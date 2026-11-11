@@ -1,5 +1,7 @@
 # The wire decisions, and why
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/smb.md](../smb.md). The code it describes was removed on 2026-08-30; read every
 present tense as "as of `685900ec`". These were the expensive-to-reverse choices (AGENTS.md,
 "anything two programs agree on"), listed so review could happen where the cost is.

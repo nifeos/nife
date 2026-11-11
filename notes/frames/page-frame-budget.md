@@ -141,6 +141,11 @@ went), and the difference is accounted rather than shrugged at:
   own piece of work. Twenty page frames is not worth the hazard.
 - A page per kernel endpoint, carved into chunks by `sched::create_endpoint` and never freed by
   design.
+- The NVMe disk, about 130 page frames. `non_volatile_memory_express_service` wires it once per
+  boot (its `WIRED`) as two processes. The admin process stays to
+  answer `RETIRE`, with its space, image, stacks and startup page. The data plane keeps a space of
+  its own with room for the grants it maps. `SUITE_PAGE_FRAME_BUDGET` is 24,760 against 24,752 measured on aarch64 and 24,715 on
+  riscv64.
 - The login service, ~640 (2026-08-22, milestone 49 (users, login,)). Same shape as the credential store above:
   wired once behind a `DONE` flag (`system_tests/src/user/login_tests.rs`) and shared by every login test.
   `crate::untyped::create` reserves the whole 640-page-frame construction budget the instant the

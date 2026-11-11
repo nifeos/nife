@@ -7,7 +7,10 @@
 # `dequeuePullRequest` clears `queued`; its `pr merge` sets `queued` (a CLEAN pull request enqueues
 # directly, so `autoMergeRequest` stays null) unless STUB_MERGE_NOOP is set, which makes the re-arm a
 # no-op and is the falsification: with it set, the re-arm cases must fail. Every call is logged to
-# $tmp/log so the order (dequeue, push, merge) can be asserted.
+# $tmp/log so the order (dequeue, push, merge) can be asserted. The head is always `h1`. Its `lint`
+# check runs come from $tmp/lint (default: one passed run) and the last queue removal from
+# $tmp/removal ("reason group-commit built-head"), and `runlog` is what `gh run view --log-failed` prints for
+# the group's one failed run, as helpers/arm.sh's `--jq` would print them, since the stub applies no filter.
 
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 root="$(dirname "$here")"
@@ -23,13 +26,21 @@ echo "gh $*" >>"$d/log"
 get() { cat "$d/$1" 2>/dev/null; }
 pr() {
 	jq -n --arg q "$(get queued)" --arg a "$(get auto)" --arg dr "$(get draft)" --arg labels "$(get labels)" '
-		{number: 42, id: "PR_42", state: "OPEN", isDraft: ($dr == "true"),
+		{number: 42, id: "PR_42", state: "OPEN", isDraft: ($dr == "true"), headRefOid: "h1",
 		 mergeQueueEntry: (if $q == "true" then {state: "QUEUED"} else null end),
 		 autoMergeRequest: (if $a == "true" then {enabledAt: "x"} else null end),
 		 labels: {nodes: ($labels | split(" ") | map(select(. != "") | {name: .}))}}'
 }
 case "$*" in
 *dequeuePullRequest*) echo false >"$d/queued" ;;
+*check-runs*)
+	[ -z "$STUB_CHECKS_FAIL" ] || exit 1
+	case "$*" in */commits/h1/*) ;; *) echo "stub gh: check runs asked for another head: $*" >&2; exit 1 ;; esac
+	get lint || echo '[{"id":1,"status":"completed","conclusion":"success"}]'
+	;;
+"api repos/"*"/actions/runs?head_sha=g1"*) echo '{"workflow_runs":[{"id":7,"conclusion":"failure"},{"id":8,"conclusion":"success"}]}' ;;
+"run view 7 --log-failed") get runlog ;;
+*timelineItems*) get removal || echo ' ' ;;
 "api graphql"*)
 	[ -z "$STUB_GRAPHQL_FAIL" ] || exit 1
 	if [ -e "$d/noPR" ]; then
@@ -73,6 +84,14 @@ printf '#!/bin/sh\necho "queue-conflicts: could not read the queue (offline); no
 chmod +x "$tmp/check-clean" "$tmp/check-unknown"
 ARM_QUEUE_CHECK="$tmp/check-clean"
 export ARM_QUEUE_CHECK
+# The lint over the queue (script/preflight-queue --arm-check) is stubbed the same way: green unless a
+# case says otherwise. helpers/preflight-arm-check-selftest.sh runs the real one against a fixture.
+printf '#!/bin/sh\necho "arm-check $*" >>"$STUB_DIR/log"\nexit 0\n' >"$tmp/lint-green"
+printf '#!/bin/sh\necho "arm-check $*" >>"$STUB_DIR/log"\necho "#$1 makes lint red: the prose ratchet"\nexit 1\n' >"$tmp/lint-red"
+printf '#!/bin/sh\necho "could not tell: the stack is red without it"\nexit 2\n' >"$tmp/lint-unknown"
+chmod +x "$tmp/lint-green" "$tmp/lint-red" "$tmp/lint-unknown"
+ARM_STACK_LINT="$tmp/lint-green"
+export ARM_STACK_LINT
 
 fail=0
 # run <name> <want: 0|nonzero> <fragment of output or ''> -- args...   state comes from the caller
@@ -91,14 +110,15 @@ state() { # queued auto labels draft
 	rm -f "$tmp/log" "$tmp/noPR"
 	printf '%s\n' "$1" >"$tmp/queued"; printf '%s\n' "$2" >"$tmp/auto"
 	printf '%s\n' "$3" >"$tmp/labels"; printf '%s\n' "$4" >"$tmp/draft"
+	rm -f "$tmp/lint" "$tmp/removal" "$tmp/runlog"
 }
 logged() { grep -qF -- "$1" "$tmp/log" 2>/dev/null; }
 check() { # name command-that-must-succeed
 	name="$1"; shift
 	"$@" || { echo "$me: $name" >&2; fail=1; }
 }
-STUB_MERGE_NOOP='' STUB_GRAPHQL_FAIL='' STUB_COMMENT_FAIL=''
-export STUB_MERGE_NOOP STUB_GRAPHQL_FAIL STUB_COMMENT_FAIL
+STUB_MERGE_NOOP='' STUB_GRAPHQL_FAIL='' STUB_COMMENT_FAIL='' STUB_CHECKS_FAIL=''
+export STUB_MERGE_NOOP STUB_GRAPHQL_FAIL STUB_COMMENT_FAIL STUB_CHECKS_FAIL
 unset STUB_REMOTE
 
 # 1. A queued pull request: dequeue, push, arm, in that order, and armed at the end.
@@ -242,6 +262,96 @@ run "unknown argument" nonzero "usage" -- "$root/helpers/arm.sh" 42 --force
 state false false "" false
 ARM_QUEUE_CHECK="$tmp/check-unknown" run "check could not tell: armed, and says so" 0 "armed unchecked" -- "$root/helpers/arm.sh" 42
 check "check could not tell: merge called" logged "pr merge 42 --auto --merge"
+
+# 12. Two ways into the queue that per-pull-request CI cannot see (the proposal "lint fails in the
+# queue after passing on the pull request"). First the lint check on the head: a draft's run skips
+# `lint` and GitHub counts the skip as passed, so arming refuses until a real lint has passed.
+lint() { printf '%s\n' "$1" >"$tmp/lint"; }
+S='{"id":1,"status":"completed","conclusion":"skipped"}'
+state false false "" false; lint "[$S]"
+run "lint skipped refused" nonzero "is skipped" -- "$root/helpers/arm.sh" 42
+check "lint skipped: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false; lint "[$S,{\"id\":2,\"status\":\"in_progress\",\"conclusion\":null}]"
+run "lint running after a skip refused" nonzero "still running" -- "$root/helpers/arm.sh" 42
+check "lint running after a skip: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false; lint "[$S,{\"id\":2,\"status\":\"completed\",\"conclusion\":\"failure\"}]"
+run "lint failed refused" nonzero "is failure" -- "$root/helpers/arm.sh" 42
+state false false "" false; lint "[$S,{\"id\":2,\"status\":\"completed\",\"conclusion\":\"success\"}]"
+run "lint passed after the skip arms" 0 "armed" -- "$root/helpers/arm.sh" 42
+# Falsification of the order: the newest run decides, not the first. A pass followed by a skip refuses.
+state false false "" false; lint '[{"id":1,"status":"completed","conclusion":"success"},{"id":2,"status":"completed","conclusion":"skipped"}]'
+run "the newest lint decides" nonzero "is skipped" -- "$root/helpers/arm.sh" 42
+# A head with no lint yet, or lint running with no skip beside it, arms: GitHub waits for the
+# check, and that is how script/push --requeue re-arms right after its push.
+state false false "" false; lint '[]'
+run "no lint yet arms" 0 "armed" -- "$root/helpers/arm.sh" 42
+state false false "" false; lint '[{"id":2,"status":"queued","conclusion":null}]'
+run "lint running, no skip, arms" 0 "armed" -- "$root/helpers/arm.sh" 42
+state true false "" false; lint '[]'
+run "requeue after a push still re-arms" 0 "armed" -- "$root/script/push" --requeue
+state false false "" false
+STUB_CHECKS_FAIL=1 run "unreadable lint refuses" nonzero "could not read the lint check" -- "$root/helpers/arm.sh" 42
+
+# Then the last queue removal: failed checks at this same head refuse; at an older head, or for
+# another reason, arming goes ahead. --despite-failed-checks posts its reason first.
+removal() { printf '%s\n' "$1" >"$tmp/removal"; }
+state false false "" false; removal "failed_checks g1 h1"
+run "re-arm at a failed head refused" nonzero "same head" -- "$root/helpers/arm.sh" 42
+check "failed head: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false; removal "FAILED_CHECKS g1 h1"
+run "the reason's case does not matter" nonzero "same head" -- "$root/helpers/arm.sh" 42
+state true false "" false; removal "failed_checks g1 h1"
+run "requeue at a failed head is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+state false false "" false; removal "failed_checks g1 h0"
+run "failed at an older head arms" 0 "armed" -- "$root/helpers/arm.sh" 42
+# A known flake re-arms without the override: a failed group job's log matches a signature. The list
+# is a fixture, so the cases do not depend on what helpers/known-flakes.tsv holds today.
+printf '# fixture\nprogenitor-oom\tthe progenitor is out of memory\tnotes/swish-check-flake.md\n' >"$tmp/flakes"
+state false false "" false; removal "failed_checks g1 h1"; echo "swish-check: could not spawn (the progenitor is out of memory)" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, a known flake: armed" 0 "known flake progenitor-oom" -- "$root/helpers/arm.sh" 42
+check "known flake: the group's failed log was read" logged "run view 7 --log-failed"
+check "known flake: merge called" logged "pr merge 42 --auto --merge"
+state false false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, no flake matches: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+check "no flake matches: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false; removal "failed_checks g1 h1"; echo "the progenitor is out of memory" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/no-such-list" run "failed head, no list: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+state true false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes" run "requeue that leaves the failed head: not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && [ -e '$root/'\"\$r\" ] || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
+state false false "" false; removal "manual g1 h1"
+run "removed by hand at this head arms" 0 "armed" -- "$root/helpers/arm.sh" 42
+state false false "" false; removal "failed_checks g1 h1"
+run "failed-checks override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-failed-checks "a runner died mid-job"
+check "failed-checks override: reason commented, then merge" awk '/pr comment 42/{c=NR} /a runner died mid-job/{w=NR} /pr merge 42/{m=NR} END{exit !(c && w && c<m)}' "$tmp/log"
+state false false "" false; removal "failed_checks g1 h1"
+STUB_COMMENT_FAIL=1 run "failed-checks override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-failed-checks "why"
+check "failed-checks override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false
+run "failed-checks override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-failed-checks ""
+run "failed-checks override needs an argument" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-failed-checks
+
+# 13. Lint over the queue it joins (the architect's ruling of 2026-11-11 on question A): a red the
+# pull request adds refuses, --despite-lint posts its reason and arms, and "could not tell" arms and
+# says so.
+state false false "" false
+run "stack lint is asked about this pull request" 0 "armed" -- "$root/helpers/arm.sh" 42
+check "stack lint: called with the number" logged "arm-check 42"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-red" run "red over the queue refused" nonzero "makes lint red on main plus the queue" -- "$root/helpers/arm.sh" 42
+check "red over the queue: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-red" run "lint override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-lint "the entry ahead is being dequeued"
+check "lint override: reason commented, then merge" awk '/pr comment 42/{c=NR} /pr merge 42/{m=NR} END{exit !(c && c<m)}' "$tmp/log"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-red" STUB_COMMENT_FAIL=1 run "lint override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-lint "why"
+check "lint override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-unknown" run "stack lint could not tell: armed, and says so" 0 "armed with that unchecked" -- "$root/helpers/arm.sh" 42
+state true false "" false
+ARM_STACK_LINT="$tmp/lint-red" run "requeue onto a red stack is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+state false false "" false
+run "lint override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-lint " "
 
 # 11. No instruction names the bare arming command, milestone 1052 (a push to a queued pull request
 # re-arms it, and arming refuses a held one). The briefs, the skills, CONTRIBUTING.md, the hook's

@@ -1,5 +1,7 @@
 # Inventory of the workspace's crates, 2026-10-07
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 Appendix to [the note](../releasable-crates-2026-10-07.md). Generated at base `cd2f93de` by
 `python3 notes/releasable-crates-2026-10-07/inventory.py` from the repository root, which reads
 `cargo metadata` for the graph. Code lines exclude blank and `//` lines under `src/`. "Kani" counts

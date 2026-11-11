@@ -85,11 +85,14 @@ else
         # firmware, so it installs on the arm64 runners this project's CI uses even though the
         # firmware it carries is x86_64's.
         $SUDO apt-get update
+        # The package list is helpers/apt-packages.txt. It names qemu-system-riscv; a release
+        # before 26.04 has qemu-system-misc instead.
         riscv_pkg=qemu-system-misc
         if apt-cache show qemu-system-riscv >/dev/null 2>&1; then
             riscv_pkg=qemu-system-riscv
         fi
-        $SUDO apt-get install -y qemu-system-arm "$riscv_pkg" qemu-system-x86 ipxe-qemu ovmf
+        # shellcheck disable=SC2046
+        $SUDO apt-get install -y $(helpers/apt-packages.sh bootstrap-qemu | sed "s/^qemu-system-riscv\$/$riscv_pkg/")
         ;;
     *)
         echo "bootstrap: unknown OS '$os'; install qemu-system-aarch64 by hand." >&2
@@ -124,7 +127,8 @@ for tool in python3 gh; do
         ;;
     Linux)
         $SUDO apt-get update
-        $SUDO apt-get install -y "$tool"
+        # shellcheck disable=SC2046
+        $SUDO apt-get install -y $(helpers/apt-packages.sh "bootstrap-$tool")
         ;;
     *)
         echo "bootstrap: unknown OS '$os'; install $tool by hand." >&2
@@ -154,7 +158,8 @@ else
         ;;
     Linux)
         $SUDO apt-get update
-        $SUDO apt-get install -y shellcheck
+        # shellcheck disable=SC2046
+        $SUDO apt-get install -y $(helpers/apt-packages.sh bootstrap-shellcheck)
         ;;
     *)
         echo "bootstrap: unknown OS '$os'; install shellcheck by hand." >&2
@@ -192,7 +197,8 @@ else
         ;;
     Linux)
         $SUDO apt-get update
-        $SUDO apt-get install -y ruby
+        # shellcheck disable=SC2046
+        $SUDO apt-get install -y $(helpers/apt-packages.sh bootstrap-ruby)
         ;;
     *)
         echo "bootstrap: unknown OS '$os'; install a ruby that can run \`ruby -ryaml\` by hand." >&2
@@ -347,7 +353,8 @@ else
     Linux)
         # Debian/Ubuntu build every LLVM backend into their clang packages.
         $SUDO apt-get update
-        $SUDO apt-get install -y clang
+        # shellcheck disable=SC2046
+        $SUDO apt-get install -y $(helpers/apt-packages.sh bootstrap-clang)
         ;;
     *)
         echo "bootstrap: unknown OS '$os'; install a clang whose \`clang -print-targets\` lists" >&2

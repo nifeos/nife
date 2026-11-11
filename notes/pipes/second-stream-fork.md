@@ -1,11 +1,11 @@
 # `2>`: the fork as it stood open
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
 analysis written while `2>` was undecided, which explains what the built thing is not. The lane that
 split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
-budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
-`notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
-the file. Naming is calef's.*
+budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md).*
 
 The records this file cites by number:
 

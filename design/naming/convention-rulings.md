@@ -1,10 +1,11 @@
 # Naming rules ratified for a class of names
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`design/naming.md`](../naming.md). It holds the rules that ratify a whole class of
 names at once, with the list or the definition that says which names each covers. `script/names`
 reads it (`helpers/name_rules.py`), so a covered name counts as ratified and `script/names <name>`
-cites the rule. The directory `design/naming/` and this file's stem are provisional names; naming
-is an architect's.*
+cites the rule.*
 
 A rule ratifies the names that follow it, today and later. A name that does not follow it is pulled
 aside and keeps its own status, so a rule never ratifies a name nobody looked at by accident of
@@ -40,103 +41,22 @@ and the fatal-risks evidence appendices stay provisional.
 
 ## Rule 2: a test fixture program is named for its role in its test, as a noun phrase
 
-Applies: fixture-roles
-Ratified: 2026-10-17 (UTC)
+A fixture program under `fixtures/src/` names the role it plays in its test, as a noun phrase
+(`file_sink`, `frame_revoker`). "Names a role" is a judgment a pattern would guess at, so no script
+applies this rule. Each fixture the rule ratified carries `Name: ratified 2026-10-17 (calef,
+convention-rulings Rule 2)` in its own module doc. `script/names` reads that block like any other. A new fixture is provisional until its own block says otherwise.
 
-What it covers. The programs under `fixtures/src/` listed below. The list is explicit because
-"names a role" is a judgment a pattern would guess at. A new fixture joins by a bullet here in the
-commit that adds it, and until then it is provisional like any other new name.
-
-Covered:
-
-```
-- `carried_capability_client`
-- `carried_capability_server`
-- `confined_syscall_fuzzer`
-- `console_test_client`
-- `current_cpu_reader`
-- `cycle_counter_reader`
-- `delegation_granter`
-- `delegation_receiver`
-- `file_sink`
-- `file_source`
-- `frame_revoker`
-- `image_self_checker`
-- `memory_region_depleter`
-- `name_resolver_test_client`
-- `network_echo_client`
-- `notification_binder`
-- `page_frame_consumer`
-- `page_frame_producer`
-- `rendezvous_minter`
-- `rendezvous_peer`
-- `scratch_release_witness`
-- `scratch_window_exerciser`
-- `sink_transcript_writer`
-- `unreachable_network_witness`
-```
-
-What it pulls aside, leaving it provisional. `alto`, `tenor`, `greeting`, `hello`, `noteless`,
-`outlaw`, `chatty` and `flaky`. None names a role in its test: `alto` and `tenor` are two voices of
-a duet, and `greeting`, `hello` and `noteless` say what they print. `outlaw`, `chatty` and `flaky`
-carry rulings of their own that no rename has applied (`kernel_test_subject`,
-`swap_boundary_witness` and `first_attempt_crasher`).
+`alto`, `tenor`, `greeting`, `hello`, `noteless`, `outlaw`, `chatty` and `flaky` are provisional.
+None names a role in its test: `alto` and `tenor` are two voices of a duet, and `greeting`, `hello`
+and `noteless` say what they print. `outlaw`, `chatty` and `flaky` carry rulings of their own that
+no rename has applied (`kernel_test_subject`, `swap_boundary_witness` and `first_attempt_crasher`).
 
 ## Rule 3: appendix stems kept as they stand
 
-Applies: listed-stems
-Ratified: 2026-10-18 (UTC)
-
-What it covers. The documents listed below, each named for its title and ratified as it is. A name
-missing from the list is not covered, and a new appendix stem is provisional until a ruling or a
-rule reaches it.
-
-Covered:
-
-```
-- design/naming: `convention-rulings`, `programs-scripts-and-directories`, `provenance-limits`, `rename-traps`, `rename-what-moves`, `rename-where-names-hide`
-- notes/citations: `census-and-backfill`
-- notes/crates-io-on-nife: `probe-results`
-- notes/delegated-review: `the-findings`, `the-method`
-- notes/documentation: `resolved-bugs`, `search-limitations`
-- notes/entropy: `jh7110-trng`
-- notes/footprint-perturbation: `executed-footprint`
-- notes/framebuffer-contract: `flushed-hang`
-- notes/frames: `run-fork`
-- notes/glyphs: `retro-fonts`, `terminal-and-proof`
-- notes/incremental-path: `sources`
-- notes/isa-discovery: `counter-rate-in-userspace`
-- notes/job-mix: `null-syscall-hvf-full-mix`, `null-syscall-under-load`
-- notes/kani-upstream: `issue-2402-comment`, `kani-lib-link-order`
-- notes/kernel-proofs: `riscv64-from-an-aarch64-host`
-- notes/load-sensitive-assertions: `caretaker-teardown-wait`, `confirmation-run`, `first-loaded-acceptance-run`, `global-baselines-and-the-drift-law`, `inbound-eintr`, `miss-taxonomy-and-clockless-loops`, `the-icount-claims`, `unowned-reds`
-- notes/merge-queue: `merge-methods-and-holds`, `prose-only`
-- notes/mutation-testing: `a-memory-bound-per-mutant`, `baseline-survivors-grant-plan-to-swish`, `documentation`, `job-mix-and-jh7110-entropy`, `machine-discovery`, `measured-boot`, `new-crate-backlog`, `uefi-loader`, `video-terminal`
-- notes/net: `memory-and-reclamation`, `prior-art-and-the-contract`, `std-tcp-listener`, `the-outbound-gates`
-- notes/packages: `jig`, `measurements`, `over-the-internet`, `several-programs`, `the-index-format`, `vouching`
-- notes/pipes: `second-stream`, `second-stream-fork`
-- notes/process-view: `the-machine-and-your-share`
-- notes/project-metrics: `ledger`
-- notes/redleaf: `sources`
-- notes/register-of-measures: `cache-experiments`, `code-proofs-and-coverage`, `file-size`, `function-length`, `gated-dated-and-owed-rows`, `landed-each-week`, `project-cost`, `prose-budget`, `ratchet-debt`, `reading-the-weekly-series`, `records-by-status`, `unsafe-series`, `which-model-wrote-it`
-- notes/releasable-crates-2026-10-07: `inventory`
-- notes/scheduled-execution: `archive-narrowing`, `calendar-and-wall-clock`, `calendar-grammar-g5`, `one-image-per-entry`
-- notes/serial-less-output: `the-xenon-grid`
-- notes/shared-page-audit: `compositor-findings`, `console-and-virtio-findings`, `filesystem-findings`
-- notes/smb: `adapter-as-it-stood`, `remaining-work`, `testing`, `throughput`, `wire-decisions`
-- notes/stack: `progenitor-stack`
-- notes/std: `allocation`, `file-times`, `fs-descent`, `threads`
-- notes/stranger-test: `instrument`
-- notes/unsafe-obligations: `ceilings`
-- notes/untested-error-paths: `tables`
-- notes/verification: `calendar-proofs`, `core-harnesses`, `elf-parser-wall`, `glob-proofs`, `paging-blocks`, `parser-harnesses`
-- notes/verus: `sources`
-- notes/visionfive2: `boots-7-and-8`, `boots-9-and-10`, `hart-roster-stops`, `on-board-test-suite`
-- notes/x86-port: `acpi-and-pci`, `interrupts-and-the-fine-map`, `ring-3`, `scheduler`, `user-mode-runtime`, `what-does-not-fit`
-```
-
-`script/names` fails when an entry names a file that does not exist, so a later rename of a listed
-stem must edit this list in the same commit.
+An appendix document whose stem is its title, and which Rule 1 does not reach, keeps its stem when
+its own `Name:` block says `Name: ratified 2026-10-18 (calef, convention-rulings Rule 3)`. No
+script lists them. A new appendix stem stays provisional until its block or a ruling says
+otherwise.
 
 ## A ruled name is not asked again, and its rename has a deadline
 

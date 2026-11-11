@@ -1,4 +1,4 @@
-//! **`MemoryRegion::RETYPE_OBJ`**: a kernel object made in a region's memory, and the capability to
+//! **`MemoryRegion::RETYPE_OBJECT`**: a kernel object made in a region's memory, and the capability to
 //! it filed in the caller's table.
 //!
 //! The third word is a floor: the capability lands in the first free slot at or above it, and `0`
@@ -12,7 +12,7 @@ use abi::Error;
 use crate::capability_object::{Capability, Object, Rights};
 use crate::sched;
 
-/// `MemoryRegion::RETYPE_OBJ`: retype a page of `region` into a kernel object of `kind` and file a
+/// `MemoryRegion::RETYPE_OBJECT`: retype a page of `region` into a kernel object of `kind` and file a
 /// capability to it at or above `floor`; returns the slot. The object lives in the carved page, and
 /// the region is pinned: a live endpoint's page must never be freed under a blocked thread.
 /// `space_slot` names the address space a `PROCESS` holds. `BadMethod` for an unknown kind.

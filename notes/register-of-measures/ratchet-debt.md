@@ -1,11 +1,10 @@
 # Two ratchets' debt
 
-*Name: provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics, with the files and charts it
-defines. Naming is an architect's.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-*(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
+*(Appendix of [the register](../register-of-measures.md). Stem minted on 2026-10-13
 (UTC) by lane/ratchet-metrics. `line-citations.csv`, its columns, its chart and
-`line_citation_debt` are provisional too, minted 2026-10-14 (UTC) by
+`line_citation_debt` are provisional, minted 2026-10-14 (UTC) by
 maintainer/line-citations-chart. calef asked for these charts so the baselines' debt can be driven
 down.)*
 

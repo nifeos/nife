@@ -1,8 +1,44 @@
 # Review package: `extensible_host_controller_interface`
 
-*Name: provisional, minted by lane lane/spell-out-xhci-e1000e. The names section of the
-`extensible_host_controller_interface` package of [crate-reviews.md](../crate-reviews.md), in its
-own file because the list of public names a later rule reaches is longer than the section.*
+*Name: provisional, minted by lane lane/spell-out-xhci-e1000e. The `extensible_host_controller_interface`
+package of the index [crate-reviews.md](../crate-reviews.md), journey 5 step 3.*
+
+## The package
+
+Name and version. `extensible_host_controller_interface` `0.1.0`, ratified with xHCI spelled out.
+146 `Name:` blocks, all ratified.
+
+API. The xHCI half of a USB driver as pure computation: `registers` (offsets and the `Capabilities`
+decode), `port`, `context`, `direct_memory_access` layout, `TransferRequestBlock`, `ProducerRing`,
+`EventRing`, `Event`, `completion` and `transfer_request_block_type`. No nife capability, handoff or
+error type appears in a public signature. The spawn handoff lives in `driver_process_contract`.
+
+Proofs. Seven harnesses: the producer ring, the event ring's wrap, the capability walk, the device
+context index, the slot and endpoint contexts, the port status write and the interrupt interval. All
+seven prove and all seven patches fail.
+
+Dependencies. None.
+
+Naming rules. Every judged name is under Names, below.
+
+| rule | result |
+|---|---|
+| the template's checks (446 names) | 0 findings |
+| the specification's register mnemonics | spelled out, each with the mnemonic as its alias |
+| parameters of public functions | spelled out in 12 functions, provisional |
+
+Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
+name `usb` is taken on crates.io. The directory and the in-tree dependency name stay `usb` until the
+move, and the crate carries `#[doc(alias = "usb")]` so a search for `usb` still finds it.
+
+Provenance. Nothing outstanding in milestone 1019 for this crate.
+
+Result of `script/crate-standalone`. Clean. The crate names no nife file.
+
+Outstanding before the move. Nothing. The README states the hub limit (a device behind a hub has no
+address), as milestone 820 (proven xHCI logic, released on its own) asks.
+
+Recommendation. Ready for review.
 
 ## Names
 

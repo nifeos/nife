@@ -223,6 +223,10 @@ echo "==> no reproducer in this branch's commit messages (a replay line, a seed 
 # This run reads the commits the branch adds to origin/main, and says so when there is no origin/main.
 helpers/replay-line-check-selftest.sh >/dev/null
 helpers/read-advisory-selftest.sh >/dev/null
+# Beside it, .github/workflows/pr-text-ask-check.yml refuses a pull request body whose
+# `## What I need from you` section asks no question, through helpers/ask-section-check.sh; its
+# selftest passes and refuses one body per shape (lane/after-this-merges-asks-nothing, provisional).
+helpers/ask-section-check.sh --selftest >/dev/null
 if git rev-parse --verify -q origin/main >/dev/null; then
     helpers/replay-line-check.sh --range origin/main..HEAD
 else
@@ -274,6 +278,9 @@ python3 helpers/crate_move.py --selftest >/dev/null
 # so its selftest is what keeps summarize, fill and check right between bench sessions, and it holds
 # results-template.md to the code.
 python3 -I tools/jh7110_entropy_board_check/results.py --selftest >/dev/null
+# The judge of a crate's hardware run (milestone 1035 (a crate names the version that ran on hardware)) reads logs only a board produces, so its
+# selftest is what keeps the six conditions right between bench sessions.
+python3 -I helpers/crate_hardware_run.py --selftest >/dev/null
 # helpers/verify-parallel-selftest.sh proves the shards, the join and the one slot; the heavy-job
 # slots section above runs it, so it is not run twice.
 
@@ -288,6 +295,9 @@ echo "==> script/push --requeue re-arms, and arming refuses a held pull request"
 # Stub gh and git. The re-arm is made a no-op inside the selftest and must fail loudly, so this is
 # where a --requeue that silently arms nothing is seen to be caught (COE action 7).
 helpers/push-requeue-selftest.sh >/dev/null
+# Arming lints the pull request over the queue it joins: a real git fixture where it is green
+# alone and red on top of the entry ahead (script/preflight-queue --arm-check).
+helpers/preflight-arm-check-selftest.sh >/dev/null
 
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
 # lint-scope: code
@@ -3964,6 +3974,9 @@ helpers/scope-merge-base-selftest.sh >/dev/null
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
 # lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
+# A draft's `lint` fails and a ready one's runs the real lint: the draft gate's state step under a
+# stub gh, and the lint job's own conditions evaluated for each event (helpers/draft-lint-selftest.sh).
+helpers/draft-lint-selftest.sh >/dev/null
 
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
 # 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules

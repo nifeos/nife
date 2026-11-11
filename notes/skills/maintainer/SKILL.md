@@ -63,6 +63,10 @@ reads, looks things up, writes briefs and records rulings in the conversation.
 A lane that carries an architect's ruling may edit `design/decisions/` to record it, on the terms
 the [developer lane](../developer-lane/SKILL.md) sets.
 
+Maintainer tooling reads and writes GitHub through GraphQL (`gh pr`, `gh issue`, `gh api graphql`),
+because the REST budget is shared by every agent and script on the account and the GraphQL budget is
+separate. A REST call stays only where GraphQL has no equivalent, such as workflow runs and their logs.
+
 ## A held finding gets one lane
 
 The fuzz host files each held fuzz finding as a private security advisory. The maintainer raises at

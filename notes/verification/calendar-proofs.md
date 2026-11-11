@@ -1,5 +1,7 @@
 # The calendar, and where BMC's cost actually is
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/verification.md](../verification.md), which keeps the lesson. This file holds
 the eleven calendar harnesses, the measurements that located the cost, and the two falsifications.
 

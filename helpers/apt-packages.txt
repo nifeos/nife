@@ -1,0 +1,16 @@
+# The apt packages script/ci-qemu and script/bootstrap install, one group per line:
+# `<group> <package>...`. Both scripts read their groups through helpers/apt-packages.sh, and
+# `helpers/owned-image-probe.sh packages` checks every package here on the owned runner image, so
+# the install and the check cannot drift apart. Add a package here, never in a script.
+#
+# script/ci-qemu
+qemu-runtime libslirp0
+qemu-build build-essential ninja-build meson pkg-config python3 python3-venv libglib2.0-dev libslirp-dev libpixman-1-dev flex bison zlib1g-dev
+# script/bootstrap. The riscv package is qemu-system-riscv from Ubuntu 26.04; bootstrap falls back
+# to qemu-system-misc on an older release, which the image (26.04) never needs.
+bootstrap-qemu qemu-system-arm qemu-system-riscv qemu-system-x86 ipxe-qemu ovmf
+bootstrap-python python3
+bootstrap-gh gh
+bootstrap-shellcheck shellcheck
+bootstrap-ruby ruby
+bootstrap-clang clang

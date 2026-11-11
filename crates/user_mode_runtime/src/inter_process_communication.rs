@@ -293,7 +293,7 @@ pub fn timer_cancel(timer_slot: u64) -> i64 {
 /// each is a page it cannot give back short of destroying the region.
 ///
 /// **`reserved` is how many low slots mean something by being empty**, and the pair is refused
-/// while any of them is. `RETYPE_OBJ` puts a new capability in the first free slot, and several
+/// while any of them is. `RETYPE_OBJECT` puts a new capability in the first free slot, and several
 /// wirings say "you have no directory" or "no entropy" by leaving a fixed slot empty. A sleeper that
 /// landed there would read as that service. So this probes slots `0..reserved` first, and a
 /// caller with an empty one keeps whatever it did before (its `BUGS` says which).
@@ -345,7 +345,7 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 /// let (r0, r1) = call(SERVICE, 0x0100_0000_0000_0008, 0);
 ///
 /// // Negative-as-u64 is enormous, which is how a wire contract tells "no capability in that slot"
-/// // from an answer without a probe request. See `entropy_contract::delivered`.
+/// // from an answer without a probe request. See `entropy_contract::delivered_bytes`.
 /// assert!((r0 as i64) >= 0 || abi::Error::from_ret(r0 as i64).is_some());
 /// # let _ = r1;
 /// # }

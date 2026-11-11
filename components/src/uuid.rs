@@ -19,7 +19,7 @@
 
 //! # Without the entropy grant
 //!
-//! It prints nothing and says why on its second stream: `entropy_contract::delivered` reports the
+//! It prints nothing and says why on its second stream: `entropy_contract::delivered_bytes` reports the
 //! empty slot as `None`, and `uuid > id.txt` must leave the file empty, because a predictable
 //! identifier is wrong and looks right. No counter fallback, as in `disk_partitioner` and the
 //! partition table.
@@ -65,7 +65,7 @@ const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 
 /// Slot 9: the entropy service, `WRITE`. Its *presence* is what the draw finds out about, and it
 /// finds out by asking rather than by probing: a `CALL` on an empty slot answers
-/// `abi::Error::NoSuchSlot`, which `entropy_contract::delivered` separates from every real count.
+/// `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes` separates from every real count.
 const ENTROPY_SLOT: u64 = grant_plan::ENTROPY_SLOT;
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry

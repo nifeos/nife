@@ -1,42 +1,28 @@
 Falsifies `kernel::arch::aarch64::iommu::proofs::no_stream_can_reach_another_streams_tables`.
 
-The defect is the change this file most invites a future reader to make. `STRTAB_LOG2` is
-6 and its comment says so almost apologetically ("64 covers bus 0's 32 devices twice
-over"); a second PCIe bus, or a board whose `iommu-map` is not the identity, and raising
-it to 7 is the obvious edit. It is also wrong, and nothing else in the tree says so: 128
-entries at a 64-byte stride is 8192 bytes, and both the stream table and the
-context-descriptor frame are **one** page frame from `zeroed_page_frame`. Streams 64
-through 127 have their entries written off the end of a kernel-owned frame into whatever
-the allocator handed out next.
+The defect is the stride the linear table used, left in place under the two-level one:
+`stream_position` picks the right leaf but offsets into it by `rid * 64` rather than by
+`(rid % 64) * 64`. For streams 0 to 63 the two agree, which is every stream a one-frame linear
+table could hold, so the edit reads as correct to anyone porting from the old shape. For stream
+64 and above the offset runs past the leaf's single frame, and the STE and CD are written into
+whatever the allocator handed out next.
 
-The patch is that edit, whole and self-consistent: `init` programs the larger
-`STRTAB_BASE_CFG` too, so the SMMU agrees with the kernel about the table's size and
-nothing complains.
+Expected to fail: `assert!(pa.offset + STE_BYTES <= page_frames::FRAME_SIZE, "every entry the
+bound admits lies inside its leaf's single frame")`. Confirmed red on 2026-11-11 (UTC), on an
+x86_64 host, against this file's pure functions and harness compiled on their own.
 
-**Every test in this tree stays green under it**, for the plain reason that the requester
-id of the one PCIe disk on `virt` is far below 64, so no test ever addresses an entry past
-the frame. The bound is the only thing standing between a device-tree-supplied `StreamID`
-and a raw write, and this proves the bound and the stride have to be checked against each
-other rather than separately.
-
-Expected to fail: `assert!(oa + STE_BYTES <= page_frames::FRAME_SIZE, "every entry the
-bound admits lies inside the single frame that holds the table")`. Confirmed red on
-2026-09-04.
-
-The sibling harness `the_smmu_is_handed_exactly_the_tables_the_kernel_built` stays green
-under this patch: it takes `ctxptr` symbolic rather than deriving it from a `StreamID`, so
-it says nothing about how many of them there may be.
+The sibling harnesses stay green under this patch: `the_smmu_is_handed_exactly_the_tables_the_kernel_built`
+takes `ctxptr` symbolic, and `the_level_one_table_names_exactly_the_leaf` never places a stream.
 
 diff --git a/kernel/src/arch/aarch64/iommu.rs b/kernel/src/arch/aarch64/iommu.rs
-index 2769577a..c0d88399 100644
 --- a/kernel/src/arch/aarch64/iommu.rs
 +++ b/kernel/src/arch/aarch64/iommu.rs
-@@ -72,7 +72,7 @@ const EVT_BYTES: u64 = 32;
+@@ -397,7 +397,7 @@
+     }
+     Some(StreamPosition {
+         leaf: (rid >> STREAM_TABLE_SPLIT) as usize,
+-        offset: (rid % STREAMS_PER_LEAF) as u64 * STE_BYTES,
++        offset: rid as u64 * STE_BYTES,
+     })
+ }
  
- // The linear stream table: 64 STEs of 64 bytes, one frame. StreamID on this board is the PCIe
- // requester id (the DTB's iommu-map is identity), so 64 covers bus 0's 32 devices twice over.
--const STRTAB_LOG2: u32 = 6;
-+const STRTAB_LOG2: u32 = 7;
- const STE_BYTES: u64 = 64;
- 
- // Commands (opcode in byte 0 of word 0).

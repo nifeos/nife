@@ -71,9 +71,12 @@ fi
 # A fresh container ships with empty package lists (a Claude cloud runner does; GitHub's images do
 # not), and there `apt-get install` fails with "Unable to locate package" before anything is
 # fetched. Update once and retry only on that failure, so the warm path on a runner stays one call.
-$SUDO apt-get install -y libslirp0 >/dev/null 2>&1 || {
+# The package lists live in helpers/apt-packages.txt, which the owned image probe also reads.
+# shellcheck disable=SC2046 # package names hold no whitespace
+$SUDO apt-get install -y $(helpers/apt-packages.sh qemu-runtime) >/dev/null 2>&1 || {
     $SUDO apt-get update >/dev/null
-    $SUDO apt-get install -y libslirp0 >/dev/null
+    # shellcheck disable=SC2046
+    $SUDO apt-get install -y $(helpers/apt-packages.sh qemu-runtime) >/dev/null
 }
 
 # The warm-cache path. `--version` prints "QEMU emulator version X.Y.Z"; match the whole token so
@@ -94,9 +97,8 @@ echo "==> Building QEMU $want (cold cache; this is the slow path)"
 # Build dependencies. libslirp is not optional for us: the network tests use QEMU's user-mode
 # networking (-netdev user), including the guestfwd echo peer and the TFTP fixture the UDP gate reads.
 $SUDO apt-get update
-$SUDO apt-get install -y \
-    build-essential ninja-build meson pkg-config python3 python3-venv \
-    libglib2.0-dev libslirp-dev libpixman-1-dev flex bison zlib1g-dev
+# shellcheck disable=SC2046
+$SUDO apt-get install -y $(helpers/apt-packages.sh qemu-build)
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

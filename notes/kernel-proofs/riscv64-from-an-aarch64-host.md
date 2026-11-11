@@ -1,11 +1,11 @@
 # Proving riscv64's IOMMU driver from an aarch64 host
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/kernel-proofs.md](../kernel-proofs.md), which links here from its stub-list
 item 8. It is milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs), built
 as option 1 of
 [the proposal that measured it](../../design/roadmap/0650-riscv64-code-the-prover-can-already-compile.md).
-
-*Name provisional: notes are an interface and their names are calef's call.*
 
 ## A correction first
 
@@ -35,9 +35,9 @@ Inside that module, `crate::arch` means aarch64. So `iommu.rs`'s call to
 would prove aarch64's code under riscv64's name. That is the stub that reads as coverage, which the
 parent note exists to prevent.
 
-Only code that never calls through `crate::arch` is proved here. Today both harnesses call four pure
-functions and nothing else: `device_context`, `is_in_directory`, `context_offset` and
-`iodir_inval_ddt`.
+Only code that never calls through `crate::arch` is proved here. The three harnesses call five pure
+functions and nothing else: `device_context`, `directory_limit`, `directory_position`,
+`non_leaf_entry` and `iodir_inval_ddt`.
 
 `script/lint` check 5b holds the line. It records each `crate::arch` path a file in the module names,
 with why no harness reaches it, and fails on a new one or a new file. It is a grep, not a call graph,
@@ -46,7 +46,7 @@ so it cannot prove reachability. It forces the question at the moment it becomes
 Extending the module to every asm-free riscv64 file was refused, in the proposal's option 2.
 `mmu.rs` and `timer.rs` call `crate::arch` throughout, so their proofs would be fictions.
 
-## The two properties
+## The three properties
 
 The SMMU's first property does not transfer. This driver writes whole 64-bit words, so there is no
 split for an address to lose half of. Milestone 432's block said finding the right property was most
@@ -65,17 +65,27 @@ of the work.
 `no_device_can_reach_another_devices_context`:
 
 - It covers both context formats: the 64-byte one QEMU selects and the 32-byte one that has never run.
-- Every requester id `is_in_directory` admits has its whole context inside the directory's frame.
+- Over every `u32`, `directory_position` places exactly the ids the specification's two-level
+  directory holds (15 bits extended, 16 base) and refuses the rest with `None`, never a panic.
+- Every placed id has a root entry, and its whole context lies inside its leaf's frame.
 - Each context is 8-byte aligned, and no two ids share a byte.
 - The `IODIR.INVAL_DDT` that follows the write names exactly that device, with DV set.
 
+`the_root_entry_names_exactly_the_leaf`:
+
+- The non-leaf entry is valid, its PPN is the leaf entire for every page-frame leaf below 2^56, and
+  no reserved bit is set (QEMU refuses a set one as `DDT_MISCONFIGURED`).
+
 ## Falsified before believed
 
-Both patches are in `kernel/falsifications/` and replay on an aarch64 host. Each was confirmed red on
-2026-09-25.
+The three patches are in `kernel/falsifications/` and replay on an aarch64 host.
 
-One is the SMMU's `STRTAB_LOG2` shape again. A bound written for the 32-byte format admits ids 64 to
-127, past the frame, and every test stays green.
+One leaves the one-level directory's stride under the two-level one: the leaf is right and the
+offset is `rid * dc_bytes`. It agrees with the right offset for every id below 64, and writes past
+the leaf for every id above.
+
+One writes the leaf's address into the root entry as it is, rather than as a PPN at bit 10, so the
+IOMMU walks a frame four times the leaf's address.
 
 The other gives `iosatp` the `(pa >> 12) << 10` encoding that three neighbors in the same file use.
 It turns MODE red for a high enough root. The boot confinement test would probably catch it too; that

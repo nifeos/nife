@@ -1,5 +1,7 @@
 # How the SMB adapter was tested, and what running it looked like
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/smb.md](../smb.md). The code it describes was removed on 2026-08-30; read every
 present tense as "as of `685900ec`". It holds the host tests, the two-ISA QEMU gate leg by leg, and
 the commands that no longer exist.

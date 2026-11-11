@@ -1,10 +1,11 @@
 # The x86_64 port: what does not fit, and where it pays
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the four places the `arch/` seam did not stretch, two bugs worth knowing, and where TSO pays out. It
 exists to verify or challenge the main page. A reader who only needs to build, boot or test the
-x86_64 port should not have to open it. The directory `notes/x86-port/` and this file's stem are
-provisional names; naming is calef's.*
+x86_64 port should not have to open it.*
 
 *Records cited below: milestone 161 (the x86_64 kernel port).*
 

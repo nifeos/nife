@@ -111,6 +111,10 @@ ci_ask=100000
 # The run bound covers the boot and the 60 s sweep of one guest.
 build_bound="${NIFE_FUZZ_BUILD_BOUND:-1800}"
 bound="${NIFE_FUZZ_BOUND:-300}"
+# What `sweep` prints when the guest ran out `bound`, and when a signal ended it before that;
+# `classify` greps both.
+bound_ran_out="the guest ran out its bound"
+early_stop="the guest was stopped by a signal"
 # The device the check reads; a variable only so that the refusal paths can be tried on a machine
 # that has KVM.
 kvm_device="${NIFE_FUZZ_KVM_DEVICE:-/dev/kvm}"
@@ -241,6 +245,10 @@ classify() {
         [ "$ran" -gt 0 ] || next=$((first + 1))
     elif [ "$rc" -eq 125 ]; then
         status=infrastructure
+    elif grep -q "^continuous-fuzz: $bound_ran_out " "$log"; then
+        status=held-hang
+    elif grep -q "^continuous-fuzz: $early_stop " "$log"; then
+        status=infrastructure
     elif [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
         status=held-hang
     elif grep -q -E 'panicked|PANIC' "$log"; then
@@ -277,7 +285,23 @@ sweep() {
         elf="$(sed -n '/"reason":"compiler-artifact"/{/"name":"system_tests"/s/.*"executable":"\([^"]*\)".*/\1/p;}' "$json" | tail -1)"
         [ -n "$elf" ] || { echo "continuous-fuzz: cargo named no system_tests executable" >&2; exit 125; }
         echo "continuous-fuzz: $5: $2, seeds from $3, accelerator kvm, image $elf"
+        guest_start="$(date +%s)"
+        set +e
         "$root/helpers/qemu-bounded.sh" "$bound" ./helpers/qemu-runner-x86_64.sh "$elf" -accel kvm
+        guest_rc=$?
+        set -e
+        guest_seconds=$(($(date +%s) - guest_start))
+        # The exit status cannot say whether the guest hung. When the bound runs out,
+        # qemu-bounded.sh sends TERM to the runner, which passes it to QEMU, and QEMU exits 0. A
+        # signal from anyone else (a person's or a session's `pkill`) ends qemu-bounded.sh with 143
+        # well before the bound. Only the guest's own time tells the two apart, so this says which
+        # one happened and `classify` reads it.
+        if [ "$guest_seconds" -ge "$bound" ]; then
+            echo "continuous-fuzz: $bound_ran_out after $guest_seconds s"
+        elif [ "$guest_rc" -eq 143 ] || [ "$guest_rc" -eq 137 ]; then
+            echo "continuous-fuzz: $early_stop after $guest_seconds s, short of its $bound s bound"
+        fi
+        exit "$guest_rc"
     )
 }
 
