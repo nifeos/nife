@@ -46,11 +46,10 @@ a boot is the expensive unit in this suite. The outbound transcript is already p
 is refused the port, so the granted run serves and stops.
 
 `std::net::TcpListener::accept` returns the peer that connected, and `peer_addr()` on the accepted
-stream reports the same. `OPERATION_ACCEPT` carries it in the second reply word. The word is packed by
-`socket_contract::peer_word` (the IPv4 address in bits 47 to 16, the port in bits 15 to 0) and read
-back by `word_peer`; the stack reads it from the connection's remote endpoint before it re-arms the
+stream reports the same. `OPERATION_ACCEPT` carries it in the second reply word. `socket_contract::peer_word` packs the word
+(the IPv4 address in bits 47 to 16, the port in bits 15 to 0) and `word_peer` reads it back; the stack reads it from the connection's remote endpoint before it re-arms the
 listener. The word is the IPv4 answer, and a peer of another family would need its own route. The
-frame's `dst` fields are not used for it: they stay what a UDP `RECEIVE` writes.
+frame's `dst` fields carry nothing of it and stay what a UDP `RECEIVE` writes.
 
 The host prober now sees two listening windows over one boot, and what it requires changed shape
 because of it. The guest offers four rounds (two per program) and the prober passes at three.

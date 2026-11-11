@@ -123,8 +123,8 @@ pub const OPERATION_BIND_UDP: u64 = 11;
 /// to 16, big-endian as an address is written, and the port in bits 15 to 0.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
-pub const fn peer_word(address: [u8; 4], port: u16) -> u64 {
-    (u32::from_be_bytes(address) as u64) << 16 | port as u64
+pub const fn peer_word(octets: [u8; 4], port: u16) -> u64 {
+    (u32::from_be_bytes(octets) as u64) << 16 | port as u64
 }
 
 /// The peer a [`peer_word`] names, or `None` for the word 0 that a reply without a peer carries
