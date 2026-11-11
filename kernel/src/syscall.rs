@@ -62,25 +62,25 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
     let method = frame.arg(1);
 
     // `exit` never comes back, so it is not part of the result-writing path below.
-    if nr == abi::SYS_EXIT {
+    if nr == abi::SYSCALL_EXIT {
         sched::exit();
     }
     // Ends this thread only, and like `exit` never comes back.
-    if nr == abi::SYS_EXIT_THREAD {
+    if nr == abi::SYSCALL_EXIT_THREAD {
         sched::exit_thread(frame.arg(0));
     }
 
     let result: Result<i64, Error> = match nr {
-        abi::SYS_YIELD => {
+        abi::SYSCALL_YIELD => {
             sched::yield_now();
             Ok(0)
         }
         // An empty slot is not an error: a loader recycling slots need not track emptiness.
-        abi::SYS_CAPABILITY_DELETE => {
+        abi::SYSCALL_CAPABILITY_DELETE => {
             let _ = sched::delete_current_capability(frame.arg(0));
             Ok(0)
         }
-        abi::SYS_INVOKE => invoke(
+        abi::SYSCALL_INVOKE => invoke(
             frame,
             frame.arg(0),
             frame.arg(1),

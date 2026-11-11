@@ -238,7 +238,7 @@ fn a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake() {
 /// (call/reply IPC: a one-shot reply capability)).
 ///
 /// The child deletes its port capability's slot (`PORT_SLOT_NO_WAKE`), then executes `out`. The
-/// port grant is a cached field the context switch installs; if `SYS_CAPABILITY_DELETE` cleared the table
+/// port grant is a cached field the context switch installs; if `SYSCALL_CAPABILITY_DELETE` cleared the table
 /// but not the cache, the child would keep the ports for life, claim 29 failing for the one object
 /// enforced outside the table. So the `out` must fault, at the instruction after the delete.
 ///

@@ -292,7 +292,7 @@ pub fn thread_control_block_resume(tcb_slot: u64) -> i64 {
     unsafe { invoke(tcb_slot, abi::thread_control_block::RESUME, 0, 0, 0) }
 }
 
-/// Drop the capability in `slot` from this thread's capability table (`SYS_CAPABILITY_DELETE`). Deleting an empty
+/// Drop the capability in `slot` from this thread's capability table (`SYSCALL_CAPABILITY_DELETE`). Deleting an empty
 /// slot is a no-op. A program that retypes many objects (a loader, a spawner) frees each slot as
 /// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
@@ -300,6 +300,6 @@ pub fn thread_control_block_resume(tcb_slot: u64) -> i64 {
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
-    // SAFETY: SYS_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
-    let _ = unsafe { trap6(abi::SYS_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
+    // SAFETY: SYSCALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
+    let _ = unsafe { trap6(abi::SYSCALL_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
 }

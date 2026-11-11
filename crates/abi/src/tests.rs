@@ -180,11 +180,11 @@ macro_rules! pinned {
 fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
     assert_eq!(crate::ABI_VERSION, 1);
     pinned! {
-        crate::SYS_EXIT => 0,
-        crate::SYS_YIELD => 1,
-        crate::SYS_INVOKE => 2,
-        crate::SYS_CAPABILITY_DELETE => 3,
-        crate::SYS_EXIT_THREAD => 4,
+        crate::SYSCALL_EXIT => 0,
+        crate::SYSCALL_YIELD => 1,
+        crate::SYSCALL_INVOKE => 2,
+        crate::SYSCALL_CAPABILITY_DELETE => 3,
+        crate::SYSCALL_EXIT_THREAD => 4,
         crate::CAPABILITY_TABLE_SLOTS => 64,
         crate::INTERFACE_ID => 1,
         crate::address_space::MAP_INTO => 0,

@@ -231,16 +231,16 @@ def selftest():
     fails('a multi-line value is read whole',
           {'crates/x/src/lib.rs': ('pub const MAGIC: u64 =\n    1;\n', 'pub const MAGIC: u64 =\n    2;\n')}, True)
 
-    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYS_EXIT: u64 = 0;\n'
+    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 0;\n'
     fails('a renumbered syscall without the version fails',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYS_EXIT: u64 = 9;\n')}, True)
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 9;\n')}, True)
     fails('a renumbered syscall with the version passes',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYS_EXIT: u64 = 9;\n')}, False)
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSCALL_EXIT: u64 = 9;\n')}, False)
     fails('a number in a module of abi without the version fails',
           {'crates/abi/src/timer.rs': ('pub const ARM: u64 = 0;\n', 'pub const ARM: u64 = 1;\n'),
            'crates/abi/src/lib.rs': (abi, abi)}, True)
     fails('an added syscall is an addition',
-          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYS_NEW: u64 = 5;\n')}, False)
+          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSCALL_NEW: u64 = 5;\n')}, False)
     fails('a removed number fails',
           {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a renumbered error without the version fails',

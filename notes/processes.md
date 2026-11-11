@@ -3,7 +3,7 @@
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The rulings are §269 (how threads share a process) forks 1, 3 and 5, and calef's four
 answers on pull request #1892 the same day. The wire contract is `abi::process`, `abi::object_type::PROCESS`,
-`abi::rights::BIND` and `abi::SYS_EXIT_THREAD`; the kernel half is `kernel/src/sched/process.rs`.*
+`abi::rights::BIND` and `abi::SYSCALL_EXIT_THREAD`; the kernel half is `kernel/src/sched/process.rs`.*
 
 ## The object
 
@@ -39,9 +39,9 @@ tree shares it through frames. Lifting it later means counting holders in the re
 
 A process ends on any of these:
 
-- a member's `SYS_EXIT`;
+- a member's `SYSCALL_EXIT`;
 - a member's fault;
-- its last running member's `SYS_EXIT_THREAD`;
+- its last running member's `SYSCALL_EXIT_THREAD`;
 - `Process::DESTROY`;
 - destruction of its region;
 - its last member leaving the thread table.
@@ -72,7 +72,7 @@ member remains, or by the region sweep once the process's name is gone.
 falsification:
 
 - two hand-written threads share a space, a table and a futex, one of them ending itself with
-  `SYS_EXIT_THREAD`;
+  `SYSCALL_EXIT_THREAD`;
 - a sibling's `exit` ends the supervised member, and its supervisor hears `EVENT_EXIT`;
 - every refusal of the contract;
 - a destroyed region ends its process and a member that lives in another region.
@@ -90,5 +90,5 @@ outcome, since the race itself cannot be staged on demand.
   heap region per thread it has ever spawned, until that region is destroyed.
 - Teardown walks every thread to find members, `MAXIMUM_THREADS` (1,024) at most. A member
   list in the page is the shape if the walk ever shows in a benchmark.
-- Exit codes are not carried. `SYS_EXIT`'s code was discarded before this milestone and still
+- Exit codes are not carried. `SYSCALL_EXIT`'s code was discarded before this milestone and still
   is; a process records its end's event, not a code.

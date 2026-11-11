@@ -5,7 +5,7 @@ decided: 2026-10-10
 ratified_by: calef
 ---
 
-# 276. The thread syscalls as built: the process object, `BIND`, futexes, the thread pointer and `SYS_EXIT_THREAD`
+# 276. The thread syscalls as built: the process object, `BIND`, futexes, the thread pointer and `SYSCALL_EXIT_THREAD`
 
 *Section number provisional until the merge queue lands it; 270 was the highest on `main` and 271
 to 275 were in open pull requests when this was written. Recorded on 2026-10-11 (UTC) by
@@ -183,12 +183,13 @@ It behaves the same on all three architectures; the only per-architecture part i
 walk (`arch::mmu::translate_user`). No timeout yet, and the walk does not hold the space's own lock;
 both are in `notes/futex.md`'s `BUGS`.
 
-### `SYS_EXIT_THREAD` (4): ending one thread
+### `SYSCALL_EXIT_THREAD` (4): ending one thread
 
-`exit_thread(word)`, a bare syscall that needs no capability and never returns. `crates/abi`,
+`exit_thread(word)`, a bare syscall that needs no capability and never returns; the names of syscalls
+0 and 4 were spelled out by the ruling of 2026-11-11 (UTC). `crates/abi`,
 `kernel/src/syscall.rs`, `kernel/src/sched.rs` (`exit_thread`).
 
-- Ends the calling thread only. `SYS_EXIT` (0) keeps meaning "end my process"; no flag was added
+- Ends the calling thread only. `SYSCALL_EXIT` (0) keeps meaning "end my process"; no flag was added
   to it. A thread that is its own process ends that process either way.
 - If `word` is nonzero, the kernel stores zero to the 32-bit word at `word` in the caller's space
   with `Release` ordering and wakes every futex waiter on it (Linux's `CLONE_CHILD_CLEARTID`,
@@ -204,12 +205,12 @@ both are in `notes/futex.md`'s `BUGS`.
 
 `invoke(process, DESTROY, _, _, _)` -> 0. Needs `WRITE` (`NotPermitted`); `Gone` if the name no longer
 resolves. The supervisor's kill of §269 fork 5. A caller that is itself a member ends with the
-process by `SYS_EXIT` and does not return. The space is released at once if no member remains; the
+process by `SYSCALL_EXIT` and does not return. The space is released at once if no member remains; the
 page stays the region's until the region is destroyed, and an ended process answers `Gone` to a join.
 
 ## How a process ends, and how its blocked members are reaped
 
-A process ends on a member's `SYS_EXIT` or fault, its last running member's `SYS_EXIT_THREAD`,
+A process ends on a member's `SYSCALL_EXIT` or fault, its last running member's `SYSCALL_EXIT_THREAD`,
 `DESTROY`, its region's destruction, or its last member leaving the thread table
 (`kernel/src/sched/process.rs`, `end`, `depart`, `leave`, `reap_region`). The last keeps revocation
 sound: the sweeps reach tables through threads, so a table with no member is never joined again.

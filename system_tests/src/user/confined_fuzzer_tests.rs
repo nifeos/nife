@@ -443,7 +443,7 @@ impl Conductor {
         // The witness holds only GO, which the generator never names: every invoke must be
         // refused, and its table must never fill at all.
         if x == WITNESS {
-            if call.number == abi::SYS_INVOKE && (call.rets[0] as i64) >= 0 {
+            if call.number == abi::SYSCALL_INVOKE && (call.rets[0] as i64) >= 0 {
                 escape!(
                     self,
                     "the witness's invoke on slot {} method {} succeeded with {:#x}",
@@ -555,7 +555,7 @@ impl Conductor {
         // A plain `RECEIVE` defines w0..w3 only and leaves x4 as the caller left it, so there is
         // nothing to check there. A deferred fill is checked at the quiet point, with its own x1
         // and x4.
-        if call.number == abi::SYS_INVOKE
+        if call.number == abi::SYSCALL_INVOKE
             && (call.rets[0] as i64) >= 0
             && self.was_receive_capability(x, call)
             && (self.pending.is_none() || self.pending.as_ref().unwrap().fuzzer != x)
@@ -582,7 +582,7 @@ impl Conductor {
     /// Keep the ledger and the badge record current with a step that revoked a frame or minted a badge.
     fn note_revoke_or_badge(&mut self, x: usize, call: &Call) {
         // A revoke kills the in-flight copy; a badge minted is a badge that may be seen.
-        if call.number == abi::SYS_INVOKE {
+        if call.number == abi::SYSCALL_INVOKE {
             match call.words[1] {
                 abi::page_frame::REVOKE => {
                     if let Some(Some((Object::PageFrame(phys, _), _))) =
@@ -627,7 +627,7 @@ impl Conductor {
         // A SEND_CAPABILITY that completed spent its delegation: its receiver may be waiting on the
         // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAPABILITY` and
         // `RETYPE_OBJECT` share the number 2.)
-        if call.number == abi::SYS_INVOKE
+        if call.number == abi::SYSCALL_INVOKE
             && call.words[1] == proto::SEND_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
             && (call.rets[0] as i64) >= 0
@@ -660,7 +660,7 @@ impl Conductor {
 
     /// Was this call a `RECEIVE_CAPABILITY` on an endpoint, the one call whose fills are deliveries?
     fn was_receive_capability(&self, x: usize, call: &Call) -> bool {
-        call.number == abi::SYS_INVOKE
+        call.number == abi::SYSCALL_INVOKE
             && call.words[1] == proto::RECEIVE_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
     }
@@ -676,7 +676,7 @@ impl Conductor {
         obj: Object,
         rights: u32,
     ) -> bool {
-        if call.number != abi::SYS_INVOKE {
+        if call.number != abi::SYSCALL_INVOKE {
             return false;
         }
         match self.held(x, call) {
@@ -1084,7 +1084,7 @@ impl Conductor {
         let (_, Some(Wait::Rendezvous(_, WaitRole::Sender))) = disposition(self, x)? else {
             return None;
         };
-        if report_word(self, x, report::NUMBER) != abi::SYS_INVOKE {
+        if report_word(self, x, report::NUMBER) != abi::SYSCALL_INVOKE {
             return None;
         }
         if report_word(self, x, report::ARGS + 1) != proto::SEND_CAPABILITY {
@@ -1485,7 +1485,7 @@ fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor
 /// The `RETYPE_OBJECT` call the conductor reads back from a fuzzer's report page.
 fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u64) -> Call {
     Call {
-        number: abi::SYS_INVOKE,
+        number: abi::SYSCALL_INVOKE,
         words: [
             region_slot,
             abi::memory_region::RETYPE_OBJECT,

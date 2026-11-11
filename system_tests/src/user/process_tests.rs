@@ -33,7 +33,7 @@ const VA: u64 = address_space_map::pair_page(0x0060_0000);
 
 /// **The waker.** Entry registers: a capability slot, `VA`, the futex flags. Stores `1` in the
 /// word, `WAKE`s one waiter on it through the slot, stores the result at `+24`, then
-/// `SYS_EXIT_THREAD(0)`: it ends itself and not its process.
+/// `SYSCALL_EXIT_THREAD(0)`: it ends itself and not its process.
 #[cfg(target_arch = "aarch64")]
 const WAKER: &[u32] = &[
     0xAA00_03F3, // mov  x19, x0
@@ -46,11 +46,11 @@ const WAKER: &[u32] = &[
     0xAA14_03E2, // mov  x2, x20
     0xAA15_03E3, // mov  x3, x21
     0xD280_0024, // mov  x4, #1            (one waiter)
-    0xD280_0048, // mov  x8, #2            (SYS_INVOKE)
+    0xD280_0048, // mov  x8, #2            (SYSCALL_INVOKE)
     0xD400_0001, // svc  #0
     0xF900_0E80, // str  x0, [x20, #24]
     0xD280_0000, // mov  x0, #0
-    0xD280_0088, // mov  x8, #4            (SYS_EXIT_THREAD)
+    0xD280_0088, // mov  x8, #4            (SYSCALL_EXIT_THREAD)
     0xD400_0001, // svc  #0
     0x1400_0000, // b    .
 ];
@@ -66,11 +66,11 @@ const WAKER: &[u32] = &[
     0x0009_8613, // mv   a2, s3
     0x000A_0693, // mv   a3, s4
     0x0010_0713, // li   a4, 1             (one waiter)
-    0x0020_0893, // li   a7, 2             (SYS_INVOKE)
+    0x0020_0893, // li   a7, 2             (SYSCALL_INVOKE)
     0x0000_0073, // ecall
     0x00A9_BC23, // sd   a0, 24(s3)
     0x0000_0513, // li   a0, 0
-    0x0040_0893, // li   a7, 4             (SYS_EXIT_THREAD)
+    0x0040_0893, // li   a7, 4             (SYSCALL_EXIT_THREAD)
     0x0000_0073, // ecall
     0x0000_006F, // j    .
 ];
@@ -97,7 +97,7 @@ const WAKER: &[u32] = &[
     0x90FE_EB05,
 ];
 
-/// **The exiter**: `SYS_EXIT(0)`, which ends its whole process.
+/// **The exiter**: `SYSCALL_EXIT(0)`, which ends its whole process.
 #[cfg(target_arch = "aarch64")]
 const EXITER: &[u32] = &[0xD280_0000, 0xD280_0008, 0xD400_0001, 0x1400_0000];
 #[cfg(target_arch = "riscv64")]
@@ -243,7 +243,7 @@ fn try_join(
 /// word of it. Both pass slot 0 to `WAIT` and `WAKE`, inserted once through the waiter's TCB: the
 /// waker can name it only because the table is the process's. The waker wakes the waiter (a
 /// user-to-user handoff, where `futex_tests`' waker is the kernel), then ends itself with
-/// `SYS_EXIT_THREAD`, and the process goes on with one member. `DESTROY` then ends that member
+/// `SYSCALL_EXIT_THREAD`, and the process goes on with one member. `DESTROY` then ends that member
 /// too, and the space goes with the process.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.process_tests.two_threads_of_one_process_share_its_space_its_table_and_a_futex.patch`
@@ -295,7 +295,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
     sched::start_thread_control_block(waker, [0, VA, flags]).expect("start the waker");
     assert!(
         wait_for(5, || !sched::is_thread_present(waker)),
-        "the waker never ended itself with SYS_EXIT_THREAD",
+        "the waker never ended itself with SYSCALL_EXIT_THREAD",
     );
     assert_eq!(
         word(page, 24),
@@ -315,7 +315,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
     assert_eq!(
         sched::process_state(pid),
         Some((1, false)),
-        "one thread's SYS_EXIT_THREAD ended its process, or left it with the wrong member count",
+        "one thread's SYSCALL_EXIT_THREAD ended its process, or left it with the wrong member count",
     );
 
     assert_eq!(
@@ -346,7 +346,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
 /// **A member's `exit` ends its process, and the supervisor of its first member hears.**
 ///
 /// The first member is supervised through the reserved fault slot of the process's table and spins
-/// forever; the second calls `SYS_EXIT`. The spinner is ended with its process, and its supervisor
+/// forever; the second calls `SYSCALL_EXIT`. The spinner is ended with its process, and its supervisor
 /// receives the end, `EVENT_EXIT`, carried by the spinner it supervised, so `REAP` collects the
 /// thread it built.
 ///
@@ -414,7 +414,7 @@ fn a_members_exit_ends_its_process_and_the_supervisor_hears() {
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **The thread that ends itself**: `SYS_EXIT_THREAD(0)`.
+/// **The thread that ends itself**: `SYSCALL_EXIT_THREAD(0)`.
 #[cfg(target_arch = "aarch64")]
 const THREAD_EXITER: &[u32] = &[0xD280_0000, 0xD280_0088, 0xD400_0001, 0x1400_0000];
 #[cfg(target_arch = "riscv64")]

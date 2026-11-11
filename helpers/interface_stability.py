@@ -478,7 +478,7 @@ def is_wire_variant(fingerprint):
 def is_syscall_item(crate, path, fingerprint):
     """Is this item part of the syscall surface? abi's public constants and enum variants.
 
-    The syscall numbers (`SYS_*`), the object types (`object_type::*`), and every method number and
+    The syscall numbers (`SYSCALL_*`), the object types (`object_type::*`), and every method number and
     argument or result encoding the object modules define are constants. The error codes
     (`Error::*`) and the other `#[repr]` enums' values are variants, and a program outside the
     tree matches on them by number exactly as it does on a constant, so a renumbered or removed
@@ -491,7 +491,7 @@ def is_syscall_item(crate, path, fingerprint):
 
 def syscall_class(path):
     leaf = path.rsplit('::', 1)[-1]
-    if '::' not in path and leaf.startswith('SYS_'):
+    if '::' not in path and leaf.startswith('SYSCALL_'):
         return 'syscall'
     if path.startswith('object_type::'):
         return 'object type'
@@ -1210,15 +1210,15 @@ def selftest():
         return {'inner': {'impl': {'trait': {'path': 'From'}, 'items': [],
                                    'blanket_impl': {'generic': 'T'}}}}
 
-    old = surface(doc({1: const('SYS_EXIT', '0'), 2: module('object_type', [3]),
+    old = surface(doc({1: const('SYSCALL_EXIT', '0'), 2: module('object_type', [3]),
                        3: const('RENDEZVOUS', '1'), 4: fn('helper', 'u8', 1),
                        5: strukt('Header', [6, 7], [10, 11]), 6: field('len', 'u32'),
                        7: field('kind', 'u16'), 8: const('VERSION', '1'),
                        10: trait_impl('Clone'), 11: blanket()},
                       [1, 2, 4, 5, 8]))
-    # Renumbered SYS_EXIT; a new object type; helper's id moved (not a change); fields swapped
+    # Renumbered SYSCALL_EXIT; a new object type; helper's id moved (not a change); fields swapped
     # (a layout change in a repr(C) struct even though no field changed type); version bumped.
-    new = surface(doc({1: const('SYS_EXIT', '9'), 2: module('object_type', [3, 12]),
+    new = surface(doc({1: const('SYSCALL_EXIT', '9'), 2: module('object_type', [3, 12]),
                        3: const('RENDEZVOUS', '1'), 12: const('NOTIFICATION', '2'),
                        4: fn('helper', 'u8', 44),
                        5: strukt('Header', [7, 6], [10, 11]), 6: field('len', 'u32'),
@@ -1346,7 +1346,7 @@ def selftest():
         ('the renumbered syscall is a syscall change', counts['syscall_changed'], 1),
         ('the new object type is a syscall addition', counts['syscall_added'], 1),
         ('the version constant is a format bump', counts['format_bumps'], 1),
-        ('the renumber is classed as a syscall', syscall_class('SYS_EXIT'), 'syscall'),
+        ('the renumber is classed as a syscall', syscall_class('SYSCALL_EXIT'), 'syscall'),
         ('an object type is classed as one', syscall_class('object_type::NOTIFICATION'), 'object type'),
         ('an error code is classed as one', syscall_class('Error::NoSuchSlot'), 'error code'),
         ('a renumbered abi error code is boundary',

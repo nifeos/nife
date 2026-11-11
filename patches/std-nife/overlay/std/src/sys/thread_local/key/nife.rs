@@ -311,7 +311,7 @@ pub unsafe fn destroy_tls() {
     }
 }
 
-/// **Free the calling spawned thread's block**, the last thing it does before `SYS_EXIT_THREAD`.
+/// **Free the calling spawned thread's block**, the last thing it does before `SYSCALL_EXIT_THREAD`.
 /// The thread pointer is left naming freed memory, which nothing reads: no allocation or free
 /// follows (the block is too large for any cache class, so its own free goes to the heap).
 ///

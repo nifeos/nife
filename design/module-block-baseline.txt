@@ -253,13 +253,9 @@ crates/abi/src/lib.rs::CAPABILITY_TABLE_SLOTS
 
 crates/abi/src/lib.rs::Error
 
-crates/abi/src/lib.rs::SYS_EXIT
 
-crates/abi/src/lib.rs::SYS_EXIT_THREAD
 
-crates/abi/src/lib.rs::SYS_INVOKE
 
-crates/abi/src/lib.rs::SYS_YIELD
 
 crates/abi/src/lib.rs::from_ret
 

@@ -70,7 +70,7 @@ const IPC_CLIENT_READS_CYCLES: u64 = 1;
 /// `lat_pipe` shape, over our endpoints.
 const IPC_ITERS: u64 = 5_000;
 
-/// Iterations for the context-switch loop. Each is one `SYS_YIELD` that hands the CPU to the peer
+/// Iterations for the context-switch loop. Each is one `SYSCALL_YIELD` that hands the CPU to the peer
 /// and gets it back: a round trip of two switches (each an address-space change, since the peer is a
 /// separate process). Fewer than the null loop: a switch is much heavier under TCG.
 const CTX_ITERS: u64 = 5_000;
@@ -101,7 +101,7 @@ fn yielder() -> ! {
 }
 
 /// **Context switch latency, measured from EL0.** With the yielder as the only other ready thread,
-/// each `SYS_YIELD` here switches to it and back: two context switches, each including an address-
+/// each `SYSCALL_YIELD` here switches to it and back: two context switches, each including an address-
 /// space change because the peer is a separate process (this is lmbench's `lat_ctx`, process flavor).
 fn ctx_switch_bench() -> ! {
     // Warm up: let both processes reach steady state before the timed loop.
@@ -253,7 +253,7 @@ fn spawn_one(code_frame: u64) {
     thread_control_block_start(tcb, 0, 0, 0);
 
     // Wait for the child to run and signal, then reclaim its region. The retry covers the sliver
-    // between the child's SEND and its SYS_EXIT: DESTROY refuses a region with a still-live thread,
+    // between the child's SEND and its SYSCALL_EXIT: DESTROY refuses a region with a still-live thread,
     // so yield until the child has finished exiting.
     let _ = receive(SP_CHILD_DONE);
     while destroy_memory_region(child_ut) != 0 {

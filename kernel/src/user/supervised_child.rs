@@ -90,15 +90,15 @@ pub const FAULT_STUB: &[u32] = &x86_programs::fault(FAULT_ADDRESS as u32);
 #[cfg(target_arch = "aarch64")]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const REPORT_STUB: &[u32] = &[
-    0xD280_0000,                                       // movz x0, #0            (slot 0)
-    0xD280_0001,                                       // movz x1, #0            (rendezvous::SEND)
-    0xD280_0000 | ((REPORT_WORD as u32) << 5) | 2,     // movz x2, #REPORT_WORD
-    0xD280_0003,                                       // movz x3, #0
-    0xD280_0004,                                       // movz x4, #0
-    0xD280_0000 | ((abi::SYS_INVOKE as u32) << 5) | 8, // movz x8, #SYS_INVOKE
-    0xD400_0001,                                       // svc #0                 (SEND)
-    0xD280_0008,                                       // movz x8, #0            (SYS_EXIT)
-    0xD400_0001,                                       // svc #0                 (exit)
+    0xD280_0000,                                           // movz x0, #0            (slot 0)
+    0xD280_0001, // movz x1, #0            (rendezvous::SEND)
+    0xD280_0000 | ((REPORT_WORD as u32) << 5) | 2, // movz x2, #REPORT_WORD
+    0xD280_0003, // movz x3, #0
+    0xD280_0004, // movz x4, #0
+    0xD280_0000 | ((abi::SYSCALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSCALL_INVOKE
+    0xD400_0001, // svc #0                 (SEND)
+    0xD280_0008, // movz x8, #0            (SYSCALL_EXIT)
+    0xD400_0001, // svc #0                 (exit)
 ];
 /// [`REPORT_STUB`] on riscv64.
 ///
@@ -106,15 +106,15 @@ pub const REPORT_STUB: &[u32] = &[
 #[cfg(target_arch = "riscv64")]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const REPORT_STUB: &[u32] = &[
-    0x0000_0513,                                    // li a0, 0            (slot 0)
-    0x0000_0593,                                    // li a1, 0            (rendezvous::SEND)
-    0x0000_0613 | ((REPORT_WORD as u32) << 20),     // li a2, REPORT_WORD
-    0x0000_0693,                                    // li a3, 0
-    0x0000_0713,                                    // li a4, 0
-    0x0000_0893 | ((abi::SYS_INVOKE as u32) << 20), // li a7, SYS_INVOKE
-    0x0000_0073,                                    // ecall               (SEND)
-    0x0000_0893 | ((abi::SYS_EXIT as u32) << 20),   // li a7, SYS_EXIT
-    0x0000_0073,                                    // ecall               (exit)
+    0x0000_0513,                                        // li a0, 0            (slot 0)
+    0x0000_0593,                                        // li a1, 0            (rendezvous::SEND)
+    0x0000_0613 | ((REPORT_WORD as u32) << 20),         // li a2, REPORT_WORD
+    0x0000_0693,                                        // li a3, 0
+    0x0000_0713,                                        // li a4, 0
+    0x0000_0893 | ((abi::SYSCALL_INVOKE as u32) << 20), // li a7, SYSCALL_INVOKE
+    0x0000_0073,                                        // ecall               (SEND)
+    0x0000_0893 | ((abi::SYSCALL_EXIT as u32) << 20),   // li a7, SYSCALL_EXIT
+    0x0000_0073,                                        // ecall               (exit)
 ];
 /// [`REPORT_STUB`] on `x86_64`.
 ///

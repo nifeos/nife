@@ -18,8 +18,9 @@ this, block until it is done, give me its output".
 
 ## The decision
 
-**`SYS_EXIT` carries one status word, and the kernel forwards it in the `EVENT_EXIT` message.**
-The pieces, each already in the tree:
+**`SYSCALL_EXIT` carries one status word, and the kernel forwards it in the `EVENT_EXIT` message.**
+(`SYSCALL_EXIT` is syscall 0, its name spelled out by the ruling of 2026-11-11 (UTC).) The pieces,
+each already in the tree:
 
 - `SYS_EXIT` exists and takes six argument words, all discarded today
   (`crates/user_mode_runtime/src/process.rs` calls it as `trap6(abi::SYS_EXIT, [0; 6])`). Word
@@ -79,7 +80,7 @@ anyway, for the art's reason: the status is where every parent already has to lo
 | | shape | what it costs |
 |---|---|---|
 | **A** | The child's runtime writes one status word to a frame the parent owns before exiting; the parent receives §26's death message, reads the word, then reaps. | No kernel change, and the status is a convention the kernel never sees. It is the one shape here where the kernel is not told the code, and the exit path is the one moment a child may not be able to write memory. |
-| **A′** | `SYS_EXIT` carries the status word; the kernel forwards it in the `EVENT_EXIT` message's currently-zero words. Chosen. | A semantic commitment of words that were reserved-zero on two existing wires, and one kernel touch on the exit path. No new surface, no second channel, and the status arrives where the death already does. |
+| **A′** | `SYSCALL_EXIT` carries the status word; the kernel forwards it in the `EVENT_EXIT` message's currently-zero words. Chosen. | A semantic commitment of words that were reserved-zero on two existing wires, and one kernel touch on the exit path. No new surface, no second channel, and the status arrives where the death already does. |
 | **B** | `ThreadControlBlock::WAIT`, a blocking method on the TCB, returning an exit status the kernel records at exit. | New syscall surface, and §26's message stays the supervisor's channel while the status travels on another one: two ways to learn about one death. |
 | **C** | A job object: spawn returns one, `Job::WAIT` collects status and the granted output ends, `Job::DESTROY` reaps. | The most machinery: a new object kind, retype and slot costs, and a second lifetime beside the region and the endpoint, exactly the bookkeeping [§142 (what a spawner retains over a child)](0142-spawn-retention.md)'s decision just finished paying down for the TCB. |
 

@@ -24,7 +24,7 @@ Three pieces, and the surface cost is zero new syscalls and zero new methods.
    hot-swap work needs it.
 
 2. Delivery, without blocking the faulting path. When the thread dies (`sched::depart`, reached
-   from both the arch fault handlers and `SYS_EXIT`), the kernel builds the five-word message and
+   from both the arch fault handlers and `SYSCALL_EXIT`), the kernel builds the five-word message and
    delivers it to the fault endpoint. Delivery is the ordinary synchronous-send rendezvous, reused.
    If a supervisor is already blocked in `RECEIVE`, hand it the message and wake it. If none is, the
    corpse itself parks on the endpoint's sender queue with the message in its mailbox, so the

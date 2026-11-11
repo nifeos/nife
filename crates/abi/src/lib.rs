@@ -38,40 +38,51 @@ pub const INTERFACE_ID: u64 = 1;
 
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
 /// because it acts on the caller itself.
-pub const SYS_EXIT: u64 = 0;
+///
+/// Name: ratified 2026-11-11 (UTC). `SYS` abbreviated "syscall", a word design/naming.md keeps;
+/// the number stays 0. Refused `SYS_EXIT`.
+pub const SYSCALL_EXIT: u64 = 0;
 /// `yield()`: give up the CPU without blocking. Needs no capability, as `exit` needs none.
-pub const SYS_YIELD: u64 = 1;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 1. Refused `SYS_YIELD`.
+pub const SYSCALL_YIELD: u64 = 1;
 /// `invoke(capability, method, a0, a1, a2)`: the one syscall that acts on anything but the caller.
 ///
 /// # Examples
 /// ```
-/// use abi::{SYS_EXIT, SYS_INVOKE, SYS_YIELD, rendezvous};
+/// use abi::{SYSCALL_EXIT, SYSCALL_INVOKE, SYSCALL_YIELD, rendezvous};
 ///
-/// assert_eq!([SYS_EXIT, SYS_YIELD, SYS_INVOKE], [0, 1, 2]);
+/// assert_eq!([SYSCALL_EXIT, SYSCALL_YIELD, SYSCALL_INVOKE], [0, 1, 2]);
 ///
 /// // Sending on a rendezvous is a method number, not a syscall number. Adding an operation to the
 /// // system is a new method here; adding a *syscall* is a design fork.
 /// assert_eq!(rendezvous::SEND, 0);
 /// ```
-pub const SYS_INVOKE: u64 = 2;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 2. Refused
+/// `SYS_INVOKE`.
+pub const SYSCALL_INVOKE: u64 = 2;
 
 /// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot
 /// Deleting an empty slot is a harmless no-op. A loader that
 /// retypes many frames through a finite table recycles slots with it, and it needs no capability
 /// because the table is the caller's own.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
-/// `SYS_CAP_DELETE` under the capability ruling of 2026-10-06 (UTC).
-pub const SYS_CAPABILITY_DELETE: u64 = 3;
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 3. Refused
+/// `SYS_CAPABILITY_DELETE` and `SYS_CAP_DELETE`.
+pub const SYSCALL_CAPABILITY_DELETE: u64 = 3;
 
 /// `exit_thread(word)`: **end the calling thread, and only it**; when it is the last running
-/// thread of its process the process ends too, as [`SYS_EXIT`] would end it. Needs no capability.
+/// thread of its process the process ends too, as [`SYSCALL_EXIT`] would end it. Needs no capability.
 ///
 /// `word`, if not zero, names a 32-bit word in the caller's own space: once the thread has left
 /// user mode for good the kernel stores zero there and wakes every futex waiter on it, so a joiner
 /// may free the thread's stack. An unmapped or misaligned word is skipped, never a reason not to
 /// exit. *(Number provisional.)*
-pub const SYS_EXIT_THREAD: u64 = 4;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 4. Refused
+/// `SYS_EXIT_THREAD`.
+pub const SYSCALL_EXIT_THREAD: u64 = 4;
 
 /// An index into the calling thread's capability table. **Not a pointer, not a handle you can
 /// guess.** The kernel looks in *your* table, and if the slot is empty you get `NoSuchSlot`.

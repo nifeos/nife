@@ -33,19 +33,19 @@ Five syscall numbers <!--count:syscalls-->, and that is the whole width of the t
 
 | `x8` | name | meaning |
 |---|---|---|
-| 0 | `SYS_EXIT` | end the calling thread's process, every thread in it. Never returns. |
-| 1 | `SYS_YIELD` | give up the CPU voluntarily. |
-| 2 | `SYS_INVOKE` | invoke a capability. **This one carries the entire capability world** (see §2). |
-| 3 | `SYS_CAPABILITY_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
-| 4 | `SYS_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread syscalls as built)). |
+| 0 | `SYSCALL_EXIT` | end the calling thread's process, every thread in it. Never returns. |
+| 1 | `SYSCALL_YIELD` | give up the CPU voluntarily. |
+| 2 | `SYSCALL_INVOKE` | invoke a capability. **This one carries the entire capability world** (see §2). |
+| 3 | `SYSCALL_CAPABILITY_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
+| 4 | `SYSCALL_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread syscalls as built)). |
 
 That narrowness is deliberate (DECISIONS rule 3: the syscall surface stays a boundary, not a habit).
-Everything a program can do to another object goes through the single `SYS_INVOKE` door; adding a
+Everything a program can do to another object goes through the single `SYSCALL_INVOKE` door; adding a
 capability *type* or a *method* does not widen the trap, it adds a row to a table the kernel already
 dispatches. `crates/user_mode_runtime` is the userspace side of this: `invoke`, and `send`/`receive`/`exit` built
 on it.
 
-## 2. The object surface, reached through `SYS_INVOKE`
+## 2. The object surface, reached through `SYSCALL_INVOKE`
 
 `invoke(cap, method, a0, a1, a2)`: `cap` names a capability in the calling thread's capability table (a small
 integer, like a file descriptor), `method` selects an operation on the object that capability points
@@ -93,7 +93,7 @@ reserved case:
 - Historically `x0` was a *role selector* for the one multi-tool `hello` binary. After the 19f split
   every program is its own binary, so `x0` is a free argument again, not a dispatch key.
 
-A program never returns from `_start`. It runs until it calls `SYS_EXIT` (a least_authority_demo, when its job is
+A program never returns from `_start`. It runs until it calls `SYSCALL_EXIT` (a least_authority_demo, when its job is
 done) or loops forever serving requests (a driver). Returning would fall off the end of the world;
 there is no runtime to catch it.
 

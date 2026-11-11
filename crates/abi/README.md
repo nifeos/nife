@@ -9,8 +9,8 @@ boundary.
 
 ## The contract
 
-- **Five syscalls** (`SYS_EXIT` 0, `SYS_YIELD` 1, `SYS_INVOKE` 2, `SYS_CAPABILITY_DELETE` 3 and
-  `SYS_EXIT_THREAD` 4). Everything else is `invoke(capability, method, a0, a1, a2)`, which acts on a
+- **Five syscalls** (`SYSCALL_EXIT` 0, `SYSCALL_YIELD` 1, `SYSCALL_INVOKE` 2, `SYSCALL_CAPABILITY_DELETE` 3 and
+  `SYSCALL_EXIT_THREAD` 4). Everything else is `invoke(capability, method, a0, a1, a2)`, which acts on a
   capability the caller holds in its own table. The syscall number is in `x8` (or the architecture's
   equivalent), the slot in `x0`, the method in `x1` and the arguments in `x2` to `x4`. `x0` returns
   a result or a negative `Error`. Adding an operation is a new method, never a new syscall.
@@ -38,9 +38,9 @@ boundary.
 ## EXAMPLES
 
 ```rust
-use abi::{Error, SYS_EXIT, SYS_INVOKE, SYS_YIELD, rendezvous};
+use abi::{Error, SYSCALL_EXIT, SYSCALL_INVOKE, SYSCALL_YIELD, rendezvous};
 
-assert_eq!([SYS_EXIT, SYS_YIELD, SYS_INVOKE], [0, 1, 2]);
+assert_eq!([SYSCALL_EXIT, SYSCALL_YIELD, SYSCALL_INVOKE], [0, 1, 2]);
 // Sending on a rendezvous is a method number, not a syscall number.
 assert_eq!(rendezvous::SEND, 0);
 // Errors are negative, and "empty slot" is not "gone".

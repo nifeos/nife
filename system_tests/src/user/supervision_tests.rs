@@ -166,7 +166,7 @@ fn a_clean_exit_reports_the_exit_event_not_a_fault() {
 /// **A supervisor that reports what it hears, label included, twice.** Slot 0 is a report endpoint
 /// (WRITE), slot 1 the supervision endpoint (READ). Each round zeroes argument register 5, does a
 /// plain `RECEIVE` on slot 1, and `SEND`s `[tid, label, event]` on slot 0, which is `[w1, r5, w0]`
-/// of what it received. Two rounds, then `SYS_EXIT`.
+/// of what it received. Two rounds, then `SYSCALL_EXIT`.
 ///
 /// It is a hand-assembled stub rather than a program because what is under test is one register on
 /// three architectures, and a stub names it outright: `x5`, `a5`, `r9`.
@@ -193,14 +193,14 @@ const fn label_reporter_aarch64() -> [u32; 32] {
         movz(3, 0),                        //
         movz(4, 0),                        //
         movz(5, 0),                        // the label register, zero unless the kernel writes it
-        movz(8, abi::SYS_INVOKE),          //
+        movz(8, abi::SYSCALL_INVOKE),      //
         SVC,                               // RECEIVE: x0 = event, x1 = tid, x5 = label
         0xAA01_03E2,                       // mov x2, x1   (tid)
         0xAA05_03E3,                       // mov x3, x5   (label)
         0xAA00_03E4,                       // mov x4, x0   (event)
         movz(0, 0),                        // slot 0: the report endpoint
         movz(1, abi::rendezvous::SEND),    //
-        movz(8, abi::SYS_INVOKE),          //
+        movz(8, abi::SYSCALL_INVOKE),      //
         SVC,                               // SEND [tid, label, event]
     ];
     let mut out = [0u32; 32];
@@ -210,7 +210,7 @@ const fn label_reporter_aarch64() -> [u32; 32] {
         out[15 + i] = round[i];
         i += 1;
     }
-    out[30] = movz(8, abi::SYS_EXIT);
+    out[30] = movz(8, abi::SYSCALL_EXIT);
     out[31] = SVC;
     out
 }
@@ -231,14 +231,14 @@ const fn label_reporter_riscv64() -> [u32; 32] {
         li(13, 0),                        // a3
         li(14, 0),                        // a4
         li(15, 0),                        // a5: the label register
-        li(17, abi::SYS_INVOKE),          // a7
+        li(17, abi::SYSCALL_INVOKE),      // a7
         ECALL,                            // RECEIVE: a0 = event, a1 = tid, a5 = label
         0x0005_8613,                      // mv a2, a1   (tid)
         0x0007_8693,                      // mv a3, a5   (label)
         0x0005_0713,                      // mv a4, a0   (event)
         li(10, 0),                        // a0: slot 0, the report endpoint
         li(11, abi::rendezvous::SEND),    // a1
-        li(17, abi::SYS_INVOKE),          // a7
+        li(17, abi::SYSCALL_INVOKE),      // a7
         ECALL,                            // SEND [tid, label, event]
     ];
     let mut out = [0u32; 32];
@@ -248,13 +248,13 @@ const fn label_reporter_riscv64() -> [u32; 32] {
         out[15 + i] = round[i];
         i += 1;
     }
-    out[30] = li(17, abi::SYS_EXIT);
+    out[30] = li(17, abi::SYSCALL_EXIT);
     out[31] = ECALL;
     out
 }
 
 /// The `x86_64` twin: one 48-byte round, its register roles beside its bytes. Two rounds, then
-/// `mov eax, SYS_EXIT; syscall` and one `nop` to fill the last word.
+/// `mov eax, SYSCALL_EXIT; syscall` and one `nop` to fill the last word.
 #[cfg(target_arch = "x86_64")]
 const fn label_reporter_x86_64() -> [u32; 26] {
     const {
@@ -264,8 +264,8 @@ const fn label_reporter_x86_64() -> [u32; 26] {
         );
     }
     let rcv = (abi::rendezvous::RECEIVE as u32).to_le_bytes();
-    let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let inv = (abi::SYSCALL_INVOKE as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     let round: [u8; 48] = [
         0xBF, 0x01, 0x00, 0x00, 0x00, // mov edi, 1 (slot 1: the supervision endpoint)
         0xBE, rcv[0], rcv[1], rcv[2], rcv[3], // mov esi, RECEIVE
@@ -273,14 +273,14 @@ const fn label_reporter_x86_64() -> [u32; 26] {
         0x45, 0x31, 0xD2, // xor r10d, r10d
         0x45, 0x31, 0xC0, // xor r8d, r8d
         0x45, 0x31, 0xC9, // xor r9d, r9d (the label register)
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall (RECEIVE: rdi = event, rsi = tid, r9 = label)
         0x48, 0x89, 0xF2, // mov rdx, rsi (tid)
         0x4D, 0x89, 0xCA, // mov r10, r9 (label)
         0x49, 0x89, 0xF8, // mov r8, rdi (event)
         0x31, 0xFF, // xor edi, edi (slot 0: the report endpoint)
         0x31, 0xF6, // xor esi, esi (SEND, which is 0)
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall (SEND [tid, label, event])
     ];
     let mut b = [0x90u8; 104];
