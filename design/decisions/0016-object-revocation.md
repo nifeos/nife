@@ -165,9 +165,11 @@ not lost: the next return with nothing in flight reclaims it.
 
 No ABI change: no new method, number or refusal; `SPLIT` and `DESTROY` mean what they meant, and
 a program only gets pages back sooner. What stays: a hole *under* a child that stays live is still
-not reused, because a carve only bumps, and a phantom child left by a split refused for a full
-table stops the reclaim for that parent for good. Both limits are recorded in the `BUGS` at
-`RegionTable::return_to_parent` (`crates/memory_regions/src/table.rs`).
+not reused, because a carve only bumps. That limit is recorded in the `BUGS` at
+`RegionTable::return_to_parent` (`crates/memory_regions/src/table.rs`). A split the table refuses,
+a full table included, moves nothing: `RegionTable::split` takes the child's slot before it moves
+the parent, so a refusal leaves no child count without a child to stop the reclaim
+([region-split-on-a-full-table.md](../../notes/region-split-on-a-full-table.md)).
 
 ## Amendment (2026-10-05): a thread whose space is rooted in the region dies as a resident
 
