@@ -140,7 +140,7 @@ shows `weekly / fuzz` succeeded, and `script/fuzz --list` in nife names neither 
 
 ## Follow-on
 
-- **Outstanding.** The move itself. `file_allocation_table` is the crate this was written for. Nobody
+- **Outstanding.** The move itself. `file_allocation_table` is the crate this milestone targets. Nobody
   has created its repository, and its two fuzz targets still sit in this tree's `fuzz/`. What remains
   is the crate repository's first `weekly` run showing `weekly / fuzz` succeeded, and `script/fuzz
   --list` naming neither target. The staging and the dry run landed. Checked with `script/fuzz
