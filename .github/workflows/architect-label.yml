@@ -157,24 +157,33 @@ jobs:
             echo "add=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          base="$(helpers/scope-merge-base.sh \
-              "$BASE_REF" \
-              "$BASE_SHA" 2>/dev/null || true)"
+          # The base branch's live tip (`helpers/scope-merge-base.sh` has why, #1416), the
+          # payload's sha only if that ref is missing. The rules diff HEAD from EVERY merge base
+          # with it and keep what each base yields (`--against`): one `git merge-base` picks a base
+          # at random when a branch merged another branch main also merged, and main's own edits
+          # then read as this pull request's (#3416, #3167). Each open pull request that carries
+          # `architect-ruled` and not `held-by-lane` goes in as `--ruled N:SHA`, so a file this
+          # branch carries byte for byte from one of them is not asked again (#3450).
+          if git rev-parse --verify --quiet "origin/$BASE_REF^{commit}" >/dev/null; then
+            main_ref="origin/$BASE_REF"
+          else
+            main_ref="$BASE_SHA"
+          fi
+          set --
+          for pair in $(helpers/architect-ruled-heads.sh "$GITHUB_REPOSITORY" "$PR_NUMBER"); do
+            set -- "$@" --ruled "$pair"
+          done
           # **A run that examined nothing routes to a person; it never reads as "no rule fired"**
           # (milestone 641 (a mechanism that reports clean says over how many units, and zero is
-          # loud), provisional). Both cases below used to set add=false: no base to diff, and the
-          # rules helper crashing, whose exit (Python's 1) was the same as "nothing matched" and was
-          # then swallowed by `|| true`. The helper now crashes with 3, and anything above 1 labels.
-          if [ -z "$base" ]; then
+          # loud), provisional). The rules helper crashes with 3 and exits 4 when there is no
+          # merge base; anything above 1 labels.
+          echo "architect-label: diffing HEAD against every merge base with $main_ref"
+          rc=0
+          report="$(python3 helpers/architect-label-rules.py --against "$main_ref" HEAD "$@")" || rc=$?
+          if [ "$rc" -eq 4 ]; then
             report="unexamined: no base to diff against, so no rule read this pull request"
-          else
-            echo "architect-label: diffing merge-base $base (origin/$BASE_REF)..HEAD"
-            rc=0
-            report="$(git diff --unified=1000000 "$base" HEAD | \
-                python3 helpers/architect-label-rules.py --base-rev "$base")" || rc=$?
-            if [ "$rc" -gt 1 ]; then
-              report="unexamined: helpers/architect-label-rules.py exited $rc (see this run's log), so no rule read this pull request"
-            fi
+          elif [ "$rc" -gt 1 ]; then
+            report="unexamined: helpers/architect-label-rules.py exited $rc (see this run's log), so no rule read this pull request"
           fi
           if [ -n "$report" ]; then
             echo "architect-label: fired:"
