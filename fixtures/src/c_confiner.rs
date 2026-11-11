@@ -56,13 +56,13 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // The three pages the whole proof rests on. All from our own budget, all ours to start with; the
     // C component's process will see two of them and never the third.
-    let Ok(grant) = process_builder::retype_page_frame_from(ROOT_UT) else {
+    let Ok(grant) = process_builder::retype_into_page_frame_from(ROOT_UT) else {
         bail(3)
     };
-    let Ok(wit_ro) = process_builder::retype_page_frame_from(ROOT_UT) else {
+    let Ok(wit_ro) = process_builder::retype_into_page_frame_from(ROOT_UT) else {
         bail(4)
     };
-    let Ok(wit_far) = process_builder::retype_page_frame_from(ROOT_UT) else {
+    let Ok(wit_far) = process_builder::retype_into_page_frame_from(ROOT_UT) else {
         bail(5)
     };
 
@@ -85,7 +85,9 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // Our children's deaths arrive here. We are the only holder with READ, and the kernel is the only
     // sender (§26.5), so both the tid and the fault address are trustworthy without a badge.
-    let Ok(faultep) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(faultep) =
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
+    else {
         bail(7)
     };
 
@@ -117,8 +119,12 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
                 // right behind it is read-only, which is what turns an off-by-one into a fault
                 // instead of a corruption. Nothing maps WITNESS_FAR here, deliberately.
                 maps: &[
-                    (c_seam::GRANT_VA, grant, abi::address_space::MAP_RW),
-                    (c_seam::WITNESS_RO_VA, wit_ro, abi::address_space::MAP_RO),
+                    (c_seam::GRANT_VA, grant, abi::address_space::MAP_READ_WRITE),
+                    (
+                        c_seam::WITNESS_RO_VA,
+                        wit_ro,
+                        abi::address_space::MAP_READ_ONLY,
+                    ),
                 ],
                 blobs: &[],
                 fault: Some(faultep),

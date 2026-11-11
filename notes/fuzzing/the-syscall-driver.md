@@ -51,9 +51,9 @@ at seed 19, step 63, inside the suite's range. Revocation in flight went red onl
 
 ## The BUGS, in full
 
-- `SYS_CAPABILITY_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
+- `SYSCALL_CAPABILITY_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
   `TrapFrame` has no setter for the syscall number, so a kernel thread cannot build a frame
-  `dispatch` would read as `SYS_CAPABILITY_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
+  `dispatch` would read as `SYSCALL_CAPABILITY_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
 - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
   `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages. No
   actor

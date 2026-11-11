@@ -200,7 +200,7 @@ pub const ENTROPY_SLOT: u64 = 9;
 ///
 /// Ten, one past [`ENTROPY_SLOT`], for that constant's reasons: a named slot rather than the next
 /// free one, above the shell's own seven positional capabilities, and far below
-/// `abi::fault::FAULT_EP_SLOT`. A program spawned without the declaration holds an empty slot here,
+/// `abi::fault::FAULT_RENDEZVOUS_SLOT`. A program spawned without the declaration holds an empty slot here,
 /// and its first `CALL` answers `abi::Error::NoSuchSlot`; `unreachable_network_witness` is the
 /// program that shows it at the prompt.
 pub const NETWORK_SLOT: u64 = 10;
@@ -280,7 +280,7 @@ pub const SHARE_SLOT: u64 = 12;
 
 /// **Where a program that declares [`Manifest::reboot`] finds the reboot object** (milestone 805,
 /// DECISIONS §251). Thirteen, one past [`SHARE_SLOT`], for [`ENTROPY_SLOT`]'s reasons: a named slot
-/// rather than the next free one, and far below `abi::fault::FAULT_EP_SLOT`. `WRITE` alone, so the
+/// rather than the next free one, and far below `abi::fault::FAULT_RENDEZVOUS_SLOT`. `WRITE` alone, so the
 /// holder can invoke it and cannot hand it on.
 ///
 /// Name: provisional (milestone 805).

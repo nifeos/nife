@@ -11,8 +11,8 @@
 
 //! # What the generator reaches
 //!
-//! `SYS_INVOKE` on any slot but [`GO`] with any method and any words, biased toward the endowment
-//! and the methods objects have; `SYS_CAPABILITY_DELETE`; `SYS_YIELD`; and unknown syscall numbers. Words
+//! `SYSCALL_INVOKE` on any slot but [`GO`] with any method and any words, biased toward the endowment
+//! and the methods objects have; `SYSCALL_CAPABILITY_DELETE`; `SYSCALL_YIELD`; and unknown syscall numbers. Words
 //! are small integers, slot numbers, rights masks, page-aligned addresses in the playground, report
 //! page, image and stack, the ABI's tag values, and raw random words. It is spawned with
 //! `user::run` and enters through `svc`/`ecall`/`syscall`, so it reaches what milestone 752 (a
@@ -26,7 +26,7 @@
 //!   `RECEIVE_CAPABILITY` on it go unexercised.
 //! - No thread or timer is ever made: a `MemoryRegion::RETYPE_OBJECT` for either is rewritten to a
 //!   rendezvous, since a thread or a timer would make a seed's run depend on timing.
-//! - `SYS_EXIT` and `SYS_EXIT_THREAD` are never drawn; either would end the run.
+//! - `SYSCALL_EXIT` and `SYSCALL_EXIT_THREAD` are never drawn; either would end the run.
 //! - It never touches the memory it maps; the page oracle reads the page tables instead.
 //!
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
@@ -37,10 +37,10 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use abi::{SYS_EXIT, SYS_INVOKE, SYS_YIELD};
+use abi::{SYSCALL_EXIT, SYSCALL_INVOKE, SYSCALL_YIELD};
 use confined_syscall_fuzzer_contract::{
     ENDOWED, GO, GO_EXIT, NO_CAPABILITY, PLAYGROUND_PAGES, PLAYGROUND_VA, REPORT_VA,
-    SYS_CAPABILITY_DELETE, report,
+    SYSCALL_CAPABILITY_DELETE, report,
 };
 use user_mode_runtime::{exit, raw_syscall, receive};
 
@@ -138,11 +138,12 @@ fn pick(rng: &mut Rng) -> (u64, [u64; 6]) {
     // own clock and break the seed's determinism (see the module's `BUGS`), so either becomes a
     // rendezvous. Applied whatever the slot holds, which nudges a `SEND_CAPABILITY`'s capability argument
     // off 3 and 5 too; that is the price of not knowing the slot's type.
-    if nr == SYS_INVOKE
+    if nr == SYSCALL_INVOKE
         && words[1] == abi::memory_region::RETYPE_OBJECT
-        && (words[2] == abi::objtype::THREAD_CONTROL_BLOCK || words[2] == abi::objtype::TIMER)
+        && (words[2] == abi::object_type::THREAD_CONTROL_BLOCK
+            || words[2] == abi::object_type::TIMER)
     {
-        words[2] = abi::objtype::RENDEZVOUS;
+        words[2] = abi::object_type::RENDEZVOUS;
     }
     (nr, words)
 }
@@ -153,24 +154,24 @@ fn draw(rng: &mut Rng) -> (u64, [u64; 6]) {
         let slot = rng.slot();
         let method = rng.method();
         (
-            SYS_INVOKE,
+            SYSCALL_INVOKE,
             [slot, method, rng.word(), rng.word(), rng.word(), 0],
         )
     } else if roll < 94 {
-        (SYS_CAPABILITY_DELETE, [rng.slot(), 0, 0, 0, 0, 0])
+        (SYSCALL_CAPABILITY_DELETE, [rng.slot(), 0, 0, 0, 0, 0])
     } else if roll < 96 {
-        (SYS_YIELD, [0; 6])
+        (SYSCALL_YIELD, [0; 6])
     } else {
-        // A number no syscall answers, or one a little past the last real one (`SYS_EXIT_THREAD`,
+        // A number no syscall answers, or one a little past the last real one (`SYSCALL_EXIT_THREAD`,
         // 4, since milestone 812 (`std::thread::spawn` runs real threads in one address space)).
         let nr = match rng.below(3) {
-            0 => abi::SYS_EXIT_THREAD + 1 + rng.below(12),
+            0 => abi::SYSCALL_EXIT_THREAD + 1 + rng.below(12),
             1 => rng.below(1 << 16),
             _ => rng.next(),
         };
         // Neither exit is drawn: each would end the fuzzer, which teaches the oracle nothing.
-        let nr = if nr == SYS_EXIT || nr == abi::SYS_EXIT_THREAD {
-            SYS_YIELD
+        let nr = if nr == SYSCALL_EXIT || nr == abi::SYSCALL_EXIT_THREAD {
+            SYSCALL_YIELD
         } else {
             nr
         };
@@ -211,7 +212,7 @@ fn start(seed: u64, role: u64, _arg2: u64) -> ! {
             report_word(report::ARGS + i, w);
         }
         // SAFETY: the point of the program. The kernel validates every word before acting on it;
-        // `pick` never draws SYS_EXIT and never names GO.
+        // `pick` never draws SYSCALL_EXIT and never names GO.
         let back = unsafe { raw_syscall(nr, words) };
         for (i, &w) in back.iter().enumerate() {
             report_word(report::RETURNS + i, w);

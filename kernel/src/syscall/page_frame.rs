@@ -3,7 +3,7 @@
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
-use super::address_space::{map_refusal, run_end_va, unmap_run_prefix};
+use super::address_space::{map_refusal, run_end_virtual_address, unmap_run_prefix};
 use super::*;
 use crate::arch::mmu;
 
@@ -37,7 +37,7 @@ pub(super) fn page_frame_map(
     };
     let count = count.get();
     // Both ends, before anything is mapped, as `MAP_INTO` checks them.
-    let Some(last_va) = run_end_va(va, count) else {
+    let Some(last_va) = run_end_virtual_address(va, count) else {
         return Err(Error::BadPointer);
     };
     if !paging::is_user_page_va::<crate::arch::mmu::Format>(va)

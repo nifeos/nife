@@ -72,7 +72,7 @@ A real escape that blocks instead of reporting is not evidence: the run hangs ra
 red, and no falsification record can be attached to it. That is row 26 of
 [the confinement claims](confinement-claims.md), one object over.
 
-So the fixtures whose `out` is expected to fault end in `SYS_EXIT` rather than in a report:
+So the fixtures whose `out` is expected to fault end in `SYSCALL_EXIT` rather than in a report:
 `port_out_then_exit`, `port_out_on_cpu_then_exit`, `capability_delete_then_port_out`,
 `two_capability_deletes_then_port_out` and `receive_then_port_out`. A wrongly permitted `out` then
 arrives as `EVENT_EXIT` on the supervision endpoint. The test wants `EVENT_FAULT` in that same
@@ -83,10 +83,10 @@ succeed and receive the word.
 
 ## The delete-it-yourself fixtures
 
-`capability_delete_then_port_out` runs `SYS_CAPABILITY_DELETE` on the slot holding its `PortRange` capability,
+`capability_delete_then_port_out` runs `SYSCALL_CAPABILITY_DELETE` on the slot holding its `PortRange` capability,
 then executes the `out`. The port grant is enforced by a cached field the context switch reads, and
 the delete must clear it: authority the thread gave up by its own hand must be gone at once.
-`SYS_CAPABILITY_DELETE` is a plain syscall number, not an `INVOKE` method, so the slot rides in `edi` and
+`SYSCALL_CAPABILITY_DELETE` is a plain syscall number, not an `INVOKE` method, so the slot rides in `edi` and
 nothing else is read. `dx` is loaded after the syscall, so no register the syscall clobbers matters.
 
 `two_capability_deletes_then_port_out` holds one range in two slots. Deleting one must leave the

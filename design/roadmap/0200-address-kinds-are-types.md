@@ -92,7 +92,7 @@ when `kernel/src` is quiet, not while lanes are open in it.
 Kani was checked first, and it is clear. Milestone 193 (put `kernel/src` within reach of the
 prover) landed harnesses proving run arithmetic over `syscall.rs` in `u64`, so a newtype that
 confused CBMC would cost this milestone those proofs. Measured 2026-08-31 rather than assumed: a
-probe crate stated milestone 193's own `run_end_va` property twice, once on bare `u64` and once
+probe crate stated milestone 193's own `run_end_virtual_address` property twice, once on bare `u64` and once
 through a `repr(transparent)` `VirtualCpuAddress`, both in `u128` so neither harness could repeat its
 implementation back at itself.
 

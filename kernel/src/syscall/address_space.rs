@@ -43,7 +43,7 @@ pub(super) fn address_space_invoke(
 }
 
 /// `AddressSpace::MAP_INTO`: map the frame in slot `a1` at `a0` in the space `name`, shaped by
-/// `a2` for a `PageFrame` (`MAP_RW`, `MAP_CODE`, else read-only), device read/write for a
+/// `a2` for a `PageFrame` (`MAP_READ_WRITE`, `MAP_CODE`, else read-only), device read/write for a
 /// `DeviceFrame`. The other half of [`page_frame_map`].
 ///
 /// Needs `WRITE` on the space and the shape's right on the frame. All or none: `BadPointer` for a
@@ -83,7 +83,7 @@ fn address_space_map_into(
             Object::PageFrame(phys, count) => {
                 // Code is W^X (`user_code` is never writable), so it needs only READ.
                 let flags = match a2 {
-                    abi::address_space::MAP_RW => {
+                    abi::address_space::MAP_READ_WRITE => {
                         if !frame.rights.allows(Rights::WRITE) {
                             return Err(Error::NotPermitted);
                         }
@@ -108,7 +108,7 @@ fn address_space_map_into(
         };
         // Both ends of the run, before any page is mapped; `syscall::proofs` shows the pages
         // between need no check of their own.
-        let Some(last_va) = run_end_va(va, count) else {
+        let Some(last_va) = run_end_virtual_address(va, count) else {
             return Err(Error::BadPointer);
         };
         if !paging::is_user_page_va::<crate::arch::mmu::Format>(va)
@@ -188,7 +188,9 @@ fn address_space_unmap(name: u64, va: u64) -> Result<i64, Error> {
 /// The last virtual address of a `count`-page run starting at `va`, or `None` if the run does not
 /// fit in a `u64`, or `count` is zero. The multiply is checked as well as the add. Both mapping
 /// paths guard on it, and `syscall::proofs` proves it exact.
-pub(super) fn run_end_va(va: u64, count: u64) -> Option<u64> {
+///
+/// Name: ratified 2026-11-11 (UTC). Refused `run_end_va` (`va` abbreviates "virtual address").
+pub(super) fn run_end_virtual_address(va: u64, count: u64) -> Option<u64> {
     va.checked_add(count.checked_sub(1)?.checked_mul(paging::PAGE_SIZE)?)
 }
 
@@ -290,9 +292,9 @@ fn address_space_list(frame: &mut TrapFrame, name: u64, cursor: u64) -> Result<i
                     let kind = if flags.is_user_executable() {
                         abi::address_space::MAP_CODE
                     } else if flags.is_writable() {
-                        abi::address_space::MAP_RW
+                        abi::address_space::MAP_READ_WRITE
                     } else {
-                        abi::address_space::MAP_RO
+                        abi::address_space::MAP_READ_ONLY
                     };
                     frame.set_arg(1, va);
                     frame.set_arg(2, kind);

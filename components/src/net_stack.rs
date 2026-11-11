@@ -11,7 +11,7 @@
 
 //! # Capability contract
 //!
-//! Slot 0 the lease's report endpoint (`WRITE`); 1 the NIC interrupt (`WAIT`/`ACK`); 2 the confined
+//! Slot 0 the lease's report endpoint (`WRITE`); 1 the NIC interrupt (`WAIT`/`ACKNOWLEDGE`); 2 the confined
 //! `Virtio` transport; 3 an untyped budget, for the heap and clients' frames; 4 `Stack` (`READ`),
 //! where requests arrive; 5 and 6 a notification bound to this thread and its retransmit timer (not
 //! in the progenitor's spawn); 7 `Stack` (`WRITE | GRANT`) to mint sockets from; 8 this address

@@ -77,17 +77,17 @@ pub const fn report(word: u32) -> [u32; 8] {
         );
     }
     let w = word.to_le_bytes();
-    let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let inv = (abi::SYSCALL_INVOKE as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_8([
         0x31, 0xFF, // xor edi, edi      (arg0: slot 0)
         0x31, 0xF6, // xor esi, esi      (arg1: SEND, which is 0)
         0xBA, w[0], w[1], w[2], w[3], // mov edx, word
         0x45, 0x31, 0xD2, // xor r10d, r10d    (the second message word)
         0x45, 0x31, 0xC0, // xor r8d, r8d      (the third)
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall
         NOP, NOP, NOP,
     ])
@@ -108,8 +108,8 @@ pub(crate) const fn port_out(port: u16, val: u8, word: u32) -> [u32; 9] {
     }
     let p = port.to_le_bytes();
     let w = word.to_le_bytes();
-    let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let inv = (abi::SYSCALL_INVOKE as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_9([
         0x66, 0xBA, p[0], p[1], // mov dx, port      (16-bit immediate)
         0xB0, val,  // mov al, val
@@ -119,9 +119,9 @@ pub(crate) const fn port_out(port: u16, val: u8, word: u32) -> [u32; 9] {
         0xBA, w[0], w[1], w[2], w[3], // mov edx, word
         0x45, 0x31, 0xD2, // xor r10d, r10d
         0x45, 0x31, 0xC0, // xor r8d, r8d
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall (SEND)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
     ])
 }
@@ -143,12 +143,12 @@ pub const PORT_OUT_PC_OFFSET: u64 = 6;
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 pub const fn port_out_then_exit(port: u16, val: u8) -> [u32; 4] {
     let p = port.to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_4([
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
         0xEE, // out dx, al (offset 6)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP, NOP, // pad 14 -> 16 (4 words)
     ])
@@ -185,8 +185,8 @@ pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] 
     let a = CURRENT_CPU_WORD.to_le_bytes();
     let p = port.to_le_bytes();
     let w = word.to_le_bytes();
-    let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let inv = (abi::SYSCALL_INVOKE as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_12([
         0x4C, 0x8B, 0x04, 0x25, a[0], a[1], a[2], a[3], // mov r8, [cpu]   (core before)
         0x66, 0xBA, p[0], p[1], // mov dx, port
@@ -196,9 +196,9 @@ pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] 
         0x31, 0xFF, // xor edi, edi
         0x31, 0xF6, // xor esi, esi
         0xBA, w[0], w[1], w[2], w[3], // mov edx, word
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall (SEND)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP, NOP,
     ])
@@ -217,7 +217,7 @@ pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] 
 pub const fn port_out_on_cpu_then_exit(port: u16, val: u8, cpu: u8) -> [u32; 8] {
     let a = CURRENT_CPU_WORD.to_le_bytes();
     let p = port.to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_8([
         0x48, 0x8B, 0x04, 0x25, a[0], a[1], a[2], a[3], // mov rax, [cpu]
         0x83, 0xF8, cpu, // cmp eax, cpu
@@ -225,7 +225,7 @@ pub const fn port_out_on_cpu_then_exit(port: u16, val: u8, cpu: u8) -> [u32; 8] 
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
         0xEE, // out dx, al          (#GP here: offset 19)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         0x31, 0xC0, // wrong: xor eax, eax
         0x48, 0x8B, 0x18, // mov rbx, [rax]      (page fault at 0: offset 29)
@@ -244,7 +244,7 @@ pub const PORT_OUT_ON_CPU_WRONG_CPU_PC_OFFSET: u64 = 29;
 /// **A child that deletes its own capability in `slot`, then writes a byte to a port, then exits**
 /// (milestone 313 (the security audit that was due since August)'s audit).
 ///
-/// A holder of the `PortRange` capability naming `port` runs `SYS_CAPABILITY_DELETE` on its slot, a plain
+/// A holder of the `PortRange` capability naming `port` runs `SYSCALL_CAPABILITY_DELETE` on its slot, a plain
 /// syscall with the slot in `edi`, and the `out` that follows must take a general protection fault
 /// at [`CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET`]. It exits rather than reporting, so a grant that
 /// survived the delete arrives as `EVENT_EXIT` instead of hanging on a SEND nobody receives.
@@ -253,17 +253,17 @@ pub const PORT_OUT_ON_CPU_WRONG_CPU_PC_OFFSET: u64 = 29;
 /// `cap_delete_then_port_out` under the capability ruling of 2026-10-06 (UTC).
 pub const fn capability_delete_then_port_out(slot: u32, port: u16, val: u8) -> [u32; 7] {
     let s = slot.to_le_bytes();
-    let del = (abi::SYS_CAPABILITY_DELETE as u32).to_le_bytes();
+    let del = (abi::SYSCALL_CAPABILITY_DELETE as u32).to_le_bytes();
     let p = port.to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_7([
         0xBF, s[0], s[1], s[2], s[3], // mov edi, slot
-        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAPABILITY_DELETE
+        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYSCALL_CAPABILITY_DELETE
         0x0F, 0x05, // syscall (CAP_DELETE)
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
         0xEE, // out dx, al
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP, NOP,
     ])
@@ -286,11 +286,11 @@ pub const CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET: u64 = 12 + PORT_OUT_PC_OFFS
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 pub const fn port_in_then_exit(port: u16) -> [u32; 4] {
     let p = port.to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_4([
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xEC, // in al, dx (offset 4)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP, NOP, NOP, NOP, // pad 12 -> 16 (4 words)
     ])
@@ -311,13 +311,13 @@ pub const PORT_IN_ONLY_PC_OFFSET: u64 = 4;
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 pub const fn port_in_then_out(port: u16, val: u8) -> [u32; 4] {
     let p = port.to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_4([
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xEC, // in al, dx (offset 4)
         0xB0, val,  // mov al, val
         0xEE, // out dx, al (offset 7)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP,  // pad 15 -> 16 (4 words)
     ])
@@ -344,20 +344,20 @@ pub const fn two_capability_deletes_then_port_out(
 ) -> [u32; 10] {
     let a = slot1.to_le_bytes();
     let b = slot2.to_le_bytes();
-    let del = (abi::SYS_CAPABILITY_DELETE as u32).to_le_bytes();
+    let del = (abi::SYSCALL_CAPABILITY_DELETE as u32).to_le_bytes();
     let p = port.to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_10([
         0xBF, a[0], a[1], a[2], a[3], // mov edi, slot1
-        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAPABILITY_DELETE
+        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYSCALL_CAPABILITY_DELETE
         0x0F, 0x05, // syscall (CAP_DELETE)
         0xBF, b[0], b[1], b[2], b[3], // mov edi, slot2
-        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAPABILITY_DELETE
+        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYSCALL_CAPABILITY_DELETE
         0x0F, 0x05, // syscall (CAP_DELETE)
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
         0xEE, // out dx, al (offset 30)
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP, NOP, // pad 38 -> 40 (10 words)
     ])
@@ -383,20 +383,20 @@ pub const RECEIVE_THEN_PORT_OUT_PC_OFFSET: u64 = 25 + PORT_OUT_PC_OFFSET;
 pub const fn receive_then_port_out(port: u16, val: u8) -> [u32; 10] {
     let p = port.to_le_bytes();
     let rcv = (abi::rendezvous::RECEIVE as u32).to_le_bytes();
-    let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let inv = (abi::SYSCALL_INVOKE as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_10([
         0xBF, 0x01, 0x00, 0x00, 0x00, // mov edi, 1        (slot 1)
         0xBE, rcv[0], rcv[1], rcv[2], rcv[3], // mov esi, RECEIVE
         0x31, 0xD2, // xor edx, edx
         0x45, 0x31, 0xD2, // xor r10d, r10d
         0x45, 0x31, 0xC0, // xor r8d, r8d
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall (RECEIVE)
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
         0xEE, // out dx, al
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall (exit)
         NOP,  // pad 39 -> 40 (10 words)
     ])
@@ -420,21 +420,21 @@ pub const fn call() -> [u32; 8] {
     invoke_then_exit(abi::rendezvous::CALL as u32)
 }
 
-/// The body [`receive`] and [`call`] share: `invoke(slot 0, method, 0, 0, 0)`, then `SYS_EXIT` if
+/// The body [`receive`] and [`call`] share: `invoke(slot 0, method, 0, 0, 0)`, then `SYSCALL_EXIT` if
 /// the invocation ever returns. One copy, so a syscall number has one place to be typed wrong.
 const fn invoke_then_exit(method: u32) -> [u32; 8] {
     let m = method.to_le_bytes();
-    let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
-    let ext = (abi::SYS_EXIT as u32).to_le_bytes();
+    let inv = (abi::SYSCALL_INVOKE as u32).to_le_bytes();
+    let ext = (abi::SYSCALL_EXIT as u32).to_le_bytes();
     pack_8([
         0x31, 0xFF, // xor edi, edi
         0xBE, m[0], m[1], m[2], m[3], // mov esi, method
         0x31, 0xD2, // xor edx, edx
         0x45, 0x31, 0xD2, // xor r10d, r10d
         0x45, 0x31, 0xC0, // xor r8d, r8d
-        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
+        0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYSCALL_INVOKE
         0x0F, 0x05, // syscall
-        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYS_EXIT
+        0xB8, ext[0], ext[1], ext[2], ext[3], // mov eax, SYSCALL_EXIT
         0x0F, 0x05, // syscall
         NOP, NOP, NOP,
     ])

@@ -32,7 +32,7 @@ pub(super) fn memory_region_invoke(
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
-            super::retype::memory_region_retype_obj(capability, region, a0, a1, a2)
+            super::retype::memory_region_retype_object(capability, region, a0, a1, a2)
         }
         abi::memory_region::RETYPE => {
             if !capability.rights.allows(Rights::WRITE) {

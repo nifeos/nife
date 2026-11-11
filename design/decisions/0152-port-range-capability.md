@@ -66,8 +66,9 @@ strand the device forever. No other method exists; `MAP` has no meaning for an o
 - **It does not replace `DeviceFrame`.** This is a *second* device-capability kind, for the one
   class with no page. PCI/PCIe devices, whose registers are memory, are unchanged and keep the
   mapping-based capability on all three architectures.
-- **It does not add a syscall number.** `REVOKE` is a method on the existing `SYS_INVOKE` surface,
-  within the established capability model. That is the bar §10/§16 set for a new method.
+- **It does not add a syscall number.** `REVOKE` is a method on the existing `SYSCALL_INVOKE`
+  surface (its name spelled out by the ruling of 2026-11-11 (UTC)), within the established
+  capability model. That is the bar §10/§16 set for a new method.
 - It does not give a way to *acquire* a port from userspace. A `PortRange` is minted by the kernel
   and delegated (`CAP_INSERT`), narrowing rights, exactly like `DeviceFrame`. There is no
   retype-into-a-port, because a program cannot conjure hardware it was not handed.

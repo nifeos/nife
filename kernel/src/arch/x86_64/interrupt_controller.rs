@@ -274,7 +274,7 @@ pub(crate) fn mask_timer() {
 /// pair and the device is stateful.
 ///
 /// # BUGS
-/// Nothing serializes the pair. A driver's `Interrupt::ACK` (`enable`) and the trap handler
+/// Nothing serializes the pair. A driver's `Interrupt::ACKNOWLEDGE` (`enable`) and the trap handler
 /// (`disable`)
 /// can run on two cores at once, and each would read or write the other's register.
 mod io_reg {
@@ -353,7 +353,7 @@ const MSI_VECTORS: u32 = SPURIOUS_VECTOR as u32 - MSI_VECTOR_BASE as u32;
 /// only `requester_id` may raise ([`super::iommu::remap_message`]). Elsewhere it is the
 /// compatibility format: `0xfee0_0000 | (local APIC id << 12)`, physical destination, and the
 /// vector as data. Either way `Fixed` delivery and edge trigger, so `enable` and a driver's
-/// `Interrupt::ACK` have nothing to do. See notes/x86-port/traps.md.
+/// `Interrupt::ACKNOWLEDGE` have nothing to do. See notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 215).
 pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
@@ -867,7 +867,7 @@ pub fn intid_of_vector(vector: u64) -> Option<u32> {
 /// Only a level-triggered line is masked: an IO APIC drops an edge that arrives on a masked entry,
 /// where a GIC keeps it pending. COM1's edge-triggered interrupt 4 stays high until the 16550 is
 /// drained,
-/// so a masked COM1 would lose a byte arriving before the ACK and never interrupt again.
+/// so a masked COM1 would lose a byte arriving before the ACKNOWLEDGE and never interrupt again.
 ///
 /// Name: recorded (aarch64's `arch::interrupt_controller::disable`): the arch contract's name for
 /// the same step, which

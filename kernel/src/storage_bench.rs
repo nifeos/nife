@@ -19,7 +19,6 @@ use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
 };
 use designware_mobile_storage::jh7110::Slot;
-use designware_mobile_storage::registers;
 use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, CardKind, InitializationError,
 };
@@ -294,7 +293,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     // every identifier is in range; every step is idempotent on a controller already up.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
-            crate::arch::mmu::phys_to_virt(sys.base) as usize,
+            crate::arch::mmu::phys_to_virt(sys.base_physical_address) as usize,
             &jh7110_clock_and_reset::SYSTEM,
             plan,
         )
@@ -318,7 +317,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::ClocksDown;
     }
 
-    let ciu_hertz = card_clock(slot, sys.base);
+    let ciu_hertz = card_clock(slot, sys.base_physical_address);
 
     // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
@@ -330,7 +329,11 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             return Outcome::Controller(e);
         }
     };
-    print_identity(slot, &id, host.queue_depth_words());
+    print_identity(
+        slot,
+        &id,
+        bench::queue_depth_words(slot.queue_depth_words, id.queue_threshold),
+    );
 
     let Some(buf) = pages(READ_PAGES) else {
         return Outcome::NoMemory;
@@ -347,14 +350,14 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             // overrun.
             let r = host.registers_mut();
             let (status, tcb, tbb) = (
-                r.read(registers::STATUS_REGISTER),
-                r.read(registers::TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
-                r.read(registers::TRANSFERRED_HOST_BYTE_COUNT_REGISTER),
+                r.read(bench::STATUS_REGISTER),
+                r.read(bench::TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
+                r.read(bench::TRANSFERRED_HOST_BYTE_COUNT_REGISTER),
             );
             say!(
                 slot,
                 "at the failure: STATUS {status:#x} (FIFO holds {} words) TCBCNT {tcb} TBBCNT {tbb}",
-                (status >> 17) & 0x1fff
+                bench::queue_count(status)
             );
             return Outcome::ReadFailed(lba, e);
         }
@@ -581,20 +584,20 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
         id.version_identification,
         id.hardware_configuration,
         id.user_identification,
-        registers::queue_offset(id.version_identification),
-        registers::queue_width_bytes(id.hardware_configuration),
+        bench::queue_offset(id.version_identification),
+        bench::queue_width_bytes(id.hardware_configuration),
         depth,
-        registers::uses_64_bit_direct_memory_access(id.hardware_configuration),
+        bench::uses_64_bit_direct_memory_access(id.hardware_configuration),
         id.card_detect,
     );
     say!(
         slot,
         "as the firmware left it: CTRL {:#x} PWREN {:#x} CLKDIV {:#x} CLKENA {:#x} CTYPE {:#x}",
-        id.firmware[0],
-        id.firmware[1],
-        id.firmware[2],
-        id.firmware[3],
-        id.firmware[4],
+        id.host_control,
+        id.power_enable,
+        id.clock_divider,
+        id.clock_enable,
+        id.card_type,
     );
 }
 
@@ -716,11 +719,11 @@ fn through_idmac(
             say!(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
-                w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
-                w.read(registers::CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER),
-                w.read(registers::CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER),
-                w.read(registers::STATUS_REGISTER),
-                w.read(registers::TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
+                w.read(bench::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
+                w.read(bench::CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER),
+                w.read(bench::CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER),
+                w.read(bench::STATUS_REGISTER),
+                w.read(bench::TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
             );
             return Dma::Failed(e);
         }
@@ -776,17 +779,17 @@ fn read_matrix(slot: &Slot) {
     let Some(sys) = crate::memory::jh7110_sys_window() else {
         return;
     };
-    let ciu_hertz = card_clock(slot, sys.base);
+    let ciu_hertz = card_clock(slot, sys.base_physical_address);
     let first = 2048;
     for depth in [slot.queue_depth_words, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.registers_physical_address) };
-        let Ok((mut host, _)) = HostController::new(QueueWatch::new(window), ciu_hertz, depth)
+        let Ok((mut host, id)) = HostController::new(QueueWatch::new(window), ciu_hertz, depth)
         else {
             println!("storage-matrix: controller refused");
             return;
         };
-        let used = host.queue_depth_words();
+        let used = bench::queue_depth_words(depth, id.queue_threshold);
         let done = bench::read_matrix(&mut host, slot.bus_width, first, buf, |r| {
             println!(
                 "storage-matrix: depth {used} card {} Hz (asked {}) blocks {}: {:?} in {} us, \

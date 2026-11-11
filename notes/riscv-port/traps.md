@@ -174,9 +174,9 @@ opens the target's threshold before the first source lands, which it can because
 registers are global MMIO. Every hart sets `SEIE` as it joins the scheduler, which delivers nothing
 until a source is routed to it.
 
-A claim's context is recorded until the driver's ACK, which completes on that context. A source can
+A claim's context is recorded until the driver's ACKNOWLEDGE, which completes on that context. A source can
 be enabled on more than one context, because the hand-over pins the console's to the boot hart, and
-only a context that enables a source may complete it. An ACK with no claim outstanding arms the
+only a context that enables a source may complete it. An ACKNOWLEDGE with no claim outstanding arms the
 source at its target instead.
 
 PCI functions on QEMU `virt` raise INTx through the standard swizzle onto PLIC inputs 32 to 35,

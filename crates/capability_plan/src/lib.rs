@@ -28,7 +28,7 @@
 /// [`Refusal::TooManyCapabilities`].
 ///
 /// Eight, which is roughly double the four that the widest manifest in this tree asks for, and which
-/// leaves room below `abi::fault::FAULT_EP_SLOT` for the placed slots a component might also want.
+/// leaves room below `abi::fault::FAULT_RENDEZVOUS_SLOT` for the placed slots a component might also want.
 ///
 /// Name: ratified 2026-10-27 (#2797), after the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC) and the capability ruling of 2026-10-06 (UTC).
@@ -112,8 +112,8 @@ impl PageKind {
     /// the conservative one rather than a claim.
     pub const fn mode(self) -> u64 {
         match self {
-            PageKind::Shared => abi::address_space::MAP_RW,
-            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_RO,
+            PageKind::Shared => abi::address_space::MAP_READ_WRITE,
+            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_READ_ONLY,
         }
     }
 }
@@ -520,7 +520,7 @@ impl Plan {
 /// .expect("every declared role is routed");
 ///
 /// assert_eq!(plan.capabilities(), &[(5, abi::rights::READ), (1, abi::rights::WRITE)]);
-/// assert_eq!(plan.maps(), &[(0x0300_0000, 9, abi::address_space::MAP_RW)]);
+/// assert_eq!(plan.maps(), &[(0x0300_0000, 9, abi::address_space::MAP_READ_WRITE)]);
 /// assert_eq!(plan.pages(), 32);
 /// ```
 pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Refusal> {
@@ -874,9 +874,12 @@ mod tests {
         let p = plan(&CONSOLE, &everything()).unwrap();
         assert_eq!(
             p.maps_without_devices(),
-            &[(0x0300_0000, 9, abi::address_space::MAP_RW)]
+            &[(0x0300_0000, 9, abi::address_space::MAP_READ_WRITE)]
         );
-        assert_eq!(p.devices(), &[(0x0310_0000, 2, abi::address_space::MAP_RO)]);
+        assert_eq!(
+            p.devices(),
+            &[(0x0310_0000, 2, abi::address_space::MAP_READ_ONLY)]
+        );
     }
 
     /// And it is separable whatever order the declaration used, because a plan sorts rather than
@@ -892,7 +895,10 @@ mod tests {
             state_handoff: None,
         };
         let p = plan(&DEVICE_FIRST, &everything()).unwrap();
-        assert_eq!(p.devices(), &[(0x0310_0000, 2, abi::address_space::MAP_RO)]);
+        assert_eq!(
+            p.devices(),
+            &[(0x0310_0000, 2, abi::address_space::MAP_READ_ONLY)]
+        );
         assert_eq!(p.maps_without_devices().len(), 1);
     }
 
@@ -918,7 +924,7 @@ mod tests {
         let p = plan(&READER, &everything()).unwrap();
         assert_eq!(
             p.maps_without_devices(),
-            &[(0x0300_0000, 9, abi::address_space::MAP_RO)]
+            &[(0x0300_0000, 9, abi::address_space::MAP_READ_ONLY)]
         );
         assert_eq!(p.devices().len(), 1);
     }
@@ -986,11 +992,14 @@ mod tests {
         assert_eq!(
             p.maps_without_devices(),
             &[
-                (0x0300_0000, 9, abi::address_space::MAP_RW),
-                (0x0320_0000, 11, abi::address_space::MAP_RW),
+                (0x0300_0000, 9, abi::address_space::MAP_READ_WRITE),
+                (0x0320_0000, 11, abi::address_space::MAP_READ_WRITE),
             ]
         );
-        assert_eq!(p.devices(), &[(0x0310_0000, 2, abi::address_space::MAP_RO)]);
+        assert_eq!(
+            p.devices(),
+            &[(0x0310_0000, 2, abi::address_space::MAP_READ_ONLY)]
+        );
     }
 
     /// **The refusal §209 needs and does not spell out.** A supervisor that routes no handoff page
