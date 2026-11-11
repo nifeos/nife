@@ -63,11 +63,18 @@ pub const INTERFACE_ID: u64 = 12;
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const GET: u64 = 1;
 
-/// Build a request word: the opcode and the byte count the client wants.
+/// Build a request word: the opcode and the byte count the client wants. A count above
+/// [`MAXIMUM_BYTES`] encodes as [`MAXIMUM_BYTES`], so the wire never carries more than a reply can
+/// hold and a client that asks for 256 bytes is not mistaken for one that asks for none.
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `req`, which abbreviates it.
 pub const fn request(operation: u64, byte_count: u64) -> u64 {
-    (operation << OPERATION_SHIFT) | (byte_count & 0xff)
+    let clamped = if byte_count > MAXIMUM_BYTES {
+        MAXIMUM_BYTES
+    } else {
+        byte_count
+    };
+    (operation << OPERATION_SHIFT) | clamped
 }
 
 /// The opcode of a request word.
@@ -383,6 +390,19 @@ mod tests {
         assert_eq!(requested_bytes(request(GET, MAXIMUM_BYTES)), MAXIMUM_BYTES);
     }
 
+    /// `request` clamps rather than truncating: 255, 256 and the largest count all read back as
+    /// `MAXIMUM_BYTES`, where a mask on the low byte made 256 a request for nothing.
+    #[test]
+    fn request_clamps_counts_the_low_byte_cannot_hold() {
+        for byte_count in [255, 256, 257, 512, u64::MAX] {
+            let request_word = request(GET, byte_count);
+            assert_eq!(request_word, (GET << OPERATION_SHIFT) | MAXIMUM_BYTES);
+            assert_eq!(operation(request_word), GET);
+            assert_eq!(requested_bytes(request_word), MAXIMUM_BYTES);
+        }
+        assert_eq!(requested_bytes(request(GET, 0)), 0);
+    }
+
     /// **The property the whole error story rests on**: no count the service can send collides with
     /// any error the kernel can return, so "no entropy capability" is distinguishable from "no
     /// entropy" without a probe. A kernel that answers a failed `CALL` with an error number from -1
@@ -490,7 +510,7 @@ mod verification {
 
     /// **A request word carries its opcode and its clamped byte count**: for any opcode that fits
     /// the top byte and any byte count, [`operation`] reads back the opcode and
-    /// [`requested_bytes`] reads back the low byte of the count, clamped to [`MAXIMUM_BYTES`].
+    /// [`requested_bytes`] reads back the count, clamped to [`MAXIMUM_BYTES`].
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_request_word_carries_its_opcode_and_clamped_count.patch`
     #[kani::proof]
     fn a_request_word_carries_its_opcode_and_clamped_count() {
@@ -499,10 +519,7 @@ mod verification {
         let byte_count: u64 = kani::any();
         let request_word = request(opcode, byte_count);
         assert_eq!(operation(request_word), opcode);
-        assert_eq!(
-            requested_bytes(request_word),
-            (byte_count & 0xff).min(MAXIMUM_BYTES)
-        );
+        assert_eq!(requested_bytes(request_word), byte_count.min(MAXIMUM_BYTES));
     }
 
     /// **Copying writes exactly the delivered bytes, and nothing past them**: for any byte count,
