@@ -49,8 +49,8 @@ pub struct Found {
     pub dma: u64,
 }
 
-/// Why there is no NVMe server: none on the bus, or one the admin process refused, two facts a
-/// test must not report alike.
+/// Why there is no NVMe server: none on the bus, one the IOMMU refused, or one the admin process
+/// refused, facts a test must not report alike.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Absent {
     /// No function on the bus carries the NVMe class code.
@@ -62,11 +62,22 @@ pub enum Absent {
         /// The phase, as the admin process reported it.
         why: BringUpError,
     },
+    /// A controller is there and the IOMMU refused to attach it, so its DMA stays blocked and no
+    /// process is handed it.
+    ///
+    /// Name: provisional.
+    Unconfined {
+        /// The controller's PCIe requester id.
+        rid: u32,
+        /// Why the IOMMU refused.
+        why: crate::iommu::AttachError,
+    },
 }
 
 /// Find the machine's NVMe controller, allocate its DMA run, and confine it.
 ///
-/// Returns [`Absent::NoController`] with none on the bus. The controller is confined to its run
+/// Returns [`Absent::NoController`] with none on the bus, and [`Absent::Unconfined`], with the run
+/// freed, when the IOMMU refuses the controller. The controller is confined to its run
 /// before this returns, and so before any process holds BAR0; with no IOMMU nothing bounds it, and
 /// nife trusts the driver (§86's ruling).
 ///
@@ -98,9 +109,14 @@ pub fn find_and_confine() -> Result<Found, Absent> {
         };
         #[cfg(not(feature = "system_tests"))]
         let extra: Option<paging::domain::DmaRegion> = None;
-        match extra {
+        let confined = match extra {
             Some(x) => crate::iommu::confine(dev.rid, &[own, x]),
             None => crate::iommu::confine(dev.rid, &[own]),
+        };
+        if let Err(why) = confined {
+            // The controller was never enabled and its DMA stays blocked, so nothing reads the run.
+            free_run(dma);
+            return Err(Absent::Unconfined { rid: dev.rid, why });
         }
     }
     Ok(Found {
@@ -121,6 +137,11 @@ pub fn find_and_confine() -> Result<Found, Absent> {
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 #[cfg(feature = "system_tests")]
 pub fn free_retired_run(dma: u64) {
+    free_run(dma);
+}
+
+/// Hand the [`DIRECT_MEMORY_ACCESS_PAGES`]-page run at `dma` back, page by page.
+fn free_run(dma: u64) {
     for page in 0..DIRECT_MEMORY_ACCESS_PAGES {
         crate::memory::free(page_frames::PageFrame::from_addr(
             dma + page * page_frames::FRAME_SIZE,

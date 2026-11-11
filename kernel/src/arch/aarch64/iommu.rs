@@ -8,11 +8,26 @@
 //! Default deny: `initialize` sets `GBPA.ABORT`, installs an all-invalid stream table and only then
 //! sets `SMMUEN`, so every stream aborts until `attach` writes its STE. See notes/iommu.md, "The
 //! two arch drivers, structural twins", and its honest limits.
+//!
+//! # BUGS
+//!
+//! - The stream table holds requester ids 0 to 32767, buses 0 to 127. `attach` refuses a device on
+//!   bus 128 or above with [`AttachError::BeyondDeviceTable`]; a third of a 16-bit id space needs a
+//!   level-one table of two frames, which the frame allocator cannot align.
+//! - A leaf, once allocated, is never freed, so the table grows by two frames per 64 requester ids
+//!   ever attached and shrinks never.
 
 use crate::arch::mmu::phys_to_virt;
+use crate::iommu::AttachError;
 use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets from the SMMU page; Arm IHI 0070, and QEMU's smmuv3-common.h) ---
+/// `SMMU_IDR0`, the first identification register (Arm IHI 0070, 6.3.1). `ST_LEVEL`, bits `[28:27]`,
+/// says which stream table formats the SMMU walks.
+///
+/// Name: provisional.
+#[doc(alias = "SMMU_IDR0")]
+const IDENTIFICATION_REGISTER_0: u64 = 0x00;
 const IDR1: u64 = 0x04;
 const CR0: u64 = 0x20;
 const CR0ACK: u64 = 0x24;
@@ -47,10 +62,60 @@ const EVTQ_LOG2: u32 = 7;
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // used by take_fault, which only the confinement test calls
 const EVT_BYTES: u64 = 32;
 
-// The linear stream table: 64 STEs of 64 bytes, one frame. StreamID on this board is the PCIe
-// requester id (the DTB's iommu-map is identity), so 64 covers bus 0's 32 devices twice over.
-const STRTAB_LOG2: u32 = 6;
+// The two-level stream table. StreamID on these boards is the PCIe requester id (the device
+// tree's iommu-map is the identity). A level-one table of 512 descriptors, eight bytes each, fills
+// one frame; each names a leaf of 64 STEs of 64 bytes, which fills one frame too. So a requester
+// id splits as `rid >> 6` (which descriptor) and `rid & 63` (which entry in its leaf), and the
+// table covers 2^15 ids, buses 0 to 127. The context descriptors keep the same shape: one frame of
+// 64 per leaf, at the same index, so a stream's CD sits at its STE's offset in a sibling frame.
 const STE_BYTES: u64 = 64;
+
+/// `STRTAB_BASE_CFG.SPLIT`, the bit at which a stream id divides into a level-one index above and
+/// a leaf index below: 6, so a leaf holds 64 STEs and fills exactly one frame (Arm IHI 0070,
+/// 6.3.24). Linux's `STRTAB_SPLIT` is 8, a leaf of four frames.
+///
+/// Name: provisional.
+#[doc(alias = "SPLIT")]
+const STREAM_TABLE_SPLIT: u32 = 6;
+
+/// How many streams one leaf holds: `1 << STREAM_TABLE_SPLIT`.
+///
+/// Name: provisional.
+const STREAMS_PER_LEAF: u32 = 1 << STREAM_TABLE_SPLIT;
+
+/// The widest stream id this table covers, in bits: 15, so the level-one table is 512 descriptors
+/// and fits one frame. `initialize` takes the smaller of this and the SMMU's own `SIDSIZE`.
+///
+/// Name: provisional.
+const STREAM_ID_BITS_MAXIMUM: u32 = 15;
+
+/// How many level-one descriptors the table has room for.
+///
+/// Name: provisional.
+const LEVEL_ONE_DESCRIPTORS: usize = 1 << (STREAM_ID_BITS_MAXIMUM - STREAM_TABLE_SPLIT);
+
+/// One level-one stream table descriptor (`L1STD`) is a 64-bit word.
+///
+/// Name: provisional.
+#[doc(alias = "L1STD")]
+const LEVEL_ONE_DESCRIPTOR_BYTES: u64 = 8;
+
+/// The bits of a level-one descriptor that hold its leaf's address, `L2Ptr` in `[51:6]`.
+///
+/// Name: provisional.
+const LEVEL_ONE_DESCRIPTOR_ADDRESS: u64 = 0x000f_ffff_ffff_ffc0;
+
+/// `STRTAB_BASE_CFG.FMT` = 0b01, a two-level stream table, in bits `[17:16]`.
+///
+/// Name: provisional.
+#[doc(alias = "STRTAB_BASE_CFG.FMT")]
+const STREAM_TABLE_FORMAT_TWO_LEVEL: u32 = 0b01 << 16;
+
+// Each table is one frame: the level-one table, a leaf of STEs and a leaf of CDs. A larger split or
+// width that no longer fits stops the build here, not at a write past a frame.
+const _: () =
+    assert!(LEVEL_ONE_DESCRIPTORS as u64 * LEVEL_ONE_DESCRIPTOR_BYTES <= page_frames::FRAME_SIZE);
+const _: () = assert!(STREAMS_PER_LEAF as u64 * STE_BYTES <= page_frames::FRAME_SIZE);
 
 // Commands (opcode in byte 0 of word 0).
 const CMD_CFGI_STE: u32 = 0x03;
@@ -71,13 +136,29 @@ pub struct Fault {
     pub addr: Option<u64>,
 }
 
+/// One leaf of the two-level stream table: a frame of 64 STEs and the frame of their 64 CDs.
+#[derive(Clone, Copy)]
+struct Leaf {
+    stream_table_entries: u64,
+    context_descriptors: u64,
+}
+
 struct Smmu {
     base: u64,
+    /// The level-one stream table: one frame of descriptors, each invalid until its leaf exists.
     strtab: u64,
-    /// One frame of CDs, one 64-byte CD per stream table entry index. Re-attaching a stream
-    /// rewrites its CD in place and invalidates, so repeated test runs converge instead of
-    /// leaking a frame per attach.
-    cds: u64,
+    /// How many stream id bits the table covers: [`STREAM_ID_BITS_MAXIMUM`], or fewer when the SMMU's
+    /// `SIDSIZE` is smaller.
+    stream_id_bits: u32,
+    /// A kernel-owned frame of [`LEVEL_ONE_DESCRIPTORS`] physical addresses: the CD frame of each
+    /// leaf, by level-one index, or zero before that leaf exists. The leaf's STE frame needs no such
+    /// record, because its level-one descriptor names it. Both live in frames rather than in this
+    /// struct, so building the struct costs no stack (script/stack-frame-check). Re-attaching a
+    /// stream rewrites its STE and CD in place and invalidates, so repeated test runs converge
+    /// instead of leaking a frame per attach.
+    ///
+    /// Name: provisional.
+    context_descriptor_leaves: u64,
     cmdq: u64,
     cmdq_prod: u32,
     // Read by take_fault (the confinement test); no production fault handler yet.
@@ -153,6 +234,11 @@ pub fn initialize(base: u64) {
         assert!(spins < 1_000_000, "SMMU GBPA update never completed");
     }
 
+    let idr0 = r32(base, IDENTIFICATION_REGISTER_0);
+    assert!(
+        (idr0 >> 27) & 0b11 == 0b01,
+        "SMMU walks only a linear stream table (IDR0 {idr0:#x}); this driver builds two levels"
+    );
     let idr1 = r32(base, IDR1);
     let cmdqs_maximum = (idr1 >> 21) & 0x1f;
     let evtqs_maximum = (idr1 >> 16) & 0x1f;
@@ -160,16 +246,26 @@ pub fn initialize(base: u64) {
         cmdqs_maximum >= CMDQ_LOG2 && evtqs_maximum >= EVTQ_LOG2,
         "SMMU queues smaller than expected (IDR1 {idr1:#x})"
     );
+    // SIDSIZE, bits [5:0]: the widest StreamID the SMMU itself carries.
+    let stream_id_bits = (idr1 & 0x3f).min(STREAM_ID_BITS_MAXIMUM);
+    assert!(
+        stream_id_bits >= STREAM_TABLE_SPLIT,
+        "SMMU StreamIDs narrower than one leaf (IDR1 {idr1:#x})"
+    );
 
     let strtab = zeroed_page_frame("stream table");
-    let cds = zeroed_page_frame("context descriptors");
     let cmdq = zeroed_page_frame("command queue");
     let evtq = zeroed_page_frame("event queue");
+    let context_descriptor_leaves = zeroed_page_frame("context descriptor leaf list");
 
-    // Linear stream table (FMT 0), 2^6 entries. An all-zero STE is invalid, and an invalid STE
-    // aborts the transaction and records C_BAD_STE: the default-deny posture.
+    // Two-level stream table, every level-one descriptor zero. A zero descriptor has SPAN 0, which
+    // names no leaf, so every stream aborts until `attach` installs one: the default-deny posture.
     w64(base, STRTAB_BASE, strtab);
-    w32(base, STRTAB_BASE_CFG, STRTAB_LOG2);
+    w32(
+        base,
+        STRTAB_BASE_CFG,
+        stream_table_configuration(stream_id_bits),
+    );
 
     w64(base, CMDQ_BASE, cmdq | CMDQ_LOG2 as u64);
     w32(base, CMDQ_PROD, 0);
@@ -189,7 +285,8 @@ pub fn initialize(base: u64) {
     *g = Some(Smmu {
         base,
         strtab,
-        cds,
+        stream_id_bits,
+        context_descriptor_leaves,
         cmdq,
         cmdq_prod: 0,
         evtq,
@@ -211,8 +308,10 @@ pub fn initialize(base: u64) {
 pub(crate) fn print_summary() {
     match SMMU.lock().as_ref() {
         Some(s) => crate::println!(
-            "  iommu            : SMMUv3 at {:#018x}, stream table default-deny, translating",
+            "  iommu            : SMMUv3 at {:#018x}, two-level stream table of {} ids, \
+             default-deny, translating",
             s.base,
+            1u32 << s.stream_id_bits,
         ),
         None => crate::println!(
             "  iommu            : none (this machine's device tree names no smmuv3 node)",
@@ -283,17 +382,52 @@ fn cmd_push(s: &mut Smmu, cmd: [u32; 4]) {
     }
 }
 
-/// **Where stream `rid`'s two tables sit**, as a byte offset into the frame that holds them.
+/// Where one stream's entries sit in the two-level table: which leaf, and the byte offset into
+/// both of that leaf's frames.
+///
+/// Name: provisional.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct StreamPosition {
+    /// The level-one descriptor that names the leaf.
+    leaf: usize,
+    /// The byte offset of the STE in the leaf's STE frame, and of the CD in its CD frame.
+    offset: u64,
+}
+
+/// **Where stream `rid`'s two tables sit**, in a table that covers `stream_id_bits` bits of
+/// stream id, or `None` past it.
 ///
 /// One function for both tables, which share the index and the 64-byte stride, so the two cannot
-/// disagree and land one stream's entry on another's. Panics past the linear table; `mod proofs`
-/// holds the bound against the stride.
-fn table_offset(rid: u32) -> u64 {
-    assert!(
-        (rid as u64) < (1 << STRTAB_LOG2),
-        "StreamID {rid} beyond the linear stream table"
-    );
-    rid as u64 * STE_BYTES
+/// disagree and land one stream's entry on another's. A refusal is a value and never a panic: a
+/// requester id comes from the bus. `mod proofs` holds the bound against the stride.
+///
+/// Name: provisional.
+fn stream_position(rid: u32, stream_id_bits: u32) -> Option<StreamPosition> {
+    if rid >= 1 << stream_id_bits {
+        return None;
+    }
+    Some(StreamPosition {
+        leaf: (rid >> STREAM_TABLE_SPLIT) as usize,
+        offset: (rid % STREAMS_PER_LEAF) as u64 * STE_BYTES,
+    })
+}
+
+/// **`STRTAB_BASE_CFG` for a two-level table over `stream_id_bits` bits of stream id**: `LOG2SIZE`
+/// in `[5:0]`, `SPLIT` in `[10:6]`, `FMT` in `[17:16]`.
+///
+/// Name: provisional.
+const fn stream_table_configuration(stream_id_bits: u32) -> u32 {
+    STREAM_TABLE_FORMAT_TWO_LEVEL | (STREAM_TABLE_SPLIT << 6) | stream_id_bits
+}
+
+/// **The level-one descriptor that names a leaf at `leaf`**: `L2Ptr` in `[51:6]` and `SPAN` in
+/// `[4:0]`. `SPAN` is `SPLIT + 1`, so the leaf holds `2^SPLIT` STEs (Arm IHI 0070, 5.1, "Level 1
+/// Stream Table Descriptor"); QEMU's walk reads the same field.
+///
+/// Name: provisional.
+#[doc(alias = "L1STD")]
+const fn level_one_descriptor(leaf: u64) -> u64 {
+    (leaf & LEVEL_ONE_DESCRIPTOR_ADDRESS) | (STREAM_TABLE_SPLIT as u64 + 1)
 }
 
 /// **The context descriptor for one stream**: the SMMU's `TTBR0_EL1` + `TCR_EL1` + `MAIR_EL1`,
@@ -338,25 +472,79 @@ const fn stream_table_entry(ctxptr: u64) -> [u32; 16] {
     ste
 }
 
+/// The leaf at level-one index `index`, allocating its two frames and installing its descriptor
+/// the first time. Returns the leaf and whether it is new, or `None` with no frame free.
+fn leaf_at(s: &mut Smmu, index: usize) -> Option<(Leaf, bool)> {
+    let descriptor = phys_to_virt(s.strtab + index as u64 * LEVEL_ONE_DESCRIPTOR_BYTES) as *mut u64;
+    let recorded =
+        phys_to_virt(s.context_descriptor_leaves + index as u64 * LEVEL_ONE_DESCRIPTOR_BYTES)
+            as *mut u64;
+    // SAFETY: strtab and context_descriptor_leaves are kernel-owned frames of
+    // LEVEL_ONE_DESCRIPTORS eight-byte entries, and `index` is below that (`stream_position`, and
+    // the build-time assertion that the table fits a frame). Only this function, under the SMMU
+    // lock, writes either.
+    let context_descriptors = unsafe { core::ptr::read_volatile(recorded) };
+    if context_descriptors != 0 {
+        // SAFETY: as above.
+        let stream_table_entries =
+            unsafe { core::ptr::read_volatile(descriptor) } & LEVEL_ONE_DESCRIPTOR_ADDRESS;
+        let leaf = Leaf {
+            stream_table_entries,
+            context_descriptors,
+        };
+        return Some((leaf, false));
+    }
+    let stream_table_entries = crate::memory::alloc_zeroed()?.addr();
+    let Some(context_descriptors) = crate::memory::alloc_zeroed() else {
+        crate::memory::free(page_frames::PageFrame::from_addr(stream_table_entries));
+        return None;
+    };
+    let leaf = Leaf {
+        stream_table_entries,
+        context_descriptors: context_descriptors.addr(),
+    };
+    // The leaf's 64 STEs are zero, so invalid: publish them before the descriptor that makes the
+    // SMMU walk them.
+    crate::arch::direct_memory_access_write_barrier();
+    // SAFETY: as above. One aligned 64-bit store, so the SMMU never reads a pointer with a stale
+    // half.
+    unsafe {
+        core::ptr::write_volatile(descriptor, level_one_descriptor(stream_table_entries));
+        core::ptr::write_volatile(recorded, leaf.context_descriptors);
+    }
+    Some((leaf, true))
+}
+
 /// Point stream `rid` at the domain rooted at `ttb` (a VMSAv8-64 table the portable seam built),
 /// tagged `asid`, then invalidate so the SMMU drops any cached STE/CD/TLB entry for the previous
-/// domain. After this returns, the device can reach exactly what the domain maps.
-pub fn attach(rid: u32, ttb: u64, asid: u16) {
+/// domain. After this returns `Ok`, the device can reach exactly what the domain maps.
+///
+/// Refuses a stream id past the table with [`AttachError::BeyondDeviceTable`], and a new leaf with
+/// no frame free with [`AttachError::NoFrameForTable`]. A refused stream keeps no STE, so it
+/// aborts every transaction.
+///
+/// Context: takes the `SMMU` lock, and allocates a leaf's frames under it.
+pub fn attach(rid: u32, ttb: u64, asid: u16) -> Result<(), AttachError> {
     let mut g = SMMU.lock();
     let s = g.as_mut().expect("SMMU attach before initialize");
-    let off = table_offset(rid);
+    let position =
+        stream_position(rid, s.stream_id_bits).ok_or(AttachError::BeyondDeviceTable {
+            requester_id: rid,
+            limit: 1 << s.stream_id_bits,
+        })?;
+    let (leaf, is_new_leaf) = leaf_at(s, position.leaf).ok_or(AttachError::NoFrameForTable)?;
 
-    let cd = phys_to_virt(s.cds + off) as *mut u32;
-    // SAFETY: cds is a kernel-owned frame; `table_offset` bounds the offset to it.
+    let cd = phys_to_virt(leaf.context_descriptors + position.offset) as *mut u32;
+    // SAFETY: the leaf's CD frame is kernel-owned; `stream_position` bounds the offset to it.
     unsafe {
         for (i, w) in context_descriptor(ttb, asid).iter().enumerate() {
             core::ptr::write_volatile(cd.add(i), *w);
         }
     }
 
-    let ctxptr = s.cds + off;
-    let ste = phys_to_virt(s.strtab + off) as *mut u32;
-    // SAFETY: strtab is a kernel-owned frame; `table_offset` bounds the offset to it.
+    let ctxptr = leaf.context_descriptors + position.offset;
+    let ste = phys_to_virt(leaf.stream_table_entries + position.offset) as *mut u32;
+    // SAFETY: the leaf's STE frame is kernel-owned; `stream_position` bounds the offset to it.
     unsafe {
         for (i, w) in stream_table_entry(ctxptr).iter().enumerate() {
             core::ptr::write_volatile(ste.add(i), *w);
@@ -368,10 +556,13 @@ pub fn attach(rid: u32, ttb: u64, asid: u16) {
 
     // Drop whatever the SMMU cached for this stream: its STE, its CD, and every TLB entry (a
     // re-attach reuses the ASID with a brand-new table, so the broad TLBI is the correct one).
-    cmd_push(s, [CMD_CFGI_STE, rid, 1, 0]); // leaf=1: just this STE
+    // Leaf 0 on a new leaf drops a cached level-one descriptor as well, so the SMMU walks the one
+    // just written.
+    cmd_push(s, [CMD_CFGI_STE, rid, u32::from(!is_new_leaf), 0]);
     cmd_push(s, [CMD_CFGI_CD, rid, 1, 0]);
     cmd_push(s, [CMD_TLBI_NSNH_ALL, 0, 0, 0]);
     cmd_push(s, [CMD_SYNC, 0, 0, 0]);
+    Ok(())
 }
 
 /// Pop one fault from the event queue, if any. The confinement test drains this to prove a DMA
@@ -409,9 +600,9 @@ pub fn take_fault() -> Option<Fault> {
 /// **Proofs over the word-building that decides which physical addresses a device may touch**
 /// (`design/fatal-risks/README.md` risk 7).
 ///
-/// The register accessors are unreachable to a harness, so `initialize`, `cmd_push`, `attach` and
-/// `take_fault` are unproved; so are the register offsets and bit constants, which only Arm IHI
-/// 0070 states. Nothing here covers the RISC-V IOMMU or VT-d. See notes/iommu.md, "What is proved,
+/// The register accessors are unreachable to a harness, so `initialize`, `leaf_at`, `cmd_push`,
+/// `attach` and `take_fault` are unproved; so are the register offsets and bit constants, which
+/// only Arm IHI 0070 states. Nothing here covers the RISC-V IOMMU or VT-d. See notes/iommu.md, "What is proved,
 /// as against tested", and notes/kernel-proofs.md, "The stub boundary, enumerated".
 #[cfg(kani)]
 mod proofs {
@@ -438,7 +629,8 @@ mod proofs {
         // `ttb` is the root of a domain built by `paging::domain`, so a page frame.
         kani::assume(ttb % page_frames::FRAME_SIZE == 0);
         kani::assume(ttb < 1 << PA_BITS);
-        // `ctxptr` is `cds + table_offset(rid)`: a page frame plus a 64-byte stride.
+        // `ctxptr` is a leaf's CD frame plus `stream_position`'s offset: a page frame plus a 64-byte
+        // stride.
         kani::assume(ctxptr % STE_BYTES == 0);
         kani::assume(ctxptr < 1 << PA_BITS);
 
@@ -472,33 +664,93 @@ mod proofs {
         );
     }
 
-    /// **No stream can reach another stream's tables.**
+    /// **No stream can reach another stream's tables, and a stream past the table is refused.**
     ///
-    /// `table_offset`'s `assert!` is all that stands between a 16-bit `StreamID` from the device
-    /// tree's `iommu-map` and a raw write. Proves everything it admits fits the frame and no two
-    /// ids overlap.
+    /// `stream_position` is all that stands between a requester id from the bus and a raw write.
+    /// Over every `u32` and every table width `initialize` can choose, it admits exactly the ids
+    /// below the width, places each inside one level-one descriptor and inside its leaf's frame,
+    /// and no two ids share a byte of either leaf.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.aarch64.iommu.proofs.no_stream_can_reach_another_streams_tables.patch`
     #[kani::proof]
     fn no_stream_can_reach_another_streams_tables() {
         let a: u32 = kani::any();
         let b: u32 = kani::any();
-        // The requester id a PCIe function stamps on its transactions is 16 bits wide
-        // (`pci::Bdf::requester_id`), and `virt`'s `iommu-map` is the identity.
-        kani::assume(a <= u16::MAX as u32 && b <= u16::MAX as u32);
-        // Anything `table_offset` refuses never reaches the arithmetic, and a refusal is a panic
-        // rather than a silent wrong answer. Restrict to what it admits.
-        kani::assume((a as u64) < (1 << STRTAB_LOG2) && (b as u64) < (1 << STRTAB_LOG2));
+        let stream_id_bits: u32 = kani::any();
+        // What `initialize` can choose: at least one leaf, at most the level-one table's frame.
+        kani::assume((STREAM_TABLE_SPLIT..=STREAM_ID_BITS_MAXIMUM).contains(&stream_id_bits));
 
-        let (oa, ob) = (table_offset(a), table_offset(b));
-
-        assert!(
-            oa + STE_BYTES <= page_frames::FRAME_SIZE,
-            "every entry the bound admits lies inside the single frame that holds the table"
+        let (pa, pb) = (
+            stream_position(a, stream_id_bits),
+            stream_position(b, stream_id_bits),
         );
         assert!(
-            a == b || oa + STE_BYTES <= ob || ob + STE_BYTES <= oa,
+            pa.is_some() == (a < 1 << stream_id_bits),
+            "exactly the ids below the table's width are placed, and every other is refused"
+        );
+        let (Some(pa), Some(pb)) = (pa, pb) else {
+            return;
+        };
+
+        assert!(
+            pa.leaf < LEVEL_ONE_DESCRIPTORS,
+            "every admitted stream's leaf has a descriptor in the level-one frame"
+        );
+        assert!(
+            pa.offset + STE_BYTES <= page_frames::FRAME_SIZE,
+            "every entry the bound admits lies inside its leaf's single frame"
+        );
+        assert!(
+            a == b
+                || pa.leaf != pb.leaf
+                || pa.offset + STE_BYTES <= pb.offset
+                || pb.offset + STE_BYTES <= pa.offset,
             "two different streams never share a byte of either table"
+        );
+    }
+
+    /// **The level-one table names exactly the leaf the kernel allocated, at the span it holds.**
+    ///
+    /// The descriptor shares its low word with `SPAN`, so an address bit there would make the SMMU
+    /// read a leaf larger than the frame; a lost high half walks another table. The configuration
+    /// word must tell the SMMU the same width and split the kernel indexes by.
+    ///
+    /// Falsification: replayable `kernel/falsifications/arch.aarch64.iommu.proofs.the_level_one_table_names_exactly_the_leaf.patch`
+    #[kani::proof]
+    fn the_level_one_table_names_exactly_the_leaf() {
+        let leaf: u64 = kani::any();
+        let stream_id_bits: u32 = kani::any();
+        // A leaf is a page frame in RAM.
+        kani::assume(leaf % page_frames::FRAME_SIZE == 0);
+        kani::assume(leaf < 1 << PA_BITS);
+        kani::assume((STREAM_TABLE_SPLIT..=STREAM_ID_BITS_MAXIMUM).contains(&stream_id_bits));
+
+        let descriptor = level_one_descriptor(leaf);
+        assert!(
+            descriptor & !0x1f == leaf,
+            "L2Ptr is the leaf entire, high half included, and nothing else"
+        );
+        assert!(
+            descriptor & LEVEL_ONE_DESCRIPTOR_ADDRESS == leaf,
+            "reading the descriptor back gives the leaf it was written with"
+        );
+        assert!(
+            1u64 << ((descriptor & 0x1f) - 1) == STREAMS_PER_LEAF as u64,
+            "SPAN says the leaf holds exactly the streams one frame of STEs holds"
+        );
+
+        let configuration = stream_table_configuration(stream_id_bits);
+        assert!(
+            configuration & 0x3f == stream_id_bits,
+            "LOG2SIZE is the width the kernel bounds requester ids by"
+        );
+        assert!(
+            (configuration >> 6) & 0x1f == STREAM_TABLE_SPLIT,
+            "SPLIT is the bit the kernel divides a requester id at"
+        );
+        assert!(
+            (configuration >> 16) & 0b11 == 0b01 && configuration & !0x3_07ff == 0,
+            "FMT is two-level, and no other bit is set"
         );
     }
 }
