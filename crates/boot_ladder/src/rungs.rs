@@ -33,6 +33,16 @@ pub const MACHINE: &str = "nife machine: ";
 /// distinguishable from "ran the set and passed".
 pub const SELF_TEST: &str = "nife self-test: ";
 
+/// **The head of the line naming a thread the self-test kills on purpose**, before its death is
+/// taken: `nife self-test subject: thread 19, which the userspace check kills on purpose`.
+///
+/// Deliberately not [`SELF_TEST`] with more after it: a matcher that finds the verdict by its head
+/// must not find this line. [`crate::verdict::SubjectLine`] renders it and
+/// [`crate::verdict::subject_thread`] reads it back.
+///
+/// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
+pub const SELF_TEST_SUBJECT: &str = "nife self-test subject: thread ";
+
 /// **What a red verdict says before it names the checks that failed.**
 ///
 /// Uppercase, the tree's word for a failed check, which other boot lines also use. It appears

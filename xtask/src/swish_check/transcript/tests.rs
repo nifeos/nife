@@ -234,3 +234,75 @@ fn a_missing_greeting_stays_missing_beside_kernel_vocabulary() {
         Marker::Absent { .. }
     ));
 }
+
+/// **A boot whose only kills are the self-test's named subjects**, in the shape aarch64 prints:
+/// the kernel's reports first, as they happen, and the progenitor's buffered transcript after.
+const NAMED_KILLS: &str = "\
+nife: handing the system to the userspace progenitor.
+
+  user thread 19 killed: Data abort from a lower EL
+    pc 0x0000000060000054   far 0xffff0000403961e0   user sp 0x000000007ffeff60   esr 0x9200000f
+  the kernel is fine.
+
+  user thread 8589934611 killed: Data abort from a lower EL
+    pc 0x0000000060000054   far 0x0000000000a50000   user sp 0x000000007ffeff60   esr 0x92000005
+  the kernel is fine.
+nife self-test subject: thread 19, which the userspace check kills on purpose
+  self-test       : userspace  ok      a program at user level read 0xffff0000403961e0: killed, and the kernel survived
+nife self-test subject: thread 8589934611, which the supervised check kills on purpose
+nife self-test: 12 of 15 passed, 3 absent: device_interrupt clock trng
+nife capability shell. naming a resource in a command IS granting it.
+";
+
+/// The self-test's named kills leave nothing behind for the kill check or the shuffle test.
+#[test]
+fn the_self_tests_named_kills_are_excluded_and_nothing_else_is() {
+    assert_eq!(killed_thread("  user thread 19 killed: Data abort"), Some(19));
+    assert_eq!(killed_thread("  user thread 16 killed: vector 14 (page fault)"), Some(16));
+    assert_eq!(killed_thread("a user thread is killed: not a report"), None);
+    let kept = without_deliberate_kills(NAMED_KILLS);
+    assert!(!kept.contains("killed: Data abort"), "{kept}");
+    assert!(
+        !KERNEL_FAULT_TOKENS.iter().any(|t| kept.contains(t)),
+        "a named kill's whole report goes: {kept}"
+    );
+    assert!(!kernel_wrote_during_boot(&kept));
+    assert!(kept.contains("nife self-test: 12 of 15 passed"));
+}
+
+/// **The login-dies shape** (milestone 233 (`login` dies on every boot, and the boot says it is
+/// ready)): a kill of a thread the self-test did not name stays in the transcript beside the named
+/// ones, so the killed-thread check still fails the boot.
+#[test]
+fn a_kill_of_an_unnamed_thread_still_fails_beside_the_named_ones() {
+    let login_dies = NAMED_KILLS.replace(
+        "nife capability shell.",
+        "\n  user thread 23 killed: Data abort from a lower EL\n    pc 0x0000000060001000   far 0x0000000000000000   user sp 0x000000007ffeff60   esr 0x92000006\n  the kernel is fine.\nnife capability shell.",
+    );
+    let kept = without_deliberate_kills(&login_dies);
+    assert!(kept.contains("user thread 23 killed: "), "{kept}");
+    assert!(!kept.contains("user thread 19 killed: "), "{kept}");
+    let failure = crate::swish_check::boot::kernel_fault_failure(&kept)
+        .expect("an unnamed kill fails the gate");
+    assert!(failure.contains("user thread 23 killed"), "{failure}");
+    assert!(kernel_wrote_during_boot(&kept));
+}
+
+/// A named thread whose report another writer shredded loses its first line alone, and a report
+/// whose first line names nothing the self-test named is left whole.
+#[test]
+fn a_shredded_named_report_loses_only_its_first_line() {
+    let shredded = "\
+  user thread 19 killed: Data abort from a lower EL
+pc 0x0000000060000054   far 0xffff0000403961e0   user sp 0x000000007ffeff60   esr 0x9200000f
+the kernel iis fnit: constiner.
+nife self-test subject: thread 19, which the userspace check kills on purpose
+";
+    let kept = without_deliberate_kills(shredded);
+    assert!(!kept.contains("user thread 19 killed: "), "{kept}");
+    assert!(kept.contains("esr 0x9200000f"), "{kept}");
+    assert_eq!(
+        without_deliberate_kills(INTERLEAVED_CI_TRANSCRIPT),
+        INTERLEAVED_CI_TRANSCRIPT
+    );
+}

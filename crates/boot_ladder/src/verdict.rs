@@ -9,7 +9,7 @@
 
 use core::fmt;
 
-use crate::{SELF_TEST, SELF_TEST_ABSENT, SELF_TEST_CHECKS, SELF_TEST_FAILED};
+use crate::{SELF_TEST, SELF_TEST_ABSENT, SELF_TEST_CHECKS, SELF_TEST_FAILED, SELF_TEST_SUBJECT};
 
 /// How many checks there are: the length of [`SELF_TEST_CHECKS`].
 ///
@@ -271,6 +271,44 @@ impl fmt::Display for CheckLine<'_> {
     }
 }
 
+/// **A thread the self-test kills on purpose, named before its death is taken**:
+/// `nife self-test subject: thread 19, which the userspace check kills on purpose`.
+///
+/// The thread id is decimal, as the kernel prints it in its own report of the kill (`user thread
+/// 19 killed: ...`), so a gate can match the two by number. `swish-check` excludes from its
+/// killed-thread check exactly the threads these lines name, and fails every other kill;
+/// [`subject_thread`] reads the number back.
+///
+/// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
+pub struct SubjectLine<'a> {
+    /// The thread's id, as the kernel reports it.
+    pub thread: u64,
+    /// The check that kills it, from [`SELF_TEST_CHECKS`].
+    pub check: &'a str,
+}
+
+impl fmt::Display for SubjectLine<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{SELF_TEST_SUBJECT}{}, which the {} check kills on purpose",
+            self.thread, self.check
+        )
+    }
+}
+
+/// **The thread a [`SubjectLine`] names**, from anywhere in `line`, or `None` when `line` carries
+/// no subject line.
+///
+/// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
+pub fn subject_thread(line: &str) -> Option<u64> {
+    let at = line.find(SELF_TEST_SUBJECT)? + SELF_TEST_SUBJECT.len();
+    let digits = line[at..]
+        .find(|c: char| !c.is_ascii_digit())
+        .map_or(&line[at..], |end| &line[at..at + end]);
+    digits.parse().ok()
+}
+
 #[cfg(test)]
 mod tests {
     extern crate std;
@@ -338,6 +376,26 @@ mod tests {
         let forged = Tally::from_packed(both | (both << PACKED_FIELD_BITS));
         assert_eq!(forged.to_words(), [0, both, 0]);
         assert_eq!(Tally::from_packed(u64::MAX).to_words()[1].count_ones() as usize, CHECKS);
+    }
+
+    /// A subject line reads back as the thread it names, and nothing else does.
+    #[test]
+    fn a_subject_line_names_its_thread() {
+        let line = format!(
+            "{}",
+            SubjectLine {
+                thread: 8_589_934_611,
+                check: "supervised",
+            }
+        );
+        assert_eq!(
+            line,
+            "nife self-test subject: thread 8589934611, which the supervised check kills on purpose"
+        );
+        assert_eq!(subject_thread(&line), Some(8_589_934_611));
+        assert_eq!(subject_thread("  user thread 19 killed: Data abort"), None);
+        assert_eq!(subject_thread("nife self-test subject: thread x"), None);
+        assert!(!line.contains(SELF_TEST), "a subject line is not a verdict line");
     }
 
     /// A check has an outcome once it is recorded, whatever the outcome, and recording one check

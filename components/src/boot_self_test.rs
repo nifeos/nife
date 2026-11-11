@@ -37,7 +37,7 @@ use boot_ladder::kernel_half::{KernelHalf, flag, word};
 use boot_ladder::self_test_program::{
     self as contract, entropy_source, header, image, image_virtual_address, message, slot,
 };
-use boot_ladder::verdict::{CheckLine, Outcome, Tally, check};
+use boot_ladder::verdict::{CheckLine, Outcome, SubjectLine, Tally, check};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
     Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,
@@ -150,6 +150,13 @@ impl Report {
                 detail,
             },
         );
+    }
+
+    /// **Name a thread this program is about to see die on purpose**, so a gate reading the
+    /// kernel's report of the kill can tell it from a death nobody meant
+    /// (`boot_ladder::SELF_TEST_SUBJECT`). Written before the death is taken.
+    fn subject(&mut self, thread: u64, check: &'static str) {
+        self.line(CHECK_LINES_END, SubjectLine { thread, check });
     }
 
     /// Record that the machine has nothing for the check to test, and why.
@@ -479,6 +486,7 @@ fn userspace(r: &mut Report, half: &KernelHalf, images: &Images) {
             return;
         }
     };
+    r.subject(child.tid, "userspace");
     let Some((event, _, _, at)) = child.death(2) else {
         child.end();
         r.record(
@@ -573,9 +581,16 @@ type Death = (u64, u64, u64, u64);
 /// **One supervised child that faults, its death received, and its region reaped**: the round
 /// `supervised` judges once and `teardown` twice. Returns the death message and the child's thread
 /// id, or which step refused.
-fn supervised_round(bytes: &[u8]) -> Result<(Death, u64), &'static str> {
+///
+/// The child is named in the transcript as `check`'s subject before its death is taken.
+fn supervised_round(
+    r: &mut Report,
+    bytes: &[u8],
+    check: &'static str,
+) -> Result<(Death, u64), &'static str> {
     let child = spawn(bytes, &[], &[], [READ_ADDRESS_ROLE, UNMAPPED_ADDRESS, 0])?;
     let tid = child.tid;
+    r.subject(tid, check);
     let Some(message) = child.death(2) else {
         child.end();
         return Err("the child did not die within 2s");
@@ -598,7 +613,7 @@ fn supervised(r: &mut Report, images: &Images) {
         );
         return;
     };
-    let ((event, tid, pc, address), child) = match supervised_round(bytes) {
+    let ((event, tid, pc, address), child) = match supervised_round(r, bytes, "supervised") {
         Ok(m) => m,
         Err(why) => {
             r.record(check!("supervised"), false, format_args!("{why}"));
@@ -627,9 +642,9 @@ fn supervised(r: &mut Report, images: &Images) {
 fn teardown(r: &mut Report, images: &Images) {
     let bytes = images.bytes[image::KERNEL_TEST_SUBJECT];
     let before = free_frames() as i64;
-    let first = supervised_round(bytes);
+    let first = supervised_round(r, bytes, "teardown");
     let after_first = free_frames() as i64;
-    let second = supervised_round(bytes);
+    let second = supervised_round(r, bytes, "teardown");
     let after_second = free_frames() as i64;
     let (first_cost, second_cost) = (before - after_first, after_first - after_second);
     match (first, second) {

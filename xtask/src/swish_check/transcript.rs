@@ -259,5 +259,52 @@ pub(super) fn boot_claim_complaint(
     }
 }
 
+/// How many lines after a kill report's first line [`without_deliberate_kills`] looks for its
+/// last, `the kernel is fine.`: the register line, `x86_64`'s page-walk lines and the end, with room
+/// for a line another writer spliced in.
+const KILL_REPORT_LINES: usize = 12;
+
+/// **The thread a kernel kill report's first line names**, from `  user thread 19 killed: ...`;
+/// `None` for any other line, a shuffled first line included.
+pub(super) fn killed_thread(line: &str) -> Option<u64> {
+    let rest = line.trim_start().strip_prefix(KERNEL_FAULT_TOKENS[0])?;
+    let end = rest.find(KERNEL_FAULT_TOKENS[1])?;
+    rest[..end].parse().ok()
+}
+
+/// **`transcript` without the kernel's reports of the self-test's deliberate kills** (milestone
+/// 1063 (the boot self-test's spawning checks run from userspace)), the kills the architect ruled
+/// on 2026-11-11 (UTC) the gate excludes by thread id.
+///
+/// `boot_self_test` names each thread it kills on purpose in a `boot_ladder::SELF_TEST_SUBJECT`
+/// line, and runs after the hand-over, so its kills are in what every check here reads. A report
+/// whose first line names one of those threads goes, through its `the kernel is fine.` line when
+/// that is within [`KILL_REPORT_LINES`], else its first line alone. Every other report stays, so a
+/// kill of any thread the self-test did not name (`login` dying, milestone 233) still fails
+/// `kernel_fault_failure` and still counts as the kernel writing during the boot.
+pub(super) fn without_deliberate_kills(transcript: &str) -> String {
+    let named: std::collections::BTreeSet<u64> = transcript
+        .lines()
+        .filter_map(boot_ladder::verdict::subject_thread)
+        .collect();
+    let lines: Vec<&str> = transcript.split_inclusive('\n').collect();
+    let mut kept = String::with_capacity(transcript.len());
+    let mut i = 0;
+    while i < lines.len() {
+        if killed_thread(lines[i]).is_some_and(|t| named.contains(&t)) {
+            let end = lines[i + 1..]
+                .iter()
+                .take(KILL_REPORT_LINES)
+                .position(|l| l.contains(KERNEL_FAULT_TOKENS[2]))
+                .map_or(i, |at| i + 1 + at);
+            i = end + 1;
+            continue;
+        }
+        kept.push_str(lines[i]);
+        i += 1;
+    }
+    kept
+}
+
 #[cfg(test)]
 mod tests;
