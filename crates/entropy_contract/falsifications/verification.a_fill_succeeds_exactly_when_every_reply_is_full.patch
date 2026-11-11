@@ -1,0 +1,22 @@
+Falsifies `entropy_contract::verification::a_fill_succeeds_exactly_when_every_reply_is_full`.
+
+The defect: `fill_with` refuses only a reply that delivers more than it asked for, and accepts a
+short one. The standard library's caller accepts partial counts on purpose; this function promises
+the opposite, and the defect quietly leaves bytes in the slice that the service never sent.
+
+Expected to fail: the harness's `assert_eq!` on `result.is_some()` against every reply being
+full, with one reply short.
+
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
+index 6b8af5504..7e1c2fc01 100644
+--- a/crates/entropy_contract/src/lib.rs
++++ b/crates/entropy_contract/src/lib.rs
+@@ -249,7 +249,7 @@ pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Opt
+     while filled < out.len() {
+         let byte_count = (out.len() - filled).min(MAXIMUM_BYTES as usize);
+         let (first_reply_word, reply_word) = call(request(GET, byte_count as u64));
+-        if delivered_bytes(first_reply_word)? != byte_count {
++        if delivered_bytes(first_reply_word)? > byte_count {
+             return None;
+         }
+         filled += copy_delivered_bytes(byte_count, reply_word, &mut out[filled..]);
