@@ -332,9 +332,13 @@ fn a_read_reaches_the_devices_own_words_and_nothing_past_them() {
     assert!(is_clock_enabled(d.read_clock(&mut f, 5).unwrap()));
     assert_eq!(d.read_clock(&mut f, 9), None);
     assert_eq!(d.reset(1), Some((WindowName::AlwaysOn, 1)));
-    let status = d.read_reset(&mut f, 1).unwrap();
-    assert!(is_deasserted(status, ALWAYS_ON.reset_bit(1).unwrap().mask));
+    assert_eq!(d.read_reset(&mut f, 1), Some(true));
     assert_eq!(d.read_reset(&mut f, 2), None);
+    // Hold line 0 again: line 1's answer, from the same status word, does not move.
+    let zero = ALWAYS_ON.reset_bit(0).unwrap();
+    f.words[slot(WindowName::AlwaysOn)][(zero.assert_offset / 4) as usize] |= zero.mask;
+    assert_eq!(d.read_reset(&mut f, 0), Some(false));
+    assert_eq!(d.read_reset(&mut f, 1), Some(true));
 }
 
 /// The SYS words radon's firmware leaves, as the storage bench read them: `bus_root` on PLL2,
@@ -386,5 +390,228 @@ fn a_rate_is_refused_where_no_divider_reaches_it_or_no_rated_clock_exists() {
     assert_eq!(
         card.set_rate(&mut f, 50_000_000),
         Err(RateRefusal::NoRatedClock)
+    );
+}
+
+#[test]
+fn each_domain_ends_where_its_last_word_does() {
+    // The reset status words end each domain: SYS has 190 clocks and 4 reset words, STG 29 and 1,
+    // the always-on domain 14 and 1.
+    assert_eq!(domain_end(&SYSTEM_TOP_GROUP), 0x7c);
+    assert_eq!(domain_end(&SYSTEM), 0x318);
+    assert_eq!(domain_end(&ALWAYS_ON), 0x40);
+    // Domains the chip does not have, where the clocks or the assert words end last instead.
+    let clocks_last = Domain {
+        reset_assert: 0x10,
+        reset_status: 0x14,
+        resets: 32,
+        clocks: 100,
+    };
+    assert_eq!(domain_end(&clocks_last), 0x190);
+    let asserts_last = Domain {
+        reset_assert: 0x100,
+        reset_status: 0x10,
+        resets: 32,
+        clocks: 1,
+    };
+    assert_eq!(domain_end(&asserts_last), 0x104);
+}
+
+/// The TRNG's one reset line, released before anything runs.
+fn released_entropy_reset(f: &mut Fake) {
+    let bit = SYSTEM_TOP_GROUP
+        .reset_bit(entropy_source().reset(0).unwrap().1)
+        .unwrap();
+    f.words[slot(WindowName::SystemTopGroup)][(bit.assert_offset / 4) as usize] &= !bit.mask;
+}
+
+#[test]
+fn a_device_is_already_up_only_when_its_clocks_and_its_resets_both_were() {
+    // Clocks gated, reset released.
+    let mut f = Fake::new();
+    released_entropy_reset(&mut f);
+    assert!(!entropy_source().bring_up(&mut f, 1).already_up);
+    // Clocks running, reset held.
+    let mut f = Fake::new();
+    entropy_source().bring_up(&mut f, 1);
+    let bit = SYSTEM_TOP_GROUP
+        .reset_bit(entropy_source().reset(0).unwrap().1)
+        .unwrap();
+    f.words[slot(WindowName::SystemTopGroup)][(bit.assert_offset / 4) as usize] |= bit.mask;
+    assert!(!entropy_source().bring_up(&mut f, 1).already_up);
+}
+
+/// The TRNG's first clock and its reset, as `jh7110_clock_and_reset` numbers them in the STG domain.
+const ENTROPY_CLOCK: u32 = 15;
+const ENTROPY_RESET: u32 = 3;
+
+#[test]
+fn a_plan_of_clocks_alone_or_resets_alone_can_be_already_up_and_an_empty_one_cannot() {
+    let (clock_window, clock) = entropy_source().clock(0).unwrap();
+    let (reset_window, reset) = entropy_source().reset(0).unwrap();
+    let clocks_alone = Device {
+        base_physical_address: 0,
+        parts: &[Part {
+            window: WindowName::SystemTopGroup,
+            plan: &[Step::EnableClock(ENTROPY_CLOCK)],
+        }],
+        rated_clock: None,
+    };
+    let resets_alone = Device {
+        base_physical_address: 0,
+        parts: &[Part {
+            window: WindowName::SystemTopGroup,
+            plan: &[Step::DeassertReset(ENTROPY_RESET)],
+        }],
+        rated_clock: None,
+    };
+    let nothing = Device {
+        base_physical_address: 0,
+        parts: &[],
+        rated_clock: None,
+    };
+    assert_eq!(
+        (clock_window, clock),
+        (WindowName::SystemTopGroup, ENTROPY_CLOCK)
+    );
+    assert_eq!(
+        (reset_window, reset),
+        (WindowName::SystemTopGroup, ENTROPY_RESET)
+    );
+    let mut f = Fake::new();
+    clocks_alone.bring_up(&mut f, 1);
+    assert!(clocks_alone.bring_up(&mut f, 1).already_up);
+    released_entropy_reset(&mut f);
+    assert!(resets_alone.bring_up(&mut f, 1).already_up);
+    assert!(!nothing.bring_up(&mut f, 1).already_up);
+}
+
+#[test]
+fn a_step_its_domain_rejects_is_counted_refused_and_never_stored() {
+    let bad = Device {
+        base_physical_address: 0,
+        parts: &[
+            Part {
+                window: WindowName::SystemTopGroup,
+                plan: &[
+                    Step::EnableClock(9_999),
+                    Step::SelectParent {
+                        clock: 9_999,
+                        parent: 1,
+                    },
+                    Step::DeassertReset(9_999),
+                ],
+            },
+            Part {
+                window: WindowName::SystemController,
+                plan: &[Step::EnableClock(0)],
+            },
+        ],
+        rated_clock: None,
+    };
+    let mut f = Fake::new();
+    let counts = bad.bring_up(&mut f, 1);
+    assert_eq!(counts.refused, 4);
+    assert_eq!(counts.clocks_in_plan + counts.resets_in_plan, 0);
+    assert!(f.writes().is_empty());
+}
+
+#[test]
+fn a_rate_exactly_the_slowest_divider_reaches_is_served() {
+    let mut f = radon_like();
+    let card = Device::at(0x1602_0000).unwrap();
+    // 594 megahertz over 15.
+    let rate = card.set_rate(&mut f, 39_600_000).unwrap();
+    assert_eq!(rate.hertz, 39_600_000);
+    assert_eq!(clock_divider(rate.after), 15);
+}
+
+#[test]
+fn a_reply_refuses_in_the_wires_order_before_anything_is_touched() {
+    use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, SET_RATE, VERSION_QUERY, request};
+    let entropy = entropy_source().base_physical_address;
+    let mut f = Fake::new();
+    // Badge first: badge 0 and an unknown badge name no device, whatever the request.
+    assert_eq!(
+        answer(&mut f, 0, request(BRING_UP, 0), 0, 1).0,
+        Status::UnknownDevice
+    );
+    assert_eq!(
+        answer(&mut f, 0x1000_0000, request(0x7f, 9), 9, 1).0,
+        Status::UnknownDevice
+    );
+    // Then the operation: the reserved version query and an unknown number.
+    assert_eq!(
+        answer(&mut f, entropy, request(VERSION_QUERY, 0), 0, 1).0,
+        Status::UnknownOperation
+    );
+    assert_eq!(
+        answer(&mut f, entropy, request(5, 1), 1, 1).0,
+        Status::UnknownOperation
+    );
+    // Then the shape: bits 55:8, an index where none is taken, and word 1 off set rate.
+    for (w0, w1) in [
+        (request(READ_CLOCK, 0) | 1 << 20, 0),
+        (request(BRING_UP, 1), 0),
+        (request(READ_CLOCK, 0), 1),
+        (request(SET_RATE, 2), 50_000_000),
+    ] {
+        assert_eq!(
+            answer(&mut f, entropy, w0, w1, 1),
+            (Status::MalformedRequest, 0)
+        );
+    }
+    assert!(f.log.is_empty(), "a refused request read or stored nothing");
+}
+
+#[test]
+fn a_reply_carries_the_bring_up_summary_one_clock_word_and_one_reset_bit() {
+    use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, READ_RESET, request};
+    let entropy = entropy_source().base_physical_address;
+    let mut f = Fake::new();
+    let (status, word) = answer(&mut f, entropy, request(READ_RESET, 0), 0, 1);
+    assert_eq!(
+        (status, word),
+        (Status::Done, 0),
+        "held before the bring-up"
+    );
+    let (status, word) = answer(&mut f, entropy, request(BRING_UP, 0), 0, 1);
+    assert_eq!(status, Status::Done);
+    let summary = Summary::unpack(word).unwrap();
+    assert_eq!((summary.clocks_running, summary.resets_released), (2, 1));
+    assert_eq!(
+        answer(&mut f, entropy, request(READ_RESET, 0), 0, 1),
+        (Status::Done, 1)
+    );
+    let (status, word) = answer(&mut f, entropy, request(READ_CLOCK, 1), 0, 1);
+    assert_eq!(status, Status::Done);
+    assert!(is_clock_enabled(word as u32));
+    assert_eq!(
+        answer(&mut f, entropy, request(READ_CLOCK, 2), 0, 1),
+        (Status::IndexOutOfRange, 0)
+    );
+    assert_eq!(
+        answer(&mut f, entropy, request(READ_RESET, 1), 0, 1),
+        (Status::IndexOutOfRange, 0)
+    );
+}
+
+#[test]
+fn a_reply_to_set_rate_is_the_hertz_or_the_refusal() {
+    use jh7110_clock_and_reset_contract::{SET_RATE, request};
+    let mut f = radon_like();
+    let card = Device::at(0x1602_0000).unwrap().base_physical_address;
+    assert_eq!(
+        answer(&mut f, card, request(SET_RATE, 0), 50_000_000, 1),
+        (Status::Done, 49_500_000)
+    );
+    assert_eq!(
+        answer(&mut f, card, request(SET_RATE, 0), 1_000_000, 1),
+        (Status::NoRateAtOrBelow, 0)
+    );
+    let ethernet = ethernet().base_physical_address;
+    assert_eq!(
+        answer(&mut f, ethernet, request(SET_RATE, 0), 50_000_000, 1),
+        (Status::NoRatedClock, 0)
     );
 }

@@ -34,7 +34,9 @@ assert_eq!(DEVICES.len(), 5);
 
 Host tests drive every device's walk against arrays that behave as the silicon does: clocks before
 resets across domains, idempotence, a badge that names no device, an index past the device's own,
-no store outside the device's own words, and both set-rate refusals. Nothing has run on silicon.
+no store outside the device's own words, and both set-rate refusals. `answer`, the whole
+dispatch of a request, is tested for the order of its refusals (badge, operation, then a malformed
+request, each before any read or store) and for each reply word. Nothing has run on silicon.
 
 ## BUGS
 

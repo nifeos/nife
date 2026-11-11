@@ -47,10 +47,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
    JH7110 watchdog (milestone 593 (a wedged kernel resets itself)) needs to turn its clock on, and
    the entropy and Ethernet bring-ups ask the server instead.
-   The server is `components/src/jh7110_clock_and_reset_server.rs`, its wire
-   `crates/jh7110_clock_and_reset_contract` and its device table
-   `jh7110_clock_and_reset_devices`. The SD/MMC starters ask it too, and the reboot path's I2C5
-   bring-up keeps the kernel's walk until step 5 replaces that path.
+   The SD/MMC starters ask it too; the reboot path's I2C5 keeps the kernel's walk until step 5.
 3. The DesignWare GMAC control plane. Its clocks and resets come up through step 2's bring-up
    verb, and a userspace control process holds the channel and MAC pages.
    `kernel/src/designware_ethernet.rs` goes, and `kernel/Cargo.toml` stops naming the crate.
@@ -284,7 +281,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
-- **Outstanding.** Step 2: the kernel still walks five callers' plans.
+- **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
 - **Outstanding.** Step 3: `PROVEN_ON_SILICON` is `false` until radon boots #3498.
 - **Outstanding.** Step 5: `kernel/src/reboot/designware_i2c.rs` exists.
 - **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.

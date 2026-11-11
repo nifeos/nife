@@ -23,12 +23,12 @@ pub const ALL: [WindowKind; 19] = [
     crate::designware_mobile_storage::TRANSFER_KIND,
     crate::extensible_host_controller_interface::REGISTER_KIND,
     crate::extensible_host_controller_interface::WORK_KIND,
+    crate::virtual_input_output::REGISTER_KIND,
+    crate::virtual_input_output::DATA_PLANE_KIND,
     crate::jh7110_clock_and_reset::SYSTEM_TOP_GROUP_KIND,
     crate::jh7110_clock_and_reset::SYSTEM_KIND,
     crate::jh7110_clock_and_reset::ALWAYS_ON_KIND,
     crate::jh7110_clock_and_reset::SYSTEM_CONTROLLER_KIND,
-    crate::virtual_input_output::REGISTER_KIND,
-    crate::virtual_input_output::DATA_PLANE_KIND,
 ];
 
 #[cfg(test)]
