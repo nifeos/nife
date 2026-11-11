@@ -26,15 +26,15 @@ The host test `a_split_refused_for_a_full_table_leaves_the_parent_unchanged` and
 
 ## The options
 
-- **A. Keep the parent spent on a full table.** The bump-only rule existed because the kernel once
+- A. Keep the parent spent on a full table. The bump-only rule existed because the kernel once
   carved under one hold of the region lock and inserted under a second, where a rollback could
   race another core's carve. `split` is now one borrow, so that reason does not apply, and the cost
   is a permanent, compounding leak on the path closest to failing. Refused.
-- **B. Decide before mutating** (in force). Fewest moving parts, and it matches every neighbor.
-- **C. Mutate, then roll back on a failed insert.** The same outcome as B, but it writes a state
+- B. Decide before mutating (in force). Fewest moving parts, and it matches every neighbor.
+- C. Mutate, then roll back on a failed insert. The same outcome as B, but it writes a state
   and then unwrites it. A watermark that falls outside the LIFO return is the one thing a reader of
   a bump allocator is primed to distrust. Refused.
-- **D. Raise `MAXIMUM_REGIONS` instead.** It makes a full table rarer and leaves the leak in place
+- D. Raise `MAXIMUM_REGIONS` instead. It makes a full table rarer and leaves the leak in place
   for whenever it is reached. A separate question, decided on the peak line every suite run
   prints.
 
