@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-09-26
 milestone_dependencies: none
 decision_dependencies: 235
@@ -61,11 +61,13 @@ calef ruled on every fork on 2026-09-27 (UTC), relayed by the maintainer on pull
 
 ## What is built
 
-Nothing. The block is NOT-STARTED until a proposal below has a lane.
+Items 2, 3 and 7 below. Item 2 is milestone 609 (the system tests leave the kernel crate), item 3
+is `supervision_contract` and `hot_swap_contract`, and item 7 is milestone 611 (every program and
+crate belongs to a package, and every package has a home). Items 1, 4, 5 and 6 are open.
 
 ## What is left
 
-The proposals, none minted, in the recommended order. §235 has the reasoning.
+The items, in the recommended order. §235 has the reasoning.
 
 1. The image is assembled from base packages by digest (host side; waits on nothing).
    Since 2026-10-12 (UTC) this is milestone 909 (basalt composes the bootable image from its
@@ -100,6 +102,16 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
 - Open follow-ons, none of them a fork: the grouping of base services with no Linux counterpart,
   package names, and the format of a package's in-tree definition.
 - The image size quoted in §235 is a stale local build, and item 1's lane should measure a fresh one.
+
+## Follow-on
+
+- **Outstanding.** Item 4, a third party builds `greeting` with no clone of this repository: no
+  milestone carries it. Item 6, the loader's two digests and the progenitor's check of the base set,
+  stays in milestones 695 and 697, both PARTIAL. Items 1 and 5 stay in milestones 909 and 976, both
+  PARTIAL. Checked by reading those blocks' statuses and by searching `design/roadmap/` for the
+  SDK archive, which no block builds.
+- **Recorded.** Division names, package names and the grouping of base services with no Linux
+  counterpart stay open, as the BUGS section states.
 
 ## Index row
 

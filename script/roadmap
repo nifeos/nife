@@ -99,7 +99,10 @@
 # condition that would change it)). `--index` renders the five-column table to stdout for the two
 # scripts that read it as data; nothing writes it to a file, and no file holds it.
 # `--ready-branch BRANCH` fails when a block still reads IN-PROGRESS on BRANCH, which is what a
-# ready pull request must never carry (milestone 630, the comment beside it says why), and
+# ready pull request must never carry (milestone 630, the comment beside it says why). Given
+# `--against REF` and a `milestone/N-*` branch it also fails when the branch leaves milestone N's
+# block unchanged against REF, or changes it and leaves NOT-STARTED (unless the branch adds the
+# block) or IN-PROGRESS, which is what section 90 says the merge must not carry. And
 # `--selftest` proves that check against fixtures.
 # See notes/roadmap.md for both vocabularies.
 #
@@ -216,6 +219,66 @@ def ready_branch_problems(blocks, branch):
             f"with what is left, and delete the 'branch:' line; commit and push.\n"
             f"  Or, if the work is not finished: gh pr ready --undo")
     return out
+
+
+def milestone_block_problems(blocks, branch, changes):
+    """A ready `milestone/N-*` branch must move its own milestone's block off the claim's status.
+
+    `blocks` is [(file name, text)]; `changes` is {file name: git status letter} for the numbered
+    blocks the branch changes against its base. The block judged is milestone N's own, or, for a
+    renumbered lane (it keeps its branch), the changed block whose slug equals the branch's or whose
+    text names the branch, as `helpers/milestone-branch-block.sh` finds it. Three things fail:
+    no block for N, a block the branch leaves unchanged, and a changed block that still reads
+    IN-PROGRESS or NOT-STARTED. NOT-STARTED passes only on a block the branch adds, which is how a
+    lane promotes or proposes a milestone and builds none of it (section 90).
+    """
+    m = re.match(r"milestone/(\d+)-(.*)$", branch)
+    if not m:
+        return []
+    prefix, slug = f"{int(m.group(1)):04d}-", m.group(2)
+    texts = dict(blocks)
+    own = [f for f in texts if f.startswith(prefix)]
+    if not own:
+        return [f"{branch!r} names milestone {int(m.group(1))}, which has no block under "
+                f"design/roadmap/."]
+    judged = [f for f in own if f in changes]
+    if not judged:
+        judged = [f for f in changes if f in texts and (
+            f.partition("-")[2] == slug + ".md" or branch in texts[f])]
+    if not judged:
+        return [f"{branch!r} is ready for review and changes nothing in design/roadmap/{own[0]}.\n"
+                f"  The status flip rides in the same merge as the work (section 90), so a ready "
+                f"milestone branch edits its own block: BUILT with 'built: YYYY-MM-DD' (UTC) if the\n"
+                f"  work is complete and proven, PARTIAL with what remains otherwise, and a "
+                f"'## Follow-on' section either way.\n"
+                f"  A branch that builds none of the milestone (a ruling, a design, a review) "
+                f"takes another prefix, such as lane/, or stays a draft."]
+    out = []
+    for f in judged:
+        fields, _, _ = roadmap_block.frontmatter(texts[f].splitlines())
+        status = (fields or {}).get("status")
+        if status == "IN-PROGRESS" or (status == "NOT-STARTED" and changes.get(f) != "A"):
+            out.append(f"design/roadmap/{f} still reads {status} on {branch!r}, and its pull "
+                       f"request is ready for review.\n"
+                       f"  Fix: set 'status: BUILT' with 'built: YYYY-MM-DD' (UTC), or "
+                       f"'status: PARTIAL' with what is left, delete any 'branch:' line, and add the "
+                       f"'## Follow-on' section; commit and push.\n"
+                       f"  Or, if the work is not finished: gh pr ready --undo")
+    return out
+
+
+def changed_blocks(repo, against):
+    """{file name: git status letter} for the numbered blocks that differ between `against` and HEAD."""
+    out = subprocess.run(
+        ["git", "-C", repo, "diff", "--name-status", "--no-renames", against, "HEAD", "--",
+         "design/roadmap/"], capture_output=True, text=True, check=True).stdout
+    changes = {}
+    for line in out.splitlines():
+        letter, _, path = line.partition("\t")
+        name = path[len("design/roadmap/"):]
+        if "/" not in name and name[:1].isdigit() and name.endswith(".md") and letter in "AM":
+            changes[name] = letter
+    return changes
 
 
 def unheld_promotions(added, held):
@@ -357,7 +420,60 @@ def ready_branch_selftest():
         ("a Reuse line inside a code fence", "NOT-STARTED", new,
          ["```", "**Reuse:** xhci", "```"], 1),
     ]
+    mb = "milestone/9-fixture"
+    own = "0009-fixture.md"
+    moved = "0011-fixture.md"
+    mcases = [
+        # The case of #3437: the branch changed code and notes, and the block stayed NOT-STARTED.
+        ("block untouched, NOT-STARTED", [(own, block("NOT-STARTED"))], {}, 1),
+        ("block untouched, BUILT", [(own, block("BUILT"))], {}, 1),
+        ("block touched, still NOT-STARTED", [(own, block("NOT-STARTED"))], {own: "M"}, 1),
+        ("block touched, still IN-PROGRESS", [(own, block("IN-PROGRESS", mb))], {own: "M"}, 1),
+        ("block touched, BUILT", [(own, block("BUILT"))], {own: "M"}, 0),
+        ("block touched, PARTIAL", [(own, block("PARTIAL"))], {own: "M"}, 0),
+        ("block added, NOT-STARTED", [(own, block("NOT-STARTED"))], {own: "A"}, 0),
+        ("no block for the number", [("0010-other.md", block("BUILT"))], {}, 1),
+        ("a renumbered lane, slug matches",
+         [(own, block("BUILT")), (moved, block("BUILT"))], {moved: "M"}, 0),
+        ("a renumbered lane, still NOT-STARTED",
+         [(own, block("BUILT")), (moved, block("NOT-STARTED"))], {moved: "M"}, 1),
+        ("another block changed, own untouched",
+         [(own, block("NOT-STARTED")), ("0012-other.md", block("BUILT"))], {"0012-other.md": "M"}, 1),
+    ]
     failed = 0
+    for name, blocks, changes, want in mcases:
+        got = len(milestone_block_problems(blocks, mb, changes))
+        if got != want:
+            print(f"roadmap --selftest: milestone block, {name}: {got} problems, expected {want}",
+                  file=sys.stderr)
+            failed += 1
+    if milestone_block_problems([(own, block("NOT-STARTED"))], "lane/anything", {}):
+        print("roadmap --selftest: a branch outside milestone/ is judged", file=sys.stderr)
+        failed += 1
+    # changed_blocks over a real repository: the diff against the base, A and M only, top level only.
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        def git(*a):
+            subprocess.run(["git", "-C", tmp, "-c", "user.name=t", "-c", "user.email=t@t",
+                            "-c", "commit.gpgsign=false", *a], check=True, capture_output=True)
+        os.makedirs(os.path.join(tmp, "design", "roadmap", "0009-fixture"))
+        for rel, text in [("0009-fixture.md", "a"), ("0010-other.md", "a"),
+                          ("0009-fixture/done-when.md", "a")]:
+            open(os.path.join(tmp, "design", "roadmap", rel), "w").write(text)
+        git("init", "-q")
+        git("add", ".")
+        git("commit", "-qm", "base")
+        base = subprocess.run(["git", "-C", tmp, "rev-parse", "HEAD"], capture_output=True,
+                              text=True, check=True).stdout.strip()
+        for rel, text in [("0010-other.md", "b"), ("0011-new.md", "a"),
+                          ("0009-fixture/done-when.md", "b")]:
+            open(os.path.join(tmp, "design", "roadmap", rel), "w").write(text)
+        git("add", ".")
+        git("commit", "-qm", "work")
+        if changed_blocks(tmp, base) != {"0010-other.md": "M", "0011-new.md": "A"}:
+            print(f"roadmap --selftest: changed_blocks read {changed_blocks(tmp, base)}",
+                  file=sys.stderr)
+            failed += 1
     for name, status, raised, lines, want in reuse:
         got = len(reuse_problems("9-a.md", status, raised, lines))
         if got != want:
@@ -376,8 +492,8 @@ def ready_branch_selftest():
             failed += 1
     if failed:
         sys.exit(1)
-    print(f"roadmap --selftest: {len(cases)} ready-branch, {len(promo)} promotion and "
-          f"{len(reuse)} reuse fixtures behave")
+    print(f"roadmap --selftest: {len(cases)} ready-branch, {len(mcases)} milestone-block, "
+          f"{len(promo)} promotion and {len(reuse)} reuse fixtures behave")
     sys.exit(0)
 
 
@@ -385,8 +501,13 @@ if mode == "--selftest":
     ready_branch_selftest()
 
 if mode == "--ready-branch":
+    against = None
+    if len(args) == 3 and args[1] == "--against":
+        against = args[2]
+        args = args[:1]
     if len(args) != 1 or not args[0]:
-        print("roadmap: --ready-branch takes one branch name", file=sys.stderr)
+        print("roadmap: --ready-branch takes one branch name, and optionally --against REF",
+              file=sys.stderr)
         sys.exit(2)
     found = []
     for fname in sorted(os.listdir(d)):
@@ -394,11 +515,14 @@ if mode == "--ready-branch":
             with open(os.path.join(d, fname)) as fh:
                 found.append((fname, fh.read()))
     problems = ready_branch_problems(found, args[0])
+    if against:
+        problems += milestone_block_problems(found, args[0], changed_blocks(root, against))
     for p in problems:
         print(f"roadmap: {p}", file=sys.stderr)
     if problems:
         sys.exit(1)
-    print(f"roadmap: no block reads IN-PROGRESS on {args[0]!r}")
+    print(f"roadmap: no block reads IN-PROGRESS on {args[0]!r}"
+          + (f", and its milestone block moved off the claim against {against}" if against else ""))
     sys.exit(0)
 
 PROPOSED_DIR = "proposals"
