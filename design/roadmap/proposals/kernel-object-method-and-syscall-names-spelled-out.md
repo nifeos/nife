@@ -23,13 +23,13 @@ On 2026-10-08 the architect refused `retype_object` for the runtime function and
 
 ## The work
 
-Items 1 and 2 are ruled and wait for their lane. The other eleven await rulings. For each item the architect rules, one lane renames it and every live use in the same commit. Live uses are the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the notes that describe the surface as it is and the NOT-STARTED roadmap blocks. The number stays, so no caller's encoding changes. Each rename carries a `Name:` block and no `doc(alias)` of the old spelling, and the present-tense passages of the decisions move with it. A refused name stays out.
+Items 1 to 3 are ruled and wait for their lane. The other ten await rulings. For each item the architect rules, one lane renames it and every live use in the same commit. Live uses are the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the notes that describe the surface as it is and the NOT-STARTED roadmap blocks. The number stays, so no caller's encoding changes. Each rename carries a `Name:` block and no `doc(alias)` of the old spelling, and the present-tense passages of the decisions move with it. A refused name stays out.
 
 | # | Name | Where | Recommended |
 |---|---|---|---|
 | 1 | `retype_obj_from` | `process_builder`, the helper every builder calls; local aliases in `login`, `user_timetable_keeper`, `system_initializer`; the `retype_obj` helper in `confined_fuzzer_tests.rs` | Ruled 2026-11-11 (UTC), not yet applied: `retype_into_kernel_object_from`, with parameters spelled out as `memory_region` and `object_type`. Its pair `retype_page_frame_from` becomes `retype_into_page_frame_from`, with parameter `memory_region`. The aliases and the `retype_obj` test helper move with them |
 | 2 | `memory_region_retype_obj` | kernel handler in `kernel/src/syscall/retype.rs`; one test name | Ruled 2026-11-11 (UTC), not yet applied: `memory_region_retype_object`, matching `memory_region_retype` and `memory_region_split`. The test `the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification` becomes `the_rights_are_101s_and_retype_object_mints_a_full_rights_notification` |
-| 3 | `abi::objtype` | the module of kernel object kinds, and the argument word in every `RETYPE_OBJECT` doc | `abi::object_type`; "objtype" joins two abbreviations |
+| 3 | `abi::objtype` | the module of kernel object kinds, and the argument word in every `RETYPE_OBJECT` doc | Ruled 2026-11-11 (UTC), not yet applied: `abi::object_type`. The numbers do not change. The module doc's "a page of untyped" becomes "memory region" |
 | 4 | `address_space::MAP_RO` | `MAP_INTO`'s read-only mapping word | `MAP_READ_ONLY` |
 | 5 | `address_space::MAP_RW` | the read-write word | `MAP_READ_WRITE` |
 | 6 | `interrupt::ACK` | method 1 on an interrupt capability | `ACKNOWLEDGE`; the runtime wrapper is already `interrupt_acknowledge` |
