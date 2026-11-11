@@ -64,8 +64,8 @@ name: architect label
 on:
   # Same three types `coe-architect-label.yml` listens for, and the same reason: only a new commit
   # can change what the diff says, so `labeled`/`unlabeled`/`ready_for_review` would cost a run for
-  # no chance of a different answer (this label is never removed by this job, so `unlabeled` in
-  # particular has nothing to react to). No draft-skip condition: a lane's first act is a draft
+  # no chance of a different answer (this job removes the label only when a new commit stops a
+  # rule firing, so `unlabeled` in particular has nothing to react to). No draft-skip condition: a lane's first act is a draft
   # pull request (AGENTS.md; DECISIONS §90 (the claim is a draft pull request; the status flip is
   # a gate)), and the whole point of a diff-reading check is to tell a lane about its own syscall
   # or dependency change before it asks to be reviewed, not after.
@@ -88,8 +88,8 @@ permissions:
 # asks "what did THIS push add" so it can tell a re-added label from a human's removal), so
 # cancelling the older one can silently drop a detection rather than just being late with it. This
 # workflow has no such split: every run here diffs the same two things, the pull request's base sha
-# and its current head, regardless of which event triggered it, and it never removes the label
-# either, so an in-flight run superseded by a newer push is answering a question a newer run is
+# and its current head, regardless of which event triggered it, and what it adds or removes
+# follows from that diff alone, so an in-flight run superseded by a newer push is answering a question a newer run is
 # about to answer again from scratch. Cancelling it costs nothing this job needs and saves a
 # runner-minute on every force-push.
 concurrency:
@@ -157,24 +157,35 @@ jobs:
             echo "add=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          base="$(helpers/scope-merge-base.sh \
-              "$BASE_REF" \
-              "$BASE_SHA" 2>/dev/null || true)"
+          # The base branch's live tip (`helpers/scope-merge-base.sh` has why, #1416), the
+          # payload's sha only if that ref is missing. The rules diff HEAD from EVERY merge base
+          # with it and keep what each base yields (`--against`): one `git merge-base` picks a base
+          # at random when a branch merged another branch main also merged, and main's own edits
+          # then read as this pull request's (#3416, #3167). Each open pull request that carries
+          # `architect-ruled` and not `held-by-lane` goes in as `--ruled N:SHA`, so a file this
+          # branch carries byte for byte from one of them is not asked again (#3450).
+          if git rev-parse --verify --quiet "origin/$BASE_REF^{commit}" >/dev/null; then
+            main_ref="origin/$BASE_REF"
+          else
+            main_ref="$BASE_SHA"
+          fi
+          set --
+          for pair in $(helpers/architect-ruled-heads.sh "$GITHUB_REPOSITORY" "$PR_NUMBER"); do
+            set -- "$@" --ruled "$pair"
+          done
           # **A run that examined nothing routes to a person; it never reads as "no rule fired"**
           # (milestone 641 (a mechanism that reports clean says over how many units, and zero is
-          # loud), provisional). Both cases below used to set add=false: no base to diff, and the
-          # rules helper crashing, whose exit (Python's 1) was the same as "nothing matched" and was
-          # then swallowed by `|| true`. The helper now crashes with 3, and anything above 1 labels.
-          if [ -z "$base" ]; then
+          # loud), provisional). The rules helper crashes with 3 and exits 4 when there is no
+          # merge base; anything above 1 labels.
+          echo "architect-label: diffing HEAD against every merge base with $main_ref"
+          rc=0
+          err="$RUNNER_TEMP/architect-label-rules.err"
+          report="$(python3 helpers/architect-label-rules.py --against "$main_ref" HEAD "$@" 2>"$err")" || rc=$?
+          cat "$err" >&2
+          if [ "$rc" -eq 4 ]; then
             report="unexamined: no base to diff against, so no rule read this pull request"
-          else
-            echo "architect-label: diffing merge-base $base (origin/$BASE_REF)..HEAD"
-            rc=0
-            report="$(git diff --unified=1000000 "$base" HEAD | \
-                python3 helpers/architect-label-rules.py --base-rev "$base")" || rc=$?
-            if [ "$rc" -gt 1 ]; then
-              report="unexamined: helpers/architect-label-rules.py exited $rc (see this run's log), so no rule read this pull request"
-            fi
+          elif [ "$rc" -gt 1 ]; then
+            report="unexamined: helpers/architect-label-rules.py exited $rc (see this run's log), so no rule read this pull request"
           fi
           if [ -n "$report" ]; then
             echo "architect-label: fired:"
@@ -188,6 +199,11 @@ jobs:
           else
             echo "architect-label: nothing in this diff matched a rule"
             echo "add=false" >> "$GITHUB_OUTPUT"
+            # Only a clean exit 1 can take back the labeler's own flag: no rule fired from any
+            # merge base, and no finding was dropped as covered by another pull request's ruling.
+            if [ "$rc" -eq 1 ] && ! grep -q "is covered by" "$err"; then
+              echo "unflag=true" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       # **Never fails the build, same as `coe-architect-label.yml`'s label step and for the same
@@ -198,7 +214,7 @@ jobs:
       # remote `gh` can infer from (it does check the repository out here, but not via a remote
       # named the same as `github.repository`'s normalized form, and the earlier failure cost a
       # whole labeler silently doing nothing for a day), so naming it is cheap insurance either way.
-      - name: Add needs-architect (never removes it)
+      - name: Add needs-architect
         if: steps.rules.outputs.add == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -219,6 +235,23 @@ jobs:
             echo "architect-label: not fatal -- a human reading the diff still sees the change." >&2
           fi
           exit 0
+
+      # **Take back this labeler's own flag, and nothing else.** On #3450 a merge of `main` emptied
+      # the decision diff this job had matched, the label stayed, and calef cleared a hold that had
+      # nothing to rule. `helpers/architect-label-unflag.sh` removes `needs-architect` only when a bot
+      # added it, no ruling is recorded and no question is open, and posts one comment naming the
+      # rule that no longer matches; its jq file lists every condition. It never removes a label a
+      # person added and never touches `architect-ruled`. Never fails the job, like the add step.
+      - name: Remove a needs-architect this labeler added, once no rule matches
+        # The payload's labels only spare a call on the many pull requests without the label; the
+        # helper reads them live before it acts.
+        if: steps.rules.outputs.unflag == 'true' && contains(github.event.pull_request.labels.*.name, 'needs-architect')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          helpers/architect-label-unflag.sh "$PR_NUMBER" "$REPO" || true
 
       # **The one comment, marker-guarded so it posts once.** The composition and the marker-guard
       # both live in `helpers/architect-label-comment.sh` (its own header has the reasoning,
