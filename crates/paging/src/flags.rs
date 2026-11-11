@@ -141,6 +141,14 @@ impl Flags {
         Flags(ACCESS_USER | ACCESS_WRITE | ACCESS_DEVICE)
     }
 
+    /// **[`user_device`](Self::user_device) without the write**: device-typed, user readable, never
+    /// writable and never executable. For a window a process reads status from and must not
+    /// change, such as the JH7110's SYS syscon, whose PLL words the clock and reset server reads to
+    /// compute a rate. Name: provisional.
+    pub const fn user_device_read_only() -> Self {
+        Flags(ACCESS_USER | ACCESS_DEVICE)
+    }
+
     /// **[`write_combining`](Self::write_combining) for a driver at user level**: a userspace
     /// framebuffer driver's view of its aperture (`framebuffer_driver`). Everything
     /// [`user_device`](Self::user_device) is, plus permission to gather stores, and the same
