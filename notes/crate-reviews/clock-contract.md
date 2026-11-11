@@ -43,11 +43,12 @@ Each by a path dependency with `version = "0.1.0"`: `kernel` (the clock service 
 `components` declare the pair of `INTERFACE_ID` and `VERSION` in their `INTERFACES` note: every
 program of `disk-tools`, `process-tools` and `core-tools`.
 
-Two more readers reach the crate by its path, not by Cargo:
+Two more readers reach the crate outside its dependency lines:
 
-- The standard library. `cargo xtask std-src` copies `crates/clock_contract/src/lib.rs` verbatim to
-  `sys/pal/nife/clockproto.rs` in the generated `std` source (`xtask/src/farm/generate.rs`, stamped
-  by `xtask/src/farm/stamp.rs`), and the time support in
+- The standard library. `cargo xtask std-src` copies the crate's `src/lib.rs` verbatim to
+  `sys/pal/nife/clockproto.rs` in the generated `std` source, from the directory `cargo metadata`
+  gives for the package (`xtask/src/farm/copied.rs`), so a pinned crate is read from Cargo's
+  checkout; the time support in
   `patches/std-nife/overlay/std/src/sys/time/nife.rs` reads `NANOS_PER_SEC`, `wall_nanos`,
   `Reading::offset_nanos` and `state::is_known` from that copy.
 - The tooling. `script/interleaving-check` and `.github/workflows/ci.yml` run the loom models.
