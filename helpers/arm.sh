@@ -15,6 +15,12 @@
 # back: armed means a merge queue entry exists or `autoMergeRequest` is not null. Neither is exit 1
 # and a line saying so.
 #
+# A pull request whose last removal from the queue was `failed_checks`, at the head it still has, is
+# refused unless the failure is a known flake: a failed merge-group job's log
+# (`gh run view <run> --log-failed`) matches a signature in helpers/known-flakes.tsv. A push lifts the
+# refusal, since the ejected head is then no longer the head. Other removals (`manual`, `merged`, a
+# conflict) are not refused here. ARM_KNOWN_FLAKES replaces the list, for the selftest only.
+#
 # `--despite-conflict "<why>"` is the override: it arms over a reported conflict, after posting the
 # reason as a comment on the pull request, since notes/merge-queue/conflict-precheck.md asks a lane
 # that arms over a conflict to say why there. It refuses an empty reason, and a comment that does not
@@ -35,6 +41,11 @@
 # while queued; that is why the queue entry is read too (helpers/pr-queue-state.sh; `gh pr view
 # --json` has no queue field). Arming a pull request by hand with
 # `gh pr merge --auto` stays possible; it is only no longer what the briefs name.
+#
+# On 2026-11-10 #3436 was ejected at 22:49 UTC because swish-check failed with "the progenitor is
+# out of memory". It was re-armed at 00:18 at the same head with nothing fixed, and failed the same
+# way. A real failure fails again at the same
+# head, so re-arming one only spends a group build; the refusal leaves it for its lane.
 #
 # ARM_VERIFY_TRIES (default 5) and ARM_VERIFY_SLEEP (default 2 seconds) bound the read-back, because
 # GitHub can take a moment to show an entry.
@@ -96,6 +107,44 @@ armed() { # reads helpers/pr-queue-state.sh's JSON on stdin; exit 0 when queued 
 if printf '%s' "$view" | armed; then
 	echo "$me: #$pr already armed."
 	exit 0
+fi
+
+# The ejection check. The last removal, its group commit and the group's second parent, which is the
+# pull request's head when the group was built (helpers/needs-maintainer.jq's nm_ejected reads the
+# same fields). A removal with no group commit cannot say which head it was, so it is not refused.
+ejection_jq='.data.repository.pullRequest as $p | ($p.removed.nodes[-1] // null) as $r
+	| if $r != null and $r.reason == "failed_checks"
+	     and ($r.beforeCommit.parents.nodes[1].oid // null) == $p.headRefOid
+	  then "\($r.createdAt) \($r.beforeCommit.oid) \($p.headRefOid)" else "" end'
+if ! ejection="$(gh api graphql -F owner='{owner}' -F name='{repo}' -F n="$pr" \
+	-f query='query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){headRefOid removed:timelineItems(last:1,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){nodes{... on RemovedFromMergeQueueEvent{createdAt reason beforeCommit{oid parents(first:2){nodes{oid}}}}}}}}}' \
+	2>/dev/null)" || ! ejection="$(printf '%s' "$ejection" | jq -r "$ejection_jq" 2>/dev/null)"; then
+	echo "$me: NOT ARMED. could not read #$pr's last removal from the merge queue." >&2
+	exit 1
+fi
+if [ -n "$ejection" ]; then
+	read -r ejected_at group head <<ENDEJECTION
+$ejection
+ENDEJECTION
+	flakes="${ARM_KNOWN_FLAKES:-$here/known-flakes.tsv}"
+	matched=
+	if grep -q '^[^#]' "$flakes" 2>/dev/null; then
+		logs="$(gh api "repos/{owner}/{repo}/actions/runs?head_sha=$group&event=merge_group&per_page=100" 2>/dev/null |
+			jq -r '.workflow_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' 2>/dev/null |
+			while read -r run; do gh run view "$run" --log-failed 2>/dev/null; done)"
+		matched="$(grep '^[^#]' "$flakes" | while IFS='	' read -r name signature record; do
+			[ -n "$signature" ] || continue
+			if printf '%s\n' "$logs" | grep -qE -- "$signature"; then
+				printf '%s (%s)\n' "$name" "$record"
+				break
+			fi
+		done)"
+	fi
+	if [ -z "$matched" ]; then
+		echo "$me: NOT ARMED. #$pr was ejected from the merge queue at $ejected_at for failed_checks, at head $head, which is still its head, and no failed merge-group job of group $group matches a known flake in helpers/known-flakes.tsv. The same head fails the same way: hand it to its lane, whose pushed fix lifts this. If the failure is a flake, record it in a note and add its signature to the list first." >&2
+		exit 1
+	fi
+	echo "$me: #$pr was ejected for failed_checks at this head, and the failure matches the known flake $matched; re-arming."
 fi
 
 # The conflict check. Exit 0 clean, 1 conflict, 2 could not tell (script/queue-conflicts).

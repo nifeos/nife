@@ -582,7 +582,7 @@ nm_comment() {
 
 $runs
 
-Hand it to its lane: a pushed fix, or the conflict resolved, takes this label off. If the failure was a flake, re-arm it (\`helpers/arm.sh $1\`); back in the queue takes the label off too."
+Hand it to its lane: a pushed fix, or the conflict resolved, takes this label off. If the failure is a known flake, re-arm it (\`helpers/arm.sh $1\`), which refuses this head unless a failed job's log matches \`helpers/known-flakes.tsv\`; back in the queue takes the label off too."
 		;;
 	conflict)
 		head=$(printf '%s' "$c" | jq -r '.head')

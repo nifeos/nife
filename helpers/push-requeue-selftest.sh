@@ -7,7 +7,9 @@
 # `dequeuePullRequest` clears `queued`; its `pr merge` sets `queued` (a CLEAN pull request enqueues
 # directly, so `autoMergeRequest` stays null) unless STUB_MERGE_NOOP is set, which makes the re-arm a
 # no-op and is the falsification: with it set, the re-arm cases must fail. Every call is logged to
-# $tmp/log so the order (dequeue, push, merge) can be asserted.
+# $tmp/log so the order (dequeue, push, merge) can be asserted. `removed`, when present, is the pull
+# request's last removal from the queue as GraphQL gives it; `runlog` is what `gh run view
+# --log-failed` prints for the group's one failed run.
 
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 root="$(dirname "$here")"
@@ -22,14 +24,18 @@ d="$STUB_DIR"
 echo "gh $*" >>"$d/log"
 get() { cat "$d/$1" 2>/dev/null; }
 pr() {
-	jq -n --arg q "$(get queued)" --arg a "$(get auto)" --arg dr "$(get draft)" --arg labels "$(get labels)" '
-		{number: 42, id: "PR_42", state: "OPEN", isDraft: ($dr == "true"),
+	jq -n --arg q "$(get queued)" --arg a "$(get auto)" --arg dr "$(get draft)" --arg labels "$(get labels)" \
+		--argjson removed "$(get removed || echo null)" '
+		{number: 42, id: "PR_42", state: "OPEN", isDraft: ($dr == "true"), headRefOid: "hhhh",
+		 removed: {nodes: (if $removed == null then [] else [$removed] end)},
 		 mergeQueueEntry: (if $q == "true" then {state: "QUEUED"} else null end),
 		 autoMergeRequest: (if $a == "true" then {enabledAt: "x"} else null end),
 		 labels: {nodes: ($labels | split(" ") | map(select(. != "") | {name: .}))}}'
 }
 case "$*" in
 *dequeuePullRequest*) echo false >"$d/queued" ;;
+"api repos/"*"/actions/runs?head_sha=gggg"*) echo '{"workflow_runs":[{"id":7,"conclusion":"failure"},{"id":8,"conclusion":"success"}]}' ;;
+"run view 7 --log-failed") get runlog ;;
 "api graphql"*)
 	[ -z "$STUB_GRAPHQL_FAIL" ] || exit 1
 	if [ -e "$d/noPR" ]; then
@@ -88,7 +94,7 @@ run() {
 	fi
 }
 state() { # queued auto labels draft
-	rm -f "$tmp/log" "$tmp/noPR"
+	rm -f "$tmp/log" "$tmp/noPR" "$tmp/removed" "$tmp/runlog"
 	printf '%s\n' "$1" >"$tmp/queued"; printf '%s\n' "$2" >"$tmp/auto"
 	printf '%s\n' "$3" >"$tmp/labels"; printf '%s\n' "$4" >"$tmp/draft"
 }
@@ -242,6 +248,47 @@ run "unknown argument" nonzero "usage" -- "$root/helpers/arm.sh" 42 --force
 state false false "" false
 ARM_QUEUE_CHECK="$tmp/check-unknown" run "check could not tell: armed, and says so" 0 "armed unchecked" -- "$root/helpers/arm.sh" 42
 check "check could not tell: merge called" logged "pr merge 42 --auto --merge"
+
+# 10b. A pull request ejected for failed_checks at the head it still has is refused, unless a failed
+# group job's log matches a known flake. `removed` is the last removal; its group `gggg` has the
+# head `hhhh` as its second parent. The list is a fixture, so the case does not depend on what
+# helpers/known-flakes.tsv holds today.
+printf '# fixture\nprogenitor-oom\tthe progenitor is out of memory\tnotes/swish-check-flake.md\n' >"$tmp/flakes"
+ARM_KNOWN_FLAKES="$tmp/flakes"
+export ARM_KNOWN_FLAKES
+ejected() { # reason second-parent
+	printf '{"createdAt":"2026-11-10T22:49:19Z","reason":"%s","beforeCommit":{"oid":"gggg","parents":{"nodes":[{"oid":"mmmm"},{"oid":"%s"}]}}}' "$1" "$2" >"$tmp/removed"
+}
+state false false "" false
+ejected failed_checks hhhh
+echo "swish-check: top: could not spawn (the prompt never echoed)" >"$tmp/runlog"
+run "ejected at this head, no flake: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+check "ejected, no flake: the refusal names the ejection" sh -c "printf '%s' \"\$1\" | grep -q 'failed_checks, at head hhhh'" _ "$out"
+check "ejected, no flake: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+check "ejected, no flake: the group's failed log was read" logged "run view 7 --log-failed"
+state false false "" false
+ejected failed_checks hhhh
+echo "swish-check: top: could not spawn (the progenitor is out of memory)" >"$tmp/runlog"
+run "ejected at this head, a known flake: armed" 0 "known flake progenitor-oom" -- "$root/helpers/arm.sh" 42
+check "ejected, flake: merge called" logged "pr merge 42 --auto --merge"
+state false false "" false
+ejected failed_checks hhhh
+echo "the progenitor is out of memory" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/no-such-list" run "ejected, no list: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+state false false "" false
+ejected failed_checks pppp
+run "ejected at an older head (pushed since): armed" 0 "armed" -- "$root/helpers/arm.sh" 42
+check "pushed since: no log read" sh -c "! grep -q 'run view' '$tmp/log'"
+state false false "" false
+ejected manual hhhh
+run "removed by hand at this head: armed" 0 "armed" -- "$root/helpers/arm.sh" 42
+state true false "" false
+ejected failed_checks hhhh
+run "requeue that leaves the ejected head: not re-armed" nonzero "NOT ARMED" -- "$root/script/push" --requeue
+check "requeue that leaves the ejected head: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+unset ARM_KNOWN_FLAKES
+state false false "" false
+check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && [ -e '$root/'\"\$r\" ] || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
 
 # 11. No instruction names the bare arming command, milestone 1052 (a push to a queued pull request
 # re-arms it, and arming refuses a held one). The briefs, the skills, CONTRIBUTING.md, the hook's
