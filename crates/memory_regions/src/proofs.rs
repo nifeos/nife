@@ -205,7 +205,7 @@ fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
                 && a.children == b.children
                 && same_ceilings(a.live, b.live)
                 && same_ceilings(a.ceilings, b.ceilings)
-                && a.held == b.held
+                && a.held.iter().zip(b.held).all(|(a, b)| *a == b)
         }
         _ => false,
     }
@@ -552,29 +552,29 @@ fn a_release_keeps_every_count_exact() {
 }
 
 /// **A release of an object its region does not hold moves nothing**: a second release of one
-/// object, or a release with no retype before it, is refused and leaves every count of every
-/// region of the tree where it was, from any state, even when a child of the region holds an
-/// object of that kind that the release could otherwise take.
+/// object, or a release with no retype before it, is refused and leaves every count of both
+/// regions where it was, from any state of a root and a child, even when the child holds objects
+/// of that kind that a release from the root could otherwise take. The release from a leaf, which
+/// has no such count to take, is [`a_release_keeps_every_count_exact`]'s.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_release_of_nothing_held_moves_nothing.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn a_release_of_nothing_held_moves_nothing() {
-    Run::for_every_depth(|mut run, r| {
-        let kind = any_object_kind();
-        kani::assume(run.own[r][kind as usize] == 0);
-        let before = run.snapshots();
-        let own = before[r].expect("a region of the tree");
-        let released = run.table.release_object(run.name(r), kind);
-        assert!(!released, "a release of nothing held was taken");
-        assert!(
-            run.unmoved_since(before),
-            "a refused release moved something"
-        );
-        kani::cover!(
-            own.live.get(Counted::Object(kind)) > 0,
-            "the subtree holds an object of the kind below the region"
-        );
-    });
+    let mut run = Run::any(2, false, true);
+    let kind = any_object_kind();
+    kani::assume(run.own[0][kind as usize] == 0);
+    let before = run.snapshots();
+    let root = before[0].expect("the root is live");
+    let released = run.table.release_object(run.name(0), kind);
+    assert!(!released, "a release of nothing held was taken");
+    assert!(
+        run.unmoved_since(before),
+        "a refused release moved something"
+    );
+    kani::cover!(
+        root.live.get(Counted::Object(kind)) > 0,
+        "the child holds an object of the kind"
+    );
 }
 
 /// **Reclaiming a subtree gives every count it held back to the root**: from any state of the

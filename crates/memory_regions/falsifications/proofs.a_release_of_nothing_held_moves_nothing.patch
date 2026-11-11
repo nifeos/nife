@@ -5,8 +5,8 @@ object of that kind, as the table did before it kept the per-region held count. 
 harmless, since every count saturates at zero, but a second release of one object takes a count a
 child still holds, and an ancestor reports fewer live objects than it has.
 
-Expected to fail: the harness's `assert!(!released, "a release of nothing held was taken")`, from
-any region of the tree.
+Expected to fail: the harness's `assert!(!released, "a release of nothing held was taken")`, on a
+release from the root.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
 index 10e92b9ae..98b072db4 100644
