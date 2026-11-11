@@ -113,10 +113,10 @@ impl Thread {
         let tcb = unsafe {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
-                abi::memory_region::RETYPE_OBJ,
+                abi::memory_region::RETYPE_OBJECT,
                 abi::objtype::THREAD_CONTROL_BLOCK,
                 0,
-                runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJ`'s floor)
+                runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )
         };
         if tcb < 0 {
@@ -142,7 +142,7 @@ impl Thread {
         // SAFETY: `block` is the new thread's, not yet running, so this write is the only access;
         // `START` below orders it before the thread's first instruction.
         unsafe { tls::set_current_cpu_page(block, page as u64) };
-        // SAFETY: as `RETYPE_OBJ` above. The three words are the thread's first argument registers.
+        // SAFETY: as `RETYPE_OBJECT` above. The three words are the thread's first argument registers.
         let started = unsafe {
             rt::invoke(
                 tcb,

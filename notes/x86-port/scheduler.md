@@ -5,8 +5,7 @@
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the trap-path split, `TSS.RSP0`, the self-IPI, and the portable-code bugs a third architecture
 found. It exists to verify or challenge the main page. A reader who only needs to build, boot or
-test the x86_64 port should not have to open it. The directory `notes/x86-port/` and this file's
-stem are provisional names; naming is calef's.*
+test the x86_64 port should not have to open it.*
 
 *Records cited below: milestone 161 (the x86_64 kernel port), milestone 71 (the thread-start fault)
 and §9 (locking).*

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-10
 milestone_dependencies: 811
 decision_dependencies: 4, 23, 86, 130, 251, 320
@@ -59,6 +59,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 4. The NVMe admin plane, as §86 states it: a userspace admin process holds BAR0 and the admin
    queues and grants the data-path driver its doorbell page and I/O queues. The admin half of
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
+   Built: #3427.
 5. The JH7110 PMIC route, as §251 (restarting the machine is a kernel object the progenitor
    hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
    brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
@@ -69,6 +70,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
+   Built: #3426.
 7. A virtio driver starts with a mediated or a direct grant (§23 (multi-queue DMA confinement)),
    as the next section designs it. Ruled 2026-11-10 (UTC). That section lists its four pull
    requests.
@@ -278,6 +280,16 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
    is a finding.
 5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
    CI runs the direct and the mediated path on all three architectures.
+
+## Follow-on
+
+- **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
+- **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
+- **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
+- **Outstanding.** Step 2: the kernel still walks five callers' plans.
+- **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
+  `kernel/src/reboot/designware_i2c.rs` exist.
+- **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
 
 ## Index row
 

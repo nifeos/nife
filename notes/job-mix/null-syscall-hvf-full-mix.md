@@ -4,7 +4,7 @@
 
 *An appendix of [the null-syscall note](null-syscall-under-load.md), measured 2026-10-05 (UTC) on
 patagonia by `lane/null-syscall-hvf`. Patagonia is an Apple M3: four performance cores, four
-efficiency cores. The file name is provisional (see the README).*
+efficiency cores.*
 
 [The off-radon appendix](null-syscall-off-radon.md) found `null_syscall` flat on four real cores.
 That was with milestone 761 (capability lookup off the global lock) in, and with the spawn job

@@ -17,7 +17,7 @@ mapping). The method works, and it cannot reach the window it was decided to clo
 below wait for an architect.
 
 Reuse: none exists; searched `kernel/src` for every mint of `cap::address_space_cap` (only
-`RETYPE_OBJ` and tests) and `crates/abi` for a self-naming slot convention (only
+`RETYPE_OBJECT` and tests) and `crates/abi` for a self-naming slot convention (only
 `abi::fault::FAULT_EP_SLOT`, which option B below would copy). This is the kernel's object model,
 where §46 (thin primitives or whole subsystems) says write it.
 
@@ -25,7 +25,7 @@ where §46 (thin primitives or whole subsystems) says write it.
 
 The progenitor maps every page it writes for a boot server into its own running space with
 `PageFrame::MAP`. To give those pages up it needs an `AddressSpace` capability naming that space,
-and none exists. `RETYPE_OBJ(ADDRESS_SPACE)` is the only place one is minted. The kernel grants none
+and none exists. `RETYPE_OBJECT(ADDRESS_SPACE)` is the only place one is minted. The kernel grants none
 at boot. `ThreadControlBlock::CONFIGURE` consumes the builder's capability and removes the name from
 `USER_SPACES`, so a copy made before it resolves to nothing after. Until this is answered, `UNMAP`
 serves only a space under construction, and milestone 95's negative control (the progenitor writes

@@ -469,6 +469,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
+ "pci",
  "startup_page_contract",
 ]
 
