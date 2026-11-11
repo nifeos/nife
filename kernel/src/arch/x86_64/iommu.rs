@@ -740,7 +740,8 @@ fn remapping_up(u: &mut Unit) -> Result<(), &'static str> {
 /// Then every device a running unit owns faults until `attach` writes its context entry (or, for
 /// an RMRR device, anywhere outside its reserved regions). Last, every unit the platform and its
 /// own `ECAP.IR` say can remap turns remapping on, provided the DMAR names the scope of
-/// `io_apic_id`, the MADT's IO APIC (milestone 1068).
+/// `io_apic_id`, the MADT's IO APIC (milestone 1068, the kernel turns interrupt remapping on
+/// where an IOMMU offers it).
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
 /// design/naming/acronyms-and-abbreviations.md.
@@ -1538,7 +1539,8 @@ mod tests {
     use super::*;
 
     /// **Interrupt remapping is on in every unit whose hardware and platform offer it, and off in
-    /// every other** (milestone 1068, the opposite of the claim milestone 317 held). Where it is on,
+    /// every other** (milestone 1068, the opposite of the claim milestone 317 (the
+    /// interrupt-remapping flags) held). Where it is on,
     /// compatibility-format messages are blocked (`GSTS.CFIS` clear) and the table the unit walks
     /// is the one this driver built. On the default runner the unit and the DMAR both offer it, so
     /// a unit that stayed off there fails rather than passing as "not offered"; under
@@ -1667,7 +1669,8 @@ mod tests {
     }
 
     /// **A message forged in one device's MSI-X table, naming a vector granted to another, is
-    /// refused** (milestone 1068 step 5, in the shape of milestone 202's confinement tests). The
+    /// refused** (milestone 1068 step 5, in the shape of the confinement tests of
+    /// milestone 202 (every confinement test is a ritual until somebody breaks the confinement)). The
     /// forger is the second virtio disk and the grant the first's: the test plays the component
     /// that holds the forger's MSI-X table page, which is what a userspace bus server holds.
     ///
