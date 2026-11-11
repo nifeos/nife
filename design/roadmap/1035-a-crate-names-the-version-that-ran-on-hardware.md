@@ -15,22 +15,26 @@ needs_person: yes
 Raised by lane/hardware-claim-names-a-crate-version.
 
 Reuse: the bench procedure of milestone 159 (a real hardware entropy source: the JH7110's TRNG),
-[`bench-procedure.md`](0159-jh7110-trng-driver/bench-procedure.md), the boot tour's `hw entropy`
-line, `script/board-image` and the network boot of milestone 257 (boot radon over the network). No
-new tool.
+[`bench-procedure.md`](0159-jh7110-trng-driver/bench-procedure.md), the boot tour's `trng` line,
+`script/board-image`, `script/board-console` and the network boot of milestone 257 (boot radon over
+the network). One new helper, `helpers/crate_hardware_run.py`, reads the transcripts against the
+definition below, because no existing tool knows the definition.
 
 ## Background
 
-`jh7110_entropy` lives in its own repository, `nifeos/jh7110_entropy`, and its next release is
-0.2.0, which carries renames. nife pins it by `rev` and `version` in three manifests:
-`kernel/Cargo.toml`, `components/Cargo.toml` and `crates/machine_discovery/Cargo.toml`.
+`jh7110_entropy` lives in its own repository, `nifeos/jh7110_entropy`. Its tag `v0.2.0` names
+commit `cfdbeb7`, and nife pins exactly that commit, with `version = "0.2.0"`, in three manifests:
+`kernel/Cargo.toml`, `components/Cargo.toml` and `crates/machine_discovery/Cargo.toml`. The crate's
+`main` has moved past the tag with breaking changes while its `Cargo.toml` still says 0.2.0, and
+milestone 1049 (`jh7110_entropy` is ready to publish) rules that 0.3.0 is the first version
+published to crates.io. So a version string alone does not name a tree here; a commit does.
 
-The crate's README has a hardware section. It says a driver built on this logic produced real TRNG
-output on a VisionFive 2 in 256-bit mode. It also carries a limitation: this exact source tree has
-not run on hardware, and an earlier version under a different crate name is the one that ran. That
-earlier version is the code milestone 159 drove on radon, with its two boots recorded in that block.
+The crate's README has a "Hardware evidence" section. It records two board runs of crate commit
+`ee0bde8`, made by milestone 1049's bare-metal payload, and says that no other commit has run. It
+names no version: `ee0bde8` sits between the tags, and the payload is not nife's driver. Milestone
+159 drove an earlier tree, under nife, on radon.
 
-No milestone runs the crate again. Milestone 159 has the status BUILT. Milestone 818 (proven JH7110
+No milestone runs a tagged version of the crate in nife's driver. Milestone 159 has the status BUILT. Milestone 818 (proven JH7110
 TRNG logic, released on its own) is the release and names no bench step. Milestone 225 (run the soak
 on radon, argon and xenon) soaks the scheduler, not this driver. Milestone 239 (radon's device tree
 does not describe the TRNG, so a working driver never runs) concerns the device tree. Milestone 224
@@ -50,8 +54,9 @@ A hardware run of `jh7110_entropy` version V is all of these:
    and state `version = "V"`. Its own pull request bumps a pin and cites
    `nifeos/jh7110_entropy@<sha>`, so the commit exists on `main` before the run.
 2. That build boots on a VisionFive 2 by the procedure in `bench-procedure.md`, twice.
-3. On each boot the tour's `hw entropy` line is the success line: the entropy service served both
-   draws to a client, and the second draw differs from the first.
+3. On each boot the tour's `trng` self-test line is `ok`: the entropy service served both 32-byte
+   draws to a client, and the second draw differs from the first. The line ends with the crate
+   version and commit the build resolved, which `kernel/build.rs` reads from `Cargo.lock`.
 4. The line's mode note says 256-bit.
 5. No lockup: the line is not a `FAILED` line, which is where a persistent `LFSR_LOCKUP` lands.
 6. The first draws of the two boots differ.
@@ -66,15 +71,16 @@ other board, or any version but V.
 A person, so `needs_person: yes`. The board needs its serial console attached and its power switched
 by hand, and a hung board needs a person because the maintainers refused remote power. Network boot
 spares the card. The maintainers keep the bench rules for the board itself (wiring, outlets)
-off-tree; the public procedure is `bench-procedure.md`. An agent prepares the build at the pin and
-reads the transcript against the six conditions above. Neither the run nor the reading runs in CI,
-since no runner reaches the board.
+off-tree; the public procedure is `bench-procedure.md`. An agent prepares the build at the pin, and
+`helpers/crate_hardware_run.py judge` reads the transcripts against the six conditions above.
+Neither the run nor the reading runs in CI, since no runner reaches the board. The steps a person
+follows are in [`bench-steps.md`](1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md).
 
 ## Where the evidence lives
 
 nife keeps the log. The run's transcript goes under `bench/<board>-<date>/`, as milestone 159's runs
-do, and the block of the milestone that ran it holds the `hw entropy` line of each boot with the
-nife commit and the crate version.
+do, and the block of the milestone that ran it holds the `trng` line of each boot with the nife
+commit and the crate version.
 
 The crate states a fact, not a story. Its hardware section names the version and the board class,
 and nothing about dates, people, faults found or earlier names. It does not link nife, because a
@@ -83,14 +89,23 @@ VisionFive 2" stays true when 0.3.0 ships, so the README never claims an unteste
 
 ## The edit the crate README then makes
 
-In the hardware section, the first paragraph becomes:
+The "Hardware evidence" section opens with:
 
 > Version 0.2.0 has run on a VisionFive 2 (JH7110): it served real TRNG output on two boots with the
 > chip in 256-bit mode, the draws differing within each boot and across the boots. The clock and
 > reset must be ungated and released first, as the first item under BUGS says.
 
-The edit removes the limitation bullet on running this exact source tree. The bullet on randomness
-quality stays.
+Its "Not established" bullet on other commits then names both trees that ran, 0.2.0 and `ee0bde8`.
+The bullet on randomness quality stays. A draft pull request in `nifeos/jh7110_entropy` holds the
+edit, unarmed until a run passes.
+
+## Which version runs first
+
+The maintainers chose 0.2.0, provisionally. It is the only tagged version nife can pin today, and
+nife's `main` pins it already, so the run needs no tag, no release and no pin bump. 0.3.0, the first
+version crates.io will carry, cannot run until its tag exists, and its tag waits on the publishing
+hold. When it exists, the same steps run at the pull request that bumps nife's pins to it, and the
+README names 0.3.0 in place of 0.2.0, as option A says.
 
 ## Options
 
@@ -144,9 +159,9 @@ Today's claims under it:
 
 ## The work
 
-1. **Needs a person; nobody is assigned.** The crate must tag 0.2.0 and nife's pins must name it first.
-   Then run the bench procedure twice on a VisionFive
-   2, commit the transcript under `bench/`, and record each boot's `hw entropy` line, the nife
+1. **Needs a person; nobody is assigned.** nife's `main` pins the tag `v0.2.0` already. Run
+   [`bench-steps.md`](1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md) on a
+   VisionFive 2, commit the transcripts under `bench/`, and record each boot's `trng` line, the nife
    commit and the crate version in this block.
 2. In `nifeos/jh7110_entropy`, after step 1, make the README edit above.
 3. Write the rule into milestone 857 (crates released on their own), beside the release rules, so
@@ -160,8 +175,9 @@ that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is th
 
 ## Done when
 
-- This block holds two `hw entropy` success lines, 256-bit, whose first draws differ, from a nife
-  commit that pins `jh7110_entropy` 0.2.0.
+- This block holds two `trng` success lines, 256-bit, whose first draws differ, from a nife
+  commit that pins `jh7110_entropy` 0.2.0, and `helpers/crate_hardware_run.py judge` prints `PASS`
+  over their transcripts.
 - The crate README names 0.2.0 as run on a VisionFive 2 and carries no limitation about an untested
   tree.
 - Milestone 857 states the rule.
@@ -171,6 +187,17 @@ that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is th
 One bench session with a person, about two boots over the network, plus two small edits. Nothing
 here is one-way: anyone can reword a README sentence, and the rule only narrows what a README may
 claim, so loosening it later breaks nobody.
+
+## BUGS
+
+- Milestone 159's `bench-procedure.md` describes the card path and a `hw entropy` line; the tour
+  prints the `trng` self-test line now, and the network boot replaces the card. `bench-steps.md`
+  here is current; that page is not.
+- The README's "Hardware evidence" section carries dates, the person's statements and a run
+  narrative, which option A keeps out of a crate's hardware sentence. The version sentence above
+  goes first; whether the run record below it stays is milestone 1049's to settle.
+- The judge cannot tell a cold boot from a warm one. The person states it, and the bench README
+  records their statement.
 
 ## Index row
 
