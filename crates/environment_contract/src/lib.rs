@@ -297,16 +297,23 @@ fn write_field(page: &mut [u8], len_off: usize, data_off: usize, cap: usize, val
     page[data_off..data_off + n].copy_from_slice(&bytes[..n]);
 }
 
-/// Read one length-prefixed field back as a `&str`. `None` for a zero length (the key was never
-/// declared) or for bytes that do not decode as UTF-8 (a page [`PageBuilder`] wrote never
-/// produces this; a foreign or corrupt page might, and the honest answer is absence rather than
-/// a panic).
-fn read_field(page: &[u8], len_off: usize, data_off: usize) -> Option<&str> {
-    let n = page[len_off] as usize;
-    if n == 0 {
+/// The bytes of one length-prefixed field. `None` for a zero length (the key was never declared)
+/// or for a length past the field's `cap`, which [`write_field`] never writes: the bytes beyond the
+/// field belong to the next field or lie off the page, and a foreign or corrupt page might claim
+/// them. Never panics, whatever the page and the length byte hold.
+fn field_bytes(page: &[u8], len_off: usize, data_off: usize, cap: usize) -> Option<&[u8]> {
+    let n = *page.get(len_off)? as usize;
+    if n == 0 || n > cap {
         return None;
     }
-    core::str::from_utf8(&page[data_off..data_off + n]).ok()
+    page.get(data_off..data_off.checked_add(n)?)
+}
+
+/// Read one length-prefixed field back as a `&str`. `None` where [`field_bytes`] is `None`, or for
+/// bytes that do not decode as UTF-8 (a page [`PageBuilder`] wrote never produces this; a foreign
+/// or corrupt page might, and the honest answer is absence rather than a panic).
+fn read_field(page: &[u8], len_off: usize, data_off: usize, cap: usize) -> Option<&str> {
+    core::str::from_utf8(field_bytes(page, len_off, data_off, cap)?).ok()
 }
 
 /// **The inert-configuration page**, as seen through one process's read-only mapping of it. It
@@ -379,24 +386,34 @@ impl ConfigPage {
     /// was never declared onto it.
     pub fn tz(&self) -> Option<&str> {
         self.is_recognized()
-            .then(|| read_field(self.bytes(), OFF_TZ_LEN, OFF_TZ))
+            .then(|| read_field(self.bytes(), OFF_TZ_LEN, OFF_TZ, MAXIMUM_TIME_ZONE_BYTES))
             .flatten()
     }
 
     /// `LANG`, or `None` for the same three reasons [`tz`](Self::tz) can be `None`.
     pub fn lang(&self) -> Option<&str> {
         self.is_recognized()
-            .then(|| read_field(self.bytes(), OFF_LANG_LEN, OFF_LANG))
+            .then(|| read_field(self.bytes(), OFF_LANG_LEN, OFF_LANG, MAXIMUM_LOCALE_BYTES))
             .flatten()
     }
 
     /// `TERM`, or `None` for the same three reasons [`tz`](Self::tz) can be `None`.
     pub fn term(&self) -> Option<&str> {
         self.is_recognized()
-            .then(|| read_field(self.bytes(), OFF_TERM_LEN, OFF_TERM))
+            .then(|| {
+                read_field(
+                    self.bytes(),
+                    OFF_TERM_LEN,
+                    OFF_TERM,
+                    MAXIMUM_TERMINAL_TYPE_BYTES,
+                )
+            })
             .flatten()
     }
 }
+
+#[cfg(kani)]
+mod verification;
 
 #[cfg(test)]
 mod tests {
@@ -520,13 +537,44 @@ mod tests {
         });
     }
 
-    /// A page with a recognized magic but garbage in a field's length byte must not read out of
-    /// bounds or panic; a length taken from an untrusted-looking page is still bounded by the
-    /// field's own cap in this test's construction, which is what the offsets guarantee: a
-    /// length byte can be at most 255, and `read_field` slices `data_off..data_off + n`, so a
-    /// caller passing a page shorter than `PAGE_BYTES` (a contract violation `new`'s safety
-    /// comment already forbids) is the only way this could go wrong, which is exactly why that
-    /// safety contract exists rather than a runtime length check.
+    /// A page with a recognized magic but a length byte past its field reads that field as
+    /// absent, for every field and every oversized length, without a panic. `TERM` is the last
+    /// field, so a length of 255 there runs off the end of the page, and a length one past a
+    /// field's cap in `TZ` or `LANG` would otherwise read into the next field.
+    #[test]
+    fn a_length_past_its_field_reads_that_field_as_absent() {
+        let fields = [
+            (OFF_TZ_LEN, MAXIMUM_TIME_ZONE_BYTES),
+            (OFF_LANG_LEN, MAXIMUM_LOCALE_BYTES),
+            (OFF_TERM_LEN, MAXIMUM_TERMINAL_TYPE_BYTES),
+        ];
+        for (corrupted, (len_off, cap)) in fields.into_iter().enumerate() {
+            for length in (cap + 1)..=usize::from(u8::MAX) {
+                let mut bytes = PageBuilder::new()
+                    .tz("UTC")
+                    .unwrap()
+                    .lang("C")
+                    .unwrap()
+                    .term("xterm")
+                    .unwrap()
+                    .build();
+                bytes[len_off] = length as u8;
+                with_page(&bytes, |page| {
+                    let read = [page.tz(), page.lang(), page.term()];
+                    for (i, value) in read.iter().enumerate() {
+                        assert_eq!(
+                            value.is_none(),
+                            i == corrupted,
+                            "field {i}, length {length}"
+                        );
+                    }
+                });
+            }
+        }
+    }
+
+    /// A zero length byte after the magic reads as absent: an assembler that wrote the magic but
+    /// never declared TZ.
     #[test]
     fn a_page_with_a_zero_length_after_the_magic_reads_that_field_as_absent() {
         let mut bytes = PageBuilder::new().tz("UTC").unwrap().build();
