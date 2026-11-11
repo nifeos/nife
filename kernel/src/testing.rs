@@ -335,9 +335,8 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 /// takes the corpse with it (`script/swish-check`'s hundred-cycle line). Every space the kernel
 /// loads also holds its startup page and that page's two tables (`user::loader`'s
 /// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more. The NVMe admin
-/// process stays for the boot too (notes/frames/page-frame-budget.md). Four tests keep a block
-/// server for the rest of the boot, so every page `block_driver`'s image grows keeps four frames
-/// more (notes/frame-budget.md).
+/// process stays for the boot too (notes/frames/page-frame-budget.md), as do four tests' block
+/// servers, so each page `block_driver`'s image grows keeps four frames (notes/frame-budget.md).
 const SUITE_PAGE_FRAME_BUDGET: usize = 24_806;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
