@@ -86,8 +86,11 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     // the input driver sets the 16550's receive enable.
     #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
     crate::arch::interrupt_controller::enable(uart_interrupt_number);
-    let build_region =
-        crate::memory_region::create(12288).expect("no building budget for the progenitor");
+    let build_region = crate::memory_region::create_with_ceilings(
+        12288,
+        crate::memory_region::progenitor_ceilings(),
+    )
+    .expect("no building budget for the progenitor");
 
     let thread_control_block_region = crate::memory_region::create(2).expect("no tcb region");
     let tid =
