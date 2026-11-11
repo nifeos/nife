@@ -432,20 +432,23 @@ pub fn read_bars(
         HEADER_TYPE_BRIDGE => 2,
         _ => 0,
     };
-    let mut i = 0;
-    while i < slots {
+    // Set when the slot before was the lower half of a 64-bit BAR, whose upper half this slot is.
+    // A flag rather than a two-slot step, so the loop is bounded by its range alone.
+    let mut upper_half = false;
+    for i in 0..slots {
+        if core::mem::take(&mut upper_half) {
+            continue;
+        }
         let off = BAR0 + i as u64 * 4;
         let orig = read32(bdf, off);
         if orig & 1 != 0 {
             // An I/O-space BAR. x86 legacy; nothing we drive uses one.
-            i += 1;
             continue;
         }
         let is_64 = orig & 0b110 == 0b100;
         if is_64 && i + 1 == slots {
             // Refused before the probe, so the register after the last slot is never written.
             refused(i, BarRefusal::SixtyFourBitInLastSlot);
-            i += 1;
             continue;
         }
 
@@ -484,7 +487,7 @@ pub fn read_bars(
                 Err(reason) => refused(i, reason),
             }
         }
-        i += if is_64 { 2 } else { 1 }; // the upper half of a 64-bit BAR consumed a slot
+        upper_half = is_64;
     }
     out
 }
