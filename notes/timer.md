@@ -13,7 +13,7 @@ is the same shape, built again on purpose, and the numbers in the milestone bloc
 
 ### The object
 
-`objtype::TIMER` and `Timer::{ARM, CANCEL}` live in `crates/abi`, and their numbers are provisional.
+`object_type::TIMER` and `Timer::{ARM, CANCEL}` live in `crates/abi`, and their numbers are provisional.
 `ARM(deadline, notification_slot, bits)` replaces any pending deadline. A deadline already reached
 signals before `ARM` returns. `CANCEL` returns `1` if it stopped a pending deadline and `0`
 otherwise, so a `0` tells the caller any signal has already happened.

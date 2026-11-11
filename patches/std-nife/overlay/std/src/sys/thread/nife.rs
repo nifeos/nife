@@ -114,7 +114,7 @@ impl Thread {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
                 abi::memory_region::RETYPE_OBJECT,
-                abi::objtype::THREAD_CONTROL_BLOCK,
+                abi::object_type::THREAD_CONTROL_BLOCK,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )

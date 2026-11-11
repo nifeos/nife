@@ -25,9 +25,10 @@ device's own cache command only. So are `reboot_capability` (capability is never
 
 1. A new kernel object kind carries the authority to restart the machine. It has no payload: the
    kernel stores nothing in it, and it names no device. It has one method and its own method
-   module, `abi::reboot`, and no `abi::objtype` number (below). This is a new method within the
-   capability model of §10 (process model: capability-based, microkernel) and §16 (object
-   revocation). It adds no syscall number.
+   module, `abi::reboot`, and no `abi::object_type` number (below; the module's name was spelled
+   out by the ruling of 2026-11-11 (UTC)). This is a new method within the capability model of
+   §10 (process model: capability-based, microkernel) and §16 (object revocation). It adds no
+   syscall number.
 2. The kernel creates exactly one at boot and grants it to the progenitor. The progenitor endows it
    to a job whose manifest declares the `reboot` field and whose bytes something vouches for: the
    image's measured archive for the image's own programs, or an owner's `grant` line for installed
@@ -134,19 +135,19 @@ Prior art, recalled, not re-read:
   `fuchsia.process.lifecycle` `Stop` before power control resets: D.
 - systemd stops units in reverse dependency order, remounts read-only, syncs, then resets: D.
 
-## The object has no `objtype` number
+## The object has no `object_type` number
 
-`objtype` lists what `MemoryRegion::RETYPE_OBJECT` (method 2, its name spelled out by the ruling of
+`object_type` lists what `MemoryRegion::RETYPE_OBJECT` (method 2, its name spelled out by the ruling of
 2026-11-11 (UTC)) can make out of memory. Nothing makes a reboot object, and a number there would
 read as a way to. It has a method module, `abi::reboot`, like `Irq`, the other kernel-minted object.
 
 Alternatives considered:
 
-- A, built: no `objtype` number and its own `abi::reboot` method module, like `Irq` and
+- A, built: no `object_type` number and its own `abi::reboot` method module, like `Irq` and
   `MemoryRegion`, which have none either.
-- B, a number `RETYPE_OBJECT` refuses: `objtype` would then mean both "can be made" and "exists".
+- B, a number `RETYPE_OBJECT` refuses: `object_type` would then mean both "can be made" and "exists".
 - C, a retypable number: anyone holding memory could mint reboot authority.
-- D, split `objtype` into a retype list and a full object-kind list: worth it only once a
+- D, split `object_type` into a retype list and a full object-kind list: worth it only once a
   capability type query exists, and nife has none today.
 
 Prior art, recalled, not re-read:

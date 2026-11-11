@@ -108,8 +108,8 @@ fn supervise(mode: u64, lengths: u64, swap: u64) -> ! {
         (0, _) => None,
         (_, Some(own)) => Some(Deadline {
             own,
-            wake: obj(abi::objtype::NOTIFICATION),
-            timer: obj(abi::objtype::TIMER),
+            wake: obj(abi::object_type::NOTIFICATION),
+            timer: obj(abi::object_type::TIMER),
             bay: bay(s::STAND_IN_PAGES),
         }),
         (_, None) => fail(),
@@ -275,9 +275,12 @@ impl<'a> Child<'a> {
             image,
             kind,
             served,
-            faultep: obj(abi::objtype::RENDEZVOUS),
-            controls: [obj(abi::objtype::RENDEZVOUS), obj(abi::objtype::RENDEZVOUS)],
-            notify: obj(abi::objtype::RENDEZVOUS),
+            faultep: obj(abi::object_type::RENDEZVOUS),
+            controls: [
+                obj(abi::object_type::RENDEZVOUS),
+                obj(abi::object_type::RENDEZVOUS),
+            ],
+            notify: obj(abi::object_type::RENDEZVOUS),
             // Bays, one per instance, split once and reused: a region split straight from the
             // budget leaves a hole when the incumbent under it dies, and the second swap fails
             // for want of budget (notes/hung-component/terminal-supervisor-bound.md).
@@ -766,8 +769,8 @@ fn bay(pages: u64) -> u64 {
     }
 }
 
-fn obj(objtype: u64) -> u64 {
-    match process_builder::retype_into_kernel_object_from(s::BUDGET, objtype) {
+fn obj(object_type: u64) -> u64 {
+    match process_builder::retype_into_kernel_object_from(s::BUDGET, object_type) {
         Ok(slot) => slot,
         Err(()) => fail(),
     }

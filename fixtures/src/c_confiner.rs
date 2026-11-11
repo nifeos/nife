@@ -86,7 +86,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // Our children's deaths arrive here. We are the only holder with READ, and the kernel is the only
     // sender (§26.5), so both the tid and the fault address are trustworthy without a badge.
     let Ok(faultep) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
     else {
         bail(7)
     };

@@ -140,9 +140,10 @@ fn pick(rng: &mut Rng) -> (u64, [u64; 6]) {
     // off 3 and 5 too; that is the price of not knowing the slot's type.
     if nr == SYS_INVOKE
         && words[1] == abi::memory_region::RETYPE_OBJECT
-        && (words[2] == abi::objtype::THREAD_CONTROL_BLOCK || words[2] == abi::objtype::TIMER)
+        && (words[2] == abi::object_type::THREAD_CONTROL_BLOCK
+            || words[2] == abi::object_type::TIMER)
     {
-        words[2] = abi::objtype::RENDEZVOUS;
+        words[2] = abi::object_type::RENDEZVOUS;
     }
     (nr, words)
 }

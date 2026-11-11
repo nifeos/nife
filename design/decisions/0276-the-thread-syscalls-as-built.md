@@ -57,10 +57,10 @@ Registers: the syscall number is in `x8`, `a7` or `rax`; the arguments are `x0` 
 and the method in the first two and three data words in the next three. A negative result is an
 `abi::Error`.
 
-### `RETYPE_OBJECT` of `objtype::PROCESS` (6): making a process
+### `RETYPE_OBJECT` of `object_type::PROCESS` (6): making a process
 
-`invoke(region, RETYPE_OBJECT, PROCESS, space_slot, floor)` -> slot, method 2, its name spelled out
-by the ruling of 2026-11-11 (UTC). `kernel/src/syscall/retype.rs`, `kernel/src/sched/process.rs`
+`invoke(region, RETYPE_OBJECT, PROCESS, space_slot, floor)` -> slot, method 2. Its name and the
+module's, `object_type`, were spelled out by the ruling of 2026-11-11 (UTC). `kernel/src/syscall/retype.rs`, `kernel/src/sched/process.rs`
 (`create_process_from`).
 
 - Needs `WRITE` on the region (`NotPermitted`) and `WRITE` on the address-space capability in

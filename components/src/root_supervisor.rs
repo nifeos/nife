@@ -66,22 +66,22 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // The channels. The spawner serves `req` and answers on `rep`; `childfault` is where the
     // sub-server's deaths go (sub_server_supervisor receives them); `rootfault` is where OUR children's deaths go.
     let Ok(req) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
     else {
         bail(5)
     };
     let Ok(rep) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
     else {
         bail(6)
     };
     let Ok(childfault) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
     else {
         bail(7)
     };
     let Ok(rootfault) =
-        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::object_type::RENDEZVOUS)
     else {
         bail(8)
     };
@@ -156,7 +156,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // retype a kernel object. Both must now fail with `NoSuchSlot` (-1), which is what
     // no-ambient-authority feels like: there is nothing there, and no way to name what used to be.
     let frame = retype_into_page_frame(ROOT_UT);
-    let object = retype_into_kernel_object(ROOT_UT, abi::objtype::THREAD_CONTROL_BLOCK);
+    let object = retype_into_kernel_object(ROOT_UT, abi::object_type::THREAD_CONTROL_BLOCK);
     send(
         REPORT,
         REPORT_CONSTRUCTION_AUTHORITY_DROPPED,

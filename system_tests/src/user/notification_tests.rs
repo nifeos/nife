@@ -326,7 +326,7 @@ fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
     let (minted, _) = invoke(
         ut,
         abi::memory_region::RETYPE_OBJECT,
-        abi::objtype::NOTIFICATION,
+        abi::object_type::NOTIFICATION,
     );
     let full = minted.expect("RETYPE_OBJECT(NOTIFICATION)") as u64;
     let capability = sched::current_capability(full).expect("the minted slot");

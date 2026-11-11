@@ -198,7 +198,7 @@ const SCRIPT: [(u64, u64, u64); 3] = {
     use abi::memory_region::{RETYPE, RETYPE_OBJECT, SPLIT};
     [
         (RETYPE, 0, 1),
-        (RETYPE_OBJECT, abi::objtype::RENDEZVOUS, 1),
+        (RETYPE_OBJECT, abi::object_type::RENDEZVOUS, 1),
         (SPLIT, 2, 2),
     ]
 };

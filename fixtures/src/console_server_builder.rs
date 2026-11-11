@@ -50,11 +50,12 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         refuse()
     };
 
-    let Ok(request) = retype_into_kernel_object_from(MEMORY_REGION, abi::objtype::RENDEZVOUS)
+    let Ok(request) = retype_into_kernel_object_from(MEMORY_REGION, abi::object_type::RENDEZVOUS)
     else {
         refuse()
     };
-    let Ok(reply) = retype_into_kernel_object_from(MEMORY_REGION, abi::objtype::RENDEZVOUS) else {
+    let Ok(reply) = retype_into_kernel_object_from(MEMORY_REGION, abi::object_type::RENDEZVOUS)
+    else {
         refuse()
     };
     let Ok(shared) = retype_into_page_frame_from(MEMORY_REGION) else {

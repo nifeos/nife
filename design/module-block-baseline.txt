@@ -292,19 +292,18 @@ crates/abi/src/notification.rs::SIGNAL
 
 crates/abi/src/notification.rs::WAIT
 
-crates/abi/src/objtype.rs
 
-crates/abi/src/objtype.rs::ADDRESS_SPACE
+crates/abi/src/object_type.rs::ADDRESS_SPACE
 
-crates/abi/src/objtype.rs::NOTIFICATION
+crates/abi/src/object_type.rs::NOTIFICATION
 
-crates/abi/src/objtype.rs::PROCESS
+crates/abi/src/object_type.rs::PROCESS
 
-crates/abi/src/objtype.rs::RENDEZVOUS
+crates/abi/src/object_type.rs::RENDEZVOUS
 
-crates/abi/src/objtype.rs::THREAD_CONTROL_BLOCK
+crates/abi/src/object_type.rs::THREAD_CONTROL_BLOCK
 
-crates/abi/src/objtype.rs::TIMER
+crates/abi/src/object_type.rs::TIMER
 
 crates/abi/src/page_frame.rs
 

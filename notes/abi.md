@@ -57,7 +57,7 @@ live per object type in `crates/abi`:
   `RECEIVE_CAPABILITY`. The synchronous-IPC primitive the whole system talks over. `WRITE` rights permit
   `SEND`; `READ` rights permit `RECEIVE`; `GRANT` permits passing a capability along.
 - Reply (`reply::REPLY`): the one-shot return leg of a `CALL`.
-- MemoryRegion / objects (`objtype::`): `RETYPE` a region into a `RENDEZVOUS`, an `ADDRESS_SPACE`,
+- MemoryRegion / objects (`object_type::`): `RETYPE` a region into a `RENDEZVOUS`, an `ADDRESS_SPACE`,
   or a `THREAD_CONTROL_BLOCK`. This is how a process builds new kernel objects out of a raw memory budget it holds.
 - ThreadControlBlock (`thread_control_block::`): `CONFIGURE` (entry, stack, address space), `CAPABILITY_INSERT` (place a capability into
   the child's capability table), `START` (see §3).

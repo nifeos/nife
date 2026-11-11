@@ -77,7 +77,7 @@ fn compose(initial_ramdisk_len: u64) -> u64 {
     };
     let mut verdict = CHILD_FOUND;
 
-    let answer = retype_into_kernel_object(MEMORY_REGION, abi::objtype::RENDEZVOUS);
+    let answer = retype_into_kernel_object(MEMORY_REGION, abi::object_type::RENDEZVOUS);
     if answer < 0 {
         return verdict;
     }

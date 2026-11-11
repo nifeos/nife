@@ -103,11 +103,11 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     };
 
     // The one endpoint this process ever waits on, and the timetable's supervision endpoint.
-    let Ok(e) = retype_into_kernel_object_from(BUDGET, abi::objtype::RENDEZVOUS) else {
+    let Ok(e) = retype_into_kernel_object_from(BUDGET, abi::object_type::RENDEZVOUS) else {
         fail(4)
     };
     // The endpoint the timetable reaps its own jobs through. Not read here.
-    let Ok(deaths) = retype_into_kernel_object_from(BUDGET, abi::objtype::RENDEZVOUS) else {
+    let Ok(deaths) = retype_into_kernel_object_from(BUDGET, abi::object_type::RENDEZVOUS) else {
         fail(5)
     };
     let Ok(jobs) = memory_region_split(BUDGET, JOB_BUDGET_PAGES) else {

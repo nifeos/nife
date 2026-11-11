@@ -114,7 +114,7 @@ pub enum Object {
     /// instead.
     ///
     /// The kernel mints exactly one, at boot, into the progenitor's table, and nothing else mints
-    /// one: no retype makes it, so it has no `abi::objtype` number. Its one method is
+    /// one: no retype makes it, so it has no `abi::object_type` number. Its one method is
     /// `abi::reboot::REBOOT`; see kernel/src/reboot.rs.
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).

@@ -305,11 +305,11 @@ pub fn retype_sleeper(memory_region_slot: u64, reserved: u64) -> Option<(u64, u6
             return None;
         }
     }
-    let n = retype_into_kernel_object(memory_region_slot, abi::objtype::NOTIFICATION);
+    let n = retype_into_kernel_object(memory_region_slot, abi::object_type::NOTIFICATION);
     if n < 0 {
         return None;
     }
-    let t = retype_into_kernel_object(memory_region_slot, abi::objtype::TIMER);
+    let t = retype_into_kernel_object(memory_region_slot, abi::object_type::TIMER);
     if t < 0 {
         objects::capability_delete(n as u64);
         return None;

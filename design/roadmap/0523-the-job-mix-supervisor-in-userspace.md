@@ -56,7 +56,7 @@ list is short and it is what makes the blockers concrete:
 1. **Find `job_mix_task`'s ELF in the initrd archive.** `nifefs::Fs::parse(archive).read(..)` plus
    `elf::Elf::parse`, the shape `components/src/root_supervisor.rs::start` already uses.
 2. **Create 67 rendezvous objects** out of its own budget: one report, 32 go, 32 child-done, 2 echo.
-   `retype_into_kernel_object(budget, abi::objtype::RENDEZVOUS)`, which
+   `retype_into_kernel_object(budget, abi::object_type::RENDEZVOUS)`, which
    `fixtures/src/rendezvous_minter.rs` proves works from EL0.
 3. Build and start 34 processes with a per-child grant set, each carrying its own rights.
    `supervision_contract::build_child` and `start_child`.

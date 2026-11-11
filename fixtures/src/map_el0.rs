@@ -59,7 +59,7 @@ const TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
 user_mode_runtime::program_entry!(start);
 
 fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
-    let space = retype_into_kernel_object(BUDGET, abi::objtype::ADDRESS_SPACE);
+    let space = retype_into_kernel_object(BUDGET, abi::object_type::ADDRESS_SPACE);
     let frame = retype_into_page_frame(BUDGET);
     if space < 0 || frame < 0 {
         // The budget was too small to build the target; a row of zeros says so without a panic.

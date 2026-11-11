@@ -120,7 +120,7 @@ fn build_with_nothing() -> ! {
         user_mode_runtime::invoke(
             7,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::RENDEZVOUS,
+            abi::object_type::RENDEZVOUS,
             0,
             0,
         )

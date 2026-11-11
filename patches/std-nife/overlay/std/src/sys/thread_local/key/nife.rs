@@ -202,20 +202,20 @@ pub fn sleep_objects() -> Option<(u64, u64)> {
         0 => {}
         t => return Some((t, notification)),
     }
-    let retype = |objtype| {
+    let retype = |object_type| {
         // SAFETY: `invoke` traps to the kernel, which validates the capability.
         unsafe {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
                 abi::memory_region::RETYPE_OBJECT,
-                objtype,
+                object_type,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )
         }
     };
-    let n = retype(abi::objtype::NOTIFICATION);
-    let t = if n >= 0 { retype(abi::objtype::TIMER) } else { n };
+    let n = retype(abi::object_type::NOTIFICATION);
+    let t = if n >= 0 { retype(abi::object_type::TIMER) } else { n };
     // SAFETY: as above.
     unsafe {
         if n < 0 || t < 0 {

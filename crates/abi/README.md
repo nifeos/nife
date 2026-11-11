@@ -19,7 +19,7 @@ boundary.
   badge), `reply`, `memory_region` (retype, split, destroy, usage), `page_frame` (map, revoke,
   slice), `address_space` (map, list, unmap, futex wait and wake), `thread_control_block`,
   `process`, `notification`, `timer`, `interrupt`, `virtio`, `uart`, `port_range`, `reboot` and
-  `console`. `objtype` names the kinds a region can be retyped into.
+  `console`. `object_type` names the kinds a region can be retyped into.
 - **Errors**: `Error` is `#[repr(i64)]`, from `NoSuchSlot` (-1) to `ResetDidNotHappen` (-15). Each
   variant says when it is answered. `NoSuchSlot` (nothing there) and `Gone` (it was there and is
   gone) are different facts on purpose. `NotSupervised` deliberately does not distinguish "gone"

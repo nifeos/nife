@@ -176,7 +176,7 @@ pub(super) fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId)
     let slot = call(
         untyped,
         abi::memory_region::RETYPE_OBJECT,
-        abi::objtype::PROCESS,
+        abi::object_type::PROCESS,
         given,
         0,
     )
@@ -591,7 +591,7 @@ fn a_process_refuses_what_its_contract_refuses() {
         call(
             untyped,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::PROCESS,
+            abi::object_type::PROCESS,
             again,
             0
         ),

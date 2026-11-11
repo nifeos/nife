@@ -250,7 +250,7 @@ pub fn build_child_space(
         return Err(());
     }
 
-    let aspace = retype_into_kernel_object_from(build_ut, abi::objtype::ADDRESS_SPACE)?;
+    let aspace = retype_into_kernel_object_from(build_ut, abi::object_type::ADDRESS_SPACE)?;
     match lay_out_child(own_ut, build_ut, elf, endow, aspace) {
         Ok(tcb) => Ok((
             Child {
@@ -368,7 +368,7 @@ fn lay_out_child(
         }
     }
 
-    let tcb = retype_into_kernel_object_from(build_ut, abi::objtype::THREAD_CONTROL_BLOCK)?;
+    let tcb = retype_into_kernel_object_from(build_ut, abi::object_type::THREAD_CONTROL_BLOCK)?;
     if endow_child(tcb, endow, aspace).is_err() {
         capability_delete(tcb);
         return Err(());
@@ -435,14 +435,14 @@ fn configure_child_as_process(
     if rights != abi::rights::BIND {
         return Err(());
     }
-    // SAFETY: `invoke` is the syscall; the kernel validates the region, the objtype and the
+    // SAFETY: `invoke` is the syscall; the kernel validates the region, the object_type and the
     // address space before it builds anything. Raw because a process takes the space as its second
     // argument, which `retype_into_kernel_object` does not pass.
     let process = unsafe {
         invoke(
             build_ut,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::PROCESS,
+            abi::object_type::PROCESS,
             aspace,
             0,
         )

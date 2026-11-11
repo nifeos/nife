@@ -1332,7 +1332,7 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 --- a/crates/abi/src/lib.rs
 +++ b/crates/abi/src/lib.rs
 @@ -1,4 +1,5 @@
- pub mod objtype {
+ pub mod object_type {
      pub const RENDEZVOUS: u64 = 1;
 +    pub const NOTIFICATION: u64 = 8;
      pub const ADDRESS_SPACE: u64 = 2;
