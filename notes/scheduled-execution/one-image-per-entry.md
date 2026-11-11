@@ -1,5 +1,7 @@
 # One image per entry: a proposal to refuse it
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 Status: REFUSED 2026-09-26. Asked "Refuse it?", calef answered "Yes" the same day, so the item
 is refused for the reason below. Written by the lane for milestone 129 (scheduled execution) for
 calef's decision. The block has carried this item as outstanding since 2026-08-23. This file argues

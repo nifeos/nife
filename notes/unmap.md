@@ -132,7 +132,7 @@ on it.
 
 The evidence, each one a lookup:
 
-- `AddressSpace` capabilities are minted in one place, `RETYPE_OBJ(ADDRESS_SPACE)` (`kernel/src/syscall.rs`).
+- `AddressSpace` capabilities are minted in one place, `RETYPE_OBJECT(ADDRESS_SPACE)` (`kernel/src/syscall.rs`).
   The kernel grants none at boot, so init holds none for the space it runs in.
 - `ThreadControlBlock::CONFIGURE` consumes the builder's capability and calls
   `user::take_user_address_space`, which removes the name from `USER_SPACES`. A copy made earlier

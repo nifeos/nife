@@ -30,12 +30,12 @@ fn parse_u64_rejects_junk() {
 /// shell split one the progenitor wasted.
 #[test]
 fn the_region_a_job_is_held_in_has_exactly_the_pages_both_sides_count() {
-    assert_eq!(JOB_REGION_PAGES, 48);
+    assert_eq!(JOB_REGION_PAGES, 60);
     assert_eq!(DIRECTORY_JOB_REGION_PAGES, 98);
     assert_eq!(STD_REGION_PAGES, 384);
-    assert_eq!(JOB_POOL_PAGES, 6 * 48 + 384);
+    assert_eq!(JOB_POOL_PAGES, 6 * 60 + 384);
     let native = Program::LeastAuthorityDemo.manifest();
-    assert_eq!(job_region_pages(&native, false), 48);
+    assert_eq!(job_region_pages(&native, false), 60);
     assert_eq!(job_region_pages(&native, true), 98);
     let std = Program::StdExerciser.manifest();
     assert_eq!(job_region_pages(&std, false), 384);

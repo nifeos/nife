@@ -13,7 +13,7 @@ use crate::syscall::invoke;
 /// here maps more than three pages, so this is generous slack rather than a tight bound.
 const SPACE_PAGES: u64 = 24;
 
-/// A fresh address space, backed by its own region, the `RETYPE_OBJ(ADDRESS_SPACE)` engine driven
+/// A fresh address space, backed by its own region, the `RETYPE_OBJECT(ADDRESS_SPACE)` engine driven
 /// directly rather than through a spawned builder thread: this kernel test *is* the builder.
 /// Returns the space's `name` and the region backing it, so [`tidy`] can give the region back.
 fn arena_space() -> (u64, u64) {

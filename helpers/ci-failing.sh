@@ -92,10 +92,15 @@ gh pr list --repo "$REPO" --state open --limit 200 --json number,isDraft,headRef
 		| [.number, .headRefOid, (.labels | map(.name) | index("ci-failing") != null), .title] | @tsv' |
 	while IFS="$(printf '\t')" read -r num sha labelled title; do
 		runs=$(gh api "repos/$REPO/commits/$sha/check-runs?per_page=100" --paginate --jq '.check_runs[]' | jq -sc .)
+		# When it was last marked ready, so a draft run's red lint is not read as this head's failure
+		# (helpers/ci-failing.jq, failing/2). Unreadable reads as never a draft, which judges every run.
+		ready_at=$(gh api graphql -F owner="${REPO%/*}" -F name="${REPO#*/}" -F n="$num" \
+			-f query='query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){timelineItems(last:1,itemTypes:[READY_FOR_REVIEW_EVENT]){nodes{... on ReadyForReviewEvent{createdAt}}}}}}' \
+			--jq '.data.repository.pullRequest.timelineItems.nodes[0].createdAt // ""' 2>/dev/null || true)
 		# The runs go in on stdin. `--argjson runs` put the whole check-run list in one argv entry,
 		# which Linux caps at 128 KiB, and run 37227933655 died there ("Argument list too long")
 		# before judging any pull request. `required` stays an argument: it is a few hundred bytes.
-		bad=$(printf '%s\n' "$runs" | jq -c --argjson required "$required" "$(cat "$JQ") failing(\$required)")
+		bad=$(printf '%s\n' "$runs" | jq -c --argjson required "$required" --arg ready_at "$ready_at" "$(cat "$JQ") failing(\$required; \$ready_at)")
 		n=$(printf '%s\n' "$bad" | jq length)
 		if [ "$n" -gt 0 ]; then
 			echo "$ME: FAILING #$num at $(printf '%s\n' "$sha" | cut -c1-9): $(printf '%s\n' "$bad" | jq -r 'map(.name) | join("; ")') ($title)"

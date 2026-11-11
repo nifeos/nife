@@ -54,7 +54,8 @@
 //! - **The name says less than the program does**: it witnesses three unreachable authorities, not
 //!   one. Renaming is an architect's call.
 //!
-//! Name: provisional. Introduced 2026-09-24 for milestone 590, after `unwritable_clock_witness`.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). Formed after
+//! `unwritable_clock_witness`.
 
 #![no_std]
 #![allow(missing_docs)]
@@ -109,7 +110,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     });
     let (r0, _) = call(
         grant_plan::ENTROPY_SLOT,
-        entropy_contract::req(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
+        entropy_contract::request(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
         0,
     );
     say(match r0 as i64 {

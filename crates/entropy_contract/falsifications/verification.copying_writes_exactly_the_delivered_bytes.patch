@@ -1,0 +1,21 @@
+Falsifies `entropy_contract::verification::copying_writes_exactly_the_delivered_bytes`.
+
+The defect: `copy_delivered_bytes` reads the reply word big-endian, the slip a reader makes who
+takes the delivered bytes for the high end of the register. The count stays right and the bytes
+come from the wrong end, so a short reply copies bytes the service never filled.
+
+Expected to fail: the harness's `assert_eq!` on `buffer[index]`, for a copy of one byte or more
+whose word reads differently from each end.
+
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
+--- a/crates/entropy_contract/src/lib.rs
++++ b/crates/entropy_contract/src/lib.rs
+@@ -265,7 +265,7 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
+ /// value out and this copies bytes.
+ pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) -> usize {
+     let copied = byte_count.min(MAXIMUM_BYTES as usize).min(out.len());
+-    out[..copied].copy_from_slice(&reply_word.to_le_bytes()[..copied]);
++    out[..copied].copy_from_slice(&reply_word.to_be_bytes()[..copied]);
+     copied
+ }
+ 

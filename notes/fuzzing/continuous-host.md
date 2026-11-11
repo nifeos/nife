@@ -117,7 +117,10 @@ The status column of `windows.tsv` says which kind of hold it is:
 
 - `held-finding`: the log has a `replay:` line, a shadow-model mismatch or an escape.
 - `held-crash`: the guest panicked and printed no replay line.
-- `held-hang`: the window ran out its bound (exit 143 or 137).
+- `held-hang`: the guest ran out its bound. The exit status cannot show it, because the runner
+  passes the bound's TERM to QEMU and QEMU then exits 0, so the supervisor times the guest and logs
+  which way it ended. A guest that a signal stopped before its bound did not hang, and that window
+  is `infrastructure`.
 - `held-budget-expired`: a wait ran out its every-core tick budget (`EveryCoreTickBudget`). The guest
   was short of time, probably through the host's doing.
 
@@ -216,6 +219,9 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - The windows have been timed one guest at a time, at about 457 seeds per second for the
   kernel-thread driver and 205 for the confined driver. Nobody has measured four windows at once
   through this path, so the rates note's four-guest figures stand in for them.
+- nife owes a measurement at 1, 4 and 8 guests through this path: seeds per second per driver and
+  the false-red count at each, beside [the rates note](rates-on-x86-64-under-kvm.md). Until then
+  `NIFE_FUZZ_GUESTS` stays at four.
 - The build fixes the seed range, so each 60-second window pays a rebuild. A runtime seed (for
   example a kernel command line word) would let one image sweep forever. That change belongs to the
   drivers' milestones.

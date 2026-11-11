@@ -20,7 +20,7 @@ leak of a leaf unmapped with its tables left standing cannot happen.
 
 A space is built two ways, and they differ in who frees that region. `AddressSpace::new` carves its
 own region out of the frame allocator, so nobody else has a name for it, and its `Drop` is the only
-thing that can free it. `user_address_space_create` (the `RETYPE_OBJ(ADDRESS_SPACE)` engine,
+thing that can free it. `user_address_space_create` (the `RETYPE_OBJECT(ADDRESS_SPACE)` engine,
 milestone 19b (run a real workload)) is lent a region whose `MemoryRegion` capability the caller holds, and that caller
 reclaims it with `DESTROY`. A lent region has two names for one run of memory, and only one of them
 may free it.
@@ -32,7 +32,7 @@ pin before the reaper's deferred drop can land. `sched::finish_switch` hoists a 
 out from under `IPC_TABLES`, releases the lock, and only then drops it. Two `destroy` calls for one
 region would then both pass the refusal check and both free every page of the run.
 
-Spending a lent region is correct: it is the point of `RETYPE_OBJ(ADDRESS_SPACE)`, which runs the
+Spending a lent region is correct: it is the point of `RETYPE_OBJECT(ADDRESS_SPACE)`, which runs the
 space on the caller's budget. Only freeing is restricted.
 
 ## The TLB tag
@@ -164,8 +164,8 @@ registry when it is built and leaves only when it drops, and holds one entry her
 cannot fill while a space that wants an entry exists. That is why `register_bound_address_space`
 panics on a full table rather than handing every kernel spawn path an error it could never act on.
 The revocation registry's own constant is the thread ceiling plus headroom, so the argument follows
-the thread ceiling when it moves. At 288
-slots the table is 21,904 bytes of `.bss` on all three architectures (`registry_footprint`): 72 bytes
+the thread ceiling when it moves. At 1,056
+slots the table is 80,272 bytes of `.bss` on all three architectures (`registry_footprint`): 72 bytes
 an entry and a 4-byte generation each. Nothing walks the empty slots, because
 `generational_table::Table` bounds every sweep by its highest live slot.
 

@@ -83,10 +83,25 @@ if [ -n "$partial" ] && [ -n "$held" ]; then
 	exit 2
 fi
 
-kind="$(gh api "repos/$repo/issues/$num" --jq 'if .pull_request then "pr" else "issue" end')" || {
+# GraphQL only (notes/skills/maintainer/SKILL.md): the REST budget is shared by every agent on the account, the
+# GraphQL one is separate. One query reads the item's kind, node id and labels, and the ids of the
+# labels this script may add or remove.
+owner="${repo%%/*}" rname="${repo#*/}"
+item_query='query($o:String!,$n:String!,$num:Int!){repository(owner:$o,name:$n){
+  issueOrPullRequest(number:$num){__typename
+    ... on PullRequest{id labels(first:100){nodes{name}}}
+    ... on Issue{id labels(first:100){nodes{name}}}}
+  ruled:label(name:"architect-ruled"){id} held:label(name:"held-by-lane"){id} asking:label(name:"needs-architect"){id}}}'
+read_item() { # prints the query's JSON; fails when the repository or the item is not there
+	ri_out="$(gh api graphql -f query="$item_query" -f o="$owner" -f n="$rname" -F num="$num")" || return 1
+	printf '%s' "$ri_out" | jq -e '.data.repository.issueOrPullRequest | select(. != null)' >/dev/null || return 1
+	printf '%s' "$ri_out"
+}
+item="$(read_item)" || {
 	echo "record-ruling: could not read #$num in $repo." >&2
 	exit 1
 }
+kind="$(printf '%s' "$item" | jq -r 'if .data.repository.issueOrPullRequest.__typename == "PullRequest" then "pr" else "issue" end')"
 
 when="$(date -u '+%Y-%m-%d %H:%M')"
 if [ -n "$partial" ]; then
@@ -123,21 +138,25 @@ if [ -n "$dry" ]; then
 	exit 0
 fi
 
-printf '%s\n' "$body" | gh "$kind" comment "$num" --repo "$repo" --body-file - >/dev/null
+subject="$(printf '%s' "$item" | jq -r '.data.repository.issueOrPullRequest.id')"
+gh api graphql -f query='mutation($s:ID!,$b:String!){addComment(input:{subjectId:$s,body:$b}){clientMutationId}}' \
+	-f s="$subject" -f b="$body" >/dev/null
 echo "record-ruling: ruling posted on #$num"
 [ -n "$partial" ] && exit 0
 
-# The REST labels endpoints, not `gh pr edit`: that reads the pull request's Projects (classic) cards,
-# and GitHub's deprecation error for them fails the whole edit. Add before removing, so a failure in
-# between leaves both labels, which architect-ruled-clears-hold.yml finishes, and never neither.
-labels="$(gh api "repos/$repo/issues/$num" --jq '.labels[].name')" || labels=""
-set -- -f 'labels[]=architect-ruled'
-[ -n "$held" ] && set -- "$@" -f 'labels[]=held-by-lane'
-gh api "repos/$repo/issues/$num/labels" "$@" >/dev/null || true
-printf '%s\n' "$labels" | grep -qx needs-architect &&
-	{ gh api -X DELETE "repos/$repo/issues/$num/labels/needs-architect" >/dev/null || true; }
+# Add before removing, so a failure in between leaves both labels, which
+# architect-ruled-clears-hold.yml finishes, and never neither.
+label_id() { printf '%s' "$item" | jq -r --arg k "$1" '.data.repository[$k].id // empty'; }
+ids="\"$(label_id ruled)\""
+[ -n "$held" ] && ids="$ids,\"$(label_id held)\""
+gh api graphql -f query="mutation(\$s:ID!){addLabelsToLabelable(input:{labelableId:\$s,labelIds:[$ids]}){clientMutationId}}" \
+	-f s="$subject" >/dev/null 2>&1 || true
+if printf '%s' "$item" | jq -e '.data.repository.issueOrPullRequest.labels.nodes | any(.name == "needs-architect")' >/dev/null; then
+	gh api graphql -f query="mutation(\$s:ID!){removeLabelsFromLabelable(input:{labelableId:\$s,labelIds:[\"$(label_id asking)\"]}){clientMutationId}}" \
+		-f s="$subject" >/dev/null 2>&1 || true
+fi
 
-after="$(gh api "repos/$repo/issues/$num" --jq '.labels[].name')" || after=""
+after="$(read_item | jq -r '.data.repository.issueOrPullRequest.labels.nodes[].name')" || after=""
 if printf '%s\n' "$after" | grep -qx needs-architect || ! printf '%s\n' "$after" | grep -qx architect-ruled ||
 	{ [ -n "$held" ] && ! printf '%s\n' "$after" | grep -qx held-by-lane; }; then
 	echo "record-ruling: the ruling is posted, but the labels on #$num did not swap (now: $(printf '%s' "$after" | tr '\n' ' '))." >&2

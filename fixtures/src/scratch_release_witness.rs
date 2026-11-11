@@ -25,7 +25,7 @@
 //! (`system_tests`' `running_space_tests`) mirrors these three words, as `authority_tests` mirrors
 //! `root_supervisor`'s.
 //!
-//! Name: provisional (milestone 95's §249 lane, 2026-10-05 UTC).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
 
 #![no_std]
 // Program entry points, not the crates/ library surface the ratchet of milestone 68 (code-quality

@@ -134,7 +134,7 @@ pub const THREAD_SLOT: u64 = 11;
 pub const SPACE_SLOT: u64 = 12;
 
 /// **The first slot above every fixed one**, this contract's and `grant_plan`'s: std makes its own
-/// capabilities (threads, keys) at or above it (`RETYPE_OBJ`'s floor). A loader places a std
+/// capabilities (threads, keys) at or above it (`RETYPE_OBJECT`'s floor). A loader places a std
 /// program's capabilities at the fixed slot numbers and nowhere else; the reserved fault slot is
 /// last in the table and far above them.
 pub const SLOTS: u64 = 31;

@@ -466,6 +466,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
+ "pci",
  "startup_page_contract",
 ]
 
@@ -825,7 +826,6 @@ dependencies = [
  "memory_regions",
  "minicov",
  "nifefs",
- "non_volatile_memory_express",
  "page_frames",
  "paging",
  "pci",

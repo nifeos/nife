@@ -1,9 +1,10 @@
 # E5: does an executed fastpath cost time on radon
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/footprint-perturbation.md`](../footprint-perturbation.md), whose "The next
 radon evening" section is the evening's plan. Written 2026-10-03 (UTC) by the
-`maintainer/radon-footprint-experiment` lane. Name provisional, the directory and the stem both;
-naming is an architect's. E5 is a provisional label too, the next free one after E4.*
+`maintainer/radon-footprint-experiment` lane. E5 is a provisional label, the next free one after E4.*
 
 Status: a plan, not runnable. Nothing here has run, and the instrument it needs is not built.
 The build is proposed in

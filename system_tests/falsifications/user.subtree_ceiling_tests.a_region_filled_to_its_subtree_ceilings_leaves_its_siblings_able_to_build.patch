@@ -1,0 +1,25 @@
+Falsifies `system_tests::user::subtree_ceiling_tests::a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build`.
+
+Architecture: aarch64, riscv64, x86_64 (the hunk is portable crate code).
+
+The defect: `RegionTable::charge` loses its decide walk's ceiling comparison, so a creation is
+counted but never refused at a ceiling, which is the kernel as it was before subtree ceilings.
+
+Expected to fail: `Rendezvous did not stop at the split child's ceiling`, the region making
+rendezvous until the attempt bound instead of stopping at the split child's share.
+Replayed red on aarch64 on 2026-11-11 (UTC): `left: 128`, `right: 112`.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+index 2534ad6b6..7c12555c6 100644
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -479,9 +479,6 @@ impl<const N: usize> RegionTable<N> {
+             let Some(r) = self.table.get(entry(at)) else {
+                 return false;
+             };
+-            if r.live.0[k] >= r.ceilings.0[k] {
+-                return false;
+-            }
+             at = r.parent;
+             if at == NO_PARENT {
+                 break;

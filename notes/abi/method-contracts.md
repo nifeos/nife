@@ -202,7 +202,7 @@ one, and a tickless kernel would be the reason to add it.
 
 ## Memory regions and frames
 
-`RETYPE_OBJ` makes one object per page, so the whole object family follows one memory rule; packing
+`RETYPE_OBJECT` makes one object per page, so the whole object family follows one memory rule; packing
 is a later placement optimization. A `std` program passes `std_runtime_contract::SLOTS` as the floor,
 so nothing it makes lands in a fixed slot it was not given.
 
@@ -211,8 +211,8 @@ The frame and object records count the whole subtree because a budget's pages ar
 child regions, and the objects live in those.
 
 BUGS: every subtree record walks the whole region table under the region lock, with interrupts
-masked. The table (`kernel/src/memory_region.rs`, `MAXIMUM_REGIONS`, 256) is machine-wide, so one
-call costs every region's parent chain. The 2026-10-03 security audit measured it on the host: 8 ns
+masked. The table (`kernel/src/memory_region.rs`, `MAXIMUM_REGIONS`, 1,024) is machine-wide, so one
+call costs every region's parent chain. The figures that follow come from a host run at 256 slots: 8 ns
 for a root with eight children, 42 µs for a root over the deepest chain the table can hold, and 62
 µs for that chain's leaf. Any holder of `ENUMERATE` on a region can repeat it, so it is a bounded
 interrupt-latency cost of the same shape as the reclaim scans the 2026-09-29 audit accepted. It is
