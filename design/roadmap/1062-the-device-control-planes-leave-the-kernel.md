@@ -24,6 +24,14 @@ it binds the device's requester id to its DMA region and grants the device's pag
 
 Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one pull request.
 
+- Step 1 waits for milestone 811 (the boot services leave the kernel)'s step 6.
+- Step 2 waits on no other work: §320 (the JH7110 clock and reset wire) states its wire.
+- Steps 3 and 5 wait for step 2, whose server brings their clocks and resets up.
+- Step 7 waits for the architect's ruling on which grant a starter gives by default, which the
+  section on step 7 leaves open.
+- Milestone 1064 (PCI enumeration leaves the kernel) follows this milestone and milestone 1068
+  (the kernel turns interrupt remapping on where an IOMMU offers it).
+
 ## The work, in order
 
 1. e1000e to the xHCI shape, after milestone 811 (the boot services leave the kernel)'s step 6.
@@ -56,10 +64,9 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route.
    `kernel/src/reboot/designware_i2c.rs` and the PMIC half of `kernel/src/reboot/pmic.rs` go.
    radon proves it.
-6. The x86 CMOS read, as §130 (how the kernel-resident CMOS RTC reaches the userspace clock
-   service) states it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the
-   CMOS itself. `kernel/src/arch/x86_64/rtc.rs` goes, and `clock_contract::rtc::CMOS` comes to name
-   two ports the service reads. §130's title, and the glosses that cite it, change with the code.
+6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
+   it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
+   `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
 7. A virtio driver starts with a mediated or a direct grant (§23 (multi-queue DMA confinement)),
    as the next section designs it. Ruled 2026-11-10 (UTC). That section lists its four pull
    requests.

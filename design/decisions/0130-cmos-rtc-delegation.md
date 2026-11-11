@@ -5,7 +5,7 @@ decided: 2026-08-26
 ratified_by: calef
 ---
 
-# 130. How the kernel-resident CMOS RTC reaches the userspace clock service
+# 130. How the userspace clock service reads the x86 CMOS RTC
 
 The rule in force, ruled 2026-11-10 (UTC): the userspace clock service reads the x86 CMOS itself,
 through a `PortRange` capability over ports 0x70 and 0x71. On the other two architectures it reads
@@ -44,7 +44,6 @@ CMOS ports, which also lets it set the clock, as its mapping already does on aar
 ## Decision
 
 Option 2. The clock service holds a `PortRange` over 0x70 and 0x71 and reads the CMOS itself.
-`clock_contract::rtc::CMOS` then names two ports the service reads, as `PL031` and `GOLDFISH` name
-register layouts. A userspace process can run this driver with a capability nife already has, so
-the kernel does not. Milestone 1062 (the device control planes leave the kernel) carries the change.
-Until it lands, `kernel/src/arch/x86_64/rtc.rs` still reads the CMOS and passes the seed.
+`clock_contract::rtc::CMOS` names the two ports the service reads, `rtc::INDEX_PORT` and
+`rtc::DATA_PORT`, as `PL031` and `GOLDFISH` name register layouts. A userspace process can run this
+driver with a capability nife already has, so the kernel does not. Milestone 1062 (the device control planes leave the kernel) carries the change.

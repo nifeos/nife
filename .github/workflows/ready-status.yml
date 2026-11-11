@@ -18,6 +18,14 @@ name: ready status
 # architect-hold.yml on purpose: one job, no build, nothing slow enough to jam the queue if it is
 # made required.
 #
+# **A `milestone/N-*` branch must move its own block** (2026-11-11 UTC, after #3437). `--check` and
+# `script/lint-fleet` 4b did not stop #3437, which merged on 2026-11-10 without touching
+# design/roadmap/: 4b skips on the detached HEAD of every CI run and only warns when it does run,
+# and the IN-PROGRESS test above passes a block that never left NOT-STARTED. So the same job now
+# also fails a ready milestone branch whose block is unchanged against the base, or still reads
+# NOT-STARTED (unless the branch adds the block) or IN-PROGRESS. The job keeps its name because the
+# ruleset requires it by name.
+#
 # **Drafts pass.** A lane's block reads IN-PROGRESS for its whole life as a draft, which is correct,
 # so the job reads the LIVE draft state (the event payload's copy has been wrong; see ci.yml's
 # `draft gate`) and passes when it is a draft. `converted_to_draft` is in `types:` so that a lane
@@ -60,6 +68,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Two commits, so that HEAD^1 (the base the pull request or the group lands on) is there
+          # to diff the branch's roadmap blocks against.
+          fetch-depth: 2
 
       - name: Resolve the branch, and whether it is asking to merge
         id: pr
@@ -88,11 +100,13 @@ jobs:
           echo "draft=$draft" >> "$GITHUB_OUTPUT"
           echo "==> #$number, branch '$branch', draft '$draft' (live)"
 
-      - name: A ready pull request carries no IN-PROGRESS block on its own branch
+      - name: A ready pull request carries no IN-PROGRESS block on its own branch, and a milestone branch moves its block
         if: steps.pr.outputs.draft != 'true'
         env:
           BRANCH: ${{ steps.pr.outputs.branch }}
-        run: script/roadmap --ready-branch "$BRANCH"
+        # HEAD is the merge commit under test, in a pull request run and in a group alike, so
+        # HEAD^1 is the base and the diff is what the branch changes.
+        run: script/roadmap --ready-branch "$BRANCH" --against HEAD^1
 
       - name: A draft is still work in progress, and its block may say so
         if: steps.pr.outputs.draft == 'true'
