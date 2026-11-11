@@ -251,10 +251,10 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The architect's clearance of this review. | architect |
 | The 118 template gate findings, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
 
-Recommendation. Ready for review and clearance; the move waits for the template gates.
+Recommendation. The architect cleared the move on 2026-11-11 (UTC), and has not cleared the tag or
+publication. The move waits for the template gates.
 
 ## `designware_mobile_storage`, step 8
 
@@ -377,7 +377,7 @@ with no Kani harness.
 | `generational_table` | 4 | cleared to move; repository exists |
 | `non_volatile_memory_express` | 5 | cleared to move; repository exists |
 | `e1000e` | 6 | cleared to move; repository exists |
-| `designware_ethernet` | 7 | ready for clearance; the move waits for the template gates |
+| `designware_ethernet` | 7 | cleared to move; the move waits for the template gates |
 | `designware_mobile_storage` | 8 | cleared to move; repository exists |
 | `jh7110_clock_and_reset` | 10 | one name and the clearance for the architect; the move waits for the template gates |
 | `block_roster_contract` | contract | ready for review |

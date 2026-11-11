@@ -153,6 +153,9 @@ template's prose caps.
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   `Handoff` is nife's spawn ABI. The cut removed `jh7110::discover`, which took a `DeviceTreeBlob`.
+- The architect cleared the crate's review on 2026-11-11 (UTC), which approves creating
+  `nifeos/designware_ethernet`. The clearance covers neither the tag nor a publication. The move
+  waits for the rename pass in *Before the move*.
 
 ## Exit
 
@@ -208,7 +211,7 @@ names until the ratification pass, so this section keeps the links it carried.
 ## Follow-on
 
 - **Outstanding.** The move. `crates/designware_ethernet` is still in this tree and the crate
-  repository does not exist. What remains is the review clearance, the repository, the tag
+  repository does not exist. What remains is the repository, the rename pass, the move, the tag
   `v0.1.0`, the soak's end conditions, the publication and nife consuming the release by semantic
   version. Checked by `ls crates/designware_ethernet` and by `gh api repos/nifeos/designware_ethernet`,
   which returns not found.
