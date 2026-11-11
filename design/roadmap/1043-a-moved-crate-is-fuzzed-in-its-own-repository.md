@@ -140,14 +140,13 @@ shows `weekly / fuzz` succeeded, and `script/fuzz --list` in nife names neither 
 
 ## Follow-on
 
-- **Outstanding.** The move itself. `file_allocation_table` is the crate this was written for, and its
-  repository is not yet created: its two fuzz targets still sit in this tree's `fuzz/`. What remains
+- **Outstanding.** The move itself. `file_allocation_table` is the crate this was written for. Nobody
+  has created its repository, and its two fuzz targets still sit in this tree's `fuzz/`. What remains
   is the crate repository's first `weekly` run showing `weekly / fuzz` succeeded, and `script/fuzz
-  --list` naming neither target. The staging and the dry run are built and merged. Checked with
-  `script/fuzz --list`, which still names `file_allocation_table_boot_sector` and
-  `file_allocation_table_writer`.
-- **Recorded.** A crash in `weekly / fuzz` and the corpus that is not kept between runs stay as the
-  BUGS section above states them.
+  --list` naming neither target. The staging and the dry run landed. Checked with `script/fuzz
+  --list`, which still names `file_allocation_table_boot_sector` and `file_allocation_table_writer`.
+- **Recorded.** A crash in `weekly / fuzz` and the corpus that no run keeps stay as the BUGS section
+  above states them.
 
 ## Index row
 
