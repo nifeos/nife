@@ -71,6 +71,19 @@ mod tests {
         );
     }
 
+    /// A `last_comp_version` past 17 says the tree cannot be read by a version 17 reader.
+    #[test]
+    fn a_tree_too_new_to_read_is_refused() {
+        let mut tree = QEMU.to_vec();
+        tree[24..28].copy_from_slice(&18u32.to_be_bytes());
+        // SAFETY: `tree` is longer than a header and outlives the call.
+        let refused = unsafe { bytes(tree.as_ptr()) };
+        assert_eq!(
+            refused,
+            Err("the firmware's device tree is a version too new to read")
+        );
+    }
+
     /// The buffer is longer than the size claimed, so the slice the old copy would have built is
     /// owned memory and the test is sound whichever way it goes; the ceiling is what decides it.
     #[test]
