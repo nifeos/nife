@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-11-10
 decided: 2026-11-10
 ratified_by: calef
@@ -60,7 +60,6 @@ answers anything else with status 8 and reads or stores nothing, so an undefined
 the silicon, and a later version can give it a meaning. The checks run in a fixed order: the badge
 (status 1), then the opcode (status 2), then the shape (status 8). A read-reset reply carries
 only the device's own line, because the other 31 lines of its status word belong to other devices.
-This paragraph, status 8 and the read-reset reply are the 2026-11-11 (UTC) ruling on this wire.
 
 Bring up walks the device's clocks, each parent choice before its clock's enable, then its
 resets, in the crate's plan order. It is idempotent, since firmware may have started the block, so
