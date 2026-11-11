@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: a-moved-crate-is-fuzzed-in-its-own-repository
 raised: 2026-11-05
 milestone_dependencies: 1034
@@ -137,6 +137,16 @@ shows `weekly / fuzz` succeeded, and `script/fuzz --list` in nife names neither 
   milestone.
 - `weekly / fuzz` does not keep its corpus between runs, as nife's shard does not, so each week
   starts from the committed seeds.
+
+## Follow-on
+
+- **Outstanding.** The move itself. `file_allocation_table` is the crate this milestone targets. Nobody
+  has created its repository, and its two fuzz targets still sit in this tree's `fuzz/`. What remains
+  is the crate repository's first `weekly` run showing `weekly / fuzz` succeeded, and `script/fuzz
+  --list` naming neither target. The staging and the dry run landed. Checked with `script/fuzz
+  --list`, which still names `file_allocation_table_boot_sector` and `file_allocation_table_writer`.
+- **Recorded.** A crash in `weekly / fuzz` and the corpus that no run keeps stay as the BUGS section
+  above states them.
 
 ## Index row
 

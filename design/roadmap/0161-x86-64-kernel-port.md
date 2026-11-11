@@ -119,7 +119,7 @@ The items were numbered in the order they had to be done, and other files cite t
 0. The device-discovery seam. The narrow half (`memory::bring_up_page_frames`) is built here. The
    wide half went to [milestone 176 (the x86_64 discovery seam's wide half)](0176-x86-64-discovery-seam-wide-half.md);
    its CMOS RTC piece, shaped by
-   [DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../decisions/0130-cmos-rtc-delegation.md),
+   [DECISIONS §130 (how the userspace clock service reads the x86 CMOS RTC)](../decisions/0130-cmos-rtc-delegation.md),
    is now built. See [open-list.md](0161-x86-64-kernel-port/open-list.md).
 1. Fine-grained page tables. BUILT 2026-08-24 (step 9). Its leftover, 2 MiB and 1 GiB leaves, was
    built by the closing lane on all three formats.
