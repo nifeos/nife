@@ -38,10 +38,10 @@ edits, which is the conflict shape the block exists to avoid, and each can drift
 
 1. Rules 2 and 3 are in the blocks. Each covered fixture and appendix document carries
    `Name: ratified 2026-10-17 (UTC, convention-rulings Rule 2)` or the Rule 3 paragraph, and
-   `helpers/name_rules.py` reads them there; the two lists and their selftests are gone, and
+   `helpers/name_rules.py` reads them there; the two lists and their selftests no longer exist, and
    `script/names | tail -3` prints the same ratified count as before. Rule 1 stays a rule that
    `name_rules.py` computes.
-2. The journey note is deleted, and `script/crate-standalone`'s step 0 message points at
+2. The journey note no longer exists, and `script/crate-standalone`'s step 0 message points at
    `name_release.py --draft`.
 3. `name_checks.py` reads a `Kept:` or `Ruled:` clause from a name's own block. The one entry whose
    name has a block moved into it. The other 25 `KEPT` and `RULED` entries name Rust items with no
@@ -58,6 +58,11 @@ a block, which is what step 3 kept the tables for.
 
 The direction that a name's status lives in the documents with the name, and the merge conflicts
 every naming pull request meets on the shared lists.
+
+## Follow-on
+
+- **Done.** The 25 `KEPT` and `RULED` entries in `helpers/name_checks.py` that name Rust items with
+  no block stay by design, each with its reason, carried by step 3 of the work above (#3485).
 
 ## Index row
 
