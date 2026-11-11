@@ -1,35 +1,42 @@
 Falsifies `memory_regions::proofs::a_refused_split_moves_nothing`.
 
-The defect: the split carves first and asks the ceiling second. It reads as a reordering with no
-effect, since both checks still run, but a split the ceiling refuses has already advanced the
-parent's watermark and raised its child count.
+The defect: the split moves the parent first and takes the child's slot second. It reads as a
+reordering with no effect, since every check still runs before either step, but a split refused for
+a full table has already advanced the parent's watermark, raised its child count and counted a
+region that does not exist.
 
 Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal moved something")`,
-on a split refused at the region ceiling.
+on a split refused for a full table.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
-index d850fff06..ecf30d8ee 100644
+index 9d726ec87..3c7f64966 100644
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
-@@ -432,11 +432,6 @@ impl<const N: usize> RegionTable<N> {
-     /// assert_eq!(table.usage(parent), Some((4, 8)), "the refused carve stays spent");
-     /// ```
-     pub fn split(&mut self, parent: u64, pages: u64) -> Option<u64> {
--        let r = self.table.get(entry(parent))?;
--        split_new_watermark(r.pages, r.watermark, pages)?;
--        if !self.charge(parent, Counted::Region) {
--            return None;
--        }
-         let (base_page, ceilings) = {
-             let r = self.table.get_mut(entry(parent))?;
-             let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
-@@ -446,6 +441,9 @@ impl<const N: usize> RegionTable<N> {
-             r.spent.children += pages;
-             (base_page, Ceilings::for_child_of(r))
-         };
-+        if !self.charge(parent, Counted::Region) {
-+            return None;
+@@ -424,6 +424,12 @@ impl<const N: usize> RegionTable<N> {
+         if !self.can_charge(parent, Counted::Region) {
+             return None;
+         }
++        self.count_one_more(parent, Counted::Region);
++        if let Some(r) = self.table.get_mut(entry(parent)) {
++            r.watermark = new_watermark;
++            r.children += 1;
++            r.spent.children += pages;
 +        }
-         let child = self
-             .table
-             .insert_with(|_| Region {
+         let child = self.table.insert_with(|_| Region {
+             base_page,
+             pages,
+@@ -436,14 +442,6 @@ impl<const N: usize> RegionTable<N> {
+             ceilings,
+             live: Ceilings::ZERO,
+         })?;
+-        // The insert filled a free slot and left every live one alone, so the parent still
+-        // resolves and the ceiling check above still holds.
+-        self.count_one_more(parent, Counted::Region);
+-        if let Some(r) = self.table.get_mut(entry(parent)) {
+-            r.watermark = new_watermark;
+-            r.children += 1;
+-            r.spent.children += pages;
+-        }
+         Some(child.to_bits())
+     }
+ 
