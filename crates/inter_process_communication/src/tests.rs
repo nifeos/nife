@@ -125,7 +125,11 @@ fn binding_refuses_the_senders_already_parked() {
 
     let mut refused = Vec::new();
     e.bind_to_interrupt(|t| refused.push(t.as_non_null()));
-    assert_eq!(refused, [first_at, second_at], "every parked sender, oldest first");
+    assert_eq!(
+        refused,
+        [first_at, second_at],
+        "every parked sender, oldest first"
+    );
     assert_eq!(e.debug_counts(), (0, 0, 0));
 
     assert_eq!(e.receive(driver), Receive::Blocked);
