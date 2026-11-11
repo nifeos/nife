@@ -18,6 +18,13 @@ inside a merge group, because only there does the branch's merge commit exist.
 still reads IN-PROGRESS on that branch, and names the block and the fix. `script/roadmap
 --selftest` proves it against fixtures under `script/lint`.
 
+With `--against <ref>` it also judges a `milestone/N-*` branch's own block against the base: the
+branch must change milestone N's block (or the block a renumbered lane moved to), and the block must
+not read IN-PROGRESS or NOT-STARTED, except that a branch which adds the block may leave it
+NOT-STARTED. The workflow passes the base of the merge commit under test, `HEAD^1`. This check
+exists because `script/lint-fleet` 4b skips on the detached HEAD of every CI run, so nothing else
+required a milestone branch to move its block.
+
 `.github/workflows/ready-status.yml` runs it on `pull_request` (opened, reopened, synchronize,
 ready_for_review, converted_to_draft) and on `merge_group`. It reads the live draft state, and a
 draft passes, because IN-PROGRESS is a draft's honest status. The pre-push hook asks the same

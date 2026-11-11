@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-07
 milestone_dependencies: 887
 decision_dependencies: none
@@ -219,6 +219,16 @@ names until the ratification pass, so this section keeps the links it carried.
   bench item for the maintainers.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
+
+## Follow-on
+
+- **Outstanding.** The move. `crates/jh7110_clock_and_reset` is still in this tree and the crate
+  repository does not exist. What remains is the repository, the tag `v0.1.0`, the soak's end
+  conditions, the publication and nife consuming the release by semantic version. Checked by `ls
+  crates/jh7110_clock_and_reset` and by `gh api repos/nifeos/jh7110_clock_and_reset`, which returns
+  not found.
+- **Recorded.** Publishing to crates.io waits on the maintainers' hold and an architect's approval,
+  as the *Release* section states.
 
 ## Index row
 
