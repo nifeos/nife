@@ -31,6 +31,19 @@ other eight, `userspace`, `budget`, `supervised`, `teardown`, `blockdev`, `clock
   progenitor can print only once the shell's output page is mapped. So the transcript and the
   verdict reach the console after the tour line, between the hand-over's lines and the prompt.
   `serial_console`'s `has_reached` waits for the verdict line itself, and `boot-check` requires it.
+- The verdict reaches a screen the kernel still paints, aarch64 and riscv64 with a `ramfb`. The
+  progenitor's console reaches the UART alone there, so the program sends its tally with `DONE`,
+  packed into one word (`Tally::to_packed`). The progenitor sends that word on an endpoint the
+  hand-over grants only on a machine with a screen, and then deletes it. A kernel thread takes the
+  one message, renders the verdict with `boot_ladder::verdict`, and paints it on the screen alone,
+  since the UART already has the program's copy. Nothing the progenitor sends is painted as text.
+  On `x86_64` the screen is the shell's terminal by then, and the verdict reaches it as every
+  console line does. The architect ruled on this path on 2026-11-11 (UTC).
+- Before a check takes the death of a child it kills on purpose, the program names the child's
+  thread in a `boot_ladder::SELF_TEST_SUBJECT` line, in decimal, as the kernel's kill report
+  prints it. `userspace`, `supervised` and both rounds of `teardown` do so. `swish-check` removes
+  exactly those threads' kill reports and fails every other kill after the hand-over, as the
+  architect ruled on 2026-11-11 (UTC).
 - A boot that cannot reach the program still prints a verdict. With no archive or no progenitor, the
   kernel prints one that fails the eight by name. A program that dies before its verdict makes the
   progenitor say so. That boot has no `nife self-test:` line, and `boot-check` fails it.

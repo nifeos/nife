@@ -19,6 +19,14 @@ Ruled 2026-11-10 (UTC): the boot self-test checks that spawn a user program move
 program the progenitor runs. The checks of the kernel's own internals stay in
 `kernel/src/self_test.rs`, because they test what must run at EL1 (§4 (kernel shape)).
 
+Ruled 2026-11-11 (UTC), on the screen: the progenitor's verdict line also reaches the kernel's
+screen, through a narrow path scoped to that line, and the screen gates keep waiting for
+`boot_ladder::SELF_TEST`.
+
+Ruled 2026-11-11 (UTC), on the self-test's deliberate kills: `boot_self_test` names each thread it
+kills on purpose in a `boot_ladder` line before its death is taken, and `swish-check` excludes
+exactly those thread ids. Every other kill after the hand-over still fails the gate.
+
 ## Today
 
 `kernel/src/self_test.rs` runs on every default boot and spawns, from the kernel,
@@ -54,6 +62,14 @@ halves share, `boot_ladder::kernel_half` the page, and `boot_ladder::self_test_p
 program's slots, addresses, image table and messages. notes/self-test-checks.md, "The two
 halves", has the design.
 
+On a machine with a screen the hand-over also grants the progenitor a `WRITE` endpoint, slot 40.
+The progenitor sends the program's packed tally on it once, and a kernel thread renders the verdict
+from it and paints it on the screen alone (`kernel/src/user/self_test_hand_over.rs`). `screen-boot`
+reads it off the `ramfb`. `uefi-boot` reads the kernel's `boot_ladder::TOUR` line off the held
+screen and the verdict off the shell's terminal, because the hold comes before the progenitor
+runs. The program names its deliberate subjects in `boot_ladder::SELF_TEST_SUBJECT` lines, and
+`swish-check` removes those threads' kill reports by id (`without_deliberate_kills`).
+
 | run | verdict |
 |---|---|
 | aarch64, `boot-check` | 10 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy |
@@ -82,6 +98,10 @@ name and turned the disk boots' verdicts red.
   starters is milestone 811 (the boot services leave the kernel)'s work.
 - The verdict reaches the console after the tour line, so a watcher reading the ladder's order
   needs `serial_console`'s `has_reached` rather than the ratchet alone.
+- A progenitor that never sends on the screen endpoint and never deletes it leaves the kernel
+  thread that paints the verdict parked on its receive.
+- A kill report another writer shredded keeps all but its first line, so the transcript still
+  reads as the kernel writing during the boot.
 
 ## Follow-on
 
