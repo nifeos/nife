@@ -89,10 +89,14 @@ before a console exists to carry a word, and `script/test` never boots the real 
 
 ## The peak, recorded
 
-`CAPABILITY_TABLE_PEAK_MEASURED` is 37, measured on 2026-10-19 (UTC) on `script/swish-check`'s
-aarch64 leg, on the boot that runs the full script for milestone 892 (a std program at the prompt
-holds the network and a name resolver). The spawn service is then building `jig install` and holds
-the copy of the boot terminal it places as that job's standard input. The same boot without that copy peaks at 36.
+`CAPABILITY_TABLE_PEAK_MEASURED` is 39, measured on 2026-11-11 (UTC) on `script/swish-check`'s
+aarch64 leg, on the boot with a gpu and a keyboard. The peak is reached before the progenitor runs
+`boot_self_test`, while it still holds the four slots the hand-over grants for it on a machine with
+a virtio disk: the kernel's half of the self-test and disk 0's trio (milestone 1063 (the boot
+self-test's spawning checks run from userspace)). It deletes them once the program is done. The
+boot that runs the full script for milestone 892 (a std program at the prompt holds the network
+and a name resolver) peaks at 37, while the spawn service builds `jig install` and holds the copy of
+the boot terminal it places as that job's standard input.
 A boot with no NVMe disk peaks two lower, because the disk tree's endpoint and client-window pool
 are held for the life of the boot. [The peak trace](capability-peak-trace.md) itemizes what sits on
 the peak.
