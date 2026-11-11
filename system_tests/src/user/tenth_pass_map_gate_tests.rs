@@ -81,7 +81,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     // A one-page control at the last-but-one user page (writable), leaving the last user page
     // free so the straddling run below starts on an unmapped address.
     let below = last_user_page - page;
-    map_one_page(space, one_page, below, abi::address_space::MAP_RW)
+    map_one_page(space, one_page, below, abi::address_space::MAP_READ_WRITE)
         .expect("MAP_INTO refused the last-but-one user page");
     assert!(
         flags_at(space_name, below).is_some_and(|f| f.is_writable()),
@@ -96,7 +96,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
             abi::address_space::MAP_INTO,
             last_user_page,
             two_pages,
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "a run whose second page lands in the kernel half was mapped (claim 10)",
@@ -108,8 +108,13 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     );
     // The last user page by itself is inside, so the refusal above was the run's shape and not
     // the address: this is the one-page positive control at the boundary itself.
-    map_one_page(space, one_page, last_user_page, abi::address_space::MAP_RW)
-        .expect("MAP_INTO refused the last user page itself");
+    map_one_page(
+        space,
+        one_page,
+        last_user_page,
+        abi::address_space::MAP_READ_WRITE,
+    )
+    .expect("MAP_INTO refused the last user page itself");
 
     // The kernel half's first page, by itself.
     assert_eq!(
@@ -118,7 +123,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
             abi::address_space::MAP_INTO,
             mmu::KERNEL_VA_BASE,
             one_page,
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "MAP_INTO mapped a page at the kernel half's base (claim 10)",
@@ -131,7 +136,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
             abi::address_space::MAP_INTO,
             below + 8,
             one_page,
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "MAP_INTO mapped an unaligned page (claim 10)",
@@ -146,7 +151,7 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
             abi::address_space::MAP_INTO,
             top,
             two_pages,
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::BadPointer),
         "a run at the very top of the address space was mapped (claim 10)",
@@ -214,7 +219,7 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
             abi::address_space::MAP_INTO,
             overlay_va,
             frame,
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         ),
         Err(Error::NotPermitted),
         "MAP_INTO overlaid a writable mapping on a live code page, or refused it as something \
@@ -265,7 +270,7 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
 }
 
 /// **One physical page is never writable through one virtual address and executable through
-/// another in the same space** (claim 11): `MAP_RW` at one address, then `MAP_CODE` of the same
+/// another in the same space** (claim 11): `MAP_READ_WRITE` at one address, then `MAP_CODE` of the same
 /// frame at the next, both through `AddressSpace::MAP_INTO`.
 ///
 /// Each leaf would be honest and the page both writable and executable, so the mapping hold refuses
@@ -292,8 +297,13 @@ fn one_physical_page_is_never_writable_here_and_executable_there() {
     let split = 1u64 << <crate::arch::mmu::Format as paging::PageFormat>::SPLIT_SHIFT;
     let executable_va = split - page;
     let writable_va = split - page * 2;
-    map_one_page(space, frame, writable_va, abi::address_space::MAP_RW)
-        .expect("MAP_INTO refused the writable mapping of a READ|WRITE frame");
+    map_one_page(
+        space,
+        frame,
+        writable_va,
+        abi::address_space::MAP_READ_WRITE,
+    )
+    .expect("MAP_INTO refused the writable mapping of a READ|WRITE frame");
     assert_eq!(
         map_one_page(space, frame, executable_va, abi::address_space::MAP_CODE),
         Err(Error::NotPermitted),
@@ -495,21 +505,21 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
             here,
             read_only,
             base,
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
             "read-only",
         ),
         (
             here,
             read_only,
             base + page,
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
             "read-only twice",
         ),
         (
             here,
             read_only,
             base + 2 * page,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
             "writable beside read-only",
         ),
         (
@@ -523,21 +533,21 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
             here,
             shared,
             base + 4 * page,
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
             "read-only beside code",
         ),
         (
             there,
             shared,
             base,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
             "writable in another space",
         ),
         (
             there,
             shared,
             base + page,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
             "writable twice there",
         ),
     ];

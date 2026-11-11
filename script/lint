@@ -2462,11 +2462,11 @@ def _sh_scripts():
 
 
 def _abi_syscalls():
-    """`SYS_*` u64 constants in crates/abi/src/lib.rs: the width of the syscall trap.
+    """`SYSCALL_*` u64 constants in crates/abi/src/lib.rs: the width of the syscall trap.
 
-    Assumes the syscall numbers are the crate's only `SYS_`-prefixed u64 constants, which they are
-    and which the naming makes self-enforcing: every other constant in the crate is a method, a
-    right, an object type or a sentinel, and none of those is spelled `SYS_`. Optional leading
+    Assumes the syscall numbers are the crate's only `SYSCALL_`-prefixed u64 constants, which they
+    are and which the naming makes self-enforcing: every other constant in the crate is a method, a
+    right, an object type or a sentinel, and none of those is spelled `SYSCALL_`. Optional leading
     whitespace so a future one nested in a module still counts; a nested one that was NOT counted
     would make this number quietly low, and a low count is no better than a high one when prose is
     copying it (the `_sh_scripts` entry records the same hazard).
@@ -2476,7 +2476,7 @@ def _abi_syscalls():
     was **three** calls. `SYS_CAP_DELETE` landed 2026-07-24 and moved none of them.
     """
     text = pathlib.Path('crates/abi/src/lib.rs').read_text(errors='replace')
-    return len(re.findall(r'^[ \t]*pub const SYS_[A-Z_0-9]+: u64\b', text, re.M))
+    return len(re.findall(r'^[ \t]*pub const SYSCALL_[A-Z_0-9]+: u64\b', text, re.M))
 
 
 def _rights_bits():

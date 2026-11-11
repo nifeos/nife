@@ -187,7 +187,8 @@ faulting address. Word 4 is reserved for the resume protocol in section 4 of §2
 endpoint). So the lead does not by itself free a word.
 
 A sixth register is free on all three ISAs. `INVOKE` reads only argument registers 0 to 4
-(`kernel/src/syscall.rs`, the `SYS_INVOKE` arm). Argument register 5 (`x5`, `a5`, `r9`) is in every
+(`kernel/src/syscall.rs`, the `SYSCALL_INVOKE` arm, its name spelled out by the ruling of 2026-11-11
+(UTC)). Argument register 5 (`x5`, `a5`, `r9`) is in every
 trap frame and restored on return, including on x86_64, whose `syscall` entry exits through
 `isr_restore`. Using it costs two things. The user-side stubs (`invoke5` in
 `crates/user_mode_runtime`) must declare it as an output on every ISA, or a `RECEIVE` silently

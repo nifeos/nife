@@ -22,7 +22,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use abi::Error;
-use abi::fault::{EVENT_FAULT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -452,7 +452,7 @@ fn a_corpse_does_not_keep_a_space_rooted_in_a_destroyed_region() {
     sched::thread_control_block_insert_capability(
         tid,
         crate::capability_object::rendezvous_capability(supervisor, Rights::READ),
-        Some(FAULT_EP_SLOT),
+        Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert the supervision endpoint");
     sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, name)

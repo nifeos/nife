@@ -57,7 +57,7 @@ worth a lane and is not worth one before this.
 sets out to *prove something in Verus* will spend its time learning Verus and produce a proof whose
 cost tells you nothing, because the first proof anyone writes in a new verifier is the expensive one.
 The number this project needs is not "can a skilled Verus user prove this", it is "does the door
-open". `notes/verus.md` already established that the first hour is cheap (a `run_end_va`-shaped
+open". `notes/verus.md` already established that the first hour is cheap (a `run_end_virtual_address`-shaped
 property, `no_std`, from a cold start knowing no Verus, verified in 0.83 seconds) and that this says
 nothing about a subsystem.
 

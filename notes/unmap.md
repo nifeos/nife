@@ -35,11 +35,11 @@ A builder that mapped the wrong page into a child before starting it:
 
 ```rust
 // SAFETY: invoke is the syscall; the kernel validates the capability, method and address.
-unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, frame, abi::address_space::MAP_RW) };
+unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, frame, abi::address_space::MAP_READ_WRITE) };
 // ... wrong frame. Give the page up and map the right one at the same address.
 let r = unsafe { invoke(aspace, abi::address_space::UNMAP, va, 0, 0) };
 assert_eq!(r, 0);
-unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, right_frame, abi::address_space::MAP_RW) };
+unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, right_frame, abi::address_space::MAP_READ_WRITE) };
 ```
 
 Asking twice is an error the second time:

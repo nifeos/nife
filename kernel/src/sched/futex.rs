@@ -122,7 +122,7 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
     n
 }
 
-/// `SYS_EXIT_THREAD`'s word: store zero in the calling thread's 32-bit word at `va` and wake every
+/// `SYSCALL_EXIT_THREAD`'s word: store zero in the calling thread's 32-bit word at `va` and wake every
 /// futex waiter on it, so a joiner may free the thread's stack. Called before the thread departs,
 /// which runs on the kernel stack, so the user stack is not touched again. A word that is zero,
 /// misaligned, outside the user half or not mapped writable is skipped: nothing stops an exit.

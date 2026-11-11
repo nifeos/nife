@@ -18,7 +18,7 @@ below wait for an architect.
 
 Reuse: none exists; searched `kernel/src` for every mint of `cap::address_space_cap` (only
 `RETYPE_OBJECT` and tests) and `crates/abi` for a self-naming slot convention (only
-`abi::fault::FAULT_EP_SLOT`, which option B below would copy). This is the kernel's object model,
+`abi::fault::FAULT_RENDEZVOUS_SLOT`, which option B below would copy). This is the kernel's object model,
 where §46 (thin primitives or whole subsystems) says write it.
 
 ## The hole
@@ -42,7 +42,7 @@ and a creator decides whether to keep or pass on one for each child. It adds aut
 `MAP_INTO` into a running space comes with it, which seL4 also allows.
 
 **B. The kernel grants every thread a capability to its own space, in a reserved slot, at
-`START`.** `abi::fault::FAULT_EP_SLOT`'s convention, one slot over. Simpler for a program to find,
+`START`.** `abi::fault::FAULT_RENDEZVOUS_SLOT`'s convention, one slot over. Simpler for a program to find,
 but every process gets it whether its builder wanted that or not, which is a default grant rather
 than an explicit one.
 

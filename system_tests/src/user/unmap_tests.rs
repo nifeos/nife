@@ -80,7 +80,7 @@ fn map_into(aspace: u64, va: u64, frame: u64) -> Result<i64, Error> {
         abi::address_space::MAP_INTO,
         va,
         frame,
-        abi::address_space::MAP_RW,
+        abi::address_space::MAP_READ_WRITE,
     )
 }
 

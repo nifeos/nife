@@ -261,7 +261,7 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
                 abi::address_space::MAP_INTO,
                 VA,
                 frame_slot,
-                abi::address_space::MAP_RW,
+                abi::address_space::MAP_READ_WRITE,
             );
             REPORT.answer.store(encode(answer), Ordering::SeqCst);
             REPORT.mapped.store(
@@ -274,7 +274,7 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
                 abi::address_space::MAP_INTO,
                 VA,
                 frame_slot,
-                abi::address_space::MAP_RW,
+                abi::address_space::MAP_READ_WRITE,
             );
             REPORT.after.store(encode(after), Ordering::SeqCst);
             REPORT.returned.store(true, Ordering::SeqCst);

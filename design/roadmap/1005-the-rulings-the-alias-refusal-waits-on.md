@@ -33,7 +33,7 @@ is both writable and executable."
 
 The gap is that two leaves can name one physical page. `AddressSpace::MAP_INTO` maps the frame a
 capability names at the address the caller picks, and nothing asks whether the space already maps
-that frame elsewhere. The tenth pass mapped one `READ | WRITE` frame `MAP_RW` at one address and
+that frame elsewhere. The tenth pass mapped one `READ | WRITE` frame `MAP_READ_WRITE` at one address and
 `MAP_CODE` at the next. Each leaf is honest; the page is both. A writer stores code at one and runs it at the other.
 
 The kernel already keeps the record a check would read. Every mapping of a frame into any space
@@ -105,8 +105,8 @@ the part of Linux's `rmap`. A check costs a scan of one log, not a new structure
 
 ### Example
 
-The witness maps the frame `MAP_RW` at `0xffffffffe000`, then `MAP_CODE` at `0xfffffffff000`. Under (a), (b) and (c) alike the kernel refuses the second call and the page stays writable only; the witness
-goes green. The rulings differ on a third call the witness does not make. `MAP_RO` of the same frame
+The witness maps the frame `MAP_READ_WRITE` at `0xffffffffe000`, then `MAP_CODE` at `0xfffffffff000`. Under (a), (b) and (c) alike the kernel refuses the second call and the page stays writable only; the witness
+goes green. The rulings differ on a third call the witness does not make. `MAP_READ_ONLY` of the same frame
 at `0xffffffffd000` succeeds under (a) and fails under (b) and (c).
 
 ### Cost
@@ -260,7 +260,7 @@ The question is whether the guarantee is worth a scan of every log inside the gl
 
 ### Example
 
-Take the reproduction across two spaces. Space S1 maps the frame `MAP_RW` at `0xffffffffe000`; space S2
+Take the reproduction across two spaces. Space S1 maps the frame `MAP_READ_WRITE` at `0xffffffffe000`; space S2
 maps it `MAP_CODE` at `0xfffffffff000`. Under (a) both succeed and claim 11, as restated, holds. Under (b) the kernel refuses the second. Under (c) both succeed, and S2's first thread fails to start until S1 unmaps.
 `fill_and_map` is this example with S1 the builder and S2 the child.
 

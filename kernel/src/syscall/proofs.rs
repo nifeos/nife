@@ -1,11 +1,11 @@
-use super::address_space::run_end_va;
+use super::address_space::run_end_virtual_address;
 use super::*;
 
 /// The page size the run arithmetic steps by, spelled once so the harnesses below and
-/// `run_end_va` cannot drift apart.
+/// `run_end_virtual_address` cannot drift apart.
 const PAGE: u128 = paging::PAGE_SIZE as u128;
 
-/// **`run_end_va` is exact, and it refuses exactly the runs that do not fit.**
+/// **`run_end_virtual_address` is exact, and it refuses exactly the runs that do not fit.**
 ///
 /// A wrapping multiply would admit a run spanning the address space for a measure-zero set of
 /// `count`s near multiples of 2^52, which no unit test writes down; the solver covers the domain.
@@ -23,7 +23,7 @@ fn the_run_end_is_exact_and_refuses_exactly_what_does_not_fit() {
 
     let want = va as u128 + (count as u128 - 1) * PAGE;
 
-    match run_end_va(va, count) {
+    match run_end_virtual_address(va, count) {
         Some(last) => {
             assert!(
                 last as u128 == want,
@@ -40,7 +40,7 @@ fn the_run_end_is_exact_and_refuses_exactly_what_does_not_fit() {
 
 /// **Checking the two ends of a run is enough to check every page in it.**
 ///
-/// Both mapping paths (`page_frame_map` and `MAP_INTO`) guard `va` and `run_end_va(va, count)`,
+/// Both mapping paths (`page_frame_map` and `MAP_INTO`) guard `va` and `run_end_virtual_address(va, count)`,
 /// then walk the pages between unchecked, sound because the user half is a contiguous prefix. `k`
 /// is the solver's, so every page of every run is covered without an unwind bound.
 ///
@@ -57,7 +57,7 @@ fn every_page_between_the_checked_ends_is_itself_a_user_page() {
     kani::assume(k < count);
 
     // The guard the call sites apply, verbatim.
-    let Some(last_va) = run_end_va(va, count) else {
+    let Some(last_va) = run_end_virtual_address(va, count) else {
         return;
     };
     kani::assume(paging::is_user_page_va::<crate::arch::mmu::Format>(va));

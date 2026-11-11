@@ -78,7 +78,7 @@ on a machine with no IOMMU, and this driver does not run at all, because it name
 `kernel/src/user/usb_keyboard_service.rs` is what the driver is handed, and its `Spawn` literal is
 the whole of the confinement claim.
 
-- Slot 0, the controller's interrupt (`Interrupt`, WAIT and ACK).
+- Slot 0, the controller's interrupt (`Interrupt`, WAIT and ACKNOWLEDGE).
 - Slot 1, an attach endpoint (READ). The one message it receives there carries the endpoint its
   keystrokes go to, delegated by the progenitor once the line discipline exists. So a driver the
   kernel starts before the progenitor holds `WRITE` on an endpoint the progenitor creates, and the
@@ -94,10 +94,10 @@ The scratchpad pages are the controller's private memory; the driver writes thei
 never their contents. It cannot reach PCI configuration space, so it cannot change bus mastering,
 move a BAR or touch MSI. It holds no budget, filesystem, console or clock.
 
-The kernel enables the interrupt through the arch layer, as the `Interrupt` capability's ACK does.
+The kernel enables the interrupt through the arch layer, as the `Interrupt` capability's ACKNOWLEDGE does.
 On
 riscv64 that is the source's stable round-robin hart (`target_context`). A source enabled on the
-boot hart's context instead is moved by its first ACK, and no keystroke after the first arrives.
+boot hart's context instead is moved by its first ACKNOWLEDGE, and no keystroke after the first arrives.
 
 ## Proving it
 
@@ -119,7 +119,7 @@ echo 'sendkey e' | nc -U /tmp/mon.sock
 
 ## The keystroke stall: the PLIC enable is written first
 
-`plic::enable`, which is the driver's ACK when no claim is outstanding, writes the enable bit before
+`plic::enable`, which is the driver's ACKNOWLEDGE when no claim is outstanding, writes the enable bit before
 the priority. QEMU's PLIC re-evaluates delivery on a priority, threshold or completion write and on
 a rising line, never on an enable write. Written the other way round, an xHCI event raised while the
 driver is draining is stranded until another device's line rises, a UART byte for instance. On

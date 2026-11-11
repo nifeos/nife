@@ -250,7 +250,7 @@ pub fn build_child_space(
         return Err(());
     }
 
-    let aspace = retype_obj_from(build_ut, abi::objtype::ADDRESS_SPACE)?;
+    let aspace = retype_into_kernel_object_from(build_ut, abi::object_type::ADDRESS_SPACE)?;
     match lay_out_child(own_ut, build_ut, elf, endow, aspace) {
         Ok(tcb) => Ok((
             Child {
@@ -280,9 +280,9 @@ fn lay_out_child(
         let mode = if seg.is_executable() {
             abi::address_space::MAP_CODE
         } else if seg.is_writable() {
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         } else {
-            abi::address_space::MAP_RO
+            abi::address_space::MAP_READ_ONLY
         };
         let (start, end) = seg.page_range(PAGE);
         let mut va = start;
@@ -305,9 +305,10 @@ fn lay_out_child(
     }
 
     for k in 0..endow.stack_pages {
-        let stack_frame = retype_page_frame_from(build_ut)?;
+        let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_RW) != 0 {
+        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
+        {
             capability_delete(stack_frame);
             return Err(());
         }
@@ -322,7 +323,7 @@ fn lay_out_child(
         build_ut,
         aspace,
         startup_page_contract::PAGE_VIRTUAL_ADDRESS,
-        abi::address_space::MAP_RO,
+        abi::address_space::MAP_READ_ONLY,
         |page| startup_page_contract::write(page, endow.windows).map_err(|_| ()),
     )?;
 
@@ -338,7 +339,7 @@ fn lay_out_child(
             build_ut,
             aspace,
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
             copy_in(page.as_ref().map(|bytes| (0usize, &bytes[..]))),
         )?;
     }
@@ -355,7 +356,7 @@ fn lay_out_child(
                 build_ut,
                 aspace,
                 base + off as u64,
-                abi::address_space::MAP_RO,
+                abi::address_space::MAP_READ_ONLY,
                 copy_in(Some((0, &bytes[off..off + n]))),
             )?;
             off += n;
@@ -368,7 +369,7 @@ fn lay_out_child(
         }
     }
 
-    let tcb = retype_obj_from(build_ut, abi::objtype::THREAD_CONTROL_BLOCK)?;
+    let tcb = retype_into_kernel_object_from(build_ut, abi::object_type::THREAD_CONTROL_BLOCK)?;
     if endow_child(tcb, endow, aspace).is_err() {
         capability_delete(tcb);
         return Err(());
@@ -412,7 +413,7 @@ fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> 
     if let Some(fault) = endow.fault {
         // The spawn-slot convention: target slot `n + 1` means "slot n", so the supervision endpoint
         // lands in the reserved last slot rather than wherever first-free fell.
-        let target = abi::fault::FAULT_EP_SLOT + 1;
+        let target = abi::fault::FAULT_RENDEZVOUS_SLOT + 1;
         if thread_control_block_capability_insert(tcb, fault, abi::rights::READ, target) < 0 {
             return Err(());
         }
@@ -435,14 +436,14 @@ fn configure_child_as_process(
     if rights != abi::rights::BIND {
         return Err(());
     }
-    // SAFETY: `invoke` is the syscall; the kernel validates the region, the objtype and the
+    // SAFETY: `invoke` is the syscall; the kernel validates the region, the object_type and the
     // address space before it builds anything. Raw because a process takes the space as its second
     // argument, which `retype_into_kernel_object` does not pass.
     let process = unsafe {
         invoke(
             build_ut,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::PROCESS,
+            abi::object_type::PROCESS,
             aspace,
             0,
         )
@@ -484,7 +485,7 @@ fn fill_and_map(
     mode: u64,
     fill: impl FnOnce(&mut [u8]) -> Result<(), ()>,
 ) -> Result<(), ()> {
-    let frame = retype_page_frame_from(build_ut)?;
+    let frame = retype_into_page_frame_from(build_ut)?;
     let Ok(scratch) = map_scratch(frame, true, own_ut) else {
         capability_delete(frame);
         return Err(());
@@ -513,21 +514,24 @@ fn copy_in(content: Option<(usize, &[u8])>) -> impl FnOnce(&mut [u8]) -> Result<
     }
 }
 
-/// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
-/// `supervision_contract` with the split, and calef names it.
-/// Retype one page of `ut` into a kernel object of `objtype` (`abi::objtype`), returning the
-/// capability slot it landed in.
-pub fn retype_obj_from(ut: u64, objtype: u64) -> Result<u64, ()> {
-    let r = retype_into_kernel_object(ut, objtype);
+/// Retype one page of `memory_region` into a kernel object of `object_type` (`abi::object_type`),
+/// returning the capability slot it landed in.
+///
+/// Name: ratified 2026-11-11 (UTC). It pairs with `user_mode_runtime::retype_into_kernel_object`,
+/// as [`retype_into_page_frame_from`] pairs with `retype_into_page_frame`. Refused
+/// `retype_obj_from` (abbreviates "object").
+pub fn retype_into_kernel_object_from(memory_region: u64, object_type: u64) -> Result<u64, ()> {
+    let r = retype_into_kernel_object(memory_region, object_type);
     if r < 0 { Err(()) } else { Ok(r as u64) }
 }
 
-/// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
-/// `supervision_contract` with the split, and calef names it.
-/// Retype one page of `ut` into a plain `PageFrame` capability, unmapped, returning the slot it
-/// landed in.
-pub fn retype_page_frame_from(ut: u64) -> Result<u64, ()> {
-    let r = retype_into_page_frame(ut);
+/// Retype one page of `memory_region` into a plain `PageFrame` capability, unmapped, returning the
+/// slot it landed in.
+///
+/// Name: ratified 2026-11-11 (UTC). It pairs with `user_mode_runtime::retype_into_page_frame`.
+/// Refused `retype_page_frame_from` (does not say "into", as its pair does).
+pub fn retype_into_page_frame_from(memory_region: u64) -> Result<u64, ()> {
+    let r = retype_into_page_frame(memory_region);
     if r < 0 { Err(()) } else { Ok(r as u64) }
 }
 

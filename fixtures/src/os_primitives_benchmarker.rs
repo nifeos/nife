@@ -70,7 +70,7 @@ const IPC_CLIENT_READS_CYCLES: u64 = 1;
 /// `lat_pipe` shape, over our endpoints.
 const IPC_ITERS: u64 = 5_000;
 
-/// Iterations for the context-switch loop. Each is one `SYS_YIELD` that hands the CPU to the peer
+/// Iterations for the context-switch loop. Each is one `SYSCALL_YIELD` that hands the CPU to the peer
 /// and gets it back: a round trip of two switches (each an address-space change, since the peer is a
 /// separate process). Fewer than the null loop: a switch is much heavier under TCG.
 const CTX_ITERS: u64 = 5_000;
@@ -101,7 +101,7 @@ fn yielder() -> ! {
 }
 
 /// **Context switch latency, measured from EL0.** With the yielder as the only other ready thread,
-/// each `SYS_YIELD` here switches to it and back: two context switches, each including an address-
+/// each `SYSCALL_YIELD` here switches to it and back: two context switches, each including an address-
 /// space change because the peer is a separate process (this is lmbench's `lat_ctx`, process flavor).
 fn ctx_switch_bench() -> ! {
     // Warm up: let both processes reach steady state before the timed loop.
@@ -228,7 +228,7 @@ fn spawn_bench() -> ! {
 fn spawn_one(code_frame: u64) {
     // The child's own region, so it is independently reclaimable.
     let child_ut = split_memory_region(SP_UNTYPED, CHILD_PAGES) as u64;
-    let aspace = retype_into_kernel_object(child_ut, abi::objtype::ADDRESS_SPACE) as u64;
+    let aspace = retype_into_kernel_object(child_ut, abi::object_type::ADDRESS_SPACE) as u64;
     // Alias the shared code frame as the child's code; a stack from the child's own region.
     address_space_map_into(
         aspace,
@@ -237,18 +237,23 @@ fn spawn_one(code_frame: u64) {
         abi::address_space::MAP_CODE,
     );
     let stack = retype_into_page_frame(child_ut) as u64;
-    address_space_map_into(aspace, CHILD_STACK_VA, stack, abi::address_space::MAP_RW);
+    address_space_map_into(
+        aspace,
+        CHILD_STACK_VA,
+        stack,
+        abi::address_space::MAP_READ_WRITE,
+    );
     capability_delete(stack);
 
     // The thread: give it CHILD_DONE (narrowed to WRITE) in its slot 0, configure (which consumes
     // the address space cap), and start. The child drops to EL0, SENDs its done word, and exits.
-    let tcb = retype_into_kernel_object(child_ut, abi::objtype::THREAD_CONTROL_BLOCK) as u64;
+    let tcb = retype_into_kernel_object(child_ut, abi::object_type::THREAD_CONTROL_BLOCK) as u64;
     thread_control_block_capability_insert(tcb, SP_CHILD_DONE, abi::rights::WRITE, 0);
     thread_control_block_configure(tcb, CHILD_CODE_VA, CHILD_STACK_VA + SPAWN_PAGE, aspace);
     thread_control_block_start(tcb, 0, 0, 0);
 
     // Wait for the child to run and signal, then reclaim its region. The retry covers the sliver
-    // between the child's SEND and its SYS_EXIT: DESTROY refuses a region with a still-live thread,
+    // between the child's SEND and its SYSCALL_EXIT: DESTROY refuses a region with a still-live thread,
     // so yield until the child has finished exiting.
     let _ = receive(SP_CHILD_DONE);
     while destroy_memory_region(child_ut) != 0 {
