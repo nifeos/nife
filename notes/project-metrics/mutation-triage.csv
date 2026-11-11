@@ -963,6 +963,7 @@ driver_process_contract::extensible_host_controller_interface,needed_ranges,repl
 driver_process_contract::extensible_host_controller_interface,needed_ranges,replace - with +,killed,killed by the_needed_ranges_end_at_their_last_byte,,,
 driver_process_contract::extensible_host_controller_interface,needed_ranges,replace - with /,killed,killed by the_needed_ranges_end_at_their_last_byte,,,
 driver_process_contract::extensible_host_controller_interface,register_window,replace < with <=,killed,killed by qemus_window_withholds_the_msix_page_and_nothing_else (a withheld range ending exactly at page 4 leaves page 4 mapped),,,
+driver_process_contract::virtual_input_output,HandOff::pack,replace | with ^,equivalent,"the packed fields share no bit (THE_HAND_OFF_WORD_FIELDS_SHARE_NO_BIT asserts it at compile time), so | and ^ agree",unclassified,,
 machine_discovery,IvrsUnits::read_ivmd,replace << with >>,killed,"killed by an_ivmd_without_iw_is_not_writable; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it",,,
 machine_discovery,IvrsUnits::read_ivmd,replace || with &&,killed,"killed by an_ivmd_without_iw_is_not_writable; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it",,,
 abi,cycle_counter::CycleMeaning::is_core_cycles,delete !,killed,"the pre-split name of CycleMeaning::is_core_cycles (inflow-2026-10-12-triage.md, Renames); killed by only_the_reference_clock_is_not_core_cycles, re-run with cargo mutants at base deff22e9f",,,

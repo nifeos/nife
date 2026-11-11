@@ -207,10 +207,10 @@ pub fn sleep_objects() -> Option<(u64, u64)> {
         unsafe {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
-                abi::memory_region::RETYPE_OBJ,
+                abi::memory_region::RETYPE_OBJECT,
                 objtype,
                 0,
-                runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJ`'s floor)
+                runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )
         }
     };

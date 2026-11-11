@@ -113,9 +113,9 @@ tree. Holding a badge instead, it can bring up, read and rate its own device and
 
 The wire is §320's, in `jh7110_clock_and_reset_contract`: interface id 24, version 1, five
 operations (version query reserved, bring up, read clock, read reset, set rate), nine statuses,
-and a packed bring-up summary. A request that sets a bit its operation gives no meaning is
-refused as malformed before anything is read or stored, and a reset read answers only the
-device's own line. Bring up enables every clock the device's plan names, in every
+and a packed bring-up summary. The server refuses a request that sets a bit its
+operation gives no meaning, as malformed, before it reads or stores anything. A reset read
+answers only the device's own line. Bring up enables every clock the device's plan names, in every
 domain, before it releases any reset, because Linux's reset driver warns that a deassert against
 a gated clock can hang. It is idempotent. No operation turns a device off (§304 (who may turn a
 device off)).

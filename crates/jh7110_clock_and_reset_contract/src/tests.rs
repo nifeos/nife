@@ -41,18 +41,21 @@ fn the_operation_sits_in_bits_63_to_56_and_the_index_in_bits_7_to_0() {
 fn a_request_may_set_only_the_bits_its_operation_defines() {
     // Each of bits 55:8 alone makes a word malformed, whatever the operation.
     for bit in 8..56 {
-        for op in [BRING_UP, READ_CLOCK, READ_RESET, SET_RATE] {
-            assert!(!is_well_formed(request(op, 0) | 1 << bit, 0), "bit {bit}");
+        for operation_number in [BRING_UP, READ_CLOCK, READ_RESET, SET_RATE] {
+            assert!(
+                !is_well_formed(request(operation_number, 0) | 1 << bit, 0),
+                "bit {bit}"
+            );
         }
     }
     // The index belongs to the two reads alone.
-    for op in [VERSION_QUERY, BRING_UP, SET_RATE] {
-        assert!(is_well_formed(request(op, 0), 0));
-        assert!(!is_well_formed(request(op, 1), 0));
+    for operation_number in [VERSION_QUERY, BRING_UP, SET_RATE] {
+        assert!(is_well_formed(request(operation_number, 0), 0));
+        assert!(!is_well_formed(request(operation_number, 1), 0));
     }
-    for op in [READ_CLOCK, READ_RESET] {
-        assert!(is_well_formed(request(op, 0xff), 0));
-        assert!(!is_well_formed(request(op, 3), 1));
+    for operation_number in [READ_CLOCK, READ_RESET] {
+        assert!(is_well_formed(request(operation_number, 0xff), 0));
+        assert!(!is_well_formed(request(operation_number, 3), 1));
     }
     // Word 1 belongs to set rate alone.
     assert!(is_well_formed(request(SET_RATE, 0), u64::MAX));

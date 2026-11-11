@@ -144,7 +144,7 @@ package_archive	userspace	components,fixtures,jig,pinned_tls_client,pinned_tls_e
 package_index	userspace	components,fixtures,jig,pinned_tls_client,pinned_tls_exerciser
 page_frames	kernel	kernel
 paging	kernel	kernel
-pci	kernel	kernel
+pci	shared	components,kernel
 periodic_deadline	shared	components,fixtures,kernel
 pgrep	userspace	components
 pmap	userspace	components

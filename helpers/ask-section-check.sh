@@ -4,6 +4,7 @@
 # asks no question.
 #
 #     helpers/ask-section-check.sh < body
+#     helpers/ask-section-check.sh --node < node.json    a pull request in the drain's query shape
 #     helpers/ask-section-check.sh --selftest
 #
 # Name: provisional, minted 2026-11-11 (UTC) by lane/after-this-merges-asks-nothing.
@@ -22,7 +23,10 @@
 #   - A note that asks nothing now opens its section with "Nothing." on a line of its own.
 #
 # The section and the test are open-question.jq's (`oq_unasked_sections`), so this and the drain
-# read the same text. It reads text, not the tree. Exit 0 clean; exit 1 naming the line of each
+# read the same text. With `--node`, which the workflow uses, a section a ruling has closed passes,
+# as does any pull request carrying `architect-ruled` or `held-by-lane`
+# (`oq_open_unasked_sections`): calef has answered it, and the drain no longer reads it as open.
+# #3483 was refused after its ruling by the version that read the body alone. It reads text, not the tree. Exit 0 clean; exit 1 naming the line of each
 # heading whose section asks nothing; exit 2 for a usage error.
 #
 # BUGS
@@ -35,9 +39,10 @@ set -e
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 me="$(basename "$0")"
 
+# check [--node]: the body on standard input, or with --node a pull request node.
 check() {
-    jq -R -s -r "$(cat "$here/open-question.jq")"'
-        oq_unasked_sections
+    if [ "${1:-}" = --node ]; then set -- -s '.[0] // {} | oq_open_unasked_sections'; else set -- -Rs oq_unasked_sections; fi
+    jq "$1" -r "$(cat "$here/open-question.jq")$2"'
         | if length == 0 then empty
           else (.[] | "line \(.heading): a `What I need from you` section with no question in it"), halt_error(1) end' 2>/dev/null || {
         status=$?
@@ -57,8 +62,8 @@ MSG
 }
 
 case "${1:-}" in
-"")
-    out="$(check)" && exit 0
+"" | --node)
+    out="$(check "${1:-}")" && exit 0
     printf '%s\n' "$out" >&2
     refuse
     exit 1
@@ -80,11 +85,28 @@ case "${1:-}" in
     expect "the second of two sections" 1 '## What I need from you\n\nA or B?\n\n### What I need from you\n\nA key.\n'
     expect "CRLF line ends" 1 '## What I need from you\r\n\r\nOne bench session.\r\n'
     expect "a heading quoted mid-line" 0 'The drain reads `## What I need from you` headings.\n'
+    # A pull request node, as the workflow builds it. The #3483 shape: an ask that names no question,
+    # answered by script/record-ruling's comment and label.
+    node() { # <labels JSON> <comments JSON>
+        jq -n --argjson l "$1" --argjson c "$2" '{ createdAt: "2026-11-11T00:00:00Z",
+            body: "## What I need from you\n\nA ruling on the rename above.\n",
+            labels: { nodes: ($l | map({ name: . })) }, comments: { nodes: $c }, labelEvents: { nodes: [] } }'
+    }
+    expect_node() { # <name> <want> <node JSON>
+        if printf '%s' "$3" | check --node >/dev/null; then got=0; else got=1; fi
+        [ "$got" = "$2" ] || { echo "$me: selftest: $1: exit $got, wanted $2" >&2; fail=1; }
+    }
+    ruling='[{"createdAt":"2026-11-11T01:00:00Z","url":"u","body":"<!-- architect-ruling -->\nRuled."}]'
+    expect_node "a node, unruled" 1 "$(node '[]' '[]')"
+    expect_node "a node closed by the ruling marker" 0 "$(node '[]' "$ruling")"
+    expect_node "a node wearing architect-ruled (#3483)" 0 "$(node '["architect-ruled"]' '[]')"
+    expect_node "a node wearing held-by-lane" 0 "$(node '["held-by-lane"]' '[]')"
+    expect_node "a partial ruling closes nothing" 1 "$(node '[]' '[{"createdAt":"2026-11-11T01:00:00Z","url":"u","body":"<!-- architect-ruling partial -->"}]')"
     [ "$fail" -eq 0 ] || exit 1
-    echo "ask-section-check: 11 bodies, each refused or passed as expected"
+    echo "ask-section-check: 16 texts, each refused or passed as expected"
     ;;
 *)
-    echo "usage: $me [--selftest] < body" >&2
+    echo "usage: $me [--node | --selftest] < body-or-node" >&2
     exit 2
     ;;
 esac

@@ -529,7 +529,7 @@ fn a_rate_exactly_the_slowest_divider_reaches_is_served() {
 #[test]
 fn a_reply_refuses_in_the_wires_order_before_anything_is_touched() {
     use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, SET_RATE, VERSION_QUERY, request};
-    let trng = entropy_source().base_physical_address;
+    let entropy = entropy_source().base_physical_address;
     let mut f = Fake::new();
     // Badge first: badge 0 and an unknown badge name no device, whatever the request.
     assert_eq!(
@@ -542,11 +542,11 @@ fn a_reply_refuses_in_the_wires_order_before_anything_is_touched() {
     );
     // Then the operation: the reserved version query and an unknown number.
     assert_eq!(
-        answer(&mut f, trng, request(VERSION_QUERY, 0), 0, 1).0,
+        answer(&mut f, entropy, request(VERSION_QUERY, 0), 0, 1).0,
         Status::UnknownOperation
     );
     assert_eq!(
-        answer(&mut f, trng, request(5, 1), 1, 1).0,
+        answer(&mut f, entropy, request(5, 1), 1, 1).0,
         Status::UnknownOperation
     );
     // Then the shape: bits 55:8, an index where none is taken, and word 1 off set rate.
@@ -557,7 +557,7 @@ fn a_reply_refuses_in_the_wires_order_before_anything_is_touched() {
         (request(SET_RATE, 2), 50_000_000),
     ] {
         assert_eq!(
-            answer(&mut f, trng, w0, w1, 1),
+            answer(&mut f, entropy, w0, w1, 1),
             (Status::MalformedRequest, 0)
         );
     }
@@ -567,31 +567,31 @@ fn a_reply_refuses_in_the_wires_order_before_anything_is_touched() {
 #[test]
 fn a_reply_carries_the_bring_up_summary_one_clock_word_and_one_reset_bit() {
     use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, READ_RESET, request};
-    let trng = entropy_source().base_physical_address;
+    let entropy = entropy_source().base_physical_address;
     let mut f = Fake::new();
-    let (status, word) = answer(&mut f, trng, request(READ_RESET, 0), 0, 1);
+    let (status, word) = answer(&mut f, entropy, request(READ_RESET, 0), 0, 1);
     assert_eq!(
         (status, word),
         (Status::Done, 0),
         "held before the bring-up"
     );
-    let (status, word) = answer(&mut f, trng, request(BRING_UP, 0), 0, 1);
+    let (status, word) = answer(&mut f, entropy, request(BRING_UP, 0), 0, 1);
     assert_eq!(status, Status::Done);
     let summary = Summary::unpack(word).unwrap();
     assert_eq!((summary.clocks_running, summary.resets_released), (2, 1));
     assert_eq!(
-        answer(&mut f, trng, request(READ_RESET, 0), 0, 1),
+        answer(&mut f, entropy, request(READ_RESET, 0), 0, 1),
         (Status::Done, 1)
     );
-    let (status, word) = answer(&mut f, trng, request(READ_CLOCK, 1), 0, 1);
+    let (status, word) = answer(&mut f, entropy, request(READ_CLOCK, 1), 0, 1);
     assert_eq!(status, Status::Done);
     assert!(is_clock_enabled(word as u32));
     assert_eq!(
-        answer(&mut f, trng, request(READ_CLOCK, 2), 0, 1),
+        answer(&mut f, entropy, request(READ_CLOCK, 2), 0, 1),
         (Status::IndexOutOfRange, 0)
     );
     assert_eq!(
-        answer(&mut f, trng, request(READ_RESET, 1), 0, 1),
+        answer(&mut f, entropy, request(READ_RESET, 1), 0, 1),
         (Status::IndexOutOfRange, 0)
     );
 }
