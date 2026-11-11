@@ -1,5 +1,7 @@
 # Descent: nested paths and `std::fs::Dir`
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/std.md`](../std.md), which is the page to read. This file holds milestone
 122's walk, `std::fs::Dir`, the two live bugs the walk found, and the write-path correction. The
 directory `notes/std/` and this file's stem are provisional names. Naming is calef's.*

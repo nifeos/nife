@@ -1,5 +1,7 @@
 # The SMB adapter as it stood: overview and pieces
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/smb.md](../smb.md). The code it describes was removed on 2026-08-30. This is
 the note's account of the adapter as it stood before the removal, unaltered in substance. Read every
 present tense in it as "as of `685900ec`", the last commit that holds the code.

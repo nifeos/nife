@@ -1,5 +1,7 @@
 # `video_terminal`
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 How `video_terminal`'s 79 survivors of the 2026-09-19 census were closed, under milestone 326 (nobody
 has been assigned to turn a mutation score upward) part 3. It verifies the crate's row in
 [notes/mutation-testing.md](../mutation-testing.md). The baseline's own `video_terminal` triage is

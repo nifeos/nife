@@ -1,6 +1,8 @@
 # Draft: the `kani_lib.c` link-order follow-up to model-checking/kani#4913
 
-*Name: provisional, for milestone 635 (riscv64 proofs check against the riscv64 model). The parent
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
+*The parent
 note is [kani-upstream.md](../kani-upstream.md). **In force:** the change is in
 model-checking/kani#4913 (`1eaa2d9`, with the Apple `char` fix in `9b72fa016`), per the ruling
 below; no separate pull request is opened, and the branch plan below is not used. calef reads

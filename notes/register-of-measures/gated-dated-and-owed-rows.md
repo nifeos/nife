@@ -1,6 +1,8 @@
 # The gated, dated and owed rows, argued
 
-*An appendix to [the register of measures](../register-of-measures.md). The name is provisional.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
+*An appendix to [the register of measures](../register-of-measures.md).*
 
 ## Gated
 

@@ -32,3 +32,13 @@ def failing($required):
   | map(select(.conclusion == "failure" or .conclusion == "timed_out"))
   | map({name: .name, url: .html_url})
   | sort_by(.name);
+
+# **A run that finished before the pull request was last marked ready decides nothing.** A draft's
+# `lint` fails on purpose ("draft: lint not run", the architect's ruling of 2026-11-11 (UTC) on
+# question B of the proposal "lint fails in the queue after passing on the pull request"), and in the
+# seconds after `ready_for_review` and before the ready run's own `lint` exists, that red is the
+# newest. `$ready_at` is the last ReadyForReviewEvent's time, "" for a pull request never a draft.
+# A run with no `completed_at` has not finished and is kept, so it still hides an older failure.
+def failing($required; $ready_at):
+  map(select($ready_at == "" or .completed_at == null or .completed_at >= $ready_at))
+  | failing($required);

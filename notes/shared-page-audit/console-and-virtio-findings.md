@@ -1,6 +1,6 @@
 # Shared-page audit: findings 3 and 6, the console and two virtio drivers
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [notes/shared-page-audit.md](../shared-page-audit.md), the tree's second security
 audit (2026-08-04). The parent states the lens and its four questions: (a) the window, (b) what can

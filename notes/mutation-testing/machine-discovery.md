@@ -1,5 +1,7 @@
 # `machine_discovery`: 77 survivors
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 The `machine_discovery` part of milestone 326 (nobody has been assigned to turn a mutation score
 upward)'s triage, on 2026-09-19, and its re-derivation on 2026-09-20. It verifies the crate's
 figures that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The method is set out

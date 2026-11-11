@@ -1,5 +1,7 @@
 # The x86_64 port: what does not fit, and where it pays
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the four places the `arch/` seam did not stretch, two bugs worth knowing, and where TSO pays out. It
 exists to verify or challenge the main page. A reader who only needs to build, boot or test the

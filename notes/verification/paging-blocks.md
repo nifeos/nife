@@ -1,5 +1,7 @@
 # Blocks: 2 MiB and 1 GiB leaves
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/verification.md](../verification.md). It holds the proofs `crates/paging`
 gained on 2026-09-19 for milestone 161 (the x86_64 kernel port), when the direct map moved to
 block leaves.

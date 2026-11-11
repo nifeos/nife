@@ -1,5 +1,7 @@
 # The owner's console: vouching for a build, and who else may run new code
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *Built 2026-09-26 (UTC) by the lane `milestone/198-owner-console`, on DECISIONS §221 (the boot
 prompt is the owner's console). Names provisional. An appendix to [packages.md](../packages.md).*
 

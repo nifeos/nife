@@ -9,12 +9,12 @@
 //! `a_user_client_moves_data_through_shared_memory` assert on the absence of a fault as well as on
 //! the bytes.
 
-//! Name: provisional (milestone 291). This was `hello`'s `PRINTING` role, number 2. Follows the
-//! `*_test_client` shape the tree already uses for a fixture that drives a real service
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `PRINTING` role.
+//! Follows the `*_test_client` shape the tree already uses for a fixture that drives a real service
 //! (`fs_test_client`, `login_test_client`, `credentialer_test_client`, `socket_test_client`).
-//! Refused `printing_client`, which is what the role was called: a verb-participle where every
-//! other client here is named for the service it drives, and the `_test_` is what says this is a
-//! fixture rather than the console's real client (the shell is that).
+//! Refused `printing_client`, which is what the role was called: a verb-participle where every other
+//! client here is named for the service it drives, and the `_test_` is what says this is a fixture
+//! rather than the console's real client (the shell is that).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks
