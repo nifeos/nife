@@ -23,7 +23,7 @@ number. A code repository checks each `milestone N`, `§N` and `TODO(milestone N
 existence at the record commit basalt pins: `design/roadmap/NNNN-*.md` for a milestone,
 `design/decisions/NNNN-*` for a section. No index file exists anywhere. An index is a place where
 merges conflict, and milestone files are already named by number, so the number resolves without
-one. A generated index can be added if the existence check proves too slow; that is compatible.
+one. A generated index can be added if the check proves too slow; that is compatible.
 `TODO(milestone N)` keeps its spelling.
 
 The reason is not effort: at equal cost A would still win, for three measured reasons. Every gate that reads a milestone today reads it at a commit, so anyone can repeat a run, and an
