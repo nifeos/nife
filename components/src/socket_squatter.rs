@@ -153,6 +153,8 @@ pub fn run() -> ! {
         WINDOW.w8(OFF_DST_IP + i as u64, b);
     }
     WINDOW.w16(OFF_DST_PORT, TFTP_PORT);
+    // Clear the length field: only a RECEIVE writes it (a send carries its length in the CALL
+    // argument), so a nonzero value below means the stack delivered something into this frame.
     WINDOW.w16(OFF_LEN, 0);
 
     send(REPORT, RPT_ARMED, refused, recv_refused);
