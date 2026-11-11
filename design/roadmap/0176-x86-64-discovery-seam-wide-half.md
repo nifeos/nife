@@ -7,7 +7,7 @@ built: 2026-08-25
 
 This is the wide half of milestone 161 (the x86_64 kernel port)'s item 0. Piece 1 is built (below).
 Piece 2 needed a decision, ratified 2026-08-26:
-[DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../decisions/0130-cmos-rtc-delegation.md).
+[DECISIONS §130 (how the userspace clock service reads the x86 CMOS RTC)](../decisions/0130-cmos-rtc-delegation.md).
 It is built against it (below).
 
 ## The four device windows, and which two are this milestone's
