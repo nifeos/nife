@@ -15,13 +15,20 @@ name: pr text ask check
 # with "Nothing.". helpers/ask-section-check.sh says so when it refuses.
 #
 # **Safe on untrusted text.** The body never reaches the script text or `env:` (the runner prints a
-# step's environment, and the log is public); `jq` reads it from the event file and pipes it to the
-# helper. Unlike pr-text-replay-check.yml, the helper is the pull request's own copy: nothing here
-# guards a secret or a leak, so a pull request that changes the rule may be judged by the rule it
-# proposes, and the one that adds this check can run it. Only two text files are checked out, both
-# read by `jq` and `sh`, with no token kept.
+# step's environment, and the log is public); it goes from the API to a file that the helper reads.
+# Unlike pr-text-replay-check.yml, the helper is the pull request's own copy: nothing here guards a
+# secret or a leak, so a pull request that changes the rule may be judged by the rule it proposes,
+# and the one that adds this check can run it. Only two text files are checked out, read by `jq`
+# and `sh`, and the checkout keeps no token; the read-only job token is used by `gh` alone.
 #
-# **Triggers.** `edited` matters most, since a body is often rewritten after the push. No
+# **A ruled ask passes.** Once a ruling closes the body's ask (script/record-ruling's comment, or
+# `architect-ruled` or `held-by-lane` on the pull request), the drain no longer reads it as open,
+# and calef's answered text is not reworded after the fact. So the step reads the pull request in
+# the drain's own shape over GraphQL and asks open-question.jq's `oq_open_unasked_sections`. #3483
+# went red on the first version, which read the event's body alone, after its ruling.
+#
+# **Triggers.** `edited` matters most, since a body is often rewritten after the push. `labeled`
+# and `unlabeled` turn the check green when script/record-ruling swaps the labels. No
 # `merge_group`: the queue entry has no body, so this is not a required context. A lane reads it
 # before marking ready.
 #
@@ -30,10 +37,11 @@ name: pr text ask check
 
 on:
   pull_request:
-    types: [opened, edited, reopened, synchronize, ready_for_review]
+    types: [opened, edited, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: pr-text-ask-check-${{ github.event.pull_request.number }}
@@ -53,5 +61,19 @@ jobs:
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
-      - name: Read the body through the helper
-        run: jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" | sh helpers/ask-section-check.sh
+      - name: Read the pull request, in the drain's shape, through the helper
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        # The fields are helpers/merge-drain.sh's query's, so open-question.jq reads what the drain
+        # reads. The body goes from the API to a file and the helper, never into the log.
+        run: |
+          gh api graphql -F number="$NUMBER" -f owner="${GITHUB_REPOSITORY%/*}" -f name="${GITHUB_REPOSITORY#*/}" -f query='
+            query($owner: String!, $name: String!, $number: Int!) {
+              repository(owner: $owner, name: $name) { pullRequest(number: $number) {
+                body createdAt url
+                labels(first: 50) { nodes { name } }
+                comments(last: 30) { nodes { createdAt url body } }
+                labelEvents: timelineItems(last: 20, itemTypes: [LABELED_EVENT]) { nodes { ... on LabeledEvent { createdAt label { name } } } }
+              } } }' --jq .data.repository.pullRequest > "$RUNNER_TEMP/node.json"
+          sh helpers/ask-section-check.sh --node < "$RUNNER_TEMP/node.json"

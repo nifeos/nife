@@ -1,7 +1,8 @@
 ---
-status: NOT-STARTED
+status: BUILT
 promoted_from: name-status-lives-only-in-name-blocks
 raised: 2026-11-05
+built: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -33,30 +34,35 @@ edits, which is the conflict shape the block exists to avoid, and each can drift
 | `design/naming-rule-baseline.txt` (374 rows) | unratified names that break a checked rule | `name_checks.py --check` | no: it grandfathers existing breaks, and a marker in each block would let a new name mark itself and pass unless the check also compares markers against the merge base |
 | `design/module-block-baseline.txt` (about 5,400 names) | names with no block at all | `module_block_ratchet.py` | no, by definition; it shrinks to nothing as blocks arrive |
 
-## The work
+## What exists
 
-1. Rules 2 and 3: write the block into each covered fixture and document, make each directory
-   README block agree, then drop the two lists and the `fixture-roles` and `listed-stems` paths
-   from `name_rules.py` with their selftests. `script/names | tail -3` must print the same ratified
-   count before and after. Rule 1 stays a rule: `name_rules.py` computes it, and it ratifies future stems.
-2. The journey note: delete it once its in-flight pull requests land, and point
-   `script/crate-standalone`'s step 0 message at `name_release.py --draft`.
-3. The `KEPT` and `RULED` tables: move each entry with a block into its item's block as a clause
-   the check reads; keep the table only for names that cannot carry a block, each with its reason.
+1. Rules 2 and 3 are in the blocks. Each covered fixture and appendix document carries
+   `Name: ratified 2026-10-17 (UTC, convention-rulings Rule 2)` or the Rule 3 paragraph, and
+   `helpers/name_rules.py` reads them there; the two lists and their selftests no longer exist, and
+   `script/names | tail -3` prints the same ratified count as before. Rule 1 stays a rule that
+   `name_rules.py` computes.
+2. The journey note no longer exists, and `script/crate-standalone`'s step 0 message points at
+   `name_release.py --draft`.
+3. `name_checks.py` reads a `Kept:` or `Ruled:` clause from a name's own block. The one entry whose
+   name has a block moved into it. The other 25 `KEPT` and `RULED` entries name Rust items with no
+   block, and the cap and unit tables name none with one, so they stay with their reasons; a block
+   added to one would change the counts `script/names` prints.
 4. The two baselines stay. They hold no status, only the debt the ratchets drive down.
 
-## Cost and risk
+## Done when
 
-Step 1 touches about 140 files, most of them notes, and conflicts with any lane editing those
-notes; it wants a quiet tree and one pull request per directory. Step 3 changes what three checks
-read and needs a selftest per clause form. Neither step can lose a ratification silently, because
-the ratified count is a number to compare. Step 2 waits for the journey note's pull requests (3142
-to 3144, 3149, 3153, 3154, 3156, 3200).
+All four hold, as above. Nothing is left over: the entries that stay are the ones that cannot carry
+a block, which is what step 3 kept the tables for.
 
 ## What drives it
 
 The direction that a name's status lives in the documents with the name, and the merge conflicts
-every naming pull request meets on the shared lists. Nothing blocks on it.
+every naming pull request meets on the shared lists.
+
+## Follow-on
+
+- **Done.** The 25 `KEPT` and `RULED` entries in `helpers/name_checks.py` that name Rust items with
+  no block stay by design, each with its reason, carried by step 3 of the work above (#3485).
 
 ## Index row
 

@@ -15,7 +15,7 @@ its threads share:
 - a member count, which every pointer into the page depends on;
 - how it ended, for the supervisor.
 
-`RETYPE_OBJ(region, PROCESS, space)` creates one, consuming the space's `WRITE` capability the way
+`RETYPE_OBJECT(region, PROCESS, space)` creates one, consuming the space's `WRITE` capability the way
 `CONFIGURE` consumes one. That second word is this lane's choice of how a process gets its space.
 The ruling says a process holds one and leaves the creation shape open. A process born with its
 space is Zircon's `zx_process_create`.

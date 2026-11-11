@@ -18,6 +18,84 @@ pub(super) static PREEMPTIONS: AtomicU64 = AtomicU64::new(0);
 pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAXIMUM_CPUS] =
     [const { AtomicU64::new(0) }; cpu::MAXIMUM_CPUS];
 
+/// How many ticks each core remembers in [`sample_tick`]'s ring.
+#[cfg(feature = "system_tests")]
+const TICK_SAMPLE_DEPTH: usize = 8;
+
+/// One core's last [`TICK_SAMPLE_DEPTH`] ticks: the thread each one interrupted and the `pc` it
+/// interrupted it at. One writer, the owning core's timer interrupt; read racily by the dump.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
+#[cfg(feature = "system_tests")]
+struct TickSamples {
+    seq: AtomicU64,
+    tid: [AtomicU64; TICK_SAMPLE_DEPTH],
+    pc: [AtomicU64; TICK_SAMPLE_DEPTH],
+}
+
+#[cfg(feature = "system_tests")]
+#[allow(clippy::declare_interior_mutable_const)]
+const NO_TICK_SAMPLES: TickSamples = TickSamples {
+    seq: AtomicU64::new(0),
+    tid: [const { AtomicU64::new(0) }; TICK_SAMPLE_DEPTH],
+    pc: [const { AtomicU64::new(0) }; TICK_SAMPLE_DEPTH],
+};
+
+#[cfg(feature = "system_tests")]
+static TICK_SAMPLES: [TickSamples; cpu::MAXIMUM_CPUS] = [NO_TICK_SAMPLES; cpu::MAXIMUM_CPUS];
+
+/// **Remember where this core's tick found its thread**: the thread running here
+/// and the `pc` the timer interrupt interrupted, kernel or user, for the thread dump's
+/// `ticks interrupted` line.
+///
+/// A budget-expired wait whose threads are runnable and taking turns on a core shows only switch
+/// events, and a kernel thread's dump `pc` is its user frame, which it does not have. These samples
+/// say where such a thread was each time the tick came: one place every time is a thread spinning
+/// there, and many places is a thread making slow progress. System tests only: the fuzz drivers'
+/// budgets are the reader, and every other build keeps the tick as it was.
+///
+/// Context: interrupt context, from the timer interrupt, on the owning core only.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
+#[cfg(feature = "system_tests")]
+#[inline(never)]
+pub fn sample_tick(interrupted_pc: u64) {
+    let ring = &TICK_SAMPLES[cpu::id()];
+    let slot = (ring.seq.fetch_add(1, Ordering::Relaxed) as usize) % TICK_SAMPLE_DEPTH;
+    ring.tid[slot].store(current_thread_id(), Ordering::Relaxed);
+    ring.pc[slot].store(interrupted_pc, Ordering::Relaxed);
+}
+
+/// [`sample_tick`]'s twin for every build that is not a system test: it records nothing.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
+#[cfg(not(feature = "system_tests"))]
+#[inline(always)]
+pub fn sample_tick(_interrupted_pc: u64) {}
+
+/// Print core `cpu`'s last ticks, oldest first, as `tid@pc`. Racy against that core's own writes,
+/// as the event ring is.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
+#[cfg(feature = "system_tests")]
+pub(super) fn dump_tick_samples(c: usize) {
+    let ring = &TICK_SAMPLES[c];
+    let seq = ring.seq.load(Ordering::Relaxed);
+    if seq == 0 {
+        return;
+    }
+    crate::print!("    core {c} ticks interrupted:");
+    for s in seq.saturating_sub(TICK_SAMPLE_DEPTH as u64)..seq {
+        let slot = (s as usize) % TICK_SAMPLE_DEPTH;
+        crate::print!(
+            " {:#x}@{:#x}",
+            ring.tid[slot].load(Ordering::Relaxed),
+            ring.pc[slot].load(Ordering::Relaxed),
+        );
+    }
+    crate::println!();
+}
+
 /// Record that this core wants a switch, and run the tick's other accounting; does not switch.
 ///
 /// `#[inline(never)]`: riscv64's timer interrupt and syscalls share `riscv_trap_body`, which

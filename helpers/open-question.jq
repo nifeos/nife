@@ -23,7 +23,7 @@
 # it missed could merge without a ruling, and a wrong add costs calef a glance (#1792). What stops
 # the wrong add is earlier. `oq_unasked_sections` finds an ask section with no question mark in it
 # that is not a "Nothing." section, and helpers/ask-section-check.sh refuses a pull request body
-# that has one (.github/workflows/pr-text-ask-check.yml), naming `## After this merges` as where a
+# that has one while no ruling has closed it (`oq_open_unasked_sections`) (.github/workflows/pr-text-ask-check.yml), naming `## After this merges` as where a
 # post-merge task goes.
 #
 # A RULING closes every ask older than it. It is any of:
@@ -107,3 +107,13 @@ def oq_open:
 def oq_last_ruling: (oq_rulings | max_by(oq_ts));
 
 def oq_has_label($name): ([.labels.nodes[]?.name] | index($name)) != null;
+
+# The body's ask sections that ask nothing and that no ruling has closed, for a node in the drain's
+# shape. The body counts from creation (see above), so any ruling closes it, and so does carrying
+# `architect-ruled` or `held-by-lane`: a section calef has answered is not reworded after the fact
+# (#3483, refused by the first version of the check after its ruling, 2026-11-11 UTC).
+def oq_open_unasked_sections:
+  if oq_has_label("architect-ruled") or oq_has_label("held-by-lane")
+     or ((oq_rulings | map(oq_ts) | max // 0) >= (.createdAt | oq_ts))
+  then []
+  else (.body | oq_unasked_sections) end;

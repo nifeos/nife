@@ -12,7 +12,7 @@ the kernel.
 
 True, at `origin/main` e1f3ddf8c:
 
-- `RETYPE_OBJ(ADDRESS_SPACE)` is the only mint (`user::user_address_space_create`,
+- `RETYPE_OBJECT(ADDRESS_SPACE)` is the only mint (`user::user_address_space_create`,
   `kernel/src/user/address_space_registry.rs`), and the name lives in that file's `USER_SPACES`.
 - `CONFIGURE` deletes the caller's capability (`thread_control_block_configure`,
   `kernel/src/syscall/thread_control_block.rs`) after `sched::configure_thread_control_block`

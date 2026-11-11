@@ -15,7 +15,7 @@ const BUILDER_BUDGET_PAGES: u64 = 80;
 /// stack page, and its TCB. Sixteen is what `build_child` has always carved.
 const INSTANCE_PAGES: u64 = 16;
 
-/// Pages for the test's own rendezvous points, one per rendezvous (`RETYPE_OBJ`'s
+/// Pages for the test's own rendezvous points, one per rendezvous (`RETYPE_OBJECT`'s
 /// one-object-per-page rule). Two is the most any one test here needs; four is slack.
 const RENDEZVOUS_PAGES: u64 = 4;
 
@@ -107,13 +107,13 @@ fn occupied_slots() -> usize {
 
 /// **The supervisor cannot construct anything, audited slot by slot.**
 ///
-/// For every empty slot, the two primitives that build a process (`RETYPE_OBJ` for a TCB and for an
+/// For every empty slot, the two primitives that build a process (`RETYPE_OBJECT` for a TCB and for an
 /// address space) are driven through the real dispatcher and must answer `NoSuchSlot`: there is
 /// nothing there, which is what no-ambient-authority feels like, and it is a different fact from
 /// `NotPermitted` (something there, restricted). For every occupied slot, the capability must be an
 /// `Rendezvous`, which cannot build by dispatch: the rendezvous arm of `invoke` offers send,
 /// receive, delegate, call, and reap, and no constructor at all. `MemoryRegion` methods are *not*
-/// invoked on those slots, because method numbers are per-object-type and `RETYPE_OBJ`'s number is
+/// invoked on those slots, because method numbers are per-object-type and `RETYPE_OBJECT`'s number is
 /// `SEND_CAPABILITY`'s on an rendezvous.
 fn assert_can_only_supervise(expected: &[u64]) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
@@ -128,7 +128,7 @@ fn assert_can_only_supervise(expected: &[u64]) {
                         invoke(
                             &mut frame,
                             slot,
-                            abi::memory_region::RETYPE_OBJ,
+                            abi::memory_region::RETYPE_OBJECT,
                             objtype,
                             0,
                             0

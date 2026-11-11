@@ -130,10 +130,11 @@ calef ruled on #1892 on 2026-10-10 (UTC) that `BIND` lives on a process capabili
 section's bound mark retires; §276 (the thread syscalls as built) records it. What changed in the
 merged code (`ddd38f0b0`):
 
-- Amendment (b) applies per holder, not per thread. A holder is a thread that is its own process,
-  or a process object. A second `CONFIGURE` with a held space, or a `RETYPE_OBJ` of a process
-  around one, is still `WrongObject`, so two processes cannot share a space. More threads run in
-  one space by joining the process that holds it.
+- Amendment (b) applies per holder, not per thread. A holder is a thread that is its own process, or
+  a process object. A second `CONFIGURE` with a held space, or a `RETYPE_OBJECT` (method 2, its name
+  spelled out by the ruling of 2026-11-11 (UTC)) of a process around one, is still `WrongObject`, so
+  two processes cannot share a space. More threads run in one space by joining the process that
+  holds it.
 - Amendment (a)'s "a space dies when its thread is reaped" now reads: when its holder is gone, which
   for a process means it has ended and its last member is reaped, or its region is destroyed.
 

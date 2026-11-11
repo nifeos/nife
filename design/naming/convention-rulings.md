@@ -5,8 +5,7 @@
 *An appendix to [`design/naming.md`](../naming.md). It holds the rules that ratify a whole class of
 names at once, with the list or the definition that says which names each covers. `script/names`
 reads it (`helpers/name_rules.py`), so a covered name counts as ratified and `script/names <name>`
-cites the rule. The directory `design/naming/` and this file's stem are provisional names; naming
-is an architect's.*
+cites the rule.*
 
 A rule ratifies the names that follow it, today and later. A name that does not follow it is pulled
 aside and keeps its own status, so a rule never ratifies a name nobody looked at by accident of

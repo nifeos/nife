@@ -44,7 +44,7 @@ pub(super) fn notification_of(
 }
 
 /// Create a notification in `region`'s memory: one page retyped and pinned, the object at its
-/// start, a fresh name. `RETYPE_OBJ`'s engine, shaped like [`try_create_rendezvous_from`]: the
+/// start, a fresh name. `RETYPE_OBJECT`'s engine, shaped like [`try_create_rendezvous_from`]: the
 /// registry is checked before a page is spent. `None` when the region or the registry is full,
 /// which userspace sees as one `OutOfMemory`.
 pub fn create_notification_from(region: u64) -> Option<NotificationId> {

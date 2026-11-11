@@ -86,7 +86,7 @@ is a jump; a cold method pays one table read for that.
 | `AddressSpace` | `MAP_INTO`, `UNMAP` | `WRITE`, and the shape's right on the frame |
 | `AddressSpace` | `LIST` | `ENUMERATE` |
 | `AddressSpace` | `WAIT`, `WAKE` | `READ`, on the caller's own space |
-| `MemoryRegion` | `MAP`, `RETYPE`, `RETYPE_OBJ`, `SPLIT`, `DESTROY` | `WRITE` |
+| `MemoryRegion` | `MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY` | `WRITE` |
 | `MemoryRegion` | `USAGE` | `ENUMERATE` |
 | `PageFrame` | `MAP` | `WRITE` for read/write, `READ` for read-only |
 | `PageFrame`, `DeviceFrame`, `PortRange` | `REVOKE`; `PageFrame::SLICE` | `GRANT` |
@@ -166,7 +166,7 @@ unmap sweep is blind to which object made a mapping.
 
 ## What a spending method mints
 
-`RETYPE`, `RETYPE_OBJ` and `SPLIT` mint through `Cap::mint_child`, which gives the new capability
+`RETYPE`, `RETYPE_OBJECT` and `SPLIT` mint through `Cap::mint_child`, which gives the new capability
 the budget's rights and no others (milestone 824 (a retype mints no right its budget lacks)).
 `split_never_widens_rights` in `crates/capability` proves the mint never widens. The root budget is
 `Rights::ALL`, so the progenitor gets every right on what it makes, and a right added later reaches
@@ -200,7 +200,7 @@ address-space capability is in [process-view.md](process-view.md).
 
 - `RETYPE` against a full capability table leaves the run retyped, named by no capability, so
   each such call spends `count` pages until the region is destroyed. `SPLIT` gives its child back in
-  the same position; a run has no inverse. `RETYPE_OBJ`'s arms have the same shape, an object
+  the same position; a run has no inverse. `RETYPE_OBJECT`'s arms have the same shape, an object
   nobody can name. Each is bounded by the caller's own region.
 - A failed multi-page map keeps the page tables its prefix retyped. A region is spend-only, so
   the mapping is undone and the budget is not. [frames.md](frames.md) records it.
