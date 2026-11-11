@@ -150,7 +150,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
     // Asked of the unit that owns the device, not of "is any IOMMU up": on a VT-d machine with
     // more than one unit those differ (`iommu::scope_of`).
     let confined_by_iommu = rid.is_some_and(|rid| crate::iommu::scope_of(rid).is_confining());
-    let vid = crate::virtio::register(transport, dma, DMA_PAGE_FRAMES * FRAME_SIZE, rid);
+    let vid = crate::virtio::register(transport, dma, DMA_PAGE_FRAMES * FRAME_SIZE, rid)?;
 
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();

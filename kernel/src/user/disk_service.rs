@@ -141,7 +141,7 @@ fn roster_page() -> (u64, usize) {
 /// build the GPT image for. That is a fact about the machine and not a failure: the caller skips.
 pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<Wiring> {
     let dev = crate::virtio::find_block_device_n(GPT_DISK)?;
-    let (blk_ep, ready, blk_shared) = fs_service::spawn_block_server(blk_image, dev);
+    let (blk_ep, ready, blk_shared) = fs_service::spawn_block_server(blk_image, dev)?;
     let (roster_phys, devices) = roster_page();
     let report = crate::sched::create_rendezvous();
     let budget =
@@ -390,7 +390,7 @@ pub fn blank_disk(blk_image: &'static [u8]) -> Option<BlankDisk> {
         });
     }
     let dev = crate::virtio::find_block_device_n(BLANK_DISK)?;
-    let (blk_ep, ready, blk_shared) = fs_service::spawn_block_server(blk_image, dev);
+    let (blk_ep, ready, blk_shared) = fs_service::spawn_block_server(blk_image, dev)?;
     BLANK_BLK_EP.store(blk_ep, Ordering::Relaxed);
     BLANK_SHARED.store(blk_shared, Ordering::Relaxed);
     BLANK_WIRED.store(true, Ordering::Release);
