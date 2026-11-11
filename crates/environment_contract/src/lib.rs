@@ -576,7 +576,7 @@ mod tests {
     /// A length exactly equal to a field's cap is the longest legal value and reads back whole, in
     /// every field, so the check against the cap refuses only what lies past it.
     #[test]
-    fn a_length_equal_to_its_cap_reads_the_whole_field() {
+    fn a_length_equal_to_its_maximum_reads_the_whole_field() {
         let fields = [
             (OFF_TZ_LEN, OFF_TZ, MAXIMUM_TIME_ZONE_BYTES),
             (OFF_LANG_LEN, OFF_LANG, MAXIMUM_LOCALE_BYTES),
