@@ -6,10 +6,11 @@
 
 An uppercase constant erases the case a unit symbol depends on (`MHZ` is also `mHz`, and `_MS`
 could be megasiemens), and the micro sign has no ASCII form, so no symbol is a valid suffix. The
-symbols and what replaces each are `[units]`, `[units_after_per]` and `[units_after_number]` in
+symbols and what replaces each are `[units]`, `[units_after_per]`, `[units_after_number]` and `[units_as_suffix]` in
 helpers/naming_words.toml. A bare `s` counts only straight after `per` or a number (`kib_per_s`,
 `within_30_s`, never the possessive in `fat32s`), and `min` only straight after `per` (`SECONDS_PER_MIN`); elsewhere they are a
-variable and a minimum.
+variable and a minimum. `ppm` counts only as the last part of a name with more than one part
+(`DRIFT_PPM`): it is also the Portable PixMap format, so a bare `ppm` or one mid-name is left alone.
 
 The names judged are the ones the crate defines (helpers/rust_names.py says which), so a call to
 `Duration::as_nanos` or `from_millis` is never a finding: the standard library defined those. A
@@ -36,6 +37,7 @@ def hits_of_words(words):
     units = words.get('units', {})
     after_per = words.get('units_after_per', {})
     after_number = words.get('units_after_number', {})
+    as_suffix = words.get('units_as_suffix', {})
 
     def hits(definition):
         parts = rust_names.components(definition.name)
@@ -51,6 +53,8 @@ def hits_of_words(words):
                 # Its own part after a number part (`within_30_s`); `gmac0s` and `fat32s` are
                 # possessives, not seconds.
                 hit = (part, after_number[part])
+            elif part in as_suffix and k == len(parts) - 1 and k > 0:
+                hit = (part, as_suffix[part])
             else:
                 continue
             if hit not in out:
@@ -82,13 +86,18 @@ pub const TO_MS: u32 = 0;
 #[doc(alias = "timeout value")]
 pub struct TimeoutMs;
 // pub const IN_A_COMMENT_MS: u32 = 0;
+pub const DRIFT_LIMIT_PPM: u32 = 50;
+pub fn read_ppm() {}
+pub fn ppm_channel_order() { let ppm = 1; let ink_in_ppm_channels = 2; }
+pub const DRIFT_LIMIT_PARTS_PER_MILLION: u32 = 50;
 '''
     found = rust_names.definitions(src)
     bad = rust_names.judge('x.rs', found, hits)
     names = [line.split(': ')[1] for line in bad]
     want = ['const TIMEOUT_MS', 'const CLOCK_MHZ', 'fn delay_us', 'parameter us',
             'binding within_30_s', 'binding kib_per_s', 'const SECONDS_PER_MIN',
-            'const NANOS_PER_SEC', 'const BUFFER_KB', 'const TO_MS']
+            'const NANOS_PER_SEC', 'const BUFFER_KB', 'const TO_MS', 'const DRIFT_LIMIT_PPM',
+            'fn read_ppm']
     failed = 0
     if names != want:
         failed += 1
@@ -99,6 +108,7 @@ pub struct TimeoutMs;
                          ('const SECONDS_PER_MIN', 'write `minute`'),
                          ('binding within_30_s', 'write `seconds`'),
                          ('const NANOS_PER_SEC', '`sec` is spelled out: write `seconds`'),
+                         ('const DRIFT_LIMIT_PPM', 'write `parts_per_million`'),
                          ('const TO_MS', 'integer constant')):
         if needle not in msg.get(name, ''):
             failed += 1

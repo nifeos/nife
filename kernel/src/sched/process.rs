@@ -23,7 +23,7 @@ pub type ProcessId = u64;
 
 /// The most processes that can exist at once, whole machine: one per thread at most, so the thread
 /// ceiling.
-pub(super) const MAXIMUM_PROCESSES: usize = super::MAXIMUM_THREADS;
+pub(crate) const MAXIMUM_PROCESSES: usize = super::MAXIMUM_THREADS;
 
 /// **What lives at the start of a process's page.** The capability table follows it, at
 /// [`TABLE_OFFSET`], outside the struct for the reason `thread::capability_table_of` gives: a
@@ -99,12 +99,15 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
             crate::thread::write_empty_capability_table(table_at(phys).cast_mut());
         }
         // The check above counts live entries, so a table with no free slot can still refuse the
-        // insert; the page stays spent.
-        let pid = sched
+        // insert. Then the count the retype took goes back; the page stays spent.
+        let Some(pid) = sched
             .processes
             .insert_with(|_| ProcessPageAddress::new(phys))
-            .ok_or(abi::Error::OutOfMemory)?
-            .to_bits();
+            .map(generational_table::EntryName::to_bits)
+        else {
+            crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Process);
+            return Err(abi::Error::OutOfMemory);
+        };
         created = Some(pid);
         Ok(Holder::Process(pid))
     })?;
