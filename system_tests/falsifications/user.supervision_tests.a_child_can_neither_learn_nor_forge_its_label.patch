@@ -6,7 +6,7 @@ The defect is `START` reading the supervision capability out of the reserved fau
 leaving it there. The child then holds a capability carrying its own label (and a `READ` view of
 its supervisor's endpoint), which is the "learn" half of this test's claim.
 
-Expected to fail: `assert!(table[FAULT_EP_SLOT as usize].is_none(), "the fault slot still holds a
+Expected to fail: `assert!(table[FAULT_RENDEZVOUS_SLOT as usize].is_none(), "the fault slot still holds a
 capability after START: the child can read its supervision capability")`. Replayed red on aarch64
 on 2026-10-05 (UTC) at that assertion. Not replayed on riscv64 or x86_64 here; CI's re-falsify
 job covers them.
@@ -29,7 +29,7 @@ index a2b41ef76..f266a02ac 100644
      {
          t.fault_ep = Some(ep);
          t.fault_label = label;
--        let _ = table.delete(abi::fault::FAULT_EP_SLOT);
+-        let _ = table.delete(abi::fault::FAULT_RENDEZVOUS_SLOT);
      }
      drop(table);
  

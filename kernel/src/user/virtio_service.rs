@@ -60,7 +60,7 @@ fn wire(
                 arg2: 0,
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: SEND the result
-                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                    interrupt_capability(intid), // slot 1: WAIT / ACKNOWLEDGE the interrupt
                     virtio_capability(vid),      // slot 2: drive the device, confined
                 ],
                 maps: &[Mapping {
@@ -262,7 +262,7 @@ fn wire_net_server(
                 arg2: listen_grant, // which ports this stack's clients may listen on, if any
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: report the acquired address
-                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                    interrupt_capability(intid), // slot 1: WAIT / ACKNOWLEDGE the interrupt
                     virtio_capability(vid),      // slot 2: the confined transport
                     memory_region_capability(budget), // slot 3: the heap's budget
                     rendezvous_capability(stack, Rights::READ), // slot 4: serve clients' requests

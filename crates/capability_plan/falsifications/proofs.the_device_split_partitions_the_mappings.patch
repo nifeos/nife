@@ -1,10 +1,10 @@
 Falsifies `capability_plan::proofs::the_device_split_partitions_the_mappings`.
 
-The defect: `PageKind::mode` returns `MAP_RW` for device registers as well as for shared
+The defect: `PageKind::mode` returns `MAP_READ_WRITE` for device registers as well as for shared
 pages, so every device register window a component is endowed with is mapped writable.
 A one-word slip in a short match, and the kind of thing a copy-paste produces.
 
-Expected to fail: `assert!(m.2 == abi::address_space::MAP_RO)` over the late half of the
+Expected to fail: `assert!(m.2 == abi::address_space::MAP_READ_ONLY)` over the late half of the
 split, on any declaration containing a device page.
 
 **Measured blind before milestone 211.** The harness used to assert
@@ -20,9 +20,9 @@ diff --git a/crates/capability_plan/src/lib.rs b/crates/capability_plan/src/lib.
 @@ -277,7 +277,7 @@ impl PageKind {
      pub const fn mode(self) -> u64 {
          match self {
-             PageKind::Shared => abi::address_space::MAP_RW,
--            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_RO,
-+            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_RW,
+             PageKind::Shared => abi::address_space::MAP_READ_WRITE,
+-            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_READ_ONLY,
++            PageKind::ReadOnly | PageKind::DeviceRegisters => abi::address_space::MAP_READ_WRITE,
          }
      }
  }

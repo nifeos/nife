@@ -92,18 +92,18 @@ pub fn slice_page_frame(frame_slot: u64, first: u64, count: u64) -> i64 {
 }
 
 /// `RETYPE_OBJECT` one page out of the untyped in `region` into a kernel object of
-/// `objtype` (see [`abi::objtype`]). Returns the slot holding a full-rights capability to the new
-/// object, or a negative `abi::Error` (`BadMethod` for an unknown `objtype`, `OutOfMemory` when the
+/// `object_type` (see [`abi::object_type`]). Returns the slot holding a full-rights capability to the new
+/// object, or a negative `abi::Error` (`BadMethod` for an unknown `object_type`, `OutOfMemory` when the
 /// untyped or either table is exhausted).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`retype_into_page_frame`]. His words: "`retype_into_page_frame` and
 /// `retype_into_kernel_object`". Refused `retype_object` (round 7's provisional name),
 /// `retype_kernel_object` (ratified earlier the same day, then superseded by this ruling).
-pub fn retype_into_kernel_object(region: u64, objtype: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`. The kernel validates the untyped, the objtype and the budget before it
+pub fn retype_into_kernel_object(region: u64, object_type: u64) -> i64 {
+    // SAFETY: `svc`/`ecall`. The kernel validates the untyped, the object_type and the budget before it
     // touches a page.
-    unsafe { invoke(region, abi::memory_region::RETYPE_OBJECT, objtype, 0, 0) }
+    unsafe { invoke(region, abi::memory_region::RETYPE_OBJECT, object_type, 0, 0) }
 }
 
 /// `SPLIT` `pages` off the untyped's unspent budget in `memory_region_slot` into a new child
@@ -180,7 +180,7 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 }
 
 /// `MAP_INTO`: map the frame in `frame_slot` into the address space named by `aspace`, at
-/// `va`, per `mode` (`abi::address_space::MAP_RO`/`MAP_RW`/`MAP_CODE`). `0` on success; a negative
+/// `va`, per `mode` (`abi::address_space::MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE`). `0` on success; a negative
 /// `abi::Error`.
 ///
 /// Safe for the reason [`map_page_frame`] is: the kernel checks the address-space capability's
@@ -292,7 +292,7 @@ pub fn thread_control_block_resume(tcb_slot: u64) -> i64 {
     unsafe { invoke(tcb_slot, abi::thread_control_block::RESUME, 0, 0, 0) }
 }
 
-/// Drop the capability in `slot` from this thread's capability table (`SYS_CAPABILITY_DELETE`). Deleting an empty
+/// Drop the capability in `slot` from this thread's capability table (`SYSCALL_CAPABILITY_DELETE`). Deleting an empty
 /// slot is a no-op. A program that retypes many objects (a loader, a spawner) frees each slot as
 /// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
@@ -300,6 +300,6 @@ pub fn thread_control_block_resume(tcb_slot: u64) -> i64 {
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
-    // SAFETY: SYS_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
-    let _ = unsafe { trap6(abi::SYS_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
+    // SAFETY: SYSCALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
+    let _ = unsafe { trap6(abi::SYSCALL_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
 }

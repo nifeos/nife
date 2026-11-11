@@ -39,7 +39,7 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 /// Capability slots the kernel handed us, by convention.
 const REPORT: u64 = 0; // SEND: report the result back to the kernel
 #[doc(alias = "irq")]
-const INTERRUPT: u64 = 1; // WAIT/ACK the device interrupt
+const INTERRUPT: u64 = 1; // WAIT/ACKNOWLEDGE the device interrupt
 const VIRTIO: u64 = 2; // the device transport: read/write registers, set up the queue, submit
 
 // --- virtio-mmio v2 register offsets (bytes from the slot base) ---

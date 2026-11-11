@@ -120,12 +120,12 @@ impl StdLayout {
             maps: [(0, 0, 0); 6],
             maps_n: 0,
         };
-        use abi::address_space::MAP_RW;
+        use abi::address_space::MAP_READ_WRITE;
         use abi::rights::{BIND, READ, WRITE};
         // Each grant at its slot, and a page grant mapped where `std` reads it too.
         if let Some((ep, page)) = dir {
             l.place(rt::FS_DIR_SLOT, ep, WRITE);
-            l.map(rt::FS_PAGE, page, MAP_RW);
+            l.map(rt::FS_PAGE, page, MAP_READ_WRITE);
         }
         l.page(clock, rt::CLOCK_SLOT, rt::CLOCK_PAGE);
         if let Some(ep) = entropy {
@@ -189,7 +189,7 @@ impl StdLayout {
     fn page(&mut self, page: Option<u64>, slot: u64, va: u64) {
         if let Some(page) = page {
             self.place(slot, page, abi::rights::READ);
-            self.map(va, page, abi::address_space::MAP_RO);
+            self.map(va, page, abi::address_space::MAP_READ_ONLY);
         }
     }
 

@@ -276,7 +276,7 @@ const NAMESET_BIT: u64 = 1 << 43;
 /// progenitor places it in, `WRITE` only, in the boot shell and in `login`, and the slot `login`
 /// delegates it from.
 ///
-/// The highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_EP_SLOT`, 63);
+/// The highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`, 63);
 /// `grant_plan` does not depend on `abi`, so each binary that reads this asserts the relation. A
 /// named slot, as [`crate::NETWORK_SLOT`] is: the holder probes it at `_start`, before it has
 /// allocated anything, which is the only time a probe is sound.

@@ -19,7 +19,7 @@ The fix distributes SPI lines across the online cores. The policy lives in
 (it may read `smp::online_count`; it is arch glue, not a driver). Each SPI is assigned a target core
 the first time it is enabled, round-robin over the online cores. That assignment is stable
 (`INTERRUPT_TARGET`, an atomic per-INTID slot). Stability matters because the `Interrupt`
-capability's ACK
+capability's ACKNOWLEDGE
 re-enables the line on every completion; re-rolling the target each time would make the line hop
 cores on every interrupt. The mechanism stays in the driver: `gic::enable(intid, target_cpu)`
 writes `ITARGETSR[intid] = 1 << target_cpu`. PPIs and SGIs are per-core, so the target is ignored
@@ -59,7 +59,7 @@ for S-mode on QEMU
   so the boot hart,
   which runs every `enable` (test wiring, driver spawn), can open any hart's context and enable a
   source on it. The target is chosen round-robin over the online harts and is stable per source
-  (`SOURCE_CTX`). The reason is the GIC's: the ACK re-enables the line on every
+  (`SOURCE_CTX`). The reason is the GIC's: the ACKNOWLEDGE re-enables the line on every
   completion, and the mask and the re-enable have to name the same context.
 - Each hart claims and completes against its own context (`this_s_context`, the context table's
   entry for `cpu::id()`,

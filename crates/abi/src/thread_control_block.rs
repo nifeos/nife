@@ -16,8 +16,8 @@ pub const CONFIGURE: u64 = 0;
 ///
 /// `target` chooses where the capability lands: **0 places it in the first free slot** (the
 /// original behavior, so every existing caller is unchanged), and `n` places it in slot
-/// `n - 1`. The explicit target exists for the supervision endpoint, which a supervisor puts
-/// in the reserved [`fault::FAULT_EP_SLOT`](super::fault::FAULT_EP_SLOT) rather than wherever
+/// `n - 1`. The explicit target exists for the supervision rendezvous, which a supervisor puts
+/// in the reserved [`fault::FAULT_RENDEZVOUS_SLOT`](super::fault::FAULT_RENDEZVOUS_SLOT) rather than wherever
 /// first-free happened to fall. `OutOfMemory` if the chosen slot is occupied or out of range.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
@@ -46,7 +46,7 @@ pub const SET_THREAD_POINTER: u64 = 3;
 /// `invoke(capability, SUSPEND, _, _, _)` -> 0 (seL4's `TCB_Suspend`). **Stop the thread this TCB names until a [`RESUME`]**, keeping its
 /// registers. Needs `WRITE`: the TCB capability is the whole authority.
 ///
-/// - **Silent**: nothing reaches the supervision endpoint that reports deaths.
+/// - **Silent**: nothing reaches the supervision rendezvous that reports deaths.
 /// - **Stopped when it returns**, even when the thread was running on another core.
 /// - A thread blocked in IPC stays in it, and stops before its next user instruction once it ends.
 /// - A thread may suspend itself; the call returns 0 once somebody resumes it. Suspending a

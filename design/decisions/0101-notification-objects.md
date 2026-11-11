@@ -124,8 +124,10 @@ and Redox.
 ### New object type
 
 ```
-objtype::NOTIFICATION: u64 = 4
+object_type::NOTIFICATION: u64 = 4
 ```
+
+The module is `abi::object_type`, its name spelled out by the ruling of 2026-11-11 (UTC).
 
 A notification is a page-resident kernel object, created by `RETYPE_OBJECT` (method 2, its name
 spelled out by the ruling of 2026-11-11 (UTC)), owned by the caller's untyped budget. It holds:

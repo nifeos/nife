@@ -51,7 +51,7 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
         abi::address_space::MAP_INTO,
         va,
         frame_slot,
-        abi::address_space::MAP_RW,
+        abi::address_space::MAP_READ_WRITE,
     );
     assert_eq!(
         outcome,
@@ -125,7 +125,7 @@ fn a_slice_maps_only_its_window() {
         abi::address_space::MAP_INTO,
         va,
         slice,
-        abi::address_space::MAP_RW,
+        abi::address_space::MAP_READ_WRITE,
     )
     .expect("the slice maps");
     assert_eq!(

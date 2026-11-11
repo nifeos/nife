@@ -98,9 +98,9 @@ const RECEIVE_STUB: &[u32] = &[
     0xD280_0002, // movz x2, #0
     0xD280_0003, // movz x3, #0
     0xD280_0004, // movz x4, #0
-    0xD280_0000 | ((abi::SYS_INVOKE as u32) << 5) | 8, // movz x8, #SYS_INVOKE
+    0xD280_0000 | ((abi::SYSCALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSCALL_INVOKE
     0xD400_0001, // svc #0                 (RECEIVE: blocks)
-    0xD280_0008, // movz x8, #SYS_EXIT
+    0xD280_0008, // movz x8, #SYSCALL_EXIT
     0xD400_0001, // svc #0                 (exit)
 ];
 #[cfg(target_arch = "riscv64")]
@@ -110,10 +110,10 @@ const RECEIVE_STUB: &[u32] = &[
     0x0000_0613,                                             // li a2, 0
     0x0000_0693,                                             // li a3, 0
     0x0000_0713,                                             // li a4, 0
-    0x0000_0893 | ((abi::SYS_INVOKE as u32) << 20),          // li a7, SYS_INVOKE
-    0x0000_0073,                                  // ecall               (RECEIVE: blocks)
-    0x0000_0893 | ((abi::SYS_EXIT as u32) << 20), // li a7, SYS_EXIT
-    0x0000_0073,                                  // ecall               (exit)
+    0x0000_0893 | ((abi::SYSCALL_INVOKE as u32) << 20),      // li a7, SYSCALL_INVOKE
+    0x0000_0073, // ecall               (RECEIVE: blocks)
+    0x0000_0893 | ((abi::SYSCALL_EXIT as u32) << 20), // li a7, SYSCALL_EXIT
+    0x0000_0073, // ecall               (exit)
 ];
 /// `x86_64`'s is in `user::x86_programs`; see [`SPIN_STUB`].
 #[cfg(target_arch = "x86_64")]
@@ -129,9 +129,9 @@ const CALL_STUB: &[u32] = &[
     0xD280_0002, // movz x2, #0
     0xD280_0003, // movz x3, #0
     0xD280_0004, // movz x4, #0
-    0xD280_0000 | ((abi::SYS_INVOKE as u32) << 5) | 8, // movz x8, #SYS_INVOKE
+    0xD280_0000 | ((abi::SYSCALL_INVOKE as u32) << 5) | 8, // movz x8, #SYSCALL_INVOKE
     0xD400_0001, // svc #0                 (CALL: blocks until replied)
-    0xD280_0008, // movz x8, #SYS_EXIT
+    0xD280_0008, // movz x8, #SYSCALL_EXIT
     0xD400_0001, // svc #0                 (exit)
 ];
 #[cfg(target_arch = "riscv64")]
@@ -141,9 +141,9 @@ const CALL_STUB: &[u32] = &[
     0x0000_0613,                                          // li a2, 0
     0x0000_0693,                                          // li a3, 0
     0x0000_0713,                                          // li a4, 0
-    0x0000_0893 | ((abi::SYS_INVOKE as u32) << 20),       // li a7, SYS_INVOKE
+    0x0000_0893 | ((abi::SYSCALL_INVOKE as u32) << 20),   // li a7, SYSCALL_INVOKE
     0x0000_0073,                                          // ecall               (CALL: blocks)
-    0x0000_0893 | ((abi::SYS_EXIT as u32) << 20),         // li a7, SYS_EXIT
+    0x0000_0893 | ((abi::SYSCALL_EXIT as u32) << 20),     // li a7, SYSCALL_EXIT
     0x0000_0073,                                          // ecall               (exit)
 ];
 /// `x86_64`'s is in `user::x86_programs`; see [`SPIN_STUB`].

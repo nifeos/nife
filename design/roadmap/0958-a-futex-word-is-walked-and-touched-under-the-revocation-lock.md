@@ -19,7 +19,7 @@ beyond holding it.
 
 ## The failure
 
-`SYS_EXIT_THREAD` clears the thread's clear-word: `kernel/src/sched/futex.rs` translates the user
+`SYSCALL_EXIT_THREAD` clears the thread's clear-word: `kernel/src/sched/futex.rs` translates the user
 address with `translate_user`, then stores zero through the direct map, holding no lock across the
 two. A sibling thread holding `WRITE` on the region behind the word can destroy it in between
 (`kernel/src/sched/region_reaping.rs`). If the frame is then reused, four zero bytes land in a

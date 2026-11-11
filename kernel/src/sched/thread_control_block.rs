@@ -169,12 +169,12 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
     // so the child cannot forge fault messages, and its badge, the child's label (§148 (a
     // supervisor restarts by asking)), reaches only the supervisor.
     let mut table = capabilities.lock();
-    if let Ok(fault_capability) = table.get(abi::fault::FAULT_EP_SLOT)
+    if let Ok(fault_capability) = table.get(abi::fault::FAULT_RENDEZVOUS_SLOT)
         && let crate::capability_object::Object::Rendezvous(ep, label) = fault_capability.object
     {
         t.fault_ep = Some(ep);
         t.fault_label = label;
-        let _ = table.delete(abi::fault::FAULT_EP_SLOT);
+        let _ = table.delete(abi::fault::FAULT_RENDEZVOUS_SLOT);
     }
     drop(table);
 

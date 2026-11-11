@@ -500,7 +500,7 @@ pub struct Thread {
     pub(crate) kill_deferred: bool,
     /// **Where this thread's fault/exit is reported** (milestone 22, DECISIONS §26), or `None` for
     /// an unsupervised thread. Set once at `START` from the child's reserved fault slot (abi's
-    /// `FAULT_EP_SLOT`) and never afterward: supervision is granted at spawn only, so the
+    /// `FAULT_RENDEZVOUS_SLOT`) and never afterward: supervision is granted at spawn only, so the
     /// relationship is fixed and visible in how the thread was built (§26.2). When the thread
     /// faults or exits, the kernel delivers a five-word message here and the corpse goes `Dead`
     /// until reaped; a thread with `None` dies and is reaped immediately, today's behavior.
