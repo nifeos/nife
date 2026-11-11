@@ -1,29 +1,22 @@
-//! **Which grant a starter gives a virtio driver, and the direct grant's carve-out.** A driver
-//! granted mediated holds a `Virtio` capability and the kernel validates every descriptor on
-//! `NOTIFY` (`kernel/src/virtio.rs`). A driver granted direct holds its function's structure
-//! pages and a DMA region the IOMMU confines, and the kernel validates nothing. See
+//! **Which grant a starter gives a virtio driver, and the direct grant's carve-out.** Mediated:
+//! a `Virtio` capability, and the kernel validates every descriptor on `NOTIFY`. Direct: the
+//! function's structure pages and a DMA region the IOMMU confines. See
 //! design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
 //!
-//! The default, ruled 2026-11-11 (UTC), lives here and nowhere in the kernel's device code:
-//! [`choose`] grants direct to a virtio-pci function the IOMMU confines, which takes all three of
-//! the active IOMMU owning its requester id, the function offering `VIRTIO_F_ACCESS_PLATFORM`,
-//! and no structure page sharing a page with its MSI-X table or pending-bit array. Every other
-//! function, and every virtio-mmio device, gets the mediated grant.
+//! The default, ruled 2026-11-11 (UTC), lives here: [`choose`] grants direct only when the active
+//! IOMMU owns the function's requester id, the function offers `VIRTIO_F_ACCESS_PLATFORM`, and no
+//! structure page shares a page with its MSI-X table or pending-bit array. Every other function,
+//! and every virtio-mmio device, gets the mediated grant.
 //!
 //! # BUGS
 //!
-//! - A direct grant's DMA region and domain live as long as the function, so a function granted
-//!   direct twice in one boot holds two regions; the second confinement drops the first from the
-//!   domain, and the first is never freed.
-//! - The direct grant has no escape test yet. Step 7 lists two: a direct driver that aims a ring
-//!   outside its region, and one that declines `VIRTIO_F_ACCESS_PLATFORM`, each answered by an
-//!   IOMMU fault or a refused `FEATURES_OK`. Until they land, the suite shows the direct disk
-//!   working and the default choosing it, and the IOMMU's confinement of a direct driver rests on
-//!   `the_iommu_faults_a_dma_that_escapes_the_domain`, which provokes the same fault through the
-//!   mediated transport.
+//! - A function granted direct twice in one boot holds two regions; the second confinement drops
+//!   the first from the domain, and the first is never freed.
+//! - No escape test drives a direct driver (a ring aimed outside its region, a declined
+//!   `VIRTIO_F_ACCESS_PLATFORM`); `the_iommu_faults_a_dma_that_escapes_the_domain` provokes the
+//!   same IOMMU fault through the mediated transport.
 //!
-//! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter, after what it
-//! decides.
+//! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 
 use driver_process_contract::virtual_input_output::{
     self as contract, HandOff, RegisterWindow, WindowRefusal,
@@ -116,10 +109,8 @@ pub(crate) struct Direct {
     count: usize,
     /// The register window, then the DMA region.
     pub windows: [startup_page_contract::Window; 2],
-    /// The spawn words, [`HandOff::pack`]'s.
+    /// The spawn words, [`HandOff::pack`]'s, the DMA region's physical base among them.
     pub words: [u64; 3],
-    /// The DMA region's physical base.
-    pub data_plane_physical_address: u64,
 }
 
 impl Direct {
@@ -204,7 +195,6 @@ pub(crate) fn carve(
             },
         ],
         words: handoff.pack(),
-        data_plane_physical_address: dma,
     })
 }
 
@@ -282,7 +272,6 @@ mod tests {
                 d.direct.bar_bases[usize::from(page.bar)] + page.offset
             );
         }
-        assert_eq!(maps[registers].phys, direct.data_plane_physical_address);
         assert_eq!(maps[registers + 1].va, DMA_VA + FRAME_SIZE);
         assert_eq!(direct.windows[0].pages as usize, registers);
         assert_eq!(direct.windows[1].pages, 2);
@@ -292,10 +281,7 @@ mod tests {
             (h.common, h.notify, h.interrupt_status),
             (window.common, window.notify, window.interrupt_status)
         );
-        assert_eq!(
-            h.data_plane_physical_address,
-            direct.data_plane_physical_address
-        );
+        assert_eq!(h.data_plane_physical_address, maps[registers].phys);
         assert_eq!(h.role, 3);
         assert!(h.fits(direct.windows[0].pages));
         // The common configuration the driver will find at its window offset is the one the

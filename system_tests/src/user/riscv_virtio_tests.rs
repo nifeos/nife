@@ -784,9 +784,13 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
 }
 
 /// **The PCI disk takes the direct grant the default gives it, and the mediated one too.** On a
-/// runner whose IOMMU confines the disk, the starter grants it direct (milestone 1062 step 7, the
-/// 2026-11-11 default), and the read test beside this one drives it so. This drives the same
-/// read on the mediated grant, so both paths run on this architecture.
+/// runner whose IOMMU confines the disk, the starter grants it direct (milestone 1062 (the device
+/// control planes leave the kernel) step 7, the 2026-11-11 default), and the read test beside this
+/// one drives it so. This drives the same read on the mediated grant, so both paths run on this
+/// architecture.
+///
+/// Falsification: unfalsified. Written by lane/1062-virtio-direct-transport, which ran it green
+/// on all three architectures but did not break the grant it guards to watch it go red.
 #[test_case]
 fn the_pcie_disk_reads_on_either_grant() {
     let Some(direct) = virtio_service::pci_disk_takes_the_direct_grant() else {

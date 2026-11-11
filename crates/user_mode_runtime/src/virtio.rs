@@ -81,6 +81,9 @@ pub fn doorbell_barrier() {
         core::arch::asm!("fence w, o", options(nostack, preserves_flags));
     }
     #[cfg(target_arch = "x86_64")]
+    // PAIR: none in software. The partner is the device, which reads the rings after it sees the
+    // doorbell store; x86_64 keeps stores in order to memory and to MMIO alike, so only the
+    // compiler must not move the ring writes past the doorbell.
     core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     #[cfg(not(any(
         target_arch = "aarch64",
