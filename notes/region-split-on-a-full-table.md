@@ -21,7 +21,7 @@ fuller, so the next caller would reach the ceiling sooner, and the aarch64 suite
 slots of `memory_region::MAXIMUM_REGIONS`.
 
 The host test `a_split_refused_for_a_full_table_leaves_the_parent_unchanged` and the Kani harness
-`a_refused_split_moves_nothing` (which fills the table on one branch) hold the rule.
+`a_split_refused_for_a_full_table_moves_nothing` hold the rule.
 `MemoryRegion::SPLIT` still answers `OutOfMemory` on a full table.
 
 ## The options

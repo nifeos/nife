@@ -374,8 +374,9 @@ impl Run {
     }
 
     /// Split one page off `r`. The tree holds at most three of the table's four slots, so only
-    /// [`fill_table`](Self::fill_table) makes a split here refused for a full table. The child is live
-    /// and counted, a region nobody drives. Returns its name, or `None` when the table refused.
+    /// [`fill_table`](Self::fill_table) makes a split here refused for a full table. The child is
+    /// live and counted, a region nobody drives. Returns its name, or `None` when the table
+    /// refused.
     fn split(&mut self, r: usize) -> Option<u64> {
         let child = self.table.split(self.name(r), 1);
         if child.is_some() {
@@ -435,17 +436,12 @@ fn a_refused_carve_moves_nothing() {
 }
 
 /// **A split the table refuses moves nothing**: no page, no pin, no child and no count, in the
-/// refused region or any other, whichever limit refused it (its pages, a ceiling or a full table),
-/// from any state.
+/// refused region or any other, whichever limit refused it, from any state.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_refused_split_moves_nothing.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn a_refused_split_moves_nothing() {
     Run::for_every_depth(|mut run, r| {
-        let full: bool = kani::any();
-        if full {
-            run.fill_table();
-        }
         let before = run.snapshots();
         let regions = run.table.len();
         let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
@@ -464,12 +460,31 @@ fn a_refused_split_moves_nothing() {
             refused && watermark == pages,
             "a split refused for its pages"
         );
+    });
+}
+
+/// **A split refused for a full table moves nothing**: from any state of the tree with every
+/// other slot of the table taken, the split is refused and no page, pin, child or count moves.
+/// Its own harness rather than a branch of
+/// [`a_refused_split_moves_nothing`], whose model a symbolic full table makes too large to check
+/// in 12 GiB.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_split_refused_for_a_full_table_moves_nothing.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_split_refused_for_a_full_table_moves_nothing() {
+    Run::for_every_depth(|mut run, r| {
+        run.fill_table();
+        let before = run.snapshots();
+        let regions = run.table.len();
+        let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
+        assert!(run.split(r).is_none(), "a full table took a child");
+        assert!(run.unmoved_since(before), "a refusal moved something");
+        assert!(run.table.len() == regions, "a refusal left a region");
+        let own = before[r].expect("a region of the tree");
+        let counted = Counted::Region;
         kani::cover!(
-            refused
-                && full
-                && watermark < pages
-                && own.live.get(counted) < own.ceilings.get(counted),
-            "a split refused for a full table"
+            watermark < pages && own.live.get(counted) < own.ceilings.get(counted),
+            "a split that only the full table refuses"
         );
     });
 }

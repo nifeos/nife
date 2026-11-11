@@ -40,6 +40,7 @@ longer live; the table names those two and the six that count objects under subt
 | `destroy_never_frees_a_child_to_the_allocator` | a pinned or parent region refuses; a **root** frees to the allocator; a **child** *never* does, its pages return to the parent. So a page reaches the allocator only through the one root that owns it, exactly once |
 | `a_refused_carve_moves_nothing` | from any state, a carve the table refuses leaves every region's pages, pin, child count and live counts as they were, whichever limit refused it |
 | `a_refused_split_moves_nothing` | the same for a refused split |
+| `a_split_refused_for_a_full_table_moves_nothing` | with every other slot of the table taken, a split is refused and moves nothing |
 | `a_carve_keeps_every_count_exact_and_under_its_ceiling` | from any state in which each region's live count of each kind equals what its subtree holds and is at most its ceiling, a carve keeps it so |
 | `a_split_keeps_every_count_exact_and_under_its_ceiling` | the same for a split, whose new child starts with nothing counted and a sixteenth of its root's ceilings |
 | `a_release_keeps_every_count_exact` | the same for a release |
