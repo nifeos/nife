@@ -32,6 +32,7 @@ use jh7110_clock_and_reset::{
     SYSTEM_TOP_GROUP, Step, advanced_extensible_interface_configuration_0_hertz, clock_divider,
     is_clock_enabled, is_deasserted, sd_card_divider_for, with_divider, with_parent,
 };
+use jh7110_clock_and_reset_contract::{self as wire, Status, Summary};
 
 /// **Which window a word lives in**: one of the three clock and reset domains a device draws on,
 /// or the SYS syscon, whose PLL words a rate needs.
@@ -358,13 +359,18 @@ impl Device {
         Some(windows.read(window, offset))
     }
 
-    /// **The `index`th reset's raw status word**, or `None` beyond the device's own resets.
+    /// **Whether the `index`th reset is released**, read from its own status bit alone, or `None`
+    /// beyond the device's own resets. The other 31 lines of the status word belong to other
+    /// devices, so nothing of them leaves this function.
     ///
     /// Name: provisional.
-    pub fn read_reset(&self, windows: &mut impl Windows, index: u8) -> Option<u32> {
+    pub fn read_reset(&self, windows: &mut impl Windows, index: u8) -> Option<bool> {
         let (window, reset) = self.reset(index)?;
         let bit = window.domain()?.reset_bit(reset)?;
-        Some(windows.read(window, bit.status_offset))
+        Some(is_deasserted(
+            windows.read(window, bit.status_offset),
+            bit.mask,
+        ))
     }
 
     /// **Run the rated clock at no more than `most_hertz`**: the smallest divider that does, the
@@ -430,6 +436,63 @@ impl Device {
             parent_hertz,
             hertz: parent_hertz / u64::from(clock_divider(after).max(1)),
         })
+    }
+}
+
+/// **Answer one request on the wire** from the device `badge` names: reply word 0's status and
+/// reply word 1. A server's whole dispatch, in the order the wire gives: a badge that names no
+/// device it serves gets [`Status::UnknownDevice`], an operation it does not serve
+/// [`Status::UnknownOperation`], and a request setting a bit its operation gives no meaning
+/// [`Status::MalformedRequest`], each before anything is read or stored.
+///
+/// Name: provisional.
+pub fn answer(
+    windows: &mut impl Windows,
+    badge: u64,
+    w0: u64,
+    w1: u64,
+    poll_limit: u32,
+) -> (Status, u64) {
+    let Some(device) = Device::at(badge).filter(|d| d.is_served_by(windows)) else {
+        return (Status::UnknownDevice, 0);
+    };
+    let operation = wire::operation(w0);
+    // `VERSION_QUERY` is not served until its reply exists (the contract crate's BUGS).
+    if !matches!(
+        operation,
+        wire::BRING_UP | wire::READ_CLOCK | wire::READ_RESET | wire::SET_RATE
+    ) {
+        return (Status::UnknownOperation, 0);
+    }
+    if !wire::is_well_formed(w0, w1) {
+        return (Status::MalformedRequest, 0);
+    }
+    let index = wire::index(w0);
+    let out_of_range = (Status::IndexOutOfRange, 0);
+    match operation {
+        wire::BRING_UP => {
+            let c = device.bring_up(windows, poll_limit);
+            let summary = Summary {
+                clocks_in_plan: c.clocks_in_plan,
+                clocks_running: c.clocks_running,
+                resets_in_plan: c.resets_in_plan,
+                resets_released: c.resets_released,
+                already_up: c.already_up,
+                refused: c.refused,
+            };
+            (summary.status(), summary.pack())
+        }
+        wire::READ_CLOCK => device
+            .read_clock(windows, index)
+            .map_or(out_of_range, |word| (Status::Done, u64::from(word))),
+        wire::READ_RESET => device
+            .read_reset(windows, index)
+            .map_or(out_of_range, |released| (Status::Done, u64::from(released))),
+        _ => match device.set_rate(windows, w1) {
+            Ok(rate) => (Status::Done, rate.hertz),
+            Err(RateRefusal::NoRatedClock) => (Status::NoRatedClock, 0),
+            Err(RateRefusal::NoRateAtOrBelow) => (Status::NoRateAtOrBelow, 0),
+        },
     }
 }
 

@@ -2,7 +2,7 @@
 //! the kernel), step 2), and the calls the kernel's own starters make to it.
 //!
 //! On a machine whose tree names a JH7110 clock and reset window, [`ensure`] spawns
-//! `components/src/jh7110_clock_and_reset_server.rs` once per boot with the first page of each
+//! `components/src/jh7110_clock_and_reset.rs` once per boot with the first page of each
 //! window the tree named (STG, SYS and AON device-typed, the SYS syscon read-only) and the receive
 //! side of one endpoint. A starter then calls it with the badge of the device it is about to start,
 //! the device's register base physical address (§320 (the JH7110 clock and reset wire)), through
@@ -121,7 +121,7 @@ fn start() -> Option<crate::sched::RendezvousId> {
     if count == 0 {
         return None;
     }
-    let image = crate::user::program("jh7110_clock_and_reset_server")?;
+    let image = crate::user::program("jh7110_clock_and_reset")?;
     let request = crate::sched::create_rendezvous();
     const _: () = assert!(REQUEST_SLOT == 0);
     crate::sched::spawn(move || {

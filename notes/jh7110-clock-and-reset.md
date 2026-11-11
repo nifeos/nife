@@ -7,7 +7,7 @@ need one). The code:
 - `crates/machine_discovery/src/jh7110/clock_and_reset.rs`: the device-tree walk.
 - `crates/jh7110_clock_and_reset_contract`: the wire, §320 (the JH7110 clock and reset wire).
 - `crates/jh7110_clock_and_reset_devices`: each device's plans, keyed by its badge.
-- `components/src/jh7110_clock_and_reset_server.rs`: the stores.
+- `components/src/jh7110_clock_and_reset.rs`: the stores.
 - `kernel/src/user/jh7110_clock_and_reset_service.rs`: the spawn and the starters' calls.
 - `kernel/src/drivers/jh7110_clock_and_reset.rs`: the kernel's own walk, for its watchdog.
 
@@ -112,8 +112,10 @@ tree. Holding a badge instead, it can bring up, read and rate its own device and
 (§256 (a server that keeps windows for many clients scopes each by the caller's badge)).
 
 The wire is §320's, in `jh7110_clock_and_reset_contract`: interface id 24, version 1, five
-operations (version query reserved, bring up, read clock, read reset, set rate), eight statuses,
-and a packed bring-up summary. Bring up enables every clock the device's plan names, in every
+operations (version query reserved, bring up, read clock, read reset, set rate), nine statuses,
+and a packed bring-up summary. The server refuses a request that sets a bit its
+operation gives no meaning, as malformed, before it reads or stores anything. A reset read
+answers only the device's own line. Bring up enables every clock the device's plan names, in every
 domain, before it releases any reset, because Linux's reset driver warns that a deassert against
 a gated clock can hang. It is idempotent. No operation turns a device off (§304 (who may turn a
 device off)).
@@ -209,7 +211,7 @@ Read the clock line first: it decides how the entropy line should be read.
 
 | The `hw clock` line says | What it means | What to do |
 |---|---|---|
-| `no clock and reset server runs` | No window was recorded, or the archive has no `jh7110_clock_and_reset_server`. On radon the first is a regression in discovery, not a fact about the board | Dump the tree at the U-Boot prompt (`fdt addr $fdtcontroladdr; fdt list /soc`) and check what the controller node is actually called. Milestone 239 is the precedent: the node name was `trng@1600C000` with an upper-case C |
+| `no clock and reset server runs` | No window was recorded, or the archive has no `jh7110_clock_and_reset`. On radon the first is a regression in discovery, not a fact about the board | Dump the tree at the U-Boot prompt (`fdt addr $fdtcontroladdr; fdt list /soc`) and check what the controller node is actually called. Milestone 239 is the precedent: the node name was `trng@1600C000` with an upper-case C |
 | `the published constant` | The TRNG node was found but no clock controller was, so the address came from the constant | The bring-up still ran and the rest of the line is real. Capture `fdt list /soc` and add the node's real compatible to `jh7110_clock_and_reset`'s discovery list, so the next boot reads it rather than assuming it |
 | `Done, clocks 2/2 running, resets 1/1 released` | **The sequence worked.** Bit 31 read back on both clocks and the status bit came up | Read the `hw entropy` line, below |
 | `ClockNotRunning, clocks 0/2 running` | The enable bit did not stick. The window is device-mapped and accepting stores, and nothing is behind it | The base address is wrong, or the STG domain itself is gated by a parent this milestone does not program. See BUGS: the SYSCRG `stg_axiahb` parent is the first suspect |

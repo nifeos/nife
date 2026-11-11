@@ -68,8 +68,9 @@ pub const BRING_UP: u64 = 1;
 /// Name: provisional.
 pub const READ_CLOCK: u64 = 2;
 
-/// **Read one of the device's reset status words**, by the device's own reset index in word 0 bits
-/// 7:0. Reply word 1 is the raw status word, in which a set bit is a line out of reset.
+/// **Read one of the device's resets**, by the device's own reset index in word 0 bits 7:0. Reply
+/// word 1 is that line's own status bit alone: 1 when the line is released, 0 when it is held. The
+/// other 31 lines of the status word belong to other devices, so the reply carries none of them.
 ///
 /// Name: provisional.
 pub const READ_RESET: u64 = 3;
@@ -112,6 +113,35 @@ pub const fn index(w0: u64) -> u8 {
     (w0 & 0xff) as u8
 }
 
+/// Request word 0's bits 55:8, which carry no meaning for any operation.
+const UNUSED_REQUEST_BITS: u64 = ((1 << OPERATION_SHIFT) - 1) & !0xff;
+
+/// **Whether a request sets only bits its operation gives a meaning**: word 0 bits 55:8 are clear,
+/// the index is zero unless the operation is [`READ_CLOCK`] or [`READ_RESET`], and word 1 is zero
+/// unless the operation is [`SET_RATE`]. A server answers [`Status::MalformedRequest`] for any
+/// other request of an operation it serves, so a bit nobody defined never reaches the silicon and
+/// a later version can give it a meaning. An operation the server does not serve is answered
+/// [`Status::UnknownOperation`] first.
+///
+/// ```
+/// use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, SET_RATE, is_well_formed, request};
+///
+/// assert!(is_well_formed(request(READ_CLOCK, 2), 0));
+/// assert!(is_well_formed(request(SET_RATE, 0), 50_000_000));
+/// assert!(!is_well_formed(request(BRING_UP, 1), 0)); // an index on an operation with none
+/// assert!(!is_well_formed(request(READ_CLOCK, 2), 7)); // word 1 on a read
+/// ```
+///
+/// Name: provisional.
+#[must_use]
+pub const fn is_well_formed(w0: u64, w1: u64) -> bool {
+    let operation = operation(w0);
+    let takes_index = operation == READ_CLOCK || operation == READ_RESET;
+    w0 & UNUSED_REQUEST_BITS == 0
+        && (takes_index || index(w0) == 0)
+        && (operation == SET_RATE || w1 == 0)
+}
+
 /// **What reply word 0 says**, a small non-negative number. A kernel failure of the `CALL` itself
 /// is a small negative, enormous as a `u64`, so [`Status::from_word`] answers `None` for it and the
 /// two never collide.
@@ -135,13 +165,15 @@ pub enum Status {
     NoRatedClock = 6,
     /// No divider gives a rate at or below the one asked.
     NoRateAtOrBelow = 7,
+    /// The request set a bit its operation gives no meaning ([`is_well_formed`]).
+    MalformedRequest = 8,
 }
 
 impl Status {
     /// Every status, in number order.
     ///
     /// Name: provisional.
-    pub const ALL: [Status; 8] = [
+    pub const ALL: [Status; 9] = [
         Status::Done,
         Status::UnknownDevice,
         Status::UnknownOperation,
@@ -150,6 +182,7 @@ impl Status {
         Status::IndexOutOfRange,
         Status::NoRatedClock,
         Status::NoRateAtOrBelow,
+        Status::MalformedRequest,
     ];
 
     /// The status as reply word 0.
@@ -258,7 +291,8 @@ impl Summary {
     /// **The status a bring-up with this summary answers**: [`Status::ClockNotRunning`] when a
     /// clock did not read back running, else [`Status::ResetHeld`] when a reset stayed held, else
     /// [`Status::Done`]. A clock comes first because the plan enables every clock before it
-    /// releases any reset, and a reset behind a gated clock may never release.
+    /// releases any reset, and a reset behind a gated clock may never release. A refused step
+    /// changes no status: it is counted in [`Summary::refused`] and nothing more.
     ///
     /// Name: provisional.
     #[must_use]

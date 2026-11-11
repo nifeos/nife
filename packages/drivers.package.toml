@@ -35,4 +35,4 @@ interfaces = [
     # its standard-mode timing in the route's spawn words, so both link it.
     "designware_inter_integrated_circuit",
 ]
-programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage", "jh7110_clock_and_reset_server", "power_management_chip_route"]
+programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage", "jh7110_clock_and_reset", "power_management_chip_route"]
