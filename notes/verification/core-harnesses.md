@@ -29,7 +29,7 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Ten in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Eleven in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
 longer live; the table names those two and the six that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
