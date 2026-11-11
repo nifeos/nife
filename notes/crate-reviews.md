@@ -288,8 +288,7 @@ Recommendation. The architect cleared the move, and has not cleared the tag or p
 
 The whole package is [crate-reviews/jh7110-clock-and-reset.md](crate-reviews/jh7110-clock-and-reset.md).
 
-Name and version. `jh7110_clock_and_reset` `0.1.0`, ratified. 80 names, all with ratified blocks;
-`CLOCK_PARENT_MASK` by the maintainer, pending the architect.
+Name and version. `jh7110_clock_and_reset` `0.1.0`, ratified. 80 names, all with ratified blocks.
 
 API. One `lib.rs`, 69 public items: offsets and bits of three domains, the bring-up plans, the I2C
 and SD clock arithmetic, and both device trees' strings. No other project's type appears in a
@@ -313,7 +312,7 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Two decisions, listed in the package: `CLOCK_PARENT_MASK` and the clearance. | architect |
+| The clearance, listed in the package. | architect |
 | The 43 template gate findings, in this tree. | a rename lane |
 | The PMIC reset path (198 high and 297 low counts at 49.5 MHz) has not run on a board; the README says so. | maintainers (bench) |
 | `repository` in the manifest, the tag, the `Name:` blocks, the stranger test. | move lane |
@@ -379,7 +378,7 @@ with no Kani harness.
 | `e1000e` | 6 | cleared to move; repository exists |
 | `designware_ethernet` | 7 | cleared to move; the move waits for the template gates |
 | `designware_mobile_storage` | 8 | cleared to move; repository exists |
-| `jh7110_clock_and_reset` | 10 | one name and the clearance for the architect; the move waits for the template gates |
+| `jh7110_clock_and_reset` | 10 | the clearance for the architect; the move waits for the template gates |
 | `block_roster_contract` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |

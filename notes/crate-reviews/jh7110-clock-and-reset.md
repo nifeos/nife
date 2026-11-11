@@ -34,7 +34,7 @@ One module and 69 public items (36 constants, 22 functions, 10 structs and the `
 
 | group | items |
 |---|---|
-| words and bits | `CLOCK_ENABLE`, `CLOCK_PARENT_MASK`, `with_parent`, `clock_divider`, `with_divider`, `is_clock_enabled`, `is_deasserted` |
+| words and bits | `CLOCK_ENABLE`, `CLOCK_MULTIPLEXER_MASK`, `with_parent`, `clock_divider`, `with_divider`, `is_clock_enabled`, `is_deasserted` |
 | domains | `Domain` (with `clock_offset` and `reset_bit`), `ResetBit`, `SYSTEM`, `ALWAYS_ON`, `SYSTEM_TOP_GROUP`, `SYSTEM_BASE_PHYSICAL_ADDRESS`, the three `RegisterWindow` values and `WindowLocation::from_regions` |
 | plans | `Step`, `ENTROPY_BRING_UP`, `GMAC0_SYSTEM_BRING_UP`, `GMAC0_ALWAYS_ON_BRING_UP`, `SD_INPUT_OUTPUT_BRING_UP`, `DevicePlan::from_specifiers`, `PowerManagementChipBus::from_nodes` |
 | rates | `InterIntegratedCircuitClockWords`, `advanced_extensible_interface_configuration_0_hertz`, `inter_integrated_circuit_5_clock_frequency`, `one_based_divider`, `sd_card_divider_for`, `StandardMode`, `standard_mode_100_kilohertz` |
@@ -84,9 +84,9 @@ both numberings. The README's usage example runs as a doctest.
 `python3 helpers/name_release.py --draft jh7110_clock_and_reset` lists 80 names (the crate, the
 test module and 78 items and fields), each with a ratified block.
 
-Provisional. The maintainer ratified `CLOCK_PARENT_MASK`, pending the architect. It says what
-the field holds, as `with_parent` and `Step::SelectParent` already do. The ruling refused
-`CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`. Recommendation: ratify.
+The architect ratified `CLOCK_MULTIPLEXER_MASK` on 2026-11-11 (UTC): OpenBSD's `CLKMUX_MASK`
+spelled out, with the three source spellings as aliases. `with_parent` and `Step::SelectParent`
+keep "parent" for what the field holds.
 
 Ratified names a later rule reached, renamed and ratified on 2026-11-08 (UTC) before the first
 release, because names become permanent on first publication.
@@ -94,7 +94,7 @@ release, because names become permanent on first publication.
 | was | rule | now |
 |---|---|---|
 | `SDIO_BRING_UP` | `SDIO` is not an accepted acronym | `SD_INPUT_OUTPUT_BRING_UP`, as `SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD` already spells it |
-| `BringUpReport::mux_before`, `mux_after`, `had_mux` | the ruling on `CLOCK_PARENT_MASK` refused `mux` | `select_parent_before`, `select_parent_after`, `had_select_parent` |
+| `BringUpReport::mux_before`, `mux_after`, `had_mux` | `mux` abbreviates multiplexer | `select_parent_before`, `select_parent_after`, `had_select_parent` |
 | `SYSTEM_BASE` | an address says virtual or physical | `SYSTEM_BASE_PHYSICAL_ADDRESS` |
 | `RegisterWindow::base`, `WindowLocation::base` | the same; both hold physical addresses | `base_physical_address` |
 | `PowerManagementChipBus::controller` | an `(address, size)` pair with no word for either | `controller_physical_window` |
@@ -211,7 +211,7 @@ path has not run on a board. The move waits for the template gates above.
 
 | item | owner |
 |---|---|
-| Decisions 1 and 2 below. | architect |
+| The decision below. | architect |
 | The 43 template gate findings above, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
 | Run the PMIC reset path on a board, then lift the README's limitation. | maintainers, at the bench |
 | `repository` in the manifest, the `v0.1.0` tag, and stripping the `Name:` blocks. | move lane |
@@ -219,9 +219,7 @@ path has not run on a board. The move waits for the template gates above.
 
 ## Decisions for the architect
 
-1. Ratify `CLOCK_PARENT_MASK`. Recommendation: ratify. The maintainer chose it over three
-   alternatives on 2026-11-05 (UTC) and left it provisional for the architect.
-2. Clear the review now, with the board run left as the README's stated limitation. Clearing approves
+1. Clear the review now, with the board run left as the README's stated limitation. Clearing approves
    creating `nifeos/jh7110_clock_and_reset`; the move itself waits for the template gates.
    Recommendation: clear now. The proofs and host tests do not depend on a board, and the board run
    can follow the move.
