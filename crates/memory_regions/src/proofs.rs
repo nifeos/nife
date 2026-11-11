@@ -373,8 +373,8 @@ impl Run {
         !carved
     }
 
-    /// Split one page off `r`. The tree holds at most three of the table's four slots, so a split
-    /// is never refused for a full table (the bump-only rule, `split`'s BUGS). The child is live
+    /// Split one page off `r`. The tree holds at most three of the table's four slots, so only
+    /// [`fill_table`](Self::fill_table) makes a split here refused for a full table. The child is live
     /// and counted, a region nobody drives. Returns its name, or `None` when the table refused.
     fn split(&mut self, r: usize) -> Option<u64> {
         let child = self.table.split(self.name(r), 1);
@@ -382,6 +382,16 @@ impl Run {
             self.own[r][REGION_COUNT] += 1;
         }
         child
+    }
+
+    /// Take every free slot of the table with a one-page root nobody drives, so the next split
+    /// finds no slot for its child.
+    fn fill_table(&mut self) {
+        for _ in 0..4 {
+            if self.table.insert_root(0, 1).is_none() {
+                break;
+            }
+        }
     }
 
     /// Release a `kind` object `r` holds, if it holds one. Returns whether it held one.
@@ -425,12 +435,17 @@ fn a_refused_carve_moves_nothing() {
 }
 
 /// **A split the table refuses moves nothing**: no page, no pin, no child and no count, in the
-/// refused region or any other, whichever limit refused it, from any state.
+/// refused region or any other, whichever limit refused it (its pages, a ceiling or a full table),
+/// from any state.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_refused_split_moves_nothing.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn a_refused_split_moves_nothing() {
     Run::for_every_depth(|mut run, r| {
+        let full: bool = kani::any();
+        if full {
+            run.fill_table();
+        }
         let before = run.snapshots();
         let regions = run.table.len();
         let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
@@ -448,6 +463,13 @@ fn a_refused_split_moves_nothing() {
         kani::cover!(
             refused && watermark == pages,
             "a split refused for its pages"
+        );
+        kani::cover!(
+            refused
+                && full
+                && watermark < pages
+                && own.live.get(counted) < own.ceilings.get(counted),
+            "a split refused for a full table"
         );
     });
 }
