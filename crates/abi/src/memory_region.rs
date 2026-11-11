@@ -19,12 +19,13 @@ pub const RETYPE: u64 = 1;
 /// **kernel object** living in it, with a full-rights
 /// capability at the returned slot. One object per page.
 ///
-/// `object_type` names what to make (see [`object_type`](super::object_type)). A region that has produced a
-/// kernel object is **pinned**: [`DESTROY`] reclaims it once the objects are torn down. `space` is
-/// read only for [`object_type::PROCESS`](super::object_type::PROCESS), the slot of the space it will hold.
-/// `floor` is the lowest slot the new capability may land in, `0` for the first free one; a `std`
-/// program passes `std_runtime_contract::SLOTS`. `BadMethod` for an unknown object_type; `OutOfMemory`
-/// when the untyped, the object registry or the capability table is exhausted.
+/// `object_type` names what to make (see [`object_type`](super::object_type)). A region that has
+/// produced a kernel object is **pinned**: [`DESTROY`] reclaims it once the objects are torn down.
+/// `space` is read only for [`object_type::PROCESS`](super::object_type::PROCESS), the slot of the
+/// space it will hold. `floor` is the lowest slot the new capability may land in, `0` for the first
+/// free one; a `std` program passes `std_runtime_contract::SLOTS`. `BadMethod` for an unknown
+/// `object_type`; `OutOfMemory` when the untyped, the object registry or the capability table is
+/// exhausted.
 ///
 /// Name: provisional. Spelled out under design/naming.md's rule that a name this tree authors
 /// carries no abbreviation, ruled for this method on 2026-11-11 (UTC); the method number stays 2.

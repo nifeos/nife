@@ -318,6 +318,8 @@ fn bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread() {
 /// boundary is what is proved, not the helper behind it. `RETYPE_OBJECT` mints the object, and the
 /// creator's capability carries every right its budget holds (milestone 824 (a retype mints no
 /// right its budget lacks)); the budget here is the root's, `Rights::ALL`.
+///
+/// Falsification: unfalsified. No planted defect has been run against it yet.
 #[test_case]
 fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
     let r = region();
