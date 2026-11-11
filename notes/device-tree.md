@@ -217,9 +217,11 @@ failure, so every limitation here is a limitation on the boot path specifically.
   is a reader that accepts what `dtc` and Linux accept: `Fdt::with_options` (#104) covers long
   property names only. The fifth is `add_child` on the mutable tree, which has no upstream issue.
   Switching nife to `dtoolkit` after a release ships these needs its own architect yes under §46
-  (thin primitives or whole subsystems). Until then nothing is retired. The reasoning is in
-  [`dtoolkit` against `device_tree_blob`](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md)
-  and [its reports](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md).
+  (thin primitives or whole subsystems). Until then nife retires nothing.
+  [The comparison](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md)
+  holds the reasoning.
+  [The reports](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md)
+  hold the upstream issues.
 - **A `reg` shorter than one address and size pair yields no region rather than an error.** The
   caller sees `None`, the same as a node with no `reg` at all.
 - **Property placement is not checked.** A property after a child node, or before the root node,
