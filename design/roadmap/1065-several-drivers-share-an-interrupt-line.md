@@ -48,19 +48,19 @@ every MSI target today. 1064 does need it, and its block records that.
 
 ## The rule
 
-Ruled 2026-11-11 (UTC): MSI replaces the interrupt lines, and the work is built so it does not
-duplicate milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it).
+Ruled 2026-11-11 (UTC): MSI replaces the interrupt lines, and this milestone builds nothing that
+duplicates milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it).
 
-- Until MSI lands, binding an interrupt line that already has a driver bound is refused with an
-  error, instead of silently taking the line from the first driver.
+- Until MSI lands, the kernel refuses with an error a bind on an interrupt line that already has a
+  driver, instead of silently taking the line from the first driver.
 - aarch64: MSI goes through the GICv3 ITS. One ITS driver serves this milestone and 1068's step 4
   remapping, and this milestone builds it. This milestone does not build GICv2m.
 - riscv64: MSI goes through the AIA (APLIC and IMSIC, `-machine virt,aia=aplic-imsic`), which
   replaces the PLIC path. It is the same driver milestone 143 (silicon IOMMU) lists, because an
   RVA23 part does not speak PLIC.
 - Shared lines stay open: an intid routing to a small set of rendezvous, each woken by an
-  interrupt. They are built only if a supported board proves to have no usable MSI controller.
-  Whether argon or radon has one is unchecked.
+  interrupt. nife builds them only if a supported board proves to have no usable MSI controller.
+  Nobody has checked yet whether argon or radon has one.
 
 Effort: the ITS L, the AIA L to XL (guesses). With MSI first, the runner move to virtio-pci totals
 XL (a guess).
@@ -68,8 +68,8 @@ XL (a guess).
 ## The work, in order
 
 1. The refusal: `sched::bind_interrupt` answers an error when the intid already has a rendezvous,
-   and the first driver keeps its line. The error is new behavior of an existing method, so its
-   semantics are recorded in `design/decisions/` with the change, and its name ships provisional.
+   and the first driver keeps its line. The error is new behavior of an existing method, so the
+   change records its semantics in `design/decisions/`, and its name ships provisional.
    The test legs' entropy driver binds a line that already has a driver today (`notes/entropy.md`),
    so this step meets it first.
 2. The GICv3 ITS driver on aarch64 (command queue, device table, `MAPD` and `MAPTI`) behind
@@ -83,8 +83,8 @@ XL (a guess).
 1. On aarch64 and riscv64, two PCI drivers whose functions swizzle onto one INTx line each receive
    every interrupt their device raises on their own MSI vector, and a system test shows it on both
    architectures.
-2. Binding a second driver to a line that already has one is refused, the first keeps receiving
-   its interrupts, and a test asserts both.
+2. The kernel refuses a second driver's bind on a line that already has one, the first keeps
+   receiving its interrupts, and a test asserts both.
 3. The existing PCI and virtio gates pass on every architecture, with no test weakened.
 4. `script/fastpath-footprint` reports no change.
 
