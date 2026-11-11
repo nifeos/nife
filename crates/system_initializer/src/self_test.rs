@@ -152,7 +152,10 @@ fn run_measured(
 
     let built = must(memory_region_split(memory_region, build_pages));
     let budget = must(memory_region_split(memory_region, budget_pages));
-    let report = must(retype_obj(memory_region, abi::objtype::RENDEZVOUS));
+    let report = must(retype_into_kernel_object_from(
+        memory_region,
+        abi::object_type::RENDEZVOUS,
+    ));
     let frame = must(retype_page_frame(memory_region));
     must_ok(map_page_frame(
         frame,
@@ -179,17 +182,17 @@ fn run_measured(
                 (
                     address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
                     g.self_test_page,
-                    abi::address_space::MAP_RO,
+                    abi::address_space::MAP_READ_ONLY,
                 ),
                 (
                     machine_statistics_contract::PAGE_VA,
                     g.machine_page,
-                    abi::address_space::MAP_RO,
+                    abi::address_space::MAP_READ_ONLY,
                 ),
                 (
                     address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
                     frame,
-                    abi::address_space::MAP_RW,
+                    abi::address_space::MAP_READ_WRITE,
                 ),
             ],
             blobs: &blobs,

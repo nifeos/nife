@@ -254,8 +254,8 @@ fn images() -> Images {
 /// A timer and a notification bound to this thread, or `None` when they cannot be made, in which
 /// case a receive here has no deadline.
 fn deadline() -> Option<Deadline> {
-    let notification = retype_into_kernel_object(slot::BUDGET, abi::objtype::NOTIFICATION);
-    let timer = retype_into_kernel_object(slot::BUDGET, abi::objtype::TIMER);
+    let notification = retype_into_kernel_object(slot::BUDGET, abi::object_type::NOTIFICATION);
+    let timer = retype_into_kernel_object(slot::BUDGET, abi::object_type::TIMER);
     if notification < 0 || timer < 0 {
         return None;
     }
@@ -405,8 +405,8 @@ fn spawn(
     let region = process_builder::memory_region_split(slot::BUDGET, pages)
         .map_err(|_| "no region for it in this program's budget")?;
     let endpoints = (
-        process_builder::retype_obj_from(region, abi::objtype::RENDEZVOUS),
-        process_builder::retype_obj_from(region, abi::objtype::RENDEZVOUS),
+        process_builder::retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS),
+        process_builder::retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS),
     );
     let (Ok(supervisor), Ok(report)) = endpoints else {
         end_region(region);
@@ -713,7 +713,7 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
     let maps = [(
         BLOCK_DRIVER_DMA_VA,
         slot::DISK_DIRECT_MEMORY_ACCESS,
-        abi::address_space::MAP_RW,
+        abi::address_space::MAP_READ_WRITE,
     )];
     let child = match spawn(bytes, &grants, &maps, [BLOCK_DRIVER_READ_ROLE, physical, 0]) {
         Ok(c) => c,
