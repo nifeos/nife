@@ -62,7 +62,7 @@ dependency); everything else is two-way and the maintainer decides it.
 
 3. The crate names nife and nife programs.
    Finding: `helpers/lint_externalized_crates.py` counts six hits, and the dry run's own
-   nife-word check fails: `README.md:6` ("written for the nife kernel"), `src/lib.rs:270` (a comment
+   nife-word check fails: `README.md` ("written for the nife kernel"), `src/lib.rs:270` (a comment
    about "nife's standard library" generator), `src/rendezvous.rs:30` ("makes nife a capability
    system"), and `src/virtio.rs:33` to `35`. These lines name `entropy`, `net_stack`, `gpu_driver`,
    `keyboard_driver` and `system_initializer` with their ring offsets.
@@ -111,7 +111,7 @@ dependency); everything else is two-way and the maintainer decides it.
    Finding: (a) `src/lib.rs:184` says of an address space that "nothing can run in it until TCBs
    arrive", while `thread_control_block::CONFIGURE` binds one and the same paragraph says a thread can take a binding. (b) `src/lib.rs:104` to `109` keep `console::WRITE` "so the ABI's history is
    legible", a method of an object no kernel serves, with no user in the tree; the tree's rule is
-   that git holds history. (c) `README.md:65` says "BUGS: None known" while the crate carries five
+   that git holds history. (c) `README.md` says "BUGS: None known" while the crate carries five
    `# BUGS` sections (`src/rendezvous.rs:20`, `46`, `71`; `src/memory_region.rs:56`;
    `src/lib.rs:247`), two of them real wire warts (a message word that reads as an error; a death
    read through `RECEIVE_CAPABILITY` loses its `pc`).

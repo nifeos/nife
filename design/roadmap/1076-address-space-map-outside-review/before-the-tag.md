@@ -67,7 +67,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
    words to avoid where the kernel meaning differs from yours. The crate's own root doc uses the
    word in both senses in one paragraph: "the map" (the table of bands) and "pages the kernel maps
    into every process" (the verb). The crate root marks the name provisional and records that the minting set `user_layout` and `address_space` aside. The block does not give the reasons (unverified).
-   Evidence: `src/lib.rs:1, 18, 124`; `design/naming/vocabulary.md:49`.
+   Evidence: `src/lib.rs:1, 18, 124`; `design/naming/vocabulary.md`.
    Change: see decision 1 below. A crate name becomes the repository name and the crates.io name
    at the first tag, so the move is the last cheap moment.
    Door: one-way. Effort: M across nife (26 manifests, 281 sites), S in the crate.

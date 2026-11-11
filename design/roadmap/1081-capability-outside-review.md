@@ -25,7 +25,7 @@ publishing hold. Where a later rule contradicts an earlier
 ruling, the item says so.
 
 The kernel is the crate's only consumer (`kernel/Cargo.toml` line 52; no other manifest in the tree
-depends on it). Milestone 1034 (a crate move runbook) owns the move itself; this block owns the
+depends on it). Milestone 1034 (a runbook for moving a crate out of nife) owns the move itself; this block owns the
 findings that should land inside that path, and the two findings against the move tool that the
 lane will hit first.
 
@@ -81,7 +81,7 @@ maintainer decides it. Every name proposed below is provisional.
    `design/roadmap/0778-...`, `script/verify`) and name the architect with dates (5 lines after
    the `Name:` blocks go; 7 before). The rule for a crate that leaves is that it never mentions
    nife, and a document states the present rule without its history. Two of the citations are
-   already wrong inside the tree. `kernel/src/capability.rs` (line 213) does not exist; the file is `kernel/src/capability_object.rs`. `[split_never_widens_rights](../src/lib.rs)` (line 138) renders as a link to a file that rustdoc does not serve. `cargo doc -D warnings` does not catch it because it is a URL and not an intra-doc path. The crate documentation also carries kernel
+   already wrong inside the tree. `kernel/src/capability.rs` (line 213) does not exist; the file is `kernel/src/capability_object.rs`. ``split_never_widens_rights`` (line 138) renders as a link to a file that rustdoc does not serve. `cargo doc -D warnings` does not catch it because it is a URL and not an intra-doc path. The crate documentation also carries kernel
    facts a generic reader cannot use ("Only `Rendezvous` consults it", "Only `Process` consults
    it", lines 70 and 79) and the phrase "A thread's capability table," above (line 43) points at
    text that now sits below it.

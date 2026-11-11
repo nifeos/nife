@@ -33,7 +33,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
 
 5. The reader's spin has no bound, and the layout is about to freeze.
    Finding: `ClockPage::read` (`src/lib.rs:272` to `299`) spins while the sequence word is odd. The
-   crate says so in its `BUGS` twice (lines 209 and `README.md:82`) and the clock note says the same.
+   crate says so in its `BUGS` twice (lines 209 and `README.md`) and the clock note says the same.
    The readers include the standard library's `SystemTime::now` in every process
    (`patches/std-nife/overlay/std/src/sys/time/nife.rs:130`), which calls `read` with no bound of its
    own. Decision 1 asks whether the page layout should make readers wait-free before `VERSION` 1 freezes. This item is the lane that follows the ruling.

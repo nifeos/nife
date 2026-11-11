@@ -59,7 +59,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
     `address_space_map` and must leave after it. No manifest or source in
     `crates/counter_frequency_contract/` names the crate now; the relation it guarded (the timebase
     page lies above the ceiling) holds as an assertion in `kernel/src/user/loader.rs:14` instead.
-    Evidence: `design/roadmap/1017-the-contract-crates-leave-in-this-order.md:71`; a grep of
+    Evidence: `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`; a grep of
     `crates/counter_frequency_contract/`.
     Change: drop the row when 1017 is next edited.
     Door: two-way. Effort: S.
