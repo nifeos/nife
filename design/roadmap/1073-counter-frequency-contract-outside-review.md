@@ -10,19 +10,19 @@ needs_person: yes
 # 1073. `counter_frequency_contract`: what an outside maintainer would fix before it leaves
 
 Raised by a read-only review of `crates/counter_frequency_contract` as a stranger to this tree
-would meet it: the crate's five tracked files, every caller in the tree, the review package, the
-naming rules, the crate template and a local dry run of the move. It changes nothing; it lists
-what the next lanes change. The recording lane assigns the number.
+would meet it. The review read the crate's five tracked files, every caller in the tree, the review
+package, the naming rules and the crate template, and ran a local dry run of the move. It changes
+nothing; it lists what the next lanes change.
 
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/counter-frequency-contract.md) and reopens none of
-the decisions it settles: the crate name, the thirteen ratified names (`MAGIC`, `VERSION`,
-`INTERFACE_ID`, `PAGE_CONTENT_BYTES`, `PAGE_VIRTUAL_ADDRESS`, `MINIMUM_PLAUSIBLE_HERTZ`,
-`MAXIMUM_PLAUSIBLE_HERTZ`, `is_plausible`, `build_page`, `CounterFrequencyPage`, `new`, `hertz`
-and the `hertz` and `virtual_address` parameters), the kept wire value `TIMEBAS1`, the dual
-license, and the three edits the package assigns to the move lane (the README's "written for the
-nife kernel" sentence, the three sibling-crate citations, and the machine and tree names in the
-doc comments). The package's open question on `PAGE_VIRTUAL_ADDRESS` existing on aarch64 stays
+the decisions it settles. Those are the crate name and the thirteen ratified names (`MAGIC`,
+`VERSION`, `INTERFACE_ID`, `PAGE_CONTENT_BYTES`, `PAGE_VIRTUAL_ADDRESS`,
+`MINIMUM_PLAUSIBLE_HERTZ`, `MAXIMUM_PLAUSIBLE_HERTZ`, `is_plausible`, `build_page`,
+`CounterFrequencyPage`, `new`, `hertz` and the `hertz` and `virtual_address` parameters). They are
+also the kept wire value `TIMEBAS1`, the dual license, and the three edits the package assigns to
+the move lane: the README's "written for the nife kernel" sentence, the three sibling-crate
+citations, and the machine and tree names in the doc comments. The package's open question on `PAGE_VIRTUAL_ADDRESS` existing on aarch64 stays
 with the maintainer and is not reopened. Where a later rule contradicts the baseline, the item
 says so; one does (item 7, the `#[doc(alias)]` sentence).
 
@@ -39,71 +39,11 @@ arrives, for the crate's own reasons, and nife's own build keeps working the day
 
 ## What was checked, and how
 
-Verified firsthand, in a fresh shallow clone of `nifeos/nife` at the merge of pull request 3461
-and a clone of `nifeos/crate-workflows` at its head, on a copy of the crate standing alone:
-
-- `cargo fmt --check` (the template's `rustfmt.toml`), `cargo test` (five unit tests, four
-  documentation tests, the README's example among them) and `cargo doc` with broken links and
-  warnings denied: clean on stable 1.99.1 and on 1.88, the manifest's `rust-version`.
-- `cargo clippy --all-targets -- -D warnings`: red on stable 1.99.1 and on 1.88 (item 2), green on
-  the nightly this tree pins. The template's `--cfg kani` clippy pass over its shim: green.
-- The crate builds and passes clippy for `x86_64-unknown-none`, `aarch64-unknown-none-softfloat`
-  and `riscv64imac-unknown-none-elf`, apart from item 2, which is the same line on every target.
-- Miri (`cargo miri test` on the pinned nightly): all nine tests pass.
-- cargo-llvm-cov: 100% of regions, functions and lines in `src/lib.rs`.
-- The template's helpers over the standalone copy: `standalone.py` fails only on the `Name:`
-  blocks, which the move strips; `spelled_out`, `unit_symbols`, `register_names`, `contract_names`,
-  `british_spelling`, `question_shape`, `service_model`, `abbreviations`, `readme_sections`,
-  `readme_acronyms`, `inflated_wording`, `history_phrases`, `prose_figures`, `function_length`,
-  `file_length` and `comment_blocks` report nothing; `prose_acronyms` and `passive_voice` report
-  findings (item 8); `unsafe_scan` refuses a fuzz opt-in, correctly, for the four `unsafe` sites.
-- `script/crate-move --dry-run` into an empty directory: the template at `v7` scaffolds, the host
-  tests and the three bare-metal builds pass on 1.88, the pinned template's cheap checks pass, and
-  the three findings it reports are the README's nife sentence (baseline) and two lines in the
-  template's own scaffold (BUGS). The mutation baseline row it carries over reads "missed 0".
-- Every caller: `kernel/src/user/loader.rs` (the writer and the mapper), the three
-  `kernel/src/arch/*/timer.rs` (the band), `crates/user_mode_runtime/src/clock.rs` (the reader),
-  `crates/process_builder/src/lib.rs` (the relay), five programs under `components/src/` (the
-  `INTERFACES` declaration), `system_tests/src/user/counter_frequency_tests.rs`, and the `std`
-  platform layer that `xtask/src/farm/generate.rs` writes from this crate's source.
-
-Inferred from reading, not run: the behavior on a target whose `usize` is narrower than 64 bits
-(item 5); whether the template's `proofs / kani` job passes on a crate with no harness (item 9);
-why the pinned nightly's clippy accepts the line stable refuses (item 2).
-
-Not run: a mutation census (outside its window; the carried row says none missed), a fuzz
-campaign (the crate has no fuzz target and, with `unsafe` in shipped source, cannot opt in to the
-public one), `cargo semver-checks` (no release to compare against), and the template's full
-workflow set against a real repository.
+The tools run, the sources read and what was not run are in [the appendix](1073-counter-frequency-contract-outside-review/what-was-checked.md).
 
 ## Prior art
 
-How other systems hand a process the rate of its free-running counter. The details marked
-unverified are from memory of those sources, not from reading them during this review.
-
-| system | mechanism | rate or scale | update discipline | discovery of the page |
-|---|---|---|---|---|
-| Arm, aarch64 | `CNTFRQ_EL0`, an architected register firmware writes | hertz, 32 bits | none needed; constant by architecture | a register, no page |
-| RISC-V | `/cpus/timebase-frequency` in the device tree; no CSR states it | hertz | the kernel reads it once | no architected way to reach a process; each kernel invents one |
-| Linux vDSO | the `vvar` data page beside the vDSO | a multiplier and shift per clock source, not hertz (unverified in detail) | a sequence counter; readers retry across an update | `AT_SYSINFO_EHDR` in the auxiliary vector, not a fixed address |
-| FreeBSD | the shared page's `vdso_timekeep` and `vdso_timehands` | a scale factor; a version field (`tk_ver`) and a generation per hand (unverified in detail) | a generation counter, seqlock style | the shared page's address through the auxiliary vector |
-| OpenBSD | the `timekeep` page, read-only in every process | a version constant the kernel and libc compare (unverified in detail) | a generation counter | ELF auxiliary vector |
-| Fuchsia | a vDSO call returning ticks per second (unverified) | hertz | constant for the boot | the vDSO |
-| Rust crates (`quanta`, `fugit`, `x86`, `riscv`, `aarch64-cpu`) | `quanta` calibrates the counter in user space itself; `fugit` carries the rate as a const type parameter; the register crates read the counter and expose no rate on the two architectures without one | hertz, or a compile-time constant | none | not applicable |
-
-Where this crate differs, on purpose: it carries the rate itself in hertz, not a scale pair, so
-every reader divides the same way; it has one writer before any reader exists, so it needs no
-sequence counter and a torn read is impossible by construction; the page sits at a fixed virtual
-address every program compiles in, so there is no auxiliary vector to parse and a process with no
-page faults rather than reading a wrong number; and an unknown rate is a zeroed frame that reads
-as `None`, where the vDSO designs always have a number. What it costs: a rate that changes after
-boot cannot be expressed (every design above shares that for an invariant counter), and the fixed
-address becomes part of the contract's identity the moment a published binary compiles it in.
-
-The concrete example the band exists for: a firmware that leaves `CNTFRQ_EL0` at its reset value
-reports 0 or 1 hertz. A reader checking `> 0` believes 1 hertz and reports every second as a
-billion. `is_plausible(1)` refuses it at the point it is learned, and the three kernel boot paths
-assert through that one function.
+The comparison with nearby work is in [the prior art appendix](1073-counter-frequency-contract-outside-review/prior-art.md).
 
 ## The items
 
@@ -126,8 +66,8 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    lines 65 to 72.
    Change: both files resolve each copied crate's source directory through `cargo metadata`
    (the `manifest_path` of the package the workspace depends on), so a crate pinned by `rev`
-   is read from Cargo's checkout and a crate still in `crates/` from there. One change serves
-   every copied crate; it lands before the first of them leaves, and it is not this crate's alone.
+   comes from Cargo's checkout and a crate still in `crates/` comes from there. One change serves
+   every copied crate. It lands before the first of them leaves, and it is not this crate's alone.
    The generated copy also keeps the `#[cfg(doctest)] include_str!("../README.md")` item; it is
    harmless inside `std` because `doctest` is never set there, and a sentence in the generator's
    comment should say so.
@@ -136,8 +76,8 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
 2. The template's clippy job is red on arrival.
    Finding: the module documentation writes `x86_64` without backticks, `clippy::doc_markdown`
    is `warn` in the manifest's `[lints.clippy]`, and the template runs clippy with `-D warnings`
-   on stable. Stable 1.99.1 and 1.88 both refuse the crate; the nightly this tree pins accepts it,
-   which is why nife's own gate never saw it (the reason the two differ is unverified).
+   on stable. Stable 1.99.1 and 1.88 both refuse the crate. The nightly this tree pins accepts it,
+   which is why nife's own gate never saw it (nobody verified why the two differ).
    Evidence: `crates/counter_frequency_contract/src/lib.rs` line 9; `Cargo.toml` lines 25 to 31.
    Change: backticks around `x86_64` on that line, and a `cargo +stable clippy -- -D warnings`
    pass over the standalone copy before the move, which `script/crate-move --dry-run` should run
@@ -156,8 +96,8 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 9 to 11; `README.md` lines 55
    to 57; `kernel/src/arch/x86_64/isa.rs` lines 4 and 10; `kernel/src/arch/x86_64/timer.rs` line 5.
    Change: rewrite the three BUGS entries in the contract's own terms. The page carries one number
-   for the life of a process, so a counter whose rate changes after the page is written cannot be
-   expressed, and whether a given counter is invariant is the writer's to establish. A reader of a
+   for the life of a process, so the contract cannot express a counter whose rate changes after the
+   page is written, and the writer establishes whether a given counter is invariant. A reader of a
    process with no mapping at the fixed address faults, by design. Drop the sentence about QEMU's
    code generator; it is a fact about one writer's environment.
    Door: two-way. Effort: XS.
@@ -175,8 +115,8 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    `crates/process_builder/src/lib.rs` line 335; `kernel/src/arch/x86_64/timer.rs` lines 257 to
    267.
    Change, within the baseline: say at `hertz` and in the README's contract list that `hertz`
-   returns the number as written and the band is the reader's to apply, add one unit test pinning
-   `build_page(0)` to `Some(0)` so the behavior is explicit, and have `cntfrq_checked` in
+   returns the number as written and the band is the reader's to apply. Add one unit test pinning
+   `build_page(0)` to `Some(0)` so the behavior is explicit. Have `cntfrq_checked` in
    `user_mode_runtime` apply `is_plausible` before returning. The stricter alternative, `hertz`
    answering `None` outside the band, is compatible with a later release and the maintainer can
    take it then; the package already leaves this with the maintainer.
@@ -185,8 +125,8 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
 5. `new` truncates its address on a target narrower than 64 bits.
    Finding: `new(virtual_address: u64)` casts with `as *const u8`. On a 32-bit target both fixed
    addresses (`0x7000_0000_0000` and `0x38_0000_0000`) are above `u32::MAX`, so the cast yields
-   address 0 and the reader dereferences a null page. No target the crate names is affected; the
-   three bare-metal targets are all 64-bit. It is a hole in the claim, not a defect a current user
+   address 0 and the reader dereferences a null page. This leaves every target the crate names
+   unaffected; the three bare-metal targets are all 64-bit. It is a hole in the claim, not a defect a current user
    can reach.
    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 106 to 122 and 175 to 179.
    Change: a `const` assertion that `PAGE_VIRTUAL_ADDRESS <= usize::MAX as u64`, so a narrow
@@ -207,13 +147,13 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
 
 7. Documentation a stranger reads, beyond the three edits the package already assigns.
    Finding, four parts. (a) The `PAGE_VIRTUAL_ADDRESS` documentation says the address-space map's
-   table of fixed pages "should list it, and does not yet"; the map's own documentation now says
-   that above 2 GiB only this page is assigned, so the sentence is stale, and it describes another
-   crate's internals. (b) The same item's `Name:` block says `VA` is the abbreviation alias, but no
-   `#[doc(alias)]` attribute exists, and the rule that a crate carries no alias for this tree's own
-   earlier spelling before its first release means none should; this is the one place a later rule
-   contradicts the baseline's text, and the move strips the block, so the fix is cosmetic on the
-   nife side. (c) `build_page`'s example comment promises an "aligned buffer" while `new` requires
+   table of fixed pages "should list it, and does not yet". The map's own documentation now says
+   that above 2 GiB only this page has an assignment, so the sentence is stale, and it describes
+   another crate's internals. (b) The same item's `Name:` block says `VA` is the abbreviation alias,
+   but no `#[doc(alias)]` attribute exists. The rule that a crate carries no alias for this tree's
+   own earlier spelling before its first release means none should. This is the one place a later
+   rule contradicts the baseline's text, and the move strips the block, so the fix is cosmetic on
+   the nife side. (c) `build_page`'s example comment promises an "aligned buffer" while `new` requires
    only byte alignment; the two should agree, and byte alignment is the true requirement because
    the reader copies into a local array. (d) `build_page` and `hertz` say "the calibrated TSC
    rate" and `new`'s safety section says "every `x86_64` process" and opens a sentence in
@@ -236,9 +176,9 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    `crates/counter_frequency_contract/README.md` lines 3, 8, 19, 23, 56 and 59;
    `crates/counter_frequency_contract/src/lib.rs` lines 50 and 56.
    Change: write "100 kilohertz" and "100 gigahertz" in prose and keep the symbol only inside a
-   code span where it names a value, expand "control and status register (CSR)" at first use, and
-   put the six README sentences into the active voice (the first is the baseline's "was written
-   for the nife kernel" sentence, which the move lane rewrites anyway).
+   code span where it names a value. Expand "control and status register (CSR)" at first use. Put
+   the six README sentences into the active voice; the first is the baseline's "was written for the
+   nife kernel" sentence, which the move lane rewrites anyway.
    Door: two-way. Effort: XS.
 
 9. Nothing is machine-checked, and the manifest says a model checker proves the crate's harnesses.
@@ -246,16 +186,17 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    reader's one decision is the magic compare, and the whole value of the crate is that a frame
    without the magic reads as `None`. A harness proving it over every 16-byte frame costs little
    and is the kind of claim a stranger wants checked before trusting the `unsafe` reader. The
-   manifest's `check-cfg` comment says `cfg(kani)` is set by "the Kani model checker, which proves
-   this crate's harnesses", which is not true until one exists. Whether the template's
-   `proofs / kani` job is green on a crate with no harness is unverified; `falsify.py` reports
+   manifest's `check-cfg` comment says "the Kani model checker, which proves this crate's harnesses"
+   sets `cfg(kani)`, which is not true until a harness exists. Nobody verified whether the
+   template's `proofs / kani` job is green on a crate with no harness; `falsify.py` reports
    "nothing to falsify" and exits 0.
    Evidence: `crates/counter_frequency_contract/README.md` lines 45 to 48; `Cargo.toml` lines
    20 to 21; `crates/counter_frequency_contract/src/lib.rs` lines 185 to 216.
    Change: two harnesses in a `verification` module behind `cfg(kani)`, each with a falsification
-   patch the template replays red: `hertz` over an arbitrary `[u8; PAGE_CONTENT_BYTES]` answers
-   `None` exactly when the first eight bytes differ from `MAGIC`, and otherwise the little-endian
-   `u64` of the next eight; and `build_page(x).hertz() == Some(x)` for an arbitrary `x`. The
+   patch the template replays red. The first takes `hertz` over an arbitrary
+   `[u8; PAGE_CONTENT_BYTES]` and asserts `None` exactly when the first eight bytes differ from
+   `MAGIC`, and otherwise the little-endian `u64` of the next eight. The second asserts
+   `build_page(x).hertz() == Some(x)` for an arbitrary `x`. The
    README's "What is proven" section then says what the two prove and that no proof covers the
    caller's mapping promise, which the package already states. The pattern is
    `block_roster_contract`'s `verification` module and its `falsifications/` directory.
@@ -263,30 +204,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
 
 ### P2: later
 
-10. The private offset constants abbreviate.
-    Finding: `OFF_MAGIC` and `OFF_HERTZ` shorten "offset". The word is not on the refused list
-    and the sibling page crates use the same prefix, so this is a family question rather than a
-    defect; the template's abbreviations check is report-only.
-    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 88 to 89.
-    Change: `MAGIC_OFFSET` and `HERTZ_OFFSET`, when the family decides, in every page crate at
-    once.
-    Door: two-way (private). Effort: XS.
-
-11. The reader test in nife compares the user-space number with the kernel's and stays in nife.
-    Finding: `system_tests/src/user/counter_frequency_tests.rs` drives the whole path through QEMU.
-    It points from nife to the crate, which the move permits, and the crate's own tests already
-    drive both halves of the page without a kernel. Nothing to move; the README's "Building and
-    testing" section should say that the end-to-end test lives with the kernel that maps the page.
-    Evidence: `system_tests/src/user/counter_frequency_tests.rs` lines 1 to 40.
-    Change: one sentence in the README.
-    Door: two-way. Effort: XS.
-
-12. The pointer-bearing type derives `Debug`, which prints the address.
-    Finding: harmless, and the address is a compile-time constant in every real use. A stranger
-    may prefer a `Debug` that prints the rate or "unknown". Not worth a release on its own.
-    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 150 to 153.
-    Change: none now; fold into the next API change if one comes.
-    Door: two-way. Effort: XS.
+The P2 items are in [the appendix](1073-counter-frequency-contract-outside-review/later-items.md).
 
 ## Decisions for the architect
 
@@ -296,21 +214,20 @@ One one-way door is open. Everything else above is two-way and the maintainer de
 
 Background. Five programs under `components/src/` declare this interface by the pair
 (`INTERFACE_ID`, `VERSION`) in their `INTERFACES` note, the kernel and every process compile in
-`PAGE_VIRTUAL_ADDRESS`, and every reader compares `MAGIC`. Once one of those programs is built from
-a pin outside nife, a change to any of these values has to move every pin in one image, which is
-the cost milestone 1017 (the contract crates leave in this order) describes from the two reverts
-it measured. The package lists ratifying `INTERFACE_ID = 9` as the architect's item; the sibling
-contracts that left before this one each had their identity frozen as a set, and the fixed
-addresses belong in this crate's set because a program acts on them exactly as it acts on the
-magic.
+`PAGE_VIRTUAL_ADDRESS`, and every reader compares `MAGIC`. Once a pin outside nife builds one of
+those programs, a change to any of these values has to move every pin in one image. Milestone 1017
+(the contract crates leave in this order) describes that cost from the two reverts it measured. The
+package lists ratifying `INTERFACE_ID = 9` as the architect's item. The sibling contracts that left
+before this one each had their identity frozen as a set, and the fixed addresses belong in this
+crate's set because a program acts on them exactly as it acts on the magic.
 
 Recommendation first: freeze the identity as it stands. `MAGIC` is `TIMEBAS1`, `VERSION` is 1,
 `INTERFACE_ID` is 9, `PAGE_VIRTUAL_ADDRESS` is `0x0000_7000_0000_0000` on `x86_64` and
 `0x0000_0038_0000_0000` on `riscv64`, and `PAGE_CONTENT_BYTES` is 16 with the magic at offset 0
 and the little-endian rate at offset 8. Every value is already compiled into the kernel, the
-runtime, the `std` platform layer and five programs; none of the items above needs any of them to
-change; and a later layout break has a path already (a new magic and version together, which the
-reader refuses by construction).
+runtime, the `std` platform layer and five programs. None of the items above needs any of them to
+change. A later layout break has a path already: a new magic and version together, which the
+reader refuses by construction.
 
 Prior art. Arm fixed the meaning of `CNTFRQ_EL0` in the architecture and never moved it. OpenBSD's
 `timekeep` page carries a version constant that libc compares before trusting the layout, and a
@@ -319,8 +236,8 @@ carries `tk_ver` for the same reason (unverified in detail). The design here is 
 the magic is the version, and the reader refuses what it does not recognize.
 
 Concrete example. `components/src/free.rs` declares `(counter_frequency_contract::INTERFACE_ID,
-counter_frequency_contract::VERSION)`. If `INTERFACE_ID` changed to 14 after `free` was built from
-a pin, the image's interface check would refuse `free` until its pin moved, and the move would have
+counter_frequency_contract::VERSION)`. Suppose `INTERFACE_ID` changed to 14 after a pin built
+`free`. The image's interface check would refuse `free` until its pin moved, and the move would have
 to carry `disk_surveyor`, `printenv`, `rm`, `slabtop` and `top` in the same pull request.
 
 The alternative, left open, is to renumber or re-mint before the first move while every consumer
@@ -328,32 +245,11 @@ is still in this tree. Nothing in this review found a reason to.
 
 ## Done when
 
-- `cargo xtask std-src` and the farm stamp read every copied contract crate's source from the
-  checkout `cargo metadata` names, proven by a build of the `std` farm with one such crate pinned
-  by `rev` (item 1).
-- `cargo +stable clippy --all-targets -- -D warnings` and the template's `--cfg kani` clippy pass
-  are green on the standalone copy, on 1.88 and on the current stable (item 2).
-- The BUGS sections of the README and the module documentation describe only what the contract
-  cannot express, and no sentence in the crate states what any kernel checks (item 3).
-- `hertz`'s documentation and the README state that the band is the reader's to apply, a unit
-  test pins `build_page(0)` to `Some(0)`, and `user_mode_runtime::cntfrq_checked` applies
-  `is_plausible` (item 4).
-- A `const` assertion refuses a target whose pointer cannot hold `PAGE_VIRTUAL_ADDRESS`, and
-  `new`'s safety section says so (item 5).
-- No file in the crate names a path, a crate or a machine outside the repository, apart from the
-  cited register names; `script/crate-move --dry-run` reports no finding against the crate's own
-  files (items 6 and 7 and the baseline's three edits).
-- `prose_acronyms` and `passive_voice` from the template's head report nothing over the crate's
-  README and source (item 8).
-- Two Kani harnesses pass, each with a falsification patch that `proofs / falsify` replays red,
-  and the README's "What is proven" section names them (item 9).
-- The architect has frozen the identity set, recorded by its values in the review package.
-- `cargo test`, `cargo clippy` on stable, `cargo doc` with warnings denied, `cargo kani` and the
-  three bare-metal builds are green at the commit the move copies.
+The checks are in [the done-when appendix](1073-counter-frequency-contract-outside-review/done-when.md).
 
 ## BUGS
 
-- Item 1 is shared by thirteen copied crates and is a nife change, not a change to this crate.
+- Item 1 serves thirteen copied crates and is a nife change, not a change to this crate.
   Until it lands, no copied contract crate can leave without breaking the `std` build, and this
   milestone's dependency on milestone 1017 stands in for that ordering.
 - `script/crate-move --dry-run` runs the pinned template's checks, not the template head's, and
@@ -366,19 +262,19 @@ is still in this tree. Nothing in this review found a reason to.
   are the template's to fix.
 - Item 5 came from reading, not from a build for a 32-bit target; the fix is cheap enough to land
   without one, and the three targets the crate names are all 64-bit.
-- Whether `proofs / kani` is green on a crate with no `#[kani::proof]` is unverified; item 9
+- Nobody verified whether `proofs / kani` is green on a crate with no `#[kani::proof]`; item 9
   removes the question.
 - The kernel's writer caches the page's physical frame on first use; if `frequency_checked` is
   `None` at that moment, every later process reads the zeroed frame (`kernel/src/user/loader.rs`
   lines 159 to 190). That is kernel behavior the kernel's own BUGS should carry, outside this
   crate; it is noted here because the crate's documentation currently describes it.
-- The mutation census was not re-run; the carried baseline row reads "missed 0".
+- Nobody re-ran the mutation census; the carried baseline row reads "missed 0".
 
 ## Index row
 
-An outside review of `counter_frequency_contract` before it leaves this tree: two items that block
-the move or its first green run (the `std` farm's path copy of the source, and a clippy failure on
-stable), seven to land before the first tag (a stale kernel claim in the BUGS section, an
-unapplied rate band in the readers, a pointer truncation on narrow targets, a manifest comment
-into nife, four documentation fixes, the template's incoming prose gates, and two Kani harnesses),
-three for later, and one one-way door for the architect: freezing the identity set as it stands.
+An outside review of `counter_frequency_contract` before it leaves this tree. Two items block the
+move or its first green run: the `std` farm's path copy of the source, and a clippy failure on
+stable. Seven land before the first tag. They are a stale kernel claim in the BUGS section, an unapplied
+rate band in the readers, a pointer truncation on narrow targets, a manifest comment into nife,
+four documentation fixes, the template's incoming prose gates, and two Kani harnesses. Three follow
+later, and one one-way door waits for the architect: freezing the identity set as it stands.
