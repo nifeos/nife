@@ -112,17 +112,15 @@ a boundary, not a library.
 
 ### And three in `kernel/src/arch/aarch64/iommu.rs` (milestones 255 and 1066)
 
-The SMMUv3 driver, aarch64's IOMMU, has no `asm!` in it, and what it computes is which physical
-addresses a device may touch, which `design/fatal-risks/README.md` risk 7 rests on. Its word
-arithmetic now sits in five functions beside `attach`, and nothing moved out of `arch/`.
-`the_smmu_is_handed_exactly_the_tables_the_kernel_built` proves that each physical address split
-across two words reads back exactly, and that no address bit lands on a control field.
-`no_stream_can_reach_another_streams_tables` proves that the two-level table places exactly the
-requester ids below its width and refuses the rest, that every entry lies inside its leaf's frame,
-and that no two share a byte. `the_level_one_table_names_exactly_the_leaf` proves the level-one
-descriptor and the configuration word. All three were falsified with patches that leave every test
-green. The register
-constants are unproved, and a property proved of the SMMUv3 is not proved of the other two IOMMUs.
+The SMMUv3 driver, aarch64's IOMMU, has no `asm!` in it, and it computes which physical addresses
+a device may touch (`design/fatal-risks/README.md` risk 7). Five functions beside `attach` hold its
+word arithmetic. `the_smmu_is_handed_exactly_the_tables_the_kernel_built`: each address split across
+two words reads back exactly, and no address bit lands on a control field.
+`no_stream_can_reach_another_streams_tables`: the table places exactly the ids below its width,
+refuses the rest, and keeps each entry inside its leaf and apart from every other.
+`the_level_one_table_names_exactly_the_leaf`: the level-one descriptor and the configuration word.
+Patches that leave every test green falsify all three. The register constants are unproved, and a
+property proved of the SMMUv3 is not proved of the other two IOMMUs.
 The detail is in [kernel-proofs/smmu-proofs.md](kernel-proofs/smmu-proofs.md).
 
 ### And two in `kernel/src/arch/x86_64/interrupt_controller.rs` (milestone 304)
@@ -148,7 +146,7 @@ as more coverage than it is.
 | x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
 | either, via script/verify-riscv64 | `arch/riscv64/`, natively | 8: two in `syscall.rs`, three in `iommu.rs`, three in `mmu.rs` |
 
-Twelve distinct harnesses on the first two hosts, not fourteen: `syscall.rs`'s two pass identically on both.
+Twelve distinct harnesses on the first two hosts, since `syscall.rs`'s two run on both.
 
 **riscv64 needed a target, not a host**: milestone 589 (Kani can prove riscv64 from the hosts we
 already have) patches Kani, since CBMC runs anywhere. See

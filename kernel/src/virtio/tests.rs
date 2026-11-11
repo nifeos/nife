@@ -413,8 +413,9 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
          (is iommu=smmuv3 / -device riscv-iommu-pci missing from the runner?)",
     );
     // Both runners place this disk at 00:10.0, requester id 128, past the first leaf of the
-    // two-level device table (milestone 1066), so the fault below is proved for an id the second
-    // level reaches. A disk moved back below 64 would prove only what one frame held.
+    // two-level device table (milestone 1066 (the IOMMU device tables on aarch64 and riscv64 grow
+    // past 64 devices)), so the fault below is proved for an id the second level reaches. A disk
+    // moved back below 64 would prove only what one frame held.
     #[cfg(not(target_arch = "x86_64"))]
     assert!(
         d.rid >= 64,

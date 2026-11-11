@@ -277,8 +277,9 @@ if [ -n "$NIFE_DISK" ]; then
     #
     # addr=0x10.0 puts the PCI disk at requester id 128, past the first leaf of the SMMU's two-level
     # stream table (ids 0 to 63), so the confinement test proves a stream the kernel reaches through
-    # a second leaf (milestone 1066). The test asserts the id, so moving the disk back below 64
-    # fails it rather than quietly proving less.
+    # a second leaf: milestone 1066 (the IOMMU device tables on aarch64 and riscv64 grow past 64
+    # devices). The test asserts the id, so moving the disk back below 64 fails it rather than
+    # quietly proving less.
     PCI_DISK="${NIFE_DISK%.img}-pci.img"
     if [ ! -f "$PCI_DISK" ]; then
         echo "qemu-runner-aarch64: $PCI_DISK does not exist (run mkdisk first; it writes both images)" >&2

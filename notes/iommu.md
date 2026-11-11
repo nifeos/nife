@@ -65,11 +65,11 @@ and the translation cache so a re-attach cannot use a stale table. `take_fault` 
 
 Both tables are two-level, with the same geometry. A root frame of 512 eight-byte entries points at
 leaf frames of 64 entries of 64 bytes, so a requester id splits as `rid >> 6` (which root entry) and
-`rid & 63` (which entry in the leaf), and each table holds ids 0 to 32767, buses 0 to 127. A leaf is
-allocated when the first device in its range attaches, under the driver's lock, and is never freed.
-A device past the table, or a leaf with no frame free, gets an `iommu::AttachError` back from
-`attach` and no entry, so it stays blocked; `confine` prints the reason and returns the error, and
-every driver that calls it refuses to start the device. The SMMU reads `SIDSIZE` and narrows the
+`rid & 63` (which entry in the leaf). Each table holds ids 0 to 32767, buses 0 to 127. The driver
+allocates a leaf, under its lock, when the first device in the leaf's range attaches, and keeps it.
+For a device past the table, or a leaf with no frame free, `attach` returns an `iommu::AttachError`
+and writes no entry, so the device stays blocked. `confine` prints the reason and returns the error,
+and every driver that calls it refuses to start the device. The SMMU reads `SIDSIZE` and narrows the
 table to it; the RISC-V IOMMU in the base 32-byte format fits 128 contexts to a leaf and so holds
 every 16-bit id. The three-level RISC-V mode, and a two-frame SMMU level-one table, would reach buses
 128 to 255; neither driver builds one (each file's `BUGS`).

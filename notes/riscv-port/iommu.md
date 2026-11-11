@@ -54,8 +54,8 @@ QEMU's unit sets `CAPS.MSI_FLAT` (measured `CAPS = 0x78c2cf4f10`, bit 22 set, on
 `msi_addr_pattern`. `attach` writes all of them zero, `msiptp.MODE = Off`, and no MSI page table is
 allocated. The machine description reports the capability bit, kept apart from the context size it
 implies: one is a capability and the other a layout. The extended format stays whenever the unit
-offers it, because its `msiptp` is where a per-device MSI page table goes once interrupts are
-remapped; the two-level directory changes where a context sits, not what it holds.
+offers it, because its `msiptp` is where a per-device MSI page table goes once the kernel
+remaps interrupts; the two-level directory changes where a context sits, not what it holds.
 
 MSI confinement lives in a different place on each architecture. On x86_64 it is a separate IOMMU
 feature (`ECAP.IR`), because VT-d intercepts writes to the MSI address range, so DMA remapping alone
