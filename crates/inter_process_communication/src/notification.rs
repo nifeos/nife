@@ -23,7 +23,6 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// use core::ptr::NonNull;
 /// use intrusive_queue::{Node, Unqueued};
 /// use inter_process_communication::notification::{Notification, Signal, Wait};
-///
 /// # struct ThreadControlBlock {
 /// #     next: Option<NonNull<ThreadControlBlock>>,
 /// # }
@@ -33,14 +32,15 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// #     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
 /// # }
 /// let mut waiter = ThreadControlBlock { next: None };
+/// let waiter = NonNull::new(&raw mut waiter).unwrap();
 /// let mut n: Notification<ThreadControlBlock> = Notification::new();
 ///
 /// // Two signals with nobody waiting accumulate into one word. Neither is lost.
 /// assert_eq!(n.signal(0b01, false), Signal::Counted);
 /// assert_eq!(n.signal(0b10, false), Signal::Counted);
 ///
-/// // SAFETY: `waiter` is a live local declared before `n`, on no queue, minted once.
-/// let token = unsafe { Unqueued::new(NonNull::from(&mut waiter)) };
+/// // SAFETY: from a live local's place, declared before `n`, not named again, on no queue.
+/// let token = unsafe { Unqueued::new(waiter) };
 ///
 /// // A wait takes the whole word and clears it, without blocking, and hands the token back.
 /// let Wait::Word(word, token) = n.wait(token) else { panic!("blocked on a non-zero word") };
@@ -49,7 +49,7 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// // The next wait finds nothing and queues; a signal now wakes it with its bits, already dequeued.
 /// assert_eq!(n.wait(token), Wait::Blocked);
 /// match n.signal(0b100, false) {
-///     Signal::Woke(woken, bits) => assert!(woken == NonNull::from(&mut waiter) && bits == 0b100),
+///     Signal::Woke(woken, bits) => assert!(woken == waiter && bits == 0b100),
 ///     other => panic!("{other:?}"),
 /// }
 /// assert!(n.is_idle());
@@ -273,13 +273,16 @@ mod verification {
         }
     }
 
-    /// Mint `n`'s token.
+    /// Mint `n`'s token, from `&raw mut` on the harness local rather than from a reference
+    /// (`Unqueued::new`'s provenance clause).
     ///
     /// # Safety
-    /// `n` is a harness local declared before the notification, on no queue, and minted only once.
-    unsafe fn mint(n: &mut N) -> Unqueued<N> {
-        // SAFETY: this function's own contract is `Unqueued::new`'s.
-        unsafe { Unqueued::new(NonNull::from(n)) }
+    /// `n` is `&raw mut` on a harness local declared before the notification, on no queue, minted only
+    /// once, and not named again.
+    unsafe fn mint(n: *mut N) -> Unqueued<N> {
+        // SAFETY: this function's own contract is `Unqueued::new`'s, and `&raw mut` on a local is
+        // never null.
+        unsafe { Unqueued::new(NonNull::new_unchecked(n)) }
     }
 
     /// An arbitrary valid state: either a symbolic non-zero word and nobody waiting, or a zero word
@@ -303,7 +306,7 @@ mod verification {
         let waiter = NonNull::from(&mut w);
         let mut n: Notification<N> = Notification::new();
         // SAFETY: two distinct fresh nodes declared before `n`, each minted once.
-        let (w, me) = unsafe { (mint(&mut w), mint(&mut me)) };
+        let (w, me) = unsafe { (mint(&raw mut w), mint(&raw mut me)) };
         seed(&mut n, w);
         match kani::any::<u8>() {
             0 => {
@@ -330,7 +333,7 @@ mod verification {
         let mut w = N::new();
         let mut n: Notification<N> = Notification::new();
         // SAFETY: `w` is a fresh node declared before `n`, minted once.
-        seed(&mut n, unsafe { mint(&mut w) });
+        seed(&mut n, unsafe { mint(&raw mut w) });
         let before = n.word;
         let bits: u64 = kani::any();
         let delivered = match n.signal(bits, kani::any()) {
@@ -350,7 +353,7 @@ mod verification {
         let waiter = NonNull::from(&mut w);
         let mut n: Notification<N> = Notification::new();
         // SAFETY: `w` is a fresh node declared before `n`, minted once; `waiter` is only compared.
-        seed(&mut n, unsafe { mint(&mut w) });
+        seed(&mut n, unsafe { mint(&raw mut w) });
         let had_waiter = !n.waiters.is_empty();
         let bits: u64 = kani::any();
         kani::assume(bits != 0);
@@ -375,7 +378,7 @@ mod verification {
         let (mut w, mut me) = (N::new(), N::new());
         let mut n: Notification<N> = Notification::new();
         // SAFETY: two distinct fresh nodes declared before `n`, each minted once.
-        let (w, me) = unsafe { (mint(&mut w), mint(&mut me)) };
+        let (w, me) = unsafe { (mint(&raw mut w), mint(&raw mut me)) };
         seed(&mut n, w);
         let before = n.word;
         match n.wait(me) {
@@ -407,11 +410,43 @@ mod tests {
         }
     }
 
-    /// Mint a boxed node's token. Every test calls this once per node, on a `Box` declared before
-    /// its notification, so the node outlives it and is on no queue yet.
-    fn token(n: &mut Box<N>) -> Unqueued<N> {
+    /// A test's node, owned through the pointer `Box::into_raw` returned. Every access, the
+    /// token's and the test's, derives from that one pointer (`Unqueued::new`'s provenance
+    /// clause), and dropping it frees the node.
+    struct Owned(NonNull<N>);
+
+    impl Drop for Owned {
+        fn drop(&mut self) {
+            // SAFETY: the pointer came from `Box::into_raw` in `node`, and is freed only here.
+            drop(unsafe { Box::from_raw(self.0.as_ptr()) });
+        }
+    }
+
+    impl core::ops::Deref for Owned {
+        type Target = N;
+        fn deref(&self) -> &N {
+            // SAFETY: live until `drop`; the reference is the test's, taken between queue
+            // operations.
+            unsafe { self.0.as_ref() }
+        }
+    }
+
+    impl core::ops::DerefMut for Owned {
+        fn deref_mut(&mut self) -> &mut N {
+            // SAFETY: as `deref`.
+            unsafe { self.0.as_mut() }
+        }
+    }
+
+    fn node() -> Owned {
+        Owned(NonNull::new(Box::into_raw(Box::new(N { next: None }))).unwrap())
+    }
+
+    /// Mint a node's token from its owning pointer. Every test calls this once per node, on a node
+    /// declared before its notification, so the node outlives it and is on no queue yet.
+    fn token(n: &mut Owned) -> Unqueued<N> {
         // SAFETY: as the doc comment says.
-        unsafe { Unqueued::new(NonNull::from(&mut **n)) }
+        unsafe { Unqueued::new(n.0) }
     }
 
     /// **A wait's verdict is equal only to itself**: the same word for another node, another word,
@@ -419,11 +454,7 @@ mod tests {
     /// with itself shares one.
     #[test]
     fn a_wait_verdict_equals_itself_and_no_other() {
-        let (mut a, mut b, mut c) = (
-            Box::new(N { next: None }),
-            Box::new(N { next: None }),
-            Box::new(N { next: None }),
-        );
+        let (mut a, mut b, mut c) = (node(), node(), node());
         let waits = [
             Wait::Word(1, token(&mut a)),
             Wait::Word(1, token(&mut b)),
@@ -452,7 +483,7 @@ mod tests {
     /// and leaves the object idle: the teardown path a destroyed notification takes.
     #[test]
     fn diagnostics_and_drain_agree_with_the_state() {
-        let (mut a, mut b) = (Box::new(N { next: None }), Box::new(N { next: None }));
+        let (mut a, mut b) = (node(), node());
         let (pa, pb) = (NonNull::from(&mut *a), NonNull::from(&mut *b));
         let mut n: Notification<N> = Notification::default();
         assert!(n.is_idle() && n.invariant_holds());
@@ -478,11 +509,7 @@ mod tests {
     /// the kernel's own tests leans on.
     #[test]
     fn outcomes_compare_and_print_by_variant() {
-        let (mut a, mut b, mut c) = (
-            Box::new(N { next: None }),
-            Box::new(N { next: None }),
-            Box::new(N { next: None }),
-        );
+        let (mut a, mut b, mut c) = (node(), node(), node());
         let all: [Signal<N>; 4] = [
             Signal::Woke(token(&mut a), 1),
             Signal::ToBound(2),
@@ -510,11 +537,7 @@ mod tests {
     /// Waiters leave in arrival order, and removing one from the middle keeps the others.
     #[test]
     fn remove_waiter_keeps_the_rest_in_order() {
-        let (mut a, mut b, mut c) = (
-            Box::new(N { next: None }),
-            Box::new(N { next: None }),
-            Box::new(N { next: None }),
-        );
+        let (mut a, mut b, mut c) = (node(), node(), node());
         let (pa, pb, pc) = (
             NonNull::from(&mut *a),
             NonNull::from(&mut *b),
@@ -538,7 +561,7 @@ mod tests {
     /// cannot reach the broken one, so this writes the word directly.
     #[test]
     fn the_invariant_fails_only_for_a_word_with_a_waiter() {
-        let mut a = Box::new(N { next: None });
+        let mut a = node();
         let mut n: Notification<N> = Notification::new();
         assert!(n.invariant_holds(), "empty");
         n.word = 0b1;
