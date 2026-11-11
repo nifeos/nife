@@ -91,7 +91,7 @@ pub(crate) fn record(kind: Event, tid: u64, aux: u8) {
     let ring = &RINGS[crate::cpu::id()];
     let seq = ring.seq.fetch_add(1, Ordering::Relaxed);
     // kind in the top byte, aux below it, the tid's low 48 bits under that. A tid is
-    // (generation << 32) | slot with slot < 256; 48 bits keeps 16 bits of generation,
+    // (generation << 32) | slot with slot < MAXIMUM_THREADS; 48 bits keeps 16 bits of generation,
     // plenty to disambiguate in a dump.
     let entry = ((kind as u64) << 56) | ((aux as u64) << 48) | (tid & 0x0000_FFFF_FFFF_FFFF);
     ring.slots[(seq as usize) % DEPTH].store(entry, Ordering::Relaxed);

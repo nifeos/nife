@@ -1,6 +1,6 @@
 # A PageFrame that names a run: how the fork was found, priced and decided
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [notes/frames.md](../frames.md), resolved on 2026-08-26. The entries it sits beside are in [limitations.md](limitations.md). Everything below
 the first section describes a state this tree no longer has, and is kept as the record.

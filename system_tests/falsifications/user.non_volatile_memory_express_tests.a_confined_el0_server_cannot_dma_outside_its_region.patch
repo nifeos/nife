@@ -3,7 +3,7 @@ Falsifies `system_tests::user::non_volatile_memory_express_tests::a_confined_el0
 Architecture: aarch64, riscv64, x86_64
 
 The confinement is skipped for the escape frame. The DMA-escape wiring (milestone 261 (the NVMe driver leaves the kernel)) stores the victim's physical base into
-`non_volatile_memory_express::ESCAPE_TARGET`, which `bring_up` reads and adds to the NVMe
+`non_volatile_memory_express::ESCAPE_TARGET`, which `find_and_confine` reads and adds to the NVMe
 controller's IOMMU domain. The controller is then confined to a domain that *includes* the frame the
 EL0 server aims its PRP at, so the out-of-region DMA lands instead of faulting: this is the
 equivalent of skipping `iommu::confine` the test exists to catch (milestone 16b (IOMMU-backed driver isolation)), done precisely enough to widen the domain by exactly the one frame
@@ -20,15 +20,14 @@ inside the domain the READ escape (disk -> victim) completes, so the IOMMU recor
 bounded poll finds none. The `esc.is_canary_intact()` assertion also flips, because that completed READ
 copies the disk image's zero bytes over the canary; either failure is the escape landing.
 diff --git a/kernel/src/user/non_volatile_memory_express_service.rs b/kernel/src/user/non_volatile_memory_express_service.rs
-index 60c85c7d2..06dabb056 100644
 --- a/kernel/src/user/non_volatile_memory_express_service.rs
 +++ b/kernel/src/user/non_volatile_memory_express_service.rs
-@@ -330,6 +330,8 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
-     // `ESCAPE_TARGET` is zero, so `victim` is not in the controller's domain and the escape below
-     // faults. The replayable falsification inserts a store of `victim` into `ESCAPE_TARGET` right
-     // here, which widens the domain to cover it; that one line is the whole patch.
+@@ -428,6 +428,8 @@
+     // zero, so `victim` is not in the controller's domain and the escape below faults. The
+     // replayable falsification inserts a store of `victim` into `ESCAPE_TARGET` right here, which
+     // widens the domain to cover it; that one line is the whole patch.
 +    crate::non_volatile_memory_express::ESCAPE_TARGET
 +        .store(victim, core::sync::atomic::Ordering::Relaxed);
-     let found = crate::non_volatile_memory_express::bring_up().ok()?;
+     let found = crate::non_volatile_memory_express::find_and_confine().ok()?;
      let rid = found.rid;
      let scope = crate::iommu::scope_of(rid);

@@ -371,6 +371,7 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
             // (locking: IrqSafeMutex, plus a discipline)).
             super::timer::TIMER_INTID => {
                 super::timer::tick();
+                crate::sched::sample_tick(frame.sepc);
                 crate::sched::on_tick();
             }
             // The claim is the mask until the driver's completion. The source stays enabled: the
