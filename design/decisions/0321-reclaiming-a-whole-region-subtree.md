@@ -1,11 +1,14 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-11-11
+decided: 2026-11-11
+ratified_by: calef
 ---
 
 # 321. Reclaiming a whole region subtree
 
-*(The section number, the title and every name below are provisional.)*
+*(The section number and title are provisional until the merge lands them. The new method's name
+and number are provisional and the architect's to rule.)*
 
 Raised by #3417's per-subtree ceilings, which bound what a region subtree holds but do not give it
 back. The code read is main and that branch (`nifeos/nife@0f9675218`).
@@ -37,6 +40,17 @@ regions. A creation refuses when the region or any ancestor is at its ceiling. O
 can hold at most a sixteenth of its root's ceilings. The ancestors keep its counts, though, so a
 parent that runs such programs one after another fills its own ceiling, and then nothing under that
 parent can create that kind of object.
+
+## The decision
+
+Option (a2), ruled 2026-11-11 (UTC), and not yet built:
+
+- A separate `MemoryRegion` method reclaims a region and everything below it: every descendant
+  region, every object in any of them and every mapping of their pages. Its name and method number
+  stay provisional (`DESTROY_SUBTREE` here) until the architect rules on them.
+- `DESTROY` keeps its refusal of a region with live children.
+- Every reclaim, through either method, first marks the region closing, so no object creation or
+  split lands in it while the reclaim runs.
 
 ## The premise, checked in the tree
 
@@ -132,11 +146,9 @@ new object races in. Waiters outside the subtree get `Gone`, as `reclaim_region`
 
 Ceilings. One ancestor walk returns every count, and the ceilings bound the work of one call.
 
-The ABI. (a1) changes what `DESTROY` means for every caller. A caller that
-counts on the refusal loses it: `release_budget` reads it as "the job left children",
-`memory_grant_reclaim_tests` asserts it, and a builder that destroys its own budget while a child it
-lent still serves someone would now end that child. (a2) adds one method and changes nothing that
-exists.
+The ABI. (a1) changes what `DESTROY` means for every caller. `release_budget` reads the refusal as
+"the job left children", `memory_grant_reclaim_tests` asserts it, and a builder destroying its
+budget would now end a child it lent. (a2) adds one method and changes nothing that exists.
 
 ### (b) Deleting the last capability to a region reclaims it
 
@@ -217,8 +229,6 @@ This lane read each source where named, on 2026-11-11 (UTC), unless marked recal
 - **Linux cgroup v2** (kernel documentation, `cgroup-v2.rst`). `rmdir` removes only a cgroup with no
   children and no live processes, today's `DESTROY`. Writing `1` to `cgroup.kill` kills every process
   in the cgroup and all its descendants, and leaves the removal to a later `rmdir`.
-- **Redox** (recalled, not read). Its kernel owns process memory and frees it at exit; it has no
-  user-held region tree, so it offers nothing to compare here.
 
 ## Where nife differs
 
@@ -228,8 +238,7 @@ This lane read each source where named, on 2026-11-11 (UTC), unless marked recal
 - seL4 bounds a revoke by preemption and restart. nife has no restartable kernel operation. The
   ceilings bound the work instead, and the holder's retry, already the `DESTROY` protocol, stands in
   for the restart.
-- Fuchsia and seL4 both count references (handles, capabilities). nife does not, which is what makes
-  (b) expensive here when it is cheap there.
+- Fuchsia and seL4 both count references; nife does not, so (b) costs far more here.
 - Fuchsia caps the job tree's height at 32. #3417's region ceiling caps a split subtree at 56
   regions, and so its depth, but nothing bounds a root without ceilings.
 
@@ -249,16 +258,13 @@ each, deletes its three capabilities to them and exits.
   rendezvous and three notifications in one pass over B's 64-page span. It removes C1, C2, C3 and B
   from the table, gives P back 4 regions, 3 rendezvous and 3 notifications in one walk, and returns
   B's run to P.
-- (b). Each of J's three deletes was the last capability to its region, so the kernel queues C1,
-  C2 and C3 for its reaper. The supervisor's `DESTROY` of B succeeds once the reaper has run, and
-  refuses until then. In the spawner, the same rule would reclaim each instance at `START`.
+- (b). J's three deletes queue C1, C2 and C3 for a reaper, and `DESTROY` of B refuses until it
+  runs.
 
-## Recommendation
+## Why (a2)
 
-**(a2): a separate method that reclaims a region's whole subtree, with the closing mark on every
-reclaim.** Refuse (b). Keep (d) as a narrowing to weigh on its own.
-
-The restrictive-first reading, option by option:
+The decision refuses (b) and leaves (d) as a separate narrowing. The restrictive-first
+reading, option by option:
 
 - (b) is the loosest. It turns a delete into a destruction and adds a trigger that no holder pulls,
   and once programs count on it, taking it back breaks them.
@@ -269,19 +275,14 @@ The restrictive-first reading, option by option:
 - (c) keeps the surface narrowest. Against a hostile program alone, the ceilings would make it fair.
   The spawner puts the gap in the supervision tree itself, and §40's guarantee fails while it stands.
 
-Would this still be the choice if every option cost the same? Yes. At equal cost (a1) and (a2)
-differ only in reversibility, and (a2) is the reversible one; (c) loses on §40's guarantee, not on
-effort.
+At equal cost the choice stands. (a1) and (a2) differ only in reversibility, and (a2) is the
+reversible one; (c) loses on §40's guarantee, not on effort.
 
-## Reversibility, and what waits
+## What follows
 
-- (a2) is additive: a new method under `invoke`, with no new syscall number. Nothing has acted on
-  it. The method's name and number are an architect's call like any syscall-surface addition.
-- (a1) changes a method every region holder already calls.
-- (b) is the one-way door here: a delete that destroys becomes something programs rely on.
-- (c) is where the tree is today.
-
-Nothing waits on this to proceed. Three things wait for its answer: milestone 933's
-recursive-teardown follow-on, §40's guarantee for supervisors that build in split regions, and the
-fix for the race in `reclaim_region`. The closing mark of (a) would fix that race, and so would a
-smaller change on its own.
+- (a2) is additive: a new method under `invoke`, with no new syscall number. Its name and number
+  are the architect's, and nothing builds on the provisional spelling.
+- Building it serves milestone 933's recursive-teardown follow-on and §40's guarantee for
+  supervisors that build in split regions.
+- The closing mark is also the fix for the race in `reclaim_region` that
+  [region-reaping.md](../../notes/region-reaping.md)'s BUGS records.

@@ -191,7 +191,8 @@ meets it.
   between the `unpin` and the claim makes the claim refuse, and `reclaim_region` still returns `Ok`,
   because `memory_region::destroy` returns nothing. Found by reading; no test reproduces it.
   [§321 (reclaiming a whole region subtree)](../design/decisions/0321-reclaiming-a-whole-region-subtree.md)
-  proposes a closing mark that `RegionTable::charge` would check.
+  rules that every reclaim first marks the region closing, which `RegionTable::charge` checks; not
+  built yet.
 - **`Err` is destructive, and it does not read that way at a call site.** A refusal caused by a live
   thread arms the kill on every live thread in the region, so `reclaim_region(r).is_err()` cannot be
   asked as a question: asking it dooms the answer. No call asks whether a region is busy without
