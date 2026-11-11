@@ -1,3 +1,8 @@
+//! Host tests of the checks the driver makes before it touches the DMA page or the device: the
+//! accessors' window check, the block server's range check, and the DHCP OFFER parse.
+//!
+//! Name: provisional, minted 2026-11-11 (UTC) by maintainer/virtio-block-server-robustness.
+
 extern crate std;
 
 use std::vec;
