@@ -100,8 +100,8 @@ pub fn run() -> ! {
 enum Outcome {
     /// No JH7110 SD/MMC controller in the tree, or no microSD one.
     NotDescribed,
-    /// No SYS clock window was recorded, so nothing was touched.
-    NoClockWindow,
+    /// No clock and reset server runs, so nothing was touched.
+    NoClockServer,
     /// A clock did not read back enabled, or the reset did not release.
     ClocksDown,
     /// The controller refused (its FIFO width).
@@ -230,41 +230,35 @@ macro_rules! say {
     };
 }
 
-/// Bring the slot's card clock to the tree's rate, and return the rate it really runs at.
-///
-/// Without the SYS syscon (mapped only where the tree names the PMIC's bus) the rate cannot be
-/// computed, so the tree's is returned and printed as unchecked.
-fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
-    if crate::memory::jh7110_pmic_bus().is_none() {
-        say!(
-            slot,
-            "card clock: no SYS syscon mapped, so its rate is the tree's {} Hz, unchecked",
+/// Bring the slot's card clock to the tree's rate through the clock and reset server, and return
+/// the rate it really runs at. When the server refuses, the tree's rate is returned and printed as
+/// unchecked.
+fn card_clock(slot: &Slot) -> u32 {
+    use crate::user::jh7110_clock_and_reset_service as clock;
+    let base = slot.registers_physical_address;
+    let before = clock::read_clock(base, 1);
+    match clock::set_rate(base, u64::from(slot.card_interface_unit_hertz)) {
+        Some(Ok(hertz)) => {
+            say!(
+                slot,
+                "card clock: {:#010x} -> {:#010x}, {} Hz (the tree asks {} Hz)",
+                before.unwrap_or(0),
+                clock::read_clock(base, 1).unwrap_or(0),
+                hertz,
+                slot.card_interface_unit_hertz
+            );
+            u32::try_from(hertz).unwrap_or(slot.card_interface_unit_hertz)
+        }
+        refused => {
+            say!(
+                slot,
+                "card clock: the clock and reset server answered {:?}, so its rate is the tree's {} Hz, unchecked",
+                refused,
+                slot.card_interface_unit_hertz
+            );
             slot.card_interface_unit_hertz
-        );
-        return slot.card_interface_unit_hertz;
+        }
     }
-    // SAFETY: `mmu::initialize` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
-    // bus, the SYS syscon (step 6c-prime); the slot index is 0 or 1 by `jh7110_storage`.
-    let c = unsafe {
-        crate::drivers::jh7110_clock_and_reset::set_card_clock(
-            crate::arch::mmu::phys_to_virt(crg_phys) as usize,
-            crate::arch::mmu::phys_to_virt(
-                jh7110_clock_and_reset::SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
-            ) as usize,
-            usize::from(slot.index),
-            slot.card_interface_unit_hertz,
-        )
-    };
-    say!(
-        slot,
-        "card clock: {:#010x} -> {:#010x}, {} Hz from a {} Hz parent (the tree asks {} Hz)",
-        c.before,
-        c.after,
-        c.hertz,
-        c.parent_hertz,
-        slot.card_interface_unit_hertz
-    );
-    c.hertz
 }
 
 fn probe(slot: &Slot, write: bool) -> Outcome {
@@ -281,44 +275,42 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         slot.interrupt,
     );
 
-    let Some(sys) = crate::memory::jh7110_sys_window() else {
+    let Some(brought) =
+        crate::user::jh7110_clock_and_reset_service::bring_up(slot.registers_physical_address)
+    else {
         say!(
             slot,
-            "no SYS clock window recorded; not touching the controller"
+            "no clock and reset server runs; not touching the controller"
         );
-        return Outcome::NoClockWindow;
+        return Outcome::NoClockServer;
     };
-    let plan = jh7110_clock_and_reset::SD_INPUT_OUTPUT_BRING_UP[usize::from(slot.index)];
-    // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::initialize` step 6c
-    // mapped exactly this window device-typed. The plan and the domain are the same crate's, so
-    // every identifier is in range; every step is idempotent on a controller already up.
-    let report = unsafe {
-        crate::drivers::jh7110_clock_and_reset::bring_up(
-            crate::arch::mmu::phys_to_virt(sys.base) as usize,
-            &jh7110_clock_and_reset::SYSTEM,
-            plan,
+    let clock = |index| {
+        crate::user::jh7110_clock_and_reset_service::read_clock(
+            slot.registers_physical_address,
+            index,
         )
+        .unwrap_or(0)
     };
+    let (bus, card) = (clock(0), clock(1));
     say!(
         slot,
-        "clocks before {:#010x} {:#010x} after {:#010x} {:#010x} (dividers {} {}), reset assert {:#x}->{:#x} status {:#x}, released {}, already up {}",
-        report.clock_before[0],
-        report.clock_before[1],
-        report.clock_after[0],
-        report.clock_after[1],
-        jh7110_clock_and_reset::clock_divider(report.clock_after[0]),
-        jh7110_clock_and_reset::clock_divider(report.clock_after[1]),
-        report.reset_assert_before,
-        report.reset_assert_after,
-        report.reset_status_after,
-        report.released,
-        report.was_already_up(),
+        "clocks {:#010x} {:#010x} (dividers {} {}) through the clock and reset server: {:?}, clocks {}/{} running, resets {}/{} released, already up {}",
+        bus,
+        card,
+        jh7110_clock_and_reset::clock_divider(bus),
+        jh7110_clock_and_reset::clock_divider(card),
+        brought.status,
+        brought.summary.clocks_running,
+        brought.summary.clocks_in_plan,
+        brought.summary.resets_released,
+        brought.summary.resets_in_plan,
+        brought.summary.already_up,
     );
-    if !report.has_clocks_running() || !report.released {
+    if !brought.is_up() {
         return Outcome::ClocksDown;
     }
 
-    let ciu_hertz = card_clock(slot, sys.base);
+    let ciu_hertz = card_clock(slot);
 
     // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
@@ -773,10 +765,7 @@ fn read_matrix(slot: &Slot) {
         println!("storage-matrix: no pages for a buffer");
         return;
     };
-    let Some(sys) = crate::memory::jh7110_sys_window() else {
-        return;
-    };
-    let ciu_hertz = card_clock(slot, sys.base);
+    let ciu_hertz = card_clock(slot);
     let first = 2048;
     for depth in [slot.queue_depth_words, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.

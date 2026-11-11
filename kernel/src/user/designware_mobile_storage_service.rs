@@ -1,5 +1,5 @@
-//! radon's SD/MMC block server's wiring. The kernel ungates the controller's clocks and releases
-//! its reset, then hands a process one device-typed page of the controller, the transfer region,
+//! radon's SD/MMC block server's wiring. The clock and reset server ungates the controller's
+//! clocks and releases its reset, for this controller's badge alone, and the kernel then hands a process one device-typed page of the controller, the transfer region,
 //! two endpoints and the window of the card it may serve;
 //! `components/src/designware_mobile_storage.rs` has what it holds and is refused. See
 //! notes/designware-mobile-storage.md.
@@ -37,8 +37,8 @@ pub(crate) struct Wiring {
 /// Why nothing was started.
 #[derive(Debug)]
 pub(crate) enum NotStarted {
-    /// No SYS clock window was recorded: this is not a JH7110.
-    NoClockWindow,
+    /// No clock and reset server runs: this is not a JH7110, or the archive has no server.
+    NoClockServer,
     /// A clock did not read back enabled, or the reset did not release.
     Clocks,
     /// No contiguous pages for the transfer region.
@@ -67,18 +67,9 @@ pub(crate) fn start(
     if Handoff::unpack(words) != Some(handoff) {
         return Err(NotStarted::BadHandoff);
     }
-    let sys = crate::memory::jh7110_sys_window().ok_or(NotStarted::NoClockWindow)?;
-    // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::initialize` step 6c
-    // mapped exactly this window device-typed. The plan and the domain are the same crate's, so
-    // every identifier is in range; every step is idempotent on a controller already up.
-    let report = unsafe {
-        crate::drivers::jh7110_clock_and_reset::bring_up(
-            crate::arch::mmu::phys_to_virt(sys.base_physical_address) as usize,
-            &jh7110_clock_and_reset::SYSTEM,
-            jh7110_clock_and_reset::SD_INPUT_OUTPUT_BRING_UP[usize::from(slot.index) & 1],
-        )
-    };
-    if !report.has_clocks_running() || !report.released {
+    let brought = super::jh7110_clock_and_reset_service::bring_up(slot.registers_physical_address)
+        .ok_or(NotStarted::NoClockServer)?;
+    if !brought.is_up() {
         return Err(NotStarted::Clocks);
     }
     let transfer_phys = crate::memory::alloc_contiguous_zeroed(blk::TRANSFER_BLOCKS)

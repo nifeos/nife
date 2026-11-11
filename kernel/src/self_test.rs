@@ -1034,35 +1034,38 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
     }
 }
 
-/// The clock-and-reset controller's before-and-after, as the `clock` check.
+/// The clock and reset server's answer for the TRNG, as the `clock` check.
 #[cfg(target_arch = "riscv64")]
-fn jh7110_clock(tally: &mut Tally, clock: Option<jh7110_clock_and_reset::BringUpReport>) {
-    let Some(report) = clock else {
+fn jh7110_clock(
+    tally: &mut Tally,
+    clock: Option<crate::user::jh7110_clock_and_reset_service::BroughtUp>,
+) {
+    let Some(brought) = clock else {
         tally.record(
             "clock",
             false,
             format_args!(
-                "this tree names a TRNG but no clock-and-reset window was mapped, so nothing was ungated"
+                "this tree names a TRNG but no clock and reset server runs, so nothing was ungated"
             ),
         );
         return;
     };
     let found = crate::user::entropy_service::jh7110_crg_window();
-    let ok = report.has_clocks_running() && report.released;
+    let s = brought.summary;
     tally.record(
         "clock",
-        ok,
+        brought.is_up(),
         format_args!(
-            "JH7110 STG CRG at {:#x} ({}): clocks {:#010x},{:#010x} -> {:#010x},{:#010x}, reset {} after {} polls{}",
+            "JH7110 STG CRG at {:#x} ({}), through the clock and reset server: {:?}, clocks {}/{} running, resets {}/{} released, {} refused{}",
             found.map_or(0, |f| f.base_physical_address),
             if found.is_some_and(|f| f.from_tree) { "from the tree" } else { "the published constant" },
-            report.clock_before[0],
-            report.clock_before[1],
-            report.clock_after[0],
-            report.clock_after[1],
-            if report.released { "released" } else { "STILL HELD" },
-            report.polls,
-            if report.was_already_up() { "; the firmware had already done all of it" } else { "" },
+            brought.status,
+            s.clocks_running,
+            s.clocks_in_plan,
+            s.resets_released,
+            s.resets_in_plan,
+            s.refused,
+            if s.already_up { "; the firmware had already done all of it" } else { "" },
         ),
     );
 }

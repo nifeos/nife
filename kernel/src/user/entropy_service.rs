@@ -43,12 +43,12 @@ pub struct Wiring {
     pub bus: Bus,
     /// True when the device sat behind an IOMMU, which on this machine means the PCIe wiring.
     pub confined_by_iommu: bool,
-    /// What the clock and reset controller said, only on the call that did the wiring, as with
-    /// [`Wiring::ready`]. `None` on every backend but [`Bus::Jh7110`], and on that one when the
-    /// tree named no controller. Read only by the riscv64 boot tour; not `cfg`-gated, so `Wiring`
+    /// What the clock and reset server said of the TRNG's bring-up, only on the call that did the
+    /// wiring, as with [`Wiring::ready`]. `None` on every backend but [`Bus::Jh7110`], and on that
+    /// one when no server runs. Read only by the riscv64 boot tour; not `cfg`-gated, so `Wiring`
     /// has one shape everywhere.
     #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))]
-    pub clock: Option<jh7110_clock_and_reset::BringUpReport>,
+    pub clock: Option<super::jh7110_clock_and_reset_service::BroughtUp>,
 }
 
 /// One entropy service per device per boot: a second would reset the device and reprogram its
@@ -292,9 +292,8 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
     let device = jh7110_trng_device()?;
 
     // Ungate the device before the spawn: the driver reads `STAT` first, and a gated block reads
-    // as zeros. The clock admin plane stays in the kernel
-    // (`kernel/src/drivers/jh7110_clock_and_reset.rs`).
-    let clock = jh7110_clock_bring_up();
+    // as zeros. The clock and reset server does it, for this device's badge alone.
+    let clock = super::jh7110_clock_and_reset_service::bring_up(device.registers_physical_address);
 
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();
@@ -330,30 +329,6 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
         confined_by_iommu: false,
         clock,
     })
-}
-
-/// Enable the TRNG's two clocks and release its reset, or `None` when this machine's tree named no
-/// clock-and-reset window, so the mapping does not exist and nothing may be stored to. riscv64
-/// only.
-#[cfg(target_arch = "riscv64")]
-fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
-    let crg = crate::memory::jh7110_clock_and_reset()?;
-    // SAFETY: `memory::initialize` recorded this region only for a machine whose tree names a
-    // JH7110, and `mmu::map_everything` mapped exactly it, device-typed, in the direct map. The
-    // domain and the plan are the same crate's, so every identifier in the plan is in range for it.
-    Some(unsafe {
-        crate::drivers::jh7110_clock_and_reset::bring_up(
-            crate::arch::mmu::phys_to_virt(crg.base_physical_address) as usize,
-            &jh7110_clock_and_reset::SYSTEM_TOP_GROUP,
-            jh7110_clock_and_reset::ENTROPY_BRING_UP,
-        )
-    })
-}
-
-/// See the riscv64 arm: no JH7110 anywhere but a JH7110.
-#[cfg(not(target_arch = "riscv64"))]
-fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
-    None
 }
 
 /// Where this machine's clock-and-reset window is, and who said so, for the boot tour to print
