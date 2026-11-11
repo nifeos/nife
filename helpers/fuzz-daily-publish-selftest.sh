@@ -79,6 +79,7 @@ mkdir -p "$work/bin"
 cat > "$work/bin/gh" <<STUB
 #!/bin/sh
 echo called >> "$work/gh-calls"
+echo "\$*" >> "$work/gh-args"
 STUB
 chmod +x "$work/bin/gh"
 
@@ -133,5 +134,22 @@ PATH="$work/bin:$PATH" NIFE_FUZZ_PUBLISH=1 GH_TOKEN="$secret" GH_TOKEN_EXPIRES_A
     "$here/fuzz-daily-publish.sh" --publish >/dev/null 2>"$work/stderr" \
     || fail "a fresh token was refused: $(cat "$work/stderr")"
 [ "$(wc -l < "$work/gh-calls" | tr -d ' ')" = 1 ] || fail "a fresh token did not reach gh exactly once"
+
+# The one call is the ruled release (design/roadmap/1026): `gh release create fuzz-<utc date>` on
+# nifeos/nife, with report.md and clean-ranges.tsv as its only assets, and the script never pushes.
+args="$(cat "$work/gh-args")"
+case "$args" in
+    "release create fuzz-$today --repo nifeos/nife "*) ;;
+    *) fail "gh was not called as 'release create fuzz-$today --repo nifeos/nife': $args" ;;
+esac
+assets="$(printf '%s\n' "$args" | tr ' ' '\n' | grep '^/' | sed 's|.*/||' | sort -u | tr '\n' ' ')"
+[ "$assets" = "clean-ranges.tsv report.md " ] || fail "release assets are '$assets', want report.md and clean-ranges.tsv"
+! grep -v '^ *#' "$here/fuzz-daily-publish.sh" | grep -q 'git push' || fail "the publish script calls git push"
+
+# No held finding appears in either asset: the held seed is absent from the report and the table.
+! grep -q "$held_seed" "$NIFE_FUZZ_HOME/out/$today/report.md" "$ranges" \
+    || fail "the held seed appears in a published asset"
+grep -q 'Held findings: 0, oldest 0 days' "$NIFE_FUZZ_HOME/out/$today/report.md" \
+    || fail "the report does not state the held count and age"
 
 echo "fuzz-daily-publish-selftest: ok"

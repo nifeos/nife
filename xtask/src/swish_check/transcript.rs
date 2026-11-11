@@ -37,7 +37,7 @@ pub(super) const SLOT_GAUGE: &str = "capability slots:";
 /// endpoint, its sleeper and the other pages it keeps for the session. Measured on aarch64 on
 /// 2026-10-27 (UTC) as the first `free` row less `free`'s own region: 268 less 192. Name:
 /// provisional (milestone 933's lane).
-pub(super) const SHELL_STATIC_KIB: u64 = 80;
+pub(super) const SHELL_STATIC_KIBIBYTES: u64 = 80;
 
 /// **The most of the shell's budget `free`'s `Yours:` line may report in use**, in KiB: the shell's
 /// own static pages, and two job regions (`grant_plan::JOB_REGION_PAGES`, 48 pages of 4 KiB). One
@@ -45,11 +45,11 @@ pub(super) const SHELL_STATIC_KIB: u64 = 80;
 /// yet collected. A reading above is a region the shell split off and did not get back. Since
 /// milestone 933 (every job is built the way a supervised job is) the row describes the shell's
 /// budget and not the progenitor's pool. Name: provisional.
-pub(super) const YOURS_CEILING_KIB: u64 = SHELL_STATIC_KIB + 2 * 48 * 4;
+pub(super) const YOURS_CEILING_KIBIBYTES: u64 = SHELL_STATIC_KIBIBYTES + 2 * 48 * 4;
 
 /// The used figure of the first `Yours:` row in `transcript`, in KiB, or `None` when there is none
 /// (the line's own expectation already fails a run that lost it).
-pub(super) fn yours_used_kib(transcript: &str) -> Option<u64> {
+pub(super) fn yours_used_kibibytes(transcript: &str) -> Option<u64> {
     let row = transcript
         .lines()
         .find_map(|l| l.trim_start().strip_prefix("Yours:"))?;

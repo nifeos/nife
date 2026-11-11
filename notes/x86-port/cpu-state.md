@@ -177,7 +177,7 @@ every boot the x86_64 suite runs. The warning prints on its own line each boot a
 hypervisor bit as the reason it is not a refusal. It is not a token in the feature list, because a
 missing word in a list of present ones is not something a reader notices.
 
-`isa::tsc_crystal_hz` reads leaf `0x15`, the TSC to crystal ratio, which some parts populate.
+`isa::tsc_crystal_hertz` reads leaf `0x15`, the TSC to crystal ratio, which some parts populate.
 Under the project's QEMU invocation (`-cpu max`, TCG) the maximum leaf is `0xd`, so it returns
 `None` and every boot's rate comes from PIT calibration. When the leaf exists but `ECX` is zero,
 Linux's `native_calibrate_tsc` falls back on a model-to-crystal table, which this port does not

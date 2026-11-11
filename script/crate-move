@@ -38,13 +38,24 @@
 # 5b. Applies every staged patch with `patch -p1 --dry-run -F0` and refuses to finish when one
 #    applies at an offset, with fuzz, or not at all (`patch applies exactly`). A hunk header that
 #    drifted from its file passes plain `patch` with a note, so the note is what fails.
+# 5c. Stages the crate's fuzz targets in cargo-fuzz's layout, under `fuzz/`: a manifest that depends
+#    on the crate by `path = ".."`, each target that links this crate and no other crate of the tree,
+#    its seeds and the crate's fixture directories that `script/fuzz` adds, in `fuzz/corpus/<target>`,
+#    the seed scripts, and a `fuzz/README.md` made of the targets' sections of the notes. The weekly
+#    caller passes `fuzz: true` only when the crate has no `unsafe` code (weekly fuzz is opt-in,
+#    ruled for crates without it); otherwise it stays `false` and the run says why. Unless
+#    `--no-build`, it then builds the targets with `cargo +nightly fuzz build` and runs each once
+#    over its corpus (`-runs=0`). The output of a run is withheld on failure, since it holds the
+#    input. Each seed script is run in a scratch copy and must rebuild its staged input byte for
+#    byte.
 # 6. `git init` and `git add --all` in the staged tree, so the checks that read `git ls-files` see
 #    what a push would carry. Nothing is committed.
 # 7. Runs the template's cheap checks from the pinned revision (standalone, prose, ratchets,
 #    naming, orphan modules, links, falsification records) plus two it lacks: citations of this
 #    tree, and the word `nife` anywhere in the staged files.
-# 8. Prints the nife-side follow-up: each consumer manifest's replacement line, and every other
-#    tracked file outside `design/` and `notes/` that names the crate.
+# 8. Prints the nife-side follow-up: each consumer manifest's replacement line, every other
+#    tracked file outside `design/` and `notes/` that names the crate, and the removals the fuzz
+#    targets' move makes in `fuzz/`, `script/fuzz` and `notes/fuzzing/targets.md`.
 #
 # It never creates a repository, pushes, tags, publishes or edits this tree. Exit 0 when every check
 # passed, 1 when the staged tree has findings (the tree is kept either way), 2 on a usage error.

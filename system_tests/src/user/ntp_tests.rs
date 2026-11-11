@@ -97,12 +97,16 @@ fn machine_has_no_entropy() -> bool {
 const SERVER_IP: u32 = 0x0a00_0202; // 10.0.2.2, slirp's gateway
 const SERVER_PORT: u16 = network_time_protocol::PORT;
 
-/// Run one exchange: a fresh server at `claimed_ns`, a fresh client, both reports drained in
+/// Run one exchange: a fresh server at `claimed_nanoseconds`, a fresh client, both reports drained in
 /// the order the blocking `send` requires. Returns `(the server's report, the client's report)`.
 ///
 /// Both programs and their three endpoints are handed back before this returns. The server never
 /// exits on its own (it serves until killed), so the holding is what ends it.
-fn exchange(clock: &clock_service::Wiring, variant: u64, claimed_ns: u64) -> ([u64; 5], [u64; 5]) {
+fn exchange(
+    clock: &clock_service::Wiring,
+    variant: u64,
+    claimed_nanoseconds: u64,
+) -> ([u64; 5], [u64; 5]) {
     // Counted before either program exists, so a fault during the exchange is told apart from a
     // client that is merely slow or blocked. Merge-group run 38284891615 (2026-10-12 UTC) failed
     // the first assertion below because the client had been killed by a page fault, and the
@@ -112,8 +116,13 @@ fn exchange(clock: &clock_service::Wiring, variant: u64, claimed_ns: u64) -> ([u
         .expect("no endpoint region for an ntp exchange");
     let mut held = Holding::new();
     held.add_region(region);
-    let server =
-        ntp_service::start_server(test_server_image(), variant, claimed_ns, region, &mut held);
+    let server = ntp_service::start_server(
+        test_server_image(),
+        variant,
+        claimed_nanoseconds,
+        region,
+        &mut held,
+    );
     let client = ntp_service::start_client(
         client_image(),
         server.stack,

@@ -170,6 +170,10 @@ dependencies = [
 [[package]]
 name = "capability_witness_contract"
 version = "0.1.0"
+dependencies = [
+ "address_space_map",
+ "startup_page_contract",
+]
 
 [[package]]
 name = "cc"
@@ -562,6 +566,7 @@ dependencies = [
  "process_builder",
  "soak_page",
  "socket_contract",
+ "startup_page_contract",
  "supervision_contract",
  "system_initializer",
  "timetable",
@@ -587,7 +592,7 @@ dependencies = [
 [[package]]
 name = "generational_table"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/generational_table?rev=759c8f7acb00f246a635c846ab6414890cf261f8#759c8f7acb00f246a635c846ab6414890cf261f8"
+source = "git+https://github.com/nifeos/generational_table?rev=b68ae45602813ad5487521fc03515fea4f8d2631#b68ae45602813ad5487521fc03515fea4f8d2631"
 
 [[package]]
 name = "generator"
@@ -780,7 +785,6 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "calendar",
  "capability",
  "clock_contract",
  "compositor",
@@ -1118,6 +1122,7 @@ dependencies = [
  "address_space_map",
  "counter_frequency_contract",
  "elf",
+ "startup_page_contract",
  "supervision_contract",
  "user_mode_runtime",
 ]
@@ -1389,6 +1394,7 @@ name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "startup_page_contract",
 ]
 
 [[package]]

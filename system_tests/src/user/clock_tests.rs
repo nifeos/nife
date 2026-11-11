@@ -13,10 +13,9 @@ fn start() -> (clock_service::Wiring, [u64; 5]) {
 /// **The machine finds out what time it is.**
 ///
 /// A PL031 counting seconds at `0x9010000` on aarch64, a Goldfish counting nanoseconds at
-/// `0x101000` on riscv64, and on `x86_64` a CMOS the *kernel* reads and hands over converted
-/// (DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)), because
-/// DECISIONS §121 (what a device capability is when the device has no page) keeps its ports out of
-/// any capability userspace could hold. One binary picks between the first two by `compatible`
+/// `0x101000` on riscv64, and on `x86_64` a CMOS the service reads through a `PortRange` over its
+/// two ports (DECISIONS §130 (the CMOS RTC and the userspace clock service)), so the kernel's
+/// half of this test is only the grant. One binary picks between the first two by `compatible`
 /// string. It is a **plausibility** check (`policy::is_plausible`), since the guest cannot know the
 /// host's clock: a wrong base or offset, swapped Goldfish halves, a unit mix-up, a BCD or 12h
 /// decode slip and a missing century all land outside a 74-year window, as does 1970 plus uptime.
@@ -30,8 +29,7 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     assert_ne!(
         w.kind,
         clock_contract::rtc::NONE,
-        "every machine this suite runs on has an RTC; finding none means the compatible match \
-         (or, on x86_64, the CMOS read) broke",
+        "every machine this suite runs on has an RTC; finding none means the compatible match broke",
     );
     assert_eq!(
         report[1],
@@ -98,7 +96,7 @@ fn a_proposer_can_ask_and_cannot_tell() {
             "backwards, where instants would happen twice",
         ),
     ] {
-        let (got, _) = w.propose_ns(proposed);
+        let (got, _) = w.propose_nanoseconds(proposed);
         assert_eq!(got, want, "proposing {what}");
         assert_eq!(
             w.page().read().generation,
@@ -109,7 +107,7 @@ fn a_proposer_can_ask_and_cannot_tell() {
 
     // And the bounded case it exists to allow: a small correction is accepted, and the
     // provenance says it came from a proposal rather than from a human.
-    let (got, after) = w.propose_ns(now + clock_contract::NS_PER_SECOND / 2);
+    let (got, after) = w.propose_nanoseconds(now + clock_contract::NS_PER_SECOND / 2);
     assert_eq!(got, status::ACCEPTED);
     assert!(after >= now);
     let r = w.page().read();
@@ -135,7 +133,7 @@ fn adjusting_the_wall_clock_leaves_the_monotonic_counter_alone() {
 
     let mono_before = clock_service::monotonic_nanoseconds();
     let wall_before = w.wall_nanoseconds();
-    let (got, wall_after) = w.propose_ns(wall_before + step);
+    let (got, wall_after) = w.propose_nanoseconds(wall_before + step);
     assert_eq!(got, status::ACCEPTED);
     let mono_after = clock_service::monotonic_nanoseconds();
 

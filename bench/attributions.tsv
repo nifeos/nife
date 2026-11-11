@@ -648,3 +648,99 @@ riscv64	f47530910	spawn_reap	+1.16	#3225: generational_table saturates a slot's 
 x86_64	f47530910	spawn_reap	+1.20	#3225: generational_table saturates a slot's generation and skips retired slots on insert
 aarch64	f47530910	spawn_el0	+0.96	#3225: generational_table saturates a slot's generation and skips retired slots on insert
 riscv64	f47530910	spawn_el0	+1.04	#3225: generational_table saturates a slot's generation and skips retired slots on insert
+
+# lane/bench/w45-unexplained-drift: `main`'s gap from 7ea93b038 (the 2026W44 reading) to 81a1cbbc7
+# (2026W45), all three architectures, each candidate merge against its first parent on
+# nightly-2026-11-08 held for the window. Held, 81a1cbbc7 reads the merge queue's rows exactly and
+# 7ea93b038 reads them to within 0.15%, apart from `null_syscall` (+0.35% aarch64, +0.30% riscv64):
+# that is the compiler term from the nightly 7ea93b038 pins, and no line here claims it. Together with
+# #3225's lines above, the merges below account for the window's step to within 0.05% on every row;
+# #3339 (generational_table leaves the tree) moves no row. Every row a merge moved by 0.1% or more.
+# Both costs are -O0 calls: the bench kernel does not inline `EntryName::from_bits`, `to_bits` or
+# the kernel's per-table id adapters, and a lookup on the switch and IPC path makes several.
+# Measured on 81a1cbbc7, not merged: `#[inline(always)]` on `from_bits`, `to_bits` and `eq` alone
+# takes `ipc_rtt` down 2.13% (aarch64), 2.37% (riscv64) and 1.71% (x86_64), and with the kernel's
+# `*_entry` adapters and the four `*PageAddress` accessors as well, 4.00%, 4.34% and 3.72%.
+aarch64	0f49abe22	relay_rtt	+4.86	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	relay_rtt	+5.17	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	relay_rtt	+4.48	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	yield_switch	+4.86	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	yield_switch	+5.17	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	yield_switch	+4.39	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	ipc_rtt	+4.84	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	ipc_rtt	+5.16	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	ipc_rtt	+4.47	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	ctx_switch	+4.51	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	ctx_switch	+4.72	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	tss_iomap_lazy_nop	+4.27	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	broker_rtt	+4.03	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	broker_rtt	+4.25	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	broker_rtt	+3.71	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	call_reply	+4.03	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	call_reply	+4.24	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	call_reply	+3.70	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	ipc_rtt_el0	+3.84	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	ipc_rtt_el0	+4.00	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	sink_throughput	+3.38	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	sink_throughput	+3.56	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	tss_iomap_lazy_switch	+3.50	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	tss_iomap_switch	+3.48	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	spawn_reap	+1.02	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	spawn_reap	+1.11	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	spawn_reap	+1.16	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	spawn_el0	+0.86	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	spawn_el0	+0.94	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	map_new	+0.66	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	map_new	+0.75	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	map_new	+0.87	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	map_el0	+0.25	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	map_el0	+0.28	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	fcedb2ee1	spawn_el0	+0.47	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+riscv64	fcedb2ee1	spawn_el0	+0.49	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+aarch64	fcedb2ee1	relay_rtt	+0.12	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+riscv64	fcedb2ee1	relay_rtt	+0.14	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+x86_64	fcedb2ee1	relay_rtt	+0.16	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+aarch64	fcedb2ee1	ipc_rtt	+0.12	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+riscv64	fcedb2ee1	ipc_rtt	+0.14	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+x86_64	fcedb2ee1	ipc_rtt	+0.16	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+
+# lane/bench/inline-entry-name-at-o0: the net of the pin to generational_table b68ae45602813ad5487521fc03515fea4f8d2631 and the
+# kernel's inline(always) adapters and accessors, measured on this branch's parent with script/bench --check on
+# all three architectures, QEMU 11.1.2, one nightly held. Taken together because the pin also brings the crate's
+# catch-up (a scan cursor, a checked slot), which alone cost +9.6% on ipc_rtt; the inlining alone took -3.6%,
+# and the unchecked widening of the slot on a 64-bit target the rest. Every row that moved by 0.1% or more.
+
+aarch64	d63867b61	broker_rtt	-6.73	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	broker_rtt	-7.20	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	broker_rtt	-5.93	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	call_reply	-6.72	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	call_reply	-7.19	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	call_reply	-5.92	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	ctx_switch	-7.46	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	ctx_switch	-7.93	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	ipc_rtt	-8.03	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	ipc_rtt	-8.71	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	ipc_rtt	-7.14	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	ipc_rtt_el0	-6.42	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	ipc_rtt_el0	-6.81	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	map_el0	-0.48	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	map_el0	-0.52	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	map_new	-1.13	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	map_new	-1.38	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	map_new	-1.41	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	relay_rtt	-8.05	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	relay_rtt	-8.73	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	relay_rtt	-7.15	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	sink_throughput	-5.67	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	sink_throughput	-6.08	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	spawn_el0	-1.58	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	spawn_el0	-1.88	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	spawn_reap	-1.67	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	spawn_reap	-2.04	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	spawn_reap	-1.99	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	tss_iomap_lazy_nop	-6.72	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	tss_iomap_lazy_switch	-5.55	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	tss_iomap_switch	-5.51	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+aarch64	d63867b61	yield_switch	-8.02	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+riscv64	d63867b61	yield_switch	-8.64	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call
+x86_64	d63867b61	yield_switch	-6.90	#3449: generational_table lookups and the kernel's id adapters and page address accessors are inline(always); the bench kernel builds at -O0, where each was a real call

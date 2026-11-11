@@ -147,14 +147,14 @@ fn phases(path: &[u8], tag: &str, nocache: bool, fullsync: bool) {
     unsafe { close(fd) };
     unsafe { unlink(path.as_ptr()) };
 
-    for (name, ns) in [
+    for (name, nanoseconds) in [
         ("seq_write", seq_write),
         ("seq_read", seq_read),
         ("rand_read", rand_read),
         ("rand_write", rand_write),
     ] {
-        let mibs = (UNIT as f64) * 1e9 / ns / (1024.0 * 1024.0);
-        println!("macosfs {tag}_{name} {ns:.0} ns/xfer {} KiB {mibs:.1} MiB/s", UNIT / 1024);
+        let mibs = (UNIT as f64) * 1e9 / nanoseconds / (1024.0 * 1024.0);
+        println!("macosfs {tag}_{name} {nanoseconds:.0} ns/xfer {} KiB {mibs:.1} MiB/s", UNIT / 1024);
     }
 }
 

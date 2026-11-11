@@ -9,6 +9,7 @@ reader, so the move, `script/crate-standalone` and the review packet agree on wh
 """
 import argparse
 import difflib
+import filecmp
 import os
 import re
 import shutil
@@ -252,6 +253,324 @@ def exempts_note(row):
             f'# {todo}\n')
 
 
+FUZZ_MANIFEST = 'fuzz/Cargo.toml'
+# Files in a fixture directory that are tools or prose, not inputs.
+NOT_AN_INPUT = ('.sh', '.md', '.py', '.toml')
+# Output lines of a fuzz run that are safe to show. A crashing run prints its input, and the
+# move lane never reads or quotes one, so everything else of a failed run is withheld.
+FUZZ_SAFE_LINE = re.compile(r'^(SUMMARY: |ERROR: libFuzzer: |error: |warning: unused)')
+
+
+def code_text(src):
+    """Rust source with comments, string literals and character literals blanked out."""
+    out, i, n = [], 0, len(src)
+    while i < n:
+        two = src[i:i + 2]
+        if two == '//':
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+        elif two == '/*':
+            depth, i = 1, i + 2
+            while i < n and depth:
+                if src[i:i + 2] == '/*':
+                    depth, i = depth + 1, i + 2
+                elif src[i:i + 2] == '*/':
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+            out.append(' ')
+        elif (m := re.match(r'b?r(#*)"', src[i:])):
+            end = src.find('"' + m.group(1), i + m.end())
+            i = n if end < 0 else end + 1 + len(m.group(1))
+            out.append(' ')
+        elif src[i] == '"':
+            i += 1
+            while i < n and src[i] != '"':
+                i += 2 if src[i] == '\\' else 1
+            i += 1
+            out.append(' ')
+        elif (m := re.match(r"'(?:\\.[^']*|[^\\'])'", src[i:])):
+            i += m.end()
+            out.append(' ')
+        else:
+            out.append(src[i])
+            i += 1
+    return ''.join(out)
+
+
+def unsafe_files(root, crate):
+    """The crate's tracked Rust files that hold the `unsafe` keyword in code."""
+    files = subprocess.run(['git', '-C', root, 'ls-files', f'crates/{crate}'], capture_output=True,
+                           text=True, check=True).stdout.split()
+    return [f for f in files if f.endswith('.rs') and
+            re.search(r'\bunsafe\b', code_text(open(os.path.join(root, f), errors='replace').read()))]
+
+
+def crate_targets(root, crate):
+    """[(name, path)] of the fuzz targets that exercise this crate and no other crate of the tree.
+
+    A target belongs to the crate when its source names the crate and none of the other path
+    dependencies of `fuzz/Cargo.toml`: one that links several crates tests their combination, and
+    stays where the combination is. The path is relative to `fuzz/`.
+    """
+    try:
+        manifest = tomllib.load(open(os.path.join(root, FUZZ_MANIFEST), 'rb'))
+    except OSError:
+        return [], []
+    others = [d for d, spec in manifest.get('dependencies', {}).items()
+              if isinstance(spec, dict) and 'path' in spec and d != crate]
+    mine, mixed = [], []
+    for b in manifest.get('bin', []):
+        text = code_text(open(os.path.join(root, 'fuzz', b['path']), errors='replace').read())
+        if not re.search(r'\b' + re.escape(crate) + r'\b', text):
+            continue
+        shared = [d for d in others if re.search(r'\b' + re.escape(d) + r'::', text)]
+        if shared:
+            mixed.append(b['name'])
+        else:
+            mine.append((b['name'], b['path']))
+    return mine, mixed
+
+
+def fixture_dirs(root, crate, target):
+    """The crate's fixture directories `script/fuzz` passes to libFuzzer as read-only corpora."""
+    text = open(os.path.join(root, 'script', 'fuzz')).read()
+    found = []
+    for m in re.finditer(r'(?m)^\s*([\w|]+)\)\s*(?:\n\s*)?set -- "\$@"([^;]*?)\s*;;', text):
+        if target in m.group(1).split('|'):
+            found += [t for t in m.group(2).split() if t.startswith(f'crates/{crate}/')]
+    return found
+
+
+def corpus_files(root, crate, target):
+    """[(source path in this tree, name in the corpus)] for one target.
+
+    The seeds committed for the target, then the inputs in each fixture directory `script/fuzz`
+    adds. Only the files directly inside a directory count, as libFuzzer reads them, and a tool or
+    a note beside the inputs does not.
+    """
+    found = []
+    for d in [f'fuzz/seeds/{target}'] + fixture_dirs(root, crate, target):
+        full = os.path.join(root, d)
+        for name in sorted(os.listdir(full)) if os.path.isdir(full) else []:
+            if os.path.isfile(os.path.join(full, name)) and not name.endswith(NOT_AN_INPUT):
+                found.append((os.path.join(full, name), name))
+    return found
+
+
+def seed_scripts(root, targets):
+    """The scripts in fuzz/seeds that write a seed of one of these targets."""
+    directory = os.path.join(root, 'fuzz', 'seeds')
+    return sorted(n for n in os.listdir(directory) if n.endswith('.py') and
+                  any(t in open(os.path.join(directory, n)).read() for t in targets))
+
+
+def readme_sections(path, headings):
+    """The sections of a markdown file whose `## ` heading names one of `headings`, verbatim."""
+    text = open(path).read()
+    parts = re.split(r'(?m)^(?=## )', text)
+    return [p.rstrip('\n') + '\n' for p in parts
+            if p.startswith('## ') and any(h in p.split('\n', 1)[0] for h in headings)]
+
+
+def fuzz_readme(root, crate, names, weekly):
+    """The staged fuzz/README.md: how to run, then the targets' sections from this tree's notes.
+
+    The sections are text about this crate alone, so they move with it. A path into this tree's
+    seed directory becomes the path in the crate's own layout.
+    """
+    head = (f'# Fuzz targets of `{crate}`\n\n'
+            'The targets use cargo-fuzz and need a nightly toolchain. From the repository root:\n\n'
+            '```sh\ncargo install --locked cargo-fuzz\ncargo +nightly fuzz list\n'
+            'cargo +nightly fuzz build\n```\n\n'
+            + ('The weekly workflow runs every target for five minutes. ' if weekly else
+               'The weekly workflow does not run them. ') +
+            'To run one by hand, give libFuzzer a scratch directory first, so that what it finds '
+            'does not land among the committed inputs:\n\n'
+            '```sh\nmkdir -p "$TMPDIR/work"\n'
+            'cargo +nightly fuzz run <target> "$TMPDIR/work" corpus/<target>\n```\n\n'
+            'Each `corpus/<target>` directory holds the inputs a run starts from. A crash input is '
+            'not committed: it becomes a regression test in the crate, beside the code it broke.\n\n')
+    for name in names:
+        copied = [d.replace(f'crates/{crate}/', '') for d in fixture_dirs(root, crate, name)]
+        if copied:
+            head += (f'`corpus/{name}` also holds copies of the inputs in '
+                     + ', '.join(f'`{d}`' for d in copied) + '.\n\n')
+    sections = readme_sections(os.path.join(root, 'notes', 'fuzzing', 'targets.md'),
+                               [f'`{n}`' for n in names])
+    sections += readme_sections(os.path.join(root, 'fuzz', 'seeds', 'README.md'),
+                                [f'`{n}/' for n in names])
+    body = '\n'.join(sections)
+    for name in names:
+        body = body.replace(f'fuzz/seeds/{name}', f'corpus/{name}')
+    body = re.sub(r'fuzz/seeds/(?=[\w-]+\.py)', '', body)
+    body = body.replace('notes/fuzzing/targets.md', 'README.md')
+    return head + moved_source(body, crate)[0]
+
+
+def target_source(text, crate):
+    """A target's source as the crate repository carries it."""
+    text = moved_source(text, crate)[0].replace('notes/fuzzing/targets.md', 'fuzz/README.md')
+    return text
+
+
+def seed_script_source(text, names):
+    """A seed script as it runs from fuzz/: its output goes under corpus/<target>."""
+    text = re.sub(r'fuzz/seeds/(?=[\w-]+\.py)', 'fuzz/', text)
+    for name in names:
+        text = text.replace(f"fuzz/seeds/{name}", f'fuzz/corpus/{name}')
+        text = text.replace(f"os.path.join(here, '{name}'", f"os.path.join(here, 'corpus', '{name}'")
+    return text
+
+
+def fuzz_manifest_text(crate, edition, libfuzzer, targets):
+    bins = ''.join(f'\n[[bin]]\nname = "{n}"\npath = "{p}"\ntest = false\ndoc = false\nbench = false\n'
+                   for n, p in targets)
+    return ('[package]\nname = "fuzz"\nversion = "0.0.0"\npublish = false\n'
+            f'edition = "{edition}"\n\n[package.metadata]\ncargo-fuzz = true\n\n'
+            f'[dependencies]\nlibfuzzer-sys = "{libfuzzer}"\n'
+            f'{crate} = {{ path = ".." }}\n\n[workspace]\nmembers = ["."]\n{bins}')
+
+
+def stage_fuzz(root, crate, into, report):
+    """Stage the crate's fuzz targets in the cargo-fuzz layout under `into`/fuzz.
+
+    Returns (target names, whether the weekly caller may pass `fuzz: true`). The ruling that weekly
+    fuzzing is opt-in applies: only a crate with no `unsafe` code is switched on.
+    """
+    targets, mixed = crate_targets(root, crate)
+    for name in mixed:
+        report('note', 'fuzz', f'{name} links other crates of this tree as well, so it stays')
+    if not targets:
+        report('note', 'fuzz', 'no fuzz target of this crate alone')
+        return [], False
+    names = [n for n, _ in targets]
+    fuzz = os.path.join(into, 'fuzz')
+    manifest = tomllib.load(open(os.path.join(root, FUZZ_MANIFEST), 'rb'))
+    crate_edition = tomllib.load(open(os.path.join(into, 'Cargo.toml'), 'rb'))['package'].get('edition', '2021')
+    libfuzzer = manifest['dependencies']['libfuzzer-sys']
+    os.makedirs(os.path.join(fuzz, 'fuzz_targets'))
+    open(os.path.join(fuzz, 'Cargo.toml'), 'w').write(
+        fuzz_manifest_text(crate, crate_edition, libfuzzer, targets))
+    open(os.path.join(fuzz, '.gitignore'), 'w').write('target/\nartifacts/\ncoverage/\n')
+    counts = []
+    for name, path in targets:
+        text = open(os.path.join(root, 'fuzz', path), errors='replace').read()
+        open(os.path.join(fuzz, path), 'w').write(target_source(text, crate))
+        corpus = os.path.join(fuzz, 'corpus', name)
+        os.makedirs(corpus)
+        files = corpus_files(root, crate, name)
+        for source, base in files:
+            shutil.copy2(source, os.path.join(corpus, base))
+        counts.append(f'{name} ({len(files)} inputs)')
+    for script in seed_scripts(root, names):
+        text = open(os.path.join(root, 'fuzz', 'seeds', script)).read()
+        open(os.path.join(fuzz, script), 'w').write(seed_script_source(text, names))
+    report('ok', 'fuzz', 'staged fuzz/ with ' + ', '.join(counts))
+    for dictionary in (f'fuzz/dictionaries/{n}.dict' for n in names):
+        if os.path.exists(os.path.join(root, dictionary)):
+            report('note', 'fuzz', f'{dictionary} is not staged: the weekly job passes no dictionary')
+    unsafe = unsafe_files(root, crate)
+    open(os.path.join(fuzz, 'README.md'), 'w').write(fuzz_readme(root, crate, names, not unsafe))
+    if unsafe:
+        report('note', 'fuzz opt-in', f'weekly fuzz stays off: unsafe code in {", ".join(unsafe[:3])}'
+                                      + (' and more' if len(unsafe) > 3 else ''))
+        return names, False
+    report('ok', 'fuzz opt-in', 'no unsafe code in the crate, so the weekly caller passes fuzz: true')
+    return names, True
+
+
+def turn_on_weekly_fuzz(into, report):
+    path = os.path.join(into, '.github', 'workflows', 'weekly.yml')
+    text = open(path).read() if os.path.exists(path) else ''
+    if 'fuzz: false' not in text:
+        report('FAIL', 'fuzz opt-in', 'the staged weekly caller has no `fuzz: false` line to turn on')
+        return
+    open(path, 'w').write(text.replace('fuzz: false', 'fuzz: true', 1))
+
+
+def fuzz_dry_run(into, names, work, report):
+    """Build every staged target, then run each once over its corpus (`-runs=0`).
+
+    A failed run prints its input, so its output is filtered down to the lines that name no input.
+    """
+    fuzz = os.path.join(into, 'fuzz')
+    env = dict(os.environ, CARGO_TARGET_DIR=os.path.join(work, 'fuzz-target'))
+    env.pop('RUSTUP_TOOLCHAIN', None)
+    code, out = run(['cargo', '+nightly', 'fuzz', 'build'], into, env)
+    if code:
+        report('FAIL', 'fuzz build', f'cargo +nightly fuzz build: {tail(out)}')
+        return
+    report('ok', 'fuzz build', f'{len(names)} target(s) built with cargo +nightly fuzz build')
+    for name in names:
+        corpus = os.path.join(fuzz, 'corpus', name)
+        before = sorted(os.listdir(corpus))
+        code, out = run(['cargo', '+nightly', 'fuzz', 'run', name, os.path.join('fuzz', 'corpus', name),
+                         '--', '-runs=0'], into, env)
+        shown = ' | '.join(line[:200] for line in out.splitlines() if FUZZ_SAFE_LINE.match(line))
+        artifacts = os.path.join(fuzz, 'artifacts')
+        if os.path.isdir(artifacts):
+            shutil.rmtree(artifacts)
+        if code:
+            report('FAIL', 'fuzz run', f'{name} over its corpus, exit {code}; the output is withheld '
+                                       'because it holds the input' + (f': {shown}' if shown else ''))
+        elif sorted(os.listdir(corpus)) != before:
+            report('FAIL', 'fuzz run', f'{name} changed its corpus directory during a -runs=0 pass')
+        else:
+            report('ok', 'fuzz run', f'{name} once over its {len(before)} corpus input(s), -runs=0')
+
+
+def seed_script_reproduces(into, names, work, report):
+    """Run each staged seed script in a scratch copy and compare its files with the staged corpus."""
+    fuzz = os.path.join(into, 'fuzz')
+    for script in sorted(n for n in os.listdir(fuzz) if n.endswith('.py')):
+        scratch = os.path.join(work, 'seed-script')
+        shutil.rmtree(scratch, ignore_errors=True)
+        os.makedirs(scratch)
+        shutil.copy(os.path.join(fuzz, script), os.path.join(scratch, script))
+        code, out = run([sys.executable, '-I', os.path.join(scratch, script)], scratch)
+        if code:
+            report('FAIL', 'seed script', f'{script}: {tail(out)}')
+            continue
+        made = [os.path.join(d, f) for d, _s, fs in os.walk(os.path.join(scratch, 'corpus')) for f in fs]
+        bad = [os.path.relpath(m, scratch) for m in made
+               if not os.path.exists(os.path.join(fuzz, os.path.relpath(m, scratch)))
+               or not filecmp.cmp(m, os.path.join(fuzz, os.path.relpath(m, scratch)), shallow=False)]
+        if not made or bad:
+            report('FAIL', 'seed script', f'{script} writes {len(made)} file(s) and {len(bad)} differ from the '
+                                          'staged corpus' if made else f'{script} writes no file under corpus/')
+        else:
+            report('ok', 'seed script', f'{script} rebuilds {len(made)} staged input(s) byte for byte')
+
+
+def stays_in_fuzz(root, crate):
+    """Whether a target that does not move still links the crate."""
+    manifest = tomllib.load(open(os.path.join(root, FUZZ_MANIFEST), 'rb'))
+    leaving = {n for n, _ in crate_targets(root, crate)[0]}
+    return any(b['name'] not in leaving and re.search(
+        r'\b' + re.escape(crate) + r'\b',
+        code_text(open(os.path.join(root, 'fuzz', b['path']), errors='replace').read()))
+        for b in manifest.get('bin', []))
+
+
+def fuzz_removals(root, crate, names):
+    """Print the nife-side removals that follow from the targets moving."""
+    print('crate-move: fuzz targets that moved; the same nife pull request removes them:')
+    for n in names:
+        print(f'  fuzz/Cargo.toml: delete the [[bin]] section of {n}')
+    print('  fuzz/fuzz_targets/: git rm ' + ' '.join(f'{n}.rs' for n in names))
+    print('  script/fuzz: drop ' + ', '.join(names) + ' from `targets=` and from the --list output'
+          + (', and the fixtures case for ' + ', '.join(sorted({n for n in names if fixture_dirs(root, crate, n)}))
+             if any(fixture_dirs(root, crate, n) for n in names) else ''))
+    seeds = [n for n in names if os.path.isdir(os.path.join(root, 'fuzz', 'seeds', n))]
+    if seeds:
+        print('  fuzz/seeds/: git rm -r ' + ' '.join(seeds))
+    for script in seed_scripts(root, names):
+        print(f'  fuzz/seeds/{script}: git rm, with its paragraph and the rows of the moved targets in fuzz/seeds/README.md')
+    print('  notes/fuzzing/targets.md: delete the section of ' + ', '.join(names))
+    print('  fuzz/Cargo.lock: refresh with `cargo update --workspace` in fuzz/')
+
+
 def run(argv, cwd, env=None, stdin=None):
     p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, input=stdin)
     return p.returncode, (p.stdout + p.stderr).strip()
@@ -375,7 +694,10 @@ def stage(root, crate, into, tree, sha, report):
                             f'falsification records moved to the head of their comments in {records} '
                             'files, repository set in Cargo.toml')
     check_patches(into, report)
-    return manifest, targets
+    moved, opted_in = stage_fuzz(root, crate, into, report)
+    if opted_in:
+        turn_on_weekly_fuzz(into, report)
+    return manifest, targets, moved
 
 
 def check_patches(into, report):
@@ -439,13 +761,15 @@ def checks(into, tree, rev, report):
         report('ok', 'mentions nife', 'none')
 
 
-def follow_up(root, crate, version):
+def follow_up(root, crate, version, moved=()):
     print('crate-move: the nife-side pull request, once the repository holds the tag'
           f' v{version} (rev is that tag\'s commit):')
     line = (f'{crate} = {{ version = "{version}", git = "{REPOSITORY_URL.format(crate=crate)}", '
             'rev = "<commit of the tag>" }')
     for manifest, table, spec in consumers(root, crate):
-        if table == 'workspace.members':
+        if manifest == FUZZ_MANIFEST and table == 'dependencies' and moved and not stays_in_fuzz(root, crate):
+            print(f'  {manifest} [{table}]: delete the {crate} line, since no target left here links it')
+        elif table == 'workspace.members':
             print(f'  {manifest}: drop "crates/{crate}" from [workspace] members')
         else:
             extra = {k: v for k, v in spec.items() if k not in ('path', 'version')}
@@ -453,12 +777,16 @@ def follow_up(root, crate, version):
             print(f'  {manifest} [{table}]: {line}{note}')
     if baseline_row(root, crate) is not None:
         print(f'  {BASELINE}: delete the row for {crate}')
+    covered = ('script/fuzz', 'fuzz/seeds/README.md') if moved else ()
     rest = [f for f in mentions(root, crate)
-            if not f.endswith(('Cargo.toml', 'Cargo.lock')) and f != BASELINE]
+            if not f.endswith(('Cargo.toml', 'Cargo.lock')) and f != BASELINE and f not in covered
+            and not (moved and f.startswith('fuzz/fuzz_targets/'))]
     if rest:
         print('crate-move: other files that name the crate, each read in the same pull request:')
         for f in rest:
             print(f'  {f}')
+    if moved:
+        fuzz_removals(root, crate, moved)
 
 
 def patch_selftest():
@@ -496,8 +824,71 @@ def patch_selftest():
         assert regenerate_patch(missing, 'x', source)[1], 'a patch that does not apply is a problem'
 
 
+def fuzz_selftest():
+    """The staging picks a crate's own targets, gates the weekly caller on `unsafe`, and stays inert otherwise."""
+    assert re.search(r'\bunsafe\b', code_text('fn f() { unsafe { g() } }'))
+    blanked = code_text('// unsafe\n/* unsafe /* unsafe */ */ let a = "unsafe"; let b = r#"un"safe"#; let c = \'"\'; ok')
+    assert 'unsafe' not in blanked and 'ok' in blanked, blanked
+    assert 'unsafe' in code_text('/// doc\nunsafe fn f() {}')
+    manifest = ('[dependencies]\nlibfuzzer-sys = "0.4"\nx = { path = "../crates/x" }\n'
+                'y = { path = "../crates/y" }\n'
+                '[[bin]]\nname = "x_a"\npath = "fuzz_targets/x_a.rs"\n'
+                '[[bin]]\nname = "x_with_y"\npath = "fuzz_targets/x_with_y.rs"\n'
+                '[[bin]]\nname = "y_only"\npath = "fuzz_targets/y_only.rs"\n')
+    sources = {'x_a': 'use x::F;\n// notes/fuzzing/targets.md\n', 'x_with_y': 'use x::F;\nuse y::G;\n',
+               'y_only': 'use y::G;\n'}
+    with tempfile.TemporaryDirectory(prefix='crate-move-fuzz-selftest-') as tmp:
+        for d in ('fuzz/fuzz_targets', 'fuzz/seeds/x_a', 'crates/x/tests/fixtures', 'crates/x/src', 'script'):
+            os.makedirs(os.path.join(tmp, d))
+        open(os.path.join(tmp, FUZZ_MANIFEST), 'w').write(manifest)
+        for name, text in sources.items():
+            open(os.path.join(tmp, 'fuzz', 'fuzz_targets', name + '.rs'), 'w').write(text)
+        open(os.path.join(tmp, 'script', 'fuzz'), 'w').write(
+            'case "$target" in\n    other|x_a)\n        set -- "$@" crates/x/tests/fixtures crates/y/tests/fixtures ;;\n'
+            '    y_only) set -- "$@" crates/y/tests/fixtures ;;\nesac\n')
+        for path in ('fuzz/seeds/x_a/s.bin', 'crates/x/tests/fixtures/f.bin', 'crates/x/tests/fixtures/make.sh',
+                     'crates/x/tests/fixtures/NOTE.md'):
+            open(os.path.join(tmp, path), 'w').write('0')
+        open(os.path.join(tmp, 'crates/x/src/lib.rs'), 'w').write('//! no unsafe here\npub fn f() {}\n')
+        mine, mixed = crate_targets(tmp, 'x')
+        assert mine == [('x_a', 'fuzz_targets/x_a.rs')] and mixed == ['x_with_y'], (mine, mixed)
+        assert fixture_dirs(tmp, 'x', 'x_a') == ['crates/x/tests/fixtures'], fixture_dirs(tmp, 'x', 'x_a')
+        assert fixture_dirs(tmp, 'x', 'y_only') == []
+        assert sorted(n for _p, n in corpus_files(tmp, 'x', 'x_a')) == ['f.bin', 's.bin'], corpus_files(tmp, 'x', 'x_a')
+        for args in (['init', '-q'], ['add', '--all'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 't']):
+            run(['git'] + args, tmp)
+        assert unsafe_files(tmp, 'x') == []
+        open(os.path.join(tmp, 'crates/x/src/lib.rs'), 'a').write('pub unsafe fn g() {}\n')
+        run(['git', 'add', '--all'], tmp)
+        assert unsafe_files(tmp, 'x') == ['crates/x/src/lib.rs']
+    toml = tomllib.loads(fuzz_manifest_text('x', '2024', '0.4', [('x_a', 'fuzz_targets/x_a.rs')]))
+    assert toml['dependencies']['x'] == {'path': '..'} and toml['bin'][0]['name'] == 'x_a'
+    assert toml['package']['metadata']['cargo-fuzz'] and toml['workspace']['members'] == ['.']
+    assert 'fuzz/README.md' in target_source('// notes/fuzzing/targets.md\n', 'x')
+    assert seed_script_source("fuzz/seeds/t/a.img; os.path.join(here, 't', 'a'); python3 fuzz/seeds/m.py", ['t']) \
+        == "fuzz/corpus/t/a.img; os.path.join(here, 'corpus', 't', 'a'); python3 fuzz/m.py"
+    with tempfile.TemporaryDirectory(prefix='crate-move-fuzz-selftest-') as tmp:
+        doc = os.path.join(tmp, 'doc.md')
+        open(doc, 'w').write('# T\n\n## `a`\n\nA.\n\n## `b`\n\nB.\n\n## `a/s.bin`\n\nS.\n')
+        assert readme_sections(doc, ['`a`', '`a/']) == ['## `a`\n\nA.\n', '## `a/s.bin`\n\nS.\n']
+        os.makedirs(os.path.join(tmp, '.github', 'workflows'))
+        weekly = os.path.join(tmp, '.github', 'workflows', 'weekly.yml')
+        failures = []
+        turn_on_weekly_fuzz(tmp, lambda *a: failures.append(a))
+        assert failures and failures[0][0] == 'FAIL', failures
+        open(weekly, 'w').write('with:\n  fuzz: false\n')
+        turn_on_weekly_fuzz(tmp, lambda *a: failures.append(a))
+        assert open(weekly).read() == 'with:\n  fuzz: true\n'
+    crash = ('INFO: Seed: 1\nERROR: libFuzzer: deadly signal\nSUMMARY: libFuzzer: deadly signal\n'
+             'artifact_prefix=./; Test unit written to ./crash-1\nBase64: AAAA\n')
+    assert [line for line in crash.splitlines() if FUZZ_SAFE_LINE.match(line)] == \
+        ['ERROR: libFuzzer: deadly signal', 'SUMMARY: libFuzzer: deadly signal']
+    print('crate_move fuzz selftest: ok')
+
+
 def selftest():
     patch_selftest()
+    fuzz_selftest()
     src = '//! Doc.\n//!\n//! Name: ratified 2026-11-01 (UTC), the\n//!   reason.\n\npub fn f() {}\n'
     assert crate_release.strip_name_blocks(src, remove=True) == '//! Doc.\n\npub fn f() {}\n'
     assert crate_release.strip_name_blocks(src).count('\n') == src.count('\n')
@@ -555,16 +946,20 @@ def main(argv):
     print(f'crate-move: {args.crate}, a dry run into {into}')
     tree, sha, rev = template_tree(args, work)
     report('ok', 'template', f'{TEMPLATE_URL} at {rev} ({sha})')
-    manifest, targets = stage(root, args.crate, into, tree, sha, report)
+    manifest, targets, moved = stage(root, args.crate, into, tree, sha, report)
     if args.no_build:
         report('note', 'build', 'skipped (--no-build); the staged tree has no Cargo.lock')
     else:
         build(into, manifest, targets, work, report)
+        if moved:
+            fuzz_dry_run(into, moved, work, report)
+    if moved:
+        seed_script_reproduces(into, moved, work, report)
     run(['git', 'init', '--quiet', '--initial-branch=main'], into)
     run(['git', 'add', '--all'], into)
     checks(into, tree, rev, report)
     shutil.rmtree(work, ignore_errors=True)
-    follow_up(root, args.crate, manifest.get('package', {}).get('version', '0.1.0'))
+    follow_up(root, args.crate, manifest.get('package', {}).get('version', '0.1.0'), moved)
     print(f'crate-move: staged in {into}, with git initialized and every file added, nothing committed;'
           ' no repository was created and nothing was pushed')
     print(f'crate-move: {args.crate}: ' + ('clean' if not failures else

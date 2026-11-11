@@ -80,7 +80,7 @@ pub const ATTEMPTS: u32 = 3;
 /// The gap between attempts. Milliseconds rather than NTP's 64 seconds, because this client is still
 /// one-shot (see the module docs). Asleep on a timer since milestone 106, whose resolution is the
 /// 10 ms scheduler tick, so the gap is in practice one tick.
-const RETRY_GAP_NS: u64 = 2 * 1_000_000;
+const RETRY_GAP_NANOSECONDS: u64 = 2 * 1_000_000;
 
 /// Where this client maps the shared socket frame in its own address space. Above the program's
 /// segments; the same address `socket_test_client` uses, and each address space is its own. The
@@ -283,8 +283,8 @@ fn poll_gap() {
     let timer = TIMER.load(Relaxed);
     if timer != u64::MAX {
         let ticks = abi::timer::counter_ticks_for(
-            RETRY_GAP_NS / 1_000_000_000,
-            (RETRY_GAP_NS % 1_000_000_000) as u32,
+            RETRY_GAP_NANOSECONDS / 1_000_000_000,
+            (RETRY_GAP_NANOSECONDS % 1_000_000_000) as u32,
             cntfrq(),
         );
         if sleep_until(
@@ -296,7 +296,7 @@ fn poll_gap() {
             return;
         }
     }
-    let deadline = monotonic_nanoseconds() + RETRY_GAP_NS;
+    let deadline = monotonic_nanoseconds() + RETRY_GAP_NANOSECONDS;
     while monotonic_nanoseconds() < deadline {
         yield_now();
     }

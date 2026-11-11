@@ -121,6 +121,7 @@ static USER_SPACES: crate::sync::InterruptSafeMutex<
 /// is still named by a `u64` across the kernel, and this module is the one edge where that word
 /// becomes the registry's `EntryName`. It goes when `Object::AddressSpace` carries the
 /// `EntryName` itself.
+#[inline(always)]
 const fn space_entry(name: u64) -> generational_table::EntryName<Registered> {
     generational_table::EntryName::from_bits(name)
 }

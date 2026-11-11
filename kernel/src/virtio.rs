@@ -511,6 +511,7 @@ struct Devices {
 /// The device table's typed name for a device id. A temporary adapter: a device is still named
 /// by a `u64` across the kernel, and this is the one edge where that word becomes the table's
 /// `EntryName`. It goes when the device id is that `EntryName` itself.
+#[inline(always)]
 const fn device_entry(id: u64) -> generational_table::EntryName<Device> {
     generational_table::EntryName::from_bits(id)
 }
