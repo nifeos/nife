@@ -531,7 +531,7 @@ mod tests {
     }
 
     #[test]
-    fn a_512_mib_volume_has_enough_clusters_to_be_fat32() {
+    fn a_512_mebibyte_volume_has_enough_clusters_to_be_fat32() {
         let v = volume();
         assert!(
             v.clusters() >= MINIMUM_FAT32_CLUSTERS,
@@ -723,8 +723,8 @@ mod tests {
     fn the_data_area_begins_on_a_cluster_boundary() {
         // A range of sizes, because the alignment depends on the table's length and the table's
         // length depends on the size.
-        for mib in [300u64, 301, 400, 512, 700, 1024, 4096] {
-            let sectors = mib * 1024 * 2;
+        for mebibytes in [300u64, 301, 400, 512, 700, 1024, 4096] {
+            let sectors = mebibytes * 1024 * 2;
             let v = VolumeLayout::new(
                 sectors,
                 2048,
@@ -734,11 +734,11 @@ mod tests {
                 "BOOTX64.EFI",
                 &mut NoClock,
             )
-            .unwrap_or_else(|e| panic!("{mib} MiB: {e:?}"));
+            .unwrap_or_else(|e| panic!("{mebibytes} MiB: {e:?}"));
             assert_eq!(
                 v.first_data_sector() % u64::from(SECTORS_PER_CLUSTER),
                 0,
-                "{mib} MiB: data area at sector {}",
+                "{mebibytes} MiB: data area at sector {}",
                 v.first_data_sector()
             );
             assert_eq!(v.file_first_sector() % u64::from(SECTORS_PER_CLUSTER), 0);

@@ -12,7 +12,7 @@ use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccess
 /// A controller's register window in the direct map, and the counter as a microsecond clock.
 pub(crate) struct Window {
     base: usize,
-    hz: u64,
+    hertz: u64,
 }
 
 impl Window {
@@ -27,7 +27,7 @@ impl Window {
     pub unsafe fn new(phys: u64) -> Window {
         Window {
             base: crate::arch::mmu::phys_to_virt(phys) as usize,
-            hz: crate::arch::timer::frequency().max(1),
+            hertz: crate::arch::timer::frequency().max(1),
         }
     }
 }
@@ -55,7 +55,7 @@ impl RegisterWindowAndClock for Window {
 
     fn now_microseconds(&mut self) -> u64 {
         // In 128 bits so a counter that has run for days cannot overflow the multiplication.
-        (u128::from(crate::arch::timer::now()) * 1_000_000 / u128::from(self.hz)) as u64
+        (u128::from(crate::arch::timer::now()) * 1_000_000 / u128::from(self.hertz)) as u64
     }
 }
 

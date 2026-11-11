@@ -132,11 +132,11 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpRe
 pub(crate) struct CardClock {
     pub before: u32,
     pub after: u32,
-    pub parent_hz: u64,
-    pub hz: u32,
+    pub parent_hertz: u64,
+    pub hertz: u32,
 }
 
-/// Run an SD/MMC controller's card clock at no more than `want_hz` (the tree's
+/// Run an SD/MMC controller's card clock at no more than `want_hertz` (the tree's
 /// `assigned-clock-rates`), and say what rate it runs at, computed from the silicon's own words.
 /// radon's firmware leaves the divider at 2, so the clock the tree calls 50 MHz runs at 198 MHz.
 /// Gated while the divider moves, so the controller never sees a half-switched clock.
@@ -150,7 +150,7 @@ pub(crate) unsafe fn set_card_clock(
     crg: usize,
     syscon: usize,
     controller: usize,
-    want_hz: u32,
+    want_hertz: u32,
 ) -> CardClock {
     use jh7110_clock_and_reset::{
         SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0,
@@ -164,10 +164,10 @@ pub(crate) unsafe fn set_card_clock(
     // SAFETY: the two windows are this function's contract. The clock chain's words are read-only
     // status words at aligned offsets inside them; then the card clock's own word in the CRG: a
     // read, two stores that keep every field but the enable and the divider, and a read back.
-    let (parent_hz, before, after) = unsafe {
+    let (parent_hertz, before, after) = unsafe {
         let word =
             |base: usize, offset: usize| core::ptr::read_volatile((base + offset) as *const u32);
-        let parent_hz = advanced_extensible_interface_configuration_0_hertz(&jh7110_clock_and_reset::InterIntegratedCircuitClockWords {
+        let parent_hertz = advanced_extensible_interface_configuration_0_hertz(&jh7110_clock_and_reset::InterIntegratedCircuitClockWords {
             bus_root: word(crg, SYSTEM_CLOCK_BUS_ROOT as usize * 4),
             advanced_extensible_interface_configuration_0: word(crg, SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0 as usize * 4),
             system_top_group_advanced_extensible_interface_advanced_high_performance_bus: word(crg, SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS as usize * 4),
@@ -177,17 +177,17 @@ pub(crate) unsafe fn set_card_clock(
             phase_locked_loop_2_pre_divider_word: word(syscon, 0x34),
         });
         let before = core::ptr::read_volatile(reg);
-        let div = sd_card_divider_for(parent_hz, u64::from(want_hz));
+        let div = sd_card_divider_for(parent_hertz, u64::from(want_hertz));
         let gated = with_divider(before & !CLOCK_ENABLE, div);
         core::ptr::write_volatile(reg, gated);
         core::ptr::write_volatile(reg, gated | (before & CLOCK_ENABLE));
-        (parent_hz, before, core::ptr::read_volatile(reg))
+        (parent_hertz, before, core::ptr::read_volatile(reg))
     };
     let div = u64::from(clock_divider(after).max(1));
     CardClock {
         before,
         after,
-        parent_hz,
-        hz: (parent_hz / div) as u32,
+        parent_hertz,
+        hertz: (parent_hertz / div) as u32,
     }
 }

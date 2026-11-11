@@ -49,7 +49,7 @@ boot hart, before `init` arms the first deadline. `crates/machine_discovery`'s `
 It is a separate call from `init` because `init` also runs on every secondary, which has no device
 tree pointer. The counter is machine-wide, so the boot hart's reading serves every hart.
 
-`TIMEBASE_HZ` is zero until that read, and the readers assert it nonzero. A boot that never read
+`TIMEBASE_HERTZ` is zero until that read, and the readers assert it nonzero. A boot that never read
 the machine panics, rather than running quietly at QEMU's 10 MHz on a board with another rate. A
 timer at the wrong rate preempts at the wrong rate and returns from `sleep` at the wrong time, and
 nothing reports a fault. `frequency_checked` is the one reader that does not panic: the timebase

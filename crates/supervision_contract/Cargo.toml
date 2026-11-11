@@ -12,3 +12,5 @@ workspace = true
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): `CHILD_STACK_VA`
 # is the map's `STACK_TOP_PAGE`, so neither can move without the other.
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
+# The window a child's startup page lists, which `ChildEndowment::windows` carries.
+startup_page_contract = { version = "0.1.0", path = "../startup_page_contract" }

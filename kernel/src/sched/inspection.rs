@@ -541,9 +541,9 @@ fn dump_thread_wait(t: &Thread) {
 
 /// [`dump_threads`]'s line for the rendezvous named `name`, printed only when it has a waiter.
 fn dump_rendezvous(name: u64, ep: &Rendezvous) {
-    let (ns, nr, np) = ep.debug_counts();
-    if ns != 0 || nr != 0 || np != 0 {
-        crate::println!("  ep={name:#06x} senders={ns} receivers={nr} pending={np}");
+    let (senders, nr, np) = ep.debug_counts();
+    if senders != 0 || nr != 0 || np != 0 {
+        crate::println!("  ep={name:#06x} senders={senders} receivers={nr} pending={np}");
     }
 }
 

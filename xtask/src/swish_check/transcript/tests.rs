@@ -9,13 +9,13 @@ fn the_job_pool_check_reads_free_as_ci_printed_it() {
     let leaked = "$ free\n                total        used        free\n\
                   Mem:        262144       84292      177852\n\
                   Yours:        2688         960        1728\n";
-    assert_eq!(super::yours_used_kib(leaked), Some(960));
-    assert!(super::yours_used_kib(leaked).unwrap() > super::YOURS_CEILING_KIB);
+    assert_eq!(super::yours_used_kibibytes(leaked), Some(960));
+    assert!(super::yours_used_kibibytes(leaked).unwrap() > super::YOURS_CEILING_KIBIBYTES);
     // The same line after the fix, measured locally on aarch64 on 2026-10-27 (UTC): the shell's
     // static pages and `free` alone.
     let whole = "Yours:        7296         268        7028\n";
-    assert!(super::yours_used_kib(whole).unwrap() <= super::YOURS_CEILING_KIB);
-    assert_eq!(super::yours_used_kib("no such row\n"), None);
+    assert!(super::yours_used_kibibytes(whole).unwrap() <= super::YOURS_CEILING_KIBIBYTES);
+    assert_eq!(super::yours_used_kibibytes("no such row\n"), None);
 }
 
 /// **The transcript milestone 230's first CI step produced**, copied out of run 33702132439

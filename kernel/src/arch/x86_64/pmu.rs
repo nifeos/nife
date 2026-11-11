@@ -194,7 +194,7 @@ pub fn initialize() {
 fn check_window_ticks() -> u64 {
     const FALLBACK: u64 = 10_000_000;
     match super::timer::frequency_checked() {
-        Some(hz) => hz / 100,
+        Some(hertz) => hertz / 100,
         None => FALLBACK,
     }
 }

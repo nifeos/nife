@@ -61,9 +61,9 @@ fn main() {
     for _ in 0..iters {
         round_trip(&mut b);
     }
-    let ns = t.elapsed().as_nanos() as f64 / iters as f64;
+    let nanoseconds = t.elapsed().as_nanos() as f64 / iters as f64;
     unsafe { close(p2c[1]) }; // let the child see EOF and exit
     let operating_system = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
-    println!("{operating_system} ipc_rtt (pipe round trip, 2 processes): {ns:.1} ns/iter  \
+    println!("{operating_system} ipc_rtt (pipe round trip, 2 processes): {nanoseconds:.1} ns/iter  \
     (iters={iters})");
 }

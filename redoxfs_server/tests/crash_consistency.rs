@@ -42,7 +42,7 @@ fn named(name: &str) -> NameCopy {
 /// The image size the fixture is built at. Big enough for the record-spanning write below to
 /// copy-on-write itself several times over, small enough that cloning it once per fault point is
 /// cheap: the sweeps below do that a few hundred times.
-const IMAGE_MIB: usize = 8;
+const IMAGE_MEBIBYTES: usize = 8;
 
 /// The names the workload touches. A snapshot reads all of them, so a file that should not exist
 /// yet is part of the state rather than something the test forgets to look at.
@@ -194,7 +194,7 @@ struct Recorded {
 fn record_workload() -> Recorded {
     // The fixture, built the way the running system's is: the host tool creates the filesystem and
     // puts the files in, and the server only ever opens it.
-    let mut fs = FileSystem::create(BlockDisk(MemIo(blank_image(IMAGE_MIB))), None, 0, 0)
+    let mut fs = FileSystem::create(BlockDisk(MemIo(blank_image(IMAGE_MEBIBYTES))), None, 0, 0)
         .expect("mkfs the fixture");
     fs.tx(|transaction| {
         for (name, body) in [
