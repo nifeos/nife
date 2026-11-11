@@ -147,6 +147,24 @@ fn is_host_bridge_present() -> bool {
     true
 }
 
+/// Size the BARs of `bdf` with [`pci::read_bars`], saying which ones it refused and why. A
+/// refused BAR is absent from the result, so a driver that needs it finds no BAR there.
+fn read_bars(bdf: Bdf) -> [Option<Bar>; 6] {
+    pci::read_bars(
+        bdf,
+        &mut |b, o| cfg_read32(b, o),
+        &mut |b, o, v| cfg_write32(b, o, v),
+        &mut |index, reason| {
+            crate::println!(
+                "  pci: {:02x}:{:02x}.{} BAR{index} refused ({reason:?}); leaving it out",
+                bdf.bus,
+                bdf.dev,
+                bdf.func,
+            );
+        },
+    )
+}
+
 /// Place every unassigned BAR of `bdf` at a size-aligned address drawn from the shared cursor,
 /// writing the config-space BAR registers. Returns false (after saying so) if the window is
 /// exhausted.
@@ -166,7 +184,10 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
         if bar.base != 0
             && let Some(lo) = mapped_lo
             && bar.base >= lo
-            && bar.base + bar.size <= mapped_hi
+            && bar
+                .base
+                .checked_add(bar.size)
+                .is_some_and(|end| end <= mapped_hi)
         {
             continue; // already placed, and inside memory this kernel actually mapped
         }
@@ -178,13 +199,17 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
         let align = bar.size.max(0x10);
         let base = loop {
             let cur = BAR_NEXT.load(Ordering::Relaxed);
-            let base = cur.next_multiple_of(align);
-            if base + bar.size > BAR_LIMIT.load(Ordering::Relaxed) {
+            let placed = cur
+                .checked_next_multiple_of(align)
+                .and_then(|base| Some((base, base.checked_add(bar.size)?)));
+            let Some((base, end)) =
+                placed.filter(|&(_, end)| end <= BAR_LIMIT.load(Ordering::Relaxed))
+            else {
                 crate::println!("  pci: BAR window exhausted; cannot place BAR{i}");
                 return false;
-            }
+            };
             if BAR_NEXT
-                .compare_exchange(cur, base + bar.size, Ordering::Relaxed, Ordering::Relaxed)
+                .compare_exchange(cur, end, Ordering::Relaxed, Ordering::Relaxed)
                 .is_ok()
             {
                 break base;
@@ -215,7 +240,13 @@ fn overlaps_ram(lo: u64, hi: u64) -> bool {
 /// routing interrupts".
 fn adopt(bdf: Bdf, index: usize, bar: &pci::Bar) -> bool {
     let lo = bar.base & !(PAGE_SIZE - 1);
-    let hi = (bar.base + bar.size).next_multiple_of(PAGE_SIZE);
+    let Some(hi) = bar
+        .base
+        .checked_add(bar.size)
+        .and_then(|end| end.checked_next_multiple_of(PAGE_SIZE))
+    else {
+        return false;
+    };
     if overlaps_ram(lo, hi) {
         crate::println!(
             "  pci: {:02x}:{:02x}.{} BAR{index} at {:#x} overlaps RAM; moving it",
@@ -561,9 +592,7 @@ fn find_virtio_bdf(modern: u16, transitional: Option<u16>, kind: &str) -> Option
 /// 4. only then set Memory-Space Enable, and Bus-Master last: DMA permission is granted at the
 ///    final moment, after the transport the confinement layer owns is fully described.
 fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -571,7 +600,8 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
     let resolve = |bars: &[Option<Bar>; 6], capability: &VirtioCapability| -> Option<u64> {
         let bar = bars.get(capability.bar as usize)?.as_ref()?;
         (u64::from(capability.offset) + u64::from(capability.length) <= bar.size)
-            .then(|| bar.base + u64::from(capability.offset))
+            .then(|| bar.base.checked_add(u64::from(capability.offset)))
+            .flatten()
     };
     let (mut common, mut notify_base, mut notify_mult, mut isr) = (None, None, 0u32, None);
     let mut device_config = None;
@@ -826,9 +856,7 @@ pub(crate) fn find_nvme_device() -> Option<PciNvmeDevice> {
     });
     let bdf = found?;
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -888,9 +916,7 @@ pub(crate) fn find_xhci_device() -> Option<PciXhciDevice> {
     );
     let bdf = found?;
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -980,9 +1006,7 @@ pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
     );
     let (bdf, device) = found?;
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -1032,9 +1056,7 @@ pub(crate) fn initialize_iommu() {
     );
     let Some(bdf) = found else { return };
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         crate::println!("  pci: could not place the IOMMU's BAR; leaving the IOMMU off");
         return;

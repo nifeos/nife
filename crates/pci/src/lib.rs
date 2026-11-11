@@ -56,8 +56,8 @@ pub const INTERRUPT_PIN: u64 = 0x3d;
 /// **Header type 1: a PCI-to-PCI bridge**, which is what a PCIe root port and every switch port
 /// present themselves as. The low seven bits of [`HEADER_TYPE`] are the layout code (0 an endpoint,
 /// 1 a bridge, 2 the long-dead `CardBus` shape); bit 7 is the multifunction flag and is masked off
-/// before comparing. A bridge's header has three BAR slots where an endpoint has six, and where an
-/// endpoint's BAR4 and BAR5 sit it carries [`BUS_NUMBERS`] instead.
+/// before comparing. A bridge's header has two BAR slots where an endpoint has six, and where an
+/// endpoint's third BAR sits it carries [`BUS_NUMBERS`] instead.
 pub const HEADER_TYPE_BRIDGE: u8 = 1;
 
 /// **Where a type-1 header states the buses behind it**: primary, secondary and subordinate bus
@@ -357,14 +357,63 @@ pub fn enumerate(
 pub struct Bar {
     /// The assigned base address (0 if firmware assigned nothing; the caller must then place it).
     pub base: u64,
-    /// The region size in bytes, from the write-ones probe.
+    /// The region size in bytes, from the write-ones probe: a power of two of at least 16, and
+    /// `base + size` does not overflow.
     pub size: u64,
     /// A 64-bit BAR consumes two BAR slots; the caller's index bookkeeping needs to know.
     pub is_64: bool,
 }
 
-/// Read and size the six BAR slots of a type-0 header. Returns one entry per **slot** (six),
-/// `None` for the upper half of a 64-bit BAR and for I/O-space BARs (we drive memory BARs only).
+/// **Why [`read_bars`] refused a memory BAR.** A refused BAR is left out of the result, as if the
+/// slot were empty, and the reason goes to the caller's `refused` closure so it can say why a
+/// device came up without one.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane pci-bar-size-from-lowest-bit, as are its
+/// variants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BarRefusal {
+    /// The register answered the probe, but no address bit is writable, so there is no size.
+    NoWritableBits,
+    /// The writable address bits are not every bit from the lowest one up to the top of the
+    /// BAR's width. A 64-bit BAR whose upper half reads back zero is this shape too.
+    MaskNotContiguous,
+    /// The assigned base plus the size passes the top of the 64-bit address space.
+    EndOverflows,
+    /// A 64-bit BAR in the header's last slot: its upper half would be the register after the
+    /// BARs (the `CardBus` CIS pointer on an endpoint), which is not a BAR.
+    SixtyFourBitInLastSlot,
+}
+
+/// The address bits of a 32-bit memory BAR: everything above the four type and prefetch bits.
+const BAR_DECODE_BITS_32: u64 = 0xffff_fff0;
+/// The address bits of a 64-bit memory BAR, both halves.
+const BAR_DECODE_BITS_64: u64 = 0xffff_ffff_ffff_fff0;
+
+/// **A memory BAR's size from the address bits that stayed set after the all-ones probe.** The
+/// size is the lowest set bit, as OpenBSD's `PCI_MAPREG_MEM_SIZE` (`mr & -mr`) and Linux's
+/// `pci_size` compute it. `decode_bits` is the BAR's width, [`BAR_DECODE_BITS_32`] or
+/// [`BAR_DECODE_BITS_64`], and `mask` must already be masked by it.
+///
+/// The probe can only describe a size if every address bit from that lowest one to the top of
+/// the width is writable, so any other mask is refused rather than sized: `!mask + 1`, which this
+/// replaced, gives a size that is not a power of two for a mask with a hole, and one near
+/// `u64::MAX` for a 64-bit BAR whose upper half reads zero.
+fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
+    if mask == 0 {
+        return Err(BarRefusal::NoWritableBits);
+    }
+    let size = mask.isolate_lowest_one();
+    if mask != decode_bits & !(size - 1) {
+        return Err(BarRefusal::MaskNotContiguous);
+    }
+    Ok(size)
+}
+
+/// Read and size the memory BARs of a header: six slots for an endpoint (type 0), two for a bridge
+/// (type 1), and none for any other layout, whose BAR slots this crate does not know. Returns one
+/// entry per **slot** (six), `None` for the upper half of a 64-bit BAR, for I/O-space BARs (we
+/// drive memory BARs only), for an unimplemented BAR, for a slot past the header's last, and for a
+/// BAR it refused. A refusal also calls `refused` with the slot and the reason.
 ///
 /// Sizing is the standard dance the spec prescribes: write all-ones, read back the mask of
 /// writable bits (the low bits that stay zero encode the alignment/size), restore the original.
@@ -374,10 +423,17 @@ pub fn read_bars(
     bdf: Bdf,
     read32: &mut dyn FnMut(Bdf, u64) -> u32,
     write32: &mut dyn FnMut(Bdf, u64, u32),
+    refused: &mut dyn FnMut(usize, BarRefusal),
 ) -> [Option<Bar>; 6] {
     let mut out = [None; 6];
+    let header_type = (read32(bdf, HEADER_TYPE & !3) >> ((HEADER_TYPE & 3) * 8)) as u8 & 0x7f;
+    let slots = match header_type {
+        0 => 6,
+        HEADER_TYPE_BRIDGE => 2,
+        _ => 0,
+    };
     let mut i = 0;
-    while i < 6 {
+    while i < slots {
         let off = BAR0 + i as u64 * 4;
         let orig = read32(bdf, off);
         if orig & 1 != 0 {
@@ -386,40 +442,49 @@ pub fn read_bars(
             continue;
         }
         let is_64 = orig & 0b110 == 0b100;
+        if is_64 && i + 1 == slots {
+            // Refused before the probe, so the register after the last slot is never written.
+            refused(i, BarRefusal::SixtyFourBitInLastSlot);
+            i += 1;
+            continue;
+        }
 
         write32(bdf, off, u32::MAX);
         let mask_lo = read32(bdf, off);
         write32(bdf, off, orig);
 
-        if is_64 {
+        let (base, mask, decode_bits) = if is_64 {
             let off_hi = off + 4;
             let orig_hi = read32(bdf, off_hi);
             write32(bdf, off_hi, u32::MAX);
             let mask_hi = read32(bdf, off_hi);
             write32(bdf, off_hi, orig_hi);
-
-            let mask = ((mask_hi as u64) << 32) | (mask_lo as u64 & 0xffff_fff0);
-            if mask != 0 {
-                out[i] = Some(Bar {
-                    base: ((orig_hi as u64) << 32) | (orig as u64 & 0xffff_fff0),
-                    size: !mask + 1,
-                    is_64: true,
-                });
-            }
-            i += 2; // the upper half consumed a slot
+            (
+                ((orig_hi as u64) << 32) | (orig as u64 & BAR_DECODE_BITS_32),
+                (((mask_hi as u64) << 32) | mask_lo as u64) & BAR_DECODE_BITS_64,
+                BAR_DECODE_BITS_64,
+            )
         } else {
-            let mask = mask_lo as u64 & 0xffff_fff0;
-            if mask != 0 {
-                out[i] = Some(Bar {
-                    base: orig as u64 & 0xffff_fff0,
-                    // Bits above a 32-bit BAR's reach can never be set; extend the mask so the
-                    // `!mask + 1` size math is done at u64 width.
-                    size: !(mask | 0xffff_ffff_0000_0000) + 1,
-                    is_64: false,
-                });
+            (
+                orig as u64 & BAR_DECODE_BITS_32,
+                mask_lo as u64 & BAR_DECODE_BITS_32,
+                BAR_DECODE_BITS_32,
+            )
+        };
+
+        // An unimplemented BAR is hardwired to zero and reads back zero, type bits included.
+        // That is an empty slot, not a malformed one.
+        if !(orig == 0 && mask_lo == 0) {
+            match size_from_mask(mask, decode_bits).and_then(|size| {
+                base.checked_add(size)
+                    .map(|_| size)
+                    .ok_or(BarRefusal::EndOverflows)
+            }) {
+                Ok(size) => out[i] = Some(Bar { base, size, is_64 }),
+                Err(reason) => refused(i, reason),
             }
-            i += 1;
         }
+        i += if is_64 { 2 } else { 1 }; // the upper half of a 64-bit BAR consumed a slot
     }
     out
 }
@@ -823,10 +888,11 @@ mod verification {
         assert!(interrupt_number.saturating_sub(base) <= 3 || interrupt_number == u32::MAX);
     }
 
-    /// **`read_bars` is total for any device responses.** The closures return arbitrary values
-    /// on every call, standing in for a device that answers the size probe with garbage; the
-    /// decode must never panic (the size arithmetic `!mask + 1` cannot overflow because the
-    /// type bits are masked out of `mask` first, so it is never all-ones).
+    /// **`read_bars` is total for any device responses, and every BAR it returns can be used.**
+    /// The closures return arbitrary values on every call, standing in for a device that answers
+    /// the size probe with garbage; the decode must never panic, and each BAR it keeps has a
+    /// power-of-two size and an end that does not overflow, which is what the kernel's placement
+    /// and bounds arithmetic rely on.
     /// Falsification: replayable `crates/pci/falsifications/verification.read_bars_is_total_for_any_device.patch`
     #[kani::proof]
     #[kani::unwind(8)]
@@ -836,7 +902,45 @@ mod verification {
             dev: kani::any(),
             func: kani::any(),
         };
-        let _ = read_bars(bdf, &mut |_, _| kani::any(), &mut |_, _, _| {});
+        let bars = read_bars(
+            bdf,
+            &mut |_, _| kani::any(),
+            &mut |_, _, _| {},
+            &mut |_, _| {},
+        );
+        for bar in bars.iter().flatten() {
+            assert!(bar.size.is_power_of_two() && bar.size >= 16);
+            assert!(bar.base.checked_add(bar.size).is_some());
+        }
+    }
+
+    /// **A BAR size is the boundary between the bits a device ignores and the bits it decodes.**
+    /// For any mask of either width: when a size comes back, every address bit at or above it is
+    /// writable and every one below it is not, so the size is exactly the region the mask
+    /// describes. And every mask that does describe a region, the width's address bits from some
+    /// power of two up, gets that size back rather than a refusal.
+    /// Falsification: replayable `crates/pci/falsifications/verification.a_bar_size_is_where_the_writable_bits_begin.patch`
+    #[kani::proof]
+    fn a_bar_size_is_where_the_writable_bits_begin() {
+        let decode_bits = if kani::any() {
+            BAR_DECODE_BITS_64
+        } else {
+            BAR_DECODE_BITS_32
+        };
+        let mask = kani::any::<u64>() & decode_bits;
+        if let Ok(size) = size_from_mask(mask, decode_bits) {
+            let bit: u32 = kani::any();
+            kani::assume(bit < 64 && decode_bits & (1 << bit) != 0);
+            assert_eq!(mask & (1 << bit) != 0, (1u64 << bit) >= size);
+        }
+
+        let shift: u32 = kani::any();
+        kani::assume((4..64).contains(&shift) && decode_bits & (1 << shift) != 0);
+        let region = 1u64 << shift;
+        assert_eq!(
+            size_from_mask(decode_bits & !(region - 1), decode_bits),
+            Ok(region)
+        );
     }
 
     /// **The capability walk terminates and never panics, even on a cyclic list.** The

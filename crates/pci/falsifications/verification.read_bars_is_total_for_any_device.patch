@@ -1,19 +1,23 @@
 Falsifies `pci::verification::read_bars_is_total_for_any_device`.
 
-The defect: the BAR loop runs one slot past the end, `i <= 6` in place of `i < 6`. A header has
-six BARs and both spellings look like "all six" at a glance; the 64-bit branch's `i += 2` already
-makes the index arithmetic here non-obvious.
+The defect: the BAR loop runs one slot past the end, `i <= slots` in place of `i < slots`. An
+endpoint has six BARs and both spellings look like "all of them" at a glance; the 64-bit branch's
+two-slot step already makes the index arithmetic here non-obvious.
 
 Expected to fail: the totality claim, as an out-of-bounds index on `out[i]` at `i == 6`. It
-needs a device that answers the size probe with a non-zero mask on the seventh read, which is
-exactly the arbitrary-response regime this harness quantifies over and nothing a fixture
-supplies.
+needs a device that reports an endpoint header and answers the size probe with a usable mask on
+the seventh slot, which is exactly the arbitrary-response regime this harness quantifies over and
+nothing a fixture supplies.
 
 diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
 --- a/crates/pci/src/lib.rs
 +++ b/crates/pci/src/lib.rs
-@@ -422,3 +422,3 @@ pub fn read_bars(
+@@ -433,7 +433,7 @@ pub fn read_bars(
+         _ => 0,
+     };
      let mut i = 0;
--    while i < 6 {
-+    while i <= 6 {
+-    while i < slots {
++    while i <= slots {
          let off = BAR0 + i as u64 * 4;
+         let orig = read32(bdf, off);
+         if orig & 1 != 0 {

@@ -1,0 +1,23 @@
+Falsifies `pci::verification::a_bar_size_is_where_the_writable_bits_begin`.
+
+The defect: `size_from_mask` keeps the lowest-set-bit size and drops the contiguity check. The
+lowest set bit is the right size for every mask a well-formed device returns, so every fixture
+still passes, but a mask with a hole above its lowest bit, or a 64-bit mask whose upper half reads
+zero, is then sized as though its writable bits ran to the top.
+
+Expected to fail: the boundary assertion, on any mask with a clear address bit above its lowest
+set one.
+
+diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
+--- a/crates/pci/src/lib.rs
++++ b/crates/pci/src/lib.rs
+@@ -403,9 +403,6 @@ fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
+         return Err(BarRefusal::NoWritableBits);
+     }
+     let size = mask.isolate_lowest_one();
+-    if mask != decode_bits & !(size - 1) {
+-        return Err(BarRefusal::MaskNotContiguous);
+-    }
+     Ok(size)
+ }
+ 
