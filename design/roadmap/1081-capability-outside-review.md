@@ -189,7 +189,7 @@ Background. Ratification chose the name `capability` over `caps` and `cap_space`
 the name `capability` belongs to an unrelated published crate (a skill-tree library for games,
 version 0.1.0, about 520 downloads all time, last updated more than a year before this review). The
 move creates `nifeos/<name>`, the kernel's manifest pins that repository by `rev`, and every later
-document names it. A crate repository exists to release on its own (§151). The publishing hold is a hold, not a decision never to publish. If the move creates the repository as `nifeos/capability` and a later rename lets the crate publish, the rename is a second move: a new repository, a new pin, and
+document names it. A crate repository exists to release on its own (§151 (the goal of the repository split is independent release and third-party programs)). The publishing hold is a hold, not a decision never to publish. If the move creates the repository as `nifeos/capability` and a later rename lets the crate publish, the rename is a second move: a new repository, a new pin, and
 a dead name in every record between.
 
 Recommendation first: rename before the move, to `capability_table`. It is free on crates.io, it

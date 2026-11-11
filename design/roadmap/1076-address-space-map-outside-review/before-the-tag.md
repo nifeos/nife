@@ -7,7 +7,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
 4. The crate's documentation addresses a reader inside nife.
    Finding: the crate root and item docs cite `notes/address-space-map.md`,
    `crates/user_mode_runtime/link.ld`, `components/src/swish.rs`, `script/lint`,
-   `kernel::user::USER_STACK_TOP`, `supervision_contract::CHILD_STACK_VA`, §171, milestones 206 and
+   `kernel::user::USER_STACK_TOP`, `supervision_contract::CHILD_STACK_VA`. They also cite §171 (where a program image starts, and where the stack goes), milestones 206 and
    956, a pull request number, the architect by name, and five `Name:` blocks. The template's
    `standalone.py` counts 1 section citation, 4 paths into the tree, 5 provenance blocks, 2 lines
    naming the architect and 3 milestone citations. The template also states that a crate carries no `Name:` block. Two sentences are history ("Was `kernel::user::USER_STACK_TOP` ... both

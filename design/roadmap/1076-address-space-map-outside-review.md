@@ -74,7 +74,7 @@ otherwise.
    `license.workspace = true`; `[lints] workspace = true`; no `rust-version`; no `description`,
    `repository`, `readme`, `keywords` or `categories`. The template's `standalone.py` refuses
    workspace inheritance, a missing `rust-version` and `publish = false` on a crate that means to
-   release. The crate's `Cargo.toml` comment cites milestone 206 and §171 as nife paths.
+   release. The crate's `Cargo.toml` comment cites milestone 206 (A program image has under 896 KiB, and the failure names an overlap rather than a size) and §171 as nife paths.
    Evidence: `crates/address_space_map/Cargo.toml` lines 5 to 6, 8 to 13 and 15 to 16.
    Change: `license = "MIT OR Apache-2.0"`, `rust-version = "1.87"` (the lowest the 1.85 failure allows; the template's weekly `msrv` job will confirm the exact floor), and the three template lints inline (`unsafe_op_in_unsafe_fn`, `missing_docs`, `unexpected_cfgs` naming `cfg(kani)`), a one-line
    `description`, `repository` and `readme`. Keep `publish = false` with a one-sentence comment a

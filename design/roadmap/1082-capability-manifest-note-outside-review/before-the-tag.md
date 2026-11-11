@@ -61,7 +61,7 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
    Change: the examples and tests build manifests from `NO_NOTE_MANIFEST` and struct update
    syntax, with `ShortOptions::try_new(b"rfv")` where a test needs letters. The catalog round trip moves to `grant_plan` (or `system_tests`) in nife, which keeps the guard that a new program
    with an unspellable manifest fails before a build carries it. Whether `Program` leaves with
-   `grant_plan` is milestone 1017's question, not this crate's; after this item the crate no
+   `grant_plan` is milestone 1017 (the contract crates leave in this order)'s question, not this crate's; after this item the crate no
    longer cares.
    Door: two-way. Effort: S.
 

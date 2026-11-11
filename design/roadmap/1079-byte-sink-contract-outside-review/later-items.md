@@ -8,7 +8,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
     Finding: `(w0 & 0xffff_ffff) as usize` drops the high half of the count on a 16-bit target, so
     a first word claiming `0x1_0010` bytes reads as 16 and passes `unpack`'s bound. No target the crate names has the problem (all three are 64-bit). `unpack` would still copy only sixteen bytes
     into a sixteen-byte buffer, so the consequence is a wrong count and not a wrong read. The same
-    class as milestone 1048's item 2.
+    class as milestone 1048 (what an outside maintainer would fix before 0.1.0)'s item 2.
     Evidence: `src/lib.rs` lines 83 to 85 and 235 to 238.
     Change: compare the count in `u64` inside `unpack` before casting, or `usize::try_from` with a
     failure reading as `Malformed`.

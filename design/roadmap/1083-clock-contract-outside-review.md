@@ -17,7 +17,7 @@ The review took its baseline from
 [the review package](../../notes/crate-reviews/clock-contract.md) and reopens none of what it
 settles. That is the crate name, the three-authority design (read is a mapping, set is a writable
 mapping, propose is an endpoint), the `UNKNOWN` state as a real answer and the asymmetric step
-bounds. It also covers the license, `publish = false` under §305 until the crate's own release
+bounds. It also covers the license, `publish = false` under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until the crate's own release
 milestone, and the package's proposed name table. Where a rule now in force contradicts a name the package records as ratified,
 this block says so and otherwise defers to the package. Milestone 1017 (the contract crates leave
 in this order) owns the move; this block owns the findings that should land inside that path.
@@ -147,7 +147,7 @@ reclaim after a restart.
 Background. Milestone 1017 asks for ratified identity values before a contract crate leaves,
 because they are what a peer compares. A reader built against one magic reads a page of another as
 no clock at all, and every program's `INTERFACES` note declares the pair of id and version. The
-review package records that the three values match row 8 of milestone 956's table and that fifteen
+review package records that the three values match row 8 of milestone 956 (the linked interfaces carry checkable versions)'s table and that fifteen
 programs already declare the pair (not re-verified here). Their `Name:` blocks read provisional.
 The two contract crates frozen before this one took the same shape: id, version 1, and a magic
 where the contract is a page.

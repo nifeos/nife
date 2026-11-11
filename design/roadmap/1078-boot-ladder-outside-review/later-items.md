@@ -23,7 +23,7 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
     Change: a README section stating the policy: a change to a head or a check name bumps the Cargo minor and adds a compatibility entry (the earlier-lengths list, and a renamed-checks list if a ruling ever renames a check). The Cargo version is the contract's version. No identity constant exists to add. Door: two-way. Effort: S.
 
 12. Growth already proposed should land before the move, or the move should take it on as cross-repository work.
-    Finding: milestone 972 proposes `PROGENITOR`, `LOADER` and `REMOVABLE_MEDIA` for this crate;
+    Finding: milestone 972 (the boot stick's shared names are code) proposes `PROGENITOR`, `LOADER` and `REMOVABLE_MEDIA` for this crate;
     `notes/bugs-without-milestones/drivers-boot-and-install-1.md` proposes hoisting the soak
     markers of `crates/serial_console/src/stop.rs` line 51 to 60 and the job-mix field names of
     `progress.rs` into it. Each is the same defect this crate exists to remove.

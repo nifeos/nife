@@ -24,7 +24,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
 
 4. The `abi` dev-dependency binds the move order to another repository for one assertion.
    Finding: `GONE` restates `abi::Error::Gone`, and the only test that pins the two together links
-   `abi` as a dev-dependency. Milestone 1017 therefore sequences this crate after `abi`, and after
+   `abi` as a dev-dependency. Milestone 1017 (the contract crates leave in this order) therefore sequences this crate after `abi`, and after
    the move the dev-dependency becomes a pin on a published `abi`. The assertion is about two crates
    nife links; nife already links both in `system_tests` and the kernel.
    Evidence: `Cargo.toml` lines 18 to 26; `src/lib.rs` lines 322 to 329; milestone 1017's table row

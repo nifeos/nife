@@ -24,7 +24,7 @@ and `design/naming.md`. Nothing below reopens:
 - the mechanism (a per-thread read-only page, §204), the `Relaxed` store and load with the
   scheduler's handoff as the ordering argument, or the fixed address beside the stack;
 - the identity values a published program already compares: `MAGIC` `CURRCPU1`, `VERSION` 1, and
-  `INTERFACE_ID` 10 in milestone 956's table (ratification is asked below, the values are not);
+  `INTERFACE_ID` 10 in milestone 956 (the linked interfaces carry checkable versions)'s table (ratification is asked below, the values are not);
 - the deliberate `!Send` and `!Sync` of `CurrentCpuPage`, which the sibling package records as a
   difference from `CounterFrequencyPage`;
 - the two renames the page-contract family rule already settles (`design/naming/crates.md`), which

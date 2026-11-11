@@ -137,7 +137,7 @@ shell's banner, which the crate's `BUGS` concedes. `SELF_TEST_CHECKS_EARLIER` ho
 Recommendation: ratify `BANNER`, `MACHINE`, `SELF_TEST`, `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`,
 `SELF_TEST_CHECKS` and `SCREEN_HELD`. Rename `PROMPT` to `SHELL_BANNER` (it is the shell's first
 line, and the real prompt is `$ `), `SELF_TEST_CHECKS_EARLIER` to `EARLIER_SELF_TEST_CHECK_COUNTS` (a count names the things counted), and `TOUR` to `CORE_RUNS` (the line's own words: the
-capability core runs). Refused for `TOUR`: `HANDOVER`, since milestone 972 spends that meaning on
+capability core runs). Refused for `TOUR`: `HANDOVER`, since milestone 972 (the boot stick's shared names are code) spends that meaning on
 the progenitor line; `KERNEL_UP`, since the banner already says the kernel is up.
 
 Prior art: systemd's readiness protocol names its message for what it says (`READY=1`, `STATUS=`), and its reader and writer share `sd_notify`'s definition. U-Boot's `bootstage` names

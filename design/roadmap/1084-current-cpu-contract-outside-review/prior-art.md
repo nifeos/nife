@@ -9,7 +9,7 @@ How other systems let a thread learn its own CPU without a crossing, and where t
 | Linux `rseq(2)` | a per-thread `struct rseq` the thread registers by syscall; the kernel writes `cpu_id_start`, `cpu_id`, `node_id` and `mm_cid` on every return to user space; 32-byte aligned | `cpu_id` is a `u32`; `RSEQ_CPU_ID_UNINITIALIZED` is -1 and `RSEQ_CPU_ID_REGISTRATION_FAILED` is -2 | at run time, from `sysconf(_SC_NPROCESSORS_CONF)` or `/sys`; no compile-time bound | read (`include/uapi/linux/rseq.h`) |
 | Linux x86 vDSO `getcpu` | `RDTSCP` or `RDPID` carry the CPU in a register the kernel loads per CPU; no page | none; always an answer | as above | recalled, unverified |
 | FreeBSD `sched_getcpu(3)` | on amd64 a user-mode read of a per-CPU register value, elsewhere a syscall; `MAXCPU` is a compile-time constant and `mp_maxid` the run-time bound | none | `MAXCPU` at compile time in the kernel; user space asks | recalled, unverified |
-| Zircon | `zx_object_get_info` with `ZX_INFO_THREAD_STATS`, a selector; `last_scheduled_cpu` is one field | none | not applicable | read, in §204 |
+| Zircon | `zx_object_get_info` with `ZX_INFO_THREAD_STATS`, a selector; `last_scheduled_cpu` is one field | none | not applicable | read, in §204 (how userspace asks where a thread runs) |
 | `counter_frequency_contract` (sibling) | the same shape: magic, then one little-endian `u64`, mapped read-only at a fixed address; written once at boot | a frame without the magic; a zero rate reads as `Some(0)` | not applicable | read |
 
 Where this crate differs: the address stays fixed and the same on three architectures, so no

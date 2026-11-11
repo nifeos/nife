@@ -73,9 +73,9 @@ dependency); everything else is two-way and the maintainer decides it.
 4. Twenty-eight references point into nife's internals, which a stranger cannot follow.
    Finding: after the move strips the `Name:` blocks, the doc comments still cite
    `cap::CAPABILITY_TABLE_SLOTS` (`src/lib.rs` line 95), `capability::Rights::ALL`, `::BIND` and
-   `::ENUMERATE` (`src/lib.rs` line 210, `src/rights.rs` line 9, 14, 19), `user_mode_runtime::cycle_reading`,
+   `::ENUMERATE` (`src/lib.rs` line 210, `src/rights.rs` line 9, 14, 19). They cite `user_mode_runtime::cycle_reading`,
    `::receive_request` and `::reply` (`src/lib.rs` line 226, `src/rendezvous.rs` line 108),
-   `std_runtime_contract::SLOTS` (`src/memory_region.rs` line 26), `current_cpu_contract::THREAD_PAGE_SLOTS` (`src/thread_control_block.rs` line 8), `filesystem_contract` (`src/rights.rs` line 9, `src/reboot.rs` line 7) and `crates/byte_sink_contract` (`src/rendezvous.rs` line 10). They also cite `entropy_contract` and `credential_contract`
+   `std_runtime_contract::SLOTS` (`src/memory_region.rs` line 26). They cite `current_cpu_contract::THREAD_PAGE_SLOTS` (`src/thread_control_block.rs` line 8), `filesystem_contract` (`src/rights.rs` line 9, `src/reboot.rs` line 7) and `crates/byte_sink_contract` (`src/rendezvous.rs` line 10). They also cite `entropy_contract` and `credential_contract`
    (`src/lib.rs` line 384), `inter_process_communication::timer` (`src/timer.rs` line 41), `sched::last_cpus`
    (`src/survey.rs` line 50), `console::configure_from_dtb` (`src/uart.rs` line 6), "AGENTS.md rule 7"
    (`src/lib.rs` line 227), "claim 11" (`src/page_frame.rs` line 6, `src/address_space.rs` line 8), "(19c)"
@@ -121,9 +121,9 @@ dependency); everything else is two-way and the maintainer decides it.
 
 8. Dates and rulings stand in doc comments as history.
    Finding: 23 dated phrases remain in `src/` after the move strips the `Name:` blocks, such as
-   `src/lib.rs` line 101 ("the size was set on"), `:171` ("confirmed on"), `:307` ("ruled on") and `:357` ("were ratified on"). Others sit at `src/memory_region.rs` line 11 and `:54`, `src/rendezvous.rs` line 82 and `:109`, `src/survey.rs` line 19, `src/notification.rs` line 33, `src/reboot.rs` line 5, `src/object_type.rs` line 29, `src/cycle_counter.rs` line 31, `src/timer.rs` line 39, `src/reply.rs` line 7 and `src/thread_control_block.rs` line 43, plus four "Index exception (date)" comments in `src/lib.rs`. §267 and §298 put these in commit
-   messages; the template's `history phrases` gate reads only markdown today, so nothing refuses
-   them, and a stranger reads them as noise.
+   `src/lib.rs` line 101 ("the size was set on"), `:171` ("confirmed on"), `:307` ("ruled on") and `:357` ("were ratified on"). Others sit at `src/memory_region.rs` line 11 and `:54`, `src/rendezvous.rs` line 82 and `:109`, `src/survey.rs` line 19, `src/notification.rs` line 33, `src/reboot.rs` line 5, `src/object_type.rs` line 29, `src/cycle_counter.rs` line 31, `src/timer.rs` line 39, `src/reply.rs` line 7 and `src/thread_control_block.rs` line 43, plus four "Index exception (date)" comments in `src/lib.rs`. Section §267 (A comment states the constraint as it is now) and §298 (A document states what is in force now, and its history is in git) put these in commit
+   messages. The template's `history phrases` gate reads only markdown today, so nothing refuses
+   them. A stranger reads them as noise.
    Fix: state each rule in the present tense; where the sentence is provenance, move it into the
    item's `Name:` block before the move strips it.
    Effort: S. Door: two-way.
@@ -138,7 +138,7 @@ dependency); everything else is two-way and the maintainer decides it.
 
 10. The manifest's publish comment points out of the repository.
     Finding: `Cargo.toml` line 10 says "the allowlist lint holds the exception (crates/publish-allowlist.txt)",
-    a file the new repository will not have. The same finding as milestone 1048's first item.
+    a file the new repository will not have. The same finding as milestone 1048 (what an outside maintainer would fix before 0.1.0)'s first item.
     Fix: "`false` until the release that publishes; that release deletes the line".
     Effort: S. Door: two-way.
 
