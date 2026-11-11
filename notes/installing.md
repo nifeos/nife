@@ -133,7 +133,7 @@ reader of this page should consider taking.
 
 Nothing in this tree could write a FAT volume. Every path around it (QEMU's `vvfat`, macOS's
 `diskutil`, Linux's `mkfs.vfat`) is a host tool the target cannot reach.
-`crates/file_allocation_table`'s writer closes it: it creates one volume holding one file at one
+`file_allocation_table`'s writer (`nifeos/file_allocation_table`) closes it: it creates one volume holding one file at one
 path, as pure computation with no I/O. The rest of that crate, a reader and a general writer for
 FAT12, FAT16 and FAT32, is milestone 813 (a proven FAT crate, released on its own). Milestone 140
 (mount a drive this system did not create) builds its FAT32 stratum on it.
