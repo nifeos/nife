@@ -22,7 +22,10 @@ hides kernel-privileged code in a userspace count.
 Userspace has three kinds of root: the `components` and `fixtures` packages; each directory in
 `rust_source.USERSPACE_ONLY_DIRS` that is its own cargo workspace (outside the root one, so
 `cargo metadata` at the root never sees it); and the crates `cargo xtask std-src` copies verbatim
-into nife's `std`, which no manifest names, read from `STD_GENERATOR`'s `root.join(...)` lines.
+into nife's `std`, which no manifest names, read from the entries of `STD_GENERATOR`'s
+`COPIED_FILES` that copy a crate's `src/lib.rs`. An entry that copies one other file (the name
+resolver's `src/wire.rs`) seeds nothing, because the rest of that crate and its dependencies do not
+come with it.
 
 `system_tests` is not a root. It is a test image that links the kernel, its own source is outside
 this split (`rust_source.trust_bucket`'s BUGS), and a crate only it reaches is `host` here.
@@ -50,9 +53,9 @@ TABLE = pathlib.Path(__file__).with_name('trust_boundary_crates.tsv')
 KERNEL_ROOTS = ('kernel',)
 USERSPACE_ROOTS = ('components', 'fixtures')
 BOOT_CHAIN_ROOTS = ('uefi_loader',)
-STD_GENERATOR = 'xtask/src/farm/generate.rs'
+STD_GENERATOR = 'xtask/src/farm/copied.rs'
 STD_ROOT = 'std'
-_STD_COPY = re.compile(r'root\.join\("crates/([a-z0-9_]+)/src/lib\.rs"\)')
+_STD_COPY = re.compile(r'^\s*package: "([a-z0-9_]+)",\n\s*file: "src/lib\.rs",$', re.MULTILINE)
 # Workspaces of their own that never run on nife. Any other top-level directory with a
 # `[workspace]` table must be in `rust_source.USERSPACE_ONLY_DIRS`, or `--check-rows` fails: a new
 # one would otherwise be a root this derivation never reads.
@@ -157,7 +160,7 @@ def derive():
     std_copied = set(_STD_COPY.findall(pathlib.Path(STD_GENERATOR).read_text()))
     if not std_copied:
         sys.exit(f'trust_boundary: no crate copied into std found in {STD_GENERATOR}; '
-                 'its root.join(...) lines changed shape, so this derivation must follow them')
+                 'its package: and file: lines changed shape, so this derivation must follow them')
     root_meta = cargo_metadata('Cargo.toml', '--locked', '--all-features')
     return classify(root_meta, root, seeds, std_copied)
 

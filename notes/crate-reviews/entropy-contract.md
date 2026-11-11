@@ -49,10 +49,10 @@ development dependency. The kernel spawns the entropy service and tests it. `com
 virtio and JH7110 entropy backends, and 15 programs there declare the pair of `INTERFACE_ID` and
 `VERSION`. Every edge points from nife to the crate, which milestone 1017 permits.
 
-One dependent reads the source file, not the crate. `xtask/src/farm/generate.rs` copies
-`crates/entropy_contract/src/lib.rs` into the patched standard library as
-`sys/pal/nife/entropyproto.rs`, and `xtask/src/farm/stamp.rs` rebuilds the farm when that path
-changes. The standard library's `sys/random` calls `request`, `GET`, `delivered_bytes`,
+One dependent reads the source file, not the crate. `cargo xtask std-src` copies the crate's
+`src/lib.rs` into the patched standard library as `sys/pal/nife/entropyproto.rs`, and rebuilds the
+farm when it changes. It finds the file through `cargo metadata` (`xtask/src/farm/copied.rs`), so
+a pinned crate is read from Cargo's checkout and the move changes nothing there. The standard library's `sys/random` calls `request`, `GET`, `delivered_bytes`,
 `copy_delivered_bytes` and `MAXIMUM_BYTES` through that copy. The copy drops the crate-level
 attributes and everything from the test module on, so the harnesses never reach it.
 
@@ -161,7 +161,6 @@ The crate itself does not. What blocks the move is in nife, and in the decisions
 
 | item | owner |
 |---|---|
-| Point `xtask/src/farm/generate.rs` and `stamp.rs` at the pinned checkout's `src/lib.rs` (from `cargo metadata`), not `crates/entropy_contract`. Thirteen other crates are copied the same way (`abi`, `counter_frequency_contract` and most contract crates among them), so one change serves them all. | move lane |
 | Convert the six path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |
 | Repoint `helpers/interface_declarations_check.py`, `helpers/interface_stability.py`, `helpers/trust_boundary_crates.tsv`, `packages/contracts.package.toml`, the `script/verify` row, the mutation baseline row and `helpers/template_report_baseline.txt`. | move lane |
 | The manifest's `publish = false` comment names this tree's allowlist path; the reason in the new repository is the publishing hold. | move lane |
