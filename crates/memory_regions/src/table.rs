@@ -1352,6 +1352,31 @@ mod tests {
     }
 
     #[test]
+    fn a_released_object_gives_its_count_back_to_its_region_and_every_ancestor() {
+        let mut t = RegionTable::<8>::new();
+        let root = t.insert_root_with_ceilings(0, 1000, every(32)).unwrap();
+        let job = t.split(root, 500).unwrap();
+        let inner = t.split(job, 100).unwrap();
+        for _ in 0..2 {
+            t.retype_object_page(inner, ObjectKind::Thread).unwrap();
+        }
+        assert_eq!(
+            t.retype_object_page(inner, ObjectKind::Thread),
+            None,
+            "the inner region is at its ceiling of 32 / 16"
+        );
+
+        t.release_object(inner, ObjectKind::Thread);
+        assert_eq!(t.live_and_ceiling(inner, THREAD), Some((1, 2)));
+        assert_eq!(t.live_and_ceiling(job, THREAD), Some((1, 2)));
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((1, 32)));
+        assert!(
+            t.retype_object_page(inner, ObjectKind::Thread).is_some(),
+            "the released place is free to use again"
+        );
+    }
+
+    #[test]
     fn a_split_refused_at_the_region_ceiling_moves_nothing() {
         let mut t = RegionTable::<64>::new();
         let root = t
