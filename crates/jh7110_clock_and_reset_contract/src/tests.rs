@@ -63,12 +63,48 @@ fn a_kernel_error_or_an_unknown_word_is_no_status() {
 #[test]
 fn the_summary_fields_sit_where_the_ruling_puts_them() {
     let one = |s: Summary| s.pack();
-    assert_eq!(one(Summary { clocks_in_plan: 0xff, ..Summary::default() }), 0xff);
-    assert_eq!(one(Summary { clocks_running: 0xff, ..Summary::default() }), 0xff << 8);
-    assert_eq!(one(Summary { resets_in_plan: 0xff, ..Summary::default() }), 0xff << 16);
-    assert_eq!(one(Summary { resets_released: 0xff, ..Summary::default() }), 0xff << 24);
-    assert_eq!(one(Summary { already_up: true, ..Summary::default() }), 1 << 32);
-    assert_eq!(one(Summary { refused: 0xff, ..Summary::default() }), 0xff << 40);
+    assert_eq!(
+        one(Summary {
+            clocks_in_plan: 0xff,
+            ..Summary::default()
+        }),
+        0xff
+    );
+    assert_eq!(
+        one(Summary {
+            clocks_running: 0xff,
+            ..Summary::default()
+        }),
+        0xff << 8
+    );
+    assert_eq!(
+        one(Summary {
+            resets_in_plan: 0xff,
+            ..Summary::default()
+        }),
+        0xff << 16
+    );
+    assert_eq!(
+        one(Summary {
+            resets_released: 0xff,
+            ..Summary::default()
+        }),
+        0xff << 24
+    );
+    assert_eq!(
+        one(Summary {
+            already_up: true,
+            ..Summary::default()
+        }),
+        1 << 32
+    );
+    assert_eq!(
+        one(Summary {
+            refused: 0xff,
+            ..Summary::default()
+        }),
+        0xff << 40
+    );
 }
 
 #[test]
@@ -97,9 +133,21 @@ fn a_gated_clock_outranks_a_held_reset() {
         ..Summary::default()
     };
     assert_eq!(up.status(), Status::Done);
-    assert_eq!(Summary { resets_released: 0, ..up }.status(), Status::ResetHeld);
     assert_eq!(
-        Summary { clocks_running: 1, resets_released: 0, ..up }.status(),
+        Summary {
+            resets_released: 0,
+            ..up
+        }
+        .status(),
+        Status::ResetHeld
+    );
+    assert_eq!(
+        Summary {
+            clocks_running: 1,
+            resets_released: 0,
+            ..up
+        }
+        .status(),
         Status::ClockNotRunning
     );
 }
