@@ -7,8 +7,7 @@ ratified_by: calef
 
 # 321. Reclaiming a whole region subtree
 
-*(The section number and title are provisional until the merge lands them. The new method's name
-and number are provisional and the architect's to rule.)*
+*(The section number and title are provisional until the merge lands them.)*
 
 Raised by #3417's per-subtree ceilings, which bound what a region subtree holds but do not give it
 back. The code read is main and that branch (`nifeos/nife@0f9675218`).
@@ -45,9 +44,9 @@ parent can create that kind of object.
 
 Option (a2), ruled 2026-11-11 (UTC), and not yet built:
 
-- A separate `MemoryRegion` method reclaims a region and everything below it: every descendant
-  region, every object in any of them and every mapping of their pages. Its name and method number
-  stay provisional (`DESTROY_SUBTREE` here) until the architect rules on them.
+- A separate method, `MemoryRegion::DESTROY_SUBTREE`, method number 6, reclaims a region and
+  everything below it: every descendant region, every object in any of them and every mapping of
+  their pages. Name and number: ratified 2026-11-11 (UTC).
 - `DESTROY` keeps its refusal of a region with live children.
 - Every reclaim, through either method, first marks the region closing, so no object creation or
   split lands in it while the reclaim runs.
@@ -112,7 +111,7 @@ every object in any of them, every mapping of their pages. This is seL4's `Revok
 Fuchsia's job kill, expressed as a region operation.
 
 It has two shapes. (a1) changes `DESTROY` itself, so it no longer refuses a region with
-children. (a2) adds a separate method on `MemoryRegion` (provisionally `DESTROY_SUBTREE`) and
+children. (a2) adds a separate method on `MemoryRegion` (`DESTROY_SUBTREE`) and
 leaves `DESTROY`'s refusal as it is.
 
 The kernel's work, in order:
@@ -280,8 +279,7 @@ reversible one; (c) loses on §40's guarantee, not on effort.
 
 ## What follows
 
-- (a2) is additive: a new method under `invoke`, with no new syscall number. Its name and number
-  are the architect's, and nothing builds on the provisional spelling.
+- (a2) is additive: method 6 under `invoke`, with no new syscall number.
 - Building it serves milestone 933's recursive-teardown follow-on and §40's guarantee for
   supervisors that build in split regions.
 - The closing mark is also the fix for the race in `reclaim_region` that
