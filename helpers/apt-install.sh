@@ -11,10 +11,13 @@
 #
 # What it does: update against the runner's own sources, with retries. If that update fails, or
 # reports a `Temporary failure resolving` for an ubuntu.com host, rewrite the Ubuntu archive and
-# security sources to mirrors.edge.kernel.org and update again, then install. It reads both source
-# formats: deb822 (`/etc/apt/sources.list.d/*.sources`, which Ubuntu 26.04 uses) and the classic
-# one-line form (`/etc/apt/sources.list`, `*.list`). The rewrite changes only the machine it runs
-# on, and a hosted runner is discarded after its job.
+# security sources to mirrors.edge.kernel.org and update again, then install. When no Ubuntu host
+# the sources name resolves at all, it skips the first update, whose retries would spend minutes on
+# DNS timeouts. It reads both source formats: deb822 (`/etc/apt/sources.list.d/*.sources`, which
+# Ubuntu 26.04 uses) and the classic one-line form (`/etc/apt/sources.list`, `*.list`), and the
+# mirror list a `mirror+file:` source names, which is how the hosted image points at its archive
+# (`/etc/apt/apt-mirrors.txt`). The rewrite changes only the machine it runs on, and a hosted runner
+# is discarded after its job.
 #
 # Signature verification stays on. The mirror serves Ubuntu's own signed Release files, and apt
 # checks them against the archive keys the image already trusts, so a mirror can withhold a package
@@ -57,14 +60,32 @@ update() {
     return "$status"
 }
 
-if ! update; then
+sources="/etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources"
+ubuntu_uri='https?://([a-z0-9-]+\.)*(archive|security)\.ubuntu\.com/ubuntu'
+
+# The files that hold an Ubuntu archive URI: the source files, and each mirror list a
+# `mirror+file:` source names.
+# shellcheck disable=SC2086 # $sources holds globs on purpose.
+ubuntu_files() {
+    for file in $sources $(cat $sources 2>/dev/null | grep -Eo 'mirror\+file:[^ ]+' | sed 's/^mirror+file://' | sort -u); do
+        [ -f "$file" ] && grep -Eq "$ubuntu_uri" "$file" && echo "$file"
+    done
+}
+
+# Succeed when at least one Ubuntu host those files name resolves.
+ubuntu_resolves() {
+    for host in $(ubuntu_files | xargs cat | grep -Eo "$ubuntu_uri" | sed -E 's#^https?://##; s#/.*##' | sort -u); do
+        getent hosts "$host" >/dev/null && return 0
+    done
+    return 1
+}
+
+if ! ubuntu_resolves || ! update; then
     echo "apt-install: the runner's Ubuntu archive is unreachable; switching its sources to $mirror" >&2
-    for file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
-        [ -f "$file" ] || continue
-        grep -Eq '://([a-z0-9-]+\.)*(archive|security)\.ubuntu\.com/ubuntu' "$file" || continue
-        # One expression serves both formats: deb822's `URIs:` field and a one-line `deb` entry both
-        # hold the URI as a single token.
-        $as_root sed -Ei "s#https?://([a-z0-9-]+\.)*(archive|security)\.ubuntu\.com/ubuntu/?#$mirror#g" "$file"
+    for file in $(ubuntu_files); do
+        # One expression serves every format: deb822's `URIs:` field, a one-line `deb` entry and a
+        # mirror list's line each hold the URI as a single token.
+        $as_root sed -Ei "s#$ubuntu_uri/?#$mirror#g" "$file"
         echo "apt-install: rewrote $file" >&2
     done
     update
