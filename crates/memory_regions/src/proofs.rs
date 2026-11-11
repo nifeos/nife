@@ -281,9 +281,11 @@ impl Run {
                 (base_page, pages, watermark, retyped_to),
                 pinned,
                 own[r][REGION_COUNT],
-                ceilings_of(r, root_ceilings),
-                Ceilings::from_counts(live[r]),
-                core::array::from_fn(|k| own[r][k]),
+                (
+                    ceilings_of(r, root_ceilings),
+                    Ceilings::from_counts(live[r]),
+                    core::array::from_fn(|k| own[r][k]),
+                ),
             );
             parent = names[r].expect("the table has room for the tree");
             (spent_from, spent_to) = (base_page, base_page + watermark);
