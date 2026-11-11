@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: the-merge-queue-is-sized-to-the-runner-pool
 raised: 2026-11-04
 milestone_dependencies: 965
@@ -74,6 +74,17 @@ Which settings, in which order? The ruling above took the first two steps of (a)
   measurement that justified them.
 - A week of queue data shows the median group wall time and the share of hosted jobs that waited
   over 5 minutes, before and after.
+
+## Follow-on
+
+- **Done.** The ruling of 2026-11-11 (UTC): the queue stays at 5 builds with `ALLGREEN` grouping, and
+  `NIFE_RUNNER_OWNED` stays `false`.
+- **Outstanding.** The fixes the ruling waits for: the lint failures inside merge groups
+  ([lint fails in the queue after passing on the pull request](proposals/lint-fails-in-the-queue-after-passing-on-the-pull-request.md))
+  and a green owned-runner canary, which then sets `NIFE_RUNNER_OWNED` to `true`.
+- **Outstanding.** A second week of queue data after those fixes: the median group wall time and the
+  share of hosted jobs that waited over 5 minutes, and from it the settings in `notes/merge-queue.md`'s
+  "The queue's own settings".
 
 ## Index row
 
