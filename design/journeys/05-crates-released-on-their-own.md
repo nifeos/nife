@@ -38,8 +38,9 @@ The end state, ruled the same day: this repository breaks up into single-purpose
 remains, as `nifeos/nife`, only for its history, and the kernel, programs, tooling and crates all leave, bottom-up.
 The kernel leaves last among the code, to `nife-kernel` (provisional), a named part of the system
 as Linux is, while the project name stays with the whole. The design record (roadmap, decisions,
-journeys, naming, notes) moves to one repository named `nifeos.org`, ruled 2026-11-01 (UTC), which
-holds the whole site published at nifeos.org. Its creation still needs the architect's approval.
+journeys, naming, notes) moves to its own repository, `nifeos/record`, ruled 2026-11-10 (UTC), which
+the site published at nifeos.org pulls at build time. Milestone 1018 (the design record moves to
+`nifeos/record` and is published as a website) creates it at its step 6.
 This journey tracks the crates.
 Its steps are of two kinds. A publish-ours crate publishes to crates.io, as the table below lays
 out. A contract crate moves to a repository of its own and carries a version whether or not it

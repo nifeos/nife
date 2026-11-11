@@ -200,7 +200,7 @@ three new names ratified and carrying eight refusals between them.
   had already left that block on 2026-09-26, when milestone 106 (a wait that ends on either the
   interrupt or the deadline) was recorded BUILT in commit `27e501401` and the table was replaced.
   So there was nothing there to repoint. The two places it meant are
-  the module docs' one-shot section of `components/src/network_time_client.rs` and `RETRY_GAP_NS`
+  the module docs' one-shot section of `components/src/network_time_client.rs` and `RETRY_GAP_NANOSECONDS`
   in the same file, and the retry gap now sleeps on a timer.
 - The report vocabulary is one numbering space across three programs that no longer share a
   binary. The numbers were kept exactly where they were so that a boot log from before this
