@@ -26,7 +26,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 
 - Step 1 waits for milestone 811 (the boot services leave the kernel)'s step 6.
 - Step 2 waits on no other work: §320 (the JH7110 clock and reset wire) states its wire.
-- Steps 3 and 5 wait for step 2, whose server brings their clocks and resets up.
+- Steps 3 and 5 wait for step 2's server.
 - Milestone 1064 (PCI enumeration leaves the kernel) follows this milestone and milestone 1068
   (the kernel turns interrupt remapping on where an IOMMU offers it).
 
@@ -51,11 +51,10 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `crates/jh7110_clock_and_reset_contract` and its device table
    `jh7110_clock_and_reset_devices`. The SD/MMC starters ask it too, and the reboot path's I2C5
    bring-up keeps the kernel's walk until step 5 replaces that path.
-3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
-   server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its
-   userspace control process holds the channel and MAC pages. `kernel/src/designware_ethernet.rs`
-   goes, and the kernel stops linking `crates/designware_ethernet`. radon proves it, so this step
-   needs a person.
+3. The DesignWare GMAC control plane. Its clocks and resets come up through step 2's bring-up
+   verb, and a userspace control process holds the channel and MAC pages.
+   `kernel/src/designware_ethernet.rs` goes, and `kernel/Cargo.toml` stops naming the crate.
+   radon proves it.
 4. The NVMe admin plane, as §86 states it: a userspace admin process holds BAR0 and the admin
    queues and grants the data-path driver its doorbell page and I/O queues. The admin half of
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
@@ -276,8 +275,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
    clock, and radon's Ethernet and reboot bench boots.
 3. `reboot` on radon resets the board through the userspace route, and resets it through `REBOOT`
    when the route is absent.
-4. `script/fastpath-footprint` reports no change. None of these paths is hot, so a change there
-   is a finding.
+4. `script/fastpath-footprint` reports no change: none of these paths is hot.
 5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
    CI runs the direct and the mediated path on all three architectures.
 
@@ -287,8 +285,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
 - **Outstanding.** Step 2: the kernel still walks five callers' plans.
-- **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
-  `kernel/src/reboot/designware_i2c.rs` exist.
+- **Outstanding.** Step 3: `PROVEN_ON_SILICON` is `false` until radon boots #3498.
+- **Outstanding.** Step 5: `kernel/src/reboot/designware_i2c.rs` exists.
 - **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
 
 ## Index row
