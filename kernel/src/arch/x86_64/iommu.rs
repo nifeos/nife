@@ -1448,7 +1448,10 @@ mod proofs {
     /// bits of the requester id, so no other function, not even another function of the same
     /// device, passes the check.
     ///
-    /// Falsification: replayable `kernel/falsifications/arch.x86_64.iommu.proofs.a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester.patch`
+    /// Falsification: attested 2026-11-11. `kernel/falsifications/arch.x86_64.iommu.proofs.a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester.patch`
+    /// The record is `attested` rather than `replayable` because a `#[kani::proof]` compiles for
+    /// the host and only an x86_64 host compiles this module; the `sweep-x86_64` job in
+    /// `.github/workflows/falsifications.yml` replays it with `--sweep-attested`.
     #[kani::proof]
     fn a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester() {
         let vector: u8 = kani::any();
@@ -1501,7 +1504,10 @@ mod proofs {
     /// to its own handle, carries the entry's vector (an end of interrupt matches on it) and
     /// arrives unmasked with no delivery-mode bits.
     ///
-    /// Falsification: replayable `kernel/falsifications/arch.x86_64.iommu.proofs.a_message_names_exactly_one_remapping_entry.patch`
+    /// Falsification: attested 2026-11-11. `kernel/falsifications/arch.x86_64.iommu.proofs.a_message_names_exactly_one_remapping_entry.patch`
+    /// The record is `attested` rather than `replayable` because a `#[kani::proof]` compiles for
+    /// the host and only an x86_64 host compiles this module; the `sweep-x86_64` job in
+    /// `.github/workflows/falsifications.yml` replays it with `--sweep-attested`.
     #[kani::proof]
     fn a_message_names_exactly_one_remapping_entry() {
         let a: u16 = kani::any();
