@@ -5,8 +5,7 @@
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the ring-3 syscall stubs, why `rdtsc` is ambient here, the `CR4.PCE` door, and `cntfrq()`. It exists
 to verify or challenge the main page. A reader who only needs to build, boot or test the x86_64 port
-should not have to open it. The directory `notes/x86-port/` and this file's stem are provisional
-names; naming is calef's.*
+should not have to open it.*
 
 *Records cited below: §121 (a device with no page) and §124 (the x86_64 syscall ABI).*
 
