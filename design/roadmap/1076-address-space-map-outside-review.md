@@ -47,7 +47,7 @@ otherwise.
    Finding: `the_user_linker_script_links_at_the_image_base` does
    `include_str!("../../user_mode_runtime/link.ld")`, so the crate's test target compiles only
    inside nife's tree. Standing alone it fails at compile time before any test runs.
-   Evidence: `src/lib.rs:358`; the standalone build above. Milestone 1017's blocker table names this
+   Evidence: `src/lib.rs` line 358; the standalone build above. Milestone 1017's blocker table names this
    row with the same resolution.
    Change: invert the test. `user_mode_runtime` stays in nife and already depends on the crate, so
    the test moves there and parses its own `link.ld` against `address_space_map::IMAGE_BASE`. The
@@ -62,7 +62,7 @@ otherwise.
    `a/crates/address_space_map/src/lib.rs`, which `git apply -p1` cannot resolve in the crate's own
    repository. The template's `falsify.py --check` reports "replayable with no patch path" for all
    nine, and the replay would fail every patch as stale.
-   Evidence: `src/verification.rs:53, 74, 99, 110, 123, 133, 146, 156, 171`; the nine files under
+   Evidence: `src/verification.rs` lines 53, 74, 99, 110, 123, 133, 146, 156 and 171; the nine files under
    `crates/address_space_map/falsifications/`; the `--check` run above.
    Change: in the move commit, rewrite the nine record lines and the eighteen path lines (two per
    patch header) to crate-relative form, and run the template's `falsify.py` once without `--check`, so each patch visibly turns exactly its own harness red. The patch headers' "Expected to fail"
@@ -75,7 +75,7 @@ otherwise.
    `repository`, `readme`, `keywords` or `categories`. The template's `standalone.py` refuses
    workspace inheritance, a missing `rust-version` and `publish = false` on a crate that means to
    release. The crate's `Cargo.toml` comment cites milestone 206 and §171 as nife paths.
-   Evidence: `crates/address_space_map/Cargo.toml:5-6, 8-13, 15-16`.
+   Evidence: `crates/address_space_map/Cargo.toml` lines 5 to 6, 8 to 13 and 15 to 16.
    Change: `license = "MIT OR Apache-2.0"`, `rust-version = "1.87"` (the lowest the 1.85 failure allows; the template's weekly `msrv` job will confirm the exact floor), and the three template lints inline (`unsafe_op_in_unsafe_fn`, `missing_docs`, `unexpected_cfgs` naming `cfg(kani)`), a one-line
    `description`, `repository` and `readme`. Keep `publish = false` with a one-sentence comment a
    stranger can act on ("stays until the release that publishes"), since a separate ruling holds publication and this block does not reopen it.
@@ -98,7 +98,7 @@ landed commit) each becomes
 the form `components/Cargo.toml` already uses for `jh7110_entropy` and `e1000e`. Milestone 1017 rules
 one revision per contract per image, so all twenty-six move in one pull request, and recommends a
 root `[workspace.dependencies]` entry so the next bump touches one line. For `memory_region_heap`
-(`crates/memory_region_heap/Cargo.toml:21`), whose default heap base is the map's `HEAP.start`,
+(`crates/memory_region_heap/Cargo.toml` line 21), whose default heap base is the map's `HEAP.start`,
 the same line applies. `cargo xtask std-src` also generates its core into std. Whether that generator resolves a git dependency where it resolved a path one stays unverified and deserves one dry run before the pull request. The crate leaves `crates/publish-allowlist.txt`'s rule by gaining
 its row, and the root `Cargo.toml`'s member list drops it.
 
@@ -128,7 +128,7 @@ Prior art: FreeBSD's header is `vmparam.h`, "virtual memory parameters"; Linux's
 "memory map"; the Rust crates above say `VirtAddr` and `GuestMemoryRegion` and have no word for a
 fixed layout because none has one.
 
-Concrete example: `crates/current_cpu_contract/src/lib.rs:141` would read
+Concrete example: `crates/current_cpu_contract/src/lib.rs` line 141 would read
 `pub const PAGE_VA: u64 = address_space_layout::CURRENT_CPU_PAGE;` (and, with decision 2,
 `address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`).
 
@@ -150,7 +150,7 @@ the fields, splits one rule across one enum and is not recommended.
 
 Prior art: FreeBSD's `USRSTACK` and `SHAREDPAGE` carry no unit or kind, and a reader needs the header's comments. `vm-memory` types the kind instead (`GuestAddress`). This crate's bare `u64` constants cannot do that without a wrapper type, a larger change than a name.
 
-Concrete example: `kernel/src/user.rs:21`, `pub const USER_STACK_TOP: u64 =
+Concrete example: `kernel/src/user.rs` line 21, `pub const USER_STACK_TOP: u64 =
 address_space_map::STACK_TOP;`, becomes `... = address_space_layout::STACK_TOP_VIRTUAL_ADDRESS;`,
 and a reader of the kernel knows it is an address without opening the crate.
 
@@ -172,7 +172,7 @@ checking `HEAP`). Keeping the one-page functions means no caller changes.
 
 Prior art: `vm-memory` checks a region's range against its neighbors once, as data, when the code builds the memory. nife checks at the use site, at compile time, which is the design choice §171 made.
 
-Concrete example: `crates/process_builder/src/lib.rs:51-54` builds `SCRATCH_WINDOW` from two `runtime_window` calls, one for the start and one for the end. With `window` it is one call that also proves the 64 MiB between them lies in the band.
+Concrete example: `crates/process_builder/src/lib.rs` lines 51 to 54 builds `SCRATCH_WINDOW` from two `runtime_window` calls, one for the start and one for the end. With `window` it is one call that also proves the 64 MiB between them lies in the band.
 
 ## Done when
 

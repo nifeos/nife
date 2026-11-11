@@ -62,7 +62,7 @@ layout, a dependency); everything else is two-way and the maintainer decides it.
    the line the dry run prints for four manifests), and into its first tag. The publish hold means nothing goes out soon, and the hold is not the point. The move creates the repository and the pins. A package name that can never go out is a name the repository would have to change later, with a second repository and a second round of pins. crates.io
    does not transfer a registered name on request; only the owner can.
    Evidence: the crates.io API response for `calendar`; `script/crate-move`'s nife-side list;
-   `crates/calendar/Cargo.toml:2`.
+   `crates/calendar/Cargo.toml` line 2.
    Change: the architect picks the package name before the repository exists (the decision
    below). The move lane then renames the directory, the manifest and the six manifests that name
    it, and the move tool's follow-up list names the other files.
@@ -72,8 +72,8 @@ layout, a dependency); everything else is two-way and the maintainer decides it.
    refuses it.
    Finding: `helpers/crate_move.py` regenerates each patch over the stripped source by running
    `diff -u` through `run()`, which returns `(stdout + stderr).strip()`
-   (`helpers/crate_move.py:576`), and then joins the pieces with `.rstrip('\n')`
-   (`helpers/crate_move.py:113` to `:116`). A unified diff whose last context line is blank ends
+   (`helpers/crate_move.py` line 576), and then joins the pieces with `.rstrip('\n')`
+   (`helpers/crate_move.py` line 113 to `:116`). A unified diff whose last context line is blank ends
    in a line holding one space; `strip()` deletes it. The hunk header still counts it. For
    `verification.every_real_date_survives_its_own_day_number.patch` the edit is the last
    expression of `Civil::to_unix`, the third trailing context line is the blank line after the
@@ -82,7 +82,7 @@ layout, a dependency); everything else is two-way and the maintainer decides it.
    which the template's `falsify.py --check` uses, answers `corrupt patch at line 19`. The staged
    repository's first `proofs / falsify` run is red for a reason no change in the crate removes.
    Any crate whose patch ends on a blank context line hits the same.
-   Evidence: `helpers/crate_move.py:113` to `:116` and `:576`; the staged patch in the dry-run
+   Evidence: `helpers/crate_move.py` line 113 to `:116` and `:576`; the staged patch in the dry-run
    directory; `git apply --check -p1` on it.
    Change: in `regenerate_patch`, take `diff`'s output unstripped (or strip `\n` only), and add a selftest fixture with a blank line after its edit. Owner: nife's tooling, through its own
    queue; this block names the dependency on the blocked side.
@@ -90,8 +90,8 @@ layout, a dependency); everything else is two-way and the maintainer decides it.
 
 3. The crate does not stand alone: no README, and a manifest and sources that point into this
    tree.
-   Finding: `standalone.py` lists eleven lines. There is no README, no `LICENSE-MIT` and no `LICENSE-APACHE`. `license.workspace = true` and `lints.workspace = true` inherit a workspace that will not be there (`Cargo.toml:6`, `:15` to `:16`). There is no `rust-version`. `publish = false` carries a comment naming `crates/publish-allowlist.txt` (`Cargo.toml:5`). The manifest's comment holds three milestone citations (`Cargo.toml:8` to `:12`). Eleven paths point into the nife tree (`notes/calendar.md` nine times, `script/verify` at `src/lib.rs:836`, `notes/verification/calendar-proofs.md` at `:843`). Six `Name:` blocks remain (the move tool strips these). Two lines name the architect (`src/lib.rs:11`, `:16`). Beyond what the script sees, the documentation leans on this tree in places a stranger cannot follow. They are "the same discipline the capability types use (a `Cap` you hold is one that was minted)" at `:232`, "a `date -s` verb" at `:247` and `:1054`, "the clock service" and "the NTP client" in the manifest comment, and `VERSION`'s doc comment at `:15` to `:18`. That comment explains the constant by a pull request number and another crate's kind.
-   Evidence: `standalone.py` output; the lines above; `packages/homes.toml:130` to `:133`, which
+   Finding: `standalone.py` lists eleven lines. There is no README, no `LICENSE-MIT` and no `LICENSE-APACHE`. `license.workspace = true` and `lints.workspace = true` inherit a workspace that will not be there (`Cargo.toml` line 6, `:15` to `:16`). There is no `rust-version`. `publish = false` carries a comment naming `crates/publish-allowlist.txt` (`Cargo.toml` line 5). The manifest's comment holds three milestone citations (`Cargo.toml` line 8 to `:12`). Eleven paths point into the nife tree (`notes/calendar.md` nine times, `script/verify` at `src/lib.rs` line 836, `notes/verification/calendar-proofs.md` at `:843`). Six `Name:` blocks remain (the move tool strips these). Two lines name the architect (`src/lib.rs` line 11, `:16`). Beyond what the script sees, the documentation leans on this tree in places a stranger cannot follow. They are "the same discipline the capability types use (a `Cap` you hold is one that was minted)" at `:232`, "a `date -s` verb" at `:247` and `:1054`, "the clock service" and "the NTP client" in the manifest comment, and `VERSION`'s doc comment at `:15` to `:18`. That comment explains the constant by a pull request number and another crate's kind.
+   Evidence: `standalone.py` output; the lines above; `packages/homes.toml` line 130 to `:133`, which
    assigns `notes/calendar.md` and `notes/verification/calendar-proofs.md` to leave with the
    crate.
    Change: a README in the scaffold's order (`scaffold/README-crate.md`), written from `notes/calendar.md`. It holds the one-line purpose and the EXAMPLES section with the round trip and a parse. It states the range and the four refusals (zone database, `strftime`, durations, leap seconds) as the crate's own statements rather than as a note's. The section "What is proven" gives eleven lines in a user's words with the harness names. The build and proof commands carry `cargo kani`'s time and peak memory, measured on the staged tree. The README works one falsification patch as an example. It ends with the minimum Rust version and the license section. In the manifest: `license = "MIT OR
@@ -101,7 +101,7 @@ layout, a dependency); everything else is two-way and the maintainer decides it.
    rewritten without milestone numbers. In the sources, every `notes/...` and `script/...` reference becomes a README section reference or the lane deletes it. `VERSION`'s doc states what it is (the formatting's generation, checked by nothing at run time) and no more. The lane rewrites the `Cap` sentence and the `date -s` sentences for a reader with no nife. Then record a stranger
    run. The two notes become the README and a `docs/` page; the proofs note's table still names
    the monotonicity harness `later_days_are_later_dates`, and the harness is
-   `each_day_sorts_after_the_one_before_it` (`src/lib.rs:936`), so the copy fixes that line.
+   `each_day_sorts_after_the_one_before_it` (`src/lib.rs` line 936), so the copy fixes that line.
    Door: two-way. Effort: M.
 
 ### P1: before the first tag

@@ -42,7 +42,7 @@ dependency); everything else is two-way and the maintainer decides it.
 ### P0: red on arrival
 
 1. `cargo clippy -- -D warnings` fails in the staged repository.
-   Finding: `src/survey.rs:39` writes `VisionFive 2's` without backticks, which `clippy::doc_markdown`
+   Finding: `src/survey.rs` line 39 writes `VisionFive 2's` without backticks, which `clippy::doc_markdown`
    (a lint the manifest turns on) reports. nife passes it only because the root `clippy.toml` lists
    `VisionFive` under `doc-valid-idents`; the template's scaffold carries no `clippy.toml`, so the
    `check / clippy` job is red on the first push. Verified on stable 1.99.1 and on the pinned nightly.
@@ -62,9 +62,9 @@ dependency); everything else is two-way and the maintainer decides it.
 
 3. The crate names nife and nife programs.
    Finding: `helpers/lint_externalized_crates.py` counts six hits, and the dry run's own
-   nife-word check fails: `README.md` ("written for the nife kernel"), `src/lib.rs:270` (a comment
-   about "nife's standard library" generator), `src/rendezvous.rs:30` ("makes nife a capability
-   system"), and `src/virtio.rs:33` to `35`. These lines name `entropy`, `net_stack`, `gpu_driver`,
+   nife-word check fails: `README.md` ("written for the nife kernel"), `src/lib.rs` line 270 (a comment
+   about "nife's standard library" generator), `src/rendezvous.rs` line 30 ("makes nife a capability
+   system"), and `src/virtio.rs` line 33 to 35. These lines name `entropy`, `net_stack`, `gpu_driver`,
    `keyboard_driver` and `system_initializer` with their ring offsets.
    Fix: say "a capability kernel" and "the drivers that map the region"; the ring offsets belong
    in the drivers that own them, not in the constant that reserves the last eight bytes.
@@ -72,14 +72,14 @@ dependency); everything else is two-way and the maintainer decides it.
 
 4. Twenty-eight references point into nife's internals, which a stranger cannot follow.
    Finding: after the move strips the `Name:` blocks, the doc comments still cite
-   `cap::CAPABILITY_TABLE_SLOTS` (`src/lib.rs:95`), `capability::Rights::ALL`, `::BIND` and
-   `::ENUMERATE` (`src/lib.rs:210`, `src/rights.rs:9`, `14`, `19`), `user_mode_runtime::cycle_reading`,
-   `::receive_request` and `::reply` (`src/lib.rs:226`, `src/rendezvous.rs:108`),
-   `std_runtime_contract::SLOTS` (`src/memory_region.rs:26`), `current_cpu_contract::THREAD_PAGE_SLOTS` (`src/thread_control_block.rs:8`), `filesystem_contract` (`src/rights.rs:9`, `src/reboot.rs:7`) and `crates/byte_sink_contract` (`src/rendezvous.rs:10`). They also cite `entropy_contract` and `credential_contract`
-   (`src/lib.rs:384`), `inter_process_communication::timer` (`src/timer.rs:41`), `sched::last_cpus`
-   (`src/survey.rs:50`), `console::configure_from_dtb` (`src/uart.rs:6`), "AGENTS.md rule 7"
-   (`src/lib.rs:227`), "claim 11" (`src/page_frame.rs:6`, `src/address_space.rs:8`), "(19c)"
-   (`src/lib.rs:184`). The programs `pmap` and `ps` appear in `src/memory_region.rs:52`, `src/address_space.rs:28` and `src/survey.rs:13`. A raw HTML link into the kernel's rustdoc, `../user/struct.Spawn.html` (`src/fault.rs:3`), does not resolve in the crate's own docs, and rustdoc does not check it. `src/address_space.rs:4` cites `frame::MAP`, a module that does not
+   `cap::CAPABILITY_TABLE_SLOTS` (`src/lib.rs` line 95), `capability::Rights::ALL`, `::BIND` and
+   `::ENUMERATE` (`src/lib.rs` line 210, `src/rights.rs` line 9, 14, 19), `user_mode_runtime::cycle_reading`,
+   `::receive_request` and `::reply` (`src/lib.rs` line 226, `src/rendezvous.rs` line 108),
+   `std_runtime_contract::SLOTS` (`src/memory_region.rs` line 26), `current_cpu_contract::THREAD_PAGE_SLOTS` (`src/thread_control_block.rs` line 8), `filesystem_contract` (`src/rights.rs` line 9, `src/reboot.rs` line 7) and `crates/byte_sink_contract` (`src/rendezvous.rs` line 10). They also cite `entropy_contract` and `credential_contract`
+   (`src/lib.rs` line 384), `inter_process_communication::timer` (`src/timer.rs` line 41), `sched::last_cpus`
+   (`src/survey.rs` line 50), `console::configure_from_dtb` (`src/uart.rs` line 6), "AGENTS.md rule 7"
+   (`src/lib.rs` line 227), "claim 11" (`src/page_frame.rs` line 6, `src/address_space.rs` line 8), "(19c)"
+   (`src/lib.rs` line 184). The programs `pmap` and `ps` appear in `src/memory_region.rs` line 52, `src/address_space.rs` line 28 and `src/survey.rs` line 13. A raw HTML link into the kernel's rustdoc, `../user/struct.Spawn.html` (`src/fault.rs` line 3), does not resolve in the crate's own docs, and rustdoc does not check it. `src/address_space.rs` line 4 cites `frame::MAP`, a module that does not
    exist (it is `page_frame`).
    Fix: restate each as a fact about the boundary ("the kernel asserts its own table size equal to
    this at compile time"; "a runtime wrapper tests `x4`, never `x1`"); delete the HTML link; name
@@ -87,33 +87,33 @@ dependency); everything else is two-way and the maintainer decides it.
    Effort: M. Door: two-way.
 
 5. The virtio contract documents an error that does not exist.
-   Finding: `src/virtio.rs:19` says `SETUP_QUEUE` answers `BadQueue`/`WrongObject`. `Error` has no
+   Finding: `src/virtio.rs` line 19 says `SETUP_QUEUE` answers `BadQueue`/`WrongObject`. `Error` has no
    `BadQueue`; the kernel maps every transport refusal but a DMA escape to `WrongObject`
-   (`kernel/src/syscall/object_methods.rs:234`). A reader who matches on `BadQueue` finds nothing to
+   (`kernel/src/syscall/object_methods.rs` line 234). A reader who matches on `BadQueue` finds nothing to
    match.
    Fix: "`WrongObject` when `queue` is out of range, the block does not fit the region, or the
    queue was never set up".
    Effort: S. Door: two-way.
 
 6. The crate root understates the register convention.
-   Finding: `src/lib.rs:6` to `7` say `x0` carries the slot, `x1` the method, `x2` to `x4` the
+   Finding: `src/lib.rs` line 6 to 7 say `x0` carries the slot, `x1` the method, `x2` to `x4` the
    arguments and `x0` the result. The runtime's trap moves six words in both directions
    (`x0` to `x5`, `a0` to `a5`); `RECEIVE` writes `x3` and `x4`; a death delivers a sixth word
-   (`src/fault.rs:26`); `CONFIGURE` reads "argument register 6" (`src/thread_control_block.rs:9`),
+   (`src/fault.rs` line 26); `CONFIGURE` reads "argument register 6" (`src/thread_control_block.rs` line 9),
    a register the root never admits. The names are aarch64's throughout; the README says "or the
-   architecture's equivalent" and the crate never says what that is beyond `START` (`src/thread_control_block.rs:29`)
-   and `LIST` (`src/address_space.rs:31`). The x86_64 names of words 3 to 5 are not verified here.
+   architecture's equivalent" and the crate never says what that is beyond `START` (`src/thread_control_block.rs` line 29)
+   and `LIST` (`src/address_space.rs` line 31). The x86_64 names of words 3 to 5 are not verified here.
    Fix: one table at the crate root: word, aarch64, riscv64, x86_64, meaning on entry, meaning on
    return; every module doc then says "word 3" or keeps `x3` with the table to read it by.
    Effort: S. Door: two-way (documentation of a wire that does not change).
 
 7. Three statements contradict the crate.
-   Finding: (a) `src/lib.rs:184` says of an address space that "nothing can run in it until TCBs
-   arrive", while `thread_control_block::CONFIGURE` binds one and the same paragraph says a thread can take a binding. (b) `src/lib.rs:104` to `109` keep `console::WRITE` "so the ABI's history is
+   Finding: (a) `src/lib.rs` line 184 says of an address space that "nothing can run in it until TCBs
+   arrive", while `thread_control_block::CONFIGURE` binds one and the same paragraph says a thread can take a binding. (b) `src/lib.rs` line 104 to 109 keep `console::WRITE` "so the ABI's history is
    legible", a method of an object no kernel serves, with no user in the tree; the tree's rule is
    that git holds history. (c) `README.md` says "BUGS: None known" while the crate carries five
-   `# BUGS` sections (`src/rendezvous.rs:20`, `46`, `71`; `src/memory_region.rs:56`;
-   `src/lib.rs:247`), two of them real wire warts (a message word that reads as an error; a death
+   `# BUGS` sections (`src/rendezvous.rs` line 20, 46, 71; `src/memory_region.rs` line 56;
+   `src/lib.rs` line 247), two of them real wire warts (a message word that reads as an error; a death
    read through `RECEIVE_CAPABILITY` loses its `pc`).
    Fix: (a) delete the sentence; (b) delete the `console` module and its pinned line, under
    decision B; (c) the README's BUGS section lists the five in one line each.
@@ -121,7 +121,7 @@ dependency); everything else is two-way and the maintainer decides it.
 
 8. Dates and rulings stand in doc comments as history.
    Finding: 23 dated phrases remain in `src/` after the move strips the `Name:` blocks, such as
-   `src/lib.rs:101` ("the size was set on"), `:171` ("confirmed on"), `:307` ("ruled on") and `:357` ("were ratified on"). Others sit at `src/memory_region.rs:11` and `:54`, `src/rendezvous.rs:82` and `:109`, `src/survey.rs:19`, `src/notification.rs:33`, `src/reboot.rs:5`, `src/object_type.rs:29`, `src/cycle_counter.rs:31`, `src/timer.rs:39`, `src/reply.rs:7` and `src/thread_control_block.rs:43`, plus four "Index exception (date)" comments in `src/lib.rs`. §267 and §298 put these in commit
+   `src/lib.rs` line 101 ("the size was set on"), `:171` ("confirmed on"), `:307` ("ruled on") and `:357` ("were ratified on"). Others sit at `src/memory_region.rs` line 11 and `:54`, `src/rendezvous.rs` line 82 and `:109`, `src/survey.rs` line 19, `src/notification.rs` line 33, `src/reboot.rs` line 5, `src/object_type.rs` line 29, `src/cycle_counter.rs` line 31, `src/timer.rs` line 39, `src/reply.rs` line 7 and `src/thread_control_block.rs` line 43, plus four "Index exception (date)" comments in `src/lib.rs`. §267 and §298 put these in commit
    messages; the template's `history phrases` gate reads only markdown today, so nothing refuses
    them, and a stranger reads them as noise.
    Fix: state each rule in the present tense; where the sentence is provenance, move it into the
@@ -137,7 +137,7 @@ dependency); everything else is two-way and the maintainer decides it.
    Effort: S. Door: two-way.
 
 10. The manifest's publish comment points out of the repository.
-    Finding: `Cargo.toml:10` says "the allowlist lint holds the exception (crates/publish-allowlist.txt)",
+    Finding: `Cargo.toml` line 10 says "the allowlist lint holds the exception (crates/publish-allowlist.txt)",
     a file the new repository will not have. The same finding as milestone 1048's first item.
     Fix: "`false` until the release that publishes; that release deletes the line".
     Effort: S. Door: two-way.
@@ -155,8 +155,8 @@ dependency); everything else is two-way and the maintainer decides it.
     Effort: M. Door: two-way.
 
 12. Two function names break rules a stranger reads as inconsistency.
-    Finding: `futex::admitted(flags) -> bool` (`src/futex.rs:16`) is a bare participle. `design/naming.md` ("Functions that answer yes or no") wants `is_admitted`, and the template's
-    `question_shape.py` refuses it at ceiling 0. `Error::from_ret` (`src/lib.rs:387`) abbreviates
+    Finding: `futex::admitted(flags) -> bool` (`src/futex.rs` line 16) is a bare participle. `design/naming.md` ("Functions that answer yes or no") wants `is_admitted`, and the template's
+    `question_shape.py` refuses it at ceiling 0. `Error::from_ret` (`src/lib.rs` line 387) abbreviates
     "return"; the standard library's spelling of the same conversion is `TryFrom<i64>`, which also
     gives `?` and `.try_into()` for free. Both names are provisional; `admitted` has one kernel
     caller, `from_ret` six.

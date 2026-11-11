@@ -6,9 +6,9 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 
 4. The public arithmetic takes bare `usize` and has three edges no `Layout` reaches.
    Finding: `class(size, align)` rounds `size` with `next_multiple_of(GRID)` before it compares to
-   `LARGEST` (`src/lib.rs:66-74`). In release, `class(usize::MAX, 8)` wraps to zero, passes the
+   `LARGEST` (`src/lib.rs` lines 66 to 74). In release, `class(usize::MAX, 8)` wraps to zero, passes the
    bound and returns `Some(18446744073709551615)` (verified); in debug it panics. `class_bytes(c)`
-   computes `(c + 1) * GRID` (`src/lib.rs:79`), which overflows the same way on a large index (inferred). `count`, `take` and `put` index `heads` and `counts` with the bare index, so a class
+   computes `(c + 1) * GRID` (`src/lib.rs` line 79), which overflows the same way on a large index (inferred). `count`, `take` and `put` index `heads` and `counts` with the bare index, so a class
    at or past `CLASSES` panics on bounds (verified for `count`). None of this is reachable through
    a valid `Layout`, whose size is at most `isize::MAX` (verified: `class(isize::MAX as usize, 8)`
    is `None`), and the `std` consumer only passes layouts. The compiler catches a stranger who calls the
@@ -21,7 +21,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 
 5. The consumer relies on "zeroed is empty", and the crate neither states nor tests it.
    Finding: the thread block in the `std` overlay holds a `Cache` in zeroed memory. Its field comment says "Zeroed is empty, so a fresh block needs no setup"
-   (`patches/std-nife/overlay/std/src/sys/thread_local/key/nife.rs:50-51`). `Cache::new` writes null heads and zero counts (`src/lib.rs:139-144`), so the claim is true today. Nothing in the crate says a later field may not break it. A test that reads a `core::mem::zeroed::<Cache>()`
+   (`patches/std-nife/overlay/std/src/sys/thread_local/key/nife.rs` lines 50 to 51). `Cache::new` writes null heads and zero counts (`src/lib.rs` lines 139 to 144), so the claim is true today. Nothing in the crate says a later field may not break it. A test that reads a `core::mem::zeroed::<Cache>()`
    as empty passes (verified on the standalone copy).
    Change: one sentence on `Cache` ("an all-zero `Cache` is empty, so it can live in memory a
    runtime zeroes") and that test.
@@ -29,10 +29,10 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 
 6. `put`'s safety contract stops short of what `spill` and `drain` later assume.
    Finding: `put` asks for `class_bytes(class)` writable grid-aligned bytes used by nothing else
-   (`src/lib.rs:169-172`). That is enough for the cache's own soundness. But every block the cache
+   (`src/lib.rs` lines 169 to 172). That is enough for the cache's own soundness. But every block the cache
    hands to `spill`'s or `drain`'s callback goes to a heap under `class_layout(class)` in both the
-   host test and the consumer (`src/lib.rs:411, 423`;
-   `patches/std-nife/overlay/std/src/sys/alloc/nife/entry.rs:43`). A block that merely satisfies
+   host test and the consumer (`src/lib.rs` lines 411 and 423;
+   `patches/std-nife/overlay/std/src/sys/alloc/nife/entry.rs` line 43). A block that merely satisfies
    `put` (a slice of a stack array, as the doc example uses) must never reach a `spill` into a heap.
    The crate does not say where that obligation lives.
    Change: `Cache`'s doc states the owner's rule. A block goes into a `Cache` the owner means to `spill` or `drain` into a heap only if that heap will accept it under `class_layout(class)`. `put`'s `# Safety` points to it. `spill` and `drain` say they hand back only what `put` and
@@ -41,8 +41,8 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 
 7. Five constant names carry no unit or name no thing, against the naming rules this tree applies
    at a release review.
-   Finding: `GRID` is 16 bytes and `LARGEST` is 256 bytes (`src/lib.rs:42, 45`); the units rule says a length or a limit carries its unit, and a limit opens `MAXIMUM_`. `DEPTH` and `BATCH` count blocks (`src/lib.rs:51, 56`). The rule says a count of things names the things.
-   `MOST_CACHED_BYTES` (`src/lib.rs:59`) opens with `MOST_` where the rule writes `MAXIMUM_`. The
+   Finding: `GRID` is 16 bytes and `LARGEST` is 256 bytes (`src/lib.rs` lines 42 and 45); the units rule says a length or a limit carries its unit, and a limit opens `MAXIMUM_`. `DEPTH` and `BATCH` count blocks (`src/lib.rs` lines 51 and 56). The rule says a count of things names the things.
+   `MOST_CACHED_BYTES` (`src/lib.rs` line 59) opens with `MOST_` where the rule writes `MAXIMUM_`. The
    template's `unit_symbols` gate passes all five because none carries a symbol; the rule is one
    that a reader applies. The methods `put` and `drain` do not take std's spelling and meaning
    where std has one: `put` is glibc's word for what std and `heapless` call `push`, with the same `Result<(), T>` shape on a full container. std's `drain` returns an iterator where this one takes a closure. `take` matches std's meaning.
@@ -52,7 +52,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 
 8. The crate is `unsafe` at its core and has no proof.
    Finding: 22 `unsafe` sites, 7 of them in production code, each with a `SAFETY` comment a reader
-   can check (`src/lib.rs:87, 105, 161, 181, 217`; the two `unsafe fn` bodies). Kani harnesses:
+   can check (`src/lib.rs` lines 87, 105, 161, 181 and 217; the two `unsafe fn` bodies). Kani harnesses:
    none; falsification patches: none. The scaffold's README template claims every property is a
    harness, which this crate cannot say. The pure functions are a cheap proof: for every `size` up to `LARGEST` and `align` up to `GRID`, `class_bytes(class(size, align))` is at least `size` and under `size + GRID`, and the index is under `CLASSES`. Also, `heap_layout(l)` keeps `l`'s alignment,
    is never empty and is never smaller than `l`. A bounded model of `put` and `take` over a fixed
@@ -63,9 +63,9 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
    Door: two-way. Effort: M.
 
 9. The code relies on the `Free` link's alignment and does not assert it.
-   Finding: `const _: () = assert!(size_of::<Free>() <= GRID)` (`src/lib.rs:119`) checks the size.
+   Finding: `const _: () = assert!(size_of::<Free>() <= GRID)` (`src/lib.rs` line 119) checks the size.
    `put` casts the block to `*mut Free` under `#[allow(clippy::cast_ptr_alignment)]` with the
-   comment that `GRID` alignment "is at least a `Free`'s" (`src/lib.rs:177-179`). True on every
+   comment that `GRID` alignment "is at least a `Free`'s" (`src/lib.rs` lines 177 to 179). True on every
    target the crate builds for, and a one-line `align_of::<Free>() <= GRID` beside the size
    assertion makes it a mechanism rather than a comment.
    Change: that assertion.

@@ -5,7 +5,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
 ## P2: worth doing, not worth holding the move for
 
 10. `propose::req` truncates silently.
-    Finding: `req(operation)` (`src/lib.rs:357`) shifts by 56, so an operation of 256 or more loses
+    Finding: `req(operation)` (`src/lib.rs` line 357) shifts by 56, so an operation of 256 or more loses
     its high bits; `operation(w0)` discards the low 56 bits of a word that nothing says must be zero
     there. Both are correct for the two opcodes that exist.
     Change: a `debug_assert!(operation < 256)` in `req`, or a sentence on each saying the opcode is
@@ -13,7 +13,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
     Door: two-way. Effort: S.
 
 11. `ClockPage::new` takes an integer where a Rust reader expects a pointer.
-    Finding: `pub const unsafe fn new(va: u64)` (`src/lib.rs:233`) casts an integer to
+    Finding: `pub const unsafe fn new(va: u64)` (`src/lib.rs` line 233) casts an integer to
     `*const AtomicU64`. The crate enables `ptr_as_ptr` and `cast_ptr_alignment`, which says it cares
     about pointer hygiene, and an integer-to-pointer cast is the one form those lints cannot see.
     The three callers pass addresses they hold as `u64` (`CLOCK_VA` constants and a physical-to-
@@ -24,7 +24,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
     Door: two-way before the first release; the name is Decision 3's. Effort: S.
 
 12. A test whose name claims more than it checks.
-    Finding: `a_reader_never_returns_data_from_a_half_written_page` (`src/lib.rs:745`) stores an odd
+    Finding: `a_reader_never_returns_data_from_a_half_written_page` (`src/lib.rs` line 745) stores an odd
     sequence and asserts that the word it stored is odd; it never calls `read` on the half-written
     page, as its own comment says. The loom model `a_reader_never_sees_half_a_publish` carries the
     claim.
@@ -33,14 +33,14 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
     Door: two-way. Effort: S.
 
 13. `initialize` relies on a zeroed frame for the reserved words.
-    Finding: `WORDS` (`src/lib.rs:178`) says the rest of the frame "is reserved and must read as
+    Finding: `WORDS` (`src/lib.rs` line 178) says the rest of the frame "is reserved and must read as
     zero"; `initialize` writes four words and nothing else; `read` checks nothing past word three.
     Change: say in `initialize`'s doc that the caller hands it a zeroed frame and the reserved words
     are whatever the frame held, or zero them there. The sentence is enough.
     Door: two-way. Effort: S.
 
 14. `offset_for` saturates to an offset of zero.
-    Finding: `offset_for(wall, monotonic)` (`src/lib.rs:115`) returns 0 when `monotonic > wall`, and
+    Finding: `offset_for(wall, monotonic)` (`src/lib.rs` line 115) returns 0 when `monotonic > wall`, and
     `wall_nanoseconds(0, monotonic)` then reads as uptime since the epoch, which is the reading the
     crate exists to prevent. Unreachable through `policy`, since a plausible wall time exceeds any
     uptime a machine will have, but `publish` accepts any offset from a set-authority holder.

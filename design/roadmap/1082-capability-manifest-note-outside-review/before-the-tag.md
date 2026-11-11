@@ -88,7 +88,7 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
    unsafe for the program that expands the macro, and that program is the one placing bytes in its
    own section. With the scan as it is, `public-crash-inputs: true` turns the fuzz job red, so the
    crate's fuzzing would run only on nife's private fuzz host.
-   Evidence: the scan's output; template `README.md`, "Why only safe-Rust crates opt in".
+   Evidence: the scan's output; the template readme, "Why only safe-Rust crates opt in".
    Change: two options. Keep the opt-in off and fuzz privately (the restrictive choice, and no
    change anywhere), or ask the template, through its own queue, to treat `#[unsafe(...)]`
    attribute syntax inside `macro_rules!` as the caller's `unsafe` and not the crate's. Recommend

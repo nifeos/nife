@@ -4,14 +4,14 @@ An appendix to [the milestone](../1080-calendar-outside-review.md).
 
 4. `UtcOffset::from_hm` multiplies before it checks, so a large hour overflows.
    Finding: `from_hm(hours, minutes)` checks the sign pairing and `minutes`' magnitude, then
-   calls `from_minutes(hours * 60 + minutes)` (`src/lib.rs:432`) with `hours` unbounded. In this
+   calls `from_minutes(hours * 60 + minutes)` (`src/lib.rs` line 432) with `hours` unbounded. In this
    tree, where release builds keep overflow checks on, `from_hm(71_582_789, 0)` panics; in a
    release build with the default profile it wraps to 44 and returns `Ok(+00:44)`, and
    `from_hm(i32::MIN, 0)` returns `Ok(UTC)`. A validating constructor that accepts a wrong value
    is the one thing the crate's documentation says it never does. No caller in the tree calls
    `from_hm` with anything but a literal, and the parser bounds its own hours to two digits, so
    no program reaches it today. The Kani harnesses never call `from_hm`.
-   Evidence: `src/lib.rs:425` to `:433`; the probe runs above.
+   Evidence: `src/lib.rs` line 425 to `:433`; the probe runs above.
    Change: refuse `hours` outside `-23..=23` before the multiply (one compare; the range is the
    grammar's, as the type's doc already says), keep the sign check, and add the two probe values
    and `from_hm(23, 59)` to `tests::utc_offsets`. Add one harness,
@@ -22,11 +22,11 @@ An appendix to [the milestone](../1080-calendar-outside-review.md).
    Door: two-way (only inputs that today panic or wrap change their answer). Effort: S.
 
 5. Names the rules refuse or a stranger misreads.
-   Finding, in the order the checks report them. `FMT_CAP` (`src/lib.rs:522`) fails the
+   Finding, in the order the checks report them. `FMT_CAP` (`src/lib.rs` line 522) fails the
    spelled-out rule (`cap` is `capability`) and the unit rule (a limit carries its unit);
-   `helpers/vendored_name_gates.py:156` already carries it as a known violator at a ceiling. The
-   `len` fields of `Formatted` (`:529`), `Writer` (`:572`) and the test `Sink` (`tests.rs:463`)
-   fail the unit rule. The test binding `ist` (`tests.rs:243`) fails the spelled-out rule
+   `helpers/vendored_name_gates.py` line 156 already carries it as a known violator at a ceiling. The
+   `len` fields of `Formatted` (`:529`), `Writer` (`:572`) and the test `Sink` (`tests.rs` line 463)
+   fail the unit rule. The test binding `ist` (`tests.rs` line 243) fails the spelled-out rule
    (`interrupt_stack_table`); `pst` (`:254`) is the same kind. Beyond the checks, `Weekday::abbrev` (`:174`) is itself an abbreviation. `UtcOffset::from_hm` (`:425`) is two initials. The private `Writer::byte` and `Writer::str` (`:583`, `:590`) are `push` and `push_str` in the standard library's spelling, which the shapes rule asks for. `Civil` (`:236`) is an adjective standing alone, where every library in the table names the thing (`NaiveDateTime`, `PrimitiveDateTime`, `civil::DateTime`). The abbreviations report lists
    `unix`, `utc`, `rfc` and `iso` as not words; each is a name nobody says in full, so the
    repository's `.github/accepted-words` should list them with that reason rather than rename
@@ -40,7 +40,7 @@ An appendix to [the milestone](../1080-calendar-outside-review.md).
 
 6. Callers cannot display or box `Error`, and the value types miss the traits a user reaches for.
    Finding: `Error` derives `Clone, Copy, PartialEq, Eq, Debug` and offers `as_str`
-   (`src/lib.rs:50` to `:90`). It implements neither `core::fmt::Display` nor
+   (`src/lib.rs` line 50 to `:90`). It implements neither `core::fmt::Display` nor
    `core::error::Error`, so `?` into a caller's error type, `anyhow`, and `eprintln!("{e}")` all
    fail to compile; every caller in this tree writes `e.as_str()` or `{e:?}`. `Weekday` has no `PartialOrd`, `Ord` or `Hash`. `Civil` has no `Hash` although it is `Eq` and `Ord`. `Formatted` has no `PartialEq` although it is `Copy`. `DateTime`'s `Eq` is on the whole value, so two readings of one instant at different offsets are unequal, which is right, though no doc a user reads says so.
    Evidence: the derive lines at `:50`, `:153`, `:235`, `:403`, `:448`, `:526`.
@@ -55,11 +55,11 @@ An appendix to [the milestone](../1080-calendar-outside-review.md).
 7. The civil date of a day number is reachable only through the expensive division.
    Finding: `Civil::days_since_epoch` is public and its inverse is the private
    `civil_from_days`. A caller holding a day number multiplies by 86,400 and calls `from_unix`,
-   which divides it back out. `crates/timetable/src/recurrence.rs:166` to `:174` does exactly that. Its comment keeps the monthly half of its logic "free of the calendar so Kani can
+   which divides it back out. `crates/timetable/src/recurrence.rs` line 166 to `:174` does exactly that. Its comment keeps the monthly half of its logic "free of the calendar so Kani can
    reach it", because the division is what the proofs note measured as the expensive part.
-   `vendor/relibc/header/time/mod.rs:519` to `:529` builds `mktime` from a day number the same
+   `vendor/relibc/header/time/mod.rs` line 519 to `:529` builds `mktime` from a day number the same
    way. Both callers would take a day-number constructor.
-   Evidence: the two callers; `src/lib.rs:133` and `:354` to `:357`;
+   Evidence: the two callers; `src/lib.rs` line 133 and `:354` to `:357`;
    `notes/verification/calendar-proofs.md`, the section on where the cost is.
    Change: `Civil::from_days_since_epoch(days: i64) -> Result<Civil, Error>` returning midnight
    of that day, `OutOfRange` outside `FIRST_DAY..=LAST_DAY` (the two constants exist in the
@@ -80,11 +80,11 @@ An appendix to [the milestone](../1080-calendar-outside-review.md).
    Door: two-way. Effort: S.
 
 9. The tests and the hostile-bytes proof stop short of the longest legal input.
-   Finding: `parse_is_total_on_hostile_bytes` quantifies over lengths up to 26 (`src/lib.rs:1059`),
+   Finding: `parse_is_total_on_hostile_bytes` quantifies over lengths up to 26 (`src/lib.rs` line 1059),
    and the shortest input that carries both a fraction and a numeric offset is 27 bytes, so the proof's success path never sees that combination. Neither does any unit test
    (`tests::parse_accepts_rfc3339` pairs every fraction with `Z`). The probe shows it parses
    correctly. No test pins `DateTime::from_unix` at `MINIMUM_TIMESTAMP` with a negative offset
    (`tests::utc_offsets` pins the upper edge), nor `UtcOffset::from_minutes(1439)`.
-   Evidence: `src/lib.rs:1056` to `:1072`; `src/tests.rs:285` to `:315`, `:370` to `:392`.
+   Evidence: `src/lib.rs` line 1056 to `:1072`; `src/tests.rs` line 285 to `:315`, `:370` to `:392`.
    Change: raise the harness's `N` to 28 and its unwind to match, and measure the cost. The proofs note says length drives it. If the run leaves the budget, add a second harness fixed at 27 bytes with the fraction and offset positions concrete. Add the three rows to the tests.
    Door: two-way. Effort: S.

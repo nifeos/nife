@@ -49,16 +49,16 @@ for those.
 ### P0: blocks the move
 
 1. The manifest and the files do not stand alone.
-   Finding: `standalone.py` from the template lists ten findings, and `script/crate-standalone` agrees. The crate has no README, no `LICENSE-MIT`, no `LICENSE-APACHE` and no `rust-version`. It sets `license.workspace = true` and `lints.workspace = true`, which inherit from a workspace the repository will not have. A manifest comment cites a milestone (`Cargo.toml:14`). The crate documentation holds a path into this tree (`src/lib.rs:8`). The crate also carries three provenance blocks and one architect's name (`src/lib.rs:32-34, 84, 99`). `cargo package` adds that the manifest names no `repository`, `documentation` or `homepage`, and it has no `description`, `keywords` or `categories`. The
+   Finding: `standalone.py` from the template lists ten findings, and `script/crate-standalone` agrees. The crate has no README, no `LICENSE-MIT`, no `LICENSE-APACHE` and no `rust-version`. It sets `license.workspace = true` and `lints.workspace = true`, which inherit from a workspace the repository will not have. A manifest comment cites a milestone (`Cargo.toml` line 14). The crate documentation holds a path into this tree (`src/lib.rs` line 8). The crate also carries three provenance blocks and one architect's name (`src/lib.rs` lines 32 to 34, 84 and 99). `cargo package` adds that the manifest names no `repository`, `documentation` or `homepage`, and it has no `description`, `keywords` or `categories`. The
    `publish = false` comment points at `crates/publish-allowlist.txt`, a file of this tree.
    Change: the scaffold's README shape (`README-crate.md`) filled from this crate. It holds one line of purpose, `## EXAMPLES` with the doc example and a second one that puts the cache in front of a heap, `## Building and testing` with the three bare-metal targets, `## BUGS`, `## Minimum Rust version` and `## License`. Add the two license files. Set `license = "MIT OR Apache-2.0"`, `rust-version = "1.88"` (verified to build), `description`, `repository` and `categories = ["no-std", "memory-management"]`. Add an inline `[lints]` table carrying `unsafe_op_in_unsafe_fn`, `missing_docs` and `unexpected_cfgs` with `cfg(kani)`. The `publish = false` comment says what a stranger can act on. The move strips the `Name:` blocks (`helpers/crate_move.py`,
    `moved_source`); the rest is the lane's.
    Door: two-way. Effort: S.
 
 2. The crate documentation addresses one consumer, and names it.
-   Finding: the crate root says what `std` does with the cache and how `cargo xtask std-src` copies the file, and under which path (`src/lib.rs:3-4`). It sends the reader to `notes/std/allocation.md` for why one thread owns a cache (`src/lib.rs:8`). The `BUGS` entry says "A thread's cache is
-   spilled at its end" (`src/lib.rs:29`), which is the consumer's behavior and not the crate's. The crate has `drain`, and nothing calls it. `heap_layout`'s doc explains the rule by talc's chunk grid (`src/lib.rs:95-97`), while the rule is general. A heap sees one layout at both ends of a block. The manifest's dev-dependency comment names the `std` copy and `user_mode_runtime`
-   (`Cargo.toml:14-16`). A stranger reads the whole thing as a fragment of another project. The
+   Finding: the crate root says what `std` does with the cache and how `cargo xtask std-src` copies the file, and under which path (`src/lib.rs` lines 3 to 4). It sends the reader to `notes/std/allocation.md` for why one thread owns a cache (`src/lib.rs` line 8). The `BUGS` entry says "A thread's cache is
+   spilled at its end" (`src/lib.rs` line 29), which is the consumer's behavior and not the crate's. The crate has `drain`, and nothing calls it. `heap_layout`'s doc explains the rule by talc's chunk grid (`src/lib.rs` lines 95 to 97), while the rule is general. A heap sees one layout at both ends of a block. The manifest's dev-dependency comment names the `std` copy and `user_mode_runtime`
+   (`Cargo.toml` lines 14 to 16). A stranger reads the whole thing as a fragment of another project. The
    standing rule for crates that leave is that they do not talk about their consumers.
    Change: rewrite the crate documentation for a stranger. It says what a class is and states the three obligations of the owner. First, one owner at a time. Second, `refill` and `spill` run under whatever excludes other users of the heap. Third, every block a `spill` or `drain` hands back goes to the heap under `class_layout(class)`. It says why a cached block is fungible within its class. It also says why `heap_layout` must shape the uncached path too (any heap that rounds or tags its own way). The talc tag and
    chunk grid become the README's example. `BUGS` says the crate-level fact: a `Cache` dropped
@@ -68,7 +68,7 @@ for those.
 
 3. No workspace member depends on the crate, so the `std` farm loses it on the day it moves.
    Finding: `grep -rn allocation_cache --include=Cargo.toml` finds only the workspace member list
-   (`Cargo.toml:106`) and the crate's own manifest. The review packet's dependents table is empty.
+   (`Cargo.toml` line 106) and the crate's own manifest. The review packet's dependents table is empty.
    The `std` farm finds each copied package through `cargo metadata` over the workspace
    (`xtask/src/farm/copied.rs`, `copied_package_directories`), and the move runbook states the consequence. With no member depending on the moved crate, `cargo xtask std-src` stops and names
    the missing package. Every other copied crate has a dependent in the tree; this one is the case

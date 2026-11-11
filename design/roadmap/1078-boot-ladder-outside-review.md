@@ -76,7 +76,7 @@ outside the repository acts on it after a release (a public name, a printed word
    Door: two-way. Effort: S.
 
 3. Shipped text points into this tree.
-   Finding: `script/crate-standalone` counts 10 milestone citation lines (first `Cargo.toml:11`). It counts 3 lines naming a path in nife (first `src/lib.rs:8`, "See notes/boot-ladder.md"; also lines 79 and 141). It counts one line naming the architect outside a `Name:` block (`src/lib.rs:62` to 63, a ruling cited by a pull request number). Beyond what
+   Finding: `script/crate-standalone` counts 10 milestone citation lines (first `Cargo.toml` line 11). It counts 3 lines naming a path in nife (first `src/lib.rs` line 8, "See notes/boot-ladder.md"; also lines 79 and 141). It counts one line naming the architect outside a `Name:` block (`src/lib.rs` line 62 to 63, a ruling cited by a pull request number). Beyond what
    the script counts, the doc comments name `kernel_main`, `kernel/src/machine_description.rs`, `kernel/src/self_test.rs`, `components/src/swish.rs`, `kernel::console::yield_screen`,
    `machine_discovery::framebuffer::SCREEN_HOLD`, `cargo xtask swish-check` and `cargo xtask
    uefi-boot`, and `AGENTS.md` rule 7 (lines 5, 31, 42, 50, 109 to 111, 119, 127, 139 to 140).
@@ -189,7 +189,7 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 - The review did not run the template's name-check helpers over the crate; `script/names` and
   `helpers/name_release.py` in nife cover the same ten names, and the printed check names are
   string literals no helper reads.
-- `xtask/src/time_record.rs:929` and 1010 (`"nife on riscv64"`, `"nife on x86_64"`) spell the
+- `xtask/src/time_record.rs` line 929 and 1010 (`"nife on riscv64"`, `"nife on x86_64"`) spell the
   banner inside `#[cfg(test)] mod tests`, so item 7 omits them; item 7's gate must exempt test
   modules the same way.
 

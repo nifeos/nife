@@ -47,7 +47,7 @@ dependency); everything else is two-way and the maintainer decides it.
 
 1. The `check / standalone` job refuses this source as it stands.
    Finding: five steps of the job fail, each at ceiling 0 with no baseline file in the new
-   repository. Naming: `spelled_out` refuses the parameter `va` (`src/lib.rs:233`); `unit_symbols`
+   repository. Naming: `spelled_out` refuses the parameter `va` (`src/lib.rs` line 233); `unit_symbols`
    refuses `NS_PER_SECOND` (line 57) and `NANOS_PER_SEC` (line 101); `register_names` refuses
    `NANOS_PER_SEC` (line 101) and the private `W_OFFSET` (line 184); `british_spelling` refuses
    `two_writers_serialise_rather_than_corrupt_the_page` (line 940),
@@ -74,7 +74,7 @@ dependency); everything else is two-way and the maintainer decides it.
    the rulings.
 
 2. `check / clippy` refuses the crate outside nife.
-   Finding: `cargo clippy --all-targets -- -D warnings` fails on `doc_markdown` at `src/lib.rs:537`
+   Finding: `cargo clippy --all-targets -- -D warnings` fails on `doc_markdown` at `src/lib.rs` line 537
    ("VisionFive 2 is riscv64"), on stable, on 1.88 and under `--cfg kani`. The crate enables
    `doc_markdown` itself in `[lints.clippy]`. Inside nife the word is on `clippy.toml`'s
    `doc-valid-idents` list; the template's scaffold carries no `clippy.toml`, so the moved crate

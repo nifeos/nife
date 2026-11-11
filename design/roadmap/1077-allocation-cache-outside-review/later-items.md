@@ -47,7 +47,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
    Door: two-way. Effort: S.
 
 15. The abbreviation report flags one test name.
-   Finding: `an_uncached_request_reaches_the_heap_as_asked_unless_empty` (`src/lib.rs:274`):
+   Finding: `an_uncached_request_reaches_the_heap_as_asked_unless_empty` (`src/lib.rs` line 274):
    `uncached` is not in the template's word lists. The step is report only.
    Change: `a_request_without_a_class_reaches_the_heap_as_asked_unless_empty`, or an
    `accepted-words` entry for `uncached` with its reason.

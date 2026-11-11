@@ -22,7 +22,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    Door: two-way. Effort: S.
 
 4. The manifest's `publish` comment names a file that is not in the repository.
-   Finding: `Cargo.toml:11` reads `publish = false # the default; the allowlist lint holds the
+   Finding: `Cargo.toml` line 11 reads `publish = false # the default; the allowlist lint holds the
    exception (crates/publish-allowlist.txt)`. The file exists in nife and nowhere else. The manifest
    also has no `repository` key, which `cargo package` warns about and the move adds. The same
    finding appears in the outside reviews of the four crates that moved before this one.
@@ -32,10 +32,10 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    Door: two-way. Effort: S.
 
 5. The reader's spin has no bound, and the layout is about to freeze.
-   Finding: `ClockPage::read` (`src/lib.rs:272` to `299`) spins while the sequence word is odd. The
+   Finding: `ClockPage::read` (`src/lib.rs` line 272 to 299) spins while the sequence word is odd. The
    crate says so in its `BUGS` twice (lines 209 and `README.md`) and the clock note says the same.
    The readers include the standard library's `SystemTime::now` in every process
-   (`patches/std-nife/overlay/std/src/sys/time/nife.rs:130`), which calls `read` with no bound of its
+   (`patches/std-nife/overlay/std/src/sys/time/nife.rs` line 130), which calls `read` with no bound of its
    own. Decision 1 asks whether the page layout should make readers wait-free before `VERSION` 1 freezes. This item is the lane that follows the ruling.
    Why it matters: after the identity freezes, changing the layout costs a `VERSION` and a new magic
    and every pin moves. Before it, the change costs one lane and a re-run of the loom models.
@@ -47,8 +47,8 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    the clock program and `date`); S for the documentation-only outcome.
 
 6. The docs call `initialize` a once-only step, and its only caller runs it on every start.
-   Finding: `initialize` (`src/lib.rs:254`) says the writer does it "once, before anyone else has a
-   mapping, so it needs no sequence claim". `components/src/clock.rs:63` calls it unconditionally at
+   Finding: `initialize` (`src/lib.rs` line 254) says the writer does it "once, before anyone else has a
+   mapping, so it needs no sequence claim". `components/src/clock.rs` line 63 calls it unconditionally at
    program start. The review did not establish whether this tree ever restarts the `clock` program on the same frame (it found no supervisor entry for it). If it does, readers already hold
    mappings when the restart stores the sequence as zero, and a reader comparing `generation` across the
    restart sees it go backward. The loom model `a_racing_reader_sees_an_unrecognised_page_or_a_whole_one`
@@ -62,7 +62,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    Door: two-way (no reader checks for the reset today). Effort: S.
 
 7. Doc comments that assume the reader lives in nife.
-   Finding: `propose::OPERATION_SHIFT` (`src/lib.rs:352`) says "the same position its sibling
+   Finding: `propose::OPERATION_SHIFT` (`src/lib.rs` line 352) says "the same position its sibling
    message contracts use". `rtc::CMOS` (lines 554 to 558) says the service reads the ports "through
    a `PortRange` capability over both, which the wiring grants with `WRITE` because the I/O
    permission bitmap cannot permit `in` without `out`". `INTERFACE_ID` (lines 168 to 171) names "a
