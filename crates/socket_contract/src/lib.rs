@@ -103,7 +103,7 @@ pub const OPERATION_LISTEN: u64 = 9;
 /// is ignored: pass 0. The reply's second word is the peer that connected, packed by [`peer_word`]
 /// and read back by [`word_peer`]: the Internet Protocol version 4 (IPv4) address in bits 47 to 16
 /// and the port in bits 15 to 0. The word is the IPv4 answer only, and a peer of another family
-/// would need its own route. Names provisional.
+/// would need its own route.
 ///
 /// ```
 /// use socket_contract::{peer_word, word_peer};
@@ -120,14 +120,17 @@ pub const OPERATION_ACCEPT: u64 = 10;
 pub const OPERATION_BIND_UDP: u64 = 11;
 
 /// A connection's peer as the second reply word of `OPERATION_ACCEPT`: the IPv4 address in bits 47
-/// to 16, big-endian as an address is written, and the port in bits 15 to 0. Names provisional.
-pub const fn peer_word(ip: [u8; 4], port: u16) -> u64 {
-    (u32::from_be_bytes(ip) as u64) << 16 | port as u64
+/// to 16, big-endian as an address is written, and the port in bits 15 to 0.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+pub const fn peer_word(address: [u8; 4], port: u16) -> u64 {
+    (u32::from_be_bytes(address) as u64) << 16 | port as u64
 }
 
 /// The peer a [`peer_word`] names, or `None` for the word 0 that a reply without a peer carries
-/// and for a word with any of the bits 63 to 48 set, which no stack here produces. Names
-/// provisional.
+/// and for a word with any of the bits 63 to 48 set, which no stack here produces.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
 pub const fn word_peer(word: u64) -> Option<([u8; 4], u16)> {
     if word == 0 || word >> 48 != 0 {
         return None;

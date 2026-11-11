@@ -26,8 +26,8 @@ never assumed.
   `LISTEN_GRANTED`, `LISTEN_DENIED` and `LISTEN_IN_USE` for a port claim. Denied means the port is
   outside the stack's grant, so do not retry; in use means pick another port.
 - The accepted peer: `OPERATION_ACCEPT` replies its connection's capability and, in the second
-  reply word, the peer that connected, packed by `peer_word(ip, port)` (the IPv4 address in bits 47
-  to 16 and the port in bits 15 to 0) and read back by `word_peer`, so `10.0.2.2:50161` is
+  reply word, the peer that connected, packed by `peer_word(address, port)` (the Internet Protocol version 4
+  (IPv4) address in bits 47 to 16 and the port in bits 15 to 0) and read back by `word_peer`, so `10.0.2.2:50161` is
   `0x0a00_0202_c3f1`. The word is IPv4 only.
 - Port grants: `listen_grant(lo, hi)` packs an inclusive TCP listen range into the low half of one
   word and `udp_bind_grant(lo, hi)` a UDP range into the high half, and the two compose with `|`.

@@ -46,7 +46,7 @@ a boot is the expensive unit in this suite. The outbound transcript is already p
 is refused the port, so the granted run serves and stops.
 
 `std::net::TcpListener::accept` returns the peer that connected, and `peer_addr()` on the accepted
-stream reports the same. `OPERATION_ACCEPT` carries it in the second reply word, packed by
+stream reports the same. `OPERATION_ACCEPT` carries it in the second reply word. The word is packed by
 `socket_contract::peer_word` (the IPv4 address in bits 47 to 16, the port in bits 15 to 0) and read
 back by `word_peer`; the stack reads it from the connection's remote endpoint before it re-arms the
 listener. The word is the IPv4 answer, and a peer of another family would need its own route. The
