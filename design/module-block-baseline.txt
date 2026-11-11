@@ -2251,33 +2251,19 @@ crates/elf/src/tests.rs
 
 crates/elf/src/verification.rs
 
-crates/entropy_contract/src/lib.rs::DEAD
 
-crates/entropy_contract/src/lib.rs::GET
 
-crates/entropy_contract/src/lib.rs::NO_ENTROPY
 
-crates/entropy_contract/src/lib.rs::OPERATION_SHIFT
 
-crates/entropy_contract/src/lib.rs::READY
 
-crates/entropy_contract/src/lib.rs::STEP_FIRST_ALL_ZERO
 
-crates/entropy_contract/src/lib.rs::STEP_NO_FIRST_BYTES
 
-crates/entropy_contract/src/lib.rs::bringup_failure
 
-crates/entropy_contract/src/lib.rs::delivered
 
-crates/entropy_contract/src/lib.rs::operation
 
-crates/entropy_contract/src/lib.rs::readiness
 
-crates/entropy_contract/src/lib.rs::req
 
-crates/entropy_contract/src/lib.rs::take
 
-crates/entropy_contract/src/lib.rs::want
 
 crates/environment_contract/src/lib.rs::ConfigPage
 

@@ -209,7 +209,7 @@ pub(crate) fn wire_device() -> Option<GpuDevice> {
         dma,
         DMA_PAGE_FRAMES * FRAME_SIZE,
         Some(d.rid), // the PCIe requester id the IOMMU keys its tables on
-    );
+    )?;
     Some(GpuDevice {
         vid,
         intid: d.intid,

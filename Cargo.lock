@@ -473,8 +473,8 @@ dependencies = [
 
 [[package]]
 name = "e1000e"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/e1000e?rev=40c1ec9c7e73e5099661636c046773dfcaecbb6d#40c1ec9c7e73e5099661636c046773dfcaecbb6d"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/e1000e?rev=ef01cefa9a186db7f1c9802e78d8c6c1215db7ec#ef01cefa9a186db7f1c9802e78d8c6c1215db7ec"
 
 [[package]]
 name = "elf"
@@ -496,8 +496,8 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "extensible_host_controller_interface"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=bea025706ab4837cf541bf93c436ff4e1057922a#bea025706ab4837cf541bf93c436ff4e1057922a"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=2394d80d83ca59d1aadf925274b34a30bfbd92b2#2394d80d83ca59d1aadf925274b34a30bfbd92b2"
 
 [[package]]
 name = "file_allocation_table"
@@ -593,8 +593,8 @@ dependencies = [
 
 [[package]]
 name = "generational_table"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/generational_table?rev=b68ae45602813ad5487521fc03515fea4f8d2631#b68ae45602813ad5487521fc03515fea4f8d2631"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/generational_table?rev=4fb6bb7cb0f465e43f90935c611d8c1626d23d67#4fb6bb7cb0f465e43f90935c611d8c1626d23d67"
 
 [[package]]
 name = "generator"
@@ -1022,8 +1022,8 @@ version = "0.1.0"
 
 [[package]]
 name = "non_volatile_memory_express"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=87bbef8c9ac4cd05cc6babf88f31fa8500166e9d#87bbef8c9ac4cd05cc6babf88f31fa8500166e9d"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=27aa19c957a340b720b8b7ce44de32a8405d6950#27aa19c957a340b720b8b7ce44de32a8405d6950"
 
 [[package]]
 name = "nu-ansi-term"
