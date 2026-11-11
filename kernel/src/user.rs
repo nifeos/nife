@@ -163,6 +163,13 @@ pub mod entropy_service;
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) mod jh7110_clock_and_reset_service;
 
+/// **The JH7110 PMIC route's wiring** (milestone 1062 (the device control planes leave the
+/// kernel), step 5): one process holds the I2C controller the board's power controller hangs off,
+/// and `reboot` asks it to reset the board before it asks the reboot object. Built on every
+/// architecture and reached only on riscv64, for the clock and reset server's reason.
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
+pub(crate) mod power_management_chip_route_service;
+
 /// **radon's SD/MMC block server's wiring** (milestone 53 (the board's own peripherals: network
 /// and storage on real silicon)): the kernel ungates the controller and hands a process one page of
 /// it, a transfer region and a window of the card. riscv64-only because the controller is the

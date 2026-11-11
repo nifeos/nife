@@ -813,6 +813,7 @@ dependencies = [
  "credential_contract",
  "current_cpu_contract",
  "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",

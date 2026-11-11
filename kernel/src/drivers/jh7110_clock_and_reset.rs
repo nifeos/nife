@@ -9,13 +9,6 @@
 //! (milestone 593 (a wedged kernel resets itself)), which the soak's supervisor pets from the
 //! kernel. See notes/jh7110-clock-and-reset.md.
 //!
-//! # BUGS
-//!
-//! - The reboot path's I2C5 bring-up (`reboot::reset`) still calls this walk, until milestone
-//!   1062 (the device control planes leave the kernel)'s step 5 moves the PMIC write to a
-//!   userspace route that asks the server.
-//!
-
 //! # SAFETY
 //!
 //! [`bring_up`] stores to whatever address it is given, and the pure crate's fallback can name

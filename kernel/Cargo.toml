@@ -166,6 +166,9 @@ jh7110_clock_and_reset = { version = "0.1.0", path = "../crates/jh7110_clock_and
 # The wire the kernel's starters speak to the JH7110 clock and reset server (§320 (the JH7110
 # clock and reset wire)).
 jh7110_clock_and_reset_contract = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset_contract" }
+# The PMIC route's standard-mode timing, which its starter derives and passes in the spawn words
+# (`kernel/src/user/power_management_chip_route_service.rs`); the kernel drives no I2C itself.
+designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/designware_inter_integrated_circuit" }
 # The JH7110's SD/MMC controller (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): the whole driver as pure logic behind one `Registers` trait, which
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.

@@ -64,8 +64,9 @@ table reads it.
 | 31 | the reboot object | `WRITE \| GRANT` | always |
 | 32, 33 | the disk tree's endpoint and client-window pool | `WRITE \| GRANT` | with an NVMe disk beside a file service |
 | 34 | the base digest page | `READ` | always |
+| 35 | the board's PMIC route (milestone 1062, step 5) | `WRITE \| GRANT` | on a board whose tree names the power controller's bus |
 
-The table has 64 slots (`crate::cap::CAPABILITY_TABLE_SLOTS`), and the ones above 34 are the
+The table has 64 slots (`crate::cap::CAPABILITY_TABLE_SLOTS`), and the ones above 35 are the
 progenitor's own to fill.
 
 ### Why every slot is explicit

@@ -37,9 +37,10 @@ pub mod plic;
 // The JH7110's clock and reset generator (milestone 220). Gated to riscv64: the JH7110 is a
 // RISC-V SoC, so on the other two architectures the module would be dead code naming a device
 // that cannot be present. Pure MMIO Rust over `crates/jh7110_clock_and_reset`'s offsets; takes its base and
-// its plan from the caller and holds no state of its own. It serves the kernel's own watchdog and
-// the reboot path; every userspace driver's device goes through the clock and reset server.
-#[cfg(target_arch = "riscv64")]
+// its plan from the caller and holds no state of its own. It serves the kernel's own watchdog alone,
+// so it is built only where a soak arms it; every other device, the PMIC bus among them, goes
+// through the clock and reset server.
+#[cfg(all(target_arch = "riscv64", soak_watchdog))]
 pub mod jh7110_clock_and_reset;
 
 // The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional), only in a

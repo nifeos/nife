@@ -150,7 +150,10 @@ fn the_timing_and_the_target_are_programmed_while_the_controller_is_disabled() {
     ] {
         assert!(disabled < at(offset) && at(offset) < enabled, "{offset:#x}");
     }
-    assert!(sim.writes.contains(&(STANDARD_SPEED_CLOCK_HIGH_COUNT, 0xd8)));
+    assert!(
+        sim.writes
+            .contains(&(STANDARD_SPEED_CLOCK_HIGH_COUNT, 0xd8))
+    );
     assert!(sim.writes.contains(&(DATA_HOLD, 0x0f)));
     // Disabled again once the stop arrived.
     assert_eq!(sim.writes.last(), Some(&(ENABLE, 0)));
@@ -242,7 +245,14 @@ fn each_failure_kind_has_its_own_number() {
 #[test]
 fn the_register_map_is_vendor_u_boots() {
     assert_eq!(
-        [CONTROL, TARGET_ADDRESS, DATA_COMMAND, RAW_INTERRUPT_STATUS, ENABLE, STATUS],
+        [
+            CONTROL,
+            TARGET_ADDRESS,
+            DATA_COMMAND,
+            RAW_INTERRUPT_STATUS,
+            ENABLE,
+            STATUS
+        ],
         [0x00, 0x04, 0x10, 0x34, 0x6c, 0x70]
     );
     assert_eq!([ENABLE_STATUS, COMPONENT_TYPE], [0x9c, 0xfc]);

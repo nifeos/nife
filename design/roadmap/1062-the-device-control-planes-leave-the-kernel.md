@@ -63,9 +63,9 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
    brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
    reset wire)), and writes the AXP15060. `reboot` calls it
-   before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route.
-   `kernel/src/reboot/designware_i2c.rs` and the PMIC half of `kernel/src/reboot/pmic.rs` go.
-   radon proves it.
+   before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route. The route is
+   `components/src/power_management_chip_route.rs` over `crates/designware_inter_integrated_circuit`,
+   and the kernel holds no I2C master. radon proves it.
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.

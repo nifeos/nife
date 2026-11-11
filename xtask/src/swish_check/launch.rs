@@ -45,6 +45,8 @@ fn firmware_marker(arch: &str) -> Option<&'static str> {
 /// phase ending each leg's first boot). It writes a file, types `reboot`, and asks for, in order:
 /// - `reboot`'s own report that its sync was answered (the block server's count of completed
 ///   `blk::FLUSH`es, through its sync-only capability), before the kernel's first `reboot:` line;
+/// - no word of a PMIC route before that line, since no machine this check boots has one, so
+///   `reboot` went to the reboot object alone;
 /// - the kernel's attempt line, and no refusal;
 /// - the firmware's line where there is firmware ([`firmware_marker`]);
 /// - a second prompt banner, then `wc reboot.txt` answering `1 3 18`.
@@ -88,6 +90,14 @@ pub(super) fn reboot_phase(
             "`reboot` reached the kernel without reporting a completed sync (no {:?} \
              before the kernel's line): {:?}",
             P::SYNCED,
+            before.trim()
+        )));
+    }
+    if before.contains(P::ROUTE) {
+        return Err(P::failure(&format!(
+            "`reboot` asked a PMIC route on a machine that has none ({:?} before the kernel's \
+             line): {:?}",
+            P::ROUTE,
             before.trim()
         )));
     }
@@ -135,8 +145,11 @@ impl RebootPhase<'_> {
     // Without the `reboot:` prefix on purpose: the shell's next prompt can land inside the
     // kernel's line ("reboo$t:  the kernel was..."). The tail is the claim.
     const KERNEL_ASKED: &str = "the kernel was asked to restart the machine";
-    const KERNEL_REFUSED: &str = "every reset route was refused";
+    const KERNEL_REFUSED: &str = "the firmware refused the reset";
     const SYNCED: &str = "reboot: filesystem synced";
+    // `reboot`'s words when it holds a PMIC route (milestone 1062, step 5). No machine this check
+    // boots has one, so they must never appear: `reboot` fell back to the reboot object alone.
+    const ROUTE: &str = "the board's power controller";
 
     /// Every error this phase returns names it, so a red leg says it was the reboot and not a
     /// scripted line.

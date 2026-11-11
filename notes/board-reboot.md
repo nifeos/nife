@@ -71,7 +71,25 @@ riscv64  PASS, 128s in: attempt 1 of 1: SBI SRST system_reset, reset type 1 (col
 ## The `reboot` program
 
 `components/src/reboot.rs` syncs the writable filesystem, says what the sync answered, then
-invokes the reboot object. Its capability table is in its module doc.
+asks the board's PMIC route where it holds one, and invokes the reboot object when it holds none or
+the board is still running after it. Its capability table is in its module doc.
+
+**The board's PMIC route** (§251, "A board's PMIC route runs in userspace"; milestone 1062 (the
+device control planes leave the kernel), step 5). On a JH7110 whose tree names the AXP15060's bus,
+the kernel spawns `components/src/power_management_chip_route.rs` once per boot
+(`kernel/src/user/power_management_chip_route_service.rs`). The starter asks the clock and reset
+server to bring I2C5 up, derives the standard-mode timing from the SYS CRG and syscon words, and
+hands the route the controller's first page and one endpoint. The progenitor holds the endpoint at
+slot 35 and endows it at `grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program that
+declares reboot, and to nothing else. The route answers one request, `RESET`: it reads register
+`0x32`, writes it back with bit 6 set and every other bit as found, and waits two seconds. A reset
+the PMIC honors never answers. Any answer is printed by `reboot`, which then asks the reboot object.
+The I2C sequence is `crates/designware_inter_integrated_circuit`, host-tested over a simulated
+controller; the wire is `driver_process_contract::power_management_chip_route`. `REBOOT` itself
+calls `arch::reboot` and nothing board-specific. Since nothing turns I2C5 off after boot, OpenSBI's
+own PMIC write finds the bus up when `REBOOT` falls back to it. The kernel's bench paths (the
+rebooting soak, the storage matrix) hold no capability and call the route through the kernel's
+`reboot::cold_reset` before the firmware.
 
 **Why a sync-only capability.** §251 (restarting the machine is a kernel object the progenitor
 hands out), clause 3, puts the sync before the reset, and the kernel does
@@ -91,9 +109,11 @@ Its limits, which its `BUGS` lists one line each:
 
 - A firmware that accepts the reset and hangs cannot be told from a slow one, from inside the
   machine. radon's OpenSBI hangs that way when U-Boot has left the PMIC's I2C bus held in reset.
-  The kernel releases the bus before the reset (milestone 592 (radon's cold reboot dies in
-  OpenSBI's PMIC write)), and `reboot` typed at radon's prompt resets the board through the
-  AXP15060 (`bench/radon-2026-10-21/README-890.md`, #2516).
+  The clock and reset server brings the bus up at boot for the PMIC route (milestone 592
+  (radon's cold reboot dies in OpenSBI's PMIC write) found the cause), and the route resets the
+  board through the AXP15060 before the firmware is asked.
+- The call to the PMIC route has no timeout of its own. The route bounds its wait for the board
+  to go, and a route that stops answering leaves `reboot` blocked.
 - A refusal does not exit non-zero, because no program in this system reports an exit status
   (`crates/swish`'s `Status` says so). The refusal is a sentence on the second stream, naming which
   of the kernel's four reasons it was.

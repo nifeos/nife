@@ -13,9 +13,8 @@
 //! # BUGS
 //!
 //! - A server that dies is not restarted, and a call to it then answers `None` for the boot.
-//! - The reboot path's I2C5 bring-up and the soak's watchdog still call
-//!   `drivers::jh7110_clock_and_reset` directly: milestone 1062's step 5 moves the first to the PMIC
-//!   route, and the second needs the kernel's own driver, since the soak's supervisor pets it.
+//! - The soak's watchdog still calls `drivers::jh7110_clock_and_reset` directly: it needs the
+//!   kernel's own driver, since the soak's supervisor pets it.
 //!
 //! Name: provisional.
 
