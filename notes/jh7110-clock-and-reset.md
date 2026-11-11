@@ -3,7 +3,10 @@
 Milestone 220 (this kernel drives no clock or reset controller, and the first real device will
 need one). `crates/jh7110_clock_and_reset` (the offsets, the plans, each tree's spellings),
 `crates/machine_discovery/src/jh7110/clock_and_reset.rs` (the device-tree walk),
-`kernel/src/drivers/jh7110_clock_and_reset.rs` (the stores), `kernel/src/user/entropy_service.rs` (the caller).
+`crates/jh7110_clock_and_reset_contract` (the wire, §320 (the JH7110 clock and reset wire)),
+`components/src/jh7110_clock_and_reset_server.rs` (the stores),
+`kernel/src/user/jh7110_clock_and_reset_service.rs` (the spawn and the starters' calls), and
+`kernel/src/drivers/jh7110_clock_and_reset.rs` (the kernel's own walk, for its watchdog).
 
 **This has never run against silicon.** QEMU's riscv64 `virt` machine has no clock or reset
 controller of any kind, so an emulator cannot validate the sequence end to end: what CI exercises
@@ -88,30 +91,36 @@ Two mechanics worth knowing, both transcribed rather than inferred:
 
 ## Where it lives, and who may drive it
 
-The kernel does it, at wiring time, and no userspace program holds the controller. That is an
-exception to this project's standing direction of travel, so it owes an argument. DECISIONS §86
-(whether an NVMe driver can leave the kernel, and what capability would let it) states that
-direction in one line, *"the microkernel thesis that drivers are user programs"*. It cites §21 (the
-terminal is a userspace component, and the kernel is out of the shell business) and §23 (multi-queue
-DMA confinement: the validator's second direction). Those are the work already spent moving
-components out. The argument here is §86's own, reused rather than reinvented: the kernel keeps
-the admin plane, EL0 gets the data path, and no new syscall surface is added.
+One userspace process, the clock and reset server, writes the shared windows. The kernel spawns it
+on a JH7110 with the first page of each window the tree named: STG, SYS and AON device-typed, and
+the SYS syscon read-only, since the server only reads PLL2's words there. Every clock word and
+every reset word of the three domains sits in that first page
+(`jh7110_clock_and_reset::device::USED_WINDOW_BYTES`, checked at compile time).
 
-Three things make the clock controller a stronger case for that split than NVMe was:
+A client never names a device. Its capability on the server's endpoint carries a badge, the
+device's register base physical address as the tree's `reg` gives it, and the server looks the
+badge up in `jh7110_clock_and_reset::device::DEVICES`: the TRNG at `0x1600_c000`, the first GMAC
+port at `0x1603_0000`, the two SD/MMC controllers at `0x1601_0000` and `0x1602_0000`, and I2C5 at
+`0x1205_0000`. A badge outside the table, 0 included, gets status 1, and so does a device whose
+window this machine's tree named nowhere. The window is shared by USB, both PCIe root ports, the
+DMA engine and the security block, so a driver that held it would hold the widest authority in the
+tree. Holding a badge instead, it can bring up, read and rate its own device and nothing else
+(§256 (a server that keeps windows for many clients scopes each by the caller's badge)).
 
-- Granting it would *widen* a driver's authority, not confine it. The STG window is one 64 KiB
-  block holding the clocks and resets for USB, both PCIe root ports, the DMA engine and the
-  security block. Milestone 159's whole demonstration is a driver holding *one page of one
-  device's registers and two endpoints*; handing it the CRG would trade the narrowest authority in
-  this tree for the widest. The reset in question is even documented as shared upstream
-  (`devm_reset_control_get_shared`): the same line resets the PL080 DMA at `0x1600_8000`, which is
-  why nothing in this crate offers an *assert* at all.
-- It is one-shot setup, entirely off any hot path. The performance argument that makes EL0
-  attractive for NVMe's data path does not exist for three register writes at boot.
-- It costs zero new syscall surface, which §86 called the reversible part of its own decision.
-  `start_jh7110` already maps the device page and spawns; this adds three stores before it. If a
-  later milestone wants a clock service at EL0 (a power-management story would want one), that is
-  a decision taken on its own evidence, and this forecloses none of it.
+The wire is §320's, in `jh7110_clock_and_reset_contract`: interface id 24, version 1, five
+operations (version query reserved, bring up, read clock, read reset, set rate), eight statuses,
+and a packed bring-up summary. Bring up enables every clock the device's plan names, in every
+domain, before it releases any reset, because Linux's reset driver warns that a deassert against
+a gated clock can hang. It is idempotent. No operation turns a device off (§304 (who may turn a
+device off)).
+
+The kernel's own starters are the server's clients today: the entropy starter, the GMAC
+bring-up and both SD/MMC starters each call it with their device's badge through
+`sched::ipc_call_badged` before they spawn the driver. The kernel keeps its own walk
+(`drivers::jh7110_clock_and_reset::bring_up`) for two callers: the soak's watchdog (milestone 593
+(a wedged kernel resets itself)), whose supervisor pets it from the kernel, and the reboot path's
+I2C5 bring-up, which milestone 1062 (the device control planes leave the kernel)'s step 5 moves to
+a userspace PMIC route.
 
 ### The one genuinely dangerous thing here, and what stops it
 
@@ -128,8 +137,9 @@ from a comment:
 
 - `memory::initialize` records the window **only when the tree names a JH7110** (a clock controller,
   or the TRNG whose clocks this exists to ungate). QEMU's `virt` names neither.
-- `mmu::map_everything` maps only what `memory::jh7110_clock_and_reset()` returned, so on any other machine
-  there is no mapping to store through.
+- `mmu::map_everything` maps only what `memory::jh7110_clock_and_reset()` returned, and the server
+  starter maps the server only the windows `memory` recorded, so on any other machine there is no
+  mapping to store through and no server.
 - `no_clock_window_is_mapped_where_there_is_no_jh7110` (`system_tests/src/user/entropy_tests.rs`) pins
   it, because the failure is silent in the direction that matters: a load or store fault during
   boot on a machine nobody would think to blame a clock driver for.
@@ -181,9 +191,8 @@ The boot proceeds exactly as `notes/visionfive2.md` records, up to the tour. Two
 whole of this milestone, and the clock line now comes first:
 
 ```text
-  hw clock    : JH7110 STG CRG at 0x10230000 (named by this machine's device tree):
-                clocks 0x00000000,0x00000000 -> 0x80000000,0x80000000 (running);
-                reset 3 assert 0x00000008 -> 0x00000000, status 0x00000008 (released, 3 polls)
+  hw clock    : JH7110 STG CRG at 0x10230000 (from the tree), through the clock and reset
+                server: Done, clocks 2/2 running, resets 1/1 released, 0 refused
   hw entropy  : JH7110 TRNG at 0x1600c000 served 32+32 bytes to a client through a capability
                 that names no device; first draw 8f3a1c04.., second differs
 ```
@@ -196,21 +205,21 @@ Read the clock line first: it decides how the entropy line should be read.
 
 | The `hw clock` line says | What it means | What to do |
 |---|---|---|
-| `skipped` / `no JH7110 clock-and-reset window was mapped` | Neither a clock controller nor a TRNG in this tree. On radon this is a regression in discovery, not a fact about the board | Dump the tree at the U-Boot prompt (`fdt addr $fdtcontroladdr; fdt list /soc`) and check what the controller node is actually called. Milestone 239 is the precedent: the node name was `trng@1600C000` with an upper-case C |
-| `NOT named by this machine's tree: the constant...` | The TRNG node was found but no clock controller was, so the address came from the constant | The bring-up still ran and the rest of the line is real. Capture `fdt list /soc` and add the node's real compatible to `jh7110_clock_and_reset`'s discovery list, so the next boot reads it rather than assuming it |
-| clocks `-> 0x80000000,0x80000000 (running)`, reset `released` | **The sequence worked.** Bit 31 read back on both clocks and the status bit came up | Read the `hw entropy` line, below |
-| clocks `(NOT running: the enable bit did not read back...)` | The enable bit did not stick. The window is device-mapped and accepting stores, and nothing is behind it | The base address is wrong, or the STG domain itself is gated by a parent this milestone does not program. See BUGS: the SYSCRG `stg_axiahb` parent is the first suspect |
-| reset `STILL HELD` after `1000000` polls | The clocks came up and the reset did not release. Linux's own comment says a gated clock is the usual cause of exactly this hang, so a `running` verdict beside it is contradictory and interesting | Capture the whole line. This is the outcome that most wants a register dump before anyone changes code |
-| `; the firmware had already done all of this` | **The premise was wrong.** The clocks were on and the reset released before nife touched anything | Then a gated clock is *not* why the TRNG read zeros, and milestone 220 does not explain the 2026-09-04 transcript. The next suspect is the base address or the `reg` decode, which is milestone 159's territory again |
+| `no clock and reset server runs` | No window was recorded, or the archive has no `jh7110_clock_and_reset_server`. On radon the first is a regression in discovery, not a fact about the board | Dump the tree at the U-Boot prompt (`fdt addr $fdtcontroladdr; fdt list /soc`) and check what the controller node is actually called. Milestone 239 is the precedent: the node name was `trng@1600C000` with an upper-case C |
+| `the published constant` | The TRNG node was found but no clock controller was, so the address came from the constant | The bring-up still ran and the rest of the line is real. Capture `fdt list /soc` and add the node's real compatible to `jh7110_clock_and_reset`'s discovery list, so the next boot reads it rather than assuming it |
+| `Done, clocks 2/2 running, resets 1/1 released` | **The sequence worked.** Bit 31 read back on both clocks and the status bit came up | Read the `hw entropy` line, below |
+| `ClockNotRunning, clocks 0/2 running` | The enable bit did not stick. The window is device-mapped and accepting stores, and nothing is behind it | The base address is wrong, or the STG domain itself is gated by a parent this milestone does not program. See BUGS: the SYSCRG `stg_axiahb` parent is the first suspect |
+| `ResetHeld, resets 0/1 released` | The clocks came up and the reset did not release. Linux's own comment says a gated clock is the usual cause of exactly this hang, so a `running` verdict beside it is contradictory and interesting | Capture the whole line. This is the outcome that most wants a register dump before anyone changes code |
+| `; the firmware had already done all of it` | **The premise was wrong.** The clocks were on and the reset released before nife touched anything | Then a gated clock is *not* why the TRNG read zeros, and milestone 220 does not explain the 2026-09-04 transcript. The next suspect is the base address or the `reg` decode, which is milestone 159's territory again |
 
 Then the entropy line:
 
 | The `hw entropy` line says | What it means |
 |---|---|
 | `served 32+32 bytes ... second differs` | **Fatal risk 6's "drives real hardware" half is closed**, and it was closed by a confined EL0 driver holding one device page |
-| `FAILED ... bring-up diagnostic 0x0000000000000000` **with** a `running`/`released` clock line | The window still reads as nothing, with its clocks demonstrably on. That is a new fact, and it is not this milestone's | 
+| `FAILED ... bring-up diagnostic 0x0000000000000000` **with** a `Done` clock line | The window still reads as nothing, with its clocks demonstrably on. That is a new fact, and it is not this milestone's | 
 | `FAILED` with a non-zero diagnostic | The device answered and the driver's sequence is wrong. That is milestone 159's, and it is the outcome 159's block was written to route |
-| `FAILED` with the clock line reporting `NOT running` | One cause, two symptoms. Fix the clock line first; the entropy line carries no independent information until it is |
+| `FAILED` with the clock line reporting `ClockNotRunning` | One cause, two symptoms. Fix the clock line first; the entropy line carries no independent information until it is |
 
 ### If it works
 
@@ -224,11 +233,14 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
   transcribed from published source; the only thing proven is that the two published trees agree
   with each other and that the arithmetic is right. An emulator cannot do better here, because
   QEMU's `virt` machine has no clock or reset controller to model.
-- **Only the STG domain, and within it only the two clocks and one reset the TRNG needs.** The
-  JH7110 has five domains (`syscrg`, `stgcrg`, `aoncrg`, `ispcrg`, `voutcrg`) and hundreds of
-  clocks. The milestone's own block named unbounded scope as its main risk; this is the small end
-  of it, with the arithmetic general enough that a second domain is a table entry rather than a
+- **Only five devices, in three domains.** The JH7110 has five domains (`syscrg`, `stgcrg`,
+  `aoncrg`, `ispcrg`, `voutcrg`) and hundreds of clocks; the server serves the devices in
+  `device::DEVICES` and answers status 1 for every other badge. A device is a table entry, not a
   rewrite.
+- Each device's plan is the crate's constant, not its tree's `clocks` and `resets`. A board whose
+  tree wires a device differently gets the constant plan.
+- The server answers the version query with status 2 until milestone 1000 (message contracts
+  carry bind-time version checks) defines its reply. A server that dies is not restarted.
 - Parent clocks are not programmed, and this is the first thing to suspect if the enable bits do
   not read back. The STG domain's own bus clock (`stg_axiahb`) comes from the SYSCRG at
   `0x1302_0000`, and nothing here touches it. Linux gets away with the same narrow sequence because
@@ -236,8 +248,8 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
   having left the bus clocks running, which is plausible (U-Boot uses the STG domain for USB and
   PCIe) and unverified.
 - The deassert poll is an iteration count, not a duration. Linux uses a 1000 µs timeout;
-  `POLL_LIMIT` counts a million reads instead, because this runs before there is a calibrated delay
-  to hand. A million MMIO reads is far longer than the microsecond the hardware needs and far
+  the server's and the kernel walk's `POLL_LIMIT` count a million reads instead, as the kernel walk
+  did before any calibrated delay existed. A million MMIO reads is far longer than the microsecond the hardware needs and far
   shorter than a boot anyone would call hung, but it is not a time bound and a slower board would
   scale it silently.
 - Nothing here can turn a clock off or assert a reset, deliberately. Gating a clock or
@@ -245,7 +257,7 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
   this tree has a reason to. It also means there is no teardown: a service that dies leaves its
   device clocked. That is the right trade today (nothing reclaims device power) and it is the piece
   a power-management milestone would have to add.
-- **`BringUpReport` records only the first four clock steps.** A longer plan still performs every step;
+- **`BringUpReport`, the kernel walk's report, records only the first four clock steps.** A longer plan still performs every step;
   the recording stops and `truncated` says so. Nothing in the tree has a plan that long.
 - **The vendor `rstgen` node is tried and has never been exercised by a fixture.** Its
   `reg-names` spelling (`"stgcrg"`, not `"stg"`) is transcribed from the vendor tree and is only
