@@ -15,8 +15,8 @@ in flight on another branch.)*
 answering the deferral in section 1. The moved-things registry lives at `packages/moved.toml`, not
 at `design/roadmap/MOVED`.*
 
-*Amended 2026-11-01 (UTC) on #3034: the numbering namespace in section 4 moves with the record to the
-`nifeos.org` repository, and `nifeos/nife` remains for history only.*
+*Amended 2026-11-01 (UTC) on #3034: the numbering namespace in section 4 moves with the record to
+`nifeos/record`, and `nifeos/nife` remains for history only.*
 
 The ruling, in one line. Keep option E, one roadmap in `basalt`, until the split makes a
 citation cross a repository boundary. Record the deferral rather than letting it happen by default.
@@ -119,8 +119,8 @@ revisit event section 1 defines. The rule, in force now:
   location `design/roadmap/MOVED` (milestone 533 (whether the roadmap should become issues, and
   what a citation means after the repository split)'s mechanism) gives way to it; the substance
   holds: the FreeBSD four-field form, append-only, written at the split.
-- The numbering namespace stays with the record repository, `nifeos.org` from 2026-11-01 (UTC), and
-  moves with the record when it leaves `nifeos/nife`, which remains for history only. A record's
+- The numbering namespace stays with the record repository, `nifeos/record`, and moves with
+  the record when it leaves `nifeos/nife`, which remains for history only. A record's
   number stays its identity. A bare code path in an existing record means that path at the last
   `nifeos/nife` commit before the move, the anchor, which `packages/moved.toml` records in one line.
   New text uses `nifeos/<repo>:<path>`, resolved at basalt's pin. The site gives each number a stable

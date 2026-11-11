@@ -290,10 +290,6 @@ Still to be ruled by the architect:
   `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
   rule is safe either way, so only the comments change.
 
-- **Outstanding.** §201 (one roadmap until a citation has to cross), journey 5 and milestone 857
-  (crates released on their own) still name `nifeos.org` as the record's repository. Each changes
-  to `nifeos/record` in its own pull request, and §201's needs the architect's approval.
-
 ## Index row
 
 The design record moves to its own repository and becomes a website with a stable address per number.
