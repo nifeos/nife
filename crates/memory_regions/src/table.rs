@@ -67,6 +67,12 @@ struct Region {
     /// those retyped from this region or from any live region split below it, and for
     /// [`Counted::Region`] the live regions below it. Never above `ceilings`, kind by kind.
     live: Ceilings,
+    /// **How many objects of each [`ObjectKind`] retyped straight from this region are still in
+    /// their kernel tables**: this region's own share of `live`, without its children's. What
+    /// [`release_object`](RegionTable::release_object) checks, so a second release of one object
+    /// is refused instead of taking a count that belongs to another region of the subtree. Name:
+    /// provisional.
+    held: [u32; ObjectKind::COUNT],
 }
 
 /// The per-use counts behind [`RegionTable::spent`]. Bump-only like the watermark, except
@@ -399,6 +405,7 @@ impl<const N: usize> RegionTable<N> {
                 parent: NO_PARENT,
                 children: 0,
                 spent: Spent::default(),
+                held: [0; ObjectKind::COUNT],
                 ceilings,
                 live: Ceilings::ZERO,
             })
@@ -463,6 +470,7 @@ impl<const N: usize> RegionTable<N> {
                 parent,
                 children: 0,
                 spent: Spent::default(),
+                held: [0; ObjectKind::COUNT],
                 ceilings,
                 live: Ceilings::ZERO,
             })
@@ -526,13 +534,29 @@ impl<const N: usize> RegionTable<N> {
 
     /// **One object of `kind` retyped from `name` has left its kernel table**: a thread reaped, an
     /// address space dropped, or an insert refused after its page was retyped. Its subtree and
-    /// every ancestor's count one fewer. A no-op on a dead name: a claimed region's counts left
-    /// its ancestors at the claim. The other kinds leave their tables only when their region is
-    /// reclaimed, and [`claim_for_destroy`](Self::claim_for_destroy) gives their counts back.
+    /// every ancestor's count one fewer. The other kinds leave their tables only when their region
+    /// is reclaimed, and [`claim_for_destroy`](Self::claim_for_destroy) gives their counts back.
+    ///
+    /// Returns `false`, and moves nothing, when `name` is live and holds no object of `kind` that
+    /// has not already been released: a second release of one object, or a release with no
+    /// retype before it. Such a release would otherwise take a count that another region of the
+    /// subtree still holds, so an ancestor would report fewer live objects than it has and carve
+    /// past its ceiling. Returns `true` on a dead name, a no-op: a claimed region's counts left
+    /// its ancestors at the claim, so its objects owe nothing.
     ///
     /// Name: provisional.
-    pub fn release_object(&mut self, name: u64, kind: ObjectKind) {
+    #[must_use]
+    pub fn release_object(&mut self, name: u64, kind: ObjectKind) -> bool {
+        let Some(r) = self.table.get_mut(entry(name)) else {
+            return true;
+        };
+        let held = &mut r.held[kind as usize];
+        if *held == 0 {
+            return false;
+        }
+        *held -= 1;
         self.release(name, Counted::Object(kind));
+        true
     }
 
     /// **The nearest region at or above `name` whose subtree is at its `counted` ceiling**, or
@@ -633,6 +657,7 @@ impl<const N: usize> RegionTable<N> {
         r.watermark += 1;
         r.retyped_to = r.watermark;
         r.spent.objects[kind as usize] += 1;
+        r.held[kind as usize] += 1;
         Some(page)
     }
 
@@ -1278,7 +1303,7 @@ mod tests {
         t.retype_object_page(inner, ObjectKind::Rendezvous).unwrap();
         t.retype_object_page(inner, ObjectKind::Thread).unwrap();
         t.retype_object_page(job, ObjectKind::Process).unwrap();
-        t.release_object(inner, ObjectKind::Thread); // reaped before the reclaim
+        assert!(t.release_object(inner, ObjectKind::Thread)); // reaped before the reclaim
         assert_eq!(t.live_and_ceiling(root, RENDEZVOUS), Some((1, 64)));
         assert_eq!(t.live_and_ceiling(root, Counted::Region), Some((2, 64)));
         assert_eq!(t.live_and_ceiling(job, Counted::Region), Some((1, 4)));
@@ -1291,7 +1316,7 @@ mod tests {
         for k in 0..COUNTED_KINDS {
             assert_eq!(t.table.get(entry(root)).unwrap().live.0[k], 0, "kind {k}");
         }
-        t.release_object(inner, ObjectKind::Rendezvous); // a dead name: inert
+        assert!(t.release_object(inner, ObjectKind::Rendezvous)); // a dead name: inert
         assert_eq!(t.live_and_ceiling(root, RENDEZVOUS), Some((0, 64)));
     }
 
@@ -1310,7 +1335,7 @@ mod tests {
             "the inner region is at its ceiling of 32 / 16"
         );
 
-        t.release_object(inner, ObjectKind::Thread);
+        assert!(t.release_object(inner, ObjectKind::Thread));
         assert_eq!(t.live_and_ceiling(inner, THREAD), Some((1, 2)));
         assert_eq!(t.live_and_ceiling(job, THREAD), Some((1, 2)));
         assert_eq!(t.live_and_ceiling(root, THREAD), Some((1, 32)));
@@ -1318,6 +1343,36 @@ mod tests {
             t.retype_object_page(inner, ObjectKind::Thread).is_some(),
             "the released place is free to use again"
         );
+    }
+
+    #[test]
+    fn a_second_release_of_one_object_is_refused_and_moves_nothing() {
+        let mut t = RegionTable::<8>::new();
+        let root = t.insert_root_with_ceilings(0, 1000, every(64)).unwrap();
+        let job = t.split(root, 500).unwrap();
+        let inner = t.split(job, 100).unwrap();
+        t.retype_object_page(job, ObjectKind::Thread).unwrap();
+        t.retype_object_page(inner, ObjectKind::Thread).unwrap();
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((2, 64)));
+
+        assert!(t.release_object(job, ObjectKind::Thread));
+        assert!(
+            !t.release_object(job, ObjectKind::Thread),
+            "the job's one thread has already been released"
+        );
+        assert_eq!(t.live_and_ceiling(job, THREAD), Some((1, 4)));
+        assert_eq!(
+            t.live_and_ceiling(root, THREAD),
+            Some((1, 64)),
+            "the inner region's thread still counts against the root"
+        );
+        assert!(
+            !t.release_object(root, ObjectKind::Thread),
+            "the root retyped no thread itself"
+        );
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((1, 64)));
+        assert!(t.release_object(inner, ObjectKind::Thread));
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((0, 64)));
     }
 
     #[test]

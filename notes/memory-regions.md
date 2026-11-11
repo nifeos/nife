@@ -221,6 +221,9 @@ Each region carries two counts for every counted kind:
 - `ceilings`: the most that subtree may hold at once. A root's comes from its creator. A split
   child gets a sixteenth of its root's, so no split region can raise what it inherited.
 
+For each object kind it also keeps `held`, the objects retyped straight from it that are still in
+their tables: its own share of `live`, without its children's.
+
 The table refuses a creation when the region or any ancestor is at its ceiling for that kind. Two
 walks of the parent chain run under the one `REGIONS` hold that also carves the page: the first
 decides and the second commits, so a refusal moves no page, no pin and no count. The caller sees
@@ -235,10 +238,17 @@ The counts follow table occupancy, not creations:
   reclaims their region, and it gives their counts back in the same borrow that removes the region.
 - An insert that fails after the region gave up its page releases the count it took.
 
+A release is refused, and moves no count, when its region holds no object of that kind: a second
+release of one object, or a release with no retype before it. Without the refusal it would take a
+count that a child still holds, and an ancestor would report fewer live objects than it has and
+carve past its ceiling. Each kernel caller releases an object once, when it leaves its table, so
+the kernel never sees a refusal; a debug build asserts that. A release on a dead name is a no-op,
+since a claimed region's counts left its ancestors at the claim.
+
 `memory_region::progenitor_ceilings` builds the progenitor's budget: every table's capacity less
 an eighth the kernel keeps, written in the `MAXIMUM_*` constants so the ceilings follow a resize.
 
-Kani proves the counting in `crates/memory_regions`: a refused carve or split moves nothing, every
+Kani proves the counting in `crates/memory_regions`: a refused carve, split or release moves nothing, every
 live count equals what its subtree holds and stays within its ceiling, and reclaiming a subtree
 gives every count back. Each harness takes one operation from any state that holds those counts,
 so the proof covers runs of any length. `subtree_ceiling_tests` fills a region to every ceiling through the real

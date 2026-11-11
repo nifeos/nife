@@ -205,6 +205,7 @@ fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
                 && a.children == b.children
                 && same_ceilings(a.live, b.live)
                 && same_ceilings(a.ceilings, b.ceilings)
+                && a.held == b.held
         }
         _ => false,
     }
@@ -282,6 +283,7 @@ impl Run {
                 own[r][REGION_COUNT],
                 ceilings_of(r, root_ceilings),
                 Ceilings::from_counts(live[r]),
+                core::array::from_fn(|k| own[r][k]),
             );
             parent = names[r].expect("the table has room for the tree");
             (spent_from, spent_to) = (base_page, base_page + watermark);
@@ -384,11 +386,17 @@ impl Run {
         child
     }
 
-    /// Release a `kind` object `r` holds, if it holds one. Returns whether it held one.
+    /// Release a `kind` object from `r`, whether or not it holds one: the table must refuse a
+    /// release of nothing held, a second release of one object, and take it only when `r` holds
+    /// one. Returns whether it held one.
     fn release(&mut self, r: usize, kind: ObjectKind) -> bool {
         let held = self.own[r][kind as usize] > 0;
+        let released = self.table.release_object(self.name(r), kind);
+        assert!(
+            released == held,
+            "a release taken without a held object, or refused with one"
+        );
         if held {
-            self.table.release_object(self.name(r), kind);
             self.own[r][kind as usize] -= 1;
         }
         held
@@ -540,6 +548,32 @@ fn a_release_keeps_every_count_exact() {
         assert!(counts.within_ceilings, "past a ceiling");
         assert!(counts.exact, "a count drifted from the subtree");
         kani::cover!(held && r == 2, "the grandchild releases an object");
+    });
+}
+
+/// **A release of an object its region does not hold moves nothing**: a second release of one
+/// object, or a release with no retype before it, is refused and leaves every count of every
+/// region of the tree where it was, from any state, even when a child of the region holds an
+/// object of that kind that the release could otherwise take.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_release_of_nothing_held_moves_nothing.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_release_of_nothing_held_moves_nothing() {
+    Run::for_every_depth(|mut run, r| {
+        let kind = any_object_kind();
+        kani::assume(run.own[r][kind as usize] == 0);
+        let before = run.snapshots();
+        let own = before[r].expect("a region of the tree");
+        let released = run.table.release_object(run.name(r), kind);
+        assert!(!released, "a release of nothing held was taken");
+        assert!(
+            run.unmoved_since(before),
+            "a refused release moved something"
+        );
+        kani::cover!(
+            own.live.get(Counted::Object(kind)) > 0,
+            "the subtree holds an object of the kind below the region"
+        );
     });
 }
 

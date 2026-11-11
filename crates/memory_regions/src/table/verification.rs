@@ -8,7 +8,7 @@
 
 use generational_table::EntryName;
 
-use super::{COUNTED_KINDS, Ceilings, Region, RegionTable, Spent, entry};
+use super::{COUNTED_KINDS, Ceilings, ObjectKind, Region, RegionTable, Spent, entry};
 
 /// What the subtree-ceiling harnesses in `proofs.rs` compare before and after a refusal.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -18,6 +18,7 @@ pub(crate) struct RegionSnapshot {
     pub(crate) children: u32,
     pub(crate) live: Ceilings,
     pub(crate) ceilings: Ceilings,
+    pub(crate) held: [u32; ObjectKind::COUNT],
 }
 
 impl<const N: usize> RegionTable<N> {
@@ -29,12 +30,14 @@ impl<const N: usize> RegionTable<N> {
             children: r.children,
             live: r.live,
             ceilings: r.ceilings,
+            held: r.held,
         })
     }
 
     /// Insert a region in whatever state the subtree-ceiling harnesses in `proofs.rs` choose, so
     /// one step can start from any state their invariant allows instead of one a short run of
-    /// steps reaches. The region holds no spending record and is pinned as `pinned` says.
+    /// steps reaches. The region holds no spending record, is pinned as `pinned` says, and holds
+    /// `held` objects of each kind retyped straight from it.
     pub(crate) fn insert_in_any_state(
         &mut self,
         parent: u64,
@@ -43,6 +46,7 @@ impl<const N: usize> RegionTable<N> {
         children: u32,
         ceilings: Ceilings,
         live: Ceilings,
+        held: [u32; ObjectKind::COUNT],
     ) -> Option<u64> {
         self.table
             .insert_with(|_| Region {
@@ -56,6 +60,7 @@ impl<const N: usize> RegionTable<N> {
                 spent: Spent::default(),
                 ceilings,
                 live,
+                held,
             })
             .map(EntryName::to_bits)
     }

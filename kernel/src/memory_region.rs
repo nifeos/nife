@@ -179,11 +179,19 @@ pub fn progenitor_ceilings() -> Ceilings {
 /// lent address space dropped, or an insert refused after the page was retyped. Its subtree's
 /// count falls by one. A no-op on a dead name. See notes/memory-regions.md, "Subtree ceilings".
 ///
+/// Every caller releases an object once, when it leaves its table, so the table never refuses
+/// one here. If a defect ever released one object twice, the table refuses the second release
+/// and moves no count, and a debug build stops at the assertion after the lock is dropped.
+///
 /// Context: takes `REGIONS`; legal under `IPC_TABLES` and the address-space registry's lock.
 ///
 /// Name: provisional.
 pub fn release_object(region: u64, kind: ObjectKind) {
-    REGIONS.lock().release_object(region, kind);
+    let released = REGIONS.lock().release_object(region, kind);
+    debug_assert!(
+        released,
+        "a release of a {kind:?} that region {region:#x} does not hold"
+    );
 }
 
 /// The counter reading at the last refusal line, and how many refusals went unprinted since. Kept
