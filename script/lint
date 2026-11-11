@@ -223,6 +223,10 @@ echo "==> no reproducer in this branch's commit messages (a replay line, a seed 
 # This run reads the commits the branch adds to origin/main, and says so when there is no origin/main.
 helpers/replay-line-check-selftest.sh >/dev/null
 helpers/read-advisory-selftest.sh >/dev/null
+# Beside it, .github/workflows/pr-text-ask-check.yml refuses a pull request body whose
+# `## What I need from you` section asks no question, through helpers/ask-section-check.sh; its
+# selftest passes and refuses one body per shape (lane/after-this-merges-asks-nothing, provisional).
+helpers/ask-section-check.sh --selftest >/dev/null
 if git rev-parse --verify -q origin/main >/dev/null; then
     helpers/replay-line-check.sh --range origin/main..HEAD
 else

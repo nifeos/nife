@@ -166,7 +166,8 @@ falsify 'select($last == null or (nm_parked([$last.labels.nodes[]?.name]) | not)
 #     and no label (#1745): surface-no-hold. 213 the same under `architect-ruled`: nothing. 214 an
 #     ask in the body: ask-no-hold. 215 the labeler's own comment quoting the heading: nothing. 216
 #     its needs-maintainer cause gone: clear. 217 case 206 already wearing needs-maintainer:
-#     clear, and still held. Issues 301 (held, no ask) and 302 (an ask in the body, unlabeled)
+#     clear, and still held. 218 a post-merge task under `## After this merges`, unlabeled:
+#     nothing, since that heading asks calef nothing. Issues 301 (held, no ask) and 302 (an ask in the body, unlabeled)
 #     take the first two causes, and come back as issues.
 #     The repair is asymmetric (calef, #1792, 2026-10-06 UTC): `+hold` marks the ADD of
 #     needs-architect the drain makes itself (ask-no-hold, surface-no-hold), with no
