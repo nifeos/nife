@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-07
 milestone_dependencies: 887
 decision_dependencies: none
@@ -218,6 +218,16 @@ handoff harnesses and the `confinement_attackers` feature describe code that lef
   and on milestone 610's per-package co-change column.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 6 can start now.
+
+## Follow-on
+
+- **Outstanding.** The crate's repository exists and nife builds against its pinned commit. What
+  remains is the tag `v0.1.0`, the soak's end conditions, the publication and nife consuming the
+  release by semantic version. Checked by `gh api repos/nifeos/non_volatile_memory_express/tags`,
+  which lists no tag, and by `cargo tree --locked -i non_volatile_memory_express`, which resolves to
+  the git pin and not to crates.io.
+- **Recorded.** Publishing to crates.io waits on the maintainers' hold and an architect's approval,
+  as the *Release* section states.
 
 ## Index row
 
