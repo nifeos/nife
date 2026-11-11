@@ -512,6 +512,12 @@ mod force_kill_tests;
 #[cfg(test)]
 mod memory_grant_reclaim_tests;
 
+/// **Whether a region subtree's ceilings hold through the real `RETYPE_OBJ` and `SPLIT`**: a
+/// region filled to every ceiling with pages to spare, a sibling that still builds, and every
+/// count back after the reclaim. Cross-ISA for `memory_grant_reclaim_tests`' reason.
+#[cfg(test)]
+mod subtree_ceiling_tests;
+
 /// **A first process that gives its authority away, and a supervision tree that outlives it** (milestone 22
 /// phase B.2).
 ///
