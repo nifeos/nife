@@ -31,7 +31,7 @@ struct Registered {
 pub enum Holder {
     /// A thread configured with the space directly.
     Thread(crate::thread::ThreadId),
-    /// A process created holding the space (`RETYPE_OBJ` of `objtype::PROCESS`).
+    /// A process created holding the space (`RETYPE_OBJECT` of `objtype::PROCESS`).
     Process(crate::sched::ProcessId),
 }
 
@@ -134,7 +134,7 @@ pub const fn registry_footprint() -> usize {
     size_of::<generational_table::Table<Registered, MAXIMUM_USER_SPACES>>()
 }
 
-/// Create an address space **in and backed by** `region` (the `RETYPE_OBJ(ADDRESS_SPACE)` engine): the
+/// Create an address space **in and backed by** `region` (the `RETYPE_OBJECT(ADDRESS_SPACE)` engine): the
 /// root page is retyped from it (pinning it, atomically with the carve), and the region becomes
 /// the space's table-and-record budget, exactly as for an exec-built space. `None` on an
 /// exhausted region, a full registry, or all 255 ASIDs live (reachable, since `MAXIMUM_SPACES` is
@@ -258,7 +258,7 @@ pub fn with_user_address_space<R>(name: u64, f: impl FnOnce(Option<&mut AddressS
 /// §249; name provisional). The space stays in the registry under its name (§249's option A).
 ///
 /// `bind` gets the copy the thread will keep and returns the holder to record: the embryo, or the
-/// process `RETYPE_OBJ` is creating. `NoSuchSlot` if the name does not resolve; `WrongObject` if
+/// process `RETYPE_OBJECT` is creating. `NoSuchSlot` if the name does not resolve; `WrongObject` if
 /// the space already has a holder (§249's amendment (b)); `bind`'s own refusal leaves it unbound.
 ///
 /// Context: holds `ADDRESS_SPACES` (61), and `bind` takes `IPC_TABLES` (60) under it, so the bind

@@ -209,7 +209,7 @@ fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
         crate::interrupt::ACK => 1,
         crate::memory_region::MAP => 0,
         crate::memory_region::RETYPE => 1,
-        crate::memory_region::RETYPE_OBJ => 2,
+        crate::memory_region::RETYPE_OBJECT => 2,
         crate::memory_region::SPLIT => 3,
         crate::memory_region::DESTROY => 4,
         crate::memory_region::USAGE => 5,

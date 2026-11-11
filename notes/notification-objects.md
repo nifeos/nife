@@ -194,7 +194,7 @@ only a bound thread pays for the body.
 `MAXIMUM_NOTIFICATIONS` is 1,024, half of `MAXIMUM_RENDEZVOUS`, because a notification is a per-thread
 or per-service doorbell where a rendezvous is per conversation. The pages come from the creators'
 own regions, so it bounds only the 16-byte-a-slot name table. Raise it when a real workload refuses
-a `RETYPE_OBJ` here.
+a `RETYPE_OBJECT` here.
 
 ## BUGS
 

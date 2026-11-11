@@ -5,8 +5,7 @@
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. This file holds the known
 limits of `Name:` blocks and `script/names`, including the kinds of name the worklist does not
 cover and why `helpers/` helpers are left out. It exists to verify or challenge the main page. A
-reader who only needs to name, ratify or rename something should not have to open it. The directory
-`design/naming/` and this file's stem are provisional names; naming is an architect's.*
+reader who only needs to name, ratify or rename something should not have to open it.*
 
 ## BUGS
 

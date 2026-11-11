@@ -75,7 +75,7 @@ comes from a shell the progenitor starts afterwards.
 
 - **It gave the construction budget away** (milestone 22 (trusted init: verify it, and shrink what a
   broken one can do)). It prints the line after deleting the root untyped, and only when `RETYPE`
-  and `RETYPE_OBJ` on that slot both answered `NoSuchSlot`: the capability is gone, not narrowed.
+  and `RETYPE_OBJECT` on that slot both answered `NoSuchSlot`: the capability is gone, not narrowed.
   The complaint says only which string was missing. All the check knows is whether a string is in a
   transcript, so naming a capability state would claim evidence it does not have.
 - **It measured every program it loaded** (milestone 104 (the measurement continues past init)). A
