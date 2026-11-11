@@ -156,7 +156,7 @@ whether a rename touches a ruling's meaning is not decidable from text. The othe
 the ruling's three terms and were not widened into; each is in BUGS. 291 files fired because words
 were added or removed, and those were not classified one by one. Among them are §-citation glosses
 (#1174's §173 (narrowing the root of the shell's namespace) gained a milestone title, #1235's
-§130 (how the kernel-resident CMOS RTC reaches the userspace clock service) a section title), which
+§130 (how the userspace clock service reads the x86 CMOS RTC) a section title), which
 fire by design.
 
 Falsified the same day, each by hand against `--selftest`: `normalize_bookkeeping` returning its

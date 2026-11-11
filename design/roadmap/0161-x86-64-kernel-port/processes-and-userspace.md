@@ -210,7 +210,7 @@ of them has since changed.
 
 - 13 skips wanted the RTC. That is now piece 2 of
   [milestone 176 (the x86_64 discovery seam's wide half)](../0176-x86-64-discovery-seam-wide-half.md),
-  decided by [§130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../../decisions/0130-cmos-rtc-delegation.md).
+  decided by [§130 (how the userspace clock service reads the x86 CMOS RTC)](../../decisions/0130-cmos-rtc-delegation.md).
   It is not §121's, which forecloses a CMOS port capability rather than building one.
 - 15 wanted a PCI bus enumerated. The discovery seam no longer blocks that: item 0's PCI window is
   wired, by [milestone 165 (x86_64 PCI enumeration)](../0165-x86-64-pci-acpi-mcfg.md). But

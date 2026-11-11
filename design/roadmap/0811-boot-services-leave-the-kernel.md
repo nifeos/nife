@@ -38,7 +38,7 @@ architecture.
 |---|---|---|---|---|
 | `fs_service::root_directory` | `boot_progenitor` (`user/progenitor_boot.rs`) | `block_driver` (`spawn_block_server`, `fs_service/wiring.rs`), `redoxfs_server` (`spawn_fs_server`, `fs_service/wiring.rs`) | all | virtio: a `Virtio` cap, an `Interrupt`, DMA pages as spawn-time mappings; the FS server gets a `MemoryRegion` budget and the channel pages |
 | the NVMe arm of the above | `nvme_disk` (`fs_service/wiring.rs`), only when booted from NVMe | `non_volatile_memory_express` (§86's data plane) | all (exercised on `x86_64`) | BAR0's doorbell page and a DMA run, as mappings; the kernel keeps the admin plane |
-| `boot_clock_page` | `boot_progenitor`; starter in `user/device_starters.rs` | `clock` (`start` in `clock_service.rs`) | all | the clock page, and the RTC page as a mapping on aarch64 and riscv64; on `x86_64` a CMOS reading as an argument (§130) |
+| `boot_clock_page` | `boot_progenitor`; starter in `user/device_starters.rs` | `clock` (`start` in `clock_service.rs`) | all | the clock page, and the RTC page as a mapping on aarch64 and riscv64; on `x86_64` a `PortRange` over the CMOS ports 0x70 and 0x71 (§130 (how the userspace clock service reads the x86 CMOS RTC)) |
 | `boot_instruction_entropy` | `boot_progenitor`; starter in `user/device_starters.rs` | `entropy` in instruction mode | `x86_64`, aarch64 with `FEAT_RNG`; riscv64 answers `None` | two endpoints; no device |
 | `boot_usb_keyboard` | `boot_progenitor`; starter in `user/device_starters.rs` | `usb_keyboard_driver` | all | an `Interrupt`, about a dozen xHCI register pages and eleven DMA pages as mappings |
 | `boot_screen_terminal` | `boot_progenitor`; starter in `user/device_starters.rs` | `framebuffer_driver`, `display_terminal` | all, UEFI boots only | the firmware screen's aperture |
@@ -89,7 +89,7 @@ the driver, not the boot.
 | several contiguous MMIO pages | `DeviceFrame` names one page | no | xHCI's register window |
 | a firmware aperture | `PageFrame` run (`grant_run` in `display_service.rs`) | yes | `framebuffer_driver` |
 | "the CPU has a seed instruction" | none; a fact, not an object | no slot for a fact (`boot_instruction_entropy`'s doc, in `user/device_starters.rs`) | `entropy` in instruction mode |
-| CMOS wall clock on `x86_64` | none; ports stay kernel-resident (§121 (what a device capability is when the device has no page: x86 port I/O)) | the reading can travel in the clock page | `clock` |
+| CMOS wall clock on `x86_64` | `PortRange` over ports 0x70 and 0x71 (§121 (what a device capability is when the device has no page: x86 port I/O), §130 (how the userspace clock service reads the x86 CMOS RTC)) | yes | `clock` |
 
 Two gaps are real. A multi-page device window has no capability, and the progenitor's capability
 table is full: all 32 slots are named in `components/src/progenitor.rs`'s `GRANTS`. Moving the rows
@@ -118,7 +118,7 @@ window into a restarted driver.
    foot gun that the header of `offer` in `install_service.rs` names: the single-user window now holds
    because one process sequences both, not because the kernel is single-threaded.
 4. `clock`: the RTC page as a `DeviceFrame`; on `x86_64` a `PortRange` over the CMOS ports (§130
-   (how the kernel-resident CMOS RTC reaches the userspace clock service)), which milestone 1062
+   (how the userspace clock service reads the x86 CMOS RTC)), which milestone 1062
    (the device control planes leave the kernel) builds.
 5. `entropy` in instruction mode: the fact travels in the inert-configuration page (§111 (inert
    configuration is a read-only page)), and the kernel stops building the service.
