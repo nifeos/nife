@@ -122,7 +122,7 @@ Milestone 36 (notes/c-seam.md) is the first thing outside milestone 22 to build 
 restarts a real component, and it pinned down the requirement §26's phase-B block left open.
 
 Reaping is `MemoryRegion::DESTROY`, which needs `WRITE` on the region. `WRITE` on a region is also what
-builds a process from it (`RETYPE`, `RETYPE_OBJ`, `SPLIT`). So a supervisor that can restart its
+builds a process from it (`RETYPE`, `RETYPE_OBJECT`, `SPLIT`). So a supervisor that can restart its
 child is a supervisor that can build processes, unless it proxies the reap through something else.
 
 - The proxy exists today: phase B.2's `sub_server_supervisor` holds no memory and asks `spawner` to reap. Right

@@ -505,6 +505,7 @@ driver_process_contract::designware_mobile_storage	0	no block the SD card server
 driver_process_contract::e1000e	1	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
 driver_process_contract::extensible_host_controller_interface	17	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
+driver_process_contract::virtual_input_output	525	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
 kernel	8	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
 components	8	the EL0 components: a bounded append that a configuration page this system did not write feeds
 machine_discovery	356	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string

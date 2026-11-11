@@ -49,7 +49,7 @@ allocation it makes, in order. It is the only way to run the cleanup paths
 
 One retype is one call into the three functions of `memory_region` that take pages out of a region:
 `split`, `retype_run` (which `retype_page` is) and `retype_object_page`. So `MemoryRegion::SPLIT`,
-`RETYPE` and `RETYPE_OBJ` each count once, and a `MAP`, `PageFrame::MAP` or
+`RETYPE` and `RETYPE_OBJECT` each count once, and a `MAP`, `PageFrame::MAP` or
 `AddressSpace::MAP_INTO` counts once per page table it builds. That last kind is why the hook is
 here rather than at the syscall: a mapping that fails after building one table runs the kernel's
 own unwind, not only the program's. The check comes before the region lock, so a refusal leaves the

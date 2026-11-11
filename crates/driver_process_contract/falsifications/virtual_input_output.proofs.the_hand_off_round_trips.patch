@@ -1,0 +1,22 @@
+Falsifies `driver_process_contract::virtual_input_output::proofs::the_hand_off_round_trips`.
+
+The defect: `HandOff::unpack` stops requiring the DMA region's base to be page aligned. A spawn
+word with a misaligned base is then accepted, and the driver places its rings at an address the
+starter never confined.
+
+Expected to fail: the harness's `assert!(h.data_plane_physical_address.is_multiple_of(PAGE_BYTES))`.
+
+diff --git a/crates/driver_process_contract/src/virtual_input_output.rs b/crates/driver_process_contract/src/virtual_input_output.rs
+index 88bb5b174..d2caedef6 100644
+--- a/crates/driver_process_contract/src/virtual_input_output.rs
++++ b/crates/driver_process_contract/src/virtual_input_output.rs
+@@ -471,8 +471,7 @@ impl HandOff {
+             && inside(interrupt_status)
+             && (notify_off_multiplier == 0
+                 || (notify_off_multiplier.is_power_of_two() && notify_off_multiplier >= 2))
+-            && w[2] != 0
+-            && w[2].is_multiple_of(PAGE_BYTES);
++            && w[2] != 0;
+         ok.then_some(HandOff {
+             common,
+             notify,

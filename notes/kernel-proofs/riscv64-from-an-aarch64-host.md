@@ -7,8 +7,6 @@ item 8. It is milestone 432 (the RISC-V IOMMU driver has no counterpart to the S
 as option 1 of
 [the proposal that measured it](../../design/roadmap/0650-riscv64-code-the-prover-can-already-compile.md).
 
-*Name provisional: notes are an interface and their names are calef's call.*
-
 ## A correction first
 
 `kernel-proofs.md` said riscv64 was unreachable, and that `iommu.rs`'s own property "can be written

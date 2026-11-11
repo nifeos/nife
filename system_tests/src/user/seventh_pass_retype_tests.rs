@@ -39,7 +39,7 @@ fn rights_at(slot: u64) -> Rights {
 ///
 /// The SPLIT step is the positive control and the claim's cited property: `MemoryRegion::SPLIT`
 /// mints through `Cap::mint_child`, which inherits the parent's rights, and `RETYPE` and
-/// `RETYPE_OBJ` mint through the same function. Nothing blocks, so a regression fails at an
+/// `RETYPE_OBJECT` mint through the same function. Nothing blocks, so a regression fails at an
 /// assertion; every minted capability is deleted and region reclaimed, keeping the ledgers flat.
 ///
 /// Name: provisional. Renamed by milestone 824's lane on 2026-10-12 (UTC) from
@@ -96,20 +96,20 @@ fn a_grant_less_budget_narrows_a_split_child_and_every_retype_alike() {
          is open again, and a non-delegating budget can lend what it carves",
     );
 
-    // Three kernel object kinds via RETYPE_OBJ, the case the pass found the frame-only test did not
+    // Three kernel object kinds via RETYPE_OBJECT, the case the pass found the frame-only test did not
     // reach. Each must come back WRITE-only.
     for &(kind, name) in &[
         (abi::objtype::RENDEZVOUS, "rendezvous"),
         (abi::objtype::NOTIFICATION, "notification"),
         (abi::objtype::TIMER, "timer"),
     ] {
-        let obj_slot = call(budget_a, abi::memory_region::RETYPE_OBJ, kind, 0, 0)
-            .unwrap_or_else(|e| panic!("RETYPE_OBJ {name} refused a WRITE-only budget: {e:?}"))
+        let obj_slot = call(budget_a, abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
+            .unwrap_or_else(|e| panic!("RETYPE_OBJECT {name} refused a WRITE-only budget: {e:?}"))
             as u64;
         assert_eq!(
             rights_at(obj_slot),
             Rights::WRITE,
-            "a WRITE-only budget RETYPE_OBJ'd a {name} carrying more than WRITE: a GRANT-less \
+            "a WRITE-only budget RETYPE_OBJECT'd a {name} carrying more than WRITE: a GRANT-less \
              budget minted a delegatable {name} in its own memory",
         );
         let _ = delete_current_capability(obj_slot);

@@ -29,6 +29,8 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../designware
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
 non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "87bbef8c9ac4cd05cc6babf88f31fa8500166e9d" }
+# The virtio window is drawn from the function's capability list, which `pci` walks.
+pci = { version = "0.1.0", path = "../pci" }
 # Each window's kind is a startup page entry kind.
 startup_page_contract = { version = "0.1.0", path = "../startup_page_contract" }
 
