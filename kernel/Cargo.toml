@@ -166,7 +166,7 @@ jh7110_clock_and_reset = { version = "0.1.0", path = "../crates/jh7110_clock_and
 # The JH7110's SD/MMC controller (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): the whole driver as pure logic behind one `Registers` trait, which
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
-designware_mobile_storage = { version = "0.1.0", git = "https://github.com/nifeos/designware_mobile_storage", rev = "c1b58f1e8396d802fb55be735259a44a396726f1" }
+designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
 pci = { version = "0.1.0", path = "../crates/pci" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the

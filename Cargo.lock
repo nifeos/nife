@@ -402,8 +402,8 @@ version = "0.1.0"
 
 [[package]]
 name = "designware_mobile_storage"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=c1b58f1e8396d802fb55be735259a44a396726f1#c1b58f1e8396d802fb55be735259a44a396726f1"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
 
 [[package]]
 name = "device_tree_blob"
