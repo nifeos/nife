@@ -191,7 +191,7 @@ pub const DOMAIN_SLOT: u64 = 7;
 ///
 /// Nine, one past [`DIAGNOSTICS_SLOT`], placed for that constant's reason and above the shell's own
 /// seven positional capabilities. A program spawned without the declaration holds an empty slot
-/// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered`
+/// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes`
 /// reads as `None`. See notes/program-manifest.md ("The named slots").
 pub const ENTROPY_SLOT: u64 = 9;
 
@@ -559,7 +559,7 @@ pub struct Manifest {
     /// [`clock`](Manifest::clock)'s family, as an endpoint rather than a page. It lands in
     /// [`ENTROPY_SLOT`] carrying `WRITE` alone, the right to `CALL`: no other client's request, and
     /// no `GRANT` to pass it on. Without it the first `CALL` fails and
-    /// `entropy_contract::delivered` reports `None`. Ambient entropy would be ambient authority
+    /// `entropy_contract::delivered_bytes` reports `None`. Ambient entropy would be ambient authority
     /// (DECISIONS §44 (entropy is a capability)); see notes/program-manifest.md ("What the line
     /// cannot name").
     pub entropy: bool,

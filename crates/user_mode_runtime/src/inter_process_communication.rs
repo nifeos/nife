@@ -345,7 +345,7 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 /// let (r0, r1) = call(SERVICE, 0x0100_0000_0000_0008, 0);
 ///
 /// // Negative-as-u64 is enormous, which is how a wire contract tells "no capability in that slot"
-/// // from an answer without a probe request. See `entropy_contract::delivered`.
+/// // from an answer without a probe request. See `entropy_contract::delivered_bytes`.
 /// assert!((r0 as i64) >= 0 || abi::Error::from_ret(r0 as i64).is_some());
 /// # let _ = r1;
 /// # }

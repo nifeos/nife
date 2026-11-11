@@ -22,13 +22,13 @@ confinement_attackers = []
 # Each window is a pair page, checked at compile time against the address-space map.
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # The xHCI register window is drawn from the controller's decoded capability registers.
-extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
+extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
 # The PMIC route's spawn words carry the I2C master's standard-mode timing.
 designware_inter_integrated_circuit = { version = "0.1.0", path = "../designware_inter_integrated_circuit" }
 # The block server answers `blk`, and its block size sets how many card sectors a block is.
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
-non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "87bbef8c9ac4cd05cc6babf88f31fa8500166e9d" }
+non_volatile_memory_express = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "27aa19c957a340b720b8b7ce44de32a8405d6950" }
 # The virtio window is drawn from the function's capability list, which `pci` walks.
 pci = { version = "0.1.0", path = "../pci" }
 # Each window's kind is a startup page entry kind.

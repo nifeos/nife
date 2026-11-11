@@ -166,6 +166,13 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
                 "the namespace's lba size gives no blocks_per in 1..=8",
             ));
         }
+        Err(Absent::Unconfined { rid, why }) => {
+            print_scope(rid, crate::iommu::scope_of(rid));
+            println!("disk-throughput: controller {rid:#06x} unconfined: {why}");
+            return Err(Verdict::Failed(
+                "the controller is present and the IOMMU refused it (line above)",
+            ));
+        }
         Err(Absent::Refused { rid, why }) => {
             print_scope(rid, crate::iommu::scope_of(rid));
             println!("disk-throughput: controller {rid:#06x} failed bring-up: {why:?}");
