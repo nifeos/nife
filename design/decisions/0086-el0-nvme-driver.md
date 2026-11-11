@@ -237,7 +237,9 @@ one, the driver needs no trust: every address the device can reach lies in the d
 built. Without one, nife trusts the driver of a DMA-capable device, because it can aim the device at
 any physical address and nothing in the kernel stops it. The rule has no named exception. It holds
 for NVMe, e1000e, the DesignWare GMAC and a virtio-mmio device alike (§23 (multi-queue DMA
-confinement)). The kernel does not keep a device's control plane in order to narrow that trust.
+confinement)). The virtio validator runs in every mediated grant, and on a machine without an IOMMU
+nife claims no confinement from it. The kernel does not keep a device's control plane in order to
+narrow that trust.
 
 Which machines have one:
 

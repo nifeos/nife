@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: the-merge-queue-is-sized-to-the-runner-pool
 raised: 2026-11-04
 milestone_dependencies: 965
@@ -30,9 +30,28 @@ heavy gates left the pull request (#3176). A group spends about 200 job minutes,
 once, so 5 groups need about 55 of the 60 hosted slots. The build window and the pool are one
 budget: a wider window with the same pool makes every group slower.
 
+## The ruling (2026-11-11, UTC)
+
+The queue stays at 5 builds with `ALLGREEN` grouping, and `NIFE_RUNNER_OWNED` stays `false` until
+the owned-runner canary is green. Raising the build window, larger groups and milestone 965's plan
+upgrade wait for a measurement taken after the lint failures inside merge groups and the canary are
+fixed.
+
+## The week the ruling rests on
+
+The 7 days before 2026-11-11 (UTC):
+
+- 396 merge-group builds, 25% of them red.
+- The queue removed 28% of its entries before they merged: 54 for a merge conflict, 44 for a failed
+  check and 25 for an invalid merge commit.
+- The `lint` job failed in 53 merge-group builds, although `lint` gates every pull request before
+  it enters the queue. The proposal
+  [lint fails in the queue after passing on the pull request](proposals/lint-fails-in-the-queue-after-passing-on-the-pull-request.md)
+  has the causes and the fixes.
+
 ## The question
 
-Which settings, in which order? Recommendation first.
+Which settings, in which order? The ruling above took the first two steps of (a).
 
 - (a) Recommended. Leave `max_entries_to_build` at 5 and the grouping at `ALLGREEN`. Set
   `NIFE_RUNNER_OWNED` to `true` once the canary has passed its acceptance items, which moves the
@@ -55,6 +74,17 @@ Which settings, in which order? Recommendation first.
   measurement that justified them.
 - A week of queue data shows the median group wall time and the share of hosted jobs that waited
   over 5 minutes, before and after.
+
+## Follow-on
+
+- **Done.** The ruling of 2026-11-11 (UTC): the queue stays at 5 builds with `ALLGREEN` grouping, and
+  `NIFE_RUNNER_OWNED` stays `false`.
+- **Outstanding.** The fixes the ruling waits for: the lint failures inside merge groups
+  ([lint fails in the queue after passing on the pull request](proposals/lint-fails-in-the-queue-after-passing-on-the-pull-request.md))
+  and a green owned-runner canary, which then sets `NIFE_RUNNER_OWNED` to `true`.
+- **Outstanding.** A second week of queue data after those fixes: the median group wall time and the
+  share of hosted jobs that waited over 5 minutes, and from it the settings in `notes/merge-queue.md`'s
+  "The queue's own settings".
 
 ## Index row
 

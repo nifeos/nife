@@ -14,7 +14,7 @@
 //!
 
 //! Name: provisional (milestone 242 (USB host and HID)). The crate's name, as
-//! `kernel/src/non_volatile_memory_express.rs` takes its crate's: the volatile half of one pair.
+//! `kernel/src/pci.rs` takes its crate's: the volatile half of one pair.
 
 use driver_process_contract::extensible_host_controller_interface::{Handoff, WindowRefusal};
 use extensible_host_controller_interface::{

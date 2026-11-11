@@ -15,6 +15,14 @@
 #   (PASS, FAIL), worktrees (PASS, FAIL missing, FAIL commondir), corpus (PASS, FAIL stale, FAIL no
 #   growth with --wait), disk (PASS, FAIL)
 #
+# BUGS: the "no growth" scenario is timing-dependent and failed once in CI (#3431), then passed on a
+# rerun. A background write lands 0.3 s after the shell starts and the tool's first corpus reading
+# should come before it, but the tool is a Python process whose start-up is not bounded: on a loaded
+# runner the first reading can follow the write, both readings agree, and the check reports "no
+# growth over 1 s". A fix is to write after the first reading rather than after a delay, for example
+# by waiting for the tool to print something, or to widen the gap (--wait 4, write at 2 s); neither is
+# obviously right without reproducing the failure, so the scenario is left as it is.
+#
 # Name: provisional, minted 2026-11-05 (UTC) by maintainer/fuzz-status.
 set -eu
 

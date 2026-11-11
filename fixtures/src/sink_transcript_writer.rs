@@ -36,12 +36,12 @@
 //! The report is a single `send` of three words, so a caller that never drains it parks this
 //! process forever at `exit`'s doorstep: drain the report or do not spawn it.
 //!
-//! Name: recorded (design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and
-//! notes/sink-protocol.md). **Provisional: calef has not ratified it.** Named for the contract it
-//! speaks (`byte_sink_contract`, which design/naming/vocabulary.md keeps) and the pinned
-//! transcript it writes. Refused `writer` (generic). Refused `indifferent_writer` (names the
-//! property being proved, not the program). Refused `sink_writer` (reads as the thing that writes
-//! a sink, and says nothing about what it writes).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). Named for the contract it speaks
+//! (`byte_sink_contract`, which design/naming/vocabulary.md keeps) and the pinned transcript it
+//! writes; see design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and
+//! notes/sink-protocol.md. Refused `writer` (generic). Refused `indifferent_writer` (names the
+//! property being proved, not the program). Refused `sink_writer` (reads as the thing that writes a
+//! sink, and says nothing about what it writes).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

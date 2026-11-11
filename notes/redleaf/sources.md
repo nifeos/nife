@@ -1,6 +1,6 @@
 # What the RedLeaf comparison read, and what it could not establish
 
-*Name: provisional. For the source table it holds.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [`notes/redleaf.md`](../redleaf.md). It lists the seven documents and one clone
 the comparison rests on, with where each was fetched and the date it was read. It also lists what

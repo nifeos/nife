@@ -1,9 +1,10 @@
 # Naming programs, scripts and directories
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`design/naming.md`](../naming.md#programs-scripts-and-directories), which states
 the rules. It holds the reasons behind the spelling per domain, the program conventions, `script/`
-against `helpers/`, and directories. The directory `design/naming/` and this file's stem are
-provisional names; naming is an architect's.*
+against `helpers/`, and directories.*
 
 ## Spelling, per domain
 

@@ -1,5 +1,7 @@
 # The index's format: a survey, and what is left to rule
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/packages.md](../packages.md), owed by milestone 801 (packages over the
 internet) under §46 (thin primitives or whole subsystems). Its block said nothing outside the tree
 was surveyed for the index format and the building lane owes that survey. Written 2026-10-09 (UTC)

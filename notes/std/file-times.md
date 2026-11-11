@@ -1,8 +1,10 @@
 # File times: `modified` and `set_times`
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/std.md`](../std.md), which is the page to read. This file holds milestone
 64's last pass: the mapping for each time call, why the handle shapes refuse, its EXAMPLES and its
-BUGS. The directory `notes/std/` and this file's stem are provisional names. Naming is calef's.*
+BUGS.*
 
 The records this file cites by number:
 

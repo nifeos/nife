@@ -50,7 +50,9 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   commit you mean: `git ls-remote origin refs/heads/<branch>` prints the same commit as
   `git rev-parse HEAD`, and `gh pr view <number> --json headRefOid --jq .headRefOid` agrees. Run
   `gh pr ready <number>` and `helpers/arm.sh <number>` after that and not before. `helpers/arm.sh`
-  is the one way to arm: it refuses a draft and a held pull request, and runs
+  is the one way to arm: it refuses a draft, a held pull request, a head whose only `lint` is the
+  draft run's skip (arm once the ready run's `lint` has passed), and a head the queue last removed
+  for failed checks. It runs
   `script/queue-conflicts`, which merges the pull request against `main` plus the entries ahead of
   it and refuses a conflict the queue would remove you for. A push to a pull request that is already
   armed or queued is `script/push --requeue`, which dequeues, pushes and arms again. The

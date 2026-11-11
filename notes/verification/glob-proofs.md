@@ -1,5 +1,7 @@
 # The glob matcher, and the two things that made it tractable
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/verification.md](../verification.md). It holds what proving the glob matcher
 taught about the cost of a proof.
 

@@ -9,7 +9,8 @@
 //! other half is `page_frame_producer`.
 //!
 
-//! Name: provisional (milestone 291). This was `hello`'s `PAGE_FRAME_CONSUMER` role, number 12.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s
+//! `PAGE_FRAME_CONSUMER` role.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

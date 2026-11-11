@@ -5,6 +5,7 @@
 #     script/preflight-queue              # --dry-run: test every entry, report, change nothing
 #     script/preflight-queue --act        # the same walk, then comment on and dequeue what is red
 #     script/preflight-queue --no-hvf     # skip the HVF leg on main's tip (it runs first by default)
+#     script/preflight-queue --arm-check <N>   # lint one pull request over the queue (helpers/arm.sh)
 #
 # # Why this exists
 #
@@ -126,6 +127,159 @@
 # calef has not ruled on it.
 
 set -e
+
+# **`--arm-check <pull request number>`: lint one pull request over the queue it is joining.**
+# helpers/arm.sh runs this before it arms (the architect's ruling of 2026-11-11 (UTC) on question A
+# of the proposal "lint fails in the queue after passing on the pull request"). In a temporary
+# detached worktree it merges `main`, then every queued entry in queue order (an entry that
+# conflicts with the stack is left out, as the queue would leave it), then the pull request, and runs
+# `script/lint --no-cargo` there. On a red it runs the same lint on the stack without the pull
+# request and compares the failing sections, because a red the stack already has is not the pull
+# request's. Exit 0: lint is green with it. Exit 1: it adds at least one failing section, which it
+# names. Exit 2: it could not tell (no queue read, a fetch failed, the pull request conflicts with
+# the stack, or every failing section fails without it too), and it says which.
+#
+# `--no-cargo` because every lint failure the queue met in the week the proposal measured was a
+# section that runs no cargo, and that mode takes about a minute and no heavy slot; the queue's own
+# lint still runs every section. No heavy slot is taken and the shared scratch worktree is not used,
+# so lanes arming at once do not wait on each other.
+#
+# For helpers/preflight-arm-check-selftest.sh, each input can be replaced: PREFLIGHT_REPO_DIR (the
+# repository whose objects it uses, default this one), PREFLIGHT_REMOTE (default origin),
+# PREFLIGHT_ENTRIES_JSON (a file holding the queue as `[{number, headRefOid}]` in order),
+# PREFLIGHT_HEAD (the pull request's head commit) and PREFLIGHT_LINT (the lint command).
+if [ "${1:-}" = "--arm-check" ]; then
+    cd "$(dirname "$0")/.."
+    exec python3 - "$@" <<'PY'
+import atexit, json, os, re, shutil, subprocess, sys, tempfile
+
+if len(sys.argv) != 3 or not sys.argv[2].isdigit():
+    print("usage: script/preflight-queue --arm-check <pull request number>", file=sys.stderr)
+    sys.exit(2)
+PR = int(sys.argv[2])
+REPO = os.environ.get("PREFLIGHT_REPO_DIR") or os.getcwd()
+REMOTE = os.environ.get("PREFLIGHT_REMOTE", "origin")
+LINT = os.environ.get("PREFLIGHT_LINT", "script/lint --no-cargo")
+BOUND = 1200
+ME = "preflight-queue --arm-check"
+
+
+def say(msg):
+    print("%s: %s" % (ME, msg), flush=True)
+
+
+def cannot_tell(msg):
+    say("could not tell: " + msg)
+    sys.exit(2)
+
+
+def run(args, cwd=REPO, timeout=None):
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                          timeout=timeout)
+
+
+def gh_json(args):
+    r = run(["gh"] + args)
+    if r.returncode != 0:
+        cannot_tell("gh %s failed: %s" % (args[0], r.stderr.strip()[-300:]))
+    return json.loads(r.stdout)
+
+
+if os.environ.get("PREFLIGHT_ENTRIES_JSON"):
+    entries = json.load(open(os.environ["PREFLIGHT_ENTRIES_JSON"]))
+else:
+    q = gh_json(["api", "graphql", "-F", "owner={owner}", "-F", "name={repo}", "-f",
+                 "query=query($owner:String!,$name:String!){repository(owner:$owner,name:$name){"
+                 "mergeQueue(branch:\"main\"){entries(first:100){nodes{position pullRequest{number headRefOid}}}}}}"])
+    nodes = sorted(q["data"]["repository"]["mergeQueue"]["entries"]["nodes"], key=lambda e: e["position"])
+    entries = [e["pullRequest"] for e in nodes]
+head = os.environ.get("PREFLIGHT_HEAD") or gh_json(
+    ["pr", "view", str(PR), "--json", "headRefOid"])["headRefOid"]
+# An entry already in the queue is checked against the entries ahead of it, not behind.
+if any(e["number"] == PR for e in entries):
+    entries = entries[:[e["number"] for e in entries].index(PR)]
+
+if run(["git", "fetch", "-q", REMOTE, "main"]).returncode != 0:
+    cannot_tell("could not fetch main from %s" % REMOTE)
+main = run(["git", "rev-parse", "FETCH_HEAD"]).stdout.strip()
+tmp = tempfile.mkdtemp(prefix="preflight-arm-check.")
+wt = os.path.join(tmp, "stack")
+
+
+def cleanup():
+    run(["git", "worktree", "remove", "--force", wt])
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+atexit.register(cleanup)
+if run(["git", "worktree", "add", "-q", "--detach", wt, main]).returncode != 0:
+    cannot_tell("could not make a worktree at main")
+ident = ["-c", "user.name=preflight-queue", "-c", "user.email=preflight-queue@localhost"]
+
+
+def merge(number, sha):
+    if run(["git", "fetch", "-q", REMOTE, sha], cwd=wt).returncode != 0:
+        return "fetch"
+    m = run(["git"] + ident + ["merge", "-q", "--no-ff", "--no-edit", "-m",
+             "preflight: #%d" % number, sha], cwd=wt)
+    if m.returncode != 0:
+        run(["git", "merge", "--abort"], cwd=wt)
+        return "conflict"
+    return ""
+
+
+left_out = []
+for e in entries:
+    why = merge(e["number"], e["headRefOid"])
+    if why:
+        left_out.append("#%d (%s)" % (e["number"], why))
+stack = run(["git", "rev-parse", "HEAD"], cwd=wt).stdout.strip()
+ahead = ", ".join("#%d" % e["number"] for e in entries) or "nothing"
+say("main %s, then %s ahead%s" % (main[:9], ahead,
+    "; left out: " + ", ".join(left_out) if left_out else ""))
+why = merge(PR, head)
+if why:
+    cannot_tell("#%d at %s does not merge onto the stack (%s)" % (PR, head[:9], why))
+
+
+def lint(label):
+    """Run the lint command in the stack worktree. Returns (exit status, failing sections, log)."""
+    log = os.path.join(tmp, label + ".log")
+    try:
+        r = run(["sh", "-c", LINT], cwd=wt, timeout=BOUND)
+        out, rc = r.stdout + r.stderr, r.returncode
+    except subprocess.TimeoutExpired:
+        out, rc = "lint passed its bound of %d s" % BOUND, 124
+    open(log, "w").write(out)
+    failed = set(re.findall(r"^  (.+) \(exit \d+\)$", out.split("sections failed")[-1], re.M)) \
+        if "sections failed" in out else set()
+    if rc != 0 and not failed:
+        failed = {"lint itself (exit %d, no section list)" % rc}
+    return rc, failed, out
+
+
+rc, with_pr, out = lint("with")
+if rc == 0:
+    say("lint is green with #%d on top" % PR)
+    sys.exit(0)
+run(["git", "reset", "-q", "--hard", stack], cwd=wt)
+run(["git", "clean", "-q", "-fd"], cwd=wt)
+_, without, _ = lint("without")
+added = sorted(with_pr - without)
+if not added:
+    cannot_tell("lint is red on the stack without #%d too, in: %s" % (PR, "; ".join(sorted(without))))
+say("#%d at %s makes lint red on main plus %s. The sections it adds:" % (PR, head[:9], ahead))
+for name in added:
+    print("  " + name)
+    m = re.search(r"^==> %s$(.*?)(?=^==> |\Z)" % re.escape(name), out, re.M | re.S)
+    if m:
+        body = [l for l in m.group(1).splitlines() if l.strip() and not l.startswith("lint-section-")]
+        for l in body[:12]:
+            print("    " + l[:300])
+sys.exit(1)
+PY
+fi
+
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py).
 . "$(dirname "$0")/../helpers/heavy-slot.sh"
 cd "$(dirname "$0")/.."

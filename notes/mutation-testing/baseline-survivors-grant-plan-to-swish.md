@@ -1,5 +1,7 @@
 # The baseline survivors, crate by crate: `grant_plan` to `swish`
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 How each survivor of the 2026-08-03 baseline was closed, from `grant_plan` to `swish`, with the test
 that killed it or the argument that it is equivalent. The counts are that run's; the current census
 is on [notes/mutation-testing.md](../mutation-testing.md), and the first half of the alphabet is in
