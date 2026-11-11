@@ -54,6 +54,20 @@ expect "timed_out must count as failing" \
 	"$(decide '[{"id":1,"name":"clippy","conclusion":"timed_out"}]' "$req")" "clippy"
 expect "a required check with no run must not count" "$(decide '[]' "$req")" ""
 
+# 2b. A draft's red lint ("draft: lint not run") finished before the pull request was last marked
+# ready, and is not this head's failure; a run that finished after it is. Never a draft: all count.
+decide_ready() { # <runs JSON> <ready_at>
+	printf '%s\n' "$1" | jq -r --argjson required "$req" --arg ready_at "$2" "$program"' failing($required; $ready_at) | map(.name) | join(";")'
+}
+draft_red='[{"id":1,"name":"clippy","conclusion":"failure","completed_at":"2026-11-11T01:00:00Z"}]'
+expect "a draft run's red counted after ready" "$(decide_ready "$draft_red" 2026-11-11T01:05:00Z)" ""
+expect "a red after ready was hidden" "$(decide_ready "$draft_red" 2026-11-11T00:55:00Z)" "clippy"
+expect "a pull request never a draft must judge every run" "$(decide_ready "$draft_red" "")" "clippy"
+expect "the ready run's red must count over the draft's" \
+	"$(decide_ready '[{"id":1,"name":"clippy","conclusion":"failure","completed_at":"2026-11-11T01:00:00Z"},{"id":2,"name":"clippy","conclusion":"failure","completed_at":"2026-11-11T01:09:00Z"}]' 2026-11-11T01:05:00Z)" "clippy"
+expect "an unfinished ready run must still hide an older red" \
+	"$(decide_ready '[{"id":1,"name":"clippy","conclusion":"failure","completed_at":"2026-11-11T01:06:00Z"},{"id":2,"name":"clippy","conclusion":null,"status":"in_progress","completed_at":null}]' 2026-11-11T01:05:00Z)" ""
+
 # 3. The script reports and never resolves.
 if grep -v '^[[:space:]]*#' "$here/ci-failing.sh" | grep -Eq 'dequeue|disable-auto|merge --auto|run rerun|enqueue'; then
 	echo "$me: ci-failing.sh changes the queue or reruns CI; it must only label and comment." >&2
