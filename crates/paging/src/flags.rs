@@ -143,8 +143,8 @@ impl Flags {
 
     /// **[`user_device`](Self::user_device) without the write**: device-typed, user readable, never
     /// writable and never executable. For a window a process reads status from and must not
-    /// change, such as the JH7110's SYS syscon, whose PLL words the clock and reset server reads to
-    /// compute a rate.
+    /// change, such as the JH7110's system controller, whose clock-source words the clock and reset server
+    /// reads to compute a rate.
     ///
     /// Name: provisional.
     pub const fn user_device_read_only() -> Self {

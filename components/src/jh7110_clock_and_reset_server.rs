@@ -137,7 +137,7 @@ fn answer(held: &mut Held, badge: u64, w0: u64, w1: u64) -> (Status, u64) {
             Err(RateRefusal::NoRateAtOrBelow) => (Status::NoRateAtOrBelow, 0),
         },
         // `VERSION_QUERY` among them, until its reply exists (the contract crate's BUGS).
-        _ => (Status::UnservedOperation, 0),
+        _ => (Status::UnknownOperation, 0),
     }
 }
 

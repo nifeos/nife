@@ -7,10 +7,10 @@ use jh7110_clock_and_reset::CLOCK_PARENT_MASK;
 
 use super::*;
 
-/// `gmac0_tx`, the AON clock whose parent the GMAC plan selects, and that parent, `gmac0_rmii_rtx`:
-/// `jh7110_clock_and_reset`'s numbers, which it keeps to itself.
-const AONCLK_GMAC0_TX: u32 = 5;
-const AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX: u32 = 1;
+/// `gmac0_tx`, the always-on clock whose parent the Ethernet plan selects, and that parent,
+/// `gmac0_rmii_rtx`: `jh7110_clock_and_reset`'s numbers, which it keeps to itself.
+const ETHERNET_TRANSMIT_CLOCK: u32 = 5;
+const ETHERNET_TRANSMIT_PARENT: u32 = 1;
 
 /// What one store or read touched, in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -116,11 +116,11 @@ impl Windows for Fake {
     }
 }
 
-fn gmac() -> &'static Device {
+fn ethernet() -> &'static Device {
     Device::at(0x1603_0000).unwrap()
 }
 
-fn trng() -> &'static Device {
+fn entropy_source() -> &'static Device {
     Device::at(0x1600_c000).unwrap()
 }
 
@@ -148,9 +148,9 @@ fn every_plan_names_only_identifiers_its_domain_has() {
 }
 
 #[test]
-fn the_gmac_comes_up_as_the_ruling_example_says() {
+fn the_ethernet_port_comes_up_as_the_ruling_example_says() {
     let mut f = Fake::new();
-    let counts = gmac().bring_up(&mut f, 4);
+    let counts = ethernet().bring_up(&mut f, 4);
     assert_eq!(
         counts,
         Counts {
@@ -180,12 +180,12 @@ fn the_gmac_comes_up_as_the_ruling_example_says() {
             (AlwaysOn, r0),
         ]
     );
-    let tx = f.word(AlwaysOn, u64::from(AONCLK_GMAC0_TX) * 4);
+    let transmit = f.word(AlwaysOn, u64::from(ETHERNET_TRANSMIT_CLOCK) * 4);
     assert_eq!(
-        (tx & CLOCK_PARENT_MASK) >> 24,
-        AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX
+        (transmit & CLOCK_PARENT_MASK) >> 24,
+        ETHERNET_TRANSMIT_PARENT
     );
-    assert!(is_clock_enabled(tx));
+    assert!(is_clock_enabled(transmit));
 }
 
 #[test]
@@ -210,12 +210,12 @@ fn no_reset_is_released_before_every_clock_is_enabled() {
 #[test]
 fn a_parent_is_chosen_while_its_clock_is_still_gated() {
     let mut f = Fake::new();
-    gmac().bring_up(&mut f, 1);
-    let tx = u64::from(AONCLK_GMAC0_TX) * 4;
+    ethernet().bring_up(&mut f, 1);
+    let transmit = u64::from(ETHERNET_TRANSMIT_CLOCK) * 4;
     let stores: Vec<u32> = f
         .writes()
         .into_iter()
-        .filter(|&(w, o, _)| w == WindowName::AlwaysOn && o == tx)
+        .filter(|&(w, o, _)| w == WindowName::AlwaysOn && o == transmit)
         .map(|(_, _, v)| v)
         .collect();
     assert_eq!(stores.len(), 2);
@@ -229,7 +229,7 @@ fn a_parent_is_chosen_while_its_clock_is_still_gated() {
 #[test]
 fn a_reset_store_keeps_the_other_31_lines_of_its_word() {
     let mut f = Fake::new();
-    trng().bring_up(&mut f, 1);
+    entropy_source().bring_up(&mut f, 1);
     let bit = SYSTEM_TOP_GROUP.reset_bit(3).unwrap();
     assert_eq!(
         f.word(WindowName::SystemTopGroup, bit.assert_offset),
@@ -240,10 +240,10 @@ fn a_reset_store_keeps_the_other_31_lines_of_its_word() {
 #[test]
 fn a_second_bring_up_says_already_up_and_changes_nothing() {
     let mut f = Fake::new();
-    let first = trng().bring_up(&mut f, 1);
+    let first = entropy_source().bring_up(&mut f, 1);
     assert!(!first.already_up);
     let words = f.words;
-    let second = trng().bring_up(&mut f, 1);
+    let second = entropy_source().bring_up(&mut f, 1);
     assert!(second.already_up);
     assert_eq!(f.words, words);
     assert_eq!(
@@ -291,7 +291,7 @@ fn one_device_never_touches_another_devices_bits() {
 fn a_dead_window_reads_as_clocks_not_running_and_resets_held() {
     let mut f = Fake::new();
     f.dead[slot(WindowName::SystemTopGroup)] = true;
-    let counts = trng().bring_up(&mut f, 3);
+    let counts = entropy_source().bring_up(&mut f, 3);
     assert_eq!((counts.clocks_in_plan, counts.clocks_running), (2, 0));
     assert_eq!((counts.resets_in_plan, counts.resets_released), (1, 0));
     // The poll bound held: three status reads for the one reset, after the one before the write.
@@ -308,7 +308,7 @@ fn a_dead_window_reads_as_clocks_not_running_and_resets_held() {
 fn a_stuck_reset_is_counted_held() {
     let mut f = Fake::new();
     f.stuck[slot(WindowName::AlwaysOn)] = ALWAYS_ON.reset_bit(1).unwrap().mask;
-    let counts = gmac().bring_up(&mut f, 2);
+    let counts = ethernet().bring_up(&mut f, 2);
     assert_eq!((counts.resets_in_plan, counts.resets_released), (2, 1));
     assert_eq!(counts.clocks_running, 6);
 }
@@ -317,14 +317,14 @@ fn a_stuck_reset_is_counted_held() {
 fn a_device_is_served_only_where_every_window_it_draws_on_is_held() {
     let mut f = Fake::new();
     f.held[slot(WindowName::AlwaysOn)] = false;
-    assert!(!gmac().is_served_by(&f));
-    assert!(trng().is_served_by(&f));
+    assert!(!ethernet().is_served_by(&f));
+    assert!(entropy_source().is_served_by(&f));
 }
 
 #[test]
 fn a_read_reaches_the_devices_own_words_and_nothing_past_them() {
     let mut f = Fake::new();
-    let d = gmac();
+    let d = ethernet();
     d.bring_up(&mut f, 1);
     assert_eq!(d.clock(0), Some((WindowName::System, 108)));
     assert_eq!(d.clock(5), Some((WindowName::AlwaysOn, 5)));
@@ -338,18 +338,18 @@ fn a_read_reaches_the_devices_own_words_and_nothing_past_them() {
 }
 
 /// The SYS words radon's firmware leaves, as the storage bench read them: `bus_root` on PLL2,
-/// `axi_cfg0` divided by 2 and PLL2 in integer mode at 1188 MHz, so the card clock's parent runs at
-/// 594 MHz, with the card clock's own divider left at 2.
+/// `axi_cfg0` divided by 2 and PLL2 in integer mode at 1188 megahertz, so the card clock's parent runs at
+/// 594 megahertz, with the card clock's own divider left at 2.
 fn radon_like() -> Fake {
     let mut f = Fake::new();
-    let sys = slot(WindowName::System);
-    f.words[sys][SYSTEM_CLOCK_BUS_ROOT as usize] = 1 << 24;
-    f.words[sys][SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0 as usize] = 2;
-    let syscon = slot(WindowName::SystemController);
+    let system = slot(WindowName::System);
+    f.words[system][SYSTEM_CLOCK_BUS_ROOT as usize] = 1 << 24;
+    f.words[system][SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0 as usize] = 2;
+    let system_controller = slot(WindowName::SystemController);
     // DACPD and DSMPD set, FBDIV 99; POSTDIV1 0 (divide by 1); PREDIV 2.
-    f.words[syscon][0x2c / 4] = 1 << 15 | 1 << 16 | 99 << 17;
-    f.words[syscon][0x34 / 4] = 2;
-    f.words[sys][SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[1] as usize] = CLOCK_ENABLE | 2;
+    f.words[system_controller][0x2c / 4] = 1 << 15 | 1 << 16 | 99 << 17;
+    f.words[system_controller][0x34 / 4] = 2;
+    f.words[system][SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[1] as usize] = CLOCK_ENABLE | 2;
     f
 }
 
@@ -372,13 +372,13 @@ fn a_rate_is_the_fastest_at_or_below_the_ask_and_keeps_the_enable_bit() {
 fn a_rate_is_refused_where_no_divider_reaches_it_or_no_rated_clock_exists() {
     let mut f = radon_like();
     let card = Device::at(0x1602_0000).unwrap();
-    // 594 MHz over 15 is 39.6 MHz, so 1 MHz cannot be reached.
+    // 594 megahertz over 15 is 39.6 megahertz, so 1 megahertz cannot be reached.
     assert_eq!(
         card.set_rate(&mut f, 1_000_000),
         Err(RateRefusal::NoRateAtOrBelow)
     );
     assert_eq!(
-        gmac().set_rate(&mut f, 50_000_000),
+        ethernet().set_rate(&mut f, 50_000_000),
         Err(RateRefusal::NoRatedClock)
     );
     assert!(f.writes().is_empty());

@@ -46,9 +46,19 @@ assert_eq!(Status::from_word(status), Some(Status::ResetHeld));
 assert_eq!(Summary::unpack(word).map(|s| s.resets_released), Some(0));
 ```
 
+## What is proven
+
+Host tests pin every number the wire carries: the interface id and version, the operation numbers
+and their bit position, each status's word, and each summary field's place, with a stray bit
+refused.
+
 ## BUGS
 
-The server answers `VERSION_QUERY` with `UnservedOperation` until the version query exists.
+The server answers `VERSION_QUERY` with `UnknownOperation` until the version query exists.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

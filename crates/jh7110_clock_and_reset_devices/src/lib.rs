@@ -43,7 +43,7 @@ pub enum WindowName {
     SystemTopGroup,
     /// The SYS domain, [`SYSTEM`].
     System,
-    /// The AON domain, [`ALWAYS_ON`].
+    /// The always-on domain, [`ALWAYS_ON`].
     AlwaysOn,
     /// The SYS syscon, read for PLL2's rate and never written.
     SystemController,
@@ -386,15 +386,18 @@ impl Device {
         if !windows.is_held(WindowName::System) || !windows.is_held(WindowName::SystemController) {
             return Err(RateRefusal::NoRatedClock);
         }
-        let mut sys = |index: u32| windows.read(WindowName::System, u64::from(index) * 4);
-        let bus_root = sys(SYSTEM_CLOCK_BUS_ROOT);
-        let configuration_0 = sys(SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0);
-        let top_group = sys(
+        let mut system = |index: u32| windows.read(WindowName::System, u64::from(index) * 4);
+        let bus_root = system(SYSTEM_CLOCK_BUS_ROOT);
+        let configuration_0 = system(SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0);
+        let top_group = system(
             SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS,
         );
-        let peripheral = sys(SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION);
-        let [pll_0, pll_1, pll_2] =
-            PHASE_LOCKED_LOOP_2_WORDS.map(|o| windows.read(WindowName::SystemController, o));
+        let peripheral = system(SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION);
+        let [
+            phase_locked_loop_0,
+            phase_locked_loop_1,
+            phase_locked_loop_2,
+        ] = PHASE_LOCKED_LOOP_2_WORDS.map(|o| windows.read(WindowName::SystemController, o));
         let parent_hertz = advanced_extensible_interface_configuration_0_hertz(
             &InterIntegratedCircuitClockWords {
                 bus_root,
@@ -402,9 +405,9 @@ impl Device {
                 system_top_group_advanced_extensible_interface_advanced_high_performance_bus:
                     top_group,
                 advanced_peripheral_bus_function: peripheral,
-                phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: pll_0,
-                phase_locked_loop_2_post_divider_1_word: pll_1,
-                phase_locked_loop_2_pre_divider_word: pll_2,
+                phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: phase_locked_loop_0,
+                phase_locked_loop_2_post_divider_1_word: phase_locked_loop_1,
+                phase_locked_loop_2_pre_divider_word: phase_locked_loop_2,
             },
         );
         if parent_hertz / u64::from(MAXIMUM_SD_CARD_DIVIDER) > most_hertz {

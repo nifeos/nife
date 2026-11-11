@@ -15,7 +15,7 @@
 //!
 //! # BUGS
 //!
-//! - The server answers [`VERSION_QUERY`] with [`Status::UnservedOperation`]: the reply milestone
+//! - The server answers [`VERSION_QUERY`] with [`Status::UnknownOperation`]: the reply milestone
 //!   1000 (message contracts carry bind-time version checks) defines does not exist yet, so a
 //!   client built against another version is not refused at bind.
 //!
@@ -75,7 +75,8 @@ pub const READ_CLOCK: u64 = 2;
 pub const READ_RESET: u64 = 3;
 
 /// **Run the device's one rated clock at no more than word 1's hertz.** Reply word 1 is the hertz
-/// it now runs at. Served only for a device with a rated clock, the SD/MMC card clock today.
+/// it now runs at. Served only for a device with a rated clock, the Secure Digital (SD) and MultiMediaCard (MMC)
+/// card clock today.
 ///
 /// Name: provisional.
 pub const SET_RATE: u64 = 4;
@@ -122,8 +123,8 @@ pub enum Status {
     Done = 0,
     /// The badge names no device this server serves, badge 0 included.
     UnknownDevice = 1,
-    /// An operation this server does not serve.
-    UnservedOperation = 2,
+    /// An operation this server does not know.
+    UnknownOperation = 2,
     /// An enable bit did not read back set.
     ClockNotRunning = 3,
     /// A reset did not read released within the poll bound.
@@ -143,7 +144,7 @@ impl Status {
     pub const ALL: [Status; 8] = [
         Status::Done,
         Status::UnknownDevice,
-        Status::UnservedOperation,
+        Status::UnknownOperation,
         Status::ClockNotRunning,
         Status::ResetHeld,
         Status::IndexOutOfRange,

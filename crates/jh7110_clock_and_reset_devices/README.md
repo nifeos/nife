@@ -4,6 +4,12 @@ Which StarFive JH7110 clocks and resets each device needs, keyed by the physical
 registers start at, and the walk that brings one device up. `no_std`, no unsafe code, no pointer:
 every read and store goes through a `Windows` the caller implements.
 
+It covers five devices: the true random number generator (TRNG), the first gigabit media access
+controller (GMAC), both Secure Digital (SD) and MultiMediaCard (MMC) controllers, and I2C5, the bus
+to the power management integrated circuit (PMIC). Their words sit in three domains, the system top
+group (STG), system (SYS) and always-on windows, and a rate also reads the SYS syscon's
+phase-locked loop (PLL) words.
+
 A clock and reset server holds the chip's shared windows and answers each client for the device its
 badge names. `Device::at` turns that badge into the device, and the device's methods touch its own
 clocks and resets alone.
@@ -24,10 +30,20 @@ assert!(trng.clock(u8::MAX).is_none());
 assert_eq!(DEVICES.len(), 5);
 ```
 
+## What is proven
+
+Host tests drive every device's walk against arrays that behave as the silicon does: clocks before
+resets across domains, idempotence, a badge that names no device, an index past the device's own,
+no store outside the device's own words, and both set-rate refusals. Nothing has run on silicon.
+
 ## BUGS
 
 Each device's plan is `jh7110_clock_and_reset`'s constant, never the device tree's `clocks` and
 `resets`.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

@@ -23,10 +23,10 @@ fn the_operation_numbers_are_the_ruled_ones() {
 #[test]
 fn the_operation_sits_in_bits_63_to_56_and_the_index_in_bits_7_to_0() {
     assert_eq!(request(READ_RESET, 0xab), 0x0300_0000_0000_00ab);
-    for op in 0..=255u64 {
+    for number in 0..=255u64 {
         for index_value in [0u8, 1, 0x7f, 0xff] {
-            let w0 = request(op, index_value);
-            assert_eq!(operation(w0), op);
+            let w0 = request(number, index_value);
+            assert_eq!(operation(w0), number);
             assert_eq!(index(w0), index_value);
         }
     }
@@ -40,7 +40,7 @@ fn every_status_has_its_ruled_number_and_reads_back() {
     let numbered = [
         (Status::Done, 0),
         (Status::UnknownDevice, 1),
-        (Status::UnservedOperation, 2),
+        (Status::UnknownOperation, 2),
         (Status::ClockNotRunning, 3),
         (Status::ResetHeld, 4),
         (Status::IndexOutOfRange, 5),
@@ -57,8 +57,8 @@ fn every_status_has_its_ruled_number_and_reads_back() {
 #[test]
 fn a_kernel_error_or_an_unknown_word_is_no_status() {
     assert_eq!(Status::from_word(8), None);
-    for errno in 1..=16i64 {
-        assert_eq!(Status::from_word((-errno) as u64), None);
+    for error in 1..=16i64 {
+        assert_eq!(Status::from_word((-error) as u64), None);
     }
 }
 

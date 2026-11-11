@@ -1,8 +1,8 @@
 //! What the kernel and the JH7110 clock and reset server agree on: where the spawner maps the first
 //! page of each window the server holds, and the kind each has on the startup page. The server
 //! (`components/src/jh7110_clock_and_reset_server.rs`) reads the page to learn which windows it
-//! holds; a machine whose tree names no AON window, for one, gets a server that serves no AON
-//! device. Its clients speak `jh7110_clock_and_reset_contract`, and
+//! holds; a machine whose tree names no always-on window, for one, gets a server that serves no
+//! always-on device. Its clients speak `jh7110_clock_and_reset_contract`, and
 //! `jh7110_clock_and_reset_devices` holds what each badge brings up. See
 //! notes/jh7110-clock-and-reset.md.
 //!
@@ -11,20 +11,21 @@
 use address_space_map::pair_page;
 use startup_page_contract::WindowKind;
 
-/// Where the spawner maps the STG clock and reset window's first page, device-typed.
+/// Where the spawner maps the system top group (STG) clock and reset window's first page,
+/// device-typed.
 ///
 /// Name: provisional.
 pub const SYSTEM_TOP_GROUP_VIRTUAL_ADDRESS: u64 = pair_page(0x0060_0000);
-/// Where the spawner maps the SYS clock and reset window's first page, device-typed.
+/// Where the spawner maps the system (SYS) clock and reset window's first page, device-typed.
 ///
 /// Name: provisional.
 pub const SYSTEM_VIRTUAL_ADDRESS: u64 = pair_page(0x0060_1000);
-/// Where the spawner maps the AON clock and reset window's first page, device-typed.
+/// Where the spawner maps the always-on clock and reset window's first page, device-typed.
 ///
 /// Name: provisional.
 pub const ALWAYS_ON_VIRTUAL_ADDRESS: u64 = pair_page(0x0060_2000);
 /// Where the spawner maps the SYS syscon's first page, device-typed and read-only: the server
-/// reads PLL2's words there for a rate and writes nothing.
+/// reads phase-locked loop (PLL) 2's words there for a rate and writes nothing.
 ///
 /// Name: provisional.
 pub const SYSTEM_CONTROLLER_VIRTUAL_ADDRESS: u64 = pair_page(0x0060_3000);

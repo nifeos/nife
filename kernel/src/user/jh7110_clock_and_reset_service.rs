@@ -6,12 +6,9 @@
 //! window the tree named (STG, SYS and AON device-typed, the SYS syscon read-only) and the receive
 //! side of one endpoint. A starter then calls it with the badge of the device it is about to start,
 //! the device's register base physical address (§320 (the JH7110 clock and reset wire)), through
-//! `sched::ipc_call_badged`. The kernel's starters are the server's only clients today. See
+//! `sched::ipc_call_badged`. The kernel's starters are its only clients. Reached only on riscv64:
+//! QEMU's `virt` names no window, so [`ensure`] answers `None` on every machine CI boots. See
 //! notes/jh7110-clock-and-reset.md.
-//!
-//! Reached only on riscv64, because the JH7110 is a RISC-V chip and no other machine nife boots
-//! has one. QEMU's `virt` names no window, so [`ensure`] answers `None` on every machine CI boots,
-//! and on aarch64 and `x86_64` too.
 //!
 //! # BUGS
 //!
