@@ -390,7 +390,7 @@ with no Kani harness.
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster_contract` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
-| `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
+| `entropy_contract` | contract | ready for review: identity, names and the move for the architect; [package](crate-reviews/entropy-contract.md) |
 | `clock_contract` | contract | identity and overlay names for the architect |
 | `socket_contract` | contract | identity, scope, names; [package](crate-reviews/socket-contract.md) |
 | `globally_unique_identifier_partition_table` | 2 | [package](crate-reviews/globally-unique-identifier-partition-table.md) |
