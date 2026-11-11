@@ -54,10 +54,10 @@ no rename has applied (`kernel_test_subject`, `swap_boundary_witness` and `first
 
 ## Rule 3: appendix stems kept as they stand
 
-An appendix document whose stem is its title, and which Rule 1 does not reach, is ratified as it
-stands when its own `Name:` block says so: `Name: ratified 2026-10-18 (calef, convention-rulings
-Rule 3)`. No script lists them. A new appendix stem is provisional until its block or a ruling
-says otherwise.
+An appendix document whose stem is its title, and which Rule 1 does not reach, keeps its stem when
+its own `Name:` block says `Name: ratified 2026-10-18 (calef, convention-rulings Rule 3)`. No
+script lists them. A new appendix stem stays provisional until its block or a ruling says
+otherwise.
 
 ## A ruled name is not asked again, and its rename has a deadline
 
