@@ -482,11 +482,11 @@ const fn remappable_redirection_entry(
     level: bool,
 ) -> u64 {
     let handle = handle as u64;
-    (handle & 0x7fff) << 49
+    ((handle & 0x7fff) << 49)
         | REDIRECTION_REMAPPABLE_FORMAT
-        | (handle >> 15) << 11
-        | (level as u64) * REDIRECTION_LEVEL
-        | (active_low as u64) * REDIRECTION_ACTIVE_LOW
+        | ((handle >> 15) << 11)
+        | ((level as u64) * REDIRECTION_LEVEL)
+        | ((active_low as u64) * REDIRECTION_ACTIVE_LOW)
         | vector as u64
 }
 
@@ -808,7 +808,7 @@ pub fn initialize(dmar: &DmarUnits, io_apic_id: Option<u8>) {
     let io_apic = io_apic_id.map(|id| {
         (
             id,
-            dmar.io_apic_source(id, &mut crate::pci::bridge_bus_range),
+            dmar.interrupt_controller_source(id, &mut crate::pci::bridge_bus_range),
         )
     });
     let mut remapping = [Err("not tried"); MAXIMUM_TRANSLATION_UNITS];

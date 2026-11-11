@@ -687,7 +687,7 @@ fn program_msi(bdf: Bdf, target: pci::MsiTarget) -> bool {
 /// read back from configuration space as placed, plus the table's offset. `None` for a function
 /// with no MSI-X. The interrupt confinement tests write it, as a component holding the table's
 /// page could.
-#[cfg(test)]
+#[cfg(all(test, target_arch = "x86_64"))]
 pub(crate) fn msix_table_entry(bdf: Bdf) -> Option<u64> {
     let capability = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))?;
     let at = pci::BAR0 + u64::from(capability.table_bar) * 4;

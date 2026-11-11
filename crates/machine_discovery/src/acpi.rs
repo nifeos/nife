@@ -34,11 +34,11 @@ pub mod ivrs;
 
 use bytes::{u16, u32, u64};
 pub use dmar::{
-    DeviceScope, Dmar, DmarEntry, DmarStructures, DmarUnits, Drhd, InterruptRemappingClaims,
-    IoApicScope, MAXIMUM_IO_APIC_SCOPES, MAXIMUM_RESERVED_REGION_DEVICES, MAXIMUM_RESERVED_REGIONS,
-    MAXIMUM_SCOPE_PATH, MAXIMUM_SCOPES, MAXIMUM_TRANSLATION_UNITS, Ownership, ReservedRegion,
-    SCOPE_IO_APIC, SCOPE_PCI_ENDPOINT, SCOPE_PCI_SUBHIERARCHY, dmar_structures, first_drhd,
-    parse_dmar,
+    DeviceScope, Dmar, DmarEntry, DmarStructures, DmarUnits, Drhd, InterruptControllerScope,
+    InterruptRemappingClaims, MAXIMUM_INTERRUPT_CONTROLLER_SCOPES, MAXIMUM_RESERVED_REGION_DEVICES,
+    MAXIMUM_RESERVED_REGIONS, MAXIMUM_SCOPE_PATH, MAXIMUM_SCOPES, MAXIMUM_TRANSLATION_UNITS,
+    Ownership, ReservedRegion, SCOPE_INPUT_OUTPUT_INTERRUPT_CONTROLLER, SCOPE_PCI_ENDPOINT,
+    SCOPE_PCI_SUBHIERARCHY, dmar_structures, first_drhd, parse_dmar,
 };
 pub use fadt::{ArmBoot, ResetRegister, ResetSpace, parse_arm_boot, parse_fadt_reset};
 pub use gtdt::{GTDT_ACTIVE_LOW, GTDT_EDGE_TRIGGERED, Gtdt, parse_gtdt};

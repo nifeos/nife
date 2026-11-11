@@ -1017,7 +1017,7 @@ pub(crate) fn provoke_iommu_escape(id: u64, avail_out_of_domain: u64) {
 /// The request is `GET_ID` (virtio 1.1 section 5.2.6): it touches no sector and writes twenty
 /// bytes of serial number, so any disk serves. The interrupt confinement tests aim the message it
 /// raises somewhere it was never granted. See notes/iommu.md.
-#[cfg(test)]
+#[cfg(all(test, target_arch = "x86_64"))]
 pub(crate) fn provoke_completion(id: u64) -> bool {
     /// `VIRTIO_BLK_T_GET_ID`, and `VIRTQ_DESC_F_WRITE` (the device writes this buffer).
     const GET_ID: u64 = 8;
@@ -1069,7 +1069,7 @@ pub(crate) fn provoke_completion(id: u64) -> bool {
 
 /// Test hook: reset every block device but the one whose requester id is `keep`, so none of them
 /// DMAs, faults or interrupts while a confinement test reads the IOMMU's fault records.
-#[cfg(test)]
+#[cfg(all(test, target_arch = "x86_64"))]
 pub(crate) fn quiesce_block_devices_except(keep: u32) {
     // Bounded at 8 so a discovery bug is a fast loop, not a hang.
     for n in 0..8 {
