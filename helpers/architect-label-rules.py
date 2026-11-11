@@ -8,20 +8,29 @@ the dependency graph moved... the second is the real answer."* `.github/workflow
 label.yml` built that answer for one shape, a correction of error. This is the general one, wired
 by `.github/workflows/architect-label.yml`.
 
-This module is a pure predicate: it reads a unified diff (as `git diff --unified=1000000 base head`
+This module is a predicate: it reads a unified diff (as `git diff --unified=1000000 base head`
 produces, so every file's diff is one hunk holding the WHOLE file, changed lines marked) and reports
-which of six rules fired, and where. It never runs `git` and never talks to GitHub; the workflow
-does both and pipes the diff text in on stdin. That split is what makes `--selftest` below run
-against literal fixture strings, no repository and no subprocess required, cheap enough for
-`script/lint-fleet` to run on every invocation.
+which of six rules fired, and where. With a diff on stdin it never talks to GitHub and runs `git`
+only for `--base-rev`; that split is what makes `--selftest` below run against literal fixture
+strings, no repository and no subprocess required, cheap enough for `script/lint-fleet` to run on
+every invocation. `--against MAIN HEAD` makes the diffs itself, one from each merge base, and is
+what the workflow and the merge drain call.
 
     python3 helpers/architect-label-rules.py --selftest        # fixtures; script/lint-fleet runs this
+    python3 helpers/architect-label-rules.py --against origin/main HEAD [--ruled N:SHA]...
     git diff --unified=1000000 BASE HEAD | python3 helpers/architect-label-rules.py
         # prints one "rule: file: line" per match on stdout, exits 0 if anything fired, 1 if
-        # nothing did, 2 on a usage error, 3 if it crashed. Nothing here reads BASE/HEAD; a caller
-        # diffs first. A crash is 3 rather than Python's own 1 so that it can never read as
+        # nothing did, 2 on a usage error, 3 if it crashed, 4 when --against finds no merge base.
+        # A crash is 3 rather than Python's own 1 so that it can never read as
         # "nothing fired" (milestone 641 (a mechanism that reports clean says over how many units,
-        # and zero is loud), provisional): the workflow routes 2 and 3 to a person.
+        # and zero is loud), provisional): the workflow routes 2, 3 and 4 to a person.
+
+Two things hold for every rule. A file whose code is the same at base and head, comments dropped
+and each identifier the diff renames at its declaration read under its new name (`code_unchanged`,
+`diff_renames`), moved no number, error or byte, so rules 1, 3, 4 and 6 are quiet on it (rule 3
+on its whole crate). And `--against` keeps a finding only when the diff from every merge base
+yields it, and drops one in a file that an open pull request carrying `architect-ruled` (and not
+`held-by-lane`) holds byte for byte at the same base (`drop_ruled`).
 
 # The six rules (the brief's wording; this file is the one place that has to agree with it)
 
@@ -52,11 +61,13 @@ against literal fixture strings, no repository and no subprocess required, cheap
 3. **format-crate**: a version constant, magic value, or documented on-disk layout moved in a crate
    that is classified, from its own head content, as a format crate: it declares a `pub const`
    ending in `VERSION` or `MAGIC`, or its module doc carries a markdown table with a `version`
-   column (the two tells the brief names). Firing is on a changed `VERSION`/`MAGIC` constant line, or
-   a changed doc or block comment line (`//!`, `///`, `/* */`) outside test code that states a
-   layout (a markdown table row, `offset`, `width`, `bit N`, an `N..M` range). A plain `//`
-   comment, a line under `#[test]` or `#[cfg(test)]`, and a removed/added pair with the same
-   numbers and layout words (an identifier renamed in the sentence) do not fire.
+   column (the two tells the brief names). A crate whose code did not move does not fire at all.
+   Otherwise firing is on a changed `VERSION`/`MAGIC` constant line, or a changed doc or block
+   comment line (`//!`, `///`, `/* */`) outside test code that states a layout (a markdown table
+   row, `offset`, `width`, `bit N`, an `N..M` range). A plain `//` comment, a line under `#[test]`
+   or `#[cfg(test)]`, and a removed/added pair (in one file or across the diff) with the same
+   constant or the same numbers and layout words do not fire: an identifier renamed in the
+   sentence, a constant moved to another crate, `pub(crate)` widened to `pub`.
 4. **spawnproto**: a `pub const` changed in a file named `spawnproto.rs` (the wire layout
    `crates/grant_plan/src/spawnproto.rs` documents; matched by filename rather than the one path in
    the tree today, so a second one elsewhere is still caught). Same-value renames pair off as in
@@ -173,6 +184,34 @@ So 7 of 29 file firings drop (6 false, plus #1352's coincidental catch), every l
 still fires, and #1402's class is in the fixtures. #1352 shows the real gap, now in BUGS: a format
 crate's other `pub const` values are not read at all.
 
+# The third narrowing, measured 2026-11-11 UTC
+
+Every pull request created from 2026-10-14 to 2026-11-11 (1,264) was read for `needs-architect`:
+221 received it, 145 from this file (the labeler's or the drain's finding comment), the rest by
+hand. Each of the 145 was rerun at its final head, and the drain's 34 firings at the head and main
+it saw. Real means the rules' own test: a wire or persisted format another program reads, the
+syscall surface, a dependency new to the graph, a decision, or a published number or name.
+
+    rule           PRs  real  false  the false ones, by class
+    format-crate    45    18     27  comment-only edit, no code moved (13); identifier rename (8);
+                                     constant moved to another crate (3); verbatim proof-module
+                                     move (1); drain base race (2)
+    dependency      24    20      4  a stacked branch carrying a ruled dependency (2); an own-crate
+                                     pin before the 2026-11-09 approval, now exempt (2, counted real)
+    decisions       70    61      9  criss-cross merge base (6); a split or stacked branch (3)
+    syscall-error    7     2      5  rename (2); stacked parts inheriting #2809 (2); one of #2965's
+    spawnproto       5     4      1  a value naming a renamed constant (#2792)
+    abi-surface      6     6      0
+
+Now quiet (22 pull requests, every one ruled a false positive): #2294 #2315 #2316 #2341 #2612
+#2622 #2623 #2631 #2632 #2633 #2634 #2635 #2636 #2708 #2736 #2779 #2791 #2792 #2793 #3042 #3094
+#3282 at their heads, and #2838 #3167 #3171 #3173 #3224 #3416 at the drain's (two merge bases each).
+Every finding ruled real still fires, among them #3425 and #3427 (in-image formats, ruled
+provisional), #2416 and #2512 (pages read across builds), #2836 (a value that gained a term) and
+#1402, #1385, #1360, #1727 and #1066 from the earlier narrowings. The in-image class keeps firing
+by design: #2416's handoff crosses a live swap and #2512's page is read by published binaries, so
+"one image, one commit" is not visible in a diff; the question names that answer instead.
+
 # BUGS
 
 - **decisions still fires on a rename sweep, an emphasis sweep, a line citation turned anchor, and
@@ -200,6 +239,15 @@ crate's other `pub const` values are not read at all.
 - **The test-code mask counts braces.** A raw string or a multi-line string holding an unbalanced
   `{` or `}` misplaces where a test module ends. Leaving a test region late hides a layout comment
   after it; the fixtures cover one-line strings and char literals only.
+- **Code that moved without moving a byte still fires.** A proof module moved verbatim to a new
+  file (#2181), a refactor (#2540, #2897), assertions added (#2867), doc attributes added (#2762),
+  and a crate split (#2749, #2997) change code tokens, so the crate is not quiet. Measured at 8 of
+  the 27 format-crate false positives above.
+- **One identifier renamed two ways is left out of the rename map.** #2809 renamed the module
+  `cap` to `capability_object` and the variable `cap` to `capability`; with no scopes the map
+  drops `cap`, so that sweep still fires (the restrictive direction).
+- **A ruled pull request covers a whole file only.** `drop_ruled` compares blobs, so a branch that
+  carries a ruled hunk and edits the same file elsewhere fires on that file again.
 - **format-crate's layout-comment test is a regex.** A layout described in a comment without a
   table row, offset, width, bit number or `N..M` range (say, a prose paragraph that moves a field)
   is missed unless a constant moves with it. Residual and unmeasured: the table-row form is the one
@@ -240,7 +288,7 @@ def parse_diff(text):
             # The b/ path names where the file ends up; a pure deletion still has SOME b/ path in
             # git's own header (historically `/dev/null` is only the +++ line, not this one), and
             # nothing here acts on a file with no b/ path anyway (no rule fires on a deleted file).
-            cur = {'path': m.group(2), 'lines': []}
+            cur = {'path': m.group(2), 'old_path': m.group(1), 'lines': []}
             continue
         if cur is None:
             continue
@@ -269,6 +317,245 @@ def changed_lines(fd):
     return [(p, line) for p, line in fd['lines'] if p in ('+', '-')]
 
 
+# ---- code tokens, and the renames a diff performs -------------------------------------------------
+#
+# A format's bytes, a syscall's errors and a protocol's values are made by code, never by comments.
+# So the rules below ask first whether a file's code moved at all: its tokens with every comment
+# dropped, base against head. A file whose code is identical, or identical once each identifier the
+# diff renames at its declaration is read under its new name, moved no byte, and those rules stay
+# quiet on it. Measured 2026-11-11 (UTC): see "the third narrowing" in the module docstring.
+
+TOKEN_RE = re.compile(
+    r'b?r(#*)"(?:.|\n)*?"\1'        # raw string or raw byte string
+    r'|b?"(?:\\[\s\S]|[^"\\])*"'     # string or byte string, a `\` line continuation included
+    r"|b?'(?:\\(?:u\{[0-9A-Fa-f_]+\}|x[0-9A-Fa-f]{2}|.)|[^'\\\n])'"  # char or byte char
+    r"|'[A-Za-z_]\w*"                # lifetime
+    r'|[A-Za-z_]\w*'                 # identifier or keyword
+    r'|0[xob][0-9A-Fa-f_]+\w*|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d+)?\w*'  # number
+    r'|::|->|=>|==|!=|<=|>=|&&|\|\||<<|>>|\.\.=|\.\.|\S')
+IDENT_RE = re.compile(r'[A-Za-z_]\w*\Z')
+KEYWORDS = frozenset((
+    'as', 'async', 'await', 'break', 'const', 'continue', 'crate', 'dyn', 'else', 'enum', 'extern',
+    'false', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop', 'match', 'mod', 'move', 'mut', 'pub',
+    'ref', 'return', 'self', 'Self', 'static', 'struct', 'super', 'trait', 'true', 'type', 'union',
+    'unsafe', 'use', 'where', 'while'))
+
+
+def strip_comments(text):
+    """Rust source text with `//` and `/* */` comments removed, strings and chars kept.
+
+    Walks token by token (`TOKEN_RE`), so a quote beside an identifier or a
+    comment marker inside a string never starts what it does not start."""
+    out, i, n = [], 0, len(text)
+    while i < n:
+        if text.startswith('//', i):
+            j = text.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if text.startswith('/*', i):
+            depth, i = 1, i + 2
+            while i < n and depth:
+                if text.startswith('/*', i):
+                    depth, i = depth + 1, i + 2
+                elif text.startswith('*/', i):
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+            out.append(' ')
+            continue
+        if text[i].isspace():
+            out.append(text[i])
+            i += 1
+            continue
+        m = TOKEN_RE.match(text, i)
+        out.append(m.group(0) + ' ')
+        i = m.end()
+    return ''.join(out)
+
+
+def code_tokens(lines):
+    """A Rust file's lines -> its code tokens, every comment dropped, and a trailing comma before a
+    closing bracket dropped too (rustfmt adds or removes one when a rename changes a line's width,
+    and it changes nothing the compiler emits)."""
+    toks = [m.group(0) for m in TOKEN_RE.finditer(strip_comments('\n'.join(lines)))]
+    return [t for i, t in enumerate(toks)
+            if not (t == ',' and i + 1 < len(toks) and toks[i + 1] in (')', ']', '}'))]
+
+
+def line_tokens(line):
+    return [m.group(0) for m in TOKEN_RE.finditer(strip_comments(line))]
+
+
+# Where a line declares names: an item (`fn`, `const`, `struct` and the rest), a `let`, a struct
+# field (`pub size: u64,`), an enum variant (`Busy,`, `Busy = 3,`, `Busy(u8),`) and a function's
+# parameters (`fn f(frame: &mut TrapFrame, cap: Capability)`).
+DECLARING = frozenset(('fn', 'const', 'static', 'struct', 'enum', 'trait', 'type', 'mod', 'union'))
+
+
+def _is_name(token):
+    return bool(IDENT_RE.match(token)) and token not in KEYWORDS
+
+
+def declared_positions(tokens):
+    """Indices of the names this line's tokens declare, in order (empty for most lines)."""
+    found = []
+    i = 0
+    if tokens[:1] == ['pub']:
+        i = 1
+        if tokens[1:2] == ['(']:
+            if ')' not in tokens[1:]:
+                return []
+            i = tokens.index(')', 1) + 1
+    while i + 1 < len(tokens) and tokens[i] in ('unsafe', 'async', 'extern', 'const') and \
+            tokens[i + 1] in DECLARING | {'unsafe', 'async', 'extern'}:
+        i += 1
+    if i < len(tokens) and tokens[i] in DECLARING | {'let'}:
+        j = i + 1
+        if tokens[j:j + 1] == ['mut']:
+            j += 1
+        if j < len(tokens) and _is_name(tokens[j]):
+            found.append(j)
+    elif i + 1 < len(tokens) and _is_name(tokens[i]) and tokens[i + 1] in (':', ',', '=', '('):
+        found.append(i)
+    if 'fn' in tokens:
+        for j in range(1, len(tokens) - 1):
+            if tokens[j + 1] == ':' and tokens[j - 1] in ('(', ',') and _is_name(tokens[j]):
+                found.append(j)
+            elif (tokens[j - 1] == 'mut' and j > 1 and tokens[j - 2] in ('(', ',')
+                  and tokens[j + 1] == ':' and _is_name(tokens[j])):
+                found.append(j)
+    return sorted(set(found))
+
+
+CARGO_NAME_RE = re.compile(r'^\s*name\s*=\s*"([^"]+)"')
+
+
+def diff_renames(files):
+    """{old identifier: new identifier} for each rename this diff performs where the name is made.
+
+    A pair enters the map only from a declaration: a removed line and an added line that declare
+    names and read the same token for token once the declared names (and the pairs already in the
+    map) are set aside. Lines pair by position inside one block of changed lines (a `-` run and the
+    `+` run after it, which is how a diff shows a line rewritten), or, failing that, anywhere in
+    the diff when the shape has one name on each side (a declaration moved to another file). A
+    crate's own name enters from its directory (`crates/a/` to `crates/b/`) or from its manifest's
+    `name = "..."`, hyphens read as underscores. A name seen renamed two different ways is left out.
+    Nothing else enters: a token that changed anywhere but a declared name is a change, not a
+    rename, so a constant re-pointed from one existing value to another still fires. Iterated, so a
+    declaration whose type or value names an identifier renamed elsewhere pairs too.
+    """
+    fixed, conflicted = {}, set()
+
+    def note(pairs, into):
+        for a, b in pairs:
+            if a == b or a in conflicted:
+                continue
+            if into.get(a, b) != b:
+                conflicted.add(a)
+                into.pop(a, None)
+            else:
+                into[a] = b
+
+    for fd in files:
+        path, old_path = fd['path'], fd.get('old_path', fd['path'])
+        if old_path != path:
+            note([(a.replace('-', '_'), b.replace('-', '_'))
+                  for a, b in zip(old_path.split('/'), path.split('/'))
+                  if a != b and IDENT_RE.match(a.replace('-', '_'))
+                  and IDENT_RE.match(b.replace('-', '_'))], fixed)
+        if path.endswith('Cargo.toml'):
+            names = {'-': [], '+': []}
+            for prefix, line in changed_lines(fd):
+                m = CARGO_NAME_RE.match(line)
+                if m:
+                    names[prefix].append(m.group(1).replace('-', '_'))
+            if len(names['-']) == 1 and len(names['+']) == 1:
+                note([(names['-'][0], names['+'][0])], fixed)
+    # Declaration lines, grouped into change blocks.
+    blocks = []
+    for fd in files:
+        if not fd['path'].endswith('.rs'):
+            continue
+        cur = None
+        for prefix, line in fd['lines']:
+            if prefix == ' ':
+                cur = None
+                continue
+            if cur is None or (prefix == '-' and cur['+']):
+                cur = {'-': [], '+': []}
+                blocks.append(cur)
+            toks = line_tokens(line)
+            ks = declared_positions(toks) if toks else []
+            if ks:
+                cur[prefix].append((toks, ks))
+
+    def shape(toks, ks, renames, side):
+        mapped = [renames.get(t, t) for t in toks] if side == '-' else list(toks)
+        for k in ks:
+            mapped[k] = '\x00name'
+        return tuple(mapped)
+
+    renames = dict(fixed)
+    for _round in range(6):
+        found = {}
+        leftovers = {'-': {}, '+': {}}
+        for block in blocks:
+            rem, add = list(block['-']), list(block['+'])
+            used_add = set()
+            for rt, rk in rem:
+                key = shape(rt, rk, renames, '-')
+                hit = next((j for j, (at, ak) in enumerate(add)
+                            if j not in used_add and len(ak) == len(rk)
+                            and shape(at, ak, renames, '+') == key), None)
+                if hit is None:
+                    leftovers['-'].setdefault(key, []).append(tuple(rt[k] for k in rk))
+                    continue
+                used_add.add(hit)
+                at, ak = add[hit]
+                note(list(zip((rt[k] for k in rk), (at[k] for k in ak))), found)
+            for j, (at, ak) in enumerate(add):
+                if j not in used_add:
+                    leftovers['+'].setdefault(shape(at, ak, renames, '+'), []).append(
+                        tuple(at[k] for k in ak))
+        for key, olds in leftovers['-'].items():
+            news = leftovers['+'].get(key, [])
+            if len(set(olds)) == 1 and len(set(news)) == 1 and len(olds) == len(news):
+                note(list(zip(olds[0], news[0])), found)
+        merged = dict(fixed)
+        for a, b in found.items():
+            if a not in conflicted and merged.get(a, b) == b:
+                merged[a] = b
+        if merged == renames:
+            break
+        renames = merged
+    return {a: b for a, b in renames.items() if a not in conflicted}
+
+
+def rename_equivalent(base_tokens, head_tokens, renames):
+    """Do two token lists match once each old name in `renames` reads as its new one?"""
+    if len(base_tokens) != len(head_tokens):
+        return False
+    return all(a == b or renames.get(a) == b for a, b in zip(base_tokens, head_tokens))
+
+
+def code_unchanged(fd, renames):
+    """True when this file's code, comments dropped, is the same at base and head (renames read
+    under their new names). A file added or deleted by the diff never counts as unchanged."""
+    base, head = base_lines(fd), head_lines(fd)
+    if not base or not head:
+        return False
+    return rename_equivalent(code_tokens(base), code_tokens(head), renames)
+
+
+class Context:
+    """What a rule may need from the whole diff rather than one file: every file, and the renames
+    the diff performs (`diff_renames`)."""
+
+    def __init__(self, files):
+        self.files = files
+        self.renames = diff_renames(files)
+
+
 # ---- rule 1: crates/abi -------------------------------------------------------------------------
 
 ABI_CONST_RE = re.compile(
@@ -278,7 +565,7 @@ ABI_CONST_RE = re.compile(
 CONST_DECL_RE = re.compile(r'^\s*pub const ([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^=]+?)\s*=\s*(.*)$')
 
 
-def unpaired_const_changes(fd, const_re):
+def unpaired_const_changes(fd, const_re, renames=None):
     """Changed `pub const` lines (matching `const_re`) left over after pairing renames.
 
     A removed `pub const A: T = V` and an added `pub const B: T = V` in the same file, same type and
@@ -286,10 +573,14 @@ def unpaired_const_changes(fd, const_re):
     spelling did, and a spelling is an architect's call that a rename PR has usually already carried
     (#1584). Each removed line pairs with at most one added line. What stays unpaired still fires: a
     changed value (the pair's value differs), an added constant with no removed partner, and a
-    removed constant with no added partner (a deleted number is a surface change too). The value
-    text is compared after dropping a trailing `;` and `//` comment, and a multi-line initializer
-    never pairs (its line has no closing `;`), so it fires as before.
+    removed constant with no added partner (a deleted number is a surface change too). The type and
+    value are compared as code tokens after dropping a trailing `;` and comment, with each
+    identifier the diff renames at its declaration (`renames`, from `diff_renames`) read under its
+    new name, so `128 + IMAGE_MAX_PAGES` pairs with `128 + IMAGE_MAXIMUM_PAGES` only when the diff
+    renames that constant. A multi-line initializer never pairs (its line has no closing `;`), so
+    it fires as before.
     """
+    renames = renames or {}
     removed, added = [], []
     for prefix, line in changed_lines(fd):
         if not const_re.match(line):
@@ -297,9 +588,12 @@ def unpaired_const_changes(fd, const_re):
         m = CONST_DECL_RE.match(line)
         key = None
         if m:
-            value = re.sub(r'\s*//.*$', '', m.group(3)).rstrip()
+            value = strip_comments(m.group(3)).rstrip()
             if value.endswith(';'):  # a one-line initializer; a multi-line one never pairs
-                key = (m.group(2).strip(), value[:-1].rstrip())
+                toks = tuple(line_tokens(m.group(2))) + ('=',) + tuple(line_tokens(value[:-1]))
+                if prefix == '-':
+                    toks = tuple(renames.get(t, t) for t in toks)
+                key = toks
         (removed if prefix == '-' else added).append((key, line))
     left = []
     for key, line in added:
@@ -312,10 +606,12 @@ def unpaired_const_changes(fd, const_re):
     return left
 
 
-def rule_abi_surface(fd, out):
+def rule_abi_surface(fd, out, ctx):
     if not (fd['path'].startswith('crates/abi/') and fd['path'].endswith('.rs')):
         return
-    left = unpaired_const_changes(fd, ABI_CONST_RE)
+    if code_unchanged(fd, ctx.renames):
+        return
+    left = unpaired_const_changes(fd, ABI_CONST_RE, ctx.renames)
     if left:
         out.append(('abi-surface', fd['path'], left[0].strip()))  # one citation per file
 
@@ -465,6 +761,8 @@ def rule_dependency(fd, out, known):
 # ---- rule 3: a format crate's version, magic or documented layout --------------------------------
 
 VERSION_OR_MAGIC_CONST_RE = re.compile(r'^\s*pub const \w*(VERSION|MAGIC)\w*\s*:')
+# The same, at any visibility: a constant moved to another crate often widens `pub(crate)` to `pub`.
+VERSION_OR_MAGIC_ANY_RE = re.compile(r'^\s*(?:pub(?:\([^)]*\))?\s+)?const \w*(VERSION|MAGIC)\w*\s*:')
 VERSION_TABLE_RE = re.compile(r'^\s*//!.*\|\s*version\s*\|', re.IGNORECASE)
 
 
@@ -547,37 +845,102 @@ def is_doc_or_block_comment(line):
     return t.startswith(('//!', '///')) or not t.startswith('//')
 
 
-def rule_format_crate(fd, out):
-    if not (fd['path'].startswith('crates/') and '/src/' in fd['path']
-            and fd['path'].endswith('.rs')):
-        return
-    if not is_format_crate_source(head_lines(fd)):
-        return
-    # A comment-only edit fires only if it reads as a layout statement (measured: 7 of 9 firings
-    # were `//!` prose or a diagram that does not), sits in a doc or block comment, and is outside
-    # test code (measured 2026-10-08: see "format-crate's second narrowing" above). A VERSION/MAGIC
-    # code line fires wherever it is.
-    for prefix, line in changed_lines(fd):
-        if not is_comment_only(line) and VERSION_OR_MAGIC_CONST_RE.match(line):
-            out.append(('format-crate', fd['path'], line.strip()))
-            return
-    # A removed and an added layout line with the same layout signature (every number, and every
-    # layout match's text) pair off, as a constant rename does in rule 1: `[plausible]` becoming
-    # `[is_plausible]` in a sentence about an offset moved no byte (#1255, #860). A table row's
-    # match is the whole row, so a table row pairs only with itself.
-    removed, added = [], []
-    for prefix, line in changed_lines_outside_tests(fd):
-        if (is_comment_only(line) and is_doc_or_block_comment(line)
-                and LAYOUT_COMMENT_RE.search(line)):
-            (removed if prefix == '-' else added).append((layout_signature(line), line))
-    for key, line in added:
-        hit = next((i for i, (rk, _l) in enumerate(removed) if rk == key), None)
-        if hit is None:
-            out.append(('format-crate', fd['path'], line.strip()))
-            return
-        removed.pop(hit)
-    if removed:
-        out.append(('format-crate', fd['path'], removed[0][1].strip()))
+def _format_crate_of(path):
+    """`crates/<name>/src/....rs` -> `<name>`, else None."""
+    parts = path.split('/')
+    if len(parts) > 3 and parts[0] == 'crates' and parts[2] == 'src' and path.endswith('.rs'):
+        return parts[1]
+    return None
+
+
+def _apply_renames_to_words(line, renames):
+    return re.sub(r'[A-Za-z_]\w*', lambda m: renames.get(m.group(0), m.group(0)), line)
+
+
+def _const_key(line, renames, side):
+    """A VERSION/MAGIC constant line as tokens, its visibility dropped (`pub(crate) const` and
+    `pub const` hold the same bytes) and, on the removed side, renames read under the new name."""
+    toks = line_tokens(line)
+    if toks[:1] == ['pub']:
+        toks = toks[1:]
+        if toks[:1] == ['(']:
+            toks = toks[toks.index(')') + 1:] if ')' in toks else toks
+    if side == '-':
+        toks = [renames.get(t, t) for t in toks]
+    return tuple(toks)
+
+
+def rule_format_crate_diff(files, out, ctx):
+    """Rule 3 over the whole diff, since a constant moved between crates is one change in two files.
+
+    A crate whose every changed `.rs` file has the same code at base and head (`code_unchanged`:
+    comments dropped, renames the diff performs read under their new names) moved no byte, so none
+    of its files fires, whatever its comments say. Otherwise each format-crate file fires on its
+    first unpaired line: a VERSION/MAGIC constant line, or a layout statement in a doc or block
+    comment outside test code. A removed and an added line pair off when they hold the same
+    constant (same tokens, visibility aside) or the same layout signature, in the same file or in
+    any other file of the diff (a constant or its documentation moved to another crate).
+    """
+    renames = ctx.renames
+    quiet_crates = set()
+    by_crate = {}
+    for fd in files:
+        parts = fd['path'].split('/')
+        if len(parts) > 2 and parts[0] == 'crates' and fd['path'].endswith('.rs'):
+            by_crate.setdefault(parts[1], []).append(fd)
+    for crate, fds in by_crate.items():
+        if all(code_unchanged(fd, renames) for fd in fds):
+            quiet_crates.add(crate)
+    # Pools of removed lines from every Rust file in the diff, for the cross-file pairing.
+    removed_consts, removed_layout = [], []
+    for fd in files:
+        if not fd['path'].endswith('.rs'):
+            continue
+        for prefix, line in changed_lines(fd):
+            if prefix == '-' and not is_comment_only(line) and VERSION_OR_MAGIC_ANY_RE.match(line):
+                removed_consts.append([_const_key(line, renames, '-'), fd['path'], False,
+                                       bool(VERSION_OR_MAGIC_CONST_RE.match(line)), line])
+        for prefix, line in changed_lines_outside_tests(fd):
+            if (prefix == '-' and is_comment_only(line) and is_doc_or_block_comment(line)
+                    and LAYOUT_COMMENT_RE.search(line)):
+                removed_layout.append([layout_signature(_apply_renames_to_words(line, renames)),
+                                       fd['path'], False, line])
+
+    def take(pool, key, path):
+        # The same file first, then any other: a pair in place is the likelier reading.
+        for want_same in (True, False):
+            for entry in pool:
+                if not entry[2] and entry[0] == key and (entry[1] == path) == want_same:
+                    entry[2] = True
+                    return True
+        return False
+
+    for fd in files:
+        crate = _format_crate_of(fd['path'])
+        if crate is None or crate in quiet_crates or not is_format_crate_source(head_lines(fd)):
+            continue
+        fired = None
+        for prefix, line in changed_lines(fd):
+            if prefix == '+' and not is_comment_only(line) and VERSION_OR_MAGIC_CONST_RE.match(line):
+                if not take(removed_consts, _const_key(line, renames, '+'), fd['path']):
+                    fired = fired or line
+        for prefix, line in changed_lines_outside_tests(fd):
+            if (prefix == '+' and is_comment_only(line) and is_doc_or_block_comment(line)
+                    and LAYOUT_COMMENT_RE.search(line)):
+                if not take(removed_layout, layout_signature(line), fd['path']):
+                    fired = fired or line
+        if fired:
+            out.append(('format-crate', fd['path'], fired.strip()))
+            continue
+        # A removed constant or layout line of this file that nothing in the diff took back.
+        for entry in removed_consts:
+            if entry[1] == fd['path'] and not entry[2] and entry[3]:
+                fired = fired or entry[4]
+        for entry in removed_layout:
+            if entry[1] == fd['path'] and not entry[2]:
+                fired = fired or entry[3]
+        if fired:
+            out.append(('format-crate', fd['path'], fired.strip()))
 
 
 def layout_signature(line):
@@ -590,10 +953,12 @@ def layout_signature(line):
 SPAWNPROTO_CONST_RE = re.compile(r'^\s*pub const \w+\s*:')
 
 
-def rule_spawnproto(fd, out):
+def rule_spawnproto(fd, out, ctx):
     if not fd['path'].endswith('spawnproto.rs'):
         return
-    left = unpaired_const_changes(fd, SPAWNPROTO_CONST_RE)
+    if code_unchanged(fd, ctx.renames):
+        return
+    left = unpaired_const_changes(fd, SPAWNPROTO_CONST_RE, ctx.renames)
     if left:
         out.append(('spawnproto', fd['path'], left[0].strip()))
 
@@ -690,7 +1055,7 @@ def bookkeeping_blocks(lines):
     return [normalize_bookkeeping(' '.join(b)) for b in blocks]
 
 
-def rule_decisions(fd, out):
+def rule_decisions(fd, out, _ctx=None):
     path = fd['path']
     if path == 'CLAUDE.md':
         if changed_lines(fd):
@@ -734,26 +1099,32 @@ def rule_decisions(fd, out):
 SYSCALL_ERROR_RE = re.compile(r'\bError::[A-Z]\w*')
 
 
-def rule_syscall_error(fd, out):
+def rule_syscall_error(fd, out, ctx):
     path = fd['path']
     if not (path == 'kernel/src/syscall.rs' or path.startswith('kernel/src/syscall/')):
         return
+    if code_unchanged(fd, ctx.renames):
+        return  # the same code once renames read under their new names (#2779, #2809)
     added, removed = [], []
     for prefix, line in changed_lines(fd):
         if is_comment_only(line) or not SYSCALL_ERROR_RE.search(line.split('//')[0]):
             continue
-        (added if prefix == '+' else removed).append(line.strip())
-    for line in added:
-        if line in removed:
-            removed.remove(line)
+        toks = line_tokens(line)
+        if prefix == '-':
+            toks = [ctx.renames.get(t, t) for t in toks]
+        (added if prefix == '+' else removed).append((tuple(toks), line.strip()))
+    for toks, line in added:
+        hit = next((i for i, (rt, _l) in enumerate(removed) if rt == toks), None)
+        if hit is not None:
+            removed.pop(hit)  # moved, or renamed around the same error
             continue
         out.append(('syscall-error', path, line))
         return
     if removed:
-        out.append(('syscall-error', path, removed[0]))
+        out.append(('syscall-error', path, removed[0][1]))
 
 
-RULES = (rule_abi_surface, rule_format_crate, rule_spawnproto, rule_decisions, rule_syscall_error)
+RULES = (rule_abi_surface, rule_spawnproto, rule_decisions, rule_syscall_error)
 
 
 # ---- the question each finding puts to calef ------------------------------------------------------
@@ -794,6 +1165,35 @@ QUESTIONS = {
         f"Does this change which error a syscall method can return (`{d}`)?"),
 }
 
+# Why each finding might be a one-way door, and what answer releases the hold. A false positive
+# costs calef a read and a missed one-way door costs more, so each finding says which it might be:
+# the answer is then a sentence, not a reading of the diff. The released-by line names the answers
+# the maintainer records with script/record-ruling; nothing here releases a hold itself.
+WHY_ONE_WAY = {
+    'abi-surface': "every program is compiled against these numbers, and a program built before "
+                   "the change keeps the old one",
+    'dependency': "code nife ships or builds with would come from outside the organization, "
+                  "and §46 rules each third-party crate",
+    'format-crate': "a program built from another commit may read these bytes: an installed "
+                    "package, a stored file, a page a previous kernel wrote, a live swap",
+    'spawnproto': "the spawner and every program it starts agree on these values",
+    'decisions': "a decision is the record every lane and reader acts on",
+    'syscall-error': "programs branch on the errors a method returns, so a new or vanished error "
+                     "changes what callers must handle",
+}
+RELEASED_BY = {
+    'abi-surface': "\"nothing moved\" (a rename or move), or approval of the new or changed value",
+    'dependency': "approval of the crate at that version (§46), or \"already approved\" naming "
+                  "the ruling that covers it",
+    'format-crate': "\"no bytes moved\"; or approval of the new layout, saying either "
+                    "\"provisional, in-image\" (every reader and writer ships in one image from one "
+                    "commit and nothing persists it) or that older readers must keep working",
+    'spawnproto': "\"nothing moved\", or approval of the new or changed value",
+    'decisions': "approval of the edit, or a send-back naming what to change",
+    'syscall-error': "\"same errors\" (a refactor or rename), or approval of the new error "
+                     "behavior",
+}
+
 UNEXAMINED_QUESTION = (
     "The rules could not read this diff. Does any of it need your ruling (the syscall surface, a "
     "dependency, a wire format or a decision)?")
@@ -819,17 +1219,96 @@ def ask(report):
             items.append(f"- {line.strip()}")
             continue
         items.append(f"- **{question(rule, path, detail)}**\n"
-                     f"  ({rule}, `{path}`, matched `{detail.replace('`', '')}`)")
+                     f"  ({rule}, `{path}`, matched `{detail.replace('`', '')}`)\n"
+                     f"  Why it might be one-way: {WHY_ONE_WAY[rule]}.\n"
+                     f"  Released by: {RELEASED_BY[rule]}.")
     return '\n'.join(items)
+
+
+def merge_bases(main, head):
+    """Every merge base of `main` and `head`. More than one when the branch merged another branch
+    that main also merged (a criss-cross), and then `git merge-base` alone picks one at random."""
+    r = subprocess.run(['git', 'merge-base', '--all', main, head], capture_output=True, text=True)
+    return r.stdout.split() if r.returncode == 0 else []
+
+
+def git_blob(rev, path):
+    """The blob id of `path` at `rev`, or None when the path is absent there."""
+    r = subprocess.run(['git', 'rev-parse', '--verify', '--quiet', f'{rev}:{path}'],
+                       capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def drop_ruled(findings, head, base, ruled, blob):
+    """`findings` less those an open pull request's ruling already covers, with what covered each.
+
+    `ruled` is [(number, head, [its merge bases with main])] for open pull requests that carry
+    `architect-ruled` and not `held-by-lane`. A finding in `path` is covered when, for one of them,
+    the file at this head is the file at that head and the file at this base is the file at one of
+    its bases: then this diff of the file is that diff of the file, byte for byte, and the ruling
+    read it. The test is the whole file, so a branch that changes the ruled file any further still
+    fires on it. Measured 2026-11-11 (UTC): #3450 merged #3434's branch and was held for #3434's
+    §130 (how the userspace clock service reads the x86 CMOS RTC) edit, which #3434's
+    ruling covers; both blobs match. `blob(rev, path)` is `git_blob`, injected so the selftest needs
+    no repository.
+    """
+    kept, covered = [], []
+    for rule, path, detail in findings:
+        by = None
+        for number, r_head, r_bases in ruled:
+            if (blob(head, path) is not None and blob(head, path) == blob(r_head, path)
+                    and any(blob(base, path) == blob(rb, path) for rb in r_bases)):
+                by = number
+                break
+        if by is None:
+            kept.append((rule, path, detail))
+        else:
+            covered.append((rule, path, by))
+    return kept, covered
+
+
+def keep_common(runs):
+    """The findings of the first run whose (rule, file) every run has."""
+    keep = set.intersection(*({(r, p) for r, p, _d in run} for run in runs))
+    return [f for f in runs[0] if (f[0], f[1]) in keep]
+
+
+def evaluate_against(main, head, ruled_heads=()):
+    """The findings of `head` against `main`, read from every merge base; one kept only when every
+    base yields it (same rule, same file), and when no open ruled pull request covers it.
+
+    A change the pull request makes shows in the diff from each base. A change main made, which a
+    branch carries because it merged a branch main also merged, shows only from a base that
+    predates it. Measured 2026-11-11 (UTC): the merge drain held #2838, #3167, #3171, #3173, #3224
+    and #3416 on decision files only main had changed, each a head with two merge bases, and with
+    the intersection none of the six fires. `ruled_heads` is [(number, head)] for the open pull
+    requests `drop_ruled` reads. Returns (findings, covered), or None when there is no merge base.
+    """
+    bases = merge_bases(main, head)
+    if not bases:
+        return None
+    ruled = [(n, h, merge_bases(main, h)) for n, h in ruled_heads]
+    runs, covered = [], []
+    for base in bases:
+        diff = subprocess.run(['git', 'diff', '--unified=1000000', base, head], check=True,
+                              capture_output=True).stdout.decode('utf-8', 'replace')
+        kept, cov = drop_ruled(evaluate(diff, known_deps_from_git(base)), head, base, ruled,
+                               git_blob)
+        runs.append(kept)
+        covered.extend(cov)
+    return keep_common(runs), covered
 
 
 def evaluate(diff_text, known=None):
     """The diff text -> [(rule, path, detail), ...], one entry per file per rule that fired."""
     known = known if known is not None else KnownDeps()
     out = []
-    for fd in parse_diff(diff_text):
+    files = parse_diff(diff_text)
+    ctx = Context(files)
+    rule_format_crate_diff(files, out, ctx)
+    for fd in files:
         for rule in RULES:
-            rule(fd, out)
+            rule(fd, out, ctx)
         rule_dependency(fd, out, known)
     return out
 
@@ -1136,18 +1615,34 @@ diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 +pub const MAGIC: [u8; 8] = *b"CRKR0003";
 """, 'format-crate'),
 
-    ("format-crate: a layout doc-comment edit (a range) fires even with the const untouched", """\
+    ("format-crate: a layout doc-comment edit (a range) beside a code change fires, const untouched",
+     """\
 diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 --- a/crates/nifefs/src/lib.rs
 +++ b/crates/nifefs/src/lib.rs
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,4 @@
  //! # The layout
 -//! blocks 0..DIR_BLOCKS   the superblock and directory
 +//! blocks 0..DIR_BLOCKS+1 the superblock and directory
  pub const MAGIC: [u8; 8] = *b"CRKR0002";
+-fn directory_end() -> u64 { DIR_BLOCKS }
++fn directory_end() -> u64 { DIR_BLOCKS + 1 }
 """, 'format-crate'),
 
-    ("format-crate: #1402's shape, a layout table row changed in a comment, fires", """\
+    ("format-crate: the same layout comment edit with no code moved stays quiet (#2612's class)",
+     """\
+diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
+--- a/crates/nifefs/src/lib.rs
++++ b/crates/nifefs/src/lib.rs
+@@ -1,4 +1,4 @@
+ //! # The layout
+-//! blocks 0..DIR_BLOCKS   the superblock and directory
++//! blocks 0..DIR_BLOCKS+1 the superblock and directory
+ pub const MAGIC: [u8; 8] = *b"CRKR0002";
+ fn directory_end() -> u64 { DIR_BLOCKS }
+""", None),
+
+    ("format-crate: #1402's shape, a layout table row changed beside the code that reads it, fires", """\
 diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
 --- a/crates/capability_manifest_note/src/lib.rs
 +++ b/crates/capability_manifest_note/src/lib.rs
@@ -1155,7 +1650,8 @@ diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_mani
  //! | version | field | meaning |
 -//! | 4 | 1 | `arg` | 0 forbidden, 1 required, 2 words |
 +//! | 4 | 1 | `arg` | 0 forbidden, 1 required; hears words: 2 read-only, 3 read-write |
- pub fn parse() {}
+-pub fn parse(arg: u8) -> bool { arg <= 2 }
++pub fn parse(arg: u8) -> bool { arg <= 3 }
 """, 'format-crate'),
 
     ("format-crate: a doc-comment prose change in a classified crate stays quiet", """\
@@ -1252,7 +1748,8 @@ diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_mani
  }
 -/// | 53 | 3 | zero | |
 +/// | 53 | 1 | `machine` | 0 or 1 |
- pub fn parse() {}
+-pub fn parse() {}
++pub fn parse() { machine() }
 """, 'format-crate'),
 
     ("format-crate: a plain `//` line naming an offset in library code stays quiet", """\
@@ -1265,7 +1762,7 @@ diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
  pub fn read() {}
 """, None),
 
-    ("format-crate: a doc layout line whose number moved fires", """\
+    ("format-crate: a doc layout line whose number moved with its constant fires", """\
 diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 --- a/crates/nifefs/src/lib.rs
 +++ b/crates/nifefs/src/lib.rs
@@ -1273,6 +1770,8 @@ diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 -/// The name sits at offset 12.
 +/// The name sits at offset 16.
  pub const MAGIC: [u8; 8] = *b"CRKR0002";
+-const NAME_OFFSET: usize = 12;
++const NAME_OFFSET: usize = 16;
 """, 'format-crate'),
 
     ("format-crate: an identifier renamed in a layout sentence stays quiet (#1255, #860)", """\
@@ -1296,6 +1795,162 @@ diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 +    pub const OLD_VERSION: u32 = 1;
  }
 """, 'format-crate'),
+
+    ("format-crate: #2315's shape, a constant renamed with its table row, stays quiet", """\
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -1,5 +1,5 @@
+ pub const VERSION: u32 = 1;
+-//! | 36 | 1 | option count | at most `MAX_DECLARED_SHORT_OPTIONS` (16) |
++//! | 36 | 1 | option count | at most `MAXIMUM_DECLARED_SHORT_OPTIONS` (16) |
+-pub const MAX_DECLARED_SHORT_OPTIONS: usize = 16;
++pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
+-fn count_ok(n: usize) -> bool { n <= MAX_DECLARED_SHORT_OPTIONS }
++fn count_ok(n: usize) -> bool { n <= MAXIMUM_DECLARED_SHORT_OPTIONS }
+""", None),
+
+    ("format-crate: the same rename with the bound also moved fires", """\
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -1,5 +1,5 @@
+ pub const VERSION: u32 = 1;
+-//! | 36 | 1 | option count | at most `MAX_DECLARED_SHORT_OPTIONS` (16) |
++//! | 36 | 1 | option count | at most `MAXIMUM_DECLARED_SHORT_OPTIONS` (32) |
+-pub const MAX_DECLARED_SHORT_OPTIONS: usize = 16;
++pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 32;
+-fn count_ok(n: usize) -> bool { n <= MAX_DECLARED_SHORT_OPTIONS }
++fn count_ok(n: usize) -> bool { n <= MAXIMUM_DECLARED_SHORT_OPTIONS }
+""", 'format-crate'),
+
+    ("format-crate: #3094's shape, a register named VERSION renamed at the same value, stays quiet",
+     """\
+diff --git a/crates/designware_ethernet/src/registers.rs b/crates/designware_ethernet/src/registers.rs
+--- a/crates/designware_ethernet/src/registers.rs
++++ b/crates/designware_ethernet/src/registers.rs
+@@ -1,3 +1,3 @@
+-pub const MAC_VERSION: u32 = 0x0110;
++pub const CORE_VERSION: u32 = 0x0110;
+-fn read() -> u32 { reg(MAC_VERSION) }
++fn read() -> u32 { reg(CORE_VERSION) }
+""", None),
+
+    ("format-crate: #2736's shape, a magic moved to another crate unchanged, stays quiet", """\
+diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
+--- a/crates/non_volatile_memory_express/src/lib.rs
++++ b/crates/non_volatile_memory_express/src/lib.rs
+@@ -1,3 +1,2 @@
+ pub const VERSION: u32 = 1;
+-pub(crate) const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
+ pub use non_volatile_memory_express_contract::ESCAPE_MAGIC;
+diff --git a/crates/non_volatile_memory_express_contract/src/lib.rs b/crates/non_volatile_memory_express_contract/src/lib.rs
+--- /dev/null
++++ b/crates/non_volatile_memory_express_contract/src/lib.rs
+@@ -0,0 +1,2 @@
++//! What the kernel and the driver agree on.
++pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
+""", None),
+
+    ("format-crate: the same move with the magic changed on the way fires", """\
+diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
+--- a/crates/non_volatile_memory_express/src/lib.rs
++++ b/crates/non_volatile_memory_express/src/lib.rs
+@@ -1,3 +1,2 @@
+ pub const VERSION: u32 = 1;
+-pub(crate) const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
+ pub use non_volatile_memory_express_contract::ESCAPE_MAGIC;
+diff --git a/crates/non_volatile_memory_express_contract/src/lib.rs b/crates/non_volatile_memory_express_contract/src/lib.rs
+--- /dev/null
++++ b/crates/non_volatile_memory_express_contract/src/lib.rs
+@@ -0,0 +1,2 @@
++//! What the kernel and the driver agree on.
++pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D46;
+""", 'format-crate'),
+
+    ("format-crate: #3425's shape, a new in-image page with a new magic, still fires", """\
+diff --git a/crates/boot_ladder/src/kernel_half.rs b/crates/boot_ladder/src/kernel_half.rs
+--- /dev/null
++++ b/crates/boot_ladder/src/kernel_half.rs
+@@ -0,0 +1,2 @@
++//! The page the kernel writes for the user half of the boot self-test.
++pub const MAGIC: u64 = u64::from_le_bytes(*b"NIFESTK1");
+""", 'format-crate'),
+
+    ("format-crate: #3427's shape, a doc rename beside a newly documented field, still fires", """\
+diff --git a/crates/driver_process_contract/src/non_volatile_memory_express.rs b/crates/driver_process_contract/src/non_volatile_memory_express.rs
+--- a/crates/driver_process_contract/src/non_volatile_memory_express.rs
++++ b/crates/driver_process_contract/src/non_volatile_memory_express.rs
+@@ -1,4 +1,5 @@
+ pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
+-/// outside 512..=4096 bytes. `lba_shift` is the format's
++/// outside 512..=4096 bytes. `logical_block_size_shift` is the format's
++/// Logical blocks per filesystem block, `1..=8`.
++pub const RETIRE: u64 = 7;
+ pub fn handoff() {}
+""", 'format-crate'),
+
+    ("spawnproto: #2792's shape, a value naming a constant the diff renames, stays quiet", """\
+diff --git a/crates/grant_plan/src/lib.rs b/crates/grant_plan/src/lib.rs
+--- a/crates/grant_plan/src/lib.rs
++++ b/crates/grant_plan/src/lib.rs
+@@ -1,1 +1,1 @@
+-pub const IMAGE_MAX_PAGES: u64 = 64;
++pub const IMAGE_MAXIMUM_PAGES: u64 = 64;
+diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
+--- a/crates/grant_plan/src/spawnproto.rs
++++ b/crates/grant_plan/src/spawnproto.rs
+@@ -1,1 +1,1 @@
+-pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAX_PAGES;
++pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
+""", None),
+
+    ("spawnproto: #2836's shape, a value that gains a term, fires", """\
+diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
+--- a/crates/grant_plan/src/spawnproto.rs
++++ b/crates/grant_plan/src/spawnproto.rs
+@@ -1,1 +1,1 @@
+-pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
++pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES + crate::JOB_POOL_PAGES;
+""", 'spawnproto'),
+
+    ("spawnproto: a value re-pointed to another existing constant fires (no declaration renamed)",
+     """\
+diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
+--- a/crates/grant_plan/src/spawnproto.rs
++++ b/crates/grant_plan/src/spawnproto.rs
+@@ -1,1 +1,1 @@
+-pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
++pub const SHELL_BUDGET_PAGES: u64 = 128 + JOB_POOL_PAGES;
+""", 'spawnproto'),
+
+    ("syscall-error: #2779's shape, a function renamed around the same error, stays quiet", """\
+diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
+--- a/kernel/src/sched.rs
++++ b/kernel/src/sched.rs
+@@ -1,1 +1,1 @@
+-pub fn irq_route(intid: u32) -> Option<u64> { None }
++pub fn interrupt_route(intid: u32) -> Option<u64> { None }
+diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_methods.rs
+--- a/kernel/src/syscall/object_methods.rs
++++ b/kernel/src/syscall/object_methods.rs
+@@ -1,3 +1,3 @@
+ fn wait(intid: u32) -> Result<i64, Error> {
+-    let ep = sched::irq_route(intid).ok_or(Error::WrongObject)?;
++    let ep = sched::interrupt_route(intid).ok_or(Error::WrongObject)?;
+     Ok(0)
+""", None),
+
+    ("syscall-error: one error swapped for another fires (no declaration renamed)", """\
+diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_methods.rs
+--- a/kernel/src/syscall/object_methods.rs
++++ b/kernel/src/syscall/object_methods.rs
+@@ -1,3 +1,3 @@
+ fn wait(intid: u32) -> Result<i64, Error> {
+-    let ep = sched::interrupt_route(intid).ok_or(Error::WrongObject)?;
++    let ep = sched::interrupt_route(intid).ok_or(Error::NotPermitted)?;
+     Ok(0)
+""", 'syscall-error'),
 
     ("spawnproto: a changed slot constant fires", """\
 diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
@@ -1572,15 +2227,43 @@ ASK_FIXTURES = [
 def selftest():
     bad = []
     asked = {line.split(':')[0] for line, _w in ASK_FIXTURES}
-    for rule in [r.__name__[len('rule_'):].replace('_', '-') for r in RULES] + ['dependency']:
-        if rule not in asked or rule not in QUESTIONS:
-            bad.append(f"rule {rule} has no question, or no ask fixture")
+    for rule in [r.__name__[len('rule_'):].replace('_', '-') for r in RULES] + [
+            'dependency', 'format-crate']:
+        if rule not in asked or rule not in QUESTIONS or rule not in WHY_ONE_WAY \
+                or rule not in RELEASED_BY:
+            bad.append(f"rule {rule} lacks a question, a why, a release, or an ask fixture")
     for line, want in ASK_FIXTURES:
         got = ask(line)
         ok = want in got
         print(f"  {'ok  ' if ok else 'FAIL'}  ask: {line.split(':')[0]} states its question")
         if not ok:
             bad.append(f"ask {line!r}: wanted {want!r} in {got!r}")
+    # keep_common: #3416's criss-cross, a decision file only main changed shows from one base only.
+    runs = [[('decisions', 'design/decisions/0004-kernel-shape.md', 'x'),
+             ('format-crate', 'crates/a/src/lib.rs', 'y')],
+            [('format-crate', 'crates/a/src/lib.rs', 'y')]]
+    got = keep_common(runs)
+    ok = got == [('format-crate', 'crates/a/src/lib.rs', 'y')]
+    print(f"  {'ok  ' if ok else 'FAIL'}  against: a finding one merge base lacks is main's, not the PR's")
+    if not ok:
+        bad.append(f"keep_common: {got!r}")
+    # drop_ruled: #3450 carries #3434's ruled §130 edit byte for byte, and an edit of its own to another decision.
+    blobs = {('H', 'd/130.md'): 'new130', ('R', 'd/130.md'): 'new130', ('B', 'd/130.md'): 'old130',
+             ('RB', 'd/130.md'): 'old130', ('H', 'd/4.md'): 'new4', ('R', 'd/4.md'): 'old4',
+             ('B', 'd/4.md'): 'old4', ('RB', 'd/4.md'): 'old4',
+             ('H2', 'd/130.md'): 'newer130'}
+    blob = lambda rev, path: blobs.get((rev, path))
+    found = [('decisions', 'd/130.md', 'a'), ('decisions', 'd/4.md', 'b')]
+    kept, covered = drop_ruled(found, 'H', 'B', [('3434', 'R', ['RB'])], blob)
+    ok = kept == [('decisions', 'd/4.md', 'b')] and covered == [('decisions', 'd/130.md', '3434')]
+    print(f"  {'ok  ' if ok else 'FAIL'}  ruled: #3450's carried §130 edit is covered by #3434's ruling")
+    if not ok:
+        bad.append(f"drop_ruled #3450: {kept!r} {covered!r}")
+    kept, _c = drop_ruled(found[:1], 'H2', 'B', [('3434', 'R', ['RB'])], blob)
+    ok = kept == found[:1]
+    print(f"  {'ok  ' if ok else 'FAIL'}  ruled: the ruled file changed any further still fires")
+    if not ok:
+        bad.append(f"drop_ruled changed further: {kept!r}")
     for name, diff_text, want_rule, *rest in FIXTURES:
         got = evaluate(diff_text, rest[0] if rest else None)
         got_rules = {r for r, _p, _d in got}
@@ -1602,6 +2285,9 @@ USAGE = (
     "usage: python3 helpers/architect-label-rules.py [--selftest]\n"
     "  --selftest   run the fixtures above; no stdin, no git, no repository\n"
     "  --base-rev REV   with a diff on stdin: rule 2 skips a dependency REV already has\n"
+    "  --against MAIN HEAD [--ruled N:REV]...   diff HEAD from every merge base with MAIN itself\n"
+    "               (no stdin), print what every base yields less what the ruled pull request N\n"
+    "               at REV already carries; exits 4 when MAIN and HEAD share no merge base\n"
     "  --ask        read this tool's own report on stdin, print each finding's question for calef\n"
     "  (no args)    read a unified diff on stdin, print each rule that fired, "
     "exit 0 if any did"
@@ -1614,6 +2300,27 @@ def main(argv):
     if argv == ['--ask']:
         print(ask(sys.stdin.read()))
         return 0
+    if len(argv) >= 3 and argv[0] == '--against':
+        ruled, rest = [], argv[3:]
+        while rest[:1] == ['--ruled'] and len(rest) >= 2 and ':' in rest[1]:
+            number, _, rev = rest[1].partition(':')
+            ruled.append((number, rev))
+            rest = rest[2:]
+        if rest:
+            print(USAGE, file=sys.stderr)
+            return 2
+        result = evaluate_against(argv[1], argv[2], ruled)
+        if result is None:
+            print(f"architect-label-rules: {argv[1]} and {argv[2]} share no merge base",
+                  file=sys.stderr)
+            return 4
+        matches, covered = result
+        for rule, path, by in covered:
+            print(f"architect-label-rules: {rule} on {path} is covered by #{by}'s ruling",
+                  file=sys.stderr)
+        for rule, path, detail in matches:
+            print(f"{rule}: {path}: {detail}")
+        return 0 if matches else 1
     known = None
     if len(argv) == 2 and argv[0] == '--base-rev':
         known = known_deps_from_git(argv[1])

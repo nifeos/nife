@@ -1,5 +1,7 @@
 # The cost ledger: what was paid, and what a token lists for
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 **This file is appended to and never regenerated.** Every other file in this directory is written by
 a script from evidence the tree already holds, and rerunning the script reproduces it byte for byte.
 This one holds facts no script can derive: what a person paid, on what day, and what a vendor was

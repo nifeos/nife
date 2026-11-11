@@ -58,14 +58,15 @@ difference between a budget and a market.
 
 ## What the carve holds, and its size
 
-The carve is `KERNEL_OBJ_PAGES`, 2048 pages (8 MiB). It holds every kernel-owned object: kernel
+The carve is `KERNEL_OBJ_PAGES`, 8192 pages (32 MiB). It holds every kernel-owned object: kernel
 endpoints, kernel thread stacks, and the TCB pages of threads the kernel creates. A thread
 created by the progenitor has its TCB page retyped from the progenitor's own region instead,
 because the progenitor is its creator: one principle, two payers.
 
 The size is a sum, not a ratio. A thread costs 7 pages here, six of stack and one of TCB, so
-`sched::MAXIMUM_THREADS` (256) takes 1792; endpoints take about 60 across a full test run; that
-leaves 196 of slack. A carve sized by doubling an older number would be a guess. One left too small
+`sched::MAXIMUM_THREADS` (1,024) takes 7168; endpoints take about 60 across a full test run; that
+leaves about a thousand pages of slack. A const assertion in `kmem` keeps the carve at least seven
+pages per thread slot. A carve sized by doubling an older number would be a guess. One left too small
 moves the thread ceiling from the thread table down to here, one level lower and no easier to
 diagnose. Exhaustion surfaces as `kmem::page()` returning `None` and an unrelated test's spawn
 failing with "no memory to wire one". It fails cleanly, the same contract as every budget, and

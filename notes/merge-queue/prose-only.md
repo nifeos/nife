@@ -1,5 +1,7 @@
 # A prose-only change skips the heavy jobs
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 A pull request or merge group whose every changed file is Markdown that no code reads skips every
 job in `ci.yml` except `lint`, and every job in `verify.yml` after its gate. The required checks
 still report success, because a job skipped by its own `if:` posts Success. Lint still runs, and

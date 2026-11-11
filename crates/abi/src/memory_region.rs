@@ -15,7 +15,7 @@ pub const MAP: u64 = 0;
 /// the run is spent, exactly as a single page always was.
 pub const RETYPE: u64 = 1;
 
-/// `invoke(capability, RETYPE_OBJ, objtype, space, floor)` -> slot: retype one page of the untyped into a
+/// `invoke(capability, RETYPE_OBJECT, objtype, space, floor)` -> slot: retype one page of the untyped into a
 /// **kernel object** living in it, with a full-rights
 /// capability at the returned slot. One object per page.
 ///
@@ -25,7 +25,11 @@ pub const RETYPE: u64 = 1;
 /// `floor` is the lowest slot the new capability may land in, `0` for the first free one; a `std`
 /// program passes `std_runtime_contract::SLOTS`. `BadMethod` for an unknown objtype; `OutOfMemory`
 /// when the untyped, the object registry or the capability table is exhausted.
-pub const RETYPE_OBJ: u64 = 2;
+///
+/// Name: provisional. Spelled out under design/naming.md's rule that a name this tree authors
+/// carries no abbreviation, ruled for this method on 2026-11-11 (UTC); the method number stays 2.
+/// Refused `RETYPE_OBJ` (abbreviates "object").
+pub const RETYPE_OBJECT: u64 = 2;
 
 /// `invoke(capability, SPLIT, pages, _, _)` -> slot. Carve `pages` off this untyped's unspent budget into
 /// a **new child untyped**, and return the slot holding a full-rights capability to it. seL4's

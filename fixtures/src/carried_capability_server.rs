@@ -19,7 +19,7 @@
 //! The other half is `carried_capability_client`; the wiring is
 //! `system_tests/src/user/carried_capability_service.rs`.
 
-//! Name: provisional (lane/649-sockets-are-capabilities, 2026-10-07 UTC).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
 
 #![no_std]
 // A program entry point, not a library surface: its one `_start` documents itself above.

@@ -21,7 +21,7 @@ whether any of it lands on the IPC fastpath.
 A throwaway scaffold was built on 2026-09-05 and then deleted. It held:
 
 - `Object::Timer(u64)`, and an `abi::timer` module with `ARM` and `CANCEL`;
-- a `RETYPE_OBJ` arm minting one from the caller's own untyped;
+- a `RETYPE_OBJECT` arm minting one from the caller's own untyped;
 - two `#[inline(never)]` dispatch bodies;
 - a 64-entry armed-timer table with a cached earliest deadline;
 - an `expire` call from `sched::on_tick` that signals through the existing

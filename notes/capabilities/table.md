@@ -53,7 +53,7 @@ themselves the rights they were denied by passing a capability to themselves.
 
 `MemoryRegion::SPLIT` mints a child budget's capability without going through `derive`, so the
 proof that `derive` never widens rights does not reach it. `MemoryRegion::RETYPE` and every
-`RETYPE_OBJ` arm mint the same way, from milestone 824 (a retype mints no right its budget lacks).
+`RETYPE_OBJECT` arm mint the same way, from milestone 824 (a retype mints no right its budget lacks).
 All of them go through `Cap::mint_child`, which takes no rights argument and copies the parent's.
 `split_never_widens_rights` proves the child's rights equal the parent's, which implies the subset
 relation the rest of the model is stated in.

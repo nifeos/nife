@@ -761,7 +761,7 @@ pub const fn named_std_region_pages(m: &Manifest) -> u64 {
 /// see notes/system-initializer/budgets.md.
 ///
 /// Name: provisional, moved here from `system_initializer` by milestone 933's lane.
-pub const JOB_REGION_PAGES: u64 = 48;
+pub const JOB_REGION_PAGES: u64 = 60;
 
 /// **One directory-granted native job's region**: the program, the `fs_subtree_caretaker` that
 /// carries its grant and the two endpoints between them, out of one carve (§92 (a caretaker is

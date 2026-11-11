@@ -1,6 +1,6 @@
 # The manual: why the search limits are drawn where they are
 
-*Name: provisional.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [`notes/documentation.md`](../documentation.md), whose `BUGS` section states each
 limit in a sentence. These are the full entries, with their reasons.

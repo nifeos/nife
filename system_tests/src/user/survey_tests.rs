@@ -16,7 +16,7 @@ const BUILDER_BUDGET_PAGES: u64 = 80;
 /// space (root and tables), its code page, its stack page, and its TCB.
 pub(super) const INSTANCE_PAGES: u64 = 16;
 
-/// Pages for the test's own rendezvous points, one per rendezvous (`RETYPE_OBJ`'s one-object-per-page rule).
+/// Pages for the test's own rendezvous points, one per rendezvous (`RETYPE_OBJECT`'s one-object-per-page rule).
 /// Three is the most any test here needs; four is slack.
 const RENDEZVOUS_PAGES: u64 = 4;
 

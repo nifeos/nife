@@ -293,7 +293,7 @@ pub fn timer_cancel(timer_slot: u64) -> i64 {
 /// each is a page it cannot give back short of destroying the region.
 ///
 /// **`reserved` is how many low slots mean something by being empty**, and the pair is refused
-/// while any of them is. `RETYPE_OBJ` puts a new capability in the first free slot, and several
+/// while any of them is. `RETYPE_OBJECT` puts a new capability in the first free slot, and several
 /// wirings say "you have no directory" or "no entropy" by leaving a fixed slot empty. A sleeper that
 /// landed there would read as that service. So this probes slots `0..reserved` first, and a
 /// caller with an empty one keeps whatever it did before (its `BUGS` says which).

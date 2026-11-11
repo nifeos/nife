@@ -1,6 +1,6 @@
 # The census and the backfill
 
-*Name: provisional.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [`notes/citations.md`](../citations.md), which states the conclusion.
 

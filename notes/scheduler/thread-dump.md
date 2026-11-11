@@ -38,6 +38,13 @@ It takes `IPC_TABLES`, which is free when the hang is a blocked thread rather th
   timer traps: it spins with interrupts masked, or sits inside an SBI call in M-mode (a remote fence
   that never completes looks exactly like this). It is the one field that tells a wedged core from a
   scheduler that chose not to run somebody.
+- `ticks interrupted` (system tests only) lists the core's last eight timer interrupts as
+  `tid@pc`: the thread each one found running and where. A kernel thread's `pc` column is not its
+  position, since a kernel thread has no user frame, so this line is the only place a preempted
+  kernel thread's position shows. A thread at one `pc` tick after tick is spinning there; a thread
+  at a different `pc` each tick is making progress, if slowly. The fuzz drivers' budget-expired
+  dumps are what it is for: their stalled threads are runnable and take turns on a core, and the
+  event ring shows only the switches between them.
 - `steal_req` that stays claimed dump after dump means the victim never reached a scheduler entry to
   serve it: the same wedge, seen from the thief's side.
 - A parked core with a non-empty inbox is a thread nothing will ever run, the shape of the

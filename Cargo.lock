@@ -825,7 +825,6 @@ dependencies = [
  "memory_regions",
  "minicov",
  "nifefs",
- "non_volatile_memory_express",
  "page_frames",
  "paging",
  "pci",
