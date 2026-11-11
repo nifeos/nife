@@ -1,0 +1,26 @@
+Falsifies `memory_regions::proofs::a_release_of_nothing_held_moves_nothing`.
+
+The defect: a release trusts its caller and walks the ancestors whether or not its region holds an
+object of that kind, as the table did before it kept the per-region held count. It reads as
+harmless, since every count saturates at zero, but a second release of one object takes a count a
+child still holds, and an ancestor reports fewer live objects than it has.
+
+Expected to fail: the harness's `assert!(!released, "a release of nothing held was taken")`, from
+any region of the tree.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+index 10e92b9ae..98b072db4 100644
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -551,10 +551,7 @@ impl<const N: usize> RegionTable<N> {
+             return true;
+         };
+         let held = &mut r.held[kind as usize];
+-        if *held == 0 {
+-            return false;
+-        }
+-        *held -= 1;
++        *held = held.saturating_sub(1);
+         self.release(name, Counted::Object(kind));
+         true
+     }
