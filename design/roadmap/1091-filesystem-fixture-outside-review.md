@@ -26,7 +26,7 @@ The crate is on `crates/externalization-list.txt`. Milestone 1017's table pairs 
 fixture. That dev-dependency is gone: commit `ce4ea2015` (pull request #3042) moved the tests that
 needed the fixture into the fixture's own test file, and `crates/filesystem_contract/Cargo.toml`
 now has no dependency table of any kind. The dependency runs one way, fixture to contract, so the
-contract leaves first and the fixture follows, pinning the contract by `git` and `rev` as §305
+contract leaves first and the fixture follows, pinning the contract by `git` and `rev` as §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)
 allows. The two can leave separately, and the README and crate-root `BUGS` that still say otherwise
 are stale (item 2). The sibling review of `filesystem_contract` reached the same conclusion.
 
@@ -94,7 +94,7 @@ decides it. Line numbers are in `crates/filesystem_fixture/src/lib.rs` unless a 
    Finding: `prose_acronyms` finds ten acronyms used before expansion (SMB line 98, EL0 158, PRNG
    175, RFC 360, FS 765, DOS 890, ISA 1079, BFS 1098, EFI 1151, GUID 1153). The gate judges Rust doc
    comments once per crate at ceiling 0, with no baseline. `typos` with the template's en-us locale refuses
-   `defence` (`src/tests.rs` line 209) and `behaviour` (line 258), which the house style refuses as
+   the British form of "defense" (`src/tests.rs` line 209) and the British form of "behavior" (line 258), which the house style refuses as
    well.
    Evidence: the helper outputs above; `crate-workflows/README.md`, rows "acronym gate" and "house
    style, typos". Change: expand each acronym at first use or drop it. `FS` and `DOS` can go, `EL0`

@@ -98,7 +98,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 
 13. Dates and British spellings in the shipped text.
     Finding: `src/verb.rs` line 369 and `:417` and `src/verb/tests.rs` line 245 narrate a change by date
-    ("until", "since"); `src/verb.rs` line 119 and `src/verb/tests.rs` line 218 write `behaviour`
+    ("until", "since"); `src/verb.rs` line 119 and `src/verb/tests.rs` line 218 write the British form of "behavior"
     (`british_spelling` judges names only, so it passed; the rule covers words). `src/fs.rs` line 224
     carries a decision date outside a `Name:` block.
     Change: state the present rule (`EBADF` is about the handle, `ENOTDIR` about the request) and

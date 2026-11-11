@@ -199,7 +199,7 @@ one-way after. The items say which.
     maintainer can decide it. Door: two-way, additive. Effort: S.
 
 12. The curated lists have no stated growth path for a stranger.
-    Finding: the crate's `BUGS` says the lists "grow on demand" and points at §46; a stranger with
+    Finding: the crate's `BUGS` says the lists "grow on demand" and points at §46 (thin primitives or whole subsystems; we write everything in between); a stranger with
     `TZ=Europe/Madrid` finds it refused and no instruction. Twenty zones, twelve locales and eleven
     terminal types is a demonstration-sized set.
     Change: the README's `BUGS` names the policy (a real IANA, glibc or terminfo name, added by a

@@ -4,7 +4,7 @@ An appendix to [the milestone](../1088-elf-outside-review.md).
 
 How the crate sits against what a reader already knows. Downloads are from the crates.io API during
 this review (all-time / last 90 days). Rows marked "784" take their measurements from [milestone
-784's appendix](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md), which built, fuzzed
+784's appendix](../0784-reuse-what-the-tree-wrote/elf-against-three-readers.md), which built, fuzzed
 and model-checked each one. The review re-read the appendix and did not rerun it.
 
 | reader | downloads | allocator | `unsafe` | what it enforces | what a user coming from it will miss here |

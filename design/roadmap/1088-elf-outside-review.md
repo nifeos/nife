@@ -18,7 +18,7 @@ its own repository would. The review changed nothing; every item below is work f
 names and decisions to leave closed. The one ratified name is the crate's own, `elf`, kept under
 §154 (the acronym test is whether the phrase is spoken) and recorded in `src/lib.rs`; this block does
 not reopen it. Every other public name is marked provisional in the source. The baseline the review
-did take is [milestone 784's comparison of the crate against three readers](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md),
+did take is [milestone 784 (reuse what the tree wrote: which first-party code an existing library should replace)'s comparison of the crate against three readers](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md),
 which measured fit, hostile input, proofs, cost and upkeep and ended in the ruling that the crate
 stays ours, and the order in which milestone 857 (crates released on their own) moves it.
 
@@ -79,10 +79,10 @@ The comparison with nearby work is in [the appendix](1088-elf-outside-review/pri
 Finding: `src/error.rs` lines 70 to 71 explains `WritableAndExecutable` by `paging::Flags` and
 `notes/elf/parser.md`. `src/error.rs` lines 75 to 76 explains `SegmentsOverlap` by
 `crates/user_mode_runtime/link.ld`. `src/segment.rs` lines 26 to 31 sends the reader to `kernel/src/user.rs`,
-`kernel/link-x86_64.ld`, milestone 200 and `notes/elf.md`. `src/lib.rs` lines 7 and 19 to 25 cite two notes, §14
-and milestone 18. `src/machine.rs` lines 1 to 2, 6, 14 and 40 say what "nife runs". `src/machine.rs` lines 46 to 49 record a
+`kernel/link-x86_64.ld`, milestone 200 (A virtual address and a physical address stop being the same type) and `notes/elf.md`. `src/lib.rs` lines 7 and 19 to 25 cite two notes, §14 (the project's direction: a verified-Rust capability microkernel that runs real workloads)
+and milestone 18 (verify the capability core, then spread inward). `src/machine.rs` lines 1 to 2, 6, 14 and 40 say what "nife runs". `src/machine.rs` lines 46 to 49 record a
 provisional name in prose with the architect's name, outside a `Name:` block, so the move's
-stripping will not remove it. `src/note.rs` lines 3 to 5 cite milestone 597, §197 and the architect.
+stripping will not remove it. `src/note.rs` lines 3 to 5 cite milestone 597 (A program carries its manifest in an ELF note), §197 (A package is one archive file, named and vouched for by its recipe) and the architect.
 `src/note.rs` lines 244 and 271 give `b"nife"` as the example owner. The Kani harness at `src/note.rs` line 355
 searches for `b"nife"`. `src/parse.rs` lines 259 to 261 speak of "halting the kernel". The packet counts 29
 such lines across `src/`. A stranger can follow none of them, and a crate that has left must not
@@ -99,7 +99,7 @@ blocks go in the move commit, as ruled for every extracted crate. Door: two-way.
 Finding: `tests/fuzz_seed.rs` lines 18 to 20 `include_bytes!` three seeds from
 `../../../fuzz/seeds/elf_parse/`, and `fuzz/fuzz_targets/elf_parse.rs` with its `fuzz/Cargo.toml`
 entry are in this repository's fuzz workspace. The target searches for owner `b"nife"` and type 1.
-Packaged on its own the test fails to compile. This is the shape milestone 1017 recorded for
+Packaged on its own the test fails to compile. This is the shape milestone 1017 (the contract crates leave in this order) recorded for
 `capability_manifest_note`: the seeds and the target leave with the crate.
 
 Change: the new repository carries `fuzz/` with the target and `fuzz/seeds/elf_parse/`. The test

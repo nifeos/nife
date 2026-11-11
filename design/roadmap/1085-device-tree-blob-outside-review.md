@@ -81,7 +81,7 @@ Effort M. Two-way.
 **P0-3. The naming gates refuse 29 names.** `spelled_out.py` refuses the binding `dtb` 28 times:
 `src/lib.rs` line 181 and 27 bindings across the three test files (the table replaces `dtb` with
 `device_tree_blob`; `tree` or `blob` reads better at a binding). `british_spelling.py` refuses
-`tests/hostile.rs` line 825 (`honours`). Both gates run at a ceiling of zero in the template. Effort S.
+`tests/hostile.rs` line 825 (the British form of "honors"). Both gates run at a ceiling of zero in the template. Effort S.
 Two-way.
 
 ### P1: land before the tag

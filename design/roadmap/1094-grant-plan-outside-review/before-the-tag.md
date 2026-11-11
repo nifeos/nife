@@ -79,8 +79,8 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
    Door: one-way at the release for the public names; two-way for the private ones. Effort: S.
 
 8. British spellings in doc comments.
-   Finding: `recognise` (`src/line.rs` line 224), `behaviour` (`src/nav.rs` line 139), `honours`
-   (`src/spawnproto.rs` line 105), `catalogue` (line 386) and `neighbour` (`src/program/tests.rs`
+   Finding: the British form of "recognize" (`src/line.rs` line 224), the British form of "behavior" (`src/nav.rs` line 139), the British form of "honors"
+   (`src/spawnproto.rs` line 105), the British form of "catalog" (line 386) and the British form of "neighbor" (`src/program/tests.rs`
    line 114). The template's `british_spelling.py` runs in the `standalone` job.
    Evidence: the lines above.
    Change: the American forms.

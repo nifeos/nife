@@ -36,7 +36,7 @@ tree's pinned nightly toolchain, on one machine:
 Read, not run: the mutation record. The baseline census counted 489 mutants for this crate at 93.7
 percent caught with 76 missed, every one since closed or argued equivalent (notes/mutation-testing);
 two later inflow triages report 36/33/3 and 7/7/0 (keys/killed/equivalent). The record holds no full run
-since the split of the crate root into modules (§272). The brief forbids a census outside the
+since the split of the crate root into modules (§272 (the grant-plan crate root splits into private modules)). The brief forbids a census outside the
 08:00 to 13:00 UTC window, and this review ran none.
 
 Not run: a stranger test, coverage, `cargo semver-checks` (no release to compare), a fuzz campaign

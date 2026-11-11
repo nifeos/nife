@@ -21,7 +21,7 @@ marked unverified were not checked against source during this review.
 
 The algorithm here is the one Russ Cox described in "Glob Matching Can Be Simple And Fast Too"
 (2017). It keeps only the most recent `*` as a backtrack point, because anything an earlier `*`
-could absorb a later one can absorb instead. That article catalogued the exponential behavior of the
+could absorb a later one can absorb instead. That article cataloged the exponential behavior of the
 naive matcher in several language runtimes. The README should cite it, since the crate's record
 argues the point from scratch. The article also records why the method does not extend to `**`. That
 is a second reason, beside the authority argument in `notes/glob-scope.md`, that `**` belongs in a

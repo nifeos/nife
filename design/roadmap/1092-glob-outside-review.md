@@ -180,7 +180,7 @@ line in P0-6. Two-way. S.
 #### P1-6. The module doc opens for nife's reader, not the crate's
 
 The first paragraph of `src/lib.rs` explains that one matcher "serves both the shell's expansion and
-its grant" and that the authors wrote it "because it is on the verification path (§46 ...)". A stranger
+its grant" and that the authors wrote it "because it is on the verification path (§46 (thin primitives or whole subsystems; we write everything in between) ...)". A stranger
 needs the first paragraph to say what the crate is: an `fnmatch(3)`-style matcher over bytes for one
 file name, with no allocation, no `unsafe`, a cost bound computable in advance, and six Kani proofs.
 The grant argument belongs in the README's "How it differs" section, in the crate's own words.

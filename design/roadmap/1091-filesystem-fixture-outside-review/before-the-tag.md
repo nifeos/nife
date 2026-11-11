@@ -82,7 +82,7 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
     targets and its README says so. The template's `allow-unpublished` input exists for a fixture
     crate that carries `publish = false` on purpose; the manifest's comment on that line points at
     `crates/publish-allowlist.txt`, a file the new repository will not have (the same finding as
-    milestone 1048 item 1). The manifest has no `repository` field, which the externalization lint
+    milestone 1048 (what an outside maintainer would fix before 0.1.0) item 1). The manifest has no `repository` field, which the externalization lint
     treats as the one place `nifeos` may appear. `.github/accepted-words` needs the Unix spellings
     item 4 keeps. `release.yml`'s gate refuses a tag while `docs/stranger-test.md` reads none, and
     the pre-release tag `v0.1.0-pre.1` the move should carry goes through that gate.

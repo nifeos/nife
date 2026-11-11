@@ -67,7 +67,7 @@ are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
 
 2. The manifest does not stand alone. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
    `categories`, and the `publish = false` line's comment names `crates/publish-allowlist.txt`, a
-   file the new repository will not have. The header comment cites milestone 384 and
+   file the new repository will not have. The header comment cites milestone 384 (nothing here resolves a hostname, and in a capability system the resolver is a grant) and
    `notes/name-resolution.md`. Evidence: `crates/domain_name_system/Cargo.toml` lines 4 to 17;
    `crate-standalone` findings `inherits license`, `inherits lints`, `no rust-version`, `2 milestone
    citation line(s)`. Change: inline `license = "MIT OR Apache-2.0"`. Inline the `[lints]` table the
@@ -98,7 +98,7 @@ are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
    Line 7 names `fuzz/fuzz_targets/domain_name_system_reply.rs`, a path in nife (item 5 moves the
    target). Lines 262 to 263 cite milestone 384 and say nothing applies `is_within`, which
    `crates/domain_name_resolution_contract/src/grants.rs` line 180 does. Lines 369 to 371 cite
-   `crates/multicast_dns_protocol`, a commit hash and milestone 298, which a stranger cannot open.
+   `crates/multicast_dns_protocol`, a commit hash and milestone 298 (retire the multicast DNS responder and its two crates, which advertised a goal that is gone), which a stranger cannot open.
    The move strips the crate-name block at lines 21 to 24, so it needs no edit for it.
    Evidence: `crate-standalone` findings `5 path into the nife tree line(s)`, `1 provenance block
    line(s)`; the lines above. Change: line 4 becomes "which program sends these bytes, and which

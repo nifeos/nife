@@ -49,7 +49,7 @@ gate requires. Door: two-way. Effort: XS.
 
 Finding: `padding` (`src/note.rs` lines 186 to 191) reads `p_align` 0 and 1 as 4-byte padding for any
 segment. LLVM's reader accepts 0 only for an empty segment and refuses 1, as the reviewer recalls
-and did not re-read. Milestone 784's table shows `object` agreeing with this crate on `p_align` 1.
+and did not re-read. Milestone 784 (reuse what the tree wrote: which first-party code an existing library should replace)'s table shows `object` agreeing with this crate on `p_align` 1.
 No producer in the tree writes either value. Change: a sentence in the doc of
 `NoteError::BadAlignment` saying which padding the reader treats each value as, and why, with the LLVM
 behavior checked against its source at that time. Door: two-way. Effort: XS.

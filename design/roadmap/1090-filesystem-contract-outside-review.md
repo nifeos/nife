@@ -254,7 +254,7 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
 
 - Item 19 came from reading, not from a 32-bit build; the crate names no 32-bit target.
 - Item 9 relies on the classification in `notes/mutation-testing/`, which predates the file split
-  of milestone 845 and names some tests by their old module; the groups still hold, the line
+  of milestone 845 (the filesystem-protocol crate root is split along its seams) and names some tests by their old module; the groups still hold, the line
   numbers do not.
 - The review did not run the template's workflows end to end. The gate results come from the
   template's helpers, which the reviewer ran by hand on a standalone copy with the same arguments

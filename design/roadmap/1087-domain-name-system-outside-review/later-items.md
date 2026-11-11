@@ -17,7 +17,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
     `Reader::record` returns a `Record` by value, so `accept` copies a `Name` once per record on
     each of its three passes over the answer section. `Answer` is 296 bytes and `Result<Answer,
     Reject>` 300. A caller on a one-page stack wants to know this before it puts a `Query` and an
-    `Answer` beside a 514-byte buffer. Change: a sizes paragraph in the README, as milestone 1048's
+    `Answer` beside a 514-byte buffer. Change: a sizes paragraph in the README, as milestone 1048 (what an outside maintainer would fix before 0.1.0)'s
     review did for `generational_table`; no code change. Door: two-way. Effort: XS.
 
 12. `Error` and `Reject` are exhaustive. Finding: EDNS(0) or AAAA support would add variants to

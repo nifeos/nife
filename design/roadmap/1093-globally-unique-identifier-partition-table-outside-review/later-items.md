@@ -32,7 +32,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     each with a patch. For `Header::decode`, try the two-stage form the header round trip already
     uses rather than the whole function. That form proves the checks before the CRC total on a
     symbolic block, and the CRC's piece-wise form equal to the whole on short inputs. Then move the fuzz target under
-    milestone 1043 and opt the repository in (no `unsafe`, so eligible).
+    milestone 1043 (A moved crate is fuzzed in its own repository) and opt the repository in (no `unsafe`, so eligible).
     Door: two-way. Effort: M.
 
 15. `Debug` on a table prints the entry array.
