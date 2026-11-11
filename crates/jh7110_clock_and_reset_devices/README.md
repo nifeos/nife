@@ -5,7 +5,7 @@ registers start at, and the walk that brings one device up. `no_std`, no unsafe 
 every read and store goes through a `Windows` the caller implements.
 
 It covers five devices: the true random number generator (TRNG), the first gigabit media access
-controller (GMAC), both Secure Digital (SD) and MultiMediaCard (MMC) controllers, and I2C5, the bus
+controller (GMAC), both Secure Digital (SD) and Multi-Media Card (MMC) controllers, and I2C5, the bus
 to the power management integrated circuit (PMIC). Their words sit in three domains, the system top
 group (STG), system (SYS) and always-on windows, and a rate also reads the SYS syscon's
 phase-locked loop (PLL) words.

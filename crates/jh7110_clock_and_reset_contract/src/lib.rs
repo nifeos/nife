@@ -75,8 +75,8 @@ pub const READ_CLOCK: u64 = 2;
 pub const READ_RESET: u64 = 3;
 
 /// **Run the device's one rated clock at no more than word 1's hertz.** Reply word 1 is the hertz
-/// it now runs at. Served only for a device with a rated clock, the Secure Digital (SD) and MultiMediaCard (MMC)
-/// card clock today.
+/// it now runs at. Served only for a device with a rated clock, today the card clock of a Secure
+/// Digital (SD) and Multi-Media Card (MMC) controller.
 ///
 /// Name: provisional.
 pub const SET_RATE: u64 = 4;
