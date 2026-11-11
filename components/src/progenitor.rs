@@ -112,10 +112,13 @@ const GRANTS: BootEndowment = BootEndowment {
     base_digest_page: 34,
     // The boot self-test's userspace half (milestone 1063 (the boot self-test's spawning checks run
     // from userspace)): the kernel's half on every boot, then the JH7110 TRNG service and disk 0's
-    // trio when the machine has them, past the base digest.
+    // trio when the machine has them, past the base digest; then the kernel's screen endpoint.
     self_test_page: 35,
     self_test_random_number_generator: 36,
     self_test_disk: [37, 38, 39],
+    // The kernel's endpoint for painting the self-test verdict on a screen it still holds, past
+    // disk 0's trio.
+    self_test_screen: 40,
     // Nothing. Since milestone 166 the boot loader is not shared with milestone 19d's test roles on
     // any architecture, so the kernel grants exactly what the interactive system uses. aarch64 once
     // carried a report endpoint (slot 1) and the 19d.2b test interrupt (slot 3) here.

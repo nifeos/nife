@@ -44,6 +44,7 @@ pub(super) struct SelfTestGrants {
     page: bool,
     random_number_generator: bool,
     disk: bool,
+    screen: bool,
 }
 
 impl SelfTestGrants {
@@ -53,17 +54,20 @@ impl SelfTestGrants {
             page: is_granted(g.self_test_page),
             random_number_generator: is_granted(g.self_test_random_number_generator),
             disk: g.self_test_disk.iter().all(|&s| is_granted(s)),
+            screen: is_granted(g.self_test_screen),
         }
     }
 }
 
 /// What [`run_self_test`] leaves for [`print_self_test`]: the transcript frame and how far the
-/// program wrote, and whether it said `DONE`.
+/// program wrote, the packed tally its `DONE` carried (`None` when it never said `DONE`), and the
+/// kernel's screen endpoint when the kernel granted one.
 pub(super) struct SelfTestTranscript {
     frame: Option<u64>,
     end: usize,
-    done: bool,
+    tally: Option<u64>,
     missing: bool,
+    screen: Option<u64>,
 }
 
 /// **Build and run `boot_self_test`, and wait for it to finish.** Every capability the kernel
@@ -77,15 +81,18 @@ pub(super) fn run_self_test(
     entropy: &Entropy,
 ) -> SelfTestTranscript {
     // A kernel without a self-test grants no page, and there is nothing to run.
+    let screen = grants.screen.then_some(g.self_test_screen);
     if !grants.page {
         return SelfTestTranscript {
             frame: None,
             end: 0,
-            done: false,
+            tally: None,
             missing: false,
+            screen,
         };
     }
-    let transcript = run_measured(g, memory_region, (fs, table), grants, entropy);
+    let mut transcript = run_measured(g, memory_region, (fs, table), grants, entropy);
+    transcript.screen = screen;
     capability_delete(g.self_test_page);
     if grants.random_number_generator {
         capability_delete(g.self_test_random_number_generator);
@@ -109,8 +116,9 @@ fn run_measured(
     let none = SelfTestTranscript {
         frame: None,
         end: 0,
-        done: false,
+        tally: None,
         missing: true,
+        screen: None,
     };
     let Some(elf) = measured(fs, table, "boot_self_test").elf else {
         return none;
@@ -195,7 +203,7 @@ fn run_measured(
     ));
     must_ok(start_child(child, 0, 0, 0));
 
-    let (end, done) = wait_for_verdict(report);
+    let (end, tally) = wait_for_verdict(report);
     // The budget first: the program's own region is the budget's sibling, not its parent.
     reclaim(budget);
     reclaim(built);
@@ -203,8 +211,9 @@ fn run_measured(
     SelfTestTranscript {
         frame: Some(frame),
         end,
-        done,
+        tally,
         missing: false,
+        screen: None,
     }
 }
 
@@ -305,21 +314,22 @@ fn placements(
 
 /// **Follow the program's transcript until it says `DONE` or dies**: every message is the
 /// program's, `LINE` or `DONE`, until its death arrives on the same endpoint as its supervisor's
-/// message. Returns the transcript's end and whether the verdict came.
-fn wait_for_verdict(report: u64) -> (usize, bool) {
+/// message. Returns the transcript's end and, when the verdict came, the packed tally `DONE`
+/// carried.
+fn wait_for_verdict(report: u64) -> (usize, Option<u64>) {
     let mut end = 0usize;
-    let done = loop {
-        let (code, at, ..) = user_mode_runtime::receive_fault(report);
+    let tally = loop {
+        let (code, at, packed, ..) = user_mode_runtime::receive_fault(report);
         match code {
             message::LINE => end = (at as usize).min(contract::TRANSCRIPT_BYTES),
             message::DONE => {
                 end = (at as usize).min(contract::TRANSCRIPT_BYTES);
-                break true;
+                break Some(packed);
             }
-            _ => break false,
+            _ => break None,
         }
     };
-    (end, done)
+    (end, tally)
 }
 
 /// `DESTROY` a region, retrying while a resident it holds is still being killed, a bounded number
@@ -336,9 +346,10 @@ fn reclaim(region: u64) {
 
 /// **Print the transcript, line by line, then let the frame go.** A program that died before its
 /// verdict, or a boot with no program, says so: with no `nife self-test:` line, `boot-check` fails
-/// the boot.
+/// the boot. A verdict also goes to the kernel's screen endpoint, through [`verdict_to_screen`].
 #[inline(never)]
 pub(super) fn print_self_test(terminal_endpoint: u64, t: &SelfTestTranscript) {
+    verdict_to_screen(t);
     if t.missing {
         announce(
             terminal_endpoint,
@@ -354,7 +365,7 @@ pub(super) fn print_self_test(terminal_endpoint: u64, t: &SelfTestTranscript) {
     for line in bytes.split_inclusive(|&b| b == b'\n') {
         announce(terminal_endpoint, line);
     }
-    if !t.done {
+    if t.tally.is_none() {
         announce(
             terminal_endpoint,
             b"progenitor: boot_self_test died before its verdict\n",
@@ -362,4 +373,18 @@ pub(super) fn print_self_test(terminal_endpoint: u64, t: &SelfTestTranscript) {
     }
     process_builder::give_up_own_page(TRANSCRIPT_VIEW_VIRTUAL_ADDRESS);
     capability_delete(frame);
+}
+
+/// **Send the verdict's tally to the kernel's screen endpoint, then let the endpoint go.**
+///
+/// On a machine whose screen the kernel still paints, the progenitor's console reaches only the
+/// UART, so the kernel paints the verdict there itself: it renders the line from the tally with
+/// `boot_ladder::verdict`, the code the program printed it with, and accepts nothing else on this
+/// endpoint. The endpoint is deleted whether or not a verdict came, so it is one message at most.
+fn verdict_to_screen(t: &SelfTestTranscript) {
+    let Some(screen) = t.screen else { return };
+    if let Some(packed) = t.tally {
+        let _ = user_mode_runtime::send(screen, packed, 0, 0);
+    }
+    capability_delete(screen);
 }

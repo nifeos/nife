@@ -218,6 +218,14 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_disk: [u64; 3],
+    /// **The kernel's screen endpoint for the self-test verdict**, `WRITE` alone: one message,
+    /// the tally `boot_self_test` sent with its verdict, in `boot_ladder::verdict::Tally::to_packed`'s
+    /// form. The kernel renders the verdict from it and paints it on a screen it still holds.
+    /// Granted on every boot that grants [`self_test_page`](Self::self_test_page);
+    /// [`boot`](crate::boot) sends at most once and then deletes it.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-11 (UTC).
+    pub self_test_screen: u64,
     /// **Capabilities the kernel granted that the interactive system never uses**, deleted before
     /// anything is built. Empty on riscv64; on aarch64 the kernel's report endpoint and a test SGI,
     /// which exist because that boot path is shared with the test roles.

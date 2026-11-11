@@ -218,7 +218,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     }
     let tally = r.tally;
     r.line(contract::TRANSCRIPT_BYTES, tally.verdict());
-    send(slot::REPORT, message::DONE, r.at as u64, 0);
+    send(slot::REPORT, message::DONE, r.at as u64, tally.to_packed());
     user_mode_runtime::exit()
 }
 

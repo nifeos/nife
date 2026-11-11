@@ -240,6 +240,49 @@ pub(crate) unsafe fn attach_screen(found: Framebuffer, virt: u64) -> Option<(u32
     Some(size)
 }
 
+/// **Paint `line` on the screen and nowhere else**, while the kernel paints it; nothing when there
+/// is no screen or a userspace terminal has it.
+///
+/// For a line whose UART copy a userspace program already printed, which would read twice on the
+/// wire if [`crate::println!`] printed it again: the one caller is the self-test verdict
+/// (`user::self_test_hand_over`), which the progenitor's console prints to the UART alone.
+pub(crate) fn paint_on_screen(line: core::fmt::Arguments) {
+    /// The screen half of [`write_wire`], as a `Write`.
+    struct ScreenOnly<'a> {
+        screen: &'a mut Screen,
+        cells: &'a mut Cells,
+    }
+    impl core::fmt::Write for ScreenOnly<'_> {
+        fn write_str(&mut self, s: &str) -> core::fmt::Result {
+            // SAFETY: as `write_wire`'s: the validated span, mapped for the life of the kernel,
+            // and the caller checked under the console lock that the painter is the kernel.
+            let bytes = unsafe {
+                core::slice::from_raw_parts_mut(self.screen.pixels as *mut u8, self.screen.len)
+            };
+            self.screen
+                .console
+                .write(self.cells, &mut PixelSink::new(bytes), s);
+            Ok(())
+        }
+    }
+    let mut guard = CONSOLE.lock();
+    let kernel = &mut *guard;
+    let Some(screen) = kernel.screen.as_mut() else {
+        return;
+    };
+    if screen.painter != Painter::Kernel {
+        return;
+    }
+    let _ = core::fmt::Write::write_fmt(
+        &mut ScreenOnly {
+            screen,
+            cells: &mut kernel.cells,
+        },
+        line,
+    );
+    crate::arch::direct_memory_access_write_barrier();
+}
+
 /// Which screen this console has, without taking it, for a caller that must decide whether to
 /// take it ([`yield_screen`] takes it too). `None` when there is no screen, or when a userspace
 /// terminal already has it.

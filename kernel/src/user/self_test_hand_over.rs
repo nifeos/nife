@@ -1,8 +1,9 @@
 //! **What the kernel hands the progenitor for the boot self-test's userspace half** (milestone
 //! 1063): the page that carries the kernel's half (`boot_ladder::kernel_half`), the JH7110 TRNG
 //! service the `clock` and `trng` checks read, and disk 0's virtio trio for `blockdev`. The
-//! progenitor passes all of it to `boot_self_test` and keeps none of it. See
-//! notes/self-test-checks.md, "The two halves".
+//! progenitor passes all of it to `boot_self_test` and keeps none of it. On a machine with a screen
+//! it also grants the endpoint the verdict comes back on, for the kernel to paint
+//! ([`paint_the_verdict`]). See notes/self-test-checks.md, "The two halves".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`.
@@ -13,6 +14,8 @@
 //!   milestone 811 (the boot services leave the kernel) moves every such starter to userspace.
 //! - A TRNG service that never sends its readiness report leaves a kernel thread parked on the
 //!   receive; the boot carries on after five seconds and `trng` says why.
+//! - A progenitor that never sends on the screen endpoint and never deletes it leaves
+//!   [`paint_the_verdict`]'s kernel thread parked on its receive for the life of the boot.
 
 use boot_ladder::kernel_half::{KernelHalf, flag, word};
 
@@ -30,6 +33,10 @@ pub(super) const TRNG_SLOT: u64 = 36;
 /// The progenitor's three slots for disk 0's virtio transport, its interrupt and its DMA page, all
 /// carrying `GRANT`, granted only when this machine has a virtio disk.
 pub(super) const DISK_SLOTS: [u64; 3] = [37, 38, 39];
+
+/// The progenitor's slot for the endpoint the self-test verdict comes back on, `WRITE` alone,
+/// granted only when the kernel has a screen.
+pub(super) const SCREEN_SLOT: u64 = 40;
 
 /// **Grant the self-test's slots**: build the kernel-half page from the kernel's tally and the
 /// facts below, then insert it and whatever devices this machine has.
@@ -78,6 +85,16 @@ pub(super) fn grant_self_test(tid: crate::thread::ThreadId) {
         );
     }
 
+    if crate::console::peek_screen().is_some()
+        && let Some(verdict) = paint_the_verdict()
+    {
+        insert(
+            tid,
+            rendezvous_capability(verdict, Rights::WRITE),
+            SCREEN_SLOT,
+            "insert the self-test's screen endpoint",
+        );
+    }
     let words = half.to_words();
     // Zeroed, so a previous occupant's bytes are not visible past the words written.
     let phys = crate::memory::alloc_zeroed()
@@ -98,6 +115,25 @@ pub(super) fn grant_self_test(tid: crate::thread::ThreadId) {
         SELF_TEST_PAGE_SLOT,
         "insert the self-test page",
     );
+}
+
+/// **Wait for the self-test's verdict on a fresh endpoint and paint it on the screen.**
+///
+/// The progenitor's console reaches the UART alone while the kernel paints the screen (aarch64 and
+/// riscv64 with a `ramfb`, and a firmware screen until it is handed to a terminal), so the verdict
+/// `boot_self_test` prints would never be on it. One message comes back here: the tally, in
+/// `boot_ladder::verdict::Tally::to_packed`'s form. The kernel renders the line from it with the
+/// code the program printed it with, so nothing the progenitor sends is painted as text, and paints
+/// it on the screen only, since the UART already carries the program's own copy. The thread takes
+/// one message and ends. `None` when no thread could be spawned, and then nothing is granted.
+fn paint_the_verdict() -> Option<crate::sched::RendezvousId> {
+    let verdict = crate::sched::create_rendezvous();
+    crate::sched::spawn(move || {
+        let [packed, ..] = crate::sched::ipc_receive(verdict);
+        let tally = boot_ladder::verdict::Tally::from_packed(packed);
+        crate::console::paint_on_screen(format_args!("{}\n", tally.verdict()));
+    })?;
+    Some(verdict)
 }
 
 /// Insert `capability` at `slot` in the progenitor's table, or panic with `what`.

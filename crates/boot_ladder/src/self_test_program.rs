@@ -202,7 +202,8 @@ pub mod message {
     ///
     /// Name: provisional.
     pub const LINE: u64 = 0x5e1f_7e57_0000_0001;
-    /// The verdict is in the transcript, up to the second word; the program exits next.
+    /// The verdict is in the transcript, up to the second word, and the third is the tally in
+    /// `crate::verdict::Tally::to_packed`'s form; the program exits next.
     ///
     /// Name: provisional.
     pub const DONE: u64 = 0x5e1f_7e57_0000_0002;

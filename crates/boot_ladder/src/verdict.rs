@@ -16,8 +16,15 @@ use crate::{SELF_TEST, SELF_TEST_ABSENT, SELF_TEST_CHECKS, SELF_TEST_FAILED};
 /// Name: provisional.
 pub const CHECKS: usize = SELF_TEST_CHECKS.len();
 
-// The tally is three bitmasks over the list, one bit per check.
-const _: () = assert!(CHECKS <= 64);
+// The tally is three bitmasks over the list, one bit per check, and its packed form puts the three
+// in one word, [`PACKED_FIELD_BITS`] each.
+const _: () = assert!(CHECKS <= PACKED_FIELD_BITS as usize);
+
+/// **How many bits each of the three masks takes in [`Tally::to_packed`]'s word.** Three fields of
+/// 21 fit 63 bits, so the list can grow to 21 checks before the packed form must change.
+///
+/// Name: provisional.
+pub const PACKED_FIELD_BITS: u32 = 21;
 
 /// **The index of `name` in [`SELF_TEST_CHECKS`].** Evaluated in a `const`, an unlisted name is a
 /// compile error, so a check the list does not name cannot record an outcome at all:
@@ -149,6 +156,30 @@ impl Tally {
             failed,
             absent,
         }
+    }
+
+    /// **The tally in one word**: passed in the low [`PACKED_FIELD_BITS`] bits, failed in the next,
+    /// absent in the next. The form a one-word message carries: `boot_self_test` sends it to the
+    /// progenitor with its verdict, and the progenitor sends it on to the kernel, which paints the
+    /// verdict on a screen it still holds.
+    ///
+    /// Name: provisional.
+    pub const fn to_packed(&self) -> u64 {
+        self.passed | (self.failed << PACKED_FIELD_BITS) | (self.absent << (2 * PACKED_FIELD_BITS))
+    }
+
+    /// A tally from [`to_packed`](Tally::to_packed)'s word, checked as
+    /// [`from_words`](Tally::from_words) checks: bits past the list are dropped, and a check claimed
+    /// twice keeps the worst outcome.
+    ///
+    /// Name: provisional.
+    pub const fn from_packed(word: u64) -> Self {
+        let field = (1u64 << PACKED_FIELD_BITS) - 1;
+        Self::from_words([
+            word & field,
+            (word >> PACKED_FIELD_BITS) & field,
+            (word >> (2 * PACKED_FIELD_BITS)) & field,
+        ])
     }
 
     /// The verdict line, without its newline: [`Verdict`]'s `Display`.
@@ -291,6 +322,22 @@ mod tests {
         let both = 1 << check("mapping");
         let forged = Tally::from_words([both, both, 0]);
         assert_eq!(forged.to_words(), [0, both, 0]);
+    }
+
+    /// The packed word carries the same tally as the three words, and keeps the worst outcome.
+    #[test]
+    fn the_packed_word_round_trips_and_keeps_the_worst() {
+        let mut t = Tally::new();
+        for i in 0..CHECKS {
+            t.record(i, Outcome::Passed);
+        }
+        t.record(check("trng"), Outcome::Absent);
+        t.record(check("frames"), Outcome::Failed);
+        assert_eq!(Tally::from_packed(t.to_packed()), t);
+        let both = 1 << check("mapping");
+        let forged = Tally::from_packed(both | (both << PACKED_FIELD_BITS));
+        assert_eq!(forged.to_words(), [0, both, 0]);
+        assert_eq!(Tally::from_packed(u64::MAX).to_words()[1].count_ones() as usize, CHECKS);
     }
 
     /// A check has an outcome once it is recorded, whatever the outcome, and recording one check

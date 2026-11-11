@@ -43,6 +43,7 @@ use super::*;
 ///         usb_keyboard_attach: 27, own_space: 28,
 ///         net_stack_ep: 29, net_stack_report: 30, reboot: 31, base_digest_page: 34,
 ///         self_test_page: 35, self_test_random_number_generator: 36, self_test_disk: [37, 38, 39],
+///         self_test_screen: 40,
 ///         for_test_roles: &[],
 ///     };
 ///     boot(&endowment, initial_ramdisk_len, fs_rights, uart_shape, None)
