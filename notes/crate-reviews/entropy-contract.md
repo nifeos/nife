@@ -98,9 +98,9 @@ What a stranger may find surprising:
   `copy_delivered_bytes` clamps again to the slice it fills.
 - `fill_with` refuses a short reply, while the standard library's caller accepts partial counts.
   The doc says both.
-- `readiness` treats an all-zero first draw, and a first draw of eight or more equal bytes, as a
-  dead device, wrong with probability 2^-64 or less for zeros and 255 in 2^64 or less for equal
-  bytes; the README's BUGS says so.
+- `readiness` treats an all-zero first draw as a dead device, wrong with probability 2^-64 or less.
+  It treats a first draw of eight or more equal bytes the same way, wrong with probability 255 in
+  2^64 or less. The README's BUGS says so.
 
 ## Proofs and falsification patches
 
