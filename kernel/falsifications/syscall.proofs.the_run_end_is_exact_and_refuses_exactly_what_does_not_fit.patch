@@ -1,6 +1,7 @@
 Falsifies `kernel::syscall::proofs::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit`.
 
-The defect is milestone 142's MAJOR 4 restored: `run_end_virtual_address` computes the last page of
+The defect is MAJOR 4 of the review of milestone 142 (a text display good enough that people use
+it instead of a GUI), restored: `run_end_virtual_address` computes the last page of
 a run as `va + (count - 1) * PAGE_SIZE` and checks only the **addition**. The multiply
 wraps, so a `count` large enough to bring `(count - 1) * 4096` back around to a small
 number yields a `last_va` sitting a few pages above `va`, and both mapping paths

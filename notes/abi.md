@@ -35,7 +35,7 @@ Five syscall numbers <!--count:syscalls-->, and that is the whole width of the t
 |---|---|---|
 | 0 | `SYSCALL_EXIT` | end the calling thread's process, every thread in it. Never returns. |
 | 1 | `SYSCALL_YIELD` | give up the CPU voluntarily. |
-| 2 | `SYSCALL_INVOKE` | invoke a capability. **This one carries the entire capability world** (see §2). |
+| 2 | `SYSCALL_INVOKE` | invoke a capability. **This one carries the entire capability world** (see section 2 below). |
 | 3 | `SYSCALL_CAPABILITY_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
 | 4 | `SYSCALL_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread syscalls as built)). |
 

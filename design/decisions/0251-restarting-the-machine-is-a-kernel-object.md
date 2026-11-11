@@ -25,8 +25,8 @@ device's own cache command only. So are `reboot_capability` (capability is never
 
 1. A new kernel object kind carries the authority to restart the machine. It has no payload: the
    kernel stores nothing in it, and it names no device. It has one method and its own method
-   module, `abi::reboot`, and no `abi::object_type` number (below; the module's name was spelled
-   out by the ruling of 2026-11-11 (UTC)). This is a new method within the capability model of
+   module, `abi::reboot`, and no `abi::object_type` number (below; the ruling of 2026-11-11 (UTC)
+   spelled out the module's name). This is a new method within the capability model of
    §10 (process model: capability-based, microkernel) and §16 (object revocation). It adds no
    syscall number.
 2. The kernel creates exactly one at boot and grants it to the progenitor. The progenitor endows it

@@ -59,8 +59,8 @@ and the method in the first two and three data words in the next three. A negati
 
 ### `RETYPE_OBJECT` of `object_type::PROCESS` (6): making a process
 
-`invoke(region, RETYPE_OBJECT, PROCESS, space_slot, floor)` -> slot, method 2. Its name and the
-module's, `object_type`, were spelled out by the ruling of 2026-11-11 (UTC). `kernel/src/syscall/retype.rs`, `kernel/src/sched/process.rs`
+`invoke(region, RETYPE_OBJECT, PROCESS, space_slot, floor)` -> slot, method 2. The ruling of
+2026-11-11 (UTC) spelled out its name and the module's, `object_type`. `kernel/src/syscall/retype.rs`, `kernel/src/sched/process.rs`
 (`create_process_from`).
 
 - Needs `WRITE` on the region (`NotPermitted`) and `WRITE` on the address-space capability in
@@ -185,8 +185,8 @@ both are in `notes/futex.md`'s `BUGS`.
 
 ### `SYSCALL_EXIT_THREAD` (4): ending one thread
 
-`exit_thread(word)`, a bare syscall that needs no capability and never returns; the names of syscalls
-0 and 4 were spelled out by the ruling of 2026-11-11 (UTC). `crates/abi`,
+`exit_thread(word)`, a bare syscall that needs no capability and never returns; the ruling of
+2026-11-11 (UTC) spelled out the names of syscalls 0 and 4. `crates/abi`,
 `kernel/src/syscall.rs`, `kernel/src/sched.rs` (`exit_thread`).
 
 - Ends the calling thread only. `SYSCALL_EXIT` (0) keeps meaning "end my process"; no flag was added

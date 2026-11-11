@@ -21,7 +21,7 @@ design/naming.md says a name this tree authors spells its words out. The ruling 
 
 ## The work
 
-All thirteen are ruled (2026-11-11 (UTC)) and renamed, each with every live use: the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the falsification patches, the notes that describe the surface as it is, the NOT-STARTED roadmap blocks and the present-tense passages of the decisions. Every number stays, so no caller's encoding and no `ABI_VERSION` changes. Each renamed item carries a ratified `Name:` block that refuses the old spelling, and none carries a `doc(alias)` of it.
+The architect ruled all thirteen on 2026-11-11 (UTC). Each rename reaches every live use. That means the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay and the falsification patches, with the notes that describe the surface, the NOT-STARTED roadmap blocks and the present-tense passages of the decisions. Every number stays, so no caller's encoding and no `ABI_VERSION` changes. Each renamed item carries a ratified `Name:` block that refuses the old spelling, and none carries a `doc(alias)` of it.
 
 | # | Was | Now |
 |---|---|---|
