@@ -1,5 +1,7 @@
 # `jig`, the package manager
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 The appendix to [notes/packages.md](../packages.md) for milestone 809 (the package client becomes a
 program), built 2026-10-10 (UTC). `jig` installs, removes and rolls back packages and lists what the
 image vouches for. The progenitor stays the installer; `jig` asks it. Since milestone 911 (scripted

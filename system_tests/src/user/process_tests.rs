@@ -159,7 +159,7 @@ pub(super) fn lay_out(region: u64, programs: &[&[u32]]) -> (u64, u64) {
     (name, page)
 }
 
-/// **A process around `space`, through the real `RETYPE_OBJ`.** Returns `(capability slot, id)`.
+/// **A process around `space`, through the real `RETYPE_OBJECT`.** Returns `(capability slot, id)`.
 /// Retyped from the root budget's rights, as the progenitor's are, because the process carries its
 /// budget's rights (milestone 824 (a retype mints no right its budget lacks)) and the joins below
 /// need `BIND`.
@@ -175,12 +175,12 @@ pub(super) fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId)
     .expect("grant");
     let slot = call(
         untyped,
-        abi::memory_region::RETYPE_OBJ,
+        abi::memory_region::RETYPE_OBJECT,
         abi::objtype::PROCESS,
         given,
         0,
     )
-    .expect("RETYPE_OBJ refused the process") as u64;
+    .expect("RETYPE_OBJECT refused the process") as u64;
     // The freed slot is the first free one, so the process capability may land in it; what must
     // not be there any more is the space.
     assert!(
@@ -196,7 +196,7 @@ pub(super) fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId)
         ..
     }) = sched::current_capability(slot)
     else {
-        panic!("RETYPE_OBJ of a process did not hand back a process capability");
+        panic!("RETYPE_OBJECT of a process did not hand back a process capability");
     };
     (slot, pid)
 }
@@ -590,7 +590,7 @@ fn a_process_refuses_what_its_contract_refuses() {
     assert_eq!(
         call(
             untyped,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::PROCESS,
             again,
             0

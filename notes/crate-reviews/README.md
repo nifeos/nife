@@ -1,21 +1,13 @@
 # The pages beside notes/crate-reviews.md
 
-[`notes/crate-reviews.md`](../crate-reviews.md) holds one review package per crate. A package that
-outgrows its section lives here, and the section links it.
+[`notes/crate-reviews.md`](../crate-reviews.md) is the index: what every package ran, what is the
+same for all of them, and one row per crate. Each crate's package is a file here, and a new package
+is a new file plus a row in the index, never a section in it, because every lane that writes one
+would otherwise add to the same page.
 
-- [`file-allocation-table.md`](file-allocation-table.md): `file_allocation_table`'s package, with
-  its open questions.
 - [`file-allocation-table-public-api.md`](file-allocation-table-public-api.md): every public item
-  of `file_allocation_table` and its signature.
-- [`generational-table.md`](generational-table.md), [`designware-ethernet.md`](designware-ethernet.md) (its names only), [`designware-mobile-storage.md`](designware-mobile-storage.md),
-  [`jh7110-clock-and-reset.md`](jh7110-clock-and-reset.md), [`e1000e.md`](e1000e.md), [`block-roster-contract.md`](block-roster-contract.md),
-  [`counter-frequency-contract.md`](counter-frequency-contract.md),
-  [`entropy-contract.md`](entropy-contract.md), [`clock-contract.md`](clock-contract.md) and
-  [`globally-unique-identifier-partition-table.md`](globally-unique-identifier-partition-table.md),
-  [`socket-contract.md`](socket-contract.md): one package each, with its
-  names, proposed items and open questions.
-- [`extensible-host-controller-interface.md`](extensible-host-controller-interface.md): the names
-  section of `extensible_host_controller_interface`'s package.
+  of `file_allocation_table` and its signature, beside its package.
+- Every other file: one crate's package, with its names, proposed items and open questions.
 
 *Name: provisional, minted by lane milestone/813-review-package. The directory follows §212 (a
 prose budget)'s siting default, `notes/X/` beside `notes/X.md`.*

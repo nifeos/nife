@@ -1,5 +1,7 @@
 # What remained for the SMB adapter, as the lists stood
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/smb.md](../smb.md). The code was removed on 2026-08-30; these are the two work
 lists as they stood at `685900ec`, kept because they say what was done and what a rebuild would face
 first. The first list's numbering is as written, including its duplicated item 5.

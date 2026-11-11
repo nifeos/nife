@@ -24,8 +24,8 @@
 //! and both are correct behaviour. The kernel-side test asserts what is actually invariant: that
 //! each id names a core that is online.
 //!
-//! Name: provisional (this lane, 2026-09-21). Formed on `cycle_counter_reader`, the fixture it is
-//! shaped after: the thing read, then `_reader`. calef names the programs.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). Formed on `cycle_counter_reader`,
+//! the fixture it is shaped after: the thing read, then `_reader`.
 
 #![no_std]
 // Program entry points, not the crates/ library surface tracked by the ratchet of

@@ -143,7 +143,7 @@ Neither job name is a required check; do not add either to the ruleset.
 
 `canary-owned` also checks out the repository, installs the pinned toolchain with
 `helpers/rustup-retry.sh toolchain install`, and then runs `helpers/owned-image-probe.sh` for each
-of four checks, through `helpers/owned-canary-image.sh`, which exits 1 for a failing probe or any
+of five checks, through `helpers/owned-canary-image.sh`, which exits 1 for a failing probe or any
 `FINDING` line (`helpers/owned-canary-image-selftest.sh` proves both ways). Any `FINDING` line fails the job, so a job image that the stage 1 jobs cannot use
 shows red where an earlier canary showed green. The checks are:
 
@@ -154,6 +154,10 @@ shows red where an earlier canary showed green. The checks are:
   `DIRECT`, and `sudo` keeps the runner's proxy variables when the runner sets them.
 - `pip`: a virtual environment's pip downloads `wheel` and `qemu.qmp` (the two packages QEMU's
   `configure` fetches) through the proxy.
+- `packages`: every apt package in `helpers/apt-packages.txt` has dpkg status `install ok installed`,
+  and each missing one is a `FINDING` line. That file is the list `script/ci-qemu` and
+  `script/bootstrap` install from, so the job spends no time on them. The probe installs and fetches
+  nothing and prints how many it checked.
 
 ### The dry run
 

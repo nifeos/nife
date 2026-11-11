@@ -25,7 +25,7 @@
 //! - while it runs, the capability of the socket it opened (from `OPEN_TCP`), which reaches that
 //!   socket and no other (§255 (each socket is its own capability)).
 //!
-//! Name: provisional. Introduced 2026-09-24 for milestone 590; says what it talks to, and expects
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). Says what it talks to, and expects
 //! to be retired rather than renamed once a real network tool can stand in for it.
 
 #![no_std]

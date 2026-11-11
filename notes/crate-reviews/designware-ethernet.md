@@ -1,8 +1,58 @@
-# Review package: `designware_ethernet`, names
+# Review package: `designware_ethernet`
 
-*Name: provisional, minted by lane lane/spell-out-ethernet-clock-reset. The naming results of the
-`designware_ethernet` section of [crate-reviews.md](../crate-reviews.md), in a page of their own
-because that file is at its word budget.*
+*Name: provisional, minted by lane lane/spell-out-ethernet-clock-reset. The `designware_ethernet`
+package of the index [crate-reviews.md](../crate-reviews.md), journey 5 step 7.*
+
+## The package
+
+Name and version. `designware_ethernet` `0.1.0`, ratified (Synopsys's name, spelled out). 173
+`Name:` blocks, all ratified.
+
+API. The DesignWare Ethernet QoS controller: `registers`, `network_interface_controller` (bring-up
+behind the `Hardware` trait), `management_data_input_output`, `motorcomm_physical_layer_device` (the
+YT8531 decode, `link_from_registers`), `cache_coherence` (the probe's verdict), `jh7110` (glue and what
+each device tree says), `DataPlane`, descriptors and `layout`. No nife type appears in a public
+signature.
+
+Proofs. Six harnesses: the delivered frame, the ring offsets, the PHY link decode, the transmit
+descriptor's length fields, the MDIO command word's address fields and the coherence verdict. All
+six prove and all six patches fail. MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
+against the simulator and no proof.
+
+Dependencies. None.
+
+Provenance. The crate adapts OpenBSD's `dwqe` and `ytphy` (ISC, with copyright lines in `lib.rs`)
+and `ukphy_status` (NetBSD Foundation BSD-2-Clause). Both notices are in the tree. Milestone 1019
+items 5 and 9 hold. The manifest license field reads `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`,
+naming the license of each adapted source.
+
+The YT8531 register sources, checked against each file at a pinned revision. The home of these
+attributions is the module documentation of `motorcomm_physical_layer_device`.
+
+| crate item | source that names it |
+|---|---|
+| the register and bit constants other than the two below, and `configure`'s order | OpenBSD `sys/dev/mii/ytphy.c` at `openbsd/src@9d7a05f92003` (revision 1.6): its `YT8511_` to `YT8531_` defines and `ytphy_yt8521_init`, `ytphy_yt8521_update`, `ytphy_yt8531_ds` and `ytphy_yt8531_init` |
+| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` (0x0c), `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` (0x27) | `ytphy.c`'s `YT8511_EXT_CLK_GATE` and `YT8511_EXT_SLEEP_CTRL`; FreeBSD `sys/dev/mii/mcommphy.c` at `freebsd/freebsd-src@2ad32d3a6868`, `PHY_CLOCK_GATING_REG` and `PHY_SLEEP_CONTROL1_REG`; Linux `drivers/net/phy/motorcomm.c` at `torvalds/linux@fc697291ad0a`, `YT8521_CLOCK_GATING_REG` and `YT8521_EXTREG_SLEEP_CONTROL1_REG` |
+| `CGR_RX_CLK_EN` (bit 12), `ESC1R_SLEEP_SW` (bit 15) | `motorcomm.c` only, `YT8521_CGR_RX_CLK_EN` and `YT8521_ESC1R_SLEEP_SW`, which `yt8531_config_init` clears for `motorcomm,keep-pll-enabled` and `motorcomm,auto-sleep-disabled` |
+| `MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID` (`0x4f51e91b`) | `motorcomm.c`'s `PHY_ID_YT8531`, matched with `PHY_ID_MATCH_EXACT`; `ytphy.c`'s `ytphys` and `mcommphy.c`'s `mcommphys` match the OUI and model |
+
+Both register constants carry OpenBSD's spelling and FreeBSD's as aliases, and no Linux spelling or
+earlier spelling of this tree, as `design/naming.md` requires before a first release.
+
+Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It runs none of the
+template's naming and prose gates.
+
+Names. Under Naming rules, below, with the template gates' 118 findings. The parameters carry
+spelled-out names, provisional.
+
+Outstanding before the move.
+
+| item | owner |
+|---|---|
+| The 118 template gate findings, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
+
+Recommendation. The architect cleared the move on 2026-11-11 (UTC), and has not cleared the tag or
+publication. The move waits for the template gates.
 
 ## Naming rules
 

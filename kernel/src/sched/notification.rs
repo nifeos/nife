@@ -11,7 +11,7 @@ use super::*;
 /// [`MAXIMUM_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about
 /// one per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from
 /// the creators' regions.
-pub(crate) const MAXIMUM_NOTIFICATIONS: usize = 256;
+pub(crate) const MAXIMUM_NOTIFICATIONS: usize = 1024;
 
 /// A notification's name: a generational name over the notification registry, what an
 /// `Object::Notification` capability carries. Stale-safe like every other name.
@@ -44,7 +44,7 @@ pub(super) fn notification_of(
 }
 
 /// Create a notification in `region`'s memory: one page retyped and pinned, the object at its
-/// start, a fresh name. `RETYPE_OBJ`'s engine, shaped like [`try_create_rendezvous_from`]: the
+/// start, a fresh name. `RETYPE_OBJECT`'s engine, shaped like [`try_create_rendezvous_from`]: the
 /// registry is checked before a page is spent. `None` when the region or the registry is full,
 /// which userspace sees as one `OutOfMemory`.
 pub fn create_notification_from(region: u64) -> Option<NotificationId> {

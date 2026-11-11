@@ -9,9 +9,10 @@
 //! minter cannot demonstrate on its own. The other half is `rendezvous_minter`.
 //!
 
-//! Name: provisional (milestone 291). This was `hello`'s `EP_USER` role, number 18. `user` was
-//! doubly wrong: it is a generic word, and in this tree it already means "a person with an
-//! identity" (`login`, `credentialer`) and "the unprivileged half of the machine" (`kernel/src/user`).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `EP_USER` role.
+//! The `user` was doubly wrong: it is a generic word, and in this tree it already means "a person
+//! with an identity" (`login`, `credentialer`) and "the unprivileged half of the machine"
+//! (`kernel/src/user`).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

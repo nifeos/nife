@@ -108,6 +108,18 @@ interfaces_note::carry_interfaces!(&[
     },
 ]);
 
+/// The row buffer lives in `.bss`: 48 bytes a row times [`ps::MAXIMUM_ROWS`] is more than a
+/// quarter of the child's stack, and the kernel's thread table decides the row count.
+static mut ROWS: [ps::Row; ps::MAXIMUM_ROWS] = [ps::Row::EMPTY; ps::MAXIMUM_ROWS];
+
+/// The row buffer, borrowed once.
+fn rows() -> &'static mut [ps::Row] {
+    let p = &raw mut ROWS;
+    // SAFETY: the program has one thread and calls this once, from `start`, so the borrow is the
+    // only one there will be.
+    unsafe { &mut *p }
+}
+
 user_mode_runtime::program_entry!(start);
 
 /// `a1` is the state mask, in `grant_plan::spawnproto`'s integer-argument position: the progenitor starts every
@@ -121,9 +133,8 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
     // **Walk first, filter second, complain third, print fourth.** DECISIONS §67's reader drains
     // diagnostics to end-of-stream before it reads a byte of output, and neither the complaints nor
     // "nothing matched" (which needs the count) is known until the walk ends. `MAXIMUM_ROWS` is the
-    // kernel's whole thread table, so truncation is unreachable: 2 KiB on a twelve-page stack.
-    let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
-    let walked = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
+    // kernel's whole thread table, so truncation is unreachable.
+    let walked = ps::collect(rows(), &mut |cursor| survey(DOMAIN_SLOT, cursor));
     let found = pgrep::select(&walked, pgrep::Selector::from_wire(a1));
 
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));

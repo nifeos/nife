@@ -1,5 +1,7 @@
 # Why the null syscall slowed when more cores were busy
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *Fatal risk 4's open finding from [the 2026-10-04 radon evening](radon-2026-10-04.md), measured on
 2026-10-04 (UTC) by the `lane/null-syscall-contention` lane. The cause and the fix were found under
 QEMU's TCG, which models no cache and no real inter-processor interrupt; radon then ran the fix the
