@@ -134,15 +134,14 @@ outcome record stays reviewed text under every shape, since readers check claims
 - Cross-repository references. `nifeos/record#N` links from any repository, and a closing keyword
   in a pull request, `Fixes nifeos/record#N`, closes an issue in another repository when the pull
   request merges into the default branch.
-- Transfer. An issue moves only within one owner; its comments come along, labels and milestones
-  only where the target repository has them, and the old address redirects. The page does not say
-  what happens to the number; from memory, not read, it takes the target repository's next number.
+- Transfer. An issue moves only within one owner; comments come along, labels and milestones only
+  where the target has them, and the old address redirects. The page does not say what happens to
+  the number.
 - Numbering. Issues and pull requests share one sequence. In `nifeos/nife` the next number is
   3,432, of which 59 are issues. Milestone numbers run to 1,068 with 41 unused. Only a fresh
   repository whose first 1,068 numbers are all issues, created in order before any pull request,
   could make issue `#N` equal milestone `N`. After that, a new milestone would take the next shared
   number, and nothing could restore the pairing.
-- Sub-issues: up to 100 under one parent, eight levels deep, across repositories.
 
 ### What migration would touch
 
@@ -194,8 +193,7 @@ and gates that read a commit. The prose ratchet and the citation glosses, which 
 §90's own argument: a second place where truth lives.
 
 The code side. `TODO(nifeos/record#N)`, with `N` equal to the milestone only for the backfill.
-The 7,785 citations stay readable if the backfill aligns, and the 668 paths are rewritten to issue
-addresses.
+The 668 paths are rewritten to issue addresses.
 
 ### C. Hybrid
 
@@ -234,9 +232,8 @@ file existence as in A. The 11,069 citations stay as written in either case.
   tracking issue repeats the release targets and asks the owner to "keep this description up to
   date". Both hold the status, by design. This lane did not read whether a check runs over
   `kep.yaml`.
-- Python. PEPs are "maintained as text files in a versioned repository, their revision history is
-  the historical record," with the status a header in the file. PEP 1 names no issue for tracking
-  implementation.
+- Python. PEPs are "maintained as text files in a versioned repository," with the status a header
+  in the file.
 - Fuchsia. An RFC is a file added by a code review, numbered at acceptance; an approved RFC that
   needs work links an issue in its header. Code TODOs cite the tracker as
   `TODO(https://fxbug.dev/42074368)`. When the tracker changed, the bug numbers changed, and
