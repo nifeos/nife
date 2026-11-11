@@ -3,7 +3,7 @@
 //!
 //! Name: provisional.
 
-use jh7110_clock_and_reset::CLOCK_PARENT_MASK;
+use jh7110_clock_and_reset::CLOCK_MULTIPLEXER_MASK;
 
 use super::*;
 
@@ -182,7 +182,7 @@ fn the_ethernet_port_comes_up_as_the_ruling_example_says() {
     );
     let transmit = f.word(AlwaysOn, u64::from(ETHERNET_TRANSMIT_CLOCK) * 4);
     assert_eq!(
-        (transmit & CLOCK_PARENT_MASK) >> 24,
+        (transmit & CLOCK_MULTIPLEXER_MASK) >> 24,
         ETHERNET_TRANSMIT_PARENT
     );
     assert!(is_clock_enabled(transmit));
