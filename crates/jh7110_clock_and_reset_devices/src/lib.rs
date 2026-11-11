@@ -4,7 +4,7 @@
 //! A [`Device`] is one block of the chip, keyed by the physical address its own registers start at,
 //! with the plan that brings it up in each domain it draws on. [`Device::at`] finds it by that
 //! address, the badge a client's capability carries. Every store and read goes through a
-//! [`Windows`] the caller implements, so this module still dereferences no pointer and a host test
+//! [`Windows`] the caller implements, so this crate dereferences no pointer and a host test
 //! drives it against an array. See notes/jh7110-clock-and-reset.md.
 //!
 //! # BUGS
@@ -12,9 +12,16 @@
 //! - Each device's plan is this crate's constant, never the device tree's `clocks` and `resets`.
 //!   A board whose tree wires a device differently gets the constant plan.
 //!
-//! Name: provisional.
+//! Name: provisional. The crate whose plans it walks, `jh7110_clock_and_reset`, with `_devices`
+//! for the table it adds.
 
-use crate::{
+#![cfg_attr(not(test), no_std)]
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
+use jh7110_clock_and_reset::{
     ALWAYS_ON, CLOCK_ENABLE, Domain, ENTROPY_BRING_UP, GMAC0_ALWAYS_ON_BRING_UP,
     GMAC0_SYSTEM_BRING_UP, InterIntegratedCircuitClockWords, MAXIMUM_SD_CARD_DIVIDER,
     POWER_MANAGEMENT_CHIP_BUS_BRING_UP, SD_INPUT_OUTPUT_BRING_UP, SYSTEM,
@@ -193,7 +200,8 @@ pub struct Counts {
     pub resets_released: u8,
     /// Every clock read enabled and every reset released before anything was written.
     pub already_up: bool,
-    /// Steps whose identifier the domain rejected, and so never stored.
+    /// Steps whose identifier the domain rejected, or whose kind the walk does not know, and so
+    /// never stored.
     pub refused: u8,
 }
 
@@ -315,6 +323,8 @@ impl Device {
                     windows.write(window, offset, with_parent(before, parent));
                 }
                 Step::DeassertReset(_) => {}
+                // A kind of step `Step` gains later, which this walk does not know how to store.
+                _ => counts.refused += 1,
             }
         }
         for (window, step) in self.steps() {

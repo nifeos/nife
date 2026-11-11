@@ -62,6 +62,7 @@ members = [
     "crates/inter_process_communication",
     "crates/jh7110_clock_and_reset",
     "crates/jh7110_clock_and_reset_contract",
+    "crates/jh7110_clock_and_reset_devices",
     "crates/jh7110_watchdog",
     "crates/job_mix",
     "crates/machine_discovery",

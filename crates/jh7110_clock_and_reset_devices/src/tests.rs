@@ -1,8 +1,16 @@
 //! The device table and its walk, driven against arrays that behave as the silicon does: a clock
 //! word keeps what is stored, and a reset's status bit sets once its assert bit is clear.
+//!
+//! Name: provisional.
+
+use jh7110_clock_and_reset::CLOCK_PARENT_MASK;
 
 use super::*;
-use crate::{AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX, AONCLK_GMAC0_TX, CLOCK_PARENT_MASK};
+
+/// `gmac0_tx`, the AON clock whose parent the GMAC plan selects, and that parent, `gmac0_rmii_rtx`:
+/// `jh7110_clock_and_reset`'s numbers, which it keeps to itself.
+const AONCLK_GMAC0_TX: u32 = 5;
+const AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX: u32 = 1;
 
 /// What one store or read touched, in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

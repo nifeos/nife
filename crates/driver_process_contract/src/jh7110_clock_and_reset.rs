@@ -3,7 +3,7 @@
 //! (`components/src/jh7110_clock_and_reset_server.rs`) reads the page to learn which windows it
 //! holds; a machine whose tree names no AON window, for one, gets a server that serves no AON
 //! device. Its clients speak `jh7110_clock_and_reset_contract`, and
-//! `jh7110_clock_and_reset::device` holds what each badge brings up. See
+//! `jh7110_clock_and_reset_devices` holds what each badge brings up. See
 //! notes/jh7110-clock-and-reset.md.
 //!
 //! Name: provisional.

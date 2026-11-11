@@ -1,12 +1,15 @@
 # Programming a clock and a reset line, for the first time
 
 Milestone 220 (this kernel drives no clock or reset controller, and the first real device will
-need one). `crates/jh7110_clock_and_reset` (the offsets, the plans, each tree's spellings),
-`crates/machine_discovery/src/jh7110/clock_and_reset.rs` (the device-tree walk),
-`crates/jh7110_clock_and_reset_contract` (the wire, §320 (the JH7110 clock and reset wire)),
-`components/src/jh7110_clock_and_reset_server.rs` (the stores),
-`kernel/src/user/jh7110_clock_and_reset_service.rs` (the spawn and the starters' calls), and
-`kernel/src/drivers/jh7110_clock_and_reset.rs` (the kernel's own walk, for its watchdog).
+need one). The code:
+
+- `crates/jh7110_clock_and_reset`: the offsets, the plans, each tree's spellings.
+- `crates/machine_discovery/src/jh7110/clock_and_reset.rs`: the device-tree walk.
+- `crates/jh7110_clock_and_reset_contract`: the wire, §320 (the JH7110 clock and reset wire).
+- `crates/jh7110_clock_and_reset_devices`: each device's plans, keyed by its badge.
+- `components/src/jh7110_clock_and_reset_server.rs`: the stores.
+- `kernel/src/user/jh7110_clock_and_reset_service.rs`: the spawn and the starters' calls.
+- `kernel/src/drivers/jh7110_clock_and_reset.rs`: the kernel's own walk, for its watchdog.
 
 **This has never run against silicon.** QEMU's riscv64 `virt` machine has no clock or reset
 controller of any kind, so an emulator cannot validate the sequence end to end: what CI exercises
@@ -35,7 +38,8 @@ hw entropy  : FAILED: JH7110 TRNG at 0x1600c000 (tree says starfive,trng, status
 
 Transcript: `target/board/radon-2026-09-04-trng-bringup.log`. The diagnostic is the raw
 `(STAT << 32) | ISTAT`, so the whole register file read back as zeros, and the vendor device tree
-independently marks the node `status disabled`. Milestone 239 deliberately *reports* that `status`
+independently marks the node `status disabled`. Milestone 239 (radon's device tree does not
+describe the TRNG) deliberately *reports* that `status`
 without acting on it. The same tree calls the S7 core `okay` and gives it an MMU it does not have,
 so the agreement between the tree and the hardware is corroboration rather than circularity.
 
@@ -95,11 +99,11 @@ One userspace process, the clock and reset server, writes the shared windows. Th
 on a JH7110 with the first page of each window the tree named: STG, SYS and AON device-typed, and
 the SYS syscon read-only, since the server only reads PLL2's words there. Every clock word and
 every reset word of the three domains sits in that first page
-(`jh7110_clock_and_reset::device::USED_WINDOW_BYTES`, checked at compile time).
+(`jh7110_clock_and_reset_devices::USED_WINDOW_BYTES`, checked at compile time).
 
 A client never names a device. Its capability on the server's endpoint carries a badge, the
-device's register base physical address as the tree's `reg` gives it, and the server looks the
-badge up in `jh7110_clock_and_reset::device::DEVICES`: the TRNG at `0x1600_c000`, the first GMAC
+device's register base physical address as the tree's `reg` gives it. The server looks the badge
+up in `jh7110_clock_and_reset_devices::DEVICES`: the TRNG at `0x1600_c000`, the first GMAC
 port at `0x1603_0000`, the two SD/MMC controllers at `0x1601_0000` and `0x1602_0000`, and I2C5 at
 `0x1205_0000`. A badge outside the table, 0 included, gets status 1, and so does a device whose
 window this machine's tree named nowhere. The window is shared by USB, both PCIe root ports, the
@@ -117,10 +121,10 @@ device off)).
 The kernel's own starters are the server's clients today: the entropy starter, the GMAC
 bring-up and both SD/MMC starters each call it with their device's badge through
 `sched::ipc_call_badged` before they spawn the driver. The kernel keeps its own walk
-(`drivers::jh7110_clock_and_reset::bring_up`) for two callers: the soak's watchdog (milestone 593
-(a wedged kernel resets itself)), whose supervisor pets it from the kernel, and the reboot path's
-I2C5 bring-up, which milestone 1062 (the device control planes leave the kernel)'s step 5 moves to
-a userspace PMIC route.
+(`drivers::jh7110_clock_and_reset::bring_up`) for two callers. One is the soak's watchdog
+(milestone 593 (a wedged kernel resets itself)), whose supervisor pets it from the kernel. The
+other is the reboot path's I2C5 bring-up, which milestone 1062 (the device control planes leave the
+kernel)'s step 5 moves to a userspace PMIC route.
 
 ### The one genuinely dangerous thing here, and what stops it
 
@@ -210,7 +214,7 @@ Read the clock line first: it decides how the entropy line should be read.
 | `Done, clocks 2/2 running, resets 1/1 released` | **The sequence worked.** Bit 31 read back on both clocks and the status bit came up | Read the `hw entropy` line, below |
 | `ClockNotRunning, clocks 0/2 running` | The enable bit did not stick. The window is device-mapped and accepting stores, and nothing is behind it | The base address is wrong, or the STG domain itself is gated by a parent this milestone does not program. See BUGS: the SYSCRG `stg_axiahb` parent is the first suspect |
 | `ResetHeld, resets 0/1 released` | The clocks came up and the reset did not release. Linux's own comment says a gated clock is the usual cause of exactly this hang, so a `running` verdict beside it is contradictory and interesting | Capture the whole line. This is the outcome that most wants a register dump before anyone changes code |
-| `; the firmware had already done all of it` | **The premise was wrong.** The clocks were on and the reset released before nife touched anything | Then a gated clock is *not* why the TRNG read zeros, and milestone 220 does not explain the 2026-09-04 transcript. The next suspect is the base address or the `reg` decode, which is milestone 159's territory again |
+| `; the firmware had already done all of it` | **The premise was wrong.** The clocks were on and the reset released before nife touched anything | Then a gated clock is *not* why the TRNG read zeros, and milestone 220 does not explain the 2026-09-04 transcript. The next suspect is the base address or the `reg` decode, which is milestone 159 (a real hardware entropy source: the JH7110's TRNG)'s territory again |
 
 Then the entropy line:
 
@@ -235,8 +239,8 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
   QEMU's `virt` machine has no clock or reset controller to model.
 - **Only five devices, in three domains.** The JH7110 has five domains (`syscrg`, `stgcrg`,
   `aoncrg`, `ispcrg`, `voutcrg`) and hundreds of clocks; the server serves the devices in
-  `device::DEVICES` and answers status 1 for every other badge. A device is a table entry, not a
-  rewrite.
+  `jh7110_clock_and_reset_devices::DEVICES` and answers status 1 for every other badge. A device
+  is a table entry, not a rewrite.
 - Each device's plan is the crate's constant, not its tree's `clocks` and `resets`. A board whose
   tree wires a device differently gets the constant plan.
 - The server answers the version query with status 2 until milestone 1000 (message contracts

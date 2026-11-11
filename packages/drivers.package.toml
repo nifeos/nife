@@ -7,7 +7,11 @@
 name = "drivers"
 kind = "base"
 home = { repo = "drivers", status = "provisional" }
-crates = ["virtio"]
+crates = [
+    "virtio",
+    # The JH7110 clock and reset server's device table; only that server links it.
+    "jh7110_clock_and_reset_devices",
+]
 # The crate `e1000e` lives in the repository `nifeos/e1000e` and is not listed here. The kernel
 # resets the NIC and programs the rings' bases through it, and `net_stack` in the network package
 # drives the rings (milestone 494 (a driver for the network card a PC actually has)). Both link it,
@@ -28,4 +32,4 @@ crates = ["virtio"]
 interfaces = [
     "designware_ethernet",
 ]
-programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]
+programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage", "jh7110_clock_and_reset_server"]

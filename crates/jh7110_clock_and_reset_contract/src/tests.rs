@@ -1,5 +1,7 @@
 //! The wire's numbers, pinned: each is one-way once a peer outside the tree builds against it
 //! (§320 (the JH7110 clock and reset wire)'s "What is one-way").
+//!
+//! Name: provisional.
 
 use super::*;
 

@@ -51,7 +51,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    the entropy and Ethernet bring-ups ask the server instead.
    The server is `components/src/jh7110_clock_and_reset_server.rs`, its wire
    `crates/jh7110_clock_and_reset_contract` and its device table
-   `jh7110_clock_and_reset::device`. The SD/MMC starters ask it too, and the reboot path's I2C5
+   `jh7110_clock_and_reset_devices`. The SD/MMC starters ask it too, and the reboot path's I2C5
    bring-up keeps the kernel's walk until step 5 replaces that path.
 3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
    server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its

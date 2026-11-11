@@ -4,7 +4,7 @@
 //! It holds the first page of each window its spawner mapped (STG, SYS and AON device-typed, the
 //! SYS syscon read-only) and one endpoint, slot [`REQUEST_SLOT`]. A client's capability on that
 //! endpoint carries a badge, its device's register base physical address, and the server answers
-//! for that device alone: `jh7110_clock_and_reset::device` holds what each badge brings up, and
+//! for that device alone: `jh7110_clock_and_reset_devices` holds what each badge brings up, and
 //! `jh7110_clock_and_reset_contract` the wire. No request word names a device, so a client can
 //! neither name nor reach another device's clocks or resets (§256 (a server that keeps windows for
 //! many clients scopes each by the caller's badge)). No operation turns a device off (§304 (who
@@ -19,16 +19,17 @@
 //! Name: provisional.
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107).
+// Program entry points, not the crates/ library surface milestone 68 (code-quality gates: one lint
+// policy)'s ratchet tracks (§107 (`missing_docs` moves to `workspace.lints.rust`, opt-out rather
+// than opt-in)).
 #![allow(missing_docs)]
 #![no_main]
 
 use driver_process_contract::jh7110_clock_and_reset::{
     ALWAYS_ON_KIND, REQUEST_SLOT, SYSTEM_CONTROLLER_KIND, SYSTEM_KIND, SYSTEM_TOP_GROUP_KIND,
 };
-use jh7110_clock_and_reset::device::{Device, RateRefusal, USED_WINDOW_BYTES, WindowName, Windows};
 use jh7110_clock_and_reset_contract::{self as wire, Status, Summary};
+use jh7110_clock_and_reset_devices::{Device, RateRefusal, USED_WINDOW_BYTES, WindowName, Windows};
 use startup_page_contract::{StartupPage, WindowKind};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{receive_request, reply};
