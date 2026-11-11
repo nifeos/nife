@@ -161,7 +161,6 @@ The crate itself does not. What blocks the move is in nife, and in the decisions
 
 | item | owner |
 |---|---|
-| Clear the move. | architect |
 | Point `xtask/src/farm/generate.rs` and `stamp.rs` at the pinned checkout's `src/lib.rs` (from `cargo metadata`), not `crates/entropy_contract`. Thirteen other crates are copied the same way (`abi`, `counter_frequency_contract` and most contract crates among them), so one change serves them all. | move lane |
 | Convert the six path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |
 | Repoint `helpers/interface_declarations_check.py`, `helpers/interface_stability.py`, `helpers/trust_boundary_crates.tsv`, `packages/contracts.package.toml`, the `script/verify` row, the mutation baseline row and `helpers/template_report_baseline.txt`. | move lane |
@@ -184,7 +183,7 @@ Each is a two-way door, decided 2026-11-11 (UTC). Reversing any costs one pull r
 
 ## Recommendation
 
-Ready for review. The architect froze the identity and ratified every name; clearing the move remains.
+Cleared to move. The architect froze the identity, ratified every name and cleared the move.
 The crate is a leaf, builds alone and proves; the move's real cost is the `xtask` copy, which one change for all fourteen copied crates pays.
 
 ## Decisions for the architect
@@ -192,5 +191,5 @@ The crate is a leaf, builds alone and proves; the move's real cost is the `xtask
 Ruled 2026-11-11 (UTC) on #3480: the architect froze the identity at `INTERFACE_ID` 12, `VERSION` 1
 and no magic, and ratified the names, with `DEAD` renamed `BRING_UP_FAILED`.
 
-Open: clear the move to `nifeos/entropy_contract`, with no tag and no publication. The clearance
-is the go for creating the repository.
+The architect cleared the move to `nifeos/entropy_contract` the same day, with no tag and no
+publication. The clearance is the go for creating the repository.
