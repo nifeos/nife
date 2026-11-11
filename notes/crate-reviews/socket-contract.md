@@ -103,6 +103,14 @@ No nife type appears in a signature. What a stranger may find surprising:
 - Under `cargo kani`, the compile-time `assert!` in `ephemeral` draws a future-incompatibility
   warning from Kani's own `assert` macro. Plain `cargo` builds do not warn.
 
+## Rulings
+
+- A send's length travels in the `CALL` argument word, checked against `DATA_MAXIMUM`, and
+  `OFF_LEN` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
+  note, every `OPERATION_` constant's documentation, the README and the client runtime's frame
+  accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
+  argument. The peer address on `ACCEPT` is not ruled.
+
 ## Names
 
 The architect ratified the crate name, and `DATA_MAXIMUM` before the rule that a limit opens

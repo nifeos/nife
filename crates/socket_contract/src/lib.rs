@@ -43,22 +43,55 @@ pub const VERSION: u32 = 1;
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 19;
 
-/// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame.
+/// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame. Not a `CALL`:
+/// it has no argument word, and a `CALL` with this opcode is answered [`REP_ERR`].
 pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
 /// `CALL` on the front door: create a User Datagram Protocol (UDP) socket and bind an ephemeral local port. Answered
 /// [`REP_OK`] with the socket's capability.
 pub const OPERATION_OPEN_UDP: u64 = 2;
 /// `CALL` on the front door: create a TCP socket. Answered [`REP_OK`] with the socket's capability.
 pub const OPERATION_OPEN_TCP: u64 = 3;
-/// `CALL`: UDP send; dst in the frame header, payload in the frame.
+/// `CALL(udp socket, OPERATION_SENDTO, length)`: UDP send. The argument word is the payload length
+/// in bytes, at most [`DATA_MAXIMUM`]; a larger one is answered [`REP_ERR`]. The destination is in
+/// the frame header and the payload at [`OFF_PAYLOAD`]. The frame's [`OFF_LEN`] is not read. Replies
+/// [`REP_OK`], or [`REP_ERR`].
 pub const OPERATION_SENDTO: u64 = 4;
-/// `CALL`: block until a datagram/segment arrives, write it to the frame.
+/// `CALL(socket, OPERATION_RECEIVE, 0)`: block until a datagram or segment arrives, and write it to
+/// the frame. The argument word is ignored: pass 0. Replies the payload length in bytes, which is
+/// also written at [`OFF_LEN`]; 0 means the stream has closed, and [`REP_ERR`] a failure. A UDP
+/// reply also writes the sender's address and port at [`OFF_DST_IP`] and [`OFF_DST_PORT`].
 pub const OPERATION_RECEIVE: u64 = 5;
-/// `CALL`: TCP connect to the frame's dst; reply the outcome.
+/// `CALL(tcp socket, OPERATION_CONNECT, 0)`: connect to the destination in the frame header. The
+/// argument word is ignored: pass 0. Replies [`CONNECT_ESTABLISHED`] or [`CONNECT_REFUSED`], or
+/// [`REP_ERR`].
 pub const OPERATION_CONNECT: u64 = 6;
-/// `CALL`: TCP send; payload in the frame.
+/// `CALL(tcp socket, OPERATION_SEND, length)`: TCP send. The argument word is the payload length in
+/// bytes, at most [`DATA_MAXIMUM`]; a larger one is answered [`REP_ERR`]. The payload is at
+/// [`OFF_PAYLOAD`]. The frame's [`OFF_LEN`] is not read. Replies the count of bytes the stack
+/// accepted, which may be fewer than `length` when its buffer is short: send the rest.
+///
+/// ```
+/// use socket_contract::{DATA_MAXIMUM, OFF_LEN, OFF_PAYLOAD, OPERATION_SEND};
+///
+/// // A client's side of a send: the payload goes in the frame, and the length goes in the
+/// // argument word of the `CALL`. It never writes `OFF_LEN`.
+/// let mut frame = [0u8; 4096];
+/// let payload = b"nife-out!";
+/// let at = OFF_PAYLOAD as usize;
+/// frame[at..at + payload.len()].copy_from_slice(payload);
+/// let (operation, argument) = (OPERATION_SEND, payload.len() as u64);
+///
+/// // The stack's side: the argument is the whole length, checked against `DATA_MAXIMUM`.
+/// assert_eq!(operation, 7);
+/// assert!(argument <= DATA_MAXIMUM as u64);
+/// let sent = &frame[at..at + argument as usize];
+/// assert_eq!(sent, payload);
+/// // Nothing was written at `OFF_LEN`.
+/// assert_eq!(frame[OFF_LEN as usize..OFF_LEN as usize + 2], [0, 0]);
+/// ```
 pub const OPERATION_SEND: u64 = 7;
-/// `CALL`: close the socket and drop its frame mapping.
+/// `CALL(socket, OPERATION_CLOSE, 0)`: close the socket and drop its frame mapping. The argument
+/// word is ignored: pass 0. Replies [`REP_OK`].
 pub const OPERATION_CLOSE: u64 = 8;
 /// `CALL(front door, OPERATION_LISTEN, port)`: start listening on `port`. Replies one of the
 /// [`LISTEN_GRANTED`] outcomes, and a granted one carries the listener's capability. Names
@@ -66,7 +99,8 @@ pub const OPERATION_CLOSE: u64 = 8;
 pub const OPERATION_LISTEN: u64 = 9;
 /// `CALL(listener, OPERATION_ACCEPT, 0)`: block until a connection arrives on this listener, then
 /// answer [`REP_OK`] carrying the connection's capability, or [`REP_ERR`]. The listener keeps
-/// listening, and the connection wants a frame attached before it carries bytes.
+/// listening, and the connection wants a frame attached before it carries bytes. The argument word
+/// is ignored: pass 0.
 pub const OPERATION_ACCEPT: u64 = 10;
 /// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the fixed
 /// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`LISTEN_GRANTED`] vocabulary,
@@ -101,7 +135,9 @@ pub const fn names_a_socket(badge: u64) -> bool {
 // Reply words. The connect outcomes are their own small vocabulary, so a client can tell
 // "refused" from "connected".
 
-/// Success. Non-negative is success, and `RECEIVE` replies its length here instead.
+/// Success. Non-negative is success, and `RECEIVE` and `SEND` reply a byte count here instead: from
+/// `RECEIVE`, 0 is the end of the stream, and from `SEND`, a count below the length sent means send
+/// the rest.
 pub const REP_OK: u64 = 0;
 /// `OPERATION_CONNECT` succeeded.
 pub const CONNECT_ESTABLISHED: u64 = 0;
@@ -454,13 +490,16 @@ pub mod stack_slots {
 /// ```text
 ///   +0x000  u8[4]  dst_ip    destination (SENDTO / CONNECT); source on a UDP RECEIVE reply
 ///   +0x004  u16    dst_port  little-endian, the same two roles
-///   +0x006  u16    len       payload length, in for SEND*, out for RECEIVE
+///   +0x006  u16    len       payload length, written by RECEIVE only
 ///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
 /// ```
 pub const OFF_DST_IP: u64 = 0x000;
 /// The destination port, right after the destination Internet Protocol (IP) address.
 pub const OFF_DST_PORT: u64 = 0x004;
-/// The payload length.
+/// The payload length of a received datagram or segment, little-endian. Only `RECEIVE` writes it,
+/// and nothing in this contract reads it: a send carries its length in the argument word of its
+/// `CALL`, checked against [`DATA_MAXIMUM`], and ignores this field. A client may clear it before
+/// a `RECEIVE` to watch for the reply.
 pub const OFF_LEN: u64 = 0x006;
 /// Where the payload bytes start.
 pub const OFF_PAYLOAD: u64 = 0x008;

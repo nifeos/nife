@@ -19,7 +19,7 @@
 //! // Nothing below is unsafe: the bounds check is the window's.
 //! FRAME.set_dst([10, 0, 2, 2], 69);
 //! FRAME.payload_write(b"nife");
-//! FRAME.set_len(4);
+//! // The length of a send rides in the CALL's argument word, never in the frame.
 //! ```
 
 //! Name: provisional (milestone 410's lane, 2026-10-16 UTC), module and type. `Frame` over
@@ -89,7 +89,9 @@ impl Frame {
         self.window.r16(OFF_DST_PORT)
     }
 
-    /// Write the payload length: what the next `SEND*` sends, or what a `RECEIVE` reply wrote.
+    /// Write the length field at `OFF_LEN`. The stack never reads it: a `SEND*` takes its length
+    /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
+    /// that clears it before a `RECEIVE` to watch for the reply.
     pub fn set_len(&self, len: u16) {
         self.window.w16(OFF_LEN, len);
     }
