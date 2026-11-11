@@ -8,11 +8,11 @@ Expected to fail: the harness's `assert_eq!` on `buffer[index]`, for a copy of o
 whose word reads differently from each end.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
-index 84f40a6a4..0c9dcee11 100644
+index feffc5ede..d3c836065 100644
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -228,7 +228,7 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
- /// ```
+@@ -264,7 +264,7 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
+ /// value out and this copies bytes.
  pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) -> usize {
      let copied = byte_count.min(MAXIMUM_BYTES as usize).min(out.len());
 -    out[..copied].copy_from_slice(&reply_word.to_le_bytes()[..copied]);

@@ -8,12 +8,12 @@ Expected to fail: the harness's `assert_eq!` on `requested_bytes`, with a nonzer
 count below eight.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
-index 84f40a6a4..60362f3e1 100644
+index feffc5ede..397a93242 100644
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -71,7 +71,7 @@ pub const fn operation(request_word: u64) -> u64 {
- /// than refusing keeps the server's loop free of an error path that only a buggy client reaches:
- /// a request for 500 bytes is a request for eight, answered, and the client asks again.
+@@ -84,7 +84,7 @@ pub const fn operation(request_word: u64) -> u64 {
+ ///
+ /// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `want`: a quantity takes its unit.
  pub const fn requested_bytes(request_word: u64) -> u64 {
 -    let byte_count = request_word & 0xff;
 +    let byte_count = request_word;

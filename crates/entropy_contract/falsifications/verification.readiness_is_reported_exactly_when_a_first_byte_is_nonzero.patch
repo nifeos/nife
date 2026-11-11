@@ -8,11 +8,11 @@ Expected to fail: the harness's `assert_eq!` on `READY`, with a draw whose first
 and a later one is not.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
-index 84f40a6a4..673d878ac 100644
+index feffc5ede..0d64185aa 100644
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -135,7 +135,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
- /// ```
+@@ -163,7 +163,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
+ /// `first`.
  pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
      let mut seen = false;
 -    for byte in first_bytes {
