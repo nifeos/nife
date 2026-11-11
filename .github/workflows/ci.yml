@@ -1694,12 +1694,6 @@ jobs:
     steps:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
-      - name: A draft runs no lint
-        if: needs.gate.outputs.draft == 'true'
-        run: |
-          echo "::error title=draft: lint not run::This pull request is a draft. Mark it ready and its ready run lints it."
-          echo "draft: lint not run"
-          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # `script/lint` runs `script/roadmap --check`, whose merged-branch check reads
@@ -1708,6 +1702,13 @@ jobs:
           # and no pull request went red. The check now refuses an empty history too, so this and
           # that refusal are belt and braces.
           fetch-depth: 0
+      - name: A draft runs no lint
+        if: needs.gate.outputs.draft == 'true'
+        # After the checkout, so the wall-time step that always runs last finds its script.
+        run: |
+          echo "::error title=draft: lint not run::This pull request is a draft. Mark it ready and its ready run lints it."
+          echo "draft: lint not run"
+          exit 1
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -1840,7 +1841,7 @@ jobs:
           name: hang-evidence-${{ github.job }}-${{ strategy.job-index }}
           path: target/hang-evidence/
       - name: Check the job's wall time against its budget
-        if: always() && needs.gate.outputs.draft != 'true'
+        if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
   fastpath-footprint:

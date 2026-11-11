@@ -99,7 +99,8 @@ status, ran = walk(draft)
 check("a draft's lint job runs (not skipped)", status is not None)
 check("a draft's lint job fails", status == "failure")
 check("a draft's lint runs its draft step", "A draft runs no lint" in ran)
-check("a draft runs no real lint step (ran: %s)" % ran, ran == ["Start the job wall-time clock", "A draft runs no lint"])
+check("a draft runs no real lint step (ran: %s)" % ran, ran[:3] == ["Start the job wall-time clock", next(s.get("uses") for s in lint["steps"] if "checkout" in s.get("uses", "")), "A draft runs no lint"]
+      and real not in ran and len(ran) == 4 and ran[-1] == "Check the job's wall time against its budget")
 
 ready = {"event": "pull_request", "gate": gate_outputs("pull_request", False)}
 check("the gate does not mark a ready pull request a draft", ready["gate"].get("draft", "") == "")
