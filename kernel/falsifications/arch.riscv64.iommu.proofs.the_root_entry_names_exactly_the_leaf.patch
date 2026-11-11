@@ -15,7 +15,7 @@ it places devices and never builds a root entry.
 diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
 --- a/kernel/src/arch/riscv64/iommu.rs
 +++ b/kernel/src/arch/riscv64/iommu.rs
-@@ -208,7 +208,7 @@
+@@ -206,7 +206,7 @@
  ///
  /// Name: provisional.
  fn non_leaf_entry(leaf: u64) -> u64 {
@@ -23,4 +23,4 @@ diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
 +    leaf | NON_LEAF_ENTRY_VALID
  }
  
- /// A device context's words in directory order: `tc`, `iohgatp`, `ta`, `fsc`, then the extended
+ /// **The leaf a valid non-leaf entry names**: the inverse of [`non_leaf_entry`], its PPN in

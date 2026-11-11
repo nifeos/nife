@@ -494,20 +494,39 @@ const STD_NET_STACK_PAGES: u64 = 32;
 /// `socket_contract::NO_LISTEN_GRANT` answers `PermissionDenied` for every port.
 ///
 /// Returns the program's stdout endpoint, its thread (so a test can tell a dead program from a busy
-/// one) and what ends the service, or `None` if no NIC is attached. See notes/net.md.
+/// one) and what ends the service, or `None` if no NIC is attached or the IOMMU refuses it. See
+/// notes/net.md.
 pub fn start_net_std(
     net_stack_image: &'static [u8],
     std_image: &'static [u8],
     listen_grant: u64,
 ) -> Option<(RendezvousId, crate::thread::ThreadId, Holding)> {
-    use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
-
     let dev = crate::virtio::find_net_device()?;
     let transport = crate::virtio::Transport::Mmio {
         mmio_phys: dev.mmio_phys,
     };
     let (net_stack_report, stack, mut held) =
         wire_net_server(net_stack_image, transport, dev.intid, None, listen_grant)?;
+    let (report, tid) = spawn_std_net_client(std_image, stack, &mut held);
+
+    // net_stack's DHCP report is a blocking `send`; until it is received, it cannot serve.
+    crate::sched::ipc_receive(net_stack_report);
+    Some((report, tid, held))
+}
+
+/// Spawn [`start_net_std`]'s `std::net` client against `stack`, and return its stdout endpoint and
+/// thread. Its thread and regions are added to `held`.
+///
+/// A function of its own, as [`spawn_stack_client`] is, so the client's locals and the server's
+/// [`Holding`] never share one frame (script/stack-frame-check).
+///
+/// Name: provisional.
+fn spawn_std_net_client(
+    std_image: &'static [u8],
+    stack: RendezvousId,
+    held: &mut Holding,
+) -> (RendezvousId, crate::thread::ThreadId) {
+    use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
 
     let std_eps =
         crate::memory_region::create(2).expect("no endpoint region for the std net client");
@@ -551,15 +570,12 @@ pub fn start_net_std(
     })
     .expect("could not spawn the networked std program");
 
-    // net_stack's DHCP report is a blocking `send`; until it is received, it cannot serve.
-    crate::sched::ipc_receive(net_stack_report);
-
     held.add_thread(tid);
     held.add_region(std_eps);
     held.add_region_after_death(heap);
     held.add_region_after_death(frames);
     held.add_region_after_death(std_stack_region);
-    Some((report, tid, held))
+    (report, tid)
 }
 
 /// [`wire`] against the enumerated mmio disk, at `role`.

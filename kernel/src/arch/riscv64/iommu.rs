@@ -107,8 +107,6 @@ struct Iommu {
     /// The device directory's root frame: [`ROOT_ENTRIES`] non-leaf entries, each invalid until
     /// its leaf exists.
     ddt: u64,
-    /// The leaf frames, by root index, allocated as the first device in each range attaches.
-    leaves: [Option<u64>; ROOT_ENTRIES as usize],
     /// The device context size: 64 bytes with `MSI_FLAT`, else 32, decided once at init.
     dc_bytes: u64,
     /// `CAPS.MSI_FLAT`: whether this unit offers the flat MSI page table, for the machine
@@ -211,6 +209,14 @@ fn non_leaf_entry(leaf: u64) -> u64 {
     ((leaf >> 12) << 10) | NON_LEAF_ENTRY_VALID
 }
 
+/// **The leaf a valid non-leaf entry names**: the inverse of [`non_leaf_entry`], its PPN in
+/// `[53:10]` back to an address.
+///
+/// Name: provisional.
+fn non_leaf_entry_leaf(entry: u64) -> u64 {
+    ((entry >> 10) & ((1 << 44) - 1)) << 12
+}
+
 /// A device context's words in directory order: `tc`, `iohgatp`, `ta`, `fsc`, then the extended
 /// format's four MSI words. The base (32-byte) format writes only the first four. Pure so that
 /// `the_iommu_is_handed_exactly_the_domain_the_kernel_built` can read each field
@@ -297,7 +303,6 @@ pub fn initialize(base: u64) {
     *g = Some(Iommu {
         base,
         ddt,
-        leaves: [None; ROOT_ENTRIES as usize],
         dc_bytes,
         msi_flat,
         cq,
@@ -388,19 +393,23 @@ fn cmd_push(s: &mut Iommu, dword0: u64, dword1: u64) {
 
 /// The leaf frame at root index `index`, allocating it and installing its non-leaf entry the first
 /// time, or `None` with no frame free.
+///
+/// The root entry is the only record of a leaf: no array beside it, so building [`Iommu`] costs no
+/// stack (script/stack-frame-check). Only this function, under the `IOMMU` lock, writes it.
 fn leaf_at(s: &mut Iommu, index: usize) -> Option<u64> {
-    if let Some(leaf) = s.leaves[index] {
-        return Some(leaf);
+    let entry = phys_to_virt(s.ddt + index as u64 * 8) as *mut u64;
+    // SAFETY: ddt is a kernel-owned frame of ROOT_ENTRIES entries and `index` is below that
+    // (`directory_position`).
+    let existing = unsafe { core::ptr::read_volatile(entry) };
+    if existing & NON_LEAF_ENTRY_VALID != 0 {
+        return Some(non_leaf_entry_leaf(existing));
     }
     let leaf = crate::memory::alloc_zeroed()?.addr();
     // The leaf's contexts are zero, so invalid: publish them before the entry that makes the IOMMU
     // walk them.
     crate::arch::direct_memory_access_write_barrier();
-    let entry = phys_to_virt(s.ddt + index as u64 * 8) as *mut u64;
-    // SAFETY: ddt is a kernel-owned frame of ROOT_ENTRIES entries and `index` is below that
-    // (`directory_position`). One aligned 64-bit store, so the IOMMU never reads half a pointer.
+    // SAFETY: as above. One aligned 64-bit store, so the IOMMU never reads half a pointer.
     unsafe { core::ptr::write_volatile(entry, non_leaf_entry(leaf)) };
-    s.leaves[index] = Some(leaf);
     Some(leaf)
 }
 
@@ -634,6 +643,10 @@ mod proofs {
         assert!(
             entry & !(((1u64 << 44) - 1) << 10 | 1) == 0,
             "no reserved bit is set: no address bit reached one"
+        );
+        assert!(
+            non_leaf_entry_leaf(entry) == leaf,
+            "reading the entry back gives the leaf it was written with"
         );
     }
 }

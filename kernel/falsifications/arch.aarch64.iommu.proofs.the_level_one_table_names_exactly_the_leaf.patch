@@ -16,12 +16,12 @@ it places streams and never builds a descriptor.
 diff --git a/kernel/src/arch/aarch64/iommu.rs b/kernel/src/arch/aarch64/iommu.rs
 --- a/kernel/src/arch/aarch64/iommu.rs
 +++ b/kernel/src/arch/aarch64/iommu.rs
-@@ -416,7 +416,7 @@
+@@ -427,7 +427,7 @@
  /// Name: provisional.
  #[doc(alias = "L1STD")]
  const fn level_one_descriptor(leaf: u64) -> u64 {
--    (leaf & 0x000f_ffff_ffff_ffc0) | (STREAM_TABLE_SPLIT as u64 + 1)
-+    (leaf & 0x000f_ffff_ffff_ffc0) | STREAM_TABLE_SPLIT as u64
+-    (leaf & LEVEL_ONE_DESCRIPTOR_ADDRESS) | (STREAM_TABLE_SPLIT as u64 + 1)
++    (leaf & LEVEL_ONE_DESCRIPTOR_ADDRESS) | STREAM_TABLE_SPLIT as u64
  }
  
  /// **The context descriptor for one stream**: the SMMU's `TTBR0_EL1` + `TCR_EL1` + `MAIR_EL1`,

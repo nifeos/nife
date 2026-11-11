@@ -100,6 +100,11 @@ const LEVEL_ONE_DESCRIPTORS: usize = 1 << (STREAM_ID_BITS_MAXIMUM - STREAM_TABLE
 #[doc(alias = "L1STD")]
 const LEVEL_ONE_DESCRIPTOR_BYTES: u64 = 8;
 
+/// The bits of a level-one descriptor that hold its leaf's address, `L2Ptr` in `[51:6]`.
+///
+/// Name: provisional.
+const LEVEL_ONE_DESCRIPTOR_ADDRESS: u64 = 0x000f_ffff_ffff_ffc0;
+
 /// `STRTAB_BASE_CFG.FMT` = 0b01, a two-level stream table, in bits `[17:16]`.
 ///
 /// Name: provisional.
@@ -145,10 +150,15 @@ struct Smmu {
     /// How many stream id bits the table covers: [`STREAM_ID_BITS_MAXIMUM`], or fewer when the SMMU's
     /// `SIDSIZE` is smaller.
     stream_id_bits: u32,
-    /// The leaves, by level-one index, allocated as the first device in each range attaches.
-    /// Re-attaching a stream rewrites its STE and CD in place and invalidates, so repeated test runs
-    /// converge instead of leaking a frame per attach.
-    leaves: [Option<Leaf>; LEVEL_ONE_DESCRIPTORS],
+    /// A kernel-owned frame of [`LEVEL_ONE_DESCRIPTORS`] physical addresses: the CD frame of each
+    /// leaf, by level-one index, or zero before that leaf exists. The leaf's STE frame needs no such
+    /// record, because its level-one descriptor names it. Both live in frames rather than in this
+    /// struct, so building the struct costs no stack (script/stack-frame-check). Re-attaching a
+    /// stream rewrites its STE and CD in place and invalidates, so repeated test runs converge
+    /// instead of leaking a frame per attach.
+    ///
+    /// Name: provisional.
+    context_descriptor_leaves: u64,
     cmdq: u64,
     cmdq_prod: u32,
     // Read by take_fault (the confinement test); no production fault handler yet.
@@ -246,6 +256,7 @@ pub fn initialize(base: u64) {
     let strtab = zeroed_page_frame("stream table");
     let cmdq = zeroed_page_frame("command queue");
     let evtq = zeroed_page_frame("event queue");
+    let context_descriptor_leaves = zeroed_page_frame("context descriptor leaf list");
 
     // Two-level stream table, every level-one descriptor zero. A zero descriptor has SPAN 0, which
     // names no leaf, so every stream aborts until `attach` installs one: the default-deny posture.
@@ -275,7 +286,7 @@ pub fn initialize(base: u64) {
         base,
         strtab,
         stream_id_bits,
-        leaves: [None; LEVEL_ONE_DESCRIPTORS],
+        context_descriptor_leaves,
         cmdq,
         cmdq_prod: 0,
         evtq,
@@ -416,7 +427,7 @@ const fn stream_table_configuration(stream_id_bits: u32) -> u32 {
 /// Name: provisional.
 #[doc(alias = "L1STD")]
 const fn level_one_descriptor(leaf: u64) -> u64 {
-    (leaf & 0x000f_ffff_ffff_ffc0) | (STREAM_TABLE_SPLIT as u64 + 1)
+    (leaf & LEVEL_ONE_DESCRIPTOR_ADDRESS) | (STREAM_TABLE_SPLIT as u64 + 1)
 }
 
 /// **The context descriptor for one stream**: the SMMU's `TTBR0_EL1` + `TCR_EL1` + `MAIR_EL1`,
@@ -464,7 +475,23 @@ const fn stream_table_entry(ctxptr: u64) -> [u32; 16] {
 /// The leaf at level-one index `index`, allocating its two frames and installing its descriptor
 /// the first time. Returns the leaf and whether it is new, or `None` with no frame free.
 fn leaf_at(s: &mut Smmu, index: usize) -> Option<(Leaf, bool)> {
-    if let Some(leaf) = s.leaves[index] {
+    let descriptor = phys_to_virt(s.strtab + index as u64 * LEVEL_ONE_DESCRIPTOR_BYTES) as *mut u64;
+    let recorded =
+        phys_to_virt(s.context_descriptor_leaves + index as u64 * LEVEL_ONE_DESCRIPTOR_BYTES)
+            as *mut u64;
+    // SAFETY: strtab and context_descriptor_leaves are kernel-owned frames of
+    // LEVEL_ONE_DESCRIPTORS eight-byte entries, and `index` is below that (`stream_position`, and
+    // the build-time assertion that the table fits a frame). Only this function, under the SMMU
+    // lock, writes either.
+    let context_descriptors = unsafe { core::ptr::read_volatile(recorded) };
+    if context_descriptors != 0 {
+        // SAFETY: as above.
+        let stream_table_entries =
+            unsafe { core::ptr::read_volatile(descriptor) } & LEVEL_ONE_DESCRIPTOR_ADDRESS;
+        let leaf = Leaf {
+            stream_table_entries,
+            context_descriptors,
+        };
         return Some((leaf, false));
     }
     let stream_table_entries = crate::memory::alloc_zeroed()?.addr();
@@ -479,12 +506,12 @@ fn leaf_at(s: &mut Smmu, index: usize) -> Option<(Leaf, bool)> {
     // The leaf's 64 STEs are zero, so invalid: publish them before the descriptor that makes the
     // SMMU walk them.
     crate::arch::direct_memory_access_write_barrier();
-    let descriptor = phys_to_virt(s.strtab + index as u64 * LEVEL_ONE_DESCRIPTOR_BYTES) as *mut u64;
-    // SAFETY: strtab is a kernel-owned frame of LEVEL_ONE_DESCRIPTORS descriptors and `index` is
-    // below that (`stream_position`, and the build-time assertion that the table fits a frame).
-    // One aligned 64-bit store, so the SMMU never reads a pointer with a stale half.
-    unsafe { core::ptr::write_volatile(descriptor, level_one_descriptor(stream_table_entries)) };
-    s.leaves[index] = Some(leaf);
+    // SAFETY: as above. One aligned 64-bit store, so the SMMU never reads a pointer with a stale
+    // half.
+    unsafe {
+        core::ptr::write_volatile(descriptor, level_one_descriptor(stream_table_entries));
+        core::ptr::write_volatile(recorded, leaf.context_descriptors);
+    }
     Some((leaf, true))
 }
 
@@ -702,6 +729,10 @@ mod proofs {
         assert!(
             descriptor & !0x1f == leaf,
             "L2Ptr is the leaf entire, high half included, and nothing else"
+        );
+        assert!(
+            descriptor & LEVEL_ONE_DESCRIPTOR_ADDRESS == leaf,
+            "reading the descriptor back gives the leaf it was written with"
         );
         assert!(
             1u64 << ((descriptor & 0x1f) - 1) == STREAMS_PER_LEAF as u64,
