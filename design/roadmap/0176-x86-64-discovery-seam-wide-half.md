@@ -51,22 +51,21 @@ PC-compatible CMOS RTC is two fixed I/O ports, and [DECISIONS §121](../decision
 current (still-PROPOSED) recommendation keeps all x86 legacy port I/O kernel-resident, so the
 existing "map the device, let userspace drive it" pattern has no CMOS equivalent. Full writeup, four
 options considered, and the decision itself in
-[DECISIONS §130](../decisions/0130-cmos-rtc-delegation.md). Option 3: the kernel reads CMOS once
-at boot and hands the seed to the clock service as a `Spawn` argument, the same way `kind` already
-crosses that boundary.
+[DECISIONS §130](../decisions/0130-cmos-rtc-delegation.md). Option 2: the clock service holds a
+`PortRange` capability over the two CMOS ports and reads the CMOS itself, as it maps a PL031 on the
+other architectures. The kernel reads no CMOS.
 
-Built exactly against that decision. `kernel/src/arch/x86_64/rtc.rs` (new) is the kernel-side
-reader: a dozen `in8`/`out8` pairs against ports `0x70`/`0x71`, the same shape as
-`arch::x86_64::timer`'s PIT calibration, with the CMOS update-in-progress flag polled and a
-double-read-and-compare so a read never lands mid-update. BCD-to-binary and 12h/24h decoded per
-status register B, and the six raw fields turned into a Unix timestamp through the `calendar` crate
-this tree already depends on rather than a second copy of that arithmetic.
-`clock_proto::rtc::CMOS` (provisional; a new kind, `= 3`) is the wire-format addition. Unlike
-`PL031`/`GOLDFISH`, which name a register layout the service polls itself, `CMOS`'s reading has
-already been taken by the kernel and arrives as data on the wall clock's second `Spawn` argument
-(`arg1`). `clock_service::start` fills that argument only on `x86_64` (`rtc_region()` stays `None` there
-forever; §121 (what a device capability is when the device has no page) forecloses the alternative). `components/src/clock.rs`'s `read_rtc` takes the new kind as
-`Some(seed)`, no register, no base address.
+The CMOS reader is `components/src/clock.rs`'s CMOS driver: a dozen `in8`/`out8` pairs against
+ports `0x70`/`0x71`, with the CMOS update-in-progress flag polled and a double-read-and-compare so a
+read never lands mid-update. BCD-to-binary and 12h/24h are decoded per status register B, and the six
+raw fields turned into a Unix timestamp through the `calendar` crate this tree already depends on
+rather than a second copy of that arithmetic. `clock_contract::rtc::CMOS` (provisional; a kind,
+`= 3`) names the two ports the service reads, `rtc::INDEX_PORT` and `rtc::DATA_PORT`, as `PL031` and
+`GOLDFISH` name register layouts the service reads through a mapping. The wiring grants the service a
+`PortRange` over both ports with `WRITE`, because the I/O permission bitmap cannot permit `in`
+without `out` (§121 (what a device capability is when the device has no page)). `rtc_region()` stays
+`None` on `x86_64`: the ports are not a page. `read_rtc` in the service takes the `CMOS` kind and
+reads through the `PortRange`, with no base address.
 
 `date_tests.rs`, `time_tests.rs`, `clock_tests.rs` and `ntp_tests.rs` all run on `x86_64` now
 instead of skipping via `clock_service::machine_has_no_rtc()`, which itself now asks the kernel's
@@ -83,15 +82,15 @@ Piece 1 is complete and independent of this.
 
 ## Follow-on
 
-- **Decision.** `design/decisions/0121-port-io-capability.md` holds the question that decided piece
-  2's shape, whether userspace may ever drive x86 legacy port I/O. Its recommendation keeps port I/O
-  kernel-resident and is still PROPOSED; `design/decisions/0130-cmos-rtc-delegation.md` took the RTC
-  question against it and is ratified, which is why `rtc_region()` stays `None` on x86_64 forever.
+- **Decision.** `design/decisions/0121-port-io-capability.md` gives x86's legacy devices a
+  `PortRange` capability, and `design/decisions/0130-cmos-rtc-delegation.md` uses it for the RTC:
+  the userspace clock service reads the CMOS through it. `rtc_region()` stays `None` on x86_64
+  because the CMOS has no page.
 - **Recorded.** `crates/clock_contract/src/lib.rs` (spelled clock_proto when this was written;
   milestone 265 renamed it) carries the new `rtc` kind, shipped as a provisional
   name like every name a lane mints. `CMOS` is unlike its siblings in kind. `PL031` and `GOLDFISH`
-  name a register layout the clock service polls itself, while `CMOS` names a reading the kernel has
-  already taken and passes to the service as data on its second `Spawn` argument.
+  name a register layout the clock service reads through a mapping, while `CMOS` names two I/O ports
+  it reads through a `PortRange`.
 - **Recorded.** `kernel/src/arch/x86_64/machine.rs`'s BUGS section had claimed for two milestones
   that the interrupt controller and the PCIe ECAM range were still `None` on x86_64, after
   milestones 161 and 165 had wired both. Corrected here, and it now names only the device windows
@@ -107,7 +106,6 @@ Piece 1 is complete and independent of this.
 Milestone 161's own item 0, re-scoped fresh: two of the four windows its text named (the interrupt
 controller, PCI) turned out to already be built, checked directly against the tree. Piece 1
 built (2026-08-25): COM1's already-discovered IRQ (`Acpi::isa_irqs[4]`) wired into `memory::UART_IRQ`, and `machine.rs`'s stale `BUGS` comment corrected. Piece 2, a CMOS RTC,
-built (2026-08-25) against [DECISIONS §130](../decisions/0130-cmos-rtc-delegation.md). The kernel
-reads CMOS once (`arch::x86_64::rtc`) and hands the wall-clock seed to the clock service as a `Spawn` argument (`clock_proto::rtc::CMOS`). Every existing RTC consumer had assumed the
-userspace clock service reads its device itself, and DECISIONS §121 forever forecloses that shape
-for CMOS's kernel-resident ports. `date_tests.rs`, `time_tests.rs`, `clock_tests.rs` and `ntp_tests.rs` now run on `x86_64` instead of skipping.
+built (2026-08-25) against [DECISIONS §130](../decisions/0130-cmos-rtc-delegation.md). The
+userspace clock service reads the CMOS itself, through a `PortRange` capability over ports 0x70 and
+0x71 (`clock_contract::rtc::CMOS`), as every other RTC consumer assumed. The kernel reads no CMOS. `date_tests.rs`, `time_tests.rs`, `clock_tests.rs` and `ntp_tests.rs` now run on `x86_64` instead of skipping.
