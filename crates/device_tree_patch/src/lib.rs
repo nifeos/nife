@@ -87,13 +87,18 @@ impl Error {
     }
 }
 
+// Every offset and length this crate adds comes out of the firmware's tree, so each sum is a checked
+// add and an overflow is `Error::Truncated`, as in `device_tree_blob`'s `be32`. A 32-bit word cannot
+// overflow a 64-bit `usize`; the checks hold the crate to its reader's rule rather than to the width
+// of the targets it runs on today.
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {
-    let b = bytes.get(at..at + 4).ok_or(Error::Truncated)?;
+    let end = at.checked_add(4).ok_or(Error::Truncated)?;
+    let b = bytes.get(at..end).ok_or(Error::Truncated)?;
     Ok(u32::from_be_bytes([b[0], b[1], b[2], b[3]]))
 }
 
-const fn align4(n: usize) -> usize {
-    (n + 3) & !3
+fn align4(n: usize) -> Result<usize, Error> {
+    Ok(n.checked_add(3).ok_or(Error::Truncated)? & !3)
 }
 
 /// The parts of the header this needs.
@@ -138,8 +143,9 @@ fn header(src: &[u8]) -> Result<Header, Error> {
 fn rsvmap_len(src: &[u8], h: &Header) -> Result<usize, Error> {
     let mut at = h.off_rsvmap;
     loop {
-        let entry = src.get(at..at + 16).ok_or(Error::Truncated)?;
-        at += 16;
+        let end = at.checked_add(16).ok_or(Error::Truncated)?;
+        let entry = src.get(at..end).ok_or(Error::Truncated)?;
+        at = end;
         if entry.iter().all(|&b| b == 0) {
             return Ok(at - h.off_rsvmap);
         }
@@ -175,7 +181,10 @@ fn output_len_inner(src: &[u8], boot_arguments: Option<&[u8]>) -> Result<usize, 
     // a wrong one.
     const _: () = assert!(HEADER_LEN.is_multiple_of(8));
     // The command line: one property of the text and its NUL, padded, and its name.
-    let arguments = boot_arguments.map_or(0, |a| 12 + align4(a.len() + 1) + BOOTARGS.len() + 1);
+    let arguments = match boot_arguments {
+        Some(a) => 12 + align4(a.len() + 1)? + BOOTARGS.len() + 1,
+        None => 0,
+    };
     Ok(HEADER_LEN + rsv + h.size_struct + h.size_strings + extra + arguments)
 }
 
@@ -209,7 +218,7 @@ impl Out<'_> {
     ///
     /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
     pub fn bytes(&mut self, b: &[u8]) -> Result<(), Error> {
-        let end = self.at + b.len();
+        let end = self.at.checked_add(b.len()).ok_or(Error::OutputTooSmall)?;
         self.buf
             .get_mut(self.at..end)
             .ok_or(Error::OutputTooSmall)?
@@ -465,7 +474,9 @@ impl Walk<'_> {
             .get(name_at..self.struct_end)
             .and_then(|s| s.iter().position(|&b| b == 0))
             .ok_or(Error::Truncated)?;
-        let next = name_at + align4(name_len + 1);
+        let next = name_at
+            .checked_add(align4(name_len + 1)?)
+            .ok_or(Error::Truncated)?;
         o.bytes(&src[at..next])?;
         self.depth += 1;
         if self.depth == 2 && &src[name_at..name_at + name_len] == b"chosen" {
@@ -521,7 +532,9 @@ impl Walk<'_> {
         let at = self.at;
         let len = be32(src, at + 4)? as usize;
         let nameoff = be32(src, at + 8)? as usize;
-        let next = at + 12 + align4(len);
+        let next = (at + 12)
+            .checked_add(align4(len)?)
+            .ok_or(Error::Truncated)?;
         if next > self.struct_end {
             return Err(Error::Truncated);
         }
@@ -1262,5 +1275,21 @@ mod tests {
                 size: u64::MAX - 5
             })
         );
+    }
+
+    /// An offset or a length near `usize::MAX` is refused rather than overflowing the sum that
+    /// bounds it, the way `device_tree_blob` refuses one. On a 64-bit target no field of a real tree
+    /// gets there, so this calls the arithmetic directly.
+    #[test]
+    fn an_offset_near_the_end_of_the_address_space_is_refused_not_overflowed() {
+        assert_eq!(be32(&[0; 8], usize::MAX - 1), Err(Error::Truncated));
+        assert_eq!(align4(usize::MAX - 1), Err(Error::Truncated));
+        assert_eq!(align4(5), Ok(8));
+        let mut buf = [0; 4];
+        let mut o = Out {
+            buf: &mut buf,
+            at: usize::MAX,
+        };
+        assert_eq!(o.bytes(&[1]), Err(Error::OutputTooSmall));
     }
 }
