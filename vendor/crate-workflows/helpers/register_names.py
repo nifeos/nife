@@ -321,6 +321,8 @@ fn a_byte_addressed_card_is_read_by_addressing_it() {}
 pub const PHYSICAL_FRAME_ADDRESS: u64 = 0;
 pub const RELATIVE_ADDRESS_OFFSETS: u64 = 0;
 pub fn bus_address() -> u64 { 0 }
+pub const SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK: u16 = 0x7f;
+pub fn frame_address() -> u64 { 0 }
 pub fn address() -> u64 { 0 }
 /// **Interrupt Mask Register** (OpenBSD's `SDMMC_INTMASK`).
 #[doc(alias = "INTMASK")]
@@ -346,7 +348,7 @@ pub const CARD_DETECT_BIT: u32 = 1;
     bad = judge('src/sd.rs', rust_names.definitions(src), words)
     got = sorted(line.split(': ')[1] for line in bad)
     want = sorted(['const PHYSICAL_FRAME_ADDRESS', 'const RELATIVE_ADDRESS_OFFSETS',
-                   'fn bus_address', 'fn address', 'const MASK_STATUS_REGISTER',
+                   'fn frame_address', 'fn address', 'const MASK_STATUS_REGISTER',
                    'const READ_LENGTH', 'const CARD_DETECT_REGISTER', 'const CARD_DETECTED',
                    'const CARD_PRESENT'])
     if got != want:
@@ -358,9 +360,18 @@ pub const CARD_DETECT_BIT: u32 = 1;
         failed += 1
         print('register_names selftest: an integer constant is never offered the kept form',
               file=sys.stderr)
-    if 'If it mirrors' not in by_name.get('fn bus_address', ''):
+    if 'If it mirrors' not in by_name.get('fn frame_address', ''):
         failed += 1
         print('register_names selftest: a function is offered the kept form', file=sys.stderr)
+    # A bus address is not a location in memory: `bus` qualifies `address`, and the selftest
+    # fails when the word leaves `[address_qualifiers]`.
+    without = {**words, 'address_qualifiers': {'words': [
+        w for w in words['address_qualifiers']['words'] if w != 'bus']}}
+    refused = sorted(line.split(': ')[1] for line in judge('src/sd.rs', rust_names.definitions(src), without))
+    if not {'fn bus_address', 'const SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK'} <= set(refused):
+        failed += 1
+        print('register_names selftest: without `bus` in [address_qualifiers] a bus address '
+              f'name must be refused, but only {refused} were', file=sys.stderr)
     return failed
 
 

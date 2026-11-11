@@ -364,8 +364,13 @@ impl Drop for AddressSpace {
         }
 
         // Only a region this space owns: a lent one is its capability holder's (`Backing`).
-        if let Backing::Owned(region) = self.backing {
-            crate::memory_region::destroy(region);
+        // A lent one counted against its region when its root was retyped, and gives that back.
+        match self.backing {
+            Backing::Owned(region) => crate::memory_region::destroy(region),
+            Backing::Lent(region) => crate::memory_region::release_object(
+                region,
+                crate::memory_region::ObjectKind::AddressSpace,
+            ),
         }
 
         // The current-CPU and thread pages did not come from the region, so they are freed by

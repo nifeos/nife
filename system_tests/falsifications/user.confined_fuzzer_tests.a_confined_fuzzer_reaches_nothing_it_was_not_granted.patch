@@ -19,18 +19,31 @@ outside every grant".
 diff --git a/kernel/src/memory_region.rs b/kernel/src/memory_region.rs
 --- a/kernel/src/memory_region.rs
 +++ b/kernel/src/memory_region.rs
-@@ -259,9 +259,11 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
+@@ -283,21 +283,12 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
      if crate::retype_fault::fails_now() {
          return None;
      }
--    // Released at the semicolon, as in `retype_page`: the pin and the carve are under the lock, the
--    // zeroing is not.
--    let page = REGIONS.lock().retype_object_page(region, kind)?;
+-    // Released at the block's end, as in `retype_page`: the pin and the carve are under the lock,
+-    // the zeroing and the refusal line are not.
+-    let (page, reached) = {
+-        let mut table = REGIONS.lock();
+-        let page = table.retype_object_page(region, kind);
+-        let reached = page
+-            .is_none()
+-            .then(|| table.ceiling_reached(region, Counted::Object(kind)))
+-            .flatten();
+-        (page, reached)
+-    };
+-    if let Some(reached) = reached {
+-        log_ceiling_refusal(Counted::Object(kind), region, reached);
+-    }
+-    let phys = page? * FRAME_SIZE;
 +    // FALSIFICATION (milestone 779's confined fuzzer): the page comes from the machine's free
 +    // list, not from the caller's region, so a confined process that retypes an object reaches a
 +    // page it was never granted. The conductor's capability oracle must say so.
 +    let _ = (region, kind);
 +    let page = memory::alloc_contiguous(1)?.addr() / FRAME_SIZE;
-     let phys = page * FRAME_SIZE;
++    let phys = page * FRAME_SIZE;
  
      // SAFETY: as retype_page: exclusively ours, direct-mapped; zero before anyone reads it.
+     unsafe {
