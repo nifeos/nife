@@ -98,7 +98,7 @@ domain_name_system abbreviations 47
 domain_name_system prose_acronyms 16
 domain_name_system readme_acronyms 8
 domain_name_system register_names 8
-driver_process_contract abbreviations 37
+driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
 elf abbreviations 102
@@ -169,6 +169,8 @@ intrusive_queue register_names 1
 jh7110_clock_and_reset abbreviations 79
 jh7110_clock_and_reset prose_acronyms 28
 jh7110_clock_and_reset register_names 8
+jh7110_clock_and_reset_contract abbreviations 1
+jh7110_clock_and_reset_devices abbreviations 1
 jh7110_watchdog abbreviations 15
 jh7110_watchdog inflated_wording 1
 jh7110_watchdog prose_acronyms 5

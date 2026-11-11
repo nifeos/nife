@@ -123,7 +123,7 @@ table. No registry outside it exists.
 | 21 | `interfaces_note` |
 | 22 | `base_digest_contract` |
 | 23 | `startup_page_contract` |
-| 24 | reserved for the JH7110 clock and reset contract, §320 (the JH7110 clock and reset wire) |
+| 24 | `jh7110_clock_and_reset_contract` |
 
 A reserved row holds a number for a ruled wire whose crate has not landed; the crate's pull request
 replaces it with the crate's row. An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and

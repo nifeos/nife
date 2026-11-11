@@ -410,7 +410,9 @@ pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 /// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
 /// then reset, for [`ENTROPY_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
 /// gated clock can hang.
-pub(crate) const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
+///
+/// Name: provisional.
+pub const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];

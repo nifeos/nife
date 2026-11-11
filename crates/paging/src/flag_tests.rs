@@ -1,6 +1,6 @@
 use super::*;
 
-const ALL: [Flags; 8] = [
+const ALL: [Flags; 9] = [
     Flags::kernel_code(),
     Flags::kernel_rodata(),
     Flags::kernel_data(),
@@ -9,6 +9,7 @@ const ALL: [Flags; 8] = [
     Flags::user_rodata(),
     Flags::user_data(),
     Flags::user_device(),
+    Flags::user_device_read_only(),
 ];
 
 /// **W^X, as a property of the type rather than of our discipline.** No constructor returns a
@@ -58,6 +59,14 @@ fn user_device_is_device_typed_user_accessible_and_never_executable() {
     assert!(f.is_device(), "a driver's MMIO must be device-typed");
 }
 
+#[test]
+fn user_device_read_only_is_user_device_less_the_write() {
+    let f = Flags::user_device_read_only();
+    assert!(f.is_user_accessible() && f.is_device());
+    assert!(!f.is_writable());
+    assert!(!f.is_user_executable() && !f.is_kernel_executable());
+}
+
 /// **The ASID/global tagging split** (milestone 15): everything user-reachable is non-global
 /// (its TLB entries are tagged, so a context switch flushes nothing), everything kernel-only is
 /// global.
@@ -86,6 +95,7 @@ fn bits_returns_the_exact_capability_word() {
     assert_eq!(Flags::user_rodata().bits(), 0b00_0010);
     assert_eq!(Flags::user_data().bits(), 0b00_0011);
     assert_eq!(Flags::user_device().bits(), 0b10_0011);
+    assert_eq!(Flags::user_device_read_only().bits(), 0b10_0010);
     assert_eq!(Flags::write_combining().bits(), 0b111_0001);
     assert_eq!(Flags::user_write_combining().bits(), 0b110_0011);
 }
@@ -106,6 +116,7 @@ fn only_writable_beside_executable_makes_the_pair() {
         Flags::user_rodata(),
         Flags::user_data(),
         Flags::user_device(),
+        Flags::user_device_read_only(),
         Flags::user_write_combining(),
     ];
     let writable = [
