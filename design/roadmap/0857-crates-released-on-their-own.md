@@ -51,7 +51,7 @@ session, relayed in comments on pull request #1806. Each fork's options, as weig
 - Fork 4: `script/verify` proves a crate while it is here. After it moves, the shared template runs
   `kani-github-action`, and the release workflow refuses to publish unless the proof job is green.
   calef: *"Yes"*.
-- Fork 5: names stand on their own, with no `nife` prefix. A crate keeps this tree's name where it
+- Fork 5, names that stand on their own: no `nife` prefix. A crate keeps this tree's name where it
   is free and descriptive, and otherwise gets a fresh descriptive name, ratified when it is first
   published. calef: *"It seems like we should pick create names that can stand on their own. If
   Nife fails the crates may survive."* Amended by calef on 2026-10-11 (UTC): *"We should ensure
