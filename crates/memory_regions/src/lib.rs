@@ -15,7 +15,9 @@
 
 mod table;
 
-pub use table::{DestroyClaim, NO_PARENT, ObjectKind, PageUse, RegionTable};
+pub use table::{
+    CeilingReached, Ceilings, Counted, DestroyClaim, NO_PARENT, ObjectKind, PageUse, RegionTable,
+};
 
 mod destroy;
 mod watermark;
