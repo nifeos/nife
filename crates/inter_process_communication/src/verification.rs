@@ -22,13 +22,16 @@ unsafe impl Node for N {
     }
 }
 
-/// Mint `n`'s token.
+/// Mint `n`'s token, from `&raw mut` on the harness local rather than from a reference
+/// (`Unqueued::new`'s provenance clause).
 ///
 /// # Safety
-/// `n` is a harness local declared before the rendezvous, on no queue, and minted only once.
-unsafe fn mint(n: &mut N) -> Unqueued<N> {
-    // SAFETY: this function's own contract is `Unqueued::new`'s.
-    unsafe { Unqueued::new(NonNull::from(n)) }
+/// `n` is `&raw mut` on a harness local declared before the rendezvous, on no queue, minted only
+/// once, and not named again.
+unsafe fn mint(n: *mut N) -> Unqueued<N> {
+    // SAFETY: this function's own contract is `Unqueued::new`'s, and `&raw mut` on a local is
+    // never null.
+    unsafe { Unqueued::new(NonNull::new_unchecked(n)) }
 }
 
 /// Put `e` into an arbitrary valid state: at most one queue non-empty (modeled as one waiter), a
@@ -50,7 +53,7 @@ fn send_preserves_the_invariant() {
     let (mut s, mut r, mut me) = (N::new(), N::new(), N::new());
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: three distinct fresh locals declared before `e`, each minted once (module note).
-    let (s, r, me) = unsafe { (mint(&mut s), mint(&mut r), mint(&mut me)) };
+    let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
     let _ = e.send(me);
     assert!(e.one_queue_invariant());
@@ -62,7 +65,7 @@ fn receive_preserves_the_invariant() {
     let (mut s, mut r, mut me) = (N::new(), N::new(), N::new());
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: as in `send_preserves_the_invariant` above.
-    let (s, r, me) = unsafe { (mint(&mut s), mint(&mut r), mint(&mut me)) };
+    let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
     let _ = e.receive(me);
     assert!(e.one_queue_invariant());
@@ -83,7 +86,7 @@ fn signal_preserves_the_invariant() {
     let (mut s, mut r) = (N::new(), N::new());
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: two distinct fresh locals declared before `e`, each minted once.
-    let (s, r) = unsafe { (mint(&mut s), mint(&mut r)) };
+    let (s, r) = unsafe { (mint(&raw mut s), mint(&raw mut r)) };
     seed(&mut e, s, r);
     let _ = e.signal();
     assert!(e.one_queue_invariant());
@@ -100,7 +103,7 @@ fn send_rendezvous_iff_a_receiver_waited() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: three distinct fresh locals declared before `e`, each minted once. `receiver_ptr`
     // is only ever compared, never dereferenced.
-    let (s, r, me) = unsafe { (mint(&mut s), mint(&mut r), mint(&mut me)) };
+    let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
 
     let had_receiver = !e.receivers.is_empty();
@@ -139,7 +142,7 @@ fn a_token_comes_back_exactly_when_its_node_did_not_queue() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: three distinct fresh locals declared before `e`, each minted once. `me_ptr` is
     // only ever compared.
-    let (s, r, me) = unsafe { (mint(&mut s), mint(&mut r), mint(&mut me)) };
+    let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
     let (senders, receivers) = (e.senders.len(), e.receivers.len());
 
@@ -179,7 +182,7 @@ fn removing_a_waiter_preserves_the_invariant() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: two distinct fresh locals declared before `e`, each minted once. The three
     // pointers above are only ever compared.
-    let (s, r) = unsafe { (mint(&mut s), mint(&mut r)) };
+    let (s, r) = unsafe { (mint(&raw mut s), mint(&raw mut r)) };
     seed(&mut e, s, r);
 
     // A symbolic victim: one of the two nodes `seed` may have queued, or a third that is on no
@@ -210,7 +213,7 @@ fn receive_drains_a_pending_signal_first() {
     let (mut s, mut r, mut me) = (N::new(), N::new(), N::new());
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: three distinct fresh locals declared before `e`, each minted once.
-    let (s, r, me) = unsafe { (mint(&mut s), mint(&mut r), mint(&mut me)) };
+    let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
     if e.pending > 0 {
         let outcome = e.receive(me);
@@ -230,7 +233,14 @@ fn a_collected_sender_is_forgotten() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     // SAFETY: four distinct fresh locals declared before `e`, each minted once. `me2` exists so
     // the second receive does not need `me`'s token back from the first.
-    let (s, r, me, me2) = unsafe { (mint(&mut s), mint(&mut r), mint(&mut me), mint(&mut me2)) };
+    let (s, r, me, me2) = unsafe {
+        (
+            mint(&raw mut s),
+            mint(&raw mut r),
+            mint(&raw mut me),
+            mint(&raw mut me2),
+        )
+    };
     seed(&mut e, s, r);
     if matches!(e.receive(me), Receive::FromSender(..)) {
         assert!(e.senders.is_empty() && e.receivers.is_empty());

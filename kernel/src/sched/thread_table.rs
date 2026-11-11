@@ -246,15 +246,21 @@ impl Threads {
     /// Mint a new thread's queue token, the only place in the kernel a token is made. Both inserts
     /// call it once on the name they minted, so every thread has one token for its whole life.
     ///
-    /// The `unsafe` discharges `Unqueued::new`'s three obligations: the `Thread` lives until
+    /// The `unsafe` discharges `Unqueued::new`'s obligations: the `Thread` lives until
     /// `Threads::remove`, reached only for a thread on no queue; the name is a moment old, so no
-    /// other token for its page exists; and every queue holding a `Thread` is behind `IPC_TABLES`
-    /// or an inbox lock. See notes/thread-control-block.md ("The thread table").
+    /// other token for its page exists; every queue holding a `Thread` is behind `IPC_TABLES` or
+    /// an inbox lock; and the token's pointer is the one the table stores, which every later
+    /// access derives from, not a `&mut Thread` from `get_mut`. `get_mut` is called again on
+    /// queued threads, and each call would invalidate a token derived from an earlier one. See
+    /// notes/thread-control-block.md ("Queue tokens").
     fn mint_token(&mut self, name: ThreadId) {
+        let Some(node) = self.pointer(name).and_then(core::ptr::NonNull::new) else {
+            return;
+        };
+        // SAFETY: the obligations above.
+        let token = unsafe { Unqueued::new(node) };
         if let Some(t) = self.get_mut(name) {
-            let node = core::ptr::NonNull::from(&mut *t);
-            // SAFETY: the three obligations above.
-            t.own_token = Some(unsafe { Unqueued::new(node) });
+            t.own_token = Some(token);
         }
     }
 
