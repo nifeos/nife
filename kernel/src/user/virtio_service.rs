@@ -567,23 +567,31 @@ fn start_role(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     ))
 }
 
+/// Which grant [`start_role_pci`] last gave the PCIe disk: 0 before any, 1 mediated, 2 direct.
+static PCI_DISK_GRANT: core::sync::atomic::AtomicU8 = core::sync::atomic::AtomicU8::new(0);
+
 /// Start a driver role against the enumerated PCIe disk, with the grant the default gives it
 /// (`virtio_grant::choose`): direct where the IOMMU confines the function, mediated otherwise.
 fn start_role_pci(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     let d = crate::pci::find_block_device()?;
-    match super::virtio_grant::choose(&d) {
-        Ok(window) => Some(wire_direct(image, &d, &window, role)),
-        Err(_) => Some(wire_mediated_pci(image, &d, role)),
-    }
+    let (grant, report) = match super::virtio_grant::choose(&d) {
+        Ok(window) => (2, wire_direct(image, &d, &window, role)),
+        Err(_) => (1, wire_mediated_pci(image, &d, role)),
+    };
+    PCI_DISK_GRANT.store(grant, core::sync::atomic::Ordering::Relaxed);
+    Some(report)
 }
 
-/// **Whether the default grants the PCIe disk direct**, or `None` with no PCIe disk on the bus.
-/// The system tests ask it to hold a confining runner to the default.
+/// **Whether the PCIe disk's last driver was granted direct**, or `None` before any started. The
+/// system tests ask it, after a read, to hold a confining runner to the default without bringing
+/// the function up again (each bring-up arms an interrupt the suite never hands back).
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
-pub fn pci_disk_takes_the_direct_grant() -> Option<bool> {
-    let d = crate::pci::find_block_device()?;
-    Some(super::virtio_grant::choose(&d).is_ok())
+pub fn pci_disk_was_granted_direct() -> Option<bool> {
+    match PCI_DISK_GRANT.load(core::sync::atomic::Ordering::Relaxed) {
+        0 => None,
+        grant => Some(grant == 2),
+    }
 }
 
 /// [`wire`] against a PCIe function, mediated.

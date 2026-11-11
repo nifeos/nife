@@ -774,30 +774,19 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
         b"nife: re",
         "the driver reported the wrong file contents over pci",
     );
+    // The 2026-11-11 default (milestone 1062 (the device control planes leave the kernel) step 7):
+    // a disk the runner's IOMMU confines is granted direct, so this read drove the direct
+    // transport.
+    assert!(
+        virtio_service::pci_disk_was_granted_direct() == Some(true) || !crate::iommu::is_active(),
+        "the runner's IOMMU confines the PCI disk, yet the default granted it mediated",
+    );
     let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     assert!(
         interrupts_after > interrupts_before,
         "the read completed but no INTx interrupt was delivered through the PLIC \
          ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
          report)",
-    );
-}
-
-/// **The default grants the PCI disk direct behind an IOMMU**: on a runner whose IOMMU confines
-/// the disk, the starter grants it direct (milestone 1062 (the device control planes leave the
-/// kernel) step 7, the 2026-11-11 default), so the PCI read and write tests drive the direct
-/// transport. The PCI network and entropy tests still drive the mediated PCI transport.
-///
-/// Falsification: unfalsified. Written by lane/1062-virtio-direct-transport, which ran it green
-/// on all three architectures but did not break the grant it guards to watch it go red.
-#[test_case]
-fn the_default_grants_the_pcie_disk_direct_behind_an_iommu() {
-    let Some(direct) = virtio_service::pci_disk_takes_the_direct_grant() else {
-        crate::testing::skip!("no virtio-pci disk on the bus");
-    };
-    assert!(
-        direct || !crate::iommu::is_active(),
-        "the runner's IOMMU confines the PCI disk, yet the default grants it mediated",
     );
 }
 
