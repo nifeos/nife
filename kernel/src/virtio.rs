@@ -416,8 +416,9 @@ impl Transport {
     }
 }
 
-/// The fixed queue layout, a contract shared with the userspace driver (user/src/virtio.rs). The
-/// kernel places the rings at these offsets in the DMA region, so it always knows where they are.
+/// The fixed queue layout, a contract shared with the userspace driver (crates/virtio/src/lib.rs).
+/// The kernel places the rings at these offsets in the DMA region, so it always knows where they
+/// are.
 /// These offsets are **relative to a queue's ring block**; a device's queue `q` puts its rings at
 /// `q * RING_BLOCK + {DESC,AVAIL,USED}_OFF` (see `RING_BLOCK`).
 ///

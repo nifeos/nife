@@ -115,12 +115,46 @@ fn mw(off: u64, v: u32) {
     write_register(VIRTIO, off, v as u64);
 }
 
-fn direct_memory_access_write<T>(off: u64, val: T) {
-    // SAFETY: off is within the DMA page and T fits; the page is mapped read/write.
+/// How many bytes from [`DMA_VA`] the two accessors below may reach: the first page of the DMA
+/// region. Every role is handed at least that page, and every ring, header, status byte and packet
+/// buffer this crate touches through them lies inside it. The block server's data pages above it
+/// are the device's and the FS server's, and this program never reads or writes them.
+const DMA_WINDOW_BYTES: u64 = 0x1000;
+
+// The window starts on a page boundary, so an offset aligned for `T` is an address aligned for `T`.
+const _: () = assert!(DMA_VA.is_multiple_of(DMA_WINDOW_BYTES));
+
+/// Whether an access of `size` bytes at `off`, for a type aligned to `align`, lies wholly inside a
+/// window of `window` bytes and is aligned. The check the two accessors below make before every
+/// access, kept apart so it can be tested on the host.
+const fn window_access_fits(off: u64, size: usize, align: usize, window: u64) -> bool {
+    match off.checked_add(size as u64) {
+        Some(end) => end <= window && off.is_multiple_of(align as u64),
+        None => false,
+    }
+}
+
+/// Write `val` at byte `off` of the DMA page. Panics, rather than write, when the access would
+/// leave the page or is misaligned for `T`.
+fn direct_memory_access_write<T: Copy>(off: u64, val: T) {
+    assert!(
+        window_access_fits(off, size_of::<T>(), align_of::<T>(), DMA_WINDOW_BYTES),
+        "a DMA page write outside the page or misaligned"
+    );
+    // SAFETY: the assertion above holds the access inside the first DMA_WINDOW_BYTES of the DMA
+    // region, which the kernel maps read/write at DMA_VA for every role, and aligned for T, since
+    // DMA_VA is page aligned.
     unsafe { core::ptr::write_volatile((DMA_VA + off) as *mut T, val) };
 }
+
+/// Read a `T` at byte `off` of the DMA page. Panics, rather than read, when the access would leave
+/// the page or is misaligned for `T`.
 fn direct_memory_access_read<T: Copy>(off: u64) -> T {
-    // SAFETY: as above.
+    assert!(
+        window_access_fits(off, size_of::<T>(), align_of::<T>(), DMA_WINDOW_BYTES),
+        "a DMA page read outside the page or misaligned"
+    );
+    // SAFETY: as in direct_memory_access_write: in bounds and aligned, checked above.
     unsafe { core::ptr::read_volatile((DMA_VA + off) as *const T) }
 }
 
@@ -594,12 +628,6 @@ fn rd_be16(off: u64) -> u16 {
     ((direct_memory_access_read::<u8>(off) as u16) << 8)
         | direct_memory_access_read::<u8>(off + 1) as u16
 }
-fn rd_be32(off: u64) -> u32 {
-    ((direct_memory_access_read::<u8>(off) as u32) << 24)
-        | ((direct_memory_access_read::<u8>(off + 1) as u32) << 16)
-        | ((direct_memory_access_read::<u8>(off + 2) as u32) << 8)
-        | (direct_memory_access_read::<u8>(off + 3) as u32)
-}
 
 /// The IPv4 header checksum over `len` bytes at `off`: sum the 16-bit words, fold the carries, and
 /// complement. The checksum field itself must be zero when this runs.
@@ -609,6 +637,10 @@ fn ip_checksum(off: u64, len: u64) -> u16 {
     while i + 1 < len {
         sum += rd_be16(off + i) as u32;
         i += 2;
+    }
+    if i < len {
+        // An odd trailing byte is summed as the high byte of a zero-padded word (RFC 1071).
+        sum += (direct_memory_access_read::<u8>(off + i) as u32) << 8;
     }
     while (sum >> 16) != 0 {
         sum = (sum & 0xffff) + (sum >> 16);
@@ -815,38 +847,88 @@ fn wait_receive(receive_used_before: u16) -> bool {
     false
 }
 
-/// Parse the frame in the receive buffer as a DHCP OFFER for our transaction. Returns the offered
-/// address (`yiaddr`) on a match, `None` otherwise, so an unrelated broadcast is skipped rather than
+/// Parse the frame in the receive buffer as a DHCP OFFER for our transaction. `used_slot` is the
+/// receive used ring element the device just published; its length is how many bytes the device
+/// wrote, virtio header included, and nothing past it is read. Returns the offered address
+/// (`yiaddr`) on a match, `None` otherwise, so an unrelated broadcast is skipped rather than
 /// mistaken for the reply.
-fn parse_dhcp_offer() -> Option<u32> {
-    let f = NET_RECEIVE_BUF + NET_HDR_LEN;
-    if rd_be16(f + 12) != 0x0800 {
+fn parse_dhcp_offer(used_slot: u16) -> Option<u32> {
+    let element = NET_RECEIVE_USED + 4 + (used_slot as u64 % QSIZE as u64) * 8;
+    let written = direct_memory_access_read::<u32>(element + 4) as u64;
+    let frame_len = written.min(NET_RECEIVE_BUF_LEN).saturating_sub(NET_HDR_LEN);
+    let frame = NET_RECEIVE_BUF + NET_HDR_LEN;
+    parse_dhcp_offer_frame(Frame {
+        len: frame_len,
+        byte: |at| direct_memory_access_read::<u8>(frame + at),
+    })
+}
+
+/// A received Ethernet frame of `len` bytes, read one byte at a time through `byte`. Every read
+/// past `len` is `None`, so a parse cannot see stale bytes from an earlier frame. On the device the
+/// bytes come from the DMA page; in the tests, from a slice.
+struct Frame<F: Fn(u64) -> u8> {
+    len: u64,
+    byte: F,
+}
+
+impl<F: Fn(u64) -> u8> Frame<F> {
+    fn u8(&self, at: u64) -> Option<u8> {
+        (at < self.len).then(|| (self.byte)(at))
+    }
+    fn be16(&self, at: u64) -> Option<u16> {
+        Some(u16::from_be_bytes([self.u8(at)?, self.u8(at + 1)?]))
+    }
+    fn be32(&self, at: u64) -> Option<u32> {
+        Some(u32::from_be_bytes([
+            self.u8(at)?,
+            self.u8(at + 1)?,
+            self.u8(at + 2)?,
+            self.u8(at + 3)?,
+        ]))
+    }
+    /// The same frame cut to `len` bytes, when that is shorter: a header's own length field may
+    /// only shrink what is read, never grow it.
+    fn truncated(self, len: u64) -> Self {
+        Frame {
+            len: self.len.min(len),
+            byte: self.byte,
+        }
+    }
+}
+
+/// [`parse_dhcp_offer`]'s parse, on a frame that starts at its Ethernet header. Every read is
+/// bounded by the frame's length, then by the IPv4 total length, then by the UDP length.
+fn parse_dhcp_offer_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
+    if frame.be16(12)? != 0x0800 {
         return None; // not IPv4
     }
-    let ip = f + 14;
-    let ihl = (direct_memory_access_read::<u8>(ip) & 0x0f) as u64 * 4;
-    if ihl < 20 || direct_memory_access_read::<u8>(ip + 9) != 17 {
+    let ip = 14;
+    let ihl = (frame.u8(ip)? & 0x0f) as u64 * 4;
+    if ihl < 20 || frame.u8(ip + 9)? != 17 {
         return None; // not a sane IPv4/UDP header
     }
+    let ip_total = frame.be16(ip + 2)? as u64;
+    let frame = frame.truncated(ip + ip_total);
     let udp = ip + ihl;
-    if rd_be16(udp + 2) != 68 {
+    if frame.be16(udp + 2)? != 68 {
         return None; // not addressed to the DHCP client port
     }
+    let udp_len = frame.be16(udp + 4)? as u64;
+    let frame = frame.truncated(udp + udp_len);
     let dhcp = udp + 8;
-    if direct_memory_access_read::<u8>(dhcp) != 2 || rd_be32(dhcp + 4) != NET_XID {
+    if frame.u8(dhcp)? != 2 || frame.be32(dhcp + 4)? != NET_XID {
         return None; // not a BOOTREPLY for our transaction
     }
-    if rd_be32(dhcp + 236) != 0x6382_5363 {
+    if frame.be32(dhcp + 236)? != 0x6382_5363 {
         return None; // no DHCP magic cookie
     }
-    let yiaddr = rd_be32(dhcp + 16);
+    let yiaddr = frame.be32(dhcp + 16)?;
 
-    // Scan the options for message type 53 == 2 (OFFER).
+    // Scan the options for message type 53 == 2 (OFFER). An option whose length runs past the
+    // frame ends the scan.
     let mut o = dhcp + 240;
-    let end = NET_RECEIVE_BUF + NET_RECEIVE_BUF_LEN;
     let mut is_offer = false;
-    while o + 1 < end {
-        let tag = direct_memory_access_read::<u8>(o);
+    while let Some(tag) = frame.u8(o) {
         if tag == 255 {
             break; // end
         }
@@ -854,8 +936,12 @@ fn parse_dhcp_offer() -> Option<u32> {
             o += 1; // pad
             continue;
         }
-        let len = direct_memory_access_read::<u8>(o + 1) as u64;
-        if tag == 53 && len >= 1 && direct_memory_access_read::<u8>(o + 2) == 2 {
+        let Some(len) = frame.u8(o + 1) else { break };
+        let len = len as u64;
+        if o + 2 + len > frame.len {
+            break;
+        }
+        if tag == 53 && len >= 1 && frame.u8(o + 2) == Some(2) {
             is_offer = true;
         }
         o += 2 + len;
@@ -886,7 +972,8 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
         }
         receive_used = direct_memory_access_read::<u16>(NET_RECEIVE_USED + 2);
 
-        if let Some(yiaddr) = parse_dhcp_offer() {
+        // One buffer is posted at a time, so the element just before the used index is its frame.
+        if let Some(yiaddr) = parse_dhcp_offer(receive_used.wrapping_sub(1)) {
             send(REPORT, yiaddr as u64, 0, 0);
             exit(); // one-shot: reported the DHCP offer, so exit and be reaped, do not spin
         }
@@ -934,6 +1021,9 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `blk::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.
     let can_flush = initialize_with_features(0, true);
+    // The capacity, read once: every transfer is checked against it before it reaches the device,
+    // so a request past the end is refused here rather than completed by the device as an error.
+    let capacity_sectors = capacity_sectors();
     // The device is up: signal readiness, so a hang here (bring-up) is distinct from a hang in the
     // first read completion. SEND rendezvous, so this also paces the test past bring-up.
     send(BLK_READY, filesystem_contract::READY, 0, 0);
@@ -951,16 +1041,26 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
         // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
         // inside the shared region just because its packing could spell a larger count.
         let count = blk::req_blocks(w0).min(blk::TRANSFER_BLOCKS) as u64;
-        let r0: i64 = match filesystem_contract::operation(w0) {
-            blk::READ => {
-                blk_read(direct_memory_access_phys, block, count);
-                0
-            }
-            blk::WRITE => {
-                blk_write(direct_memory_access_phys, block, count);
-                0
-            }
-            blk::SIZE => disk_size_bytes(),
+        let operation = filesystem_contract::operation(w0);
+        let r0: i64 = match operation {
+            blk::READ | blk::WRITE => match transfer_first_sector(block, count, capacity_sectors) {
+                // EINVAL: some block of the request lies past the end of the disk.
+                None => filesystem_contract::reply_err(22),
+                Some(sector) => {
+                    let done = if operation == blk::READ {
+                        blk_read(direct_memory_access_phys, sector, count)
+                    } else {
+                        blk_write(direct_memory_access_phys, sector, count)
+                    };
+                    // EIO: the device took the request and completed it with a non-OK status.
+                    if done {
+                        0
+                    } else {
+                        filesystem_contract::reply_err(5)
+                    }
+                }
+            },
+            blk::SIZE => disk_size_bytes(capacity_sectors),
             // The one verb that can refuse for a reason outside this program. A device that never
             // offered the feature gets EOPNOTSUPP rather than a zero, because a zero here is a lie
             // about somebody's data; see `filesystem_contract::blk::FLUSH`.
@@ -983,11 +1083,22 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     }
 }
 
-/// Complete a block-server transfer by waiting on the completion interrupt, not by polling the
-/// used ring, with the same loop as [`complete_block`]. A WAIT per read fits the test watchdog,
-/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtio.md
-/// ("A completion is the used ring advancing").
-fn complete_blk(used_before: u16) {
+/// The first sector of a `count`-block transfer starting at filesystem block `block`, or `None`
+/// when any block of it lies past a disk of `capacity_sectors` sectors, or when the arithmetic
+/// would overflow. The block index arrives from a client, so nothing about it is trusted.
+fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Option<u64> {
+    let first = block.checked_mul(blk::SECTORS_PER_BLOCK)?;
+    let end = first.checked_add(count.checked_mul(blk::SECTORS_PER_BLOCK)?)?;
+    (count >= 1 && end <= capacity_sectors).then_some(first)
+}
+
+/// Complete a block-server request by waiting on the completion interrupt, not by polling the used
+/// ring, with the same loop as [`complete_block`]. `true` if the device completed with
+/// `VIRTIO_BLK_S_OK`. It does not panic on another status: the long-lived block server's death
+/// would block every filesystem client, so the verdict goes back to the one that asked. A WAIT per
+/// read fits the test watchdog, since whole-block requests keep the mount's read count in the low
+/// hundreds. See notes/virtio.md ("A completion is the used ring advancing").
+fn complete_blk(used_before: u16) -> bool {
     // QEMU completes inside `NOTIFY`, so the interrupt is usually already pending and the kernel's
     // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
     // message)) returns this WAIT at once.
@@ -1001,49 +1112,36 @@ fn complete_blk(used_before: u16) {
             break; // our request is on the used ring; this wakeup was really ours
         }
     }
-    let st = direct_memory_access_read::<u8>(OFF_STATUS);
-    if st != 0 {
-        panic!(); // the device reported a non-OK status
-    }
+    direct_memory_access_read::<u8>(OFF_STATUS) == 0
 }
 
-/// Read `count` contiguous filesystem blocks starting at `block` in a single virtio request,
+/// Read `count` contiguous filesystem blocks starting at `sector` in a single virtio request,
 /// straight into the data pages, which are the FS server's shared region: no per-block loop and no
 /// copy (milestone 138 (close the read gap: a 4 KiB request must stop moving 128 KiB) step 4),
-/// since a device round trip costs far more than the transfer.
-fn blk_read(direct_memory_access_phys: u64, block: u64, count: u64) {
-    let used_before = submit_blk(
-        direct_memory_access_phys,
-        block * blk::SECTORS_PER_BLOCK,
-        VIRTIO_BLK_T_IN,
-        count,
-    );
-    complete_blk(used_before);
+/// since a device round trip costs far more than the transfer. The caller has checked the range
+/// with [`transfer_first_sector`]. `true` if the device reported success.
+fn blk_read(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
+    let used_before = submit_blk(direct_memory_access_phys, sector, VIRTIO_BLK_T_IN, count);
+    complete_blk(used_before)
 }
 
 /// Write `count` contiguous filesystem blocks from the data pages (the FS server filled them before
 /// this request) in a single virtio request. The one direction flag differs from the read; the
-/// addresses are identical.
-fn blk_write(direct_memory_access_phys: u64, block: u64, count: u64) {
-    let used_before = submit_blk(
-        direct_memory_access_phys,
-        block * blk::SECTORS_PER_BLOCK,
-        VIRTIO_BLK_T_OUT,
-        count,
-    );
-    complete_blk(used_before);
+/// addresses are identical. `true` if the device reported success.
+fn blk_write(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
+    let used_before = submit_blk(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT, count);
+    complete_blk(used_before)
 }
 
 /// **Ask the device to make everything it has acknowledged durable**, and wait for it to say it
 /// did. `true` if the device completed with `VIRTIO_BLK_S_OK`.
 ///
 /// A status of 0 says the device finished its flush; it cannot prove the hardware beneath is
-/// honest. Unlike [`complete_blk`] this does not panic on a bad status such as
-/// `VIRTIO_BLK_S_UNSUPP` (2): the long-lived block server's death would block every filesystem
-/// client. See notes/virtio.md ("The block server").
+/// honest. A bad status such as `VIRTIO_BLK_S_UNSUPP` (2) is `false`, as for a transfer. See
+/// notes/virtio.md ("The block server").
 fn blk_flush(direct_memory_access_phys: u64) -> bool {
     let used_before = submit_flush(direct_memory_access_phys);
-    complete_flush(used_before)
+    complete_blk(used_before)
 }
 
 /// A flush's **two**-descriptor chain: the 16-byte request header the device reads, and the status
@@ -1084,22 +1182,6 @@ fn submit_flush(direct_memory_access_phys: u64) -> u16 {
         panic!();
     }
     used_before
-}
-
-/// [`complete_blk`]'s wait, returning the device's verdict instead of panicking on it. See
-/// [`blk_flush`] for why the difference is deliberate.
-fn complete_flush(used_before: u16) -> bool {
-    loop {
-        interrupt_wait(INTERRUPT);
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(INTERRUPT);
-        virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
-            break; // our request is on the used ring; this wakeup was really ours
-        }
-    }
-    direct_memory_access_read::<u8>(OFF_STATUS) == 0
 }
 
 /// Build and publish the three-descriptor chain for a `count`-block transfer and ring the device
@@ -1156,11 +1238,22 @@ fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count:
     used_before
 }
 
-/// The disk's size in bytes, from virtio-blk's capacity register (sectors * 512). RedoxFS asks for
-/// this once, at open, to size its allocator; the value is the whole extent the image lives in.
-fn disk_size_bytes() -> i64 {
+/// The disk's capacity in 512-byte sectors, from virtio-blk's capacity register.
+fn capacity_sectors() -> u64 {
     let lo = mr(CONFIG) as u64;
     let hi = mr(CONFIG + 4) as u64;
-    let sectors = lo | (hi << 32);
-    (sectors * 512) as i64
+    lo | (hi << 32)
 }
+
+/// The disk's size in bytes (sectors * 512), for `blk::SIZE`. RedoxFS asks for this once, at open,
+/// to size its allocator; the value is the whole extent the image lives in. A capacity too large to
+/// state in a non-negative `i64` answers `i64::MAX` rather than overflow or turn negative, which a
+/// client would read as an error.
+fn disk_size_bytes(capacity_sectors: u64) -> i64 {
+    capacity_sectors
+        .saturating_mul(blk::SECTOR_BYTES)
+        .min(i64::MAX as u64) as i64
+}
+
+#[cfg(test)]
+mod tests;
