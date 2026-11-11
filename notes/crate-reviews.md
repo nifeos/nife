@@ -245,8 +245,7 @@ Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It r
 template's naming and prose gates.
 
 Names. [crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md) has them, with
-the template gates' findings at the commit the moved repositories pin: 91 register-rule, 2
-spelled-out and 25 acronym findings. The parameters carry spelled-out names, provisional.
+the template gates' 118 findings. The parameters carry spelled-out names, provisional.
 
 Outstanding before the move.
 
