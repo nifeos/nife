@@ -147,8 +147,9 @@ impl RebootPhase<'_> {
     const KERNEL_ASKED: &str = "the kernel was asked to restart the machine";
     const KERNEL_REFUSED: &str = "the firmware refused the reset";
     const SYNCED: &str = "reboot: filesystem synced";
-    // `reboot`'s words when it holds a PMIC route (milestone 1062, step 5). No machine this check
-    // boots has one, so they must never appear: `reboot` fell back to the reboot object alone.
+    // `reboot`'s words when it holds a PMIC route (milestone 1062 (the device control planes
+    // leave the kernel), step 5). No machine this check boots has one, so they must never appear:
+    // `reboot` went to the reboot object alone.
     const ROUTE: &str = "the board's power controller";
 
     /// Every error this phase returns names it, so a red leg says it was the reboot and not a

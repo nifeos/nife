@@ -80,10 +80,10 @@ the kernel spawns `components/src/power_management_chip_route.rs` once per boot
 (`kernel/src/user/power_management_chip_route_service.rs`). The starter asks the clock and reset
 server to bring I2C5 up, derives the standard-mode timing from the SYS CRG and syscon words, and
 hands the route the controller's first page and one endpoint. The progenitor holds the endpoint at
-slot 35 and endows it at `grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program that
-declares reboot, and to nothing else. The route answers one request, `RESET`: it reads register
+slot 35. It endows `WRITE` at `grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
+that declares reboot, and to nothing else. The route answers one request, `RESET`: it reads register
 `0x32`, writes it back with bit 6 set and every other bit as found, and waits two seconds. A reset
-the PMIC honors never answers. Any answer is printed by `reboot`, which then asks the reboot object.
+the PMIC honors never answers. `reboot` prints any answer, then asks the reboot object.
 The I2C sequence is `crates/designware_inter_integrated_circuit`, host-tested over a simulated
 controller; the wire is `driver_process_contract::power_management_chip_route`. `REBOOT` itself
 calls `arch::reboot` and nothing board-specific. Since nothing turns I2C5 off after boot, OpenSBI's
@@ -109,9 +109,9 @@ Its limits, which its `BUGS` lists one line each:
 
 - A firmware that accepts the reset and hangs cannot be told from a slow one, from inside the
   machine. radon's OpenSBI hangs that way when U-Boot has left the PMIC's I2C bus held in reset.
-  The clock and reset server brings the bus up at boot for the PMIC route (milestone 592
-  (radon's cold reboot dies in OpenSBI's PMIC write) found the cause), and the route resets the
-  board through the AXP15060 before the firmware is asked.
+  Milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) found the cause. The clock and
+  reset server brings the bus up at boot for the PMIC route, and the route resets the board
+  through the AXP15060 before `reboot` asks the firmware.
 - The call to the PMIC route has no timeout of its own. The route bounds its wait for the board
   to go, and a route that stops answering leaves `reboot` blocked.
 - A refusal does not exit non-zero, because no program in this system reports an exit status

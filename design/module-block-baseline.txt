@@ -8749,7 +8749,6 @@ kernel/src/preemption_window_tests.rs
 
 kernel/src/progenitor_stack.rs
 
-kernel/src/reboot/designware_i2c.rs::new
 
 kernel/src/retype_fault.rs
 

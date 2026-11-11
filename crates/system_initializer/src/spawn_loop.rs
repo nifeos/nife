@@ -107,7 +107,7 @@ pub(super) struct Channels {
     /// [`grant_plan::REBOOT_SLOT`] and says so. The shell holds none: restarting the machine is not
     /// something a builtin does.
     pub(super) reboot: Option<u64>,
-    /// **The board's PMIC route** (milestone 1062, step 5), endowed `WRITE` at
+    /// **The board's PMIC route** (milestone 1062 (the device control planes leave the kernel), step 5), endowed `WRITE` at
     /// [`grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] beside the reboot object, and to nothing
     /// else. `None` on every machine whose kernel spawned no route, and then the declaring child
     /// holds an empty slot and asks the reboot object alone.

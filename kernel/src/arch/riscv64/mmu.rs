@@ -461,7 +461,8 @@ where
     }
 
     // 6c'. The SYS syscon, the PLL words the PMIC route's starter derives the I2C clock from. The
-    // bus's I2C controller is not mapped: the PMIC route holds it (milestone 1062, step 5).
+    // bus's I2C controller stays out of the direct map, since the PMIC route holds it (milestone
+    // 1062 (the device control planes leave the kernel), step 5).
     if memory::jh7110_pmic_bus().is_some() {
         direct_map(
             m,

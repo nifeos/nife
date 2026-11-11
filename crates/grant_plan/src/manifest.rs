@@ -300,7 +300,6 @@ pub const SYNC_SLOT: u64 = 14;
 /// in userspace"). Twenty-three, one past the highest slot this crate named before it. Empty
 /// everywhere else, which is every machine CI boots. `WRITE` alone, the right to `CALL` the route.
 /// The reboot declaration carries it, since restarting the board is the only thing the route does.
-/// The wire is `driver_process_contract::power_management_chip_route`'s.
 ///
 /// Name: provisional.
 pub const POWER_MANAGEMENT_CHIP_ROUTE_SLOT: u64 = 23;
