@@ -12,12 +12,19 @@
 #   1. With the opt-in, a push reaches `gh` (the queued check and the ready-status read).
 #   2. With the opt-in, a failing script/lint-fleet refuses the push.
 #   3. Without it, neither happens: no `gh` call, and a failing script/lint-fleet is not run.
+#   4. With the opt-in and NIFE_PUSH_QUEUED=1, the override `script/push --requeue` sets, the push
+#      passes and the queued check does not ask GitHub.
+#
+# The override is unset first. `script/push --requeue` exports it to the hook, the hook runs
+# script/lint-fleet, and script/lint-fleet runs this file, so an inherited value would skip the
+# queued check in case 1 and fail the very push that set it.
 #
 # helpers/pre-push-selftest.sh, run by script/lint, holds the stranger's side on its own.
 
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 me="pre-push-fleet-selftest"
+unset NIFE_PUSH_QUEUED
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_CONFIG_PARAMETERS
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/nife-pre-push-fleet-selftest.XXXXXX")"
@@ -73,4 +80,12 @@ g config --unset nife.fleet
 push || fail "without nife.fleet, the hook refused a push that only script/lint-fleet would refuse"
 [ ! -s "$calls" ] || fail "without nife.fleet, the hook called gh: $(cat "$calls")"
 
-echo "pre-push-fleet selftest: the opt-in reaches gh and lint-fleet, and nothing else does"
+# 4. Opted in, with the override script/push --requeue sets: the push passes without the queued
+# check's GraphQL call.
+g config nife.fleet true
+stub lint-fleet 0
+(NIFE_PUSH_QUEUED=1 && export NIFE_PUSH_QUEUED && push) ||
+	fail "with nife.fleet and NIFE_PUSH_QUEUED=1, the hook refused the push"
+if grep -q '^gh api graphql' "$calls"; then fail "with NIFE_PUSH_QUEUED=1, the queued-branch check still called gh"; fi
+
+echo "pre-push-fleet selftest: the opt-in reaches gh and lint-fleet, the requeue override skips the queued check, and nothing else does"
