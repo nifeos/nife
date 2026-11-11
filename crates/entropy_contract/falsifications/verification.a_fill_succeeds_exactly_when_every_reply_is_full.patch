@@ -10,7 +10,7 @@ full, with one reply short.
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -283,7 +283,7 @@ pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Opt
+@@ -284,7 +284,7 @@ pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Opt
      while filled < out.len() {
          let byte_count = (out.len() - filled).min(MAXIMUM_BYTES as usize);
          let (first_reply_word, reply_word) = call(request(GET, byte_count as u64));

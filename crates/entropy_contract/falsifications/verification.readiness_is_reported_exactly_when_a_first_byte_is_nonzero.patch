@@ -10,7 +10,7 @@ and a later one is not.
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -163,7 +163,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
+@@ -164,7 +164,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
  /// `first`.
  pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
      let mut seen = false;

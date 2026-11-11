@@ -12,7 +12,7 @@ diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/li
 +++ b/crates/entropy_contract/src/lib.rs
 @@ -84,7 +84,7 @@ pub const fn operation(request_word: u64) -> u64 {
  ///
- /// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `want`: a quantity takes its unit.
+ /// Name: ratified 2026-11-11 (#3480): renamed from `want`: a quantity takes its unit.
  pub const fn requested_bytes(request_word: u64) -> u64 {
 -    let byte_count = request_word & 0xff;
 +    let byte_count = request_word;
