@@ -1,4 +1,4 @@
-//! What the kernel, the JH7110 PMIC route and `reboot` agree on (§251 (restarting the machine is a
+//! What the kernel, the JH7110 PMIC (power management integrated circuit) route and `reboot` agree on (§251 (restarting the machine is a
 //! kernel object the progenitor hands out), "A board's PMIC route runs in userspace").
 //!
 //! The kernel's starter maps the I2C controller's page at [`CONTROLLER_VIRTUAL_ADDRESS`] and lists
@@ -112,14 +112,14 @@ pub const fn unpack_failure(word: u64) -> (u8, u32) {
     ((word >> 32) as u8, word as u32)
 }
 
-/// **What the route writes, and to whom**: the power controller's 7-bit address on the bus, its
+/// **What the route writes, and to whom**: the power controller's 7-bit number on the bus, its
 /// reset register and the reset bit in it. Spawn word 0.
 ///
 /// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Target {
-    /// The power controller's 7-bit address.
-    pub address: u8,
+    /// The power controller's 7-bit number on the bus.
+    pub chip: u8,
     /// The register that holds the reset bit.
     pub register: u8,
     /// The reset bit, 0 to 7.
@@ -127,27 +127,27 @@ pub struct Target {
 }
 
 impl Target {
-    /// Spawn word 0: the address in bits 7:0, the register in 15:8, the bit in 23:16.
+    /// Spawn word 0: the chip in bits 7:0, the register in 15:8, the bit in 23:16.
     ///
     /// Name: provisional.
     #[must_use]
     pub const fn pack(self) -> u64 {
-        self.address as u64 | (self.register as u64) << 8 | (self.bit as u64) << 16
+        self.chip as u64 | (self.register as u64) << 8 | (self.bit as u64) << 16
     }
 
-    /// The target spawn word 0 names, or `None` for a word with a stray bit, an address past 7
+    /// The target spawn word 0 names, or `None` for a word with a stray bit, a chip past 7
     /// bits or a bit past 7.
     ///
     /// Name: provisional.
     #[must_use]
     pub const fn unpack(word: u64) -> Option<Target> {
-        let address = word as u8;
+        let chip = word as u8;
         let bit = (word >> 16) as u8;
-        if word >> 24 != 0 || address > 0x7f || bit > 7 {
+        if word >> 24 != 0 || chip > 0x7f || bit > 7 {
             return None;
         }
         Some(Target {
-            address,
+            chip,
             register: (word >> 8) as u8,
             bit,
         })
@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn the_target_round_trips_and_a_stray_bit_is_refused() {
         let t = Target {
-            address: 0x36,
+            chip: 0x36,
             register: 0x32,
             bit: 6,
         };

@@ -1,4 +1,4 @@
-//! **A polled Synopsys DesignWare I2C master** for one transaction class: write bytes to a 7-bit
+//! **A polled Synopsys `DesignWare` I2C master** for one transaction class: write bytes to a 7-bit
 //! target, optionally read bytes back, one transfer, every wait bounded.
 //!
 //! The register sequence lives here and the register file does not: the caller supplies a
@@ -15,7 +15,7 @@
 //! - One controller has run it: the JH7110's I2C5, on radon, as the kernel's own copy of this
 //!   sequence before this crate held it.
 //!
-//! Name: provisional. The `DesignWare` IP's vendor name and the bus spelled out, as
+//! Name: provisional. The `DesignWare` block's vendor name and the bus spelled out, as
 //! `designware_mobile_storage` spells its bus.
 
 #![cfg_attr(not(test), no_std)]
@@ -32,11 +32,11 @@ mod tests;
 /// Name: provisional.
 #[doc(alias = "IC_CON")]
 pub const CONTROL: u32 = 0x00;
-/// `IC_TAR`, the target address.
+/// `IC_TAR`, the target: the 7-bit bus number of the chip a transfer goes to.
 ///
 /// Name: provisional.
 #[doc(alias = "IC_TAR")]
-pub const TARGET_ADDRESS: u32 = 0x04;
+pub const TARGET: u32 = 0x04;
 /// `IC_DATA_CMD`: a byte to write, or [`READ_COMMAND`] to ask for one.
 ///
 /// Name: provisional.
@@ -102,14 +102,14 @@ pub const TRANSMIT_ABORT_SOURCE: u32 = 0x80;
 /// Name: provisional.
 #[doc(alias = "IC_ENABLE_STATUS")]
 pub const ENABLE_STATUS: u32 = 0x9c;
-/// `IC_COMP_TYPE`: the IP's own identity, [`COMPONENT_TYPE_DESIGNWARE`] in every build of it.
+/// `IC_COMP_TYPE`: the block's own identity, [`COMPONENT_TYPE_DESIGNWARE`] in every build of it.
 ///
 /// Name: provisional.
 #[doc(alias = "IC_COMP_TYPE")]
 pub const COMPONENT_TYPE: u32 = 0xfc;
 
-/// What every `DesignWare` I2C IP answers in [`COMPONENT_TYPE`] (`DW_I2C_COMP_TYPE`, "DW" and a
-/// number).
+/// What every `DesignWare` I2C block answers in [`COMPONENT_TYPE`] (`DW_I2C_COMP_TYPE`, the
+/// letters `DW` and a number).
 ///
 /// Name: provisional.
 #[doc(alias = "DW_I2C_COMP_TYPE")]
@@ -175,7 +175,7 @@ pub struct Timing {
 /// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Failure {
-    /// [`COMPONENT_TYPE`] did not read as a `DesignWare` I2C IP: the page is not this controller.
+    /// [`COMPONENT_TYPE`] did not read as a `DesignWare` I2C block: the page is not this controller.
     NotADesignWare(u32),
     /// The controller never took an enable or disable word ([`ENABLE_STATUS`] last read).
     EnableStuck(u32),
@@ -321,8 +321,7 @@ impl<R: Registers> Controller<R> {
         self.registers
             .write(STANDARD_SPEED_CLOCK_LOW_COUNT, timing.low_count);
         self.registers.write(DATA_HOLD, timing.data_hold);
-        self.registers
-            .write(TARGET_ADDRESS, u32::from(target & 0x7f));
+        self.registers.write(TARGET, u32::from(target & 0x7f));
         self.set_enable(true)?;
         self.wait(STATUS, |w| {
             w & STATUS_MASTER_ACTIVITY == 0 && w & STATUS_TRANSMIT_EMPTY != 0

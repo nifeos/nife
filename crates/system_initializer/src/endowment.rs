@@ -189,7 +189,7 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
     pub reboot: u64,
-    /// **The board's PMIC route** (milestone 1062 (the device control planes leave the kernel),
+    /// **The board's PMIC (power management integrated circuit) route** (milestone 1062 (the device control planes leave the kernel),
     /// step 5; §251, "A board's PMIC route runs in userspace"), `WRITE | GRANT`: an endpoint the
     /// kernel grants only on a board whose tree names the power controller's bus, and empty on
     /// every other machine. [`boot`](crate::boot) never calls it. The spawn service keeps it and

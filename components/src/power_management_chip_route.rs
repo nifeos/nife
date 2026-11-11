@@ -62,12 +62,12 @@ impl Registers for Page {
 
 /// **Reset the board**, or say why it is still running: the status and reply word 1.
 fn reset(controller: &mut Controller<Page>, timing: &Timing, target: Target) -> (Status, u64) {
-    let value = match controller.read_register(timing, target.address, target.register) {
+    let value = match controller.read_register(timing, target.chip, target.register) {
         Ok(value) => value,
         Err(f) => return (Status::ReadFailed, wire::pack_failure(f.kind(), f.word())),
     };
     let set = with_bit(value, target.bit);
-    if let Err(f) = controller.write_register(timing, target.address, target.register, set) {
+    if let Err(f) = controller.write_register(timing, target.chip, target.register, set) {
         return (Status::WriteFailed, wire::pack_failure(f.kind(), f.word()));
     }
     let start = user_mode_runtime::monotonic_nanoseconds();

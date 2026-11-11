@@ -294,7 +294,8 @@ pub const REBOOT_SLOT: u64 = 13;
 /// request and its capability, and flush for the device cache only.").
 pub const SYNC_SLOT: u64 = 14;
 
-/// **Where a program that declares [`Manifest::reboot`] finds the board's PMIC route**, on a board
+/// **Where a program that declares [`Manifest::reboot`] finds the board's
+/// PMIC (power management integrated circuit) route**, on a board
 /// that has one (milestone 1062 (the device control planes leave the kernel), step 5; §251
 /// (restarting the machine is a kernel object the progenitor hands out), "A board's PMIC route runs
 /// in userspace"). Twenty-three, one past the highest slot this crate named before it. Empty

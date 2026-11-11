@@ -2,23 +2,19 @@
 //! kernel), step 5; §251 (restarting the machine is a kernel object the progenitor hands out), "A
 //! board's PMIC route runs in userspace"), and the kernel's own calls to it.
 //!
-//! On a machine whose tree names the power controller's bus, [`ensure`] spawns
-//! `components/src/power_management_chip_route.rs` once per boot. First it asks the clock and
-//! reset server to bring the bus's I2C controller up (by the controller's base, the badge §320
-//! (the JH7110 clock and reset wire) names it by). Then it derives the standard-mode timing from
-//! the controller's input clock, read from the SYS CRG and syscon words in the direct map, and
-//! hands the route the controller's first page, device-typed, and the receive side of one
-//! endpoint. The progenitor holds the send side at slot 35 and hands it to `reboot` alone. Reached
-//! only on riscv64: QEMU's `virt` names no PMIC bus, so [`ensure`] answers `None` on every machine
-//! CI boots. See notes/board-reboot.md.
+//! On a machine whose tree names the power controller's bus, [`ensure`] asks the clock and reset
+//! server to bring the bus's I2C controller up (badged by its base, §320 (the JH7110 clock and
+//! reset wire)), derives the standard-mode timing from the SYS CRG and syscon words in the direct
+//! map, and spawns `components/src/power_management_chip_route.rs` once per boot with the
+//! controller's first page, device-typed, and the receive side of one endpoint. The progenitor
+//! holds the send side at slot 35. QEMU's `virt` names no PMIC bus, so [`ensure`] answers `None`
+//! on every machine CI boots. See notes/board-reboot.md.
 //!
 //! # BUGS
 //!
-//! - A route that dies is not restarted, and `reboot` then blocks in its call (the route's BUGS).
-//! - The timing is computed once, at boot, from the clock words then; a later change to the I2C
-//!   controller's input clock is not seen.
-//! - The soak no longer prints the AXP15060's latched status at boot: the route answers `RESET`
-//!   alone.
+//! - A route that dies is not restarted, and `reboot` then blocks in its call.
+//! - The timing is the boot's: a later change to the controller's input clock is not seen.
+//! - The soak prints no AXP15060 latched status at boot: the route answers `RESET` alone.
 //!
 //! Name: provisional.
 
@@ -74,7 +70,7 @@ fn start() -> Option<crate::sched::RendezvousId> {
         return None;
     };
     let target = Target {
-        address,
+        chip: address,
         register: jh7110_clock_and_reset::POWER_MANAGEMENT_CHIP_RESET_REGISTER,
         bit: jh7110_clock_and_reset::POWER_MANAGEMENT_CHIP_RESET_BIT,
     };

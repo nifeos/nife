@@ -130,7 +130,7 @@ fn a_register_read_writes_its_number_then_one_read_with_the_stop_on_it() {
     assert_eq!(c.read_register(&TIMING, 0x36, 0x32), Ok(0x24));
     let sim = c.into_registers();
     assert_eq!(sim.data_commands(), [0x32, READ_COMMAND | STOP_COMMAND]);
-    assert!(sim.writes.contains(&(TARGET_ADDRESS, 0x36)));
+    assert!(sim.writes.contains(&(TARGET, 0x36)));
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn the_timing_and_the_target_are_programmed_while_the_controller_is_disabled() {
         STANDARD_SPEED_CLOCK_HIGH_COUNT,
         STANDARD_SPEED_CLOCK_LOW_COUNT,
         DATA_HOLD,
-        TARGET_ADDRESS,
+        TARGET,
     ] {
         assert!(disabled < at(offset) && at(offset) < enabled, "{offset:#x}");
     }
@@ -247,7 +247,7 @@ fn the_register_map_is_vendor_u_boots() {
     assert_eq!(
         [
             CONTROL,
-            TARGET_ADDRESS,
+            TARGET,
             DATA_COMMAND,
             RAW_INTERRUPT_STATUS,
             ENABLE,
