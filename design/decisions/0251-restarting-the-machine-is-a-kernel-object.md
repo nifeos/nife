@@ -82,11 +82,11 @@ answers one request, reset the board.
   `StillRunning`, `reboot` invokes `REBOOT`, the plain firmware route above.
 - `reboot`'s own call to the route has no timeout, so a route that stops answering hangs `reboot`.
   Bounding that call is follow-on work that waits on a timed call, which nife does not have; a
-  timed call is proposed as its own milestone.
+  separate proposal asks for one as its own milestone.
 - The reboot object itself stays as clause 1 states it: no payload and no device. `REBOOT` calls
   `arch::reboot` and nothing board-specific.
 
-The route is `components/src/power_management_chip_route.rs`, built by milestone 1062 (the device
+The route is `components/src/power_management_chip_route.rs`, from milestone 1062 (the device
 control planes leave the kernel). Its starter brings I2C5 up at boot through the JH7110 clock and
 reset server of §320 (the JH7110 clock and reset wire), and the kernel holds no I2C master. The
 route's name and its request are provisional, like the object's.
