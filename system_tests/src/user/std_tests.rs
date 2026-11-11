@@ -6,7 +6,7 @@ use super::*;
 /// The framing is the sink contract's (`crates/byte_sink_contract`, milestone 50 (pipes and
 /// redirection: one sink protocol, and `|` turns out to be an endpoint)): `w0` is the count, `w1`
 /// and `w2` the bytes, little-endian. `SEND` blocks until a receiver takes it, so the program is
-/// between its last `println!` and `SYS_EXIT` when the bytes land. Reading to `OPERATION_EOF`
+/// between its last `println!` and `SYSCALL_EXIT` when the bytes land. Reading to `OPERATION_EOF`
 /// rather than to `want.len()` proves the program printed exactly this and then finished. Every
 /// std test on every ISA asserts through here, so a drift is a diff in one place.
 pub(super) fn assert_std_transcript(report: crate::sched::RendezvousId, want: &[u8], what: &str) {

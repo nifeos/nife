@@ -113,7 +113,7 @@ timer, because sending those to userspace costs an IPC round trip per guest tick
 
 ### The syscall surface
 
-No new syscall number. Everything is `SYS_INVOKE` on the two new objects. The method list is
+No new syscall number. Everything is `SYSCALL_INVOKE` on the two new objects. The method list is
 provisional: `GuestAddressSpace::MAP` and `UNMAP`; `VirtualCpu::BIND`, `READ_REGISTERS`,
 `WRITE_REGISTERS` and `INJECT`. The exit message layout is a wire format. Two new object types are
 the deliberate growth `kernel/src/cap.rs` says each `Object` variant is, so they need a section in

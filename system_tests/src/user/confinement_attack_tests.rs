@@ -228,10 +228,13 @@ fn a_retype_mints_no_right_its_budget_lacks() {
             "a frame retyped from a GRANT-less budget was sliced: it was passed on without GRANT",
         );
         for &(kind, name) in &[
-            (abi::objtype::RENDEZVOUS, "rendezvous"),
-            (abi::objtype::NOTIFICATION, "notification"),
-            (abi::objtype::TIMER, "timer"),
-            (abi::objtype::THREAD_CONTROL_BLOCK, "thread control block"),
+            (abi::object_type::RENDEZVOUS, "rendezvous"),
+            (abi::object_type::NOTIFICATION, "notification"),
+            (abi::object_type::TIMER, "timer"),
+            (
+                abi::object_type::THREAD_CONTROL_BLOCK,
+                "thread control block",
+            ),
         ] {
             let object = call(budget, abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
                 .unwrap_or_else(|e| panic!("RETYPE_OBJECT {name} refused: {e:?}"))
@@ -246,7 +249,7 @@ fn a_retype_mints_no_right_its_budget_lacks() {
         let space = call(
             budget,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::ADDRESS_SPACE,
+            abi::object_type::ADDRESS_SPACE,
             0,
             0,
         )
@@ -259,7 +262,7 @@ fn a_retype_mints_no_right_its_budget_lacks() {
         let process = call(
             budget,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::PROCESS,
+            abi::object_type::PROCESS,
             space,
             0,
         )

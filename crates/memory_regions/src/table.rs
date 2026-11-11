@@ -84,21 +84,21 @@ struct Spent {
 /// Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ObjectKind {
-    /// An IPC rendezvous (`abi::objtype::RENDEZVOUS`).
+    /// An IPC rendezvous (`abi::object_type::RENDEZVOUS`).
     Rendezvous,
-    /// An address space's root table (`abi::objtype::ADDRESS_SPACE`).
+    /// An address space's root table (`abi::object_type::ADDRESS_SPACE`).
     AddressSpace,
-    /// A thread control block (`abi::objtype::THREAD_CONTROL_BLOCK`).
+    /// A thread control block (`abi::object_type::THREAD_CONTROL_BLOCK`).
     Thread,
     /// A page of the kernel's own object pool (`kernel/src/kmem.rs`), whose contents change kind as
     /// pages are recycled, so no finer count would stay true.
     KernelPool,
-    /// A notification object (`abi::objtype::NOTIFICATION`). Counted, and not yet reported by any
+    /// A notification object (`abi::object_type::NOTIFICATION`). Counted, and not yet reported by any
     /// `abi::usage` record: the ratified records predate this object kind (see that module's BUGS).
     Notification,
-    /// A timer object (`abi::objtype::TIMER`), counted and unreported for the same reason.
+    /// A timer object (`abi::object_type::TIMER`), counted and unreported for the same reason.
     Timer,
-    /// A process (`abi::objtype::PROCESS`, milestone 812 (`std::thread::spawn` runs real threads
+    /// A process (`abi::object_type::PROCESS`, milestone 812 (`std::thread::spawn` runs real threads
     /// in one address space)), counted and unreported for the same reason.
     Process,
 }

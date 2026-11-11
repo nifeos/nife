@@ -20,7 +20,7 @@ and found none.
 `AddressSpace::MAP_INTO` with `MAP_CODE` needs `WRITE` on the space and `READ` on the frame, and
 nothing else. A component holding `WRITE` on its own running space (§249 (a running address space
 stays nameable)) and a budget that retypes `READ | WRITE` frames can therefore run code it wrote. It
-maps a frame `MAP_RW`, writes instructions, unmaps it with `UNMAP`, and maps it `MAP_CODE`. No page is
+maps a frame `MAP_READ_WRITE`, writes instructions, unmaps it with `UNMAP`, and maps it `MAP_CODE`. No page is
 ever writable and executable at once, so claim 11 holds, and milestone 969's refusal does not touch
 this sequence.
 

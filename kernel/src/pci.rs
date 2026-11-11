@@ -12,7 +12,7 @@
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 
 use paging::PAGE_SIZE;
-use pci::{Bar, Bdf, VirtioCapability};
+use pci::{Bar, Bdf};
 
 use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE};
 
@@ -371,6 +371,25 @@ pub(crate) struct PciVirtioDevice {
     /// offset 0, what `blk::SIZE` answers from); net, rng and console carry `None`. The mmio
     /// transport's config area is at a fixed offset (0x100) instead.
     pub device_config: Option<u64>,
+    /// What a starter needs to draw a direct grant's register window
+    /// (`driver_process_contract::virtual_input_output::register_window`): the four structures as the capability
+    /// list names them, each BAR's base and size, and the MSI-X table and pending-bit array this
+    /// function must never map. A mediated grant reads none of it.
+    pub direct: PciVirtioDirect,
+}
+
+/// The parts of a virtio-pci function a direct grant is drawn from, read once at bring-up.
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct PciVirtioDirect {
+    /// The four structures, by BAR and offset.
+    pub structures: driver_process_contract::virtual_input_output::Structures,
+    /// Each BAR's physical base, zero for one the function does not have.
+    pub bar_bases: [u64; 6],
+    /// Each BAR's size in bytes, zero for one the function does not have.
+    pub bar_bytes: [u64; 6],
+    /// The MSI-X table and pending-bit array, as byte ranges of their BARs.
+    pub withheld: [driver_process_contract::virtual_input_output::Withheld; 2],
 }
 
 /// Find the first modern virtio-blk function on the bus and bring it up. `None` if there is no
@@ -568,33 +587,32 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
         return None;
     }
 
-    let resolve = |bars: &[Option<Bar>; 6], capability: &VirtioCapability| -> Option<u64> {
-        let bar = bars.get(capability.bar as usize)?.as_ref()?;
-        (u64::from(capability.offset) + u64::from(capability.length) <= bar.size)
-            .then(|| bar.base + u64::from(capability.offset))
+    // The first capability of each type, as virtio 1.2 section 4.1.4 has a driver prefer it. The
+    // walk is the contract's, so the mediated transport and a direct grant's window read one list
+    // the same way.
+    let (structures, notify_mult) =
+        driver_process_contract::virtual_input_output::structures(bdf, &mut |b, o| {
+            cfg_read32(b, o)
+        })?;
+    let resolve = |s: &driver_process_contract::virtual_input_output::Structure| -> Option<u64> {
+        let bar = bars.get(s.bar as usize)?.as_ref()?;
+        (s.offset.checked_add(s.length)? <= bar.size).then(|| bar.base + s.offset)
     };
-    let (mut common, mut notify_base, mut notify_mult, mut isr) = (None, None, 0u32, None);
-    let mut device_config = None;
-    pci::virtio_capabilities(
-        bdf,
-        &mut |b, o| cfg_read32(b, o),
-        &mut |capability| match capability.cfg_type {
-            pci::VIRTIO_CAPABILITY_COMMON if common.is_none() => {
-                common = resolve(&bars, &capability);
-            }
-            pci::VIRTIO_CAPABILITY_NOTIFY if notify_base.is_none() => {
-                notify_base = resolve(&bars, &capability);
-                notify_mult = capability.notify_off_multiplier;
-            }
-            pci::VIRTIO_CAPABILITY_ISR if isr.is_none() => isr = resolve(&bars, &capability),
-            // Optional per the spec; absent stays `None` rather than failing bring-up.
-            pci::VIRTIO_CAPABILITY_DEVICE if device_config.is_none() => {
-                device_config = resolve(&bars, &capability);
-            }
-            _ => {}
-        },
+    let (common, notify_base, isr) = (
+        resolve(&structures.common)?,
+        resolve(&structures.notify)?,
+        resolve(&structures.interrupt_status)?,
     );
-    let (common, notify_base, isr) = (common?, notify_base?, isr?);
+    // Optional per the spec; absent or unresolvable stays `None` rather than failing bring-up.
+    let device_config = structures.device.as_ref().and_then(resolve);
+    let direct = PciVirtioDirect {
+        structures,
+        bar_bases: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.base)),
+        bar_bytes: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.size)),
+        withheld: driver_process_contract::virtual_input_output::withheld(bdf, &mut |b, o| {
+            cfg_read32(b, o)
+        }),
+    };
 
     // The upper half of this dword is STATUS, whose error bits are write-1-to-clear, so it is
     // written as zero.
@@ -618,6 +636,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
         rid: bdf.requester_id(),
         device_type,
         device_config,
+        direct,
     })
 }
 

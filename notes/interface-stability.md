@@ -14,7 +14,7 @@ column's are provisional.*
 What a program that is not the kernel is written against, and what would break it if it changed.
 The headline measures the boundary, two parts:
 
-- The syscall surface: every public constant in `abi`, the `SYS_*` numbers, the `objtype::*`
+- The syscall surface: every public constant in `abi`, the `SYSCALL_*` numbers, the `object_type::*`
   object types, and the method numbers and argument or result encodings in the object modules.
   The values of `abi`'s enums (the `Error::*` codes) count too, because a program matches
   them by number exactly as it does a constant.

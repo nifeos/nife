@@ -66,8 +66,8 @@ pub use layout::{
 use line_editor::proto;
 use measurement::*;
 use process_builder::{
-    build_child, forget_thread_control_block, hand_to_requester, retype_obj_from as retype_obj,
-    retype_page_frame_from as retype_page_frame, start_child,
+    build_child, forget_thread_control_block, hand_to_requester, retype_into_kernel_object_from,
+    retype_into_page_frame_from as retype_page_frame, start_child,
 };
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};

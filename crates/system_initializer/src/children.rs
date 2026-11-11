@@ -75,14 +75,18 @@ pub(super) fn build_caretaker(
     care_words: (u64, u64, u64),
     set: Option<u64>,
 ) -> Option<u64> {
-    let narrow_ep = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
-    let ready = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
+    let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
+    let ready = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
     let maps = [
-        (FS_CLIENT_PAGE_VA, fs.page, abi::address_space::MAP_RW),
+        (
+            FS_CLIENT_PAGE_VA,
+            fs.page,
+            abi::address_space::MAP_READ_WRITE,
+        ),
         (
             NAMESET_PAGE_VA,
             set.unwrap_or(0),
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
         ),
     ];
     // Its whole authority: no untyped, no clock, no terminal, nothing that names another process.
@@ -169,8 +173,14 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
     };
     // Read; the rings are `net_stack`'s from here, so our view of them goes (milestone 95).
     process_builder::give_up_own_page(NET_DMA_PEEK_VA);
-    let stack = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let report = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let stack = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
+    let report = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     let budget = must(memory_region_split(ut, NET_STACK_BUDGET_PAGES));
     let child = must(build_child(
         ut,
@@ -198,7 +208,11 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
                     abi::rights::WRITE,
                 ),
             ],
-            maps: &[(NET_DMA_VA, g.virtio_net_dma, abi::address_space::MAP_RW)],
+            maps: &[(
+                NET_DMA_VA,
+                g.virtio_net_dma,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             stack_pages: NET_STACK_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -281,7 +295,10 @@ pub(super) fn build_domain_name_resolver(
     server: [u8; 4],
 ) -> u64 {
     use domain_name_resolution_contract::endowment;
-    let service = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let service = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     let budget = must(memory_region_split(ut, RESOLVER_BUDGET_PAGES));
     let child = must(build_child(
         ut,
@@ -513,10 +530,13 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
         gpu,
         ..
     } = *l;
-    let Some(display) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
+    let Some(display) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    else {
         return Err(());
     };
-    let Some(driver_report) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
+    let Some(driver_report) =
+        retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    else {
         drop_capabilities(&[display]);
         return Err(());
     };
@@ -575,11 +595,14 @@ fn start_display_terminal(
         gpu,
         ..
     } = *l;
-    let Some(term_report) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
+    let Some(term_report) =
+        retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    else {
         drop_capabilities(&[display, driver_report]);
         return Err(());
     };
-    let Some(term) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
+    let Some(term) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    else {
         drop_capabilities(&[display, driver_report, term_report]);
         return Err(());
     };
@@ -643,7 +666,9 @@ fn start_keyboard_arm(
     (term, out): (u64, u64),
 ) -> Result<SessionArm, ()> {
     let GraphicalTerminalLaunch { own_ut, region, .. } = *l;
-    let Some(session_term) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
+    let Some(session_term) =
+        retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    else {
         drop_capabilities(&[term, out]);
         return Err(());
     };
@@ -672,7 +697,8 @@ fn start_keyboard_arm(
             (session_in, abi::rights::READ | abi::rights::WRITE),
         ],
     );
-    let Some(report) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
+    let Some(report) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()
+    else {
         drop_capabilities(&[term, out, session_term, session_out, session_in]);
         return Err(());
     };
@@ -689,7 +715,7 @@ fn start_keyboard_arm(
                 (k[0], abi::rights::WRITE),
                 (session_term, abi::rights::WRITE),
             ],
-            maps: &[(KBD_DMA_VA, k[2], abi::address_space::MAP_RW)],
+            maps: &[(KBD_DMA_VA, k[2], abi::address_space::MAP_READ_WRITE)],
             ..ChildEndowment::new(Retention::Nothing)
         },
     )
@@ -727,12 +753,12 @@ fn start_session_program(
     } = *l;
     // `components/src/graphical_terminal.rs`'s slots 0 to 2; the line page only on arm 0.
     let mut maps = [
-        (SCREEN_OUT_VA, out_page, abi::address_space::MAP_RW),
+        (SCREEN_OUT_VA, out_page, abi::address_space::MAP_READ_WRITE),
         (0, 0, 0),
     ];
     let n_maps = match in_page {
         Some(p) => {
-            maps[1] = (SCREEN_IN_VA, p, abi::address_space::MAP_RO);
+            maps[1] = (SCREEN_IN_VA, p, abi::address_space::MAP_READ_ONLY);
             2
         }
         None => 1,

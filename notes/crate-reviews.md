@@ -73,9 +73,9 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`generational_table`](crate-reviews/generational-table.md) | 4 | cleared to move; repository exists |
 | [`non_volatile_memory_express`](crate-reviews/non-volatile-memory-express.md) | 5 | cleared to move; repository exists |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
-| [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | two alias sets for the architect |
+| [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; the move waits for the template gates |
 | [`designware_mobile_storage`](crate-reviews/designware-mobile-storage.md) | 8 | cleared to move; repository exists |
-| [`jh7110_clock_and_reset`](crate-reviews/jh7110-clock-and-reset.md) | 10 | blocked by the unrun bench check |
+| [`jh7110_clock_and_reset`](crate-reviews/jh7110-clock-and-reset.md) | 10 | cleared to move; the move waits for the template gates |
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by its identity value and three text edits |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |

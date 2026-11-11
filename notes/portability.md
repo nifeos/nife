@@ -125,7 +125,7 @@ Traps and interrupts:
 - `interrupt_controller::{initialize, initialize_this_cpu, print_summary}`: the interrupt
   controller, then each core.
 - `interrupt_controller::enable(id)`: unmask a source the handler masked, at an `Interrupt`
-  capability's ACK.
+  capability's ACKNOWLEDGE.
 - `interrupt_controller::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
 - `interrupt_controller::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board
   uses INTx.

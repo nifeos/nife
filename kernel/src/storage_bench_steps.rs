@@ -15,30 +15,133 @@
 use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
 use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
 use designware_mobile_storage::partition::MasterBootRecord;
-#[cfg(feature = "storage_read_matrix")]
-use designware_mobile_storage::registers::{
-    STATUS_REGISTER, TRANSFERRED_CARD_BYTE_COUNT_REGISTER, TRANSFERRED_HOST_BYTE_COUNT_REGISTER,
-};
 use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, Card, InitializationError,
 };
 
-#[cfg(feature = "storage_read_matrix")]
+// The registers and fields below are the ones the bench reads for its transcript and the driver
+// does not export, because a caller of the driver never needs them. Each is from the register map
+// of the Synopsys DesignWare Cores Mobile Storage Host databook, which the JH7110's two SD/MMC
+// controllers implement, with OpenBSD's `sys/dev/fdt/dwmmc.c` spelling first. They are read only,
+// for a transcript or a fake card, and the bench writes none of them.
+
+/// **Status Register** (OpenBSD's `SDMMC_STATUS`, the databook's `STATUS`, offset `0x048`): FIFO
+/// count, busy, command state.
+///
+/// Name: provisional. The databook's register, spelled out, as the driver's own private copy is.
+#[doc(alias = "STATUS")]
+pub(crate) const STATUS_REGISTER: u32 = 0x048;
+
+/// **Transferred CIU Card Byte Count Register** (OpenBSD's `SDMMC_TCBCNT`, the databook's
+/// `TCBCNT`, offset `0x05c`): bytes the card interface has moved in the current data phase.
+///
+/// Name: provisional. The databook's register, spelled out.
+#[doc(alias = "TCBCNT")]
+pub(crate) const TRANSFERRED_CARD_BYTE_COUNT_REGISTER: u32 = 0x05c;
+
+/// **Transferred Host to BIU-FIFO Byte Count Register** (OpenBSD's `SDMMC_TBBCNT`, the databook's
+/// `TBBCNT`, offset `0x060`): bytes moved between the host and the FIFO in the current data phase.
+///
+/// Name: provisional. The databook's register, spelled out.
+#[doc(alias = "TBBCNT")]
+pub(crate) const TRANSFERRED_HOST_BYTE_COUNT_REGISTER: u32 = 0x060;
+
+/// **Internal DMAC Status Register** (OpenBSD's `SDMMC_IDSTS32`, the databook's `IDSTS`, offset
+/// `0x08c` with 32-bit addressing, `HCON` bit 27 clear): the IDMAC's status bits.
+///
+/// Name: provisional. The databook's register, spelled out, as the driver's own private copy is.
+#[doc(alias = "IDSTS")]
+#[doc(alias = "SDMMC_IDSTS32")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER: u32 = 0x08c;
+
+/// **Current Host Descriptor Address Register** (OpenBSD's `SDMMC_DSCADDR`, the databook's
+/// `DSCADDR`, offset `0x094` with 32-bit addressing): the descriptor the IDMAC is on.
+///
+/// Name: provisional. The databook's register, spelled out; the address is physical.
+#[doc(alias = "DSCADDR")]
+pub(crate) const CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER: u32 = 0x094;
+
+/// **Current Buffer Descriptor Address Register** (OpenBSD's `SDMMC_BUFADDR`, the databook's
+/// `BUFADDR`, offset `0x098` with 32-bit addressing): the buffer address the IDMAC is on.
+///
+/// Name: provisional. The databook's register, spelled out; the address is physical.
+#[doc(alias = "BUFADDR")]
+pub(crate) const CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER: u32 = 0x098;
+
 /// **Raw Interrupt Status Register** (OpenBSD's `SDMMC_RINTSTS`): write one to clear. The matrix
 /// reads it straight after each read, for its transcript.
+#[cfg(feature = "storage_read_matrix")]
 const RAW_INTERRUPT_STATUS_REGISTER: u32 = 0x044;
 
-#[cfg(feature = "storage_read_matrix")]
 /// **FIFO full** (`STATUS_FIFO_FULL`, the databook's `fifo_full`, which `dwmmc-host` keeps): the
 /// FIFO is full.
+#[cfg(feature = "storage_read_matrix")]
 const STATUS_QUEUE_FULL: u32 = 1 << 3;
 
-#[cfg(feature = "storage_read_matrix")]
 /// **FIFO count** (OpenBSD's `SDMMC_STATUS_FIFO_COUNT`, the databook's `fifo_count`): how many FIFO
 /// words are filled, bits 29:17 of `STATUS_REGISTER`.
-const fn queue_count(status: u32) -> u32 {
+pub(crate) const fn queue_count(status: u32) -> u32 {
     (status >> 17) & 0x1fff
 }
+
+/// **Where the data FIFO is**, given `VERID`: the databook puts it at `0x200` from release 2.40a
+/// and at `0x100` before, and Linux's `dw_mci_probe` makes the same test. OpenBSD assumes `0x200`.
+/// The driver makes the same choice; this copy only prints it.
+///
+/// Name: provisional. The FIFO's offset, named `queue` as the driver names the FIFO.
+#[doc(alias = "fifo")]
+pub(crate) const fn queue_offset(version_identification: u32) -> u32 {
+    if version_identification & 0xffff < 0x240a {
+        0x100
+    } else {
+        0x200
+    }
+}
+
+/// **The FIFO's width in bytes**, from `HCON` bits 9:7 (the databook's `H_DATA_WIDTH`, OpenBSD's
+/// `SDMMC_HCON_DATA_WIDTH`): 0 is 16-bit, 1 is 32-bit, 2 is 64-bit, `None` for anything else.
+///
+/// Name: provisional. The FIFO's width; the unit is spelled out.
+#[doc(alias = "SDMMC_HCON_DATA_WIDTH")]
+pub(crate) const fn queue_width_bytes(hardware_configuration: u32) -> Option<u32> {
+    match (hardware_configuration >> 7) & 0x7 {
+        0 => Some(2),
+        1 => Some(4),
+        2 => Some(8),
+        _ => None,
+    }
+}
+
+/// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27 (the databook's `ADDR_CONFIG`, OpenBSD's
+/// `SDMMC_HCON_DMA64`). It moves every IDMAC register from `0x88` up, so the offsets above hold
+/// only while it is clear, as it is on the JH7110.
+///
+/// Name: provisional. A question, as the driver's own private copy is.
+#[doc(alias = "SDMMC_HCON_DMA64")]
+pub(crate) const fn uses_64_bit_direct_memory_access(hardware_configuration: u32) -> bool {
+    hardware_configuration & (1 << 27) != 0
+}
+
+/// **The FIFO depth the driver uses, in 32-bit words**: `asked` (the tree's `fifo-depth`) when it is
+/// nonzero, else `FIFOTH`'s receive watermark (bits 27:16, the databook's `RX_WMark`, reset to
+/// `depth - 1`) plus one. This is the rule `HostController::new` applies, copied so a transcript
+/// can print the depth; the driver does not report it.
+///
+/// Name: provisional. The depth in words, as the driver's `new` argument is named.
+pub(crate) const fn queue_depth_words(asked: Option<u32>, queue_threshold: u32) -> u32 {
+    match asked {
+        Some(d) if d > 0 => d,
+        _ => ((queue_threshold >> 16) & 0xfff) + 1,
+    }
+}
+
+/// **The transfer clock, in hertz**: the SD Physical Layer Simplified Specification's default
+/// speed ceiling, 25 megahertz, which is the rate `sd::identify` leaves a card at. The driver keeps
+/// its own copy private.
+///
+/// Name: provisional. The driver's name for the same rate; the unit is spelled out.
+#[cfg(any(test, feature = "storage_read_matrix"))]
+pub(crate) const TRANSFER_HERTZ: u32 = 25_000_000;
 
 /// The first used partition's start, or `None` when nothing is partitioned.
 fn first_partition_start_of(master_boot_record: MasterBootRecord) -> Option<u32> {
@@ -418,11 +521,7 @@ pub struct MatrixRow {
 ///
 /// Name: ratified 2026-11-05 (UTC), #3276. The card clocks of the matrix; the unit is spelled out as
 /// `HERTZ`.
-pub const MATRIX_HERTZ: [u32; 3] = [
-    sd::TRANSFER_HERTZ,
-    sd::TRANSFER_HERTZ / 2,
-    sd::TRANSFER_HERTZ / 4,
-];
+pub const MATRIX_HERTZ: [u32; 3] = [TRANSFER_HERTZ, TRANSFER_HERTZ / 2, TRANSFER_HERTZ / 4];
 #[cfg(feature = "storage_read_matrix")]
 /// The `CMD18` lengths the matrix reads, in blocks.
 ///
@@ -760,7 +859,7 @@ mod tests {
                         | if writing { Self::TRANSMIT_REQUEST } else { 0 }
                 }
                 // The queue count in bits 29:17: the words left to read, and none held when writing.
-                STATUS_REGISTER_OFFSET => (((self.read_end - self.read_at) / 4) as u32) << 17,
+                STATUS_REGISTER => (((self.read_end - self.read_at) / 4) as u32) << 17,
                 Self::VERSION => 0x240a,
                 // A 32-bit queue.
                 Self::HARDWARE_CONFIGURATION => 1 << 7,
@@ -799,9 +898,6 @@ mod tests {
         }
     }
 
-    /// `STATUS_REGISTER`, the one register of the fake the crate exports an offset for.
-    const STATUS_REGISTER_OFFSET: u32 = designware_mobile_storage::registers::STATUS_REGISTER;
-
     /// A block-addressed card of `FAKE_SECTORS` sectors, and a controller over `fake` with a
     /// 128-word queue.
     fn host_over(fake: FakeCard<'_>) -> (HostController<FakeCard<'_>>, Card) {
@@ -812,11 +908,15 @@ mod tests {
             operation_conditions: 0,
             card_identification_raw: [0; 4],
             card_specific_data_raw: [0; 4],
-            card_identification: CardIdentification::from_sd_register(&[0; 4]),
+            card_identification: CardIdentification {
+                manufacturer: 0,
+                name: [0; 6],
+                serial: 0,
+            },
             blocks: FAKE_SECTORS as u64,
             block_addressed: true,
             bus_width: 4,
-            clock_hertz: sd::TRANSFER_HERTZ,
+            clock_hertz: TRANSFER_HERTZ,
         };
         (host, card)
     }

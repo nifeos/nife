@@ -111,12 +111,12 @@ fn target_context(source: u32) -> usize {
 static CLAIM_CTX: [AtomicU16; MAXIMUM_SOURCES] =
     [const { AtomicU16::new(CTX_UNASSIGNED) }; MAXIMUM_SOURCES];
 
-/// Record that `context` claimed `source` and that its driver's ACK owes the completion.
+/// Record that `context` claimed `source` and that its driver's ACKNOWLEDGE owes the completion.
 pub(crate) fn hold_claim(source: u32, context: usize) {
     CLAIM_CTX[source as usize % MAXIMUM_SOURCES].store(context as u16, Ordering::Release);
 }
 
-/// An `Interrupt` capability's ACK for `intid`, and its arming at setup.
+/// An `Interrupt` capability's ACKNOWLEDGE for `intid`, and its arming at setup.
 ///
 /// With a claim outstanding, completes it on the claiming context, so the gateway forwards the next
 /// interrupt. Otherwise enables the source at its stable target hart (see [`target_context`]).

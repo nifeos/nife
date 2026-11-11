@@ -186,7 +186,7 @@ pub fn enable(intid: u32, target_cpu: usize) {
 /// Disable one interrupt source, at the distributor.
 ///
 /// How a userspace driver's interrupt is masked the moment it fires, so a level-triggered line
-/// cannot storm before the driver services it; its `Interrupt` capability's `ACK` re-enables it.
+/// cannot storm before the driver services it; its `Interrupt` capability's `ACKNOWLEDGE` re-enables it.
 /// See
 /// notes/interrupts.md.
 pub(crate) fn disable(intid: u32) {

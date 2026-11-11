@@ -150,7 +150,7 @@ fn census(line: &mut [u8; 96]) -> usize {
     let head = b"slots held:";
     line[..head.len()].copy_from_slice(head);
     let mut n = head.len();
-    for slot in 0..abi::fault::FAULT_EP_SLOT {
+    for slot in 0..abi::fault::FAULT_RENDEZVOUS_SLOT {
         if is_granted(slot) {
             line[n] = b' ';
             n += 1;

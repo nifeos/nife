@@ -79,6 +79,14 @@ pub mod supervised_child;
 // the tour spawns it; the tests drive it
 pub mod virtio_service;
 
+/// **Which grant a starter gives a virtio driver**, mediated or direct, and the direct grant's
+/// carve-out: the confinement, the structure pages and the handoff. See
+/// design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
+// The starters that grant direct are milestone 1062 (the device control planes leave the kernel)
+// step 7's third pull request; until then the unit tests are the callers.
+#[cfg_attr(not(test), allow(dead_code))]
+pub mod virtio_grant;
+
 /// **A service's memory, remembered so a finished test can hand it back.** The bookkeeping half of
 /// DECISIONS §16 object revocation, applied to the services the test boot builds: without it a boot
 /// that runs many service-shaped tests runs out of frames, and does so in whichever innocent test

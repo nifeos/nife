@@ -75,7 +75,7 @@ environment_proto	shared	retired
 environment_protocol	shared	retired
 extensible_host_controller_interface	shared	retired
 extensible_host_controller_interface_contract	shared	retired
-file_allocation_table	userspace	components
+file_allocation_table	userspace	retired
 filesystem_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 filesystem_fixture	shared	components,fixtures,kernel,redoxfs_server,std_exerciser
 filesystem_proto	shared	retired

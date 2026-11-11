@@ -57,7 +57,7 @@ impl Uart {
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         ) == 0)
             .then_some(Uart {})
     }
@@ -98,7 +98,7 @@ impl Uart {
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         ) == 0)
             .then_some(Uart {
                 shape: abi::uart::RegisterShape::from_word(uart_shape),

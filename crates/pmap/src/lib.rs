@@ -37,7 +37,7 @@ pub const MAXIMUM_ROWS: usize = 256;
 pub struct Row {
     /// The virtual address this page is mapped at, in the space the capability names.
     pub va: u64,
-    /// One of `abi::address_space`'s `MAP_RO`/`MAP_RW`/`MAP_CODE` codes.
+    /// One of `abi::address_space`'s `MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE` codes.
     pub kind: u64,
 }
 
@@ -185,8 +185,8 @@ impl Listing<'_> {
 /// this program.
 pub const fn kind_name(kind: u64) -> &'static str {
     match kind {
-        abi::address_space::MAP_RO => "r--",
-        abi::address_space::MAP_RW => "rw-",
+        abi::address_space::MAP_READ_ONLY => "r--",
+        abi::address_space::MAP_READ_WRITE => "rw-",
         abi::address_space::MAP_CODE => "r-x",
         _ => "???",
     }
@@ -248,12 +248,12 @@ mod tests {
         String::from_utf8(v).unwrap()
     }
 
-    /// Every kind has its three letters, and the one with no test of its own (`MAP_RO`) cannot be
+    /// Every kind has its three letters, and the one with no test of its own (`MAP_READ_ONLY`) cannot be
     /// deleted into `???`.
     #[test]
     fn every_kind_has_its_permission_letters() {
-        assert_eq!(kind_name(abi::address_space::MAP_RO), "r--");
-        assert_eq!(kind_name(abi::address_space::MAP_RW), "rw-");
+        assert_eq!(kind_name(abi::address_space::MAP_READ_ONLY), "r--");
+        assert_eq!(kind_name(abi::address_space::MAP_READ_WRITE), "rw-");
         assert_eq!(kind_name(abi::address_space::MAP_CODE), "r-x");
         assert_eq!(kind_name(u64::MAX), "???");
     }
@@ -288,8 +288,8 @@ mod tests {
             &mut rows,
             &mut space(&[
                 (0x0040_0000, abi::address_space::MAP_CODE),
-                (0x0050_0000, abi::address_space::MAP_RW),
-                (0x0060_0000, abi::address_space::MAP_RO),
+                (0x0050_0000, abi::address_space::MAP_READ_WRITE),
+                (0x0060_0000, abi::address_space::MAP_READ_ONLY),
             ]),
         );
         assert!(!l.is_refused());
@@ -298,7 +298,7 @@ mod tests {
             l.rows()[2],
             Row {
                 va: 0x0060_0000,
-                kind: abi::address_space::MAP_RO
+                kind: abi::address_space::MAP_READ_ONLY
             }
         );
     }
@@ -344,7 +344,7 @@ mod tests {
     fn a_cursor_that_does_not_advance_ends_the_walk() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(&mut rows, &mut |_| {
-            (1, 0x0040_0000, abi::address_space::MAP_RO)
+            (1, 0x0040_0000, abi::address_space::MAP_READ_ONLY)
         });
         assert!(l.is_refused());
         assert!(shown(|o| l.write_diagnostics(o)).contains("did not advance"));
@@ -357,7 +357,7 @@ mod tests {
             (
                 cursor as i64 + 1,
                 0x0040_0000 + cursor * 0x1000,
-                abi::address_space::MAP_RW,
+                abi::address_space::MAP_READ_WRITE,
             )
         });
         assert_eq!(l.rows().len(), 2);
@@ -374,7 +374,7 @@ mod tests {
             &mut rows,
             &mut space(&[
                 (0x0040_0000, abi::address_space::MAP_CODE),
-                (0x0050_0000, abi::address_space::MAP_RW),
+                (0x0050_0000, abi::address_space::MAP_READ_WRITE),
             ]),
         );
         let out = shown(|o| l.write_report(o));
@@ -418,7 +418,7 @@ mod tests {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(
             &mut rows,
-            &mut space(&[(0x0000_7fff_ffff_f000, abi::address_space::MAP_RW)]),
+            &mut space(&[(0x0000_7fff_ffff_f000, abi::address_space::MAP_READ_WRITE)]),
         );
         let out = shown(|o| l.write_report(o));
         assert!(out.contains("0x7ffffffff000"), "{out}");

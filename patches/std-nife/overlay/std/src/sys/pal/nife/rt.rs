@@ -97,7 +97,7 @@ unsafe fn trap6(nr: u64, a: [u64; 6]) -> [u64; 6] {
 
 /// Invoke a capability. See `crates/user_mode_runtime::invoke`, of which this is a twin.
 pub unsafe fn invoke(capability: u64, method: u64, a0: u64, a1: u64, a2: u64) -> i64 {
-    unsafe { trap6(abi::SYS_INVOKE, [capability, method, a0, a1, a2, 0])[0] as i64 }
+    unsafe { trap6(abi::SYSCALL_INVOKE, [capability, method, a0, a1, a2, 0])[0] as i64 }
 }
 
 /// SEND three words on the endpoint in `slot`. Blocks until a receiver takes them.
@@ -113,7 +113,7 @@ pub fn send(slot: u64, w0: u64, w1: u64, w2: u64) -> i64 {
 /// is a small opcode and length.
 pub fn receive(slot: u64) -> (u64, u64, u64) {
     // SAFETY: RECEIVE returns the three message words in the first three registers.
-    let w = unsafe { trap6(abi::SYS_INVOKE, [slot, abi::rendezvous::RECEIVE, 0, 0, 0, 0]) };
+    let w = unsafe { trap6(abi::SYSCALL_INVOKE, [slot, abi::rendezvous::RECEIVE, 0, 0, 0, 0]) };
     (w[0], w[1], w[2])
 }
 
@@ -126,7 +126,7 @@ pub fn receive(slot: u64) -> (u64, u64, u64) {
 /// as `i64` (the net server never replies a negative word).
 pub fn call(slot: u64, w0: u64, w1: u64) -> (u64, u64) {
     // SAFETY: CALL returns the two reply words in the first two registers.
-    let w = unsafe { trap6(abi::SYS_INVOKE, [slot, abi::rendezvous::CALL, w0, w1, 0, 0]) };
+    let w = unsafe { trap6(abi::SYSCALL_INVOKE, [slot, abi::rendezvous::CALL, w0, w1, 0, 0]) };
     (w[0], w[1])
 }
 
@@ -137,11 +137,11 @@ pub fn call(slot: u64, w0: u64, w1: u64) -> (u64, u64) {
 pub fn call_receiving(slot: u64, w0: u64, w1: u64) -> (u64, u64, Option<u64>) {
     let none = abi::rendezvous::NO_CAPABILITY;
     // SAFETY: CALL returns the two reply words and the delivered slot in the first three registers.
-    let w = unsafe { trap6(abi::SYS_INVOKE, [slot, abi::rendezvous::CALL, w0, w1, none, 0]) };
+    let w = unsafe { trap6(abi::SYSCALL_INVOKE, [slot, abi::rendezvous::CALL, w0, w1, none, 0]) };
     (w[0], w[1], (w[2] != none).then_some(w[2]))
 }
 
-/// Drop the capability in `slot` (`SYS_CAPABILITY_DELETE`). A twin of `user_mode_runtime::capability_delete`.
+/// Drop the capability in `slot` (`SYSCALL_CAPABILITY_DELETE`). A twin of `user_mode_runtime::capability_delete`.
 /// **`ThreadControlBlock::CONFIGURE` joining a process** (milestone 812 (`std::thread::spawn` runs
 /// real threads in one address space)): the process capability in `process` with `BIND`, and the new
 /// thread's thread pointer in the sixth register. The answer is the thread's current-CPU page, or a
@@ -149,35 +149,35 @@ pub fn call_receiving(slot: u64, w0: u64, w1: u64) -> (u64, u64, Option<u64>) {
 pub fn configure_joining(tcb: u64, entry: u64, user_sp: u64, process: u64, thread_pointer: u64) -> i64 {
     let w = unsafe {
         trap6(
-            abi::SYS_INVOKE,
+            abi::SYSCALL_INVOKE,
             [tcb, abi::thread_control_block::CONFIGURE, entry, user_sp, process, thread_pointer],
         )
     };
     w[0] as i64
 }
 
-/// **`SYS_EXIT_THREAD`** (milestone 812): end the calling thread, and its process only if it was
+/// **`SYSCALL_EXIT_THREAD`** (milestone 812): end the calling thread, and its process only if it was
 /// the last to run. `word`, if not zero, is cleared and its futex waiters woken once this thread
 /// has left user mode for good.
 pub fn exit_thread(word: u64) -> ! {
-    let _ = unsafe { trap6(abi::SYS_EXIT_THREAD, [word, 0, 0, 0, 0, 0]) };
+    let _ = unsafe { trap6(abi::SYSCALL_EXIT_THREAD, [word, 0, 0, 0, 0, 0]) };
     loop {
         core::hint::spin_loop();
     }
 }
 
 pub fn capability_delete(slot: u64) {
-    let _ = unsafe { trap6(abi::SYS_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
+    let _ = unsafe { trap6(abi::SYSCALL_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
 }
 
-/// Give up the CPU (`SYS_YIELD`); the timed sleep loop is built on this.
+/// Give up the CPU (`SYSCALL_YIELD`); the timed sleep loop is built on this.
 pub fn yield_now() {
-    let _ = unsafe { trap6(abi::SYS_YIELD, [0; 6]) };
+    let _ = unsafe { trap6(abi::SYSCALL_YIELD, [0; 6]) };
 }
 
-/// Terminate this process (`SYS_EXIT`). The kernel reaps the thread and frees the address space.
+/// Terminate this process (`SYSCALL_EXIT`). The kernel reaps the thread and frees the address space.
 pub fn exit(code: i64) -> ! {
-    let _ = unsafe { trap6(abi::SYS_EXIT, [code as u64, 0, 0, 0, 0, 0]) };
+    let _ = unsafe { trap6(abi::SYSCALL_EXIT, [code as u64, 0, 0, 0, 0, 0]) };
     loop {
         core::hint::spin_loop();
     }

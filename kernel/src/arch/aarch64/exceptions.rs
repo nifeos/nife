@@ -497,7 +497,7 @@ fn handle_interrupt(frame: &mut TrapFrame) {
         }
         other => {
             // Masked before the notification, or a level-triggered line re-fires on the EOI; the
-            // driver's ACK re-enables it. See notes/interrupts.md.
+            // driver's ACKNOWLEDGE re-enables it. See notes/interrupts.md.
             if let Some(ep) = crate::sched::interrupt_route(other) {
                 ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                 interrupt_controller::disable(other);
