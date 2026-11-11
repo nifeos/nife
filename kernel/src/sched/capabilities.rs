@@ -332,9 +332,9 @@ pub(crate) fn current_mappable_pages() -> u64 {
     })
 }
 
-/// [`grant`], into the first free slot at or above `floor` (milestone 812, `std::thread::spawn`
-/// runs real threads in one address space): `RETYPE_OBJECT`'s third word, so a `std` program can
-/// make objects without filling a fixed slot it was not given.
+/// [`grant`], into the first free slot at or above `floor`: `RETYPE_OBJECT`'s third word, so a
+/// `std` program can make objects without filling a fixed slot it was not given. Milestone 812
+/// (`std::thread::spawn` runs real threads in one address space) added it.
 pub(crate) fn grant_from(
     floor: u64,
     capability: crate::capability_object::Capability,
