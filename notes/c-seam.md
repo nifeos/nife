@@ -227,7 +227,7 @@ This is the part that feeds an open design fork, so it is written down precisely
 `c_confiner` restarts its child, and to restart it must first reap it: the corpse is
 dead-until-reaped (§26.4), and its region stays pinned until somebody says otherwise. Reaping is
 `MemoryRegion::DESTROY`, which needs `WRITE` on the region. **`WRITE` on a region is also exactly what
-builds a process from it** (`RETYPE`, `RETYPE_OBJ`, `SPLIT`). There is no narrower right.
+builds a process from it** (`RETYPE`, `RETYPE_OBJECT`, `SPLIT`). There is no narrower right.
 
 - What it had to hold: a full-rights untyped budget, for its whole life. From that it can split
   regions, make frames, make address spaces, make threads, make endpoints, and destroy regions. It

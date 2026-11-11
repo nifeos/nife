@@ -185,7 +185,7 @@ fn a_new_thread_holds_no_capabilities() {
 
 /// **Milestone 19a, end to end: an rendezvous minted by a process out of its own memory
 /// carries IPC between processes.** The maker retypes a page of its untyped into an rendezvous
-/// (`RETYPE_OBJ`), delegates a READ view to a peer it has never met, and sends a word into
+/// (`RETYPE_OBJECT`), delegates a READ view to a peer it has never met, and sends a word into
 /// it; the peer listens on the received capability and reports what arrived. No kernel
 /// wiring created the rendezvous: budget, mint, delegation, and rendezvous are all the
 /// processes' own acts. The word arriving is the whole granular-construction story of 19a
