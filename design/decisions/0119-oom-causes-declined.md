@@ -12,12 +12,13 @@ customer."*
 
 ## The question
 
-`Untyped::SPLIT` and `RETYPE_OBJECT` (method 2, its name spelled out by the ruling of 2026-11-11
-(UTC)) both return `Error::OutOfMemory` for three unrelated causes: the caller's own region budget
-exhausted, the caller's own cspace full, or `MAX_REGIONS` (the system-wide concurrently-live region
-table) full. The first two are facts about the caller. The third is a fact about everyone else on
-the machine, fixable by nothing the caller can do locally. Distinguishing them touches the syscall
-ABI's shared `Error` enum, so the milestone named it a fork rather than guessing.
+`Untyped::SPLIT` and `RETYPE_OBJECT` both return `Error::OutOfMemory` for three unrelated causes:
+the caller's own region budget exhausted, the caller's own cspace full, or `MAX_REGIONS` (the
+system-wide concurrently-live region table) full. (`RETYPE_OBJECT` is method 2, its name spelled out
+by the ruling of 2026-11-11 (UTC).) The first two are facts about the caller. The third is a fact
+about everyone else on the machine, fixable by nothing the caller can do locally. Distinguishing
+them touches the syscall ABI's shared `Error` enum, so the milestone named it a fork rather than
+guessing.
 
 ## The decision
 
