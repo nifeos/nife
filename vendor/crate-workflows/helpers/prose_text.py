@@ -10,6 +10,8 @@ CODE = re.compile(r'`[^`\n]*`')
 COMMENT = re.compile(r'<!--.*?-->', re.S)
 URL = re.compile(r'<https?://[^>\s]*>|\]\([^)\s]*\)|https?://\S+')
 FENCE = re.compile(r'\s*(```|~~~)')
+# A line of nothing but `[![alt](image)](link)` badges is the README's badge row: images, not prose.
+BADGE_LINE = re.compile(r'^\s*(?:\[!\[[^\]]*\]\([^)\s]+\)\]\([^)\s]+\)\s*)+$')
 
 
 def clean(line):
@@ -34,7 +36,7 @@ def markdown_lines(text):
         if mark:
             fence = None if fence == mark.group(1) else (fence or mark.group(1))
             continue
-        if fence or not line.strip():
+        if fence or not line.strip() or BADGE_LINE.match(line):
             continue
         out.append((n + 1, clean(line), bool(re.match(r'#{1,6} ', line))))
     return out
@@ -76,6 +78,9 @@ def selftest():
         ('a.md', '```\nEFI\n```\nafter\n', [(4, 'after', False)]),
         ('a.md', '<!-- EFI -->\nafter\n', [(2, 'after', False)]),
         ('a.md', '---\nk: EFI\n---\nafter\n', [(4, 'after', False)]),
+        ('a.md', '# t\n\n[![CI EFI](https://x.example/b.svg)](https://x.example)\n[![a](i)](l) [![b](i)](l)\nafter\n',
+         [(1, '# t', True), (5, 'after', False)]),
+        ('a.md', 'A [![CI](i)](l) badge in prose.\n', [(1, 'A [![CI]()]() badge in prose.', False)]),
         ('a.md', 'See <https://x.example/EFI> and [text](https://x.example/EFI).\n',
          [(1, 'See  and [text]().', False)]),
         ('a.rs', 'let EFI = 1; // EFI\n/// Doc line.\n//! Inner doc.\n', [(2, 'Doc line.', False), (3, 'Inner doc.', False)]),

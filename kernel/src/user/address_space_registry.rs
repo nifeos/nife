@@ -147,9 +147,21 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
     mmu::share_kernel_half(root); // RISC-V single-satp: the process root carries the kernel high half
 
     // The tag first, because the registry records it (see `AddressSpace::new`).
-    let asid = ASIDS.lock().alloc()?;
+    // Every refusal below gives back the count the retype took: the page stays spent, but no
+    // space holds a tag or a registry slot.
+    let release = || {
+        crate::memory_region::release_object(
+            region,
+            crate::memory_region::ObjectKind::AddressSpace,
+        );
+    };
+    let Some(asid) = ASIDS.lock().alloc() else {
+        release();
+        return None;
+    };
     if !crate::revoke::register_space(root, region, asid) {
         ASIDS.lock().free(asid);
+        release();
         return None; // registry full; the carved page is spent, the caller's own loss (B.4 rule)
     }
 
@@ -172,9 +184,9 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
         .lock()
         .insert_with(|_| Registered { space, bound: None })
         .map(generational_table::EntryName::to_bits);
-    // On a refusal the closure is dropped uncalled, and `space`'s `Drop` forgets the root and frees
-    // the ASID; the page stays spent on the caller's budget. Nothing is left to undo here, and a
-    // second free could take the ASID from a space given it since.
+    // On a refusal the closure is dropped uncalled, and `space`'s `Drop` forgets the root, frees
+    // the ASID and gives the count back; the page stays spent on the caller's budget. Nothing is
+    // left to undo here, and a second free could take the ASID from a space given it since.
     name
 }
 

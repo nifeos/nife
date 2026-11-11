@@ -20,6 +20,10 @@ machine-local facts (which hosts, where they sit) off-tree, and this page does n
   `sudo`, so it is root in the container and nowhere else.
 - Each container has 4 vCPUs, 16 GiB of memory, `/dev/kvm`, a 50 GB volume and a 90-minute limit.
 - The image is Ubuntu 26.04 with runner 2.338.2 and `qemu-system-x86` installed.
+- The runner's work folder is `/home/runner/work`, the hosted layout, so the workspace is
+  `/home/runner/work/nife/nife`.
+- `rustup` and `cargo` are in `/opt/rust/cargo/bin`, which the image puts on `PATH` for every job;
+  no workflow sets it. A job installs the pinned toolchain with `helpers/rustup-retry.sh`.
 - Egress goes through an allowlist proxy. The proxy refuses a host not on the list and reports it to the
   maintainers, who add it (see "A blocked host" below).
 

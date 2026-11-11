@@ -8,8 +8,8 @@
 //! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119 (splitting
 //! `OutOfMemory`'s three causes is declined for want of a customer)); see the note.
 
-pub use memory_regions::ObjectKind;
-use memory_regions::{PageUse, RegionTable};
+use memory_regions::{CeilingReached, PageUse, RegionTable};
+pub use memory_regions::{Ceilings, Counted, ObjectKind};
 use page_frames::{FRAME_SIZE, PageFrame};
 
 use crate::memory;
@@ -65,11 +65,20 @@ static REGIONS: InterruptSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
 /// free RAM becomes untyped handed to the first process. Everything the owner does afterward
 /// spends this, not the allocator.
 pub fn create(pages: u64) -> Option<u64> {
+    create_with_ceilings(pages, Ceilings::UNLIMITED)
+}
+
+/// [`create`] for a root whose subtree lives under `ceilings`: no more than that many objects of
+/// each [`Counted`] kind live in it at once, and each region split below it gets a sixteenth of
+/// them (`RegionTable::split`). See notes/memory-regions.md, "Subtree ceilings".
+///
+/// Name: provisional.
+pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
     let base = memory::alloc_contiguous(pages as usize)?.addr();
 
     let name = {
         let mut table = REGIONS.lock();
-        let name = table.insert_root(base / FRAME_SIZE, pages);
+        let name = table.insert_root_with_ceilings(base / FRAME_SIZE, pages, ceilings);
         note_peak(&table);
         name
     };
@@ -102,10 +111,113 @@ pub fn split(parent: u64, pages: u64) -> Option<u64> {
     if crate::retype_fault::fails_now() {
         return None;
     }
-    let mut table = REGIONS.lock();
-    let child = table.split(parent, pages);
-    note_peak(&table);
+    let (child, reached) = {
+        let mut table = REGIONS.lock();
+        let child = table.split(parent, pages);
+        note_peak(&table);
+        let reached = child
+            .is_none()
+            .then(|| table.ceiling_reached(parent, Counted::Region))
+            .flatten();
+        (child, reached)
+    };
+    if let Some(reached) = reached {
+        log_ceiling_refusal(Counted::Region, parent, reached);
+    }
     child
+}
+
+/// **The kernel keeps this fraction of every table for itself**: one eighth, so the progenitor's
+/// subtree may hold the other seven. What the kernel holds outside that subtree (its own threads
+/// and rendezvous, the roots and spaces of the services it starts) is measured against this in
+/// notes/memory-regions.md, "Subtree ceilings".
+const KERNEL_RESERVE_OF_EACH_TABLE: usize = 8;
+
+/// **The ceilings the progenitor's subtree lives under**: every kernel table less the kernel's
+/// reserve, written in the tables' own capacities so they follow a resize. Each region the
+/// progenitor splits gets a sixteenth of these (`RegionTable::split`). The kernel pool is the
+/// kernel's own and has no ceiling.
+///
+/// Name: provisional.
+pub fn progenitor_ceilings() -> Ceilings {
+    let leave_reserve = |capacity: usize| {
+        u32::try_from(capacity - capacity / KERNEL_RESERVE_OF_EACH_TABLE).unwrap_or(u32::MAX)
+    };
+    // A space holds a tag and a revocation-registry entry; the scarcer bounds it. ASID 0 is never
+    // handed out.
+    let spaces = core::cmp::min(
+        address_space_identifier::ASIDS - 1,
+        crate::revoke::MAXIMUM_SPACES,
+    );
+    let object = |kind| Counted::Object(kind);
+    Ceilings::UNLIMITED
+        .with(
+            object(ObjectKind::Rendezvous),
+            leave_reserve(crate::sched::MAXIMUM_RENDEZVOUS),
+        )
+        .with(object(ObjectKind::AddressSpace), leave_reserve(spaces))
+        .with(
+            object(ObjectKind::Thread),
+            leave_reserve(crate::sched::MAXIMUM_THREADS),
+        )
+        .with(
+            object(ObjectKind::Notification),
+            leave_reserve(crate::sched::MAXIMUM_NOTIFICATIONS),
+        )
+        .with(
+            object(ObjectKind::Timer),
+            leave_reserve(crate::sched::MAXIMUM_TIMERS),
+        )
+        .with(
+            object(ObjectKind::Process),
+            leave_reserve(crate::sched::MAXIMUM_PROCESSES),
+        )
+        .with(Counted::Region, leave_reserve(MAXIMUM_REGIONS))
+}
+
+/// **One object of `kind` retyped from `region` has left its kernel table**: a thread reaped, a
+/// lent address space dropped, or an insert refused after the page was retyped. Its subtree's
+/// count falls by one. A no-op on a dead name. See notes/memory-regions.md, "Subtree ceilings".
+///
+/// Context: takes `REGIONS`; legal under `IPC_TABLES` and the address-space registry's lock.
+///
+/// Name: provisional.
+pub fn release_object(region: u64, kind: ObjectKind) {
+    REGIONS.lock().release_object(region, kind);
+}
+
+/// The counter reading at the last refusal line, and how many refusals went unprinted since. Kept
+/// apart from `REGIONS` so the line prints with no lock held.
+static LAST_CEILING_LINE_TICKS: core::sync::atomic::AtomicU64 =
+    core::sync::atomic::AtomicU64::new(u64::MAX);
+static UNPRINTED_CEILING_REFUSALS: core::sync::atomic::AtomicU64 =
+    core::sync::atomic::AtomicU64::new(0);
+
+/// **Say that a subtree ceiling refused a creation**, at most once a second: the kind, the region
+/// asked, the region whose ceiling bound it and its live count against that ceiling. The caller
+/// sees `OutOfMemory` either way; this line is how a person tells a ceiling from an empty region.
+fn log_ceiling_refusal(counted: Counted, asked: u64, reached: CeilingReached) {
+    use core::sync::atomic::Ordering;
+    let now = crate::arch::timer::now();
+    let last = LAST_CEILING_LINE_TICKS.load(Ordering::Relaxed);
+    let due = last == u64::MAX || now.saturating_sub(last) >= crate::arch::timer::frequency();
+    if !due
+        || LAST_CEILING_LINE_TICKS
+            .compare_exchange(last, now, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
+    {
+        UNPRINTED_CEILING_REFUSALS.fetch_add(1, Ordering::Relaxed);
+        return;
+    }
+    let unprinted = UNPRINTED_CEILING_REFUSALS.swap(0, Ordering::Relaxed);
+    crate::println!(
+        "  region ceiling: {counted:?} refused in {asked:#x}: {}/{} live under {:#x}, {} up; \
+         {unprinted} more refused since the last line",
+        reached.live,
+        reached.ceiling,
+        reached.region,
+        reached.levels_up,
+    );
 }
 
 /// Whether this region has live children (was split and they are not all reclaimed), so it cannot be
@@ -159,6 +271,11 @@ pub fn retype_run(region: u64, requested: u64) -> Option<(u64, u64)> {
 /// **Retype one page for a kernel object, pinning the region in the same breath** (19a). Pin and
 /// carve happen under one hold of the region lock, so no [`destroy`] can slip between them and
 /// free a page that is about to hold an endpoint. Zeroed like every retyped page.
+///
+/// The object counts against the region's subtree and every ancestor's: `None`, moving nothing,
+/// when one of them is at its ceiling for `kind`. A caller whose object then fails to reach its
+/// kernel table, or that later removes it from that table before the region is reclaimed, calls
+/// [`release_object`].
 pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
     // The test kernel's Nth-retype fault (milestone 757, provisional): refused before the lock,
     // so the region is left exactly as an exhausted one would be. Absent from every other build.
@@ -166,10 +283,21 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
     if crate::retype_fault::fails_now() {
         return None;
     }
-    // Released at the semicolon, as in `retype_page`: the pin and the carve are under the lock, the
-    // zeroing is not.
-    let page = REGIONS.lock().retype_object_page(region, kind)?;
-    let phys = page * FRAME_SIZE;
+    // Released at the block's end, as in `retype_page`: the pin and the carve are under the lock,
+    // the zeroing and the refusal line are not.
+    let (page, reached) = {
+        let mut table = REGIONS.lock();
+        let page = table.retype_object_page(region, kind);
+        let reached = page
+            .is_none()
+            .then(|| table.ceiling_reached(region, Counted::Object(kind)))
+            .flatten();
+        (page, reached)
+    };
+    if let Some(reached) = reached {
+        log_ceiling_refusal(Counted::Object(kind), region, reached);
+    }
+    let phys = page? * FRAME_SIZE;
 
     // SAFETY: as retype_page: exclusively ours, direct-mapped; zero before anyone reads it.
     unsafe {
@@ -197,6 +325,15 @@ pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
         _ => PageUse::Children,
     };
     table.spent(region, on)
+}
+
+/// `region`'s subtree's live `counted` objects and its ceiling for them, `(live, ceiling)`, or
+/// `None` for a dead name. For the tests.
+///
+/// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // only the system tests call it
+pub fn live_and_ceiling(region: u64, counted: Counted) -> Option<(u32, u32)> {
+    REGIONS.lock().live_and_ceiling(region, counted)
 }
 
 /// How many pages the region has retyped, and its size. For the demo and tests.

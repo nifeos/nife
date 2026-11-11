@@ -223,6 +223,10 @@ def selftest():
            ['no `## What is proven`', 'no `## Minimum Rust version`', 'no `## License`'])
     expect('a title in code', GOOD.replace('# example', '# `example`'), ["the title is '`example`'"])
     expect('no summary', GOOD.replace('One line.\n', ''), ['no summary paragraph'])
+    badges = '[![check](https://x.example/b.svg)](https://x.example)\n[![MSRV](https://x.example/m.svg)](https://x.example)\n'
+    expect('a badge row under the title', GOOD.replace('# example\n', '# example\n\n' + badges), [])
+    expect('a badge row is no summary', GOOD.replace('# example\n', '# example\n\n' + badges).replace('One line.\n', ''),
+           ['no summary paragraph'])
     expect('a section twice', GOOD + '\n## BUGS\n\nMore.\n',
            ['`## BUGS` appears twice', "`## BUGS` ('BUGS') comes after `## License`"])
     with tempfile.TemporaryDirectory() as scratch, contextlib.redirect_stdout(io.StringIO()) as out, \
