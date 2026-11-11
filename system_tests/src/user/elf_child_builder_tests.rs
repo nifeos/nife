@@ -260,11 +260,19 @@ fn the_report_child_builder_parses_an_elf_and_builds_a_running_child() {
         report,
     );
 
-    let word = crate::sched::ipc_receive(report)[0];
+    let [word, address, pages, ..] = crate::sched::ipc_receive(report);
     assert_eq!(
         word,
         capability_witness_contract::REPORT_CHILD_WORD,
         "the builder did not build a running child from the ELF it parsed in userspace",
+    );
+    // The window the builder listed on the child's startup page is the one the child read, so the
+    // page `process_builder` wrote reached a process it built.
+    let listed = capability_witness_contract::REPORT_CHILD_WINDOW;
+    assert_eq!(
+        (address, pages),
+        (listed.virtual_address, u64::from(listed.pages)),
+        "the child did not find the window its builder listed on its startup page",
     );
     builder.release_or_fail("a builder test's building budget");
     crate::sched::reclaim_region(report_region)

@@ -96,7 +96,7 @@ mod boot {
             windows.len()
         );
         assert!(
-            windows.iter().all(|&hz| hz != 0),
+            windows.iter().all(|&hertz| hertz != 0),
             "a timed window with a zero rate is a PIT that never counted",
         );
     }

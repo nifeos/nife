@@ -14,8 +14,8 @@
 //!
 //! - One page per address space, at one address: two programs sharing a space would share one
 //!   page, and two instances of one program in one space could not tell their windows apart.
-//! - A process the kernel builds by hand, or one a userspace builder spawns, has no page yet;
-//!   [`StartupPage::mapped`] there reads unmapped memory and faults, on purpose.
+//! - A process the kernel builds by hand has no page yet; [`StartupPage::mapped`] there reads
+//!   unmapped memory and faults, on purpose.
 //! - Each contract crate mints the kinds of the windows it describes, and nothing checks numbers
 //!   across crates. Today only `driver_process_contract` mints any, and its own test holds them
 //!   apart.

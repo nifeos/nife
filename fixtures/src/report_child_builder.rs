@@ -6,7 +6,9 @@
 //! verbs (retype an address space, copy each segment into retyped frames, retype a thread, endow
 //! it, start it) and grants it the report endpoint. The kernel never touches the child's bytes, so
 //! [`capability_witness_contract::REPORT_CHILD_WORD`] arriving is milestone 19's whole thesis: a
-//! kernel that runs a workload it did not load. A failed lookup, parse or build reports word 0.
+//! kernel that runs a workload it did not load. It also maps one page into the child and lists it
+//! on the child's startup page ([`capability_witness_contract::REPORT_CHILD_WINDOW`]), which the
+//! child reports back. A failed lookup, parse or build reports word 0.
 
 //! # BUGS
 //!
@@ -22,7 +24,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use process_builder::{build_child, start_child};
+use process_builder::{build_child, retype_page_frame_from, start_child};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{exit, require, send};
 
@@ -44,8 +46,19 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         refuse()
     };
     let grants = [(REPORT, abi::rights::WRITE)];
+    // One page of the building budget, mapped into the child as the window its startup page lists.
+    let Ok(window_frame) = retype_page_frame_from(MEMORY_REGION) else {
+        refuse()
+    };
+    let window = capability_witness_contract::REPORT_CHILD_WINDOW;
     let endowment = ChildEndowment {
         capabilities: &grants,
+        maps: &[(
+            window.virtual_address,
+            window_frame,
+            abi::address_space::MAP_RW,
+        )],
+        windows: &[window],
         stack_pages: system_initializer::CHILD_STACK_PAGES,
         // `Retention::Nothing`: this program exits a few lines after `START`, so keeping the
         // child's thread control block capability would be keeping it for nobody (DECISIONS §142

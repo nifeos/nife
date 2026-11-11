@@ -45,12 +45,12 @@ fn self_pipe_pass() -> f64 {
             read(p[0], b.as_mut_ptr(), 1);
         }
     }
-    let ns = t.elapsed().as_nanos() as f64 / iters as f64;
+    let nanoseconds = t.elapsed().as_nanos() as f64 / iters as f64;
     unsafe {
         close(p[0]);
         close(p[1]);
     }
-    ns
+    nanoseconds
 }
 
 const SYS_GETPID: std::os::raw::c_long = 172; // aarch64 Linux
@@ -98,9 +98,9 @@ fn map_fault() -> f64 {
             // SAFETY: `p` covers `pages` pages; write the first byte of page i to fault it in.
             unsafe { p.add(i * PAGE).write_volatile(1) };
         }
-        let ns = t.elapsed().as_nanos() as f64 / pages as f64;
+        let nanoseconds = t.elapsed().as_nanos() as f64 / pages as f64;
         unsafe { munmap(p, len) };
-        ns
+        nanoseconds
     };
     let _ = go(2_000); // warm the mmap/fault paths on a throwaway region; timed run gets a fresh one
     go(50_000)
@@ -165,9 +165,9 @@ fn ipc_rtt() -> f64 {
     for _ in 0..iters {
         rt(&mut b);
     }
-    let ns = t.elapsed().as_nanos() as f64 / iters as f64;
+    let nanoseconds = t.elapsed().as_nanos() as f64 / iters as f64;
     unsafe { close(p2c[1]) };
-    ns
+    nanoseconds
 }
 
 fn main() {

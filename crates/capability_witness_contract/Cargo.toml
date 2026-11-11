@@ -9,3 +9,9 @@ license.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+# The window `report_child` finds on its startup page: where `report_child_builder` maps one page
+# for it, and what the page says about it.
+address_space_map = { version = "0.1.0", path = "../address_space_map" }
+startup_page_contract = { version = "0.1.0", path = "../startup_page_contract" }

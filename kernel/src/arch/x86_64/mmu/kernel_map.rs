@@ -70,9 +70,9 @@ static TABLE_FRAMES: AtomicU64 = AtomicU64::new(0);
 /// cannot describe the fault handler. The extended range's own maximum (leaf 0x80000000) is
 /// checked first, because a leaf past it returns another leaf's answer rather than zeros.
 pub(super) fn largest_leaf() -> PageSize {
-    const PAGE_1GB: u32 = 1 << 26;
+    const PAGE_ONE_GIBIBYTE: u32 = 1 << 26;
     if super::isa::cpuid(0x8000_0000).eax >= 0x8000_0001
-        && super::isa::cpuid(0x8000_0001).edx & PAGE_1GB != 0
+        && super::isa::cpuid(0x8000_0001).edx & PAGE_ONE_GIBIBYTE != 0
     {
         PageSize::Size1GiB
     } else {

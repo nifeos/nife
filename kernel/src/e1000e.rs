@@ -9,7 +9,7 @@
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
 //! - [`frame_counts`] reads counters that clear on read, so two callers would split one count
 //!   between them; the bench boot and the DHCP gate are its only callers, one per boot.
-//! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
+//! - Waiting for link is a spin of up to [`LINK_WAIT_MILLISECONDS`], holding a core once per wiring.
 //! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -19,9 +19,9 @@ use e1000e::{layout, registers};
 use crate::arch::mmu;
 
 /// The longest bring-up waits for `CTRL.RST` to clear.
-const RESET_WAIT_MS: u64 = 1000;
+const RESET_WAIT_MILLISECONDS: u64 = 1000;
 /// The longest bring-up waits for `STATUS.LU`.
-pub(crate) const LINK_WAIT_MS: u64 = 3000;
+pub(crate) const LINK_WAIT_MILLISECONDS: u64 = 3000;
 
 /// Why a controller that is on the bus was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,7 +62,7 @@ pub struct Found {
     pub device: u16,
     /// What the process is told: the MAC address and the region's physical base.
     pub handoff: ::driver_process_contract::e1000e::Handoff,
-    /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
+    /// Whether `STATUS.LU` was set before [`LINK_WAIT_MILLISECONDS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
     /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_management_data_input_output`] under QEMU.
@@ -149,7 +149,8 @@ pub fn bring_up() -> Result<Found, Absent> {
         physical_layer_device_id = Some(id);
         flush_descriptor_rings(&mut hw, &dev, region);
         pass_begins(2, "global_reset");
-        sequence::global_reset(&mut hw, RESET_WAIT_MS).map_err(|e| refused(Error::Pch(e)))?;
+        sequence::global_reset(&mut hw, RESET_WAIT_MILLISECONDS)
+            .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         reset_82574(&c).map_err(refused)?;
     }
@@ -230,7 +231,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         }
     };
 
-    let link_up = wait_ms(LINK_WAIT_MS, || {
+    let link_up = wait_milliseconds(LINK_WAIT_MILLISECONDS, || {
         c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
     });
 
@@ -295,14 +296,14 @@ fn reset_82574(c: &Controller) -> Result<(), Error> {
     c.w(registers::RECEIVE_CONTROL_REGISTER, 0);
     c.w(registers::TRANSMIT_CONTROL_REGISTER, 0);
     let _ = c.r(registers::DEVICE_STATUS_REGISTER);
-    spin_ms(10);
+    spin_milliseconds(10);
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
     c.w(
         registers::DEVICE_CONTROL_REGISTER,
         c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::DEVICE_CONTROL_GLOBAL_RESET,
     );
-    spin_ms(20);
-    if !wait_ms(RESET_WAIT_MS, || {
+    spin_milliseconds(20);
+    if !wait_milliseconds(RESET_WAIT_MILLISECONDS, || {
         c.r(registers::DEVICE_CONTROL_REGISTER) & ::e1000e::DEVICE_CONTROL_GLOBAL_RESET == 0
     }) {
         return Err(Error::ResetTimeout);
@@ -459,13 +460,14 @@ fn spin_microseconds(microseconds: u64) {
     crate::arch::timer::spin_for(microseconds * crate::arch::timer::frequency() / 1_000_000);
 }
 
-fn spin_ms(ms: u64) {
-    crate::arch::timer::spin_for(ms * crate::arch::timer::frequency() / 1000);
+fn spin_milliseconds(milliseconds: u64) {
+    crate::arch::timer::spin_for(milliseconds * crate::arch::timer::frequency() / 1000);
 }
 
 /// Poll `done` until it holds or `ms` pass. True when it held.
-fn wait_ms(ms: u64, mut done: impl FnMut() -> bool) -> bool {
-    let deadline = crate::arch::timer::now() + ms * crate::arch::timer::frequency() / 1000;
+fn wait_milliseconds(milliseconds: u64, mut done: impl FnMut() -> bool) -> bool {
+    let deadline =
+        crate::arch::timer::now() + milliseconds * crate::arch::timer::frequency() / 1000;
     loop {
         if done() {
             return true;

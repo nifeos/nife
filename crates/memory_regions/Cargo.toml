@@ -12,7 +12,7 @@ workspace = true
 # The generational table the region names are (notes/generational-names.md). It is what makes the
 # destroy claim single-winner rather than merely first: removing a slot bumps its generation, so the
 # loser's name is dead by the time it looks.
-generational_table = { version = "0.1.0", git = "https://github.com/nifeos/generational_table", rev = "759c8f7acb00f246a635c846ab6414890cf261f8" }
+generational_table = { version = "0.1.0", git = "https://github.com/nifeos/generational_table", rev = "b68ae45602813ad5487521fc03515fea4f8d2631" }
 
 # Loom is a dependency of this crate ONLY under `--cfg loom`, which nothing but
 # `script/interleaving-check` sets. Cargo evaluates `cfg(loom)` as false for every real target, so a

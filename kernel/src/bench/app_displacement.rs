@@ -8,7 +8,7 @@ use super::*;
 
 /// Working-set sizes for [`app_displacement()`] (E4), in KiB: below, at and above a typical L1d.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-const APPDISP_WORKINGSET_KIB: &[usize] = &[4, 16, 32, 64, 128];
+const APPDISP_WORKINGSET_KIBIBYTES: &[usize] = &[4, 16, 32, 64, 128];
 /// Bytes per working-set word; the workload reads and writes `u64`s.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const APPDISP_WORD_BYTES: usize = 8;
@@ -146,7 +146,7 @@ fn appdisp_best(
 
 /// E4: what an IPC-heavy kernel costs an unrelated application's working set.
 ///
-/// Times [`appdisp_workload`] over each of [`APPDISP_WORKINGSET_KIB`] alone, with
+/// Times [`appdisp_workload`] over each of [`APPDISP_WORKINGSET_KIBIBYTES`] alone, with
 /// [`APPDISP_IPC_PAIRS`] background pairs on the same core, and with [`APPDISP_IPC_PAIRS_HIGH`];
 /// the throughput lost between conditions is the number. Skips off a real single hart. See
 /// notes/benchmarks/kernel-bench-harness.md and notes/register-of-measures/cache-experiments.md.
@@ -163,8 +163,8 @@ pub(super) fn app_displacement() {
         reply[i] = sched::create_rendezvous();
     }
 
-    for &kib in APPDISP_WORKINGSET_KIB {
-        let words = kib * 1024 / APPDISP_WORD_BYTES;
+    for &kibibytes in APPDISP_WORKINGSET_KIBIBYTES {
+        let words = kibibytes * 1024 / APPDISP_WORD_BYTES;
         let passes = (APPDISP_TARGET_TOUCHES / words as u64).max(1);
         let solo = appdisp_best(words, passes, &[], &[]);
         let with_ipc = appdisp_best(
@@ -174,9 +174,9 @@ pub(super) fn app_displacement() {
             &reply[..APPDISP_IPC_PAIRS],
         );
         let with_ipc_high = appdisp_best(words, passes, &req, &reply);
-        println!("bench: appdisp_{kib}k_solo {solo} {passes}");
-        println!("bench: appdisp_{kib}k_ipc {with_ipc} {passes}");
-        println!("bench: appdisp_{kib}k_ipc96 {with_ipc_high} {passes}");
+        println!("bench: appdisp_{kibibytes}k_solo {solo} {passes}");
+        println!("bench: appdisp_{kibibytes}k_ipc {with_ipc} {passes}");
+        println!("bench: appdisp_{kibibytes}k_ipc96 {with_ipc_high} {passes}");
         let lost_pct = |busy: u64| {
             if solo > 0 {
                 ((busy as i64 - solo as i64) * 100) / solo as i64
@@ -185,11 +185,11 @@ pub(super) fn app_displacement() {
             }
         };
         println!(
-            "bench-probe: appdisp_{kib}k_throughput_lost_pct {}",
+            "bench-probe: appdisp_{kibibytes}k_throughput_lost_pct {}",
             lost_pct(with_ipc)
         );
         println!(
-            "bench-probe: appdisp_{kib}k_highload_throughput_lost_pct {}",
+            "bench-probe: appdisp_{kibibytes}k_highload_throughput_lost_pct {}",
             lost_pct(with_ipc_high)
         );
     }

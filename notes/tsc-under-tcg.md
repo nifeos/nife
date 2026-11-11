@@ -194,7 +194,7 @@ ms. One host descheduling of the QEMU thread inside that window inflates the ans
 
 `timer.rs`'s `BUGS` already said "a single 10 ms window on a busy host under TCG can be off by a per
 cent or so". A per cent is the good case; the distribution has no right tail to speak of. The
-same one-shot window sets `APIC_TIMER_HZ`, which is why the APIC figure tracks it in every
+same one-shot window sets `APIC_TIMER_HERTZ`, which is why the APIC figure tracks it in every
 transcript, and through that the scheduler's own tick period.
 
 What reads the number: `bench --x86 --real`'s ns/iter, `Instant` and `uptime` through

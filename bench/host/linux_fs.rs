@@ -171,14 +171,14 @@ fn phases(path: &[u8], tag: &str, direct: bool, dsync: bool, unit: usize) {
 
     // ns per 4 KiB transfer, and MiB/s, so neither side of the comparison has to be divided by
     // hand into the other's units.
-    for (name, ns) in [
+    for (name, nanoseconds) in [
         ("seq_write", seq_write),
         ("seq_read", seq_read),
         ("rand_read", rand_read),
         ("rand_write", rand_write),
     ] {
-        let mibs = (unit as f64) * 1e9 / ns / (1024.0 * 1024.0);
-        println!("linuxfs {tag}_{name} {ns:.0} ns/xfer {} KiB {mibs:.1} MiB/s", unit / 1024);
+        let mibs = (unit as f64) * 1e9 / nanoseconds / (1024.0 * 1024.0);
+        println!("linuxfs {tag}_{name} {nanoseconds:.0} ns/xfer {} KiB {mibs:.1} MiB/s", unit / 1024);
     }
 }
 
