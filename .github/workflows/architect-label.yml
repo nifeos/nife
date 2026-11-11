@@ -243,7 +243,9 @@ jobs:
       # rule that no longer matches; its jq file lists every condition. It never removes a label a
       # person added and never touches `architect-ruled`. Never fails the job, like the add step.
       - name: Remove a needs-architect this labeler added, once no rule matches
-        if: steps.rules.outputs.unflag == 'true'
+        # The payload's labels only spare a call on the many pull requests without the label; the
+        # helper reads them live before it acts.
+        if: steps.rules.outputs.unflag == 'true' && contains(github.event.pull_request.labels.*.name, 'needs-architect')
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
