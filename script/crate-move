@@ -27,7 +27,8 @@
 #    bare-metal ones) and `allow-unpublished: true` for the soak. A file the crate already carries
 #    wins over the scaffold's, and says so.
 # 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), regenerates each falsification
-#    patch over the stripped source, and sets `repository` in `Cargo.toml`. A patch is regenerated
+#    patch over the stripped source, and sets `repository` in `Cargo.toml` after `license`, a value
+#    or `license.workspace = true` (a manifest with neither is a finding). A patch is regenerated
 #    and never edited: it is applied to the crate's source in this tree, both versions go through the
 #    same change the move makes to every file, and the patch is the difference, so every hunk header
 #    carries the stripped file's line numbers. The patch keeps its prose header and takes `a/`

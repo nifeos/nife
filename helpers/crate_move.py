@@ -161,12 +161,21 @@ def falsification_first(text):
 
 
 def add_repository(manifest, crate):
-    """The manifest with `repository` set to the crate's own repository, after `license`."""
-    if re.search(r'(?m)^repository\s*=', manifest):
+    """The manifest with `repository` set to the crate's own repository, after `license`.
+
+    `license` is either a value (`license = "..."`) or inherited (`license.workspace = true`); a
+    manifest that already has `repository`, in either form, is returned unchanged. Raises
+    ValueError when there is no `license` line to place it after, so the step fails instead of
+    reporting a field it did not write.
+    """
+    if re.search(r'(?m)^repository(\.workspace)?\s*=', manifest):
         return manifest
     line = f'repository = "{REPOSITORY_URL.format(crate=crate)}"'
-    new, n = re.subn(r'(?m)^(license\s*=.*)$', lambda m: m.group(1) + '\n' + line, manifest, count=1)
-    return new if n else manifest
+    new, n = re.subn(r'(?m)^(license(\.workspace)?\s*=.*)$', lambda m: m.group(1) + '\n' + line,
+                     manifest, count=1)
+    if not n:
+        raise ValueError('Cargo.toml has no `license` line to place `repository` after')
+    return new
 
 
 def caller_workflow(text, sha, targets):
@@ -680,6 +689,7 @@ def stage(root, crate, into, tree, sha, report):
                              + (f'; the crate\'s own {", ".join(sorted(kept))} kept' if kept else ''))
 
     blocks = patches = paths = records = 0
+    repository = 'repository not set in Cargo.toml'
     source = os.path.join(root, 'crates', crate)
     for dirpath, _dirs, names in os.walk(into):
         if '/.git' in dirpath or dirpath.endswith('/.git'):
@@ -699,13 +709,17 @@ def stage(root, crate, into, tree, sha, report):
                 new, b, r, n = moved_source(text, crate)
                 blocks, records, paths = blocks + b, records + r, paths + n
             if rel == 'Cargo.toml':
-                new = add_repository(new, crate)
+                try:
+                    new = add_repository(new, crate)
+                    repository = 'repository set in Cargo.toml'
+                except ValueError as e:
+                    report('FAIL', 'repository', str(e))
             if new != text:
                 open(path, 'w').write(new)
     report('ok', 'rewrite', f'Name: blocks removed from {blocks} files, {patches} patches regenerated '
                             f'for -p1 over the stripped source, {paths} paths made repository-relative, '
                             f'falsification records moved to the head of their comments in {records} '
-                            'files, repository set in Cargo.toml')
+                            f'files, {repository}')
     check_patches(into, report)
     moved, opted_in = stage_fuzz(root, crate, into, report)
     if opted_in:
@@ -930,6 +944,16 @@ def selftest():
     m = '[package]\nname = "x"\nlicense = "MIT OR Apache-2.0"\n'
     assert 'repository = "https://github.com/nifeos/x"' in add_repository(m, 'x')
     assert add_repository(add_repository(m, 'x'), 'x').count('repository') == 1
+    inherited = '[package]\nname = "x"\nlicense.workspace = true\n\n[lints]\nworkspace = true\n'
+    assert add_repository(inherited, 'x') == \
+        '[package]\nname = "x"\nlicense.workspace = true\nrepository = "https://github.com/nifeos/x"\n' \
+        '\n[lints]\nworkspace = true\n', add_repository(inherited, 'x')
+    try:
+        add_repository('[package]\nname = "x"\n', 'x')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('a manifest with no license line is refused, not passed through')
     wf = "    uses: o/r/.github/workflows/check.yml@PINS@\n    with:\n      targets: ''\n"
     out = caller_workflow(wf, 'abc', ['t1', 't2'])
     assert '@abc' in out and 'targets: t1 t2' in out and 'allow-unpublished: true' in out, out
