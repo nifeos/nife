@@ -1,5 +1,7 @@
 # The network stack: the aarch64 memory receipt, and the reclamation that answered it
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/net.md`](../net.md), which is the page to read. This file holds how net
 servers exhausted the aarch64 test boot, and what reclaiming them cost and returned. It exists to
 verify or challenge the main page. A reader who only needs to use the socket contract should not

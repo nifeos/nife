@@ -1,6 +1,6 @@
 # The second FLUSH that never returned (resolved 2026-09-19)
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [notes/framebuffer-contract.md](../framebuffer-contract.md), moved there on
 2026-10-11 (UTC) under §212 (a prose budget). It is the record of milestone 177 (wire the graphical

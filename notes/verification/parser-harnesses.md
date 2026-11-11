@@ -1,5 +1,7 @@
 # The parser and device-input harnesses: ELF, nifefs and PCI
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/verification.md](../verification.md). These three crates parse input the
 kernel did not write: a binary, a boot archive, and a PCI function's answers. Why whole-parse
 totality was out of reach is in [elf-parser-wall.md](elf-parser-wall.md).

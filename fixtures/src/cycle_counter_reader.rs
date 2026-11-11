@@ -25,11 +25,11 @@
 //! and the `cycle` CSR this program reads may differ. Nothing asserts the size: under QEMU it is
 //! emulator time. The meaning is checked on all three.
 //!
-//! Name: provisional (milestone 291). This was `hello`'s `CYCLE_COUNTER_CHILD` role, number 42.
-//! Refused keeping `_child`: nothing builds this program as a child. The kernel's own test starts
-//! it directly, because milestone 229 shipped the grant mechanism without a syscall method to set
-//! it and there is therefore no userspace route to a granted thread; `_child` named a relationship
-//! that does not exist.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s
+//! `CYCLE_COUNTER_CHILD` role. Refused keeping `_child`: nothing builds this program as a child. The
+//! kernel's own test starts it directly, because milestone 229 shipped the grant mechanism without a
+//! syscall method to set it and there is therefore no userspace route to a granted thread; `_child`
+//! named a relationship that does not exist.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

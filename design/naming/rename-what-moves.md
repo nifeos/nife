@@ -1,5 +1,7 @@
 # Performing a rename: what moves
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`design/naming.md`](../naming.md). It holds the rename checklist, which
 occurrences of a ratified name move and which stay, the refusal-count gate, and the habits that keep
 a sweep from rewriting a record. The directory `design/naming/` and this file's stem are provisional

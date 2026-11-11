@@ -1,5 +1,7 @@
 # `2>`: the fork as it stood open
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
 analysis written while `2>` was undecided, which explains what the built thing is not. The lane that
 split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose

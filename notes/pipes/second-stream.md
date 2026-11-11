@@ -1,5 +1,7 @@
 # `2>`: built as a declaration
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds what
 DECISIONS §67 built: its five moving parts, the transcripts, the bugs building it found, the default
 destination and the ordering rule. The lane that split the file moved it here verbatim from the main

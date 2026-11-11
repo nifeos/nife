@@ -1,5 +1,7 @@
 # Performing a rename: traps
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. This file holds the smaller
 failures past renames hit: foreign identifiers, parser artefacts, stale pointers, broken word
 boundaries, rewraps and generated files. It exists to verify or challenge the main page. A reader

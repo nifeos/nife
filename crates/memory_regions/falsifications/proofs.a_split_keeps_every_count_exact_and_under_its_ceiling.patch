@@ -1,0 +1,23 @@
+Falsifies `memory_regions::proofs::a_split_keeps_every_count_exact_and_under_its_ceiling`.
+
+The defect: every split takes a sixteenth of its parent's ceilings, not of its root's. It reads as
+the same rule, and it is for a child of the root, but a grandchild then lives under a 256th of the
+root's ceilings and a deep job shrinks to nothing.
+
+Expected to fail: the harness's `assert!(same_ceilings(s.ceilings, ceilings_of(1,
+run.root_ceilings)), "a split child's ceilings are not its root's share")`, on a split from the
+child.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -178,9 +178,6 @@
+     /// and [`CHILD_SHARE_OF_ROOT`] of the root's, kind by kind. Every split region of one tree
+     /// therefore has the same ceilings, which is why a split reads only its parent's.
+     fn for_child_of(parent: &Region) -> Ceilings {
+-        if parent.parent != NO_PARENT {
+-            return parent.ceilings;
+-        }
+         let mut counts = parent.ceilings.0;
+         for count in &mut counts {
+             *count /= CHILD_SHARE_OF_ROOT;

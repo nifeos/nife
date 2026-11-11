@@ -1,5 +1,7 @@
 # The x86_64 port: ACPI, discovery, and PCI interrupts
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 what the loader hands over, the ACPI tables, the discovery seam, and how a PCI function's interrupt
 reaches a driver. It exists to verify or challenge the main page. A reader who only needs to build,

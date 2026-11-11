@@ -117,7 +117,10 @@ The status column of `windows.tsv` says which kind of hold it is:
 
 - `held-finding`: the log has a `replay:` line, a shadow-model mismatch or an escape.
 - `held-crash`: the guest panicked and printed no replay line.
-- `held-hang`: the window ran out its bound (exit 143 or 137).
+- `held-hang`: the guest ran out its bound. The exit status cannot show it, because the runner
+  passes the bound's TERM to QEMU and QEMU then exits 0, so the supervisor times the guest and logs
+  which way it ended. A guest that a signal stopped before its bound did not hang, and that window
+  is `infrastructure`.
 - `held-budget-expired`: a wait ran out its every-core tick budget (`EveryCoreTickBudget`). The guest
   was short of time, probably through the host's doing.
 

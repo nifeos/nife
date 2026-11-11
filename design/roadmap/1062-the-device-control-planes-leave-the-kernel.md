@@ -27,8 +27,6 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 - Step 1 waits for milestone 811 (the boot services leave the kernel)'s step 6.
 - Step 2 waits on no other work: §320 (the JH7110 clock and reset wire) states its wire.
 - Steps 3 and 5 wait for step 2, whose server brings their clocks and resets up.
-- Step 7 waits for the architect's ruling on which grant a starter gives by default, which the
-  section on step 7 leaves open.
 - Milestone 1064 (PCI enumeration leaves the kernel) follows this milestone and milestone 1068
   (the kernel turns interrupt remapping on where an IOMMU offers it).
 
@@ -160,8 +158,8 @@ A direct driver takes the same line or vector a mediated one does.
   the line, as `Transport::read_reg` does for a mediated device.
 
 A line routes to one driver (`kernel/src/sched/interrupt_route.rs`), so a direct driver meets the
-limit a mediated one meets, and the work that lets several drivers share an interrupt line lifts
-it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
+limit a mediated one meets, and milestone 1065 (MSI replaces the interrupt lines on aarch64 and
+riscv64) lifts it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
 entropy driver does.
 
 ### What stays in `kernel/src/virtio.rs`
@@ -175,10 +173,16 @@ boot, so both run unchanged, and `notify` still calls the validator, so `kani-re
 
 ### Which grant, by default
 
-Open, for the architect, and not ruled: which grant a starter gives a virtio-pci function that can
-take either, on a machine whose IOMMU confines it and on one without. Until that ruling every
-starter keeps the mediated grant, which is the kernel's behavior today, and the direct grant runs in
-its own tests. Whatever the ruling, the rule lives in the starter and never in the kernel.
+Ruled 2026-11-11 (UTC). A starter gives the direct grant to a virtio-pci function the IOMMU
+confines, which takes all three of these:
+
+- the active IOMMU owns its requester id (`iommu::Scope::is_confining`);
+- the function offers `VIRTIO_F_ACCESS_PLATFORM`;
+- none of its structure pages shares a page with its MSI-X table or pending-bit array.
+
+Every other function gets the mediated grant, and so does every virtio-mmio device. The validator
+runs in every mediated grant, and on a machine without an IOMMU nife claims no confinement from it.
+The rule lives in the starter, never in the kernel.
 
 ### Prior art
 
@@ -220,7 +224,7 @@ the mediated grant refuses it at `NOTIFY` with `DmaEscape`.
 
 ### Tests, proofs and starters
 
-- The kernel's own starters keep the mediated grant: nine `virtio::register` calls in six files
+- The kernel's own starters grant mediated until this step's starter carve-out lands: nine `virtio::register` calls in six files
   under `kernel/src/user`, among them the system tests' disks, the entropy service and the
   keyboard. So the existing `DmaEscape` tests, and the system-test files that name virtio, run on
   the mediated path, and every aarch64 boot exercises it through the virtio-mmio boot disk.
@@ -268,9 +272,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
    when the route is absent.
 4. `script/fastpath-footprint` reports no change. None of these paths is hot, so a change there
    is a finding.
-5. A virtio-pci driver runs on either grant, the kernel's own starters keep the mediated grant
-   until the architect rules the default, and CI runs the direct and the mediated path on all three
-   architectures.
+5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
+   CI runs the direct and the mediated path on all three architectures.
 
 ## Index row
 

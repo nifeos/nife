@@ -268,6 +268,8 @@ impl Threads {
         // home to `kmem`, a user TCB's belongs to its region.
         // SAFETY: live per the table, exclusive per `&mut self`.
         let from_kmem = unsafe { (*ptr).thread_control_block_kmem };
+        // SAFETY: as above.
+        let paid_by = unsafe { (*ptr).thread_control_block_region };
         // SAFETY: as above. Drop first (KernelStack's unmap-and-recycle, AddressSpace teardown,
         // the QuotaToken), then kill the name, then the page goes home: nothing can reach the
         // dropped Thread afterward.
@@ -277,6 +279,9 @@ impl Threads {
         crate::virtio::release_owned_by(tid);
         if from_kmem {
             crate::kmem::recycle(crate::arch::mmu::virt_to_phys(ptr as u64));
+        } else if let Some(region) = paid_by {
+            // The slot is free, so the region's subtree holds one thread fewer.
+            crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Thread);
         }
     }
 

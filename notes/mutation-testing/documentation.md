@@ -1,5 +1,7 @@
 # `documentation`: a crate scored with a third of its tests compiled away
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 This appendix of [notes/mutation-testing.md](../mutation-testing.md) holds the 2026-09-13 finding
 that `documentation`'s 52% was measured with a third of its tests compiled away, the fix and its
 gate, and the crate's full survivor ledger.

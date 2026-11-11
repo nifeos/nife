@@ -3,6 +3,8 @@
 [`../0857-crates-released-on-their-own.md`](../0857-crates-released-on-their-own.md) is the page to
 read. These files hold what its prose budget has no room for.
 
+- [`the-forks-and-their-options.md`](the-forks-and-their-options.md): the eight forks as raised,
+  with the options weighed for each.
 - [`what-nife-does-at-each-extraction.md`](what-nife-does-at-each-extraction.md): the checklist
   each extraction runs.
 - [`contribute-proofs-instead-of-releasing.md`](contribute-proofs-instead-of-releasing.md): the
