@@ -63,6 +63,7 @@ pub use interrupt_route::*;
 pub use ipc_tables::*;
 pub use notification::*;
 pub use placement::*;
+pub(crate) use process::MAXIMUM_PROCESSES;
 pub use process::{ProcessId, create_process_from, destroy as destroy_process, with_holders};
 #[cfg(feature = "system_tests")]
 pub use process::{process_state, process_threads_started, reap_corpses_now, strand_member};
@@ -123,7 +124,7 @@ pub use departure::{exit, exit_thread, fault, yield_now};
 use ipc_outcome::*;
 pub use ipc_outcome::{take_ipc_aborted, take_ipc_refused};
 use preemption::*;
-pub use preemption::{on_tick, preempt_if_needed};
+pub use preemption::{on_tick, preempt_if_needed, sample_tick};
 pub(crate) use switch::finish_switch;
 use switch::*;
 pub use switch::{initialize, is_running, mark_current_fp_live, schedule};

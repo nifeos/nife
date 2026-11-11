@@ -3,7 +3,7 @@
 //! Milestone 15 (design/roadmap/0015-asids.md). The hardware tags every TLB entry from a
 //! non-global mapping with the ASID in `TTBR0_EL1` (or `satp`), so a context switch flushes
 //! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan.
-//! The kernel's `MAXIMUM_SPACES` is 288, above the 255 numbers handed out, so a full bitmap is
+//! The kernel's `MAXIMUM_SPACES` is 1,056, above the 255 numbers handed out, so a full bitmap is
 //! reachable; past 255 live spaces the fix is 16-bit ASIDs.
 //! A number may be reused only once no core's TLB holds it: the kernel invalidates by ASID in
 //! `AddressSpace::drop` before [`free`](Allocator::free), one `tlbi aside1is` on aarch64 and an
@@ -53,7 +53,7 @@ impl Allocator {
     }
 
     /// Claim a free ASID. `None` once all 255 are live. The kernel can reach that, because its
-    /// `MAXIMUM_SPACES` is 288, so a caller handles `None`.
+    /// `MAXIMUM_SPACES` is 1,056, so a caller handles `None`.
     pub fn alloc(&mut self) -> Option<u16> {
         for (i, word) in self.bitmap.iter_mut().enumerate() {
             if *word != u64::MAX {

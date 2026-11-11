@@ -1,6 +1,6 @@
 # The progenitor's stack, measured
 
-*Name: provisional, for this stem. Naming is calef's.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 The progenitor is the first process, and its stack lives for the whole boot because the spawn
 service runs inside `system_initializer::boot`. It ran on eight pages (32 KiB), a size whose doc

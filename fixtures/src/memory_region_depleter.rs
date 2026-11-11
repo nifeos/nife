@@ -19,12 +19,12 @@
 //! `memory_region_service::start` returns the `ThreadId` for that reason, and a caller that drops
 //! the name has leaked a spinning thread onto every test that runs after it.
 //!
-//! Name: provisional (milestone 291). This was `hello`'s `UNTYPED_DEMO` role, number 7, whose
-//! function was already called `memory_region_demo` after the untyped-to-memory-region rename.
-//! Matches `memory_grant_depleter`, the milestone-31 program that does the same thing to a grant
-//! rather than to a region, which is the analogous case this tree already named. Refused
-//! `memory_region_demo`: "demo" says why it was written rather than what it does, and every
-//! program in this directory is a demonstration of something.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `UNTYPED_DEMO`
+//! role, whose function was already called `memory_region_demo` after the untyped-to-memory-region
+//! rename. Matches `memory_grant_depleter`, the milestone-31 program that does the same thing to a
+//! grant rather than to a region, which is the analogous case this tree already named. Refused
+//! `memory_region_demo`: "demo" says why it was written rather than what it does, and every program
+//! in this directory is a demonstration of something.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

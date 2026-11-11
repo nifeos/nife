@@ -512,6 +512,12 @@ mod force_kill_tests;
 #[cfg(test)]
 mod memory_grant_reclaim_tests;
 
+/// **Whether a region subtree's ceilings hold through the real `RETYPE_OBJECT` and `SPLIT`**: a
+/// region filled to every ceiling with pages to spare, a sibling that still builds, and every
+/// count back after the reclaim. Cross-ISA for `memory_grant_reclaim_tests`' reason.
+#[cfg(test)]
+mod subtree_ceiling_tests;
+
 /// **A first process that gives its authority away, and a supervision tree that outlives it** (milestone 22
 /// phase B.2).
 ///
@@ -1076,7 +1082,7 @@ mod confinement_attack_tests;
 /// **A spend-only budget narrows a SPLIT child and every RETYPE alike** (milestone 903 (a seventh
 /// outsider pass attacks the confinement claim), fatal risk 7's confinement claim, claim 3). Drives
 /// the real dispatcher: SPLIT off a WRITE-only budget inherits WRITE, and so do RETYPE and
-/// `RETYPE_OBJ` for a frame, a rendezvous, a notification and a timer. A characterization of the gap
+/// `RETYPE_OBJECT` for a frame, a rendezvous, a notification and a timer. A characterization of the gap
 /// until milestone 824 (a retype mints no right its budget lacks) closed it; its header has the
 /// history.
 ///

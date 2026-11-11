@@ -10,9 +10,10 @@
 //! - The client is in the kernel, so the figure leaves out a client process's cost.
 //! - Sequential only, one pass, no warm-up and no repeats.
 
+use driver_process_contract::non_volatile_memory_express::BringUpError;
 use filesystem_contract::blk;
 
-use crate::non_volatile_memory_express::{Absent, BLOCK_SIZE, Error};
+use crate::non_volatile_memory_express::{Absent, BLOCK_SIZE};
 use crate::user::non_volatile_memory_express_service::{self as service, Wiring};
 use crate::{arch, println};
 
@@ -148,7 +149,11 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
         }
         Err(Absent::Refused {
             rid,
-            why: Error::UnsupportedNamespace { lba_shift, blocks },
+            why:
+                BringUpError::UnsupportedNamespace {
+                    logical_block_size_shift: lba_shift,
+                    blocks,
+                },
         }) => {
             // No server, so no wiring; the requester id still answers the scope.
             print_scope(rid, crate::iommu::scope_of(rid));
@@ -159,6 +164,13 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
             );
             return Err(Verdict::Skipped(
                 "the namespace's lba size gives no blocks_per in 1..=8",
+            ));
+        }
+        Err(Absent::Unconfined { rid, why }) => {
+            print_scope(rid, crate::iommu::scope_of(rid));
+            println!("disk-throughput: controller {rid:#06x} unconfined: {why}");
+            return Err(Verdict::Failed(
+                "the controller is present and the IOMMU refused it (line above)",
             ));
         }
         Err(Absent::Refused { rid, why }) => {

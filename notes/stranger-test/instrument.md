@@ -1,5 +1,7 @@
 # Stranger test instrument history
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [the stranger test](../stranger-test.md), which holds the current state. This page
 is the record for how the harness, the rubric and the cadence came to be as they are.*
 

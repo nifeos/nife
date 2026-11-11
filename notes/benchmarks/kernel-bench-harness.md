@@ -233,7 +233,7 @@ records which machine a number came from.
 `SCALE_MAXIMUM_PAIRS` is 48, so the sweep stops at 96 threads, where the roadmap says "N from 2 to
 128". Read "N" as distinct threads cycling through IPC, as the prediction ("somewhere between 16 and
 32 threads") does: 96 is three times past the predicted knee. It stays at 48 although
-`sched::MAXIMUM_THREADS` is now 256, because the sweep is a published measurement and moving its end
+`sched::MAXIMUM_THREADS` is now 1,024, because the sweep is a published measurement and moving its end
 would make every later run incomparable. Change it only if the knee moves.
 
 E4 sweeps working sets of 4 to 128 KiB, below, at and above a typical 32 KB L1d and into L2, so it

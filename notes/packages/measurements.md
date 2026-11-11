@@ -2,8 +2,9 @@
 
 *An appendix to [`notes/packages.md`](../packages.md), which carries the design and is written so a
 reader can act without opening this file. This one holds the producer's and the installer's proof
-lists and the measured costs of running an installed program by its bytes and of installing one.
-Name: provisional (2026-09-26).*
+lists and the measured costs of running an installed program by its bytes and of installing one.*
+
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 ## What proves the producer
 

@@ -64,7 +64,7 @@ out of range. Both cases answer `NoSuchSlot`.
 
 A leaf child is handed a budget without `GRANT`, so it may spend memory but not lend it. `SPLIT`
 honors that (`split_never_widens_rights`), and milestone 824 (a retype mints no right its budget
-lacks) makes `RETYPE` and `RETYPE_OBJ` honor it too.
+lacks) makes `RETYPE` and `RETYPE_OBJECT` honor it too.
 
 The test uses two `GRANT`-less budgets: `WRITE` alone, and `SPEND_ONLY`, which is every right but
 `GRANT` and is what `memory_region_capability` hands a leaf. The frame and every object kind come back with

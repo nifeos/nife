@@ -27,7 +27,7 @@ pub const TIMER: u64 = 5;
 
 /// **A process**: the capability table its threads share,
 /// the address space they run in, its threads, and its supervision. The page is the creator's
-/// region's, which is what pays for it. `RETYPE_OBJ`'s second word names the address space the
+/// region's, which is what pays for it. `RETYPE_OBJECT`'s second word names the address space the
 /// process holds, a `WRITE` capability that is consumed as `CONFIGURE` consumes one. See
 /// [`super::process`]. *(Number provisional.)*
 pub const PROCESS: u64 = 6;

@@ -57,7 +57,8 @@ an NVMe driver on a machine without one.
 - nife has no virtio-iommu driver.
 
 `crates/direct_memory_access_validator` and its Kani harnesses stay in the tree as the proved form
-of §86's option 4, doorbell mediation.
+of §86's option 4, doorbell mediation. The validator runs in every mediated grant, and on a machine
+without an IOMMU nife claims no confinement from it.
 
 Ruled 2026-11-10 (UTC). A virtio driver starts with one of two grants, and the grant decides; the
 kernel has no mode flag and no refusal on `NOTIFY` for it. The mediated grant is the `Virtio`
@@ -68,5 +69,8 @@ is a new method or a new object kind. The direct grant applies to virtio-pci dev
 runners keep virtio-mmio. Milestone 1062 (the device control planes leave the kernel), step 7,
 designs it.
 
-Not ruled: which grant a starter gives a virtio-pci device that can take either. Until that
-ruling every starter grants mediated.
+Ruled 2026-11-11 (UTC). A starter gives the direct grant to a virtio-pci function the IOMMU
+confines: the active IOMMU owns its requester id, the function offers `VIRTIO_F_ACCESS_PLATFORM`,
+and none of its structure pages shares a page with its MSI-X table or pending-bit array. Every other
+function gets the mediated grant, and so does every virtio-mmio device. The rule lives in the
+starter, never in the kernel.

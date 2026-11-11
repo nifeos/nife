@@ -56,7 +56,7 @@ thirty thousand pages and the kernel loses thirty thousand frames.
 
 Since milestone 824 (a retype mints no right its budget lacks), on calef's ruling (a) of 2026-10-07
 (UTC) on PR #1798: a frame or kernel object retyped from a region carries the region capability's
-rights, no more. `RETYPE` and every `RETYPE_OBJ` arm mint through `Cap::mint_child`, the inheriting
+rights, no more. `RETYPE` and every `RETYPE_OBJECT` arm mint through `Cap::mint_child`, the inheriting
 mint `SPLIT` already used and `split_never_widens_rights` proves. Before 824 each minted
 `Rights::ALL`, so a holder of a budget without `GRANT` could carve a page and lend it. `GRANT` is
 now delegated down the budget tree and never minted at a leaf.
@@ -130,15 +130,15 @@ objects needs `IPC_TABLES`, while `destroy` must never take it, because it is re
 
 ## How many regions can be live
 
-`memory_region::MAXIMUM_REGIONS` (256) bounds regions live at once, not creations over the kernel's
+`memory_region::MAXIMUM_REGIONS` (1,024) bounds regions live at once, not creations over the kernel's
 lifetime, since slots are reused. Every suite run prints the peak on its `regions:` line, with the
 test during which it was set. Measured 2026-09-26:
 
 | architecture | peak | spare | live when the first test starts | live after the last |
 |---|---|---|---|---|
-| aarch64 | **225** | 31 | 1 | 222 |
-| riscv64 | **224** | 32 | 1 | 221 |
-| `x86_64` | **125** | 131 | 1 | 122 |
+| aarch64 | **225** | 799 | 1 | 222 |
+| riscv64 | **224** | 800 | 1 | 221 |
+| `x86_64` | **125** | 899 | 1 | 122 |
 
 The table is nearly empty at boot. Almost every region live at the peak is one an earlier test left
 behind (on aarch64, `ntp_tests` 39 and `login_tests` 33 lead, then the compositor, file service and
@@ -210,11 +210,56 @@ almost all carved into job regions, and the objects live in those, so a count of
 would say its threads cost nothing. `Children` is the region's alone, since it is exactly the pages
 the subtree counts are drawn from.
 
+## Subtree ceilings
+
+Every kind of kernel object lives in a fixed-size table the whole machine shares. The region tree
+bounds each table by subtree as well as by pages.
+
+Each region carries two counts for every counted kind:
+
+- `live`: the objects of that kind in its subtree right now.
+- `ceilings`: the most that subtree may hold at once. A root's comes from its creator. A split
+  child gets a sixteenth of its root's, so no split region can raise what it inherited.
+
+The table refuses a creation when the region or any ancestor is at its ceiling for that kind. Two
+walks of the parent chain run under the one `REGIONS` hold that also carves the page: the first
+decides and the second commits, so a refusal moves no page, no pin and no count. The caller sees
+`OutOfMemory`, as for an empty region. The kernel also prints one line, at most once a second,
+naming the kind, the region asked and the region whose ceiling refused it.
+
+The counts follow table occupancy, not creations:
+
+- `Threads::remove` releases a thread when its slot frees at the reap.
+- `AddressSpace::drop` releases a lent address space.
+- Rendezvous, notifications, timers and processes leave their tables only when `claim_for_destroy`
+  reclaims their region, and it gives their counts back in the same borrow that removes the region.
+- An insert that fails after the region gave up its page releases the count it took.
+
+`memory_region::progenitor_ceilings` builds the progenitor's budget: every table's capacity less
+an eighth the kernel keeps, written in the `MAXIMUM_*` constants so the ceilings follow a resize.
+
+Kani proves the counting in `crates/memory_regions`: a refused carve or split moves nothing, every
+live count equals what its subtree holds and stays within its ceiling, and reclaiming a subtree
+gives every count back. Each harness takes one operation from any state that holds those counts,
+so the proof covers runs of any length. `subtree_ceiling_tests` fills a region to every ceiling through the real
+`RETYPE_OBJECT` and `SPLIT`, then builds a child in a sibling.
+
+Prior art. Linux bounds threads per cgroup with the `pids` controller and per user with
+`RLIMIT_NPROC`; both are per-group counters checked at creation, the shape used here. seL4 has no
+global object tables, so memory is its only budget. nife sits between them: its tables have fixed
+sizes, so a subtree needs a count beside its pages.
+
+Limits that remain:
+
+- Regions that share one budget share its sixteenth, so one job can use a whole pool's share.
+- A service that creates objects for a client out of its own region spends its own ceiling.
+- Regions the kernel creates as roots have no ceiling and draw on the kernel's reserve.
+
 ## BUGS
 
 - **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
   caller's own budget is exhausted, when the caller's capability table is full, or when
-  `MAXIMUM_REGIONS` is exhausted; `RETYPE_OBJ` collapses a different pair the same way (each
+  `MAXIMUM_REGIONS` is exhausted; `RETYPE_OBJECT` collapses a different pair the same way (each
   method's doc comment in `crates/abi`). The first two are facts about the caller; the third is a
   fact about every other live region on the machine, which the caller did not cause and cannot fix.
   DECISIONS §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer)

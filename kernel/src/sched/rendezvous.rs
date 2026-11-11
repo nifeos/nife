@@ -18,7 +18,7 @@ pub(super) enum RendezvousFailure {
 
 /// Create an rendezvous **in `region`'s memory** (milestone 19a): one page retyped and pinned, the
 /// rendezvous at its start, a fresh generational name in the registry. The shared engine of the
-/// `RETYPE_OBJ` syscall and the kernel's own [`create_rendezvous`]. Returns the name, or which
+/// `RETYPE_OBJECT` syscall and the kernel's own [`create_rendezvous`]. Returns the name, or which
 /// limit refused it; a refusal spends nothing.
 ///
 /// Context: takes `IPC_TABLES`, and `MEMORY_REGION` beneath it.
@@ -45,12 +45,15 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     unsafe { (crate::arch::mmu::phys_to_virt(phys) as *mut Rendezvous).write(Rendezvous::new()) };
 
     // The check above counts live entries, so a table with no free slot can still refuse the
-    // insert; the page stays spent.
-    let name = sched
+    // insert. Then the count the retype took goes back; the page stays spent.
+    let Some(name) = sched
         .rendezvous_table
         .insert_with(|_| RendezvousPageAddress::new(phys))
-        .ok_or(RendezvousFailure::RegistryFull)?
-        .to_bits();
+        .map(EntryName::to_bits)
+    else {
+        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Rendezvous);
+        return Err(RendezvousFailure::RegistryFull);
+    };
     PEAK_RENDEZVOUS.fetch_max(sched.rendezvous_table.len(), Ordering::Relaxed);
     if sched.kernel_ep_region == Some(region) {
         KERNEL_CHUNK_RENDEZVOUS.fetch_add(1, Ordering::Relaxed);
@@ -59,7 +62,7 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
 }
 
 /// Create an rendezvous in `region`'s memory. `None` when the region is out of budget or the registry
-/// is full. The `RETYPE_OBJ` syscall's engine; userspace gets one flat failure because a process
+/// is full. The `RETYPE_OBJECT` syscall's engine; userspace gets one flat failure because a process
 /// cannot act on the difference (it holds one region and cannot enlarge the kernel's registry).
 pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
     try_create_rendezvous_from(region).ok()

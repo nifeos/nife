@@ -150,7 +150,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
     // Asked of the unit that owns the device, not of "is any IOMMU up": on a VT-d machine with
     // more than one unit those differ (`iommu::scope_of`).
     let confined_by_iommu = rid.is_some_and(|rid| crate::iommu::scope_of(rid).is_confining());
-    let vid = crate::virtio::register(transport, dma, DMA_PAGE_FRAMES * FRAME_SIZE, rid);
+    let vid = crate::virtio::register(transport, dma, DMA_PAGE_FRAMES * FRAME_SIZE, rid)?;
 
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();
@@ -387,10 +387,10 @@ impl Wiring {
     pub fn get(&self, n: u64, out: &mut [u8]) -> usize {
         let r = crate::sched::ipc_call(
             self.request,
-            [entropy_contract::req(entropy_contract::GET, n), 0],
+            [entropy_contract::request(entropy_contract::GET, n), 0],
         );
-        match entropy_contract::delivered(r[0]) {
-            Some(count) => entropy_contract::take(count, r[1], out),
+        match entropy_contract::delivered_bytes(r[0]) {
+            Some(count) => entropy_contract::copy_delivered_bytes(count, r[1], out),
             None => 0,
         }
     }

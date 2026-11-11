@@ -3,11 +3,11 @@ Falsifies `system_tests::user::seventh_pass_retype_tests::a_grant_less_budget_na
 Architecture: aarch64
 
 The patch puts back, for one kernel object kind, the mint milestone 824 (a retype mints no right
-its budget lacks) removed: `MemoryRegion::RETYPE_OBJ` hands back a rendezvous with `Rights::ALL`
+its budget lacks) removed: `MemoryRegion::RETYPE_OBJECT` hands back a rendezvous with `Rights::ALL`
 whatever the budget holds. The frame step before it still holds, so the test fails at the first
 object, which is the half the seventh outsider pass found the frame-only test did not reach.
 
-Expected to fail: `assert_eq!` "a WRITE-only budget RETYPE_OBJ'd a rendezvous carrying more than
+Expected to fail: `assert_eq!` "a WRITE-only budget RETYPE_OBJECT'd a rendezvous carrying more than
 WRITE", with `left: Rights(31)` and `right: Rights(2)`. Replayed on 2026-10-12 (UTC) by milestone
 824's lane: red at exactly that assertion on aarch64.
 

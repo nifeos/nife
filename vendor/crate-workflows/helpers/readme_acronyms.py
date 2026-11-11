@@ -290,6 +290,7 @@ def selftest():
         ('Non-Volatile Memory Express (NVMe) and PCI Express (PCIe).\n', []),
         ('The Basic Multilingual Plane is one plane. A reader of\nthe BMP knows it.\n', []),
         ('The Fast path. Access is Tight.\n\nFAT later.\n', [('FAT', None)]),
+        ('# c\n\n[![CI](https://x.example/TRNG.svg)](https://x.example)\n\nThe EFI.\n', [('EFI', None)]),
     ]
     english = frozenset({'identify', 'fat'})
     cases += [

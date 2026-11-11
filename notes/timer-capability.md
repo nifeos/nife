@@ -154,7 +154,7 @@ assumes about it:
 - The reap sweep was priced, not proved. There is no test that destroys a region holding an
   armed timer, which is precisely the use-after-free the second-scaffold summary above says the sweep exists to
   close. Whoever builds this owes that test before the sweep is believed.
-- `MAXIMUM_TIMERS = 512` is this lane's guess and it drives the only figure here that is large.
+- `MAXIMUM_TIMERS` is 1,024, and it drives the only figure here that is large.
   See the `IpcTables` finding above.
 - Nothing here was run on hardware. The aarch64 refutation is a register specification plus this
   tree's own code, not an EL0 program that armed `CNTP_CVAL_EL0` and took the interrupt. The cheap

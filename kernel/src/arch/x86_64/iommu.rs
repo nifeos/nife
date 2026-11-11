@@ -434,11 +434,11 @@ pub fn initialize(dmar: &DmarUnits) {
         }
         done[done_count] = rid;
         done_count += 1;
-        if let Some(i) = owner_index(rid) {
-            crate::iommu::confine(rid, &[]);
-            if let Slot::Up(u) = &mut IOMMU.lock().slots[i] {
-                u.reserved_devices += 1;
-            }
+        if let Some(i) = owner_index(rid)
+            && crate::iommu::confine(rid, &[]).is_ok()
+            && let Slot::Up(u) = &mut IOMMU.lock().slots[i]
+        {
+            u.reserved_devices += 1;
         }
     }
 
@@ -712,17 +712,23 @@ fn invalidate_all(s: &Unit) {
 /// which the unit hands out itself because the requester id does not fit a real unit's domain-id
 /// width ([`Unit::domain_id`]). A device no running unit owns gets no context entry; [`scope_of`]
 /// is how a caller learns that.
-pub fn attach(rid: u32, root: u64, _tag: u16) {
+///
+/// Always `Ok`: a VT-d root and context table cover every 16-bit requester id, and the cases that
+/// leave a device unconfined (no owning unit here, an AMD-Vi alias conflict) fail closed inside
+/// and answer through [`scope_of`] or a printed line, as they did before the seam returned a
+/// result.
+pub fn attach(rid: u32, root: u64, _tag: u16) -> Result<(), crate::iommu::AttachError> {
     if super::amd_vi::is_active() {
-        return super::amd_vi::attach(rid, root);
+        super::amd_vi::attach(rid, root);
+        return Ok(());
     }
     let Some(i) = owner_index(rid) else {
-        return;
+        return Ok(());
     };
     let mut g = IOMMU.lock();
     let Units { slots, ctx } = &mut *g;
     let Slot::Up(s) = &mut slots[i] else {
-        return;
+        return Ok(());
     };
     let ctx = &mut ctx[i];
     let did = s.domain_id();
@@ -779,6 +785,7 @@ pub fn attach(rid: u32, root: u64, _tag: u16) {
     crate::arch::direct_memory_access_write_barrier();
 
     invalidate_all(s);
+    Ok(())
 }
 
 /// Pop one fault, if any unit holds one: `FSTS.PPF` says at least one Fault Recording Register
@@ -1014,7 +1021,11 @@ mod tests {
             _ => crate::testing::skip!("bus 0xfe has an owner on this DMAR (a catch-all takes it)"),
         }
         let root = zeroed_page_frame("test domain root");
-        attach(rid, root, 0);
+        assert_eq!(
+            attach(rid, root, 0),
+            Ok(()),
+            "VT-d's attach never refuses with an error"
+        );
         let g = IOMMU.lock();
         for (i, slot) in g.iter().enumerate() {
             let Slot::Up(u) = slot else { continue };
