@@ -35,10 +35,11 @@
 //! - It appends to one name, [`fixture::SINK_NAME`]; two running on one image would interleave.
 //! - [`PAGE_VA`] is copied in every program that maps the FS server's shared frame.
 //!
-//! Name: recorded (design/roadmap/0292-the-sink-contract-ends-are-three-programs.md), provisional:
-//! the name the kernel side spells (`fs_service::FileSink`). Refused `file_sink_caretaker` (collides
-//! with `fs_file_caretaker`) and `sink_file_writer` (this *is* the sink). What `caretaker` means for
-//! a translating adapter is milestone 413 (what a `caretaker` is).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). The name the kernel side spells
+//! (`fs_service::FileSink`); see design/roadmap/0292-the-sink-contract-ends-are-three-programs.md.
+//! Refused `file_sink_caretaker` (collides with `fs_file_caretaker`) and `sink_file_writer` (this
+//! *is* the sink). What `caretaker` means for a translating adapter is milestone 413 (what a
+//! `caretaker` is).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

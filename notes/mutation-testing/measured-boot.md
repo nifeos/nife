@@ -1,5 +1,7 @@
 # `measured_boot`: five survivors proved equivalent
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 This appendix of [notes/mutation-testing.md](../mutation-testing.md) holds the 2026-09-03 re-run of
 `measured_boot`, and the algebra proving its five survivors equivalent.
 

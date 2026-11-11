@@ -182,15 +182,15 @@ boot pass must stop at one as well.
 ### Widening the table
 
 `CAPABILITY_TABLE_SLOTS` is one constant for every thread. A slot is 32 bytes, asserted in
-`kernel/src/capability_object.rs`, and `kernel::sched::MAXIMUM_THREADS` is 256, so each slot added costs 8 KiB of
+`kernel/src/capability_object.rs`, and `kernel::sched::MAXIMUM_THREADS` is 1,024, so each slot added costs 32 KiB of
 kernel memory. Holding N durable sessions needs 19 + 4N slots:
 
 | Durable sessions | Slots needed | Table raise | Kernel memory |
 |---|---|---|---|
 | 1 | 23 | none | none |
-| 2 | 27 | +4, to 28 | 32 KiB |
-| 4 | 35 | +12, to 36 | 96 KiB |
-| 8 | 51 | +28, to 52 | 224 KiB |
+| 2 | 27 | +4, to 28 | 128 KiB |
+| 4 | 35 | +12, to 36 | 384 KiB |
+| 8 | 51 | +28, to 52 | 896 KiB |
 
 Each session also takes `DURABLE_BUDGET_PAGES`, 640 pages (64 client, 192 session region, 384
 session budget), 2.5 MiB with 4 KiB pages. The alternatives to a global raise are fewer slots per

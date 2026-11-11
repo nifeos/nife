@@ -1,6 +1,7 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-11-10
+built: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -16,8 +17,8 @@ IOMMU, and Kani proves these drivers, so no third-party crate applies.
 
 Ruled 2026-11-10 (UTC): the QEMU runners keep virtio-mmio, and §18 (the PCIe transport: one driver,
 two buses, the seam in the kernel)'s item 3 stands. A later move of the aarch64 and riscv64 runners
-to virtio-pci needs this milestone and milestone 1065 (several drivers share an interrupt line, or
-MSI replaces the lines) first.
+to virtio-pci needs this milestone and milestone 1065 (MSI replaces the interrupt lines on
+aarch64 and riscv64) first.
 
 ## Why it stands on its own
 
@@ -66,6 +67,38 @@ Total: S to M (a guess).
 3. Neither driver panics on a requester id the board can produce, and each refuses one beyond the
    new table with an error, not a panic.
 4. The existing IOMMU and PCI gates pass on every architecture, with no test weakened.
+
+## What was built
+
+Both tables are two-level, with one geometry: a root frame of 512 eight-byte entries naming leaf
+frames of 64 entries of 64 bytes, each leaf allocated when the first device in its range attaches.
+Each holds requester ids 0 to 32767, buses 0 to 127.
+
+- aarch64 took step 1's second shape, the two-level stream table (`SPLIT` 6, `LOG2SIZE` the
+  smaller of 15 and the SMMU's `SIDSIZE`), rather than a 256-entry linear table. The linear table
+  reaches bus 0 alone and needs four contiguous frames aligned to 16 KiB, which the frame allocator
+  does not give; the two-level table matches the RISC-V side and costs one descriptor read on an
+  STE cache miss. Each leaf is a frame of STEs and a sibling frame of CDs at the same offsets.
+- riscv64 runs `ddtp` mode `2LVL` and keeps the extended 64-byte context whenever the unit offers
+  `MSI_FLAT`, the format whose `msiptp` per-device MSI page tables use.
+- Past the table, or with no frame for a new leaf, `attach` returns `iommu::AttachError` and writes
+  no entry. `iommu::confine` returns it, and every driver that confines a device refuses to start
+  one it names. x86_64's `attach` always returns `Ok`.
+- Kani: `no_stream_can_reach_another_streams_tables` and
+  `no_device_can_reach_another_devices_context` range over every `u32` and prove placement,
+  refusal and disjointness; `the_level_one_table_names_exactly_the_leaf` and
+  `the_root_entry_names_exactly_the_leaf` prove the root entries. Each carries a replayable
+  falsification.
+- Both runners put the PCI disk at 00:10.0, requester id 128, and
+  `the_iommu_faults_a_dma_that_escapes_the_domain` asserts the id on both architectures. The riscv64
+  e1000e moved to 00:11.0, requester id 136.
+
+## Follow-on
+
+- **Recorded.** Buses 128 to 255 stay out of reach on both architectures: a three-level RISC-V
+  directory, or an SMMU level-one table of two aligned frames, would reach them. The `BUGS`
+  sections of `kernel/src/arch/aarch64/iommu.rs` and `kernel/src/arch/riscv64/iommu.rs` carry it.
+- **Recorded.** A leaf, once allocated, is never freed; the same two `BUGS` sections say so.
 
 ## Index row
 

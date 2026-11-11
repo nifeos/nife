@@ -412,6 +412,17 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
         "a PCIe disk is present but the IOMMU is not active: DMA is bypassing translation \
          (is iommu=smmuv3 / -device riscv-iommu-pci missing from the runner?)",
     );
+    // Both runners place this disk at 00:10.0, requester id 128, past the first leaf of the
+    // two-level device table (milestone 1066 (the IOMMU device tables on aarch64 and riscv64 grow
+    // past 64 devices)), so the fault below is proved for an id the second level reaches. A disk
+    // moved back below 64 would prove only what one frame held.
+    #[cfg(not(target_arch = "x86_64"))]
+    assert!(
+        d.rid >= 64,
+        "the PCIe disk is at requester id {:#x}, inside the first 64: this run no longer confines a \
+         device past the device table's first leaf",
+        d.rid,
+    );
 
     // Quiesce every other block device. On VT-d a disk nothing registered faults default-deny
     // when `confine` invalidates, and refaults every retry; with one fault-recording register
@@ -433,7 +444,8 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
         dma,
         page_frames::FRAME_SIZE,
         Some(d.rid),
-    );
+    )
+    .expect("the IOMMU refused to attach the PCIe disk");
 
     // A frame the domain does not map: the device's escape target.
     let victim = crate::memory::alloc().expect("no victim frame").addr();
@@ -508,7 +520,8 @@ fn a_device_write_to_the_read_only_shadow_is_refused() {
         dma,
         page_frames::FRAME_SIZE,
         Some(d.rid),
-    );
+    )
+    .expect("the IOMMU refused to attach the PCIe disk");
     let flags = provoke_write_to_shadow(id);
     assert_eq!(
         flags, 0xffff,
@@ -543,7 +556,10 @@ fn borrow_block_transport() -> Option<Transport> {
 fn register_borrowed() -> Option<(u64, u64)> {
     let transport = borrow_block_transport()?;
     let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
-    Some((register(transport, dma, page_frames::FRAME_SIZE, None), dma))
+    Some((
+        register(transport, dma, page_frames::FRAME_SIZE, None)?,
+        dma,
+    ))
 }
 
 /// [`unregister`] a borrowed device and return its DMA frame.

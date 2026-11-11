@@ -1,5 +1,7 @@
 # The new-crate backlog: a loop that waits
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 This appendix holds the triage of the seven worst new crates at the 2026-09-14 census, and the
 `tests::` exclusion that part of the work added. The summary and the current figures are in
 [notes/mutation-testing.md](../mutation-testing.md).

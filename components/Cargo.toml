@@ -713,10 +713,10 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
-non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "87bbef8c9ac4cd05cc6babf88f31fa8500166e9d" }
+non_volatile_memory_express = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "27aa19c957a340b720b8b7ce44de32a8405d6950" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
-e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "40c1ec9c7e73e5099661636c046773dfcaecbb6d" }
+e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", rev = "ef01cefa9a186db7f1c9802e78d8c6c1215db7ec" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
 designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet" }
@@ -724,7 +724,7 @@ designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
 usb = { version = "0.1.0", path = "../crates/usb" }
-extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
+extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.

@@ -1,5 +1,7 @@
 # The rest of the era, and the one failure mode the retro fonts share
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/glyphs.md](../glyphs.md). It holds the survey of early machines' fonts beyond
 the Kaypro II, and what it is evidence for.
 

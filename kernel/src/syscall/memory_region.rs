@@ -28,7 +28,7 @@ pub(super) fn memory_region_invoke(
             }
             memory_region_map(region, a0)
         }
-        abi::memory_region::RETYPE_OBJ => {
+        abi::memory_region::RETYPE_OBJECT => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
@@ -119,7 +119,7 @@ pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
 /// # BUGS
 ///
 /// - A full capability table leaves the run retyped and unnamed until the region is destroyed.
-/// - `RETYPE_OBJ`'s arms have the same shape: an object nobody can name.
+/// - `RETYPE_OBJECT`'s arms have the same shape: an object nobody can name.
 #[inline(never)]
 pub(super) fn memory_region_retype(
     capability: Capability,

@@ -6,8 +6,8 @@
 //! carries real authority when a process that did not mint it invokes it, and the kernel refuses
 //! to let it travel further because it was handed over without `GRANT`.
 //!
-//! Name: provisional (milestone 291). This was `hello`'s `RECEIVER` role, number 10. See
-//! `delegation_granter` for why the qualifier: `receiver` alone could name almost anything that
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `RECEIVER` role.
+//! See `delegation_granter` for why the qualifier: `receiver` alone could name almost anything that
 //! holds the read end of a channel.
 
 #![no_std]

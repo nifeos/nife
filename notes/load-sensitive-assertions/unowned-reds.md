@@ -1,5 +1,7 @@
 # Unowned reds from milestone 185's lane, 2026-08-27
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *(An appendix of [notes/load-sensitive-assertions.md](../load-sensitive-assertions.md), which holds
 the register and the rules. Moved here on 2026-09-24 and tightened; pull request #1211's first
 commit has the text verbatim.)*

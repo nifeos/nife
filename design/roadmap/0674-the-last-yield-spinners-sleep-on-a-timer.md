@@ -64,7 +64,7 @@ execution: a cron whose every entry is a grant), not to a lane of its own.
 
 ### A std program with an empty contract slot
 
-`std::thread::sleep` makes its timer and notification from slot 0 on first use. `RETYPE_OBJ` puts
+`std::thread::sleep` makes its timer and notification from slot 0 on first use. `RETYPE_OBJECT` puts
 each in the first free slot, and the std runtime contract says "not granted" by leaving a slot
 empty. So a program with no network or no directory would find its sleeper read as that service.
 The PAL refuses to make one while any contract slot is empty, and such a program still spins.

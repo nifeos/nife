@@ -1,6 +1,6 @@
 # The grid on xenon's screen
 
-*Name: provisional, for the finding it holds.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 On the one real machine that has run `screen_console`, xenon, the screen shows a regular grid
 instead of text. It was seen on 2026-09-04 and again on 2026-09-17. The cause is in the painting

@@ -123,6 +123,18 @@ interfaces_note::carry_interfaces!(&[
     },
 ]);
 
+/// The row buffer lives in `.bss`: 48 bytes a row times [`ps::MAXIMUM_ROWS`] is more than a
+/// quarter of the child's stack, and the kernel's thread table decides the row count.
+static mut ROWS: [ps::Row; ps::MAXIMUM_ROWS] = [ps::Row::EMPTY; ps::MAXIMUM_ROWS];
+
+/// The row buffer, borrowed once.
+fn rows() -> &'static mut [ps::Row] {
+    let p = &raw mut ROWS;
+    // SAFETY: the program has one thread and calls this once, from `start`, so the borrow is the
+    // only one there will be.
+    unsafe { &mut *p }
+}
+
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
@@ -130,10 +142,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     // **Walk first, complain second, print third.** A survey cannot know its complaints up front,
     // and §67's reader drains diagnostics to end-of-stream *before* it reads a byte of output.
-    // `MAXIMUM_ROWS` is the kernel's whole thread table, so truncation is unreachable: two
-    // kilobytes on a twelve-page stack.
-    let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
-    let mut found = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
+    // `MAXIMUM_ROWS` is the kernel's whole thread table, so truncation is unreachable.
+    let mut found = ps::collect(rows(), &mut |cursor| survey(DOMAIN_SLOT, cursor));
     // **The `TIME` column is a second walk** (milestone 282 (a thread's CPU time, and the `top` it
     // makes possible)): `SURVEY` answers one record per call, so the two facts are two walks joined
     // on the tid, over the same endpoint and right as the listing above.

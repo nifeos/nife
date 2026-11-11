@@ -24,12 +24,12 @@
 //!
 //! - [`GO`] is never fuzzed: the conductor needs it. It holds `READ` alone, so `RECEIVE` and
 //!   `RECEIVE_CAPABILITY` on it go unexercised.
-//! - No thread or timer is ever made: a `MemoryRegion::RETYPE_OBJ` for either is rewritten to a
+//! - No thread or timer is ever made: a `MemoryRegion::RETYPE_OBJECT` for either is rewritten to a
 //!   rendezvous, since a thread or a timer would make a seed's run depend on timing.
 //! - `SYS_EXIT` and `SYS_EXIT_THREAD` are never drawn; either would end the run.
 //! - It never touches the memory it maps; the page oracle reads the page tables instead.
 //!
-//! Name: provisional (milestone 779 (fuzz the surface a confined process can reach)'s lane, 2026-10-06 UTC).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68 (code-quality gates)'s ratchet tracks
@@ -134,12 +134,12 @@ impl Rng {
 /// One call: a syscall number and its six words.
 fn pick(rng: &mut Rng) -> (u64, [u64; 6]) {
     let (nr, mut words) = draw(rng);
-    // `MemoryRegion::RETYPE_OBJ`'s first word is the object type. A TCB or a timer would run on its
+    // `MemoryRegion::RETYPE_OBJECT`'s first word is the object type. A TCB or a timer would run on its
     // own clock and break the seed's determinism (see the module's `BUGS`), so either becomes a
     // rendezvous. Applied whatever the slot holds, which nudges a `SEND_CAPABILITY`'s capability argument
     // off 3 and 5 too; that is the price of not knowing the slot's type.
     if nr == SYS_INVOKE
-        && words[1] == abi::memory_region::RETYPE_OBJ
+        && words[1] == abi::memory_region::RETYPE_OBJECT
         && (words[2] == abi::objtype::THREAD_CONTROL_BLOCK || words[2] == abi::objtype::TIMER)
     {
         words[2] = abi::objtype::RENDEZVOUS;

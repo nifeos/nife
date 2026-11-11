@@ -57,10 +57,11 @@ Registers: the syscall number is in `x8`, `a7` or `rax`; the arguments are `x0` 
 and the method in the first two and three data words in the next three. A negative result is an
 `abi::Error`.
 
-### `RETYPE_OBJ` of `objtype::PROCESS` (6): making a process
+### `RETYPE_OBJECT` of `objtype::PROCESS` (6): making a process
 
-`invoke(region, RETYPE_OBJ, PROCESS, space_slot, floor)` -> slot. `kernel/src/syscall/retype.rs`,
-`kernel/src/sched/process.rs` (`create_process_from`).
+`invoke(region, RETYPE_OBJECT, PROCESS, space_slot, floor)` -> slot, method 2, its name spelled out
+by the ruling of 2026-11-11 (UTC). `kernel/src/syscall/retype.rs`, `kernel/src/sched/process.rs`
+(`create_process_from`).
 
 - Needs `WRITE` on the region (`NotPermitted`) and `WRITE` on the address-space capability in
   `space_slot` (`NotPermitted`). An empty slot is `NoSuchSlot`; a capability that is not an address
@@ -121,8 +122,8 @@ entry, so a racing `START` sees all of them or none.
 
 **One holder per space.** Ruling 1 said §249's bound mark retires. What the code retires is the
 one-*thread* limit: threads share a space by joining its process. What it keeps is one *holder*
-per space, a thread that is its own process or a process, so a second `CONFIGURE` or `RETYPE_OBJ`
-on a held space is still `WrongObject` and two processes cannot share one space
+per space, a thread that is its own process or a process, so a second `CONFIGURE` or
+`RETYPE_OBJECT` on a held space is still `WrongObject` and two processes cannot share one space
 (`kernel/src/user/address_space_registry.rs`, `bind_user_address_space`). §249 is amended below to
 say so.
 

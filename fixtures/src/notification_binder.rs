@@ -9,7 +9,7 @@
 //! as `(w0, w1, tag)`, `tag` 1 for a notification and 0 for a message, for the kernel test.
 //!
 
-//! Name: provisional (milestone 151's lane, 2026-09-26).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
 
 #![no_std]
 // Program entry points, not the crates/ library surface the ratchet of milestone 68 (code-quality gates) tracks
