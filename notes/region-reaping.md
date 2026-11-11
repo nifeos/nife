@@ -184,6 +184,15 @@ meets it.
 
 ## BUGS
 
+- **A second holder can race a reclaim.** Nothing closes the region while `reclaim_region` runs. A
+  holder of the region's capability outside the region, on another core, can retype a kernel object
+  into it after `reap_region_objects` has scanned the tables. The `unpin` then clears that object's
+  pin, the claim succeeds, and the region frees a page a live object occupies. A split or retype
+  between the `unpin` and the claim makes the claim refuse, and `reclaim_region` still returns `Ok`,
+  because `memory_region::destroy` returns nothing. Found by reading; no test reproduces it.
+  [§321 (reclaiming a whole region subtree)](../design/decisions/0321-reclaiming-a-whole-region-subtree.md)
+  rules that every reclaim first marks the region closing, which `RegionTable::charge` checks; not
+  built yet.
 - **`Err` is destructive, and it does not read that way at a call site.** A refusal caused by a live
   thread arms the kill on every live thread in the region, so `reclaim_region(r).is_err()` cannot be
   asked as a question: asking it dooms the answer. No call asks whether a region is busy without
