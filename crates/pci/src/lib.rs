@@ -433,9 +433,9 @@ pub fn read_bars(
         _ => 0,
     };
     // Set when the slot before was the lower half of a 64-bit BAR, whose upper half this slot is.
-    // A flag rather than a two-slot step, so the loop is bounded by its range alone.
+    // A flag rather than a two-slot step, so the loop is bounded by the six slots alone.
     let mut upper_half = false;
-    for i in 0..slots {
+    for (i, slot) in out.iter_mut().enumerate().take(slots) {
         if core::mem::take(&mut upper_half) {
             continue;
         }
@@ -483,7 +483,7 @@ pub fn read_bars(
                     .map(|_| size)
                     .ok_or(BarRefusal::EndOverflows)
             }) {
-                Ok(size) => out[i] = Some(Bar { base, size, is_64 }),
+                Ok(size) => *slot = Some(Bar { base, size, is_64 }),
                 Err(reason) => refused(i, reason),
             }
         }
