@@ -47,12 +47,9 @@ dependency); everything else is two-way and the maintainer decides it.
 
 1. The `check / standalone` job refuses this source as it stands.
    Finding: five steps of the job fail, each at ceiling 0 with no baseline file in the new
-   repository. Naming: `spelled_out` refuses the parameter `va` (`src/lib.rs` line 233); `unit_symbols`
-   refuses `NS_PER_SECOND` (line 57) and `NANOS_PER_SEC` (line 101); `register_names` refuses
-   `NANOS_PER_SEC` (line 101) and the private `W_OFFSET` (line 184); `british_spelling` refuses
-   `two_writers_serialise_rather_than_corrupt_the_page` (line 940),
-   `a_racing_reader_sees_an_unrecognised_page_or_a_whole_one` (line 985), `SAW_UNRECOGNISED` (line
-   986) and `SAW_INITIALISED` (line 987). Prose acronyms in doc comments: RTC (line 125), ARM (line
+   repository. Naming: `spelled_out` refuses the parameter `va` (`src/lib.rs` line 233). `unit_symbols`
+   refuses `NS_PER_SECOND` (line 57) and `NANOS_PER_SEC` (line 101). `register_names` refuses
+   `NANOS_PER_SEC` (line 101) and the private `W_OFFSET` (line 184). `british_spelling` refuses one test name (line 940), another test name (line 985) and two constants (lines 986 and 987), which use the British forms of serialize, unrecognized and initialized. Prose acronyms in doc comments: RTC (line 125), ARM (line
    204), POSIX (line 382), TLS (line 418), UART (line 536), ISA (line 537), LOW and HIGH (line 550)
    are not expanded at first use. Passive voice: `README.md` lines 36 ("is refused") and 43 ("be
    told") are two passives in 640 words where the helper allows one. Badge row: the README has

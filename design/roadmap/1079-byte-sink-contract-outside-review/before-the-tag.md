@@ -64,8 +64,8 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    Door: two-way before the release (decoder behavior, no wire change). Effort: S.
 
 7. A British spelling fails the template's gate at a ceiling of zero.
-   Finding: `neighbours` in a test function's name; `authorise` and `neighbour` in prose, which the
-   house-style check refuses in new text.
+   Finding: the British spelling of "neighbors" appears in a test function's name, and the British
+   spellings of "authorize" and "neighbor" appear in prose. The house-style check refuses them in new text.
    Evidence: `src/lib.rs` lines 207, 442 and 454.
    Change: `neighbors`, `authorize`, `neighbor`.
    Door: two-way. Effort: XS.

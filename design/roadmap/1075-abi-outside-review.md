@@ -220,7 +220,7 @@ program basalt has built against 1. The deletion changes nothing a program can o
 
 Recommendation. Delete the module and its pinned line without a bump. Record in the gate (and later in the crate's own rule, item 11) that the version follows the numbers a kernel dispatches, so a removal of a number no kernel serves is not a renumber. The stricter alternative, bumping on every
 removal, would make the first deliberate cleanup of the surface a flag day for basalt with no
-behaviour behind it.
+behavior behind it.
 
 Prior art. seL4 and Zircon remove nothing from a released ABI; Linux reserves a retired syscall's
 number forever (`sys_ni_syscall`). None of them has a version a program declares at spawn, which is

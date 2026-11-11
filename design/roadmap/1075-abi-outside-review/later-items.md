@@ -53,7 +53,7 @@ An appendix to [the milestone](../1075-abi-outside-review.md).
     counting test kills the `rights` class outright.
     Effort: S. Door: two-way.
 
-21. No machine checks it, and the proofs job's behaviour on zero harnesses stays unverified.
+21. No machine checks it, and the proofs job's behavior on zero harnesses stays unverified.
     Finding: the README says so plainly. `timer::counter_ticks_for` is the one function with
     arithmetic; the recorded Kani attempt with a symbolic rate did not finish. A bounded harness
     over concrete rates and `seconds < 2^20` may finish where the symbolic divide did not; the tests

@@ -20,7 +20,7 @@ Verified firsthand on a fresh shallow clone of `nifeos/nife` at the merge of pul
 - crates.io, through its API: the name `abi` belongs to another crate (decision A), and the
   download figures in the prior-art box.
 
-Inferred from reading, not run: the behaviour of the template's `proofs` job on a crate with no Kani harness (item 21). The coverage figure against the template's 85 floor and the x86_64 register names for the fourth and fifth syscall words (item 6) come from reading too.
+Inferred from reading, not run: the behavior of the template's `proofs` job on a crate with no Kani harness (item 21). The coverage figure against the template's 85 floor and the x86_64 register names for the fourth and fifth syscall words (item 6) come from reading too.
 
 Not run: a mutation census (outside its window), the stranger test, `cargo semver-checks`, the
 publish rehearsal, and the review packet script, which writes into `notes/`.

@@ -51,7 +51,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    mapping, so it needs no sequence claim". `components/src/clock.rs` line 63 calls it unconditionally at
    program start. The review did not establish whether this tree ever restarts the `clock` program on the same frame (it found no supervisor entry for it). If it does, readers already hold
    mappings when the restart stores the sequence as zero, and a reader comparing `generation` across the
-   restart sees it go backward. The loom model `a_racing_reader_sees_an_unrecognised_page_or_a_whole_one`
+   restart sees it go backward. The loom model for a racing reader
    covers the first initialize only.
    Why it matters: the contract's precondition is one the caller cannot promise in general, and a
    stranger writing a second clock service will copy the call.
