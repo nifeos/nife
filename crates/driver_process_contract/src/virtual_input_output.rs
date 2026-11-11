@@ -344,10 +344,8 @@ pub fn register_window(
                     return Err(WindowRefusal::TooManyPages);
                 }
                 // Shift the tail up by one, last first, so the page lands at its sorted place.
-                let mut k = count;
-                while k > at {
-                    pages[k] = pages[k - 1];
-                    k -= 1;
+                for k in (at..count).rev() {
+                    pages[k + 1] = pages[k];
                 }
                 pages[at] = p;
                 count += 1;
@@ -722,6 +720,114 @@ mod tests {
         .into_iter()
         .collect();
         move |_, offset| *space.get(&(offset & !3)).unwrap_or(&0)
+    }
+
+    /// [`configuration_space`] with a second capability of every virtio type after the MSI-X one,
+    /// each naming BAR 5 and a notify multiplier of 8, as a device that lists a structure twice.
+    fn configuration_space_listing_each_structure_twice() -> impl FnMut(Bdf, u64) -> u32 {
+        let vendor =
+            |next: u32, kind: u32, length: u32| 0x09 | next << 8 | length << 16 | kind << 24;
+        let mut first = configuration_space(1, 0);
+        let second: std::collections::HashMap<u64, u32> = [
+            // MSI-X, two entries, now pointing on to the second list.
+            (0x84, 0x11 | 0x90 << 8 | 1 << 16),
+            (0x90, vendor(0xa0, 1, 16)),
+            (0x94, 5),
+            (0x98, 0x8000),
+            (0x9c, 0x1000),
+            (0xa0, vendor(0xb0, 3, 16)),
+            (0xa4, 5),
+            (0xa8, 0x9000),
+            (0xac, 0x1000),
+            (0xb0, vendor(0xc0, 4, 16)),
+            (0xb4, 5),
+            (0xb8, 0xa000),
+            (0xbc, 0x1000),
+            (0xc0, vendor(0, 2, 20)),
+            (0xc4, 5),
+            (0xc8, 0xb000),
+            (0xcc, 0x1000),
+            (0xd0, 8),
+        ]
+        .into_iter()
+        .collect();
+        move |f, offset| match second.get(&(offset & !3)) {
+            Some(word) => *word,
+            None => first(f, offset),
+        }
+    }
+
+    /// **The first capability of each type is the structure**, as virtio 1.2 section 4.1.4 has a
+    /// driver use it: a second one, later in the list, changes nothing.
+    #[test]
+    fn a_second_capability_of_a_type_changes_nothing() {
+        let mut read = configuration_space_listing_each_structure_twice();
+        let (structures, multiplier) = structures(FUNCTION, &mut read).unwrap();
+        assert_eq!(structures, qemu_four_pages());
+        assert_eq!(multiplier, 4);
+    }
+
+    /// **A withheld range withholds only the pages it overlaps**: one that ends where a structure's
+    /// page begins, or begins where it ends, refuses nothing, and a page two structures share is
+    /// mapped once.
+    #[test]
+    fn a_withheld_range_beside_a_page_withholds_nothing_of_it() {
+        let structures = Structures {
+            common: s(4, 0x1000, COMMON_CONFIGURATION_BYTES),
+            notify: s(4, 0x1100, 4),
+            interrupt_status: s(4, 0x1200, 1),
+            device: None,
+        };
+        let before = Withheld {
+            bar: 4,
+            start: 0x0ff0,
+            end: 0x1000,
+        };
+        let after = Withheld {
+            bar: 4,
+            start: 0x2000,
+            end: 0x2010,
+        };
+        let window = register_window(&structures, &QEMU_BARS, &[before, after]).unwrap();
+        assert_eq!(
+            window.pages(),
+            &[RegisterPage {
+                bar: 4,
+                offset: 0x1000
+            }]
+        );
+        assert_eq!(
+            (window.common, window.notify, window.interrupt_status),
+            (0, 0x100, 0x200)
+        );
+    }
+
+    /// **A structure at the window's very end does not fit**: an ISR byte or a device
+    /// configuration that would begin at the window's last byte plus one is outside it.
+    #[test]
+    fn a_structure_at_the_end_of_the_window_does_not_fit() {
+        let one_page = HandOff {
+            common: 0,
+            notify: 0x100,
+            interrupt_status: 0x200,
+            device: None,
+            ..hand_off()
+        };
+        assert!(one_page.fits(1));
+        assert!(
+            !HandOff {
+                interrupt_status: 0x1000,
+                ..one_page
+            }
+            .fits(1)
+        );
+        assert!(
+            !HandOff {
+                device: Some(0x1000),
+                ..one_page
+            }
+            .fits(1)
+        );
     }
 
     const FUNCTION: Bdf = Bdf {

@@ -195,7 +195,7 @@ fn a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing() {
 /// mints no right its budget lacks), calef's ruling (a) of 2026-10-07 UTC). Held, booted.
 ///
 /// For two `GRANT`-less budgets, `WRITE` and a leaf's `SPEND_ONLY`, the `RETYPE` frame and every
-/// `RETYPE_OBJ` kind carry exactly the budget's rights, and `PageFrame::SLICE` on the frame is
+/// `RETYPE_OBJECT` kind carry exactly the budget's rights, and `PageFrame::SLICE` on the frame is
 /// refused. `READ | WRITE` and `Rights::ALL` budgets are the controls that the mint is the budget's
 /// rights, not a fixed narrow set. Nothing blocks; the ledgers end flat.
 ///
@@ -233,42 +233,42 @@ fn a_retype_mints_no_right_its_budget_lacks() {
             (abi::objtype::TIMER, "timer"),
             (abi::objtype::THREAD_CONTROL_BLOCK, "thread control block"),
         ] {
-            let object = call(budget, abi::memory_region::RETYPE_OBJ, kind, 0, 0)
-                .unwrap_or_else(|e| panic!("RETYPE_OBJ {name} refused: {e:?}"))
+            let object = call(budget, abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
+                .unwrap_or_else(|e| panic!("RETYPE_OBJECT {name} refused: {e:?}"))
                 as u64;
             assert_eq!(
                 minted(object),
                 rights,
-                "a GRANT-less budget RETYPE_OBJ'd a {name} carrying rights it lacks",
+                "a GRANT-less budget RETYPE_OBJECT'd a {name} carrying rights it lacks",
             );
             let _ = delete_current_capability(object);
         }
         let space = call(
             budget,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::ADDRESS_SPACE,
             0,
             0,
         )
-        .expect("RETYPE_OBJ refused an address space") as u64;
+        .expect("RETYPE_OBJECT refused an address space") as u64;
         assert_eq!(
             minted(space),
             rights,
-            "a GRANT-less budget RETYPE_OBJ'd an address space carrying rights it lacks",
+            "a GRANT-less budget RETYPE_OBJECT'd an address space carrying rights it lacks",
         );
         let process = call(
             budget,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::PROCESS,
             space,
             0,
         )
-        .expect("RETYPE_OBJ refused a process around the space it was given")
+        .expect("RETYPE_OBJECT refused a process around the space it was given")
             as u64;
         assert_eq!(
             minted(process),
             rights,
-            "a GRANT-less budget RETYPE_OBJ'd a process carrying rights it lacks",
+            "a GRANT-less budget RETYPE_OBJECT'd a process carrying rights it lacks",
         );
         let _ = delete_current_capability(process);
         let _ = delete_current_capability(frame);

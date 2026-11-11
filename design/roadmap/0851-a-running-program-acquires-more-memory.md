@@ -60,7 +60,7 @@ The allocator already grows lazily. `user_mode_runtime::heap` and `std`'s restat
 `MAP` at a time, geometrically, into `address_space_map::HEAP`, a 256 MiB band at `0x4000_0000`.
 Missing is a second source of pages once the first region is spent.
 
-`memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJ`, `SPLIT`, `DESTROY` and `USAGE`. Nothing grows or
+`memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY` and `USAGE`. Nothing grows or
 shrinks a region (`crates/abi`). A process can hold several regions, and `MAP` takes any of them.
 
 The kernel has no demand paging: a fault is a death on the fault endpoint (§26 (the fault

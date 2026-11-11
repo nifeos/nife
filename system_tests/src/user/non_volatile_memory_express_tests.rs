@@ -24,6 +24,10 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
     let w = match non_volatile_memory_express_service::ensure_or_why(image) {
         Ok(w) => w,
         Err(crate::non_volatile_memory_express::Absent::NoController) => return None,
+        Err(crate::non_volatile_memory_express::Absent::Unconfined { rid, why }) => panic!(
+            "an NVMe controller at requester id {rid:#06x} is on the bus and the IOMMU refused it: \
+             {why}. Not a skip: see notes/risk-6-bench-evening.md"
+        ),
         Err(crate::non_volatile_memory_express::Absent::Refused { rid, why }) => panic!(
             "an NVMe controller at requester id {rid:#06x} is on the bus and this driver refused              it: {why:?}. Not a skip: see notes/risk-6-bench-evening.md"
         ),

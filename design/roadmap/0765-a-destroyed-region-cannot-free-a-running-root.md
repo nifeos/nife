@@ -79,7 +79,7 @@ about.
 
 ## The hole
 
-`RETYPE_OBJ(ADDRESS_SPACE)` retypes a space's root out of region R. `CONFIGURE` binds that space to
+`RETYPE_OBJECT(ADDRESS_SPACE)` retypes a space's root out of region R. `CONFIGURE` binds that space to
 a TCB, and nothing requires the TCB to come from R. `sched::reclaim_region(R)` reaps threads whose
 TCB page is in R and unbound spaces whose root is in R (`user::reap_address_spaces_in_region` reads
 only `USER_SPACES`). A bound space whose thread lives elsewhere is neither, so `DESTROY` succeeds,

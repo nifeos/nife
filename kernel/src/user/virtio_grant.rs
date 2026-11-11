@@ -140,7 +140,7 @@ impl Direct {
 /// **Carve out a direct grant of `d`** for a driver that runs `role`, with `pages` pages of DMA,
 /// in the step 7 order: confine the function to a zeroed region before any queue exists, map the
 /// window's pages and nothing else of its BARs, and pack the handoff. `None` when no contiguous run
-/// of `pages` is free. The region is never returned to the allocator, because the domain maps it
+/// of `pages` is free, or when the IOMMU refuses to attach the function. The region is never returned to the allocator, because the domain maps it
 /// for as long as the function lives; a function granted again gets the same region, after
 /// [`reset`] has stopped the device and the region is zeroed.
 ///
@@ -177,7 +177,7 @@ pub(crate) fn carve(
         }
         _ => {
             let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
-            crate::iommu::confine(
+            let confined = crate::iommu::confine(
                 d.rid,
                 &[paging::domain::DmaRegion {
                     base: dma,
@@ -185,6 +185,13 @@ pub(crate) fn carve(
                     writable: true,
                 }],
             );
+            if confined.is_err() {
+                // The device stays blocked, and the region goes back: no domain maps it.
+                for k in 0..pages as u64 {
+                    crate::memory::free(page_frames::PageFrame::from_addr(dma + k * FRAME_SIZE));
+                }
+                return None;
+            }
             let mut table = CARVED.lock();
             let slot = table
                 .iter()

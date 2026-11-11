@@ -471,6 +471,8 @@ fn dump_cores() {
     for c in crate::smp::online_cpus() {
         dump_core(c);
         trace::dump(c);
+        #[cfg(feature = "system_tests")]
+        super::preemption::dump_tick_samples(c);
     }
     let online = crate::smp::online_harts_mask();
     for c in (0..crate::cpu::MAXIMUM_CPUS).filter(|c| online & (1 << c) == 0) {
