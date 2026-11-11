@@ -77,7 +77,7 @@ answers one request, reset the board.
 
 - The image's `reboot` calls the route after the `SYNC` and before `REBOOT`. A write the PMIC
   honors never returns.
-- The route bounds its own wait (ruled 2026-11-11 UTC). After its write it waits two seconds for
+- The route bounds its own wait. After its write it waits two seconds for
   the board to reset, then answers `StillRunning`. If the route is absent, refuses, or answers
   `StillRunning`, `reboot` invokes `REBOOT`, the plain firmware route above.
 - `reboot`'s own call to the route has no timeout, so a route that stops answering hangs `reboot`.
