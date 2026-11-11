@@ -137,16 +137,16 @@ that is sound by the token's provenance, not by how the link is accessed:
 
 - A token taken from a `&mut` reborrow of the node, such as `NonNull::from(get_mut(..))`, dies at
   the owner's next `&mut` reborrow of the same node. The queue's next push or pop through it is
-  undefined behaviour under both models.
+  undefined behavior under both models.
 - A token taken from the owning pointer (the one `Box::into_raw` returned, or the page pointer
   the thread table stores) survives those reborrows, because each reborrow also comes from that
   pointer, and using the token afterwards only ends the reborrow.
 
 So `Unqueued::new` requires the second shape, and `Threads::mint_token` mints from the pointer the
-table stores. The crate's test `a_token_from_the_owning_pointer_survives_the_owners_reborrows`
+table stores. The crate's test `a_token_from_the_owning_pointer_survives_later_borrows`
 runs the thread table's sequence: store the owning pointer, mint from it, reborrow the node while
 it moves on and off a queue, and retire it. Both models pass it. With the token minted from a
-reborrow instead, both report undefined behaviour at the next push. `SCHED` or a queue's own
+reborrow instead, both report undefined behavior at the next push. `SCHED` or a queue's own
 synchronization also serializes every access, so no two accesses overlap in time. Miri never runs
 the kernel itself, so the kernel's adherence rests on this argument and not on a run. The Kani harnesses are unaffected: Kani does not
 model aliasing.

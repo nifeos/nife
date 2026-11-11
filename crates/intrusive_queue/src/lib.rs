@@ -86,7 +86,7 @@ impl<T> Unqueued<T> {
     ///   that is not named again. It is never derived from a reference, such as
     ///   `NonNull::from(&mut *owner)` (rule 3). Under Rust's aliasing rules, a later `&mut`
     ///   reborrow of the node from its owner invalidates every pointer derived from an earlier
-    ///   reference, so the queue's next use of a token minted that way is undefined behaviour,
+    ///   reference, so the queue's next use of a token minted that way is undefined behavior,
     ///   while a token derived from the owning pointer stays valid across such reborrows.
     #[inline(always)]
     pub const unsafe fn new(node: NonNull<T>) -> Self {
@@ -136,14 +136,11 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// #     fn next(&self) -> Option<NonNull<Self>> { self.next }
 /// #     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
 /// # }
-/// // Each node is owned through the pointer `Box::into_raw` returns, and its token is minted from
-/// // that pointer, not from a reference (`Unqueued::new`'s provenance clause).
 /// let a = NonNull::new(Box::into_raw(Box::new(Thread { tid: 1, next: None }))).unwrap();
 /// let b = NonNull::new(Box::into_raw(Box::new(Thread { tid: 2, next: None }))).unwrap();
 /// let mut q: Queue<Thread> = Queue::new();
 ///
-/// // SAFETY: both are live boxed nodes, on no queue and with no token yet, freed only after `q`
-/// // is gone.
+/// // SAFETY: live boxed nodes on no queue, minted from their owning pointers, freed below.
 /// let (ta, tb) = unsafe { (Unqueued::new(a), Unqueued::new(b)) };
 /// q.push_back(ta);
 /// q.push_back(tb);
@@ -160,10 +157,7 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 ///     .map(|t| unsafe { (*t.as_ptr()).tid })
 ///     .collect();
 /// assert_eq!(order, vec![2, 1]);
-///
-/// // Rule 2: the nodes outlive every queue that held them.
-/// drop(q);
-/// // SAFETY: each pointer came from `Box::into_raw` above, and no queue or token reaches it now.
+/// // SAFETY: both came from `Box::into_raw`, and `q` is empty, so nothing reaches them (rule 2).
 /// unsafe { drop((Box::from_raw(a.as_ptr()), Box::from_raw(b.as_ptr()))) };
 /// ```
 #[doc(alias = "fifo")]
@@ -510,9 +504,9 @@ mod tests {
     /// retired. Run it under Miri with either borrow model (`cargo miri test -p intrusive_queue`,
     /// and again with `MIRIFLAGS=-Zmiri-tree-borrows`): both pass it. A token minted instead from
     /// one of those reborrows, `NonNull::from(table.get_mut(0))`, is invalidated by the next
-    /// `get_mut`, and both models report the queue's next use of it as undefined behaviour.
+    /// `get_mut`, and both models report the queue's next use of it as undefined behavior.
     #[test]
-    fn a_token_from_the_owning_pointer_survives_the_owners_reborrows() {
+    fn a_token_from_the_owning_pointer_survives_later_borrows() {
         /// The thread table's shape: it owns each node through the pointer it stores.
         struct Table(Vec<NonNull<N>>);
         impl Table {

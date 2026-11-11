@@ -23,7 +23,6 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// use core::ptr::NonNull;
 /// use intrusive_queue::{Node, Unqueued};
 /// use inter_process_communication::notification::{Notification, Signal, Wait};
-///
 /// # struct ThreadControlBlock {
 /// #     next: Option<NonNull<ThreadControlBlock>>,
 /// # }
@@ -33,7 +32,6 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// #     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
 /// # }
 /// let mut waiter = ThreadControlBlock { next: None };
-/// // The token's pointer comes from the place itself, and `waiter` is not named again.
 /// let waiter = NonNull::new(&raw mut waiter).unwrap();
 /// let mut n: Notification<ThreadControlBlock> = Notification::new();
 ///
@@ -41,7 +39,8 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// assert_eq!(n.signal(0b01, false), Signal::Counted);
 /// assert_eq!(n.signal(0b10, false), Signal::Counted);
 ///
-/// // SAFETY: `waiter` is a live local declared before `n`, on no queue, minted once.
+/// // SAFETY: from the place of a live local declared before `n` and not named again; on no
+/// // queue, minted once.
 /// let token = unsafe { Unqueued::new(waiter) };
 ///
 /// // A wait takes the whole word and clears it, without blocking, and hands the token back.

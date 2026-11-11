@@ -186,7 +186,7 @@ mod tests {
     /// A pointer to each element of `threads`, all derived from the one pointer to the array, so
     /// a token minted from one is not invalidated by a later access (`Unqueued::new`'s provenance
     /// clause). The caller passes `&raw mut` on its local and does not name the local again.
-    fn pointers<const N: usize>(threads: *mut [T; N]) -> Vec<NonNull<T>> {
+    fn element_pointers<const N: usize>(threads: *mut [T; N]) -> Vec<NonNull<T>> {
         (0..N)
             .map(|i| NonNull::new(threads.cast::<T>().wrapping_add(i)).unwrap())
             .collect()
@@ -214,15 +214,15 @@ mod tests {
         let b = key(1, 0x1004);
         let c = key(2, 0x1000); // the same address in another space is another futex
         let mut threads = [a, b, a, c, a].map(|key| T { next: None, key });
-        let ptrs = pointers(&raw mut threads);
+        let pointers = element_pointers(&raw mut threads);
         let mut f = OneBucket::new();
-        park_all(&mut f, &ptrs);
+        park_all(&mut f, &pointers);
         assert_eq!(f.queued(), 5);
         assert_eq!(f.waiters(a, key_of), 3);
 
         let mut two = f.take(a, 2, key_of);
-        assert!(two.pop_front().is_some_and(|t| t == ptrs[0]));
-        assert!(two.pop_front().is_some_and(|t| t == ptrs[2]));
+        assert!(two.pop_front().is_some_and(|t| t == pointers[0]));
+        assert!(two.pop_front().is_some_and(|t| t == pointers[2]));
         assert!(two.pop_front().is_none());
         assert_eq!(f.waiters(a, key_of), 1);
         assert_eq!(f.waiters(b, key_of), 1);
@@ -241,17 +241,17 @@ mod tests {
     fn remove_unlinks_exactly_the_victim() {
         let a = key(1, 0x2000);
         let mut threads = [a, a, a].map(|key| T { next: None, key });
-        let ptrs = pointers(&raw mut threads);
+        let pointers = element_pointers(&raw mut threads);
         let mut f = OneBucket::new();
-        park_all(&mut f, &ptrs);
-        assert!(f.remove(a, ptrs[1]).is_some_and(|t| t == ptrs[1]));
+        park_all(&mut f, &pointers);
+        assert!(f.remove(a, pointers[1]).is_some_and(|t| t == pointers[1]));
         assert!(
-            f.remove(a, ptrs[1]).is_none(),
+            f.remove(a, pointers[1]).is_none(),
             "a second remove finds nothing"
         );
         let mut rest = f.take(a, usize::MAX, key_of);
-        assert!(rest.pop_front().is_some_and(|t| t == ptrs[0]));
-        assert!(rest.pop_front().is_some_and(|t| t == ptrs[2]));
+        assert!(rest.pop_front().is_some_and(|t| t == pointers[0]));
+        assert!(rest.pop_front().is_some_and(|t| t == pointers[2]));
         assert!(rest.pop_front().is_none());
     }
 
