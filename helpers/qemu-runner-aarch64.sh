@@ -274,6 +274,11 @@ if [ -n "$NIFE_DISK" ]; then
     # bypasses the SMMU silently, and the confinement test (which asserts the hardware faults an
     # out-of-region DMA) fails loudly rather than passing on a fiction. The mmio disk (hd0) has no
     # IOMMU in front of it on this machine, so it takes no such flag.
+    #
+    # addr=0x10.0 puts the PCI disk at requester id 128, past the first leaf of the SMMU's two-level
+    # stream table (ids 0 to 63), so the confinement test proves a stream the kernel reaches through
+    # a second leaf (milestone 1066). The test asserts the id, so moving the disk back below 64
+    # fails it rather than quietly proving less.
     PCI_DISK="${NIFE_DISK%.img}-pci.img"
     if [ ! -f "$PCI_DISK" ]; then
         echo "qemu-runner-aarch64: $PCI_DISK does not exist (run mkdisk first; it writes both images)" >&2
@@ -332,7 +337,7 @@ if [ -n "$NIFE_DISK" ]; then
     if [ -f "$BLANK_DISK_IMG" ]; then
         BLANK_MMIO="-drive file=$BLANK_DISK_IMG,if=none,format=raw,id=hd5 -device virtio-blk-device,drive=hd5"
     fi
-    DISK="$BLANK_MMIO $GPT_MMIO $CRASH_MMIO $REDOXFS_MMIO -drive file=$NIFE_DISK,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 -drive file=$PCI_DISK,if=none,format=raw,id=hd1 -device virtio-blk-pci,drive=hd1,disable-legacy=on,iommu_platform=on"
+    DISK="$BLANK_MMIO $GPT_MMIO $CRASH_MMIO $REDOXFS_MMIO -drive file=$NIFE_DISK,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 -drive file=$PCI_DISK,if=none,format=raw,id=hd1 -device virtio-blk-pci,drive=hd1,disable-legacy=on,iommu_platform=on,addr=0x10.0"
 fi
 
 # **Modern virtio-mmio is a property of the BUS, not of the disks, so the switch that selects it
