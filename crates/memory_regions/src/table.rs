@@ -372,6 +372,10 @@ impl<const N: usize> RegionTable<N> {
     /// name. `None` when every slot is live, in which case the caller still owns the pages and must
     /// give them back rather than leak them.
     ///
+    /// `None` too, recording nothing, for a root of no pages or one whose end, `base_page + pages`,
+    /// does not fit in a `u64`. Every region below a root lies inside it, so with these refused no
+    /// page number or end the table computes can overflow.
+    ///
     /// This is the table half of the kernel's `create`; the allocation itself is the kernel's,
     /// because a crate that can be model-checked cannot also own a physical allocator.
     pub fn insert_root(&mut self, base_page: u64, pages: u64) -> Option<u64> {
@@ -389,6 +393,9 @@ impl<const N: usize> RegionTable<N> {
         pages: u64,
         ceilings: Ceilings,
     ) -> Option<u64> {
+        if pages == 0 || base_page.checked_add(pages).is_none() {
+            return None;
+        }
         self.table
             .insert_with(|_| Region {
                 base_page,
@@ -601,7 +608,7 @@ impl<const N: usize> RegionTable<N> {
     pub fn retype_run(&mut self, name: u64, requested: u64) -> Option<u64> {
         let r = self.table.get_mut(entry(name))?;
         let new = crate::retype_new_watermark(r.pages, r.watermark, requested)?;
-        let page = r.base_page + r.watermark;
+        let page = r.base_page.checked_add(r.watermark)?;
         let spent = new - r.watermark;
         r.watermark = new;
         r.retyped_to = new;
@@ -624,12 +631,12 @@ impl<const N: usize> RegionTable<N> {
         if r.watermark >= r.pages {
             return None;
         }
+        let page = r.base_page.checked_add(r.watermark)?;
         if !self.charge(name, Counted::Object(kind)) {
             return None;
         }
         let r = self.table.get_mut(entry(name))?;
         r.pinned = true;
-        let page = r.base_page + r.watermark;
         r.watermark += 1;
         r.retyped_to = r.watermark;
         r.spent.objects[kind as usize] += 1;
@@ -778,18 +785,19 @@ impl<const N: usize> RegionTable<N> {
         };
         // What the parent still has out: how many of its children are live, and where the highest
         // one ends, in the parent's own page offsets. The returning child left the table at its
-        // claim, so it is in neither figure.
+        // claim, so it is in neither figure. Offsets first, then lengths: a child lies inside its
+        // parent, so neither sum can overflow, even for a parent ending at the last page number.
         let (live, live_to) = self
             .table
             .iter()
             .filter(|(_, r)| r.parent == claim.parent)
             .fold((0u32, 0u64), |(n, to), (_, r)| {
-                (n + 1, to.max(r.base_page + r.pages - parent_base))
+                (n + 1, to.max(r.base_page - parent_base + r.pages))
             });
         let Some(p) = self.table.get_mut(entry(claim.parent)) else {
             return;
         };
-        let is_lifo_top = claim.base_page + claim.pages == p.base_page + p.watermark;
+        let is_lifo_top = claim.base_page - p.base_page + claim.pages == p.watermark;
         if let DestroyOutcome::ReturnToParent { unbump } =
             destroy_outcome(false, 0, false, is_lifo_top, claim.pages)
         {
@@ -1170,6 +1178,52 @@ mod tests {
             None,
             "exhausted, not an error"
         );
+    }
+
+    #[test]
+    fn a_root_of_no_pages_or_past_the_last_page_number_is_refused() {
+        let mut t = RegionTable::<4>::new();
+        assert_eq!(t.insert_root(0x40, 0), None, "a root of no pages");
+        assert_eq!(
+            t.insert_root(u64::MAX, 4),
+            None,
+            "its end does not fit in a u64"
+        );
+        assert_eq!(
+            t.insert_root(u64::MAX - 3, 4),
+            None,
+            "its end is 2^64, one past u64::MAX"
+        );
+        assert!(t.is_empty(), "a refused root records nothing");
+
+        let top = t.insert_root(u64::MAX - 4, 4).unwrap();
+        assert_eq!(t.retype_page(top), Some(u64::MAX - 4));
+        assert_eq!(t.retype_run(top, 2), Some(u64::MAX - 3));
+        assert_eq!(
+            t.retype_object_page(top, ObjectKind::Rendezvous),
+            Some(u64::MAX - 1)
+        );
+        assert_eq!(t.retype_page(top), None, "exhausted, not a panic");
+    }
+
+    #[test]
+    fn a_child_at_the_top_of_the_page_number_space_returns_to_its_parent() {
+        let mut t = RegionTable::<4>::new();
+        let root = t.insert_root(u64::MAX - 8, 8).unwrap();
+        let low = t.split(root, 4).unwrap();
+        let high = t.split(root, 4).unwrap();
+        assert_eq!(t.bounds(high), Some((u64::MAX - 4, 4)));
+
+        let claim = t.claim_for_destroy(high).unwrap();
+        t.return_to_parent(&claim);
+        assert_eq!(
+            t.usage(root),
+            Some((4, 8)),
+            "the top child gave its pages back"
+        );
+        let claim = t.claim_for_destroy(low).unwrap();
+        t.return_to_parent(&claim);
+        assert_eq!(t.usage(root), Some((0, 8)));
     }
 
     #[test]

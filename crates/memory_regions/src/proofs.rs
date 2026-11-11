@@ -490,9 +490,11 @@ fn a_carve_keeps_every_count_exact_and_under_its_ceiling() {
 fn a_split_keeps_every_count_exact_and_under_its_ceiling() {
     let mut table = RegionTable::<1>::new();
     let ceilings = Ceilings::from_counts(kani::any());
+    let (base_page, pages): (u64, u64) = (kani::any(), kani::any());
+    kani::assume(pages > 0 && base_page.checked_add(pages).is_some());
     let root = table
-        .insert_root_with_ceilings(kani::any(), kani::any(), ceilings)
-        .expect("an empty table has room");
+        .insert_root_with_ceilings(base_page, pages, ceilings)
+        .expect("an empty table has room for a root that fits");
     let s = table.snapshot(root).expect("the root is live");
     assert!(
         same_ceilings(s.ceilings, ceilings)
