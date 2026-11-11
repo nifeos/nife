@@ -204,25 +204,23 @@ none of the template's naming and prose gates above. `cargo test -p jh7110_clock
 
 ## Recommendation
 
-Ready for the architect's review and clearance, with one limit stated in the README: the PMIC reset
-path has not run on a board. The move waits for the template gates above.
+Cleared to move, with one limit stated in the README: the PMIC reset path has not run on a board.
+The move waits for the template gates above.
 
 ## Outstanding before the move
 
 | item | owner |
 |---|---|
-| The decision below. | architect |
 | The 43 template gate findings above, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
 | Run the PMIC reset path on a board, then lift the README's limitation. | maintainers, at the bench |
 | `repository` in the manifest, the `v0.1.0` tag, and stripping the `Name:` blocks. | move lane |
 | The stranger test in the new repository. | move lane |
 
-## Decisions for the architect
+## Clearance
 
-1. Clear the review now, with the board run left as the README's stated limitation. Clearing approves
-   creating `nifeos/jh7110_clock_and_reset`; the move itself waits for the template gates.
-   Recommendation: clear now. The proofs and host tests do not depend on a board, and the board run
-   can follow the move.
+The architect cleared the review on 2026-11-11 (UTC), with the board run following the move as the
+README's stated limitation. Clearing approves creating `nifeos/jh7110_clock_and_reset`; the tag and
+a publication stay uncleared, and the move waits for the template gates.
 
 Decided by the maintainer, provisional (2026-11-11 UTC), and reversible until the first
 publication:

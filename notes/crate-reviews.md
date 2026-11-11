@@ -312,12 +312,12 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The clearance, listed in the package. | architect |
 | The 43 template gate findings, in this tree. | a rename lane |
 | The PMIC reset path (198 high and 297 low counts at 49.5 MHz) has not run on a board; the README says so. | maintainers (bench) |
 | `repository` in the manifest, the tag, the `Name:` blocks, the stranger test. | move lane |
 
-Recommendation. Ready for review and clearance; the move waits for the template gates.
+Recommendation. The architect cleared the move on 2026-11-11 (UTC), with the board run to follow,
+and has not cleared the tag or publication. The move waits for the template gates.
 
 ## `block_roster_contract`, the first contract crate
 
@@ -378,7 +378,7 @@ with no Kani harness.
 | `e1000e` | 6 | cleared to move; repository exists |
 | `designware_ethernet` | 7 | cleared to move; the move waits for the template gates |
 | `designware_mobile_storage` | 8 | cleared to move; repository exists |
-| `jh7110_clock_and_reset` | 10 | the clearance for the architect; the move waits for the template gates |
+| `jh7110_clock_and_reset` | 10 | cleared to move; the move waits for the template gates |
 | `block_roster_contract` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |

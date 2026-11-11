@@ -174,6 +174,10 @@ template's prose caps.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today: the
   decoders take raw property bytes and a phandle lookup generic over the caller's error type, and
   their names are provisional.
+- The architect cleared the crate's review on 2026-11-11 (UTC), which approves creating
+  `nifeos/jh7110_clock_and_reset`. The board run of the PMIC reset path follows the move, and the
+  README states it as a limitation until then. The clearance covers neither the tag nor a
+  publication. The move waits for the rename pass in *Before the move*.
 
 ## Exit
 
