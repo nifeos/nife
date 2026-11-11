@@ -27,7 +27,8 @@
 #    bare-metal ones) and `allow-unpublished: true` for the soak. A file the crate already carries
 #    wins over the scaffold's, and says so.
 # 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), regenerates each falsification
-#    patch over the stripped source, and sets `repository` in `Cargo.toml`. A patch is regenerated
+#    patch over the stripped source, and sets `repository` in `Cargo.toml` after `license`, a value
+#    or `license.workspace = true` (a manifest with neither is a finding). A patch is regenerated
 #    and never edited: it is applied to the crate's source in this tree, both versions go through the
 #    same change the move makes to every file, and the patch is the difference, so every hunk header
 #    carries the stripped file's line numbers. The patch keeps its prose header and takes `a/`
@@ -35,9 +36,11 @@
 #    here, is a finding.
 # 5. Unless `--no-build`: writes `Cargo.lock`, runs the host tests and builds each target at the
 #    manifest's `rust-version`.
-# 5b. Applies every staged patch with `patch -p1 --dry-run -F0` and refuses to finish when one
-#    applies at an offset, with fuzz, or not at all (`patch applies exactly`). A hunk header that
-#    drifted from its file passes plain `patch` with a note, so the note is what fails.
+# 5b. Applies every staged patch with `patch -p1 --dry-run -F0` and `git apply --check -p1`, and
+#    refuses to finish when one applies at an offset, with fuzz, or not at all (`patch applies
+#    exactly`). A hunk header that drifted from its file passes plain `patch` with a note, so the
+#    note is what fails. `git apply` is what the template's `proofs / falsify` runs, and it refuses
+#    a hunk that has lost a context line, which `patch` accepts.
 # 5c. Stages the crate's fuzz targets in cargo-fuzz's layout, under `fuzz/`: a manifest that depends
 #    on the crate by `path = ".."`, each target that links this crate and no other crate of the tree,
 #    its seeds and the crate's fixture directories that `script/fuzz` adds, in `fuzz/corpus/<target>`,

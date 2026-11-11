@@ -142,6 +142,75 @@ fn regions_outside_our_range_are_ignored() {
     assert_eq!(a.stats().used, 0);
 }
 
+// --- mark_free rounds inward, the mirror of mark_used ---
+
+/// An allocator over 64 frames with nothing freed yet, as `new` leaves it.
+fn all_used(bitmap: &mut [u8]) -> PageFrameAllocator<'_> {
+    PageFrameAllocator::new(BASE, 64, bitmap)
+}
+
+/// The frame indices `a` holds free, lowest first.
+fn free_frames(a: &PageFrameAllocator<'_>) -> Vec<u64> {
+    (0..64)
+        .filter(|&i| a.is_used(PageFrame::from_addr(BASE + i * FRAME_SIZE)) == Some(false))
+        .collect()
+}
+
+#[test]
+fn mark_free_of_an_unaligned_start_keeps_the_frame_it_starts_in() {
+    let mut bits = [0u8; 8];
+    let mut a = all_used(&mut bits);
+
+    // A usable region from 100 bytes into frame 2 to the end of frame 5. Frame 2's first 100
+    // bytes were never said to be RAM, so frame 2 stays used.
+    a.mark_free(BASE + 2 * FRAME_SIZE + 100, 4 * FRAME_SIZE - 100);
+
+    assert_eq!(free_frames(&a), [3, 4, 5]);
+    assert_eq!(a.stats().free(), 3);
+}
+
+#[test]
+fn mark_free_of_an_unaligned_end_keeps_the_frame_it_ends_in() {
+    let mut bits = [0u8; 8];
+    let mut a = all_used(&mut bits);
+
+    // Frames 2 to 4 whole, then the first byte of frame 5.
+    a.mark_free(BASE + 2 * FRAME_SIZE, 3 * FRAME_SIZE + 1);
+
+    assert_eq!(free_frames(&a), [2, 3, 4]);
+}
+
+#[test]
+fn mark_free_of_a_region_smaller_than_a_frame_frees_nothing() {
+    let mut bits = [0u8; 8];
+    let mut a = all_used(&mut bits);
+
+    // Inside one frame, touching neither of its edges.
+    a.mark_free(BASE + 7 * FRAME_SIZE + 16, FRAME_SIZE - 32);
+    // Starting on a boundary, one byte short of a whole frame.
+    a.mark_free(BASE + 9 * FRAME_SIZE, FRAME_SIZE - 1);
+
+    assert_eq!(a.stats().free(), 0);
+    assert_eq!(a.alloc(), None);
+}
+
+#[test]
+fn mark_free_of_a_region_straddling_one_boundary_frees_nothing() {
+    let mut bits = [0u8; 8];
+    let mut a = all_used(&mut bits);
+
+    // The second half of frame 3 and the first half of frame 4: a whole frame's worth of bytes,
+    // and no whole frame.
+    a.mark_free(BASE + 3 * FRAME_SIZE + FRAME_SIZE / 2, FRAME_SIZE);
+
+    assert_eq!(a.stats().free(), 0);
+
+    // Twice as long, it covers exactly frame 4 and part of frames 3 and 5.
+    a.mark_free(BASE + 3 * FRAME_SIZE + FRAME_SIZE / 2, 2 * FRAME_SIZE);
+
+    assert_eq!(free_frames(&a), [4]);
+}
+
 // --- contiguous allocation, the reason we're a bitmap ---
 
 #[test]
