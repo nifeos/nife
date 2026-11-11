@@ -61,8 +61,8 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    hands out) states it. `components/src/power_management_chip_route.rs` holds the I2C5
    controller's page as a `DeviceFrame` and writes the AXP15060, after its starter brings I2C5 up
    through the step 2 server (§320 (the JH7110 clock and reset wire)). `reboot` calls it before
-   `REBOOT`, with a timeout and a fallback to plain `REBOOT`. The kernel holds no I2C master.
-   radon proves it.
+   `REBOOT` and falls back to plain `REBOOT`; the route bounds its wait. The kernel holds no I2C
+   master. radon proves it.
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
@@ -285,6 +285,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
 - **Outstanding.** Step 3: `kernel/src/designware_ethernet.rs` exists.
 - **Done.** Step 5 in #3499: `components/src/power_management_chip_route.rs`.
+- **Outstanding.** A timeout on `reboot`'s call to the route, which waits on a timed call.
 - **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
 
 ## Index row
