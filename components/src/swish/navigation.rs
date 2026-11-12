@@ -474,12 +474,9 @@ impl Nav {
         // (there is no combined verb), but this at least orders the local, no-wire-cost check first.
         let at_seconds: Option<u64> = match args.at {
             None => None,
-            Some(text) => match jiff::fmt::temporal::DateTimeParser::new().parse_timestamp(text) {
-                Ok(at) => match u64::try_from(at.as_second()) {
-                    Ok(seconds) => Some(seconds),
-                    Err(_) => return Say::NotAnInstant,
-                },
-                Err(_) => return Say::NotAnInstant,
+            Some(text) => match rfc3339_unix_seconds(text) {
+                Some(seconds) => Some(seconds),
+                None => return Say::NotAnInstant,
             },
         };
 
@@ -623,6 +620,69 @@ impl Nav {
         }
         Say::Nothing
     }
+}
+
+/// **`-t`'s operand as Unix seconds**, or `None` for text that is not an RFC 3339 instant at or
+/// after the epoch (notes/touch.md).
+///
+/// The grammar is RFC 3339's `date-time` with the three relaxations RFC 3339 itself allows: a
+/// lowercase `t` or `z`, a space in place of `T`, and a fraction of a second, which is read and
+/// dropped. jiff's Temporal parser accepts more than that (a leap second clamped to `:59`, offsets
+/// without a colon or with seconds, the compact form, annotations), so the shape is checked here
+/// first, and jiff then reads only the date and time of day. The offset is applied by civil
+/// arithmetic rather than through `jiff::Timestamp`, whose range stops short of the end of year 9999.
+fn rfc3339_unix_seconds(text: &[u8]) -> Option<u64> {
+    let digits = |at: usize, width: usize| {
+        text.get(at..at + width)
+            .is_some_and(|d| d.iter().all(u8::is_ascii_digit))
+    };
+    let two = |at: usize| i64::from(text[at] - b'0') * 10 + i64::from(text[at + 1] - b'0');
+    let shaped = digits(0, 4)
+        && text.get(4) == Some(&b'-')
+        && digits(5, 2)
+        && text.get(7) == Some(&b'-')
+        && digits(8, 2)
+        && matches!(text.get(10), Some(b'T' | b't' | b' '))
+        && digits(11, 2)
+        && text.get(13) == Some(&b':')
+        && digits(14, 2)
+        && text.get(16) == Some(&b':')
+        && digits(17, 2);
+    // A leap second has no Unix time, so `:60` is refused rather than folded onto a neighbour.
+    if !shaped || two(17) > 59 {
+        return None;
+    }
+    let mut at = 19;
+    if text.get(at) == Some(&b'.') {
+        at += 1;
+        let start = at;
+        while text.get(at).is_some_and(u8::is_ascii_digit) {
+            at += 1;
+        }
+        if at == start {
+            return None;
+        }
+    }
+    let offset_seconds = match text.get(at..)? {
+        b"Z" | b"z" => 0,
+        [sign @ (b'+' | b'-'), _, _, b':', _, _] if digits(at + 1, 2) && digits(at + 4, 2) => {
+            let (hours, minutes) = (two(at + 1), two(at + 4));
+            if hours > 23 || minutes > 59 {
+                return None;
+            }
+            let seconds = hours * 3600 + minutes * 60;
+            if *sign == b'-' { -seconds } else { seconds }
+        }
+        _ => return None,
+    };
+    let mut civil = [0u8; 19];
+    civil.copy_from_slice(&text[..19]);
+    civil[10] = b'T';
+    let local = jiff::fmt::temporal::DateTimeParser::new()
+        .parse_datetime(&civil)
+        .ok()?;
+    let epoch = jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0);
+    u64::try_from(local.duration_since(epoch).as_secs() - offset_seconds).ok()
 }
 
 /// The local buffer one `READDIR` round is decoded from. The shared page is sixteen times larger, so
