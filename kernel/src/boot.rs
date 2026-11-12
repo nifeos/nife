@@ -120,7 +120,8 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
         print_machine_description(boot_info_pointer);
 
         // Rung two of the ladder: the self-test reports and does not gate, because a machine you
-        // cannot log into is a machine you cannot fix. See notes/boot-ladder.md.
+        // cannot log into is a machine you cannot fix. This is the kernel's half; the hand-over
+        // runs the rest and prints the verdict. See notes/boot-ladder.md.
         self_test::run();
 
         // `boot_ladder::TOUR` (`Stage::Tour`): only the hand-over may lie between this line and the
@@ -179,12 +180,16 @@ fn hand_over() {
     let Some(image) = user::initial_ramdisk() else {
         println!();
         println!("nife: no archive to hand the system to (no initial ramdisk was loaded).");
+        #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
+        self_test::verdict_without_userspace("this boot has no archive, so no progenitor");
         return;
     };
     println!();
     println!("nife: handing the system to the userspace progenitor.");
     if let Err(e) = user::boot_progenitor(image) {
         println!("  handoff FAILED: {e:?}");
+        #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
+        self_test::verdict_without_userspace("the progenitor would not load");
     }
 }
 

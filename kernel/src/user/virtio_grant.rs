@@ -1,23 +1,23 @@
-//! **Which grant a starter gives a virtio driver, and the direct grant's carve-out.** A driver
-//! granted mediated holds a `Virtio` capability and the kernel validates every descriptor on
-//! `NOTIFY` (`kernel/src/virtio.rs`). A driver granted direct holds its function's structure
-//! pages and a DMA region the IOMMU confines, and the kernel validates nothing. See
+//! **Which grant a starter gives a virtio driver, and the direct grant's carve-out.** Mediated:
+//! a `Virtio` capability, and the kernel validates every descriptor on `NOTIFY`. Direct: the
+//! function's structure pages and a DMA region the IOMMU confines. See
 //! design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
 //!
-//! The default, ruled 2026-11-11 (UTC), lives here and nowhere in the kernel's device code:
-//! [`choose`] grants direct to a virtio-pci function the IOMMU confines, which takes all three of
-//! the active IOMMU owning its requester id, the function offering `VIRTIO_F_ACCESS_PLATFORM`,
-//! and no structure page sharing a page with its MSI-X table or pending-bit array. Every other
-//! function, and every virtio-mmio device, gets the mediated grant.
+//! The default, ruled 2026-11-11 (UTC), lives here: [`choose`] grants direct only when the active
+//! IOMMU owns the function's requester id, the function offers `VIRTIO_F_ACCESS_PLATFORM`, and no
+//! structure page shares a page with its MSI-X table or pending-bit array. Every other function,
+//! and every virtio-mmio device, gets the mediated grant.
 //!
 //! # BUGS
 //!
-//! - A direct grant's DMA region and domain live as long as the function, so a function granted
-//!   direct twice in one boot holds two regions; the second confinement drops the first from the
-//!   domain, and the first is never freed.
+//! - A function granted direct again while its first driver still runs shares its region with
+//!   that driver, and the reset stops the device under it. The starters grant a function again
+//!   only after its driver has reported.
+//! - No escape test drives a direct driver (a ring aimed outside its region, a declined
+//!   `VIRTIO_F_ACCESS_PLATFORM`); `the_iommu_faults_a_dma_that_escapes_the_domain` provokes the
+//!   same IOMMU fault through the mediated transport.
 //!
-//! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter, after what it
-//! decides.
+//! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 
 use driver_process_contract::virtual_input_output::{
     self as contract, HandOff, RegisterWindow, WindowRefusal,
@@ -25,6 +25,7 @@ use driver_process_contract::virtual_input_output::{
 
 use super::*;
 use crate::pci::PciVirtioDevice;
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// Where a direct driver's register window starts. The driver reads it from the startup page.
 const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
@@ -42,6 +43,18 @@ const ACCESS_PLATFORM_HIGH: u32 = 1 << 1;
 /// The common configuration's feature select and feature words (virtio 1.2 section 4.1.4.3).
 const DEVICE_FEATURE_SELECT: u64 = 0x00;
 const DEVICE_FEATURE: u64 = 0x04;
+/// The common configuration's device status byte (virtio 1.2 section 4.1.4.3).
+const DEVICE_STATUS: u64 = 0x14;
+/// How many times [`reset`] reads the status byte waiting for the reset to land.
+const RESET_POLLS: u32 = 100_000;
+/// How many functions [`carve`] remembers a region for: more than any runner attaches.
+const MAXIMUM_CARVED_FUNCTIONS: usize = 8;
+
+/// **Each function's DMA region**, by requester id, with its page count. `iommu::confine` runs
+/// once per function per boot (a second attach leaks the first domain's tables), so a function
+/// granted direct again gets its first region back, reset and zeroed.
+static CARVED: InterruptSafeMutex<[Option<(u32, u64, usize)>; MAXIMUM_CARVED_FUNCTIONS]> =
+    InterruptSafeMutex::new(rank::VIRTIO, [None; MAXIMUM_CARVED_FUNCTIONS]);
 
 /// **Why a function gets the mediated grant.**
 ///
@@ -110,10 +123,8 @@ pub(crate) struct Direct {
     count: usize,
     /// The register window, then the DMA region.
     pub windows: [startup_page_contract::Window; 2],
-    /// The spawn words, [`HandOff::pack`]'s.
+    /// The spawn words, [`HandOff::pack`]'s, the DMA region's physical base among them.
     pub words: [u64; 3],
-    /// The DMA region's physical base.
-    pub data_plane_physical_address: u64,
 }
 
 impl Direct {
@@ -127,11 +138,11 @@ impl Direct {
 }
 
 /// **Carve out a direct grant of `d`** for a driver that runs `role`, with `pages` pages of DMA,
-/// in the step 7 order: confine the function to a fresh zeroed region before any queue exists,
-/// map the window's pages and nothing else of its BARs, and pack the handoff. `None` when no
-/// contiguous run of `pages` is free, or when the IOMMU refuses the function, which then stays
-/// blocked. The region is never returned to the allocator once the function is confined, because
-/// the domain maps it for as long as the function lives.
+/// in the step 7 order: confine the function to a zeroed region before any queue exists, map the
+/// window's pages and nothing else of its BARs, and pack the handoff. `None` when no contiguous run
+/// of `pages` is free, or when the IOMMU refuses to attach the function. The region is never returned to the allocator, because the domain maps it
+/// for as long as the function lives; a function granted again gets the same region, after
+/// [`reset`] has stopped the device and the region is zeroed.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 pub(crate) fn carve(
@@ -144,23 +155,54 @@ pub(crate) fn carve(
         (1..=MAXIMUM_DATA_PLANE_PAGES).contains(&pages),
         "a direct grant of {pages} DMA pages"
     );
-    let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
-    if crate::iommu::confine(
-        d.rid,
-        &[paging::domain::DmaRegion {
-            base: dma,
-            size: pages as u64 * FRAME_SIZE,
-            writable: true,
-        }],
-    )
-    .is_err()
-    {
-        // The IOMMU refused the function, so it stays blocked and no queue reads the region.
-        for k in 0..pages as u64 {
-            crate::memory::free(page_frames::PageFrame::from_addr(dma + k * FRAME_SIZE));
+    let carved = CARVED
+        .lock()
+        .iter()
+        .flatten()
+        .find(|(rid, ..)| *rid == d.rid)
+        .copied();
+    let dma = match carved {
+        Some((_, dma, carved_pages)) if pages <= carved_pages => {
+            reset(d);
+            // SAFETY: `dma` is this function's region of `carved_pages` frames, which no other
+            // owner holds, and the reset has stopped the device writing it.
+            unsafe {
+                core::ptr::write_bytes(
+                    mmu::phys_to_virt(dma) as *mut u8,
+                    0,
+                    carved_pages * FRAME_SIZE as usize,
+                );
+            }
+            dma
         }
-        return None;
-    }
+        _ => {
+            let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
+            let confined = crate::iommu::confine(
+                d.rid,
+                &[paging::domain::DmaRegion {
+                    base: dma,
+                    size: pages as u64 * FRAME_SIZE,
+                    writable: true,
+                }],
+            );
+            if confined.is_err() {
+                // The device stays blocked, and the region goes back: no domain maps it.
+                for k in 0..pages as u64 {
+                    crate::memory::free(page_frames::PageFrame::from_addr(dma + k * FRAME_SIZE));
+                }
+                return None;
+            }
+            let mut table = CARVED.lock();
+            let slot = table
+                .iter()
+                .position(|c| c.is_some_and(|(rid, ..)| rid == d.rid))
+                .or_else(|| table.iter().position(Option::is_none));
+            if let Some(slot) = slot {
+                table[slot] = Some((d.rid, dma, pages));
+            }
+            dma
+        }
+    };
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
@@ -207,8 +249,25 @@ pub(crate) fn carve(
             },
         ],
         words: handoff.pack(),
-        data_plane_physical_address: dma,
     })
+}
+
+/// **Reset `d`** before its region goes to a new driver: write zero to the device status and wait
+/// for it to read back zero, as `virtio::unregister` does for a mediated function, so the device
+/// holds no queue the last driver programmed and stops writing the region.
+fn reset(d: &PciVirtioDevice) {
+    let status = (mmu::phys_to_virt(d.common) + DEVICE_STATUS) as *mut u8;
+    // SAFETY: as in `choose`: the common configuration is mapped device memory, and the status
+    // byte lies in its first 0x38 bytes.
+    unsafe { core::ptr::write_volatile(status, 0) };
+    // Bounded: a device that never reads back zero is as quiet as it will get.
+    for _ in 0..RESET_POLLS {
+        // SAFETY: as above.
+        if unsafe { core::ptr::read_volatile(status) } == 0 {
+            break;
+        }
+        core::hint::spin_loop();
+    }
 }
 
 #[cfg(test)]
@@ -285,7 +344,6 @@ mod tests {
                 d.direct.bar_bases[usize::from(page.bar)] + page.offset
             );
         }
-        assert_eq!(maps[registers].phys, direct.data_plane_physical_address);
         assert_eq!(maps[registers + 1].va, DMA_VA + FRAME_SIZE);
         assert_eq!(direct.windows[0].pages as usize, registers);
         assert_eq!(direct.windows[1].pages, 2);
@@ -295,10 +353,7 @@ mod tests {
             (h.common, h.notify, h.interrupt_status),
             (window.common, window.notify, window.interrupt_status)
         );
-        assert_eq!(
-            h.data_plane_physical_address,
-            direct.data_plane_physical_address
-        );
+        assert_eq!(h.data_plane_physical_address, maps[registers].phys);
         assert_eq!(h.role, 3);
         assert!(h.fits(direct.windows[0].pages));
         // The common configuration the driver will find at its window offset is the one the
