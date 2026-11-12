@@ -1,38 +1,31 @@
 #!/bin/sh
-# script/qemu-check: is the QEMU on PATH the one this project expects?
+# script/qemu-check: is the QEMU on PATH exactly the one this project pins, with every device the
+# suite needs? Exits 0 when it is, and 1 with one line per problem when it is not. It never installs.
 #
-# `.qemu-version` is the single source of truth, and it is read by three things that must agree: this
-# check, `script/ci-qemu` (which builds that exact version on the runner), and the CI cache key. Change
-# the file and all three move together.
+# This is the verdict `script/ci-qemu` renders before and after it builds, §322 (the QEMU bootstrap
+# is the one QEMU check): ci-qemu is the one place that acts on it, and `script/bootstrap` neither
+# runs this nor provisions QEMU. Run it directly to ask the question without building anything.
 #
-# **Two different questions, deliberately answered with different severity**, because they are not
-# equally serious:
+# What it accepts, and nothing less:
 #
-#   1. *Does this QEMU have the devices we need?* A hard failure. Without `riscv-iommu-pci` the riscv
-#      leg cannot boot milestone 16b's tests at all, and the tempting workaround (drop the device when
-#      absent) would let the DMA-confinement tests pass while testing nothing. That is the silent
-#      degradation the CRICKER_DISK check exists to prevent.
+#   1. All three emulators the suite boots are on PATH: qemu-system-aarch64, qemu-system-riscv64 and
+#      qemu-system-x86_64.
+#   2. **Each of them is exactly `.qemu-version`.** An emulator version is part of what "the tests
+#      passed" means, and the benchmarks are icount instruction counts that a different QEMU can
+#      move; each baseline's `# qemu:` line records the emulator that produced it. Each binary is
+#      checked, because a PATH can mix two installations.
+#   3. The devices whose absence would gut a test rather than fail it: `riscv-iommu-pci` on riscv64
+#      (milestone 16b, the RISC-V IOMMU, §20) and the `virt` machine on aarch64. Dropping the IOMMU
+#      device when QEMU lacks it is refused on purpose: the confinement tests would pass while
+#      testing nothing, and a test that quietly stops testing is worse than a red build.
 #
-#   2. *Is it the exact pinned version?* A warning. Benchmark numbers are icount instruction counts,
-#      so a different QEMU can legitimately shift them. But Homebrew cannot install an arbitrary
-#      older QEMU, so demanding an exact match locally would be a rule nobody could follow. Loud and
-#      non-fatal is the honest setting.
+# **"The QEMU on PATH" means the project's when it has one.** This sources `helpers/qemu-path.sh`,
+# which puts `script/ci-qemu`'s build first on PATH when that build is the pinned version, so the
+# verdict is about the emulator every `script/` entry point will run, never about a `/usr/bin` QEMU
+# that the build shadows.
 #
-#      **This paragraph used to say `bench/baseline-aarch64.txt` "was recorded against the pinned
-#      one", and nothing in the tree supported that** (corrected 2026-09-21). No baseline recorded
-#      which emulator produced it, and this machine has run 11.1.1 against a pinned 11.0.2 since
-#      2026-08-28, so the claim was an assumption wearing a fact's clothes in the one place a reader
-#      goes to ask the question. The baselines now carry a `# qemu:` line, `cargo xtask bench --save`
-#      writes it from the binary it ran, and `--check` compares it against the emulator in front of
-#      it; the existing files say `unrecorded`, which is the truth about them.
-#
-# Run it directly any time; `script/bootstrap` calls it after installing.
-#
-# **"The QEMU on PATH" means the project's, not the system's** (milestone 287). This script
-# sources `helpers/qemu-path.sh` below, so on Linux it reports on whatever `script/ci-qemu`
-# built rather than on apt's. Before that it answered about `/usr/bin`'s 8.2.2 even on a
-# machine that had built 11.0.2 an hour earlier, which is how the remedy this check prints
-# came to name two commands that looped.
+# `.qemu-version` is the single source of truth, read by this check, `script/ci-qemu`,
+# `helpers/qemu-path.sh` and the CI cache key. Change the file and all of them move together.
 #
 # Name: recorded (script/undefined-behavior-check, ratified 2026-08-03 by calef). Introduced
 # 2026-07-30. The `-check` suffix is not this script's coinage to defend: calef signed it while
@@ -44,53 +37,48 @@
 set -e
 cd "$(dirname "$0")/.."
 
-# This project's own QEMU, if `script/ci-qemu` has built one (helpers/qemu-path.sh says why
-# PATH is the mechanism). A no-op on macOS and on any machine without that prefix.
+# This project's own QEMU, when `script/ci-qemu` has built the pinned version (helpers/qemu-path.sh
+# says why PATH is the mechanism).
 . helpers/qemu-path.sh
 
 want="$(tr -d ' \n' < .qemu-version)"
 
-if ! command -v qemu-system-aarch64 >/dev/null 2>&1 \
-    || ! command -v qemu-system-riscv64 >/dev/null 2>&1 \
-    || ! command -v qemu-system-x86_64 >/dev/null 2>&1; then
-    echo "qemu-check: qemu-system-aarch64, qemu-system-riscv64 and qemu-system-x86_64 must all be on PATH." >&2
-    echo "  Run script/bootstrap, or on Linux script/ci-qemu to build the pinned version." >&2
+# The version a QEMU binary reports: the word after `version`, not a field position, so a vendor's
+# first line ("qemu-system-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1)") cannot shift it
+# (xtask/src/host.rs parses it the same way). An exact string comparison then keeps 11.0.2 from
+# satisfying a pin of 11.0.20.
+qemu_version() {
+    "$1" --version 2>/dev/null | head -1 | sed -n 's/.*version \([0-9][0-9.]*\).*/\1/p'
+}
+
+problems=""
+for arch in aarch64 riscv64 x86_64; do
+    bin="$(command -v "qemu-system-$arch" 2>/dev/null || true)"
+    if [ -z "$bin" ]; then
+        problems="$problems
+qemu-system-$arch is not on PATH"
+        continue
+    fi
+    have="$(qemu_version "$bin")"
+    if [ "$have" != "$want" ]; then
+        problems="$problems
+$bin is ${have:-a QEMU whose version cannot be read}, and .qemu-version pins $want"
+    fi
+done
+if command -v qemu-system-riscv64 >/dev/null 2>&1 \
+    && ! qemu-system-riscv64 -device help 2>&1 | grep -q "riscv-iommu-pci"; then
+    problems="$problems
+qemu-system-riscv64 has no riscv-iommu-pci device (milestone 16b, §20)"
+fi
+if command -v qemu-system-aarch64 >/dev/null 2>&1 \
+    && ! qemu-system-aarch64 -machine help 2>&1 | grep -q "^virt"; then
+    problems="$problems
+qemu-system-aarch64 has no virt machine"
+fi
+
+if [ -n "$problems" ]; then
+    echo "$problems" | sed '/^$/d; s/^/qemu-check: /' >&2
     exit 1
 fi
 
-have="$(qemu-system-aarch64 --version | head -1 | awk '{print $4}')"
-
-# The capability check. These are the devices whose absence silently guts a test rather than failing
-# it, so each is named here rather than discovered at boot. riscv-iommu-pci is the one that actually
-# bit us: Ubuntu 24.04's QEMU 8.2 had no such device and the riscv leg died mid-suite.
-missing=""
-qemu-system-riscv64 -device help 2>&1 | grep -q "riscv-iommu-pci" \
-    || missing="$missing riscv-iommu-pci(riscv64)"
-qemu-system-aarch64 -machine help 2>&1 | grep -q "virt" \
-    || missing="$missing virt(aarch64)"
-
-if [ -n "$missing" ]; then
-    echo "qemu-check: QEMU $have is missing:$missing" >&2
-    echo "  These are required (milestone 16b, DECISIONS §20). Upgrade to $want or newer." >&2
-    echo "  macOS:  brew upgrade qemu" >&2
-    echo "  Linux:  script/ci-qemu   (builds and installs the pinned version)" >&2
-    exit 1
-fi
-
-if [ "$have" != "$want" ]; then
-    echo "qemu-check: WARNING: QEMU $have on PATH, but .qemu-version pins $want."
-    echo "  Every device this project needs is present, so the tests will run."
-    echo "  What can differ is the BENCHMARKS: bench/baseline-aarch64.txt holds icount instruction counts,"
-    echo "  and a different QEMU can move them (the check has a 10% tolerance). Which emulator actually"
-    echo "  produced a baseline is in its own '# qemu:' line; 'unrecorded' means it predates that record,"
-    echo "  and 'cargo xtask bench --check' says so rather than assuming this QEMU is the right one."
-    echo
-    echo "  Pick one, deliberately:"
-    echo "    - keep this QEMU and update the pin:  echo $have > .qemu-version   (commit it; CI"
-    echo "      rebuilds and re-caches, and re-run script/bench --save --why \"new QEMU: ...\" if the"
-    echo "      numbers actually moved)"
-    echo "    - keep the pin and hold QEMU still:   brew pin qemu"
-    exit 0
-fi
-
-echo "qemu-check: QEMU $have matches the pin, with every required device present."
+echo "qemu-check: QEMU $want on PATH ($(command -v qemu-system-aarch64)), with every required device."
