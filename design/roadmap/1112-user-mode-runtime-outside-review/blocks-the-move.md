@@ -67,7 +67,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    Add a README from the scaffold with the build lines for all three targets, and both license
    files. Reword the `publish` comment to one sentence a stranger can act on. Add `version` on
    jig's dependency line. The six path
-   dependencies the check also reports are the extraction order of milestone 1017 doing its job,
+   dependencies the check also reports are the extraction order of milestone 1017 (the contract crates leave in this order) doing its job,
    not a defect: `abi`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`,
    `entropy_contract` and `socket_contract` leave first.
    Door: two-way (the crate name and the license are already ruled). Effort: S.
