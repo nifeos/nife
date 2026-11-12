@@ -23,7 +23,7 @@ reader names a raw address, and it has no Kani harness. Every name has a ratifie
 | license | `MIT OR Apache-2.0`, both texts at the crate root |
 | `publish` | `false`; milestone 1017 (the contract crates leave in this order) keeps moved contract crates unpublished until their own release milestone |
 | size | one `src/lib.rs` of 298 lines: about 213 of library and 85 of tests |
-| identity values | `MAGIC` (`TIMEBAS1`), `VERSION` 1, `INTERFACE_ID` 9 |
+| identity values | frozen: `MAGIC` (`TIMEBAS1`), `VERSION` 1, `INTERFACE_ID` 9, `PAGE_CONTENT_BYTES` 16 (the magic at offset 0, the little-endian rate at offset 8) and `PAGE_VIRTUAL_ADDRESS` `0x0000_7000_0000_0000` on `x86_64` and `0x0000_0038_0000_0000` on `riscv64`. A layout break ships as a new magic and version together. The crate header and README state them, and a host test pins them as literals. Frozen 2026-11-11 (UTC) on #3516 |
 | consumers in nife | `kernel`, `user_mode_runtime`, `process_builder`, `components` and `system_tests` (development only), by path |
 
 ## Public API
@@ -77,7 +77,6 @@ because uppercase erases the case that tells `MHz` from `mHz`.
 | The README says the crate "was written for the nife kernel and its user-mode runtime"; reword it. | move lane |
 | The `Send` and `Sync` safety comment cites `environment_contract::ConfigPage`, and two tests cite `environment_contract` and `clock_contract`, all crates in nife. State each argument in the crate's own terms. | move lane |
 | The doc comments name radon (a VisionFive 2) and "every rate this tree has met"; say "a VisionFive 2" and "rates real machines have". | move lane |
-| Ratify the identity value `INTERFACE_ID = 9`, which milestone 1017 asks for before a contract crate leaves. | architect |
 | The crate leaves after `address_space_map` in milestone 1017's order. The table there lists a development dependency on it; the manifest no longer has one, so the order may no longer bind. | maintainer |
 
 ## Proposed items
@@ -107,5 +106,4 @@ small needs a harness is open; the reader's one decision is the magic compare, a
 
 ## Recommendation
 
-Blocked by the identity value `INTERFACE_ID = 9` and by the move lane's three edits. After those,
-ready for review.
+Blocked by the move lane's three edits. After those, ready for review.

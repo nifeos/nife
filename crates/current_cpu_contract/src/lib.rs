@@ -76,6 +76,12 @@ pub const UNSCHEDULED: u64 = u64::MAX;
 /// userspace. The kernel's `cpu::MAXIMUM_CPUS` is this constant (AGENTS.md rule 7). Not the online
 /// count; see the crate's `BUGS` section, and `crates/cpu_set` for why counting is not indexing.
 ///
+/// **The bound is part of this page's identity.** The page's layout does not change when the bound
+/// does, so a reader built with one bound would otherwise accept a page from a writer built with
+/// another. Any change to this value therefore re-mints [`MAGIC`] and bumps [`VERSION`] in the
+/// same change. The reader backs this up: [`CurrentCpuPage::cpu`] reads an id at or past the bound
+/// as unknown.
+///
 /// # Examples
 ///
 /// Sizing a per-CPU array, which is the consumer this page exists for:
@@ -271,12 +277,17 @@ impl CurrentCpuPage {
     }
 
     /// Which CPU this thread is running on, or `None` if this page is unrecognized (a frame
-    /// nobody prepared) or its thread has never been switched in. Never a fabricated 0.
+    /// nobody prepared), its thread has never been switched in, or the published id is one this
+    /// crate's bound cannot index. Never a fabricated 0.
     ///
-    /// Two aligned loads and two comparisons, no syscall.
+    /// An id at or past [`CPU_ID_BOUND`] reads as unknown, so the answer always indexes an array
+    /// of `CPU_ID_BOUND` elements.
+    ///
+    /// Two aligned loads and three comparisons, no syscall.
     pub fn cpu(&self) -> Option<usize> {
         match self.word(OFF_CPU)? {
             UNSCHEDULED => None,
+            cpu if cpu >= CPU_ID_BOUND as u64 => None,
             cpu => Some(cpu as usize),
         }
     }
@@ -393,6 +404,19 @@ mod tests {
             bytes.publish(id as u64);
             assert_eq!(bytes.cpu(), Some(id));
         }
+    }
+
+    /// An id one below the bound is accepted and an id at the bound is refused, so a writer built
+    /// with a larger bound degrades to "unknown" instead of handing out an index past the array.
+    #[test]
+    fn an_id_past_the_bound_reads_as_unknown() {
+        let mut bytes = aligned_page();
+        bytes.publish(CPU_ID_BOUND as u64 - 1);
+        assert_eq!(bytes.cpu(), Some(CPU_ID_BOUND - 1));
+        bytes.publish(CPU_ID_BOUND as u64);
+        assert_eq!(bytes.cpu(), None);
+        bytes.publish(CPU_ID_BOUND as u64 + 1);
+        assert_eq!(bytes.cpu(), None);
     }
 
     /// **The allowance reads back, and a page built without one has no answer** (milestone 812
