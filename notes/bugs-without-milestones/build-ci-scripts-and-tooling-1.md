@@ -4,6 +4,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 
 | Where | Gap | Proposed milestone | Size |
 |---|---|---|---|
+|  .github/workflows/ci.yml (cpu matrix shard) | on 2026-11-11 the `cpu matrix shard (rva23s64 thead-c906)` job hit its 25-minute `timeout-minutes` in merge-group run 43109391409 (for #3528, a change to the owned-image probe that touches nothing the matrix runs); the job record spans 30 minutes, the shard normally takes about 12 (about 12 minutes in the three neighboring runs), and the same change passed on its next run. The log is gone (the blob is not found), no hang-evidence artifact was uploaded, and the job's last step reached was `helpers/hang_evidence.py run -- script/ci-build cpu-matrix`, so no log text exists for a signature in `helpers/known-flakes.tsv` to match | Keep the evidence of a cpu matrix shard that times out | S  |
 |  .github/workflows/ready-status.yml | check matches branch by name only; a wrong-but-well-formed branch name passes and fails later in the group | ready-status compares the block's branch to the one actually pushed | S  |
 |  briefs/gate-in-ci.md | nothing measures what a CI round costs against a local one | Price a CI round against a local one | S  |
 |  briefs/merge-and-cleanup.md | no check on disk headroom; failure shows as an unrelated "No space left" | A disk-headroom check in session-start or pre-push | S  |
