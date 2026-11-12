@@ -31,7 +31,7 @@ use driver_process_contract::non_volatile_memory_express::{
     ADMINISTRATION_SUBMISSION_QUEUE_PAGE, AdministrationReport, BringUpError, DATA_PLANE_GRANT,
     DOORBELL_PAGE_GRANT, Handoff, IDENTIFY_PAGE, IO_COMPLETION_QUEUE_PAGE,
     IO_SUBMISSION_QUEUE_PAGE, MAXIMUM_DOORBELL_STRIDE, REGISTER_KIND, REGISTER_PAGES, RETIRE,
-    administration_slots,
+    administration_slots, take_completion,
 };
 use non_volatile_memory_express::{
     Capabilities, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace,
@@ -153,9 +153,14 @@ impl Controller {
         let cqe = ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE + self.admin_cq.head() as u64 * 16;
         let mut done: Option<Completion> = None;
         for _ in 0..SPIN_BOUND {
-            let c = Completion::from_dwords(queues.read::<[u32; 4]>(cqe));
-            if self.admin_cq.is_owned(&c) {
-                done = Some(c);
+            // The barrier inside orders the phase read before the rest of the entry and the
+            // payload reads that follow it (the identify parse).
+            done = take_completion(
+                &self.admin_cq,
+                |i| queues.read::<u32>(cqe + 4 * i as u64),
+                barrier,
+            );
+            if done.is_some() {
                 break;
             }
             if self.reg32(registers::CONTROLLER_STATUS_REGISTER)
@@ -167,9 +172,6 @@ impl Controller {
             core::hint::spin_loop();
         }
         let c = done.ok_or(BringUpError::CompletionTimeout)?;
-        // Order the completion's phase read before the payload reads that follow (the identify
-        // parse).
-        barrier();
 
         let new_head = self.admin_cq.pop();
         self.wr32(

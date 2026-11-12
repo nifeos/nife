@@ -448,6 +448,48 @@ impl Handoff {
     }
 }
 
+/// **Take the completion entry the controller posted at the polled slot, reading its phase tag
+/// before the rest of it.** `read_double_word(i)` reads dword `i` of the entry and `acquire` orders the
+/// reads before it ahead of those after it; the admin process and the data plane both poll through
+/// this, so they read an entry in one order. `None` while the entry is still last lap's.
+///
+/// The controller writes the entry while the poll runs, from another thread on QEMU and from
+/// another agent on hardware, so the four dwords are four reads that a posting can fall between.
+/// Read in address order and judged afterwards, the phase tag (in dword 3) could be the new lap's
+/// while dword 2, the submission queue head, was still the old one: on a ring's first lap that is
+/// the zero a fresh ring holds, a head the driver cannot accept, and the request answered `EIO`.
+/// riscv64 builds the read as four 32-bit loads, so its swish-check's `ioping` on the disk tree
+/// met that intermittently; aarch64's single `ldp` kept dwords 2 and 3 in one load. Dword 3 also
+/// carries the command identifier and the status, so the one read of it that decided ownership
+/// is the read every one of those comes from.
+///
+/// # BUGS
+///
+/// - It belongs in `non_volatile_memory_express`, whose main branch already has the pieces
+///   (`Completion::is_phase_tag_set` and `CompletionQueue::expects_phase_tag_set`, from
+///   `nifeos/non_volatile_memory_express#23`); this pin predates them, so the ownership test here
+///   decodes dword 3 alone through `from_dwords`.
+///
+/// Name: provisional, minted 2026-11-12 (UTC) by lane maintainer/riscv64-nvme-ioping-io-error.
+pub fn take_completion(
+    queue: &::non_volatile_memory_express::CompletionQueue,
+    mut read_double_word: impl FnMut(usize) -> u32,
+    acquire: impl FnOnce(),
+) -> Option<::non_volatile_memory_express::Completion> {
+    use ::non_volatile_memory_express::Completion;
+    let double_word_three = read_double_word(3);
+    if !queue.is_owned(&Completion::from_dwords([0, 0, 0, double_word_three])) {
+        return None;
+    }
+    acquire();
+    Some(Completion::from_dwords([
+        read_double_word(0),
+        read_double_word(1),
+        read_double_word(2),
+        double_word_three,
+    ]))
+}
+
 #[cfg(kani)]
 mod proofs;
 
@@ -456,6 +498,77 @@ mod tests {
     use ::non_volatile_memory_express::{Doorbell, doorbell};
 
     use super::*;
+
+    /// **A completion posted between any two of the poll's reads is taken whole or not at all.**
+    /// The controller posts an entry, lap one, slot 1 (head 2, command 7) over the zeros a fresh
+    /// ring holds; the posting is placed after each count of reads in turn. Reading the four
+    /// dwords in address order before judging the phase fails at three reads: a fresh phase with
+    /// the stale head of zero, the `EIO` riscv64's swish-check met.
+    #[test]
+    fn a_completion_posted_mid_poll_is_never_taken_torn() {
+        use ::non_volatile_memory_express::{Completion, CompletionQueue};
+        let stale = [0u32; 4];
+        let posted = [0, 0, 2 | 1 << 16, 7 | 1 << 16];
+        let queue = CompletionQueue::new(16);
+        for posted_after in 0..=8 {
+            let mut reads = 0;
+            let mut acquired_at = None;
+            let taken = take_completion(
+                &queue,
+                |i| {
+                    let double_word = if reads >= posted_after {
+                        posted[i]
+                    } else {
+                        stale[i]
+                    };
+                    reads += 1;
+                    double_word
+                },
+                || acquired_at = Some(posted_after),
+            );
+            match taken {
+                Some(c) => {
+                    assert_eq!(
+                        c,
+                        Completion::from_dwords(posted),
+                        "posted after {posted_after}"
+                    );
+                    assert_eq!(acquired_at, Some(posted_after), "taken with no acquire");
+                }
+                None => assert!(posted_after >= 1, "a posting before any read is missed"),
+            }
+        }
+    }
+
+    /// The acquire falls between the phase read and the rest, and the phase is read first.
+    #[test]
+    fn the_phase_is_read_first_and_acquired_before_the_rest() {
+        use ::non_volatile_memory_express::CompletionQueue;
+        let posted = [0, 0, 2 | 1 << 16, 7 | 1 << 16];
+        let order = core::cell::RefCell::new(std::vec::Vec::new());
+        let taken = take_completion(
+            &CompletionQueue::new(16),
+            |i| {
+                order.borrow_mut().push(i as i32);
+                posted[i]
+            },
+            || order.borrow_mut().push(-1),
+        );
+        assert!(taken.is_some());
+        assert_eq!(*order.borrow(), [3, -1, 0, 1, 2]);
+        // Last lap's entry is not taken, and nothing past its phase is read.
+        order.borrow_mut().clear();
+        let stale = take_completion(
+            &CompletionQueue::new(16),
+            |i| {
+                order.borrow_mut().push(i as i32);
+                0
+            },
+            || order.borrow_mut().push(-1),
+        );
+        assert!(stale.is_none());
+        assert_eq!(*order.borrow(), [3]);
+    }
 
     /// The handoff the admin process builds is the handoff the data plane reads, and a
     /// word that cannot describe a servable controller is refused rather than decoded.
