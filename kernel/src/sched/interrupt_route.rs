@@ -101,7 +101,13 @@ pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
 /// it.
 ///
 /// Name: ratified 2026-10-27 (#2797).
+///
+/// `#[inline(never)]` keeps these bytes out of `riscv_trap_body`, which `script/fastpath-footprint`
+/// counts as syscall entry: folded there, this call and its two neighbors in the riscv64 trap
+/// dispatcher grew that entry from 2,010 to 3,116 bytes, though no syscall fetches them
+/// (milestone 368).
 #[doc(alias = "irq")]
+#[inline(never)]
 pub fn interrupt_notify(ep: RendezvousId) {
     // Counted for `vmstat`'s `in` column.
     crate::machine_statistics::interrupt();

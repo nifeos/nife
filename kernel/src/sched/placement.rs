@@ -54,6 +54,12 @@ pub const RESCHED_SGI: u32 = 0;
 ///
 /// Context: the reschedule-SGI handler, in interrupt context with interrupts masked, which
 /// `with_runq` needs. Takes only this core's inbox lock (§11 (SMP)).
+///
+/// `#[inline(never)]` keeps these bytes out of `riscv_trap_body`, which `script/fastpath-footprint`
+/// counts as syscall entry: folded there, this call and its two neighbors in the riscv64 trap
+/// dispatcher grew that entry from 2,010 to 3,116 bytes, though no syscall fetches them
+/// (milestone 368).
+#[inline(never)]
 pub fn drain_inbox() {
     // Every caller is a cross-core interrupt arm, so the machine statistics page counts it here.
     crate::machine_statistics::interrupt();
@@ -141,6 +147,12 @@ pub(super) fn pick_spawn_target() -> usize {
 ///
 /// Context: interrupt context (the reschedule-SGI handler), interrupts masked; takes the
 /// requester's inbox lock.
+///
+/// `#[inline(never)]` keeps these bytes out of `riscv_trap_body`, which `script/fastpath-footprint`
+/// counts as syscall entry: folded there, this call and its two neighbors in the riscv64 trap
+/// dispatcher grew that entry from 2,010 to 3,116 bytes, though no syscall fetches them
+/// (milestone 368).
+#[inline(never)]
 pub fn serve_steal_request() {
     // The acquire/release pairing and the read-and-clear are in `steal_request`, where loom checks
     // them (notes/interleaving.md).
