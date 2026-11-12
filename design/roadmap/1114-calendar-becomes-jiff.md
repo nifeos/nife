@@ -16,15 +16,15 @@ crate `jiff` 0.2 (Unlicense OR MIT) with its default features off. The ruling ap
 dependency for these callers. The branch is `milestone/1105-calendar-becomes-jiff`.
 
 Reuse: this milestone takes `jiff` 0.2. `time` 0.3 lost because it formats only with `std`. `chrono`
-0.4 lost because it writes RFC 3339 into an allocated `String`. `date` is a `#![no_std]` program with no
-allocator, and `jiff` formats with neither, through its own `jiff::fmt::Write`. Without its
-time-zone features it handles fixed offsets only, which is the scope nife keeps.
+0.4 lost because it writes RFC 3339 into an allocated `String`. `jiff` formats and parses with
+neither `std` nor an allocator. Without its time-zone features it handles fixed offsets only, which
+is the scope nife keeps.
 
 ## What is in force
 
 | Caller | What it takes from `jiff` |
 |---|---|
-| `date` (`components/src/date.rs`) | civil time from Unix seconds; the five formats as `strtime` layouts |
+| `date` (`components/src/date.rs`) | civil time from Unix seconds, and the weekday |
 | the clock service (`components/src/clock.rs`) | an RTC reading to Unix seconds |
 | `touch -t` (`components/src/swish/navigation.rs`) | the date and time of day of an RFC 3339 operand whose shape the program checked first |
 | the timetable (`crates/timetable/src/recurrence.rs`) | day numbers to civil dates and back, month lengths |
@@ -50,6 +50,10 @@ verification path needed them. §46's amendment of 2026-10-04 makes taking a cra
 outside the kernel and the crates Kani proves, and the calendar is neither.
 
 ## BUGS
+
+- `date` writes its five layouts' digits itself. jiff's `strtime` formatter overflowed the one
+  stack page a spawned program is given, so `date` takes only civil arithmetic and the weekday from
+  jiff. The host harness compared those layouts with the removed crate.
 
 - jiff's Temporal parser accepts more than RFC 3339: a leap second clamped to `:59`, an offset
   without a colon or with seconds, the compact form, bracketed annotations. `touch -t` checks the

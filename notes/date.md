@@ -11,8 +11,8 @@ call into `jiff`.
 
 ## What it prints
 
-`a0` picks one of five formats, each a `jiff` `strtime` layout. Zero is `Human`, so a spawn that passes no arguments
-at all gets what a person typing `date` wants.
+`a0` picks one of five formats. Zero is `Human`, so a spawn that passes no arguments at all gets
+what a person typing `date` wants.
 
 | `a0` | `Format` | output |
 |---|---|---|

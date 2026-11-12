@@ -1,6 +1,7 @@
 //! `date`: print the wall-clock time (notes/date.md, notes/clock.md, notes/calendar.md).
 //!
-//! It reads the clock page, adds the ambient counter, formats with `jiff` and sends the bytes.
+//! It reads the clock page, adds the ambient counter, finds the civil time with `jiff`, prints it and
+//! sends the bytes.
 //! It holds the page read-only, so it cannot set the clock (§43 (reading the clock is a page)). An
 //! unknown clock is an answer: it reads the state word first and names the cause on [`DIAG_SLOT`],
 //! so `date > when.txt` on a clockless machine leaves the file empty. Every complaint is sent, and
@@ -27,9 +28,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 
 use clock_contract::{ClockPage, state};
 use jiff::SignedDuration;
-use jiff::civil::{DateTime, date};
-use jiff::fmt::strtime::BrokenDownTime;
-use jiff::tz::Offset;
+use jiff::civil::{DateTime, Weekday, date};
 use user_mode_runtime::{exit, is_granted, monotonic_nanoseconds, send};
 
 /// Slot 0: where the output goes. An endpoint with `WRITE`, and the same 16-bytes-per-message
@@ -140,16 +139,13 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
         end();
     }
 
-    // RFC 3339 writes an offset as `HH:MM` with the hour below 24, so ±23:59 is the range. jiff's
-    // `Offset` would take up to ±25:59:59, which no format here can print.
-    let offset_minutes = offset_minutes as i64 as i32;
-    let Some(offset) = (offset_minutes.unsigned_abs() < 24 * 60)
-        .then(|| Offset::from_seconds(offset_minutes * 60).ok())
-        .flatten()
-    else {
+    // RFC 3339 writes an offset as `HH:MM` with the hour below 24, so ±23:59 is the range.
+    let offset_minutes = offset_minutes as i64;
+    if offset_minutes.unsigned_abs() >= 24 * 60 {
         complain(b"date: that UTC offset is not one RFC 3339 can write");
         end();
-    };
+    }
+    let offset_minutes = offset_minutes as i32;
 
     // Nanoseconds to seconds, truncating towards zero, which is exact here: the wall clock is a
     // `u64` count of nanoseconds since 1970 and every format here prints whole seconds.
@@ -171,7 +167,7 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
     // message and is the whole of the rule a declaring program keeps.
     diag_end();
     let mut text = Text::new();
-    write_format(&mut text, fmt, local, offset, unix_seconds);
+    write_format(&mut text, fmt, local, offset_minutes, unix_seconds);
     line(text.as_bytes());
     if provenance != 0 {
         // Provenance is a fact about the clock rather than a complaint about the run, so it goes
@@ -194,46 +190,110 @@ fn local_reading(unix_seconds: i64, offset_minutes: i32) -> Option<DateTime> {
     (reading.year() >= 0).then_some(reading)
 }
 
-/// Print `local` in the format the `a0` selector names, through jiff's `strtime`. An unrecognised
-/// value is `Human` rather than an error: this is a register, not a parsed string, and the caller
-/// that got it wrong wants the default.
+/// Print `local` in the format the `a0` selector names. An unrecognised value is `Human` rather
+/// than an error: this is a register, not a parsed string, and the caller that got it wrong wants
+/// the default.
 ///
 /// The five layouts are the ones notes/calendar.md lists: `Rfc3339` prints `Z` at zero offset and
 /// `±HH:MM` otherwise, and `Human` prints `UTC` at zero offset. `Unix` is the instant, whatever the
-/// offset.
-fn write_format(out: &mut Text, fmt: u64, local: DateTime, offset: Offset, unix_seconds: i64) {
-    let utc = offset.seconds() == 0;
+/// offset. The digits are written here from jiff's civil fields rather than through jiff's
+/// `strtime`, whose formatter needs more stack than the one page a spawned program is given.
+fn write_format(out: &mut Text, fmt: u64, local: DateTime, offset_minutes: i32, unix_seconds: i64) {
     let fmt = match fmt {
         FMT_RFC3339 | FMT_DATE | FMT_TIME | FMT_UNIX => fmt,
         _ => FMT_HUMAN, // a caller that got the selector wrong wants the default
     };
-    let layout: &str = match fmt {
-        FMT_RFC3339 if utc => "%Y-%m-%dT%H:%M:%SZ",
-        FMT_RFC3339 => "%Y-%m-%dT%H:%M:%S%:z",
-        FMT_DATE => "%Y-%m-%d",
-        FMT_TIME => "%H:%M:%S",
+    match fmt {
+        FMT_RFC3339 => {
+            write_date(out, local);
+            out.push("T");
+            write_time(out, local);
+            if offset_minutes == 0 {
+                out.push("Z");
+            } else {
+                write_offset(out, offset_minutes);
+            }
+        }
+        FMT_DATE => write_date(out, local),
+        FMT_TIME => write_time(out, local),
         FMT_UNIX => {
             use core::fmt::Write;
             // `Text` drops what does not fit rather than failing, so this cannot return an error.
             let _ = write!(out, "{unix_seconds}");
-            return;
         }
-        FMT_HUMAN if utc => "%a %Y-%m-%d %H:%M:%S UTC",
-        _ => "%a %Y-%m-%d %H:%M:%S %:z", // `FMT_HUMAN` at an offset
-    };
-    let mut fields = BrokenDownTime::from(local);
-    fields.set_offset(Some(offset));
-    // Every directive above is one `fields` holds, and `Text` never refuses a write, so this
-    // cannot fail; a failure would leave the line short rather than panic.
-    let _ = fields.format(layout, &mut *out);
+        _ => {
+            // `FMT_HUMAN`
+            out.push(weekday_abbreviation(local.weekday()));
+            out.push(" ");
+            write_date(out, local);
+            out.push(" ");
+            write_time(out, local);
+            out.push(" ");
+            if offset_minutes == 0 {
+                out.push("UTC");
+            } else {
+                write_offset(out, offset_minutes);
+            }
+        }
+    }
+}
+
+/// `YYYY-MM-DD`. The year is 0000 to 9999, which [`local_reading`] holds.
+fn write_date(out: &mut Text, local: DateTime) {
+    write_digits(out, local.year().unsigned_abs().into(), 4);
+    out.push("-");
+    write_digits(out, local.month().unsigned_abs().into(), 2);
+    out.push("-");
+    write_digits(out, local.day().unsigned_abs().into(), 2);
+}
+
+/// `HH:MM:SS`.
+fn write_time(out: &mut Text, local: DateTime) {
+    write_digits(out, local.hour().unsigned_abs().into(), 2);
+    out.push(":");
+    write_digits(out, local.minute().unsigned_abs().into(), 2);
+    out.push(":");
+    write_digits(out, local.second().unsigned_abs().into(), 2);
+}
+
+/// `±HH:MM`, for an offset other than zero and within ±23:59.
+fn write_offset(out: &mut Text, offset_minutes: i32) {
+    out.push(if offset_minutes < 0 { "-" } else { "+" });
+    let minutes = offset_minutes.unsigned_abs();
+    write_digits(out, minutes / 60, 2);
+    out.push(":");
+    write_digits(out, minutes % 60, 2);
+}
+
+/// `value` in decimal, zero-padded to `width` digits. Every caller passes a value that fits.
+fn write_digits(out: &mut Text, value: u32, width: u32) {
+    let mut place = 10u32.pow(width - 1);
+    while place > 0 {
+        let digit = (value / place % 10) as u8;
+        out.push_byte(b'0' + digit);
+        place /= 10;
+    }
+}
+
+/// The English three-letter weekday `Human` prints, as `strftime`'s `%a` does in the C locale.
+fn weekday_abbreviation(weekday: Weekday) -> &'static str {
+    match weekday {
+        Weekday::Monday => "Mon",
+        Weekday::Tuesday => "Tue",
+        Weekday::Wednesday => "Wed",
+        Weekday::Thursday => "Thu",
+        Weekday::Friday => "Fri",
+        Weekday::Saturday => "Sat",
+        Weekday::Sunday => "Sun",
+    }
 }
 
 /// The longest line any format prints is `Human` at an extreme offset,
 /// `Fri 9999-12-31 23:59:59 +23:59`, which is 30 bytes.
 const TEXT_CAPACITY: usize = 32;
 
-/// A formatted timestamp, in a fixed buffer. No allocator: jiff prints into it through its own
-/// `fmt::Write` trait, and `core::fmt` prints the `Unix` number into it.
+/// A formatted timestamp, in a fixed buffer. No allocator: the layouts above write into it
+/// directly, and `core::fmt` prints the `Unix` number into it.
 struct Text {
     buf: [u8; TEXT_CAPACITY],
     len: usize,
@@ -256,18 +316,16 @@ impl Text {
     /// wanted to print the time.
     fn push(&mut self, s: &str) {
         for &b in s.as_bytes() {
-            if self.len < TEXT_CAPACITY {
-                self.buf[self.len] = b;
-                self.len += 1;
-            }
+            self.push_byte(b);
         }
     }
-}
 
-impl jiff::fmt::Write for Text {
-    fn write_str(&mut self, s: &str) -> Result<(), jiff::Error> {
-        self.push(s);
-        Ok(())
+    /// Append one byte, dropping it when the buffer is full, as [`Self::push`] does.
+    fn push_byte(&mut self, b: u8) {
+        if self.len < TEXT_CAPACITY {
+            self.buf[self.len] = b;
+            self.len += 1;
+        }
     }
 }
 

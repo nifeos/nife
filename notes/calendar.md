@@ -7,12 +7,11 @@ dependency was ruled 2026-11-12 (UTC) under §46 (thin primitives or whole subsy
 
 With default features off, jiff needs neither `std` nor an allocator. The lock file also names
 `jiff-core`, `jiff-static` and `portable-atomic`; the last two are behind `cfg` gates that this
-tree's targets do not meet. It prints through its own `jiff::fmt::Write` trait, so a program with no heap prints
-into a fixed buffer.
+tree's targets do not meet.
 
 | Caller | What it takes from jiff |
 |---|---|
-| `date` (`components/src/date.rs`, notes/date.md) | civil time from Unix seconds, and the five formats through `strtime` |
+| `date` (`components/src/date.rs`, notes/date.md) | civil time from Unix seconds, and the weekday |
 | the clock service (`components/src/clock.rs`) | an RTC's year, month, day and time to Unix seconds |
 | `touch -t` (`components/src/swish/navigation.rs`, notes/touch.md) | the date and time of day of an RFC 3339 operand |
 | the timetable (`crates/timetable/src/recurrence.rs`) | day numbers to civil dates and back, and month lengths |
@@ -21,13 +20,17 @@ into a fixed buffer.
 
 ## Why `jiff`
 
-`date` is a `#![no_std]` program with no allocator, and that settles the choice among the three
-Rust date libraries:
+The callers need civil arithmetic and an RFC 3339 reader in programs with no `std` and, for
+`date`, no allocator. All three Rust date libraries do the arithmetic without `std`. They differ in
+formatting and parsing:
 
 - `time` 0.3 formats only with `std`.
 - `chrono` 0.4 writes RFC 3339 into an allocated `String`.
-- `jiff` 0.2 formats with neither `std` nor an allocator, and its scope without its time-zone
-  features is fixed offsets only, which is the scope nife keeps (below).
+- `jiff` 0.2 formats and parses with neither `std` nor an allocator, and without its time-zone
+  features its scope is fixed offsets only, which is the scope nife keeps (below).
+
+`date` itself does not use jiff's formatter (see the formats below), so jiff's formatting advantage
+applies to the guest tests and to future callers, not to `date`.
 
 Taking a crate is the default §46's amendment of 2026-10-04 sets for userland programs and tools.
 The proofs nife had written for its own calendar crate do not change that: they proved code that
@@ -76,8 +79,9 @@ So there are no zone names, no daylight saving time and no `TZ`; jiff's `tz-syst
 | `Time` | `12:34:56` |
 | `Unix` | `1785414896`, the instant whatever the offset |
 
-Each is one `strtime` layout in `date.rs`, chosen by a register rather than read from the user, so
-no format string reaches jiff from outside the program. `Human` keeps the ISO date and prefixes
+`date.rs` writes each layout's digits itself from jiff's civil fields, and the `a0` register picks
+the layout, so no format string is read from the user. It does not use jiff's `strtime`: that
+formatter needs more stack than the one page a spawned program is given. `Human` keeps the ISO date and prefixes
 the weekday rather than printing Unix's `Wed Jul 30 12:34:56 UTC 2026`, which does not sort.
 
 ## `touch -t` reads RFC 3339 strictly
