@@ -127,7 +127,7 @@ A second premise changes the cost estimate below: does the tree already have a w
 output stream? Yes, mostly unused today. DECISIONS §26 (the fault endpoint) built a kernel-delivered fault/exit
 endpoint in milestone 22: "when a thread faults or exits, the kernel delivers a message to the
 supervision endpoint its spawner designated," with a reserved capability table slot
-(`abi::fault::FAULT_EP_SLOT`) and a kernel-stamped `(event code, tid, ...)` message, already proved
+(`abi::fault::FAULT_RENDEZVOUS_SLOT`) and a kernel-stamped `(event code, tid, ...)` message, already proved
 and already in the tree. Today `components/src/swish/` wires this only for supervised (interruptible)
 foreground jobs (`spawn_interruptible`, watching a cooperative job-frame `DONE` flag, which is a
 *different*, userspace-cooperative mechanism, not §26's kernel path). Ordinary sink-declaring

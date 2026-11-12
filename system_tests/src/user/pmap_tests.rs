@@ -129,12 +129,12 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     );
     let (rw_frame, rw_region) = page_frame(Rights::WRITE);
     assert_eq!(
-        map_into(builder, RW_VA, rw_frame, abi::address_space::MAP_RW),
+        map_into(builder, RW_VA, rw_frame, abi::address_space::MAP_READ_WRITE),
         Ok(0)
     );
     let (ro_frame, ro_region) = page_frame(Rights::READ);
     assert_eq!(
-        map_into(builder, RO_VA, ro_frame, abi::address_space::MAP_RO),
+        map_into(builder, RO_VA, ro_frame, abi::address_space::MAP_READ_ONLY),
         Ok(0)
     );
 
@@ -153,7 +153,7 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     assert!(
         l.rows().contains(&pmap::Row {
             va: RW_VA,
-            kind: abi::address_space::MAP_RW
+            kind: abi::address_space::MAP_READ_WRITE
         }),
         "{:?}",
         l.rows()
@@ -161,7 +161,7 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     assert!(
         l.rows().contains(&pmap::Row {
             va: RO_VA,
-            kind: abi::address_space::MAP_RO
+            kind: abi::address_space::MAP_READ_ONLY
         }),
         "{:?}",
         l.rows()
@@ -171,7 +171,12 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     // refused the one thing this test's builder capability can do: change one.
     let (spare, spare_region) = page_frame(Rights::READ);
     assert_eq!(
-        map_into(viewer, 0x0070_0000, spare, abi::address_space::MAP_RO),
+        map_into(
+            viewer,
+            0x0070_0000,
+            spare,
+            abi::address_space::MAP_READ_ONLY
+        ),
         Err(Error::NotPermitted),
         "ENUMERATE let a viewer map a page; that is the exact power SURVEY's split exists to deny",
     );
@@ -250,7 +255,7 @@ fn a_capability_outliving_its_space_reads_as_empty() {
     let builder = hold_builder(name);
     let (f, frame_region) = page_frame(Rights::READ);
     assert_eq!(
-        map_into(builder, 0x0040_0000, f, abi::address_space::MAP_RO),
+        map_into(builder, 0x0040_0000, f, abi::address_space::MAP_READ_ONLY),
         Ok(0)
     );
 

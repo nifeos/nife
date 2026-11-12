@@ -14,12 +14,12 @@
 //! Objects: two rendezvous, one notification, two single-page frames, and the Reply capabilities
 //! `CALL` mints. Methods: `SEND`, `RECEIVE`, `SEND_CAPABILITY`, `RECEIVE_CAPABILITY`, `CALL`, `BADGE` on a
 //! rendezvous; `REPLY`; `SIGNAL`, `WAIT`, `POLL`, `BIND` on the notification; `REVOKE` on a frame;
-//! an unknown method on each; and `SYS_CAPABILITY_DELETE`. The actors are kernel threads, not an EL0
+//! an unknown method on each; and `SYSCALL_CAPABILITY_DELETE`. The actors are kernel threads, not an EL0
 //! program, so the trap entry is not exercised here.
 
 //! # BUGS
 //!
-//! - `SYS_CAPABILITY_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
+//! - `SYSCALL_CAPABILITY_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
 //! - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
 //!   `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages.
 //! - An unexpected wake is caught, but possibly some steps after the operation that caused it.
@@ -856,7 +856,7 @@ fn actor(i: usize, doorbell: RendezvousId) {
                 Answer::ok(0)
             }
             Cmd::Op(Op::Delete { slot }) => {
-                // `syscall::dispatch`'s SYS_CAPABILITY_DELETE arm, which ignores the result.
+                // `syscall::dispatch`'s SYSCALL_CAPABILITY_DELETE arm, which ignores the result.
                 let _ = sched::delete_current_capability(slot);
                 Answer::ok(0)
             }

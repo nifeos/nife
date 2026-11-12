@@ -67,6 +67,12 @@ struct Region {
     /// those retyped from this region or from any live region split below it, and for
     /// [`Counted::Region`] the live regions below it. Never above `ceilings`, kind by kind.
     live: Ceilings,
+    /// **How many objects of each [`ObjectKind`] retyped straight from this region are still in
+    /// their kernel tables**: this region's own share of `live`, without its children's. What
+    /// [`release_object`](RegionTable::release_object) checks, so a second release of one object
+    /// is refused instead of taking a count that belongs to another region of the subtree. Name:
+    /// provisional.
+    held: [u32; ObjectKind::COUNT],
 }
 
 /// The per-use counts behind [`RegionTable::spent`]. Bump-only like the watermark, except
@@ -84,21 +90,21 @@ struct Spent {
 /// Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ObjectKind {
-    /// An IPC rendezvous (`abi::objtype::RENDEZVOUS`).
+    /// An IPC rendezvous (`abi::object_type::RENDEZVOUS`).
     Rendezvous,
-    /// An address space's root table (`abi::objtype::ADDRESS_SPACE`).
+    /// An address space's root table (`abi::object_type::ADDRESS_SPACE`).
     AddressSpace,
-    /// A thread control block (`abi::objtype::THREAD_CONTROL_BLOCK`).
+    /// A thread control block (`abi::object_type::THREAD_CONTROL_BLOCK`).
     Thread,
     /// A page of the kernel's own object pool (`kernel/src/kmem.rs`), whose contents change kind as
     /// pages are recycled, so no finer count would stay true.
     KernelPool,
-    /// A notification object (`abi::objtype::NOTIFICATION`). Counted, and not yet reported by any
+    /// A notification object (`abi::object_type::NOTIFICATION`). Counted, and not yet reported by any
     /// `abi::usage` record: the ratified records predate this object kind (see that module's BUGS).
     Notification,
-    /// A timer object (`abi::objtype::TIMER`), counted and unreported for the same reason.
+    /// A timer object (`abi::object_type::TIMER`), counted and unreported for the same reason.
     Timer,
-    /// A process (`abi::objtype::PROCESS`, milestone 812 (`std::thread::spawn` runs real threads
+    /// A process (`abi::object_type::PROCESS`, milestone 812 (`std::thread::spawn` runs real threads
     /// in one address space)), counted and unreported for the same reason.
     Process,
 }
@@ -399,6 +405,7 @@ impl<const N: usize> RegionTable<N> {
                 parent: NO_PARENT,
                 children: 0,
                 spent: Spent::default(),
+                held: [0; ObjectKind::COUNT],
                 ceilings,
                 live: Ceilings::ZERO,
             })
@@ -411,74 +418,59 @@ impl<const N: usize> RegionTable<N> {
     ///
     /// `None` if the parent's name is dead, its budget cannot cover the carve (the proved
     /// [`split_new_watermark`] decides), the parent or an ancestor is at its [`Counted::Region`]
-    /// ceiling, or the table is full. The first three move nothing. On a full table the run stays
-    /// spent on the parent and its child count stays raised: the bump-only rule. The child's
-    /// ceilings are fixed here, from its parent's.
-    ///
-    /// # BUGS
-    ///
-    /// - A split refused for a full table leaves its parent undestroyable until reboot, and each
-    ///   refusal makes the table fuller. The doctest below reproduces it, and
-    ///   `notes/region-split-on-a-full-table.md` has the account, the kernel's `SPLIT` sibling and
-    ///   the options:
-    ///
-    /// ```
-    /// let mut table = memory_regions::RegionTable::<2>::new();
-    /// let parent = table.insert_root(0x1000, 8).unwrap();
-    /// let child = table.split(parent, 2).unwrap(); // the second and last slot
-    ///
-    /// // The table is full, so this split is refused, but the parent's count went up anyway.
-    /// assert_eq!(table.split(parent, 2), None);
-    ///
-    /// // Reclaim the one real child; the parent should now be reclaimable, and is not.
-    /// let claim = table.claim_for_destroy(child).unwrap();
-    /// table.return_to_parent(&claim);
-    /// assert!(table.has_children(parent), "a phantom child nobody can name");
-    /// assert!(table.claim_for_destroy(parent).is_none(), "refused, and it always will be");
-    /// assert_eq!(table.usage(parent), Some((4, 8)), "the refused carve stays spent");
-    /// ```
+    /// ceiling, or the table is full, and **a refusal moves nothing**: every check runs before
+    /// the parent changes, and the child's slot is taken before the parent's watermark and child
+    /// count move, so a split refused for a full table leaves the parent as it found it. The
+    /// child's ceilings are fixed here, from its parent's. See
+    /// notes/region-split-on-a-full-table.md.
     pub fn split(&mut self, parent: u64, pages: u64) -> Option<u64> {
         let r = self.table.get(entry(parent))?;
-        split_new_watermark(r.pages, r.watermark, pages)?;
-        if !self.charge(parent, Counted::Region) {
+        let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
+        let base_page = r.base_page + r.watermark;
+        let ceilings = Ceilings::for_child_of(r);
+        if !self.can_charge(parent, Counted::Region) {
             return None;
         }
-        let (base_page, ceilings) = {
-            let r = self.table.get_mut(entry(parent))?;
-            let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
-            let base_page = r.base_page + r.watermark;
+        let child = self.table.insert_with(|_| Region {
+            base_page,
+            pages,
+            watermark: 0,
+            retyped_to: 0,
+            pinned: false,
+            parent,
+            children: 0,
+            spent: Spent::default(),
+            held: [0; ObjectKind::COUNT],
+            ceilings,
+            live: Ceilings::ZERO,
+        })?;
+        // The insert filled a free slot and left every live one alone, so the parent still
+        // resolves and the ceiling check above still holds.
+        self.count_one_more(parent, Counted::Region);
+        if let Some(r) = self.table.get_mut(entry(parent)) {
             r.watermark = new_watermark;
             r.children += 1;
             r.spent.children += pages;
-            (base_page, Ceilings::for_child_of(r))
-        };
-        let child = self
-            .table
-            .insert_with(|_| Region {
-                base_page,
-                pages,
-                watermark: 0,
-                retyped_to: 0,
-                pinned: false,
-                parent,
-                children: 0,
-                spent: Spent::default(),
-                ceilings,
-                live: Ceilings::ZERO,
-            })
-            .map(EntryName::to_bits);
-        if child.is_none() {
-            self.release(parent, Counted::Region);
         }
-        child
+        Some(child.to_bits())
     }
 
     /// **Count one more live `counted` against `name` and every ancestor, or refuse and count
-    /// nothing** when any of them is at its ceiling. Two walks of the parent chain under one
-    /// borrow: the first decides, the second commits, so a refusal moves no count. `false` for a
-    /// dead name. Each walk is bounded by the capacity, since a chain longer than the table would
-    /// be a cycle, which the split protocol cannot build.
+    /// nothing** when any of them is at its ceiling: [`can_charge`](Self::can_charge) decides and
+    /// [`count_one_more`](Self::count_one_more) commits, under one borrow, so a refusal moves no
+    /// count.
     fn charge(&mut self, name: u64, counted: Counted) -> bool {
+        if !self.can_charge(name, counted) {
+            return false;
+        }
+        self.count_one_more(name, counted);
+        true
+    }
+
+    /// Whether `name` and every ancestor are under their `counted` ceilings, so one more would
+    /// fit. `false` for a dead name. The walk is bounded by the capacity, since a chain longer
+    /// than the table would be a cycle, which the split protocol cannot build.
+    fn can_charge(&self, name: u64, counted: Counted) -> bool {
         let k = counted.index();
         let mut at = name;
         for _ in 0..N {
@@ -493,6 +485,13 @@ impl<const N: usize> RegionTable<N> {
                 break;
             }
         }
+        true
+    }
+
+    /// Count one more live `counted` against `name` and every ancestor, once
+    /// [`can_charge`](Self::can_charge) has said each is under its ceiling.
+    fn count_one_more(&mut self, name: u64, counted: Counted) {
+        let k = counted.index();
         let mut at = name;
         for _ in 0..N {
             let Some(r) = self.table.get_mut(entry(at)) else {
@@ -504,7 +503,6 @@ impl<const N: usize> RegionTable<N> {
                 break;
             }
         }
-        true
     }
 
     /// Count one fewer live `counted` against `name` and every ancestor. A no-op on a dead name,
@@ -526,13 +524,29 @@ impl<const N: usize> RegionTable<N> {
 
     /// **One object of `kind` retyped from `name` has left its kernel table**: a thread reaped, an
     /// address space dropped, or an insert refused after its page was retyped. Its subtree and
-    /// every ancestor's count one fewer. A no-op on a dead name: a claimed region's counts left
-    /// its ancestors at the claim. The other kinds leave their tables only when their region is
-    /// reclaimed, and [`claim_for_destroy`](Self::claim_for_destroy) gives their counts back.
+    /// every ancestor's count one fewer. The other kinds leave their tables only when their region
+    /// is reclaimed, and [`claim_for_destroy`](Self::claim_for_destroy) gives their counts back.
+    ///
+    /// Returns `false`, and moves nothing, when `name` is live and holds no object of `kind` that
+    /// has not already been released: a second release of one object, or a release with no
+    /// retype before it. Such a release would otherwise take a count that another region of the
+    /// subtree still holds, so an ancestor would report fewer live objects than it has and carve
+    /// past its ceiling. Returns `true` on a dead name, a no-op: a claimed region's counts left
+    /// its ancestors at the claim, so its objects owe nothing.
     ///
     /// Name: provisional.
-    pub fn release_object(&mut self, name: u64, kind: ObjectKind) {
+    #[must_use]
+    pub fn release_object(&mut self, name: u64, kind: ObjectKind) -> bool {
+        let Some(r) = self.table.get_mut(entry(name)) else {
+            return true;
+        };
+        let held = &mut r.held[kind as usize];
+        if *held == 0 {
+            return false;
+        }
+        *held -= 1;
         self.release(name, Counted::Object(kind));
+        true
     }
 
     /// **The nearest region at or above `name` whose subtree is at its `counted` ceiling**, or
@@ -633,6 +647,7 @@ impl<const N: usize> RegionTable<N> {
         r.watermark += 1;
         r.retyped_to = r.watermark;
         r.spent.objects[kind as usize] += 1;
+        r.held[kind as usize] += 1;
         Some(page)
     }
 
@@ -768,7 +783,6 @@ impl<const N: usize> RegionTable<N> {
     ///
     /// # BUGS
     /// - A hole under a live child is not reused while that child lives.
-    /// - A phantom child ([`split`](Self::split)'s `BUGS`) stops the coalescing for good.
     pub fn return_to_parent(&mut self, claim: &DestroyClaim) {
         if claim.is_root {
             return;
@@ -1278,7 +1292,7 @@ mod tests {
         t.retype_object_page(inner, ObjectKind::Rendezvous).unwrap();
         t.retype_object_page(inner, ObjectKind::Thread).unwrap();
         t.retype_object_page(job, ObjectKind::Process).unwrap();
-        t.release_object(inner, ObjectKind::Thread); // reaped before the reclaim
+        assert!(t.release_object(inner, ObjectKind::Thread)); // reaped before the reclaim
         assert_eq!(t.live_and_ceiling(root, RENDEZVOUS), Some((1, 64)));
         assert_eq!(t.live_and_ceiling(root, Counted::Region), Some((2, 64)));
         assert_eq!(t.live_and_ceiling(job, Counted::Region), Some((1, 4)));
@@ -1291,7 +1305,7 @@ mod tests {
         for k in 0..COUNTED_KINDS {
             assert_eq!(t.table.get(entry(root)).unwrap().live.0[k], 0, "kind {k}");
         }
-        t.release_object(inner, ObjectKind::Rendezvous); // a dead name: inert
+        assert!(t.release_object(inner, ObjectKind::Rendezvous)); // a dead name: inert
         assert_eq!(t.live_and_ceiling(root, RENDEZVOUS), Some((0, 64)));
     }
 
@@ -1310,7 +1324,7 @@ mod tests {
             "the inner region is at its ceiling of 32 / 16"
         );
 
-        t.release_object(inner, ObjectKind::Thread);
+        assert!(t.release_object(inner, ObjectKind::Thread));
         assert_eq!(t.live_and_ceiling(inner, THREAD), Some((1, 2)));
         assert_eq!(t.live_and_ceiling(job, THREAD), Some((1, 2)));
         assert_eq!(t.live_and_ceiling(root, THREAD), Some((1, 32)));
@@ -1318,6 +1332,36 @@ mod tests {
             t.retype_object_page(inner, ObjectKind::Thread).is_some(),
             "the released place is free to use again"
         );
+    }
+
+    #[test]
+    fn a_second_release_of_one_object_is_refused_and_moves_nothing() {
+        let mut t = RegionTable::<8>::new();
+        let root = t.insert_root_with_ceilings(0, 1000, every(64)).unwrap();
+        let job = t.split(root, 500).unwrap();
+        let inner = t.split(job, 100).unwrap();
+        t.retype_object_page(job, ObjectKind::Thread).unwrap();
+        t.retype_object_page(inner, ObjectKind::Thread).unwrap();
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((2, 64)));
+
+        assert!(t.release_object(job, ObjectKind::Thread));
+        assert!(
+            !t.release_object(job, ObjectKind::Thread),
+            "the job's one thread has already been released"
+        );
+        assert_eq!(t.live_and_ceiling(job, THREAD), Some((1, 4)));
+        assert_eq!(
+            t.live_and_ceiling(root, THREAD),
+            Some((1, 64)),
+            "the inner region's thread still counts against the root"
+        );
+        assert!(
+            !t.release_object(root, ObjectKind::Thread),
+            "the root retyped no thread itself"
+        );
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((1, 64)));
+        assert!(t.release_object(inner, ObjectKind::Thread));
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((0, 64)));
     }
 
     #[test]
@@ -1344,15 +1388,38 @@ mod tests {
         );
     }
 
+    /// **A split refused for a full table moves nothing**: the parent's watermark, child count,
+    /// spending and region counts stay as they were, so once its one real child returns the
+    /// parent is whole and reclaimable. A refusal that moved the parent first would leave a child
+    /// count no child could ever bring back down.
     #[test]
-    fn a_split_refused_for_a_full_table_gives_its_region_count_back() {
+    fn a_split_refused_for_a_full_table_leaves_the_parent_unchanged() {
         let mut t = RegionTable::<2>::new();
-        let root = t.insert_root(0, 8).unwrap();
-        t.split(root, 2).unwrap();
-        assert_eq!(t.split(root, 2), None);
+        let root = t.insert_root(0x1000, 8).unwrap();
+        let child = t.split(root, 2).unwrap(); // the second and last slot
+        let before = (
+            t.usage(root),
+            t.spent(root, PageUse::Children),
+            t.live_and_ceiling(root, Counted::Region),
+        );
+        assert_eq!(t.split(root, 2), None, "no free slot");
         assert_eq!(
-            t.live_and_ceiling(root, Counted::Region).map(|(n, _)| n),
-            Some(1)
+            (
+                t.usage(root),
+                t.spent(root, PageUse::Children),
+                t.live_and_ceiling(root, Counted::Region),
+            ),
+            before,
+            "watermark, spending and region count unmoved"
+        );
+        assert_eq!(t.usage(root), Some((2, 8)));
+        let claim = t.claim_for_destroy(child).unwrap();
+        t.return_to_parent(&claim);
+        assert!(!t.has_children(root), "no child count without a child");
+        assert_eq!(t.usage(root), Some((0, 8)), "the budget whole again");
+        assert!(
+            t.claim_for_destroy(root).is_some(),
+            "and the parent reclaimable"
         );
     }
 

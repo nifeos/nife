@@ -31,6 +31,7 @@ const STD_SRC_PATCH_VERSION: u32 = 15;
 // `use super::*`; the names other modules call keep their `crate::farm::` paths through the
 // re-exports below. The constants above are the handful every child reads.
 mod aborts;
+mod copied;
 mod exerciser;
 mod generate;
 mod patch;
@@ -40,6 +41,7 @@ mod stamp;
 mod toolchain;
 
 pub(crate) use aborts::std_aborts;
+use copied::*;
 use exerciser::STD_TARGETS;
 pub(crate) use exerciser::{build_jig, build_mdr, std_exerciser};
 use generate::*;

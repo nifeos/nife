@@ -86,6 +86,15 @@ path = "src/progenitor.rs"
 test = false
 bench = false
 
+# The boot self-test's userspace half (milestone 1063 (the boot self-test's spawning checks run from
+# userspace)): the checks that spawn a user program, run by the progenitor before the shell, and the
+# one verdict.
+[[bin]]
+name = "boot_self_test"
+path = "src/boot_self_test.rs"
+test = false
+bench = false
+
 # The virtio-blk driver as its own binary (parity C): the shared `virtio` module (the same file
 # hello's aarch64 roles compile) behind a dedicated-binary skeleton, so riscv runs the identical
 # driver, attacker included, without porting the PL011-wired hello multiplexer.
@@ -368,6 +377,14 @@ path = "src/jh7110_clock_and_reset.rs"
 test = false
 bench = false
 
+# The JH7110 Ethernet port's control process (milestone 1062 (the device control planes leave the
+# kernel), step 3): RGMII, the PHY, the controller reset, the coherence probe, both rings and the
+# link, by `designware_ethernet::bring_up`, before the kernel starts `net_stack` over the data
+# plane. Name provisional.
+[[bin]]
+name = "designware_ethernet_control"
+path = "src/designware_ethernet_control.rs"
+
 # The JH7110 PMIC route (milestone 1062 (the device control planes leave the kernel), step 5): the
 # one process that writes the board's power controller, over the I2C controller it hangs off,
 # answering `reboot`'s one request (§251, "A board's PMIC route runs in userspace"). Name provisional.
@@ -645,7 +662,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0", git = "https://github.com/nifeos/designware_mobile_storage", rev = "a800e4b89cf379a85947e473082ebe7f8f933c34" }
+designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 # The boot ladder's console markers (milestone 268). `swish` prints the last rung; the kernel
 # prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
@@ -676,13 +693,13 @@ http_response = { version = "0.1.0", path = "../crates/http_response" }
 domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
 # The name resolver's contract with its clients and its spawner (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
-block_roster_contract = { version = "0.1.0", path = "../crates/block_roster_contract" }
+block_roster_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/block_roster_contract", rev = "62630199281cbd294d6621cc35f31f81933e6be2" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
 # (§46 (thin primitives or whole subsystems)), default features off, so `no_std` with no dependencies of its own.
 uuid = { version = "1.28.0", default-features = false }
-file_allocation_table = { version = "0.1.0", path = "../crates/file_allocation_table" }
+file_allocation_table = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/file_allocation_table", rev = "9b3eac1cdbb19cc6668e3346296c8cee87e32214" }
 # Milestone 198 rung 2b: the two-slot boot state the installer writes into GPT attribute bits and
 # `uefi_loader`'s chooser reads back. One implementation, two programs.
 boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }

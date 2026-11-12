@@ -125,10 +125,18 @@ const E_FEATURES: u64 = 0x03;
 const E_QUEUE: u64 = 0x04;
 
 /// The virtio steps above are this backend's own, and `entropy_contract` reserves `0x01..=0x0f` for
-/// exactly that. The two steps every backend shares (`STEP_NO_FIRST_BYTES`, `STEP_FIRST_ALL_ZERO`)
-/// start at `0x10`, and this assert is what keeps a fifth virtio step from silently becoming one
+/// exactly that. The three steps every backend shares (`STEP_NO_FIRST_BYTES`, `STEP_FIRST_ALL_ZERO`,
+/// `STEP_FIRST_ALL_SAME`) start at `0x10`, and this assert is what keeps a fifth virtio step from silently becoming one
 /// of them: a report word decodes to one step or it decodes to a lie.
 const _: () = assert!(E_QUEUE < proto::STEP_NO_FIRST_BYTES);
+
+/// Whether a readiness report condemns the source for the rest of the boot: a first draw of
+/// zeros, or of one value repeated. An empty draw is not condemned, since a source that answered
+/// nothing may start answering.
+fn refuses_service(report: u64) -> bool {
+    report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO)
+        || report == proto::bring_up_failure(proto::STEP_FIRST_ALL_SAME)
+}
 
 fn r8(off: u64) -> u8 {
     WINDOW.r8(off)
@@ -231,7 +239,7 @@ impl Pool {
         }
         // Quiet the device and re-enable the line even on the path that never waited: the device
         // raised its line when it completed and the kernel masked it, and a line left masked is one
-        // the *next* holder of a shared intid never hears from. `interrupt::ACK` is
+        // the *next* holder of a shared intid never hears from. `interrupt::ACKNOWLEDGE` is
         // `arch::interrupt_controller::enable`, which is idempotent, so this is safe when nothing
         // fired.
         self.quiet();
@@ -361,13 +369,10 @@ fn start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
     let report = proto::readiness((0..pool.filled).map(|i| r8(POOL_OFF + i)));
     send(READY, report, u64::from(first), pool.filled);
 
-    // A device that wrote a page of zeros is condemned for the rest of the boot; a device that
-    // wrote nothing is not. See `jh7110_entropy.rs`'s `_start`, which says why at length: the report
+    // A device that wrote a page of zeros, or of one repeated value, is condemned for the rest of the
+    // boot; a device that wrote nothing is not. See `jh7110_entropy.rs`'s `_start`, which says why at length: the report
     // word reaches whoever wired the service, and a client only ever sees a reply.
-    serve(
-        pool,
-        report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO),
-    )
+    serve(pool, refuses_service(report))
 }
 
 /// The serve loop: one endpoint, one wait point, forever.
@@ -504,11 +509,11 @@ fn serve_instruction() -> ! {
         u64::from(first.is_some()),
         first.map_or(0, |_| proto::MAXIMUM_BYTES),
     );
-    // Eight zero bytes out of `RDSEED`/`RNDRRS` condemn the source for the boot, the same rule the
-    // two device backends follow. The false-positive probability is 2^-64 here rather than the
+    // Eight zero bytes, or eight equal bytes, out of `RDSEED`/`RNDRRS` condemn the source for the boot,
+    // the same rule the two device backends follow. The false-positive probability is 2^-64 here rather than the
     // 2^-256 a 32-byte draw gets, which is the width of the answer rather than a weaker check;
     // `entropy_contract`'s `BUGS` carries the number.
-    let refuse = report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO);
+    let refuse = refuses_service(report);
     loop {
         let req = receive_request(I_REQ);
         let w0 = req.w0;

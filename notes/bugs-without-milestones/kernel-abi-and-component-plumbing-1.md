@@ -13,7 +13,6 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  crates/environment_contract/src/lib.rs | no Manifest field declares wanting the environment page, so no shell-facing grant or caps preview | Manifest field for the environment page | M  |
 |  crates/grant_plan/src/line.rs | `<<` is refused with the wrong message (NoRedirectTarget) | grant_plan: a refusal that says `<<` is unsupported | S  |
 |  crates/grant_plan/src/spawnproto.rs | any promised message a caller withholds hangs the progenitor; no way to abandon a half-sent request | Spawn protocol: abandon a half-sent request | M  |
-|  crates/memory_regions/src/table.rs (+557 second bullet) | A split refused for a full table leaves a phantom child, so the parent can never be destroyed. Milestone 601 (The region table prints its peak, and a refused split's leak is recorded) only recorded it; its PROPOSED block waits on calef's ruling (notes/region-split-on-a-full-table.md, option B recommended). | A refused region split must not raise the parent's child count | S  |
 |  crates/pmap/src/lib.rs (resumed cursor bullet) | A resumed LIST cursor can land on a recycled log slot because entries carry no generation. | Give revocation-log entries a generation so pmap's cursor cannot resume wrongly | M  |
 |  crates/system_initializer/src/std_layout.rs | A std child holds WRITE (which is SPLIT) on its heap region; a program that splits pins its job region for good. Needs a MAP-not-SPLIT right (architect's call). | A region right that allows MAP and not SPLIT | M  |
 |  crates/thread_wake_handshake/src/lib.rs (2nd bullet) | `park` does not clear a stale `ipc_aborted`; every caller collects it today, nothing enforces it. Not clearly inside 366. | Make park refuse or clear a stale ipc_aborted | S  |
@@ -58,7 +57,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/mmu.md | aarch64 kill report prints neither the live root nor a walk, and should before the next sighting | Print root and walk in the aarch64 kill report | S  |
 |  notes/overflow-checks.md | `rendezvous_of` and riscv64/x86_64 `phys_to_virt` callers carry an add check where a range check is what matters | Range-check phys_to_virt callers | S  |
 |  notes/page-frame-slice.md | progenitor is not told when a job dies, so a window is reused after seven grants regardless of holders | Tell the progenitor when a job exits | M  |
-|  notes/processes.md | exit codes not carried; `SYS_EXIT` code discarded | Carry exit codes | M  |
+|  notes/processes.md | exit codes not carried; `SYSCALL_EXIT` code discarded | Carry exit codes | M  |
 |  notes/processes.md | TCB page of an ended thread is never reused (one heap page per thread ever spawned) | Reuse the ended thread's TCB page | M  |
 |  notes/riscv-tlb-shootdown.md (share_kernel_half bullet) | `share_kernel_half` copies top-level entries once; a later new top-level kernel mapping would be invisible to older spaces, and nothing asserts it cannot happen | Assert (or propagate) late kernel top-level entries across address spaces | S  |
 |  notes/stack/progenitor-stack.md (cap-slot gauge, incident-table bullets) | Capability-slot gauge lacks the x86_64 yield trigger; the appendix is not a row in `notes/stack.md`'s table | Give the cap-slot gauge x86_64 parity; add the incident row | S  |

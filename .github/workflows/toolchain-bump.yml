@@ -373,9 +373,10 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         if: steps.install.outcome == 'success'
 
+      # helpers/apt-install.sh falls back to a second Ubuntu mirror; its header says why.
       - name: Install clang (the C component's compiler, milestone 36)
         if: steps.install.outcome == 'success'
-        run: sudo apt-get update && sudo apt-get install -y clang
+        run: helpers/apt-install.sh clang
 
       # The sanity check, and only the sanity check. The std overlay patches std's own source, so it
       # tracks upstream internals rather than a stable API and is where a bump bites first. A clean

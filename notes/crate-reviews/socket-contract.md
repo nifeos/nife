@@ -39,7 +39,7 @@ file by path to build the standard library's platform layer.
 | kind | where |
 |---|---|
 | path dependency | `components`, `kernel`, `fixtures`, `crates/system_initializer`, `crates/user_mode_runtime`, `jig`, `std_exerciser`; `system_tests` as a development dependency. `jig` and `std_exerciser` carry no `version` key |
-| source copied by path | `xtask/src/farm/generate.rs` writes `src/lib.rs` verbatim into `patches/std-nife` as `netproto.rs`, and `xtask/src/farm/stamp.rs` watches it; the runbook's BUGS has this |
+| source copied into `std` | `cargo xtask std-src` writes `src/lib.rs` verbatim into the patched `std` as `netproto.rs` and stamps it, from the directory `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`), so the move changes nothing there |
 | prose and tables | `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, `helpers/lint_externalized_crates.py`, `helpers/template_report_baseline.txt`, `packages/contracts.package.toml`, `crates/externalization-list.txt`, the doc comments of `domain_name_resolution_contract` |
 | users of `fixture` | `components/src/socket_test_client.rs`, `fixtures`, `jig`, `std_exerciser`, `system_tests` (network and riscv virtio tests); `xtask/src/inbound.rs` spells the same values for the host side |
 | users of `ephemeral` and `polled_wait` | the network stack alone: `components/src/socket_server.rs`, `components/src/socket_table.rs`, `components/src/nic_wait.rs`. No crate in nife holds the stack's host-testable logic, so these two modules live here for their host tests |
@@ -102,6 +102,18 @@ No nife type appears in a signature. What a stranger may find surprising:
   page.
 - Under `cargo kani`, the compile-time `assert!` in `ephemeral` draws a future-incompatibility
   warning from Kani's own `assert` macro. Plain `cargo` builds do not warn.
+
+## Rulings
+
+- A send's length travels in the `CALL` argument word, checked against `DATA_MAXIMUM`, and
+  `OFF_LEN` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
+  note, every `OPERATION_` constant's documentation, the README and the client runtime's frame
+  accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
+  argument. 
+- `ACCEPT`'s second reply word carries the peer: the IPv4 address in bits 47 to 16 and the port in
+  bits 15 to 0, packed by `peer_word` and read by `word_peer` (names provisional), the architect's
+  ruling of 2026-11-11 UTC. The frame's `dst` fields are not used for it, and the word stays the
+  IPv4 answer; another family would need a second route.
 
 ## Names
 

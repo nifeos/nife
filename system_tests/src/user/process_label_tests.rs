@@ -12,7 +12,7 @@
 
 //! Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
 
-use abi::fault::FAULT_EP_SLOT;
+use abi::fault::FAULT_RENDEZVOUS_SLOT;
 use abi::survey::record;
 
 use super::process_tests::{SPINNER, STACK_VA, call, create_process, join, lay_out, wait_for};
@@ -80,7 +80,7 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
         sched::thread_control_block_insert_capability(
             tid,
             crate::capability_object::rendezvous_capability(ep, Rights::READ),
-            Some(FAULT_EP_SLOT),
+            Some(FAULT_RENDEZVOUS_SLOT),
         )
         .expect("insert the supervision endpoint");
         sched::start_thread_control_block(tid, [0; 3]).expect("start a spinner");

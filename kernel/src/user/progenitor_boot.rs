@@ -115,6 +115,8 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     }
     grant_disk_tree(tid, fs_pool);
     grant_base_digest(tid);
+    #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
+    grant_self_test(tid);
     grant_power_management_chip_route(tid);
     crate::sched::configure_thread_control_block(tid, elf.entry(), USER_STACK_TOP, aspace_name)
         .expect("configure");
@@ -498,23 +500,23 @@ fn grant_base_digest(tid: crate::thread::ThreadId) {
     assert_eq!(s34, 34);
 }
 
-/// Slot 35, on a board whose tree names the power controller's bus: the PMIC route's endpoint
+/// Slot 41, on a board whose tree names the power controller's bus: the PMIC route's endpoint
 /// (milestone 1062 (the device control planes leave the kernel), step 5; §251 (restarting the
 /// machine is a kernel object the progenitor hands out), "A board's PMIC route runs in userspace").
 /// `WRITE | GRANT`, the reboot object's rights at slot 31: the spawn service keeps it and hands
-/// `WRITE` to the program that declares reboot. Past slot 34, so no slot moves; empty on every
+/// `WRITE` to the program that declares reboot. Past slot 40, the self-test's screen endpoint, so no slot moves; empty on every
 /// machine CI boots. See notes/progenitor-boot.md.
 fn grant_power_management_chip_route(tid: crate::thread::ThreadId) {
     let Some(route) = super::power_management_chip_route_service::ensure() else {
         return;
     };
-    let s35 = crate::sched::thread_control_block_insert_capability(
+    let s41 = crate::sched::thread_control_block_insert_capability(
         tid,
         rendezvous_capability(route, Rights::WRITE.union(Rights::GRANT)),
-        Some(35),
+        Some(41),
     )
     .expect("insert the PMIC route");
-    assert_eq!(s35, 35);
+    assert_eq!(s41, 41);
 }
 
 /// Slots 24 to 26: the kernel's log ring, its cursor page and its notification (milestone 342 (one

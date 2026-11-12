@@ -228,7 +228,7 @@ pub(crate) fn tcp_accept(
     sockets: &mut SocketSet,
     table: &mut Table,
     listening: usize,
-) -> Result<usize, u64> {
+) -> Result<(usize, u64), u64> {
     let Some(listener) = table.socks[listening] else {
         return Err(REP_ERR);
     };
@@ -254,6 +254,15 @@ pub(crate) fn tcp_accept(
         tcp::State::Listen | tcp::State::SynReceived | tcp::State::Closed
     );
 
+    // Who connected, read before the re-arm replaces the handle: the packed second reply word.
+    let peer = sockets
+        .get_mut::<tcp::Socket>(handle)
+        .remote_endpoint()
+        .map_or(0, |endpoint| {
+            let IpAddress::Ipv4(address) = endpoint.addr;
+            peer_word(address.octets(), endpoint.port)
+        });
+
     // Re-arm whatever happened, including the aborted case: the listener's authority did not expire
     // because one peer sent a RST, and a client that gets `REP_ERR` should be able to accept again.
     match arm_listener(sockets, port) {
@@ -275,7 +284,7 @@ pub(crate) fn tcp_accept(
         return Err(REP_ERR);
     }
     table.install(target, handle, Kind::Tcp, port);
-    Ok(target)
+    Ok((target, peer))
 }
 
 /// **`BIND_UDP`: claim a fixed UDP port, if this stack was granted it** (milestone 55's mDNS stack

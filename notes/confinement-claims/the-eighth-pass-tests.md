@@ -164,7 +164,7 @@ the same error word for word. Every probe is non-blocking or aimed at a settled 
 Claim 4 says a consumed capability cannot be used again. Claim 5 says dropping one capability does
 not disturb the others. The host crate proves both on pure logic
 (`capability::a_deleted_capability_stays_deleted`, `delete_touches_only_its_slot`). This module
-drives the live kernel paths instead: `SYS_CAPABILITY_DELETE`'s kernel half, `delete_current_capability`, followed
+drives the live kernel paths instead: `SYSCALL_CAPABILITY_DELETE`'s kernel half, `delete_current_capability`, followed
 by invokes through `syscall::invoke`. It tries three angles a host crate cannot reach. One is a
 stale slot number, held by a program that watched its capability be deleted. One is an out-of-range
 index forged in a register. One is a deleted slot whose number the table later hands out again. The

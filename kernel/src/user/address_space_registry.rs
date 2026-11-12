@@ -31,7 +31,7 @@ struct Registered {
 pub enum Holder {
     /// A thread configured with the space directly.
     Thread(crate::thread::ThreadId),
-    /// A process created holding the space (`RETYPE_OBJECT` of `objtype::PROCESS`).
+    /// A process created holding the space (`RETYPE_OBJECT` of `object_type::PROCESS`).
     Process(crate::sched::ProcessId),
 }
 

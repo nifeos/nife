@@ -1,0 +1,25 @@
+Falsifies `inter_process_communication::verification::a_bound_rendezvous_never_yields_a_sender`.
+
+The defect: `bind_to_interrupt` sets the flag and leaves the sender queue alone. That is the
+natural reading of milestone 603 (an interrupt's endpoint refuses every send), since `send`
+already checks the flag, and it misses the senders that queued before the bind.
+
+Expected to fail: `refused == usize::from(sender_was_queued)` when `seed` queued a sender, and
+the closing `!matches!(e.receive(me), Receive::FromSender(..))`, because the driver's receive
+collects the parked sender and wakes holding its words.
+
+diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
+index cfd015317..2d80a24e1 100644
+--- a/crates/inter_process_communication/src/rendezvous.rs
++++ b/crates/inter_process_communication/src/rendezvous.rs
+@@ -169,9 +169,7 @@ impl<T: Node> Rendezvous<T> {
+     /// Name: provisional (milestone 603): calef names public items.
+     pub fn bind_to_interrupt(&mut self, mut refuse: impl FnMut(Unqueued<T>)) {
+         self.bound_to_interrupt = true;
+-        while let Some(sender) = self.senders.pop_front() {
+-            refuse(sender);
+-        }
++        let _ = &mut refuse;
+     }
+ 
+     /// Whether [`bind_to_interrupt`](Self::bind_to_interrupt) has been called on this rendezvous.

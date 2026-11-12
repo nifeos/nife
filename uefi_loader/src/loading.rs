@@ -125,19 +125,19 @@ pub(crate) fn configuration_table(table: &SystemTable) -> &[ConfigurationTable] 
 /// **Copy the firmware's device tree below the ceiling, naming the archive in `/chosen`**, and
 /// putting the loader's two digests in `/chosen/bootargs` beside it (`embedded::LOADER_DIGESTS`,
 /// milestone 695 (the kernel trusts two digests handed to it by the loader)). aarch64 and riscv64
-/// both do this, identically.
+/// both do this, identically. A tree with the wrong magic, or a `totalsize` past
+/// `device_tree_blob::MAXIMUM_TOTALSIZE`, is refused before anything is read past its header
+/// (`uefi_loader::device_tree_from_firmware::bytes`).
 #[cfg(not(target_arch = "x86_64"))]
 pub(crate) fn copy_device_tree(
     services: &BootServices,
     source: *const u8,
     module: Option<(u64, u64)>,
 ) -> Result<u64, &'static str> {
-    // SAFETY: the firmware installed this table and it outlives boot services; the header's first
-    // eight bytes are magic and total size, and the full length is read from them before the rest.
-    let header = unsafe { core::slice::from_raw_parts(source, 8) };
-    let total = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
-    // SAFETY: as above, now for the length the header states.
-    let src = unsafe { core::slice::from_raw_parts(source, total) };
+    // SAFETY: the firmware installed this table under the device-tree GUID and it outlives boot
+    // services, which is `bytes`'s contract; it checks the magic and the ceiling before any slice.
+    let src = unsafe { uefi_loader::device_tree_from_firmware::bytes(source) }?;
+    let total = src.len();
     let words = crate::embedded::LOADER_DIGESTS.as_bytes();
     let capacity = device_tree_patch::output_len_with_boot_arguments(src, words)
         .map_err(device_tree_patch::Error::reason)?;

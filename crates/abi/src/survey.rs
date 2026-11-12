@@ -45,7 +45,7 @@ pub mod record {
     /// quietly tallying core 255.
     ///
     /// Every thread a survey can report has started, so this should not be reachable: a
-    /// supervision endpoint is recorded at `START`, so an embryo is not in its
+    /// supervision rendezvous is recorded at `START`, so an embryo is not in its
     /// domain yet, and a corpse keeps the placement it was started with. It is defined anyway
     /// rather than left to a guess, which is the same posture `sched::last_cpus` takes with its
     /// own `u8::MAX`.

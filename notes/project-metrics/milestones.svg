@@ -128,13 +128,13 @@
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
 <text class="fg val" x="582.4" y="94.7" font-size="10" text-anchor="middle">1012</text>
 <rect class="seg s0" x="612.6" y="306.9" width="29.8" height="17.1"><title>2026W46, Closed (removed, superseded or refused): 77</title></rect>
-<rect class="seg s1" x="612.6" y="198.1" width="29.8" height="108.8"><title>2026W46, Built: 491</title></rect>
-<rect class="seg s2" x="612.6" y="186.6" width="29.8" height="11.5"><title>2026W46, Partial: 52</title></rect>
-<rect class="seg s3" x="612.6" y="98.6" width="29.8" height="88.0"><title>2026W46, Not started: 397</title></rect>
-<rect class="seg s4" x="612.6" y="98.1" width="29.8" height="0.4"><title>2026W46, Optional: 2</title></rect>
-<path class="seg s6" d="M612.6,98.1 V98.0 Q612.6,97.9 612.7,97.9 H642.2 Q642.3,97.9 642.3,98.0 V98.1 Z"><title>2026W46, Proposal, no number yet: 1</title></path>
+<rect class="seg s1" x="612.6" y="195.4" width="29.8" height="111.5"><title>2026W46, Built: 503</title></rect>
+<rect class="seg s2" x="612.6" y="181.9" width="29.8" height="13.5"><title>2026W46, Partial: 61</title></rect>
+<rect class="seg s3" x="612.6" y="96.3" width="29.8" height="85.6"><title>2026W46, Not started: 386</title></rect>
+<rect class="seg s4" x="612.6" y="95.9" width="29.8" height="0.4"><title>2026W46, Optional: 2</title></rect>
+<path class="seg s6" d="M612.6,95.9 V95.0 Q612.6,94.1 613.5,94.1 H641.5 Q642.3,94.1 642.3,95.0 V95.9 Z"><title>2026W46, Proposal, no number yet: 8</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
-<text class="fg val" x="627.5" y="92.9" font-size="10" text-anchor="middle">1020</text>
+<text class="fg val" x="627.5" y="89.1" font-size="10" text-anchor="middle">1037</text>
 <rect class="s6" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">Proposal, no number</tspan><tspan x="689" dy="13">yet</tspan></text>
 <rect class="s5" x="672" y="96" width="11" height="11" rx="2"/>

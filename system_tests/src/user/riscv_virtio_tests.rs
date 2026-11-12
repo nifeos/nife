@@ -774,6 +774,13 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
         b"nife: re",
         "the driver reported the wrong file contents over pci",
     );
+    // The 2026-11-11 default (milestone 1062 (the device control planes leave the kernel) step 7):
+    // a disk the runner's IOMMU confines is granted direct, so this read drove the direct
+    // transport.
+    assert!(
+        virtio_service::pci_disk_was_granted_direct() == Some(true) || !crate::iommu::is_active(),
+        "the runner's IOMMU confines the PCI disk, yet the default granted it mediated",
+    );
     let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     assert!(
         interrupts_after > interrupts_before,

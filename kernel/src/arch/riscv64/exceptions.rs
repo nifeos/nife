@@ -386,7 +386,7 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
                         super::interrupt_controller::hold_claim(source, ctx);
                         crate::sched::interrupt_notify(ep);
                     } else {
-                        // Nobody will ACK an unrouted source, so it is completed here.
+                        // Nobody will ACKNOWLEDGE an unrouted source, so it is completed here.
                         SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                         crate::drivers::plic::complete(source, ctx);
                     }

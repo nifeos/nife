@@ -28,4 +28,4 @@ index 5e2b1b9d6..f459f11e2 100644
 +            OPERATION_CLOSE => REP_OK,
              OPERATION_ACCEPT => {
                  match tcp_accept(&mut iface, &mut dev, &mut sockets, &mut table, entry) {
-                     Ok(connection) => {
+                     Ok((connection, peer)) => {

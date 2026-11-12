@@ -108,7 +108,7 @@ fn all_is_every_right_and_spend_only_lacks_grant_alone() {
     assert_eq!(SPEND_ONLY, 0b1_1011);
 }
 
-/// The fault-endpoint slot is a valid slot index. Its value is `CAPABILITY_TABLE_SLOTS - 1` by
+/// The fault-rendezvous slot is a valid slot index. Its value is `CAPABILITY_TABLE_SLOTS - 1` by
 /// definition; what can actually be wrong (and what a mutant made wrong invisibly) is the
 /// arithmetic putting it outside the capability table, where `CAPABILITY_INSERT` would refuse it and every
 /// supervised spawn would fail.
@@ -117,9 +117,9 @@ fn all_is_every_right_and_spend_only_lacks_grant_alone() {
 // rewrites, and the assertion is what notices.
 #[allow(clippy::assertions_on_constants)]
 fn the_fault_slot_is_inside_the_capability_table() {
-    assert!(super::fault::FAULT_EP_SLOT < super::CAPABILITY_TABLE_SLOTS);
+    assert!(super::fault::FAULT_RENDEZVOUS_SLOT < super::CAPABILITY_TABLE_SLOTS);
     assert_eq!(
-        super::fault::FAULT_EP_SLOT,
+        super::fault::FAULT_RENDEZVOUS_SLOT,
         super::CAPABILITY_TABLE_SLOTS - 1
     );
 }
@@ -180,23 +180,23 @@ macro_rules! pinned {
 fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
     assert_eq!(crate::ABI_VERSION, 1);
     pinned! {
-        crate::SYS_EXIT => 0,
-        crate::SYS_YIELD => 1,
-        crate::SYS_INVOKE => 2,
-        crate::SYS_CAPABILITY_DELETE => 3,
-        crate::SYS_EXIT_THREAD => 4,
+        crate::SYSCALL_EXIT => 0,
+        crate::SYSCALL_YIELD => 1,
+        crate::SYSCALL_INVOKE => 2,
+        crate::SYSCALL_CAPABILITY_DELETE => 3,
+        crate::SYSCALL_EXIT_THREAD => 4,
         crate::CAPABILITY_TABLE_SLOTS => 64,
         crate::INTERFACE_ID => 1,
         crate::address_space::MAP_INTO => 0,
-        crate::address_space::MAP_RO => 0,
-        crate::address_space::MAP_RW => 1,
+        crate::address_space::MAP_READ_ONLY => 0,
+        crate::address_space::MAP_READ_WRITE => 1,
         crate::address_space::MAP_CODE => 2,
         crate::address_space::LIST => 1,
         crate::address_space::UNMAP => 2,
         crate::address_space::WAIT => 3,
         crate::address_space::WAKE => 4,
         crate::console::WRITE => 0,
-        crate::fault::FAULT_EP_SLOT => 63,
+        crate::fault::FAULT_RENDEZVOUS_SLOT => 63,
         crate::fault::EVENT_FAULT => 1,
         crate::fault::EVENT_EXIT => 2,
         crate::futex::SIZE_U8 => 0,
@@ -206,7 +206,7 @@ fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
         crate::futex::SIZE_MASK => 3,
         crate::futex::PRIVATE => 128,
         crate::interrupt::WAIT => 0,
-        crate::interrupt::ACK => 1,
+        crate::interrupt::ACKNOWLEDGE => 1,
         crate::memory_region::MAP => 0,
         crate::memory_region::RETYPE => 1,
         crate::memory_region::RETYPE_OBJECT => 2,
@@ -225,12 +225,12 @@ fn the_middle_object_modules_are_pinned() {
         crate::notification::POLL => 2,
         crate::notification::BIND => 3,
         crate::notification::BOUND => 2,
-        crate::objtype::RENDEZVOUS => 1,
-        crate::objtype::ADDRESS_SPACE => 2,
-        crate::objtype::THREAD_CONTROL_BLOCK => 3,
-        crate::objtype::NOTIFICATION => 4,
-        crate::objtype::TIMER => 5,
-        crate::objtype::PROCESS => 6,
+        crate::object_type::RENDEZVOUS => 1,
+        crate::object_type::ADDRESS_SPACE => 2,
+        crate::object_type::THREAD_CONTROL_BLOCK => 3,
+        crate::object_type::NOTIFICATION => 4,
+        crate::object_type::TIMER => 5,
+        crate::object_type::PROCESS => 6,
         crate::page_frame::MAP => 0,
         crate::page_frame::REVOKE => 1,
         crate::page_frame::SLICE => 2,

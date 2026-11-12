@@ -1,0 +1,23 @@
+Falsifies `inter_process_communication::verification::signal_preserves_the_invariant`.
+
+The defect: the pending count is incremented with a plain `+= 1` instead of saturating. It reads
+as the obvious way to count, and a count of four billion unreceived signals looks unreachable.
+
+Expected to fail: Kani's arithmetic overflow check on the increment, when `seed` sets `pending`
+to `u32::MAX` and no receiver is queued. The one-queue assertion itself still holds; the harness
+goes red because `signal` panics in debug builds and wraps the count to zero in release builds,
+which loses every counted signal.
+
+diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
+index cfd015317..bfe0cf56b 100644
+--- a/crates/inter_process_communication/src/rendezvous.rs
++++ b/crates/inter_process_communication/src/rendezvous.rs
+@@ -325,7 +325,7 @@ impl<T: Node> Rendezvous<T> {
+         if let Some(receiver) = self.receivers.pop_front() {
+             Some(receiver)
+         } else {
+-            self.pending = self.pending.saturating_add(1);
++            self.pending += 1;
+             None
+         }
+     }
