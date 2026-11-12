@@ -48,7 +48,8 @@ runner that lost contact with GitHub or a probe that a host outage cut short, no
 5. The image preinstalls the packages `script/ci-qemu` and `script/bootstrap` install, so a job
    spends no time on them and fetches nothing the proxy must allow for them. Open: the `packages`
    probe checks each package in `helpers/apt-packages.txt`, the list both scripts install from, with
-   `dpkg-query`. The next green canary run on the pool shows whether the item is met; a missing
+   `dpkg-query`. Every group is checked, and none is a QEMU: the image needs no apt QEMU, because
+   `script/ci-qemu` builds the pin. The next green canary run on the pool shows whether the item is met; a missing
    package is a `FINDING` line.
 6. Once one merge group or push run meets the condition in notes/owned-runners.md, a maintainer
    sets the variable as that note says. Open: it waits for the proxy evidence and for the

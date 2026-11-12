@@ -35,16 +35,17 @@ FROM docker.io/library/ubuntu:26.04
 # read-only at run time so the container cannot write into a lane's worktree).
 #
 # The second block is what `script/bootstrap` looks for and would otherwise `sudo apt-get` at run
-# time: clang with both backends for the C component (DECISIONS §30), shellcheck for the gates, and
-# `ipxe-qemu` for `efi-virtio.rom`. Installing them here rather than there keeps the timed part of a
-# run free of package downloads.
+# time: clang with both backends for the C component (DECISIONS §30) and shellcheck for the gates.
+# Installing them here rather than there keeps the timed part of a run free of package downloads.
+# No firmware package is here: the built QEMU's `make install` puts `efi-virtio.rom` and the edk2
+# images in its own prefix.
 #
 # `procps` is not incidental: `script/repeat-under-load` samples `pgrep -l qemu` every ten seconds,
 # and that instrument is how a run says whether a neighbouring boot was competing with it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ninja-build meson pkg-config python3 python3-venv \
         libglib2.0-dev libslirp-dev libpixman-1-dev flex bison zlib1g-dev \
-        clang shellcheck ipxe-qemu \
+        clang shellcheck \
         curl ca-certificates git xz-utils file procps sudo \
     && rm -rf /var/lib/apt/lists/*
 

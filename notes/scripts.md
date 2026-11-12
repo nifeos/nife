@@ -16,9 +16,9 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 
 | script | what it does |
 |---|---|
-| `script/bootstrap` | Install the pinned toolchain and QEMU. Idempotent. `NIFE_SKIP_LINT_TOOLS=1` skips the lint-only tools (cargo-machete, typos). |
-| `script/setup` | First run after a clone: `bootstrap`, then build. |
-| `script/update` | After a pull: `bootstrap`, then rebuild. |
+| `script/bootstrap` | Install the pinned toolchain and the other tools, never QEMU. Idempotent. `NIFE_SKIP_LINT_TOOLS=1` skips the lint-only tools (cargo-machete, typos). |
+| `script/setup` | First run after a clone: `bootstrap`, `ci-qemu`, then build. |
+| `script/update` | After a pull: `bootstrap`, `ci-qemu`, then rebuild. |
 | `script/test` | The suite: host-logic crates, then the kernel under QEMU. The gate. `--arch`, `--no-host`, `--cpu`, `--hvf`, `--test` narrow it. |
 | `script/verify` | The Kani proofs over the pure-logic crates. |
 | `script/verify-riscv64` | The `kernel` row for riscv64, under Kani patched from `patches/`. Provisional name. |
@@ -28,8 +28,8 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. `--quick` runs the cheap ones first. |
 | `script/coverage` | Host-crate coverage, gated at 80% per file. |
 | `script/ci-build` | The one list of checks a pull request must pass. CI runs its rows. |
-| `script/qemu-check` | Is the QEMU on PATH the pinned one, with the devices the suite needs? |
-| `script/ci-qemu` | Build the pinned QEMU on Linux, where apt cannot. |
+| `script/qemu-check` | Is the QEMU on PATH exactly the pinned one, with the devices the suite needs? Installs nothing. |
+| `script/ci-qemu` | The one QEMU check: build the pinned QEMU when the one on PATH is not exactly it, on every machine. |
 | `script/drift` | Does a toolchain still build us? |
 | `script/toolchain-bump` | Raise the pinned nightly, with every gate as evidence. |
 | `script/kani-install` | Install the stock Kani that `.kani-version` pins. The only place that does. |
@@ -158,7 +158,7 @@ The scripts add a normalized interface on top, and `cargo xtask …` still works
 
 `script/` is the front door. `helpers/` is the drawer behind it: cargo runners, `qemu-bounded.sh`,
 and modules the scripts import. You do not run those by hand. `bootstrap` installs system packages,
-and on Linux it also builds the pinned QEMU. [helpers-and-bootstrap.md](scripts/helpers-and-bootstrap.md)
+and `ci-qemu` builds the pinned QEMU. [helpers-and-bootstrap.md](scripts/helpers-and-bootstrap.md)
 has the reasons, the exceptions and the 2026-09-23 rename from `scripts/`.
 
 ## A piped gate reports the pipe's status, not the gate's
