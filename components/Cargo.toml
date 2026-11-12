@@ -384,6 +384,8 @@ bench = false
 [[bin]]
 name = "designware_ethernet_control"
 path = "src/designware_ethernet_control.rs"
+test = false
+bench = false
 
 # The JH7110 PMIC route (milestone 1062 (the device control planes leave the kernel), step 5): the
 # one process that writes the board's power controller, over the I2C controller it hangs off,
