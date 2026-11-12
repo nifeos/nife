@@ -1071,7 +1071,7 @@ fn serve_one_inbound(listener: &TcpListener, round: usize) {
     // accepting, since a window can open while the host prober still holds an earlier connection.
     let mut tries = 0;
     let waiting = Instant::now();
-    let (mut conn, _peer) = loop {
+    let (mut conn, peer) = loop {
         match listener.accept() {
             Ok(accepted) => break accepted,
             Err(e) if e.kind() == ErrorKind::WouldBlock && tries + 1 < ACCEPT_TRIES => tries += 1,
@@ -1082,6 +1082,18 @@ fn serve_one_inbound(listener: &TcpListener, round: usize) {
             ),
         }
     };
+
+    // A connection arrived through the host's forward, so it has a real peer, and the stream
+    // reports the same one.
+    assert!(
+        !peer.ip().is_unspecified() && peer.port() != 0,
+        "round {round}: accept reported no peer: {peer}",
+    );
+    assert_eq!(
+        conn.peer_addr().unwrap(),
+        peer,
+        "round {round}: peer_addr disagrees with accept"
+    );
 
     let mut got = vec![0u8; fixture::IN_MSG.len()];
     conn.read_exact(&mut got)

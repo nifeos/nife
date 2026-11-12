@@ -100,13 +100,43 @@ pub const OPERATION_LISTEN: u64 = 9;
 /// `CALL(listener, OPERATION_ACCEPT, 0)`: block until a connection arrives on this listener, then
 /// answer [`REP_OK`] carrying the connection's capability, or [`REP_ERR`]. The listener keeps
 /// listening, and the connection wants a frame attached before it carries bytes. The argument word
-/// is ignored: pass 0.
+/// is ignored: pass 0. The reply's second word is the peer that connected, packed by [`peer_word`]
+/// and read back by [`word_peer`]: the Internet Protocol version 4 (IPv4) address in bits 47 to 16
+/// and the port in bits 15 to 0. The word is the IPv4 answer only, and a peer of another family
+/// would need its own route.
+///
+/// ```
+/// use socket_contract::{peer_word, word_peer};
+///
+/// // The second reply word of an ACCEPT from 10.0.2.2, port 50161.
+/// assert_eq!(peer_word([10, 0, 2, 2], 50161), 0x0a00_0202_c3f1);
+/// assert_eq!(word_peer(0x0a00_0202_c3f1), Some(([10, 0, 2, 2], 50161)));
+/// ```
 pub const OPERATION_ACCEPT: u64 = 10;
 /// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the fixed
 /// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`LISTEN_GRANTED`] vocabulary,
 /// which is the port-claim vocabulary rather than a TCP one, and a granted one carries the socket's
 /// capability. Name provisional.
 pub const OPERATION_BIND_UDP: u64 = 11;
+
+/// A connection's peer as the second reply word of `OPERATION_ACCEPT`: the IPv4 address in bits 47
+/// to 16, big-endian as an address is written, and the port in bits 15 to 0.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+pub const fn peer_word(octets: [u8; 4], port: u16) -> u64 {
+    (u32::from_be_bytes(octets) as u64) << 16 | port as u64
+}
+
+/// The peer a [`peer_word`] names, or `None` for the word 0 that a reply without a peer carries
+/// and for a word with any of the bits 63 to 48 set, which no stack here produces.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+pub const fn word_peer(word: u64) -> Option<([u8; 4], u16)> {
+    if word == 0 || word >> 48 != 0 {
+        return None;
+    }
+    Some((((word >> 16) as u32).to_be_bytes(), word as u16))
+}
 
 /// The badge bit that marks a socket's capability (name provisional). The stack mints every
 /// socket's badge with this bit set, so a request whose badge has it names a socket and any other
@@ -588,6 +618,22 @@ pub mod lease {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_peer_word_round_trips_and_refuses_what_no_stack_writes() {
+        assert_eq!(peer_word([10, 0, 2, 2], 50161), 0x0a00_0202_c3f1);
+        assert_eq!(word_peer(0x0a00_0202_c3f1), Some(([10, 0, 2, 2], 50161)));
+        assert_eq!(
+            word_peer(peer_word([255; 4], u16::MAX)),
+            Some(([255; 4], u16::MAX))
+        );
+        assert_eq!(
+            word_peer(peer_word([0, 0, 0, 1], 0)),
+            Some(([0, 0, 0, 1], 0))
+        );
+        assert_eq!(word_peer(0), None);
+        assert_eq!(word_peer(1 << 48), None);
+    }
 
     #[test]
     fn a_lease_word_round_trips_and_refuses_what_no_encoder_writes() {

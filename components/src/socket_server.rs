@@ -148,7 +148,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
                 _ => Err(REP_ERR),
             };
             match opened {
-                Ok((entry, word)) => table.hand_over(&mut sockets, to, entry, word),
+                Ok((entry, word)) => table.hand_over(&mut sockets, to, entry, word, 0),
                 Err(word) => {
                     reply(to, word, 0);
                 }
@@ -187,8 +187,8 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
             }
             OPERATION_ACCEPT => {
                 match tcp_accept(&mut iface, &mut dev, &mut sockets, &mut table, entry) {
-                    Ok(connection) => {
-                        table.hand_over(&mut sockets, to, connection, REP_OK);
+                    Ok((connection, peer)) => {
+                        table.hand_over(&mut sockets, to, connection, REP_OK, peer);
                         continue;
                     }
                     Err(word) => word,
