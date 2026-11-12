@@ -244,14 +244,19 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         diagnostic,
     );
 
-    // A device that answered with zeros is refused for the rest of the boot: a client only sees a
-    // reply, so serving that zero buffer would hand zeros out as randomness to everyone not
+    // A device that answered with zeros, or with one value repeated, is refused for the rest of the
+    // boot: a client only sees a reply, so serving that buffer would hand it out as randomness to everyone not
     // watching the handshake. A device that answered nothing is not refused: `take` answers
     // `NO_ENTROPY` while it stays dry, and it recovers by itself if it starts answering.
-    serve(
-        pool,
-        report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO),
-    )
+    serve(pool, refuses_service(report))
+}
+
+/// Whether a readiness report condemns the source for the rest of the boot: a first draw of
+/// zeros, or of one value repeated. An empty draw is not condemned, since a source that answered
+/// nothing may start answering.
+fn refuses_service(report: u64) -> bool {
+    report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO)
+        || report == proto::bring_up_failure(proto::STEP_FIRST_ALL_SAME)
 }
 
 /// The serve loop: one endpoint, one wait point, forever. Identical in shape to `entropy.rs`'s,

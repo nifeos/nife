@@ -10,12 +10,12 @@ and a later one is not.
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -164,7 +164,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
- /// `first`.
- pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
-     let mut seen = false;
+@@ -193,7 +193,7 @@
+     let mut count = 0usize;
+     let mut all_same = true;
+     let mut any_nonzero = false;
 -    for byte in first_bytes {
 +    for byte in first_bytes.into_iter().take(1) {
-         if byte != 0 {
-             return READY;
-         }
+         if count == 0 {
+             first = byte;
+         } else if byte != first {
