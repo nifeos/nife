@@ -467,7 +467,7 @@ impl Handoff {
 ///
 /// - It belongs in `non_volatile_memory_express`, whose main branch already has the pieces
 ///   (`Completion::is_phase_tag_set` and `CompletionQueue::expects_phase_tag_set`, from
-///   nifeos/non_volatile_memory_express#23); this pin predates them, so the ownership test here
+///   `nifeos/non_volatile_memory_express#23`); this pin predates them, so the ownership test here
 ///   decodes dword 3 alone through `from_dwords`.
 ///
 /// Name: provisional, minted 2026-11-12 (UTC) by lane maintainer/riscv64-nvme-ioping-io-error.
