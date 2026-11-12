@@ -92,7 +92,7 @@ The comparison with nearby work is in [the appendix](1095-inter-process-communic
    lines 5 to 12; `src/rendezvous.rs` lines 5 and 9; `src/notification.rs` line 8;
    `src/futex.rs` line 8; `src/timer.rs` line 4; `falsifications/*.patch` headers.
    Change: the move commit strips every `Name:` block (git holds the history). It rewrites each
-   citation as the fact it cites (the §101 rule order becomes "a waiter first, then the bound
+   citation as the fact it cites (the §101 (notification objects: async multiplexing without wait-any) rule order becomes "a waiter first, then the bound
    receiver, then the word"). It replaces the note paths with the crate's own `docs/design.md`
    (item 6), writes the license and lints into the manifest, and sets `rust-version` (item 7).
    The patch headers lose their nife paths and keep the defect description.

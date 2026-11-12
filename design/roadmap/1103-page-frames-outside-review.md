@@ -107,7 +107,7 @@ dependency). Everything else is two-way and the maintainer decides it. Line numb
    Evidence: the dry run's `citations` lines. `grep -n '§\|milestone\|notes/' src/lib.rs
    tests/allocator.rs`.
    Change: in nife before the move, rewrite each sentence to carry its reason instead of its
-   pointer. "Milestone 107 found 137 frames free and no run of 128" becomes "a boot can hold 137
+   pointer. "Milestone 107 (the socket contract learns to accept) found 137 frames free and no run of 128" becomes "a boot can hold 137
    free frames and no run of 128, and a total-free reading alone cannot tell exhaustion from
    fragmentation". The `[notes/mmu.md]` link at `src/lib.rs` line 15 becomes a sentence. The
    falsification headers keep their defect and expectation text and lose the milestone numbers.

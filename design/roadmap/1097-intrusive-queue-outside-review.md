@@ -63,7 +63,7 @@ decides it.
 
 2. The crate's front page points into nife.
    Finding: the crate root says "See notes/intrusive-queues.md" twice, cites
-   "notes/overflow-checks.md" and "DECISIONS §14", and carries two `Name:` blocks, one of which
+   "notes/overflow-checks.md" and "DECISIONS §14 (the project's direction: a verified-Rust capability microkernel that runs real workloads)", and carries two `Name:` blocks, one of which
    names a person and a milestone round and asks a question the record never answers. The
    template's `standalone` check refuses all of it: three path lines, three provenance block lines,
    one milestone citation, two lines naming the architect, one section citation. A reader on

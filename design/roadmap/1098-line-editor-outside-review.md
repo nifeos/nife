@@ -71,7 +71,7 @@ or identity, a dependency); everything else is two-way and the maintainer decide
    protocol for one nife program, and pulls `capability_plan` (which pulls `abi`) into a crate
    whose engine needs neither. `proto` is the IPC framing of the terminal contract: opcodes,
    badges, a quiesce handshake and a swap protocol that only nife programs speak. 32 of the 38
-   caller files reach only these two modules; the kernel links the crate for `proto` alone. A stranger who takes the crate for its editor pays for a dependency chain and a module tree that mean nothing outside this system. The "nothing that leaves references back" rule of milestone 1017 cannot hold while `component` names `terminal_supervisor`, `system_initializer`
+   caller files reach only these two modules; the kernel links the crate for `proto` alone. A stranger who takes the crate for its editor pays for a dependency chain and a module tree that mean nothing outside this system. The "nothing that leaves references back" rule of milestone 1017 (the contract crates leave in this order) cannot hold while `component` names `terminal_supervisor`, `system_initializer`
    and `display_terminal`.
    Evidence: `Cargo.toml` line 14; `src/lib.rs` lines 38 to 68; `src/component.rs` whole;
    `src/proto.rs` lines 63 to 215; `crates/hot_swap_contract/src/lib.rs` line 49 (the duplicate

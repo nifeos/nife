@@ -60,7 +60,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    (`patches/std-nife/overlay/std/src/sys/alloc/nife/heap.rs`), and the host tool
    `redoxfs_server/src/bin/second_mount.rs` restates `grow` and sizes its request as `size + align +
    2 * CHUNK_UNIT` "as `MemoryRegionHeap::alloc` sizes it", which is no longer how `shortfall` sizes
-   it: the third copy has drifted. The mutation census of milestone 0955 groups this crate with two
+   it: the third copy has drifted. The mutation census of milestone 0955 (mutation testing reaches the kernel and its programs under QEMU, a diff and a slice at a time) groups this crate with two
    others at 346 mutants. No per-crate outcome exists on record (unverified).
    Evidence: `Cargo.toml` lines 11 to 14. `system_tests/src/user/heap_tests.rs`.
    `patches/std-nife/overlay/std/src/sys/alloc/nife/heap.rs` lines 67 to 123.

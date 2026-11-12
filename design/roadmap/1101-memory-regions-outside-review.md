@@ -84,7 +84,7 @@ numbers are in `crates/memory_regions/` at `75bb255a`.
    tree carries the word `nife` in five files, four of them the scaffold's own. The doc comments
    send a stranger to `kernel/src/memory_region.rs`, `sched::reclaim_region`, `abi::object_type::*`,
    `kernel/src/kmem.rs`, `script/lint`, `notes/*.md`, pull request #316, milestones 126, 135, 326,
-   601, 812 and DECISIONS §16, §113, §225, none of which the repository holds. The `publish = false`
+   601, 812 and DECISIONS §16 (object revocation: reclaim the objects a process built), §113 (eleven kernel object and identifier names move from contraction or borrowed jargon to the plain, standard term), §225 (`free` sees the machine and your share: a region method and a withholdable memory page), none of which the repository holds. The `publish = false`
    comment points at `crates/publish-allowlist.txt`.
    Evidence: `Cargo.toml` lines 5, 12 to 14 and 16 to 21. `src/lib.rs` lines 1 to 12. `src/table.rs` lines 1 to 11, 47 to 50, 57 to 60, 87 to 104, 231 to 236, 350 to 359, 418 to 424, 585 to 590, 639 to 644, 657 to 663, 762 to 771 and 1387 to 1395. `src/destroy.rs` line 3.
    `src/watermark.rs` lines 4, 35 to 38 and 56 to 57. The `standalone.py` run and the `crate-move` dry run above.

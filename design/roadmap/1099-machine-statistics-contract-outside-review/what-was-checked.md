@@ -42,7 +42,7 @@ workspace with its two path dependencies beside it and the workspace's license a
 - Every caller: `kernel/src/machine_statistics.rs` (the writer). `kernel/src/sched/preemption.rs`, `kernel/src/sched/interrupt_route.rs`, `kernel/src/sched/placement.rs` and `kernel/src/memory.rs` (the call sites). `crates/free`, `crates/vmstat` and `crates/top` (the reader libraries and their host tests). `components/src/free.rs`, `components/src/vmstat.rs` and `components/src/top.rs` (the `INTERFACES` declarations and the `Snapshot::read` calls). `crates/system_initializer/src/spawn_loop.rs` (the mapping at the fixed address). `crates/grant_plan/src/manifest.rs` (the slot). Last, `system_tests/src/user/machine_statistics_tests.rs`. Neither `xtask/` nor `patches/` copies this
   crate's source into the `std` platform layer, so the path-copy hazard the sibling reviews found
   does not apply here.
-- The interface id table in milestone 956's block assigns 4 to this crate, and
+- The interface id table in milestone 956 (the linked interfaces carry checkable versions)'s block assigns 4 to this crate, and
   `notes/interfaces-note.md` repeats it.
 - Download figures for the prior-art crates, from the crates.io API.
 
