@@ -460,8 +460,10 @@ where
         direct_map_device_window(m, sys.base_physical_address, sys.size)?;
     }
 
-    // 6c'. The SYS syscon (the PLL words the I2C clock reads) and the PMIC bus's I2C controller.
-    if let Some((_sys, bus)) = memory::jh7110_pmic_bus() {
+    // 6c'. The SYS syscon, the PLL words the PMIC route's starter derives the I2C clock from. The
+    // bus's I2C controller stays out of the direct map, since the PMIC route holds it (milestone
+    // 1062 (the device control planes leave the kernel), step 5).
+    if memory::jh7110_pmic_bus().is_some() {
         direct_map(
             m,
             jh7110_clock_and_reset::SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
@@ -469,9 +471,6 @@ where
                 + jh7110_clock_and_reset::SYSTEM_CONTROLLER_SIZE_BYTES,
             Flags::device(),
         )?;
-        if let Some((base, size)) = bus.controller_physical_window {
-            direct_map_device_window(m, base, size)?;
-        }
     }
 
     // 6d. The JH7110's first Ethernet port, its AON clock-and-reset window and AON syscon page.

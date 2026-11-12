@@ -9,7 +9,7 @@ use startup_page_contract::WindowKind;
 /// some day lists two drivers' windows in one space stays unambiguous.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-pub const ALL: [WindowKind; 19] = [
+pub const ALL: [WindowKind; 20] = [
     crate::non_volatile_memory_express::REGISTER_KIND,
     crate::non_volatile_memory_express::ADMINISTRATION_QUEUE_KIND,
     crate::e1000e::DATA_PLANE_KIND,
@@ -29,6 +29,7 @@ pub const ALL: [WindowKind; 19] = [
     crate::jh7110_clock_and_reset::SYSTEM_KIND,
     crate::jh7110_clock_and_reset::ALWAYS_ON_KIND,
     crate::jh7110_clock_and_reset::SYSTEM_CONTROLLER_KIND,
+    crate::power_management_chip_route::CONTROLLER_KIND,
 ];
 
 #[cfg(test)]

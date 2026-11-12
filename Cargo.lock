@@ -225,6 +225,7 @@ dependencies = [
  "credentialer",
  "current_cpu_contract",
  "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "designware_mobile_storage",
  "disk_tree",
  "documentation",
@@ -403,6 +404,10 @@ name = "designware_ethernet"
 version = "0.1.0"
 
 [[package]]
+name = "designware_inter_integrated_circuit"
+version = "0.1.0"
+
+[[package]]
 name = "designware_mobile_storage"
 version = "0.1.0-pre.1"
 source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
@@ -465,6 +470,7 @@ version = "0.1.0"
 dependencies = [
  "address_space_map",
  "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",
@@ -806,6 +812,7 @@ dependencies = [
  "cpu_set",
  "credential_contract",
  "current_cpu_contract",
+ "designware_inter_integrated_circuit",
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",

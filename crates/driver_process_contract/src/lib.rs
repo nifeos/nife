@@ -17,5 +17,6 @@ pub mod e1000e;
 pub mod extensible_host_controller_interface;
 pub mod jh7110_clock_and_reset;
 pub mod non_volatile_memory_express;
+pub mod power_management_chip_route;
 pub mod virtual_input_output;
 pub mod window_kinds;

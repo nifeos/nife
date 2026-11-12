@@ -47,7 +47,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
    JH7110 watchdog (milestone 593 (a wedged kernel resets itself)) needs to turn its clock on, and
    the entropy and Ethernet bring-ups ask the server instead.
-   SD/MMC starters ask it too.
+   SD/MMC starters and step 5's PMIC route ask it too.
 3. The DesignWare GMAC control plane. Its clocks and resets come up through step 2's bring-up
    verb, and a userspace control process holds the channel and MAC pages.
    `kernel/src/designware_ethernet.rs` goes, and `kernel/Cargo.toml` stops naming the crate.
@@ -57,12 +57,10 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
    Built: #3427.
 5. The JH7110 PMIC route, as §251 (restarting the machine is a kernel object the progenitor
-   hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
-   brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
-   reset wire)), and writes the AXP15060. `reboot` calls it
-   before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route.
-   `kernel/src/reboot/designware_i2c.rs` and the PMIC half of `kernel/src/reboot/pmic.rs` go.
-   radon proves it.
+   hands out) states it. `components/src/power_management_chip_route.rs` holds the I2C5
+   controller's page as a `DeviceFrame` and writes the AXP15060, after its starter brings I2C5 up
+   through the step 2 server (§320 (the JH7110 clock and reset wire)). `reboot` calls it, then
+   `REBOOT`; the route bounds its wait. The kernel holds no I2C master. radon proves it.
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
@@ -281,7 +279,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
 - **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
 - **Outstanding.** Step 3: `PROVEN_ON_SILICON` is `false` until radon boots #3498.
-- **Outstanding.** Step 5: `kernel/src/reboot/designware_i2c.rs` exists.
+- **Done.** Step 5 in #3499: `components/src/power_management_chip_route.rs`.
+- **Outstanding.** A timeout on `reboot`'s call to the route waits on a timed call.
 - **Outstanding.** Step 7: the measurement; "Cost and effort" still reads not measured.
 - **Outstanding.** An escape test that drives a direct driver (a ring outside its region, a
   declined `VIRTIO_F_ACCESS_PLATFORM`); the mediated
