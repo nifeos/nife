@@ -25,7 +25,7 @@ Each variant of `Object` is a decision. What follows is why each is there.
   because `PageFrame` is already that wide.
 - `MemoryRegion`: raw physical memory the holder retypes into pages and objects. Invoking it grows
   the holder's address space out of its own budget, and the kernel allocates nothing to do it.
-- `Interrupt`: a hardware interrupt, by INTID. The holder can `WAIT` for it and `ACK` it once the
+- `Interrupt`: a hardware interrupt, by INTID. The holder can `WAIT` for it and `ACKNOWLEDGE` it once the
   device
   is serviced. The kernel's handler does nothing device-specific: it masks the line and turns the
   interrupt into a message. A driver owns an interrupt without owning any privilege.
@@ -89,10 +89,14 @@ before a console exists to carry a word, and `script/test` never boots the real 
 
 ## The peak, recorded
 
-`CAPABILITY_TABLE_PEAK_MEASURED` is 37, measured on 2026-10-19 (UTC) on `script/swish-check`'s
-aarch64 leg, on the boot that runs the full script for milestone 892 (a std program at the prompt
-holds the network and a name resolver). The spawn service is then building `jig install` and holds
-the copy of the boot terminal it places as that job's standard input. The same boot without that copy peaks at 36.
+`CAPABILITY_TABLE_PEAK_MEASURED` is 39, which `script/swish-check`'s aarch64 leg read on
+2026-11-11 (UTC) on the boot with a gpu and a keyboard. The progenitor reaches it before it runs
+`boot_self_test`. It then still holds the four slots the hand-over grants for the program on a
+machine with a virtio disk: the kernel's half of the self-test and disk 0's trio (milestone 1063
+(the boot self-test's spawning checks run from userspace)). It deletes them once the program
+finishes. The boot that runs the full script for milestone 892 (a std program at the prompt holds the
+network and a name resolver) peaks at 37. There the spawn service builds `jig install` and holds a
+copy of the boot terminal, which it places as that job's standard input.
 A boot with no NVMe disk peaks two lower, because the disk tree's endpoint and client-window pool
 are held for the life of the boot. [The peak trace](capability-peak-trace.md) itemizes what sits on
 the peak.

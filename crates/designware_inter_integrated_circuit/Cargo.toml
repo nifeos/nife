@@ -1,0 +1,29 @@
+[package]
+name = "designware_inter_integrated_circuit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A polled Synopsys DesignWare I2C master for one write-then-read transfer, over registers the caller supplies"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "i2c", "designware"]
+categories = ["no-std", "embedded", "hardware-support"]
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+
+# A polled DesignWare I2C master: the register sequence of one transfer and a read-modify-write of
+# one target register, over a register file the caller supplies. Pure logic, host-tested against a
+# simulated controller, no_std, dependency-free.
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]

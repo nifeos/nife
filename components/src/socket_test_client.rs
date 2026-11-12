@@ -282,9 +282,14 @@ fn open(operation: u64, which: usize, arg: u64) -> u64 {
     word
 }
 
+/// The second reply word of the latest `ACCEPT`: the connection's peer, which `serve_one_inbound`
+/// requires to name a real address.
+static ACCEPTED_PEER: AtomicU64 = AtomicU64::new(0);
+
 /// `ACCEPT` on the listener in `listener`, keeping the connection it hands back in `connection`.
 fn accept(listener: usize, connection: usize) -> u64 {
-    let (word, _, socket) = call_receiving(held(listener), OPERATION_ACCEPT, 0);
+    let (word, peer, socket) = call_receiving(held(listener), OPERATION_ACCEPT, 0);
+    ACCEPTED_PEER.store(peer, Ordering::Relaxed);
     let Some(socket) = socket else {
         return REP_ERR;
     };
@@ -727,6 +732,13 @@ fn serve_one_inbound(base: u64) {
     // `tcp_accept` re-arms on every exit), so a server that means to serve asks again.
     if !(0..ACCEPT_TRIES).any(|_| accept(LISTENER, CONNECTION) == REP_OK) {
         done(base); // nobody connected within ACCEPT_TRIES of the server's bounded waits
+    }
+
+    // The host's connection came through slirp, so the stack must have named a peer.
+    if word_peer(ACCEPTED_PEER.load(Ordering::Relaxed))
+        .is_none_or(|(ip, port)| ip == [0; 4] || port == 0)
+    {
+        done(base + 5);
     }
 
     let (rlen, _) = on(CONNECTION, OPERATION_RECEIVE, 0);

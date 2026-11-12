@@ -53,7 +53,7 @@ Option (a2), ruled 2026-11-11 (UTC), and not yet built:
 
 ## The premise, checked in the tree
 
-Three places in the tree already meet the gap.
+Two places in the tree already meet the gap.
 
 - The supervision tree's own builder does steps 1 and 2. `components/src/spawner.rs`
   splits an instance region off its budget, builds the child in it, and deletes
@@ -70,9 +70,6 @@ Three places in the tree already meet the gap.
   that a contract for job authors that nothing enforces, and left recursive teardown unbuilt until a
   real program needs to split its budget. `release_budget` (`components/src/swish/jobs.rs`) prints
   one sentence when it sees the case.
-- A split refused for a full table leaves a child count with no child behind it, so its parent
-  refuses `DESTROY` forever ([region-split-on-a-full-table.md](../../notes/region-split-on-a-full-table.md)).
-  The table state differs; the effect on the parent matches.
 
 Reading `reclaim_region` also turned up a race. It reaps the region's objects, unpins the region
 and then claims it. A holder of the

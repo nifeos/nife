@@ -176,14 +176,16 @@ impl<'a> PageFrameAllocator<'a> {
         }
     }
 
-    /// Mark every frame **overlapping** `[start, start+size)` as free.
+    /// Mark every frame **wholly inside** `[start, start+size)` as free.
     ///
-    /// Note "overlapping" and not "contained in". This rounds the range *outward*,
-    /// which is correct here (usable RAM regions from the device tree are page-aligned
-    /// in practice) but is the **opposite** of what [`mark_used`](Self::mark_used) must
-    /// do. See the comment there; the asymmetry is the whole ballgame.
+    /// The start rounds **up** and the end **down**, the opposite of
+    /// [`mark_used`](Self::mark_used): a frame only partly inside the region also holds bytes the
+    /// caller never said were RAM, so it stays used. A region that holds no whole frame frees
+    /// nothing. Under-freeing wastes at most 4 KiB at each end of a region. Frames outside what
+    /// the allocator manages are ignored. notes/physical-memory.md, "The rounding asymmetry, which
+    /// is the whole ballgame".
     pub fn mark_free(&mut self, start: u64, size: u64) {
-        for i in self.page_frame_range(start, size) {
+        for i in self.whole_frames_in(start, size) {
             if self.get(i) {
                 self.set(i, false);
                 self.used -= 1;
@@ -194,10 +196,12 @@ impl<'a> PageFrameAllocator<'a> {
 
     /// Mark every frame **touched by** `[start, start+size)` as used.
     ///
-    /// The start rounds **down** and the end **up**: a region ending mid-frame (a kernel image
-    /// ending at `0x4009_7010`) still owns that frame, and rounding down would hand out the tail of
-    /// the kernel. Over-reserving wastes at most 4 KiB per region. notes/physical-memory.md, "The
-    /// rounding asymmetry, which is the whole ballgame".
+    /// The start rounds **down** and the end **up**, the opposite of
+    /// [`mark_free`](Self::mark_free): a region ending mid-frame (a kernel image ending at
+    /// `0x4009_7010`) still owns that frame, and rounding down would hand out the tail of the
+    /// kernel. Over-reserving wastes at most 4 KiB at each end of a region. Frames outside what the
+    /// allocator manages are ignored. notes/physical-memory.md, "The rounding asymmetry, which is
+    /// the whole ballgame".
     pub fn mark_used(&mut self, start: u64, size: u64) {
         for i in self.page_frame_range(start, size) {
             if !self.get(i) {
@@ -305,6 +309,30 @@ impl<'a> PageFrameAllocator<'a> {
         }
         let i = ((addr - self.base) / FRAME_SIZE) as usize;
         (i < self.total).then_some(i)
+    }
+
+    /// Every frame index wholly inside `[start, start+size)`, clamped to what we manage.
+    ///
+    /// Start rounds **up**, end rounds **down**, and a range holding no whole frame is empty. See
+    /// [`mark_free`](Self::mark_free). `base` is frame-aligned, so rounding an offset from it
+    /// rounds the address.
+    fn whole_frames_in(&self, start: u64, size: u64) -> core::ops::Range<usize> {
+        let end = start.saturating_add(size);
+        if end <= self.base {
+            return 0..0;
+        }
+
+        let first = start.max(self.base) - self.base;
+        let last = end - self.base;
+
+        let lo = first.div_ceil(FRAME_SIZE);
+        let hi = (last / FRAME_SIZE).min(self.total as u64);
+
+        if lo >= hi {
+            0..0
+        } else {
+            lo as usize..hi as usize
+        }
     }
 
     /// Every frame index touched by `[start, start+size)`, clamped to what we manage.
@@ -418,6 +446,42 @@ mod verification {
         let b = fa.alloc();
         if let (Some(fa), Some(fb)) = (a, b) {
             assert_ne!(fa.addr(), fb.addr());
+        }
+    }
+
+    /// **`mark_free` frees only frames wholly inside the range.** From an all-used bitmap, over any
+    /// aligned base and any `start` and `size`, every frame `mark_free` leaves free lies entirely
+    /// within `[start, start + size)`. A frame only partly inside a usable region also holds bytes
+    /// nobody said were RAM, and handing it out would put a page table or a heap block over them.
+    /// The end is compared in `u128`, so a range that wraps the address space is held to its true
+    /// end and not a saturated one.
+    /// Falsification: replayable `crates/page_frames/falsifications/verification.mark_free_frees_only_whole_frames_inside_the_range.patch`
+    #[kani::proof]
+    #[kani::unwind(9)]
+    fn mark_free_frees_only_whole_frames_inside_the_range() {
+        let base: u64 = kani::any();
+        kani::assume(base.is_multiple_of(FRAME_SIZE));
+        kani::assume(base.checked_add(8 * FRAME_SIZE).is_some());
+        let start: u64 = kani::any();
+        let size: u64 = kani::any();
+
+        let mut bitmap = [0xffu8; 1]; // eight frames, all used, as `new` leaves them
+        let mut fa = PageFrameAllocator {
+            bitmap: &mut bitmap,
+            base,
+            total: 8,
+            used: 8,
+            hint: 0,
+        };
+        fa.mark_free(start, size);
+
+        let i: usize = kani::any();
+        kani::assume(i < 8);
+        if !fa.get(i) {
+            let frame_start = u128::from(base) + i as u128 * u128::from(FRAME_SIZE);
+            let frame_end = frame_start + u128::from(FRAME_SIZE);
+            assert!(frame_start >= u128::from(start));
+            assert!(frame_end <= u128::from(start) + u128::from(size));
         }
     }
 

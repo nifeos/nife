@@ -1,12 +1,5 @@
 # Memory regions: the kernel stops allocating
 
-*Renamed 2026-08-24 (DECISIONS §113, milestone 158): the kernel object this file describes was
-called `Untyped` (seL4's own word for it) until this rename. It is now `MemoryRegion`, chosen
-because it names what the capability actually is (a run of physical memory) rather than seL4's
-own word for what has not yet been done to it. This file is rewritten throughout to use the
-current name; the historical number in "The one number that proves it" is untouched because it is
-a measurement, not a name.*
-
 Milestone 11, and DECISIONS §10's deliberately-deferred third axis. It is the strangest idea in
 the whole project, and the one that makes seL4 verifiable: **a kernel that does not own a pool of
 memory to hand out.**
@@ -199,7 +192,7 @@ returned has left the table while its pages are still being revoked, so the scan
 sits. Dropping the watermark under it would let the parent carve pages a peer may still map, the
 use-after-free of §13 (capability revocation and untyped reclamation). The parent's child count
 tells, because it drops at the return and not at the claim. A count above the live children the scan
-found means a sibling in flight (or the phantom child below), and then only the LIFO un-bump
+found means a sibling in flight, and then only the LIFO un-bump
 happens. The next return with nothing in flight reclaims the holes, because the scan starts from the
 live set each time. The count dropping at the return is also what keeps the parent from being
 reclaimed while this child's pages are in flight. Decrementing at the claim would reopen the claim's
@@ -235,10 +228,15 @@ The counts follow table occupancy, not creations:
   reclaims their region, and it gives their counts back in the same borrow that removes the region.
 - An insert that fails after the region gave up its page releases the count it took.
 
+Each region also keeps `held`, the objects retyped straight from it that are still live. The table
+refuses a release, and moves no count, when its region holds none of that kind: a second release of
+one object would otherwise take a count a child still holds. Kernel callers release each object
+once, and a debug build asserts the table took it.
+
 `memory_region::progenitor_ceilings` builds the progenitor's budget: every table's capacity less
 an eighth the kernel keeps, written in the `MAXIMUM_*` constants so the ceilings follow a resize.
 
-Kani proves the counting in `crates/memory_regions`: a refused carve or split moves nothing, every
+Kani proves the counting in `crates/memory_regions`: a refused carve, split or release moves nothing, every
 live count equals what its subtree holds and stays within its ceiling, and reclaiming a subtree
 gives every count back. Each harness takes one operation from any state that holds those counts,
 so the proof covers runs of any length. `subtree_ceiling_tests` fills a region to every ceiling through the real
@@ -266,10 +264,6 @@ Limits that remain:
   declines it and records non-binding guidance for whoever has a customer: cause-specific `Error`
   variants, the shape of `crates/timetable`'s `Unbacked`/`Refusal` split and POSIX's
   `EMFILE`/`ENFILE`.
-- **A split refused for a full table still bumps the parent**, which can then never be reclaimed.
-  The phantom child also stops `return_to_parent` coalescing, so the parent keeps only the LIFO
-  rule. `RegionTable::split`'s `# BUGS` has the reproduction, and
-  [region-split-on-a-full-table.md](region-split-on-a-full-table.md) the proposal.
 - A hole under a live child is not reused while that child lives, because `split` only bumps. A
   parent whose children always overlap (each carved before the one below it returns) never drains,
   so its holes never close. With every reap held back 150 ms, the riscv64 swish-check pool fills. A

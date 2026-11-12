@@ -223,6 +223,9 @@ def crate_interfaces(crate, src):
     return out
 
 
+NIFEOS_GIT = 'git+https://github.com/nifeos/'
+
+
 def metadata():
     out = subprocess.run(['cargo', 'metadata', '--format-version', '1', '--offline'],
                          check=True, capture_output=True, text=True).stdout
@@ -231,7 +234,11 @@ def metadata():
 
 def tree_problems():
     meta = metadata()
-    members = set(meta['workspace_members'])
+    # A crate that left for its own nifeos repository is read from the checkout Cargo pinned, so
+    # its interface keeps its row in the table and its readers keep declaring it.
+    members = set(meta['workspace_members']) | {
+        p['id'] for p in meta['packages']
+        if (p.get('source') or '').startswith(NIFEOS_GIT)}
     package = {p['id']: p for p in meta['packages']}
     by_name = {package[i]['name']: i for i in members}
     edges = {n['id']: [d['pkg'] for d in n['deps']

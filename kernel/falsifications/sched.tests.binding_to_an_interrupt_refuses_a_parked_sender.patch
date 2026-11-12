@@ -1,0 +1,21 @@
+Falsifies `kernel::sched::tests::binding_to_an_interrupt_refuses_a_parked_sender`.
+
+The defect: `refuse_parked_sender` marks the parked sender refused and never wakes it. The queue
+is empty, so no receive collects the sender's words, but the sender sleeps for ever on a send
+that will never complete. It is the half of the fix a reader who only wanted the driver
+protected would write.
+
+Expected to fail: "the bind left the parked sender asleep", because nothing wakes the sender.
+
+diff --git a/kernel/src/sched/interrupt_route.rs b/kernel/src/sched/interrupt_route.rs
+index df95d0076..8e12781aa 100644
+--- a/kernel/src/sched/interrupt_route.rs
++++ b/kernel/src/sched/interrupt_route.rs
+@@ -75,7 +75,6 @@ fn refuse_parked_sender(sched: &mut IpcTables, tid: ThreadId) {
+     }
+     set_ipc_aborted(sched, tid);
+     set_ipc_refused(sched, tid);
+-    wake(sched, tid);
+ }
+ 
+ /// The rendezvous an interrupt is routed to, if any. Read from the interrupt handler; lock-free.

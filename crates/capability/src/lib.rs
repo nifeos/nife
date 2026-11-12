@@ -429,7 +429,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// Put a capability in a **specific free slot**, refusing an occupied or out-of-range one.
     ///
     /// The targeted counterpart of [`insert`](Self::insert). A supervisor uses it to place a
-    /// child's supervision rendezvous in the reserved fault slot (abi's `FAULT_EP_SLOT`) rather than
+    /// child's supervision rendezvous in the reserved fault slot (abi's `FAULT_RENDEZVOUS_SLOT`) rather than
     /// wherever first-free would fall, and refusing an occupied slot keeps that reservation honest:
     /// two things must never share the slot the kernel reads at `START`.
     pub fn insert_at(&mut self, slot: u64, capability: Capability<O>) -> Result<u64, Error> {

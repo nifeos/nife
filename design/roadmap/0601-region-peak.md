@@ -10,8 +10,6 @@ so the lane took the next free; the integrator confirms it at merge. Title a dra
 the maintainer from two findings in the lane of milestone 152 (durable delegation), both about the
 kernel's region table (`memory_region::MAX_REGIONS`, 256).
 
-One PROPOSED question for calef is below, and nothing waits on it.
-
 ## Why
 
 On aarch64 `main` the suite reached `timetable_tests` with 252 of 256 regions live. The lane of
@@ -43,22 +41,22 @@ answer there was a `threads:` line on every run. Nothing printed the region peak
   spare), riscv64 at 491 and `x86_64` at 315. The ledger is at `sched::PEAK_RENDEZVOUS`.
 - No gate on headroom, deliberately. The thread peak's reason holds. A second reason is written at
   `MAX_REGIONS`: nothing yet says which regions are meant to be permanent.
-- A `# BUGS` entry at `RegionTable::split`. A split refused for a full table keeps the parent's
-  bumped child count, so the parent can never be reclaimed, and the failure ratchets. Its
-  reproduction is a doctest, which fails the day the rule changes.
+- A split refused for a full table moves nothing. `RegionTable::split` makes every check, then
+  takes the child's table slot, and only then advances the parent's watermark and raises its child
+  count, so a refusal leaves no child count without a child and the parent stays reclaimable.
 - A sibling leak, fixed rather than recorded. `syscall::memory_region_split` minted the child,
   then returned `OutOfMemory` when the caller's capability table was full. The orphaned child had
   the same permanent consequence. It now destroys the child.
   `split_refused_for_a_full_capability_table_orphans_no_child` proves the parent comes back
   reclaimable with its budget whole, and it passes on all three architectures.
 
-## PROPOSED: does the bump-only rule survive a full table
+## A refused split moves nothing, a full table included
 
-This is calef's call, in `notes/region-split-on-a-full-table.md`. The options are A (keep), B
-(decide before mutating, recommended), C (mutate then roll back) and D (raise the ceiling instead).
-Both reasons the rule was written for have lapsed. The two lock holds it protected became one
-borrow in milestone 135 (the region claim, under loom). The "practically unreachable" full table
-was measured at 256 of 256. It is cheap to reverse either way, and nothing is blocked on it.
+The rule is option B of `notes/region-split-on-a-full-table.md`, decide before mutating, a
+provisional ruling by the maintainer that calef may overrule. The split runs in one `&mut self`
+borrow (milestone 135 (the region claim, under loom)), so reserving the child's slot before moving
+the parent races nothing. The host test `a_split_refused_for_a_full_table_leaves_the_parent_unchanged`
+and the Kani harness `a_split_refused_for_a_full_table_moves_nothing` hold it.
 
 ## Follow-on
 
@@ -67,14 +65,15 @@ was measured at 256 of 256. It is cheap to reverse either way, and nothing is bl
   list.
 - **Milestone 671.** Milestone 671 (tests retype their rendezvous from their own region, so the registry stops filling). `design/roadmap/0671-tests-retype-their-rendezvous-from-their-own-region.md`:
   466 of aarch64's 505 live rendezvous sit on kernel chunks that are never freed.
-- **Recorded.** A split refused for a full table leaks its parent: the `# BUGS` entry on
-  `RegionTable::split` in `crates/memory_regions/src/table.rs`. Whether the bump-only rule changes
-  is calef's, proposed in `notes/region-split-on-a-full-table.md`.
+- **Done.** A split refused for a full table moves nothing: `RegionTable::split` in
+  `crates/memory_regions/src/table.rs`, under the provisional ruling in
+  `notes/region-split-on-a-full-table.md`.
 
 ## Index row
 
 The suite now prints how close the boot came to three ceilings: the region table, page frames and
 the rendezvous registry. It names the test that pushed it there, so the next full table is read off a
 transcript instead of found by a hang in an unrelated test. `MAX_REGIONS` carries the ledger of
-what holds regions at the peak. A refused split that leaks its parent is recorded where a reader
-meets it, and a second road to the same leak through `MemoryRegion::SPLIT` is closed.
+what holds regions at the peak. A split refused for a full table moves nothing, and a split
+refused for a full capability table destroys the child it made, so neither leaves its parent
+unreclaimable.

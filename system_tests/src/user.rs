@@ -1103,7 +1103,7 @@ mod seventh_pass_delegation_tests;
 
 /// **A consumed capability stays consumed, and deleting one disturbs nothing else** (an eighth
 /// outsider pass at the confinement claim, claims 4 and 5). Attacks the live kernel paths the host
-/// crate's pure-logic tests cannot reach: a stale slot number after `SYS_CAPABILITY_DELETE`, an
+/// crate's pure-logic tests cannot reach: a stale slot number after `SYSCALL_CAPABILITY_DELETE`, an
 /// out-of-range index forged in a register, a double delete, a neighbor that must keep working
 /// through the real dispatcher, and a freed slot regranted with narrower rights that must carry
 /// nothing of its deleted tenant. Nothing blocks. Its own header has the reasoning.
@@ -1168,7 +1168,7 @@ mod eighth_pass_port_boundary_tests;
 /// program granted the unvouched shape (one endpoint, two read-only pages) has its whole table
 /// read back slot for slot: exactly those three, and no device capability of any kind. The
 /// `kernel_test_subject`'s `BUILD_WITH_NOTHING` role answers NoSuchSlot to every minting attempt
-/// from inside, through the real `SYS_INVOKE`.
+/// from inside, through the real `SYSCALL_INVOKE`.
 ///
 /// Cross-ISA: the spawn path, the census and the `kernel_test_subject` are portable (DECISIONS
 /// §19).
@@ -1270,7 +1270,7 @@ mod ninth_pass_port_tests;
 /// **A holder that drops its construction authority cannot build again** (a ninth outsider pass at
 /// the confinement claim, claim 23). `authority_tests` boots the real `root_supervisor` for this;
 /// this drives the mechanism through the dispatcher with no ramdisk. A full untyped budget retypes
-/// and splits, is deleted the way `SYS_CAPABILITY_DELETE` deletes it, and the identical build operations
+/// and splits, is deleted the way `SYSCALL_CAPABILITY_DELETE` deletes it, and the identical build operations
 /// then answer `NoSuchSlot`.
 ///
 /// Cross-ISA: untyped retype and split and the capability table are portable kernel code
@@ -1280,7 +1280,7 @@ mod ninth_pass_authority_tests;
 
 /// **The mapping boundary's edges, and W^X against two aliases of one page** (a tenth outsider
 /// pass at the confinement claim, claims 10 and 11): the last user page mapped, a straddling run
-/// refused with nothing left mapped, a wrapping run, and the same frame mapped `MAP_RW` at one
+/// refused with nothing left mapped, a wrapping run, and the same frame mapped `MAP_READ_WRITE` at one
 /// address and `MAP_CODE` at another.
 ///
 /// Cross-ISA: `MAP_INTO` and the gate instantiate the running architecture's `Format`

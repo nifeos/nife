@@ -31,7 +31,7 @@ made between calls, so a wrong answer cannot steer what the generator does next.
   A process retype can file the process in the slot it deleted its address space from.
 - Held objects. Every endpoint, notification, timer, process, address space and thread the fuzzer
   holds has its page inside a granted region.
-- The witness. It holds only slot 0, which is never named, so every `SYS_INVOKE` it makes must fail.
+- The witness. It holds only slot 0, which is never named, so every `SYSCALL_INVOKE` it makes must fail.
 - The page oracle. Every mapping lies in the spawned pages or the 32-page playground, and every
   frame behind them lies in a granted region or one of the two gift frames.
 

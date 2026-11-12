@@ -44,9 +44,13 @@ The verdict enums compare and print by hand rather than by derive. A derive woul
 
 §101 (notification objects), as amended on 2026-09-26, rules that an endpoint bound to an
 interrupt refuses every send. `bind_to_interrupt` sets a flag that is never cleared, and `send`
-then answers `Send::Refused` and touches nothing. So the only thing a receiver there can be handed
-is a signal, and an interrupt's `w0 = 1` cannot be forged by anyone who holds a `WRITE`
-capability. The flag sits in the padding after the pending count, so the object did not grow.
+then answers `Send::Refused` and touches nothing. The bind also empties the sender queue, handing
+each sender parked before it back to the caller, which wakes it with the same refusal
+(`bind_interrupt` in the kernel). A bound rendezvous therefore never holds a sender, and the only
+thing a receiver there can be handed is a signal, so an interrupt's `w0 = 1` cannot be forged by
+anyone who holds a `WRITE` capability. Emptying the queue once at the bind keeps `receive`
+unchanged and its harnesses as they were; the alternative, a `receive` that skips senders while
+bound, would leave those senders asleep for good. The flag sits in the padding after the pending count, so the object did not grow.
 
 The refusal is tested before a receiver is popped. The receiver on an interrupt's rendezvous is
 the driver, and handing it a sender's words is the forgery. Binding has no inverse because the

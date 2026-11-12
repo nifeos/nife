@@ -40,7 +40,13 @@ const VIRTIO_BLK_SERVER: u64 = 32;
 
 user_mode_runtime::program_entry!(start);
 
-fn start(role: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
+fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
+    // A direct grant's three words are its handoff, and the role travels in it; a mediated
+    // grant's first word is the role and its second the DMA page's physical base.
+    let (role, direct_memory_access_phys) = match virtio::direct::take([arg0, arg1, arg2]) {
+        Some(granted) => (granted.role, granted.physical_address),
+        None => (arg0, arg1),
+    };
     match role {
         VIRTIO_BLK => virtio::run(direct_memory_access_phys),
         VIRTIO_ATTACK => virtio::run_attack(direct_memory_access_phys),

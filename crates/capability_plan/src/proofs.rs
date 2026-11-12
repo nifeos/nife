@@ -250,12 +250,12 @@ fn the_device_split_partitions_the_mappings() {
         // one constant for both kinds would satisfy an assertion phrased through it while
         // the operator mapped a device register page writable.
         for m in late {
-            assert!(m.2 == abi::address_space::MAP_RO);
+            assert!(m.2 == abi::address_space::MAP_READ_ONLY);
         }
         for m in early {
-            assert!(m.2 == abi::address_space::MAP_RW);
+            assert!(m.2 == abi::address_space::MAP_READ_WRITE);
         }
-        const { assert!(abi::address_space::MAP_RO != abi::address_space::MAP_RW) };
+        const { assert!(abi::address_space::MAP_READ_ONLY != abi::address_space::MAP_READ_WRITE) };
     }
 }
 

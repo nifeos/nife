@@ -170,7 +170,7 @@ A GIC keeps an interrupt pending while it is disabled. An IO APIC drops an edge 
 masked entry. COM1's interrupt 4 is edge-triggered on every PC, and a 16550 holds its line high
 until the
 driver drains it. Masking it would turn a byte that arrives between the driver's last read and its
-ACK into silence: the line is already high when the entry is unmasked, so no new edge comes. Left
+ACKNOWLEDGE into silence: the line is already high when the entry is unmasked, so no new edge comes. Left
 live, the byte raises a fresh edge after the drain. So `interrupt_controller::disable` masks only a
 level-triggered
 line.
@@ -224,7 +224,7 @@ take-back yet.
 ## BUGS
 
 - The IO APIC's index and data window are a pair with nothing serializing them. A driver's
-  `Interrupt::ACK` reaches `interrupt_controller::enable` on whichever core ran the syscall, and the
+  `Interrupt::ACKNOWLEDGE` reaches `interrupt_controller::enable` on whichever core ran the syscall, and the
   trap handler calls
   `interrupt_controller::disable` on whichever core took the line. With two cores these can
   interleave, and each

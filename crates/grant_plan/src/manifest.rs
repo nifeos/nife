@@ -200,7 +200,7 @@ pub const ENTROPY_SLOT: u64 = 9;
 ///
 /// Ten, one past [`ENTROPY_SLOT`], for that constant's reasons: a named slot rather than the next
 /// free one, above the shell's own seven positional capabilities, and far below
-/// `abi::fault::FAULT_EP_SLOT`. A program spawned without the declaration holds an empty slot here,
+/// `abi::fault::FAULT_RENDEZVOUS_SLOT`. A program spawned without the declaration holds an empty slot here,
 /// and its first `CALL` answers `abi::Error::NoSuchSlot`; `unreachable_network_witness` is the
 /// program that shows it at the prompt.
 pub const NETWORK_SLOT: u64 = 10;
@@ -280,7 +280,7 @@ pub const SHARE_SLOT: u64 = 12;
 
 /// **Where a program that declares [`Manifest::reboot`] finds the reboot object** (milestone 805,
 /// DECISIONS §251). Thirteen, one past [`SHARE_SLOT`], for [`ENTROPY_SLOT`]'s reasons: a named slot
-/// rather than the next free one, and far below `abi::fault::FAULT_EP_SLOT`. `WRITE` alone, so the
+/// rather than the next free one, and far below `abi::fault::FAULT_RENDEZVOUS_SLOT`. `WRITE` alone, so the
 /// holder can invoke it and cannot hand it on.
 ///
 /// Name: provisional (milestone 805).
@@ -293,6 +293,17 @@ pub const REBOOT_SLOT: u64 = 13;
 /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server
 /// request and its capability, and flush for the device cache only.").
 pub const SYNC_SLOT: u64 = 14;
+
+/// **Where a program that declares [`Manifest::reboot`] finds the board's
+/// PMIC (power management integrated circuit) route**, on a board
+/// that has one (milestone 1062 (the device control planes leave the kernel), step 5; §251
+/// (restarting the machine is a kernel object the progenitor hands out), "A board's PMIC route runs
+/// in userspace"). Twenty-three, one past the highest slot this crate named before it. Empty
+/// everywhere else, which is every machine CI boots. `WRITE` alone, the right to `CALL` the route.
+/// The reboot declaration carries it, since restarting the board is the only thing the route does.
+///
+/// Name: provisional.
+pub const POWER_MANAGEMENT_CHIP_ROUTE_SLOT: u64 = 23;
 
 /// **What the progenitor endows a child whose bytes nobody vouched for**, when the caller presented
 /// the run-unvouched capability (DECISIONS §219 gate D2, ruled by calef 2026-09-26: *"Yes, allow
@@ -582,7 +593,8 @@ pub struct Manifest {
     /// **Provisional field name.**
     pub share: bool,
     /// **Endowed the reboot object** (milestone 805 (`reboot` at the prompt), DECISIONS §251
-    /// (restarting the machine is a kernel object the progenitor hands out)), at [`REBOOT_SLOT`].
+    /// (restarting the machine is a kernel object the progenitor hands out)), at [`REBOOT_SLOT`], and
+    /// the board's PMIC route at [`POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] on a board that has one.
     ///
     /// The authority to restart the machine: the kernel grants the progenitor the one there is.
     /// Without the declaration the kernel refuses the invoke with `abi::Error::NoSuchSlot`. It syncs

@@ -35,8 +35,8 @@
 #![no_main]
 
 use process_builder::{
-    build_child, memory_region_destroy, memory_region_split, retype_obj_from as retype_obj,
-    retype_page_frame_from, start_child,
+    build_child, memory_region_destroy, memory_region_split, retype_into_kernel_object_from,
+    retype_into_page_frame_from, start_child,
 };
 use supervision_contract::{ChildEndowment, Retention};
 use timetable::registration;
@@ -82,7 +82,7 @@ const RUN_UNVOUCHED: u64 = grant_plan::spawnproto::RUN_UNVOUCHED_SLOT;
 /// session's two caretakers and its timetable and nothing else.
 const DURABLE_WINDOW: u64 = login_contract::DURABLE_WINDOW_SLOT;
 // `grant_plan` states the slot without depending on `abi`; the relation is held by each reader.
-const _: () = assert!(RUN_UNVOUCHED == abi::fault::FAULT_EP_SLOT - 1);
+const _: () = assert!(RUN_UNVOUCHED == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// Whether [`RUN_UNVOUCHED`] holds a capability. Probed at [`_start`], before this process has
 /// allocated anything, which is what makes the probe sound: later, a slot this process retyped
@@ -1080,8 +1080,8 @@ fn open_schedule(
         return None;
     };
     let (Ok(page), Ok(ready)) = (
-        retype_page_frame_from(keeper),
-        retype_obj(keeper, abi::objtype::RENDEZVOUS),
+        retype_into_page_frame_from(keeper),
+        retype_into_kernel_object_from(keeper, abi::object_type::RENDEZVOUS),
     ) else {
         discard(its_budget);
         fail(&[activation, packages]);
@@ -1172,8 +1172,8 @@ fn store_caretaker(
 ) -> Option<u64> {
     let name = name.as_bytes();
     let (lo, hi) = filesystem_contract::grant::pack_name(name)?;
-    let narrow_ep = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
-    let Ok(ready) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
+    let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
+    let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         capability_delete(narrow_ep);
         return None;
     };
@@ -1191,7 +1191,11 @@ fn store_caretaker(
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &[(CARETAKER_FS_VA, DURABLE_WINDOW, abi::address_space::MAP_RW)],
+            maps: &[(
+                CARETAKER_FS_VA,
+                DURABLE_WINDOW,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -1236,16 +1240,16 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     let region = memory_region_split(channel_ut, CHANNEL_REGION_PAGES).ok()?;
     // Every abandoned step below gives back its capability slots as well as its memory
     // ([`discard`], and `capability_delete` for what was retyped before the step that failed).
-    let Ok(request) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
+    let Ok(request) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         discard(region);
         return None;
     };
-    let Ok(result) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
+    let Ok(result) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         capability_delete(request);
         discard(region);
         return None;
     };
-    let Ok(page) = retype_page_frame_from(region) else {
+    let Ok(page) = retype_into_page_frame_from(region) else {
         capability_delete(result);
         capability_delete(request);
         discard(region);
@@ -1296,11 +1300,11 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;
     // As in [`connect`]: an abandoned step gives back its capability slots as well as its memory
     // ([`discard`]).
-    let Ok(narrow_ep) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
+    let Ok(narrow_ep) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         discard(region);
         return None;
     };
-    let Ok(ready) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
+    let Ok(ready) = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS) else {
         capability_delete(narrow_ep);
         discard(region);
         return None;
@@ -1322,7 +1326,11 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &[(CARETAKER_FS_VA, FS_PAGE_FRAME, abi::address_space::MAP_RW)],
+            maps: &[(
+                CARETAKER_FS_VA,
+                FS_PAGE_FRAME,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },

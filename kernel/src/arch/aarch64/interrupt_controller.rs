@@ -44,8 +44,8 @@ fn affinity_of(cpu: usize) -> u64 {
 /// Per-INTID target core, or [`UNASSIGNED`] until the first `enable` chooses one. A device line's
 /// target must be **stable** across re-enables: the interrupt handler masks the line when it fires,
 /// and
-/// the driver's ACK re-enables it (this file's `enable`), so if we re-rolled the target on every
-/// ACK the line would hop cores on every completion. Assign once, then reuse.
+/// the driver's ACKNOWLEDGE re-enables it (this file's `enable`), so if we re-rolled the target on every
+/// ACKNOWLEDGE the line would hop cores on every completion. Assign once, then reuse.
 const UNASSIGNED: u8 = 0xff;
 #[doc(alias = "irq")]
 static INTERRUPT_TARGET: [AtomicU8; 256] = [const { AtomicU8::new(UNASSIGNED) }; 256];
@@ -83,7 +83,7 @@ fn target_cpu(intid: u32) -> usize {
 
 /// Re-enable (unmask) an interrupt source at the controller.
 ///
-/// Called by the `Interrupt` capability's ACK once a userspace driver has serviced its device
+/// Called by the `Interrupt` capability's ACKNOWLEDGE once a userspace driver has serviced its device
 /// (seL4's
 /// `IRQHandler` protocol), and by the timer on each core. An SPI goes to its [`target_cpu`]; an SGI
 /// or a PPI (INTID below 32) is enabled on the calling core and takes no target.
@@ -156,7 +156,7 @@ pub fn send_sgi(intid: u32, target_cpu: usize) {
 /// falls back to that. A GICv3
 /// ITS would implement MSI here on a board that needs it. See
 /// design/roadmap/0215-x86-64-pci-interrupt-routing.md.
-pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
+pub(crate) fn alloc_msi_vector(_requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
     None
 }
 

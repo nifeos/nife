@@ -18,7 +18,7 @@
 //! 4. A holder that takes the range back from everyone else keeps its own bitmap:
 //!    [`a_take_back_leaves_the_invokers_own_bitmap_installed`].
 
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::sched;
@@ -141,7 +141,7 @@ fn build_child(
             fault_ep,
             crate::capability_object::Rights::READ,
         ),
-        Some(FAULT_EP_SLOT),
+        Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert fault ep");
 
@@ -308,7 +308,7 @@ fn a_revoked_holder_faults_on_its_next_port_write() {
 }
 
 /// **A holder that deletes its own port capability faults on its next `out`** (milestone 313's
-/// audit, 2026-09-17): the grant is a cached field the switch installs, and `SYS_CAPABILITY_DELETE` must
+/// audit, 2026-09-17): the grant is a cached field the switch installs, and `SYSCALL_CAPABILITY_DELETE` must
 /// clear it with the slot, or §12 (call/reply IPC: a one-shot reply capability)'s "a consumed
 /// capability cannot be used again" fails for the one object enforced outside the table. The child
 /// deletes [`PORT_SLOT_WITHOUT_WAKE`], executes `out` and exits rather than reporting, so a

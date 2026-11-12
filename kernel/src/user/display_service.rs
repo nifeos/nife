@@ -67,13 +67,13 @@ const TERM_SLOT_SURFACE: u64 = 4;
 const TERM_SLOT_OUT: u64 = TERM_SLOT_SURFACE + 1;
 
 // No grant list on this path may reach the fault slot. The supervisor writes the process's fault
-// endpoint at `abi::fault::FAULT_EP_SLOT`, and `grant_at` on an empty slot succeeds, so a grant
+// endpoint at `abi::fault::FAULT_RENDEZVOUS_SLOT`, and `grant_at` on an empty slot succeeds, so a grant
 // there would overwrite it silently: the process would hang on a fault instead of being reaped.
 // Each assertion is the highest slot one grant list uses.
 const _: () = {
-    assert!(DRIVER_SLOT_DMA < abi::fault::FAULT_EP_SLOT);
-    assert!(CLIENT_SLOT_SURFACE < abi::fault::FAULT_EP_SLOT);
-    assert!(TERM_SLOT_OUT < abi::fault::FAULT_EP_SLOT);
+    assert!(DRIVER_SLOT_DMA < abi::fault::FAULT_RENDEZVOUS_SLOT);
+    assert!(CLIENT_SLOT_SURFACE < abi::fault::FAULT_RENDEZVOUS_SLOT);
+    assert!(TERM_SLOT_OUT < abi::fault::FAULT_RENDEZVOUS_SLOT);
 };
 
 /// Grant one capability naming the `count`-frame run at `base`, read/write, at `slot`; the program
@@ -457,7 +457,7 @@ const SCREEN_SLOT_REPORT: u64 = 0;
 const SCREEN_SLOT_DISPLAY: u64 = 1;
 const SCREEN_SLOT_BUDGET: u64 = 2;
 const SCREEN_SLOT_SURFACE: u64 = 3;
-const _: () = assert!(SCREEN_SLOT_SURFACE < abi::fault::FAULT_EP_SLOT);
+const _: () = assert!(SCREEN_SLOT_SURFACE < abi::fault::FAULT_RENDEZVOUS_SLOT);
 
 /// The part of `screen` the terminal covers, and the pages of it the driver maps:
 /// [`start_screen_terminal`]'s first step. `None` when the screen cannot show a surface or its

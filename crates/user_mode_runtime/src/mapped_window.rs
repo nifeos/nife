@@ -249,10 +249,15 @@ impl MappedWindow {
 ///
 /// Name: provisional (milestone 494's lane, 2026-10-04).
 pub fn doorbell_barrier() {
+    // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
+    // read or write to any memory accessible outside of the `asm!` block", which lets the compiler
+    // cache values in registers and move loads and stores across it, and it adds that the compiler
+    // "also assumes that this `asm!` block does not perform any kind of synchronization with other
+    // threads, e.g. via fences". A barrier exists to order memory, so it must not claim either.
     // SAFETY: a barrier has no operands and cannot be unsound; it only constrains ordering.
     #[cfg(target_arch = "aarch64")]
     unsafe {
-        core::arch::asm!("dmb sy", options(nostack, nomem, preserves_flags));
+        core::arch::asm!("dmb sy", options(nostack, preserves_flags));
     }
     // SAFETY: as above.
     #[cfg(target_arch = "riscv64")]
@@ -262,7 +267,7 @@ pub fn doorbell_barrier() {
     // SAFETY: as above.
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        core::arch::asm!("mfence", options(nostack, nomem, preserves_flags));
+        core::arch::asm!("mfence", options(nostack, preserves_flags));
     }
     // A fourth architecture fails to build rather than silently ordering nothing.
     #[cfg(not(any(

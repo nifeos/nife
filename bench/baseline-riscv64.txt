@@ -21,7 +21,7 @@
 # why: 2026-11-10: restamped from nightly-2026-11-09 to nightly-2026-11-10 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: map_el0 -0.002%, null_syscall -0.001% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: null_syscall +0.297%, ctx_switch +0.082%, yield_switch +0.065%, ipc_rtt_el0 +0.049%, map_new +0.040%, ipc_rtt +0.036%, relay_rtt +0.036%, sink_throughput +0.030%, broker_rtt +0.023%, spawn_reap +0.023%, call_reply +0.022%, spawn_el0 +0.015%, map_el0 +0.006%
 # bench/baseline-riscv64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
-# emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on
+# emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
 # PATH is not the pinned one, precisely because that is when a baseline comparison stops being
 # apples to apples.
 # A tick is not an instruction: one guest instruction is one virtual nanosecond under -icount

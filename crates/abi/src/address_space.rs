@@ -3,7 +3,7 @@
 /// the frame capability needs `READ` for a read-only mapping, `WRITE` for a writable one, the
 /// `frame::MAP` rule verbatim. Page tables and the revocation record are paid from the space's own
 /// backing region; a mapping whose record cannot be afforded is refused (`OutOfMemory`), never left
-/// invisible to revocation. A `MAP_RW` of a page the space already maps as code, or a `MAP_CODE` of
+/// invisible to revocation. A `MAP_READ_WRITE` of a page the space already maps as code, or a `MAP_CODE` of
 /// one it already maps writable, is refused with `NotPermitted`: no page is writable through one
 /// mapping and executable through another in one address space (claim 11). The same frame
 /// writable in one space and code in another maps.
@@ -12,17 +12,24 @@ pub const MAP_INTO: u64 = 0;
 /// `MAP_INTO`'s third argument: how to map the frame. Read-only, read/write, or executable
 /// code. Code is W^X: mapped RX,
 /// never writable, and the kernel makes the I-cache coherent with the loader's data writes.
-pub const MAP_RO: u64 = 0;
+///
+/// Name: ratified 2026-11-11 (UTC). Spelled out under design/naming.md's rule that a name this
+/// tree authors carries no abbreviation; the value stays 0. Refused `MAP_RO` (abbreviates "read
+/// only").
+pub const MAP_READ_ONLY: u64 = 0;
 /// Map read/write.
-pub const MAP_RW: u64 = 1;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`MAP_READ_ONLY`]; the value stays 1. Refused `MAP_RW`
+/// (abbreviates "read write").
+pub const MAP_READ_WRITE: u64 = 1;
 /// Map executable code: RX, never writable (W^X).
 pub const MAP_CODE: u64 = 2;
 
 /// `invoke(capability, LIST, cursor, 0, 0) -> (next_cursor, va, kind)` (`pmap`): list this space's
 /// mappings one entry per call, changing none, with `Rendezvous::SURVEY`'s cursors and right.
 ///
-/// - `next_cursor` returns in x0 (a0 on RISC-V), `va` in x1 and `kind` in x2, one of [`MAP_RO`],
-///   [`MAP_RW`] or [`MAP_CODE`]. A `DeviceFrame` mapping reads as `MAP_RW`.
+/// - `next_cursor` returns in x0 (a0 on RISC-V), `va` in x1 and `kind` in x2, one of [`MAP_READ_ONLY`],
+///   [`MAP_READ_WRITE`] or [`MAP_CODE`]. A `DeviceFrame` mapping reads as `MAP_READ_WRITE`.
 /// - Start with `cursor = 0` and feed each `next_cursor` back; `abi::survey::DONE` means finished.
 ///   A cursor this space's log never minted is [`crate::Error::BadPointer`], and any other negative first word is an [`crate::Error`].
 /// - Needs [`rights::ENUMERATE`](super::rights::ENUMERATE), not `WRITE`.

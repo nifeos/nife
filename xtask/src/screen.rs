@@ -21,6 +21,11 @@ use crate::{RISCV_TARGET, TARGET, profile_dir};
 /// answers, so the bound is only ever paid by a failure.
 const WATCH_SECONDS: u64 = 300;
 
+/// How long, once the screen has the marker, the serial line is given to carry it too. The UART
+/// copy is printed after the screen's, by the progenitor before the prompt, and like the watch
+/// above the bound is only ever paid by a failure.
+const SERIAL_GRACE_SECONDS: u64 = 120;
+
 /// Boot one of the two board architectures, `arch`, with a `ramfb` and read the tour back off it.
 ///
 /// Returns true when `boot_ladder::SELF_TEST` was decoded off the screen glyph by glyph and the
@@ -28,8 +33,8 @@ const WATCH_SECONDS: u64 = 300;
 /// the screen read is the claim: the `fw_cfg` conversation, the address the kernel handed over, the
 /// byte order, the stride and the font. The machine has no virtio-gpu, because `screendump` with no
 /// device argument writes console 0 and a boot with both would photograph whichever console QEMU
-/// ordered first. The boot is stopped once the screen has answered; the kernel never exits on its
-/// own. See notes/serial-less-output/ramfb.md.
+/// ordered first. The boot is stopped once the screen has answered and the serial line has caught
+/// up; the kernel never exits on its own. See notes/serial-less-output/ramfb.md.
 pub(crate) fn screen_boot(arch: &str) -> bool {
     let Some((runner, elf, archive)) = build_screen_leg(arch) else {
         return false;
@@ -48,15 +53,28 @@ pub(crate) fn screen_boot(arch: &str) -> bool {
     let Some(mut child) = start_ramfb_boot(runner, &elf, &sock, &archive) else {
         return false;
     };
+    // Each stream is read into a buffer the watch below can look at while QEMU still runs.
     let collect = |mut from: Box<dyn std::io::Read + Send>| {
-        std::thread::spawn(move || {
-            let mut bytes = Vec::new();
-            let _ = std::io::Read::read_to_end(&mut from, &mut bytes);
-            String::from_utf8_lossy(&bytes).into_owned()
-        })
+        let bytes = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let into = std::sync::Arc::clone(&bytes);
+        let reader = std::thread::spawn(move || {
+            let mut chunk = [0u8; 4096];
+            while let Ok(n @ 1..) = std::io::Read::read(&mut from, &mut chunk) {
+                into.lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .extend_from_slice(&chunk[..n]);
+            }
+        });
+        (bytes, reader)
     };
-    let stdout = collect(Box::new(child.stdout.take().expect("piped stdout")));
-    let stderr = collect(Box::new(child.stderr.take().expect("piped stderr")));
+    let (stdout, stdout_reader) = collect(Box::new(child.stdout.take().expect("piped stdout")));
+    let (stderr, stderr_reader) = collect(Box::new(child.stderr.take().expect("piped stderr")));
+    let read_so_far = || {
+        let text = |b: &std::sync::Mutex<Vec<u8>>| {
+            String::from_utf8_lossy(&b.lock().unwrap_or_else(|e| e.into_inner())).into_owned()
+        };
+        format!("{}{}", text(&stdout), text(&stderr))
+    };
 
     let seen = {
         let (sock, shot) = (sock.clone(), shot.clone());
@@ -65,17 +83,32 @@ pub(crate) fn screen_boot(arch: &str) -> bool {
     .join()
     .unwrap_or_default();
 
-    // Stop the machine rather than waiting out its own bound: the kernel never exits, and what is
-    // asserted below has already been painted by the time the marker appeared.
+    // The screen can answer before the serial line does: the kernel paints the self-test's verdict
+    // as soon as the program is done, and the progenitor prints the program's transcript to the
+    // UART only later, before the prompt. So once the screen has the marker, wait (within the same
+    // bound) for the serial line to carry it too before stopping the machine.
+    if seen
+        .as_deref()
+        .is_some_and(|text| text.contains(boot_ladder::SELF_TEST))
+    {
+        let deadline =
+            std::time::Instant::now() + std::time::Duration::from_secs(SERIAL_GRACE_SECONDS);
+        while std::time::Instant::now() < deadline
+            && !read_so_far().contains(boot_ladder::SELF_TEST)
+            && matches!(child.try_wait(), Ok(None))
+        {
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
+    }
+
+    // Stop the machine rather than waiting out its own bound: the kernel never exits.
     let _ = Command::new("kill")
         .args(["-TERM", &child.id().to_string()])
         .status();
     let _ = child.wait();
-    let transcript = format!(
-        "{}{}",
-        stdout.join().unwrap_or_default(),
-        stderr.join().unwrap_or_default()
-    );
+    let _ = stdout_reader.join();
+    let _ = stderr_reader.join();
+    let transcript = read_so_far();
 
     let mut ok = screen_showed_the_tour(seen.as_deref(), arch, &shot);
     ok &= serial_control_holds(&transcript, ok);

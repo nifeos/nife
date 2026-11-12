@@ -188,7 +188,7 @@ things collapse:
 
 - `interrupt_controller::enable` has nothing to do for one, which is correct rather than a stub: the
   message is
-  edge-delivered and already over. A driver's `Interrupt::ACK` is correspondingly a no-op.
+  edge-delivered and already over. A driver's `Interrupt::ACKNOWLEDGE` is correspondingly a no-op.
 - The trap handler can ask `sched::interrupt_route(vector)` directly. The vector-to-intid inversion
   an IO APIC line would need (and which `exceptions.rs` still records as owed for one) never
   arises, because there is no line in between to have named it.

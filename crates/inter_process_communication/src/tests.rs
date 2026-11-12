@@ -1,8 +1,8 @@
 //! The crate's host tests.
 //!
-//! Every node in these tests is minted once, through [`token`], on a `Box` declared before its
-//! `Rendezvous`; Rust drops locals in reverse declaration order, so the rendezvous goes first
-//! and a node parked on a queue when a test ends was valid for all of its time there.
+//! Every node in these tests is minted once, through [`token`], on an [`Owned`] node declared
+//! before its `Rendezvous`; Rust drops locals in reverse declaration order, so the rendezvous goes
+//! first and a node parked on a queue when a test ends was valid for all of its time there.
 
 use super::*;
 
@@ -20,14 +20,42 @@ unsafe impl Node for N {
     }
 }
 
-fn node() -> Box<N> {
-    Box::new(N { next: None })
+/// A test's node, owned through the pointer `Box::into_raw` returned. Every access, the
+/// token's and the test's, derives from that one pointer (`Unqueued::new`'s provenance
+/// clause), and dropping it frees the node.
+struct Owned(NonNull<N>);
+
+impl Drop for Owned {
+    fn drop(&mut self) {
+        // SAFETY: the pointer came from `Box::into_raw` in `node`, and is freed only here.
+        drop(unsafe { Box::from_raw(self.0.as_ptr()) });
+    }
 }
 
-fn token(n: &mut Box<N>) -> Unqueued<N> {
+impl core::ops::Deref for Owned {
+    type Target = N;
+    fn deref(&self) -> &N {
+        // SAFETY: live until `drop`; the reference is the test's, taken between queue
+        // operations.
+        unsafe { self.0.as_ref() }
+    }
+}
+
+impl core::ops::DerefMut for Owned {
+    fn deref_mut(&mut self) -> &mut N {
+        // SAFETY: as `deref`.
+        unsafe { self.0.as_mut() }
+    }
+}
+
+fn node() -> Owned {
+    Owned(NonNull::new(Box::into_raw(Box::new(N { next: None }))).unwrap())
+}
+
+fn token(n: &mut Owned) -> Unqueued<N> {
     // SAFETY: a live boxed node declared before its rendezvous, on no queue, minted once per
-    // test (see the module note).
-    unsafe { Unqueued::new(NonNull::from(&mut **n)) }
+    // test (see the module note), from the pointer every other access derives from.
+    unsafe { Unqueued::new(n.0) }
 }
 
 /// **Two verdicts are equal when they decided the same thing about the same nodes**, and a
@@ -36,7 +64,7 @@ fn token(n: &mut Box<N>) -> Unqueued<N> {
 #[test]
 fn a_verdict_equals_itself_and_no_other() {
     {
-        let mut n: Vec<Box<N>> = (0..6).map(|_| node()).collect();
+        let mut n: Vec<Owned> = (0..6).map(|_| node()).collect();
         let mut t = n.iter_mut().map(token);
         let mut next = || t.next().unwrap();
         let sends = [
@@ -52,7 +80,7 @@ fn a_verdict_equals_itself_and_no_other() {
             }
         }
     }
-    let mut n: Vec<Box<N>> = (0..6).map(|_| node()).collect();
+    let mut n: Vec<Owned> = (0..6).map(|_| node()).collect();
     let mut t = n.iter_mut().map(token);
     let mut next = || t.next().unwrap();
     let receives = [
@@ -96,7 +124,7 @@ fn a_driver_waiting_on_its_interrupt_is_not_handed_a_send() {
     let (dp, fp) = (NonNull::from(&mut *driver), NonNull::from(&mut *forger));
     let (dt, ft) = (token(&mut driver), token(&mut forger));
     let mut e: Rendezvous<N> = Rendezvous::new();
-    e.bind_to_interrupt();
+    e.bind_to_interrupt(|_| panic!("nobody was queued"));
 
     assert_eq!(e.receive(dt), Receive::Blocked);
     match e.send(ft) {
@@ -106,6 +134,34 @@ fn a_driver_waiting_on_its_interrupt_is_not_handed_a_send() {
     // Still parked, still the only waiter, and the interrupt still reaches it.
     assert_eq!(e.debug_counts(), (0, 1, 0));
     assert!(e.signal().is_some_and(|t| t == dp));
+    assert!(e.is_idle());
+}
+
+/// **Binding refuses the senders already parked, so a receive there never collects one.** Two
+/// senders queue before the bind; the bind hands both back in order, and the driver's receive
+/// that follows blocks for the interrupt instead of waking with a sender's words.
+#[test]
+fn binding_refuses_the_senders_already_parked() {
+    let (mut first, mut second, mut driver) = (node(), node(), node());
+    let first_at = NonNull::from(&mut *first);
+    let second_at = NonNull::from(&mut *second);
+    let driver_at = NonNull::from(&mut *driver);
+    let (first, second, driver) = (token(&mut first), token(&mut second), token(&mut driver));
+    let mut e: Rendezvous<N> = Rendezvous::new();
+    assert_eq!(e.send(first), Send::Blocked);
+    assert_eq!(e.send(second), Send::Blocked);
+
+    let mut refused = Vec::new();
+    e.bind_to_interrupt(|t| refused.push(t.as_non_null()));
+    assert_eq!(
+        refused,
+        [first_at, second_at],
+        "every parked sender, oldest first"
+    );
+    assert_eq!(e.debug_counts(), (0, 0, 0));
+
+    assert_eq!(e.receive(driver), Receive::Blocked);
+    assert!(e.signal().is_some_and(|t| t == driver_at));
     assert!(e.is_idle());
 }
 
@@ -344,7 +400,7 @@ fn a_signal_wakes_a_waiting_receiver() {
 /// disagree, and the rendering is the string a hang dump prints.
 #[test]
 fn verdict_variants_are_distinct_and_print_their_names() {
-    let mut n: Vec<Box<N>> = (0..6).map(|_| node()).collect();
+    let mut n: Vec<Owned> = (0..6).map(|_| node()).collect();
     let [s1, s2, s3, s4, s5, t1] = [0, 1, 2, 3, 4, 5].map(|i| token(&mut n[i]));
     assert_ne!(Send::<N>::Blocked, Send::Rendezvous(s1, s2));
     assert_ne!(Receive::Signal(s3), Receive::Blocked);
@@ -360,8 +416,8 @@ fn verdict_variants_are_distinct_and_print_their_names() {
 fn binding_to_an_interrupt_is_visible_and_one_way() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     assert!(!e.is_bound_to_interrupt());
-    e.bind_to_interrupt();
+    e.bind_to_interrupt(|_| panic!("nobody was queued"));
     assert!(e.is_bound_to_interrupt());
-    e.bind_to_interrupt();
+    e.bind_to_interrupt(|_| panic!("nobody was queued"));
     assert!(e.is_bound_to_interrupt(), "binding twice does not undo it");
 }

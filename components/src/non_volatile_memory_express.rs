@@ -33,8 +33,8 @@ const IO_QID: u16 = 1;
 /// The one namespace QEMU's `-device nvme,drive=` carries; the admin process identifies it.
 const NSID: u32 = 1;
 
-/// How many polls of the completion ring before this server declares the command lost. QEMU
-/// completes synchronously inside the doorbell write, so this is paranoia there; on hardware it is
+/// How many polls of the completion ring before this server declares the command lost. QEMU posts
+/// the completion from its own thread while the poll spins, as hardware does; on hardware this is
 /// roughly a second of spinning. **Not a measured bound**, and it is the only thing standing
 /// between a dead controller and a server that never answers, because `CSTS` is unreachable from
 /// here. See `data_plane`'s `BUGS`.

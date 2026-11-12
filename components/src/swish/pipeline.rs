@@ -998,6 +998,6 @@ fn release_pipeline(region: u64, pipes: &[u64]) {
 /// every right, and since milestone 824 (a retype mints no right its budget lacks) a retype mints
 /// its budget's rights.
 pub(super) fn retype_rendezvous(region: u64) -> Option<u64> {
-    let r = retype_into_kernel_object(region, abi::objtype::RENDEZVOUS);
+    let r = retype_into_kernel_object(region, abi::object_type::RENDEZVOUS);
     if r < 0 { None } else { Some(r as u64) }
 }

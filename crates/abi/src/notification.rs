@@ -30,6 +30,6 @@ pub const BIND: u64 = 3;
 /// 0, 0, BOUND)`: this value in `x0` as specified for notification objects, the word in `x1`,
 /// **and this value again in `x4`, which is the one to test.** Any sender can put `BOUND` in `x0`;
 /// `x4` is written only by the kernel, and is `0` on every other receive. Ruled on
-/// 2026-09-26. The fault-reply protocol that the fault endpoint reserves `w4` for must not put this
+/// 2026-09-26. The fault-reply protocol that the fault rendezvous reserves `w4` for must not put this
 /// value there.
 pub const BOUND: u64 = 2;

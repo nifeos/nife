@@ -16,10 +16,10 @@ whether it still applies.
 |---|---|---|---|
 | 2026-08-15 | #179 | The workspace had not built on an x86_64 host since 2026-08-03. A session dismissed it as "a container artifact" for hours. | No, a `script/lint` check now derives the bare-metal crates. But CI builds on arm64 only, so treat an x86_64 host failure as real. |
 | 2026-08-17 | #278 | `script/lint` refused the harness's `claude/` branch prefix. | No. `claude/*` is accepted now. |
-| 2026-08-17 | #278 | QEMU was not installed; the session installed it by hand. | Yes. Run `script/bootstrap`. |
+| 2026-08-17 | #278 | QEMU was not installed; the session installed it by hand. | Yes. Run `script/ci-qemu`. |
 | 2026-08-17 | #278 | Four QEMU and host-network checks failed identically on `main` in the container: a virtio-keyboard test needing the QEMU monitor socket, and the inbound, multicast and SMB host checks. | Unverified since. The container ran Ubuntu's QEMU, not the pin. Gate in CI and compare against `main`. |
 | 2026-09-18 | #937 | `script/lint` exited 1 at `cargo-machete not found`, and the lane reported exit 0 because it read `tail`'s status. | Yes. Bootstrap installs it; never pipe a gate. `briefs/gate-in-ci.md` says so now. |
-| 2026-09-18 | #947, #948 | Ubuntu's QEMU 8.2.2 lacks `riscv-iommu-pci`, and `script/qemu-check` refuses it. A roadmap block was drafted against it anyway. | Yes. Bootstrap builds the pinned QEMU from source, about 12 minutes. |
+| 2026-09-18 | #947, #948 | Ubuntu's QEMU 8.2.2 lacks `riscv-iommu-pci`, and `script/qemu-check` refuses it. A roadmap block was drafted against it anyway. | Yes. `script/ci-qemu` builds the pinned QEMU from source, about 12 minutes. |
 | 2026-09-18 | #937 | `script/ci-build` was still in its QEMU tier after half an hour and was killed. | Yes. Gate in CI instead. #956 did finish it a day later, with TCG only. |
 | 2026-09-18 | #937 | A draft pull request ran no CI at all, and the lane read seventeen skips as a pass. | Yes, by design. Dispatch the suite as `briefs/gate-in-ci.md` step 2 says. |
 

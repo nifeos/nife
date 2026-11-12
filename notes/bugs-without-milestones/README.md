@@ -41,7 +41,7 @@ is a proposal.
 - **Stale entries.** About 510 entries record something since fixed or overtaken (for example the
   unpinned Kani entry, fixed by 0795). They are not listed; the mechanism below would catch the
   cited-milestone subset of them.
-- **Build, CI, scripts and tooling** is the largest group (172 rows) and is mostly small gates and checks.
+- **Build, CI, scripts and tooling** is the largest group (174 rows) and is mostly small gates and checks.
 
 ## The entries, by area
 
@@ -57,9 +57,9 @@ Where is the file whose `BUGS` section holds the entry (a roadmap number means t
 - [std, C library and packages](std-c-library-and-packages.md): 34 rows.
 - [Security, verification and fuzzing](security-verification-and-fuzzing.md): 38 rows.
 - [Tests, benchmarks and measurement](tests-benchmarks-and-measurement.md): 73 rows.
-- [Build, CI, scripts and tooling (part 1 of 3)](build-ci-scripts-and-tooling-1.md): 72 rows.
+- [Build, CI, scripts and tooling (part 1 of 3)](build-ci-scripts-and-tooling-1.md): 73 rows.
 - [Build, CI, scripts and tooling (part 2 of 3)](build-ci-scripts-and-tooling-2.md): 77 rows.
-- [Build, CI, scripts and tooling (part 3 of 3)](build-ci-scripts-and-tooling-3.md): 23 rows.
+- [Build, CI, scripts and tooling (part 3 of 3)](build-ci-scripts-and-tooling-3.md): 24 rows.
 - [Docs, briefs and naming](docs-briefs-and-naming.md): 27 rows.
 
 ## A mechanism so a (c) entry cannot be added without a milestone

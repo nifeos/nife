@@ -6,7 +6,6 @@
 row	path	tree	kani	peak_mib
 address_space_identifier	crates/address_space_identifier	e110da1b5c95d704cdd55118ae0101db8c1bec59	0.68.0	93
 address_space_map	crates/address_space_map	6cc7dd3e042d38083e9cc90f69c9e0d24f7a717e	0.68.0	131
-block_roster_contract	crates/block_roster_contract	bc1eb2a131f09ff72f48407e957c95ec9454165d	0.68.0	950
 calendar	crates/calendar	57a92657e6234da1b6f09c6e48a948406e7bd650	0.68.0	3381
 capability	crates/capability	55f611a3fa1cde9bcc47d961e103aee8fc74ba47	0.68.0	571
 capability_manifest_note	crates/capability_manifest_note	7c62f31595d50906f1b35a8731d508198907c8ad	0.68.0	3682
@@ -22,7 +21,6 @@ driver_process_contract::e1000e	crates/driver_process_contract	c4abd3c29f1398968
 driver_process_contract::extensible_host_controller_interface	crates/driver_process_contract	c4abd3c29f139896895874d82ce3a7c1d7647748	0.68.0	764
 driver_process_contract::non_volatile_memory_express	crates/driver_process_contract	c4abd3c29f139896895874d82ce3a7c1d7647748	0.68.0	86
 elf	crates/elf	4870292a3ba3fca14938ba9a8663d439d08d76c6	0.68.0	3538
-file_allocation_table	crates/file_allocation_table	d470d3338e81996eb48ff944cd639ccbb6ef983b	0.68.0	5140
 filesystem_contract	crates/filesystem_contract	d1e1b1fa1c085d74325db15ca3781319091c2ed1	0.68.0	302
 glob	crates/glob	d39522e750da80f714cf30128a9522d2d0333c05	0.68.0	8574
 globally_unique_identifier_partition_table	crates/globally_unique_identifier_partition_table	6ccccda31b1a14942579043a18f3d5b2f79cd8d8	0.68.0	1686

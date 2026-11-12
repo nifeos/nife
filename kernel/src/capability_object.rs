@@ -27,7 +27,7 @@ pub enum Object {
     /// own budget, and the kernel allocates nothing to do it. See `kernel/src/memory_region.rs`.
     MemoryRegion(u64),
 
-    /// A hardware interrupt, by INTID. The holder may `WAIT` for it and `ACK` it; the kernel's
+    /// A hardware interrupt, by INTID. The holder may `WAIT` for it and `ACKNOWLEDGE` it; the kernel's
     /// handler masks the line and turns the interrupt into a message, so a driver owns an interrupt
     /// without owning any privilege.
     ///
@@ -114,7 +114,7 @@ pub enum Object {
     /// instead.
     ///
     /// The kernel mints exactly one, at boot, into the progenitor's table, and nothing else mints
-    /// one: no retype makes it, so it has no `abi::objtype` number. Its one method is
+    /// one: no retype makes it, so it has no `abi::object_type` number. Its one method is
     /// `abi::reboot::REBOOT`; see kernel/src/reboot.rs.
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
@@ -153,13 +153,13 @@ const _: () = assert!(
 const _: () = assert!(core::mem::size_of::<CapabilityTable>() == 2064);
 pub(crate) type CapabilityTable = capability::CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>;
 
-/// The progenitor's peak capability count on `script/swish-check`'s aarch64 leg: 37 of
-/// [`CAPABILITY_TABLE_SLOTS`] (2026-10-19 UTC). A record, not a target: [`report_peak`] says on the
+/// The progenitor's peak capability count on `script/swish-check`'s aarch64 leg: 39 of
+/// [`CAPABILITY_TABLE_SLOTS`] (2026-11-11 UTC). A record, not a target: [`report_peak`] says on the
 /// console when a boot goes past it, and `script/swish-check` fails on that sentence. When it
 /// fires, measure and update this rather than raising the slot count.
 /// `notes/capability-peak-trace.md` itemizes the peak, and notes/capability-objects.md has the
 /// measurement.
-pub(crate) const CAPABILITY_TABLE_PEAK_MEASURED: usize = 37;
+pub(crate) const CAPABILITY_TABLE_PEAK_MEASURED: usize = 39;
 
 // The headroom is what this pair means, so the two cannot silently invert.
 const _: () = assert!(CAPABILITY_TABLE_PEAK_MEASURED < CAPABILITY_TABLE_SLOTS);
@@ -318,7 +318,7 @@ pub fn rendezvous_capability_badged(
     }
 }
 
-/// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACK` it.
+/// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACKNOWLEDGE` it.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]

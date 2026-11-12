@@ -259,7 +259,7 @@ One line each. The full entry is in
   because neither call has an error channel. `HashMap`'s seed is the one caller that degrades.
 - The environment holds only what a grant seeded (`TZ`, `LANG`, `TERM`) plus what the program sets.
   `current_exe` and `chdir` refuse, `home_dir` is `None`, and `process::id()` is `0`.
-- `net` has no peer address on `accept` (it reads `0.0.0.0:0`), no non-blocking mode or timeouts, no
+- `net` has no non-blocking mode or timeouts, no
   DNS through `lookup_host`, and no IPv6. A listener's backlog is one connection. A socket's local
   port follows its id, so fast churn can reuse a port slirp has not cleared
   ([the net appendix](std/net.md)).

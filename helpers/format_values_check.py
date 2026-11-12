@@ -106,17 +106,42 @@ def values(text, path):
     return found
 
 
-def renames(before, after):
-    """The removed keys that are one-to-one renames of an added key: same kind, value and meaning."""
-    def by_signature(keys, side):
+def renames(before, after, renamed_names=None):
+    """{removed key: added key} for the one-to-one renames: same kind, value and meaning.
+
+    `renamed_names` maps other old names to their new ones, renames already found in the same
+    change; a removed item's doc comment is read with them applied, so a doc that names a sibling
+    renamed beside it still matches."""
+    def respell(doc):
+        for old, new in (renamed_names or {}).items():
+            doc = re.sub(r'\b' + re.escape(old) + r'\b', new, doc)
+        return doc
+
+    def by_signature(keys, side, spell):
         groups = {}
         for key in keys:
-            groups.setdefault((key[0], side[key]), []).append(key)
+            value, (kind, doc) = side[key]
+            groups.setdefault((key[0], (value, (kind, spell(doc)))), []).append(key)
         return groups
-    removed = by_signature(set(before) - set(after), before)
-    added = by_signature(set(after) - set(before), after)
-    return {old[0] for signature, old in removed.items()
+    removed = by_signature(set(before) - set(after), before, respell)
+    added = by_signature(set(after) - set(before), after, lambda doc: doc)
+    return {old[0]: added[signature][0] for signature, old in removed.items()
             if len(old) == 1 and len(added.get(signature, [])) == 1}
+
+
+def all_renames(sides):
+    """{path: {removed key: added key}} over every judged file, to a fixed point.
+
+    A rename found in one pass lets the next read a sibling's doc comment that names it, so the
+    syscalls renamed together, whose docs name each other, pair; a doc that names a constant no
+    rename in the change accounts for still does not."""
+    names = {}
+    while True:
+        found = {path: renames(before, after, names) for path, (before, after) in sides.items()}
+        now = {old[1]: new[1] for pairs in found.values() for old, new in pairs.items()}
+        if now == names:
+            return found
+        names = now
 
 
 def judged(path):
@@ -131,12 +156,12 @@ def crate_of(path):
 def problems(files):
     """`files` is {path: (base text or None, head text or None)}; returns the failure messages."""
     moved = {}  # crate -> {'magic': [...], 'version': [...], 'abi': [...]}
-    for path, (old, new) in sorted(files.items()):
-        if not judged(path):
-            continue
-        before = values(old or '', path)
-        after = values(new or '', path)
-        renamed = renames(before, after)
+    sides = {path: (values(old or '', path), values(new or '', path))
+             for path, (old, new) in files.items() if judged(path)}
+    found = all_renames(sides)
+    for path in sorted(sides):
+        before, after = sides[path]
+        renamed = found[path]
         crate = moved.setdefault(crate_of(path), {'magic': [], 'version': [], 'abi': []})
         for key in sorted(set(before) | set(after)):
             kind, name = key
@@ -181,13 +206,17 @@ def git(*args, cwd=None):
 
 def changed_files(base, cwd=None):
     """Each changed path with its base and head text. A file git reads as moved is judged against
-    the text it had at its old path, so moving a crate's directory is not a removal of its magic."""
+    the text it had at its old path, so moving a crate's directory is not a removal of its magic.
+    A crate whose manifest is gone left the tree for a repository of its own: its values did not
+    move here, and its own identity test guards them there, so none of its files is judged."""
     rows = (git('diff', '--name-status', '-M', base, '--', 'crates', cwd=cwd) or '').splitlines()
     files = {}
     for row in rows:
         fields = row.split('\t')
         old_path, path = fields[1], fields[-1]
         if not judged(path) and not judged(old_path):
+            continue
+        if not os.path.exists(os.path.join(cwd or '.', crate_of(path), 'Cargo.toml')):
             continue
         old = git('show', f'{base}:{old_path}', cwd=cwd)
         head = os.path.join(cwd or '.', path)
@@ -231,16 +260,16 @@ def selftest():
     fails('a multi-line value is read whole',
           {'crates/x/src/lib.rs': ('pub const MAGIC: u64 =\n    1;\n', 'pub const MAGIC: u64 =\n    2;\n')}, True)
 
-    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYS_EXIT: u64 = 0;\n'
+    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 0;\n'
     fails('a renumbered syscall without the version fails',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYS_EXIT: u64 = 9;\n')}, True)
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 9;\n')}, True)
     fails('a renumbered syscall with the version passes',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYS_EXIT: u64 = 9;\n')}, False)
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSCALL_EXIT: u64 = 9;\n')}, False)
     fails('a number in a module of abi without the version fails',
           {'crates/abi/src/timer.rs': ('pub const ARM: u64 = 0;\n', 'pub const ARM: u64 = 1;\n'),
            'crates/abi/src/lib.rs': (abi, abi)}, True)
     fails('an added syscall is an addition',
-          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYS_NEW: u64 = 5;\n')}, False)
+          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSCALL_NEW: u64 = 5;\n')}, False)
     fails('a removed number fails',
           {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a renumbered error without the version fails',
@@ -262,6 +291,15 @@ def selftest():
     fails('a renamed constant whose doc names another constant still fails',
           {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
                                                named.format('NEW', '').replace('makes one', 'OTHER makes one'))},
+          True)
+    siblings = ('pub const ABI_VERSION: u32 = 1;\n/// End the process.\npub const {0}EXIT: u64 = 0;\n'
+                '/// End the thread; the last one ends the process, as [`{0}EXIT`] would.\n'
+                'pub const {0}EXIT_THREAD: u64 = 4;\n')
+    fails('renamed siblings whose docs name each other pass',
+          {'crates/abi/src/lib.rs': (siblings.format('OLD_'), siblings.format('NEW_'))}, False)
+    fails('a renamed sibling whose doc names a constant no rename accounts for still fails',
+          {'crates/abi/src/lib.rs': (siblings.format('OLD_'),
+                                     siblings.format('NEW_').replace('[`NEW_EXIT`]', '[`OTHER`]'))},
           True)
     fails('a renamed constant whose value changed fails',
           {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
@@ -302,6 +340,7 @@ def selftest():
                            check=True, capture_output=True)
         sh('init', '-q')
         os.makedirs(os.path.join(scratch, 'crates/x/src'))
+        open(os.path.join(scratch, 'crates/x/Cargo.toml'), 'w').write('[package]\nname = "x"\n')
         lib = os.path.join(scratch, 'crates/x/src/lib.rs')
         open(lib, 'w').write(magic_old)
         sh('add', '.')
@@ -313,6 +352,18 @@ def selftest():
         open(lib, 'w').write('pub const MAGIC: u64 = 2;\npub const VERSION: u32 = 2;\n')
         sh('commit', '-qam', 'and its version')
         assert not problems(changed_files(base, cwd=scratch)), 'with its version it passes'
+        os.makedirs(os.path.join(scratch, 'crates/y/src'))
+        open(os.path.join(scratch, 'crates/y/Cargo.toml'), 'w').write('[package]\nname = "y"\n')
+        open(os.path.join(scratch, 'crates/y/src/lib.rs'), 'w').write(magic_old)
+        sh('add', '.')
+        sh('commit', '-q', '-m', 'a second crate')
+        base = git('rev-parse', 'HEAD', cwd=scratch).strip()
+        open(os.path.join(scratch, 'crates/y/src/lib.rs'), 'w').write('pub const VERSION: u32 = 1;\n')
+        sh('commit', '-qam', 'removes its magic')
+        assert problems(changed_files(base, cwd=scratch)), 'a removed magic in a kept crate fails'
+        sh('rm', '-rq', 'crates/y')
+        sh('commit', '-qm', 'the crate leaves the tree')
+        assert not problems(changed_files(base, cwd=scratch)), 'a crate that left moves no magic'
     print('format_values_check selftest: ok')
 
 

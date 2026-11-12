@@ -100,9 +100,8 @@ pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
 /// A child destroyed at the top of the parent's watermark gives its pages back (DECISIONS §16
 /// (object revocation)); one freed out of order leaves a hole until no child above it is live.
 ///
-/// **A split refused for a full table still bumps the parent**, and the parent can then never be
-/// reclaimed: `RegionTable::split`'s `# BUGS` entry has the consequence and a reproduction, and
-/// `notes/region-split-on-a-full-table.md` the proposal.
+/// A refusal moves nothing, a full table included: the parent keeps its watermark and child count
+/// (`RegionTable::split`; notes/region-split-on-a-full-table.md).
 pub fn split(parent: u64, pages: u64) -> Option<u64> {
     // The test kernel's Nth-retype fault (milestone 757 (a test kernel fails a process on its Nth
     // retype), provisional): refused before the lock, so the region is left exactly as an
@@ -179,11 +178,19 @@ pub fn progenitor_ceilings() -> Ceilings {
 /// lent address space dropped, or an insert refused after the page was retyped. Its subtree's
 /// count falls by one. A no-op on a dead name. See notes/memory-regions.md, "Subtree ceilings".
 ///
+/// Every caller releases an object once, when it leaves its table, so the table never refuses
+/// one here. If a defect ever released one object twice, the table refuses the second release
+/// and moves no count, and a debug build stops at the assertion after the lock is dropped.
+///
 /// Context: takes `REGIONS`; legal under `IPC_TABLES` and the address-space registry's lock.
 ///
 /// Name: provisional.
 pub fn release_object(region: u64, kind: ObjectKind) {
-    REGIONS.lock().release_object(region, kind);
+    let released = REGIONS.lock().release_object(region, kind);
+    debug_assert!(
+        released,
+        "a release of a {kind:?} that region {region:#x} does not hold"
+    );
 }
 
 /// The counter reading at the last refusal line, and how many refusals went unprinted since. Kept

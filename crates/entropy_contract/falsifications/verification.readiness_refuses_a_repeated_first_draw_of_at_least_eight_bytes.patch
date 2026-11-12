@@ -1,0 +1,21 @@
+Falsifies `entropy_contract::verification::readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes`.
+
+The defect: the repeat rule is off by one and judges only draws longer than `MAXIMUM_BYTES`. A
+draw of exactly eight bytes, the width the instruction backend draws, then passes as `READY`
+although every byte is the same.
+
+Expected to fail: the harness's `assert_eq!` on `STEP_FIRST_ALL_SAME`, with a draw of exactly
+eight equal nonzero bytes.
+
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
+--- a/crates/entropy_contract/src/lib.rs
++++ b/crates/entropy_contract/src/lib.rs
+@@ -206,7 +206,7 @@
+         bring_up_failure(STEP_NO_FIRST_BYTES)
+     } else if !any_nonzero {
+         bring_up_failure(STEP_FIRST_ALL_ZERO)
+-    } else if all_same && count >= MAXIMUM_BYTES as usize {
++    } else if all_same && count > MAXIMUM_BYTES as usize {
+         bring_up_failure(STEP_FIRST_ALL_SAME)
+     } else {
+         READY

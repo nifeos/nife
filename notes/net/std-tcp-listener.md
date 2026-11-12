@@ -45,14 +45,11 @@ open rather than an oversight. A net test spends minutes in `net_stack`'s usersp
 a boot is the expensive unit in this suite. The outbound transcript is already proven by the run that
 is refused the port, so the granted run serves and stops.
 
-One thing the contract cannot tell the PAL, and it is now a fork rather than a gap.
-`std::net::TcpListener::accept` must return a `SocketAddr`, and `OPERATION_ACCEPT`'s reply carries no peer,
-so what comes back is `0.0.0.0:0` and `peer_addr()` on an accepted stream reports the same. A server
-that logs its peers logs zeros. Two ways to fix it, both changes to what two programs agree on and
-therefore neither taken here. One is a second reply word (`reply` already carries two and `OPERATION_ACCEPT`
-sends zero in the second). The other is the frame's dead `dst` fields, which is exactly the move a UDP
-`RECEIVE` already makes with the datagram's source and would cost no format change at all. The second
-is cheaper and has the precedent; both are calef's.
+`std::net::TcpListener::accept` returns the peer that connected, and `peer_addr()` on the accepted
+stream reports the same. `OPERATION_ACCEPT` carries it in the second reply word. `socket_contract::peer_word` packs the word
+(the IPv4 address in bits 47 to 16, the port in bits 15 to 0) and `word_peer` reads it back; the stack reads it from the connection's remote endpoint before it re-arms the
+listener. The word is the IPv4 answer, and a peer of another family would need its own route. The
+frame's `dst` fields carry nothing of it and stay what a UDP `RECEIVE` writes.
 
 The host prober now sees two listening windows over one boot, and what it requires changed shape
 because of it. The guest offers four rounds (two per program) and the prober passes at three.

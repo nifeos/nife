@@ -1,6 +1,6 @@
-# toolchain: nightly-2026-10-11
-# date: 2026-10-12
-# why: lane maintainer/near-ceiling-splits (#1990): splitting kernel/src/syscall.rs into four child modules changed the codegen-unit partition again, and the flat entry set fell from 2516 to 2010 B on riscv64, most of the 598 B the previous save (#1988) recorded as an inlining flip into riscv_trap_body. A shrink, measured on the same nightly at the merged tip. The two IPC shapes did not move (4028, 5088).
+# toolchain: nightly-2026-11-10
+# date: 2026-11-12
+# why: re-baselined to origin/main bf2266f58: syscall_entry 2010 -> 2106 (4.8%) had accumulated on main under the 5% band
 # bench/fastpath-riscv64.txt: an upper bound on the IPC fastpath's instruction footprint.
 # Written by script/fastpath-footprint --save. Updating this file is a statement that a
 # footprint change is intended and understood; do it in the commit that causes it.
@@ -10,7 +10,7 @@
 # milestone 188 phase 1 because the system runs the second and this gate measured only the
 # first. `ipc_fastpath` is DERIVED, the worse of the two, kept under its old name because
 # the tree cites it; it is not checked separately. Both shapes and `syscall_entry` are.
-ipc_send_receive 4028
-ipc_call_reply 5088
-ipc_fastpath 5088
-syscall_entry 2010
+ipc_send_receive 4018
+ipc_call_reply 5104
+ipc_fastpath 5104
+syscall_entry 2106

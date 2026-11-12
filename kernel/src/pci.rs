@@ -12,7 +12,7 @@
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 
 use paging::PAGE_SIZE;
-use pci::{Bar, Bdf, VirtioCapability};
+use pci::{Bar, Bdf};
 
 use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE};
 
@@ -147,6 +147,24 @@ fn is_host_bridge_present() -> bool {
     true
 }
 
+/// Size the BARs of `bdf` with [`pci::read_bars`], saying which ones it refused and why. A
+/// refused BAR is absent from the result, so a driver that needs it finds no BAR there.
+fn read_bars(bdf: Bdf) -> [Option<Bar>; 6] {
+    pci::read_bars(
+        bdf,
+        &mut |b, o| cfg_read32(b, o),
+        &mut |b, o, v| cfg_write32(b, o, v),
+        &mut |index, reason| {
+            crate::println!(
+                "  pci: {:02x}:{:02x}.{} BAR{index} refused ({reason:?}); leaving it out",
+                bdf.bus,
+                bdf.dev,
+                bdf.func,
+            );
+        },
+    )
+}
+
 /// Place every unassigned BAR of `bdf` at a size-aligned address drawn from the shared cursor,
 /// writing the config-space BAR registers. Returns false (after saying so) if the window is
 /// exhausted.
@@ -166,7 +184,10 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
         if bar.base != 0
             && let Some(lo) = mapped_lo
             && bar.base >= lo
-            && bar.base + bar.size <= mapped_hi
+            && bar
+                .base
+                .checked_add(bar.size)
+                .is_some_and(|end| end <= mapped_hi)
         {
             continue; // already placed, and inside memory this kernel actually mapped
         }
@@ -178,13 +199,17 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
         let align = bar.size.max(0x10);
         let base = loop {
             let cur = BAR_NEXT.load(Ordering::Relaxed);
-            let base = cur.next_multiple_of(align);
-            if base + bar.size > BAR_LIMIT.load(Ordering::Relaxed) {
+            let placed = cur
+                .checked_next_multiple_of(align)
+                .and_then(|base| Some((base, base.checked_add(bar.size)?)));
+            let Some((base, end)) =
+                placed.filter(|&(_, end)| end <= BAR_LIMIT.load(Ordering::Relaxed))
+            else {
                 crate::println!("  pci: BAR window exhausted; cannot place BAR{i}");
                 return false;
-            }
+            };
             if BAR_NEXT
-                .compare_exchange(cur, base + bar.size, Ordering::Relaxed, Ordering::Relaxed)
+                .compare_exchange(cur, end, Ordering::Relaxed, Ordering::Relaxed)
                 .is_ok()
             {
                 break base;
@@ -215,7 +240,13 @@ fn overlaps_ram(lo: u64, hi: u64) -> bool {
 /// routing interrupts".
 fn adopt(bdf: Bdf, index: usize, bar: &pci::Bar) -> bool {
     let lo = bar.base & !(PAGE_SIZE - 1);
-    let hi = (bar.base + bar.size).next_multiple_of(PAGE_SIZE);
+    let Some(hi) = bar
+        .base
+        .checked_add(bar.size)
+        .and_then(|end| end.checked_next_multiple_of(PAGE_SIZE))
+    else {
+        return false;
+    };
     if overlaps_ram(lo, hi) {
         crate::println!(
             "  pci: {:02x}:{:02x}.{} BAR{index} at {:#x} overlaps RAM; moving it",
@@ -371,6 +402,25 @@ pub(crate) struct PciVirtioDevice {
     /// offset 0, what `blk::SIZE` answers from); net, rng and console carry `None`. The mmio
     /// transport's config area is at a fixed offset (0x100) instead.
     pub device_config: Option<u64>,
+    /// What a starter needs to draw a direct grant's register window
+    /// (`driver_process_contract::virtual_input_output::register_window`): the four structures as the capability
+    /// list names them, each BAR's base and size, and the MSI-X table and pending-bit array this
+    /// function must never map. A mediated grant reads none of it.
+    pub direct: PciVirtioDirect,
+}
+
+/// The parts of a virtio-pci function a direct grant is drawn from, read once at bring-up.
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct PciVirtioDirect {
+    /// The four structures, by BAR and offset.
+    pub structures: driver_process_contract::virtual_input_output::Structures,
+    /// Each BAR's physical base, zero for one the function does not have.
+    pub bar_bases: [u64; 6],
+    /// Each BAR's size in bytes, zero for one the function does not have.
+    pub bar_bytes: [u64; 6],
+    /// The MSI-X table and pending-bit array, as byte ranges of their BARs.
+    pub withheld: [driver_process_contract::virtual_input_output::Withheld; 2],
 }
 
 /// Find the first modern virtio-blk function on the bus and bring it up. `None` if there is no
@@ -465,7 +515,7 @@ pub(crate) fn find_rng_device() -> Option<PciVirtioDevice> {
 /// How many modern virtio-blk functions are on the bus (milestone 57's roster).
 ///
 /// Reads config space and nothing else: bring-up sizes BARs and enables decoding, which would
-/// disturb whichever driver owns the function (`crates/block_roster_contract`).
+/// disturb whichever driver owns the function (`block_roster_contract`).
 pub fn count_block_devices() -> usize {
     if !is_host_bridge_present() {
         return 0;
@@ -561,40 +611,39 @@ fn find_virtio_bdf(modern: u16, transitional: Option<u16>, kind: &str) -> Option
 /// 4. only then set Memory-Space Enable, and Bus-Master last: DMA permission is granted at the
 ///    final moment, after the transport the confinement layer owns is fully described.
 fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
 
-    let resolve = |bars: &[Option<Bar>; 6], capability: &VirtioCapability| -> Option<u64> {
-        let bar = bars.get(capability.bar as usize)?.as_ref()?;
-        (u64::from(capability.offset) + u64::from(capability.length) <= bar.size)
-            .then(|| bar.base + u64::from(capability.offset))
+    // The first capability of each type, as virtio 1.2 section 4.1.4 has a driver prefer it. The
+    // walk is the contract's, so the mediated transport and a direct grant's window read one list
+    // the same way.
+    let (structures, notify_mult) =
+        driver_process_contract::virtual_input_output::structures(bdf, &mut |b, o| {
+            cfg_read32(b, o)
+        })?;
+    let resolve = |s: &driver_process_contract::virtual_input_output::Structure| -> Option<u64> {
+        let bar = bars.get(s.bar as usize)?.as_ref()?;
+        (s.offset.checked_add(s.length)? <= bar.size)
+            .then(|| bar.base.checked_add(s.offset))
+            .flatten()
     };
-    let (mut common, mut notify_base, mut notify_mult, mut isr) = (None, None, 0u32, None);
-    let mut device_config = None;
-    pci::virtio_capabilities(
-        bdf,
-        &mut |b, o| cfg_read32(b, o),
-        &mut |capability| match capability.cfg_type {
-            pci::VIRTIO_CAPABILITY_COMMON if common.is_none() => {
-                common = resolve(&bars, &capability);
-            }
-            pci::VIRTIO_CAPABILITY_NOTIFY if notify_base.is_none() => {
-                notify_base = resolve(&bars, &capability);
-                notify_mult = capability.notify_off_multiplier;
-            }
-            pci::VIRTIO_CAPABILITY_ISR if isr.is_none() => isr = resolve(&bars, &capability),
-            // Optional per the spec; absent stays `None` rather than failing bring-up.
-            pci::VIRTIO_CAPABILITY_DEVICE if device_config.is_none() => {
-                device_config = resolve(&bars, &capability);
-            }
-            _ => {}
-        },
+    let (common, notify_base, isr) = (
+        resolve(&structures.common)?,
+        resolve(&structures.notify)?,
+        resolve(&structures.interrupt_status)?,
     );
-    let (common, notify_base, isr) = (common?, notify_base?, isr?);
+    // Optional per the spec; absent or unresolvable stays `None` rather than failing bring-up.
+    let device_config = structures.device.as_ref().and_then(resolve);
+    let direct = PciVirtioDirect {
+        structures,
+        bar_bases: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.base)),
+        bar_bytes: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.size)),
+        withheld: driver_process_contract::virtual_input_output::withheld(bdf, &mut |b, o| {
+            cfg_read32(b, o)
+        }),
+    };
 
     // The upper half of this dword is STATUS, whose error bits are write-1-to-clear, so it is
     // written as zero.
@@ -618,6 +667,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
         rid: bdf.requester_id(),
         device_type,
         device_config,
+        direct,
     })
 }
 
@@ -630,7 +680,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
 /// `msix_vector` is `pci::VIRTIO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
 /// route exists. See notes/pcie.md, "Placing BARs, and routing interrupts".
 fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> Option<(u32, u16)> {
-    match crate::arch::interrupt_controller::alloc_msi_vector() {
+    match crate::arch::interrupt_controller::alloc_msi_vector(bdf.requester_id()) {
         Some((intid, target)) => {
             // No fallback to INTx: on a machine that answered `Some`, `PCI_INTERRUPT_NUMBER_BASE`
             // is 0 and the
@@ -681,6 +731,24 @@ fn program_msi(bdf: Bdf, target: pci::MsiTarget) -> bool {
         (head & 0xffff) | (control as u32) << 16,
     );
     true
+}
+
+/// **Where entry 0 of `bdf`'s MSI-X table lives, as a physical address**: the BAR its BIR names,
+/// read back from configuration space as placed, plus the table's offset. `None` for a function
+/// with no MSI-X. The interrupt confinement tests write it, as a component holding the table's
+/// page could.
+#[cfg(all(test, target_arch = "x86_64"))]
+pub(crate) fn msix_table_entry(bdf: Bdf) -> Option<u64> {
+    let capability = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))?;
+    let at = pci::BAR0 + u64::from(capability.table_bar) * 4;
+    let low = cfg_read32(bdf, at);
+    // Bits 2:1 = 10 is a 64-bit memory BAR, whose upper half is the next register.
+    let high = if low & 0b110 == 0b100 {
+        u64::from(cfg_read32(bdf, at + 4)) << 32
+    } else {
+        0
+    };
+    Some((high | u64::from(low & !0xf)) + u64::from(capability.table_offset))
 }
 
 /// The INTx path: read the function's interrupt pin and swizzle it onto this board's controller.
@@ -826,9 +894,7 @@ pub(crate) fn find_nvme_device() -> Option<PciNvmeDevice> {
     });
     let bdf = found?;
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -888,9 +954,7 @@ pub(crate) fn find_xhci_device() -> Option<PciXhciDevice> {
     );
     let bdf = found?;
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -980,9 +1044,7 @@ pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
     );
     let (bdf, device) = found?;
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         return None;
     }
@@ -1032,9 +1094,7 @@ pub(crate) fn initialize_iommu() {
     );
     let Some(bdf) = found else { return };
 
-    let mut bars = pci::read_bars(bdf, &mut |b, o| cfg_read32(b, o), &mut |b, o, v| {
-        cfg_write32(b, o, v);
-    });
+    let mut bars = read_bars(bdf);
     if !place_bars(bdf, &mut bars) {
         crate::println!("  pci: could not place the IOMMU's BAR; leaving the IOMMU off");
         return;

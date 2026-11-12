@@ -99,9 +99,9 @@ fn a_grant_less_budget_narrows_a_split_child_and_every_retype_alike() {
     // Three kernel object kinds via RETYPE_OBJECT, the case the pass found the frame-only test did not
     // reach. Each must come back WRITE-only.
     for &(kind, name) in &[
-        (abi::objtype::RENDEZVOUS, "rendezvous"),
-        (abi::objtype::NOTIFICATION, "notification"),
-        (abi::objtype::TIMER, "timer"),
+        (abi::object_type::RENDEZVOUS, "rendezvous"),
+        (abi::object_type::NOTIFICATION, "notification"),
+        (abi::object_type::TIMER, "timer"),
     ] {
         let obj_slot = call(budget_a, abi::memory_region::RETYPE_OBJECT, kind, 0, 0)
             .unwrap_or_else(|e| panic!("RETYPE_OBJECT {name} refused a WRITE-only budget: {e:?}"))

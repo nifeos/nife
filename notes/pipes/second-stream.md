@@ -52,7 +52,7 @@ and that is not a style choice. How many low slots a child gets depends on what 
 granted it (`date` gets a clock from the progenitor and none from the guest-test harness). So a
 diagnostic stream that landed "next" would sit at slot 2 in one wiring and slot 1 in another, and a
 program that probes one number would read the wrong slot. `abi::tcb::CAPABILITY_INSERT` already had an
-explicit target, added for `abi::fault::FAULT_EP_SLOT` for exactly this reason; §67 is its second
+explicit target, added for `abi::fault::FAULT_RENDEZVOUS_SLOT` for exactly this reason; §67 is its second
 user.
 
 So the number eight is not a convention anybody has to know. It is in the manifest, `caps` prints
