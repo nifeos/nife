@@ -10,9 +10,10 @@
 #
 #     . helpers/qemu-path.sh
 #
-# **Why it exists: a build nobody puts on PATH is a loop** (milestone 287). `script/ci-qemu` builds
-# the pinned QEMU into `$HOME/.cache/nife-qemu` when the QEMU on PATH is not exactly the pin, since
-# few distributions ship one with `riscv-iommu-pci` (see that script's header, and DECISIONS §20).
+# **Why it exists: a build nobody puts on PATH is a loop** (milestone 287 (`script/bootstrap`
+# installs a working QEMU on Linux)). `script/ci-qemu` builds the pinned QEMU into
+# `$HOME/.cache/nife-qemu` when the QEMU on PATH is not exactly the pin, since few distributions ship
+# one with `riscv-iommu-pci` (see that script's header, and §20 (IOMMU-backed DMA isolation)).
 # Without this file only `.github/workflows/ci.yml` would put that prefix on PATH, so a developer
 # who built the right QEMU would find `/usr/bin`'s again on the next check: same failure, same
 # message, same remedy, forever. The build was never the missing piece. PATH was.

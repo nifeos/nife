@@ -74,9 +74,9 @@ them itself and a developer's bare `script/bootstrap` still installs everything.
 QEMU is not bootstrap's, §322 (the QEMU bootstrap is the one QEMU check). A package manager
 cannot finish that job: few distributions ship a QEMU with `-device riscv-iommu-pci`, `apt-get`
 already fetches the newest package for the release, and Homebrew installs its current release and
-not the pin. So `script/ci-qemu` is the one place that checks, and when the QEMU on PATH is not
-exactly `.qemu-version` it says what it is about to cost and builds that version, which takes about
-twelve minutes the first time and under a second on every run after it. Its result counts only once
+not the pin. So `script/ci-qemu` is the one place that checks. When the QEMU on PATH is not exactly
+`.qemu-version`, it says what it is about to cost and builds that version: about twelve minutes the
+first time, and under a second on every run after it. Its result counts only once
 it is on PATH: a build left in the prefix while a stale QEMU stays first is a loop, and
 `helpers/qemu-path.sh` closes it. See design/roadmap/0287-bootstrap-installs-a-working-qemu.md.
 

@@ -16,7 +16,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 
 | script | what it does |
 |---|---|
-| `script/bootstrap` | Install the pinned toolchain and the other tools, never QEMU. Idempotent. `NIFE_SKIP_LINT_TOOLS=1` skips the lint-only tools (cargo-machete, typos). |
+| `script/bootstrap` | Install the pinned toolchain, never QEMU. Idempotent. `NIFE_SKIP_LINT_TOOLS=1` skips the lint-only tools (cargo-machete, typos). |
 | `script/setup` | First run after a clone: `bootstrap`, `ci-qemu`, then build. |
 | `script/update` | After a pull: `bootstrap`, `ci-qemu`, then rebuild. |
 | `script/test` | The suite: host-logic crates, then the kernel under QEMU. The gate. `--arch`, `--no-host`, `--cpu`, `--hvf`, `--test` narrow it. |
@@ -28,8 +28,8 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. `--quick` runs the cheap ones first. |
 | `script/coverage` | Host-crate coverage, gated at 80% per file. |
 | `script/ci-build` | The one list of checks a pull request must pass. CI runs its rows. |
-| `script/qemu-check` | Is the QEMU on PATH exactly the pinned one, with the devices the suite needs? Installs nothing. |
-| `script/ci-qemu` | The one QEMU check: build the pinned QEMU when the one on PATH is not exactly it, on every machine. |
+| `script/qemu-check` | Is the QEMU on PATH exactly the pinned one, with the devices the suite needs? |
+| `script/ci-qemu` | Build the pinned QEMU when PATH lacks it. |
 | `script/drift` | Does a toolchain still build us? |
 | `script/toolchain-bump` | Raise the pinned nightly, with every gate as evidence. |
 | `script/kani-install` | Install the stock Kani that `.kani-version` pins. The only place that does. |

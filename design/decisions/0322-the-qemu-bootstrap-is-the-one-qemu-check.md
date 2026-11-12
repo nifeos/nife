@@ -22,8 +22,8 @@ five `bootstrap-qemu` packages) when none was on PATH, and then ran `script/qemu
 failed on a missing device and only warned on a version other than the pin. On a Linux failure
 bootstrap ran `script/ci-qemu` and checked again. CI never used the packaged path: every job runs
 `script/ci-qemu` first, so bootstrap found the pinned build and skipped its install. The packaged
-QEMU therefore served nobody in CI and, on a cold Linux box, was installed only to be shadowed by
-the build. Two scripts held the question "is this the right QEMU", with two different answers to a
+QEMU therefore served nobody in CI, and a cold Linux box installed it only for the build to shadow
+it. Two scripts held the question "is this the right QEMU", with two different answers to a
 version mismatch.
 
 ## The decision
@@ -43,7 +43,7 @@ What follows in the tree:
   ci-qemu renders before and after its build; it installs nothing, and bootstrap does not run it.
 - `script/setup`, `script/update` and `script/ci-build`'s no-argument path run `script/ci-qemu`
   after `script/bootstrap`, so a newcomer still gets the pinned emulator from one command, as
-  [§181 (bootstrap provisions and judges)](0181-bootstrap-provisions-and-judges.md) required of
+  [§181 (may `script/bootstrap` say "installed everything I could")](0181-bootstrap-provisions-and-judges.md) required of
   setup and update.
 - macOS builds the pin from source too, with Homebrew supplying the build dependencies, because
   Homebrew installs its current QEMU and not the pin.

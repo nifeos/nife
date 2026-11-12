@@ -12,15 +12,15 @@
 # What it accepts, and nothing less:
 #
 #   1. All three emulators the suite boots are on PATH: qemu-system-aarch64, qemu-system-riscv64 and
-#      qemu-system-x86_64 (milestone 161 added the third).
+#      qemu-system-x86_64 (milestone 161 (the x86_64 kernel port) added the third).
 #   2. **Each of them is exactly the pinned version.** An emulator version is part of what "the tests
 #      passed" means, and the benchmarks are icount instruction counts that a different QEMU can
 #      move. Each binary is checked, because a PATH can mix two installations.
 #   3. The devices whose absence would gut a test rather than fail it are present:
-#      `riscv-iommu-pci` on riscv64 (milestone 16b, the RISC-V IOMMU, §20) and the `virt` machine on
-#      aarch64. Dropping the IOMMU device when QEMU lacks it is refused on purpose: the confinement
-#      tests would pass while testing nothing, and a test that quietly stops testing is worse than a
-#      red build.
+#      `riscv-iommu-pci` on riscv64 (milestone 16b (real hardware and IOMMU-backed driver
+#      isolation), §20 (IOMMU-backed DMA isolation)) and the `virt` machine on aarch64. Dropping the
+#      IOMMU device when QEMU lacks it is refused on purpose: the confinement tests would pass while
+#      testing nothing, and a test that quietly stops testing is worse than a red build.
 #
 # When the QEMU on PATH (the prefix's, once `helpers/qemu-path.sh` has put it there) passes, this
 # exits 0 at once, which is what makes it cheap to call unconditionally. When it does not, this

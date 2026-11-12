@@ -15,9 +15,10 @@
 #      move; each baseline's `# qemu:` line records the emulator that produced it. Each binary is
 #      checked, because a PATH can mix two installations.
 #   3. The devices whose absence would gut a test rather than fail it: `riscv-iommu-pci` on riscv64
-#      (milestone 16b, the RISC-V IOMMU, §20) and the `virt` machine on aarch64. Dropping the IOMMU
-#      device when QEMU lacks it is refused on purpose: the confinement tests would pass while
-#      testing nothing, and a test that quietly stops testing is worse than a red build.
+#      (milestone 16b (real hardware and IOMMU-backed driver isolation), §20 (IOMMU-backed DMA
+#      isolation)) and the `virt` machine on aarch64. Dropping the IOMMU device when QEMU lacks it
+#      is refused on purpose: the confinement tests would pass while testing nothing, and a test that
+#      quietly stops testing is worse than a red build.
 #
 # **"The QEMU on PATH" means the project's when it has one.** This sources `helpers/qemu-path.sh`,
 # which puts `script/ci-qemu`'s build first on PATH when that build is the pinned version, so the
