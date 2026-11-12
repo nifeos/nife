@@ -10,13 +10,13 @@ needs_person: no
 ---
 # 1114. The calendar becomes `jiff`
 
-Ruled 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems): nife does not write its own
-calendar. `crates/calendar` is gone, and every caller uses the third-party crate `jiff` 0.2
-(Unlicense OR MIT) with its default features off. The ruling is the approval of that dependency for
-these callers. The branch is `milestone/1105-calendar-becomes-jiff`.
+The ruling of 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems): nife does not write
+its own calendar. This milestone deletes `crates/calendar`, and every caller uses the third-party
+crate `jiff` 0.2 (Unlicense OR MIT) with its default features off. The ruling approves that
+dependency for these callers. The branch is `milestone/1105-calendar-becomes-jiff`.
 
-Reuse: `jiff` 0.2 is taken. `time` 0.3 was considered and formats only with `std`. `chrono` 0.4 was
-considered and writes RFC 3339 into an allocated `String`. `date` is a `#![no_std]` program with no
+Reuse: this milestone takes `jiff` 0.2. `time` 0.3 lost because it formats only with `std`. `chrono`
+0.4 lost because it writes RFC 3339 into an allocated `String`. `date` is a `#![no_std]` program with no
 allocator, and `jiff` formats with neither, through its own `jiff::fmt::Write`. Without its
 time-zone features it handles fixed offsets only, which is the scope nife keeps.
 
@@ -31,8 +31,8 @@ time-zone features it handles fixed offsets only, which is the scope nife keeps.
 | the C library (`vendor/relibc/header/time/mod.rs`) | `gmtime` and `mktime` |
 | the guest tests (`system_tests/src/user/date_tests.rs`) | `date`'s output parsed back |
 
-What a user sees is unchanged. Each caller was compared with the removed crate on the host, the
-comparison being a test harness that is not in the tree:
+What a user sees stays the same. A host harness outside the tree compared each caller with the
+removed crate:
 
 - `date`'s five formats, at offsets from -23:59 to +23:59, over years 0000 to 9999: byte-identical.
 - The timetable's day numbers, civil dates and month lengths over the whole range and past it on
@@ -41,32 +41,31 @@ comparison being a test harness that is not in the tree:
 - `touch -t` on fixed edge cases, three million mutated operands and one million generated ones:
   the same instant accepted, or the same operand refused.
 
-The range stays years 0000 through 9999, kept by the callers through civil arithmetic from the
-epoch, because a `jiff::Timestamp` ends 26 hours before the end of 9999. A leap second is refused,
-and negative timestamps are ordinary. notes/calendar.md states the rule.
+The range stays years 0000 through 9999. The callers keep it through civil arithmetic from the
+epoch, because a `jiff::Timestamp` ends 26 hours before the end of 9999. `touch -t` refuses a leap
+second, and negative timestamps are ordinary. notes/calendar.md states the rule.
 
-The eleven Kani harnesses and the eleven falsification patches went with the crate. No first-party
-code on the verification path depended on them: §46's amendment of 2026-10-04 makes taking a crate
-the default outside the kernel and the crates Kani proves, and the calendar is neither.
+The crate's eleven Kani harnesses and eleven falsification patches leave with it. Nothing on the
+verification path needed them. §46's amendment of 2026-10-04 makes taking a crate the default
+outside the kernel and the crates Kani proves, and the calendar is neither.
 
 ## BUGS
 
-- jiff's Temporal parser accepts more than RFC 3339 (a leap second clamped to `:59`, an offset
-  without a colon or with seconds, the compact form, bracketed annotations). `touch -t` checks the
-  operand's shape itself before it hands jiff anything, so that check is first-party code with no
-  proof behind it, only tests.
-- The lock file names `portable-atomic`, `portable-atomic-util` and `jiff-static`. None of them is
-  built for this tree's targets, since all three have pointer-width atomics and `jiff-static` sits
-  behind `cfg(any())`, but each is in `Cargo.lock` and the supply-chain gates read it.
+- jiff's Temporal parser accepts more than RFC 3339: a leap second clamped to `:59`, an offset
+  without a colon or with seconds, the compact form, bracketed annotations. `touch -t` checks the
+  operand's shape itself before it hands jiff anything. That check is first-party code with tests
+  and no proof.
+- The lock file names `portable-atomic`, `portable-atomic-util` and `jiff-static`. No target of
+  this tree builds them: all three targets have pointer-width atomics, and `jiff-static` sits behind
+  `cfg(any())`. Each still appears in `Cargo.lock`, and the supply-chain gates read it.
 
 ## Follow-on
 
-- **Proposed, for the maintainer.** Several blocks a lane may not edit still name the crate:
-  milestone 51 (wall-clock time) says the library half is `crates/calendar`; milestone 1017 (the
-  contract crates leave in this order) lists `calendar` in step 8 and among the contribute crates;
-  milestone 857 (crates released on their own) lists it under fork 8; milestone 956 (the linked
-  interfaces carry checkable versions) counts it among crates that stay Rust APIs. Each wants its
-  line corrected to the crate being gone.
+- **Proposed.** Four blocks still name the crate, and each wants its line corrected. Milestone 51
+  (wall-clock time) says the library half is `crates/calendar`. Milestone 1017 (the contract crates
+  leave in this order) lists `calendar` in step 8 and among the contribute crates. Milestone 857
+  (crates released on their own) lists it under fork 8. Milestone 956 (the linked interfaces carry
+  checkable versions) counts it among the crates that stay Rust APIs.
 
 ## Index row
 

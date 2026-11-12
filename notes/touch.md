@@ -90,9 +90,10 @@ lies are plausible.
 
 `grant_plan`'s parser does not interpret the `-t` operand's text at all; it only recognizes the `-t`
 flag and hands the following token, unparsed, to `TouchOperands::at`. Converting it to Unix seconds
-happens where the grant is made (`Nav::touch` in `components/src/swish/navigation.rs`), using
-`rfc3339_unix_seconds` there, which checks RFC 3339's grammar and hands the date and time of day to
-`jiff`, the crate `date` itself uses for the read side. `date`'s own `FMT_RFC3339` output is therefore a valid `-t` operand:
+happens where the grant is made (`Nav::touch` in `components/src/swish/navigation.rs`). Its
+`rfc3339_unix_seconds` checks RFC 3339's grammar and hands the date and time of day to `jiff`, the
+crate `date` itself uses for the read side. `date`'s own `FMT_RFC3339` output is therefore a valid
+`-t` operand:
 `touch -t "$(date ...)" name` round-trips through this shell without either side inventing a
 format.
 

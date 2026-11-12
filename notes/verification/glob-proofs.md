@@ -10,9 +10,8 @@ naming). See [glob.md](../glob.md) for the crate itself, which carries the harne
 is a loop over two byte strings where the pattern is untrusted. So the property that matters is the
 one BMC is best at: totality, meaning no panic and no hang on any input.
 
-It also produced two findings worth having next to the calendar's
-([calendar-proofs.md](calendar-proofs.md)). Both are about the same thing: the cost of a proof is
-the shape of the code, not the size of the claim.
+It also produced two findings. Both are about the same thing: the cost of a proof is the shape of
+the code, not the size of the claim.
 
 - One loop, not two, and the claim is the same. Finding a bracket expression's closing `]` in one
   loop and testing membership in another, nested inside the match loop Kani already unrolls, took
@@ -32,9 +31,8 @@ is already a negated class. So "`[xy]` and `[!xy]` are complements" is false whe
 back in 42 seconds with the counterexample. It is worth recording, because the reflex on a red
 harness is to suspect the code.
 
-The cost, stated rather than discovered: about ten minutes of solver time for the six, which puts
-`glob` second to `calendar` in this suite. Two thirds of it is the two harnesses that quantify over
-a symbolic-length pattern *and* a symbolic-length name at once. That is the calendar's finding again
-from a different direction: the expensive thing is not the property, it is the second symbolic
-length. Cutting one harness's name bound from three bytes to two took it from 279s to 199s without
+The cost, stated rather than discovered: about ten minutes of solver time for the six, which makes
+`glob`'s proofs the slowest in this suite. Two thirds of it is the two harnesses that quantify over
+a symbolic-length pattern *and* a symbolic-length name at once. The expensive thing is not the property,
+it is the second symbolic length. Cutting one harness's name bound from three bytes to two took it from 279s to 199s without
 weakening it, because that harness's rule is a predicate on the name's first byte.

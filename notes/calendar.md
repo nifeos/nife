@@ -24,9 +24,9 @@ into a fixed buffer.
 `date` is a `#![no_std]` program with no allocator, and that settles the choice among the three
 Rust date libraries:
 
-- **`time` 0.3** formats only with `std`.
-- **`chrono` 0.4** writes RFC 3339 into an allocated `String`.
-- **`jiff` 0.2** formats with neither `std` nor an allocator, and its scope without its time-zone
+- `time` 0.3 formats only with `std`.
+- `chrono` 0.4 writes RFC 3339 into an allocated `String`.
+- `jiff` 0.2 formats with neither `std` nor an allocator, and its scope without its time-zone
   features is fixed offsets only, which is the scope nife keeps (below).
 
 Taking a crate is the default §46's amendment of 2026-10-04 sets for userland programs and tools.

@@ -10,6 +10,8 @@ needs_person: no
 ---
 # 1080. `calendar`: what an outside maintainer would fix before it leaves
 
+Reuse: milestone 1114 (the calendar becomes `jiff`) took `jiff` in the crate's place.
+
 Milestone 1114 (the calendar becomes `jiff`) removed `crates/calendar`, so no crate is left to
 review or to move. Every caller uses `jiff`, and notes/calendar.md states the rule.
 

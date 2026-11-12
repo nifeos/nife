@@ -259,7 +259,8 @@ path = "src/clock.rs"
 test = false
 bench = false
 
-# `date` (milestone 51, DECISIONS §43): reads the clock page, hands the number to `jiff`, prints.
+# `date` (milestone 51 (wall-clock time, the `date` command, and an NTP service), §43 (reading the
+# clock is a page)): reads the clock page, hands the number to `jiff`, prints.
 # It holds a read-only mapping and therefore cannot set the clock; there is no `date -s` here on
 # purpose. `has_initial_ramdisk_aarch64` packs it as "date" for both ISAs.
 [[bin]]

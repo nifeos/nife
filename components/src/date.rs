@@ -230,19 +230,19 @@ fn write_format(out: &mut Text, fmt: u64, local: DateTime, offset: Offset, unix_
 
 /// The longest line any format prints is `Human` at an extreme offset,
 /// `Fri 9999-12-31 23:59:59 +23:59`, which is 30 bytes.
-const TEXT_CAP: usize = 32;
+const TEXT_CAPACITY: usize = 32;
 
 /// A formatted timestamp, in a fixed buffer. No allocator: jiff prints into it through its own
 /// `fmt::Write` trait, and `core::fmt` prints the `Unix` number into it.
 struct Text {
-    buf: [u8; TEXT_CAP],
+    buf: [u8; TEXT_CAPACITY],
     len: usize,
 }
 
 impl Text {
     const fn new() -> Text {
         Text {
-            buf: [0; TEXT_CAP],
+            buf: [0; TEXT_CAPACITY],
             len: 0,
         }
     }
@@ -251,12 +251,12 @@ impl Text {
         &self.buf[..self.len]
     }
 
-    /// Append `s`, dropping what does not fit. [`TEXT_CAP`] is two bytes over the longest line, so
+    /// Append `s`, dropping what does not fit. [`TEXT_CAPACITY`] is two bytes over the longest line, so
     /// nothing is dropped, and a short line is still better than a panic in a program that only
     /// wanted to print the time.
     fn push(&mut self, s: &str) {
         for &b in s.as_bytes() {
-            if self.len < TEXT_CAP {
+            if self.len < TEXT_CAPACITY {
                 self.buf[self.len] = b;
                 self.len += 1;
             }
