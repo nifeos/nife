@@ -22,8 +22,7 @@ The review took its baseline from the settled record and reopens none of it:
   `extensible_host_controller_interface` and published as `universal_serial_bus`, because the name
   `usb` is taken on crates.io. Verified against the crates.io API: `usb` 0.3.0 exists ("Common
   definitions of USB constants"); `universal_serial_bus` does not.
-- The provenance ruling recorded in milestone 1019 (the driver crates carry facts, not source
-  text), item 2: the usage table takes its usages from the HID Usage Tables 1.5 and its numbers from
+- The provenance ruling recorded in milestone 1019 (the driver crates carry facts from their sources, not their text), item 2: the usage table takes its usages from the HID Usage Tables 1.5 and its numbers from
   the `KEY_*` names of Linux's `input-event-codes.h`, with Linux's `hid_keyboard[]` as a test
   cross-check only.
 - The one paragraph the review package of `extensible_host_controller_interface`

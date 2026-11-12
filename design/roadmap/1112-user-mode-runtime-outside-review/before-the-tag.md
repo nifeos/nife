@@ -85,7 +85,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
     asserts it (none found by search; unverified beyond that). After the move the two live in
     different repositories.
     Evidence: `src/initial_ramdisk.rs` line 34; `kernel/src/user/loader.rs` line 297.
-    Change: `address_space_map` leaves before this crate (milestone 1017, step 3), so depend on it
+    Change: `address_space_map` leaves before this crate (milestone 1017 (the contract crates leave in this order), step 3), so depend on it
     and define the constant as the kernel does, from one source; or have the kernel import this
     crate's constant. One of the two, not both.
     Door: two-way (both sides are nife's). Effort: XS.

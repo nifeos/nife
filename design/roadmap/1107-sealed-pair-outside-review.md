@@ -47,7 +47,7 @@ a repository); everything else is two-way and the maintainer decides it.
 
 1. The crate cannot leave before the two crates it builds on.
    Finding: both dependencies are path dependencies on sibling crates that have no repository of
-   their own (`nifefs`, `measured_boot`). The ruling of milestone 1017 is that a crate leaves
+   their own (`nifefs`, `measured_boot`). The ruling of milestone 1017 (the contract crates leave in this order) is that a crate leaves
    bottom-up and nothing that has left depends on a path or a pin into this tree. `measured_boot`
    is in the kernel's graph and `nifefs` is the kernel's archive format; neither is on journey 5's
    table yet. A repository for `sealed_pair` today would pin two unreleased crates by git revision
@@ -160,7 +160,7 @@ a repository); everything else is two-way and the maintainer decides it.
 8. The refusal text asserts a cause.
    Finding: `explain` says "They are from different builds" for every `Vouch::No`. One flipped
    byte on a card produces the same verdict, and the crate's own test
-   `one_stale_half_is_named_on_its_own` builds that case. Milestone 563 recorded the same sentence
+   `one_stale_half_is_named_on_its_own` builds that case. Milestone 563 (A seal check that reads bytes cannot see a check that was dropped) recorded the same sentence
    as false for a diverted build, and its `BUGS` entry stands.
    Evidence: `crates/sealed_pair/src/lib.rs` lines 177 to 181;
    `design/roadmap/0563-a-seal-check-that-reads-bytes-cannot-see-a-check-that-was-dropped.md`,

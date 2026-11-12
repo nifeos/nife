@@ -15,7 +15,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    Change: fill in the scaffold. The README's first line says "host side" and "boot keyboard" so
    the `usb-device` and `usbd-hid` crowd leave at once. "What is proven" states the three bounds
    (25 configuration bytes, 20 events, 20 header bytes) and names what lies outside them (item 7).
-   A "Where the table comes from" section restates the provenance position of milestone 1019, so a
+   A "Where the table comes from" section restates the provenance position of milestone 1019 (the driver crates carry facts from their sources, not their text), so a
    docs.rs reader sees the license reasoning without opening a module. Then run the stranger test.
    Door: two-way. Effort: M.
 
@@ -24,7 +24,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    paragraph that records no name, no API summary, no proof list and no `script/crate-standalone`
    result for it. `script/names` lists one `Name:` block for the crate, so the eight public
    functions, four public types, one enum and nineteen public constants have no `provisional`,
-   `recorded` or `ratified` state anywhere. Milestone 820 moves the crate on the strength of a
+   `recorded` or `ratified` state anywhere. Milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its own) moves the crate on the strength of a
    review that was never written.
    Evidence: `notes/crate-reviews.md` line 72 (the xHCI row); `notes/crate-reviews/README.md`
    ("a new package is a new file plus a row in the index").

@@ -230,7 +230,7 @@ Prior art: `rustix` spells every parameter out. Its one exception, `fd`, is a na
 
 Background. `link.ld` is interface 20, the entry registers and link layout. Today eight build
 scripts in nife reach it by a relative path into this crate's directory, and that path stops
-existing at the move. A consumer of the released crate (the SDK archive milestone 607 describes, a
+existing at the move. A consumer of the released crate (the SDK archive milestone 607 (nife is built and updated from packages, and its source divides by purpose) describes, a
 program built outside nife) needs a documented way to link with the script, and that way is a
 published behavior from the first release on.
 
@@ -238,7 +238,7 @@ Recommendation: the embedded Rust mechanism. This crate's `build.rs` copies `lin
 `OUT_DIR` and emits `cargo:rustc-link-search`; a program links with `-C link-arg=-Tlink.ld` and
 no path. The script's base stays `0x60000000`, and the test that checks it against
 `address_space_map::IMAGE_BASE` moves here. The alternative, each consumer vendoring a copy, is
-what milestone 73 refused ("two copies would be two places to be wrong about the base") and the
+what milestone 73 (name the aarch64 files aarch64, before x86_64 makes it worse) refused ("two copies would be two places to be wrong about the base") and the
 move would make it eight copies.
 
 Prior art: `cortex-m-rt` (`link.x`, 10.6 million downloads) and `riscv-rt` (`link.x`) do exactly

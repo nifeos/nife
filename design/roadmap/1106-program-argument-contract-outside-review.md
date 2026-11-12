@@ -92,8 +92,8 @@ otherwise.
 
 3. The crate's text reaches back into nife.
    Finding: `src/lib.rs` names `notes/foreign-program-arguments.md` (line 20) and
-   `design/roadmap/0672-the-argument-page-layout.md` (line 38), cites decision sections (§170 at
-   lines 2 and 7, §111 at line 31) and milestones (205, 326, 956) by number. It carries four `Name:`
+   `design/roadmap/0672-the-argument-page-layout.md` (line 38), cites decision sections (§170 (how a foreign program is told what to do) at
+   lines 2 and 7, §111 (inert configuration is a read-only page, and each declared key is validated against a closed domain) at line 31) and milestones (205, 326, 956) by number. It carries four `Name:`
    provenance blocks (lines 35, 59, 68, and the manifest's line 13), and the block at line 35 names
    the architect and quotes the question asked. The template's rules say a crate carries no
    `Name:` block, and `standalone.py` fails on each class: 5 section citation lines, 4 milestone

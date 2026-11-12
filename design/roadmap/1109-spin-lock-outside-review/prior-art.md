@@ -18,7 +18,7 @@ sources and were not re-read for this review; treat them as unverified.
 
 Where this crate differs on purpose: the atomics are loom's under `cfg(loom)` and `core`'s
 otherwise. One source is therefore both the thing the kernel compiles and the thing the model
-checker replays. Milestone 953 could not get that from `spin` or `lock_api`. What that costs: no
+checker replays. Milestone 953 (the kernel's lock proves what it takes from spin) could not get that from `spin` or `lock_api`. What that costs: no
 fairness (a waiter may lose every round, as stated), no `?Sized`, no `lock_api` interoperability,
 and a thinner accessor surface than any crate in the table. A concrete example of the gap: a reader
 coming from `std::sync::Mutex` writes `lock.into_inner()` or `lock.get_mut()` to read a test's final

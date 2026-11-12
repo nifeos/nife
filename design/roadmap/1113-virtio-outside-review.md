@@ -49,7 +49,7 @@ format, identity, layout or dependency) or two-way.
 
 **1. The crate cannot leave as it stands, and by the standing rules it should not leave as a
 crate at all.** `Cargo.toml` lines 12 to 18 names four path dependencies, one of them `user_mode_runtime`,
-the SDK, which the contract-crate ordering (milestone 1017) has leaving last because a crate that
+the SDK, which the contract-crate ordering (milestone 1017 (the contract crates leave in this order)) has leaving last because a crate that
 leaves must reference nothing back into this tree. The crate's seven public items
 (`src/lib.rs` lines 198, 246, 297, 321, 352, 872 and 933) are `fn(u64) -> !` entry points: five test roles
 the QEMU suite spawns, one abandon-and-die role, and one server. They hardcode this tree's
@@ -131,8 +131,8 @@ Background. `SETUP_QUEUE` places a queue's rings at fixed offsets inside the que
 the driver's DMA region. The offsets and the queue size are the ones `direct_memory_access_validator`
 proves (`LAYOUT_QSIZE`, `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`). The kernel aliases
 the validator's constants so the layout it runs is the proved one. Every userspace driver spells
-the same numbers as literals, because §46 priced the edge from `components` to the validator and the
-tree did not take it (milestone 410, per `notes/net/the-driver-and-dhcp.md` lines 130 to 137). The
+the same numbers as literals, because §46 (thin primitives or whole subsystems; we write everything in between) priced the edge from `components` to the validator and the
+tree did not take it (milestone 410 (six copies of the shared-frame accessors), per `notes/net/the-driver-and-dhcp.md` lines 130 to 137). The
 validator has no dependencies. `abi::virtio` already carries one DMA-layout fact for drivers, the
 word offset at which the kernel writes the region's physical base.
 

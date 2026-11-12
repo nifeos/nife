@@ -15,5 +15,5 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
   pass over the crate, the last one in the repository that receives it.
 - `notes/boot-stick.md` names the two measured entries.
 - The census row stays at none missed.
-- Decision A appears in journey 5's table or in milestone 1017's order, and no repository
+- Decision A appears in journey 5's table or in milestone 1017 (the contract crates leave in this order)'s order, and no repository
   exists for the crate before the two it builds on have theirs.

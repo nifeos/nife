@@ -11,7 +11,7 @@ USED_OFF, RING_BLOCK}` as literals. The kernel aliases those constants, so the l
 matches the layout Kani proves (`kernel/src/virtio.rs` lines 422 to 442). The driver does not alias them.
 A change to the proved layout would leave the driver reading the wrong offsets, and nothing would
 fail until a QEMU test did. `components/src/virtio_net_transport.rs` lines 28 to 31 records the same copy as
-a bug, and this crate records nothing. `notes/net/the-driver-and-dhcp.md` lines 130 to 137 says §46 priced
+a bug, and this crate records nothing. `notes/net/the-driver-and-dhcp.md` lines 130 to 137 says §46 (thin primitives or whole subsystems; we write everything in between) priced
 the dependency edge and the tree did not take it. The validator has no dependencies of its own
 (`crates/direct_memory_access_validator/Cargo.toml`). The fix: see Decision 2. Until the architect
 rules, add a `BUGS` entry at the constants, as `virtio_net_transport` has. Effort: S. One-way in
@@ -49,7 +49,7 @@ specification requires before reinitialization (virtio 1.2, the device initializ
 requirements of the PCI and MMIO transports; section numbers unverified). It checks the magic
 value (`:141`, `:622`) and never the `Version` register (`0x004 == 2`) or `DeviceID`. Today the
 kernel enumerates the device and QEMU resets synchronously, so neither gap can bite. Under the
-ruled direct grant (milestone 1062 step 7) a driver will own its own bring-up against a real
+ruled direct grant (milestone 1062 (the device control planes leave the kernel) step 7) a driver will own its own bring-up against a real
 device, and these are the two checks that catch a wrong or half-reset device. The fix: a bounded
 wait for `Status == 0`, and a `Version` check beside the magic check. Effort: S. Two-way.
 Inferred from reading.

@@ -18,7 +18,7 @@ measured none.
 Where this crate differs: it parses nothing out of the kernel. It hashes each archive entry and
 looks for the 32 raw bytes in the image. One function therefore reads a flat `booti` image, an ELF
 and a UEFI boot file. That is cheaper than every tool above. It is weaker in one way the tree
-already recorded (milestone 563: a digest present is not a check reached). It also answers the
+already recorded (milestone 563 (A seal check that reads bytes cannot see a check that was dropped): a digest present is not a check reached). It also answers the
 second question, the table against the archive. `sha256sum -c` answers that for a directory, and
 nothing above answers it for an archive inside a boot file. What it costs: the vocabulary is this
 tree's (`progenitor`, `MEASURED BOOT REFUSED`, the console). Both inputs are this tree's formats. A

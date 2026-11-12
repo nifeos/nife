@@ -80,6 +80,6 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     own documentation is right.
     Evidence: `notes/boot-stick.md` lines 150 to 153; `crates/sealed_pair/src/lib.rs` lines 22 to
     28.
-    Change: the note states the two names and points at `measured_entries`, as milestone 971
+    Change: the note states the two names and points at `measured_entries`, as milestone 971 (the boot stick notes are read against their code)
     intended.
     Door: two-way. Effort: XS.

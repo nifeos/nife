@@ -267,7 +267,7 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 ## BUGS
 
 - Item 1's fix is the template's, and `clock_contract` needs it before this crate does if
-  milestone 1017's order holds; the two should land once.
+  milestone 1017 (the contract crates leave in this order)'s order holds; the two should land once.
 - The Linux and BSD rows of the prior-art table are from memory and marked unverified.
 - Item 13's codegen claim was not measured here in either direction.
 - The review did not run the template's workflows, because no repository exists; every template
