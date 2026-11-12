@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-11-10
 decided: 2026-11-10
 ratified_by: calef
@@ -49,10 +49,17 @@ The opcode sits in bits 63:56 of request word 0, where `entropy_contract::OPERAT
 | 0 | version query, reserved | none | the served versions, as milestone 1000 (message contracts carry bind-time version checks) defines them |
 | 1 | bring up | none | the bring-up summary |
 | 2 | read clock | word 0 bits 7:0, the device's own clock index | that clock's raw word |
-| 3 | read reset | word 0 bits 7:0, the device's own reset index | that reset's raw status word |
+| 3 | read reset | word 0 bits 7:0, the device's own reset index | that reset's own status bit: 1 released, 0 held |
 | 4 | set rate | word 1, the most hertz the device may run at | the hertz it now runs at |
 
 Opcodes 5 to 255 are free. No verb turns a device off.
+
+A request sets only the bits its opcode gives a meaning. Word 0 bits 55:8 are always zero, the
+index is zero except for opcodes 2 and 3, and word 1 is zero except for opcode 4. The server
+answers anything else with status 8 and reads or stores nothing, so an undefined bit never reaches
+the silicon, and a later version can give it a meaning. The checks run in a fixed order: the badge
+(status 1), then the opcode (status 2), then the shape (status 8). A read-reset reply carries
+only the device's own line, because the other 31 lines of its status word belong to other devices.
 
 Bring up walks the device's clocks, each parent choice before its clock's enable, then its
 resets, in the crate's plan order. It is idempotent, since firmware may have started the block, so
@@ -73,8 +80,12 @@ reasoning).
 | 5 | a read named a clock or reset beyond the device's own |
 | 6 | set rate on a device with no rated clock |
 | 7 | no divider gives a rate at or below the one asked |
+| 8 | malformed request: a bit its opcode gives no meaning is set |
 
-For statuses 3 and 4 the server still sends the summary, so the failure is diagnosable.
+For statuses 3 and 4 the server still sends the summary, so the failure is diagnosable. A
+bring-up whose clock did not run answers 3 even if a reset also stayed held: the plan enables
+every clock before it releases any reset, and a reset behind a gated clock may never release.
+A refused step is counted in the summary and changes no status.
 
 The bring-up summary, from bit 0: bits 7:0 count the clocks the plan enables, 15:8 those reading
 back as running, 23:16 the resets in the plan, 31:24 those released. Bit 32 says the device was

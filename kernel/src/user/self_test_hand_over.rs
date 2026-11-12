@@ -218,21 +218,32 @@ fn start_jh7110_trng(half: &mut KernelHalf) -> Option<crate::sched::RendezvousId
     half.flags |= flag::RANDOM_NUMBER_GENERATOR_WIRED;
     if let Some(report) = w.clock {
         half.flags |= flag::CLOCK_REPORTED;
+        let summary = report.summary;
         for (ok, bit) in [
-            (report.has_clocks_running(), flag::CLOCK_RUNNING),
-            (report.released, flag::CLOCK_RELEASED),
-            (report.was_already_up(), flag::CLOCK_ALREADY_UP),
+            (
+                summary.clocks_running == summary.clocks_in_plan,
+                flag::CLOCK_RUNNING,
+            ),
+            (
+                summary.resets_released == summary.resets_in_plan,
+                flag::CLOCK_RELEASED,
+            ),
+            (summary.already_up, flag::CLOCK_ALREADY_UP),
         ] {
             if ok {
                 half.flags |= bit;
             }
         }
-        let pack = |w: [u32; jh7110_clock_and_reset::MAXIMUM_RECORDED_CLOCKS]| {
-            u64::from(w[0]) | (u64::from(w[1]) << 32)
+        // The server answers a count, not the raw registers or a poll count, so the clocks' words
+        // are read back through it after the bring-up, and the before and poll words stay zero.
+        let read = |index| {
+            crate::user::jh7110_clock_and_reset_service::read_clock(
+                device.registers_physical_address,
+                index,
+            )
+            .unwrap_or(0)
         };
-        half.words[word::CLOCK_BEFORE] = pack(report.clock_before);
-        half.words[word::CLOCK_AFTER] = pack(report.clock_after);
-        half.words[word::CLOCK_POLLS] = u64::from(report.polls);
+        half.words[word::CLOCK_AFTER] = u64::from(read(0)) | (u64::from(read(1)) << 32);
     }
     if let Some(window) = entropy_service::jh7110_crg_window() {
         half.words[word::CLOCK_WINDOW] = window.base_physical_address;
