@@ -201,12 +201,13 @@ fn parse_peer(s: &str) -> Option<u64> {
 /// `e1000e` arm spells them.
 #[cfg(target_arch = "riscv64")]
 mod radon {
-    use ::designware_ethernet::cache_coherence::Verdict;
-    use ::designware_ethernet::jh7110;
+    use driver_process_contract::designware_ethernet::device::cache_coherence::Verdict;
+    use driver_process_contract::designware_ethernet::device::jh7110;
 
-    use crate::designware_ethernet::{Absent, Report, last_report};
     use crate::println;
-    use crate::user::designware_ethernet_service::{self as service, NotStarted};
+    use crate::user::designware_ethernet_service::{
+        self as service, Absent, NotStarted, Report, last_report,
+    };
 
     pub(super) fn measure(image: &'static [u8], peer: Option<u64>) -> &'static str {
         let started = match peer {
@@ -233,7 +234,9 @@ mod radon {
         let report = last_report();
         print(report.as_ref());
         let coherent = matches!(
-            report.and_then(|r| r.coherence),
+            report
+                .and_then(|r| r.control)
+                .and_then(|c| c.account.coherence),
             Some((Verdict::Coherent, _))
         );
         let Some(cli) = client else {
@@ -288,58 +291,46 @@ mod radon {
                 "from the constants (the tree named at least one of them nowhere)"
             },
         );
-        let words = |c: &jh7110_clock_and_reset::BringUpReport| {
-            let mut s = [(0u32, 0u32); jh7110_clock_and_reset::MAXIMUM_RECORDED_CLOCKS];
-            for (k, w) in s.iter_mut().enumerate().take(c.clocks) {
-                *w = (c.clock_before[k], c.clock_after[k]);
-            }
-            (s, c.clocks)
+        match r.clocks {
+            Some(b) => println!(
+                "network-bench: clocks    : {:?} from the clock and reset server, clocks {}/{} running, resets {}/{} released, {} refused, already up {}",
+                b.status,
+                b.summary.clocks_running,
+                b.summary.clocks_in_plan,
+                b.summary.resets_released,
+                b.summary.resets_in_plan,
+                b.summary.refused,
+                b.summary.already_up,
+            ),
+            None => println!("network-bench: clocks    : no clock and reset server answered"),
+        }
+        let Some(control) = r.control else {
+            println!("network-bench: control   : no report from the control process");
+            return;
         };
-        for (name, c) in [("sys", &r.sys), ("aon", &r.aon)] {
-            let (w, n) = words(c);
-            for (k, (before, after)) in w.iter().take(n).enumerate() {
-                println!(
-                    "network-bench: clocks    : {name} clock step {k}: {before:#010x} -> {after:#010x}"
-                );
-            }
-        }
-        if r.aon.had_select_parent {
-            println!(
-                "network-bench: clocks    : aon tx mux {:#010x} -> {:#010x}",
-                r.aon.select_parent_before, r.aon.select_parent_after
-            );
-        }
-        println!(
-            "network-bench: resets    : {} of {} released, last assert {:#010x} -> {:#010x}, status {:#010x}, {} polls",
-            r.aon.resets_released,
-            r.aon.resets,
-            r.aon.reset_assert_before,
-            r.aon.reset_assert_after,
-            r.aon.reset_status_after,
-            r.aon.polls,
-        );
+        let a = control.account;
         println!(
             "network-bench: syscon    : {:#010x} -> {:#010x} (gmac0 interface {} before, {} after; 1 is RGMII)",
-            r.syscon.0,
-            r.syscon.1,
-            jh7110::gmac0_interface_select(r.syscon.0),
-            jh7110::gmac0_interface_select(r.syscon.1),
+            control.system_controller.0,
+            control.system_controller.1,
+            jh7110::gmac0_interface_select(control.system_controller.0),
+            jh7110::gmac0_interface_select(control.system_controller.1),
         );
         println!(
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",
-            r.version, r.direct_memory_access_address_bits
+            a.version, a.direct_memory_access_address_bits
         );
-        match r.physical_layer_device {
+        match a.physical_layer_device {
             Some((mv, source)) => println!(
                 "network-bench: phy       : id {:#010x}, {mv} mV I/O, settings from {source:?}",
-                r.physical_layer_device_id
+                a.physical_layer_device_id
             ),
             None => println!(
                 "network-bench: phy       : id {:#010x}",
-                r.physical_layer_device_id
+                a.physical_layer_device_id
             ),
         }
-        if let Some((m, source)) = r.mac {
+        if let Some((m, source)) = a.station_address {
             println!(
                 "network-bench: address   : {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x} from {source:?}",
                 m[0], m[1], m[2], m[3], m[4], m[5]
@@ -347,25 +338,25 @@ mod radon {
         }
         println!(
             "network-bench: reset     : {} us, then {} us",
-            r.resets_microseconds[0], r.resets_microseconds[1]
+            a.resets_microseconds[0], a.resets_microseconds[1]
         );
-        match r.coherence {
+        match a.coherence {
             Some((v, o)) => println!(
                 "network-bench: coherence : {v:?} (rx des3 {:#010x}, tx des3 {:#010x}, channel status {:#010x}, payload {:?})",
                 o.receive_descriptor_word_3, o.transmit_descriptor_word_3, o.status, o.payload
             ),
             None => println!("network-bench: coherence : not reached"),
         }
-        match r.link {
+        match a.link {
             Some(l) => println!(
                 "network-bench: link      : {} Mbit/s {} duplex, {} ms after autonegotiation restarted",
                 l.speed.megabits_per_second(),
                 if l.full_duplex { "full" } else { "half" },
-                r.link_wait_milliseconds
+                a.link_wait_milliseconds
             ),
             None => println!(
                 "network-bench: link      : NONE after {} ms",
-                r.link_wait_milliseconds
+                a.link_wait_milliseconds
             ),
         }
     }

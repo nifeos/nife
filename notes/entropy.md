@@ -237,9 +237,13 @@ it.
   probe; see `design/roadmap/0162-cpu-instruction-entropy.md`). But the service cannot be spawned
   into
   userspace at all yet: there is no ring 3 on this port (milestone 161 item 3).
-- **No health test.** A device that started returning a constant would be passed straight through.
-  The kernel tests would catch it, a running system would not. NIST SP 800-90B's repetition-count and
-  adaptive-proportion tests are the cheap standard answer and are not implemented.
+- **Only a start-up health check.** `entropy_contract::readiness` refuses a first draw that is all
+  zero (`STEP_FIRST_ALL_ZERO`) or that repeats one nonzero value over at least eight bytes
+  (`STEP_FIRST_ALL_SAME`), and every backend then refuses to serve for the rest of the boot. A device
+  that starts returning a constant after bring-up is still passed straight through: the kernel tests
+  would catch it, a running system would not. NIST SP 800-90B's repetition-count and
+  adaptive-proportion tests on the running stream are the cheap standard answer and are not
+  implemented.
 - **No rate limit and no quota.** A client holding the endpoint can drain the service as fast as it
   can `CALL`. Eight bytes per round trip is a cost, not a defense.
 - **A program at the prompt can hold entropy, since milestone 111** (2026-09-05). This entry used to

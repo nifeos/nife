@@ -16,6 +16,14 @@ Raised 2026-09-01 by the maintainer, from milestone 159 (a real hardware entropy
 JH7110's TRNG)'s (a real hardware entropy source: the JH7110's TRNG) lane. That lane found the
 question and correctly declined to answer it: a developer does not write a decision.
 
+## What is checked now
+
+Ruled 2026-11-11 (UTC): `entropy_contract::readiness` refuses a first draw whose bytes are all one
+value, under its own bring-up failure step, `STEP_FIRST_ALL_SAME` (provisional name). The rule
+holds at start-up only, for a draw of at least eight bytes, beside the existing refusal of an empty
+draw and of an all-zero one. Every backend refuses to serve after it. The continuous tests this decision rules
+are not yet implemented.
+
 ## What is being decided
 
 Whether nife performs its own health tests on hardware entropy, and what it does when one fails.

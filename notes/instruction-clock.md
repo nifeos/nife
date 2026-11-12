@@ -282,8 +282,8 @@ there.
   seconds, and killing QEMU is what closes the pipe and ends the read. `run_bench` has the same
   shape and the same exposure, and was not changed here.
 - Numbers are from one QEMU. icount counts guest instructions, so the emulator's version is part
-  of what they mean, exactly as `bench/baseline-*.txt` records for itself. `script/qemu-check` warns
-  when the QEMU on PATH is not the pinned one.
+  of what they mean, exactly as `bench/baseline-*.txt` records for itself. `script/qemu-check` fails
+  when the QEMU on PATH is not the pinned one, and `script/ci-qemu` then builds the pin.
 
 ## See also
 

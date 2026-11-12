@@ -5,6 +5,11 @@
 # for what is already present and installs only what is missing, so it is cheap to re-run and
 # safe to call from script/setup, script/update, and script/ci-build.
 #
+# **QEMU is not this script's.** `script/ci-qemu` is the one place that checks for the pinned
+# emulator and builds it when the one on PATH is not exactly `.qemu-version` (§322 (the QEMU
+# bootstrap is the one QEMU check)). `script/setup`, `script/update` and `script/ci-build` run it
+# after this script; anyone running this one alone runs `script/ci-qemu` next.
+#
 # Name: ratified 2026-07-22 by adopting Scripts to Rule Them All. The canonical set keeps its
 # standard names even where a more descriptive word exists, because the entire value is that the
 # command is the same in every repository that follows the pattern (design/naming.md).
@@ -15,11 +20,6 @@ set -e
 # which is the cloud-session case (notes/working-from-a-cloud-session.md).
 if [ "$(id -u)" -eq 0 ]; then SUDO=; else SUDO=sudo; fi
 cd "$(dirname "$0")/.."
-
-# The project's own QEMU, if a previous run built one. This has to happen BEFORE the `command -v`
-# checks below, or a second bootstrap on a Linux box re-runs the whole apt branch against a prefix
-# that already holds exactly what is wanted. See helpers/qemu-path.sh for why PATH is the mechanism.
-. helpers/qemu-path.sh
 
 os="$(uname -s)"
 
@@ -41,65 +41,12 @@ echo "==> Ensuring Rust toolchain '$channel' (components + bare-metal targets)"
 helpers/rustup-retry.sh toolchain install "$channel" --profile minimal
 helpers/rustup-retry.sh component add --toolchain "$channel" rust-src llvm-tools rustfmt clippy miri
 # **Every target the pin declares**, read from `rust-toolchain.toml` rather than spelled here, the
-# way `channel` above already is and the way `script/drift` does it. The hand-written list this
-# replaces named two of the supported bare-metal targets and not `x86_64-unknown-none`, which was
-# visibly inconsistent with the paragraph below that checks for all three QEMU emulators because
-# "`cargo xtask test` now needs the full set". It was harmless only because rustup honours the
-# pin's `targets` array, which is also what made the line dead weight rather than a source of
-# truth: a fourth architecture is installed here the day it is added to the pin, and there is no
-# second list to forget. See notes/architecture-list-sweep.md, option A.
+# way `channel` above already is and the way `script/drift` does it: a fourth architecture is
+# installed here the day it is added to the pin, and there is no second list to forget. See
+# notes/architecture-list-sweep.md, option A.
 all_targets="$(awk -F'"' '/^targets *=/ {for (i = 2; i < NF; i += 2) printf "%s ", $i}' rust-toolchain.toml)"
 # shellcheck disable=SC2086  # word splitting is the point: one flag per target
 helpers/rustup-retry.sh target add --toolchain "$channel" $all_targets
-
-# --- QEMU ---------------------------------------------------------------------------------
-# The kernel runs under qemu-system-aarch64, the riscv port under qemu-system-riscv64, and the
-# x86_64 port (milestone 161) under qemu-system-x86_64. Check for all three: a machine
-# provisioned before a given port has only the earlier ones, and `cargo xtask test` now needs
-# the full set.
-if command -v qemu-system-aarch64 >/dev/null 2>&1 && command -v qemu-system-riscv64 >/dev/null 2>&1 \
-    && command -v qemu-system-x86_64 >/dev/null 2>&1; then
-    echo "==> QEMU present: $(qemu-system-aarch64 --version | head -1)"
-else
-    echo "==> Installing QEMU"
-    case "$os" in
-    Darwin)
-        if ! command -v brew >/dev/null 2>&1; then
-            echo "bootstrap: Homebrew not found; install it from https://brew.sh, then re-run." >&2
-            exit 1
-        fi
-        # Homebrew's qemu ships every system emulator: riscv64 and x86_64 included.
-        brew install qemu
-        ;;
-    Linux)
-        # qemu-system-arm carries qemu-system-aarch64, qemu-system-riscv (Ubuntu 26.04 and later;
-        # qemu-system-misc before that) carries qemu-system-riscv64, and qemu-system-x86 carries
-        # qemu-system-x86_64; ipxe-qemu
-        # supplies efi-virtio.rom, the option ROM the -device virtio-blk-device (our disk)
-        # loads at startup.
-        #
-        # `ovmf` is milestone 87's UEFI firmware, and it is here because CI is not macOS.
-        # Homebrew's QEMU ships edk2-x86_64-code.fd inside the QEMU keg, which is what made
-        # milestone 87 pick the UEFI path over GRUB (nothing had to be installed). Debian packages
-        # the firmware separately, so on Linux it does. The package is architecture-independent
-        # firmware, so it installs on the arm64 runners this project's CI uses even though the
-        # firmware it carries is x86_64's.
-        $SUDO apt-get update
-        # The package list is helpers/apt-packages.txt. It names qemu-system-riscv; a release
-        # before 26.04 has qemu-system-misc instead.
-        riscv_pkg=qemu-system-misc
-        if apt-cache show qemu-system-riscv >/dev/null 2>&1; then
-            riscv_pkg=qemu-system-riscv
-        fi
-        # shellcheck disable=SC2046
-        $SUDO apt-get install -y $(helpers/apt-packages.sh bootstrap-qemu | sed "s/^qemu-system-riscv\$/$riscv_pkg/")
-        ;;
-    *)
-        echo "bootstrap: unknown OS '$os'; install qemu-system-aarch64 by hand." >&2
-        exit 1
-        ;;
-    esac
-fi
 
 # Python 3 and the GitHub CLI. Neither was checked here until 2026-09-24, when calef asked whether
 # this script installs everything and the answer was no. `script/lint` runs six embedded Python
@@ -249,70 +196,6 @@ else
     fi
 fi
 
-# Whichever way QEMU got here, it has to be one this project can actually use. The check is separate
-# so it can be re-run any time (a `brew upgrade` months from now is exactly when it matters), and it
-# fails only on a MISSING DEVICE; a version that merely differs from the pin is a loud warning, since
-# Homebrew cannot install an arbitrary older QEMU and an unfollowable rule is worse than none.
-#
-# **On Linux this is where `script/setup` used to die with no way forward**, found by milestone 117's
-# second stranger run on a stock Ubuntu box. Ubuntu 24.04 ships a QEMU without
-# `riscv-iommu-pci`, so this check hard-fails there by design; `set -e` then ended bootstrap here, before
-# the clang step, and the remedy it named (`script/ci-qemu`) described itself as "CI only". So the
-# reader was told to run a script that told them not to. Nothing was wrong except that nobody had
-# started from cold on Linux in weeks.
-#
-# **That fix printed a two-command remedy, and milestone 287 replaced it with doing the thing.** The
-# printed version failed in three separate ways, each of which hid the next:
-#
-#   1. `[ "$os" = linux ]` never matched, because `uname -s` says `Linux`. The message milestone 117
-#      wrote had never once reached a reader; bootstrap simply exited 1 with no Linux advice at all.
-#   2. Even printed, it is rung four of AGENTS.md's ladder. A script that knows the next two commands
-#      and asks a human to type them is describing a mechanism instead of being one.
-#   3. **The remedy looped.** `script/ci-qemu` installs into `$HOME/.cache/nife-qemu`, and until
-#      `helpers/qemu-path.sh` nothing outside `.github/workflows/ci.yml` ever put that on PATH. So
-#      following the instructions verbatim spent twelve minutes building the right QEMU and then
-#      found `/usr/bin`'s 8.2.2 again, forever.
-#
-# The check stays ahead of the clang step rather than being reordered behind it, because a bootstrap
-# that installs a compiler and then tells you the emulator is unusable has wasted your time in the
-# other direction.
-if ! script/qemu-check; then
-    if [ "$os" != Linux ]; then
-        # macOS and everything else: qemu-check has already named the remedy (`brew upgrade qemu`),
-        # and there is no source build to fall back on. `script/ci-qemu` refuses to run off Linux.
-        #
-        # **The pin is enforceable on Linux and only advisory here, and that asymmetry is worth a
-        # reader's notice rather than a surprise.** `script/ci-qemu` builds the version
-        # `.qemu-version` names, so a Linux machine can always be made to match. Homebrew installs
-        # whatever is current, so `brew upgrade qemu` produces *latest* rather than *the pin*: the
-        # two agree when the pin tracks Homebrew and drift apart the moment it moves, which is how
-        # the pin came to read 11.0.2 on a machine that had run 11.1.1 since 2026-08-28. Nothing
-        # here can fix that; the honest thing is that the check says which version it found.
-        exit 1
-    fi
-
-    # **Say what this is about to cost, loudly, before it costs it.** A package-install step that
-    # silently turns into a twelve-minute source build is its own surprise, and the reader pays those
-    # minutes either way: before milestone 287 they paid them after a failed run and a re-read.
-    echo >&2
-    echo "==> No packaged QEMU on Linux can satisfy this project, so bootstrap will build one." >&2
-    echo "    No Ubuntu release ships a QEMU with -device riscv-iommu-pci (milestone 16b," >&2
-    echo "    DECISIONS §20), and apt-get already fetches the newest package for the release," >&2
-    echo "    so there is nothing better for apt to get." >&2
-    echo "    script/ci-qemu builds and installs the pinned version. THIS TAKES ABOUT 12 MINUTES" >&2
-    echo "    the first time; it is cached afterwards and re-runs in under a second." >&2
-    echo >&2
-
-    script/ci-qemu
-
-    # ci-qemu installed into the prefix; this is what makes the build count for anything at all.
-    # Without it bootstrap would re-run qemu-check against the same /usr/bin QEMU it just failed on,
-    # which is precisely the loop described above.
-    . helpers/qemu-path.sh
-
-    script/qemu-check
-fi
-
 # --- A bare-metal C compiler ----------------------------------------------------------------
 # Milestone 36 links a C component into the `c_shim` userspace program (fixtures/c/c_seam.c,
 # DECISIONS §30), so building `fixtures` now needs a clang with BOTH the AArch64 and RISC-V
@@ -369,4 +252,5 @@ else
     }
 fi
 
-echo "==> Bootstrap complete"
+echo "==> Bootstrap complete. QEMU is not provisioned here: run script/ci-qemu, which checks for"
+echo "    the pinned version and builds it when the one on PATH is not exactly that."

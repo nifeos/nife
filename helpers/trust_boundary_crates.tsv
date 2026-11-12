@@ -107,6 +107,8 @@ intrusive_queue	kernel	kernel
 ipc	kernel	retired
 isa	kernel	retired
 jh7110_clock_and_reset	shared	components,kernel,uefi_loader
+jh7110_clock_and_reset_contract	shared	components,kernel
+jh7110_clock_and_reset_devices	userspace	components
 jh7110_crg	kernel	retired
 jh7110_entropy	shared	retired
 jh7110_entropy_source	shared	retired

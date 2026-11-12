@@ -31,10 +31,13 @@ A `CALL` carries one request word and returns two reply words.
   `CALL` as a small negative number (-1 to -8), which is an enormous unsigned value, so `delivered_bytes`
   returns `None` for it and a caller with no entropy capability finds out without a probe.
 - Readiness: a service sends `READY` on its readiness endpoint only after it holds bytes that are not
-  all zero (`readiness` decides). Otherwise it sends `BRING_UP_FAILED | step` (`bring_up_failure`), where the
-  step is `STEP_NO_FIRST_BYTES` (0x10, the device never answered) or `STEP_FIRST_ALL_ZERO` (0x11,
-  every byte was zero). Steps 0x01 to 0x0f belong to each backend. Treating an all-zero first draw
-  as a dead device is wrong with probability 2^-64 to 2^-2048 by source, the safe way round.
+  all zero and not one value repeated (`readiness` decides). Otherwise it sends
+  `BRING_UP_FAILED | step` (`bring_up_failure`), where the step is `STEP_NO_FIRST_BYTES` (0x10, the
+  device never answered), `STEP_FIRST_ALL_ZERO` (0x11, every byte was zero) or
+  `STEP_FIRST_ALL_SAME` (0x12, at least `MAXIMUM_BYTES` bytes, every one equal and nonzero). Steps
+  0x01 to 0x0f belong to each backend. Treating an all-zero or all-equal first draw as a dead device
+  is wrong with probability 2^-64 to 2^-2048 by source for zeros, and 255 in 2^64 or less for eight
+  equal bytes, the safe way round.
 - `VERSION` (1) is the protocol's version: one number for the operation set and the reply shape. A
   break bumps it; an addition (a new opcode, an optional field) does not.
 
@@ -64,7 +67,7 @@ assert_eq!(MAXIMUM_BYTES, 8);
 
 ## What is proven
 
-Four Kani harnesses in `src/lib.rs` prove these properties, each within the stated bounds:
+Five Kani harnesses in `src/lib.rs` prove these properties, each within the stated bounds:
 
 - A request word reads back as built: for any opcode that fits the top byte and any byte count,
   `operation` returns the opcode. `requested_bytes` returns the count, clamped to
@@ -76,6 +79,9 @@ Four Kani harnesses in `src/lib.rs` prove these properties, each within the stat
   replies, `fill_with` asks for the remainder clamped to `MAXIMUM_BYTES` each time. It answers
   `Some` exactly when every reply delivers what it was asked for, and then holds those bytes in
   order.
+- A repeated first draw is refused: for any first draw of up to 9 bytes, `readiness` names
+  `STEP_FIRST_ALL_SAME` for a draw of at least `MAXIMUM_BYTES` bytes that repeats one nonzero value,
+  and answers `READY` for every draw that is neither empty, zero nor such a repeat.
 - Readiness is `READY` exactly when a first byte is nonzero: for any first draw of up to 4 bytes,
   `readiness` answers `READY` when one byte is nonzero. Otherwise it names `STEP_NO_FIRST_BYTES`
   for an empty draw or `STEP_FIRST_ALL_ZERO` for a draw of zeros.
@@ -94,8 +100,11 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 ## BUGS
 
 - `readiness` reads an all-zero first draw as a dead device: wrong with probability 2^-64 to
-  2^-2048 by source, and the safe way round.
-- Continuous health testing of the source is not part of this contract; the check is bring-up only.
+  2^-2048 by source, and the safe way round. It reads a first draw of eight or more equal bytes the
+  same way: wrong with probability at most 255 in 2^64 for eight bytes from a uniform source. A
+  shorter draw is not judged for repeats.
+- Continuous health testing of the source is not part of this contract; the checks are bring-up
+  only.
 
 ## Minimum Rust version
 

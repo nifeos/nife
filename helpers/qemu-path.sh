@@ -10,12 +10,12 @@
 #
 #     . helpers/qemu-path.sh
 #
-# **Why it exists, and it is a loop that nobody closed** (milestone 287). On Linux, `script/ci-qemu`
-# builds the pinned QEMU into `$HOME/.cache/nife-qemu` because no Ubuntu release ships one with
-# `riscv-iommu-pci` (see that script's header, and DECISIONS §20). Until this file, the ONLY thing in
-# the whole tree that ever put that prefix on PATH was `.github/workflows/ci.yml`. So a Linux
-# developer who followed `script/bootstrap`'s own instructions built the right QEMU, re-ran
-# `script/setup` as told, and `script/qemu-check` found `/usr/bin`'s 8.2.2 again: same failure, same
+# **Why it exists: a build nobody puts on PATH is a loop** (milestone 287 (`script/bootstrap`
+# installs a working QEMU on Linux)). `script/ci-qemu` builds the pinned QEMU into
+# `$HOME/.cache/nife-qemu` when the QEMU on PATH is not exactly the pin, since few distributions ship
+# one with `riscv-iommu-pci` (see that script's header, and §20 (IOMMU-backed DMA isolation)).
+# Without this file only `.github/workflows/ci.yml` would put that prefix on PATH, so a developer
+# who built the right QEMU would find `/usr/bin`'s again on the next check: same failure, same
 # message, same remedy, forever. The build was never the missing piece. PATH was.
 #
 # **The mechanism is inheritance, not a spawn site.** The emulator is invoked by bare name from 38

@@ -1,15 +1,16 @@
 # radon's Ethernet: the JH7110's DesignWare controller
 
 *(Milestone 53 (the board's own peripherals: network and storage on real silicon), its network
-half. Every name on this page is provisional: the crate `designware_ethernet`, the kernel module
-of the same name, `designware_ethernet_service`, `designware_ethernet_transport`, and this page's
-stem. An architect names things.)*
+half. Every name on this page is provisional: the crate `designware_ethernet`, the program
+`designware_ethernet_control`, `designware_ethernet_service`, `designware_ethernet_transport`, and
+this page's stem. An architect names things.)*
 
 radon's two ports are Synopsys DesignWare Ethernet QoS controllers, `snps,dwmac-5.20`, at
 `0x1603_0000` and `0x1604_0000`, each behind a Motorcomm YT8531 PHY. This driver brings up the
 first, which is the one U-Boot netboots radon over, and hands it to `net_stack` the way milestone
 494 (a driver for the network card a PC actually has) hands it an `e1000e`. It has leased an
-address and moved 100 MiB on radon (Results, below), and the booted system brings the port up.
+address and moved 100 MiB on radon (Results, below). The bring-up now runs in a control process
+that no radon boot has run, so the booted system leaves the port alone until one does.
 The second port is proposed in pull request #2470 (radon's second Ethernet port, `gmac1`).
 
 ## How it is split
@@ -18,8 +19,9 @@ The second port is proposed in pull request #2470 (radon's second Ethernet port,
 |---|---|---|
 | everything computed | `crates/designware_ethernet` | register map, descriptors, the DMA region's layout, the handoff, ring logic, MDIO, the YT8531's board settings, the controller sequences, the coherence probe and its verdict, the device-tree query. Host-tested against a simulated controller; three Kani harnesses |
 | the clocks | `crates/jh7110_clock_and_reset` | the AON domain, a parent-select step, and `gmac0`'s two plans, walked by the existing `drivers/jh7110_clock_and_reset.rs` |
-| control plane | `kernel/src/designware_ethernet.rs` | clocks and resets, RGMII select, PHY, reset, the coherence probe, rings, link, start |
-| what the process is handed | `kernel/src/user/designware_ethernet_service.rs` | the DMA region and the controller's DMA page; not the MAC page |
+| the bring-up's order | `crates/designware_ethernet`'s `bring_up` | PHY, reset, the coherence probe, rings, link, start, over a `Port`; the simulation runs it on the host |
+| control plane | `components/src/designware_ethernet_control.rs` | RGMII select, then `bring_up` over the first two register pages and the region; reports, exits |
+| the kernel's part | `kernel/src/user/designware_ethernet_service.rs` | finds the port, has the clock and reset server bring it up, allocates the region, spawns both processes; `net_stack` gets no MAC page |
 | data plane | `components/src/designware_ethernet_transport.rs`, inside `net_stack` | posts receive buffers, copies frames, moves the two tail pointers, polls |
 | the bench boot | `kernel/src/network_bench.rs`'s `radon` arm | the bring-up's whole account, then a lease and a measured transfer |
 
@@ -110,7 +112,8 @@ IOMMU in front of this device. So the process that moves the tails can point the
 anywhere and reset the MAC; it is as confined as its arithmetic, milestone 261 (the NVMe driver
 leaves the kernel)'s position on a machine with no IOMMU. What the split still keeps from it is the
 first page: the MAC configuration, the packet filter, the station address and the MDIO bus, so it
-cannot reach the PHY, change its address or receive promiscuously.
+cannot reach the PHY, change its address or receive promiscuously. The control process holds both
+pages, so it runs trusted (§86 (whether an NVMe driver can leave the kernel)).
 
 ## calef's bench step on radon
 
@@ -178,15 +181,16 @@ Each way it can end, by the last lines:
 |---|---|---|
 | `verdict LEASED-AND-MEASURED` with `coherence : Coherent` | the driver works, and radon's DMA is coherent by measurement | fill the Results row; a lane flips `PROVEN_ON_SILICON` citing it, and records the coherence result in 655 |
 | `INCONCLUSIVE-COHERENCE` | it leased, so DMA works in practice, but the loopback never ran | record it; the probe needs a second method (PHY loopback), a lane |
-| `refused at bring-up: NotCoherent(..)` | radon is not coherent, in the direction named | stop: 655's proposal above applies, and this is a finding for fatal risk 6 |
+| `refused at bring-up: Port(NotCoherent(..))` | radon is not coherent, in the direction named | stop: 655's proposal above applies, and this is a finding for fatal risk 6 |
 | `refused at bring-up: ClocksNotRunning` or `ResetsHeld` | the clock words did not read back | the `clocks` and `resets` lines say which; a lane |
-| `refused at bring-up: Silent { version: .. }` | the controller's window reads as nothing | clocks or resets are not what the plans say; a lane, with the log |
-| `refused at bring-up: UnknownPhysicalLayerDevice { id: .. }` | not a YT8531 at address 0 | record the id; a lane |
-| `refused at bring-up: Mdio(Timeout ..)` | the MDIO bus did not answer | a lane, with the log |
-| `refused at bring-up: Controller(ResetTimeout)` | the software reset needs the PHY's receive clock and did not get it | check the cable; a lane |
+| `refused at bring-up: Port(Silent { version: .. })` | the controller's window reads as nothing | clocks or resets are not what the plans say; a lane, with the log |
+| `refused at bring-up: Port(UnknownPhysicalLayerDevice { id: .. })` | not a YT8531 at address 0 | record the id; a lane |
+| `refused at bring-up: Port(Mdio(Timeout ..))` | the MDIO bus did not answer | a lane, with the log |
+| `refused at bring-up: Port(Controller(ResetTimeout))` | the software reset needs the PHY's receive clock and did not get it | check the cable; a lane |
 | `FAILED: no link` | the port came up and no link resolved in 5 s | the cable and the port it is in; the `phy` line says the PHY answered |
 | leased, then `transfer` slow or `client stopped` | frames move; the TCP path does not | the peer loop and the firewall first, then a lane |
 | `dhcp : waiting` as the last line | frames go out and no lease comes back | the transmit clock inversion or the RGMII delays are the first suspects; a lane, with the log |
+| `refused at bring-up: NoControlProgram` or `ControlReportUnreadable` | the control process is missing or unreadable | a lane, with the log |
 | no `network-bench:` line at all | a bring-up step hung | the last kernel line says which; power-cycle, put the ordinary image back |
 
 ### Results
@@ -197,7 +201,8 @@ Each way it can end, by the last lines:
 | 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.542 s | 14.329 Mbit/s | `LEASED-AND-MEASURED` |
 | 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.606 s | 14.313 Mbit/s | `LEASED-AND-MEASURED` |
 
-The row is `bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
+Every row predates the control process. The first row is
+`bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
 the boots were run, and why the console was not `script/board-console`. Its two earlier boots had
 the cable in `ethernet@16040000`'s jack and ended `FAILED: no link` after 5003 ms, which is the
 cabling, not the driver. What the run settled that nothing read had predicted:
@@ -228,10 +233,10 @@ Mbit/s, how QEMU reproduces it, the fix, and what the later rows measured of it.
 - **One board.** The Results rows are three boots, on one board, with one cable. Every other test
   runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
   header, not the device; QEMU has no model of this controller.
-- **The booted system brings the port up on every radon boot**
-  (`designware_ethernet_service::PROVEN_ON_SILICON` is `true`). With no cable in the jack that
-  costs the five-second link wait, then `network : NONE`. If a boot ever hangs in the bring-up,
-  setting the constant back to `false` leaves the port as U-Boot left it.
+- **The booted system leaves the port alone**
+  (`designware_ethernet_service::PROVEN_ON_SILICON` is `false`), because the control process has
+  not run on silicon. A bench boot that ends `LEASED-AND-MEASURED` with `coherence : Coherent` is
+  what sets it `true`; with no cable in the jack it then costs the five-second link wait.
 - **`gmac0` only.** `gmac1`'s clocks all live in the SYS domain and no plan for them exists; the
   milestone proposed in pull request #2470 is that work.
 - The PHY's delays and drive strengths come from `Settings::FALLBACK_GMAC0` on radon, because

@@ -247,6 +247,7 @@ dependencies = [
  "http_response",
  "installed_programs",
  "interfaces_note",
+ "jh7110_clock_and_reset_devices",
  "jh7110_entropy",
  "line_editor",
  "login_contract",
@@ -463,6 +464,7 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "designware_ethernet",
  "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",
@@ -756,6 +758,18 @@ name = "jh7110_clock_and_reset"
 version = "0.1.0"
 
 [[package]]
+name = "jh7110_clock_and_reset_contract"
+version = "0.1.0"
+
+[[package]]
+name = "jh7110_clock_and_reset_devices"
+version = "0.1.0"
+dependencies = [
+ "jh7110_clock_and_reset",
+ "jh7110_clock_and_reset_contract",
+]
+
+[[package]]
 name = "jh7110_entropy"
 version = "0.2.0"
 source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
@@ -792,7 +806,6 @@ dependencies = [
  "cpu_set",
  "credential_contract",
  "current_cpu_contract",
- "designware_ethernet",
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",
@@ -812,6 +825,7 @@ dependencies = [
  "inter_process_communication",
  "intrusive_queue",
  "jh7110_clock_and_reset",
+ "jh7110_clock_and_reset_contract",
  "jh7110_entropy",
  "jh7110_watchdog",
  "job_mix",

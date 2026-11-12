@@ -21,6 +21,8 @@ confinement_attackers = []
 [dependencies]
 # Each window is a pair page, checked at compile time against the address-space map.
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
+# The JH7110 Ethernet control process's handoff and report carry the driver crate's types.
+designware_ethernet = { version = "0.1.0", path = "../designware_ethernet" }
 # The xHCI register window is drawn from the controller's decoded capability registers.
 extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
 # The block server answers `blk`, and its block size sets how many card sectors a block is.

@@ -163,6 +163,14 @@ pub mod clock_service;
 // the system tests, std_service, the installer and boot_progenitor are its callers
 pub mod entropy_service;
 
+/// **The JH7110 clock and reset server's wiring** (milestone 1062 (the device control planes leave
+/// the kernel), step 2): one process holds the shared clock and reset windows, and the kernel's
+/// starters ask it, by their device's badge, to bring that device up. Built on every
+/// architecture, and reached only on riscv64, because the JH7110 is a RISC-V chip; the module
+/// header carries the parity note.
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
+pub(crate) mod jh7110_clock_and_reset_service;
+
 /// **radon's SD/MMC block server's wiring** (milestone 53 (the board's own peripherals: network
 /// and storage on real silicon)): the kernel ungates the controller and hands a process one page of
 /// it, a transfer region and a window of the card. riscv64-only because the controller is the
@@ -196,8 +204,8 @@ pub mod disk_tree_service;
 pub mod e1000e_service;
 
 /// **`net_stack` over the JH7110's Ethernet port** (milestone 53 (the board's own peripherals:
-/// network and storage on real silicon)): `e1000e_service`'s shape for radon. riscv64-only because
-/// the JH7110 is; `kernel/src/designware_ethernet.rs` carries the parity note.
+/// network and storage on real silicon)): the control process's spawn, then `e1000e_service`'s
+/// shape for radon. riscv64-only because the JH7110 is; the module header carries the parity note.
 #[cfg(target_arch = "riscv64")]
 pub mod designware_ethernet_service;
 
