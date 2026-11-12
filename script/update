@@ -18,6 +18,9 @@ cd "$(dirname "$0")/.."
 . helpers/qemu-path.sh
 
 script/bootstrap
+# `.qemu-version` can change from one checkout to the next as well, and script/ci-qemu is what
+# follows it: §322 (the QEMU bootstrap is the one QEMU check).
+script/ci-qemu
 
 echo "==> Rebuilding for the current checkout"
 cargo xtask build

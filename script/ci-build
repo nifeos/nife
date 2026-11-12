@@ -51,19 +51,17 @@
 # installs; so the saving would be one row wide and the cost would be a second column in the table
 # saying which rows need it.
 #
-# **What that ruling costs, and why the failure path below is loud.** `script/bootstrap` does two
-# jobs: it installs what is missing, and it verifies the environment is ADEQUATE. The second can
-# fail on a machine where most of this tier would have run perfectly; measured on milestone 286's
-# own container, where the packaged QEMU is 8.2.2 and lacks `riscv-iommu-pci`, so bootstrap exits 1
-# having installed nothing and broken nothing. The developer then gets **one error about QEMU** and
-# no checks at all, where the retired `script/gates` (which never provisioned) ran three. Read as
-# the QEMU error alone, that is a gate silently giving somebody nothing, which is the same failure
-# `a gate people skip is not a gate` names, arriving from the other side. So the exit says in plain
-# words that NO CHECKS RAN, lists the tier it skipped out of this table rather than out of a second
-# hand-written list, and names what is still runnable by hand.
+# **What that ruling costs, and why the failure path below is loud.** Provisioning can fail on a
+# machine where most of this tier would have run perfectly: `script/ci-qemu` exits 1 when it cannot
+# make the QEMU on PATH the pinned one (no compiler for the build, no network for the tarball). The
+# developer then gets **one error about QEMU** and no checks at all. Read as the QEMU error alone,
+# that is a gate silently giving somebody nothing, which is the same failure `a gate people skip is
+# not a gate` names, arriving from the other side. So the exit says in plain words that NO CHECKS
+# RAN, lists the tier it skipped out of this table rather than out of a second hand-written list,
+# and names what is still runnable by hand.
 # **Bootstrapping is the no-argument path's job and nobody else's.** With no arguments this is the
-# one command a person runs before pushing, so it provisions first; `script/bootstrap` is idempotent
-# and does nothing on a warm machine. A named check runs exactly what it names, because the caller
+# one command a person runs before pushing, so it provisions first; `script/bootstrap` and
+# `script/ci-qemu` are idempotent and do nothing on a warm machine. A named check runs exactly what it names, because the caller
 # that names one check is a CI job whose own steps have already installed the targets, the
 # components and the QEMU it needs. That is not a new convention: the `bench` and `cpu matrix` jobs
 # in `ci.yml` have always carried their own `script/bootstrap` step, and the `test` job now does
@@ -396,37 +394,50 @@ if [ $# -gt 0 ]; then
     exit 0
 fi
 
-# The no-argument path: provision, then the `local` tier in this table's order.
+# The no-argument path: provision, then the `local` tier in this table's order. Provisioning is two
+# scripts: `script/bootstrap` (the toolchain and the lint tools) and `script/ci-qemu` (the pinned
+# emulator, which bootstrap does not touch, §322 (the QEMU bootstrap is the one QEMU check)).
 #
-# **A failed bootstrap ends the run, loudly, saying what it cost.** `set -e` would already exit here
-# and would leave the developer holding whatever sentence `script/bootstrap` printed last, which on
-# the machine this was measured on is a line about a QEMU device. The point of the block below is
-# that nobody should have to infer "and therefore nothing was checked" from the absence of output.
-echo "==> script/bootstrap"
-if ! script/bootstrap; then
+# **A failed provisioning step ends the run, loudly, saying what it cost.** `set -e` would already
+# exit here and would leave the developer holding whatever sentence the failing script printed last,
+# which on a machine with an unusable QEMU is a line about a QEMU device. The point of the block
+# below is that nobody should have to infer "and therefore nothing was checked" from the absence of
+# output.
+provisioned=yes
+for provisioner in script/bootstrap script/ci-qemu; do
+    echo "==> $provisioner"
+    if ! "$provisioner"; then
+        provisioned=$provisioner
+        break
+    fi
+done
+if [ "$provisioned" != yes ]; then
     echo
-    echo "ci-build: NO CHECKS RAN. script/bootstrap failed above, and every check below it needs"
-    echo "  something it provisions: the toolchain components, the three emulators, or the lint tools."
-    echo "  Read its last line as the CAUSE, not as the whole cost. The cost is this:"
+    echo "ci-build: NO CHECKS RAN. $provisioned failed above, and every check below it needs"
+    echo "  something provisioning installs: the toolchain components, the three emulators, or the"
+    echo "  lint tools. Read its last line as the CAUSE, not as the whole cost. The cost is this:"
     echo
     echo "  Skipped, the entire local tier:"
     names_in_tier local | sed 's/^/    /'
     echo
     echo "  Still runnable by name on a machine in this state:"
-    echo "    script/ci-build fmt      rustfmt only; needs nothing script/bootstrap installs"
+    echo "    script/ci-build fmt      rustfmt only; needs nothing provisioning installs"
     echo
     # **`fmt` is named by hand and the others are not, and that is deliberate.** Which rows survive a
-    # failed bootstrap depends on WHICH PART of it failed, and this table has no column for that: an
-    # adequacy failure (an old QEMU) leaves `lint` and `image-permissions` perfectly runnable, while a
+    # failed provisioning step depends on WHICH PART of it failed, and this table has no column for
+    # that: an unusable QEMU leaves `lint` and `image-permissions` perfectly runnable, while a
     # missing rustup leaves nothing. Guessing from the table would produce a list that is wrong half
     # the time, which is worse than a short list that is always right. `fmt` is the one row that is
     # safe under every failure mode, so it is the one named.
-    echo "  Other rows may also work, depending on what failed: an out-of-date emulator leaves"
+    echo "  Other rows may also work, depending on what failed: an unusable emulator leaves"
     echo "  script/ci-build lint and script/ci-build image-permissions runnable, where a missing"
     echo "  rustup leaves nothing. This script does not guess which, because the table does not"
-    echo "  record why a row needs bootstrap and a wrong guess is worse than a short list."
+    echo "  record why a row needs provisioning and a wrong guess is worse than a short list."
     exit 1
 fi
+# script/ci-qemu may have just built the pinned QEMU into its prefix; put it on this shell's PATH,
+# which every check below inherits.
+. helpers/qemu-path.sh
 
 # The tier has to select something: milestone 401 (a gate that selects the set it judges).
 # `names_in_tier` matches a literal column value out of the `checks` table, so renaming the tier or reformatting the separator leaves this

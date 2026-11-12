@@ -1,7 +1,8 @@
 #!/bin/sh
 # script/setup: get the project ready to use from a fresh clone (or a clean slate).
 #
-# Installs dependencies, then builds so the first run is warm. After this, script/test,
+# Installs dependencies (script/bootstrap, then the pinned QEMU through script/ci-qemu), then
+# builds so the first run is warm. After this, script/test,
 # script/server, and script/console all work. See notes/scripts.md.
 #
 # Name: ratified 2026-07-22 by adopting Scripts to Rule Them All. The canonical set keeps its
@@ -16,6 +17,11 @@ cd "$(dirname "$0")/.."
 . helpers/qemu-path.sh
 
 script/bootstrap
+# The pinned QEMU is script/ci-qemu's, not bootstrap's: §322 (the QEMU bootstrap is the one QEMU
+# check). It builds the pinned version when the one on PATH is not exactly that, and the second
+# source puts a fresh build on this shell's PATH.
+script/ci-qemu
+. helpers/qemu-path.sh
 
 # There is deliberately no `rustup update` here. rust-toolchain.toml pins a DATED nightly (read the
 # date there; this comment used to repeat it and was two weeks stale by 2026-09-03, found by
