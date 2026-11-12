@@ -29,10 +29,10 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Eleven in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Twelve in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
-longer live; the table names those two and the six that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
+longer live; the table names those two and the eight that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
 
 | Harness | Property |
 |---|---|
@@ -43,7 +43,8 @@ longer live; the table names those two and the six that count objects under subt
 | `a_split_refused_for_a_full_table_moves_nothing` | with every other slot of the table taken, a split is refused and moves nothing |
 | `a_carve_keeps_every_count_exact_and_under_its_ceiling` | from any state in which each region's live count of each kind equals what its subtree holds and is at most its ceiling, a carve keeps it so |
 | `a_split_keeps_every_count_exact_and_under_its_ceiling` | the same for a split, whose new child starts with nothing counted and a sixteenth of its root's ceilings |
-| `a_release_keeps_every_count_exact` | the same for a release |
+| `a_release_keeps_every_count_exact` | the same for a release, which the table takes exactly when its region holds an object of that kind |
+| `a_release_of_nothing_held_moves_nothing` | from any state of a root and a child, a release from the root of a kind it does not hold itself (a second release of one object) is refused and leaves both regions' pages, pin, child count and counts as they were, even when the child holds that kind |
 | `a_reclaimed_region_tree_leaves_no_count_behind` | reclaiming a subtree leaf by leaf gives every count it held back, leaving the root's live counts at zero |
 
 The second is the no-double-free crux. The kernel (`untyped::split`, `untyped::destroy`) *calls*
