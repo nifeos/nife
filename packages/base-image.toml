@@ -91,6 +91,7 @@ programs = [
     "block_driver",
     "non_volatile_memory_express",
     "designware_mobile_storage",
+    "designware_ethernet_control",
     "jh7110_entropy",
     # The JH7110 clock and reset server: the entropy, Ethernet and SD/MMC starters ask it to bring
     # their device up, so on a JH7110 those drivers start only where the image carries it.

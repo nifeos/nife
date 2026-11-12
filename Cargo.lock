@@ -464,6 +464,7 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "designware_ethernet",
  "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",
@@ -805,7 +806,6 @@ dependencies = [
  "cpu_set",
  "credential_contract",
  "current_cpu_contract",
- "designware_ethernet",
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",

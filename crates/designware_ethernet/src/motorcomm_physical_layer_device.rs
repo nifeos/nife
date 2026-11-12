@@ -336,6 +336,87 @@ const FIXED_DELAY_PICOSECONDS: u32 = 1900;
 const STEP_PICOSECONDS: u32 = 150;
 
 impl Settings {
+    /// **These settings as one word**, for a process that hands them to another: bits 3:0 the
+    /// receive delay, 4 the fixed delay, 8:5 the transmit delay, 11:9 the three clock inversions
+    /// (10, 100 and 1000 Mbit/s from bit 9), 13:12 the source (0 vendor, 1 mainline, 2 fallback),
+    /// then the receive clock drive at bit 14 and the receive data drive at bit 39, each a tag bit
+    /// (0 a code, 1 microamps) and 24 bits of value above it. `None` when a select is past its
+    /// field or a drive past 24 bits, which no tree this crate parses produces.
+    ///
+    /// Name: provisional.
+    pub const fn to_word(&self) -> Option<u64> {
+        const fn drive(d: PadDriveStrength) -> Option<u64> {
+            match d {
+                PadDriveStrength::Code(c) => Some((c as u64) << 1),
+                PadDriveStrength::Microamps(u) if u < 1 << 24 => Some((u as u64) << 1 | 1),
+                PadDriveStrength::Microamps(_) => None,
+            }
+        }
+        if self.receive_delay > 0xf || self.transmit_delay > 0xf {
+            return None;
+        }
+        let (Some(clock), Some(data)) = (
+            drive(self.receive_clock_drive),
+            drive(self.receive_data_drive),
+        ) else {
+            return None;
+        };
+        let [ten, hundred, thousand] = self.transmit_clock_inverted;
+        let source = match self.source {
+            SettingsSource::VendorTree => 0,
+            SettingsSource::MainlineTree => 1,
+            SettingsSource::Fallback => 2,
+        };
+        Some(
+            self.receive_delay as u64
+                | (self.receive_fixed_delay as u64) << 4
+                | (self.transmit_delay as u64) << 5
+                | (ten as u64) << 9
+                | (hundred as u64) << 10
+                | (thousand as u64) << 11
+                | source << 12
+                | clock << 14
+                | data << 39,
+        )
+    }
+
+    /// [`Settings::to_word`]'s inverse. `None` for a source past the three.
+    ///
+    /// Name: provisional.
+    pub const fn from_word(word: u64) -> Option<Settings> {
+        const fn drive(bits: u64) -> PadDriveStrength {
+            let value = (bits >> 1) & 0xff_ffff;
+            if bits & 1 == 0 {
+                PadDriveStrength::Code(value as u8)
+            } else {
+                PadDriveStrength::Microamps(value as u32)
+            }
+        }
+        let source = match (word >> 12) & 0x3 {
+            0 => SettingsSource::VendorTree,
+            1 => SettingsSource::MainlineTree,
+            2 => SettingsSource::Fallback,
+            _ => return None,
+        };
+        let clock = (word >> 14) & 0x1ff_ffff;
+        if clock & 1 == 0 && clock >> 1 > 0xff {
+            return None;
+        }
+        let data = (word >> 39) & 0x1ff_ffff;
+        if data & 1 == 0 && data >> 1 > 0xff {
+            return None;
+        }
+        Some(Settings {
+            receive_delay: (word & 0xf) as u8,
+            receive_fixed_delay: word >> 4 & 1 != 0,
+            transmit_delay: (word >> 5 & 0xf) as u8,
+            receive_clock_drive: drive(clock),
+            receive_data_drive: drive(data),
+            transmit_clock_inverted: [word >> 9 & 1 != 0, word >> 10 & 1 != 0, word >> 11 & 1 != 0],
+            source,
+        })
+    }
+
     /// **radon's `gmac0` (Gigabit MAC, GMAC).** Both trees give these values, so a tree that names
     /// neither spelling still gets the board it is on, and says so.
     ///
@@ -1044,6 +1125,201 @@ mod tests {
         assert_eq!(
             physical_layer_device.extended(EXTENDED_PAD_DRIVE_STRENGTH_REGISTER),
             0xd030
+        );
+    }
+
+    /// Settings with every field at its smallest, the word zero.
+    fn all_zero_settings() -> Settings {
+        Settings {
+            receive_delay: 0,
+            receive_fixed_delay: false,
+            transmit_delay: 0,
+            receive_clock_drive: PadDriveStrength::Code(0),
+            receive_data_drive: PadDriveStrength::Code(0),
+            transmit_clock_inverted: [false; 3],
+            source: SettingsSource::VendorTree,
+        }
+    }
+
+    /// Each field of the word stands alone and at its largest, and each limit holds exactly: the
+    /// selects stop at 15, a code at 255, a microamp value at 2^24 - 1, and no field leaks into
+    /// its neighbor.
+    #[test]
+    fn each_field_of_the_settings_word_stands_alone_at_its_limit() {
+        let base = all_zero_settings();
+        assert_eq!(base.to_word(), Some(0));
+        assert_eq!(Settings::from_word(0), Some(base));
+        let single_bits = [
+            (
+                Settings {
+                    receive_delay: 0xf,
+                    ..base
+                },
+                0xf,
+            ),
+            (
+                Settings {
+                    receive_fixed_delay: true,
+                    ..base
+                },
+                1 << 4,
+            ),
+            (
+                Settings {
+                    transmit_delay: 0xf,
+                    ..base
+                },
+                0xf << 5,
+            ),
+            (
+                Settings {
+                    transmit_clock_inverted: [true, false, false],
+                    ..base
+                },
+                1 << 9,
+            ),
+            (
+                Settings {
+                    transmit_clock_inverted: [false, true, false],
+                    ..base
+                },
+                1 << 10,
+            ),
+            (
+                Settings {
+                    transmit_clock_inverted: [false, false, true],
+                    ..base
+                },
+                1 << 11,
+            ),
+            (
+                Settings {
+                    source: SettingsSource::MainlineTree,
+                    ..base
+                },
+                1 << 12,
+            ),
+            (
+                Settings {
+                    source: SettingsSource::Fallback,
+                    ..base
+                },
+                2 << 12,
+            ),
+            (
+                Settings {
+                    receive_clock_drive: PadDriveStrength::Code(0xff),
+                    ..base
+                },
+                0xff << 15,
+            ),
+            (
+                Settings {
+                    receive_data_drive: PadDriveStrength::Code(0xff),
+                    ..base
+                },
+                0xff << 40,
+            ),
+            (
+                Settings {
+                    receive_clock_drive: PadDriveStrength::Microamps((1 << 24) - 1),
+                    ..base
+                },
+                (((1 << 24) - 1) << 15) | 1 << 14,
+            ),
+            (
+                Settings {
+                    receive_data_drive: PadDriveStrength::Microamps((1 << 24) - 1),
+                    ..base
+                },
+                (((1u64 << 24) - 1) << 40) | 1 << 39,
+            ),
+        ];
+        for (settings, word) in single_bits {
+            assert_eq!(settings.to_word(), Some(word), "{settings:?}");
+            assert_eq!(Settings::from_word(word), Some(settings), "{word:#x}");
+        }
+    }
+
+    /// Each limit holds exactly: the selects stop at 15, the microamp values at 2^24 - 1, and a
+    /// drive code at 255.
+    #[test]
+    fn each_limit_of_the_settings_word_refuses_one_past_it() {
+        let base = all_zero_settings();
+        for (settings, why) in [
+            (
+                Settings {
+                    receive_delay: 0x10,
+                    ..base
+                },
+                "receive delay past 15",
+            ),
+            (
+                Settings {
+                    transmit_delay: 0x10,
+                    ..base
+                },
+                "transmit delay past 15",
+            ),
+            (
+                Settings {
+                    receive_clock_drive: PadDriveStrength::Microamps(1 << 24),
+                    ..base
+                },
+                "clock microamps past 24 bits",
+            ),
+            (
+                Settings {
+                    receive_data_drive: PadDriveStrength::Microamps(1 << 24),
+                    ..base
+                },
+                "data microamps past 24 bits",
+            ),
+        ] {
+            assert_eq!(settings.to_word(), None, "{why}");
+        }
+        assert_eq!(
+            Settings::from_word(0x100 << 15),
+            None,
+            "a clock code past 255"
+        );
+        assert_eq!(
+            Settings::from_word(0x100u64 << 40),
+            None,
+            "a data code past 255"
+        );
+    }
+
+    /// Settings survive the word a spawner hands them in, for each source and each drive form,
+    /// and the word refuses what it cannot carry rather than truncating it.
+    #[test]
+    fn settings_survive_their_word_and_refuse_what_it_cannot_carry() {
+        let mainline = Settings::from_mainline(2200, 1500, 3970, 2910, Some([false, true, true]));
+        for s in [Settings::FALLBACK_GMAC0, mainline] {
+            let word = s.to_word().unwrap();
+            assert_eq!(Settings::from_word(word), Some(s));
+        }
+        let vendor = Settings {
+            source: SettingsSource::VendorTree,
+            receive_clock_drive: PadDriveStrength::Code(7),
+            ..Settings::FALLBACK_GMAC0
+        };
+        assert_eq!(Settings::from_word(vendor.to_word().unwrap()), Some(vendor));
+        let too_far = Settings {
+            receive_data_drive: PadDriveStrength::Microamps(1 << 24),
+            ..mainline
+        };
+        assert_eq!(too_far.to_word(), None);
+        let past_field = Settings {
+            transmit_delay: 0x10,
+            ..mainline
+        };
+        assert_eq!(past_field.to_word(), None);
+        let word = Settings::FALLBACK_GMAC0.to_word().unwrap();
+        assert_eq!(
+            Settings::from_word(word | 0x3 << 12),
+            None,
+            "no fourth source"
         );
     }
 }
