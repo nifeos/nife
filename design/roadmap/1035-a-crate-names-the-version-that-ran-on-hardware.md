@@ -56,7 +56,7 @@ A hardware run of `jh7110_entropy` version V is all of these:
 2. That build boots on a VisionFive 2 by the procedure in `bench-procedure.md`, twice.
 3. On each boot the tour's `trng` self-test line is `ok`: the entropy service served both 32-byte
    draws to a client, and the second draw differs from the first. The line ends with the crate
-   version and commit the build resolved, which `kernel/build.rs` reads from `Cargo.lock`.
+   version and commit the build resolved, which `components/build.rs` reads from `Cargo.lock`.
 4. The line's mode note says 256-bit.
 5. No lockup: the line is not a `FAILED` line, which is where a persistent `LFSR_LOCKUP` lands.
 6. The first draws of the two boots differ.

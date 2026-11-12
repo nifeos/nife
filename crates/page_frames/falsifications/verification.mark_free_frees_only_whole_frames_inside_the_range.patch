@@ -1,0 +1,19 @@
+Falsifies `page_frames::verification::mark_free_frees_only_whole_frames_inside_the_range`.
+
+The defect: `mark_free` walks `page_frame_range`, the outward-rounding range `mark_used` needs,
+in place of `whole_frames_in`. Both return a `Range<usize>` of frame indices from the same
+arguments, so the type system cannot tell them apart.
+
+Expected to fail: both of the harness's assertions. A range starting partway into a frame frees
+that frame, which begins below `start`; a range ending partway into a frame frees that frame,
+which ends past `start + size`. That is a frame only partly inside a usable region becoming
+allocatable.
+
+diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
+--- a/crates/page_frames/src/lib.rs
++++ b/crates/page_frames/src/lib.rs
+@@ -187,3 +187,3 @@ impl<'a> PageFrameAllocator<'a> {
+     pub fn mark_free(&mut self, start: u64, size: u64) {
+-        for i in self.whole_frames_in(start, size) {
++        for i in self.page_frame_range(start, size) {
+             if self.get(i) {

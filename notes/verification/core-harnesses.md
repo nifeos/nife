@@ -96,7 +96,7 @@ the host and kernel tests.
 
 ## `crates/page_frames`
 
-Five in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the physical frame allocator:
+Six in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the physical frame allocator:
 
 | Harness | Property |
 |---|---|
@@ -105,10 +105,12 @@ Five in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the 
 | `index_of_inverts_frame_addressing` | frame address and bitmap index are inverses, so naming is unambiguous |
 | `containing_rounds_down_within_a_frame` | `PageFrame::containing` returns an aligned frame that holds the address |
 | `bitmap_bytes_covers_every_frame` | the bitmap is always sized to hold one bit per frame (no out-of-bounds in `get`/`set`) |
+| `mark_free_frees_only_whole_frames_inside_the_range` | from an all-used bitmap, every frame `mark_free` frees lies wholly inside the given range, for any aligned base, start and size |
 
 The allocator harnesses build a small allocator over a *symbolic* bitmap directly. The
 `#[cfg(kani)]` module is inside the crate, so it can reach the private fields. They do not go
-through `new`, which fills the bitmap all-used. The scan loops are bounded by pinning `total = 8`, so
+through `new`, which fills the bitmap all-used; the `mark_free` harness starts from that all-used
+state by hand. The scan loops are bounded by pinning `total = 8`, so
 `unwind(9)` suffices.
 
 ## `crates/device_tree_blob`
@@ -129,8 +131,8 @@ is the ELF lesson reused: prove (and here, harden) the loopless leaves; the walk
 
 ## `crates/inter_process_communication`
 
-Fifteen in `crates/inter_process_communication` <!--count:inter-process-communication-harnesses-->,
-the synchronous-rendezvous state machine: the rendezvous six the table names, in
+Sixteen in `crates/inter_process_communication` <!--count:inter-process-communication-harnesses-->,
+the synchronous-rendezvous state machine: the rendezvous harnesses the table names, in
 `src/verification.rs` (`src/lib.rs` at the writing), plus the notification and timer harnesses
 those later subsystems added to the same crate (four and three).
 It is the decision core of `sched`'s `Rendezvous`, extracted as pure logic. It was restated over
@@ -144,6 +146,7 @@ composing with the `Queue`'s own FIFO proof below.
 | `send_rendezvous_iff_a_receiver_waited` | a send rendezvouses exactly when a receiver was waiting, else blocks (no dropped message, no spurious block) |
 | `receive_drains_a_pending_signal_first` | a receive takes a pending async signal before a blocked sender, so a signal is never lost |
 | `a_collected_sender_is_forgotten` | once a receive collects a blocked sender, the endpoint holds no name for it in either queue and no later receive can produce it again (the endpoint half of the one-shot Reply) |
+| `a_bound_rendezvous_never_yields_a_sender` | binding to an interrupt refuses exactly the parked senders, and no later receive on the bound rendezvous is handed a sender's words |
 
 These are inductive-step proofs: assume a valid state, apply one operation, check the invariant
 holds. A non-empty queue is modeled with a single waiter. The decision and the invariant depend only

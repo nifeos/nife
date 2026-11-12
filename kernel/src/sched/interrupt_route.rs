@@ -26,6 +26,11 @@ pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAXIMUM_INTID] =
 /// `SEND_CAPABILITY` and `CALL` answer [`abi::Error::NotPermitted`]. Marked before the route is published,
 /// so no instant exists where the line is live and the endpoint accepts a send.
 ///
+/// A sender already parked on `ep` is refused the same way, under the same hold: it wakes and its
+/// `SEND`, `SEND_CAPABILITY` or `CALL` answers `NotPermitted`, and any capability it staged is
+/// dropped. A corpse parked with a death message is dropped, as `deliver_death` drops one that
+/// finds `ep` already bound. So the driver's first `RECEIVE` is never handed a sender's words.
+///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
 pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
@@ -34,13 +39,43 @@ pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
         "intid {intid} out of range"
     );
     {
-        let guard = IPC_TABLES.lock();
-        if let Some(rendezvous) = guard.as_ref().and_then(|sched| rendezvous_of(sched, ep)) {
-            rendezvous.bind_to_interrupt();
+        let mut guard = IPC_TABLES.lock();
+        if let Some(sched) = guard.as_mut()
+            && let Some(rendezvous) = rendezvous_of(sched, ep)
+        {
+            // Refuse inside the drain, as `reap_region_objects` wakes inside its own: the pop has
+            // freed the intrusive link, and `rendezvous_of`'s `'static` does not hold `sched`.
+            rendezvous.bind_to_interrupt(|sender| {
+                let tid = hold_token(sender);
+                refuse_parked_sender(sched, tid);
+            });
         }
     }
     // +1 so 0 keeps meaning "not routed"; a name is never u64::MAX, so this cannot wrap.
     INTERRUPT_ROUTES[intid as usize].store(ep + 1, Ordering::Release);
+}
+
+/// **Answer a sender that was parked on a rendezvous when it was bound to an interrupt.** A live
+/// sender is aborted with the refusal flag set ([`set_ipc_aborted`] drops a staged capability, and
+/// [`set_ipc_refused`] makes the syscall layer answer `NotPermitted`), then woken. A corpse is
+/// waiting on nothing now; it is left dead, and its death message is dropped.
+///
+/// Context: caller holds `IPC_TABLES`; `tid` has left the sender queue and holds its token.
+///
+/// Name: provisional (2026-11-11 UTC): calef names public items.
+#[cold]
+#[inline(never)]
+fn refuse_parked_sender(sched: &mut IpcTables, tid: ThreadId) {
+    let Some(t) = sched.threads.get_mut(tid) else {
+        return;
+    };
+    if t.handshake.state == State::Dead {
+        t.handshake.wait_on = None;
+        return;
+    }
+    set_ipc_aborted(sched, tid);
+    set_ipc_refused(sched, tid);
+    wake(sched, tid);
 }
 
 /// The rendezvous an interrupt is routed to, if any. Read from the interrupt handler; lock-free.

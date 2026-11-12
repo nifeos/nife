@@ -32,6 +32,8 @@ programs = [
     "swapper",
     "system_log",
     "reboot",
+    # The boot self-test's userspace half, which the progenitor runs before the shell.
+    "boot_self_test",
 
     # terminal: the two components that have to exist before the progenitor can say anything, and
     # the sink and supervisor that complete the stack.
