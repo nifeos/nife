@@ -93,12 +93,12 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
 
 ## What is proved today
 
-Two properties, both in `kernel/src/syscall.rs`, both about `run_end_va` and the map loops that
+Two properties, both in `kernel/src/syscall.rs`, both about `run_end_virtual_address` and the map loops that
 guard on it. Milestone 193 (put `kernel/src` within reach of the prover) predicted this code would never become a
 crate, rightly: syscall dispatch is
 a boundary, not a library.
 
-`run_end_va` computes the last virtual address a `count`-page run starting at `va` covers.
+`run_end_virtual_address` computes the last virtual address a `count`-page run starting at `va` covers.
 
 - **`the_run_end_is_exact_and_refuses_exactly_what_does_not_fit`.** For every `va` and every
   `count >= 1`: a `Some(last)` is exactly `va + (count - 1) * PAGE_SIZE` computed without wrapping,
@@ -110,16 +110,17 @@ a boundary, not a library.
   run does too, and no page is computed past the checked end. `k` is symbolic rather than iterated,
   so this covers every page of every run with no unwind bound.
 
-### And two in `kernel/src/arch/aarch64/iommu.rs` (milestone 255)
+### And three in `kernel/src/arch/aarch64/iommu.rs` (milestones 255 and 1066)
 
-The SMMUv3 driver, aarch64's IOMMU, has no `asm!` in it, and what it computes is which physical
-addresses a device may touch, which `design/fatal-risks/README.md` risk 7 rests on. Its word
-arithmetic now sits in three functions beside `attach`, and nothing moved out of `arch/`.
-`the_smmu_is_handed_exactly_the_tables_the_kernel_built` proves that each physical address split
-across two words reads back exactly, and that no address bit lands on a control field.
-`no_stream_can_reach_another_streams_tables` proves that every entry lies inside its table's frame
-and no two share a byte. Both were falsified with patches that leave every test green. The register
-constants are unproved, and a property proved of the SMMUv3 is not proved of the other two IOMMUs.
+The SMMUv3 driver, aarch64's IOMMU, has no `asm!` in it, and it computes which physical addresses
+a device may touch (`design/fatal-risks/README.md` risk 7). Five functions beside `attach` hold its
+word arithmetic. `the_smmu_is_handed_exactly_the_tables_the_kernel_built`: each address split across
+two words reads back exactly, and no address bit lands on a control field.
+`no_stream_can_reach_another_streams_tables`: the table places exactly the ids below its width,
+refuses the rest, and keeps each entry inside its leaf and apart from every other.
+`the_level_one_table_names_exactly_the_leaf`: the level-one descriptor and the configuration word.
+Patches that leave every test green falsify all three. The register constants are unproved, and a
+property proved of the SMMUv3 is not proved of the other two IOMMUs.
 The detail is in [kernel-proofs/smmu-proofs.md](kernel-proofs/smmu-proofs.md).
 
 ### And two in `kernel/src/arch/x86_64/interrupt_controller.rs` (milestone 304)
@@ -141,11 +142,11 @@ as more coverage than it is.
 
 | host | `arch/` subtree compiled | harnesses that run |
 |---|---|---|
-| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 7: two in `syscall.rs`, two in each `iommu.rs`, one in `fp.rs` |
+| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 9: two in `syscall.rs`, three in each `iommu.rs`, one in `fp.rs` |
 | x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
-| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 7: two in `syscall.rs`, two in `iommu.rs`, three in `mmu.rs` |
+| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 8: two in `syscall.rs`, three in `iommu.rs`, three in `mmu.rs` |
 
-Ten distinct harnesses, not twelve: `syscall.rs`'s two pass identically on both hosts.
+Twelve distinct harnesses on the first two hosts, since `syscall.rs`'s two run on both.
 
 **riscv64 needed a target, not a host**: milestone 589 (Kani can prove riscv64 from the hosts we
 already have) patches Kani, since CBMC runs anywhere. See
@@ -166,11 +167,11 @@ puts out of reach: `rearm` reads `CNTVCT_EL0` and writes `CNTV_CVAL_EL0`, both `
 accessors in `arch/aarch64/instructions.rs`, which a harness can stub. Proving it means first lifting the arithmetic out of the register accesses, and where
 that seam goes is a design question.
 
-`run_end_va` was chosen instead on the criterion that matters most given milestone 191's finding:
-it has a real defect on record. Milestone 142's review, MAJOR 4, found that the old
-implementation checked only the addition in `va.checked_add((count - 1) * PAGE_SIZE)`, leaving the
-multiply free to wrap. So a large `count` produced a `last_va` a few pages above `va`, admitting a run that
-spanned the address space.
+`run_end_virtual_address` was chosen because it has a real defect on record, the criterion milestone
+191 (did the proofs catch the bugs?) put first. In the review of milestone 142 (a text display good
+enough that people use it), MAJOR 4 found it checking only the addition in `va.checked_add((count -
+1) * PAGE_SIZE)`: the multiply wrapped, so a large `count` admitted a run spanning the address
+space.
 
 ## EXAMPLES
 
@@ -207,7 +208,7 @@ Falsify a new harness before you believe it. This is the tree's standing discipl
 historical defect and check that both harnesses go red:
 
 ```console
-$ # in run_end_va, replace the checked arithmetic with milestone 142's bug:
+$ # in run_end_virtual_address, replace the checked arithmetic with milestone 142's bug:
 $ #   va.checked_add((count - 1).wrapping_mul(paging::PAGE_SIZE))
 $ cargo kani -p kernel -Z unstable-options --ignore-global-asm --output-format=terse
 Verification failed for - syscall::proofs::every_page_between_the_checked_ends_is_itself_a_user_page

@@ -222,3 +222,7 @@ adds it itself on a machine bootstrapped before milestone 79.
   row in the table above came to light that way. The proposal
   [the Miri run keeps its budget](../design/roadmap/1040-the-miri-run-keeps-its-budget.md)
   turns the budget into a gate that names the test.
+- `script/undefined-behavior-check` says in its header that Miri checks aliasing under Tree
+  Borrows, but it never passes `-Zmiri-tree-borrows`, and neither does the weekly workflow, so
+  every run checks Stacked Borrows, Miri's default. Either the header changes to say Stacked
+  Borrows, or the script runs both models.

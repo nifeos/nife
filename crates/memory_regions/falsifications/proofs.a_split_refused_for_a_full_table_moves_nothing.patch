@@ -1,0 +1,41 @@
+Falsifies `memory_regions::proofs::a_split_refused_for_a_full_table_moves_nothing`.
+
+The defect: the split moves the parent first and takes the child's slot second. It reads as a
+reordering with no effect, since every check still runs before either step, but a split refused for
+a full table has already advanced the parent's watermark, raised its child count and counted a
+region that does not exist.
+
+Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal moved something")`.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+index 9d726ec87..3c7f64966 100644
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -424,6 +424,12 @@ impl<const N: usize> RegionTable<N> {
+         if !self.can_charge(parent, Counted::Region) {
+             return None;
+         }
++        self.count_one_more(parent, Counted::Region);
++        if let Some(r) = self.table.get_mut(entry(parent)) {
++            r.watermark = new_watermark;
++            r.children += 1;
++            r.spent.children += pages;
++        }
+         let child = self.table.insert_with(|_| Region {
+             base_page,
+             pages,
+@@ -436,14 +442,6 @@ impl<const N: usize> RegionTable<N> {
+             ceilings,
+             live: Ceilings::ZERO,
+         })?;
+-        // The insert filled a free slot and left every live one alone, so the parent still
+-        // resolves and the ceiling check above still holds.
+-        self.count_one_more(parent, Counted::Region);
+-        if let Some(r) = self.table.get_mut(entry(parent)) {
+-            r.watermark = new_watermark;
+-            r.children += 1;
+-            r.spent.children += pages;
+-        }
+         Some(child.to_bits())
+     }
+ 

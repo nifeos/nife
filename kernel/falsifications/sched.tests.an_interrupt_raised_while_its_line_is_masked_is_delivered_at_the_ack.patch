@@ -2,14 +2,14 @@ Falsifies `kernel::sched::tests::an_interrupt_raised_while_its_line_is_masked_is
 
 Architecture: riscv64
 
-The defect is an ACK that forgets its claim: `arch::interrupt_controller::enable` drops the claimed context and
+The defect is an ACKNOWLEDGE that forgets its claim: `arch::interrupt_controller::enable` drops the claimed context and
 enables the source instead of completing it. The PLIC's gateway then waits for a completion that
 never comes, so the source stays claimed and nothing it raises again is delivered. It is the same
 outcome as a completion written where the PLIC ignores it, which QEMU cannot show directly because
 its PLIC accepts any completion.
 
 Expected to fail: the second assertion, "an interrupt raised while its line was masked was never
-delivered after the ACK unmasked it", because the second raise of the console UART's
+delivered after the ACKNOWLEDGE unmasked it", because the second raise of the console UART's
 transmit-empty line is never routed.
 
 riscv64 only. aarch64's GIC and x86_64's self-IPI have no claim to forget, and this file is

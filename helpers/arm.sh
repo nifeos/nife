@@ -19,8 +19,10 @@
 #
 # It also refuses a head whose newest `lint` check run is skipped, failed or cancelled, or is still
 # running beside a skipped one, since GitHub counts a draft run's skip as passed. And it refuses a
-# head that the merge queue last removed for failed checks, which `--despite-failed-checks "<why>"`
-# overrides after posting the reason. After the conflict check it lints the pull request over the
+# head that the merge queue last removed for failed checks, unless a failed merge-group job's log
+# (`gh run view <run> --log-failed`) matches a signature in helpers/known-flakes.tsv (ARM_KNOWN_FLAKES
+# replaces the list, for the selftest only); `--despite-failed-checks "<why>"` overrides after posting
+# the reason. After the conflict check it lints the pull request over the
 # queue it joins (`script/preflight-queue --arm-check`) and refuses a red it adds, which
 # `--despite-lint "<why>"` overrides the same way. Each rule and its cases are at its check, below.
 #
@@ -160,22 +162,45 @@ esac
 # decides; its merge-group commit's last parent is the head it built. `--despite-failed-checks
 # "<why>"` arms anyway (a flake, say), after posting the reason on the pull request.
 if ! removal="$(gh api graphql -F owner='{owner}' -F name='{repo}' -F n="$pr" \
-	-f query="query(\$owner:String!,\$name:String!,\$n:Int!){repository(owner:\$owner,name:\$name){pullRequest(number:\$n){timelineItems(last:1,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){nodes{... on RemovedFromMergeQueueEvent{reason beforeCommit{parents(last:1){nodes{oid}}}}}}}}}" \
-	--jq '.data.repository.pullRequest.timelineItems.nodes[0] // {} | "\(.reason // "") \(.beforeCommit.parents.nodes[0].oid // "")"' 2>/dev/null)"; then
+	-f query="query(\$owner:String!,\$name:String!,\$n:Int!){repository(owner:\$owner,name:\$name){pullRequest(number:\$n){timelineItems(last:1,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){nodes{... on RemovedFromMergeQueueEvent{reason beforeCommit{oid parents(last:1){nodes{oid}}}}}}}}}" \
+	--jq '.data.repository.pullRequest.timelineItems.nodes[0] // {} | "\(.reason // "") \(.beforeCommit.oid // "-") \(.beforeCommit.parents.nodes[0].oid // "")"' 2>/dev/null)"; then
 	echo "$me: NOT ARMED. could not read #$pr's last merge queue removal." >&2
 	exit 1
 fi
-reason="$(printf '%s' "${removal% *}" | tr '[:upper:]' '[:lower:]')"
-if [ "$reason" = failed_checks ] && [ "${removal##* }" = "$head" ]; then
-	if [ -z "$despite_failed" ]; then
-		echo "$me: NOT ARMED. the merge queue last removed #$pr for failed checks at this same head, $head, so it would fail again. Read the merge-group log, push a fix and arm again; or, for a flake, arm with --despite-failed-checks \"<why>\"." >&2
-		exit 1
+read -r reason group built <<ENDREMOVAL
+$removal
+ENDREMOVAL
+reason="$(printf '%s' "$reason" | tr '[:upper:]' '[:lower:]')"
+if [ "$reason" = failed_checks ] && [ "$built" = "$head" ]; then
+	# A known flake re-arms without the override: a failed job of the group's merge-group runs has a
+	# log that matches a signature in the list. A removal with no group commit matches nothing.
+	flakes="${ARM_KNOWN_FLAKES:-$here/known-flakes.tsv}"
+	matched=
+	if [ "$group" != - ] && [ -z "$despite_failed" ] && grep -q '^[^#]' "$flakes" 2>/dev/null; then
+		logs="$(gh api "repos/{owner}/{repo}/actions/runs?head_sha=$group&event=merge_group&per_page=100" 2>/dev/null |
+			jq -r '.workflow_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' 2>/dev/null |
+			while read -r run; do gh run view "$run" --log-failed 2>/dev/null; done)"
+		matched="$(grep '^[^#]' "$flakes" | while IFS='	' read -r name signature record; do
+			[ -n "$signature" ] || continue
+			if printf '%s\n' "$logs" | grep -qE -- "$signature"; then
+				printf '%s (%s)\n' "$name" "$record"
+				break
+			fi
+		done)"
 	fi
-	if ! gh pr comment "$pr" --body "Armed again at \`$head\`, which the merge queue last removed for failed checks, with \`helpers/arm.sh --despite-failed-checks\`. Why: $despite_failed" >/dev/null 2>&1; then
-		echo "$me: NOT ARMED. could not post the reason for arming over the failed checks on #$pr." >&2
-		exit 1
+	if [ -n "$matched" ]; then
+		echo "$me: #$pr was removed for failed checks at this head, and the failure matches the known flake $matched; re-arming."
+	else
+		if [ -z "$despite_failed" ]; then
+			echo "$me: NOT ARMED. the merge queue last removed #$pr for failed checks at this same head, $head, so it would fail again. No failed merge-group job matches a known flake in helpers/known-flakes.tsv. Read the merge-group log, push a fix and arm again; or, for a flake, record it and add its signature there, or arm with --despite-failed-checks \"<why>\"." >&2
+			exit 1
+		fi
+		if ! gh pr comment "$pr" --body "Armed again at \`$head\`, which the merge queue last removed for failed checks, with \`helpers/arm.sh --despite-failed-checks\`. Why: $despite_failed" >/dev/null 2>&1; then
+			echo "$me: NOT ARMED. could not post the reason for arming over the failed checks on #$pr." >&2
+			exit 1
+		fi
+		echo "$me: arming #$pr over its last failed checks; the reason is on the pull request."
 	fi
-	echo "$me: arming #$pr over its last failed checks; the reason is on the pull request."
 fi
 
 # The conflict check. Exit 0 clean, 1 conflict, 2 could not tell (script/queue-conflicts).

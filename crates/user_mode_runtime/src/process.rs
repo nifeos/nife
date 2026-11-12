@@ -9,23 +9,23 @@
 
 use crate::syscall::trap6;
 
-/// Give up the CPU (`SYS_YIELD`). Returns when the scheduler runs this thread again; if another
+/// Give up the CPU (`SYSCALL_YIELD`). Returns when the scheduler runs this thread again; if another
 /// thread is ready, control goes there and back, which is one context-switch round trip.
 ///
 /// Not `nomem`: while this thread is away others write memory it shares with them, which a caller
 /// spinning on a shared word with `yield_now` relies on. Through `trap6`, because the kernel
 /// writes its result into `x0`/`a0`/`rdi` on the way out of a yield too.
 pub fn yield_now() {
-    // SAFETY: SYS_YIELD gives up the CPU and comes back; it reads no argument and touches no
+    // SAFETY: SYSCALL_YIELD gives up the CPU and comes back; it reads no argument and touches no
     // memory of this thread's own.
-    let _ = unsafe { trap6(abi::SYS_YIELD, [0; 6]) };
+    let _ = unsafe { trap6(abi::SYSCALL_YIELD, [0; 6]) };
 }
 
 /// Terminate this process. The kernel reaps the thread and frees its whole address space. Never
 /// returns; the trailing spin is only there to satisfy the `-> !` type if the trap ever came back.
 pub fn exit() -> ! {
     // SAFETY: the syscall never returns; the trailing spin only satisfies the `-> !` type.
-    let _ = unsafe { trap6(abi::SYS_EXIT, [0; 6]) };
+    let _ = unsafe { trap6(abi::SYSCALL_EXIT, [0; 6]) };
     loop {
         core::hint::spin_loop();
     }

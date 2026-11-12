@@ -29,7 +29,7 @@ instead of sleeping, which is correct and slower.
 - **`sys/thread/nife.rs`.** A spawn retypes a TCB from slot 0 above the fixed slots (`RETYPE_OBJECT`'s
   floor), allocates a stack and a thread-local block from the heap, and calls `CONFIGURE` with the
   process capability and the block as the thread pointer. `CONFIGURE` answers the thread's
-  current-CPU page, which goes in its block before `START`. A thread ends with `SYS_EXIT_THREAD`
+  current-CPU page, which goes in its block before `START`. A thread ends with `SYSCALL_EXIT_THREAD`
   naming its packet's word. The kernel clears that word once the thread has left user mode, so a
   `join` that sees it cleared may free the stack.
 - `sys/thread_local/key/nife.rs`. Thread-local keys, xous's shape. The thread pointer names the

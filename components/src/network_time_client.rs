@@ -207,20 +207,24 @@ fn client(server_ip: u64, server_port: u64) -> ! {
 
 /// **Eight unguessable bytes, or an error word that says why not.**
 ///
-/// `entropy_contract::delivered` is what makes the two failures distinguishable with no probe: a byte
+/// `entropy_contract::delivered_bytes` is what makes the two failures distinguishable with no probe: a byte
 /// count is `0..=8`, and every error a `CALL` can return is one of the kernel's small negatives,
 /// which read as enormous `u64`s. So `Err(0)` is "the service has no entropy" and `Err(huge)` is
 /// "there is no entropy service in slot 4". Both stop the client; only the report tells them apart.
 fn nonce_bits() -> Result<u64, u64> {
-    let (r0, r1) = call(ENTROPY, entropy_contract::req(entropy_contract::GET, 8), 0);
-    let Some(n) = entropy_contract::delivered(r0) else {
+    let (r0, r1) = call(
+        ENTROPY,
+        entropy_contract::request(entropy_contract::GET, 8),
+        0,
+    );
+    let Some(n) = entropy_contract::delivered_bytes(r0) else {
         return Err(r0);
     };
     if n < 8 {
         return Err(r0);
     }
     let mut bytes = [0u8; 8];
-    entropy_contract::take(n, r1, &mut bytes);
+    entropy_contract::copy_delivered_bytes(n, r1, &mut bytes);
     Ok(u64::from_le_bytes(bytes))
 }
 

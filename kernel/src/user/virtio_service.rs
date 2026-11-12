@@ -6,9 +6,9 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
-/// Where the driver expects its DMA page. Must match user/src/virtio.rs. The driver holds no
-/// device registers: it drives the device through a `Virtio` capability, so it cannot point the
-/// device outside this DMA region.
+/// Where the driver expects its DMA page. Must match `DMA_VA` in crates/virtio/src/lib.rs. The
+/// driver holds no device registers: it drives the device through a `Virtio` capability, so it
+/// cannot point the device outside this DMA region.
 const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 
 const ROLE_VIRTIO_BLK: u64 = 3;
@@ -23,27 +23,31 @@ const ROLE_VIRTIO_NET: u64 = 40;
 ///
 /// The shared body of [`start`] (mmio), [`start_pci`] (PCIe) and the writer starters; every bus and
 /// every role gets the same world. `rid` is the PCIe requester id the IOMMU keys its tables on;
-/// mmio devices have no IOMMU in front of them and pass `None`. See notes/virtio.md.
+/// mmio devices have no IOMMU in front of them and pass `None`. `None` when the IOMMU refuses to
+/// attach the device. See notes/virtio.md.
 fn wire(
     image: &'static [u8],
     transport: crate::virtio::Transport,
     intid: u32,
     role: u64,
     rid: Option<u32>,
-) -> RendezvousId {
+) -> Option<RendezvousId> {
     // The driver builds requests from the DMA page's physical address, so it gets it in `arg1`.
     // Zeroed so stale RAM cannot look like a valid descriptor to the device.
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for the virtio driver")
         .addr();
+    // First, so a refused device leaves nothing else behind.
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+        return None;
+    };
 
     let interrupt_ep = crate::sched::create_rendezvous();
     crate::sched::bind_interrupt(intid, interrupt_ep);
     crate::arch::interrupt_controller::enable(intid);
 
     let report = crate::sched::create_rendezvous();
-
-    let vid = crate::virtio::register(transport, dma, FRAME_SIZE, rid);
 
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16, amendment of 2026-10-27).
@@ -56,7 +60,7 @@ fn wire(
                 arg2: 0,
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: SEND the result
-                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                    interrupt_capability(intid), // slot 1: WAIT / ACKNOWLEDGE the interrupt
                     virtio_capability(vid),      // slot 2: drive the device, confined
                 ],
                 maps: &[Mapping {
@@ -70,7 +74,7 @@ fn wire(
     })
     .expect("could not spawn the virtio driver");
 
-    report
+    Some(report)
 }
 
 /// Start the driver against the virtio-mmio disk. Returns the endpoint it will report its
@@ -111,7 +115,7 @@ pub fn start_write_abandoner(image: &'static [u8]) -> Option<RendezvousId> {
 /// confinement polices both queues through the one `Virtio` capability.
 pub fn start_net(image: &'static [u8]) -> Option<RendezvousId> {
     let dev = crate::virtio::find_net_device()?;
-    Some(wire(
+    wire(
         image,
         crate::virtio::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
@@ -119,20 +123,20 @@ pub fn start_net(image: &'static [u8]) -> Option<RendezvousId> {
         dev.intid,
         ROLE_VIRTIO_NET,
         None, // virtio-mmio has no IOMMU in front of it on either board
-    ))
+    )
 }
 
 /// The same net driver over the PCIe transport, behind the IOMMU (§20): the NIC is confined in
 /// hardware to its DMA region and shadow page, `iommu_platform=on`, as the disk is.
 pub fn start_net_pci(image: &'static [u8]) -> Option<RendezvousId> {
     let d = crate::pci::find_net_device()?;
-    Some(wire(
+    wire(
         image,
         crate::virtio::Transport::pci(&d),
         d.intid,
         ROLE_VIRTIO_NET,
         Some(d.rid),
-    ))
+    )
 }
 
 /// The heap budget the net server (smoltcp) draws from, in pages: the socket set, per-frame
@@ -159,7 +163,7 @@ pub fn start_net_server(image: &'static [u8]) -> Option<(RendezvousId, Holding)>
         dev.intid,
         None,
         socket_contract::NO_LISTEN_GRANT, // a DHCP bring-up serves nobody inbound
-    );
+    )?;
     Some((report, holding))
 }
 
@@ -172,7 +176,7 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
         d.intid,
         Some(d.rid),
         socket_contract::NO_LISTEN_GRANT,
-    );
+    )?;
     Some((report, holding))
 }
 
@@ -180,15 +184,16 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
 /// endpoint, plus a heap budget, extra stack pages, a retransmit timer and a `Stack` endpoint (slot
 /// 4) where clients' socket-contract requests arrive. `listen_grant` goes in `arg2`.
 ///
-/// Returns `(report endpoint, stack endpoint, what ends the service)`. A caller with no client
-/// ignores the stack. See notes/net/memory-and-reclamation.md.
+/// Returns `(report endpoint, stack endpoint, what ends the service)`, or `None` when the IOMMU
+/// refuses to attach the NIC. A caller with no client ignores the stack. See
+/// notes/net/memory-and-reclamation.md.
 fn wire_net_server(
     image: &'static [u8],
     transport: crate::virtio::Transport,
     intid: u32,
     rid: Option<u32>,
     listen_grant: u64,
-) -> (RendezvousId, RendezvousId, Holding) {
+) -> Option<(RendezvousId, RendezvousId, Holding)> {
     use crate::capability_object::memory_region_capability;
 
     // Zeroed so stale RAM cannot look like a valid descriptor to the device before the driver
@@ -196,6 +201,11 @@ fn wire_net_server(
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for the net server")
         .addr();
+    // First, so a refused NIC leaves nothing else behind.
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+        return None;
+    };
 
     // The endpoints come out of a region of their own, or the service cannot be ended: `net_stack`
     // blocks in `receive_capability(STACK)` forever, a `Blocked` thread never reaches the `schedule()` that
@@ -213,7 +223,6 @@ fn wire_net_server(
     // no capability to its own TCB (`notes/timer.md`, "Binding a notification to yourself").
     let wake = crate::sched::create_notification_from(ep_region).expect("no notification");
     let retransmit = crate::sched::create_timer_from(ep_region).expect("no retransmit timer");
-    let vid = crate::virtio::register(transport, dma, FRAME_SIZE, rid);
     let budget =
         crate::memory_region::create(NET_SERVER_BUDGET_PAGES).expect("no untyped for net_stack");
     // The extra stack pages get a region of their own, freed only after the server is dead: a
@@ -253,7 +262,7 @@ fn wire_net_server(
                 arg2: listen_grant, // which ports this stack's clients may listen on, if any
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: report the acquired address
-                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                    interrupt_capability(intid), // slot 1: WAIT / ACKNOWLEDGE the interrupt
                     virtio_capability(vid),      // slot 2: the confined transport
                     memory_region_capability(budget), // slot 3: the heap's budget
                     rendezvous_capability(stack, Rights::READ), // slot 4: serve clients' requests
@@ -279,7 +288,7 @@ fn wire_net_server(
     held.add_region(ep_region);
     held.add_region_after_death(budget);
     held.add_region_after_death(stack_region);
-    (report, stack, held)
+    Some((report, stack, held))
 }
 
 /// The client's budget, in pages: it mints one shared frame and pays for that frame's own page
@@ -362,7 +371,7 @@ fn start_net_stack_with(
     };
 
     let (net_stack_report, stack, mut held) =
-        wire_net_server(image, transport, intid, rid, listen_grant);
+        wire_net_server(image, transport, intid, rid, listen_grant)?;
     let cli_report = spawn_stack_client(image, cli_arg, cli_arg1, blob, stack, &mut held);
 
     // net_stack reports its DHCP lease with a blocking `send`; until it is received, net_stack
@@ -485,20 +494,39 @@ const STD_NET_STACK_PAGES: u64 = 32;
 /// `socket_contract::NO_LISTEN_GRANT` answers `PermissionDenied` for every port.
 ///
 /// Returns the program's stdout endpoint, its thread (so a test can tell a dead program from a busy
-/// one) and what ends the service, or `None` if no NIC is attached. See notes/net.md.
+/// one) and what ends the service, or `None` if no NIC is attached or the IOMMU refuses it. See
+/// notes/net.md.
 pub fn start_net_std(
     net_stack_image: &'static [u8],
     std_image: &'static [u8],
     listen_grant: u64,
 ) -> Option<(RendezvousId, crate::thread::ThreadId, Holding)> {
-    use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
-
     let dev = crate::virtio::find_net_device()?;
     let transport = crate::virtio::Transport::Mmio {
         mmio_phys: dev.mmio_phys,
     };
     let (net_stack_report, stack, mut held) =
-        wire_net_server(net_stack_image, transport, dev.intid, None, listen_grant);
+        wire_net_server(net_stack_image, transport, dev.intid, None, listen_grant)?;
+    let (report, tid) = spawn_std_net_client(std_image, stack, &mut held);
+
+    // net_stack's DHCP report is a blocking `send`; until it is received, it cannot serve.
+    crate::sched::ipc_receive(net_stack_report);
+    Some((report, tid, held))
+}
+
+/// Spawn [`start_net_std`]'s `std::net` client against `stack`, and return its stdout endpoint and
+/// thread. Its thread and regions are added to `held`.
+///
+/// A function of its own, as [`spawn_stack_client`] is, so the client's locals and the server's
+/// [`Holding`] never share one frame (script/stack-frame-check).
+///
+/// Name: provisional.
+fn spawn_std_net_client(
+    std_image: &'static [u8],
+    stack: RendezvousId,
+    held: &mut Holding,
+) -> (RendezvousId, crate::thread::ThreadId) {
+    use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
 
     let std_eps =
         crate::memory_region::create(2).expect("no endpoint region for the std net client");
@@ -542,21 +570,18 @@ pub fn start_net_std(
     })
     .expect("could not spawn the networked std program");
 
-    // net_stack's DHCP report is a blocking `send`; until it is received, it cannot serve.
-    crate::sched::ipc_receive(net_stack_report);
-
     held.add_thread(tid);
     held.add_region(std_eps);
     held.add_region_after_death(heap);
     held.add_region_after_death(frames);
     held.add_region_after_death(std_stack_region);
-    Some((report, tid, held))
+    (report, tid)
 }
 
 /// [`wire`] against the enumerated mmio disk, at `role`.
 fn start_role(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     let dev = crate::virtio::find_block_device()?;
-    Some(wire(
+    wire(
         image,
         crate::virtio::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
@@ -564,19 +589,86 @@ fn start_role(image: &'static [u8], role: u64) -> Option<RendezvousId> {
         dev.intid,
         role,
         None, // virtio-mmio has no IOMMU in front of it on either board
-    ))
+    )
 }
 
-/// [`wire`] against the enumerated PCIe disk, at `role`.
+/// Which grant [`start_role_pci`] last gave the PCIe disk: 0 before any, 1 mediated, 2 direct.
+static PCI_DISK_GRANT: core::sync::atomic::AtomicU8 = core::sync::atomic::AtomicU8::new(0);
+
+/// Start a driver role against the enumerated PCIe disk, with the grant the default gives it
+/// (`virtio_grant::choose`): direct where the IOMMU confines the function, mediated otherwise.
 fn start_role_pci(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     let d = crate::pci::find_block_device()?;
-    Some(wire(
+    let (grant, report) = match super::virtio_grant::choose(&d) {
+        Ok(window) => (2, wire_direct(image, &d, &window, role)?),
+        Err(_) => (1, wire_mediated_pci(image, &d, role)?),
+    };
+    PCI_DISK_GRANT.store(grant, core::sync::atomic::Ordering::Relaxed);
+    Some(report)
+}
+
+/// **Whether the PCIe disk's last driver was granted direct**, or `None` before any started. The
+/// system tests ask it, after a read, to hold a confining runner to the default without bringing
+/// the function up again (each bring-up arms an interrupt the suite never hands back).
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
+pub fn pci_disk_was_granted_direct() -> Option<bool> {
+    match PCI_DISK_GRANT.load(core::sync::atomic::Ordering::Relaxed) {
+        0 => None,
+        grant => Some(grant == 2),
+    }
+}
+
+/// [`wire`] against a PCIe function, mediated. `None` when the IOMMU refuses the function.
+fn wire_mediated_pci(
+    image: &'static [u8],
+    d: &crate::pci::PciVirtioDevice,
+    role: u64,
+) -> Option<RendezvousId> {
+    wire(
         image,
-        crate::virtio::Transport::pci(&d),
+        crate::virtio::Transport::pci(d),
         d.intid,
         role,
         Some(d.rid), // the PCIe requester id, the IOMMU keys its tables on it
-    ))
+    )
+}
+
+/// **Start a driver role on a direct grant** of `d`: its structure pages and a one-page DMA region
+/// the IOMMU confines, an interrupt and a report endpoint, and no `Virtio` capability. The same
+/// role numbers and slots 0 and 1 as [`wire`], so the driver binary runs either grant. `None` when
+/// [`super::virtio_grant::carve`] finds no frame or the IOMMU refuses the function.
+fn wire_direct(
+    image: &'static [u8],
+    d: &crate::pci::PciVirtioDevice,
+    window: &driver_process_contract::virtual_input_output::RegisterWindow,
+    role: u64,
+) -> Option<RendezvousId> {
+    let direct = super::virtio_grant::carve(d, window, role as u16, 1)?;
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(d.intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(d.intid);
+    let report = crate::sched::create_rendezvous();
+    let intid = d.intid;
+    crate::sched::spawn(move || {
+        let words = direct.words;
+        run(
+            image,
+            Spawn {
+                arg0: words[0],
+                arg1: words[1],
+                arg2: words[2],
+                grants: &[
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: SEND the result
+                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                ],
+                maps: direct.maps(),
+                windows: &direct.windows,
+            },
+        )
+    })
+    .expect("could not spawn the direct virtio driver");
+    Some(report)
 }
 
 const ROLE_VIRTIO_ATTACK: u64 = 8;
@@ -594,7 +686,7 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
         dma,
         FRAME_SIZE,
         None,
-    );
+    )?;
     let report = crate::sched::create_rendezvous();
 
     crate::sched::spawn(move || {
@@ -642,7 +734,7 @@ pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
         dma,
         FRAME_SIZE,
         None,
-    );
+    )?;
     let report = crate::sched::create_rendezvous();
 
     crate::sched::spawn(move || {

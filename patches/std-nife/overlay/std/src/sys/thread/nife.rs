@@ -5,7 +5,7 @@
 //! `ThreadControlBlock::CONFIGURE` with the capability in `runtimeproto::PROCESS_SLOT` (which
 //! carries `BIND`). It runs on a heap stack, shares the capability table, the space and every lock,
 //! and has its own thread pointer naming its own block (`sys::thread_local::key::nife`). It ends
-//! with `SYS_EXIT_THREAD`, which clears the word its joiner waits on only once it has left its
+//! with `SYSCALL_EXIT_THREAD`, which clears the word its joiner waits on only once it has left its
 //! stack for good. A program given no process capability cannot spawn: `Thread::new` answers
 //! `Unsupported`.
 
@@ -30,7 +30,7 @@ use crate::time::Duration;
 
 /// The packet a spawner and its thread share: one word, the futex the joiner waits on.
 ///
-/// `RUNNING` until the thread leaves. The thread's `SYS_EXIT_THREAD` names this word, and the
+/// `RUNNING` until the thread leaves. The thread's `SYSCALL_EXIT_THREAD` names this word, and the
 /// kernel stores `DONE` in it and wakes the joiner once the thread will never touch its stack
 /// again, which is what makes freeing the stack after a join sound. A handle dropped without a
 /// join marks it `DETACHED`, and the thread then frees the packet itself and names no word.
@@ -114,7 +114,7 @@ impl Thread {
             rt::invoke(
                 runtimeproto::MEMORY_REGION_SLOT,
                 abi::memory_region::RETYPE_OBJECT,
-                abi::objtype::THREAD_CONTROL_BLOCK,
+                abi::object_type::THREAD_CONTROL_BLOCK,
                 0,
                 runtimeproto::SLOTS, // above every fixed slot (`RETYPE_OBJECT`'s floor)
             )

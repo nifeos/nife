@@ -279,7 +279,7 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
         dma,
         FRAME_SIZE,
         None,
-    );
+    )?;
     Some(VirtioBootGrant {
         vid,
         intid: d.intid,

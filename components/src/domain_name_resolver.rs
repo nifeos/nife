@@ -329,13 +329,17 @@ fn ask(state: &mut State, server: &Server, name: Name) -> Result<Answer, Fail> {
 /// Sixteen unguessable bits, or the refusal to ask at all.
 fn transaction_id() -> Result<u16, Fail> {
     let no_entropy = Fail::Status(Outcome::of(status::NO_ENTROPY));
-    let (r0, r1) = call(ENTROPY, entropy_contract::req(entropy_contract::GET, 2), 0);
-    let n = entropy_contract::delivered(r0).ok_or(no_entropy)?;
+    let (r0, r1) = call(
+        ENTROPY,
+        entropy_contract::request(entropy_contract::GET, 2),
+        0,
+    );
+    let n = entropy_contract::delivered_bytes(r0).ok_or(no_entropy)?;
     if n < 2 {
         return Err(Fail::Status(Outcome::of(status::NO_ENTROPY)));
     }
     let mut bytes = [0u8; 2];
-    entropy_contract::take(n, r1, &mut bytes);
+    entropy_contract::copy_delivered_bytes(n, r1, &mut bytes);
     Ok(u16::from_le_bytes(bytes))
 }
 

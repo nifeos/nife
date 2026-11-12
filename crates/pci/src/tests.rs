@@ -423,6 +423,7 @@ fn bars_are_sized_and_restored() {
         bdf,
         &mut |b, o| cfg.borrow_mut().read32(b, o),
         &mut |b, o, v| cfg.borrow_mut().write32(b, o, v),
+        &mut |i, reason| panic!("BAR{i} refused: {reason:?}"),
     );
     let mut cfg = cfg.into_inner();
 
@@ -478,6 +479,7 @@ fn a_64_bit_bar_in_the_first_slot_keeps_its_high_half() {
             highest.set(highest.get().max(o));
             cfg.borrow_mut().write32(b, o, v);
         },
+        &mut |i, reason| panic!("BAR{i} refused: {reason:?}"),
     );
 
     assert_eq!(
@@ -500,6 +502,199 @@ fn a_64_bit_bar_in_the_first_slot_keeps_its_high_half() {
         BAR0 + 20,
         "the probe touched a register outside the six BAR slots"
     );
+}
+
+/// A device answering the BAR probe from a table: `BAR0 + 4 * slot` holds `(value, mask)`, and an
+/// all-ones write to a slot reads back its mask until the next write restores a value. The header
+/// type dword reads `header_type << 16`, and any other register reads zero.
+struct ProbeTable {
+    header_type: u8,
+    slots: [(u32, u32); 6],
+    probing: [bool; 6],
+    highest: u64,
+}
+
+impl ProbeTable {
+    fn new(slots: [(u32, u32); 6]) -> Self {
+        ProbeTable {
+            header_type: 0,
+            slots,
+            probing: [false; 6],
+            highest: 0,
+        }
+    }
+
+    fn slot(off: u64) -> Option<usize> {
+        (BAR0..BAR0 + 24)
+            .contains(&off)
+            .then(|| ((off - BAR0) / 4) as usize)
+    }
+
+    fn read32(&mut self, off: u64) -> u32 {
+        self.highest = self.highest.max(off);
+        if off == HEADER_TYPE & !3 {
+            return u32::from(self.header_type) << 16;
+        }
+        match Self::slot(off) {
+            Some(i) if self.probing[i] => self.slots[i].1,
+            Some(i) => self.slots[i].0,
+            None => 0,
+        }
+    }
+
+    fn write32(&mut self, off: u64, v: u32) {
+        self.highest = self.highest.max(off);
+        if let Some(i) = Self::slot(off) {
+            self.probing[i] = v == u32::MAX;
+        }
+    }
+
+    /// Run `read_bars` over this table, returning the BARs and every refusal it reported.
+    fn read(&mut self) -> ([Option<Bar>; 6], Vec<(usize, BarRefusal)>) {
+        let device = std::cell::RefCell::new(self);
+        let mut refusals = Vec::new();
+        let bars = read_bars(
+            Bdf {
+                bus: 0,
+                dev: 0,
+                func: 0,
+            },
+            &mut |_, o| device.borrow_mut().read32(o),
+            &mut |_, o, v| device.borrow_mut().write32(o, v),
+            &mut |i, reason| refusals.push((i, reason)),
+        );
+        (bars, refusals)
+    }
+}
+
+/// A 32-bit BAR whose writable bits have a hole above the lowest one describes no size. The
+/// complement of the mask would have called this one `0x1001_0000` bytes, which is not a power of
+/// two and so cannot be aligned.
+#[test]
+fn a_bar_mask_with_a_hole_is_refused() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0, 0xefff_0000);
+    let (bars, refusals) = ProbeTable::new(slots).read();
+    assert_eq!(bars, [None; 6]);
+    assert_eq!(refusals, vec![(0, BarRefusal::MaskNotContiguous)]);
+}
+
+/// A 64-bit BAR whose upper half reads back zero cannot be placed above 4 GiB, and the complement
+/// of its mask is a size near `u64::MAX`. It is refused, not sized from its lower half.
+#[test]
+fn a_64_bit_bar_whose_upper_half_reads_zero_is_refused() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0b100, 0xffff_c004);
+    slots[1] = (0, 0);
+    let (bars, refusals) = ProbeTable::new(slots).read();
+    assert_eq!(bars, [None; 6]);
+    assert_eq!(refusals, vec![(0, BarRefusal::MaskNotContiguous)]);
+}
+
+/// A memory BAR that says it is implemented (its type bits are set) but has no writable address
+/// bit is refused. A slot that reads zero before and after the probe is unimplemented, which is
+/// ordinary, and is neither kept nor reported.
+#[test]
+fn a_bar_with_no_writable_bits_is_refused() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0b100, 0b100);
+    slots[1] = (0, 0);
+    slots[2] = (0b1000, 0b1000); // prefetchable 32-bit, nothing writable
+    let (bars, refusals) = ProbeTable::new(slots).read();
+    assert_eq!(bars, [None; 6]);
+    assert_eq!(
+        refusals,
+        vec![
+            (0, BarRefusal::NoWritableBits),
+            (2, BarRefusal::NoWritableBits),
+        ],
+    );
+}
+
+/// A 64-bit BAR assigned so high that its base plus its size passes the top of the address space
+/// is refused, because every caller adds the two.
+#[test]
+fn a_bar_whose_end_overflows_is_refused() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0xffff_f004, 0xffff_e004); // a 0x2000-byte BAR, low half of the base 0xffff_f000
+    slots[1] = (u32::MAX, u32::MAX);
+    let (bars, refusals) = ProbeTable::new(slots).read();
+    assert_eq!(bars, [None; 6]);
+    assert_eq!(refusals, vec![(0, BarRefusal::EndOverflows)]);
+}
+
+/// A 64-bit BAR in slot 5 would take 0x28, the `CardBus` CIS pointer, as its upper half. It is
+/// refused before the probe, so nothing past the six slots is read or written.
+#[test]
+fn a_64_bit_bar_in_the_last_slot_is_refused_without_probing_past_it() {
+    let mut slots = [(0, 0); 6];
+    slots[5] = (0b100, 0xffff_f004);
+    let mut device = ProbeTable::new(slots);
+    let (bars, refusals) = device.read();
+    assert_eq!(bars, [None; 6]);
+    assert_eq!(refusals, vec![(5, BarRefusal::SixtyFourBitInLastSlot)]);
+    assert_eq!(
+        device.highest,
+        BAR0 + 20,
+        "the probe touched a register past the BARs"
+    );
+}
+
+/// A bridge header has two BAR slots, and where an endpoint's BAR2 sits it carries the bus
+/// numbers. Those are never probed, and a 64-bit BAR in a bridge's second slot is refused for
+/// the same reason as one in an endpoint's sixth.
+#[test]
+fn a_bridge_has_two_bar_slots() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0x4000_0000, 0xffff_f000);
+    slots[1] = (0b100, 0xffff_f004);
+    slots[2] = (0x0001_0100, 0xffff_ffff); // what the bus numbers would read back as
+    let mut device = ProbeTable::new(slots);
+    device.header_type = HEADER_TYPE_BRIDGE;
+    let (bars, refusals) = device.read();
+    assert_eq!(
+        bars[0],
+        Some(Bar {
+            base: 0x4000_0000,
+            size: 0x1000,
+            is_64: false
+        })
+    );
+    assert_eq!(&bars[1..], &[None; 5]);
+    assert_eq!(refusals, vec![(1, BarRefusal::SixtyFourBitInLastSlot)]);
+    assert_eq!(
+        device.highest,
+        BAR0 + 4,
+        "the probe touched the bus numbers"
+    );
+}
+
+/// A header layout this crate does not know (2, `CardBus`) has no BARs it will probe.
+#[test]
+fn an_unknown_header_layout_has_no_bars() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0x4000_0000, 0xffff_f000);
+    let mut device = ProbeTable::new(slots);
+    device.header_type = 2;
+    let (bars, refusals) = device.read();
+    assert_eq!(bars, [None; 6]);
+    assert!(refusals.is_empty());
+    assert_eq!(device.highest, HEADER_TYPE & !3);
+}
+
+/// The largest regions both widths can describe are sized, not refused: a 32-bit BAR of 2 GiB and
+/// a 64-bit BAR of 2^63 bytes, the masks whose complement the old arithmetic got right only by
+/// extending the 32-bit one by hand.
+#[test]
+fn the_largest_regions_are_sized() {
+    let mut slots = [(0, 0); 6];
+    slots[0] = (0, 0x8000_0000);
+    slots[1] = (0b100, 0b100);
+    slots[2] = (0, 0x8000_0000);
+    let (bars, refusals) = ProbeTable::new(slots).read();
+    assert!(refusals.is_empty(), "{refusals:?}");
+    assert_eq!(bars[0].map(|b| b.size), Some(0x8000_0000));
+    assert_eq!(bars[1].map(|b| b.size), Some(1 << 63));
 }
 
 /// The capability walk yields the two virtio vendor capabilities with their (bar, offset,

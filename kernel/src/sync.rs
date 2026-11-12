@@ -48,7 +48,8 @@ pub mod rank {
     /// table's removal (under `IPC_TABLES`) to release a dead driver's device.
     pub(crate) const VIRTIO: u32 = 56;
 
-    /// The IOMMU driver's device: the SMMUv3's or RISC-V IOMMU's tables and queues. A leaf; the DMA
+    /// The IOMMU driver's device: the SMMUv3's or RISC-V IOMMU's tables and queues. Above the frame
+    /// allocator, which a driver takes under it for a new leaf of its device table; the DMA
     /// domain's page-table frames are allocated before it is taken (`crate::iommu::confine`).
     pub const IOMMU: u32 = 54;
 

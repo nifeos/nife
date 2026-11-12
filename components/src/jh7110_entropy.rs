@@ -91,7 +91,7 @@ use trng::registers;
 const REQ: u64 = 0;
 /// Slot 1, a readiness endpoint (`WRITE`) that gets one message:
 /// [`proto::READY`](entropy_contract::READY) once a first generation is not all zero, or a
-/// [`bringup_failure`](entropy_contract::bringup_failure) word naming the failed step.
+/// [`bring_up_failure`](entropy_contract::bring_up_failure) word naming the failed step.
 const READY: u64 = 1;
 
 /// Where the spawner maps the TRNG's register page (a device-typed mapping, the same mechanism
@@ -250,7 +250,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // `NO_ENTROPY` while it stays dry, and it recovers by itself if it starts answering.
     serve(
         pool,
-        report == proto::bringup_failure(proto::STEP_FIRST_ALL_ZERO),
+        report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO),
     )
 }
 
@@ -269,7 +269,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this driver condemned at bring-up (see `_start`). It is
             // answered exactly the way a dry device is, because `NO_ENTROPY` already means the one
             // thing a client has to know: it is not getting randomness here.
-            proto::GET if !refuse => pool.take(proto::want(w0), &mut generate),
+            proto::GET if !refuse => pool.take(proto::requested_bytes(w0), &mut generate),
             _ => (proto::NO_ENTROPY, 0),
         };
         reply(capability, count, word);
@@ -277,7 +277,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
 }
 
 /// **The two 8s are the same 8.** `jh7110_entropy::Pool::take` clamps to the width of the word it
-/// answers with; `entropy_contract::want` clamps to the width of the word the wire carries. This file
+/// answers with; `entropy_contract::requested_bytes` clamps to the width of the word the wire carries. This file
 /// is the only one that depends on both, so it is where the agreement can be checked, and a
 /// compile-time assert is the rung this project reaches for when a fact can be made unrepresentable
 /// rather than remembered.

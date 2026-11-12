@@ -16,8 +16,8 @@ asid	kernel	retired
 base_digest_contract	shared	components,fixtures,kernel
 bitfont	shared	retired
 bitmap_font	shared	components,kernel,uefi_loader
-block_roster_contract	shared	components,kernel
-boot_ladder	shared	components,kernel
+block_roster_contract	shared	retired
+boot_ladder	shared	components,fixtures,kernel
 boot_slot	shared	components,kernel,uefi_loader
 byte_sink_contract	shared	components,fixtures,kernel,std
 byte_sink_proto	shared	retired
@@ -75,7 +75,7 @@ environment_proto	shared	retired
 environment_protocol	shared	retired
 extensible_host_controller_interface	shared	retired
 extensible_host_controller_interface_contract	shared	retired
-file_allocation_table	userspace	components
+file_allocation_table	userspace	retired
 filesystem_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 filesystem_fixture	shared	components,fixtures,kernel,redoxfs_server,std_exerciser
 filesystem_proto	shared	retired

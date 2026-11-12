@@ -110,7 +110,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     });
     let (r0, _) = call(
         grant_plan::ENTROPY_SLOT,
-        entropy_contract::req(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
+        entropy_contract::request(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
         0,
     );
     say(match r0 as i64 {
@@ -150,7 +150,7 @@ fn census(line: &mut [u8; 96]) -> usize {
     let head = b"slots held:";
     line[..head.len()].copy_from_slice(head);
     let mut n = head.len();
-    for slot in 0..abi::fault::FAULT_EP_SLOT {
+    for slot in 0..abi::fault::FAULT_RENDEZVOUS_SLOT {
         if is_granted(slot) {
             line[n] = b' ';
             n += 1;

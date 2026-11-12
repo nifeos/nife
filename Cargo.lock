@@ -102,7 +102,8 @@ dependencies = [
 
 [[package]]
 name = "block_roster_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/block_roster_contract?rev=62630199281cbd294d6621cc35f31f81933e6be2#62630199281cbd294d6621cc35f31f81933e6be2"
 
 [[package]]
 name = "boot_ladder"
@@ -403,8 +404,8 @@ version = "0.1.0"
 
 [[package]]
 name = "designware_mobile_storage"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=a800e4b89cf379a85947e473082ebe7f8f933c34#a800e4b89cf379a85947e473082ebe7f8f933c34"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
 
 [[package]]
 name = "device_tree_blob"
@@ -474,8 +475,8 @@ dependencies = [
 
 [[package]]
 name = "e1000e"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/e1000e?rev=40c1ec9c7e73e5099661636c046773dfcaecbb6d#40c1ec9c7e73e5099661636c046773dfcaecbb6d"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/e1000e?rev=ef01cefa9a186db7f1c9802e78d8c6c1215db7ec#ef01cefa9a186db7f1c9802e78d8c6c1215db7ec"
 
 [[package]]
 name = "elf"
@@ -497,16 +498,13 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "extensible_host_controller_interface"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=bea025706ab4837cf541bf93c436ff4e1057922a#bea025706ab4837cf541bf93c436ff4e1057922a"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=2394d80d83ca59d1aadf925274b34a30bfbd92b2#2394d80d83ca59d1aadf925274b34a30bfbd92b2"
 
 [[package]]
 name = "file_allocation_table"
-version = "0.1.0"
-dependencies = [
- "lamfat",
- "ruzstd",
-]
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/file_allocation_table?rev=9b3eac1cdbb19cc6668e3346296c8cee87e32214#9b3eac1cdbb19cc6668e3346296c8cee87e32214"
 
 [[package]]
 name = "filesystem_contract"
@@ -594,8 +592,8 @@ dependencies = [
 
 [[package]]
 name = "generational_table"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/generational_table?rev=b68ae45602813ad5487521fc03515fea4f8d2631#b68ae45602813ad5487521fc03515fea4f8d2631"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/generational_table?rev=4fb6bb7cb0f465e43f90935c611d8c1626d23d67#4fb6bb7cb0f465e43f90935c611d8c1626d23d67"
 
 [[package]]
 name = "generator"
@@ -859,16 +857,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lamfat"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7d4340238d6ebca31df00ac672df6615e3250247da0b31dfb8e2851e388fbf1"
-dependencies = [
- "bitflags 2.13.2",
- "log",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1022,8 +1010,8 @@ version = "0.1.0"
 
 [[package]]
 name = "non_volatile_memory_express"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=87bbef8c9ac4cd05cc6babf88f31fa8500166e9d#87bbef8c9ac4cd05cc6babf88f31fa8500166e9d"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=27aa19c957a340b720b8b7ce44de32a8405d6950#27aa19c957a340b720b8b7ce44de32a8405d6950"
 
 [[package]]
 name = "nu-ansi-term"
@@ -1211,15 +1199,6 @@ name = "rustversion"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
-
-[[package]]
-name = "ruzstd"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e4ce4a039f42bf25920b95667e4d789e98749ab11bbb8d2c2936f788421bb5"
-dependencies = [
- "twox-hash",
-]
 
 [[package]]
 name = "same-file"
@@ -1453,6 +1432,7 @@ dependencies = [
  "abi",
  "address_space_map",
  "base_digest_contract",
+ "boot_ladder",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",
@@ -1743,12 +1723,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "twox-hash"
-version = "2.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a801b3cea342a06d468c8710662aa29e5e05e4f5c0d62f00bbb7f2ad7941c2"
-
-[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1834,8 +1808,10 @@ name = "virtio"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "driver_process_contract",
  "filesystem_contract",
  "nifefs",
+ "startup_page_contract",
  "user_mode_runtime",
 ]
 

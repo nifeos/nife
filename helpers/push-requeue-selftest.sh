@@ -9,7 +9,8 @@
 # no-op and is the falsification: with it set, the re-arm cases must fail. Every call is logged to
 # $tmp/log so the order (dequeue, push, merge) can be asserted. The head is always `h1`. Its `lint`
 # check runs come from $tmp/lint (default: one passed run) and the last queue removal from
-# $tmp/removal, as helpers/arm.sh's `--jq` would print them, since the stub applies no filter.
+# $tmp/removal ("reason group-commit built-head"), and `runlog` is what `gh run view --log-failed` prints for
+# the group's one failed run, as helpers/arm.sh's `--jq` would print them, since the stub applies no filter.
 
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 root="$(dirname "$here")"
@@ -37,6 +38,8 @@ case "$*" in
 	case "$*" in */commits/h1/*) ;; *) echo "stub gh: check runs asked for another head: $*" >&2; exit 1 ;; esac
 	get lint || echo '[{"id":1,"status":"completed","conclusion":"success"}]'
 	;;
+"api repos/"*"/actions/runs?head_sha=g1"*) echo '{"workflow_runs":[{"id":7,"conclusion":"failure"},{"id":8,"conclusion":"success"}]}' ;;
+"run view 7 --log-failed") get runlog ;;
 *timelineItems*) get removal || echo ' ' ;;
 "api graphql"*)
 	[ -z "$STUB_GRAPHQL_FAIL" ] || exit 1
@@ -107,7 +110,7 @@ state() { # queued auto labels draft
 	rm -f "$tmp/log" "$tmp/noPR"
 	printf '%s\n' "$1" >"$tmp/queued"; printf '%s\n' "$2" >"$tmp/auto"
 	printf '%s\n' "$3" >"$tmp/labels"; printf '%s\n' "$4" >"$tmp/draft"
-	rm -f "$tmp/lint" "$tmp/removal"
+	rm -f "$tmp/lint" "$tmp/removal" "$tmp/runlog"
 }
 logged() { grep -qF -- "$1" "$tmp/log" 2>/dev/null; }
 check() { # name command-that-must-succeed
@@ -292,21 +295,36 @@ STUB_CHECKS_FAIL=1 run "unreadable lint refuses" nonzero "could not read the lin
 # Then the last queue removal: failed checks at this same head refuse; at an older head, or for
 # another reason, arming goes ahead. --despite-failed-checks posts its reason first.
 removal() { printf '%s\n' "$1" >"$tmp/removal"; }
-state false false "" false; removal "failed_checks h1"
+state false false "" false; removal "failed_checks g1 h1"
 run "re-arm at a failed head refused" nonzero "same head" -- "$root/helpers/arm.sh" 42
 check "failed head: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
-state false false "" false; removal "FAILED_CHECKS h1"
+state false false "" false; removal "FAILED_CHECKS g1 h1"
 run "the reason's case does not matter" nonzero "same head" -- "$root/helpers/arm.sh" 42
-state true false "" false; removal "failed_checks h1"
+state true false "" false; removal "failed_checks g1 h1"
 run "requeue at a failed head is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
-state false false "" false; removal "failed_checks h0"
+state false false "" false; removal "failed_checks g1 h0"
 run "failed at an older head arms" 0 "armed" -- "$root/helpers/arm.sh" 42
-state false false "" false; removal "manual h1"
+# A known flake re-arms without the override: a failed group job's log matches a signature. The list
+# is a fixture, so the cases do not depend on what helpers/known-flakes.tsv holds today.
+printf '# fixture\nprogenitor-oom\tthe progenitor is out of memory\tnotes/swish-check-flake.md\n' >"$tmp/flakes"
+state false false "" false; removal "failed_checks g1 h1"; echo "swish-check: could not spawn (the progenitor is out of memory)" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, a known flake: armed" 0 "known flake progenitor-oom" -- "$root/helpers/arm.sh" 42
+check "known flake: the group's failed log was read" logged "run view 7 --log-failed"
+check "known flake: merge called" logged "pr merge 42 --auto --merge"
+state false false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, no flake matches: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+check "no flake matches: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false; removal "failed_checks g1 h1"; echo "the progenitor is out of memory" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/no-such-list" run "failed head, no list: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+state true false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes" run "requeue that leaves the failed head: not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && [ -e '$root/'\"\$r\" ] || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
+state false false "" false; removal "manual g1 h1"
 run "removed by hand at this head arms" 0 "armed" -- "$root/helpers/arm.sh" 42
-state false false "" false; removal "failed_checks h1"
+state false false "" false; removal "failed_checks g1 h1"
 run "failed-checks override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-failed-checks "a runner died mid-job"
 check "failed-checks override: reason commented, then merge" awk '/pr comment 42/{c=NR} /a runner died mid-job/{w=NR} /pr merge 42/{m=NR} END{exit !(c && w && c<m)}' "$tmp/log"
-state false false "" false; removal "failed_checks h1"
+state false false "" false; removal "failed_checks g1 h1"
 STUB_COMMENT_FAIL=1 run "failed-checks override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-failed-checks "why"
 check "failed-checks override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state false false "" false

@@ -249,7 +249,7 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     let full = invoke(
         ut,
         abi::memory_region::RETYPE_OBJECT,
-        abi::objtype::TIMER,
+        abi::object_type::TIMER,
         0,
         0,
     )
@@ -262,7 +262,7 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     let n_slot = invoke(
         ut,
         abi::memory_region::RETYPE_OBJECT,
-        abi::objtype::NOTIFICATION,
+        abi::object_type::NOTIFICATION,
         0,
         0,
     )

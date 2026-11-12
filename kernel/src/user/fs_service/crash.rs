@@ -60,7 +60,7 @@ pub fn start_crash(
     let (blk_ep, blk_ready, blk_shared) = spawn_block_server(
         blk_image,
         crate::virtio::find_block_device_n(CRASH_DISK_INDEX)?,
-    );
+    )?;
     CRASH_BLK_EP.store(blk_ep, Ordering::Relaxed);
     CRASH_BLK_SHARED.store(blk_shared, Ordering::Relaxed);
 

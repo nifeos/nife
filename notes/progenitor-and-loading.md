@@ -50,7 +50,7 @@ mapped read-only at `INITIAL_RAMDISK_VIRTUAL_ADDRESS` so the builder can read th
    Then `MAP_INTO` the child at the segment's own virtual address with the segment's permissions
    (executable code via the `MAP_CODE` mode 19d added). Then `capability_delete` the frame cap so the
    16-slot capability table recycles the slot. A loader retypes hundreds of frames, so slot
-   recycling is why `SYS_CAPABILITY_DELETE` exists.
+   recycling is why `SYSCALL_CAPABILITY_DELETE` exists.
 3. A stack frame, mapped read/write.
 4. `RETYPE_OBJECT(THREAD_CONTROL_BLOCK)`, `CAPABILITY_INSERT` the report endpoint as the child's slot 0, `CONFIGURE` (entry
    from the ELF, the child's stack top, the address space), `START`. `START` carries the child's first

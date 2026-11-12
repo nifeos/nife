@@ -198,8 +198,8 @@ pub(crate) fn bring_up_iommus() {
 /// VT-d's units, copied out of the ACPI walk and brought up.
 #[inline(never)]
 fn bring_up_vt_d() {
-    let dmar = with_acpi(|a| a.dmar);
-    super::iommu::initialize(&dmar);
+    let (dmar, io_apic) = with_acpi(|a| (a.dmar, a.io_apic));
+    super::iommu::initialize(&dmar, io_apic.map(|(id, _, _)| id));
 }
 
 /// AMD-Vi's units, copied out of the ACPI walk and brought up.

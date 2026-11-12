@@ -191,7 +191,7 @@ pub const DOMAIN_SLOT: u64 = 7;
 ///
 /// Nine, one past [`DIAGNOSTICS_SLOT`], placed for that constant's reason and above the shell's own
 /// seven positional capabilities. A program spawned without the declaration holds an empty slot
-/// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered`
+/// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes`
 /// reads as `None`. See notes/program-manifest.md ("The named slots").
 pub const ENTROPY_SLOT: u64 = 9;
 
@@ -200,7 +200,7 @@ pub const ENTROPY_SLOT: u64 = 9;
 ///
 /// Ten, one past [`ENTROPY_SLOT`], for that constant's reasons: a named slot rather than the next
 /// free one, above the shell's own seven positional capabilities, and far below
-/// `abi::fault::FAULT_EP_SLOT`. A program spawned without the declaration holds an empty slot here,
+/// `abi::fault::FAULT_RENDEZVOUS_SLOT`. A program spawned without the declaration holds an empty slot here,
 /// and its first `CALL` answers `abi::Error::NoSuchSlot`; `unreachable_network_witness` is the
 /// program that shows it at the prompt.
 pub const NETWORK_SLOT: u64 = 10;
@@ -280,7 +280,7 @@ pub const SHARE_SLOT: u64 = 12;
 
 /// **Where a program that declares [`Manifest::reboot`] finds the reboot object** (milestone 805,
 /// DECISIONS §251). Thirteen, one past [`SHARE_SLOT`], for [`ENTROPY_SLOT`]'s reasons: a named slot
-/// rather than the next free one, and far below `abi::fault::FAULT_EP_SLOT`. `WRITE` alone, so the
+/// rather than the next free one, and far below `abi::fault::FAULT_RENDEZVOUS_SLOT`. `WRITE` alone, so the
 /// holder can invoke it and cannot hand it on.
 ///
 /// Name: provisional (milestone 805).
@@ -548,7 +548,7 @@ pub struct Manifest {
     /// [`clock`](Manifest::clock)'s family, as an endpoint rather than a page. It lands in
     /// [`ENTROPY_SLOT`] carrying `WRITE` alone, the right to `CALL`: no other client's request, and
     /// no `GRANT` to pass it on. Without it the first `CALL` fails and
-    /// `entropy_contract::delivered` reports `None`. Ambient entropy would be ambient authority
+    /// `entropy_contract::delivered_bytes` reports `None`. Ambient entropy would be ambient authority
     /// (DECISIONS §44 (entropy is a capability)); see notes/program-manifest.md ("What the line
     /// cannot name").
     pub entropy: bool,

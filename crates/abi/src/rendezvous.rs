@@ -12,7 +12,7 @@ pub const SEND: u64 = 0;
 
 /// `invoke(capability, RECEIVE, _, _, _)` -> w0, with w1 in x1 and w2 in x2. **Blocks until a message
 /// arrives.** Only the kernel writes `x3` and `x4`: `x3` is the [`BADGE`] on the sender's capability
-/// (`0` unbadged), or a death's fault address from the fault endpoint, and `x4` is `0` or
+/// (`0` unbadged), or a death's fault address from the fault rendezvous, and `x4` is `0` or
 /// [`notification::BOUND`](crate::notification::BOUND). **It never takes a capability** (a
 /// plain `RECEIVE` never does): a [`SEND_CAPABILITY`]'s is dropped and a [`CALL`] gets
 /// [`Gone`](crate::Error::Gone); use [`RECEIVE_CAPABILITY`] for both.
@@ -61,8 +61,8 @@ pub const RECEIVE_CAPABILITY: u64 = 3;
 /// Reply.
 pub const CALL: u64 = 4;
 
-/// `invoke(capability, REAP, tid, _, _)` -> 0. **Collect a corpse this endpoint supervises**: reclaim the TCB, space and region of the thread `tid` names.
-/// Needs `READ`, and the thread's recorded fault endpoint must *be* this endpoint.
+/// `invoke(capability, REAP, tid, _, _)` -> 0. **Collect a corpse this rendezvous supervises**: reclaim the TCB, space and region of the thread `tid` names.
+/// Needs `READ`, and the thread's recorded fault rendezvous must *be* this rendezvous.
 ///
 /// - [`crate::Error::StillAlive`]: not dead yet. Killing stays with `MemoryRegion::DESTROY`.
 /// - [`crate::Error::NotSupervised`]: one error for not yours, already collected, or a stale tid.
@@ -73,8 +73,8 @@ pub const CALL: u64 = 4;
 pub const REAP: u64 = 5;
 
 /// `invoke(capability, SURVEY, cursor, record, 0)` -> `(next_cursor, tid, word)`: **read one entry of the
-/// domain this endpoint supervises**, the threads whose fault
-/// endpoint is this one. `record` picks the word ([`survey::record`](super::survey::record)); an
+/// domain this rendezvous supervises**, the threads whose fault
+/// rendezvous is this one. `record` picks the word ([`survey::record`](super::survey::record)); an
 /// unknown one is [`crate::Error::BadMethod`], refused before the walk.
 ///
 /// Needs [`rights::ENUMERATE`](super::rights::ENUMERATE), not `READ`: a domain names its members and

@@ -63,7 +63,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
         dma,
         DMA_PAGE_FRAMES * FRAME_SIZE,
         Some(d.rid),
-    );
+    )?;
     Some(KeyboardDevice {
         vid,
         intid: d.intid,

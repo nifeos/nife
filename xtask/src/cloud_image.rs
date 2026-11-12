@@ -88,17 +88,15 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
 
     // No time source: the image must be the same bytes every run, so every entry carries the zero
     // timestamp, which is what `NoClock` writes.
-    let volume = fat::VolumeLayout::new(
-        ESP_SECTORS,
-        ALIGN,
-        file.len() as u64,
-        volume_id,
-        // The volume label a firmware menu or another operating system shows for the partition.
-        "NIFE",
-        name,
-        &mut fat::NoClock,
-    )
-    .map_err(|e| format!("the FAT32 volume: {e:?}"))?;
+    // The volume label is what a firmware menu or another operating system shows for the
+    // partition.
+    let volume = fat::VolumeLayoutOptions::new(ESP_SECTORS)
+        .with_hidden_sectors(ALIGN)
+        .with_volume_id(volume_id)
+        .with_label("NIFE")
+        .and_then(|options| options.with_file(name, file.len() as u64))
+        .and_then(|options| fat::VolumeLayout::new(options, &mut fat::NoClock))
+        .map_err(|e| format!("the FAT32 volume: {e:?}"))?;
     let blocks = ALIGN + ESP_SECTORS + ALIGN;
     let esp = Entry::new(types::EFI_SYSTEM, part_guid, ALIGN, ALIGN + ESP_SECTORS - 1)
         .with_name("EFI system partition")

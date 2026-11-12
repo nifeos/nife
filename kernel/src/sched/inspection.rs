@@ -589,7 +589,7 @@ fn dump_parked_core(c: usize) {
 
 /// How many senders are parked on the rendezvous `ep` (test support): the non-blocking look that
 /// lets a test assert "and then nothing happened", which `RECEIVE` would block on.
-#[cfg(feature = "system_tests")]
+#[cfg(any(test, feature = "system_tests"))]
 pub fn rendezvous_waiting_senders(ep: RendezvousId) -> usize {
     let mut guard = IPC_TABLES.lock();
     let Some(sched) = guard.as_mut() else {

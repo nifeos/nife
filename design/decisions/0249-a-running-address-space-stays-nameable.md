@@ -49,8 +49,8 @@ with `WrongObject`, as a second `CONFIGURE` of a started thread already is. §10
 
 **Still open, and owed its own ruling:** which slot init's own-space capability occupies. A slot
 convention is a wire format. The candidates the research names are a fixed slot after
-`abi::fault::FAULT_EP_SLOT`'s pattern, or a grant through `boot_progenitor`'s `Spawn::grants` at a
-slot the progenitor is told.
+`abi::fault::FAULT_RENDEZVOUS_SLOT`'s pattern (its name spelled out by the ruling of 2026-11-11
+(UTC)), or a grant through `boot_progenitor`'s `Spawn::grants` at a slot the progenitor is told.
 
 ## What was refused
 
@@ -117,7 +117,7 @@ answers the "still open" paragraph above. Recorded by the maintainer.
 
 Refused:
 
-- B, a tree-wide constant beside `FAULT_EP_SLOT` (63), such as 62. Builders would adopt it for
+- B, a tree-wide constant beside `FAULT_RENDEZVOUS_SLOT` (63), such as 62. Builders would adopt it for
   children, a process-wide convention drifting toward the default grant this section refused as its
   option B.
 - C, seL4's slot 3. It renumbers every slot from 3 up for no gain.

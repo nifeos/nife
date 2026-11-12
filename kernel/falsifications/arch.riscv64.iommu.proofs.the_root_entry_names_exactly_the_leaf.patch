@@ -1,0 +1,26 @@
+Falsifies `kernel::arch::riscv64::iommu::proofs::the_root_entry_names_exactly_the_leaf`.
+
+The defect is the leaf's physical address written into the non-leaf entry as it is, rather than
+as a PPN at bit 10. The entry's PPN field starts at bit 10 while a page frame's address has zeros
+below bit 12, so the IOMMU reads a PPN four times the leaf's and walks a frame the kernel never
+allocated as this device's contexts.
+
+Expected to fail: `assert!(((entry >> 10) & ((1 << 44) - 1)) << 12 == leaf, "the PPN is the leaf
+entire")`. Confirmed red on 2026-11-11 (UTC), on an x86_64 host, against this file's pure functions
+and harness compiled on their own.
+
+The sibling harness `no_device_can_reach_another_devices_context` stays green under this patch:
+it places devices and never builds a root entry.
+
+diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
+--- a/kernel/src/arch/riscv64/iommu.rs
++++ b/kernel/src/arch/riscv64/iommu.rs
+@@ -206,7 +206,7 @@
+ ///
+ /// Name: provisional.
+ fn non_leaf_entry(leaf: u64) -> u64 {
+-    ((leaf >> 12) << 10) | NON_LEAF_ENTRY_VALID
++    leaf | NON_LEAF_ENTRY_VALID
+ }
+ 
+ /// **The leaf a valid non-leaf entry names**: the inverse of [`non_leaf_entry`], its PPN in

@@ -84,7 +84,7 @@ fn a_process_granted_no_entropy_prints_no_identifier() {
 
     // And the shape of what it did not say. A version-4 identifier is 36 characters with four
     // hyphens in fixed places, so a single hyphen anywhere in this stream would mean bytes derived
-    // from *something* got out. `entropy_contract::delivered` reading a kernel error as `None` rather
+    // from *something* got out. `entropy_contract::delivered_bytes` reading a kernel error as `None` rather
     // than as a short count is what makes that impossible, and this is the assertion that it holds
     // through the whole program rather than only at the accessor.
     assert!(

@@ -86,6 +86,15 @@ path = "src/progenitor.rs"
 test = false
 bench = false
 
+# The boot self-test's userspace half (milestone 1063 (the boot self-test's spawning checks run from
+# userspace)): the checks that spawn a user program, run by the progenitor before the shell, and the
+# one verdict.
+[[bin]]
+name = "boot_self_test"
+path = "src/boot_self_test.rs"
+test = false
+bench = false
+
 # The virtio-blk driver as its own binary (parity C): the shared `virtio` module (the same file
 # hello's aarch64 roles compile) behind a dedicated-binary skeleton, so riscv runs the identical
 # driver, attacker included, without porting the PL011-wired hello multiplexer.
@@ -646,7 +655,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0", git = "https://github.com/nifeos/designware_mobile_storage", rev = "a800e4b89cf379a85947e473082ebe7f8f933c34" }
+designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 # The boot ladder's console markers (milestone 268). `swish` prints the last rung; the kernel
 # prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
@@ -677,13 +686,13 @@ http_response = { version = "0.1.0", path = "../crates/http_response" }
 domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
 # The name resolver's contract with its clients and its spawner (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
-block_roster_contract = { version = "0.1.0", path = "../crates/block_roster_contract" }
+block_roster_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/block_roster_contract", rev = "62630199281cbd294d6621cc35f31f81933e6be2" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
 # (§46 (thin primitives or whole subsystems)), default features off, so `no_std` with no dependencies of its own.
 uuid = { version = "1.28.0", default-features = false }
-file_allocation_table = { version = "0.1.0", path = "../crates/file_allocation_table" }
+file_allocation_table = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/file_allocation_table", rev = "9b3eac1cdbb19cc6668e3346296c8cee87e32214" }
 # Milestone 198 rung 2b: the two-slot boot state the installer writes into GPT attribute bits and
 # `uefi_loader`'s chooser reads back. One implementation, two programs.
 boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
@@ -735,10 +744,10 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
-non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "87bbef8c9ac4cd05cc6babf88f31fa8500166e9d" }
+non_volatile_memory_express = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "27aa19c957a340b720b8b7ce44de32a8405d6950" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
-e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "40c1ec9c7e73e5099661636c046773dfcaecbb6d" }
+e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", rev = "ef01cefa9a186db7f1c9802e78d8c6c1215db7ec" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
 designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet" }
@@ -746,7 +755,7 @@ designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
 usb = { version = "0.1.0", path = "../crates/usb" }
-extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
+extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.

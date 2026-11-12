@@ -1,0 +1,15 @@
+# helpers/known-flakes.tsv: the CI failures that are known flakes, one per line. Read by
+# helpers/arm.sh, which arms a pull request ejected for `failed_checks` at its current head only when
+# a failed merge-group job's log matches one of these. Provisional name.
+#
+# Three tab-separated fields: a short name, an extended regular expression (grep -E) matched
+# against the output of `gh run view <run> --log-failed`, and the note that records the flake, its
+# measurement and why a rerun cures it. A line whose record does not exist fails
+# helpers/push-requeue-selftest.sh.
+#
+# Add a line only for a failure a note shows to be a flake, and remove it when the fix lands. A
+# signature listed here re-arms every pull request whose log carries it, so keep it as narrow as the
+# failure's own wording. Every swish-check signature in notes/swish-check-flake.md is fixed, so
+# none is listed.
+#
+# name	signature	record

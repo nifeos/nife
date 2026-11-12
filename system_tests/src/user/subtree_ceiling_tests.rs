@@ -46,18 +46,22 @@ fn share(counted: Counted) -> u32 {
     crate::memory_region::progenitor_ceilings().get(counted) / 16
 }
 
-/// `RETYPE_OBJECT` of `objtype` from the region in `budget` until it refuses, deleting each new
+/// `RETYPE_OBJECT` of `object_type` from the region in `budget` until it refuses, deleting each new
 /// capability (the object stays in its table, as a program's would), and how many it made.
-fn fill(budget: u64, objtype: u64) -> u32 {
+fn fill(budget: u64, object_type: u64) -> u32 {
     let mut made = 0;
     for _ in 0..ATTEMPTS {
-        match call(budget, abi::memory_region::RETYPE_OBJECT, objtype, 0) {
+        match call(budget, abi::memory_region::RETYPE_OBJECT, object_type, 0) {
             Ok(slot) => {
                 let _ = sched::delete_current_capability(slot as u64);
                 made += 1;
             }
             Err(e) => {
-                assert_eq!(e, Error::OutOfMemory, "objtype {objtype} refused for {e:?}");
+                assert_eq!(
+                    e,
+                    Error::OutOfMemory,
+                    "object_type {object_type} refused for {e:?}"
+                );
                 break;
             }
         }
@@ -74,7 +78,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
         let Ok(space) = call(
             budget,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::ADDRESS_SPACE,
+            abi::object_type::ADDRESS_SPACE,
             0,
         ) else {
             break;
@@ -82,7 +86,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
         match call(
             budget,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::PROCESS,
+            abi::object_type::PROCESS,
             space as u64,
         ) {
             Ok(slot) => {
@@ -98,7 +102,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
     }
     (
         processes,
-        processes + fill(budget, abi::objtype::ADDRESS_SPACE),
+        processes + fill(budget, abi::object_type::ADDRESS_SPACE),
     )
 }
 
@@ -137,14 +141,14 @@ fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
     let filled = crate::memory_region::split(root, FILLED_PAGES).expect("no region to fill");
     let budget = sched::grant(memory_region_capability(filled)).expect("grant the filled region");
 
-    for (objtype, kind) in [
-        (abi::objtype::RENDEZVOUS, ObjectKind::Rendezvous),
-        (abi::objtype::NOTIFICATION, ObjectKind::Notification),
-        (abi::objtype::TIMER, ObjectKind::Timer),
-        (abi::objtype::THREAD_CONTROL_BLOCK, ObjectKind::Thread),
+    for (object_type, kind) in [
+        (abi::object_type::RENDEZVOUS, ObjectKind::Rendezvous),
+        (abi::object_type::NOTIFICATION, ObjectKind::Notification),
+        (abi::object_type::TIMER, ObjectKind::Timer),
+        (abi::object_type::THREAD_CONTROL_BLOCK, ObjectKind::Thread),
     ] {
         assert_eq!(
-            fill(budget, objtype),
+            fill(budget, object_type),
             share(Counted::Object(kind)),
             "{kind:?} did not stop at the split child's ceiling",
         );

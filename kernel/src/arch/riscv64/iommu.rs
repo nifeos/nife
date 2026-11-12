@@ -12,10 +12,15 @@
 //! - The MSI page table is offered and deliberately unused: [`attach`] writes `msiptp.MODE = Off`.
 //! - Untestable on owned silicon: no board ships the ratified IOMMU, so the base context format
 //!   has never run, and what `MODE = Off` does to an MSI-shaped write is a reading of the spec.
+//! - The two-level directory holds requester ids 0 to 32767 in the extended format, buses 0 to
+//!   127. `attach` refuses a device on bus 128 or above with
+//!   [`AttachError::BeyondDeviceTable`]; the three-level mode would reach them.
+//! - A leaf, once allocated, is never freed.
 //!
 //! Details in notes/riscv-port/iommu.md, BUGS.
 
 use crate::arch::mmu::phys_to_virt;
+use crate::iommu::AttachError;
 use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets into BAR 0; RISC-V IOMMU spec ch. 5, QEMU's riscv-iommu-bits.h) ---
@@ -34,9 +39,29 @@ const FQCSR: u64 = 0x4c;
 const CAP_SV39: u64 = 1 << 9;
 const CAP_MSI_FLAT: u64 = 1 << 22;
 
-// ddtp: mode in bits [3:0], busy at 4, PPN at [53:10]. Mode 2 = one-level device directory.
-const DDTP_MODE_1LVL: u64 = 2;
+// ddtp: mode in bits [3:0], busy at 4, PPN at [53:10].
 const DDTP_BUSY: u64 = 1 << 4;
+
+/// `ddtp.iommu_mode` = 3, `2LVL`: a two-level device directory (RISC-V IOMMU spec 5.2). The root
+/// frame holds 512 non-leaf entries, each naming one leaf frame of device contexts.
+///
+/// Name: provisional.
+#[doc(alias = "2LVL")]
+const DEVICE_DIRECTORY_MODE_TWO_LEVEL: u64 = 3;
+
+/// How many non-leaf entries the root frame holds: 512 of eight bytes, the spec's nine-bit `DDI[1]`.
+///
+/// Name: provisional.
+const ROOT_ENTRIES: u32 = 512;
+
+/// A non-leaf device directory entry's valid bit, bit 0; its leaf's PPN is in `[53:10]`.
+///
+/// Name: provisional.
+#[doc(alias = "V")]
+const NON_LEAF_ENTRY_VALID: u64 = 1 << 0;
+
+// The root frame is one frame of eight-byte entries.
+const _: () = assert!(ROOT_ENTRIES as u64 * 8 == page_frames::FRAME_SIZE);
 
 // cqcsr/fqcsr: enable at 0, active ("on") at 16, busy at 17; error bits 8..11 for diagnostics.
 const QUEUE_EN: u32 = 1 << 0;
@@ -79,6 +104,8 @@ pub struct Fault {
 
 struct Iommu {
     base: u64,
+    /// The device directory's root frame: [`ROOT_ENTRIES`] non-leaf entries, each invalid until
+    /// its leaf exists.
     ddt: u64,
     /// The device context size: 64 bytes with `MSI_FLAT`, else 32, decided once at init.
     dc_bytes: u64,
@@ -129,26 +156,65 @@ fn zeroed_page_frame(what: &str) -> u64 {
     pa
 }
 
-/// A queue base register value: PPN in [53:10], log2(entries)-1 in [4:0].
+/// A queue base register value: PPN in `[53:10]`, log2(entries)-1 in `[4:0]`.
 fn queue_base(pa: u64, log2: u32) -> u64 {
     ((pa >> 12) << 10) | (log2 as u64 - 1)
 }
 
-/// Does device `rid` have a context in the one-level device directory, whose `dc_bytes`-long entries
-/// fill one frame? This is the only thing between a requester id and a raw write, so it is a
-/// function of its own: `no_device_can_reach_another_devices_context` assumes exactly what it
-/// admits and proves the stride in `context_offset` agrees with it.
-fn is_in_directory(rid: u32, dc_bytes: u64) -> bool {
-    (rid as u64) < page_frames::FRAME_SIZE / dc_bytes
+/// Where one device's context sits in the two-level directory: which leaf, and the byte offset
+/// into that leaf's frame.
+///
+/// Name: provisional.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DirectoryPosition {
+    /// The root entry that names the leaf: `DDI[1]`.
+    leaf: usize,
+    /// The byte offset of the context in the leaf: `DDI[0]` times the context size.
+    offset: u64,
 }
 
-/// Where device `rid`'s context sits in the device directory, as a byte offset into its frame.
-fn context_offset(rid: u32, dc_bytes: u64) -> u64 {
-    assert!(
-        is_in_directory(rid, dc_bytes),
-        "device_id {rid} beyond the one-level device directory"
-    );
-    rid as u64 * dc_bytes
+/// How many requester ids the two-level directory holds with `dc_bytes`-long contexts: 512 leaves
+/// of one frame each, so 32768 extended (64-byte) contexts or 65536 base (32-byte) ones.
+///
+/// Name: provisional.
+const fn directory_limit(dc_bytes: u64) -> u64 {
+    ROOT_ENTRIES as u64 * (page_frames::FRAME_SIZE / dc_bytes)
+}
+
+/// **Where device `rid`'s context sits** in the two-level directory of `dc_bytes`-long contexts,
+/// or `None` past it. This is the only thing between a requester id and a raw write, so it is a
+/// function of its own, and a refusal is a value and never a panic: a requester id comes from the
+/// bus. `no_device_can_reach_another_devices_context` proves it.
+///
+/// The split is the spec's: a leaf frame holds `FRAME_SIZE / dc_bytes` contexts, so `DDI[0]` is 6
+/// bits extended or 7 base, and `DDI[1]` is the next 9.
+///
+/// Name: provisional.
+fn directory_position(rid: u32, dc_bytes: u64) -> Option<DirectoryPosition> {
+    if rid as u64 >= directory_limit(dc_bytes) {
+        return None;
+    }
+    let per_leaf = page_frames::FRAME_SIZE / dc_bytes;
+    Some(DirectoryPosition {
+        leaf: (rid as u64 / per_leaf) as usize,
+        offset: (rid as u64 % per_leaf) * dc_bytes,
+    })
+}
+
+/// **The non-leaf directory entry that names a leaf at `leaf`**: valid, the leaf's PPN in `[53:10]`,
+/// every other bit zero (QEMU reports a set reserved bit as `DDT_MISCONFIGURED`).
+///
+/// Name: provisional.
+fn non_leaf_entry(leaf: u64) -> u64 {
+    ((leaf >> 12) << 10) | NON_LEAF_ENTRY_VALID
+}
+
+/// **The leaf a valid non-leaf entry names**: the inverse of [`non_leaf_entry`], its PPN in
+/// `[53:10]` back to an address.
+///
+/// Name: provisional.
+fn non_leaf_entry_leaf(entry: u64) -> u64 {
+    ((entry >> 10) & ((1 << 44) - 1)) << 12
 }
 
 /// A device context's words in directory order: `tc`, `iohgatp`, `ta`, `fsc`, then the extended
@@ -220,10 +286,14 @@ pub fn initialize(base: u64) {
     w64(base, FQB, queue_base(fq, FQ_LOG2));
     queue_enable(base, FQCSR, "fault");
 
-    // One page of invalid contexts: ids 0..63 in the extended format, all of bus 0. From this
-    // write on, an unattached device is blocked with DDT_ENTRY_INVALID.
+    // A root frame of invalid non-leaf entries. From this write on, an unattached device is
+    // blocked with DDT_ENTRY_INVALID, at the root or, once its leaf exists, at its context.
     let ddt = zeroed_page_frame("device directory");
-    w64(base, DDTP, DDTP_MODE_1LVL | ((ddt >> 12) << 10));
+    w64(
+        base,
+        DDTP,
+        DEVICE_DIRECTORY_MODE_TWO_LEVEL | ((ddt >> 12) << 10),
+    );
     let mut spins = 0u32;
     while r64(base, DDTP) & DDTP_BUSY != 0 {
         spins += 1;
@@ -252,9 +322,10 @@ pub fn initialize(base: u64) {
 pub(crate) fn print_summary() {
     match IOMMU.lock().as_ref() {
         Some(s) => crate::println!(
-            "  iommu            : riscv-iommu at {:#018x}, device directory default-deny, \
-             translating, MSI page table {} (mode off)",
+            "  iommu            : riscv-iommu at {:#018x}, two-level device directory of {} ids, \
+             default-deny, translating, MSI page table {} (mode off)",
             s.base,
+            directory_limit(s.dc_bytes),
             if s.msi_flat { "offered" } else { "absent" },
         ),
         None => crate::println!(
@@ -320,19 +391,49 @@ fn cmd_push(s: &mut Iommu, dword0: u64, dword1: u64) {
     }
 }
 
+/// The leaf frame at root index `index`, allocating it and installing its non-leaf entry the first
+/// time, or `None` with no frame free.
+///
+/// The root entry is the only record of a leaf: no array beside it, so building [`Iommu`] costs no
+/// stack (script/stack-frame-check). Only this function, under the `IOMMU` lock, writes it.
+fn leaf_at(s: &mut Iommu, index: usize) -> Option<u64> {
+    let entry = phys_to_virt(s.ddt + index as u64 * 8) as *mut u64;
+    // SAFETY: ddt is a kernel-owned frame of ROOT_ENTRIES entries and `index` is below that
+    // (`directory_position`).
+    let existing = unsafe { core::ptr::read_volatile(entry) };
+    if existing & NON_LEAF_ENTRY_VALID != 0 {
+        return Some(non_leaf_entry_leaf(existing));
+    }
+    let leaf = crate::memory::alloc_zeroed()?.addr();
+    // The leaf's contexts are zero, so invalid: publish them before the entry that makes the IOMMU
+    // walk them.
+    crate::arch::direct_memory_access_write_barrier();
+    // SAFETY: as above. One aligned 64-bit store, so the IOMMU never reads half a pointer.
+    unsafe { core::ptr::write_volatile(entry, non_leaf_entry(leaf)) };
+    Some(leaf)
+}
+
 /// Point device `rid` at the Sv39 domain at `root`, tagged `pscid`, then invalidate whatever the
 /// IOMMU cached for its previous domain.
 ///
-/// Context: takes the `IOMMU` lock.
-pub fn attach(rid: u32, root: u64, pscid: u16) {
+/// Refuses a requester id past the directory with [`AttachError::BeyondDeviceTable`], and a new
+/// leaf with no frame free with [`AttachError::NoFrameForTable`]. A refused device keeps no valid
+/// context, so it faults on every transaction.
+///
+/// Context: takes the `IOMMU` lock, and allocates a leaf's frame under it.
+pub fn attach(rid: u32, root: u64, pscid: u16) -> Result<(), AttachError> {
     let mut g = IOMMU.lock();
     let s = g.as_mut().expect("IOMMU attach before initialize");
-    let offset = context_offset(rid, s.dc_bytes);
+    let position = directory_position(rid, s.dc_bytes).ok_or(AttachError::BeyondDeviceTable {
+        requester_id: rid,
+        limit: directory_limit(s.dc_bytes) as u32,
+    })?;
+    let leaf = leaf_at(s, position.leaf).ok_or(AttachError::NoFrameForTable)?;
     let words = device_context(root, pscid);
 
     // The valid bit last, after a barrier, so the IOMMU never sees a valid entry with a stale root.
-    let dc = phys_to_virt(s.ddt + offset) as *mut u64;
-    // SAFETY: ddt is a kernel-owned frame; `context_offset` bounds rid so the whole
+    let dc = phys_to_virt(leaf + position.offset) as *mut u64;
+    // SAFETY: the leaf is a kernel-owned frame; `directory_position` bounds the offset so the whole
     // `dc_bytes`-long entry lies inside it.
     unsafe {
         core::ptr::write_volatile(dc.add(1), words[1]); // iohgatp: Bare
@@ -351,11 +452,13 @@ pub fn attach(rid: u32, root: u64, pscid: u16) {
     }
     crate::arch::direct_memory_access_write_barrier();
 
-    // IODIR drops the cached context, IOTINVAL.VMA every translation, and IOFENCE.C orders both
-    // before any later transaction.
+    // IODIR drops the cached context and, with DV set, the non-leaf entries that locate it;
+    // IOTINVAL.VMA drops every translation, and IOFENCE.C orders both before any later
+    // transaction.
     cmd_push(s, iodir_inval_ddt(rid), 0);
     cmd_push(s, CMD_IOTINVAL_VMA, 0);
     cmd_push(s, CMD_IOFENCE_C, 0);
+    Ok(())
 }
 
 /// Pop one fault from the fault queue, or `None`. The confinement test drains it to prove the
@@ -452,10 +555,11 @@ mod proofs {
     }
 
     /// No device can reach another device's context, or invalidate the wrong one, in either
-    /// context format.
+    /// context format, and a device past the directory is refused.
     ///
-    /// The directory bound agrees with the stride, and `IODIR.INVAL_DDT` decodes to exactly this
-    /// device with DV set. See notes/riscv-port/iommu.md.
+    /// Over every `u32`, `directory_position` admits exactly the ids below the directory's limit,
+    /// places each in one root entry and inside its leaf's frame, and no two share a byte; and
+    /// `IODIR.INVAL_DDT` decodes to exactly this device with DV set. See notes/riscv-port/iommu.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.riscv64.iommu.proofs.no_device_can_reach_another_devices_context.patch`
     #[kani::proof]
@@ -464,37 +568,85 @@ mod proofs {
         let b: u32 = kani::any();
         let extended: bool = kani::any();
         let dc_bytes: u64 = if extended { 64 } else { 32 };
-        // A PCIe requester id is 16 bits (`pci::Bdf::requester_id`).
-        kani::assume(a <= u16::MAX as u32 && b <= u16::MAX as u32);
-        // Assume through the same predicate, not a restatement, so a drifting bound turns red.
-        kani::assume(is_in_directory(a, dc_bytes) && is_in_directory(b, dc_bytes));
 
-        let (oa, ob) = (context_offset(a, dc_bytes), context_offset(b, dc_bytes));
+        let (pa, pb) = (
+            directory_position(a, dc_bytes),
+            directory_position(b, dc_bytes),
+        );
+        // Stated as the spec's device_id widths for a two-level directory, not as the function's
+        // own expression: 15 bits extended, 16 base.
+        let width = if extended { 15 } else { 16 };
         assert!(
-            oa + dc_bytes <= page_frames::FRAME_SIZE,
-            "every context the bound admits lies inside the directory's single frame"
+            pa.is_some() == (a < 1 << width),
+            "exactly the ids the spec's two-level directory holds are placed, and every other is refused"
+        );
+
+        if a <= u16::MAX as u32 {
+            let cmd = iodir_inval_ddt(a);
+            assert!(
+                cmd & 0x7f == 3 && (cmd >> 7) & 0b111 == 0,
+                "the command is IODIR.INVAL_DDT"
+            );
+            assert!(
+                (cmd >> 33) & 1 == 1,
+                "DV is set, so the DID field is honoured"
+            );
+            assert!(
+                cmd >> 40 == a as u64,
+                "the invalidation names exactly the device just attached"
+            );
+        }
+
+        let (Some(pa), Some(pb)) = (pa, pb) else {
+            return;
+        };
+        assert!(
+            pa.leaf < ROOT_ENTRIES as usize,
+            "every admitted device's leaf has an entry in the root frame"
         );
         assert!(
-            oa % 8 == 0,
+            pa.offset + dc_bytes <= page_frames::FRAME_SIZE,
+            "every context the bound admits lies inside its leaf's single frame"
+        );
+        assert!(
+            pa.offset % 8 == 0,
             "every context starts on the 8-byte boundary its 64-bit stores need"
         );
         assert!(
-            a == b || oa + dc_bytes <= ob || ob + dc_bytes <= oa,
+            a == b
+                || pa.leaf != pb.leaf
+                || pa.offset + dc_bytes <= pb.offset
+                || pb.offset + dc_bytes <= pa.offset,
             "two different devices never share a byte of the directory"
         );
+    }
 
-        let cmd = iodir_inval_ddt(a);
+    /// The root frame names exactly the leaf the kernel allocated, and nothing else.
+    ///
+    /// A lost PPN bit walks another frame as this device's contexts, and a set reserved bit makes
+    /// the IOMMU refuse the whole leaf as misconfigured.
+    ///
+    /// Falsification: replayable `kernel/falsifications/arch.riscv64.iommu.proofs.the_root_entry_names_exactly_the_leaf.patch`
+    #[kani::proof]
+    fn the_root_entry_names_exactly_the_leaf() {
+        let leaf: u64 = kani::any();
+        // A leaf is a page frame in RAM.
+        kani::assume(leaf % page_frames::FRAME_SIZE == 0);
+        kani::assume(leaf < 1 << PA_BITS);
+
+        let entry = non_leaf_entry(leaf);
+        assert!(entry & 1 == 1, "the entry is valid");
         assert!(
-            cmd & 0x7f == 3 && (cmd >> 7) & 0b111 == 0,
-            "the command is IODIR.INVAL_DDT"
+            ((entry >> 10) & ((1 << 44) - 1)) << 12 == leaf,
+            "the PPN is the leaf entire"
         );
         assert!(
-            (cmd >> 33) & 1 == 1,
-            "DV is set, so the DID field is honoured"
+            entry & !(((1u64 << 44) - 1) << 10 | 1) == 0,
+            "no reserved bit is set: no address bit reached one"
         );
         assert!(
-            cmd >> 40 == a as u64,
-            "the invalidation names exactly the device just attached"
+            non_leaf_entry_leaf(entry) == leaf,
+            "reading the entry back gives the leaf it was written with"
         );
     }
 }

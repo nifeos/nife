@@ -34,6 +34,10 @@ pub enum Error {
     Pch(::e1000e::platform_controller_hub::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
     PhysicalLayerDeviceId(::e1000e::platform_controller_hub::physical_layer_device::Error),
+    /// The IOMMU refused to attach the controller, so its DMA stays blocked.
+    ///
+    /// Name: provisional.
+    Unconfined(crate::iommu::AttachError),
 }
 
 /// Why there is no NIC to hand out.
@@ -133,9 +137,9 @@ fn read_frame_counts(c: &Controller) -> FrameCounts {
 /// calls this refuses while that process lives (`e1000e_service`'s `BUGS`).
 pub fn bring_up() -> Result<Found, Absent> {
     let dev = crate::pci::find_e1000e_device().ok_or(Absent::NoController)?;
-    let region = region_for(dev.rid);
-    let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
+    let region = region_for(dev.rid).map_err(|e| refused(Error::Unconfined(e)))?;
+    let c = Controller(mmu::phys_to_virt(dev.bar0));
     let pch = ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
@@ -312,17 +316,18 @@ fn reset_82574(c: &Controller) -> Result<(), Error> {
 }
 
 /// The DMA region: allocated and confined on the first call, the same region on every later one.
-fn region_for(rid: u32) -> u64 {
+/// A refused attach frees the region and returns the IOMMU's reason.
+fn region_for(rid: u32) -> Result<u64, crate::iommu::AttachError> {
     let base = REGION.load(Ordering::Acquire);
     if base != 0 {
-        return base;
+        return Ok(base);
     }
     let base =
         crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
             .expect("no DMA region for the e1000e NIC")
             .addr();
     if crate::iommu::is_active() {
-        crate::iommu::confine(
+        let confined = crate::iommu::confine(
             rid,
             &[paging::domain::DmaRegion {
                 base,
@@ -330,9 +335,17 @@ fn region_for(rid: u32) -> u64 {
                 writable: true,
             }],
         );
+        if let Err(e) = confined {
+            for page in 0..layout::DIRECT_MEMORY_ACCESS_REGION_PAGES {
+                crate::memory::free(page_frames::PageFrame::from_addr(
+                    base + page * page_frames::FRAME_SIZE,
+                ));
+            }
+            return Err(e);
+        }
     }
     REGION.store(base, Ordering::Release);
-    base
+    Ok(base)
 }
 
 /// Zero the region, after the reset and before the rings are programmed. A stale descriptor status

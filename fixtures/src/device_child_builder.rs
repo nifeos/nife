@@ -49,7 +49,11 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         refuse()
     };
     let grants = [(REPORT, abi::rights::WRITE)];
-    let maps = [(CHILD_UART_VA, UART_DEVICE, abi::address_space::MAP_RO)];
+    let maps = [(
+        CHILD_UART_VA,
+        UART_DEVICE,
+        abi::address_space::MAP_READ_ONLY,
+    )];
     let endowment = ChildEndowment {
         capabilities: &grants,
         maps: &maps,

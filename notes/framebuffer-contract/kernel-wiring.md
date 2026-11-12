@@ -26,7 +26,7 @@ the harness and the boot hand the driver one world.
 
 ## The fault slot
 
-The supervisor writes each process's fault endpoint at `abi::fault::FAULT_EP_SLOT`, the last slot
+The supervisor writes each process's fault endpoint at `abi::fault::FAULT_RENDEZVOUS_SLOT`, the last slot
 of the table. A grant placed there would overwrite it, and nothing would complain: `grant_at` on an
 empty slot succeeds. The failure would surface later as a faulting process that hangs instead of
 being reaped, far from its cause. So each grant list's highest slot is checked against the fault

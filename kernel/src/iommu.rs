@@ -107,6 +107,40 @@ impl core::fmt::Display for Scope {
     }
 }
 
+/// **Why an IOMMU driver refused to attach a device.** The device keeps no entry in the driver's
+/// table, so the IOMMU blocks every DMA it emits; the caller must not hand it to a driver.
+///
+/// Name: provisional, the type and both variants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttachError {
+    /// The requester id lies past the device table the driver built. `limit` is the first id the
+    /// table cannot hold.
+    BeyondDeviceTable { requester_id: u32, limit: u32 },
+    /// The table needed a new leaf for this requester id and no page frame was free.
+    NoFrameForTable,
+}
+
+impl core::fmt::Display for AttachError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match *self {
+            AttachError::BeyondDeviceTable {
+                requester_id,
+                limit,
+            } => write!(
+                f,
+                "requester id {requester_id:#06x} lies past the device table, which ends at \
+                 {limit:#06x}"
+            ),
+            AttachError::NoFrameForTable => {
+                write!(
+                    f,
+                    "no page frame was free for a new leaf of the device table"
+                )
+            }
+        }
+    }
+}
+
 /// Ask the architecture's driver for `rid`'s [`Scope`].
 pub(crate) fn scope_of(rid: u32) -> Scope {
     crate::arch::iommu::scope_of(rid)
@@ -135,7 +169,11 @@ fn zeroed_page_frame() -> u64 {
 /// `rid` is the PCIe requester id (bus/dev/fn), which both IOMMUs key their tables on (each `virt`
 /// board's device tree gives an identity `iommu-map`). The caller must have checked [`is_active`];
 /// attaching before the driver's `initialize` panics.
-pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) {
+///
+/// Returns the driver's [`AttachError`] when it cannot hold `rid`, after printing it; the device
+/// stays blocked. The domain built for a refused device is not freed.
+#[must_use = "a refused device is blocked, and its driver must not start"]
+pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) -> Result<(), AttachError> {
     // The grant plus the firmware's reserved regions for this device: VT-d 4.1 section 3.16 wants
     // an RMRR identity-mapped in its device's domain, or the firmware's own DMA faults. One that
     // overlaps the grant is skipped, since mapping a page twice fails the build. See
@@ -169,7 +207,9 @@ pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) {
 
     // The domain's cache tag (ASID on aarch64, PSCID on riscv). One per device; the requester id is
     // unique per device and never zero for a real PCI function (dev >= 1), so it is a fine tag.
-    crate::arch::iommu::attach(rid, root, rid as u16);
+    crate::arch::iommu::attach(rid, root, rid as u16).inspect_err(|e| {
+        crate::println!("  iommu            : {e}; its DMA stays blocked");
+    })
 }
 
 /// **Build an identity domain over exactly `regions` in format `F`, and return its root.** The
