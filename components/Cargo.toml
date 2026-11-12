@@ -259,9 +259,9 @@ path = "src/clock.rs"
 test = false
 bench = false
 
-# `date` (milestone 51, DECISIONS §43): reads the clock page, hands the number to the host-tested
-# `calendar` crate, prints. It holds a read-only mapping and therefore cannot set the clock; there is
-# no `date -s` here on purpose. `has_initial_ramdisk_aarch64` packs it as "date" for both ISAs.
+# `date` (milestone 51, DECISIONS §43): reads the clock page, hands the number to `jiff`, prints.
+# It holds a read-only mapping and therefore cannot set the clock; there is no `date -s` here on
+# purpose. `has_initial_ramdisk_aarch64` packs it as "date" for both ISAs.
 [[bin]]
 name = "date"
 path = "src/date.rs"
@@ -705,7 +705,11 @@ file_allocation_table = { version = "0.1.0-pre.1", git = "https://github.com/nif
 # Milestone 198 rung 2b: the two-slot boot state the installer writes into GPT attribute bits and
 # `uefi_loader`'s chooser reads back. One implementation, two programs.
 boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
-calendar = { version = "0.1.0", path = "../crates/calendar" }
+# Civil dates for `date`, `clock` and `swish`'s `touch -t`: a reading to text in five layouts, RFC
+# 3339 text to an instant, RTC fields to Unix seconds. Third-party, ruled 2026-11-12 (UTC) under §46
+# (thin primitives or whole subsystems); default features off, so no `std`, no `alloc` and no time
+# zone database, only fixed offsets. See notes/calendar.md.
+jiff = { version = "0.2.43", default-features = false }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # A program's manifest carried in its own bytes (milestone 597 (a program carries its manifest in an
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program

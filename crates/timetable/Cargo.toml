@@ -14,10 +14,11 @@ workspace = true
 # implementation that could drift. `version` is required beside `path`: cargo-deny reads a
 # path-only dependency as a wildcard, and `user` depends on this crate.
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
-# Civil-date arithmetic for calendar entries (G5): a day number to a year, month and weekday, and a
-# month's length. The crate of milestone 51 (wall-clock time), already Kani-proved inverse over its range, rather than a
-# second copy of Hinnant's algorithms here.
-calendar = { version = "0.1.0", path = "../calendar" }
+# Civil-date arithmetic for calendar entries (G5): a day number to a year, month and day, and a
+# month's length. `jiff` with default features off, which needs neither std nor an allocator; the
+# dependency was ruled 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems), and
+# notes/calendar.md says why it was chosen.
+jiff = { version = "0.2.43", default-features = false }
 clock_contract = { version = "0.1.0", path = "../clock_contract" }
 # The fire arithmetic, `next_after`, and its Kani proofs (milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls)). The kernel's timer re-arm
 # links the same crate, so the proof binds the code that runs. `timetable` re-exports it.

@@ -474,8 +474,8 @@ impl Nav {
         // (there is no combined verb), but this at least orders the local, no-wire-cost check first.
         let at_seconds: Option<u64> = match args.at {
             None => None,
-            Some(text) => match calendar::DateTime::parse_rfc3339_bytes(text) {
-                Ok(dt) => match u64::try_from(dt.to_unix()) {
+            Some(text) => match jiff::fmt::temporal::DateTimeParser::new().parse_timestamp(text) {
+                Ok(at) => match u64::try_from(at.as_second()) {
                     Ok(seconds) => Some(seconds),
                     Err(_) => return Say::NotAnInstant,
                 },

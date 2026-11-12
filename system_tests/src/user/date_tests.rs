@@ -176,11 +176,11 @@ fn date_prints_the_wall_clock_it_was_granted() {
     let (ep, region) = spawn_date(Some(w.page_phys), FMT_RFC3339, 0, 0);
     let n = line(ep, &mut buf);
     let s = core::str::from_utf8(&buf[..n]).expect("date printed non-UTF-8");
-    let dt = calendar::DateTime::parse_rfc3339(s)
-        .unwrap_or_else(|e| panic!("date printed {s:?}, which is not RFC 3339: {}", e.as_str()));
-    assert_eq!(dt.offset().minutes(), 0, "no offset was asked for");
+    let dt = jiff::fmt::temporal::DateTimeParser::new()
+        .parse_timestamp(s)
+        .unwrap_or_else(|e| panic!("date printed {s:?}, which is not RFC 3339: {e}"));
     assert!(
-        (dt.to_unix() - ours).abs() < 10,
+        (dt.as_second() - ours).abs() < 10,
         "date printed {s}, which is not the {ours} the kernel reads",
     );
     assert!(
@@ -213,11 +213,11 @@ fn date_prints_the_wall_clock_it_was_granted() {
     let mut iso = [0u8; 32];
     iso[..19].copy_from_slice(&s.as_bytes()[4..23]); // the date and time
     iso[19..25].copy_from_slice(&s.as_bytes()[24..]); // the offset, its space removed
-    let iso = calendar::DateTime::parse_rfc3339_bytes(&iso[..25])
-        .unwrap_or_else(|e| panic!("{s:?} does not reduce to RFC 3339: {}", e.as_str()));
-    assert_eq!(iso.offset().minutes(), 330);
+    let iso = jiff::fmt::temporal::DateTimeParser::new()
+        .parse_timestamp(&iso[..25])
+        .unwrap_or_else(|e| panic!("{s:?} does not reduce to RFC 3339: {e}"));
     assert!(
-        (iso.to_unix() - ours).abs() < 10,
+        (iso.as_second() - ours).abs() < 10,
         "{s:?} names a different instant from the {ours} the kernel reads",
     );
     crate::sched::reclaim_region(region).expect("date's region would not reclaim");

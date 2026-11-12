@@ -295,7 +295,7 @@ that compiles it, and nife's own half (the platform layer, `malloc`, the start o
   functions that need what stage 1 lacks were removed (pseudo-terminals, `crypt`, `alarm`, timers); `select` and
   `pselect` are written on the platform layer's `poll` rather than epoll; relibc's misspelled
   `POSIX_MADV_WONTNEED` is `POSIX_MADV_DONTNEED`; time zones are UTC
-  on `crates/calendar`; `printf` reads a `double` vararg as the soft-float ABI passes it; and
+  on `jiff`'s civil arithmetic; `printf` reads a `double` vararg as the soft-float ABI passes it; and
   `getopt_long_only`, which relibc lacks, was added.
 - **The headers** in `relibc/include/` are generated from the modules by cbindgen 0.29.0, as relibc
   generates them, and committed. `helpers/c-library-headers.sh` regenerates them; no build runs it.

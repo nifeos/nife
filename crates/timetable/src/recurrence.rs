@@ -5,13 +5,14 @@
 //! minute. Every field RFC 5545 would derive from DTSTART is written in the line, so occurrences
 //! do not depend on registration (rule 4 of notes/scheduled-execution/calendar-grammar-g5.md). A
 //! **minute** counts whole UTC minutes since 1970-01-01T00:00Z, a **day** is that over 1440, and
-//! civil dates are `crates/calendar`'s, which Kani proves inverse over its whole range. No seconds
+//! civil dates are `jiff`'s, limited to years 0000 to 9999 so a date always prints in four digits. No seconds
 //! (BYSECOND=0) and no zones: a line means UTC forever (rule 5).
 //!
 //! Name: provisional, minted 2026-09-26 (UTC) by milestone 129's lane, for this module and every
 //! public item in it. Naming is calef's.
 
-use calendar::{Civil, days_in_month};
+use jiff::SignedDuration;
+use jiff::civil::Date;
 
 /// Minutes in a day.
 pub(crate) const MINUTES_PER_DAY: i64 = 1440;
@@ -163,17 +164,41 @@ pub(crate) const fn weekday_of(d: i64) -> u8 {
     (d + 3).rem_euclid(7) as u8
 }
 
-/// `(year, month 1..=12, day 1..=31)` of day number `d`. `None` outside `crates/calendar`'s range.
+/// Seconds in a day, the unit a day number counts.
+const SECONDS_PER_DAY: i64 = 86_400;
+
+/// Day number 0, 1970-01-01.
+const EPOCH: Date = jiff::civil::date(1970, 1, 1);
+
+/// `(year, month 1..=12, day 1..=31)` of day number `d`. `None` outside years 0000 to 9999, which
+/// [`write_date`] prints as four digits; jiff's own range reaches back to -9999.
 fn civil(d: i64) -> Option<(i32, u8, u8)> {
-    let c = Civil::from_unix(d.checked_mul(86_400)?).ok()?;
-    Some((c.year(), c.month(), c.day()))
+    let c = EPOCH
+        .checked_add(SignedDuration::from_secs(d.checked_mul(SECONDS_PER_DAY)?))
+        .ok()?;
+    (0..=9999)
+        .contains(&c.year())
+        .then(|| (i32::from(c.year()), c.month() as u8, c.day() as u8))
 }
 
-/// The day number of a civil date, or `None` if it is not one.
+/// The day number of a civil date, or `None` if it is not one or falls outside years 0000 to 9999.
 fn day_number(year: i32, month: u8, day: u8) -> Option<i64> {
-    Civil::new(year, month, day, 0, 0, 0)
-        .ok()
-        .map(|c| c.days_since_epoch())
+    if !(0..=9999).contains(&year) {
+        return None;
+    }
+    let c = Date::new(
+        year as i16,
+        i8::try_from(month).ok()?,
+        i8::try_from(day).ok()?,
+    )
+    .ok()?;
+    Some(c.duration_since(EPOCH).as_secs() / SECONDS_PER_DAY)
+}
+
+/// The number of days in `month` of `year`, or `None` if `month` is not 1 to 12.
+fn days_in_month(year: i32, month: u8) -> Option<u8> {
+    let first = Date::new(i16::try_from(year).ok()?, i8::try_from(month).ok()?, 1).ok()?;
+    Some(first.days_in_month() as u8)
 }
 
 /// **Does a month day match**, given the day's number in its month, its weekday, and the month's
