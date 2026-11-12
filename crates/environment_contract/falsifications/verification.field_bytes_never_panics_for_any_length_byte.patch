@@ -1,0 +1,24 @@
+Falsifies `environment_contract::verification::field_bytes_never_panics_for_any_length_byte`.
+
+The defect: `field_bytes` trusts the length byte and no longer compares it with the field's cap, so a
+length of 255 in `TERM` slices past the end of the page.
+
+Expected to fail: the slice's index-out-of-bounds check inside `field_bytes`, at any length over the
+cap of 24, and the harness's `assert!(read.is_none())` for the same lengths.
+
+diff --git a/crates/environment_contract/src/lib.rs b/crates/environment_contract/src/lib.rs
+--- a/crates/environment_contract/src/lib.rs
++++ b/crates/environment_contract/src/lib.rs
+@@ -303,10 +303,10 @@ fn write_field(page: &mut [u8], len_off: usize, data_off: usize, cap: usize, val
+ /// them. Never panics, whatever the page and the length byte hold.
+ fn field_bytes(page: &[u8], len_off: usize, data_off: usize, cap: usize) -> Option<&[u8]> {
+     let n = *page.get(len_off)? as usize;
+-    if n == 0 || n > cap {
++    if n == 0 {
+         return None;
+     }
+-    page.get(data_off..data_off.checked_add(n)?)
++    Some(&page[data_off..data_off + n])
+ }
+ 
+ /// Read one length-prefixed field back as a `&str`. `None` where [`field_bytes`] is `None`, or for

@@ -34,7 +34,6 @@ use ::designware_ethernet::{
     management_data_input_output, registers,
 };
 use driver_process_contract::designware_ethernet::Handoff;
-use jh7110_clock_and_reset as crg;
 
 use crate::arch::mmu;
 
@@ -47,6 +46,8 @@ pub(crate) const LINK_WAIT_MILLISECONDS: u64 = 5000;
 pub enum Error {
     /// `phy-mode` names no RGMII variant, so there is no interface select to make.
     NotRgmii,
+    /// No clock and reset server runs to bring the port's clocks and resets up.
+    NoClockServer,
     /// A clock's enable bit did not read back: the window is not the controller it was named as.
     ClocksNotRunning,
     /// A reset did not read as released before the clock driver's poll gave up.
@@ -95,10 +96,8 @@ pub(crate) struct Report {
     pub compatible: &'static [u8],
     /// Whether the clock-and-reset windows came from the tree or from the constants.
     pub windows_from_tree: bool,
-    /// The SYS-domain clocks' before-and-after words.
-    pub sys: crg::BringUpReport,
-    /// The AON-domain clocks', mux's and resets' words.
-    pub aon: crg::BringUpReport,
+    /// What the clock and reset server answered for the port's SYS and AON clocks and resets.
+    pub clocks: Option<crate::user::jh7110_clock_and_reset_service::BroughtUp>,
     /// The syscon word before and after the interface select.
     pub syscon: (u32, u32),
     /// The controller's version register.
@@ -127,8 +126,7 @@ impl Report {
             base: e.port.registers_physical_address,
             compatible: e.port.compatible,
             windows_from_tree: e.aon.from_tree && e.sys.from_tree && e.syscon.from_tree,
-            sys: crg::BringUpReport::default(),
-            aon: crg::BringUpReport::default(),
+            clocks: None,
             syscon: (0, 0),
             version: 0,
             direct_memory_access_address_bits: 0,
@@ -202,28 +200,16 @@ fn run(
         return Err(Error::NotRgmii);
     }
 
-    // Clocks, then resets: the SYS plan is all clocks, and the AON plan ends in both resets, so
-    // running SYS first means every clock is up before either reset is released.
-    // SAFETY: `memory::jh7110_ethernet` recorded these windows only on a tree that names a JH7110
-    // Ethernet port, and RISC-V's `mmu::initialize` mapped each device-typed (steps 6c and 6d),
-    // which is `bring_up`'s contract.
-    unsafe {
-        r.sys = crate::drivers::jh7110_clock_and_reset::bring_up(
-            mmu::phys_to_virt(e.sys.base_physical_address) as usize,
-            &crg::SYSTEM,
-            crg::GMAC0_SYSTEM_BRING_UP,
-        );
-        r.aon = crate::drivers::jh7110_clock_and_reset::bring_up(
-            mmu::phys_to_virt(e.aon.base_physical_address) as usize,
-            &crg::ALWAYS_ON,
-            crg::GMAC0_ALWAYS_ON_BRING_UP,
-        );
-    }
-    if !r.sys.has_clocks_running() || !r.aon.has_clocks_running() {
-        return Err(Error::ClocksNotRunning);
-    }
-    if !r.aon.all_resets_are_released() {
-        return Err(Error::ResetsHeld);
+    // Clocks, then resets, across both domains: the clock and reset server takes the order from
+    // the port's plan, for this port's badge alone (§320 (the JH7110 clock and reset wire)).
+    let brought =
+        crate::user::jh7110_clock_and_reset_service::bring_up(e.port.registers_physical_address)
+            .ok_or(Error::NoClockServer)?;
+    r.clocks = Some(brought);
+    match brought.status {
+        jh7110_clock_and_reset_contract::Status::Done => {}
+        jh7110_clock_and_reset_contract::Status::ResetHeld => return Err(Error::ResetsHeld),
+        _ => return Err(Error::ClocksNotRunning),
     }
 
     let syscon =

@@ -288,36 +288,19 @@ mod radon {
                 "from the constants (the tree named at least one of them nowhere)"
             },
         );
-        let words = |c: &jh7110_clock_and_reset::BringUpReport| {
-            let mut s = [(0u32, 0u32); jh7110_clock_and_reset::MAXIMUM_RECORDED_CLOCKS];
-            for (k, w) in s.iter_mut().enumerate().take(c.clocks) {
-                *w = (c.clock_before[k], c.clock_after[k]);
-            }
-            (s, c.clocks)
-        };
-        for (name, c) in [("sys", &r.sys), ("aon", &r.aon)] {
-            let (w, n) = words(c);
-            for (k, (before, after)) in w.iter().take(n).enumerate() {
-                println!(
-                    "network-bench: clocks    : {name} clock step {k}: {before:#010x} -> {after:#010x}"
-                );
-            }
+        match r.clocks {
+            Some(b) => println!(
+                "network-bench: clocks    : {:?} from the clock and reset server, clocks {}/{} running, resets {}/{} released, {} refused, already up {}",
+                b.status,
+                b.summary.clocks_running,
+                b.summary.clocks_in_plan,
+                b.summary.resets_released,
+                b.summary.resets_in_plan,
+                b.summary.refused,
+                b.summary.already_up,
+            ),
+            None => println!("network-bench: clocks    : no clock and reset server answered"),
         }
-        if r.aon.had_select_parent {
-            println!(
-                "network-bench: clocks    : aon tx mux {:#010x} -> {:#010x}",
-                r.aon.select_parent_before, r.aon.select_parent_after
-            );
-        }
-        println!(
-            "network-bench: resets    : {} of {} released, last assert {:#010x} -> {:#010x}, status {:#010x}, {} polls",
-            r.aon.resets_released,
-            r.aon.resets,
-            r.aon.reset_assert_before,
-            r.aon.reset_assert_after,
-            r.aon.reset_status_after,
-            r.aon.polls,
-        );
         println!(
             "network-bench: syscon    : {:#010x} -> {:#010x} (gmac0 interface {} before, {} after; 1 is RGMII)",
             r.syscon.0,

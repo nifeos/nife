@@ -37,8 +37,8 @@ pub mod plic;
 // The JH7110's clock and reset generator (milestone 220). Gated to riscv64: the JH7110 is a
 // RISC-V SoC, so on the other two architectures the module would be dead code naming a device
 // that cannot be present. Pure MMIO Rust over `crates/jh7110_clock_and_reset`'s offsets; takes its base and
-// its plan from the caller and holds no state of its own. Its header carries the argument for why
-// this one driver is kernel-resident when §21 and §23 put drivers at EL0.
+// its plan from the caller and holds no state of its own. It serves the kernel's own watchdog and
+// the reboot path; every userspace driver's device goes through the clock and reset server.
 #[cfg(target_arch = "riscv64")]
 pub mod jh7110_clock_and_reset;
 
