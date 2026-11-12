@@ -401,6 +401,18 @@ impl NetworkInterfaceController {
     pub(crate) fn break_loopback(&mut self) {
         self.loopback_broken = true;
     }
+    /// Set a register as a hardware fault would leave it, for a test of what the bring-up does
+    /// with a value it should refuse.
+    #[cfg(test)]
+    pub(crate) fn set_register(&mut self, offset: u32, value: u32) {
+        self.registers.insert(offset, value);
+    }
+    /// Start the clock at `microseconds`, as a machine that has been up a while would, so a test
+    /// can tell an elapsed time from a clock reading.
+    #[cfg(test)]
+    pub(crate) fn set_clock_microseconds(&mut self, microseconds: u64) {
+        self.clock_microseconds = microseconds;
+    }
     /// A register's current value.
     pub(crate) fn register(&self, offset: u32) -> u32 {
         self.registers.get(&offset).copied().unwrap_or(0)

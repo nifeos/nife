@@ -1128,6 +1128,168 @@ mod tests {
         );
     }
 
+    /// Settings with every field at its smallest, the word zero.
+    fn all_zero_settings() -> Settings {
+        Settings {
+            receive_delay: 0,
+            receive_fixed_delay: false,
+            transmit_delay: 0,
+            receive_clock_drive: PadDriveStrength::Code(0),
+            receive_data_drive: PadDriveStrength::Code(0),
+            transmit_clock_inverted: [false; 3],
+            source: SettingsSource::VendorTree,
+        }
+    }
+
+    /// Each field of the word stands alone and at its largest, and each limit holds exactly: the
+    /// selects stop at 15, a code at 255, a microamp value at 2^24 - 1, and no field leaks into
+    /// its neighbor.
+    #[test]
+    fn each_field_of_the_settings_word_stands_alone_at_its_limit() {
+        let base = all_zero_settings();
+        assert_eq!(base.to_word(), Some(0));
+        assert_eq!(Settings::from_word(0), Some(base));
+        let single_bits = [
+            (
+                Settings {
+                    receive_delay: 0xf,
+                    ..base
+                },
+                0xf,
+            ),
+            (
+                Settings {
+                    receive_fixed_delay: true,
+                    ..base
+                },
+                1 << 4,
+            ),
+            (
+                Settings {
+                    transmit_delay: 0xf,
+                    ..base
+                },
+                0xf << 5,
+            ),
+            (
+                Settings {
+                    transmit_clock_inverted: [true, false, false],
+                    ..base
+                },
+                1 << 9,
+            ),
+            (
+                Settings {
+                    transmit_clock_inverted: [false, true, false],
+                    ..base
+                },
+                1 << 10,
+            ),
+            (
+                Settings {
+                    transmit_clock_inverted: [false, false, true],
+                    ..base
+                },
+                1 << 11,
+            ),
+            (
+                Settings {
+                    source: SettingsSource::MainlineTree,
+                    ..base
+                },
+                1 << 12,
+            ),
+            (
+                Settings {
+                    source: SettingsSource::Fallback,
+                    ..base
+                },
+                2 << 12,
+            ),
+            (
+                Settings {
+                    receive_clock_drive: PadDriveStrength::Code(0xff),
+                    ..base
+                },
+                0xff << 15,
+            ),
+            (
+                Settings {
+                    receive_data_drive: PadDriveStrength::Code(0xff),
+                    ..base
+                },
+                0xff << 40,
+            ),
+            (
+                Settings {
+                    receive_clock_drive: PadDriveStrength::Microamps((1 << 24) - 1),
+                    ..base
+                },
+                (((1 << 24) - 1) << 15) | 1 << 14,
+            ),
+            (
+                Settings {
+                    receive_data_drive: PadDriveStrength::Microamps((1 << 24) - 1),
+                    ..base
+                },
+                (((1u64 << 24) - 1) << 40) | 1 << 39,
+            ),
+        ];
+        for (settings, word) in single_bits {
+            assert_eq!(settings.to_word(), Some(word), "{settings:?}");
+            assert_eq!(Settings::from_word(word), Some(settings), "{word:#x}");
+        }
+    }
+
+    /// Each limit holds exactly: the selects stop at 15, the microamp values at 2^24 - 1, and a
+    /// drive code at 255.
+    #[test]
+    fn each_limit_of_the_settings_word_refuses_one_past_it() {
+        let base = all_zero_settings();
+        for (settings, why) in [
+            (
+                Settings {
+                    receive_delay: 0x10,
+                    ..base
+                },
+                "receive delay past 15",
+            ),
+            (
+                Settings {
+                    transmit_delay: 0x10,
+                    ..base
+                },
+                "transmit delay past 15",
+            ),
+            (
+                Settings {
+                    receive_clock_drive: PadDriveStrength::Microamps(1 << 24),
+                    ..base
+                },
+                "clock microamps past 24 bits",
+            ),
+            (
+                Settings {
+                    receive_data_drive: PadDriveStrength::Microamps(1 << 24),
+                    ..base
+                },
+                "data microamps past 24 bits",
+            ),
+        ] {
+            assert_eq!(settings.to_word(), None, "{why}");
+        }
+        assert_eq!(
+            Settings::from_word(0x100 << 15),
+            None,
+            "a clock code past 255"
+        );
+        assert_eq!(
+            Settings::from_word(0x100u64 << 40),
+            None,
+            "a data code past 255"
+        );
+    }
+
     /// Settings survive the word a spawner hands them in, for each source and each drive form,
     /// and the word refuses what it cannot carry rather than truncating it.
     #[test]

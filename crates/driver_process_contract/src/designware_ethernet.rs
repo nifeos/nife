@@ -640,6 +640,118 @@ mod tests {
         }
     }
 
+    /// Every code each field can carry survives the report's words, so a mapping that drops one of
+    /// them, or a bit that is always set, shows. The stage before used one source, one speed, one
+    /// payload and always a full duplex.
+    #[test]
+    fn every_source_speed_payload_and_duplex_survives_the_report() {
+        let mut combinations = 0;
+        for source in [
+            SettingsSource::VendorTree,
+            SettingsSource::MainlineTree,
+            SettingsSource::Fallback,
+        ] {
+            for speed in [Speed::Ten, Speed::Hundred, Speed::Thousand] {
+                for payload in [Payload::Matches, Payload::Poison, Payload::Other] {
+                    for full_duplex in [false, true] {
+                        for station_origin in [AddressSource::Tree, AddressSource::Registers] {
+                            let r = ControlReport {
+                                account: Account {
+                                    version: 0x5251,
+                                    direct_memory_access_address_bits: 40,
+                                    physical_layer_device_id: 0x4f51_e91b,
+                                    physical_layer_device: Some((0xff_ffff, source)),
+                                    station_address: Some((
+                                        [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
+                                        station_origin,
+                                    )),
+                                    resets_microseconds: [12, 34],
+                                    coherence: Some((
+                                        Verdict::Coherent,
+                                        Observation {
+                                            receive_descriptor_word_3: u32::MAX,
+                                            transmit_descriptor_word_3: u32::MAX,
+                                            status: u32::MAX,
+                                            payload,
+                                        },
+                                    )),
+                                    link: Some(Link { speed, full_duplex }),
+                                    link_wait_milliseconds: 2900,
+                                },
+                                system_controller: (u32::MAX, 0),
+                            };
+                            assert_eq!(ControlReport::from_words(&r.to_words()), Some(r));
+                            combinations += 1;
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(combinations, 3 * 3 * 3 * 2 * 2);
+    }
+
+    /// Each presence bit stands alone: a report with one field present and the rest absent
+    /// survives, so a bit read as always set would invent the others.
+    #[test]
+    fn each_presence_bit_stands_alone() {
+        let full = ControlReport {
+            account: Account {
+                physical_layer_device: Some((1800, SettingsSource::Fallback)),
+                station_address: Some(([2, 0, 0, 0, 0, 1], AddressSource::Tree)),
+                coherence: Some((
+                    Verdict::BusError,
+                    Observation {
+                        receive_descriptor_word_3: 1,
+                        transmit_descriptor_word_3: 2,
+                        status: 3,
+                        payload: Payload::Other,
+                    },
+                )),
+                link: Some(Link {
+                    speed: Speed::Ten,
+                    full_duplex: false,
+                }),
+                ..Account::default()
+            },
+            system_controller: (0, 0),
+        };
+        for keep in 0..4 {
+            let mut r = full;
+            if keep != 0 {
+                r.account.physical_layer_device = None;
+            }
+            if keep != 1 {
+                r.account.station_address = None;
+            }
+            if keep != 2 {
+                r.account.coherence = None;
+            }
+            if keep != 3 {
+                r.account.link = None;
+            }
+            assert_eq!(ControlReport::from_words(&r.to_words()), Some(r));
+        }
+        let mut words = ControlReport::default().to_words();
+        words[1] |= 3 << 56;
+        assert_eq!(
+            ControlReport::from_words(&words),
+            Some(ControlReport::default()),
+            "a source code with no PHY present is not read"
+        );
+    }
+
+    /// The spawn words accept the largest device number a word carries and refuse the next.
+    #[test]
+    fn the_control_spawn_words_carry_the_largest_five_bit_device_number() {
+        let i = Inputs {
+            physical_layer_device_address: 0x1f,
+            ..inputs(None)
+        };
+        let words = control_spawn_words(&i).expect("fits");
+        assert_eq!(control_inputs(words), Some(i));
+        assert_eq!(control_inputs([words[0], words[1] + 1, words[2]]), None);
+    }
+
     #[test]
     fn the_handoff_refuses_a_multicast_or_absent_address() {
         let h = Handoff {

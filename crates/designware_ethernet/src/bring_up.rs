@@ -472,4 +472,82 @@ mod tests {
         assert!(account.physical_layer_device.is_some());
         assert_eq!(account.coherence, None);
     }
+
+    /// A version register that reads all zeros or all ones is a window nothing answers, and each
+    /// is refused on its own, with the version the register held.
+    #[test]
+    fn a_silent_version_register_is_refused_whether_it_reads_zero_or_all_ones() {
+        for version in [0, u32::MAX] {
+            let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
+            p.set_register(registers::CORE_VERSION_REGISTER, version);
+            let mut account = Account::default();
+            assert_eq!(
+                bring_up(&mut p, &inputs(), &mut account),
+                Err(Error::Silent { version })
+            );
+            assert_eq!(account.version, version);
+        }
+    }
+
+    /// The link wait is reported in milliseconds and is the time spent: a link that is already up
+    /// costs about nothing, and one that never comes costs the bound and no more than one poll
+    /// beyond it.
+    #[test]
+    fn the_link_wait_is_reported_in_milliseconds_of_the_time_spent() {
+        let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
+        let mut account = Account::default();
+        bring_up(&mut p, &inputs(), &mut account).unwrap();
+        assert!(
+            account.link_wait_milliseconds < LINK_POLL_MICROSECONDS / 1000,
+            "a link already up costs under one poll: {}",
+            account.link_wait_milliseconds
+        );
+        let mut p = port(Memory::coherent(REGION), None);
+        let mut account = Account::default();
+        bring_up(&mut p, &inputs(), &mut account).unwrap();
+        assert!(account.link_wait_milliseconds >= LINK_WAIT_MILLISECONDS);
+        assert!(
+            account.link_wait_milliseconds
+                <= LINK_WAIT_MILLISECONDS + LINK_POLL_MICROSECONDS / 1000,
+            "no more than one poll past the bound: {}",
+            account.link_wait_milliseconds
+        );
+    }
+
+    /// The region is zeroed, the whole of it: a word the probe or a previous wiring left behind
+    /// would read as a received frame.
+    #[test]
+    fn the_region_is_zeroed_to_its_last_word() {
+        let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
+        let last = layout::DIRECT_MEMORY_ACCESS_REGION_BYTES - 8;
+        p.with(|r, _| {
+            r.write_u64(last, 0xdead_beef);
+            r.write_u64(last - 4096, 0xfeed);
+        });
+        let mut account = Account::default();
+        bring_up(&mut p, &inputs(), &mut account).unwrap();
+        let (end, earlier) = p.with(|r, _| (r.read_u64(last), r.read_u64(last - 4096)));
+        assert_eq!(end, 0, "the last word");
+        assert_eq!(earlier, 0, "a word a page before it");
+    }
+
+    /// Both waits measure elapsed time, not the clock's reading: on a machine that has been up
+    /// a long while a link that never comes still costs the bound, and the probe still waits for
+    /// its frame.
+    #[test]
+    fn the_waits_measure_elapsed_time_on_a_clock_that_started_long_ago() {
+        let mut p = port(Memory::coherent(REGION), None);
+        p.set_clock_microseconds(1 << 40);
+        let mut account = Account::default();
+        assert_eq!(
+            bring_up(&mut p, &inputs(), &mut account),
+            Ok((STATION, None))
+        );
+        assert!(matches!(account.coherence, Some((Verdict::Coherent, _))));
+        assert!(account.link_wait_milliseconds >= LINK_WAIT_MILLISECONDS);
+        assert!(
+            account.link_wait_milliseconds
+                <= LINK_WAIT_MILLISECONDS + LINK_POLL_MICROSECONDS / 1000
+        );
+    }
 }
