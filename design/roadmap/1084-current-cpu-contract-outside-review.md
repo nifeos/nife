@@ -160,6 +160,13 @@ Concrete example. A kernel with a bound of 16 publishes CPU 9 to a program built
 program reads `None` for every word, and its standard library walks on one thread, which is the
 degradation the crate already documents for a magic mismatch.
 
+Ruled 2026-11-12 (UTC): option A. The bound is part of the page's identity. A change to
+`CPU_ID_BOUND` re-mints `MAGIC` and bumps `VERSION` in the same change, and the constant's
+documentation says so. `cpu()` answers `None` for a published id at or past the bound. The
+documentation of `machine_statistics_contract`'s re-export states that its identity follows the
+same rule. Tests cover an id one below the bound (accepted) and an id at the bound
+(refused). Item 5 is done by the pull request that carries this ruling.
+
 ### Decision B. The names
 
 Background. Ratification covers the crate's name; 18 public names lack it, and the standalone gate refuses the move until every name a stranger meets has it. The page-contract family rule pre-rules two, and the table lists them for completeness only. One pull request carries the table below as
