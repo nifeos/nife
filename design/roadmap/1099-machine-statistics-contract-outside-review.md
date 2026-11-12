@@ -81,7 +81,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    Door: two-way. Effort: S.
 
 3. The source cites this tree in places a stranger cannot follow.
-   Finding: the module documentation and the doc comments name milestone 126 (the `procps` package, now `process-tools`: who else is running, and who may ask) and milestone 956. They also name milestone 326 (nobody owns turning a mutation score upward), decision 225, "AGENTS.md rule 7", `notes/machine-statistics.md`, pull requests 1360 and 2852, two lane names and the architect. Also `src/lib.rs` line 16 says "nife does not page out". The manifest comment does the same. `script/crate-standalone` counts two section
+   Finding: the module documentation and the doc comments name milestone 126 (the `procps` package, now `process-tools`: who else is running, and who is allowed to ask) and milestone 956. They also name milestone 326 (nobody has been assigned to turn a mutation score upward), decision 225, "AGENTS.md rule 7", `notes/machine-statistics.md`, pull requests 1360 and 2852, two lane names and the architect. Also `src/lib.rs` line 16 says "nife does not page out". The manifest comment does the same. `script/crate-standalone` counts two section
    citation lines, six milestone citation lines, three architect's-name lines and three path lines;
    the externalization lint counts one `nife` hit. The `Name:` block on the module is the only one
    the move strips; the `Ratified` sentence on `PAGE_VA` (line 76) and the ruling sentence on
