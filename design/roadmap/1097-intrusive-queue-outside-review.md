@@ -13,10 +13,7 @@ Raised by a read-only outside review of `crates/intrusive_queue`, read the way a
 it on crates.io for the first time would read it. It changes nothing; it lists what the lanes that
 move and release the crate change. The number is the recording lane's to assign.
 
-The crate has no review package under `notes/crate-reviews/`; the accepted baseline is the ratified
-block in `src/lib.rs` (the crate name and `Queue<T: Node>`), the `Unqueued` token as the ruling on
-the drive-down-unsafe milestone recorded it, the Kani harness and its falsification patch, and the
-release survey's row that says the crate moves. None of those is reopened here. Where a later rule
+The crate has no review package under `notes/crate-reviews/`; the accepted baseline is the ratified block in `src/lib.rs` (the crate name and `Queue<T: Node>`). It also holds the `Unqueued` token as the ruling on the drive-down-unsafe milestone recorded it, the Kani harness and its falsification patch, and the release survey's row that says the crate moves. None of those is reopened here. Where a later rule
 (the naming page, the units rule, the standard-library-names rule) bears on the crate, the item says
 so; the template's name checks refuse nothing in it.
 

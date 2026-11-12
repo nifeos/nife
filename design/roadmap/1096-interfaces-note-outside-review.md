@@ -15,10 +15,7 @@ before `script/crate-move` can finish, and what the architect must rule first.
 
 The crate has no review package in `notes/crate-reviews/`. The settled baseline is therefore the
 block of [milestone 956 (the linked interfaces carry checkable versions)](0956-the-linked-interfaces-carry-checkable-versions.md),
-which rules the note type `INTERFACES` = 4, the descriptor shape (a version word, a count, then
-records of a `u64` id and a `u32` version in strictly ascending id order), the id table with `21`
-for this crate, the equality check at spawn and the rule that a missing note or a missing entry
-passes. The audit report "from the package to the grant" under `design/audit-reports/` accepted
+which rules the note type `INTERFACES` = 4. It also rules the descriptor shape (a version word, a count, then records of a `u64` id and a `u32` version in strictly ascending id order). It rules the id table with `21` for this crate, the equality check at spawn and the rule that a missing note or a missing entry passes. The audit report "from the package to the grant" under `design/audit-reports/` accepted
 the missing-note rule. None of those is reopened here. Step 3 of
 [milestone 1017 (the contract crates leave in this order)](1017-the-contract-crates-leave-in-this-order.md)
 puts this crate last in its step and says it leaves like any leaf.

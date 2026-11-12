@@ -11,11 +11,11 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
     Change: make `fraction` public. Door: two-way. Effort: XS.
 
 17. Nothing uses the two low-entropy items of the public surface.
-    Finding: `Query::new` (nonce equals the send time) and `Timestamp::randomise_low` (a dozen
+    Finding: `Query::new` (nonce equals the send time) and the low-bit randomizer (a dozen
     random bits) exist for a caller with no random source. No caller in the tree uses either; nife's
     client and the test server use `with_nonce`. Keeping them publishes a weaker path next to a free
     stronger one, and the documentation has to spend two paragraphs steering readers away from it.
-    Evidence: `src/lib.rs` lines 218 to 236 and 613 to 622; `grep -rn "randomise_low\|Query::new"`
+    Evidence: `src/lib.rs` lines 218 to 236 and 613 to 622; `grep -rn "Query::new"` and a search for the low-bit randomizer
     finds no NTP caller.
     Change: Decision 3 asks whether both leave before the first publish. If they stay, `new` gains a
     `# Security` paragraph and the README's BUGS names it.

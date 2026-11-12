@@ -14,13 +14,7 @@ the first time would. It changes nothing; it lists what the move lane and the re
 The number is a placeholder a recording lane fills in.
 
 The crate has no review package under `notes/crate-reviews/` and no row in `notes/crate-reviews.md`,
-so this review had no settled package to inherit. The baseline it takes instead, and does not
-reopen, is what the tree already records: the ratified crate name (`network_time_protocol`, the
-standard's own word and the one exception to the `_contract` rule in `design/naming.md`); the
-ratified `UNIX_MINIMUM`; the recorded `MAXIMUM_STRATUM`, `MAXIMUM_ROOT_DISTANCE` and
-`leap::UNSYNCHRONISED`; and the four design decisions `notes/ntp.md` records: unauthenticated NTPv4
-only, exactly 48 bytes, a fixed era pivot rather than a nearest-era rule, and `Packet::parse` total
-with every judgement in `Query::accept`. Two of those baseline names meet a later rule and are
+so this review had no settled package to inherit. The baseline it takes instead, and does not reopen, is what the tree already records. That is the ratified crate name (`network_time_protocol`, the standard's own word and the one exception to the `_contract` rule in `design/naming.md`), the ratified `UNIX_MINIMUM`, and the recorded `MAXIMUM_STRATUM`, `MAXIMUM_ROOT_DISTANCE` and `leap::UNSYNCHRONISED`. It also includes the four design decisions `notes/ntp.md` records. They are unauthenticated NTPv4 only, exactly 48 bytes, a fixed era pivot rather than a nearest-era rule, and `Packet::parse` total with every judgment in `Query::accept`. Two of those baseline names meet a later rule and are
 reopened below, as the release-review rule allows: `UNIX_MINIMUM` carries no unit, and
 `UNSYNCHRONISED` is a British spelling the cited source does not use.
 
@@ -110,16 +104,14 @@ the gates refuse.
    Door: a public name. Two-way today. Effort: XS, plus the callers.
 
 5. British spellings in names.
-   Finding: `british_spelling` refuses `randomise_low` (public), the test and harness
-   `parse_then_serialise_is_the_identity` (the harness name is also the falsification patch's file
-   name and the first line of its header), and the test
-   `randomising_the_low_bits_touches_only_the_low_bits`. `Reject::Unsynchronised` and
+   Finding: `british_spelling` refuses the British form of the low-bit randomizer (public). It refuses the test and harness for the British form of the parse-then-serialize identity (the harness name is also the falsification patch's file
+   name and the first line of its header). It also refuses the test for the British form of randomizing only the low bits. `Reject::Unsynchronised` and
    `leap::UNSYNCHRONISED` escape that list only because the stem is not in `naming_words.toml`. The
    rule (an `ise` ending for `ize`) covers them, the abbreviations report flags both, and RFC 5905
    itself writes "unsynchronized" (its section 11.1 and Figure 22), so the recorded citation does
    not support the British form. The client's `reject_code` table names the variant.
    Evidence: `src/lib.rs` lines 124, 226, 524, 886, 1101. `src/verification.rs` line 80.
-   `falsifications/verification.parse_then_serialise_is_the_identity.patch`.
+   the falsification patch of that harness under `falsifications/`.
    `components/src/network_time_client.rs` line 319.
    Change: `randomize_low_bits`, `Unsynchronized`, `UNSYNCHRONIZED` (Decision 2). The test and
    harness names `parse_then_serialize_is_the_identity` and
@@ -203,7 +195,7 @@ Recommendation, one line each, in the order a ruling would take them:
 | today | recommended | rule | status today |
 |---|---|---|---|
 | `PACKET_LEN` | `PACKET_BYTES` | a length carries its unit | no block |
-| `randomise_low` | `randomize_low_bits` | American spelling; say what is low | no block |
+| the British form of the low-bit randomizer | `randomize_low_bits` | American spelling; say what is low | no block |
 | `Reject::Unsynchronised`, `leap::UNSYNCHRONISED` | `Unsynchronized`, `UNSYNCHRONIZED` | American spelling; RFC 5905 writes "unsynchronized" | recorded (RFC 5905's leap indicator 3) |
 | `UNIX_MINIMUM` | `MINIMUM_UNIX_SECONDS` | a limit opens `MINIMUM_` and ends with its unit | ratified; reopened by the later rule |
 | `UNIX_LIMIT` (exclusive) | `MAXIMUM_UNIX_SECONDS` (inclusive, one less) | same rule; std's `MAX` is inclusive | provisional |
@@ -225,27 +217,27 @@ Example: a user reading `Timestamp::from_unix(seconds, nanoseconds)` and its doc
 meets `UNIX_MINIMUM..UNIX_LIMIT` and has to learn that `LIMIT` is exclusive. With
 `MINIMUM_UNIX_SECONDS..=MAXIMUM_UNIX_SECONDS` the range reads the way every std range does.
 
-### Decision 3. Do `Query::new` and `randomise_low` leave before the first publish?
+### Decision 3. Do `Query::new` and the low-bit randomizer leave before the first publish?
 
 Background: `Query::with_nonce` puts 64 random bits on the wire and keeps the true send time
 locally, and the crate's documentation explains at length why this is free and strictly stronger.
-`Query::new` and `randomise_low` are the weaker path for a caller with no random source. No caller
+`Query::new` and the low-bit randomizer are the weaker path for a caller with no random source. No caller
 in nife uses them. Once published, removing them is a breaking change.
 
 Recommendation: remove both now. A caller with no random source has no business proposing a wall
 clock from an unauthenticated protocol, and the crate's own documentation says as much. Two public
 items that exist only to steer callers away are surface without a user. If the architect wants the
-weak path for an embedded user with a weak entropy source, keep `randomise_low` under the spelled
+weak path for an embedded user with a weak entropy source, keep the low-bit randomizer under the spelled
 name and drop `Query::new`. Then the only constructor takes a nonce, and the caller decides what to
 put in it.
 
-Prior art: chrony randomises the transmit timestamp by default (the crate's documentation;
+Prior art: chrony randomizes the transmit timestamp by default (the crate's documentation;
 unverified here). `ntpd-rs` generates a random origin for every request (unverified). `sntpc` sends
 the caller's timestamp (its documentation does not describe a nonce).
 
 Example: a user who writes `Query::new(now)` because it is the first constructor in the
 documentation ships a client whose replies an off-path attacker forges with about 4,096 guesses on
-a microsecond clock, as the `randomise_low` documentation itself computes.
+a microsecond clock, as the low-bit randomizer documentation itself computes.
 
 ## Done when
 
@@ -257,7 +249,7 @@ The checks are in [the appendix](1102-network-time-protocol-outside-review/done-
   patch fails at the assertion its header names. Kani reports most of the seven failures through a
   placeholder message rather than the assertion text. So the replay never matched the "expected to
   fail" line of five headers against the output.
-- Item 10's timing (a minute unoptimised) is the workspace manifest's figure; this review did not
+- Item 10's timing (a minute unoptimized) is the workspace manifest's figure; this review did not
   rebuild without the override. Item 12's overflow comes from reasoning over the types. Nobody wrote
   a test.
 - The prior-art table marks every claim about another implementation's era rule and nonce as
@@ -276,7 +268,7 @@ An outside review of `network_time_protocol` before it leaves. Seven items turn 
 required checks red on the first day. They are the manifest, the missing README and licenses, the
 contract-crate opening form, `PACKET_LEN`, three British spellings, nine unexpanded acronyms, and a
 dependency taken for one constant. Eight items land before the first tag. They are nife references
-in shipped text, `forbid(unsafe_code)` and a fuzz opt-in, the optimisation the exhaustive sweep
+in shipped text, `forbid(unsafe_code)` and a fuzz opt-in, the optimization the exhaustive sweep
 needs, the mutation exemptions, an overflow in `Interval`'s accessors, two RFC checks, the caller's
 replay duty, and a liveness proof for `accept`. Seven items are for later. Three decisions for the
 architect: the dependency, nine names, and whether the low-entropy constructor ships.

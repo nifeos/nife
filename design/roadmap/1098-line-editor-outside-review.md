@@ -20,10 +20,7 @@ crate name (ratified), `Event::Suspend`, `Event::Tab` and the badge and opcode v
 settled, together with §232 (the `line_editor` swap contract) and §295 (the line editor's crate
 root splits into module files). No review package exists for this crate under
 `notes/crate-reviews/`, so the baseline is thinner than the other crates' and this block says so.
-Three names #2797 ratified, `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM`, are reopened
-here, because the later unit rule (design/naming.md, "Units": a limit opens `MAXIMUM_` and ends
-with its unit) contradicts them, and the rule in force is that a release review rechecks a name
-ratified before a later rule.
+Three names #2797 ratified, `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM`, are reopened here. The later unit rule (design/naming.md, "Units": a limit opens `MAXIMUM_` and ends with its unit) contradicts them. The rule in force is that a release review rechecks a name ratified before a later rule.
 
 Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
 `abbreviations.py`, `standalone.py`), cargo-fuzz, Kani, cargo-mutants. No new tool.

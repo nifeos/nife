@@ -95,16 +95,9 @@ from this reading.
    `standalone.py` to zero. Effort M. Two-way.
 
 5. Public names the spelled-out rule refuses. The template's `spelled_out.py`, at a ceiling of
-0, refuses 84 definitions. Public among them: `is_user_page_va` (`src/page_format.rs` line 43),
-`PageFormat::entry_pa` (`src/page_format.rs` line 66), the `va` and `pa` parameters of every `PageFormat`
-method and every `Mapper` method (`src/mapper.rs` lines 138 to 451), `PageSize::largest_fitting`
-(`src/page_size.rs` line 53), `DmaRegion` (`src/domain.rs` line 12), `pat::MSR` (`src/x86_64.rs` line 23) and
-`AMD_VI_PR` (`src/x86_64.rs` line 331, refused as `pr`; it is "present"). The rule (`design/naming.md`,
+0, refuses 84 definitions. Public among them: `is_user_page_va` (`src/page_format.rs` line 43) and `PageFormat::entry_pa` (`src/page_format.rs` line 66). The `va` and `pa` parameters of every `PageFormat` method and every `Mapper` method (`src/mapper.rs` lines 138 to 451). `PageSize::largest_fitting` (`src/page_size.rs` line 53), `DmaRegion` (`src/domain.rs` line 12) and `pat::MSR` (`src/x86_64.rs` line 23). `AMD_VI_PR` (`src/x86_64.rs` line 331, refused as `pr`; it is "present"). The rule (`design/naming.md`,
 "Acronyms and abbreviations") lists `va`, `pa`, `dma` and `msr` by name, and says an integer
-constant is never kept. Not caught by the helper but the same rule by judgment: `phys_to_ptr` and
-`alloc_page_frame` as parameters (`src/mapper.rs` lines 66 to 67, `src/domain.rs` lines 81 to 82), `attrs`
-(`src/aarch64.rs` line 111, `src/sv39.rs` line 55, `src/x86_64.rs` line 107), and `kernel_rodata` and `user_rodata`
-(`src/flags.rs` line 84, `src/flags.rs` line 125), where "read-only data" is the spoken phrase. Fix: one
+constant is never kept. The helper does not catch these, but the same rule applies by judgment. `phys_to_ptr` and `alloc_page_frame` as parameters (`src/mapper.rs` lines 66 to 67, `src/domain.rs` lines 81 to 82). `attrs` (`src/aarch64.rs` line 111, `src/sv39.rs` line 55, `src/x86_64.rs` line 107). `kernel_rodata` and `user_rodata` (`src/flags.rs` line 84, `src/flags.rs` line 125), where "read-only data" is the spoken phrase. Fix: one
 rename lane: `virtual_address` and `physical_address` throughout, `is_user_page_virtual_address`,
 `entry_physical_address`, `DirectMemoryAccessRegion`, `pat::MODEL_SPECIFIC_REGISTER` with
 `#[doc(alias = "IA32_PAT")]`, `AMD_VI_PRESENT`, `physical_to_pointer`, `allocate_page_frame`,
@@ -136,12 +129,7 @@ them provisionally, and the release review rechecks them.
    frame any live leaf maps. Add `debug_assert!(new.is_multiple_of(PAGE_SIZE))` at both sites or
    return `MapError::Misaligned` for a misaligned frame. Effort S. Two-way.
 
-8. The proofs say "over every constructor" and cover eight of ten. Every `all` array in the
-format harnesses (`src/aarch64.rs` lines 402 to 411, `src/aarch64.rs` lines 433 to 442, `src/aarch64.rs` lines 481 to 490,
-`src/sv39.rs` lines 468 to 477, `src/sv39.rs` lines 500 to 509, `src/sv39.rs` lines 544 to 553, `src/x86_64.rs` lines 1000 to 1009,
-`src/x86_64.rs` lines 1037 to 1046, `src/x86_64.rs` lines 1072 to 1081, `src/x86_64.rs` lines 1133 to 1142) and
-`flag_tests::ALL` (`src/flag_tests.rs` lines 3 to 12) omit `Flags::write_combining` and
-`Flags::user_write_combining`. On `Ia32e` those two are the only flags that take the PWT-alone path
+8. The proofs say "over every constructor" and cover eight of ten. Every `all` array in the format harnesses omits `Flags::write_combining` and `Flags::user_write_combining`. The arrays are at `src/aarch64.rs` lines 402 to 411, 433 to 442 and 481 to 490. More are at `src/sv39.rs` lines 468 to 477, 500 to 509 and 544 to 553. The rest are at `src/x86_64.rs` lines 1000 to 1009, 1037 to 1046, 1072 to 1081 and 1133 to 1142. `flag_tests::ALL` (`src/flag_tests.rs` lines 3 to 12) omits them too. On `Ia32e` those two are the only flags that take the PWT-alone path
 (`src/x86_64.rs` lines 118 to 123), so the W^X, round-trip and address-field proofs never see that branch.
 The host tests do (`src/eighth_pass_attacks.rs` lines 56 to 67, `src/x86_64.rs` lines 614 to 635), and
 `src/flags.rs` lines 41 to 47 already records half of this gap in its BUGS. Fix: a `Flags::ALL` constant of

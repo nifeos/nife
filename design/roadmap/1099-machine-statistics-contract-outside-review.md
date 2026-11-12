@@ -17,12 +17,7 @@ rules, the crate template and the sibling contract crates, and ran the standalon
 dry run of the move. It changes nothing; it lists what the next lanes change.
 
 There is no review package for this crate in `notes/crate-reviews/`, and no row for it in
-`notes/crate-reviews.md`. The accepted baseline is therefore thinner than the sibling reviews had:
-the crate name, ratified on pull request 1360's table; the two provisional identity constants
-`VERSION` and `INTERFACE_ID` that milestone 956 (the linked interfaces carry checkable versions)
-minted, with the version word placed beside the magic by ruling; the fixed address, ratified on the
-same table; and the two renames `helpers/name_release.py` already carries as pre-ruled for this
-crate, `PAGE_BYTES` to `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`. The review
+`notes/crate-reviews.md`. The accepted baseline is therefore thinner than the sibling reviews had. It holds the crate name, ratified on pull request 1360's table. It holds the two provisional identity constants `VERSION` and `INTERFACE_ID` that milestone 956 (the linked interfaces carry checkable versions) minted, with the version word placed beside the magic by ruling. It holds the fixed address, ratified on the same table. It holds the two renames `helpers/name_release.py` already carries as pre-ruled for this crate, `PAGE_BYTES` to `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`. The review
 reopens none of these. The fixed address predates the rule that an address is `_VIRTUAL_ADDRESS`
 in every location, and the pre-ruled rename already resolves that contradiction; the review flags
 nothing else in the baseline against a later rule. Every other public name has no `Name:` block
@@ -86,10 +81,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    Door: two-way. Effort: S.
 
 3. The source cites this tree in places a stranger cannot follow.
-   Finding: the module documentation and the doc comments name milestone 126 (the `procps` package, now `process-tools`: who else is running, and who is allowed to ask), milestone 956,
-   milestone 326 (nobody has been assigned to turn a mutation score upward), decision 225, "AGENTS.md rule 7", `notes/machine-statistics.md`, pull requests
-   1360 and 2852, two lane names and the architect, and `src/lib.rs` line 16 says "nife does not
-   page out". The manifest comment does the same. `script/crate-standalone` counts two section
+   Finding: the module documentation and the doc comments name milestone 126 (the `procps` package, now `process-tools`: who else is running, and who may ask) and milestone 956. They also name milestone 326 (nobody owns turning a mutation score upward), decision 225, "AGENTS.md rule 7", `notes/machine-statistics.md`, pull requests 1360 and 2852, two lane names and the architect. Also `src/lib.rs` line 16 says "nife does not page out". The manifest comment does the same. `script/crate-standalone` counts two section
    citation lines, six milestone citation lines, three architect's-name lines and three path lines;
    the externalization lint counts one `nife` hit. The `Name:` block on the module is the only one
    the move strips; the `Ratified` sentence on `PAGE_VA` (line 76) and the ruling sentence on
@@ -126,9 +118,9 @@ is another crate's constant (item 6). A kernel and a reader that agree on every 
 still disagree on the layout if that constant moves between their pins.
 
 Recommendation first: freeze the identity as it stands, and make the line count this crate's own.
-`MAGIC` is `MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VIRTUAL_ADDRESS` is `0x005F_F000` (a pair page on the address-space map). A line is eight words. There are eight cpu lines after the header line, and the content is 576 bytes. The header holds the magic at word 0, the frame size at 1, the tick rate at 2, the total and free frame counts at 3 and 4 and the version at 5. Words 6 and 7 of every line are reserved and read zero. A later writer may assign one under the same version only if a reader that does not know it is still right to read zero there. Any other change bumps `VERSION` and re-mints the magic's digit in one change. Every value is already compiled into the kernel, the spawn service and three programs, and no item above needs any of them to change. The line count becomes a constant of this crate with a compile-time check against `current_cpu_contract::CPU_ID_BOUND`. The two cannot drift inside one image, and a change to the bound is a deliberate version decision here.
+`MAGIC` is `MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VIRTUAL_ADDRESS` is `0x005F_F000` (a pair page on the address-space map). A line is eight words. There are eight cpu lines after the header line, and the content is 576 bytes. The header holds the magic at word 0, the frame size at 1, the tick rate at 2, the total and free frame counts at 3 and 4 and the version at 5. Words 6 and 7 of every line stay reserved and read zero. A later writer may assign one under the same version only if a reader that does not know it is still right to read zero there. Any other change bumps `VERSION` and re-mints the magic's digit in one change. Every value is already compiled into the kernel, the spawn service and three programs, and no item above needs any of them to change. The line count becomes a constant of this crate with a compile-time check against `current_cpu_contract::CPU_ID_BOUND`. The two cannot drift inside one image, and a change to the bound is a deliberate version decision here.
 
-Prior art. Linux's vDSO data page is matched to the kernel that ships it, so its layout never has to be versioned across a boundary. FreeBSD's `vdso_timekeep` carries `tk_ver` and OpenBSD's `timekeep` page a version constant that libc compares. A mismatch means no page rather than a misread one (both unverified in detail). Linux `/proc/stat` grows by appending columns and readers ignore columns they do not know, which is the growth rule recommended for the reserved words. Fuchsia's `zx_info_cpu_stats_t` is a struct per topic whose size the call checks (unverified in
+Prior art. Linux's vDSO data page always matches the kernel that ships it, so its layout never has to be versioned across a boundary. FreeBSD's `vdso_timekeep` carries `tk_ver` and OpenBSD's `timekeep` page a version constant that libc compares. A mismatch means no page rather than a misread one (both unverified in detail). Linux `/proc/stat` grows by appending columns and readers ignore columns they do not know, which is the growth rule recommended for the reserved words. Fuchsia's `zx_info_cpu_stats_t` is a struct per topic whose size the call checks (unverified in
 detail). `block_roster_contract`, the contract pilot, froze its identity as a set before it left.
 
 Concrete example. `components/src/free.rs` declares

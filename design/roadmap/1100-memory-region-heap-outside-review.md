@@ -15,10 +15,7 @@ recording lane's to assign.
 
 The review took its baseline from `notes/heap.md` ("The `memory_region_heap` crate's contract"),
 from milestone 1017 (the contract crates leave in this order), step 9 and its appendix on where
-`talc` goes, and from the vendoring record in `vendor/README.md` and `vendor/talc.pin`. It raises
-none of the decisions those settle: the algorithm (`talc` 5.1.1's core, `Manual` source), the
-geometric growth with a floor of eight pages, the one contiguous heap, the untyped slot as part of
-the program's capability contract, and the step at which the crate leaves. **There is no package
+`talc` goes, and from the vendoring record in `vendor/README.md` and `vendor/talc.pin`. It raises none of the decisions those settle. Those are the algorithm (`talc` 5.1.1's core, `Manual` source), the geometric growth with a floor of eight pages and the one contiguous heap. They also include the untyped slot as part of the program's capability contract, and the step at which the crate leaves. **There is no package
 for this crate in `notes/crate-reviews/`**, so no name ruling exists to reopen; every name below is
 provisional or unmarked.
 

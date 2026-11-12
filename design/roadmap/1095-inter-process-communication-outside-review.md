@@ -25,9 +25,7 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, its name gates
 crate's own harness helpers (`seed`, `mint`, `any_timers`). No new tool.
 
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two, L is more. A door is
-one-way when somebody outside this repository acts on it after the move or the release (a
-published name, a dependency another repository pins, a wire format, a layout somebody else
-reads); everything else is two-way and the maintainer decides it. Until the crate is published,
+one-way when somebody outside this repository acts on it after the move or the release. Examples are a published name, a dependency another repository pins, a wire format and a layout somebody else reads. Everything else is two-way and the maintainer decides it. Until the crate is published,
 every public name is two-way in fact and one-way in intent, because the first publish freezes it;
 the items say which.
 
@@ -126,8 +124,8 @@ The comparison with nearby work is in [the appendix](1095-inter-process-communic
    - Test bindings `pa` and `pb` in `notification.rs` tests: `spelled_out` reads `pa` as the
      abbreviation of physical address. They are pointers to `a` and `b`; `pointer_a` says so and
      passes.
-   - Eight prose spellings `typos` (en-us) refuses: `signalled` (twice), `signalling`,
-     `queueing` (twice), `modelled`, `neighbouring`, and `behaviour` in one patch header.
+   - Eight prose spellings `typos` (en-us) refuses: the British forms of signaled (twice) and signaling,
+     `queueing` (twice), and the British forms of modeled, neighboring, and behavior (in one patch header).
    Evidence: `src/rendezvous.rs` line 180; `src/futex.rs` lines 51 and 172; `src/timer.rs`
    line 250; `src/notification.rs` lines 456 and 518; `src/verification.rs` line 76;
    `src/timer.rs` line 13; `src/futex.rs` line 5; `src/rendezvous.rs` line 38;

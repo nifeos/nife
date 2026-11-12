@@ -62,9 +62,6 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
     Either advance the hint past the run or say in the comment why the hint stays. Evidence:
     `src/lib.rs` lines 123 to 125, `229-255`. Door: two-way. Effort: XS.
 
-20. `notes/physical-memory.md` is stale on the nife side: it names `FrameAllocator::new` and an
-    `init`, and gives a six-step order where the kernel's code has three loops (`mark_free` each
-    RAM region, `mark_used` each forbidden region, `mark_used` the bitmap;
-    `kernel/src/memory.rs` lines 387 to 399). Edit it to the truth when the README of item 2 takes the
+20. `notes/physical-memory.md` is stale on the nife side. It names `FrameAllocator::new` and an `init`. It gives a six-step order where the kernel's code has three loops (`mark_free` each RAM region, `mark_used` each forbidden region, `mark_used` the bitmap; `kernel/src/memory.rs` lines 387 to 399). Edit it to the truth when the README of item 2 takes the
     arguments over, and point it at the crate's README for them. Evidence:
     `notes/physical-memory.md` lines 48 to 66. Door: two-way. Effort: XS.

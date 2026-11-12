@@ -15,11 +15,7 @@ change, in nife before the move where the runbook puts a finding against the cra
 the new repository after it.
 
 The crate has no review package in `notes/crate-reviews/`, so this review has a thinner baseline
-than its siblings had. What it takes as settled and does not reopen: the crate name, which the
-crate-level `Name:` block records as ratified at a kernel-dependency crate naming review; the
-bitmap design and the all-used start, which `notes/physical-memory.md` argues; the five Kani
-harnesses and their falsification patches; the three mutation survivors nife's census argued
-equivalent; and the move itself, once a package exists. No `Name:` block below the crate level
+than its siblings had. It takes the following as settled and does not reopen them. The crate name, which the crate-level `Name:` block records as ratified at a kernel-dependency crate naming review. The bitmap design and the all-used start, which `notes/physical-memory.md` argues. The five Kani harnesses and their falsification patches. The three mutation survivors nife's census argued equivalent. The move itself, once a package exists. No `Name:` block below the crate level
 exists, so every public item name is provisional, and the naming pass of item 8 is the first time
 they meet [design/naming.md](../naming.md). Two of them fail a rule there and are one-way doors
 after a release, so they go to the architect (Decisions 1 and 2).
@@ -98,10 +94,7 @@ dependency). Everything else is two-way and the maintainer decides it. Line numb
    Door: two-way. Effort: M.
 
 3. The documentation cites this tree, and the move refuses it.
-   Finding: the dry run counts 2 section citations (`src/lib.rs` line 4, 342), 6 milestone citations
-   (`src/lib.rs` line 226, 259, 342, `tests/allocator.rs` line 221, 270, and a falsification patch
-   header) and 6 paths into the nife tree (`src/lib.rs` line 5, 15, 86, 199, 348,
-   `tests/allocator.rs` line 272). `src/lib.rs` line 261 names a nife program, `tests/allocator.rs` line 215 names
+   Finding: the dry run counts 2 section citations (`src/lib.rs` line 4, 342). It counts 6 milestone citations (`src/lib.rs` line 226, 259, 342, `tests/allocator.rs` line 221, 270, and a falsification patch header). It counts 6 paths into the nife tree (`src/lib.rs` line 5, 15, 86, 199, 348, `tests/allocator.rs` line 272). `src/lib.rs` line 261 names a nife program, `tests/allocator.rs` line 215 names
    an emulator board, and `src/lib.rs` line 10 names a sibling crate. The move strips the `Name:`
    paragraph at `src/lib.rs` lines 8 to 11 and leaves the rest.
    Evidence: the dry run's `citations` lines. `grep -n '§\|milestone\|notes/' src/lib.rs

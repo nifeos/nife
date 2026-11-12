@@ -30,7 +30,7 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at the head of `ma
   mutants tested, 166 caught, 5 missed, 14 unviable) and the triage of the five survivors in
   `notes/project-metrics/mutation-triage.csv`.
 
-Inferred from reading, not run: the overflow in item 12, the behavior of the unoptimised exhaustive
+Inferred from reading, not run: the overflow in item 12, the behavior of the unoptimized exhaustive
 sweep under the template's jobs (item 10), and whether the move's provenance strip reaches a `//!`
 block (item 8).
 

@@ -36,21 +36,21 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
 10. The exhaustive sweep depends on a workspace profile override that does not move.
     Finding: `every_nanosecond_survives_the_round_trip` runs the conversion on all 10^9 inputs and
     takes 0.6 s only because the workspace manifest sets `opt-level = 2` for this package. The
-    workspace comment says the unoptimised run is about a minute (unverified here). In the new
+    workspace comment says the unoptimized run is about a minute (unverified here). In the new
     repository `check / tests` runs it once, `check / mutation-diff` and the weekly `mutation` run
     it once per mutant (185 mutants), and `weekly / miri` already takes the strided path.
     Evidence: `Cargo.toml` (workspace) lines 284 to 290. `src/lib.rs` lines 826 to 854.
-    Change: carry the optimisation in the crate's own manifest (`[profile.test] opt-level = 2`, or
+    Change: carry the optimization in the crate's own manifest (`[profile.test] opt-level = 2`, or
     `[profile.dev.package.network_time_protocol]` since the crate is its own workspace root), and
     measure `check / coverage` at that level before relying on it, because line coverage under
-    optimisation can merge lines (unverified). If coverage suffers, keep the full sweep behind a
+    optimization can merge lines (unverified). If coverage suffers, keep the full sweep behind a
     feature or an environment variable, run it in `proofs` beside Kani, and let the default test
     walk the same prime stride Miri does.
     Door: two-way. Effort: S.
 
 11. The surviving mutants need the exemptions file.
     Finding: five mutants survive and nife's triage calls each equivalent (`|` to `^` over disjoint
-    bits in `Packet::to_bytes` twice, `Timestamp::from_unix` and `Timestamp::randomise_low`; `%` to
+    bits in `Packet::to_bytes` twice, `Timestamp::from_unix` and the low-bit randomizer; `%` to
     `+` in `from_unix` where the `as u32` truncation makes the two agree). The template's `mutation
     / mutation` fails on one survivor unless `.github/mutants-exempts` lists it with a reason, and
     `release / gate` reads that verdict.
