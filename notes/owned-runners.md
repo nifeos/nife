@@ -156,11 +156,10 @@ shows red where an earlier canary showed green. The checks are:
   `configure` fetches) through the proxy.
 - `packages`: every apt package in `helpers/apt-packages.txt` has dpkg status `install ok installed`,
   and each missing one is a `FINDING` line. That file is the list `script/ci-qemu` and
-  `script/bootstrap` install from, so the job spends no time on them. The probe skips one group,
-  `bootstrap-qemu`, because no CI job installs it: QEMU on CI is `script/ci-qemu`'s pinned build,
-  on `PATH` before `script/bootstrap` runs, and an apt QEMU in the image would be a second, unpinned
-  one. The `qemu` check judges the pinned build. The probe installs and fetches nothing and prints
-  how many it checked.
+  `script/bootstrap` install from, so the job spends no time on them. No group in it is a QEMU:
+  QEMU on CI is `script/ci-qemu`'s pinned build, and an apt QEMU in the image would be a second,
+  unpinned one. The `qemu` check judges the pinned build. The probe installs and fetches nothing and
+  prints how many it checked.
 
 ### The dry run
 

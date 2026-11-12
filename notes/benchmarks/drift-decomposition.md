@@ -20,7 +20,7 @@ A naive `current - baseline` conflates three variables that all changed in the w
 code, the pinned nightly (`nightly-2026-08-27` -> `nightly-2026-09-15`), and the dev Mac's QEMU
 (`11.0.2` -> `11.1.1`, upgraded 2026-08-28, after the baseline save). Since icount counts guest
 instructions, in principle the emulator version is part of what a number means. That is why
-`.qemu-version` is pinned and `script/qemu-check` warns on a mismatch. Only 11.1.1 is installable
+`.qemu-version` is pinned and `script/qemu-check` fails on a mismatch. Only 11.1.1 is installable
 locally now, so the QEMU term had to be measured out rather than assumed away.
 
 Four measurements per arch, QEMU held at 11.1.1 throughout, isolate each term:

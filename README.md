@@ -28,7 +28,7 @@ The CI badge under the title is green only when every check `script/ci-build --l
 
 ```
 git clone https://github.com/nifeos/nife && cd nife
-script/setup               # install the pinned toolchain and QEMU, then build
+script/setup               # install the pinned toolchain, build the pinned QEMU, then build
 script/console             # boot to an interactive shell (add --hvf on Apple Silicon)
 script/test                # host tests, then the kernel under QEMU on all three ISAs
 script/catch-up            # what changed since you last looked
@@ -37,8 +37,9 @@ script/catch-up            # what changed since you last looked
 At the `$` prompt try `help`, `echo hello` or `least_authority_demo 7`. Quit with Ctrl-C, or run
 `pkill qemu-system-aarch64` from another terminal.
 
-On Linux, `script/setup` stops and asks you to run `script/ci-qemu` first. No distribution ships a
-QEMU with the `riscv-iommu-pci` device, so the pinned one is built from source, once.
+The QEMU comes from `script/ci-qemu`, which `script/setup` runs after the toolchain. When the QEMU on
+your PATH is not exactly the version `.qemu-version` pins, it builds that version from source, once,
+and says so before it starts. Run `script/ci-qemu` again whenever you want to check.
 
 Every other command, including `script/verify` (the Kani proofs) and `script/bench`, is in
 [notes/scripts.md](notes/scripts.md).

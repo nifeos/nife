@@ -95,7 +95,7 @@ pub(crate) fn capture(program: &str, args: &[&str]) -> Option<String> {
 /// (`helpers/qemu-path.sh` puts this project's own QEMU first), so the number names the
 /// emulator that actually ran rather than one a config elsewhere prefers. Nothing new learns
 /// which binary was chosen: PATH is still the mechanism, and `script/qemu-check` reads the
-/// same field of the same output. Name provisional, minted by milestone 414's lane.
+/// same word of the same output. Name provisional, minted by milestone 414's lane.
 pub(crate) fn qemu_version(arch: &str) -> String {
     capture(&format!("qemu-system-{arch}"), &["--version"])
         .and_then(|out| parse_qemu_version(&out).map(str::to_string))
@@ -104,8 +104,8 @@ pub(crate) fn qemu_version(arch: &str) -> String {
 
 /// The version field of a `--version` first line: whatever follows the word `version`.
 ///
-/// Anchored on the word rather than counted from the left (`script/qemu-check`'s
-/// `awk '{print $4}'`): upstream prints `QEMU emulator version 11.1.2`, where counting works,
+/// Anchored on the word rather than counted from the left, as `script/qemu-check` reads it
+/// too: upstream prints `QEMU emulator version 11.1.2`, where counting works,
 /// and some distributions print `qemu-system-aarch64 version 8.2.2`, where the fourth field is
 /// already inside the package suffix. The word appears in both shapes.
 fn parse_qemu_version(version_output: &str) -> Option<&str> {
