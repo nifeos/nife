@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 204
@@ -217,6 +217,14 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 - The prior-art rows marked "recalled" were not read in their sources during this review.
 - The review ran no mutation census and found none recorded for this crate; the first run in the
   crate's own repository is the first figure.
+
+## Follow-on
+
+What is left of this review: Decision B (the names) is not ruled, and every other before-the-tag
+item except item 5, plus the P0 and P2 items, is open.
+
+- **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
+  rename pass of Decision B and the P0 items above land, so the standalone gate can pass.
 
 ## Index row
 
