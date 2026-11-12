@@ -54,7 +54,8 @@ pub struct Rendezvous<T: Node> {
     pub(crate) pending: u32,
     /// This rendezvous carries a hardware interrupt, so it takes no message. Set once by
     /// [`bind_to_interrupt`](Self::bind_to_interrupt) and never cleared; while it is set,
-    /// [`send`](Self::send) answers [`Send::Refused`] (§101 (notification objects), as amended).
+    /// [`send`](Self::send) answers [`Send::Refused`] (§101 (notification objects), as amended)
+    /// and the sender queue is empty.
     ///
     /// Name: provisional (milestone 603 (an interrupt's endpoint refuses every send)): calef names
     /// public items, and this is read through the public methods.
@@ -155,13 +156,22 @@ impl<T: Node> Rendezvous<T> {
         }
     }
 
-    /// Make this the rendezvous a hardware interrupt is delivered to, for good. Every later
-    /// [`send`](Self::send) is [`Send::Refused`]; [`signal`](Self::signal) and
-    /// [`receive`](Self::receive) are unchanged. There is no unbind, because the kernel has none.
+    /// Make this the rendezvous a hardware interrupt is delivered to, for good, refusing the
+    /// senders already parked here. Every later [`send`](Self::send) is [`Send::Refused`];
+    /// [`signal`](Self::signal) and [`receive`](Self::receive) are unchanged. There is no unbind,
+    /// because the kernel has none.
+    ///
+    /// `refuse` is handed each sender queued before the bind, in FIFO order, with its token; the
+    /// caller wakes each one with the error a refused send answers. Afterwards the sender queue is
+    /// empty, and since `send` refuses from now on it stays empty, so no [`receive`](Self::receive)
+    /// here can return [`Receive::FromSender`]. Queued receivers stay: they wait for the interrupt.
     ///
     /// Name: provisional (milestone 603): calef names public items.
-    pub fn bind_to_interrupt(&mut self) {
+    pub fn bind_to_interrupt(&mut self, mut refuse: impl FnMut(Unqueued<T>)) {
         self.bound_to_interrupt = true;
+        while let Some(sender) = self.senders.pop_front() {
+            refuse(sender);
+        }
     }
 
     /// Whether [`bind_to_interrupt`](Self::bind_to_interrupt) has been called on this rendezvous.

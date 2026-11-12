@@ -36,6 +36,12 @@ mod progenitor_boot;
 pub use progenitor_boot::*;
 mod device_starters;
 use device_starters::*;
+// The kernel's self-test is not built into the test and benchmark kernels, so neither grants the
+// progenitor its page and neither boot runs `boot_self_test`.
+#[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
+mod self_test_hand_over;
+#[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
+use self_test_hand_over::*;
 mod virtio_dma;
 pub(crate) use virtio_dma::*;
 mod terminal_print;
@@ -59,14 +65,9 @@ pub use address_space_registry::*;
 #[cfg(target_arch = "x86_64")]
 pub mod x86_programs;
 
-/// A supervised child built from a hand-assembled stub, its whole world in one untyped region:
-/// the boot self-test's `supervised` and `teardown` checks, and the system tests that watch a
-/// child die. See notes/self-test-checks.md.
-// A unit-test build runs neither the self-test nor the suite, and a `bench` build has no self-test.
-#[cfg_attr(
-    any(test, all(feature = "bench", not(feature = "system_tests"))),
-    allow(dead_code)
-)]
+/// A supervised child built from a hand-assembled stub, its whole world in one untyped region: the
+/// system tests that watch a child die.
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests are its callers
 pub mod supervised_child;
 
 /// Bringing the virtio block driver up in userspace.
@@ -76,7 +77,7 @@ pub mod supervised_child;
 /// device's registers, a DMA page, an interrupt, and an endpoint to report what it read. The
 /// kernel does not touch the device.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-// the tour spawns it; the tests drive it
+// the hand-over's network and disk wiring use it; the tests drive the rest
 pub mod virtio_service;
 
 /// **Which grant a starter gives a virtio driver**, mediated or direct, and the direct grant's
@@ -162,6 +163,14 @@ pub mod clock_service;
 // the system tests, std_service, the installer and boot_progenitor are its callers
 pub mod entropy_service;
 
+/// **The JH7110 clock and reset server's wiring** (milestone 1062 (the device control planes leave
+/// the kernel), step 2): one process holds the shared clock and reset windows, and the kernel's
+/// starters ask it, by their device's badge, to bring that device up. Built on every
+/// architecture, and reached only on riscv64, because the JH7110 is a RISC-V chip; the module
+/// header carries the parity note.
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
+pub(crate) mod jh7110_clock_and_reset_service;
+
 /// **radon's SD/MMC block server's wiring** (milestone 53 (the board's own peripherals: network
 /// and storage on real silicon)): the kernel ungates the controller and hands a process one page of
 /// it, a transfer region and a window of the card. riscv64-only because the controller is the
@@ -245,7 +254,7 @@ pub mod identity_provisioner_service;
 pub mod ntp_service;
 
 /// Milestone 11: hand a process an untyped budget and let it spend it.
-#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the tour and the userspace tests
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests are its callers
 pub mod memory_region_service;
 
 /// **The raw-keystroke input primitive** (milestone 169): a real `line_editor` process, wired

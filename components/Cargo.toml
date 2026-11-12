@@ -86,6 +86,15 @@ path = "src/progenitor.rs"
 test = false
 bench = false
 
+# The boot self-test's userspace half (milestone 1063 (the boot self-test's spawning checks run from
+# userspace)): the checks that spawn a user program, run by the progenitor before the shell, and the
+# one verdict.
+[[bin]]
+name = "boot_self_test"
+path = "src/boot_self_test.rs"
+test = false
+bench = false
+
 # The virtio-blk driver as its own binary (parity C): the shared `virtio` module (the same file
 # hello's aarch64 roles compile) behind a dedicated-binary skeleton, so riscv runs the identical
 # driver, attacker included, without porting the PL011-wired hello multiplexer.
@@ -356,6 +365,15 @@ bench = false
 [[bin]]
 name = "jh7110_entropy"
 path = "src/jh7110_entropy.rs"
+test = false
+bench = false
+
+# The JH7110 clock and reset server (milestone 1062 (the device control planes leave the kernel),
+# step 2): the one process that writes the shared clock and reset windows, bringing up only the
+# device a caller's badge names (§320 (the JH7110 clock and reset wire)). Name provisional.
+[[bin]]
+name = "jh7110_clock_and_reset"
+path = "src/jh7110_clock_and_reset.rs"
 test = false
 bench = false
 
@@ -697,6 +715,9 @@ machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_sta
 uptime = { version = "0.1.0", path = "../crates/uptime" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
+# The JH7110's clock and reset device table, walk and request dispatch, host-tested in its own
+# crate; jh7110_clock_and_reset.rs is the volatile shell of register stores over it.
+jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset_devices" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
 jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06" }

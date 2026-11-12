@@ -124,7 +124,7 @@ fn a_driver_waiting_on_its_interrupt_is_not_handed_a_send() {
     let (dp, fp) = (NonNull::from(&mut *driver), NonNull::from(&mut *forger));
     let (dt, ft) = (token(&mut driver), token(&mut forger));
     let mut e: Rendezvous<N> = Rendezvous::new();
-    e.bind_to_interrupt();
+    e.bind_to_interrupt(|_| panic!("nobody was queued"));
 
     assert_eq!(e.receive(dt), Receive::Blocked);
     match e.send(ft) {
@@ -134,6 +134,34 @@ fn a_driver_waiting_on_its_interrupt_is_not_handed_a_send() {
     // Still parked, still the only waiter, and the interrupt still reaches it.
     assert_eq!(e.debug_counts(), (0, 1, 0));
     assert!(e.signal().is_some_and(|t| t == dp));
+    assert!(e.is_idle());
+}
+
+/// **Binding refuses the senders already parked, so a receive there never collects one.** Two
+/// senders queue before the bind; the bind hands both back in order, and the driver's receive
+/// that follows blocks for the interrupt instead of waking with a sender's words.
+#[test]
+fn binding_refuses_the_senders_already_parked() {
+    let (mut first, mut second, mut driver) = (node(), node(), node());
+    let first_at = NonNull::from(&mut *first);
+    let second_at = NonNull::from(&mut *second);
+    let driver_at = NonNull::from(&mut *driver);
+    let (first, second, driver) = (token(&mut first), token(&mut second), token(&mut driver));
+    let mut e: Rendezvous<N> = Rendezvous::new();
+    assert_eq!(e.send(first), Send::Blocked);
+    assert_eq!(e.send(second), Send::Blocked);
+
+    let mut refused = Vec::new();
+    e.bind_to_interrupt(|t| refused.push(t.as_non_null()));
+    assert_eq!(
+        refused,
+        [first_at, second_at],
+        "every parked sender, oldest first"
+    );
+    assert_eq!(e.debug_counts(), (0, 0, 0));
+
+    assert_eq!(e.receive(driver), Receive::Blocked);
+    assert!(e.signal().is_some_and(|t| t == driver_at));
     assert!(e.is_idle());
 }
 
@@ -388,8 +416,8 @@ fn verdict_variants_are_distinct_and_print_their_names() {
 fn binding_to_an_interrupt_is_visible_and_one_way() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     assert!(!e.is_bound_to_interrupt());
-    e.bind_to_interrupt();
+    e.bind_to_interrupt(|_| panic!("nobody was queued"));
     assert!(e.is_bound_to_interrupt());
-    e.bind_to_interrupt();
+    e.bind_to_interrupt(|_| panic!("nobody was queued"));
     assert!(e.is_bound_to_interrupt(), "binding twice does not undo it");
 }
