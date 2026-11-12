@@ -679,7 +679,7 @@ fn rfc3339_unix_seconds(text: &[u8]) -> Option<u64> {
     civil.copy_from_slice(&text[..19]);
     civil[10] = b'T';
     let local = jiff::fmt::temporal::DateTimeParser::new()
-        .parse_datetime(&civil)
+        .parse_datetime(civil)
         .ok()?;
     let epoch = jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0);
     u64::try_from(local.duration_since(epoch).as_secs() - offset_seconds).ok()

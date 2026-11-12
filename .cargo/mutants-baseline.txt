@@ -12,6 +12,7 @@ boot_slot 107 7 0 8
 byte_sink_contract 73 4 0 2
 c_library_errno 42 1 0 0
 c_seam 21 1 0 3
+calendar 372 4 3 16
 capability 98 3 3 26
 capability_manifest_note 191 3 10 65
 capability_witness_contract 10 6 0 0

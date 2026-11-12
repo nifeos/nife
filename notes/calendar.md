@@ -49,7 +49,7 @@ run back past the 1582 reform, and year 0 exists and is a leap year. Negative ti
 ordinary. Every timestamp is `i64`, so 2038 is an ordinary year.
 
 **Leap seconds have no Unix time.** `touch -t` refuses `:60` rather than folding it onto a
-neighbouring second, and nothing prints one.
+neighboring second, and nothing prints one.
 
 ## Time zones: a fixed offset, never a zone
 
