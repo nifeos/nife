@@ -136,7 +136,7 @@ pub fn receive_badged_bound(slot: u64) -> Result<(u64, u64, u64, u64), u64> {
 /// endpoint) implementation note 4); ordinary three-word IPC leaves the top two zero. A checking
 /// supervisor reads `w3`, the faulting address. The sixth word is the dead child's label (§148
 /// (resolves by asking the kernel), as amended 2026-10-04): the badge its builder put on the
-/// supervision capability in `abi::fault::FAULT_EP_SLOT`, or `0` when unbadged or unstamped,
+/// supervision capability in `abi::fault::FAULT_RENDEZVOUS_SLOT`, or `0` when unbadged or unstamped,
 /// because `invoke6` zeroes the register on the way in. See `abi::fault`.
 pub fn receive_fault(slot: u64) -> (u64, u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from `invoke6`'s contract.
@@ -305,11 +305,11 @@ pub fn retype_sleeper(memory_region_slot: u64, reserved: u64) -> Option<(u64, u6
             return None;
         }
     }
-    let n = retype_into_kernel_object(memory_region_slot, abi::objtype::NOTIFICATION);
+    let n = retype_into_kernel_object(memory_region_slot, abi::object_type::NOTIFICATION);
     if n < 0 {
         return None;
     }
-    let t = retype_into_kernel_object(memory_region_slot, abi::objtype::TIMER);
+    let t = retype_into_kernel_object(memory_region_slot, abi::object_type::TIMER);
     if t < 0 {
         objects::capability_delete(n as u64);
         return None;

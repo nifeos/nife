@@ -583,9 +583,9 @@ jobs:
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
       # with the image while the pin does not. The version is pinned in .qemu-version so CI and the developer
       # machine emulate on the same thing, which matters for a project whose benchmarks are instruction
-      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
-      # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
-      # PATH, which is how the built one wins.
+      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored and
+      # built before script/bootstrap, which installs no QEMU, so the pinned build is on PATH for every
+      # later step.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -658,7 +658,7 @@ jobs:
   # So on a pull request the `test` name means this job: the host crates and no kernel. In a merge
   # group it means the two shards above, whose first one runs the same host pass. `test-host` runs
   # on the x86_64 pool, where the host tests reproduced arm64's results (the header's 2026-09-24
-  # paragraph), and restores QEMU only so that script/bootstrap skips its apt install.
+  # paragraph).
   test-host:
     name: test-host (the host crates, on a pull request)
     runs-on: ubuntu-26.04
@@ -806,9 +806,9 @@ jobs:
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
       # with the image while the pin does not. The version is pinned in .qemu-version so CI and the developer
       # machine emulate on the same thing, which matters for a project whose benchmarks are instruction
-      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
-      # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
-      # PATH, which is how the built one wins.
+      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored and
+      # built before script/bootstrap, which installs no QEMU, so the pinned build is on PATH for every
+      # later step.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -950,9 +950,9 @@ jobs:
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
       # with the image while the pin does not. The version is pinned in .qemu-version so CI and the developer
       # machine emulate on the same thing, which matters for a project whose benchmarks are instruction
-      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
-      # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
-      # PATH, which is how the built one wins.
+      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored and
+      # built before script/bootstrap, which installs no QEMU, so the pinned build is on PATH for every
+      # later step.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -1172,9 +1172,9 @@ jobs:
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
       # with the image while the pin does not. The version is pinned in .qemu-version so CI and the developer
       # machine emulate on the same thing, which matters for a project whose benchmarks are instruction
-      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
-      # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
-      # PATH, which is how the built one wins.
+      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored and
+      # built before script/bootstrap, which installs no QEMU, so the pinned build is on PATH for every
+      # later step.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -1433,8 +1433,8 @@ jobs:
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
       # growing. See notes/actions-cache-budget-2026-10-07.md.
-      # The same cached QEMU the test and bench jobs use, restored before script/bootstrap for the
-      # same reason (bootstrap skips its apt install when QEMU is already on PATH).
+      # The same cached QEMU the test and bench jobs use, restored and built before script/bootstrap
+      # for the same reason.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -1721,7 +1721,7 @@ jobs:
         run: helpers/rustup-retry.sh toolchain install
       # `script/lint` clippies the `user` package, whose build.rs compiles the C component with a
       # bare-metal clang (milestone 36, DECISIONS §30). The test job gets this from script/bootstrap;
-      # this job does not run bootstrap (it would install QEMU it never uses), so install clang here.
+      # this job does not run bootstrap (it would install tools it never uses), so install clang here.
       # Ubuntu's clang carries every LLVM backend, including RISC-V.
       # shellcheck too: script/lint gates over 50 `#!/bin/sh` scripts <!--count-at-least:sh-scripts--> on it.
       # (That number is re-derived from the tree by script/lint's counted-claims check; the marker is
@@ -1734,8 +1734,10 @@ jobs:
       # not ship it.
       # ruby too: two script/lint checks parse YAML with `ruby -ryaml` (helpers/workflow_parses.py,
       # helpers/issue_forms.py). The image ships it; the explicit install is for the reason above.
+      # helpers/apt-install.sh retries, and switches to a second Ubuntu mirror when the runner's own
+      # archive does not resolve; its header says why.
       - name: Install clang (the C component's compiler), shellcheck, dtc and ruby
-        run: sudo apt-get update && sudo apt-get install -y clang shellcheck device-tree-compiler ruby
+        run: helpers/apt-install.sh clang shellcheck device-tree-compiler ruby
       # **No rust-cache entry is saved from a merge group, because nothing can ever restore one.**
       # A run restores caches from its own ref and the default branch's, and every merge group runs
       # on a fresh `gh-readonly-queue/...` ref. Measured 2026-10-07 (UTC): 0 hits in 111 merge-group
@@ -2216,9 +2218,9 @@ jobs:
       # apt cannot fix it: it installs the newest package for the release, and apt's QEMU moves
       # with the image while the pin does not. The version is pinned in .qemu-version so CI and the developer
       # machine emulate on the same thing, which matters for a project whose benchmarks are instruction
-      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
-      # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
-      # PATH, which is how the built one wins.
+      # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored and
+      # built before script/bootstrap, which installs no QEMU, so the pinned build is on PATH for every
+      # later step.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6

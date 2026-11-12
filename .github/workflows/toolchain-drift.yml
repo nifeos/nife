@@ -71,8 +71,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
+      # helpers/apt-install.sh falls back to a second Ubuntu mirror; its header says why.
       - name: Install clang (the C component's compiler, milestone 36)
-        run: sudo apt-get update && sudo apt-get install -y clang
+        run: helpers/apt-install.sh clang
 
       # The most fragile thing first, because it is the thing that actually breaks: rebuilding the std
       # overlay against a fresh rust-src. A clean farm is the point, so this must not reuse a cached one.

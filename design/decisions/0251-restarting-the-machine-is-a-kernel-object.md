@@ -18,16 +18,17 @@ program name (clause 2). *(Section number provisional until the merge queue land
 The object, its method, the `reboot` field and the program `reboot` carry provisional names under
 design/naming.md. The sync names are ratified (2026-10-06 UTC): the file-server request and its
 capability are `fs::BIND_SYNC`, `SyncOnly` and `Manifest::sync`, and "flush" means the block
-device's own cache command only. So are `reboot_capability` (capability is never abbreviated `cap`),
-`prepare_reset_route` and the four errors under "A refusal returns its reason".
+device's own cache command only. So are `reboot_capability` (capability is never abbreviated `cap`)
+and the four errors under "A refusal returns its reason".
 
 ## The ruling
 
 1. A new kernel object kind carries the authority to restart the machine. It has no payload: the
    kernel stores nothing in it, and it names no device. It has one method and its own method
-   module, `abi::reboot`, and no `abi::objtype` number (below). This is a new method within the
-   capability model of §10 (process model: capability-based, microkernel) and §16 (object
-   revocation). It adds no syscall number.
+   module, `abi::reboot`, and no `abi::object_type` number (below; the ruling of 2026-11-11 (UTC)
+   spelled out the module's name). This is a new method within the capability model of
+   §10 (process model: capability-based, microkernel) and §16 (object revocation). It adds no
+   syscall number.
 2. The kernel creates exactly one at boot and grants it to the progenitor. The progenitor endows it
    to a job whose manifest declares the `reboot` field and whose bytes something vouches for: the
    image's measured archive for the image's own programs, or an owner's `grant` line for installed
@@ -77,14 +78,19 @@ answers one request, reset the board.
 
 - The image's `reboot` calls the route after the `SYNC` and before `REBOOT`. A write the PMIC
   honors never returns.
-- `reboot` waits for the route with a timeout. If the route is absent, refuses, or does not reset
-  the board within the timeout, `reboot` invokes `REBOOT`, the plain firmware route above.
+- The route bounds its own wait. After its write it waits two seconds for
+  the board to reset, then answers `StillRunning`. If the route is absent, refuses, or answers
+  `StillRunning`, `reboot` invokes `REBOOT`, the plain firmware route above.
+- `reboot`'s own call to the route has no timeout, so a route that stops answering hangs `reboot`.
+  Bounding that call is follow-on work that waits on a timed call, which nife does not have; a
+  separate proposal asks for one as its own milestone.
 - The reboot object itself stays as clause 1 states it: no payload and no device. `REBOOT` calls
   `arch::reboot` and nothing board-specific.
 
-Until milestone 1062 (the device control planes leave the kernel) lands,
-`kernel/src/reboot/designware_i2c.rs` and `kernel/src/reboot/pmic.rs` still run the PMIC write
-inside `REBOOT`. The route's name and its request are provisional, like the object's.
+The route is `components/src/power_management_chip_route.rs`, from milestone 1062 (the device
+control planes leave the kernel). Its starter brings I2C5 up at boot through the JH7110 clock and
+reset server of §320 (the JH7110 clock and reset wire), and the kernel holds no I2C master. The
+route's name and its request are provisional, like the object's.
 
 ## How `reboot` syncs: a sync-only capability
 
@@ -134,19 +140,19 @@ Prior art, recalled, not re-read:
   `fuchsia.process.lifecycle` `Stop` before power control resets: D.
 - systemd stops units in reverse dependency order, remounts read-only, syncs, then resets: D.
 
-## The object has no `objtype` number
+## The object has no `object_type` number
 
-`objtype` lists what `MemoryRegion::RETYPE_OBJECT` (method 2, its name spelled out by the ruling of
+`object_type` lists what `MemoryRegion::RETYPE_OBJECT` (method 2, its name spelled out by the ruling of
 2026-11-11 (UTC)) can make out of memory. Nothing makes a reboot object, and a number there would
 read as a way to. It has a method module, `abi::reboot`, like `Irq`, the other kernel-minted object.
 
 Alternatives considered:
 
-- A, built: no `objtype` number and its own `abi::reboot` method module, like `Irq` and
+- A, built: no `object_type` number and its own `abi::reboot` method module, like `Irq` and
   `MemoryRegion`, which have none either.
-- B, a number `RETYPE_OBJECT` refuses: `objtype` would then mean both "can be made" and "exists".
+- B, a number `RETYPE_OBJECT` refuses: `object_type` would then mean both "can be made" and "exists".
 - C, a retypable number: anyone holding memory could mint reboot authority.
-- D, split `objtype` into a retype list and a full object-kind list: worth it only once a
+- D, split `object_type` into a retype list and a full object-kind list: worth it only once a
   capability type query exists, and nife has none today.
 
 Prior art, recalled, not re-read:

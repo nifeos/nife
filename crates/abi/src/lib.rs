@@ -38,40 +38,51 @@ pub const INTERFACE_ID: u64 = 1;
 
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
 /// because it acts on the caller itself.
-pub const SYS_EXIT: u64 = 0;
+///
+/// Name: ratified 2026-11-11 (UTC). `SYS` abbreviated "syscall", a word design/naming.md keeps;
+/// the number stays 0. Refused `SYS_EXIT`.
+pub const SYSCALL_EXIT: u64 = 0;
 /// `yield()`: give up the CPU without blocking. Needs no capability, as `exit` needs none.
-pub const SYS_YIELD: u64 = 1;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 1. Refused `SYS_YIELD`.
+pub const SYSCALL_YIELD: u64 = 1;
 /// `invoke(capability, method, a0, a1, a2)`: the one syscall that acts on anything but the caller.
 ///
 /// # Examples
 /// ```
-/// use abi::{SYS_EXIT, SYS_INVOKE, SYS_YIELD, rendezvous};
+/// use abi::{SYSCALL_EXIT, SYSCALL_INVOKE, SYSCALL_YIELD, rendezvous};
 ///
-/// assert_eq!([SYS_EXIT, SYS_YIELD, SYS_INVOKE], [0, 1, 2]);
+/// assert_eq!([SYSCALL_EXIT, SYSCALL_YIELD, SYSCALL_INVOKE], [0, 1, 2]);
 ///
 /// // Sending on a rendezvous is a method number, not a syscall number. Adding an operation to the
 /// // system is a new method here; adding a *syscall* is a design fork.
 /// assert_eq!(rendezvous::SEND, 0);
 /// ```
-pub const SYS_INVOKE: u64 = 2;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 2. Refused
+/// `SYS_INVOKE`.
+pub const SYSCALL_INVOKE: u64 = 2;
 
 /// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot
 /// Deleting an empty slot is a harmless no-op. A loader that
 /// retypes many frames through a finite table recycles slots with it, and it needs no capability
 /// because the table is the caller's own.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
-/// `SYS_CAP_DELETE` under the capability ruling of 2026-10-06 (UTC).
-pub const SYS_CAPABILITY_DELETE: u64 = 3;
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 3. Refused
+/// `SYS_CAPABILITY_DELETE` and `SYS_CAP_DELETE`.
+pub const SYSCALL_CAPABILITY_DELETE: u64 = 3;
 
 /// `exit_thread(word)`: **end the calling thread, and only it**; when it is the last running
-/// thread of its process the process ends too, as [`SYS_EXIT`] would end it. Needs no capability.
+/// thread of its process the process ends too, as [`SYSCALL_EXIT`] would end it. Needs no capability.
 ///
 /// `word`, if not zero, names a 32-bit word in the caller's own space: once the thread has left
 /// user mode for good the kernel stores zero there and wakes every futex waiter on it, so a joiner
 /// may free the thread's stack. An unmapped or misaligned word is skipped, never a reason not to
 /// exit. *(Number provisional.)*
-pub const SYS_EXIT_THREAD: u64 = 4;
+///
+/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 4. Refused
+/// `SYS_EXIT_THREAD`.
+pub const SYSCALL_EXIT_THREAD: u64 = 4;
 
 /// An index into the calling thread's capability table. **Not a pointer, not a handle you can
 /// guess.** The kernel looks in *your* table, and if the slot is empty you get `NoSuchSlot`.
@@ -81,12 +92,12 @@ pub const SYS_EXIT_THREAD: u64 = 4;
 pub type CapabilitySlot = u64;
 
 /// The number of slots in a thread's capability table, mirroring the kernel's
-/// `cap::CAPABILITY_TABLE_SLOTS` so userspace can name [`fault::FAULT_EP_SLOT`] without reaching
+/// `cap::CAPABILITY_TABLE_SLOTS` so userspace can name [`fault::FAULT_RENDEZVOUS_SLOT`] without reaching
 /// into the kernel. The two must agree, or the fault slot sits in different places on the two
 /// sides of the boundary.
 ///
-/// **Changing it is an ABI change**: [`fault::FAULT_EP_SLOT`] is derived from it, so a supervisor
-/// built against another size writes the fault endpoint to a slot the kernel does not read. Every
+/// **Changing it is an ABI change**: [`fault::FAULT_RENDEZVOUS_SLOT`] is derived from it, so a supervisor
+/// built against another size writes the fault rendezvous to a slot the kernel does not read. Every
 /// program that names it is built against one copy of this crate. The size was set on 2026-10-04 (UTC).
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
@@ -110,7 +121,7 @@ pub mod rendezvous;
 /// run states a supervised thread can be found in.
 ///
 /// **Only four states can appear, and the two absentees say something.** `Embryo` cannot, because a
-/// thread's supervision endpoint is recorded at `START` and an embryo has not
+/// thread's supervision rendezvous is recorded at `START` and an embryo has not
 /// started: a child that is built but not yet running is not in its domain yet. `Finished` cannot
 /// either, because that is the state of a thread the reaper collects immediately, which is what
 /// *un*supervised death looks like; a supervised thread dies into [`DEAD`](self::survey::DEAD) and
@@ -126,14 +137,14 @@ pub mod survey;
 /// discipline.
 pub mod reply;
 
-/// Object types for [`memory_region::RETYPE_OBJECT`]: what a page of untyped becomes.
-pub mod objtype;
+/// Object types for [`memory_region::RETYPE_OBJECT`]: what a page of a memory region becomes.
+pub mod object_type;
 
 /// Methods on the **reboot object** (restarting the machine is a kernel object the progenitor
 /// hands out).
 ///
 /// The kernel mints exactly one at boot and grants it to the progenitor, which endows it only to a
-/// program whose manifest declares `reboot`. Nothing retypes one, so it has no [`objtype`] number.
+/// program whose manifest declares `reboot`. Nothing retypes one, so it has no [`object_type`] number.
 /// Holding it is the whole authority: no rights bit is asked for.
 ///
 /// *(Provisional, with its method number: the object, the module and `REBOOT` are an
@@ -141,7 +152,7 @@ pub mod objtype;
 pub mod reboot;
 
 /// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJECT`]
-/// with [`objtype::NOTIFICATION`]. A signaller ORs bits into its word and never blocks; a waiter
+/// with [`object_type::NOTIFICATION`]. A signaller ORs bits into its word and never blocks; a waiter
 /// takes what has accumulated. [`BIND`](notification::BIND) attaches it to one thread, so a signal
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
 ///
@@ -151,7 +162,7 @@ pub mod reboot;
 pub mod notification;
 
 /// Methods on a `Timer` capability: **the kernel's comparator, lent one deadline at a time.** Created by
-/// [`memory_region::RETYPE_OBJECT`] with [`objtype::TIMER`]. It has no wait of its own: when its
+/// [`memory_region::RETYPE_OBJECT`] with [`object_type::TIMER`]. It has no wait of its own: when its
 /// deadline passes it signals a [`notification`].
 ///
 /// Deadlines are absolute, in the counter ticks a program reads without a syscall, and fire at the
@@ -161,7 +172,7 @@ pub mod notification;
 pub mod timer;
 
 /// Methods on a `ThreadControlBlock` capability: **another thread, under
-/// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`objtype::THREAD_CONTROL_BLOCK`].
+/// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`object_type::THREAD_CONTROL_BLOCK`].
 ///
 /// **There is deliberately no method here that grants a thread the cycle counter**: the kernel
 /// carries the grant, and the method that would set it waits for a consumer with a requirement in
@@ -169,7 +180,7 @@ pub mod timer;
 pub mod thread_control_block;
 
 /// Methods on an `AddressSpace` capability: **another process's memory, under
-/// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`objtype::ADDRESS_SPACE`];
+/// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`object_type::ADDRESS_SPACE`];
 /// nothing can run in it until TCBs arrive (19c), so today it is a structure you build, revocation
 /// can reach, and `ENUMERATE` can look at without touching. The
 /// capability keeps naming the space after a thread is
@@ -183,7 +194,7 @@ pub mod address_space;
 /// Name: provisional (2026-10-10 UTC).
 pub mod futex;
 
-/// Methods on a **process** capability. Created by [`memory_region::RETYPE_OBJECT`] with [`objtype::PROCESS`], whose second
+/// Methods on a **process** capability. Created by [`memory_region::RETYPE_OBJECT`] with [`object_type::PROCESS`], whose second
 /// word is the address space the process will hold.
 ///
 /// A process is the capability table its threads share, their space, its supervision and its end.
@@ -201,8 +212,8 @@ pub mod process;
 /// dropped at every delegation; the comment on that constant carries the warning.
 pub mod rights;
 
-/// **The fault endpoint: thread death becomes a message a supervisor holds**. When a thread faults or exits, the kernel delivers one message to the
-/// supervision endpoint its spawner designated, and the thread's corpse persists (dead until the
+/// **The fault rendezvous: thread death becomes a message a supervisor holds**. When a thread faults or exits, the kernel delivers one message to the
+/// supervision rendezvous its spawner designated, and the thread's corpse persists (dead until the
 /// supervisor reaps it with revocation). Restart policy lives in userspace; the kernel never
 /// relaunches anything. This module holds two conventions: a message-format convention and a
 /// spawn-slot convention. No new syscall and no new method.
@@ -325,7 +336,7 @@ pub enum Error {
     /// escalate to the owner's `MemoryRegion::DESTROY`, versus give up on that tid).
     StillAlive = -9,
 
-    /// **This endpoint does not supervise a thread by that tid.** Another supervisor's child, one
+    /// **This rendezvous does not supervise a thread by that tid.** Another supervisor's child, one
     /// already collected, or a tid whose generational name is stale. One error for all three
     /// deliberately: distinguishing "gone" from "not yours" would let a supervisor probe the tid
     /// space of children it has no relationship with.

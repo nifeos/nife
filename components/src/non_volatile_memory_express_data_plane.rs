@@ -34,6 +34,7 @@
 use driver_process_contract::non_volatile_memory_express::{
     DATA_PLANE_GRANT, DATA_PLANE_PAGES, DISK_TREE_WINDOW, DOORBELL_PAGE_GRANT, FIRST_TRANSFER_PAGE,
     Handoff, IO_COMPLETION_QUEUE_PAGE, IO_SUBMISSION_QUEUE_PAGE, client_window, data_plane_slots,
+    take_completion,
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
@@ -153,16 +154,19 @@ impl Plane {
         let cqe = IO_CQ_OFF + self.cq.head() as u64 * 16;
         let mut done: Option<Completion> = None;
         for _ in 0..SPIN_BOUND {
-            let c = Completion::from_dwords(self.data.read::<[u32; 4]>(cqe));
-            if self.cq.is_owned(&c) {
-                done = Some(c);
+            // The barrier inside orders the phase read before the rest of the entry and the
+            // payload reads that follow it (the block's bytes).
+            done = take_completion(
+                &self.cq,
+                |i| self.data.read::<u32>(cqe + 4 * i as u64),
+                barrier,
+            );
+            if done.is_some() {
                 break;
             }
             core::hint::spin_loop();
         }
         let c = done.ok_or(u16::MAX)?;
-        // Order the phase read before the payload reads that follow (the block's bytes).
-        barrier();
 
         let new_head = self.cq.pop();
         self.bells.w32(
@@ -237,7 +241,7 @@ fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWin
             data_plane_slots::OWN_SPACE,
             va,
             slot,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         ) != 0
         {
             return None;

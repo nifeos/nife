@@ -12,6 +12,8 @@
 /// Whether the file this loader came from is on a given disk; the chooser's one device-path question.
 pub mod device_path;
 pub mod device_tree_from_acpi;
+/// The firmware's device tree as a slice, its magic and length checked first.
+pub mod device_tree_from_firmware;
 pub mod handoff;
 pub mod image;
 /// The one line this loader leaves on the screen across the handoff, milestone 243 (a machine with no serial port).

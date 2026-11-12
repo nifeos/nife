@@ -26,7 +26,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 
 - Step 1 waits for milestone 811 (the boot services leave the kernel)'s step 6.
 - Step 2 waits on no other work: §320 (the JH7110 clock and reset wire) states its wire.
-- Steps 3 and 5 wait for step 2, whose server brings their clocks and resets up.
+- Steps 3 and 5 wait for step 2's server.
 - Milestone 1064 (PCI enumeration leaves the kernel) follows this milestone and milestone 1068
   (the kernel turns interrupt remapping on where an IOMMU offers it).
 
@@ -47,22 +47,20 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
    JH7110 watchdog (milestone 593 (a wedged kernel resets itself)) needs to turn its clock on, and
    the entropy and Ethernet bring-ups ask the server instead.
-3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
-   server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its
-   userspace control process holds the channel and MAC pages. `kernel/src/designware_ethernet.rs`
-   goes, and the kernel stops linking `crates/designware_ethernet`. radon proves it, so this step
-   needs a person.
+   SD/MMC starters and step 5's PMIC route ask it too.
+3. The DesignWare GMAC control plane. Its clocks and resets come up through step 2's bring-up
+   verb, and a userspace control process holds the channel and MAC pages.
+   `kernel/src/designware_ethernet.rs` goes, and `kernel/Cargo.toml` stops naming the crate.
+   radon proves it.
 4. The NVMe admin plane, as §86 states it: a userspace admin process holds BAR0 and the admin
    queues and grants the data-path driver its doorbell page and I/O queues. The admin half of
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
    Built: #3427.
 5. The JH7110 PMIC route, as §251 (restarting the machine is a kernel object the progenitor
-   hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
-   brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
-   reset wire)), and writes the AXP15060. `reboot` calls it
-   before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route.
-   `kernel/src/reboot/designware_i2c.rs` and the PMIC half of `kernel/src/reboot/pmic.rs` go.
-   radon proves it.
+   hands out) states it. `components/src/power_management_chip_route.rs` holds the I2C5
+   controller's page as a `DeviceFrame` and writes the AXP15060, after its starter brings I2C5 up
+   through the step 2 server (§320 (the JH7110 clock and reset wire)). `reboot` calls it, then
+   `REBOOT`; the route bounds its wait. The kernel holds no I2C master. radon proves it.
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
@@ -82,8 +80,7 @@ build feature and no boot parameter for it, and the choice can differ per device
 - Mediated. The driver holds the `Virtio` capability, as every virtio driver does today.
   `kernel/src/virtio.rs` keeps the device's registers, places the descriptor table and available
   ring in a kernel-private shadow page, validates each new descriptor on `NOTIFY` with
-  `crates/direct_memory_access_validator`, and only then rings the device. Nothing in this path
-  changes.
+  `crates/direct_memory_access_validator`, and only then rings the device. This path does not change.
 - Direct. The driver holds its device's register pages as plain device frames, listed on its
   startup page, and its DMA region. It resets the device, negotiates features, sets up each queue
   in the common configuration and writes its doorbells itself. The xHCI driver does the same with
@@ -216,8 +213,7 @@ validator has a Kani proof.
 The `x86_64` runner attaches `virtio-blk-pci,iommu_platform=on` behind `intel-iommu`. A starter
 that grants it direct confines its requester id to the driver's DMA region and maps the pages of
 the four structures. QEMU places them at 0x0, 0x1000, 0x2000 and 0x3000 of BAR4, and the MSI-X
-table in BAR1; that layout comes from memory, and the starter reads the capability list rather than relying on
-it. It lists the pages on the startup page and passes `notify_off_multiplier` 4 and MSI-X entry 0.
+table in BAR1. The starter reads the capability list instead. It lists the pages on the startup page and passes `notify_off_multiplier` 4 and MSI-X entry 0.
 The driver writes 0 to `device_status`, accepts `VERSION_1` and `ACCESS_PLATFORM`, selects queue
 0, writes ring addresses inside its region, enables the queue and sets `DRIVER_OK`. To submit a
 read it publishes the descriptor and stores the queue number at `queue_notify_off * 4` in the
@@ -258,8 +254,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 1. The contract: `driver_process_contract::virtio`, its window kinds and handoff, with tests.
 2. The starter's carve-out: the confinement, the four structures' pages, the withheld MSI-X pages,
    the `ACCESS_PLATFORM` and requester id checks, and the startup page, with unit tests.
-3. The driver's direct transport in userspace, the direct disk system test on all three
-   architectures and the two escape tests.
+3. The driver's direct transport in userspace and the direct disk system test on all three
+   architectures.
 4. The measurement.
 
 ## Done when
@@ -272,8 +268,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
    clock, and radon's Ethernet and reboot bench boots.
 3. `reboot` on radon resets the board through the userspace route, and resets it through `REBOOT`
    when the route is absent.
-4. `script/fastpath-footprint` reports no change. None of these paths is hot, so a change there
-   is a finding.
+4. `script/fastpath-footprint` reports no change: none of these paths is hot.
 5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
    CI runs the direct and the mediated path on all three architectures.
 
@@ -282,10 +277,14 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
-- **Outstanding.** Step 2: the kernel still walks five callers' plans.
-- **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
-  `kernel/src/reboot/designware_i2c.rs` exist.
-- **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
+- **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
+- **Outstanding.** Step 3: `PROVEN_ON_SILICON` is `false` until radon boots #3498.
+- **Done.** Step 5 in #3499: `components/src/power_management_chip_route.rs`.
+- **Outstanding.** A timeout on `reboot`'s call to the route waits on a timed call.
+- **Outstanding.** Step 7: the measurement; "Cost and effort" still reads not measured.
+- **Outstanding.** An escape test that drives a direct driver (a ring outside its region, a
+  declined `VIRTIO_F_ACCESS_PLATFORM`); the mediated
+  `the_iommu_faults_a_dma_that_escapes_the_domain` covers that fault today.
 
 ## Index row
 

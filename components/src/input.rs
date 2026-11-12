@@ -31,7 +31,7 @@ const UART_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
 
 const TERM: u64 = 0; // CALL: forward raw wire bytes to the line discipline
 #[doc(alias = "irq")]
-const INTERRUPT: u64 = 1; // WAIT / ACK the receive interrupt
+const INTERRUPT: u64 = 1; // WAIT / ACKNOWLEDGE the receive interrupt
 
 /// The UART, the one arch-specific part of an input driver. aarch64's `virt` has a PL011 (32-bit
 /// registers, RX-FIFO-empty and TX-FIFO-full flags in the Flag Register, a maskable RX interrupt in

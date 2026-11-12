@@ -111,22 +111,29 @@ def regenerate_patch(text, crate, source):
             for name, body in (('old', old), ('new', new)):
                 open(os.path.join(tmp, name), 'w').write(body)
             _code, delta = run(['diff', '-u', '--label', 'a/' + rel, '--label', 'b/' + rel,
-                                os.path.join(tmp, 'old'), os.path.join(tmp, 'new')], tmp)
-            pieces.append(f'diff --git a/{rel} b/{rel}\n' + delta + '\n')
-    return preamble + ''.join(pieces).rstrip('\n') + '\n', problems
+                                os.path.join(tmp, 'old'), os.path.join(tmp, 'new')], tmp, strip=False)
+            pieces.append(f'diff --git a/{rel} b/{rel}\n' + delta)
+    return preamble + ''.join(pieces), problems
 
 
 def patch_application(into, patch):
-    """What `patch -p1 --dry-run -F0` says of one patch against the staged tree, or '' when clean.
+    """What `patch -p1 --dry-run -F0` and `git apply --check` say of one patch, or '' when clean.
 
     A patch that applies at an offset or with fuzz still exits 0, which is how a stale hunk header
-    passes: the move accepts only a patch that applies exactly where it says.
+    passes: the move accepts only a patch that applies exactly where it says. `git apply` is what
+    the template's `proofs / falsify` runs, and it refuses a hunk that `patch` accepts with a
+    context line missing. The ceiling keeps git from finding a repository above `into`, inside
+    which it would skip every path outside its working directory and report success.
     """
     code, out = run(['patch', '-p1', '--dry-run', '-F0', '-i', patch], into)
     if code:
         return 'does not apply: ' + tail(out)
     notes = [line for line in out.splitlines() if re.search(r'offset|fuzz', line)]
-    return '; '.join(notes[:2])
+    if notes:
+        return '; '.join(notes[:2])
+    env = dict(os.environ, GIT_CEILING_DIRECTORIES=os.path.dirname(os.path.abspath(into)))
+    code, out = run(['git', 'apply', '--check', '-p1', patch], into, env=env)
+    return 'git apply --check refuses it: ' + tail(out) if code else ''
 
 
 def falsification_first(text):
@@ -154,12 +161,21 @@ def falsification_first(text):
 
 
 def add_repository(manifest, crate):
-    """The manifest with `repository` set to the crate's own repository, after `license`."""
-    if re.search(r'(?m)^repository\s*=', manifest):
+    """The manifest with `repository` set to the crate's own repository, after `license`.
+
+    `license` is either a value (`license = "..."`) or inherited (`license.workspace = true`); a
+    manifest that already has `repository`, in either form, is returned unchanged. Raises
+    ValueError when there is no `license` line to place it after, so the step fails instead of
+    reporting a field it did not write.
+    """
+    if re.search(r'(?m)^repository(\.workspace)?\s*=', manifest):
         return manifest
     line = f'repository = "{REPOSITORY_URL.format(crate=crate)}"'
-    new, n = re.subn(r'(?m)^(license\s*=.*)$', lambda m: m.group(1) + '\n' + line, manifest, count=1)
-    return new if n else manifest
+    new, n = re.subn(r'(?m)^(license(\.workspace)?\s*=.*)$', lambda m: m.group(1) + '\n' + line,
+                     manifest, count=1)
+    if not n:
+        raise ValueError('Cargo.toml has no `license` line to place `repository` after')
+    return new
 
 
 def caller_workflow(text, sha, targets):
@@ -571,9 +587,15 @@ def fuzz_removals(root, crate, names):
     print('  fuzz/Cargo.lock: refresh with `cargo update --workspace` in fuzz/')
 
 
-def run(argv, cwd, env=None, stdin=None):
+def run(argv, cwd, env=None, stdin=None, strip=True):
+    """(exit code, stdout then stderr), stripped unless `strip` is false.
+
+    Output that is itself a file, such as a patch from `diff`, passes `strip=False`: stripping
+    deletes a hunk's trailing blank context line, which `git apply` then refuses.
+    """
     p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, input=stdin)
-    return p.returncode, (p.stdout + p.stderr).strip()
+    out = p.stdout + p.stderr
+    return p.returncode, out.strip() if strip else out
 
 
 def tail(text, n=3):
@@ -667,6 +689,7 @@ def stage(root, crate, into, tree, sha, report):
                              + (f'; the crate\'s own {", ".join(sorted(kept))} kept' if kept else ''))
 
     blocks = patches = paths = records = 0
+    repository = 'repository not set in Cargo.toml'
     source = os.path.join(root, 'crates', crate)
     for dirpath, _dirs, names in os.walk(into):
         if '/.git' in dirpath or dirpath.endswith('/.git'):
@@ -686,13 +709,17 @@ def stage(root, crate, into, tree, sha, report):
                 new, b, r, n = moved_source(text, crate)
                 blocks, records, paths = blocks + b, records + r, paths + n
             if rel == 'Cargo.toml':
-                new = add_repository(new, crate)
+                try:
+                    new = add_repository(new, crate)
+                    repository = 'repository set in Cargo.toml'
+                except ValueError as e:
+                    report('FAIL', 'repository', str(e))
             if new != text:
                 open(path, 'w').write(new)
     report('ok', 'rewrite', f'Name: blocks removed from {blocks} files, {patches} patches regenerated '
                             f'for -p1 over the stripped source, {paths} paths made repository-relative, '
                             f'falsification records moved to the head of their comments in {records} '
-                            'files, repository set in Cargo.toml')
+                            f'files, {repository}')
     check_patches(into, report)
     moved, opted_in = stage_fuzz(root, crate, into, report)
     if opted_in:
@@ -713,7 +740,7 @@ def check_patches(into, report):
             report('FAIL', 'patch applies exactly', f'falsifications/{name}: {said}')
     if not bad:
         report('ok', 'patch applies exactly', f'{len(names)} patches apply with no offset and no fuzz '
-                                              '(patch -p1 --dry-run -F0)')
+                                              '(patch -p1 --dry-run -F0, then git apply --check -p1)')
 
 
 def build(into, manifest, targets, work, report):
@@ -822,6 +849,21 @@ def patch_selftest():
         assert regenerate_patch(block, 'x', source)[1], 'an edit inside a Name: block is a problem'
         missing = patch.replace('m > n', 'no such line')
         assert regenerate_patch(missing, 'x', source)[1], 'a patch that does not apply is a problem'
+        # The hunk's last context line is the blank one after `}`; it must survive regeneration.
+        blank = ('Falsifies `x::verification::h`.\n\n'
+                 'diff --git a/crates/x/src/lib.rs b/crates/x/src/lib.rs\n'
+                 '--- a/crates/x/src/lib.rs\n+++ b/crates/x/src/lib.rs\n'
+                 '@@ -11,4 +11,4 @@\n pub fn f(n: u32) -> bool {\n-    let m = n + 1;\n+    let m = n;\n'
+                 '     m > n\n }\n')
+        new, problems = regenerate_patch(blank, 'x', source)
+        assert not problems, problems
+        assert new.endswith('\n }\n \n'), repr(new[-40:])
+        trailing = os.path.join(staged, 'falsifications', 'trailing.patch')
+        open(trailing, 'w').write(new)
+        assert patch_application(staged, trailing) == '', patch_application(staged, trailing)
+        open(trailing, 'w').write(new.rstrip() + '\n')
+        said = patch_application(staged, trailing)
+        assert said.startswith('git apply --check refuses it'), 'the gate sees a lost context line: ' + said
 
 
 def fuzz_selftest():
@@ -902,6 +944,16 @@ def selftest():
     m = '[package]\nname = "x"\nlicense = "MIT OR Apache-2.0"\n'
     assert 'repository = "https://github.com/nifeos/x"' in add_repository(m, 'x')
     assert add_repository(add_repository(m, 'x'), 'x').count('repository') == 1
+    inherited = '[package]\nname = "x"\nlicense.workspace = true\n\n[lints]\nworkspace = true\n'
+    assert add_repository(inherited, 'x') == \
+        '[package]\nname = "x"\nlicense.workspace = true\nrepository = "https://github.com/nifeos/x"\n' \
+        '\n[lints]\nworkspace = true\n', add_repository(inherited, 'x')
+    try:
+        add_repository('[package]\nname = "x"\n', 'x')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('a manifest with no license line is refused, not passed through')
     wf = "    uses: o/r/.github/workflows/check.yml@PINS@\n    with:\n      targets: ''\n"
     out = caller_workflow(wf, 'abc', ['t1', 't2'])
     assert '@abc' in out and 'targets: t1 t2' in out and 'allow-unpublished: true' in out, out

@@ -8,6 +8,9 @@
 /// happens in the kernel.
 pub const WAIT: u64 = 0;
 
-/// `invoke(capability, ACK, _, _, _)` -> 0. Re-enable the interrupt at the GIC, once we have quieted
-/// the device. Until we call this, the interrupt stays masked and cannot storm.
-pub const ACK: u64 = 1;
+/// `invoke(capability, ACKNOWLEDGE, _, _, _)` -> 0. Re-enable the interrupt at the GIC, once we
+/// have quieted the device. Until we call this, the interrupt stays masked and cannot storm.
+///
+/// Name: ratified 2026-11-11 (UTC), matching the runtime wrapper `interrupt_acknowledge`; the
+/// method number stays 1. Refused `ACK` (abbreviates "acknowledge").
+pub const ACKNOWLEDGE: u64 = 1;

@@ -52,8 +52,8 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Fifteen parser targets, deliberately fewer than one per crate; the table holds fourteen, and
-[fuzzing/targets.md](fuzzing/targets.md) covers the FAT writer. A fuzz target that finds nothing
+Thirteen parser targets, deliberately fewer than one per crate; the FAT crate fuzzes its own in its
+repository, `nifeos/file_allocation_table`. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
@@ -63,7 +63,6 @@ implies coverage the project does not have.
 | `device_tree_patch_initial_ramdisk` | UEFI firmware's device tree | the loader's own walker; a wrong `Ok` boots a kernel without its archive. |
 | `elf_parse` | any binary a user asks to run | the only parser that loads what it parses: its output becomes page-table entries. The whole-parse totality proof is recorded as intractable. |
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
-| `file_allocation_table_boot_sector` | a USB stick somebody else formatted | every later FAT read indexes by what it says |
 | `domain_name_system_reply` | a name server, or anyone who can forge its reply | a reply that panics takes name resolution down, and one that slips past `Query::accept` sends a client to the wrong host. Kani covers the name decoder, not `accept`; see notes/name-resolution.md. |
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |

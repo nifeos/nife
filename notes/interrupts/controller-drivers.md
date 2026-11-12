@@ -58,7 +58,7 @@ bound, so a controller that is not answering does not look like a boot that stop
 
 The sixteen SGIs are enabled and never disabled. Linux disables them and enables them one by one as
 IPIs, but QEMU's GICv2 model forces SGIs enabled (`hw/intc/arm_gic.c`), and so does the GIC-400.
-The Interrupt capability's mask-on-fire, unmask-on-ACK protocol relies on that in its SGI tests,
+The Interrupt capability's mask-on-fire, unmask-on-ACKNOWLEDGE protocol relies on that in its SGI tests,
 where the
 mask and the unmask can run on different cores. An SGI is an edge a core raises on purpose and
 cannot storm, so the reason to mask a line does not apply to it.
@@ -107,7 +107,7 @@ enabled. QEMU's PLIC (11.1.1) re-evaluates on a priority write, a threshold writ
 a rising line, but not on an enable write. With the priority first, the re-evaluation ran while the
 bit was clear and the interrupt stayed pending until another line rose. Written second, the priority
 write is the re-evaluation, and on a PLIC that follows the specification the order costs nothing.
-An Interrupt capability's ACK with a claim outstanding is a completion
+An Interrupt capability's ACKNOWLEDGE with a claim outstanding is a completion
 (`arch::interrupt_controller::enable` calls
 `complete` on the claiming context), which QEMU does re-evaluate on; the enable path is taken only
 at setup or when nothing is claimed.

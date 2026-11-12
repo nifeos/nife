@@ -58,30 +58,27 @@ can be imported into, but every one of these scripts `cd`s to the repository roo
 python, so `sys.path.insert(0, 'helpers')` is all it takes. The alternative on the table was a host
 crate, which would have made three `script/` commands depend on a `cargo build`.
 
-`bootstrap` installs system packages, and on Linux it also builds one. Running
-`script/bootstrap` will `brew install qemu` on macOS or `apt-get install` on Linux if QEMU is
-missing. That is the pattern's intent: a fresh clone should be one command from working, but it is
-also why `script/test` does *not* call `bootstrap` every time: re-checking a package manager on
+`bootstrap` installs system packages, and `ci-qemu` builds one, the pinned QEMU. A fresh clone
+should be one command from working, which is why `setup` runs both, but it is also why `script/test` does *not* call `bootstrap` every time: re-checking a package manager on
 every inner-loop test run is a poor trade. `setup`/`update` do the heavy dependency work; `test`
 stays fast; `ci-build` provisions on its no-argument path, because that is the command a person runs on a
 cold checkout before pushing. A named check (`ci-build fmt`) does not, because the caller naming
 one check is a CI job that has already installed exactly what it needs, and a rustfmt runner has
-no business apt-installing QEMU.
+no business building QEMU.
 
 `NIFE_SKIP_LINT_TOOLS=1 script/bootstrap` skips `cargo-machete` and `typos`, the two tools only
 `script/lint` uses. On Linux both compile from source, about 85 s per job on the arm64 runners
 (measured on PR #1778, 2026-10-06 UTC). The CI jobs that never lint set it; the `lint` job installs
 them itself and a developer's bare `script/bootstrap` still installs everything.
 
-On Linux the package manager cannot finish the job, so bootstrap runs `script/ci-qemu` itself
-(milestone 287). No Ubuntu release ships a QEMU with `-device riscv-iommu-pci`, and `apt-get`
-already fetches the newest package for the release, so there is nothing better for apt to get.
-Bootstrap therefore says what it is about to cost and builds the pinned version, which takes about
-twelve minutes the first time and under a second on every run after it. Before that milestone it
-printed the two commands for a human to type, which is rung four of AGENTS.md's ladder; worse, the
-printed sequence looped, because nothing outside `.github/workflows/ci.yml` put the build's install
-prefix on PATH. See `helpers/qemu-path.sh` and
-design/roadmap/0287-bootstrap-installs-a-working-qemu.md.
+QEMU is not bootstrap's, §322 (the QEMU bootstrap is the one QEMU check). A package manager
+cannot finish that job: few distributions ship a QEMU with `-device riscv-iommu-pci`, `apt-get`
+already fetches the newest package for the release, and Homebrew installs its current release and
+not the pin. So `script/ci-qemu` is the one place that checks. When the QEMU on PATH is not exactly
+`.qemu-version`, it says what it is about to cost and builds that version: about twelve minutes the
+first time, and under a second on every run after it. Its result counts only once
+it is on PATH: a build left in the prefix while a stale QEMU stays first is a loop, and
+`helpers/qemu-path.sh` closes it. See design/roadmap/0287-bootstrap-installs-a-working-qemu.md.
 
 What this appendix's numbers cite, gathered in `notes/scripts.md` until the split: milestone 87 (the
 x86_64 bare-metal machine) and

@@ -38,7 +38,7 @@ pub(super) static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
 // `grant_plan` states the slot without depending on `abi`; the relation is held by each reader.
-const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_EP_SLOT - 1);
+const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// **Whether this shell holds a read-only view of the inert-configuration page**
 /// ([`grant_plan::SHELL_CONFIGURATION_SLOT`], mapped at [`grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS`]; milestone 47
@@ -57,7 +57,7 @@ pub(super) static HOLDS_CONFIG: core::sync::atomic::AtomicBool =
 pub(super) static HOLDS_MOUNTED_TREE: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-const _: () = assert!(spawnproto::MOUNTED_TREE_SLOT < abi::fault::FAULT_EP_SLOT);
+const _: () = assert!(spawnproto::MOUNTED_TREE_SLOT < abi::fault::FAULT_RENDEZVOUS_SLOT);
 
 // The named slot sits under the run-unvouched one and so under the kernel's fault slot.
 const _: () = assert!(grant_plan::SHELL_CONFIGURATION_SLOT < spawnproto::RUN_UNVOUCHED_SLOT);

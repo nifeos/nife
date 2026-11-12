@@ -115,7 +115,7 @@ pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u6
 ///
 /// # Safety
 /// `trap6`'s: the kernel validates the capability and the method before acting. A caller that
-/// passes `SYS_EXIT` does not come back.
+/// passes `SYSCALL_EXIT` does not come back.
 ///
 /// Name: provisional, milestone 779's lane, 2026-10-06 (UTC).
 pub unsafe fn raw_syscall(number: u64, words: [u64; 6]) -> [u64; 6] {
@@ -124,7 +124,7 @@ pub unsafe fn raw_syscall(number: u64, words: [u64; 6]) -> [u64; 6] {
     [w0, w1, w2, w3, w4, w5]
 }
 
-/// The six-register round trip through `SYS_INVOKE`: [`trap6`] with the number fixed and the sixth
+/// The six-register round trip through `SYSCALL_INVOKE`: [`trap6`] with the number fixed and the sixth
 /// word in as zero, so [`receive_fault`](crate::receive_fault) reads `0` for anything the kernel
 /// did not stamp.
 ///
@@ -141,7 +141,7 @@ pub(crate) unsafe fn invoke6(
     a2: u64,
 ) -> (u64, u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from this function's own contract.
-    unsafe { trap6(abi::SYS_INVOKE, [capability, method, a0, a1, a2, 0]) }
+    unsafe { trap6(abi::SYSCALL_INVOKE, [capability, method, a0, a1, a2, 0]) }
 }
 
 /// [`invoke6`] read to the five words every method but a death delivery uses.

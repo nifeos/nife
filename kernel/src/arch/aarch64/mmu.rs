@@ -764,8 +764,13 @@ impl Drop for UserMapBatch {
         }
         // The page-table writes must be visible to the table walker before the process touches
         // any page of the run.
+        // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
+        // read or write to any memory accessible outside of the `asm!` block", which lets the compiler
+        // cache values in registers and move loads and stores across it, and it adds that the compiler
+        // "also assumes that this `asm!` block does not perform any kind of synchronization with other
+        // threads, e.g. via fences". A barrier exists to order memory, so it must not claim either.
         // SAFETY: a barrier is always sound.
-        unsafe { core::arch::asm!("dsb ishst", "isb", options(nostack, nomem, preserves_flags)) };
+        unsafe { core::arch::asm!("dsb ishst", "isb", options(nostack, preserves_flags)) };
     }
 }
 
@@ -789,8 +794,10 @@ pub(crate) fn map_current_user_page_frame(
     mapper.map(va, phys, flags)?;
 
     // The page-table writes must be visible to the table walker before the process touches `va`.
+    // No `nomem`, for the reason at [`UserMapBatch`]'s `drop`: the compiler would otherwise be free
+    // to sink the page-table stores past the `dsb`.
     // SAFETY: a barrier is always sound.
-    unsafe { core::arch::asm!("dsb ishst", "isb", options(nostack, nomem, preserves_flags)) };
+    unsafe { core::arch::asm!("dsb ishst", "isb", options(nostack, preserves_flags)) };
     Ok(())
 }
 

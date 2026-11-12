@@ -205,6 +205,7 @@ fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
                 && a.children == b.children
                 && same_ceilings(a.live, b.live)
                 && same_ceilings(a.ceilings, b.ceilings)
+                && a.held.iter().zip(b.held).all(|(a, b)| *a == b)
         }
         _ => false,
     }
@@ -280,8 +281,11 @@ impl Run {
                 (base_page, pages, watermark, retyped_to),
                 pinned,
                 own[r][REGION_COUNT],
-                ceilings_of(r, root_ceilings),
-                Ceilings::from_counts(live[r]),
+                (
+                    ceilings_of(r, root_ceilings),
+                    Ceilings::from_counts(live[r]),
+                    core::array::from_fn(|k| own[r][k]),
+                ),
             );
             parent = names[r].expect("the table has room for the tree");
             (spent_from, spent_to) = (base_page, base_page + watermark);
@@ -373,9 +377,10 @@ impl Run {
         !carved
     }
 
-    /// Split one page off `r`. The tree holds at most three of the table's four slots, so a split
-    /// is never refused for a full table (the bump-only rule, `split`'s BUGS). The child is live
-    /// and counted, a region nobody drives. Returns its name, or `None` when the table refused.
+    /// Split one page off `r`. The tree holds at most three of the table's four slots, so only
+    /// [`fill_table`](Self::fill_table) makes a split here refused for a full table. The child is
+    /// live and counted, a region nobody drives. Returns its name, or `None` when the table
+    /// refused.
     fn split(&mut self, r: usize) -> Option<u64> {
         let child = self.table.split(self.name(r), 1);
         if child.is_some() {
@@ -384,11 +389,27 @@ impl Run {
         child
     }
 
-    /// Release a `kind` object `r` holds, if it holds one. Returns whether it held one.
+    /// Take every free slot of the table with a one-page root nobody drives, so the next split
+    /// finds no slot for its child.
+    fn fill_table(&mut self) {
+        for _ in 0..4 {
+            if self.table.insert_root(0, 1).is_none() {
+                break;
+            }
+        }
+    }
+
+    /// Release a `kind` object from `r`, whether or not it holds one: the table must refuse a
+    /// release of nothing held, a second release of one object, and take it only when `r` holds
+    /// one. Returns whether it held one.
     fn release(&mut self, r: usize, kind: ObjectKind) -> bool {
         let held = self.own[r][kind as usize] > 0;
+        let released = self.table.release_object(self.name(r), kind);
+        assert!(
+            released == held,
+            "a release taken without a held object, or refused with one"
+        );
         if held {
-            self.table.release_object(self.name(r), kind);
             self.own[r][kind as usize] -= 1;
         }
         held
@@ -452,6 +473,32 @@ fn a_refused_split_moves_nothing() {
     });
 }
 
+/// **A split refused for a full table moves nothing**: from any state of the tree with every
+/// other slot of the table taken, the split is refused and no page, pin, child or count moves.
+/// Its own harness rather than a branch of
+/// [`a_refused_split_moves_nothing`], whose model a symbolic full table makes too large to check
+/// in 12 GiB.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_split_refused_for_a_full_table_moves_nothing.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_split_refused_for_a_full_table_moves_nothing() {
+    Run::for_every_depth(|mut run, r| {
+        run.fill_table();
+        let before = run.snapshots();
+        let regions = run.table.len();
+        let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
+        assert!(run.split(r).is_none(), "a full table took a child");
+        assert!(run.unmoved_since(before), "a refusal moved something");
+        assert!(run.table.len() == regions, "a refusal left a region");
+        let own = before[r].expect("a region of the tree");
+        let counted = Counted::Region;
+        kani::cover!(
+            watermark < pages && own.live.get(counted) < own.ceilings.get(counted),
+            "a split that only the full table refuses"
+        );
+    });
+}
+
 /// **A carve keeps every region's live count exactly what its subtree holds, and never above its
 /// ceiling**, kind by kind, from any state that held it.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_carve_keeps_every_count_exact_and_under_its_ceiling.patch`
@@ -490,9 +537,11 @@ fn a_carve_keeps_every_count_exact_and_under_its_ceiling() {
 fn a_split_keeps_every_count_exact_and_under_its_ceiling() {
     let mut table = RegionTable::<1>::new();
     let ceilings = Ceilings::from_counts(kani::any());
+    let (base_page, pages): (u64, u64) = (kani::any(), kani::any());
+    kani::assume(pages > 0 && base_page.checked_add(pages).is_some());
     let root = table
-        .insert_root_with_ceilings(kani::any(), kani::any(), ceilings)
-        .expect("an empty table has room");
+        .insert_root_with_ceilings(base_page, pages, ceilings)
+        .expect("an empty table has room for a root that fits");
     let s = table.snapshot(root).expect("the root is live");
     assert!(
         same_ceilings(s.ceilings, ceilings)
@@ -541,6 +590,32 @@ fn a_release_keeps_every_count_exact() {
         assert!(counts.exact, "a count drifted from the subtree");
         kani::cover!(held && r == 2, "the grandchild releases an object");
     });
+}
+
+/// **A release of an object its region does not hold moves nothing**: a second release of one
+/// object, or a release with no retype before it, is refused and leaves every count of both
+/// regions where it was, from any state of a root and a child, even when the child holds objects
+/// of that kind that a release from the root could otherwise take. The release from a leaf, which
+/// has no such count to take, is [`a_release_keeps_every_count_exact`]'s.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_release_of_nothing_held_moves_nothing.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_release_of_nothing_held_moves_nothing() {
+    let mut run = Run::any(2, false, true);
+    let kind = any_object_kind();
+    kani::assume(run.own[0][kind as usize] == 0);
+    let before = run.snapshots();
+    let root = before[0].expect("the root is live");
+    let released = run.table.release_object(run.name(0), kind);
+    assert!(!released, "a release of nothing held was taken");
+    assert!(
+        run.unmoved_since(before),
+        "a refused release moved something"
+    );
+    kani::cover!(
+        root.live.get(Counted::Object(kind)) > 0,
+        "the child holds an object of the kind"
+    );
 }
 
 /// **Reclaiming a subtree gives every count it held back to the root**: from any state of the

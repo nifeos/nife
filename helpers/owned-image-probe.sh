@@ -9,8 +9,9 @@
 #     helpers/owned-image-probe.sh qemu         the QEMU cache landed where script/ci-qemu looks, and
 #                                               what script/ci-qemu would decide (build or skip)
 #     helpers/owned-image-probe.sh qemu-fetch   the hosts a cold QEMU build fetches from answer
-#     helpers/owned-image-probe.sh packages     every apt package script/ci-qemu and script/bootstrap install
-#                                               (helpers/apt-packages.txt) is already installed
+#     helpers/owned-image-probe.sh packages     every apt package a CI job installs through script/ci-qemu or
+#                                               script/bootstrap (helpers/apt-packages.txt, every group) is
+#                                               already installed
 #     helpers/owned-image-probe.sh kvm          /dev/kvm can create a VM (KVM_GET_API_VERSION is 12, KVM_CREATE_VM returns a descriptor)
 #
 # Run from the repository root. The owned canary (strict checks) and its dry run call this, so the
@@ -139,11 +140,20 @@ check_qemu_fetch() {
     check_pip
 }
 
+# Every group in helpers/apt-packages.txt. None of them is a QEMU: on CI, QEMU is script/ci-qemu's
+# source build of .qemu-version's pin, and the `qemu` check judges that build.
 check_packages() {
-    if ! list=$(helpers/apt-packages.sh); then
-        finding "helpers/apt-packages.sh cannot list the packages"
-        return
-    fi
+    list=
+    # shellcheck disable=SC2013  # a group name is one word, the first field of its line
+    for group in $(awk '!/^#/ && NF > 0 { print $1 }' helpers/apt-packages.txt); do
+        if ! packages=$(helpers/apt-packages.sh "$group"); then
+            finding "helpers/apt-packages.sh cannot list the group $group"
+            return
+        fi
+        list="$list $packages"
+    done
+    # shellcheck disable=SC2086  # word splitting is the point: one package per line
+    list=$(printf '%s\n' $list | awk 'NF > 0 && !seen[$0]++')
     checked=0
     missing=0
     for package in $list; do

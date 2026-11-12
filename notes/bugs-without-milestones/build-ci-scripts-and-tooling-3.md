@@ -4,6 +4,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 
 | Where | Gap | Proposed milestone | Size |
 |---|---|---|---|
+|  crates/driver_process_contract/src/non_volatile_memory_express.rs (`take_completion`) | the completion poll that reads the phase tag before the rest of the entry, so a posting between the reads cannot hand `ioping` on the disk tree a stale submission queue head and `EIO`, lives here and not in `non_volatile_memory_express`, whose pin predates its `is_phase_tag_set` | Move `take_completion` into `non_volatile_memory_express` with the next pin bump | S  |
 |  roadmap 0887 | a gate added to nife is not in the template table; nothing asks "and the template?" | Template drift check for new nife gates | S  |
 |  roadmap 0889 | a gate split can drop a check; no one told a record waits; opt-in per clone; four stale `script/lint` mentions | Fleet-split gaps | M  |
 |  roadmap 0914 | outsider pass "blind to history" is honor only; nothing enforces it | Enforce no-history for outsider passes | M  |

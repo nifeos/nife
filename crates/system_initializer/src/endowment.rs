@@ -189,6 +189,15 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
     pub reboot: u64,
+    /// **The board's PMIC (power management integrated circuit) route** (milestone 1062 (the device control planes leave the kernel),
+    /// step 5; §251, "A board's PMIC route runs in userspace"), `WRITE | GRANT`: an endpoint the
+    /// kernel grants only on a board whose tree names the power controller's bus, and empty on
+    /// every other machine. [`boot`](crate::boot) never calls it. The spawn service keeps it and
+    /// places `WRITE` at [`grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] in the child that holds
+    /// the reboot object, which asks the route before the object.
+    ///
+    /// Name: provisional.
+    pub power_management_chip_route: u64,
     /// **The base digest page** (milestone 695 (the kernel trusts two digests from the loader),
     /// part 1): a `PageFrame` capability with `READ` alone, no `GRANT`, granted on every boot. It
     /// carries the loader's `nife.base` digest in `base_digest_contract`'s layout, and
@@ -198,6 +207,34 @@ pub struct BootEndowment {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3102.
     pub base_digest_page: u64,
+    /// **The kernel's half of the boot self-test** (milestone 1063 (the boot self-test's spawning
+    /// checks run from userspace)): a `PageFrame` capability with `READ | GRANT` to the page
+    /// `boot_ladder::kernel_half` describes, granted on every boot. [`boot`](crate::boot) maps it
+    /// read-only into `boot_self_test` and deletes its own copy once the program's verdict is
+    /// printed.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
+    pub self_test_page: u64,
+    /// The request endpoint of the JH7110 true random number generator (TRNG) service, `WRITE |
+    /// GRANT`, which the `clock` and `trng` checks draw through. **Absent** on every machine but a
+    /// JH7110; [`boot`](crate::boot) probes. Passed to `boot_self_test` and then deleted.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
+    pub self_test_random_number_generator: u64,
+    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the `blockdev`
+    /// check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot) probes. Passed to
+    /// `boot_self_test` and then deleted.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
+    pub self_test_disk: [u64; 3],
+    /// **The kernel's screen endpoint for the self-test verdict**, `WRITE` alone: one message,
+    /// the tally `boot_self_test` sent with its verdict, in `boot_ladder::verdict::Tally::to_packed`'s
+    /// form. The kernel renders the verdict from it and paints it on a screen it still holds.
+    /// Granted on every boot that grants [`self_test_page`](Self::self_test_page);
+    /// [`boot`](crate::boot) sends at most once and then deletes it.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-11 (UTC).
+    pub self_test_screen: u64,
     /// **Capabilities the kernel granted that the interactive system never uses**, deleted before
     /// anything is built. Empty on riscv64; on aarch64 the kernel's report endpoint and a test SGI,
     /// which exist because that boot path is shared with the test roles.

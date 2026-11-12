@@ -102,7 +102,8 @@ dependencies = [
 
 [[package]]
 name = "block_roster_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/block_roster_contract?rev=62630199281cbd294d6621cc35f31f81933e6be2#62630199281cbd294d6621cc35f31f81933e6be2"
 
 [[package]]
 name = "boot_ladder"
@@ -224,6 +225,7 @@ dependencies = [
  "credentialer",
  "current_cpu_contract",
  "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "designware_mobile_storage",
  "disk_tree",
  "documentation",
@@ -246,6 +248,7 @@ dependencies = [
  "http_response",
  "installed_programs",
  "interfaces_note",
+ "jh7110_clock_and_reset_devices",
  "jh7110_entropy",
  "line_editor",
  "login_contract",
@@ -401,9 +404,13 @@ name = "designware_ethernet"
 version = "0.1.0"
 
 [[package]]
-name = "designware_mobile_storage"
+name = "designware_inter_integrated_circuit"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=a800e4b89cf379a85947e473082ebe7f8f933c34#a800e4b89cf379a85947e473082ebe7f8f933c34"
+
+[[package]]
+name = "designware_mobile_storage"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
 
 [[package]]
 name = "device_tree_blob"
@@ -462,6 +469,8 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",
@@ -500,11 +509,8 @@ source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev
 
 [[package]]
 name = "file_allocation_table"
-version = "0.1.0"
-dependencies = [
- "lamfat",
- "ruzstd",
-]
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/file_allocation_table?rev=9b3eac1cdbb19cc6668e3346296c8cee87e32214#9b3eac1cdbb19cc6668e3346296c8cee87e32214"
 
 [[package]]
 name = "filesystem_contract"
@@ -758,6 +764,18 @@ name = "jh7110_clock_and_reset"
 version = "0.1.0"
 
 [[package]]
+name = "jh7110_clock_and_reset_contract"
+version = "0.1.0"
+
+[[package]]
+name = "jh7110_clock_and_reset_devices"
+version = "0.1.0"
+dependencies = [
+ "jh7110_clock_and_reset",
+ "jh7110_clock_and_reset_contract",
+]
+
+[[package]]
 name = "jh7110_entropy"
 version = "0.2.0"
 source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
@@ -794,7 +812,7 @@ dependencies = [
  "cpu_set",
  "credential_contract",
  "current_cpu_contract",
- "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",
@@ -814,6 +832,7 @@ dependencies = [
  "inter_process_communication",
  "intrusive_queue",
  "jh7110_clock_and_reset",
+ "jh7110_clock_and_reset_contract",
  "jh7110_entropy",
  "jh7110_watchdog",
  "job_mix",
@@ -842,16 +861,6 @@ dependencies = [
  "thread_wake_handshake",
  "video_terminal",
  "work_steal_slot",
-]
-
-[[package]]
-name = "lamfat"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7d4340238d6ebca31df00ac672df6615e3250247da0b31dfb8e2851e388fbf1"
-dependencies = [
- "bitflags 2.13.2",
- "log",
 ]
 
 [[package]]
@@ -1199,15 +1208,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
-name = "ruzstd"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e4ce4a039f42bf25920b95667e4d789e98749ab11bbb8d2c2936f788421bb5"
-dependencies = [
- "twox-hash",
-]
-
-[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1439,6 +1439,7 @@ dependencies = [
  "abi",
  "address_space_map",
  "base_digest_contract",
+ "boot_ladder",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",
@@ -1729,12 +1730,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "twox-hash"
-version = "2.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a801b3cea342a06d468c8710662aa29e5e05e4f5c0d62f00bbb7f2ad7941c2"
-
-[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1820,8 +1815,10 @@ name = "virtio"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "driver_process_contract",
  "filesystem_contract",
  "nifefs",
+ "startup_page_contract",
  "user_mode_runtime",
 ]
 
