@@ -10,8 +10,8 @@
 #                                               what script/ci-qemu would decide (build or skip)
 #     helpers/owned-image-probe.sh qemu-fetch   the hosts a cold QEMU build fetches from answer
 #     helpers/owned-image-probe.sh packages     every apt package a CI job installs through script/ci-qemu or
-#                                               script/bootstrap (helpers/apt-packages.txt, all groups but
-#                                               bootstrap-qemu) is already installed
+#                                               script/bootstrap (helpers/apt-packages.txt, every group) is
+#                                               already installed
 #     helpers/owned-image-probe.sh kvm          /dev/kvm can create a VM (KVM_GET_API_VERSION is 12, KVM_CREATE_VM returns a descriptor)
 #
 # Run from the repository root. The owned canary (strict checks) and its dry run call this, so the
@@ -140,16 +140,12 @@ check_qemu_fetch() {
     check_pip
 }
 
-# Every group but bootstrap-qemu. On CI, QEMU is script/ci-qemu's source build of .qemu-version's
-# pin, restored from cache and put on PATH before script/bootstrap runs, and bootstrap installs the
-# bootstrap-qemu group only when qemu-system-aarch64, -riscv64 or -x86_64 is missing from PATH. So no
-# CI job installs that group, and an image that carried it would hold a second, unpinned QEMU in
-# /usr/bin. The `qemu` check, which the dry run calls, judges the pinned build instead.
+# Every group in helpers/apt-packages.txt. None of them is a QEMU: on CI, QEMU is script/ci-qemu's
+# source build of .qemu-version's pin, and the `qemu` check judges that build.
 check_packages() {
     list=
     # shellcheck disable=SC2013  # a group name is one word, the first field of its line
     for group in $(awk '!/^#/ && NF > 0 { print $1 }' helpers/apt-packages.txt); do
-        test "$group" = bootstrap-qemu && continue
         if ! packages=$(helpers/apt-packages.sh "$group"); then
             finding "helpers/apt-packages.sh cannot list the group $group"
             return
