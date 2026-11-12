@@ -61,11 +61,8 @@ outside the kernel and the crates Kani proves, and the calendar is neither.
 
 ## Follow-on
 
-- **Proposed.** Four blocks still name the crate, and each wants its line corrected. Milestone 51
-  (wall-clock time) says the library half is `crates/calendar`. Milestone 1017 (the contract crates
-  leave in this order) lists `calendar` in step 8 and among the contribute crates. Milestone 857
-  (crates released on their own) lists it under fork 8. Milestone 956 (the linked interfaces carry
-  checkable versions) counts it among the crates that stay Rust APIs.
+- **Proposed.** Four blocks still name the crate as present: milestones 51, 857, 956 and 1017.
+  `design/roadmap/proposals/blocks-that-name-the-removed-calendar-crate.md` lists each edit.
 
 ## Index row
 
