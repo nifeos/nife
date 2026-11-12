@@ -449,7 +449,7 @@ impl Handoff {
 }
 
 /// **Take the completion entry the controller posted at the polled slot, reading its phase tag
-/// before the rest of it.** `read_dword(i)` reads dword `i` of the entry and `acquire` orders the
+/// before the rest of it.** `read_double_word(i)` reads dword `i` of the entry and `acquire` orders the
 /// reads before it ahead of those after it; the admin process and the data plane both poll through
 /// this, so they read an entry in one order. `None` while the entry is still last lap's.
 ///
@@ -473,20 +473,20 @@ impl Handoff {
 /// Name: provisional, minted 2026-11-12 (UTC) by lane maintainer/riscv64-nvme-ioping-io-error.
 pub fn take_completion(
     queue: &::non_volatile_memory_express::CompletionQueue,
-    mut read_dword: impl FnMut(usize) -> u32,
+    mut read_double_word: impl FnMut(usize) -> u32,
     acquire: impl FnOnce(),
 ) -> Option<::non_volatile_memory_express::Completion> {
     use ::non_volatile_memory_express::Completion;
-    let dword_three = read_dword(3);
-    if !queue.is_owned(&Completion::from_dwords([0, 0, 0, dword_three])) {
+    let double_word_three = read_double_word(3);
+    if !queue.is_owned(&Completion::from_dwords([0, 0, 0, double_word_three])) {
         return None;
     }
     acquire();
     Some(Completion::from_dwords([
-        read_dword(0),
-        read_dword(1),
-        read_dword(2),
-        dword_three,
+        read_double_word(0),
+        read_double_word(1),
+        read_double_word(2),
+        double_word_three,
     ]))
 }
 
@@ -516,13 +516,13 @@ mod tests {
             let taken = take_completion(
                 &queue,
                 |i| {
-                    let dword = if reads >= posted_after {
+                    let double_word = if reads >= posted_after {
                         posted[i]
                     } else {
                         stale[i]
                     };
                     reads += 1;
-                    dword
+                    double_word
                 },
                 || acquired_at = Some(posted_after),
             );
