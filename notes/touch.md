@@ -91,8 +91,8 @@ lies are plausible.
 `grant_plan`'s parser does not interpret the `-t` operand's text at all; it only recognizes the `-t`
 flag and hands the following token, unparsed, to `TouchOperands::at`. Converting it to Unix seconds
 happens where the grant is made (`Nav::touch` in `components/src/swish/navigation.rs`), using
-`calendar::DateTime::parse_rfc3339_bytes`, the same crate and the same layering `date` itself uses
-for the read side. `date`'s own `FMT_RFC3339` output is therefore a valid `-t` operand:
+`rfc3339_unix_seconds` there, which checks RFC 3339's grammar and hands the date and time of day to
+`jiff`, the crate `date` itself uses for the read side. `date`'s own `FMT_RFC3339` output is therefore a valid `-t` operand:
 `touch -t "$(date ...)" name` round-trips through this shell without either side inventing a
 format.
 
@@ -158,7 +158,7 @@ a real `fs_subtree_caretaker` in front of a real `redoxfs_server`):
 - `TOUCH_MTIME_ADVANCED`: a bare `touch`, typed as a real command line, observes a strictly later
   mtime through `GETMTIME` than the file had before.
 - `TOUCH_AT_ROUND_TRIPPED`: `touch -t 2030-01-01T00:00:00Z`, typed as a real command line the
-  parser has to split into four tokens and `calendar` has to decode, lands on exactly
+  parser has to split into four tokens and `jiff` has to decode, lands on exactly
   `NAV_TOUCH_AT_UNIX` and not the value `TOUCH_MTIME_ADVANCED` just observed. The exact-equality
   check, not merely "later", is what makes this bit mean the caller's assertion moved rather than
   the server's own clock falling back to "now".

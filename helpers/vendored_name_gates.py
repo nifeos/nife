@@ -153,8 +153,6 @@ _CEILING = 'cap is the English word for a limit or a capacity here, not an abbre
 _REGISTER = 'mirrors a register or field a hardware specification named'
 CAP_KEPT = {
     'components/src/printenv.rs': ({'CAP'}, _CEILING),
-    'crates/calendar/src/lib.rs': ({'FMT_CAP'}, _CEILING),
-    'crates/calendar/src/tests.rs': ({'FMT_CAP'}, _CEILING),
     'kernel/src/stack.rs': ({'CAP'}, _CEILING),
     'kernel/src/arch/x86_64/timer.rs': ({'CALIBRATION_WINDOW_CAP'}, _CEILING),
     'redoxfs_server/src/bin/second_mount.rs': ({'cap', 'heap_cap', 'HIT_CAP', 'cap_mebibytes'}, _CEILING),

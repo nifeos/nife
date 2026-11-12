@@ -28,10 +28,6 @@ c_program_fixture readme_acronyms 1
 c_seam abbreviations 16
 c_seam prose_acronyms 3
 c_seam register_names 1
-calendar abbreviations 53
-calendar prose_acronyms 7
-calendar readme_acronyms 2
-calendar register_names 3
 capability abbreviations 11
 capability prose_acronyms 4
 capability_manifest_note abbreviations 45

@@ -1,17 +1,17 @@
 # `date`: printing the time, and refusing to make one up
 
 The command that makes the wall clock visible to a person. Milestone 51's last small piece, and the
-first thing in the tree that puts [the clock service](clock.md) and [the calendar
-crate](calendar.md) in the same process. The program is `components/src/date.rs`; the guest tests are
+first thing in the tree that puts [the clock service](clock.md) and [the date
+crate, `jiff`](calendar.md), in the same process. The program is `components/src/date.rs`; the guest tests are
 `kernel::user::date_tests`.
 
-It is a hundred lines and most of them are comments, which is the point. The design decided
+Most of `components/src/date.rs` is comments, which is the point. The design decided
 everything interesting before the program existed, so what is left is a page read, an add, and a
-call into a crate that was proved on the host.
+call into `jiff`.
 
 ## What it prints
 
-`a0` picks one of `calendar`'s five formats. Zero is `Human`, so a spawn that passes no arguments
+`a0` picks one of five formats, each a `jiff` `strtime` layout. Zero is `Human`, so a spawn that passes no arguments
 at all gets what a person typing `date` wants.
 
 | `a0` | `Format` | output |
