@@ -186,6 +186,31 @@ mod tests {
     fn the_request_carries_reset_in_the_top_byte() {
         assert_eq!(request(RESET), 1 << 56);
         assert_eq!(operation(request(RESET)), RESET);
+        for other in [0, 2, 0x7f, 0xff] {
+            assert_eq!(operation(request(other)), other);
+        }
+    }
+
+    /// The highest chip number and the highest bit are accepted, and the next of each is refused.
+    #[test]
+    fn the_target_accepts_its_limits_and_refuses_one_past_them() {
+        let limit = Target {
+            chip: 0x7f,
+            register: 0xff,
+            bit: 7,
+        };
+        assert_eq!(Target::unpack(limit.pack()), Some(limit));
+        assert_eq!(
+            Target::unpack(
+                Target {
+                    chip: 0x80,
+                    ..limit
+                }
+                .pack()
+            ),
+            None
+        );
+        assert_eq!(Target::unpack(Target { bit: 8, ..limit }.pack()), None);
     }
 
     #[test]

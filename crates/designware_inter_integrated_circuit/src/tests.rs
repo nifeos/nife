@@ -23,6 +23,8 @@ struct Simulated {
     /// Bytes read back, waiting at [`DATA_COMMAND`].
     received: Vec<u8>,
     stopped: bool,
+    /// The status register reads exactly this, whatever the queues hold.
+    status: Option<u32>,
 }
 
 impl Simulated {
@@ -38,6 +40,7 @@ impl Simulated {
             pointer: None,
             received: Vec::new(),
             stopped: false,
+            status: None,
         }
     }
 
@@ -61,6 +64,7 @@ impl Registers for Simulated {
                     self.enabled
                 }
             }
+            STATUS if self.status.is_some() => self.status.unwrap_or(0),
             STATUS => {
                 let mut w = STATUS_TRANSMIT_NOT_FULL | STATUS_TRANSMIT_EMPTY;
                 if !self.received.is_empty() {
@@ -257,4 +261,43 @@ fn the_register_map_is_vendor_u_boots() {
     );
     assert_eq!([ENABLE_STATUS, COMPONENT_TYPE], [0x9c, 0xfc]);
     assert_eq!(COMPONENT_TYPE_DESIGNWARE, 0x4457_0140);
+}
+
+/// Each status bit the sequence waits on is read on its own: with only the other bits set, the
+/// wait runs to its bound and names its own failure.
+#[test]
+fn each_status_bit_is_waited_on_by_itself() {
+    let ready = STATUS_TRANSMIT_NOT_FULL | STATUS_TRANSMIT_EMPTY;
+    let run = |status| {
+        let mut sim = Simulated::new();
+        sim.status = Some(status);
+        controller(sim).read_register(&TIMING, 0x36, 0x32)
+    };
+    assert!(
+        matches!(
+            run(ready | STATUS_MASTER_ACTIVITY),
+            Err(Failure::BusBusy(_))
+        ),
+        "a busy bus"
+    );
+    assert!(
+        matches!(run(STATUS_TRANSMIT_NOT_FULL), Err(Failure::BusBusy(_))),
+        "a transmitter that is not empty"
+    );
+    assert!(
+        matches!(
+            run(STATUS_TRANSMIT_EMPTY),
+            Err(Failure::TransmitterStuck(_))
+        ),
+        "a full transmit queue"
+    );
+    assert!(
+        matches!(run(ready), Err(Failure::ReceiverStuck(_))),
+        "a receive queue that stays empty"
+    );
+    assert_eq!(
+        run(ready | STATUS_RECEIVE_NOT_EMPTY),
+        Ok(0),
+        "the receive bit with the ready bits is enough to read"
+    );
 }
