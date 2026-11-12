@@ -22,7 +22,7 @@ pub const CONTROLLER_VIRTUAL_ADDRESS: u64 = pair_page(0x0061_0000);
 /// [`CONTROLLER_VIRTUAL_ADDRESS`]'s entry on the startup page.
 ///
 /// Name: provisional.
-pub const CONTROLLER_KIND: WindowKind = WindowKind(24);
+pub const CONTROLLER_KIND: WindowKind = WindowKind(26);
 
 /// The slot the route receives its one request on.
 ///
