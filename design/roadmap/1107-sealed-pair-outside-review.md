@@ -12,9 +12,9 @@ needs_person: yes
 Raised by a read-only review of `crates/sealed_pair` as a stranger to this tree would meet it. It
 changes nothing; it lists what the next lanes change. The number is the recording lane's.
 
-The review had no settled baseline to start from: `notes/crate-reviews.md` carries no package for
-this crate, and the only record is `notes/sealed-pair.md` plus the `Name:` block at the head of
-`src/lib.rs`, which marks the crate name provisional and records two refusals (`card_check`,
+The review had no settled baseline to start from. `notes/crate-reviews.md` carries no package for
+this crate. The only record is `notes/sealed-pair.md` plus the `Name:` block at the head of
+`src/lib.rs`. That block marks the crate name provisional and records two refusals (`card_check`,
 `seal`). Nothing below reopens those refusals. Every name in the crate is unratified, so every
 naming item here is a proposal for the architect and not a rename a lane may perform.
 
@@ -35,7 +35,7 @@ The tools run, the sources read and what was not run are in [the appendix](1107-
 
 ## Prior art
 
-The comparison with nearby work is in [the appendix](1107-sealed-pair-outside-review/prior-art.md).
+The comparison with nearby work is in [the appendix](1107-sealed-pair-outside-review/prior-art.md). The tree already recorded one weakness of a check that reads bytes: milestone 563 (A seal check that reads bytes cannot see a check that was dropped).
 
 ## The items
 
@@ -171,7 +171,7 @@ a repository); everything else is two-way and the maintainer decides it.
    Door: two-way. Effort: XS.
 
 9. One British spelling in a public parameter.
-   Finding: `test_support::pair(flavour: &str)`. The naming page spells every name the American
+   Finding: the one parameter of `test_support::pair`, a `&str`, is spelled the British way. The naming page spells every name the American
    way and the template's `british_spelling.py` refuses it at a ceiling of zero, so the template's
    `check` job would be red on the first push. The parameter is public because the module is.
    Evidence: `crates/sealed_pair/src/lib.rs` lines 406 and 410.
@@ -224,7 +224,7 @@ force both of those crates to publish first, and `measured_boot` is in the kerne
 
 Background. Names are the architect's. Two of this crate's public names fail a reading a stranger
 would give them, and a release makes them permanent. One is `THE_BOARD_IS_THE_AUTHORITY` (item 6: a
-sentence, a `THE_` prefix, "board" for "kernel"). The other is the parameter `flavour` (item 9: a
+sentence, a `THE_` prefix, "board" for "kernel"). The other is the parameter of `test_support::pair` (item 9: a
 British spelling the template refuses). Every other name reads as what it is: `inspect`, `Seal`,
 `EntrySeal`, `TableSeal`, `TableDisagreement`, `Vouch`, `Unreadable`, `embedded_archive`,
 `is_sealed`, `kernel_refuses`, `progenitor_refuses`, `hex_string`, `test_support`.

@@ -14,10 +14,10 @@ run on a fresh shallow clone of `main` at `7fc52ac8`. It changes nothing; it lis
 lane and the lanes after it change.
 
 There is no review package for this crate in `notes/crate-reviews/`, so there is no settled
-baseline to take rulings from. The baseline this review took instead: the name `subtree_scope` is
-provisional (its `Name:` block and `script/names subtree_scope` both say so), `Binding::SyncOnly`
-and `Bindings::bind_sync_only` are ratified names, the unknown-badge rule of milestone 726 (an
-unknown badge fails closed in subtree_scope) is a ruling, and the crate leaves at step 9 of
+baseline to take rulings from. The baseline this review took instead has four parts. The name `subtree_scope` is
+provisional (its `Name:` block and `script/names subtree_scope` both say so). `Binding::SyncOnly`
+and `Bindings::bind_sync_only` are ratified names. The unknown-badge rule of milestone 726 (an
+unknown badge fails closed in subtree_scope) is a ruling. The crate leaves at step 9 of
 milestone 1017 (the contract crates leave in this order), after the contract crates it links. None
 of those is reopened here. One ratified-name check: no later rule (units, standard-library
 spellings) contradicts `SyncOnly` or `bind_sync_only`.

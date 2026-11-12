@@ -13,10 +13,10 @@ Raised by a read-only outside review of `crates/spin_lock` as a stranger to this
 it. It changes nothing; it lists what the lanes that move the crate change, and the one question
 only an architect can answer.
 
-The settled baseline this review does not reopen: the rulings recorded in milestone 953 (the
-kernel's lock proves what it takes from `spin`), which ratified the crate name, `SpinLock`,
-`SpinLockGuard`, both `new`, `lock`, `try_lock` and `force_unlock`, chose a test-and-set lock with
-loom-ready atomics over `spin`, and placed `force_unlock` outside the models by construction; and
+The settled baseline this review does not reopen is the rulings recorded in milestone 953 (the
+kernel's lock proves what it takes from `spin`). They ratified the crate name, `SpinLock`,
+`SpinLockGuard`, both `new`, `lock`, `try_lock` and `force_unlock`. They chose a test-and-set lock with
+loom-ready atomics over `spin`. They placed `force_unlock` outside the models by construction. The baseline also holds
 the mutation triage that classes the `pause` survivor as equivalent. No review package exists for
 this crate in `notes/crate-reviews/`, so the baseline is milestone 953's built record and the
 `Name:` blocks in the source. No later rule contradicts a ratified name here: the six public names

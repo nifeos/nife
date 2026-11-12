@@ -16,10 +16,7 @@ lanes change before the crate moves to a repository of its own (milestone 1017 (
 leave in this order), step 5).
 
 The crate has no review package in `notes/crate-reviews/` and no row in `notes/crate-reviews.md`.
-The settled baseline this review takes instead is the layout proposal, milestone 672 (the argument
-page's layout), the interface table of milestone 956 (the linked interfaces carry checkable
-versions), which gives the crate `INTERFACE_ID` 18, and milestone 1017's order, which has the crate
-leave after milestone 994 (the cross-repository pair is tested where the pin is) lands. Both 672 and
+The settled baseline this review takes instead has three parts. The first is the layout proposal, milestone 672 (the argument page's layout). The second is the interface table of milestone 956 (the linked interfaces carry checkable versions), which gives the crate `INTERFACE_ID` 18. The third is milestone 1017's order, which has the crate leave after milestone 994 (the cross-repository pair is tested where the pin is) lands. Both 672 and
 994 are NOT-STARTED. The crate's name is ratified in its own `Name:` block and is not reopened. Every
 other public name in the crate is provisional by the crate's own manifest, and this block proposes
 the ones the template's gates refuse.
@@ -92,8 +89,7 @@ otherwise.
 
 3. The crate's text reaches back into nife.
    Finding: `src/lib.rs` names `notes/foreign-program-arguments.md` (line 20) and
-   `design/roadmap/0672-the-argument-page-layout.md` (line 38), cites decision sections (§170 (how a foreign program is told what to do) at
-   lines 2 and 7, §111 (inert configuration is a read-only page, and each declared key is validated against a closed domain) at line 31) and milestones (205, 326, 956) by number. It carries four `Name:`
+   `design/roadmap/0672-the-argument-page-layout.md` (line 38). It cites decision sections: §170 (how a foreign program is told what to do) at lines 2 and 7, and §111 (inert configuration is a read-only page, and each declared key is validated against a closed domain) at line 31. It also cites milestones (205, 326, 956) by number. It carries four `Name:`
    provenance blocks (lines 35, 59, 68, and the manifest's line 13), and the block at line 35 names
    the architect and quotes the question asked. The template's rules say a crate carries no
    `Name:` block, and `standalone.py` fails on each class: 5 section citation lines, 4 milestone
