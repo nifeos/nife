@@ -37,8 +37,7 @@ mutates, so they reach no mutant and go unscored. 17 mutants are killed by a pro
 
 *Measured 2026-10-06 (UTC), under §216 (fatal-risk facts are correctable, and verdicts are the architect's):* the falsification backlog is done. `unfalsified` fell from
 56 harnesses to 0 across #1697, #1701 and #1713; 227 of 229 carry a record (220 replayable, 7
-attested). One is `unfalsifiable` (§134 (a harness carries a machine-replayable falsification record, or it is not evidence), amended 2026-10-06): `inter_process_communication::signal_preserves_the_invariant` guards against
-`signal` growing an enqueue path and cannot catch a bug in today's code. #1730 recorded two; #1747 overturned the other. `direct_memory_access_validator::a_descriptor_mutated_after_validation_cannot_reach_the_device`
+attested). None is `unfalsifiable` (§134 (a harness carries a machine-replayable falsification record, or it is not evidence), amended 2026-10-06): `inter_process_communication::signal_preserves_the_invariant` carries a patch that replays, a plain increment of the pending count that overflows where the saturating one does not. `direct_memory_access_validator::a_descriptor_mutated_after_validation_cannot_reach_the_device`
 was falsifiable all along: its memory model was a fixed table, so a double fetch (validate one read, copy a second) could not show. A racing-driver model (`ChainMem::racing`) now turns it red under a double-fetch patch. The proof held only because its model of memory was too kind, this risk's failure mode, found by falsification work. A record shows a
 harness *can* go red, not that one *has* after the day it was written. AMBER re-affirmed by calef on
 2026-10-06 (#1730); green needs a standing harness in CI to catch a defect nobody planted, and every

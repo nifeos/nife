@@ -192,24 +192,22 @@ every Kani harness to say what evidence it carries that it can fail. In 2026W40,
 `unfalsified`. Three lanes worked the list down: #1697 (batch 1, merged 2026-10-05), #1701 (batch 2,
 2026-10-06) and #1713 (batch 3, the cover-only and x86_64 harnesses, 2026-10-06). Measured from the
 merged tree by `script/falsifications` on 2026-10-06: 229 harnesses in 33 packages, 220
-`replayable`, 7 `attested`, 2 `unfalsifiable` (1 after #1747, below) and 0 `unfalsified`. So 227 of 229 (99%) carry a
+`replayable`, 7 `attested`, 2 `unfalsifiable` (0 after #1747 and #3522, below) and 0 `unfalsified`. So 227 of 229 (99%) carry a
 falsification record, and 220 (96%) carry one a machine replays.
 
-The two that are left are deliberate, and §134 gained a fourth state for them the same day,
-`unfalsifiable`, which a lint holds to a written reason of at least 200 characters:
+§134 has a fourth state, `unfalsifiable`, which a lint holds to a written reason of at least 200
+characters. No harness carries it. The two that once did are falsifiable:
 
 - `inter_process_communication::signal_preserves_the_invariant` proves "at most one queue is
-  non-empty" over `signal`, which takes no node: its branches pop a receiver or increment a
-  counter, so no mistake in it can enqueue anything. It guards against `signal` growing an enqueue
-  path later. It is not evidence about the code today.
+  non-empty" over `signal`. Its patch replays: a plain increment of the pending count in place of
+  the saturating one fails Kani's overflow check when the count is at `u32::MAX`.
 - `direct_memory_access_validator::a_descriptor_mutated_after_validation_cannot_reach_the_device`
   is falsifiable (#1747). A fixed-table memory model could not show a double fetch;
   `ChainMem::racing` models a racing driver, and a double-fetch patch turns the harness red.
-  `unfalsifiable` stands at 1.
 
 What this does and does not move. It closes the question milestone 191 opened about chaff, whether
-harnesses prove properties nothing could have made false: every harness but two now has a recorded
-defect it catches, and the two say why they have none. It says nothing about either amber reason.
+harnesses prove properties nothing could have made false: every harness has a recorded defect it
+catches. It says nothing about either amber reason.
 A falsification record is made on purpose, by the person writing it, which is the survivorship rule
 1 names: it shows a harness *can* go red, never that one *has* caught a regression nobody planted.
 The nearer evidence is milestone 741 (does a standing proof notice a regression?), a mutation
