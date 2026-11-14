@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -221,6 +221,10 @@ Prior art: the rows of the prior-art table above; `heapless::spsc::Queue` spells
 Concrete example: `let first = ready.pop_front()?; inbox.push_back(first);` reads as the thread
 leaving one queue for another, with the token named nowhere because the types carry it. A name
 that said `dequeue` or `take_front` would read as well but would stop matching `VecDeque`.
+
+## Ledger
+
+What is done and what is left, item by item, is in [the appendix](1097-intrusive-queue-outside-review/ledger.md).
 
 ## Done when
 
