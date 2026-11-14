@@ -157,9 +157,9 @@ intrusive_queue abbreviations 6
 intrusive_queue prose_acronyms 1
 intrusive_queue readme_acronyms 1
 intrusive_queue register_names 1
-jh7110_clock_and_reset abbreviations 79
+jh7110_clock_and_reset abbreviations 59
 jh7110_clock_and_reset prose_acronyms 28
-jh7110_clock_and_reset register_names 8
+jh7110_clock_and_reset register_names 5
 jh7110_clock_and_reset_contract abbreviations 1
 jh7110_clock_and_reset_devices abbreviations 1
 jh7110_watchdog abbreviations 15
