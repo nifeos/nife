@@ -15,6 +15,8 @@ use crate::output::Sink;
 #[cfg(not(kani))]
 pub const LINE_MAXIMUM: usize = 256;
 /// The proofs run over a line of 16 bytes: the solver cannot finish a symbolic move inside 256.
+///
+/// Name: ratified 2026-10-27 (#2797), the same item as the build's limit above.
 #[cfg(kani)]
 pub const LINE_MAXIMUM: usize = 16;
 /// How many history entries the ring holds.

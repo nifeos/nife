@@ -1,11 +1,11 @@
 # Ledger
 
-An appendix to [the milestone](../1098-line-editor-outside-review.md). Each item is DONE with the
-test or harness that holds it, or LEFT with the reason.
+An appendix to [the milestone](../1098-line-editor-outside-review.md). A DONE row names the test or harness that holds the item, and a LEFT row
+names the reason it waits.
 
 | item | state | where |
 |---|---|---|
-| 1 stand-alone text and manifest | LEFT | the move commit's work (manifest rows, licenses, citations); `crates/line_editor/README.md` is written in the stranger's terms already |
+| 1 stand-alone text and manifest | LEFT | the move commit's work (manifest rows, licenses, citations); `crates/line_editor/README.md` already speaks in the stranger's terms |
 | 2 cut `proto` and `component` | LEFT | decision 1 (where the cut falls) |
 | 3 public names | LEFT | decisions 2 and 3 (`LineEditor`, `HISTORY_LINES`, the three limits) |
 | 4 gate spellings, `proto` and `component` | LEFT | they belong to the contract crate after the cut; the engine's private fields and parameters land with item 3's renames |

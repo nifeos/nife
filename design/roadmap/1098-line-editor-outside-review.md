@@ -161,6 +161,13 @@ or identity, a dependency); everything else is two-way and the maintainer decide
 
 The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.md).
 
+## Follow-on
+
+- **Outstanding.** Items 1 to 4: the move commit's manifest and license work, the cut of `proto`
+  and `component` (Decision 1), the public names (Decisions 2 and 3) and the gate spellings that
+  follow the cut. The ledger names each with its reason. Checked by reading the ledger rows
+  against the crate after the commit that built the done items.
+
 ## Decisions for the architect
 
 Only one-way doors. Each gives the background first, then the recommendation.
@@ -229,7 +236,7 @@ sees it is bytes, not columns, which the one-row `BUGS` entry makes a live disti
 
 ## Done when
 
-The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). What is done and what is left, item by item, is in [the ledger](1098-line-editor-outside-review/ledger.md).
+The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). [The ledger](1098-line-editor-outside-review/ledger.md) says, item by item, what is done and what waits.
 
 ## BUGS
 

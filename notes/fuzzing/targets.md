@@ -146,9 +146,9 @@ inside the line and the line inside `LINE_MAXIMUM`, and no echo write is empty o
 prompt and a line. Two Kani harnesses cover the escape parser and the range delete for every input;
 this target covers the whole state machine, history and yank included.
 
-`line_editor_handoff` hands arbitrary bytes to the replacement editor's reader. A blob is refused or
-restored to a state whose cursor is inside its line, and that state saves and restores again to the
-same line. A restored raw queue never drains more than it holds. The target has no seeds yet: the
+`line_editor_handoff` hands arbitrary bytes to the replacement editor's reader. The reader refuses a
+blob or restores a state whose cursor is inside its line, and that state saves and restores again
+to the same line. A restored raw queue never drains more than it holds. The target has no seeds yet: the
 two layouts are short, and the header check passes within a few thousand inputs.
 
 ## `nifefs_roundtrip` and `package_archive_roundtrip`
