@@ -50,8 +50,8 @@ use extensible_host_controller_interface::{
     Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
     TransferRequestBlockPlacement, completion, context, direct_memory_access, port, registers,
 };
-use line_editor::proto;
 use startup_page_contract::StartupWindow;
+use terminal_contract as proto;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;

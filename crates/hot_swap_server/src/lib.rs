@@ -179,7 +179,7 @@ pub fn serve_with_state(
                 }
                 // BUGS: as in `serve`, the quiesce arrives on `SVC`, which every client holds
                 // `WRITE` on, so any client can evict this instance. Closing it is a badge the
-                // operator quiesces through, `line_editor::proto::SUPERVISOR_BADGE`'s shape.
+                // operator quiesces through, `terminal_contract::SUPERVISOR_BADGE`'s shape.
                 OPERATION_QUIESCE => {
                     write_state(state_blob(layout, tally));
                     user_mode_runtime::send(RPT, RPT_QUIESCED, version, tally);

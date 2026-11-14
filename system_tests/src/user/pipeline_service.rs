@@ -326,8 +326,8 @@ pub fn transcript(w: &Wiring, sentinel: &[u8], out: &mut [u8]) -> usize {
         else {
             panic!("the shell sent the terminal something that was not a CALL");
         };
-        let n = line_editor::proto::len(w0);
-        if line_editor::proto::operation(w0) == line_editor::proto::OPERATION_WRITE {
+        let n = terminal_contract::len(w0);
+        if terminal_contract::operation(w0) == terminal_contract::OPERATION_WRITE {
             let mut buf = TRANSCRIPT.lock();
             let at = WRITTEN.load(Ordering::SeqCst);
             let n = n.min(buf.len().saturating_sub(at));

@@ -406,7 +406,7 @@ fn a_destroyed_sink_ends_the_writer_and_an_absent_one_does_not() {
 /// `CALL`, so a child handed it as output would hold the keyboard. Its sink is a separate endpoint
 /// served by `terminal_sink_caretaker`, holding the sink `READ` and a terminal endpoint `WRITE`;
 /// the kernel serves the terminal contract on the far side here, so the transcript is asserted byte
-/// for byte through a real adapter speaking `line_editor::proto::OPERATION_PRINT`. The writer holds
+/// for byte through a real adapter speaking `terminal_contract::OPERATION_PRINT`. The writer holds
 /// one capability, to the adapter, so it cannot read a line. See notes/sink-protocol.md, "The
 /// terminal's sink adapter, and the wall it hit".
 #[test_case]
@@ -461,11 +461,11 @@ fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
             panic!("the adapter sent the terminal something that was not a CALL");
         };
         assert_eq!(
-            line_editor::proto::operation(w0),
-            line_editor::proto::OPERATION_PRINT,
+            terminal_contract::operation(w0),
+            terminal_contract::OPERATION_PRINT,
             "the adapter sent the terminal something other than a print",
         );
-        let len = line_editor::proto::len(w0).min(8);
+        let len = terminal_contract::len(w0).min(8);
         let bytes = w1.to_le_bytes();
         for &b in &bytes[..len] {
             assert!(

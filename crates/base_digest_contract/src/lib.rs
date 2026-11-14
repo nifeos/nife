@@ -58,15 +58,15 @@ pub const DIGEST_BYTES: usize = 32;
 /// Name: ratified 2026-11-03 (UTC), #3102.
 pub type Digest = [u8; DIGEST_BYTES];
 
-const OFF_MAGIC: usize = 0;
-const OFF_DIGEST: usize = OFF_MAGIC + MAGIC.len();
+const MAGIC_OFFSET_BYTES: usize = 0;
+const DIGEST_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + MAGIC.len();
 
 /// **The size of the page's content** in bytes: the magic, then the digest. This is not a page
 /// size. The page is one whole frame, and this is how much of it carries data; the rest is zeroes.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3102. The
 /// page-crate family's name for the content length (design/naming/crates.md).
-pub const PAGE_CONTENT_BYTES: usize = OFF_DIGEST + DIGEST_BYTES;
+pub const PAGE_CONTENT_BYTES: usize = DIGEST_OFFSET_BYTES + DIGEST_BYTES;
 
 /// **Build a base digest page's content** for `digest`. The writer copies the result into a zeroed
 /// frame before any reader can map it; nothing else constructs one.
@@ -84,8 +84,8 @@ pub const PAGE_CONTENT_BYTES: usize = OFF_DIGEST + DIGEST_BYTES;
 /// `counter_frequency_contract`'s name for the same function.
 pub fn build_page(digest: &Digest) -> [u8; PAGE_CONTENT_BYTES] {
     let mut page = [0u8; PAGE_CONTENT_BYTES];
-    page[OFF_MAGIC..OFF_DIGEST].copy_from_slice(&MAGIC);
-    page[OFF_DIGEST..PAGE_CONTENT_BYTES].copy_from_slice(digest);
+    page[MAGIC_OFFSET_BYTES..DIGEST_OFFSET_BYTES].copy_from_slice(&MAGIC);
+    page[DIGEST_OFFSET_BYTES..PAGE_CONTENT_BYTES].copy_from_slice(digest);
     page
 }
 
@@ -181,7 +181,7 @@ pub fn read_page(bytes: &[u8]) -> Result<Digest, Refused> {
             length: bytes.len(),
         });
     };
-    let (magic, rest) = content.split_at(OFF_DIGEST);
+    let (magic, rest) = content.split_at(DIGEST_OFFSET_BYTES);
     let version_at = MAGIC.len() - 1;
     if magic[..version_at] != MAGIC[..version_at] {
         return Err(Refused::NotThisPage);
@@ -298,7 +298,7 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_is_the_magic_then_the_digest() {
-        assert_eq!(OFF_DIGEST, 8);
+        assert_eq!(DIGEST_OFFSET_BYTES, 8);
         assert_eq!(PAGE_CONTENT_BYTES, 40);
         assert!(PAGE_CONTENT_BYTES < 4096, "the page must fit in one frame");
         assert_eq!(MAGIC[7], b'0' + VERSION as u8);

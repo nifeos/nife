@@ -6,7 +6,7 @@
 //! compositor, and that mapping is its power to type (DECISIONS §33 (the compositor's authority is
 //! memory, not messages)): the doorbell it rings is content-free, and focus is the compositor's
 //! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
-//! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
+//! to `line_editor` and sends the UART driver's [`terminal_contract::OPERATION_BYTES`] framing:
 //! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
 
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
@@ -31,7 +31,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};

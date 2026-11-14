@@ -846,7 +846,7 @@ mod riscv_virtio_tests;
 /// One module for both ISAs (DECISIONS §19). It wires the **real shell binary**, reading a script
 /// instead of a keyboard, with the interactive endowment (a terminal, a spawn channel, a result
 /// channel and a budget), and the kernel plays the other ends. The test serves
-/// `line_editor::proto::OPERATION_WRITE` and collects every byte the shell prints, so assertions
+/// `terminal_contract::OPERATION_WRITE` and collects every byte the shell prints, so assertions
 /// are against what a person would see. A second thread serves `program_table::spawnproto` as the
 /// progenitor does, building each stage with the delegated sink and source: the same protocol, not
 /// the same code (notes/pipes.md's BUGS).

@@ -29,7 +29,7 @@ calendar	userspace	retired
 canary_gate	kernel	retired
 capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
-capability_plan	shared	components,fixtures,kernel
+capability_plan	userspace	components,fixtures
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
@@ -117,7 +117,8 @@ jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
 job_mix	shared	fixtures,kernel
-line_editor	shared	components,fixtures,kernel
+line_editor	userspace	components
+line_editor_component	userspace	components,fixtures
 loaded_image_check	userspace	fixtures
 login_contract	shared	components,fixtures,kernel
 login_proto	shared	retired
@@ -188,6 +189,7 @@ system_log	userspace	components
 system_log_contract	shared	components,kernel
 system_log_protocol	shared	retired
 system_manifest	host	-
+terminal_contract	shared	components,fixtures,kernel
 test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel
 timebase_proto	shared	retired

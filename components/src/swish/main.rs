@@ -46,9 +46,9 @@ use grant_plan::{
     Action, Command, DirectoryGrant as GrantDir, Endowment, Escalation, ParsedInvocation, Refusal,
     Streams, TouchOperands,
 };
-use line_editor::proto;
 use program_table::{Program, job_page_frame, spawnproto};
 use swish::{Route, Say, Status, Untimed, sequence};
+use terminal_contract as proto;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
     call, capability_delete, cntfrq, destroy_memory_region, exit, monotonic_nanoseconds, now, reap,

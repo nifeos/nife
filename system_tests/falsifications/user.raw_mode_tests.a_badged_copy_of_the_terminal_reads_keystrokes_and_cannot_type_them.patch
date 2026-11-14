@@ -1,7 +1,7 @@
 Falsifies `system_tests::user::raw_mode_tests::a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them`.
 
 Architecture: all three (the change is in a userspace component, `components/src/line_editor.rs`,
-built for every ISA from one source; the table it reads is `crates/line_editor/src/proto.rs`'s
+built for every ISA from one source; the table it reads is `crates/terminal_contract/src/lib.rs`'s
 `admits`).
 
 The defect this restores is the one milestone 709 closes: the boot line discipline served every
@@ -25,14 +25,14 @@ lines removed. Replayed red on aarch64 the same day, at the same first assertion
 (`raw_mode_tests.rs:449`).
 
 **Re-cut 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only**, when the serve
-loop's allowlist moved into `line_editor::proto::admits` so `line_editor` and its host tests read
+loop's allowlist moved into `terminal_contract::admits` so `line_editor` and its host tests read
 one table. Same defect, `RAW_ONLY_BADGE => true` there. Replayed red on aarch64 the same day, at
 the same first assertion (`raw_mode_tests.rs:449`).
 
-diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
+diff --git a/crates/terminal_contract/src/lib.rs b/crates/terminal_contract/src/lib.rs
 index 44da33940..6e75276c9 100644
---- a/crates/line_editor/src/proto.rs
-+++ b/crates/line_editor/src/proto.rs
+--- a/crates/terminal_contract/src/lib.rs
++++ b/crates/terminal_contract/src/lib.rs
 @@ -201,7 +201,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
                  | OPERATION_RAWMODE
                  | OPERATION_READRAW

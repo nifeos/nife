@@ -27,7 +27,7 @@ pub(super) fn term_print(out: u64, ep: crate::sched::RendezvousId, text: &[u8]) 
     // already order it; this fence is kept for a terminal that polls instead of blocking. See
     // notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
-    let w0 = line_editor::proto::req(line_editor::proto::OPERATION_WRITE, text.len() as u64);
+    let w0 = terminal_contract::req(terminal_contract::OPERATION_WRITE, text.len() as u64);
     let r = crate::sched::ipc_call(ep, [w0, 0]);
     assert_eq!(
         r[0],

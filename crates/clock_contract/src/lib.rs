@@ -242,8 +242,16 @@ impl ClockPage {
         unsafe { &*self.base.add(i) }
     }
 
-    /// Stamp a fresh frame as a clock page in the unknown state. The writer does this once, before
-    /// anyone else has a mapping, so it needs no sequence claim.
+    /// Stamp a fresh frame as a clock page in the unknown state. The writer does this at start,
+    /// before anyone else has a mapping on a fresh frame, so it needs no sequence claim.
+    ///
+    /// **Calling it again is safe, and changes nothing a reader has seen.** A frame that already
+    /// carries the magic is a page a previous run of the writer stamped, and readers may already
+    /// map it, so it is left as it is: the state, the offset and the generation carry on, and a
+    /// reader comparing `generation` across a restart never sees it go backward. The one exception
+    /// is a sequence left odd by a writer that stopped mid-publish, which readers and the next
+    /// `publish` would spin on forever: the only writer is this one, so it releases the claim by
+    /// moving the sequence forward to the next even value.
     ///
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
@@ -252,6 +260,20 @@ impl ClockPage {
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
+        // A compare-exchange of the magic for itself rather than a load: it answers the same
+        // question (is the magic already there?) and writes nothing new. A lone load here left the
+        // loom model of the first initialize with a single interleaving to check.
+        if self
+            .word(W_MAGIC)
+            .compare_exchange(MAGIC, MAGIC, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+        {
+            let sequence = self.word(W_SEQ).load(Ordering::Relaxed);
+            if sequence & 1 != 0 {
+                self.word(W_SEQ).store(sequence + 1, Ordering::Release);
+            }
+            return;
+        }
         self.word(W_SEQ).store(0, Ordering::Relaxed);
         self.word(W_STATE).store(state::UNKNOWN, Ordering::Relaxed);
         self.word(W_OFFSET).store(0, Ordering::Relaxed);
@@ -709,6 +731,55 @@ mod tests {
         });
     }
 
+    /// A restarted writer calls `initialize` on a frame readers already map. The page must keep what
+    /// it holds: the state, the offset and above all the generation, which a reader compares across
+    /// time and which must never go backward.
+    #[test]
+    fn initializing_a_page_again_keeps_what_was_published() {
+        let frame = [const { AtomicU64::new(0) }; WORDS];
+        with_page(&frame, |page| {
+            page.initialize();
+            page.publish(state::RTC, 7);
+            let second = page.publish(state::SYNCED, 9);
+            let before = page.read();
+            assert_eq!(before.generation, second);
+            let sequence = frame[W_SEQ].load(Ordering::Relaxed);
+
+            page.initialize();
+            // The raw word first: a sequence turned odd here would make the read below spin.
+            assert_eq!(
+                frame[W_SEQ].load(Ordering::Relaxed),
+                sequence,
+                "a restart leaves a released sequence where it was"
+            );
+            assert_eq!(page.read(), before, "a restart leaves the page as it was");
+            assert_eq!(
+                page.publish(state::RTC, 11),
+                second + 1,
+                "and the count carries on from where it was"
+            );
+        });
+    }
+
+    /// A writer that stopped between claiming the sequence and releasing it leaves an odd one, which
+    /// readers spin on and no later writer can claim past. The restarted writer is the only one,
+    /// so `initialize` releases it: the sequence moves forward, never back.
+    #[test]
+    fn initializing_a_page_with_an_abandoned_claim_releases_it_forward() {
+        let frame = [const { AtomicU64::new(0) }; WORDS];
+        with_page(&frame, |page| {
+            page.initialize();
+            page.publish(state::RTC, 7);
+            let before = frame[W_SEQ].load(Ordering::Relaxed);
+            frame[W_SEQ].store(before + 1, Ordering::Relaxed); // the claim, never released
+
+            page.initialize();
+            let after = frame[W_SEQ].load(Ordering::Relaxed);
+            assert_eq!(after, before + 2);
+            assert!(page.read().generation > before / 2);
+        });
+    }
+
     #[test]
     fn a_published_page_reads_back_and_counts_generations() {
         let frame = [const { AtomicU64::new(0) }; WORDS];
@@ -865,6 +936,33 @@ mod interleavings {
                 "vacuous harness: no execution ever reached {what}, so nothing was checked"
             );
         }
+    }
+
+    /// **A restarted writer's `initialize` is invisible to a reader.** The page already holds a
+    /// publish and readers already map it; the writer starts again and initializes the same frame
+    /// while a reader reads. Every reading is the publish, whole, and never the unknown state a
+    /// fresh stamp would show.
+    #[test]
+    fn a_restarted_initialize_never_shows_a_reader_a_reset_page() {
+        loom::model(|| {
+            let page = page();
+            page.initialize();
+            page.publish(state::RTC, 1_000);
+
+            let restarted = {
+                let p = page;
+                thread::spawn(move || p.initialize())
+            };
+
+            let r = page.read();
+            assert_eq!(
+                (r.state, r.offset_nanos, r.generation),
+                (state::RTC, 1_000, 1),
+                "a reader saw the page reset by a restart"
+            );
+
+            restarted.join().unwrap();
+        });
     }
 
     /// **The seqlock's whole reason to exist: a reader never sees half a publish.**

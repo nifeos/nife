@@ -780,6 +780,10 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # the byte order, host-tested there because this program has no harness of its own.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+# The terminal contract's two halves: the wire words every terminal, client and driver speak, and
+# what `terminal_supervisor` routes to a `line_editor` it can replace.
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
 network_time_protocol = { version = "0.1.0", path = "../crates/network_time_protocol" }
 documentation = { version = "0.1.0", path = "../crates/documentation" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }

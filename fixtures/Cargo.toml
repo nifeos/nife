@@ -673,7 +673,7 @@ capability_manifest_note = { version = "0.1.0", path = "../crates/capability_man
 filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
 filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule

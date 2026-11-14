@@ -1876,10 +1876,6 @@ crates/domain_name_resolution_contract/src/wire.rs::NO_SOCKET_PAGE
 
 crates/domain_name_resolution_contract/src/wire.rs::NO_SUCH_NAME
 
-crates/domain_name_resolution_contract/src/wire.rs::OFF_ADDRESSES
-
-crates/domain_name_resolution_contract/src/wire.rs::OFF_NAME
-
 crates/domain_name_resolution_contract/src/wire.rs::OK
 
 crates/domain_name_resolution_contract/src/wire.rs::OPEN
@@ -4235,48 +4231,6 @@ crates/job_mix/src/lib.rs::order
 
 crates/job_mix/src/lib.rs::spread
 
-crates/line_editor/src/component.rs
-
-crates/line_editor/src/component.rs::BUDGET
-
-crates/line_editor/src/component.rs::BUDGET_PAGES
-
-crates/line_editor/src/component.rs::CLIENT_IN
-
-crates/line_editor/src/component.rs::CLIENT_OUT
-
-crates/line_editor/src/component.rs::CONSOLE
-
-crates/line_editor/src/component.rs::DISPLAY
-
-crates/line_editor/src/component.rs::ELF_VA
-
-crates/line_editor/src/component.rs::HANDOFF_PAGES
-
-crates/line_editor/src/component.rs::HANDOFF_VA
-
-crates/line_editor/src/component.rs::INSTANCE_PAGES
-
-crates/line_editor/src/component.rs::ROLLED_BACK
-
-crates/line_editor/src/component.rs::SINK
-
-crates/line_editor/src/component.rs::SINK_PAGE
-
-crates/line_editor/src/component.rs::SINK_REPLY
-
-crates/line_editor/src/component.rs::STACK_PAGES
-
-crates/line_editor/src/component.rs::STOP
-
-crates/line_editor/src/component.rs::STOPPED
-
-crates/line_editor/src/component.rs::SWAP
-
-crates/line_editor/src/component.rs::SWAPPED
-
-crates/line_editor/src/component.rs::TERMINAL
-
 crates/line_editor/src/handoff.rs
 
 crates/line_editor/src/handoff.rs::LAYOUT
@@ -4349,50 +4303,6 @@ crates/line_editor/src/output.rs::expand_output
 
 crates/line_editor/src/output/tests.rs
 
-crates/line_editor/src/proto.rs
-
-crates/line_editor/src/proto.rs::BAD_REQUEST
-
-crates/line_editor/src/proto.rs::CTL_QUIT
-
-crates/line_editor/src/proto.rs::CTL_RESUME
-
-crates/line_editor/src/proto.rs::FLAG_EOF
-
-crates/line_editor/src/proto.rs::FLAG_INTERRUPTED
-
-crates/line_editor/src/proto.rs::NOTE_ABSORBED
-
-crates/line_editor/src/proto.rs::OPERATION_BYTES
-
-crates/line_editor/src/proto.rs::OPERATION_INTRCOUNT
-
-crates/line_editor/src/proto.rs::OPERATION_PRINT
-
-crates/line_editor/src/proto.rs::OPERATION_RAWMODE
-
-crates/line_editor/src/proto.rs::OPERATION_READLINE
-
-crates/line_editor/src/proto.rs::OPERATION_READRAW
-
-crates/line_editor/src/proto.rs::OPERATION_SHIFT
-
-crates/line_editor/src/proto.rs::OPERATION_WRITE
-
-crates/line_editor/src/proto.rs::QUIESCED
-
-crates/line_editor/src/proto.rs::START_ABSORB
-
-crates/line_editor/src/proto.rs::is_retry
-
-crates/line_editor/src/proto.rs::len
-
-crates/line_editor/src/proto.rs::operation
-
-crates/line_editor/src/proto.rs::req
-
-crates/line_editor/src/proto/tests.rs
-
 crates/line_editor/src/raw_queue.rs::RawQueue
 
 crates/line_editor/src/raw_queue.rs::is_empty
@@ -4404,6 +4314,47 @@ crates/line_editor/src/raw_queue.rs::pop8
 crates/line_editor/src/raw_queue.rs::push
 
 crates/line_editor/src/raw_queue/tests.rs
+
+
+crates/line_editor_component/src/lib.rs::BUDGET
+
+crates/line_editor_component/src/lib.rs::BUDGET_PAGES
+
+crates/line_editor_component/src/lib.rs::CLIENT_IN
+
+crates/line_editor_component/src/lib.rs::CLIENT_OUT
+
+crates/line_editor_component/src/lib.rs::CONSOLE
+
+crates/line_editor_component/src/lib.rs::DISPLAY
+
+crates/line_editor_component/src/lib.rs::ELF_VA
+
+crates/line_editor_component/src/lib.rs::HANDOFF_PAGES
+
+crates/line_editor_component/src/lib.rs::HANDOFF_VA
+
+crates/line_editor_component/src/lib.rs::INSTANCE_PAGES
+
+crates/line_editor_component/src/lib.rs::ROLLED_BACK
+
+crates/line_editor_component/src/lib.rs::SINK
+
+crates/line_editor_component/src/lib.rs::SINK_PAGE
+
+crates/line_editor_component/src/lib.rs::SINK_REPLY
+
+crates/line_editor_component/src/lib.rs::STACK_PAGES
+
+crates/line_editor_component/src/lib.rs::STOP
+
+crates/line_editor_component/src/lib.rs::STOPPED
+
+crates/line_editor_component/src/lib.rs::SWAP
+
+crates/line_editor_component/src/lib.rs::SWAPPED
+
+crates/line_editor_component/src/lib.rs::TERMINAL
 
 crates/loaded_image_check/src/lib.rs::verify
 
@@ -6310,14 +6261,6 @@ crates/socket_contract/src/lib.rs::NO_LISTEN_GRANT
 
 crates/socket_contract/src/lib.rs::NO_NAMESERVER
 
-crates/socket_contract/src/lib.rs::OFF_DST_IP
-
-crates/socket_contract/src/lib.rs::OFF_DST_PORT
-
-crates/socket_contract/src/lib.rs::OFF_LEN
-
-crates/socket_contract/src/lib.rs::OFF_PAYLOAD
-
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 
 crates/socket_contract/src/lib.rs::OPERATION_ATTACH_PAGE_FRAME
@@ -7065,6 +7008,49 @@ crates/system_log_contract/src/lib.rs::set
 crates/system_log_contract/src/lib.rs::word
 
 crates/system_log_contract/src/lib.rs::wrote
+
+
+crates/terminal_contract/src/lib.rs::BAD_REQUEST
+
+crates/terminal_contract/src/lib.rs::CTL_QUIT
+
+crates/terminal_contract/src/lib.rs::CTL_RESUME
+
+crates/terminal_contract/src/lib.rs::FLAG_EOF
+
+crates/terminal_contract/src/lib.rs::FLAG_INTERRUPTED
+
+crates/terminal_contract/src/lib.rs::NOTE_ABSORBED
+
+crates/terminal_contract/src/lib.rs::OPERATION_BYTES
+
+crates/terminal_contract/src/lib.rs::OPERATION_INTRCOUNT
+
+crates/terminal_contract/src/lib.rs::OPERATION_PRINT
+
+crates/terminal_contract/src/lib.rs::OPERATION_RAWMODE
+
+crates/terminal_contract/src/lib.rs::OPERATION_READLINE
+
+crates/terminal_contract/src/lib.rs::OPERATION_READRAW
+
+crates/terminal_contract/src/lib.rs::OPERATION_SHIFT
+
+crates/terminal_contract/src/lib.rs::OPERATION_WRITE
+
+crates/terminal_contract/src/lib.rs::QUIESCED
+
+crates/terminal_contract/src/lib.rs::START_ABSORB
+
+crates/terminal_contract/src/lib.rs::is_retry
+
+crates/terminal_contract/src/lib.rs::len
+
+crates/terminal_contract/src/lib.rs::operation
+
+crates/terminal_contract/src/lib.rs::req
+
+crates/terminal_contract/src/tests.rs
 
 crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECONDS
 

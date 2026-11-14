@@ -95,15 +95,37 @@ impl MemoryRegionHeap {
     /// `[base, base + maximum_bytes)`. Call once, before the first allocation, first thing in
     /// `_start`. `base` must be page-aligned and inside the user half.
     ///
+    /// **Only the first call wires the heap.** A later call changes nothing, because rewiring a heap
+    /// that may already hold allocations would leave its allocator owning pages the new base never
+    /// mapped, and a later allocation could be handed memory in that hole. A caller that wants to
+    /// know asks [`is_initialized`](Self::is_initialized) first.
+    ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();
+        if Self::wired(inner) {
+            return;
+        }
         inner.memory_region_slot = memory_region_slot;
         inner.base = base;
         inner.committed = 0;
         inner.maximum = maximum_bytes & !(PAGE - 1);
+    }
+
+    /// Whether [`initialize`](Self::initialize) has run, so that a further call would change
+    /// nothing.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by maintainer/review-hostile-input-fixes.
+    pub fn is_initialized(&self) -> bool {
+        let mut g = self.lock();
+        Self::wired(g.inner())
+    }
+
+    /// Whether the heap has been wired to a budget, or has already taken pages from one.
+    fn wired(inner: &Inner) -> bool {
+        inner.memory_region_slot != u64::MAX || inner.heap_end.is_some() || inner.committed > 0
     }
 
     /// **Map the whole capped range now**, rather than on the first allocations that need it.
@@ -193,8 +215,10 @@ impl MemoryRegionHeap {
             };
         }
         // Only a fresh contiguous run at least as big as the request guarantees the retry
-        // succeeds; anything less and the honest answer is allocation failure.
-        got >= need_pages
+        // succeeds; anything less and the honest answer is allocation failure. A run of no pages
+        // is never a success, even for a request that needed none: the caller retries after a
+        // `true`, and a retry after nothing changed would ask the same question forever.
+        got > 0 && got >= need_pages
     }
 }
 
@@ -285,5 +309,63 @@ unsafe impl GlobalAlloc for MemoryRegionHeap {
             }
             new_ptr
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate std;
+
+    use super::*;
+
+    /// A heap wired to a slot, a base and a cap, with every page of the cap already committed, so
+    /// the next `grow` is at the cap and issues no syscall.
+    fn heap_at_its_maximum() -> MemoryRegionHeap {
+        let heap = MemoryRegionHeap::new();
+        heap.initialize(3, DEFAULT_BASE, 16 * PAGE);
+        let mut g = heap.lock();
+        g.inner().committed = 16 * PAGE;
+        drop(g);
+        heap
+    }
+
+    /// Only the first `initialize` wires the heap. A second call, before or after allocations,
+    /// changes neither the base nor the cap nor what is committed.
+    #[test]
+    fn a_second_initialize_changes_nothing() {
+        let heap = MemoryRegionHeap::new();
+        assert!(!heap.is_initialized());
+        heap.initialize(3, DEFAULT_BASE, 16 * PAGE);
+        assert!(heap.is_initialized());
+        heap.initialize(4, DEFAULT_BASE + 64 * PAGE, 8 * PAGE);
+
+        let mut g = heap.lock();
+        let inner = g.inner();
+        assert_eq!(
+            (inner.memory_region_slot, inner.base, inner.maximum),
+            (3, DEFAULT_BASE, 16 * PAGE)
+        );
+        inner.committed = 4 * PAGE; // as after a grow
+        drop(g);
+
+        heap.initialize(3, DEFAULT_BASE + 64 * PAGE, 16 * PAGE);
+        assert_eq!(
+            heap.committed_bytes(),
+            4 * PAGE,
+            "a repeated call does not reset it"
+        );
+    }
+
+    /// A request for zero bytes at the cap maps nothing, so it cannot have grown the heap, and
+    /// `grow` must not claim it did: `alloc` retries after a `true`, and a retry that changes
+    /// nothing would loop forever.
+    #[test]
+    fn a_grow_of_nothing_at_the_maximum_is_a_refusal() {
+        let heap = heap_at_its_maximum();
+        let mut g = heap.lock();
+        let inner = g.inner();
+        assert!(!MemoryRegionHeap::grow(inner, 0));
+        // The control: a real request past the cap is refused too, as before.
+        assert!(!MemoryRegionHeap::grow(inner, PAGE));
     }
 }

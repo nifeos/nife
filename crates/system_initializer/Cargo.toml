@@ -39,7 +39,9 @@ interfaces_note = { version = "0.1.0", path = "../interfaces_note" }
 # nothing with it (filesystem_contract has no non-dev dependencies of its own).
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The terminal contract's framing, for the one sentence init prints (`proto::OPERATION_WRITE`).
-line_editor = { version = "0.1.0", path = "../line_editor" }
+terminal_contract = { version = "0.1.0", path = "../terminal_contract" }
+# The slot order `terminal_supervisor` is endowed in, which init builds it with.
+line_editor_component = { version = "0.1.0", path = "../line_editor_component" }
 # The hash and the manifest format the kernel measures init with (milestone 104). This crate is the
 # next link: it reads the same shape of table out of the archive and applies it to what IT loads.
 measured_boot = { version = "0.1.0", path = "../measured_boot" }

@@ -62,7 +62,6 @@ pub use layout::{
     CHILD_STACK_PAGES, GRANT_MACHINE_PAGE, IMAGE_POOL_PAGES, JOBS_BUDGET_PAGES,
     PROGENITOR_RESERVED_PAGES, SHELL_STACK_PAGES,
 };
-use line_editor::proto;
 use measurement::*;
 use process_builder::{
     build_child, forget_thread_control_block, hand_to_requester, retype_into_kernel_object_from,
@@ -75,6 +74,7 @@ use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};
 // The tree's only loader, named here rather than qualified at every call.
 use supervision_contract::{ChildEndowment, Retention};
+use terminal_contract as proto;
 use user_mode_runtime::{
     address_space_map_into, call, capability_delete, is_granted, map_page_frame, receive,
     receive_badged, receive_capability_badged, retype_into_kernel_object, retype_into_page_frame,

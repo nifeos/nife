@@ -15,6 +15,8 @@ Rules, each named in a failure:
   consumer-name   the name of a nife program (a `[[bin]]` of components/Cargo.toml or the directory
                   of a top-level program crate with a hyphen or underscore, so one plain word such as
                   `console` is never taken for a program) or of a package (packages/*.package.toml).
+                  A crate's own name is not a consumer of it: a crate whose program shares its name
+                  (`line_editor`) still names itself in its manifest and its examples.
 
 A wire literal is exempt (the architect's ruling of 2026-11-14 UTC, provisional spelling): bytes that
 already sit on a wire or in built programs keep their spelling after the crate leaves, so an ELF
@@ -41,7 +43,7 @@ import sys
 PENDING = "a text or value hit in the crate on the day the lint was added; reword or remove it, then delete the entry"
 WAIVERS = {
     "abi": (6, PENDING),
-    "byte_sink_contract": (2, PENDING),
+    "byte_sink_contract": (1, PENDING),
     "capability_manifest_note": (28, PENDING),
     "counter_frequency_contract": (1, PENDING),
     "current_cpu_contract": (3, PENDING),
@@ -142,9 +144,10 @@ def crate_files(cdir):
 
 
 def scan_tree(root, marked=None):
-    rules = compile_rules(consumer_names(root))
+    consumers = consumer_names(root)
     result = {}
     for crate in listed_crates(root):
+        rules = compile_rules([n for n in consumers if n != crate])
         cdir = os.path.join(root, "crates", crate)
         hits = []
         if os.path.isdir(cdir):
@@ -188,16 +191,18 @@ def selftest():
     import tempfile
 
     with tempfile.TemporaryDirectory() as root:
-        for d in ("crates/good/src", "crates/bad/src", "components"):
+        for d in ("crates/good/src", "crates/bad/src", "crates/disk_surveyor/src", "components"):
             os.makedirs(os.path.join(root, d))
         files = {
-            "crates/externalization-list.txt": "# c\ngood\nbad\n",
+            "crates/externalization-list.txt": "# c\ngood\nbad\ndisk_surveyor\n",
             "components/Cargo.toml": '[[bin]]\nname = "disk_surveyor"\n',
             "crates/good/Cargo.toml": '[package]\nrepository = "https://github.com/nifeos/good"\n',
             "crates/good/README.md": "A standalone crate.\n",
             "crates/good/src/lib.rs": "//! Fine.\n",
             "crates/bad/Cargo.toml": '[package]\ndescription = "x"\n',
             "crates/bad/src/lib.rs": "//! Read by disk_surveyor in nife.\n",
+            "crates/disk_surveyor/Cargo.toml": '[package]\nname = "disk_surveyor"\n',
+            "crates/disk_surveyor/src/lib.rs": "//! use disk_surveyor::Survey;\n",
             "crates/good/src/note.rs": 'const OWNER: &[u8] = b"nife"; // wire literal\n',
         }
         for name, text in files.items():
@@ -208,6 +213,7 @@ def selftest():
         assert found["good"] == [], found
         assert [m[:2] for m in marked] == [("crates/good/src/note.rs", 1)], marked
         assert sorted(h[2] for h in found["bad"]) == ["consumer-name", "nife-word"], found
+        assert found["disk_surveyor"] == [], found
     print("lint_externalized_crates selftest: ok")
 
 
