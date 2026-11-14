@@ -6,8 +6,8 @@
 
 use super::*;
 /// **`field_bytes`, which `read_field` is built on, never panics for any length byte, and a length
-/// past the field reads as absent.** (`read_field` adds only `core::str::from_utf8`, which is total.)
-/// **`read_field` never panics for any length byte, and a length past the field reads as absent.**
+/// past the field reads as absent.** (`read_field` adds only `core::str::from_utf8`, which is total,
+/// and is left out because a symbolic UTF-8 scan is the expensive part and not the bound.)
 /// The page is the real size, `TERM`'s field is the last on it, and the length byte is free, so the
 /// case that once sliced past the end of the page (a length of 255) is among the inputs.
 /// Falsification: replayable `crates/environment_contract/falsifications/verification.field_bytes_never_panics_for_any_length_byte.patch`
@@ -16,9 +16,62 @@ use super::*;
 fn field_bytes_never_panics_for_any_length_byte() {
     let mut page = [0u8; PAGE_BYTES];
     let length: u8 = kani::any();
-    page[OFF_TERM_LEN] = length;
-    let read = field_bytes(&page, OFF_TERM_LEN, OFF_TERM, MAXIMUM_TERMINAL_TYPE_BYTES);
+    page[TERMINAL_TYPE_LENGTH_OFFSET] = length;
+    let read = field_bytes(
+        &page,
+        TERMINAL_TYPE_LENGTH_OFFSET,
+        TERMINAL_TYPE_OFFSET,
+        MAXIMUM_TERMINAL_TYPE_BYTES,
+    );
     if usize::from(length) > MAXIMUM_TERMINAL_TYPE_BYTES {
         assert!(read.is_none());
+    }
+}
+
+/// **A written field reads back whole.** For any ASCII value of one to 24 bytes, `write_field` then
+/// `field_bytes` returns the same bytes, so the writer, the layout and the reader agree on the
+/// offset and the length of the last field on the page. The value is a symbolic ASCII array, so the
+/// proof stays on the bound and not on the domain lists.
+/// Falsification: replayable `crates/environment_contract/falsifications/verification.a_written_field_reads_back_whole.patch`
+#[kani::proof]
+#[kani::unwind(26)]
+fn a_written_field_reads_back_whole() {
+    let bytes: [u8; MAXIMUM_TERMINAL_TYPE_BYTES] = kani::any();
+    let length: usize = kani::any();
+    kani::assume(length >= 1 && length <= MAXIMUM_TERMINAL_TYPE_BYTES);
+    let value = &bytes[..length];
+    kani::assume(value.is_ascii());
+    let text = core::str::from_utf8(value).unwrap();
+    let mut page = [0u8; PAGE_BYTES];
+    write_field(
+        &mut page,
+        TERMINAL_TYPE_LENGTH_OFFSET,
+        TERMINAL_TYPE_OFFSET,
+        MAXIMUM_TERMINAL_TYPE_BYTES,
+        Some(text),
+    );
+    assert!(
+        field_bytes(
+            &page,
+            TERMINAL_TYPE_LENGTH_OFFSET,
+            TERMINAL_TYPE_OFFSET,
+            MAXIMUM_TERMINAL_TYPE_BYTES
+        ) == Some(value)
+    );
+}
+
+/// **A value an accessor returns is a member of its key's domain, whatever the length byte says.**
+/// The page carries the member `UTC` and a free time zone length byte, so a length that cuts the
+/// member short, or runs into the zeroes after it, must read as absent and never as a prefix.
+/// Falsification: replayable `crates/environment_contract/falsifications/verification.an_accessor_returns_only_a_domain_member.patch`
+#[kani::proof]
+#[kani::unwind(45)]
+fn an_accessor_returns_only_a_domain_member() {
+    let mut page = PageBuilder::new().tz("UTC").unwrap().build();
+    page[TIME_ZONE_LENGTH_OFFSET] = kani::any();
+    // SAFETY: `page` is a live array of exactly `PAGE_BYTES`, alive for this function.
+    let read = unsafe { ConfigPage::new(page.as_ptr() as u64) };
+    if let Some(value) = read.tz() {
+        assert!(domain::KNOWN_TIME_ZONES.contains(&value));
     }
 }

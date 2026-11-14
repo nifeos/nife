@@ -1,0 +1,17 @@
+Falsifies `environment_contract::verification::an_accessor_returns_only_a_domain_member`.
+
+The defect: `ConfigPage::tz` returns the bytes the page holds without checking them against the domain.
+
+Expected to fail: `assert!(domain::KNOWN_TIME_ZONES.contains(&value))` for a page that carries any other UTF-8 value.
+
+diff --git a/crates/environment_contract/src/lib.rs b/crates/environment_contract/src/lib.rs
+--- a/crates/environment_contract/src/lib.rs
++++ b/crates/environment_contract/src/lib.rs
+@@ -449,7 +449,6 @@
+                 )
+             })
+             .flatten()
+-            .filter(|value| domain::is_valid_tz(value))
+     }
+ 
+     /// `LANG`, or `None` for the same reasons [`tz`](Self::tz) can be `None`, with

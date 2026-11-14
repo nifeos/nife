@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 111, 305
@@ -167,6 +167,30 @@ one-way after. The items say which.
 ### P2: after the move, before a release
 
 The P2 items are in [the appendix](1089-environment-contract-outside-review/later-items.md).
+
+## Ledger
+
+| item | state | how |
+|---|---|---|
+| 1 reader panics on a length byte | DONE | `a_length_past_its_field_reads_that_field_as_absent` (landed in #3529) |
+| 2 reader-side domain check | DONE | `a_recognized_page_carrying_a_non_member_reads_that_key_as_absent` |
+| 3 family and rule names | LEFT | public names: an architect's call, though the rules are ruled |
+| 4 abbreviated accessors | LEFT | the decision below |
+| 5 proof | DONE | `a_written_field_reads_back_whole`, `an_accessor_returns_only_a_domain_member` and `field_bytes_never_panics_for_any_length_byte`, each with a falsification patch (the round trip is over one field, ASCII, so the proof stays on the bound; build then read over the domain lists was too wide to finish) |
+| 6 stands alone | LEFT | the manifest rows, README, licenses and rewritten citations belong to the move lane (`script/crate-move`), which waits on whether the crate leaves |
+| 7 identity | LEFT | the decision below; the pinning test and `const` assertion follow the ruling |
+| 8 compile-time check | DONE | `const` assertions in `lib.rs`, `every_domain_member_fits_its_field`; `write_field` asserts, private names spelled out, the `vendored_name_gates.py` exemption removed |
+| 9 `Display` and `Error` | DONE | `a_refusal_displays_and_is_an_error` |
+| 10 five documentation sentences | DONE | the zone length, the test name, `notes/env-config.md`, the stale BUGS row and the `UTF-8` note |
+| 11 a safe reader | LEFT | a new public name and constructor: an architect's call |
+| 12 growth path | DONE | the crate's `BUGS` section; the README row waits on item 6 |
+
+## Follow-on
+
+- **Outstanding.** Items 3, 4, 6, 7 and 11: public names, the identity freeze, the move commit's
+  standalone files and a safe reader constructor. Each waits on a ruling or on the move, as the
+  ledger above says. Checked by reading the ledger rows against the crate after the commit that
+  built the done items.
 
 ## Decisions for the architect
 
