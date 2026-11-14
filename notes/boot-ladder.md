@@ -95,18 +95,18 @@ child twice, and the second round moves the frame count by zero. The last five n
 
 | Check | Its claim | Where it can run |
 |---|---|---|
-| `blockdev` | a user-level driver reads `motd` off a virtio disk, woken by its interrupt | a machine with a virtio disk |
+| `block_device` | a user-level driver reads `motd` off a virtio disk, woken by its interrupt | a machine with a virtio disk |
 | `device_interrupt` | a device's line reaches the CPU through the interrupt controller | `x86_64`: the PIT through the IO APIC |
 | `clock` | the JH7110's clock controller ungates its TRNG | radon |
-| `trng` | the JH7110 TRNG serves two different draws, timed | radon |
+| `true_random_number_generator` | the JH7110 TRNG serves two different draws, timed | radon |
 | `entropy` | the machine's entropy source serves a client | a TRNG or a seed instruction |
 
-A machine without the device reports the check `absent`, with its reason, and the verdict lists
-it: `nife self-test: 12 of 15 passed, 3 absent: blockdev clock trng`. Absent is not a failure on
-its own. Each `serial_console` board profile names the checks its board has the device for, and an
-absence of one of those is FAILED: radon may not be without `entropy`, `trng` or `clock`, and
-xenon not without `entropy` or `device_interrupt`. The emulator profile `boot-check` uses forbids
-none.
+A machine without the device reports the check `absent`, with its reason, and the verdict lists it:
+`nife self-test: 12 of 15 passed, 3 absent: block_device clock true_random_number_generator`. Absent
+is not a failure on its own. Each `serial_console` board profile names the checks its board has the
+device for, and an absence of one of those is FAILED: radon may not be without `entropy`,
+`true_random_number_generator` or `clock`, and xenon not without `entropy` or `device_interrupt`.
+The emulator profile `boot-check` uses forbids none.
 
 **A failure prints and the boot carries on.** calef, 2026-09-09: *"I could see building tools to
 diagnose what broke but we can only run them if there is a prompt"*. A machine you cannot log into
@@ -173,10 +173,9 @@ board-console: machine: nife machine: riscv64, 4 processor(s), 8192 MiB, 100 Hz
 board-console: self-test: nife self-test: 5 of 5 passed
 ```
 
-That capture is of a kernel with five checks. Today's kernel on radon should report `blockdev` and
-`device_interrupt` absent and nothing else, and `serial_console` fails it if `entropy`, `trng` or
-`clock`
-is absent. No board has run it yet.
+That capture is of a kernel with five checks. Today's kernel on radon should report `block_device`
+and `device_interrupt` absent and nothing else, and `serial_console` fails it if `entropy`,
+`true_random_number_generator` or `clock` is absent. No board has run it yet.
 
 Replay a capture through the same recognizer, which is how every marker in it is tested:
 

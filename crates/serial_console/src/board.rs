@@ -268,7 +268,7 @@ pub static RADON: Profile = Profile {
     relocation: &["Moving Image from"],
     // The JH7110 has a TRNG and the clock controller that gates it, and the TRNG is this board's
     // entropy source: an absence of any of the three is a board that lost a device.
-    must_not_be_absent: &["entropy", "trng", "clock"],
+    must_not_be_absent: &["entropy", "true_random_number_generator", "clock"],
 };
 
 /// **xenon, whose firmware prologue is empty, and that is a measurement.**

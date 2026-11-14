@@ -12,10 +12,11 @@ checks themselves, which the modules' doc comments link to. The checks are the c
 ## The two halves
 
 The kernel runs `exceptions`, `mapping`, `frames`, `timer`, `scheduler`, `preemption` and
-`device_interrupt`, prints their lines and then `boot_ladder::Heads::tour`'s. No check there spawns a user
-program or starts a service, so a kernel that leaves services to userspace keeps its self-test. The
-other eight, `userspace`, `budget`, `supervised`, `teardown`, `blockdev`, `clock`, `trng` and
-`entropy`, run in `boot_self_test`, which the progenitor builds before the shell.
+`device_interrupt`, prints their lines and then `boot_ladder::Heads::tour`'s. No check there spawns
+a user program or starts a service, so a kernel that leaves services to userspace keeps its
+self-test. The other eight, `userspace`, `budget`, `supervised`, `teardown`, `block_device`,
+`clock`, `true_random_number_generator` and `entropy`, run in `boot_self_test`, which the progenitor
+builds before the shell.
 
 - The tally is code both halves share, `boot_ladder::verdict`: one bit per check in three masks, and
   the line and verdict formats. The kernel writes its tally into the page `boot_ladder::kernel_half`
@@ -126,20 +127,21 @@ spinners runnable each look can cost a whole tick; a million looks would be thre
   not leaks (a kernel stack the recycler has not held yet), so one before-and-after over a single
   round cannot tell those from a leak. Under QEMU both rounds cost zero, because `supervised` has
   already paid them.
-- `blockdev` has a user-level driver read `motd` off virtio disk 0, through a nifefs parse of its
-  own. The hand-over sets disk 0's confined transport, interrupt and DMA page aside for the program,
-  and the file service takes disk 1, so they do not collide. The driver exits once it has reported,
-  and the program collects it.
+- `block_device` has a user-level driver read `motd` off virtio disk 0, through a nifefs parse of
+  its own. The hand-over sets disk 0's confined transport, interrupt and DMA page aside for the
+  program, and the file service takes disk 1, so they do not collide. The driver exits once it has
+  reported, and the program collects it.
 - `device_interrupt` reads the count `x86_64` took from the PIT through the IO APIC at bring-up, the
   one
   window with the scheduler up and the tick not yet armed. On aarch64 and riscv64 no device
-  interrupts without input or a disk, so the input driver and `blockdev` prove a line there.
-- `clock` and `trng` come from one JH7110 bring-up. `clock` is the clock-and-reset controller's
-  before and after (milestone 220 (this kernel drives no clock or reset controller, and the first
-  real device will need one)). `trng` is two different device generations drawn through the confined
-  driver, timed (milestone 306 (time the hw entropy step)). The hand-over brings the controller up
-  and wires the TRNG's service. It records what both answered in the kernel's half and grants the
-  service's endpoint for the program to draw from. The kernel never reads a `RAND` register.
+  interrupts without input or a disk, so the input driver and `block_device` prove a line there.
+- `clock` and `true_random_number_generator` come from one JH7110 bring-up. `clock` is the
+  clock-and-reset controller's before and after (milestone 220 (this kernel drives no clock or reset
+  controller, and the first real device will need one)). `true_random_number_generator` is two
+  different device generations drawn through the confined driver, timed (milestone 306 (time the hw
+  entropy step)). The hand-over brings the controller up and wires the TRNG's service. It records
+  what both answered in the kernel's half and grants the service's endpoint for the program to draw
+  from. The kernel never reads a `RAND` register.
 - `entropy` draws twice from the JH7110 TRNG where the tree names one, else from the progenitor's
   own entropy service, whatever it draws from: the CPU's seed instruction or a virtio-rng device.
 
@@ -177,8 +179,8 @@ which the `clock` line explains.
 - The hand-over, not userspace, starts the JH7110 TRNG's service and sets disk 0 aside. A TRNG that
   never reports ready leaves a kernel thread parked on the receive. Milestone 811 (the boot services
   leave the kernel) moves those starters out.
-- `trng` and `entropy` draw with calls that have no deadline, so a service that never answers holds
-  the boot before the shell.
+- `true_random_number_generator` and `entropy` draw with calls that have no deadline, so a service
+  that never answers holds the boot before the shell.
 - `supervised` checks that the faulting pc lies in the child's executable segment, not which
   instruction it was.
 - A check can still hang the boot if the operation it measures never returns. A `sched::yield_now`

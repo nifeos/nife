@@ -165,7 +165,7 @@ pub(crate) fn alloc_msi_vector(_requester_id: u32) -> Option<(u32, pci::MsiTarge
 /// device line through the GIC, and `self_test`'s `device_interrupt` check reports itself absent.
 /// `x86_64`
 /// proves the PIT's. A device line on this port is proved where one exists: the user-level input
-/// driver at the hand-over, and the `blockdev` check's driver when a disk is attached.
+/// driver at the hand-over, and the `block_device` check's driver when a disk is attached.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)

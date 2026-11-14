@@ -428,7 +428,7 @@ mod tests {
     #[test]
     fn an_absence_fails_the_boot_only_on_the_board_that_has_the_device() {
         let log = format!(
-            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: blockdev device_interrupt\n\
+            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: block_device device_interrupt\n\
              soak-test: started\n{}",
             beat(5, 400, 9, 2000, (0, 0, 0))
         );

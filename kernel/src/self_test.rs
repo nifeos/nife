@@ -554,7 +554,7 @@ fn preemption(tally: &mut Checks) {
 /// the scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
 /// aarch64 and riscv64**, which have no device the kernel can make interrupt without input or a
 /// disk; there the line is proved by the input driver at the hand-over and by `boot_self_test`'s
-/// `blockdev`.
+/// `block_device`.
 #[doc(alias = "irq")]
 fn device_interrupt(tally: &mut Checks) {
     match arch::interrupt_controller::device_line_interrupts() {
@@ -570,7 +570,7 @@ fn device_interrupt(tally: &mut Checks) {
         None => tally.absent(
             check!("device_interrupt"),
             format_args!(
-                "no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists"
+                "no device on this port interrupts without input or a disk; the input driver and block_device prove a line where one exists"
             ),
         ),
     }

@@ -13,8 +13,8 @@
 pub const SELF_TEST_FAILED: &str = "FAILED: ";
 
 /// **What a verdict says before it names the checks this machine had nothing for** (calef's ruling
-/// of 2026-10-20 (UTC) on #2447): `<system> self-test: 9 of 13 passed, 3 absent: blockdev clock
-/// trng`.
+/// of 2026-10-20 (UTC) on #2447): `<system> self-test: 9 of 13 passed, 3 absent: block_device clock
+/// true_random_number_generator`.
 ///
 /// An absent check neither passed nor failed: the machine has no device for it to test, and the
 /// kernel's line for that check says which. The verdict stays green unless something says
@@ -35,9 +35,9 @@ pub const SELF_TEST_ABSENT: &str = "absent: ";
 /// and `serial_console` fails a verdict whose total is not this list's length. See
 /// notes/boot-ladder.md, "One list of checks, for every architecture".
 ///
-/// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
-/// `device_interrupt` (spelled `deviceirq` until 2026-10-26 (UTC)) awaits a ruling, and so does
-/// reading older logs that print the old spelling.
+/// They are printed, and matched, so they are a contract.
+///
+/// Name: ratified 2026-11-14 (UTC), block 1078, each of the fifteen.
 pub const SELF_TEST_CHECKS: &[&str] = &[
     "exceptions",
     "mapping",
@@ -49,10 +49,10 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
     "budget",
     "supervised",
     "teardown",
-    "blockdev",
+    "block_device",
     "device_interrupt",
     "clock",
-    "trng",
+    "true_random_number_generator",
     "entropy",
 ];
 

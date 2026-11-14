@@ -209,8 +209,8 @@ fn names(mask: u64) -> impl Iterator<Item = &'static str> {
         .map(|(_, &name)| name)
 }
 
-/// **The verdict line**: `<system> self-test: 9 of 15 passed, 4 absent: blockdev device_interrupt
-/// clock trng, 2 FAILED: exceptions userspace`.
+/// **The verdict line**: `<system> self-test: 9 of 15 passed, 4 absent: block_device
+/// device_interrupt clock true_random_number_generator, 2 FAILED: exceptions userspace`.
 ///
 /// The counts are there on success as well as on failure, so "ran nothing and passed" reads
 /// differently from "ran the set and passed". Absences come before failures, so a matcher reading
@@ -335,12 +335,12 @@ mod tests {
         for i in 0..CHECKS {
             t.record(i, Outcome::Passed);
         }
-        t.record(check("blockdev"), Outcome::Absent);
+        t.record(check("block_device"), Outcome::Absent);
         t.record(check("userspace"), Outcome::Failed);
         assert_eq!(
             format!("{}", t.verdict(HEADS)),
             format!(
-                "example self-test: {} of {CHECKS} passed, 1 absent: blockdev, 1 FAILED: userspace",
+                "example self-test: {} of {CHECKS} passed, 1 absent: block_device, 1 FAILED: userspace",
                 CHECKS - 2
             )
         );
@@ -380,7 +380,7 @@ mod tests {
         for i in 0..CHECKS {
             t.record(i, Outcome::Passed);
         }
-        t.record(check("trng"), Outcome::Absent);
+        t.record(check("true_random_number_generator"), Outcome::Absent);
         t.record(check("frames"), Outcome::Failed);
         assert_eq!(Tally::from_packed(t.to_packed()), t);
         let both = 1 << check("mapping");
@@ -430,16 +430,21 @@ mod tests {
         assert!(!t.is_recorded(check("timer")));
         t.record(check("timer"), Outcome::Passed);
         t.record(check("clock"), Outcome::Failed);
-        t.record(check("blockdev"), Outcome::Absent);
-        t.record(check("trng"), Outcome::Absent);
-        for name in ["timer", "clock", "blockdev", "trng"] {
+        t.record(check("block_device"), Outcome::Absent);
+        t.record(check("true_random_number_generator"), Outcome::Absent);
+        for name in [
+            "timer",
+            "clock",
+            "block_device",
+            "true_random_number_generator",
+        ] {
             assert!(t.is_recorded(check(name)), "{name}");
         }
         assert!(!t.is_recorded(check("mapping")));
         assert_eq!(
             format!("{}", t.verdict(HEADS)),
             format!(
-                "example self-test: 1 of {CHECKS} passed, 2 absent: blockdev trng, 1 FAILED: clock"
+                "example self-test: 1 of {CHECKS} passed, 2 absent: block_device true_random_number_generator, 1 FAILED: clock"
             )
         );
     }
@@ -467,7 +472,7 @@ mod tests {
             t.record(i, Outcome::Passed);
         }
         t.record(check("clock"), Outcome::Failed);
-        t.record(check("trng"), Outcome::Absent);
+        t.record(check("true_random_number_generator"), Outcome::Absent);
         assert_eq!(t.fail_unrecorded().count(), 0);
     }
 
