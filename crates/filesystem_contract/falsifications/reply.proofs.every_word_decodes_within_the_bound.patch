@@ -3,7 +3,7 @@ Falsifies `filesystem_contract::reply::proofs::every_word_decodes_within_the_bou
 The defect: the bound dropped from `reply_errno`, so a negative word below `-MAXIMUM_ERRNO`
 negates and truncates as before instead of reading as `EPROTO`.
 
-Expected to fail: the harness's `code <= MAXIMUM_ERRNO` assertion, on any word below the bound.
+Expected to fail: the harness's `contains(&code)` assertion, on any word below the bound.
 
 diff --git a/crates/filesystem_contract/src/reply.rs b/crates/filesystem_contract/src/reply.rs
 --- a/crates/filesystem_contract/src/reply.rs

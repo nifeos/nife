@@ -96,7 +96,7 @@ mod proofs {
             None => assert!(word >= 0),
             Some(code) => {
                 assert!(word < 0);
-                assert!(1 <= code && code <= MAXIMUM_ERRNO);
+                assert!((1..=MAXIMUM_ERRNO).contains(&code));
                 if word >= -(MAXIMUM_ERRNO as i64) {
                     assert_eq!(code as i64, -word);
                 } else {
@@ -111,7 +111,7 @@ mod proofs {
     #[kani::proof]
     fn a_sent_code_round_trips() {
         let code: i32 = kani::any();
-        kani::assume(1 <= code && code <= MAXIMUM_ERRNO);
+        kani::assume((1..=MAXIMUM_ERRNO).contains(&code));
         let word = reply_err(code);
         assert!(word < 0);
         assert_eq!(reply_errno(word), Some(code));
