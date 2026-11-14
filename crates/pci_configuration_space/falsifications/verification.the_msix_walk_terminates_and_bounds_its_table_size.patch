@@ -10,9 +10,9 @@ Expected to fail: the harness's `assert!(cap.table_size >= 1 && cap.table_size <
 any device answering with bit 11 set, where the kernel would size a vector table at up to 4096
 entries against hardware that has at most 2048.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -627,3 +627,3 @@ pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<Msi
                  // has one, which is the shape of failure that looks like "no MSI-X here".
 -                table_size: (control & 0x7ff) + 1,

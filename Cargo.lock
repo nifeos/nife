@@ -473,7 +473,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
- "pci",
+ "pci_configuration_space",
  "startup_page_contract",
 ]
 
@@ -877,7 +877,7 @@ dependencies = [
  "nifefs",
  "page_frames",
  "paging",
- "pci",
+ "pci_configuration_space",
  "periodic_deadline",
  "primitive_benchmark_contract",
  "screen_console",
@@ -1110,7 +1110,7 @@ name = "paging"
 version = "0.1.0"
 
 [[package]]
-name = "pci"
+name = "pci_configuration_space"
 version = "0.1.0"
 dependencies = [
  "device_tree_blob",

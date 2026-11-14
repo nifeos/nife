@@ -233,7 +233,7 @@ narrower authority than the ring, not looser: one capability, fixed by whoever b
 
 The driver does no key repeat of its own: the device sends repeats, and `video_terminal::keymap`
 honors them. It drives no LEDs and switches no layouts. It handles no mouse or tablet, though a
-`virtio-tablet-pci` presents the same PCI id (recorded in `crates/pci`), and it makes no
+`virtio-tablet-pci` presents the same PCI id (recorded in `crates/pci_configuration_space`), and it makes no
 configuration-space query.
 
 ## Two sinks, and the badged copies

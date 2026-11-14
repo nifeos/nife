@@ -229,7 +229,8 @@ pub(crate) fn carve(
         interrupt_status: window.interrupt_status,
         device: window.device,
         notify_off_multiplier: d.notify_mult,
-        interrupt_vector: (d.msix_vector != pci::VIRTIO_MSIX_NO_VECTOR).then_some(d.msix_vector),
+        interrupt_vector: (d.msix_vector != pci_configuration_space::VIRTIO_MSIX_NO_VECTOR)
+            .then_some(d.msix_vector),
         role,
         data_plane_physical_address: dma,
     };

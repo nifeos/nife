@@ -167,17 +167,17 @@ network_time_protocol,Timestamp::randomise_low,replace | with ^,crates/network_t
 network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,421,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
 network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,421,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
 paging,,replace | with ^,crates/paging/src/x86_64.rs,34,site,pub const VALUE: u64 = (RESET & !0xff00) | 0x01 << 8;
-pci,Bdf::ecam_offset,replace | with ^,crates/pci/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
-pci,Bdf::ecam_offset,replace | with ^,crates/pci/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
-pci,Bdf::requester_id,replace | with ^,crates/pci/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
-pci,Bdf::requester_id,replace | with ^,crates/pci/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
-pci,read_bars,replace | with ^,crates/pci/src/lib.rs,401,site,let mask = ((mask_hi as u64) << 32) | (mask_lo as u64 & 0xffff_fff0);
-pci,read_bars,replace | with ^,crates/pci/src/lib.rs,404,site,"base: ((orig_hi as u64) << 32) | (orig as u64 & 0xffff_fff0),"
-pci,read_bars,replace | with ^,crates/pci/src/lib.rs,417,site,"size: !(mask | 0xffff_ffff_0000_0000) + 1,"
-pci,,replace << with >>,crates/pci/src/lib.rs,554,literal,a zero feed or amount: 1 and 0
-pci,mem32_window,replace | with ^,crates/pci/src/lib.rs,768,site,let pci_addr = (cell(1) << 32) | cell(2);
-pci,mem32_window,replace | with ^,crates/pci/src/lib.rs,769,site,let cpu_addr = (cell(3) << 32) | cell(4);
-pci,mem32_window,replace | with ^,crates/pci/src/lib.rs,770,site,let size = (cell(5) << 32) | cell(6);
+pci_configuration_space,Bdf::ecam_offset,replace | with ^,crates/pci_configuration_space/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
+pci_configuration_space,Bdf::ecam_offset,replace | with ^,crates/pci_configuration_space/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
+pci_configuration_space,Bdf::requester_id,replace | with ^,crates/pci_configuration_space/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
+pci_configuration_space,Bdf::requester_id,replace | with ^,crates/pci_configuration_space/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
+pci_configuration_space,read_bars,replace | with ^,crates/pci_configuration_space/src/lib.rs,401,site,let mask = ((mask_hi as u64) << 32) | (mask_lo as u64 & 0xffff_fff0);
+pci_configuration_space,read_bars,replace | with ^,crates/pci_configuration_space/src/lib.rs,404,site,"base: ((orig_hi as u64) << 32) | (orig as u64 & 0xffff_fff0),"
+pci_configuration_space,read_bars,replace | with ^,crates/pci_configuration_space/src/lib.rs,417,site,"size: !(mask | 0xffff_ffff_0000_0000) + 1,"
+pci_configuration_space,,replace << with >>,crates/pci_configuration_space/src/lib.rs,554,literal,a zero feed or amount: 1 and 0
+pci_configuration_space,mem32_window,replace | with ^,crates/pci_configuration_space/src/lib.rs,768,site,let pci_addr = (cell(1) << 32) | cell(2);
+pci_configuration_space,mem32_window,replace | with ^,crates/pci_configuration_space/src/lib.rs,769,site,let cpu_addr = (cell(3) << 32) | cell(4);
+pci_configuration_space,mem32_window,replace | with ^,crates/pci_configuration_space/src/lib.rs,770,site,let size = (cell(5) << 32) | cell(6);
 pgrep,,replace | with ^,crates/pgrep/src/lib.rs,40,site,pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;
 pgrep,,replace | with ^,crates/pgrep/src/lib.rs,40,site,pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;
 pgrep,,replace | with ^,crates/pgrep/src/lib.rs,40,site,pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;

@@ -44,7 +44,7 @@ fn psci(bytes: &[u8]) -> Option<Psci> {
 /// **The four cores the runner asks for are the four the tree describes**, with the hardware ids the
 /// kernel used to assume. This is the assertion that made the old hardcode *look* right: on this
 /// machine `reg` really is `0..4`, so nothing the kernel did was wrong here. It is the shape of the
-/// check `crates/pci` uses on its own hardcodes, and the reason a second board is where it breaks.
+/// check `crates/pci_configuration_space` uses on its own hardcodes, and the reason a second board is where it breaks.
 #[test]
 fn qemu_virt_describes_the_four_cpus_the_runner_starts() {
     let list = cpus(QEMU_VIRT_SMP4);

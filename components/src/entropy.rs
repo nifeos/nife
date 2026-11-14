@@ -217,7 +217,7 @@ impl Pool {
 
         // **The completion is the used ring advancing, not the wakeup**, so look before blocking.
         // QEMU completes a request inside `NOTIFY`, and PCI INTx lines are shared four ways on both
-        // `virt` boards (`pci::intx_interrupt_number` swizzles modulo 4) while the kernel routes an
+        // `virt` boards (`pci_configuration_space::intx_interrupt_number` swizzles modulo 4) while the kernel routes an
         // intid to one
         // endpoint (`sched::bind_interrupt`): with five PCI functions no unshared line is left. A
         // wakeup

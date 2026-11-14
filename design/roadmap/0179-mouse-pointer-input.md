@@ -27,9 +27,9 @@ carry the selection anywhere).
 
 ## Why this is not a driver-writing problem, and what it actually is
 
-**The device exists and is already partly discovered.** `crates/pci::VIRTIO_INPUT_MODERN` (0x1052)
+**The device exists and is already partly discovered.** `crates/pci_configuration_space::VIRTIO_INPUT_MODERN` (0x1052)
 is virtio's input device class, and QEMU's `virtio-tablet-pci` presents the identical PCI id
-`virtio-keyboard-pci` does; `crates/pci`'s own doc comment already names this ("the id names the
+`virtio-keyboard-pci` does; `crates/pci_configuration_space`'s own doc comment already names this ("the id names the
 device class, not the keyboard") because milestone 29's driver had to know it to avoid attaching the
 wrong one. **Today we attach only a keyboard, by choice, not by inability to tell them apart at all**.
 The two are distinguished by the device's own configuration space (`virtio-input`'s `EV_KEY` vs.
@@ -88,7 +88,7 @@ Not started; nothing built yet to carry its own BUGS section.
 ## Index row
 
 `notes/glyphs.md` already names "no mouse" as an honest limit. `virtio-tablet-pci` shares the same
-PCI device id as milestone 29 (a display terminal)'s keyboard (`crates/pci::VIRTIO_INPUT_MODERN`). Device discovery
+PCI device id as milestone 29 (a display terminal)'s keyboard (`crates/pci_configuration_space::VIRTIO_INPUT_MODERN`). Device discovery
 already half-knows this and simply attaches only a keyboard by choice. The open part is routing a
 pointer event through the compositor, which has never had to answer "which client owns this
 coordinate" before.
