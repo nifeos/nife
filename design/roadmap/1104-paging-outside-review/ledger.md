@@ -21,11 +21,11 @@ Names minted by this work are provisional: `Flags::ALL`.
 - 10 DONE: `map_range` and `map_span` refuse a run that passes `u64::MAX` with
   `MapError::BadRegion`, before mapping anything
   (`a_range_or_span_past_the_top_of_the_address_space_is_refused_whole`). its callers' loops keep `index` under
-  `LEVELS`, and no assertion was added.
+  `LEVELS`, and nobody added an assertion.
 - 11 LEFT: the README is item 1's move preparation.
 - 12 PARTIAL: the IOMMU formats' `PageFormat` and the crate's BUGS now document `SPLIT_SHIFT`
   as a ceiling, and `BadRegion`'s doc names its three raisers. Moving `WritableAndExecutable`
-  out of the enum is a public-item change and is LEFT.
+  out of the enum is a public-item change, so it stays LEFT.
 - 13 DONE: `Mapper::walk` asserts `F::LEVELS <= MAXIMUM_WALK` at compile time.
 - 14 LEFT: Decision 2.
 - 15 PARTIAL: `MapError` has `Display` and `core::error::Error`
@@ -34,5 +34,5 @@ Names minted by this work are provisional: `Flags::ALL`.
 - 16 DONE: the documentation pass (`invlpg`, the x86 halves, `ACCESS_*`, the PAT reset value cited
   to the Intel SDM).
 - 17 LEFT: a test-harness conversion with no effect on the crate's contract; not reached.
-- 18 DONE: both limits are in the crate's BUGS. No vendor document for the T-Head bits was found.
+- 18 DONE: both limits are in the crate's BUGS. The search found no vendor document for the T-Head bits.
 - 19 LEFT: not reached.

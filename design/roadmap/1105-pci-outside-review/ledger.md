@@ -22,5 +22,5 @@ Names minted by this work: none.
 - P2 `intx_interrupt_number` precondition: LEFT; `intx_pin_through_bridge` is a new public name.
 - P2 `Bdf` fields: DONE by masking in `ecam_offset` and `requester_id`
   (`a_device_or_function_past_its_field_is_masked_to_it`); the proof no longer assumes the ranges.
-- P2 `#![forbid(unsafe_code)]`: DONE. The fuzz targets are LEFT (a fuzz opt-in is a decision).
+- P2 `#![forbid(unsafe_code)]`: DONE. The fuzz targets stay LEFT, since a fuzz opt-in is a decision.
 - P2 stale patch headers, the verification table rows and the mutation survivors: LEFT with the move.
