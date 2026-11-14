@@ -599,3 +599,48 @@ fn the_interfaces_note_shares_the_manifest_notes_header() {
         interfaces_note::interfaces_len(1)
     );
 }
+
+/// The encoders refuse what the decoder refuses, so a program built with `carry!` never ships a
+/// note its own readers reject. A zone the resolver would not spell, in either zoned encoder.
+#[test]
+#[should_panic(expected = "lowercase dotted ASCII")]
+fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
+    let _ = encode_serviced::<{ serviced_len(&["Example.NET"]) }>(
+        &grant_plan::NO_NOTE_MANIFEST,
+        &["Example.NET"],
+        true,
+    );
+}
+
+#[test]
+#[should_panic(expected = "lowercase dotted ASCII")]
+fn the_serviced_encoder_refuses_a_zone_with_a_trailing_dot() {
+    let _ = encode_serviced::<{ serviced_len(&["example.net."]) }>(
+        &grant_plan::NO_NOTE_MANIFEST,
+        &["example.net."],
+        false,
+    );
+}
+
+/// A required memory grant whose minimum exceeds its maximum is refused when it is written, as
+/// `decode` refuses it when it is read.
+#[test]
+#[should_panic(expected = "minimum no greater than its maximum")]
+fn the_encoder_refuses_an_inverted_memory_grant() {
+    let _ = encode(&Manifest {
+        memory_grant: MemoryGrantDeclaration::Required {
+            minimum: 8,
+            maximum: 4,
+        },
+        ..grant_plan::NO_NOTE_MANIFEST
+    });
+}
+
+/// `Error` prints and boxes.
+#[test]
+fn an_error_prints_and_is_an_error() {
+    extern crate std;
+    use std::string::ToString;
+    let error: &dyn core::error::Error = &Error::BadField(57);
+    assert!(error.to_string().contains("57"));
+}
