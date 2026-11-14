@@ -15,7 +15,7 @@ Names minted by this work: none.
   slots and no other header probes any.
 - 5, 6 LEFT: renames of public names, each for the architect's ratification.
 - 7 LEFT: the documentation rewrite, with the move.
-- 8 PARTIAL: `the_msi_walk_terminates_on_any_device` is added with its falsification patch
+- 8 PARTIAL: `the_msi_walk_terminates_on_any_device` arrives with its falsification patch
   (`the_msi_walk_ends_on_a_cyclic_list` is its host twin). The factoring of the three walks into one
   and the ceiling proof are not done.
 - P2 `cap_len`: DONE (`a_vendor_capability_shorter_than_its_type_needs_is_skipped`).
