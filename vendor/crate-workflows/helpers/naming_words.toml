@@ -65,8 +65,8 @@ min = "minimum"
 max = "maximum"
 os = "operating_system"
 rgmii = "reduced_gigabit_media_independent_interface"
-mdio = "management_data_input_output"
-sdio = "a name for what the controller is (the vendor's instance label is not a name)"
+mdio = "management_data_io"
+sdio = "sd_io"
 
 # A refused component that is an English word in front of these: "opt in" and "opt out" are verbs,
 # not `option` abbreviated.
