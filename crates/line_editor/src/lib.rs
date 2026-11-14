@@ -36,7 +36,7 @@
 //! The arrow, Home, End and Delete keys arrive as `ESC [ ...` or `ESC O ...` sequences. An
 //! unrecognized final byte drops the whole sequence, and an X10 mouse report (`ESC [ M` and three
 //! payload bytes) is dropped with its payload. A second Escape is the same introducer.
-//!
+
 //! # Limits
 //!
 //! | Constant | Value | What it bounds |
@@ -69,7 +69,7 @@
 //! assert_eq!(editor.feed(b'\r', &mut out), Event::Line);
 //! assert_eq!(editor.line(), b"hello");
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - Input is ASCII only. A byte at or above 0x80 is dropped without echo, so UTF-8 text typed

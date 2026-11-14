@@ -135,11 +135,9 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 
 /// First in, first out: the queue is two pointers into nodes it does not own, plus a count.
 ///
-/// Dropping a queue that still holds nodes strands them exactly as dropping a token does: the
-/// nodes stay linked to one another, no token for them exists any more, and queueing one again
-/// needs a fresh [`Unqueued::new`]. `Queue` has no `Drop`, so a caller can move one by value,
-/// through [`Default`] and `core::mem::take` or by assignment, and pop every node before it lets
-/// the queue go.
+/// Dropping a queue that still holds nodes strands them as dropping a token does: they stay linked,
+/// no token for them exists, and queueing one again needs a fresh [`Unqueued::new`]. `Queue` has no
+/// `Drop`, so pop every node before the queue goes.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 ///
@@ -159,18 +157,14 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// let a = NonNull::new(Box::into_raw(Box::new(Thread { tid: 1, next: None }))).unwrap();
 /// let b = NonNull::new(Box::into_raw(Box::new(Thread { tid: 2, next: None }))).unwrap();
 /// let mut q: Queue<Thread> = Queue::new();
-///
 /// // SAFETY: live boxed nodes on no queue, minted from their owning pointers, freed below.
 /// let (ta, tb) = unsafe { (Unqueued::new(a), Unqueued::new(b)) };
 /// q.push_back(ta);
 /// q.push_back(tb);
 /// assert_eq!(q.len(), 2);
 ///
+/// // Drained then refilled: where the classic tail-pointer bug lives.
 /// let first = q.pop_front().unwrap();
-/// // SAFETY: the token's node is one of the live locals above.
-/// assert_eq!(unsafe { (*first.as_ptr()).tid }, 1);
-///
-/// // A drained-then-refilled queue is where the classic tail-pointer bug lives.
 /// q.push_back(first);
 /// let order: Vec<u32> = core::iter::from_fn(|| q.pop_front())
 ///     // SAFETY: each token's node is one of the live locals above.
