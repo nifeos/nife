@@ -166,6 +166,13 @@ The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before
 | 17 doc comments | LEFT | a documentation rewrite of 11,000 words, with the reasons moving to the new repository's `docs/` |
 | 18 a harness for outsiders | LEFT | out of this block's scope |
 
+## Follow-on
+
+- **Outstanding.** Items 1, 4, 5, 6, 11, 15, 16, 17 and 18 and the rest of items 2 and 3: template
+  work, the architect's naming rulings (Decision 2), the move commit and a documentation rewrite,
+  each named with its reason in the ledger above. Checked by reading the ledger rows against the
+  crate after the commit that built the done items.
+
 ## Decisions for the architect
 
 Two one-way doors. Everything else above is the maintainer's.
