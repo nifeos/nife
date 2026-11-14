@@ -13,8 +13,9 @@ An appendix to [the milestone](../1095-inter-process-communication-outside-revie
     same `Unqueued<T>` tokens with the same proof shape.
     Evidence: `src/lib.rs` lines 1 to 2; `notes/inter-process-communication.md` ("The timer",
     "The futex queues").
-    Change: D2 below. Nothing moves before the architect rules.
-    Door: one-way at publish (the crate name is a claim about its contents). Effort: XS to
+    Change: the milestone's D2 decides, provisionally, that the four stay together until the
+    publish review; the README states their shared reason.
+    Door: two-way until the first publish (the crate name is a claim about its contents). Effort: XS to
     document, M to split.
 
 11. The one-queue invariant could hold by construction.
