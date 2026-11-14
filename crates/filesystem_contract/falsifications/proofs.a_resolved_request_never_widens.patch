@@ -1,0 +1,18 @@
+Falsifies `filesystem_contract::proofs::a_resolved_request_never_widens`.
+
+The defect: `Rights::resolve` answers every right for the sentinel instead of the parent's own.
+
+Expected to fail: `assert!(child.bits() & !parent.bits() == 0)` for a parent that lacks a right.
+
+diff --git a/crates/filesystem_contract/src/dir.rs b/crates/filesystem_contract/src/dir.rs
+--- a/crates/filesystem_contract/src/dir.rs
++++ b/crates/filesystem_contract/src/dir.rs
+@@ -208,7 +208,7 @@
+     /// attenuate).
+     pub const fn resolve(self, requested: u64) -> u64 {
+         if requested == PARENT_RIGHTS {
+-            self.0
++            u64::MAX
+         } else {
+             requested
+         }

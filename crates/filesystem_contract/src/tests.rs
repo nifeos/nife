@@ -1,18 +1,19 @@
 use super::*;
+extern crate std;
 
 #[test]
 fn every_opcode_is_distinct_and_fits_its_field() {
     // Two verbs sharing a number is a wire bug the packing tests cannot see: each would pack and
     // unpack perfectly and mean the wrong thing. Cheap to assert, so assert it.
-    let operations = [
-        ("OPEN", fs::OPEN),
-        ("READ", fs::READ),
-        ("WRITE", fs::WRITE),
-        ("CLOSE", fs::CLOSE),
-        ("FSTAT", fs::FSTAT),
-        ("CREATE", fs::CREATE),
-        ("TRUNCATE", fs::TRUNCATE),
-    ];
+    // The table lists every verb from `FIRST` to `LAST`, and the compile-time assertions in `verb`
+    // prove it complete and in order; the three bind verbs sit outside it.
+    let mut operations = std::vec::Vec::new();
+    for row in &verb::TABLE {
+        operations.push((row.name, row.operation));
+    }
+    operations.push(("BIND", fs::BIND));
+    operations.push(("UNBIND", fs::UNBIND));
+    operations.push(("BIND_SYNC", fs::BIND_SYNC));
     for (i, (na, a)) in operations.iter().enumerate() {
         assert!(*a <= 0xff, "{na} does not fit the 8-bit opcode field");
         assert_ne!(

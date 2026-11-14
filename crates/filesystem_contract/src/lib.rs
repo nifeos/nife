@@ -40,8 +40,9 @@ pub const fn operation(w0: u64) -> u64 {
     w0 >> OPERATION_SHIFT
 }
 
-/// Turn a redox/POSIX errno into a reply's first word: the negated number, so the client can invert
-/// it. This is the ONE place the error convention is defined; the FS server calls it at its boundary.
+/// Turn a Redox or POSIX (Portable Operating System Interface) errno into a reply's first word: the
+/// negated number, so the client can invert it. This is the one place the error convention is
+/// defined; the filesystem server calls it at its boundary.
 pub const fn reply_err(errno: i32) -> i64 {
     -(errno as i64)
 }
@@ -120,7 +121,7 @@ pub mod dirent;
 /// # BUGS
 ///
 /// - Free space is a forecast, not a reservation; see [`fs::STATFS`]'s BUGS.
-/// - There is no inode count: SMB's volume classes carry none, so nothing above has asked.
+/// - There is no inode count: Server Message Block's volume classes carry none, so nothing above has asked.
 pub mod statfs;
 
 /// **The per-file grant**: holding one file rather than a directory, and how the narrowing travels.
@@ -175,6 +176,9 @@ pub const DESCENT_REFUSED: u64 = 0xF5_0DEAD5;
 
 /// What the `rm` program reports, and how a diagnostic is told from the verdict.
 pub mod rm;
+
+#[cfg(kani)]
+mod proofs;
 
 #[cfg(test)]
 mod tests;

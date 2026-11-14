@@ -48,7 +48,7 @@ pub const RAW: u32 = 0;
 /// which is the discipline `ENOENT` earns in [`dir::explain`]: an instrument that reads any
 /// failure as "not there" reports filesystems that never existed.
 pub const ENODATA: i32 = 61;
-/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL. A fact about the
+/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL byte. A fact about the
 /// name, not about the capability.
 pub const ERANGE: i32 = 34;
 /// `E2BIG`: the value is longer than [`MAXIMUM_VALUE`].
@@ -70,7 +70,7 @@ pub const ENOTSUP: i32 = 95;
 ///
 /// Every name-taking verb refuses it with `EINVAL`, as for `..`, and [`fs::READDIR`] skips it, in
 /// every directory, so no client reaches attributes as ordinary bytes. Recovery does see it:
-/// `redoxfs_host extract` and upstream's FUSE mount carry it out with the files, a decision and not
+/// `redoxfs_host extract` and upstream's FUSE (filesystem in userspace) mount carry it out with the files, a decision and not
 /// a leak.
 ///
 /// **BUGS.** No file anywhere on a nife filesystem can be called `.nife-attrs`, at any rights.
