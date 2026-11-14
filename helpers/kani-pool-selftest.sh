@@ -109,7 +109,7 @@ three() {
 	rm -f "$tmp/go"
 	: >"$tmp/events"
 	for i in 1 2 3; do
-		"$root/script/verify" --only glob >"$tmp/run$i.out" 2>&1 &
+		"$root/script/verify" --only byte_glob >"$tmp/run$i.out" 2>&1 &
 		pids="$pids $!"
 		if [ "$i" -lt 3 ]; then until_true "run $i to start its proof" starts "$i"; fi
 	done
@@ -138,7 +138,7 @@ grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" || fail "stage 2: the th
 # 3.
 : >"$tmp/args"
 : >"$tmp/go"
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=8 "$root/script/verify" --only glob >"$tmp/clamp.out" 2>&1 ||
+NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=8 "$root/script/verify" --only byte_glob >"$tmp/clamp.out" 2>&1 ||
 	fail "stage 3: the clamped run failed"
 grep -q "VERIFY_JOBS=8 lowered to 2" "$tmp/clamp.out" || fail "stage 3: the lowering was silent"
 grep -q -- "-j 2 " "$tmp/args" || fail "stage 3: cargo kani was not run at -j 2: $(cat "$tmp/args")"
@@ -158,7 +158,7 @@ grep -q "waiting for 5 of 11 Kani units" "$tmp/run3.out" || fail "stage 5: the t
 # 6. A holder in flight is named by lane, worktree and command.
 rm -f "$tmp/go"
 : >"$tmp/events"
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 "$root/script/verify" --only glob >/dev/null 2>&1 &
+NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 "$root/script/verify" --only byte_glob >/dev/null 2>&1 &
 holder=$!
 until_true "the holder to start its proof" starts 1
 st="$(NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
@@ -223,7 +223,7 @@ PY
 # 8.
 [ -z "$(git -C "$root" status --porcelain -- .kani-version)" ] ||
 	fail "stage 8: .kani-version has local changes, so the fixture row cannot be fresh; commit it first"
-printf 'row\tpath\ttree\tkani\tpeak_mib\nglob\t.kani-version\t%s\t%s\t1500\n' \
+printf 'row\tpath\ttree\tkani\tpeak_mib\nbyte_glob\t.kani-version\t%s\t%s\t1500\n' \
 	"$(git -C "$root" rev-parse HEAD:.kani-version)" "$(tr -d '[:space:]' <"$root/.kani-version")" >"$tmp/peaks.tsv"
 pids=""
 unset NIFE_KANI_HARNESS_GIB
