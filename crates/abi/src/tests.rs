@@ -322,3 +322,101 @@ fn every_error_is_pinned_to_its_number() {
         assert_eq!(Error::from_ret(number), Some(error), "{error:?}");
     }
 }
+
+/// **A public number nobody pinned fails here.** The lists above claim to be exhaustive; this
+/// counts. It reads every source file of the crate, finds each `pub const NAME: u64` and
+/// `pub const NAME: u32` (the types a number on the wire takes), and fails unless the name
+/// appears in a pinned list or an `assert_eq!` of this file under its module's path. So a number
+/// added without a pinned line, or a line deleted with its number left behind, cannot pass.
+#[test]
+fn every_public_number_is_pinned() {
+    extern crate std;
+    use std::format;
+    use std::string::String;
+    use std::vec::Vec;
+
+    const SOURCES: &[(&str, &str)] = &[
+        ("", include_str!("lib.rs")),
+        ("address_space", include_str!("address_space.rs")),
+        ("console", include_str!("console.rs")),
+        ("cycle_counter", include_str!("cycle_counter.rs")),
+        ("fault", include_str!("fault.rs")),
+        ("futex", include_str!("futex.rs")),
+        ("interrupt", include_str!("interrupt.rs")),
+        ("memory_region", include_str!("memory_region.rs")),
+        ("notification", include_str!("notification.rs")),
+        ("object_type", include_str!("object_type.rs")),
+        ("page_frame", include_str!("page_frame.rs")),
+        ("port_range", include_str!("port_range.rs")),
+        ("process", include_str!("process.rs")),
+        ("reboot", include_str!("reboot.rs")),
+        ("rendezvous", include_str!("rendezvous.rs")),
+        ("reply", include_str!("reply.rs")),
+        ("rights", include_str!("rights.rs")),
+        ("survey", include_str!("survey.rs")),
+        (
+            "thread_control_block",
+            include_str!("thread_control_block.rs"),
+        ),
+        ("timer", include_str!("timer.rs")),
+        ("uart", include_str!("uart.rs")),
+        ("usage", include_str!("usage.rs")),
+        ("virtio", include_str!("virtio.rs")),
+    ];
+    let pinned_text = include_str!("tests.rs");
+
+    let mut unpinned: Vec<String> = Vec::new();
+    let mut counted = 0;
+    for (module, source) in SOURCES {
+        for line in source.lines() {
+            let line = line.trim_start();
+            let Some(rest) = line.strip_prefix("pub const ") else {
+                continue;
+            };
+            let Some((name, kind)) = rest.split_once(": ") else {
+                continue;
+            };
+            if name.starts_with("fn ") {
+                continue;
+            }
+            if !(kind.starts_with("u64") || kind.starts_with("u32")) {
+                continue;
+            }
+            counted += 1;
+            let direct = if module.is_empty() {
+                format!("crate::{name} =>")
+            } else {
+                format!("crate::{module}::{name} =>")
+            };
+            let nested = format!("crate::{module}::record::{name} =>");
+            let version = format!("crate::{name}, ");
+            if !(pinned_text.contains(&direct)
+                || pinned_text.contains(&nested)
+                || pinned_text.contains(&version))
+            {
+                unpinned.push(format!("{module}::{name}"));
+            }
+        }
+    }
+    assert!(counted >= 99, "the scan found only {counted} numbers");
+    assert!(
+        unpinned.is_empty(),
+        "public numbers with no pinned line: {unpinned:?}"
+    );
+}
+
+/// **`Error` works behind `?` and in a hash map.** It is `Display`, `core::error::Error` and
+/// `Hash`, which a host-side harness reaches for first.
+#[test]
+fn error_displays_and_is_an_error_and_hashes() {
+    extern crate std;
+    use std::collections::HashSet;
+    use std::string::ToString;
+    let error: &dyn core::error::Error = &Error::Gone;
+    assert_eq!(
+        error.to_string(),
+        "the capability names an object that no longer exists"
+    );
+    let set: HashSet<Error> = [Error::Gone, Error::Gone, Error::NoSuchSlot].into();
+    assert_eq!(set.len(), 2);
+}

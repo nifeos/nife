@@ -32,7 +32,6 @@ import sys
 # of crates that still describe their consumers.
 PENDING = "a text or value hit in the crate on the day the lint was added; reword or remove it, then delete the entry"
 WAIVERS = {
-    "abi": (6, PENDING),
     "byte_sink_contract": (2, PENDING),
     "capability_manifest_note": (37, PENDING),
     "counter_frequency_contract": (1, PENDING),

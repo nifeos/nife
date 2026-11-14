@@ -8,11 +8,9 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["no-std", "abi", "syscall", "capabilities"]
 categories = ["no-std", "embedded", "os"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # `false` until the release that publishes; that release deletes the line
 
 [lints.rust]
-# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 unsafe_op_in_unsafe_fn = "warn"
 missing_docs = "warn"
 
