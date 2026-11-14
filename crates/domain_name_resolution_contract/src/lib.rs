@@ -27,9 +27,10 @@
 
 /// The version of the name resolver protocol and its zone limits: 1. A break bumps it, with the
 /// dated ledger entry the interface-stability discipline owes; an addition an older peer ignores
-/// does not.
+/// does not. Version 1 includes the reply to a spawner's control `CALL` ([`refusal`]).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its version. The
+/// value is frozen at 1, ruled 2026-11-14 (UTC) (milestone 1086, item 3).
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 11, naming the name resolver
@@ -38,7 +39,8 @@ pub const VERSION: u32 = 1;
 /// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
 /// tree to it. A program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface
+/// identity. The value is frozen at 11, ruled 2026-11-14 (UTC) (milestone 1086, item 3).
 pub const INTERFACE_ID: u64 = 11;
 
 mod wire;
