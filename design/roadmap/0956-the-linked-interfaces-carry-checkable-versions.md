@@ -134,7 +134,8 @@ and stay Rust APIs: `calendar`, `domain_name_system`, `glob`, `grant_plan` and
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
 carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
 not reach `grant_plan`. The `Manifest` type and the slot constants live in the leaf crate
-`grant_contract`, which carries interface 17 (milestone 1094, an outside review of `grant_plan`).
+`grant_contract`, which carries interface 17 (milestone 1094 (`grant_plan`: what an outside
+maintainer would fix before it leaves)).
 
 ## What this block does not do
 
