@@ -797,8 +797,8 @@ mod verification {
         );
         assert_eq!(out[..expected], bytes[..expected]);
         let word_bytes = reply_word.to_le_bytes();
-        for index in expected..word_bytes.len() {
-            assert_eq!(word_bytes[index], 0);
+        for &byte in &word_bytes[expected..] {
+            assert_eq!(byte, 0);
         }
     }
 

@@ -114,15 +114,16 @@ doctest.
 
 ### Running the proofs
 
-Install Kani first: `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani
-setup`. Setup downloads a model checker, so it needs network access. Then run every harness:
+Install Kani first: run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. Setup downloads a model checker, so it needs network access. Then run every
+harness:
 
 ```sh
 cargo kani
 ```
 
-On a 2026 x86_64 desktop the six harnesses take about one minute and peak near 2.2 GB of memory,
-as `/usr/bin/time -v cargo kani` measured. To run one harness, give its full path, because
+On a 2026 x86_64 desktop the six harnesses take about one minute and peak near 2.2 gigabytes of
+memory, as `/usr/bin/time -v cargo kani` measured. To run one harness, give its full path, because
 `--exact` refuses a bare name:
 
 ```sh
