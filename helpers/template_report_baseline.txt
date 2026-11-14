@@ -1,4 +1,4 @@
-abi abbreviations 21
+abi abbreviations 32
 abi prose_acronyms 26
 abi register_names 9
 address_space_identifier abbreviations 10
@@ -65,7 +65,7 @@ current_cpu_contract prose_acronyms 1
 current_cpu_contract readme_acronyms 1
 designware_ethernet abbreviations 27
 designware_ethernet prose_acronyms 26
-designware_ethernet register_names 89
+designware_ethernet register_names 91
 designware_inter_integrated_circuit abbreviations 2
 device_tree_blob abbreviations 37
 device_tree_blob prose_acronyms 12
@@ -99,6 +99,7 @@ elf abbreviations 102
 elf prose_acronyms 8
 elf readme_acronyms 1
 elf register_names 9
+entropy_contract abbreviations 7
 environment_contract abbreviations 19
 environment_contract prose_acronyms 4
 environment_contract readme_acronyms 2
@@ -218,6 +219,10 @@ page_frames register_names 6
 paging abbreviations 172
 paging prose_acronyms 57
 paging register_names 22
+pci_configuration_space abbreviations 134
+pci_configuration_space prose_acronyms 27
+pci_configuration_space readme_acronyms 3
+pci_configuration_space register_names 9
 periodic_deadline abbreviations 2
 periodic_deadline prose_acronyms 2
 pgrep abbreviations 9
@@ -228,7 +233,7 @@ pmap register_names 1
 primitive_benchmark_contract abbreviations 7
 primitive_benchmark_contract prose_acronyms 2
 primitive_benchmark_contract readme_acronyms 1
-process_builder abbreviations 35
+process_builder abbreviations 39
 process_builder prose_acronyms 4
 program_argument_contract abbreviations 7
 program_argument_contract prose_acronyms 2
@@ -302,7 +307,7 @@ usb abbreviations 27
 usb prose_acronyms 11
 usb readme_acronyms 4
 usb register_names 10
-user_mode_runtime abbreviations 53
+user_mode_runtime abbreviations 54
 user_mode_runtime prose_acronyms 24
 user_mode_runtime readme_acronyms 1
 user_mode_runtime register_names 2
@@ -310,8 +315,8 @@ video_terminal abbreviations 189
 video_terminal prose_acronyms 17
 video_terminal readme_acronyms 4
 video_terminal register_names 3
-virtio abbreviations 100
-virtio prose_acronyms 17
+virtio abbreviations 103
+virtio prose_acronyms 18
 virtio readme_acronyms 2
 virtio register_names 6
 vmstat abbreviations 5
