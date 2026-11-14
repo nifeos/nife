@@ -18,8 +18,8 @@ An appendix to [the milestone](../1058-non-volatile-memory-express-outside-revie
 - `cargo test`, `cargo kani` (every harness verifies, every patch fails), `cargo mutants` (no miss
   outside the ledger) and all three fuzz targets are green at the commit a tag would carry. The tag
   itself waits for its own ruling.
-- P1-1 to P1-14 have closed in the repository, each by a pull request that cites this block by
-  number, and each P2 item has either closed or become an entry in the README's BUGS.
+- P1-1 to P1-14 have closed in the repository, each by a pull request in the crate's repository,
+  recorded in this block's Follow-on, and each P2 item has either closed or become an entry in the README's BUGS.
 
 ## What needs QEMU or hardware
 
