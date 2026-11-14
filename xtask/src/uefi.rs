@@ -419,7 +419,7 @@ pub(crate) type CollectedStreams = (
 /// for the join and both into one shared transcript as they arrive.
 pub(crate) fn collect_uefi_streams(child: &mut std::process::Child) -> CollectedStreams {
     // On threads, so the watcher and not a blocking read decides when the boot has said enough;
-    // and into a shared buffer, because the watcher waits for `boot_ladder::SCREEN_HELD` live.
+    // and into a shared buffer, because the watcher waits for the screen-hold line (`boot_ladder::Heads::screen_held`) live.
     let transcript_so_far = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
     let collect = |mut from: Box<dyn std::io::Read + Send>,
                    into: std::sync::Arc<std::sync::Mutex<String>>| {
@@ -454,9 +454,10 @@ pub(crate) fn collect_uefi_streams(child: &mut std::process::Child) -> Collected
 /// none of the tells that it did not run. False after naming each that failed.
 fn uefi_serial_transcript_holds(transcript: &str) -> bool {
     let mut ok = true;
+    let verdict = serial_console::HEADS.self_test().to_string();
     for wanted in [
         // This boot carries the archive, so it reaches the self-test verdict and the hand-over.
-        boot_ladder::SELF_TEST,
+        verdict.as_str(),
         "nife: handing the system to the userspace progenitor.",
         "(xsdt)",
         "pci         : ecam at",
@@ -501,7 +502,7 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
             let rows = text.lines().filter(|l| !l.is_empty()).count();
             // Reported, not required: the kernel is stopped while this is read, so a shallow catch
             // means the tour had not finished painting. See `UEFI_SCREEN_MARKER`.
-            let depth = if text.contains(UEFI_SCREEN_DEEP_MARKER) {
+            let depth = if UEFI_SCREEN_DEEP_MARKER.is_in(text) {
                 "the whole tour, banner included: it never scrolled"
             } else {
                 "its last page; the tour is taller than this screen and the serial transcript above has the rest"
@@ -543,7 +544,7 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
                  built with the `screen_hold` feature (target/esp-screen, not target/esp), that \
                  `screen-hold` reached the kernel's boot command line, and that the boot got as far \
                  as the screen handover at all. Last dump: {}",
-                boot_ladder::SCREEN_HELD,
+                serial_console::HEADS.screen_held().to_string(),
                 shot.display()
             );
             ok = false;
@@ -558,7 +559,10 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
     let mut ok = true;
     match &screen.verdict {
         Some(text) => {
-            if let Some(line) = text.lines().find(|l| l.contains(boot_ladder::SELF_TEST)) {
+            if let Some(line) = text
+                .lines()
+                .find(|l| serial_console::HEADS.self_test().is_in(l))
+            {
                 eprintln!("uefi-boot: the self-test verdict is on the shell's screen:");
                 eprintln!("uefi-boot:   | {line}");
             }
@@ -567,7 +571,7 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
             eprintln!(
                 "uefi-boot: the self-test verdict (`{}`) never reached the shell's screen. Last \
                  dump: {}",
-                boot_ladder::SELF_TEST,
+                serial_console::HEADS.self_test(),
                 shot.display()
             );
             ok = false;
@@ -617,14 +621,14 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
 /// `boot_self_test` prints it after the hand-over, once the screen is the shell's terminal, so it
 /// is read off the terminal ([`ScreenReadings::verdict`]). See
 /// notes/x86-uefi-boot/running-under-firmware.md.
-const UEFI_SCREEN_MARKER: &str = boot_ladder::TOUR;
+const UEFI_SCREEN_MARKER: boot_ladder::Head<'static> = serial_console::HEADS.tour();
 
 /// **The tour's first line, reported when the screen was tall enough to still be holding it.**
 ///
 /// Not required, and never there on QEMU's 1280x800 OVMF console, where the tour scrolls. Reported
 /// because it separates "the whole boot is on this screen" from "its last page is", so a machine
 /// whose tour stops scrolling says so.
-const UEFI_SCREEN_DEEP_MARKER: &str = boot_ladder::BANNER;
+const UEFI_SCREEN_DEEP_MARKER: boot_ladder::Head<'static> = serial_console::HEADS.banner();
 
 /// The command `uefi-boot` types on the serial line once the prompt is on the screen, and
 /// [`UEFI_SCREEN_ANSWER`] the line it must print there. Words that appear nowhere in the boot, so
@@ -648,7 +652,7 @@ struct ScreenReadings {
     /// true, because that is the one case where the reader needs to see what WAS there: the boot
     /// was stopped, so this picture is the answer rather than a near miss.
     last_held: Option<String>,
-    /// The shell's terminal with the self-test verdict (`boot_ladder::SELF_TEST`) on it: the
+    /// The shell's terminal with the self-test verdict (`boot_ladder::Heads::self_test`) on it: the
     /// progenitor prints the verdict to its console, which this screen shows once it is handed
     /// over.
     verdict: Option<String>,
@@ -686,7 +690,7 @@ fn terminal_text(ppm: &[u8]) -> Option<String> {
 /// **Ask the kernel to hold still, then read three stages of what the screen shows**, from the
 /// monitor at `sock` into `shot`, typing on `serial` (COM1) and watching `wire`.
 ///
-/// 1. The tour, held: on [`boot_ladder::SCREEN_HELD`] in `wire` it dumps and decodes, then writes
+/// 1. The tour, held: on the screen-hold line (`boot_ladder::Heads::screen_held`) in `wire` it dumps and decodes, then writes
 ///    a byte to release the boot (milestone 445). Nothing falls back to sampling.
 /// 2. The prompt, a row starting `$ `, sampled because it is a state and not an event.
 /// 3. The answer: [`UEFI_SCREEN_COMMAND`] typed, and a row equal to [`UEFI_SCREEN_ANSWER`].
@@ -717,7 +721,7 @@ fn screen_watch(
         if !seen.held {
             seen.held = wire
                 .lock()
-                .map(|t| t.contains(boot_ladder::SCREEN_HELD))
+                .map(|t| serial_console::HEADS.screen_held().is_in(&t))
                 .unwrap_or(false);
         }
         if !screendump(sock, shot) {
@@ -740,7 +744,7 @@ fn screen_watch(
         // The shell's half is drawn by `display_terminal`, in its own font, not the tour's.
         let shell = bytes.as_ref().and_then(|bytes| terminal_text(bytes));
         if let Some(shell) = &shell {
-            if seen.verdict.is_none() && shell.contains(boot_ladder::SELF_TEST) {
+            if seen.verdict.is_none() && serial_console::HEADS.self_test().is_in(shell) {
                 seen.verdict = Some(shell.clone());
             }
             if seen.prompt.is_none() && shell.lines().any(|l| l.starts_with("$ ")) {
@@ -755,7 +759,7 @@ fn screen_watch(
             // Only until the release: a dump taken after it shows the shell's terminal in another
             // font, which this decoder reads as noise.
             if seen.held && !released {
-                if seen.tour.is_none() && text.contains(UEFI_SCREEN_MARKER) {
+                if seen.tour.is_none() && UEFI_SCREEN_MARKER.is_in(&text) {
                     seen.tour = Some(text.clone());
                 }
                 if !text.trim().is_empty() {

@@ -26,6 +26,13 @@ use screen_console::{Cells, PixelSink, ScreenConsole};
 
 use crate::sync::{InterruptSafeMutex, rank};
 
+/// **The heads of this system's boot lines**, built from the name every one of them begins with.
+/// The kernel prints the banner, machine, tour, screen-hold and (with no progenitor) verdict lines
+/// through it; `serial_console` builds the same heads to read them.
+///
+/// Name: provisional.
+pub(crate) const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
+
 /// The console UART's **physical** address on QEMU's `virt` machine.
 #[cfg(target_arch = "aarch64")]
 const UART_PHYS: u64 = 0x0900_0000; // PL011
@@ -365,7 +372,7 @@ fn hold_screen_for_host() {
     CONSOLE.lock().uart.discard_waiting_bytes();
     crate::println!(
         "{}send any byte on this line to release it",
-        boot_ladder::SCREEN_HELD
+        HEADS.screen_held()
     );
 
     let start = crate::arch::timer::ticks();

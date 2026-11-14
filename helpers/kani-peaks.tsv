@@ -35,7 +35,7 @@ nifefs	crates/nifefs	a7038e8018ae2d1f802c8065ce8a80b14654d248	0.68.0	390
 package_archive	crates/package_archive	226714b9f133d678297b1dd4d759897edb047476	0.68.0	381
 page_frames	crates/page_frames	f11347388d22c03da514ee9f2bdf64f0839fe4ac	0.68.0	305
 paging	crates/paging	6a9384aa9ac33a8f3dbe6c5abe64a6139d4e5b1b	0.68.0	104
-pci	crates/pci	0ec368d5b5b7357f0a9a213388a4a6e030b78683	0.68.0	630
+pci_configuration_space	crates/pci_configuration_space	0ec368d5b5b7357f0a9a213388a4a6e030b78683	0.68.0	630
 periodic_deadline	crates/periodic_deadline	3847c01544341364e3e8bc6edd44f5c703dbb5dd	0.68.0	191
 subtree_scope	crates/subtree_scope	e4683040334bd8f920db2f51a2e4e9e6a4ada7f4	0.68.0	5943
 timetable	crates/timetable	d6fe2168f801fd1479e80ffdca95664b63fe0a83	0.68.0	410
