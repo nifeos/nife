@@ -43,8 +43,8 @@ use slabtop::Spending;
 use user_mode_runtime::{exit, is_granted, memory_region_usage, send};
 
 const REPORT: u64 = 0;
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
-const SHARE_SLOT: u64 = grant_plan::SHARE_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
+const SHARE_SLOT: u64 = grant_contract::SHARE_SLOT;
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
@@ -79,8 +79,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

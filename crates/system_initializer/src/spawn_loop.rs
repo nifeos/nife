@@ -59,7 +59,7 @@ pub(super) struct Channels {
     /// READ on the wall clock, endowed to a child whose manifest declares one (DECISIONS §43).
     pub(super) clock_page: u64,
     /// READ on the inert-configuration page, endowed to a child whose manifest declares
-    /// [`grant_plan::Manifest::configuration`] (DECISIONS §111 (inert configuration is a read-only page)). [`clock_page`](Channels::clock_page)'s
+    /// [`grant_contract::Manifest::configuration`] (DECISIONS §111 (inert configuration is a read-only page)). [`clock_page`](Channels::clock_page)'s
     /// twin in every respect: unconditional, read-only, and handed on only where the manifest asks.
     pub(super) config_page: u64,
     /// WRITE-delegable: the endpoint the terminal's sink adapter serves, which is where a declared
@@ -77,22 +77,22 @@ pub(super) struct Channels {
     /// **The second mounted tree's service and its client-window pool** (milestone 834 (ioping on nife and Linux)), or `None`
     /// on a boot without one. [`fs`](Channels::fs)'s shape and reason: a directory grant the shell
     /// names through `/disk` is built from this, badged per job
-    /// (`grant_plan::spawnproto::in_mounted_tree`).
+    /// (`program_table::spawnproto::in_mounted_tree`).
     pub(super) disk: Option<Fs>,
     /// **A client view of the entropy service** (milestone 111 (endow a child with entropy)),
     /// endowed `WRITE`, the right to `CALL`, to a child whose manifest declares
-    /// [`grant_plan::Manifest::entropy`]; the progenitor keeps the full-rights capability it
+    /// [`grant_contract::Manifest::entropy`]; the progenitor keeps the full-rights capability it
     /// retyped and never receives on it. `None` on a boot that built no entropy service (no
     /// virtio-rng device, no `entropy` program in the initial ramdisk, or a service that did not
-    /// answer `READY`), and then a declaring child gets an empty [`grant_plan::ENTROPY_SLOT`] and
+    /// answer `READY`), and then a declaring child gets an empty [`grant_contract::ENTROPY_SLOT`] and
     /// says so rather than drawing predictable bytes. The shell holds none, since nothing it does
     /// as a builtin is unpredictable.
     pub(super) entropy: Option<u64>,
     /// **The network stack's client endpoint** (milestone 590 (provisional)), endowed to a child
-    /// whose manifest declares [`grant_plan::Manifest::network`]. [`entropy`](Channels::entropy)'s
+    /// whose manifest declares [`grant_contract::Manifest::network`]. [`entropy`](Channels::entropy)'s
     /// shape exactly: the progenitor keeps the full-rights capability it retyped and never receives
     /// on it, and places `WRITE` for a declaring child. `None` on a boot with no NIC or no
-    /// `net_stack`, and then a declaring child holds an empty [`grant_plan::NETWORK_SLOT`] and says
+    /// `net_stack`, and then a declaring child holds an empty [`grant_contract::NETWORK_SLOT`] and says
     /// so. The shell holds none, for `entropy`'s reason: nothing it does as a builtin reaches the
     /// network.
     pub(super) network: Option<u64>,
@@ -102,13 +102,13 @@ pub(super) struct Channels {
     /// reap, the forget through it ([`SpawnEndpoint::resolver_for`]).
     pub(super) resolver: Option<u64>,
     /// **The reboot object** (milestone 805, DECISIONS §251), endowed `WRITE` to a child whose
-    /// manifest declares [`grant_plan::Manifest::reboot`], and to nothing else. `None` only on a
+    /// manifest declares [`grant_contract::Manifest::reboot`], and to nothing else. `None` only on a
     /// kernel that did not grant it, and then a declaring child holds an empty
-    /// [`grant_plan::REBOOT_SLOT`] and says so. The shell holds none: restarting the machine is not
+    /// [`grant_contract::REBOOT_SLOT`] and says so. The shell holds none: restarting the machine is not
     /// something a builtin does.
     pub(super) reboot: Option<u64>,
     /// **The board's PMIC route** (milestone 1062 (the device control planes leave the kernel), step 5), endowed `WRITE` at
-    /// [`grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] beside the reboot object, and to nothing
+    /// [`grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] beside the reboot object, and to nothing
     /// else. `None` on every machine whose kernel spawned no route, and then the declaring child
     /// holds an empty slot and asks the reboot object alone.
     pub(super) power_management_chip_route: Option<u64>,
@@ -163,7 +163,7 @@ pub(super) struct Fs {
 /// (§24 (interrupting the foreground process)). See notes/system-initializer.md, "The spawn
 /// service".
 ///
-/// `spawnable.progs` is indexed by [`Program::id`], so it is [`grant_plan::PROGRAM_COUNT`] long: a
+/// `spawnable.progs` is indexed by [`Program::id`], so it is [`program_table::PROGRAM_COUNT`] long: a
 /// variant added to `grant_plan` without a slot here would be an out-of-bounds read.
 pub(super) fn spawn_service(
     c: Channels,
@@ -195,8 +195,8 @@ pub(super) fn spawn_service(
 /// authority, the boot's measured images, and the two pieces of state a request can change.
 struct Service<'a> {
     c: Channels,
-    progs: &'a [Option<elf::Elf<'a>>; grant_plan::PROGRAM_COUNT],
-    absent: &'a [bool; grant_plan::PROGRAM_COUNT],
+    progs: &'a [Option<elf::Elf<'a>>; program_table::PROGRAM_COUNT],
+    absent: &'a [bool; program_table::PROGRAM_COUNT],
     care: Caretakers,
     discipline: SessionDiscipline,
     fs_scoped: bool,
@@ -290,13 +290,13 @@ impl Delegated {
 /// What a request resolved to before anything is built: the one manifest, the word a refusal
 /// answers with, the image's parsed bytes when it is one, and the verb read from its argv.
 struct Resolved {
-    manifest: Option<grant_plan::Manifest>,
+    manifest: Option<grant_contract::Manifest>,
     failure: u64,
     image_elf: Option<elf::Elf<'static>>,
     /// The digest of an image the live generation vouched for, which its zone grants are keyed on
     /// (milestone 892).
     image_digest: Option<measured_boot::Digest>,
-    verb: [u8; grant_plan::MAXIMUM_VERB],
+    verb: [u8; grant_contract::MAXIMUM_VERB],
     verb_len: Option<usize>,
     /// **The approval a delegated line asked to act within** (milestone 911 (scripted installs
     /// grant only what the owner's approval file allows)), as the line's `--within <name>` said.
@@ -330,7 +330,7 @@ impl Wants {
     /// Read each declaration from the program's own manifest, never from the request: a person
     /// designates none of these, so no bit on the wire carries them. See
     /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
-    fn of(manifest: Option<grant_plan::Manifest>) -> Wants {
+    fn of(manifest: Option<grant_contract::Manifest>) -> Wants {
         let wants_clock = manifest.is_some_and(|m| m.clock);
         let wants_domain = manifest.is_some_and(|m| m.domain);
         let wants_config = manifest.is_some_and(|m| m.configuration);
@@ -338,7 +338,7 @@ impl Wants {
         let wants_network = manifest.is_some_and(|m| m.network);
         let wants_machine = manifest.is_some_and(|m| m.machine);
         let wants_share = manifest.is_some_and(|m| m.share);
-        // `grant_plan::image_can_carry` keeps this off every image, so only the built-in `reboot`.
+        // `program_table::image_can_carry` keeps this off every image, so only the built-in `reboot`.
         let wants_reboot = manifest.is_some_and(|m| m.reboot);
         let wants_sync = manifest.is_some_and(|m| m.sync);
         Wants {
@@ -607,7 +607,7 @@ impl Service<'_> {
 
     /// Carve an image request's child region and staging region from the image pool, and copy its
     /// frames into the staging region. The child's region is a `std` one when the argv bit is set,
-    /// sized as the image (`grant_plan::image_region_pages`); see
+    /// sized as the image (`program_table::image_region_pages`); see
     /// notes/system-initializer/the-spawn-service.md, "Images". A `graphical_terminal` request is
     /// never an image, so nothing is carved for one and its frames' views are only given up.
     fn carve_image(&mut self, req: &Request) -> (Option<u64>, Option<u64>) {
@@ -631,12 +631,12 @@ impl Service<'_> {
         {
             spawn.split(
                 images_ut,
-                grant_plan::image_region_pages(
+                program_table::image_region_pages(
                     spawnproto::image_pages(spawnproto::image_len(w0)),
                     if wiring.program_arguments {
-                        grant_plan::StartupContract::Std
+                        grant_contract::StartupContract::Std
                     } else {
-                        grant_plan::StartupContract::Native
+                        grant_contract::StartupContract::Native
                     },
                     JOB_REGION_PAGES,
                 ),
@@ -720,7 +720,7 @@ impl Service<'_> {
     /// Decide what the request is: vouch for and parse an image, read the line's verb, and settle
     /// the one manifest and the word a refusal answers with. A vouched image is endowed from its
     /// own note, an unvouched one only for a caller that presented the run-unvouched capability and
-    /// then with `grant_plan::UNVOUCHED_MANIFEST` (§219 D); a program with a verb table is narrowed
+    /// then with `program_table::UNVOUCHED_MANIFEST` (§219 D); a program with a verb table is narrowed
     /// by the line's verb. See notes/system-initializer/the-spawn-service.md, "Images".
     fn resolve(&mut self, req: &Request, staging: Option<u64>) -> Resolved {
         let Channels { own_ut, fs, .. } = self.c;
@@ -741,7 +741,7 @@ impl Service<'_> {
         let image_elf = staging.and_then(|_| {
             let bytes = staged_image(spawnproto::image_len(w0));
             let (vouch, digest) = vouched(bytes, fs, own_ut, &mut self.fs_mapped);
-            unvouched = vouch == grant_plan::Vouch::Unvouched;
+            unvouched = vouch == program_table::Vouch::Unvouched;
             image_digest = (!unvouched).then_some(digest);
             let elf = if !unvouched || presented {
                 elf::Elf::parse(bytes).ok()
@@ -762,15 +762,15 @@ impl Service<'_> {
         });
         // The verb is read from the shell's page before the region is split, which an installer
         // holder's manifest sizes, and checked again against the child's copy ([`copy_args`]).
-        let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
+        let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
         let verb_len = args_seen.and_then(|theirs| {
             // SAFETY: `receive_args` mapped the shell's frame read-only at `theirs`, one page, and
             // it stays mapped until the shell reclaims its frame after this request's answer.
             let page = unsafe {
                 core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
             };
-            let mut read = [0u8; grant_plan::MAXIMUM_VERB];
-            let w = grant_plan::verb_of_page(page, &mut read)?;
+            let mut read = [0u8; grant_contract::MAXIMUM_VERB];
+            let w = grant_contract::verb_of_page(page, &mut read)?;
             verb[..w.len()].copy_from_slice(w);
             Some(w.len())
         });
@@ -786,13 +786,13 @@ impl Service<'_> {
             let page = unsafe {
                 core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
             };
-            grant_plan::delegated_within(page, &mut within)
+            grant_contract::delegated_within(page, &mut within)
         });
         let manifest = if wiring.image {
             image_manifest
         } else {
             let verb = verb_len.map(|n| &verb[..n]);
-            prog.map(|p| grant_plan::narrow_by_verb(&p.manifest(), p.verbs(), verb))
+            prog.map(|p| grant_contract::narrow_by_verb(&p.manifest(), p.verbs(), verb))
         };
         let failure = if unvouched && !presented {
             spawnproto::SPAWN_UNVOUCHED
@@ -891,7 +891,8 @@ impl Service<'_> {
         let wants = Wants::of(manifest);
         // The region comes before any grant: a directory grant's caretaker is built from the same
         // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
-        let std_layout = manifest.is_some_and(|m| m.startup == grant_plan::StartupContract::Std);
+        let std_layout =
+            manifest.is_some_and(|m| m.startup == grant_contract::StartupContract::Std);
         let wants_installer = manifest.is_some_and(|m| m.installer);
         let (region, held_misfit) =
             self.job_region(req, manifest, image_region, (std_layout, wants_installer));
@@ -1000,7 +1001,7 @@ impl Service<'_> {
     fn job_region(
         &mut self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         image_region: Option<u64>,
         (std_layout, wants_installer): (bool, bool),
     ) -> (Option<u64>, bool) {
@@ -1047,7 +1048,7 @@ impl Service<'_> {
     fn split_job_region(
         &mut self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         image_region: Option<u64>,
         (std_layout, wants_installer): (bool, bool),
     ) -> Option<u64> {
@@ -1060,7 +1061,7 @@ impl Service<'_> {
         } else if let (true, Some(m)) = (std_layout, manifest) {
             self.spawn.split(
                 if wants_installer { images_ut } else { jobs_ut },
-                grant_plan::named_std_region_pages(&m),
+                program_table::named_std_region_pages(&m),
             )
         } else {
             self.spawn.split(
@@ -1086,7 +1087,8 @@ impl Service<'_> {
         let own_ut = self.c.own_ut;
         let page = match (std_layout, region, seen) {
             (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
-                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAXIMUM_VERB]) == job.verb()
+                grant_contract::verb_of_page(copy, &mut [0u8; grant_contract::MAXIMUM_VERB])
+                    == job.verb()
             }),
             _ => None,
         };
@@ -1102,7 +1104,7 @@ impl Service<'_> {
         &mut self,
         req: &Request,
         job: &Resolved,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         region: Option<u64>,
         (std_layout, wants_installer): (bool, bool),
         label: u64,
@@ -1128,7 +1130,7 @@ impl Service<'_> {
     fn package_parts(
         &mut self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         region: Option<u64>,
         (std_layout, wants_installer): (bool, bool),
         label: u64,
@@ -1164,7 +1166,7 @@ impl Service<'_> {
     fn wire_directory(
         &mut self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         region: Option<u64>,
         (wants_sync, store): (bool, Option<ActivationGrant>),
     ) -> DirWiring {
@@ -1283,7 +1285,7 @@ impl Service<'_> {
     fn wire_mounted(
         &mut self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         region: Option<u64>,
         tree: Fs,
         care_words: (u64, u64, u64),
@@ -1348,7 +1350,7 @@ impl Service<'_> {
     fn native_endowment(
         &self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         wants: &Wants,
         dir: &DirWiring,
         out: (u64, u64),
@@ -1412,7 +1414,7 @@ impl Service<'_> {
     fn named_slots(
         &self,
         req: &Request,
-        manifest: Option<grant_plan::Manifest>,
+        manifest: Option<grant_contract::Manifest>,
         wants: &Wants,
         sync_ep: Option<u64>,
     ) -> ([(u64, u64, u64); 9], usize) {
@@ -1441,49 +1443,49 @@ impl Service<'_> {
             // job's domain is its shell's: the threads of the jobs that shell holds, itself among
             // them, since the progenitor's `deaths` holds none of them (milestone 933).
             let domain = req.delegated.held.map_or(deaths, |(_, exit)| exit);
-            placed_buf[placed_n] = (grant_plan::DOMAIN_SLOT, domain, abi::rights::ENUMERATE);
+            placed_buf[placed_n] = (grant_contract::DOMAIN_SLOT, domain, abi::rights::ENUMERATE);
             placed_n += 1;
         }
         // `WRITE` alone, the right to `CALL`: `READ` would let it take another client's request,
         // and `GRANT` would let it hand the service on. The network's slot is narrowed the same way.
         if let (true, Some(ep)) = (wants.entropy, entropy) {
-            placed_buf[placed_n] = (grant_plan::ENTROPY_SLOT, ep, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::ENTROPY_SLOT, ep, abi::rights::WRITE);
             placed_n += 1;
         }
         if let (true, Some(ep)) = (wants.network, network) {
-            placed_buf[placed_n] = (grant_plan::NETWORK_SLOT, ep, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::NETWORK_SLOT, ep, abi::rights::WRITE);
             placed_n += 1;
         }
         // The job pool with `ENUMERATE` alone answers `abi::memory_region::USAGE` and nothing that
         // spends, splits or destroys.
         if let (true, Some(page)) = (wants.machine, req.delegated.machine_page) {
-            placed_buf[placed_n] = (grant_plan::MACHINE_SLOT, page, abi::rights::READ);
+            placed_buf[placed_n] = (grant_contract::MACHINE_SLOT, page, abi::rights::READ);
             placed_n += 1;
         }
         if wants.share {
             // A held job's share is the shell's budget, which its regions are split from; every
             // other job's is the progenitor's pool.
             let share = req.delegated.share.unwrap_or(jobs_ut);
-            placed_buf[placed_n] = (grant_plan::SHARE_SLOT, share, abi::rights::ENUMERATE);
+            placed_buf[placed_n] = (grant_contract::SHARE_SLOT, share, abi::rights::ENUMERATE);
             placed_n += 1;
         }
         // `WRITE` alone: the child can invoke the reboot object and cannot hand it on.
         if let (true, Some(r)) = (wants.reboot, reboot) {
-            placed_buf[placed_n] = (grant_plan::REBOOT_SLOT, r, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::REBOOT_SLOT, r, abi::rights::WRITE);
             placed_n += 1;
         }
         // `WRITE` alone, the right to `CALL` the route, under the same declaration: the route
         // restarts the board and does nothing else.
         if let (true, Some(route)) = (wants.reboot, power_management_chip_route) {
             placed_buf[placed_n] = (
-                grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT,
+                grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT,
                 route,
                 abi::rights::WRITE,
             );
             placed_n += 1;
         }
         if let Some(f) = sync_ep {
-            placed_buf[placed_n] = (grant_plan::SYNC_SLOT, f, abi::rights::WRITE);
+            placed_buf[placed_n] = (grant_contract::SYNC_SLOT, f, abi::rights::WRITE);
             placed_n += 1;
         }
         (placed_buf, placed_n)

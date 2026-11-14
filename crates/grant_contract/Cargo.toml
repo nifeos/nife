@@ -1,0 +1,23 @@
+[package]
+name = "grant_contract"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# What a program declares it needs and where it finds what it was given: the manifest types, the
+# capability slot numbers, and the narrowing of a manifest by a line's verb. A program reads a slot
+# number from here and links no parser; the shell's planner and the progenitor both read the same
+# declarations. Name: provisional (it waits on the naming-layers decision).
+
+[lints]
+workspace = true
+
+[dependencies]
+# The argument page, which the verb on a page is read from (`verb_of_page`, `delegated_within`).
+program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
+
+# A dev dependency only: one host test pins a word grant's rights to the filesystem contract's bits,
+# which this crate spells as numbers so that it does not link the contract.
+[dev-dependencies]
+filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }

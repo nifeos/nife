@@ -319,7 +319,7 @@ fn spawn_std(
     // clock service is running: an honest baseline rather than a guess. There is no shell here
     // yet to hold a *different* default and pass it explicitly (the "inheritance with
     // visibility" shape the roadmap names); that arrives with whatever program first declares it
-    // wants this page through `grant_plan::Manifest`, which none does today.
+    // wants this page through `grant_contract::Manifest`, which none does today.
     let config_bytes = environment_contract::PageBuilder::new()
         .tz("UTC")
         .expect("UTC is not a recognized environment_contract::domain::KNOWN_TIME_ZONES member")

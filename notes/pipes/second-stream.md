@@ -183,7 +183,7 @@ no message.
 
 `kernel/src/main.rs` hands off to `user::initial_ramdisk()`, which loads the program named `init`,
 and on aarch64 that is `fixtures/src/hello.rs`'s `init_boot` role. `components/src/progenitor.rs` is
-riscv64's. Both serve `grant_plan::spawnproto`, and the serving loop existed twice, once in each
+riscv64's. Both serve `program_table::spawnproto`, and the serving loop existed twice, once in each
 file, about a hundred and forty near-identical lines: the same delegation order, the same slot
 ordering, the same clock rule, the same `build_child_at`.
 

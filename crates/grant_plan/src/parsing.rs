@@ -8,7 +8,8 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    Command, MAXIMUM_SHORT_OPTIONS, Refusal, TouchOperands, parse_u64, split_first_word, trim, word,
+    Command, MAXIMUM_SHORT_OPTIONS, MAXIMUM_VERB, Refusal, TouchOperands, parse_u64,
+    split_first_word, trim, verb_key, word,
 };
 
 /// Split a command line into whitespace-separated tokens, writing them into `out` and returning
@@ -121,7 +122,7 @@ pub const BUILTINS: &[&[u8]] = &[
 /// The first token selects the command, and one that is not a builtin is a **program name**.
 /// `echo` keeps the rest of the line verbatim; the prefix words (`caps`, `time`, `xargs`) keep it
 /// unsplit, since their operand is a command line; everything else works on tokens. Builtins win
-/// over programs, so [`Program::from_name`](crate::Program::from_name) must never learn a name
+/// over programs, so the shell's program table must never learn a name
 /// that is also a builtin.
 pub fn parse(line: &[u8]) -> Command<'_> {
     let trimmed = trim(line);
@@ -396,7 +397,7 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_POSITIONALS: usize = 4;
 
-/// The parsed form of a program invocation, before the manifest check. [`plan`](crate::plan) turns it into an
+/// The parsed form of a program invocation, before the manifest check. [`plan_against`](crate::plan_against) turns it into an
 /// [`Endowment`](crate::Endowment) or a [`Refusal`].
 ///
 /// **The positional tokens are deliberately unclassified here.** The parser knows the shape of a
@@ -476,3 +477,28 @@ impl<'a> ParsedInvocation<'a> {
 
 #[cfg(test)]
 mod tests;
+
+/// **The line's verb**: its second word, quotes off, as the program will hear it as `argv[1]`
+/// (`each_word`'s reading, which `grant_plan::argv` assembles the page from), followed by a
+/// space and the third word when both fit in [`MAXIMUM_VERB`] bytes, which is the key a verb with
+/// an option has (`list -u`). `None` when there is no second word, when it is longer than
+/// [`MAXIMUM_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
+/// into `out`, because a quoted word's text is a temporary.
+///
+/// Name: provisional.
+pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
+    let mut seen = 0usize;
+    let mut held = [[0u8; MAXIMUM_VERB]; 2];
+    let mut lens = [None; 2];
+    let _ = each_word(line, &mut |w| {
+        seen += 1;
+        if (2..=3).contains(&seen) && w.len() <= MAXIMUM_VERB {
+            held[seen - 2][..w.len()].copy_from_slice(w);
+            lens[seen - 2] = Some(w.len());
+        }
+        Ok(())
+    });
+    let verb = &held[0][..lens[0]?];
+    let option = lens[1].map(|n| &held[1][..n]);
+    verb_key(verb, option, out)
+}

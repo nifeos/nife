@@ -14,7 +14,7 @@
 //! |---|---|---|
 //! | 0 | the output sink, `WRITE` | where the table goes |
 //! | [`ADDRESS_SPACE_SLOT`] | the address space, `ENUMERATE` | the space whose mappings it may **name** |
-//! | [`DIAG_SLOT`](grant_plan::DIAGNOSTICS_SLOT) | the diagnostics sink, `WRITE` | where a refusal goes |
+//! | [`DIAG_SLOT`](grant_contract::DIAGNOSTICS_SLOT) | the diagnostics sink, `WRITE` | where a refusal goes |
 
 //! # BUGS
 //!
@@ -44,9 +44,9 @@ const REPORT: u64 = 0;
 /// **The address space under view**: an `AddressSpace` capability, `ENUMERATE`. Everything this program
 /// can see comes through here and nothing else in the capability table names a space.
 ///
-/// Not a `grant_plan` constant like `ps`'s [`grant_plan::DOMAIN_SLOT`], on purpose: `grant_plan` is
-/// the shell's command-line planning surface, and there is no command line that can grant this
-/// program anything (see the module docs). The number is chosen to sit in the same reserved-low-slot
+/// Not a `grant_contract` constant like `ps`'s [`grant_contract::DOMAIN_SLOT`], on purpose: those
+/// are what the shell's command-line planning can grant, and there is no command line that can
+/// grant this program anything (see the module docs). The number is chosen to sit in the same reserved-low-slot
 /// range `DOMAIN_SLOT` (7) and `DIAGNOSTICS_SLOT` (8) already use, so a caller that does eventually
 /// wire this up is not the first program to want a fixed low slot for "the thing under view."
 const ADDRESS_SPACE_SLOT: u64 = 7;
@@ -54,7 +54,7 @@ const ADDRESS_SPACE_SLOT: u64 = 7;
 /// The declared second stream (DECISIONS §67): complaints about the run, never about the listing.
 /// Reused from `grant_plan` rather than a second constant minted for the same number: every program
 /// with a diagnostics stream in this tree uses slot 8, whether or not the shell can reach it.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Whether this process was granted a second stream, decided once in [`_start`].
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
@@ -92,8 +92,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

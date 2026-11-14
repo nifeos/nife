@@ -51,6 +51,9 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
         Ok(v) => v,
         Err(s) => return say(s),
     };
+    // The row each stage was planned as, beside its plan: an endowment carries its manifest and
+    // no row, and the spawn request names the row.
+    let mut rows = [None::<Program>; line::MAXIMUM_STAGES];
     let mut head_builtin = false;
     for (i, stage) in l.stages().iter().enumerate() {
         match grant_plan::parse(stage) {
@@ -71,8 +74,11 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
                     source: l.source_for(i, inp),
                     diagnostics: diag_file,
                 };
-                match grant_plan::plan_stage(&spec, holdings(nav), expanded, streams) {
-                    Ok(e) => plans[i] = Some(e),
+                match program_table::plan_stage(&spec, holdings(nav), expanded, streams) {
+                    Ok((program, e)) => {
+                        plans[i] = Some(e);
+                        rows[i] = Some(program);
+                    }
                     Err(r) => return refuse(spec, r),
                 }
             }
@@ -108,7 +114,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
         None => inp,
     };
 
-    run_pipeline(nav, l, &plans, head_builtin, out, inp, diag_file);
+    run_pipeline(nav, l, &plans, &rows, head_builtin, out, inp, diag_file);
 }
 
 /// Mint the pipes, open the files, spawn the stages, feed the head if the shell is the producer, and
@@ -122,6 +128,7 @@ pub(super) fn run_pipeline(
     nav: &mut Nav,
     l: Line<'_>,
     plans: &[Option<Endowment>],
+    rows: &[Option<Program>],
     head_builtin: bool,
     out: Option<grant_plan::FileGrant>,
     inp: Option<grant_plan::FileGrant>,
@@ -132,7 +139,7 @@ pub(super) fn run_pipeline(
     // This shell can be at one end of a chain, never both. Checked before the files are opened:
     // a `>` truncates, and a line that will not run must not have emptied a file.
     if let Err(r) = grant_plan::check_chain(inp.is_some() || head_builtin, &plans[..n]) {
-        say_chain_refused(&plans[..n], r);
+        say_chain_refused(&plans[..n], &rows[..n], r);
         return;
     }
 
@@ -179,8 +186,14 @@ pub(super) fn run_pipeline(
     // **And every stage's words grant, the same way** (milestone 205's designation half): a stage
     // that hears words is granted what they designated, on window `i`.
     let mut sets = [None::<WordsGrant>; line::MAXIMUM_STAGES];
-    if let Err((prog, why)) = write_stage_words(l, &plans[..n], head_builtin, &mut argvs, &mut sets)
-    {
+    if let Err((prog, why)) = write_stage_words(
+        l,
+        &plans[..n],
+        &rows[..n],
+        head_builtin,
+        &mut argvs,
+        &mut sets,
+    ) {
         give_back_words(&argvs, &sets, true);
         release_pipeline(region, &pipes[..minted]);
         say_stage_words_failed(prog, why);
@@ -194,7 +207,7 @@ pub(super) fn run_pipeline(
         feed_pipe,
         screen_ep,
     };
-    if !spawn_stages(&plans[..n], head_builtin, &ends, &argvs, &sets) {
+    if !spawn_stages(&plans[..n], &rows[..n], head_builtin, &ends, &argvs, &sets) {
         give_back_words(&argvs, &sets, false);
         release_pipeline(region, &pipes[..minted]);
         return;
@@ -250,14 +263,21 @@ fn screen_for_tail(needs_screen: bool) -> Result<Option<u64>, ()> {
 }
 
 /// Say why `check_chain` refused the line, naming the first stage of `plans` that answers while it
-/// reads.
-fn say_chain_refused(plans: &[Option<Endowment>], r: Refusal) {
+/// reads, by its row in `rows`.
+fn say_chain_refused(plans: &[Option<Endowment>], rows: &[Option<Program>], r: Refusal) {
     refused();
     print(b"  ");
     // Named after the first stage that answers while it reads, which is the one a person would
     // reach for `| wc` about. The sentence itself is about the *line* and says so.
-    if let Some(e) = plans.iter().flatten().find(|e| e.writes_while_reading) {
-        print(e.program.name().as_bytes());
+    let first = plans
+        .iter()
+        .zip(rows)
+        .find_map(|(e, program)| match (e, program) {
+            (Some(e), Some(program)) if e.writes_while_reading => Some(program),
+            _ => None,
+        });
+    if let Some(program) = first {
+        print(program.name().as_bytes());
         print(b": ");
     }
     print(r.message().as_bytes());
@@ -381,16 +401,17 @@ fn give_back_words(argvs: &[Option<Argv>], sets: &[Option<WordsGrant>], unsent: 
 fn write_stage_words(
     l: Line<'_>,
     plans: &[Option<Endowment>],
+    rows: &[Option<Program>],
     head_builtin: bool,
     argvs: &mut [Option<Argv>],
     sets: &mut [Option<WordsGrant>],
-) -> Result<(), (grant_plan::Program, Option<&'static [u8]>)> {
+) -> Result<(), (Program, Option<&'static [u8]>)> {
     for i in 0..plans.len() {
-        let Some(e) = plans[i].filter(|_| !(i == 0 && head_builtin)) else {
+        let (Some(e), Some(program)) = (plans[i].filter(|_| !(i == 0 && head_builtin)), rows[i])
+        else {
             continue;
         };
-        let grant_plan::ProgramArgumentDeclaration::Words(grant) =
-            e.program.manifest().program_argument
+        let grant_contract::ProgramArgumentDeclaration::Words(grant) = e.manifest.program_argument
         else {
             continue;
         };
@@ -406,7 +427,7 @@ fn write_stage_words(
                 }
             });
         if let Err(why) = assembled {
-            return Err((e.program, why));
+            return Err((program, why));
         }
     }
     Ok(())
@@ -414,7 +435,7 @@ fn write_stage_words(
 
 /// Say why [`write_stage_words`] could not write `prog`'s words: its sentence, or that the
 /// budget ran out.
-fn say_stage_words_failed(prog: grant_plan::Program, why: Option<&[u8]>) {
+fn say_stage_words_failed(prog: Program, why: Option<&[u8]>) {
     match why {
         Some(sentence) => {
             refused();
@@ -437,10 +458,12 @@ struct StageEnds<'a> {
     screen_ep: Option<u64>,
 }
 
-/// Spawn every stage of `plans` left to right. On a failure it deletes the frames of the stages
-/// after the one that failed and answers `false`; the caller gives back the rest.
+/// Spawn every stage of `plans` left to right, each as its row in `rows`. On a failure it deletes
+/// the frames of the stages after the one that failed and answers `false`; the caller gives back
+/// the rest.
 fn spawn_stages(
     plans: &[Option<Endowment>],
+    rows: &[Option<Program>],
     head_builtin: bool,
     ends: &StageEnds<'_>,
     argvs: &[Option<Argv>],
@@ -451,7 +474,9 @@ fn spawn_stages(
         if i == 0 && head_builtin {
             continue;
         }
-        let Some(e) = plans[i] else { continue };
+        let (Some(e), Some(program)) = (plans[i], rows[i]) else {
+            continue;
+        };
         let stage_sink = if i + 1 < n { Some(ends.pipes[i]) } else { None };
         let stage_source = if i > 0 {
             Some(ends.pipes[i - 1])
@@ -465,6 +490,7 @@ fn spawn_stages(
         // Only the tail is ever screen-narrowed.
         let stage_screen = ends.screen_ep.filter(|_| i + 1 == n);
         if !spawn_stage(
+            program,
             e,
             stage_sink,
             stage_source,
@@ -855,13 +881,15 @@ fn drain_into(f: &mut FileOut) {
     print(b"  (output truncated: that program never said it was finished)\n");
 }
 
-/// **Direct the progenitor to build one stage**, delegating whatever the operators put in its slots.
+/// **Direct the progenitor to build one stage**, as `program`, delegating whatever the operators put
+/// in its slots.
 ///
 /// The progenitor puts the delegated rendezvous where the result rendezvous would have gone, which
 /// is why `>` and `|` are one mechanism. The wiring rules are in notes/pipes/the-shell-side.md.
 ///
 /// Returns whether the stage started; a failure has already been printed.
 fn spawn_stage(
+    program: Program,
     e: Endowment,
     sink: Option<u64>,
     source: Option<u64>,
@@ -915,7 +943,7 @@ fn spawn_stage(
         held: false,
     };
     let (w0, w1, w2) = spawnproto::request(
-        e.program.id(),
+        program.id(),
         e.program_argument,
         e.memory_grant_pages,
         wiring,

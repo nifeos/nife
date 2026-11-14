@@ -56,8 +56,6 @@ use client_windows::*;
 pub use endowment::{BootEndowment, MountedTreeGrant};
 use fault::*;
 use filesystem_contract::{dir, fs as fs_operation};
-use grant_plan::job_windows::{ReapsDue, Windows};
-use grant_plan::{Program, spawnproto};
 use image_request::*;
 use layout::*;
 pub use layout::{
@@ -70,6 +68,8 @@ use process_builder::{
     build_child, forget_thread_control_block, hand_to_requester, retype_into_kernel_object_from,
     retype_into_page_frame_from as retype_page_frame, start_child,
 };
+use program_table::job_windows::{ReapsDue, Windows};
+use program_table::{Program, spawnproto};
 use self_test::*;
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};

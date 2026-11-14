@@ -50,11 +50,11 @@ pool.
 
 The shell holds the regions of the jobs it starts from the program table (see
 `design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is.md`). So `SHELL_BUDGET_PAGES` carries the same mix as the pool,
-`grant_plan::JOB_POOL_PAGES` at 744 pages, beside its 128 pages and the image's 1,024 staging
+`program_table::JOB_POOL_PAGES` at 744 pages, beside its 128 pages and the image's 1,024 staging
 pages: 1,896 in all. The pool keeps its 744 until the stages of a pipeline, the image pool's jobs
 and the graphical session move as well.
 
-`JOBS_BUDGET_PAGES` is six job regions and one `std` region (`grant_plan::STD_REGION_PAGES`). It is
+`JOBS_BUDGET_PAGES` is six job regions and one `std` region (`program_table::STD_REGION_PAGES`). It is
 small on purpose. `script/swish-check` runs more jobs through it than it could hold without the
 regions coming back, so the gate proves that a bounded budget is enough. Widening it silently
 retires that gate. The `std` region is there so a `std` job does not need every native job before
@@ -111,9 +111,9 @@ sized from `credentialer`'s Argon2id cost.
 
 `script/region-check` (`cargo xtask region-check`, in `xtask/src/region_check.rs`; both names
 provisional) fails when a spawnable program outgrows its region, before a QEMU suite reports
-"could not spawn". It builds every `grant_plan::Program` in debug for one architecture and reads
+"could not spawn". It builds every `program_table::Program` in debug for one architecture and reads
 each ELF's loaded pages: the union of the `PT_LOAD` segments' memory sizes, so `.bss` counts. It
-adds the fixed costs and compares the sum with `grant_plan::job_region_pages`, which is
+adds the fixed costs and compares the sum with `program_table::job_region_pages`, which is
 `JOB_REGION_PAGES`, or `DIRECTORY_JOB_REGION_PAGES` behind a directory grant. Four pages of margin stay free. A failure names the program, its image pages, its need and the region. A
 `std` program has its own region and needs no check.
 

@@ -31,7 +31,8 @@ publish = false
 abi = { path = "../crates/abi" }
 address_space_map = { path = "../crates/address_space_map" }
 filesystem_contract = { path = "../crates/filesystem_contract" }
-grant_plan = { path = "../crates/grant_plan" }
+grant_contract = { path = "../crates/grant_contract" }
+program_table = { path = "../crates/program_table" }
 http_response = { path = "../crates/http_response" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 # Finding each program's manifest note in a package, to list what it asks the owner for at install

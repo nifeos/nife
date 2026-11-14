@@ -327,7 +327,7 @@ fn text(bytes: &[u8]) {
 /// **The last message, and it closes the stream** ([`byte_sink_contract::eof`]) rather than inventing a
 /// terminator of its own.
 ///
-/// This program's manifest declares [`grant_plan::OutputDeclaration::Bytes`], the sink contract:
+/// This program's manifest declares [`grant_contract::OutputDeclaration::Bytes`], the sink contract:
 /// self-framing byte messages ending in `OPERATION_EOF`, which the shell reads through
 /// `byte_sink_contract::unpack`, so `rm -rv logs | wc` works. `OPERATION_EOF` uses only the first
 /// word, so the status and the count ride in the two the contract leaves free, on the one message
@@ -373,8 +373,8 @@ interfaces_note::carry_interfaces!(&[
         version: filesystem_contract::fs::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

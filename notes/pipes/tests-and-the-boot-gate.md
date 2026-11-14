@@ -19,7 +19,7 @@ The records this file cites by number:
 `kernel::user::pipeline_tests` wires the real shell binary in a role that reads a script instead
 of a keyboard, with the interactive endowment slot for slot. The kernel plays the two parties on the
 other ends: it serves the terminal contract and collects every byte the shell prints, and a second
-thread serves `grant_plan::spawnproto` as the progenitor.
+thread serves `program_table::spawnproto` as the progenitor.
 
 So the assertions check what a person would see, and the headline one is not a
 constant:
@@ -74,7 +74,7 @@ the shell.
 ## The gate for the boot itself, which is what runs the real progenitor
 
 The guest tests above wire the shell from the kernel: it serves the terminal contract and, on a
-second thread, `grant_plan::spawnproto` in place of the progenitor. The shell cannot tell the
+second thread, `program_table::spawnproto` in place of the progenitor. The shell cannot tell the
 difference, and that is the problem. `components/src/progenitor.rs` is not the same code, so a
 change that broke the real spawn path failed nothing, and the interactive boot is the only
 thing that runs it.

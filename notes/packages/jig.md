@@ -58,7 +58,7 @@ basalt can name another index without rebuilding `jig`.
 
 **Each line holds what its verb needs and no more** (option V2, milestone 281 (`watch` holds
 exactly what `ps` holds)'s test): `list` the catalog alone, `remove` and `rollback` the installer
-alone, `install` all three. `grant_plan::narrow_by_verb` decides it from `grant_plan::Program::verbs`.
+alone, `install` all three. `grant_contract::narrow_by_verb` decides it from `program_table::Program::verbs`.
 The shell narrows for `caps` and the progenitor for the endowment, each reading the line's second
 word. The progenitor reads it off the argv page and refuses the spawn if the child's copy says
 otherwise.
@@ -91,7 +91,7 @@ each page before it hashes, checks its copy against its own catalog, places the 
 a generation. The row records `jig` in its manager column.
 
 The run needs room for a package beside the heap, so a program declaring the installer is built in a
-region one package larger, from the progenitor's image pool (`grant_plan::named_std_region_pages`).
+region one package larger, from the progenitor's image pool (`program_table::named_std_region_pages`).
 
 ## What moved
 

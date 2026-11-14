@@ -269,7 +269,7 @@ fn here_holds(word: &[u8]) -> Result<NameSet, Say> {
     }
 }
 
-fn designated(line: &[u8], g: grant_plan::WordGrant) -> grant_plan::expand::Designation {
+fn designated(line: &[u8], g: grant_contract::WordGrant) -> grant_plan::expand::Designation {
     designation(line, g, &mut here_holds)
         .unwrap()
         .designation()
@@ -283,7 +283,7 @@ fn designated(line: &[u8], g: grant_plan::WordGrant) -> grant_plan::expand::Desi
 fn a_word_that_names_something_here_is_designated() {
     let d = designated(
         b"rg -i needle src/lib.rs notes.txt ./src",
-        grant_plan::WordGrant::ReadOnly,
+        grant_contract::WordGrant::ReadOnly,
     );
     let names: Vec<&[u8]> = d.names().iter().map(|(n, _)| n).collect();
     assert_eq!(names, [&b"src"[..], b"notes.txt"]);
@@ -294,7 +294,7 @@ fn a_word_that_names_something_here_is_designated() {
 /// `.` designates this directory itself. Absolute paths and `..` designate nothing.
 #[test]
 fn nothing_named_is_nothing_designated_and_dot_is_here() {
-    let ro = grant_plan::WordGrant::ReadOnly;
+    let ro = grant_contract::WordGrant::ReadOnly;
     assert!(designated(b"rg needle", ro).is_empty());
     assert!(designated(b"rg needle /etc ../up", ro).is_empty());
     assert!(designated(b"rg needle .", ro).is_here());
@@ -305,8 +305,8 @@ fn nothing_named_is_nothing_designated_and_dot_is_here() {
 /// **Only a program that may create is granted a name that is not here yet** (§170 clause 3).
 #[test]
 fn a_name_not_here_is_designated_only_for_a_program_that_creates() {
-    assert!(designated(b"cc -o main", grant_plan::WordGrant::ReadWrite).is_empty());
-    let d = designated(b"cc -o main", grant_plan::WordGrant::Create);
+    assert!(designated(b"cc -o main", grant_contract::WordGrant::ReadWrite).is_empty());
+    let d = designated(b"cc -o main", grant_contract::WordGrant::Create);
     assert!(d.names().contains(b"main"));
 }
 
@@ -314,7 +314,7 @@ fn a_name_not_here_is_designated_only_for_a_program_that_creates() {
 /// either. A resolver that holds every name makes either mistake visible as a designation.
 #[test]
 fn the_program_and_its_options_are_never_designated() {
-    let ro = grant_plan::WordGrant::ReadOnly;
+    let ro = grant_contract::WordGrant::ReadOnly;
     // `src` exists here, but as the program it is not a grant.
     assert!(designated(b"src", ro).is_empty());
     assert!(designated(b"notes.txt needle", ro).is_empty());
@@ -330,7 +330,7 @@ fn the_program_and_its_options_are_never_designated() {
 /// answer for them: the guard is the shell's and does not depend on the directory refusing.
 #[test]
 fn dotdot_absolute_and_quoted_glob_words_are_refused_before_the_directory_is_asked() {
-    let ro = grant_plan::WordGrant::ReadOnly;
+    let ro = grant_contract::WordGrant::ReadOnly;
     let mut asked = Vec::new();
     let mut holds_all = |w: &[u8]| {
         asked.push(w.to_vec());

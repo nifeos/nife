@@ -85,7 +85,7 @@ under `design/` and so is not a lane's either.
 
 - Kernel and component documentation, which is the bulk: `kernel/src/user.rs` (90),
   `crates/system_initializer/src/lib.rs` (80), `components/src/swish.rs` (48),
-  `crates/grant_plan/src/spawnproto.rs` (32), `crates/grant_plan/src/lib.rs` (29),
+  `crates/program_table/src/spawnproto.rs` (32), `crates/grant_plan/src/lib.rs` (29),
   `kernel/src/trust.rs` (23), and forty more files with fewer.
 - Four user-visible strings. `could not spawn (the progenitor is out of memory)` at the prompt
   (both copies, `components/src/swish.rs` and `crates/swish/src/lib.rs`), `nife: handing the system

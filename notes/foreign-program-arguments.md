@@ -191,7 +191,7 @@ separate channel.
   architectures). `rg` still has nothing to search: a `std` program at the prompt holds no
   directory until the designation half is built
   (`design/roadmap/0665-designating-a-foreign-programs-words.md`).
-- The shell cannot spawn a std program at all. All 16 `grant_plan::Program` entries are native, and
+- The shell cannot spawn a std program at all. All 16 `program_table::Program` entries are native, and
   `ripgrep` runs only from the kernel test harness (`fs_service::start_std_full`). Every option
   inherits this gap. The demonstration at the prompt that milestone 121 (`ripgrep` on nife) wants
   needs it closed. Proposed to the maintainer as a milestone of its own. *Partly closed

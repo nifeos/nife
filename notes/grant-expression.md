@@ -68,7 +68,7 @@ and `CAPABILITY_INSERT`s it into the shell, so the shell has memory that is genu
 
 The shell does not build children itself; the progenitor holds the initrd and stays the ELF loader (the
 parser lives in one place, out of the shell). So the shell directs The progenitor and delegates the
-capabilities it grants, over the spawn endpoint. The protocol (`grant_plan::spawnproto`, a userspace
+capabilities it grants, over the spawn endpoint. The protocol (`program_table::spawnproto`, a userspace
 protocol like the terminal contract, DECISIONS §21):
 
 1. The shell resolves the command into an endowment (program id, argument, page count), checking it

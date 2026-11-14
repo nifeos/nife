@@ -6,8 +6,58 @@
 
 use crate::{
     DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration, InputDeclaration,
-    Manifest, MemoryGrantDeclaration, OutputDeclaration, Program, ProgramArgumentDeclaration,
-    StartupContract, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST,
+    Manifest, MemoryGrantDeclaration, NO_SHORT_OPTIONS, OutputDeclaration, Program,
+    ProgramArgumentDeclaration, StartupContract, WordGrant,
+};
+
+/// **What the progenitor endows a child whose bytes nobody vouched for**, when the caller presented
+/// the run-unvouched capability (DECISIONS §219 gate D2, ruled by calef 2026-09-26: *"Yes, allow
+/// the clock and config pages."*).
+///
+/// The ruling in one value. Of the authorities the progenitor endows from a manifest rather than
+/// from the line, an unvouched child gets the two read-only pages and none of the rest. Everything
+/// else it holds is what the caller delegated, the output alone (slot 0, then the clock page and
+/// the configuration page, for a native child). The bytes' own declaration is not consulted, and
+/// [`image_manifest`] refuses one that asks the line to designate more.
+///
+/// Name: provisional (milestone 198 rung 3a, 2026-09-26).
+pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Forbidden,
+    memory_grant: MemoryGrantDeclaration::Forbidden,
+    file: FileGrantDeclaration::Forbidden,
+    directory: DirectoryGrantDeclaration::Forbidden,
+    short_options: NO_SHORT_OPTIONS,
+    output: OutputDeclaration::Bytes,
+    input: InputDeclaration::Forbidden,
+    reports: true,
+    interruptible: false,
+    clock: true,
+    domain: false,
+    configuration: true,
+    entropy: false,
+    network: false,
+    machine: false,
+    share: false,
+    reboot: false,
+    sync: false,
+    installer: false,
+    catalog: false,
+    indexes: IndexStoreDeclaration::Forbidden,
+    activation_directory: false,
+    console_input: false,
+    startup: StartupContract::Native,
+};
+
+/// **[`UNVOUCHED_MANIFEST`] for bytes built against nife's `std`** (milestone 205 (how a foreign
+/// program is told what to do)): the same two pages, in the `std` layout (clock at slot 5,
+/// configuration at slot 7), plus the line's words at slot 8, which §170 ruled carry no authority.
+/// No entropy, network or domain, whatever the note asks.
+///
+/// Name: provisional.
+pub const UNVOUCHED_STD_MANIFEST: Manifest = Manifest {
+    program_argument: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
+    startup: StartupContract::Std,
+    ..UNVOUCHED_MANIFEST
 };
 
 /// **What a file's bytes are bound and endowed with when they carry no manifest note** (milestone
@@ -23,15 +73,14 @@ use crate::{
 /// Name: provisional (milestone 597, 2026-09-26).
 pub const NO_NOTE_MANIFEST: Manifest = Program::Uptime.manifest();
 
-/// **The row an image's [`Endowment`](crate::Endowment) is filed under**, because an endowment names a `Program` and
-/// a file's bytes have none.
+/// **The row an image is filed under where a caller keeps a row beside the endowment**, such as
+/// the shell's job table and its outcome sentences, because a file's bytes have none.
 ///
-/// An exception, and a foot gun: nothing about an image may be decided from this row. Every
-/// decision is made from the manifest [`image_manifest`] returns, which is what the shell binds
-/// the line against and what the progenitor endows from. A reader who calls
-/// `e.program.manifest()` on an image's endowment gets `uptime`'s manifest, which is the wrong one
-/// whenever the program carries a note. The fix is an endowment that holds its manifest rather
-/// than its row; that is wider than this milestone, and `spawnproto`'s BUGS records it.
+/// An exception, and a foot gun: nothing about an image may be decided from this row. Its
+/// [`Endowment`](crate::Endowment) carries the manifest [`image_manifest`] returns, which is what
+/// the shell binds the line against and what the progenitor endows from. A reader who calls
+/// `IMAGE_ROW.manifest()` gets `uptime`'s manifest, which is the wrong one whenever the program
+/// carries a note.
 ///
 /// Name: provisional (milestone 597, 2026-09-26).
 pub const IMAGE_ROW: Program = Program::Uptime;

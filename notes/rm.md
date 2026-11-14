@@ -1,7 +1,7 @@
 # `rm`, `rm -r`, and why removal needs a directory
 
 Milestone 47. Built 2026-07-31. The contract side is `filesystem_contract::fs::RMDIR`; the program is
-`components/src/rm.rs`; the grant is `grant_plan::DirectoryGrantDeclaration`.
+`components/src/rm.rs`; the grant is `grant_contract::DirectoryGrantDeclaration`.
 
 ## Removal is an operation on the directory, not on the file
 

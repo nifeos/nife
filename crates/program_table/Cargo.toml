@@ -1,0 +1,28 @@
+[package]
+name = "program_table"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# nife's own side of the grant vocabulary: the programs the shell can spawn and what each declares,
+# the spawn protocol's word layout, the shell's window pool and the region budgets both the shell and
+# the progenitor count. The planner it feeds is `grant_plan`, which knows only manifests; this crate
+# is what names nife's programs. Name: provisional.
+
+[lints]
+workspace = true
+
+[dependencies]
+# The manifest types and slot numbers every row is written in.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+# The planner: `plan` and `plan_stage` resolve a name here and plan against its manifest there.
+grant_plan = { version = "0.1.0", path = "../grant_plan" }
+
+# Dev dependencies only: host tests pin `spawnproto`'s rights words to the filesystem contract's bits
+# and `map_el0`'s budget to the one the primitive benchmark measured, without linking either, and
+# read a verb back off an argument page the way the progenitor does.
+[dev-dependencies]
+program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
+filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+primitive_benchmark_contract = { version = "0.1.0", path = "../primitive_benchmark_contract" }

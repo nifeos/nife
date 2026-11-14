@@ -93,9 +93,10 @@ glyph_atlas = { version = "0.1.0", path = "../crates/glyph_atlas" }
 # `display_service::start_screen_terminal` drew it at, from the same function.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 # The programs the shell can spawn (milestone 150): the packer refuses to build an archive missing
-# one, because a `Prog` whose binary is not packed compiles, passes every host test and cannot be
-# spawned. `no_std` with one in-tree dependency (`glob`), so it costs the host build nothing.
-grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+# one, because a `Program` whose binary is not packed compiles, passes every host test and cannot be
+# spawned. Both `no_std`, so they cost the host build nothing.
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for
 # `script/swish-check`'s malformed-note line.

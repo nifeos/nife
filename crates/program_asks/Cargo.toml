@@ -22,6 +22,7 @@ elf = { version = "0.1.0", path = "../elf" }
 package_archive = { version = "0.1.0", path = "../package_archive" }
 
 [dev-dependencies]
-# The `Manifest` the test manifests start from, and the program manifests that name them. A test
-# dependency: no shipped binary reads a manifest through this crate's tests.
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+# The `Manifest` the test manifests start from, and the program manifests that name them. Test
+# dependencies: no shipped binary reads a manifest through this crate's tests.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+program_table = { version = "0.1.0", path = "../program_table" }

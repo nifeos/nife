@@ -7,7 +7,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -68,16 +68,32 @@ name = "glob"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "rayon"
@@ -111,7 +127,8 @@ dependencies = [
  "domain_name_resolution_contract",
  "filesystem_contract",
  "filesystem_fixture",
- "grant_plan",
+ "grant_contract",
+ "program_table",
  "rayon",
  "socket_contract",
  "walk_pricing",

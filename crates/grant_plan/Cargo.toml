@@ -19,6 +19,10 @@ workspace = true
 # on. `grant_plan` is depended on by `user` and `kernel`, so it is exactly that case.
 glob = { version = "0.1.0", path = "../glob" }
 
+# The declarations a line is planned against: the manifest types, the slot numbers and the narrowing
+# by verb. A program reads them without linking this parser.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+
 # The argument page's layout (milestone 205 (how a foreign program is told what to do), DECISIONS §170 (how a foreign program is told what to do)): `argv` assembles a line's words onto
 # it, so the shell and the std PAL that reads the page share one definition.
 program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
@@ -29,4 +33,8 @@ program_argument_contract = { version = "0.1.0", path = "../program_argument_con
 # safe rather than a drift waiting to happen.
 [dev-dependencies]
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
-primitive_benchmark_contract = { version = "0.1.0", path = "../primitive_benchmark_contract" }
+# A dev dependency only, and the one edge that points back: the planner's tests plan the lines a
+# person types against the manifests nife's programs ship with. The library links no program table;
+# its tests pass a row's manifest in, the way a caller does. Nothing here may hand a type of this
+# crate to `program_table`, whose `grant_plan` is the library build and not this test build.
+program_table = { version = "0.1.0", path = "../program_table" }

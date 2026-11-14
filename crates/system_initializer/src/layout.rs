@@ -78,7 +78,7 @@ const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * process_builder::SCRATCH_
 /// spawns, [`CHILD_STACK_PAGES`], a TCB, an address-space root, the tables for the windows a child
 /// touches and the mapping records of §13 (capability revocation and untyped reclamation); see
 /// notes/system-initializer/budgets.md.
-pub(super) const JOB_REGION_PAGES: u64 = grant_plan::JOB_REGION_PAGES;
+pub(super) const JOB_REGION_PAGES: u64 = program_table::JOB_REGION_PAGES;
 
 /// **One directory-granted job's region**: the program *and* the `fs_subtree_caretaker` that carries
 /// its grant, plus the two endpoints between them, all out of one carve, so the client's one reap
@@ -86,7 +86,7 @@ pub(super) const JOB_REGION_PAGES: u64 = grant_plan::JOB_REGION_PAGES;
 /// supervisor's death is its subtree's death)). The endpoints must come from this region: the reap
 /// sweeps them, and that is what wakes a caretaker parked in `RECEIVE`. See
 /// notes/system-initializer/children.md and notes/system-initializer/budgets.md.
-pub(super) const DIR_JOB_REGION_PAGES: u64 = grant_plan::DIRECTORY_JOB_REGION_PAGES;
+pub(super) const DIR_JOB_REGION_PAGES: u64 = program_table::DIRECTORY_JOB_REGION_PAGES;
 
 /// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it: it has
 /// no allocator, no recursion, and one sizable frame (a sixteen-entry handle table, and in a
@@ -105,10 +105,10 @@ pub(super) const FS_CLIENT_PAGE_VA: u64 = address_space_map::pair_page(0x0060_00
 pub(super) const NAMESET_PAGE_VA: u64 = address_space_map::pair_page(0x0070_0000);
 
 /// **The job pool**: six live native jobs and one `std` program's region
-/// ([`grant_plan::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
+/// ([`program_table::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
 /// through it than it could hold without the regions coming back, so widening it silently retires
 /// that gate. See notes/system-initializer/budgets.md.
-pub const JOBS_BUDGET_PAGES: u64 = grant_plan::JOB_POOL_PAGES;
+pub const JOBS_BUDGET_PAGES: u64 = program_table::JOB_POOL_PAGES;
 
 /// **The image pool** (a provisional name), apart from [`JOBS_BUDGET_PAGES`], where an image run by
 /// path or installed is staged and built: the largest image twice (the child's pages, and the copy
@@ -118,9 +118,9 @@ pub const JOBS_BUDGET_PAGES: u64 = grant_plan::JOB_POOL_PAGES;
 ///
 /// - The image is held three times while a child is built (notes/system-initializer/budgets.md).
 /// - Reserved at boot, not borrowed, whether or not an image ever runs.
-pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
+pub const IMAGE_POOL_PAGES: u64 = program_table::image_region_pages(
     spawnproto::IMAGE_MAXIMUM_PAGES,
-    grant_plan::StartupContract::Std,
+    grant_contract::StartupContract::Std,
     JOB_REGION_PAGES,
 ) + spawnproto::IMAGE_MAXIMUM_PAGES;
 

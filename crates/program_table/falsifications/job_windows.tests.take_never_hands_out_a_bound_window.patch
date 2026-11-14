@@ -1,4 +1,4 @@
-Falsifies `grant_plan::job_windows::tests::take_never_hands_out_a_bound_window`.
+Falsifies `program_table::job_windows::tests::take_never_hands_out_a_bound_window`.
 
 The defect: `Windows::take` stops skipping a bound window, so a reaped job's window goes to the
 next job still bound, and the only `UNBIND` left is one run at reuse: the gap milestone 606 (a directory walk costs what it does on Linux) closed, where a
@@ -8,10 +8,10 @@ so everything compiles and nothing else changes.
 Expected to fail: the take after job 1's reap, which gets job 1's window while its badge is still
 bound ("a bound window was handed out: the UNBIND would run at reuse, not at reap").
 
-diff --git a/crates/grant_plan/src/job_windows.rs b/crates/grant_plan/src/job_windows.rs
+diff --git a/crates/program_table/src/job_windows.rs b/crates/program_table/src/job_windows.rs
 index 78fcb64..171bd32 100644
---- a/crates/grant_plan/src/job_windows.rs
-+++ b/crates/grant_plan/src/job_windows.rs
+--- a/crates/program_table/src/job_windows.rs
++++ b/crates/program_table/src/job_windows.rs
 @@ -92,7 +92,7 @@ impl Windows {
          let n = self.end - self.first;
          let w = (0..n)

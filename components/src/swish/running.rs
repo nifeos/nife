@@ -92,7 +92,7 @@ pub(super) struct WordsGrant {
 ///   until milestone 599 (a frame per filesystem client channel).
 pub(super) fn words_grant(
     g: &GrantDir,
-    grant: grant_plan::WordGrant,
+    grant: grant_contract::WordGrant,
     stage: usize,
 ) -> Result<WordsGrant, Option<&'static [u8]>> {
     let dir = match g.directory.depth() {
@@ -242,7 +242,7 @@ static IMAGE_TABLES: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU
 /// Sends the file's frames on the spawn endpoint under `IMAGE_BIT`; a digest the progenitor does
 /// not find runs only under [`HOLDS_RUN_UNVOUCHED`], presented last. The line is bound against the
 /// manifest note [`read_manifest_note`] finds (milestone 597 (a program carries its manifest in an
-/// ELF note)), or `grant_plan::NO_NOTE_MANIFEST`, and every refusal sends nothing. The staging
+/// ELF note)), or `program_table::NO_NOTE_MANIFEST`, and every refusal sends nothing. The staging
 /// region is destroyed once the answer is in, revoking the frames from both address spaces. See
 /// `notes/swish-language/running.md` and `spawnproto`'s BUGS.
 pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
@@ -330,9 +330,8 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
 
 /// [`run_image`]'s answer: the image's output or its one word, then whether the bytes sent were
 /// the whole file.
-fn report_image_answer(e: Endowment, m: &grant_plan::Manifest, read_ok: bool) {
-    // The output's shape is the manifest's, never `e.program`'s: an image's row is a stand-in
-    // (`grant_plan::IMAGE_ROW`).
+fn report_image_answer(e: Endowment, m: &grant_contract::Manifest, read_ok: bool) {
+    // The output's shape is the manifest's: an image is no row of the table.
     if m.output.is_byte_stream() {
         drain_text();
     } else {
@@ -342,7 +341,9 @@ fn report_image_answer(e: Endowment, m: &grant_plan::Manifest, read_ok: bool) {
         // `graphical_terminal` launch); anything below is the program's own answer, which no row
         // renders for an image.
         if answer >= spawnproto::SPAWN_REFUSED_BY_MANIFEST {
-            outcome(e, answer);
+            // Every such word is answered before any row's own sentence, so the stand-in row
+            // (`program_table::IMAGE_ROW`) is never read.
+            outcome(program_table::IMAGE_ROW, e, answer);
         } else {
             print(b"  it answered ");
             print_num(answer);
@@ -360,7 +361,7 @@ struct PlannedImage {
     t: Tree,
     handle: u64,
     size: u64,
-    m: grant_plan::Manifest,
+    m: grant_contract::Manifest,
     e: Endowment,
 }
 
@@ -381,12 +382,12 @@ fn plan_image(nav: &mut Nav, spec: ParsedInvocation) -> Option<PlannedImage> {
             return None;
         }
     };
-    let m = declared.unwrap_or(grant_plan::NO_NOTE_MANIFEST);
-    if !grant_plan::image_can_carry(&m) {
+    let m = declared.unwrap_or(program_table::NO_NOTE_MANIFEST);
+    if !program_table::image_can_carry(&m) {
         nav.close(handle);
         refused();
         print(swish::image_refusal_sentence(
-            grant_plan::ImageRefusal::NotCarried,
+            program_table::ImageRefusal::NotCarried,
         ));
         return None;
     }
@@ -397,12 +398,12 @@ fn plan_image(nav: &mut Nav, spec: ParsedInvocation) -> Option<PlannedImage> {
     if m.network {
         let vouch = super::capabilities::file_digest(t, handle, size)
             .and_then(|d| super::capabilities::live_generation_listing(nav, &d))
-            .map_or(grant_plan::Vouch::Unvouched, |v| {
-                grant_plan::Vouch::Vouched {
+            .map_or(program_table::Vouch::Unvouched, |v| {
+                program_table::Vouch::Vouched {
                     network: v.network_granted,
                 }
             });
-        if let Err(r) = grant_plan::image_manifest(declared, vouch) {
+        if let Err(r) = program_table::image_manifest(declared, vouch) {
             nav.close(handle);
             refused();
             print(swish::image_refusal_sentence(r));
@@ -413,7 +414,7 @@ fn plan_image(nav: &mut Nav, spec: ParsedInvocation) -> Option<PlannedImage> {
     // have their words designated rather than their patterns expanded, and only the note says
     // whether these do.
     let expanded = match m.program_argument {
-        grant_plan::ProgramArgumentDeclaration::Words(grant) => {
+        grant_contract::ProgramArgumentDeclaration::Words(grant) => {
             swish::designation(spec.line(), grant, &mut |token| nav.expand(token))
         }
         _ => expansion(nav, &spec),
@@ -429,8 +430,7 @@ fn plan_image(nav: &mut Nav, spec: ParsedInvocation) -> Option<PlannedImage> {
             return None;
         }
     };
-    let e = match grant_plan::plan_against(&spec, grant_plan::IMAGE_ROW, m, holdings(nav), expanded)
-    {
+    let e = match grant_plan::plan_against(&spec, m, holdings(nav), expanded) {
         Ok(e) => e,
         Err(r) => {
             nav.close(handle);
@@ -464,7 +464,7 @@ fn carve_image_grants(
     t: Tree,
     handle: u64,
     e: &Endowment,
-    m: &grant_plan::Manifest,
+    m: &grant_contract::Manifest,
     pages: u64,
 ) -> Option<ImageGrants> {
     // The window's tables first (once), then any `--mem` region, then the staging region, so
@@ -483,8 +483,8 @@ fn carve_image_grants(
     // foreign program is told what to do)), which is how an installed `rg` hears its pattern. The
     // line's first word is the path it was run by, so that is `argv[0]`. Its region is carved
     // below staging, so staging is still the top when it goes; a program that hears words takes no
-    // `--mem` (`grant_plan::image_can_carry`), so nothing sits between the two.
-    let argv = if grant_plan::image_hears_words(m) {
+    // `--mem` (`program_table::image_can_carry`), so nothing sits between the two.
+    let argv = if program_table::image_hears_words(m) {
         match assemble_argv(spec.line(), 0) {
             Ok(a) => Some(a),
             Err(why) => {
@@ -502,7 +502,7 @@ fn carve_image_grants(
     // **And what its words designated** (milestone 205's designation half), on a page carved
     // after the argv's and still below staging.
     let set_grant = match (e.directory, m.program_argument) {
-        (Some(g), grant_plan::ProgramArgumentDeclaration::Words(grant)) => {
+        (Some(g), grant_contract::ProgramArgumentDeclaration::Words(grant)) => {
             match words_grant(&g, grant, 0) {
                 Ok(w) => Some(w),
                 Err(why) => {
@@ -561,8 +561,8 @@ pub(super) fn read_manifest_note(
     dir: u64,
     handle: u64,
     size: u64,
-) -> Result<Option<grant_plan::Manifest>, grant_plan::ImageRefusal> {
-    use grant_plan::ImageRefusal::Unreadable;
+) -> Result<Option<grant_contract::Manifest>, program_table::ImageRefusal> {
+    use program_table::ImageRefusal::Unreadable;
     // SAFETY: this shell is one thread, and these two statics are used here and nowhere else, so
     // no other reference to either is live.
     let head = unsafe { &mut *core::ptr::addr_of_mut!(NOTE_HEAD) };
@@ -919,18 +919,18 @@ struct Minted {
 /// terminal (the spawn service builds it from its own copies) and an installer holder (its region
 /// comes from the image pool, which is sized for a package). `line` is the typed line, whose verb
 /// narrows a manifest as it does at the progenitor, so both sides count the same region
-/// (`grant_plan::job_region_pages`).
-pub(super) fn hold_pages(e: &Endowment, line: &[u8]) -> Option<u64> {
-    if e.interruptible || e.file.is_some() || e.program == grant_plan::Program::GraphicalTerminal {
+/// (`program_table::job_region_pages`). `program` is the row `e` was planned as.
+pub(super) fn hold_pages(program: Program, e: &Endowment, line: &[u8]) -> Option<u64> {
+    if e.interruptible || e.file.is_some() || program == Program::GraphicalTerminal {
         return None;
     }
-    let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
+    let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
     let verb = grant_plan::verb_of(line, &mut verb);
-    let manifest = grant_plan::narrow_by_verb(&e.program.manifest(), e.program.verbs(), verb);
+    let manifest = grant_contract::narrow_by_verb(&e.manifest, program.verbs(), verb);
     if manifest.installer {
         return None;
     }
-    Some(grant_plan::job_region_pages(
+    Some(program_table::job_region_pages(
         &manifest,
         e.directory.is_some(),
     ))
@@ -946,11 +946,11 @@ fn mint_held(pages: u64) -> Option<Minted> {
     Some(Minted { region, exit })
 }
 
-/// Grant and spawn. The one moment authority moves: split any memory grant off our own budget,
+/// Grant and spawn `program`. The one moment authority moves: split any memory grant off our own budget,
 /// direct the progenitor to load the program, delegate the grant, and read the one answer that comes back.
 /// With a [`Hold`] the progenitor builds the job from a region this shell splits off for it, and
 /// the answer is the job's output and then its death, on this shell's own exit endpoint.
-pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
+pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
     // Unreachable while `plan` refuses a `file:` without `holdings().dir`. If that flips, a file
     // grant must be refused loudly here, never dropped while the child runs without it.
     if e.file.is_some() {
@@ -1005,6 +1005,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
     };
 
     let (w0, w1, w2) = plain_request(
+        program,
         &e,
         argv.is_some(),
         dir_words.is_some(),
@@ -1048,7 +1049,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
         );
         // And, for a program that declares a share view, this shell's budget narrowed to the right
         // to enumerate it: `free` and `slabtop` then describe where the job's memory is.
-        if spawnproto::held_shares(e.program) {
+        if spawnproto::held_shares(program) {
             delegate(BUDGET, abi::rights::ENUMERATE | abi::rights::GRANT);
         }
     }
@@ -1070,12 +1071,12 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
     // whose manifest says it writes **bytes** is the exception: its answer is a stream, so it is
     // drained by a reader that knows the sink contract's framing.
     if let Some(m) = held {
-        finish_held(&e, m, mem_slot, background);
-    } else if e.program.manifest().output.is_byte_stream() {
+        finish_held(program, &e, m, mem_slot, background);
+    } else if e.manifest.output.is_byte_stream() {
         drain_text();
     } else {
         let answer = receive(RESULT).0;
-        outcome(e, answer);
+        outcome(program, e, answer);
     }
     // The set's page was carved after the argv's, so it goes back first and each is the top.
     if let Some(w) = &set_grant {
@@ -1103,9 +1104,9 @@ fn spawn_dir_grant(
     // The progenitor builds the caretaker, because this shell holds no GRANT on the file service.
     // Both helpers return words rather than sending them, so a refusal spawns nothing.
     let mut set_grant = None;
-    let dir_words = match (e.directory, e.program.manifest().program_argument) {
+    let dir_words = match (e.directory, e.manifest.program_argument) {
         (None, _) => None,
-        (Some(g), grant_plan::ProgramArgumentDeclaration::Words(grant)) => {
+        (Some(g), grant_contract::ProgramArgumentDeclaration::Words(grant)) => {
             match words_grant(&g, grant, 0) {
                 Ok(w) => {
                     set_grant = Some(w);
@@ -1161,6 +1162,7 @@ fn spawn_dir_grant(
 
 /// [`spawn`]'s request words for a plain line: `args`, `dir` and `nameset` say what follows it.
 fn plain_request(
+    program: Program,
     e: &Endowment,
     args: bool,
     dir: bool,
@@ -1171,7 +1173,7 @@ fn plain_request(
     // line has no `2>`, and a declared second stream gets the terminal's own sink. `2>` goes down
     // [`pipeline`].
     spawnproto::request(
-        e.program.id(),
+        program.id(),
         e.program_argument,
         e.memory_grant_pages,
         spawnproto::Wiring {
@@ -1199,7 +1201,7 @@ fn plain_request(
             // display grants, and the shell holds none)); no display answers `SPAWN_NO_DISPLAY`.
             // A plain line is the only one `graphical_terminal` reaches. `keyboard` is the spawn
             // service's call, from what the boot granted.
-            graphics: e.program == grant_plan::Program::GraphicalTerminal,
+            graphics: program == Program::GraphicalTerminal,
             keyboard: false,
             held: held.is_some(),
         },
@@ -1384,30 +1386,36 @@ pub(super) const MAXIMUM_OUTPUT_CHUNKS: usize = 4096;
 /// **Take the answer to a held job's request, and then the job**: the progenitor's one answer, the
 /// job's `ThreadControlBlock` after a good one (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)), and then either the job in the foreground,
 /// read to its death and torn down, or the job kept in `background` (milestone 933).
-fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Option<&mut Jobs>) {
+fn finish_held(
+    program: Program,
+    e: &Endowment,
+    held: Minted,
+    budget: Option<u64>,
+    background: Option<&mut Jobs>,
+) {
     let (answer, label, _) = receive(RESULT);
     if answer != spawnproto::SPAWN_OK {
         // The progenitor has reclaimed the region; this shell's slot for it is stale. The budget
         // it was to spend is still this shell's, and goes back above the region's pages.
         capability_delete(held.region);
         if let Some(slot) = budget {
-            jobs::release_budget(slot, e.program);
+            jobs::release_budget(slot, program);
         }
-        if e.program.manifest().output.is_byte_stream() {
+        if e.manifest.output.is_byte_stream() {
             drain_text_with(&mut || Some((answer, 0, 0)));
         } else {
-            outcome(*e, answer);
+            outcome(program, *e, answer);
         }
         return;
     }
     let tcb = receive_capability(RESULT).1;
     match background {
-        Some(jobs) => keep_background(jobs, Held::exit(label, held.region, budget, tcb, e.program)),
+        Some(jobs) => keep_background(jobs, Held::exit(label, held.region, budget, tcb, program)),
         None => {
-            foreground_held(e, label);
+            foreground_held(program, e, label);
             held::collect(held.region, label);
             if let Some(slot) = budget {
-                jobs::release_budget(slot, e.program);
+                jobs::release_budget(slot, program);
             }
             process_builder::forget_thread_control_block(tcb);
         }
@@ -1416,10 +1424,10 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
 
 /// Read a held job's output and then its death, and say how it went. The job's messages and its
 /// death arrive in order on the exit endpoint, so a fault before the answer ends the read.
-fn foreground_held(e: &Endowment, label: u64) {
+fn foreground_held(program: Program, e: &Endowment, label: u64) {
     // `Some(fault)` once the job's death has been heard.
     let mut fate: Option<bool> = None;
-    if e.program.manifest().output.is_byte_stream() {
+    if e.manifest.output.is_byte_stream() {
         drain_text_with(&mut || match held::read_job(label) {
             Ok(message) => Some(message),
             Err(fault) => {
@@ -1429,11 +1437,11 @@ fn foreground_held(e: &Endowment, label: u64) {
         });
     } else {
         match held::read_job(label) {
-            Ok((answer, ..)) => outcome(*e, answer),
+            Ok((answer, ..)) => outcome(program, *e, answer),
             Err(fault) => {
                 fate = Some(fault);
                 if fault {
-                    outcome(*e, spawnproto::JOB_FAULTED);
+                    outcome(program, *e, spawnproto::JOB_FAULTED);
                 } else {
                     failed();
                     print(b"  that command exited without answering\n");
@@ -1449,8 +1457,8 @@ fn foreground_held(e: &Endowment, label: u64) {
     }
 }
 
-/// Report what the spawned program did, in terms of the grant it was given.
-fn outcome(e: Endowment, answer: u64) {
+/// Report what `program`, spawned, did, in terms of the grant it was given.
+fn outcome(program: Program, e: Endowment, answer: u64) {
     // **The only failure a spawned child reports back today**, which is why the sweep's stop rule
     // is honest about its reach: there is no exit status on this path, so a child that ran and did
     // the wrong thing looks to a sweep exactly like one that succeeded. See notes/glob-grant.md.
@@ -1467,7 +1475,7 @@ fn outcome(e: Endowment, answer: u64) {
     if answer == spawnproto::SPAWN_UNVOUCHED || answer == spawnproto::SPAWN_REFUSED_BY_MANIFEST {
         refused();
     }
-    swish::write_outcome(&e, answer, &mut print);
+    swish::write_outcome(program, &e, answer, &mut print);
 }
 
 /// Resolve an invocation, then either refuse it at the prompt (a mismatch the manifest caught) or
@@ -1511,54 +1519,64 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
         Err(Say::Cannot(r)) => return refuse(spec, r),
         Err(said) => return say(said),
     };
-    match grant_plan::plan(&spec, holdings(nav), expanded) {
+    match program_table::plan(&spec, holdings(nav), expanded) {
         Err(refusal) => refuse(spec, refusal),
         // A supervised job runs under the two-tier ^C path (DECISIONS §24); a fast job is simply
         // spawned and waited on.
-        Ok(endow) if endow.interruptible => spawn_interruptible(&mut nav.jobs, endow),
+        Ok((program, endow)) if endow.interruptible => {
+            spawn_interruptible(&mut nav.jobs, program, endow)
+        }
         // `wc report.txt` is `wc < report.txt`: the planner put the name in the source, so this is
         // a one-stage pipeline down the same path a `<` takes, and the child cannot tell the two apart.
-        Ok(endow) => match endow.source {
+        Ok((program, endow)) => match endow.source {
             Source::File(g) => {
                 // Cannot fail: this command came out of `cmd`.
                 let Ok(l) = line::split(cmd) else { return };
                 // One element, not `MAXIMUM_STAGES`: an `Endowment` carries a whole `NameSet` by
                 // value, and a full-width array overflows the shell's stack (a data abort one word
                 // below the lowest mapped stack page).
-                run_pipeline(nav, l, &[Some(endow)], false, None, Some(g), None);
+                run_pipeline(
+                    nav,
+                    l,
+                    &[Some(endow)],
+                    &[Some(program)],
+                    false,
+                    None,
+                    Some(g),
+                    None,
+                );
             }
             // **A program that hears words gets the line as its argv** (milestone 205,
             // DECISIONS §170 (how a foreign program is told what to do)). Assembled here, where a refusal can still name the program, and
             // before anything is sent, so a line that does not fit spawns nothing.
-            _ if endow.program.manifest().program_argument.hears_words() => {
+            _ if endow.manifest.program_argument.hears_words() => {
                 // **A job that reads the console needs the line discipline** (milestone 892 (a std
                 // program at the prompt holds the network and a resolver)): the terminal answers its
                 // stdin read only in cooked mode, so the shell leaves raw mode first, as it does for a
                 // supervised job, and the next prompt's editor takes it back.
-                let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
+                let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
                 let verb = grant_plan::verb_of(spec.line(), &mut verb);
-                let program = endow.program;
-                if grant_plan::narrow_by_verb(&program.manifest(), program.verbs(), verb)
+                if grant_contract::narrow_by_verb(&endow.manifest, program.verbs(), verb)
                     .console_input
                 {
                     super::prompt::leave_raw();
                 }
-                let hold = hold_pages(&endow, spec.line()).map(|pages| Hold {
+                let hold = hold_pages(program, &endow, spec.line()).map(|pages| Hold {
                     pages,
                     background: None,
                 });
                 match assemble_argv(spec.line(), 0) {
-                    Ok(a) => spawn(endow, Some(a), hold),
+                    Ok(a) => spawn(program, endow, Some(a), hold),
                     Err(Some(r)) => refuse(spec, r),
                     Err(None) => out_of_budget(),
                 }
             }
             _ => {
-                let hold = hold_pages(&endow, spec.line()).map(|pages| Hold {
+                let hold = hold_pages(program, &endow, spec.line()).map(|pages| Hold {
                     pages,
                     background: None,
                 });
-                spawn(endow, None, hold);
+                spawn(program, endow, None, hold);
             }
         },
     }

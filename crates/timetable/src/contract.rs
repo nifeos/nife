@@ -4,7 +4,7 @@
 //! The boot-time test spawns one with the compiled-in document, and a durable session
 //! (milestone 152 (durable delegation)) to register its user's schedule; both read this module
 //! rather than a copy (AGENTS.md rule 7). Never hand one the run-unvouched capability
-//! (`grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`): a timetable holding it runs nothing and exits
+//! (`program_table::spawnproto::RUN_UNVOUCHED_SLOT`): a timetable holding it runs nothing and exits
 //! with [`E_UNVOUCHED`], so a scheduled job stays within reach of §220 (signed builds, and trusting
 //! a key is scoped).
 

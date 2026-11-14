@@ -527,7 +527,7 @@ impl Designation {
 /// **What the shell expanded, handed to the planner.**
 ///
 /// The shell expands *before* it plans, which is also what Unix does, so there is no divergence to
-/// earn here. The structural consequence is that [`crate::plan`] must see the **set** rather than
+/// earn here. The structural consequence is that [`crate::plan_against`] must see the **set** rather than
 /// the pattern, since the endowment is the set; this is that argument, and the positional index is
 /// carried so the placement stays explicit rather than being inferred from which slot happens to
 /// want a name.

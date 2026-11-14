@@ -48,8 +48,8 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
      /// Read each declaration from the program's own manifest, never from the request: a person
      /// designates none of these, so no bit on the wire carries them. See
      /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
--    fn of(manifest: Option<grant_plan::Manifest>) -> Wants {
-+    fn of(manifest: Option<grant_plan::Manifest>, unvouched: bool) -> Wants {
+-    fn of(manifest: Option<grant_contract::Manifest>) -> Wants {
++    fn of(manifest: Option<grant_contract::Manifest>, unvouched: bool) -> Wants {
          let wants_clock = manifest.is_some_and(|m| m.clock);
 -        let wants_domain = manifest.is_some_and(|m| m.domain);
 +        let wants_domain = manifest.is_some_and(|m| m.domain) || unvouched;
@@ -72,4 +72,4 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
 +        let wants = Wants::of(manifest, job.unvouched);
          // The region comes before any grant: a directory grant's caretaker is built from the same
          // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
-         let std_layout = manifest.is_some_and(|m| m.startup == grant_plan::StartupContract::Std);
+         let std_layout = manifest.is_some_and(|m| m.startup == grant_contract::StartupContract::Std);

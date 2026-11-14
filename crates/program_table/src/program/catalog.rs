@@ -52,7 +52,7 @@ macro_rules! programs {
 
             /// Resolve a program by the name typed on the command line.
             ///
-            /// Builtins are matched first by [`parse`](crate::parse), so a program named `help`, `echo`, `caps`
+            /// Builtins are matched first by [`parse`](grant_plan::parse), so a program named `help`, `echo`, `caps`
             /// or `time` would be unreachable. The program namespace must not contain any of those
             /// names.
             pub fn from_name(name: &[u8]) -> Option<Program> {
@@ -206,7 +206,7 @@ programs! {
         /// that feeds it nothing is [`Refusal::InputRequired`](crate::Refusal::InputRequired) at the
         /// prompt, and [`OutputDeclaration::Bytes`](crate::OutputDeclaration::Bytes), so `echo a |
         /// wc | wc` composes. With an input and no file, `wc report.txt` is `wc < report.txt`
-        /// ([`line::Source::File`](crate::line::Source::File)); see
+        /// ([`line::Source::File`](grant_plan::line::Source::File)); see
         /// notes/grant-expression/per-file-grants.md.
         Wc { id: 6, name: "wc" },
         /// **Render markdown for a terminal** (milestone 40, `components/src/mdr.rs`,

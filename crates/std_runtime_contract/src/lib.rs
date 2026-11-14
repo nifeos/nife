@@ -94,7 +94,7 @@ pub const RESOLVER_SLOTS: [u64; 8] = [RESOLVER_SLOT, 22, 23, 24, 25, 26, 27, 28]
 /// **Standard input: the terminal endpoint, badged `line_editor::proto::STDIN_BADGE`** (milestone
 /// 892; calef, 2026-10-19 (UTC), on #2405: "a"). std's `Stdin::read` asks it for the line being
 /// typed, eight bytes at a time (`OPERATION_READ_LINE_BYTES`); an empty slot is end of input at
-/// once. Placed only for a program whose manifest sets `grant_plan::Manifest::console_input`.
+/// once. Placed only for a program whose manifest sets `grant_contract::Manifest::console_input`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const STDIN_SLOT: u64 = 29;
@@ -156,17 +156,17 @@ pub const ARGS_PAGE: u64 = 0x1400_0000;
 pub const RESOLVER_PAGE: u64 = 0x1500_0000;
 
 /// **Where the loader maps a copy of the image's package catalog**, read-only, for a program that
-/// declares `grant_plan::Manifest::catalog` (milestone 809 (the package client becomes a program)):
+/// declares `grant_contract::Manifest::catalog` (milestone 809 (the package client becomes a program)):
 /// `package_archive::CATALOG`'s `<stem> <digest>` lines, padded with zero bytes to the page's end.
 /// The page is the child's own, carved from its region, so its reap takes it back; its capability
-/// is at `grant_plan::CATALOG_SLOT`, above the ten fixed slots, for the program to probe. One page
+/// is at `grant_contract::CATALOG_SLOT`, above the ten fixed slots, for the program to probe. One page
 /// above the resolver's. Provisional.
 pub const CATALOG_PAGE: u64 = 0x1600_0000;
 
 /// **Where the loader maps a copy of the image's index sources**, read-only, for a program that
-/// holds `grant_plan::Manifest::indexes` (milestone 801 (packages over the internet)): the
+/// holds `grant_contract::Manifest::indexes` (milestone 801 (packages over the internet)): the
 /// `package_index::SOURCES_ENTRY` text, padded with zero bytes to the page's end, as
-/// [`CATALOG_PAGE`] is. Its capability is at `grant_plan::INDEX_SOURCES_SLOT`. One page above the
+/// [`CATALOG_PAGE`] is. Its capability is at `grant_contract::INDEX_SOURCES_SLOT`. One page above the
 /// catalog's. Provisional, 2026-10-12 (UTC).
 pub const INDEX_SOURCES_PAGE: u64 = 0x1700_0000;
 

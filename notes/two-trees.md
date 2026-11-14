@@ -136,6 +136,6 @@ the `Holdings` entry under BUGS below records it.
   manifest, makes the manifest the only source of one.
 - A path through a mount point is bounded by the one tree's depth, eight components counting the
   mount point's own, not by the second tree's.
-- `grant_plan::plan` and the three functions under it take an `~1 KiB` `Holdings` by value, so a
+- `program_table::plan` and the three functions under it take an `~1 KiB` `Holdings` by value, so a
   debug build keeps a copy in each frame. The globbing witness ran within bytes of its stack and
   now has a seventh page; passing `&Holdings` is the smaller frame that should replace that page.

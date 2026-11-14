@@ -80,7 +80,7 @@ the kernel spawns `components/src/power_management_chip_route.rs` once per boot
 (`kernel/src/user/power_management_chip_route_service.rs`). The starter asks the clock and reset
 server to bring I2C5 up, derives the standard-mode timing from the SYS CRG and syscon words, and
 hands the route the controller's first page and one endpoint. The progenitor holds the endpoint at
-slot 35. It endows `WRITE` at `grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
+slot 35. It endows `WRITE` at `grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
 that declares reboot, and to nothing else. The route answers one request, `RESET`: it reads register
 `0x32`, writes it back with bit 6 set and every other bit as found, and waits two seconds. A reset
 the PMIC honors never answers. `reboot` prints any answer, then asks the reboot object.

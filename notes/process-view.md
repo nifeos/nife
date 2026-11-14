@@ -154,7 +154,7 @@ than it saw without saying so.
 person types, so there is no token to place and no refusal to write. What the field does is tell
 The progenitor which children to endow, and tell a person reading `caps ps` that the authority exists.
 
-Init places the endpoint in `grant_plan::DOMAIN_SLOT` (seven) with `ENUMERATE`, using the same named-slot
+Init places the endpoint in `grant_contract::DOMAIN_SLOT` (seven) with `ENUMERATE`, using the same named-slot
 mechanism §67 gave the diagnostics stream, for the same reason. How many low slots a child gets
 depends on what else the line granted it, and a program that probes a fixed number needs that number
 not to move.

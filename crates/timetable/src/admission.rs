@@ -7,8 +7,10 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
+use grant_contract::Manifest;
 use grant_plan::expand::Expansion;
-use grant_plan::{Endowment, Holdings, Manifest, Refusal};
+use grant_plan::{Endowment, Holdings, Refusal};
+use program_table::Program;
 
 use crate::{Entry, Schedule};
 
@@ -130,9 +132,11 @@ impl Unbacked {
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Admission {
-    /// Planned, backed, armed. The [`Endowment`] is the complete authority the child will hold, and
-    /// printing it is what "`caps` before anything fires" means.
-    Fires(Endowment),
+    /// Planned, backed, armed. The [`Program`] is the row the child is built as, and the
+    /// [`Endowment`] is the complete authority it will hold; printing that is what "`caps` before
+    /// anything fires" means. An installed program's row is `program_table::IMAGE_ROW`, the
+    /// prompt's own convention for bytes.
+    Fires(Program, Endowment),
     /// The program's own manifest refuses the line, exactly as it would at the prompt.
     Refused(Refusal),
     /// The line is legal and this scheduler holds nothing to back it.
@@ -152,11 +156,11 @@ pub(super) fn admit(command: &[u8], held: Held) -> Admission {
         directory: true,
         ..Holdings::default()
     };
-    match grant_plan::plan(&spec, holdings, Expansion::none()) {
+    match program_table::plan(&spec, holdings, Expansion::none()) {
         Err(r) => Admission::Refused(r),
-        Ok(e) => match unbacked(&e, &e.program.manifest(), held) {
+        Ok((program, e)) => match unbacked(&e, &e.manifest, held) {
             Some(u) => Admission::Unbacked(u),
-            None => Admission::Fires(e),
+            None => Admission::Fires(program, e),
         },
     }
 }
@@ -172,33 +176,33 @@ pub(super) fn admit_installed_row(entry: &Entry<'_>, m: Manifest, held: Held) ->
 }
 
 /// **[`admit`], for an installed program**, planned against the manifest its bytes carry rather
-/// than against a row of the image's table. The endowment is filed under `grant_plan::IMAGE_ROW`,
-/// the prompt's own convention for bytes, so nothing may be read off `e.program`: [`unbacked`] is
-/// handed `m` for that reason.
+/// than against a row of the image's table. The admission is filed under `program_table::IMAGE_ROW`,
+/// the prompt's own convention for bytes, so nothing about the program may be read off that row:
+/// the endowment carries `m`.
 fn admit_installed(command: &[u8], m: Manifest, held: Held) -> Admission {
     let spec = grant_plan::parse_run(command);
     let holdings = Holdings {
         directory: true,
         ..Holdings::default()
     };
-    match grant_plan::plan_against(&spec, grant_plan::IMAGE_ROW, m, holdings, Expansion::none()) {
+    match grant_plan::plan_against(&spec, m, holdings, Expansion::none()) {
         Err(r) => Admission::Refused(r),
         Ok(e) => match unbacked(&e, &m, held) {
             Some(u) => Admission::Unbacked(u),
-            None => Admission::Fires(e),
+            None => Admission::Fires(program_table::IMAGE_ROW, e),
         },
     }
 }
 
 /// **Whether a timetable can build a program that carries `m` at all**, before any line is planned
-/// against it: what an image request can carry (`grant_plan::image_can_carry`), less what no
-/// timetable endows. An argv (`grant_plan::ProgramArgumentDeclaration::Words`), entropy, the network and a
+/// against it: what an image request can carry (`program_table::image_can_carry`), less what no
+/// timetable endows. An argv (`grant_contract::ProgramArgumentDeclaration::Words`), entropy, the network and a
 /// configuration page have no slot in `components/src/timetable.rs`'s `fire`, and the verdicts a
 /// page carries have no word for them, so an installed program declaring one is refused when its
 /// document is resolved rather than planned. Name: provisional.
 pub fn schedulable(m: &Manifest) -> bool {
-    grant_plan::image_can_carry(m)
-        && !grant_plan::image_hears_words(m)
+    program_table::image_can_carry(m)
+        && !program_table::image_hears_words(m)
         && !m.entropy
         && !m.network
         && !m.configuration
@@ -243,7 +247,6 @@ fn unbacked(e: &Endowment, m: &Manifest, held: Held) -> Option<Unbacked> {
 
 #[cfg(test)]
 mod tests {
-    use grant_plan::Program;
 
     use super::*;
     use crate::test_support::{REFERENCE, shown, with_clock};
@@ -260,7 +263,7 @@ mod tests {
         let mut unbacked = 0;
         for r in reg.rows() {
             match r.admission {
-                Admission::Fires(_) => fires += 1,
+                Admission::Fires(..) => fires += 1,
                 Admission::Refused(_) => refused += 1,
                 Admission::Unbacked(_) => unbacked += 1,
             }
@@ -296,7 +299,7 @@ mod tests {
 
         // Fires, with the argument the line named and no memory it did not.
         let e = rows[0].endowment().unwrap();
-        assert_eq!(e.program, Program::LeastAuthorityDemo);
+        assert_eq!(rows[0].program(), Some(Program::LeastAuthorityDemo));
         assert_eq!(e.program_argument, 7);
         assert_eq!(e.memory_grant_pages, 0);
 
@@ -356,9 +359,12 @@ mod tests {
                 ..Held::default()
             },
         );
-        assert!(matches!(endowed.rows()[0].admission, Admission::Fires(_)));
+        assert!(matches!(endowed.rows()[0].admission, Admission::Fires(..)));
         let e = endowed.rows()[1].endowment().unwrap();
-        assert_eq!(e.program, Program::MemoryGrantDepleter);
+        assert_eq!(
+            endowed.rows()[1].program(),
+            Some(Program::MemoryGrantDepleter)
+        );
         assert_eq!(e.memory_grant_pages, 4);
 
         // And the ceiling is the scheduler's, not the manifest's: `memory_grant_depleter` declares 1..=64 pages,
@@ -378,7 +384,7 @@ mod tests {
     }
 
     /// **What a designation costs when the scheduler holds a directory, and what it costs when it
-    /// does not.** `admit` lends `grant_plan::plan` a directory, and a timetable that holds one and
+    /// does not.** `admit` lends `program_table::plan` a directory, and a timetable that holds one and
     /// reports every `rm` line as unbackable has forgotten what it was given. The two `!held.dir`
     /// tests in `unbacked` are called directly too. `e.file` has no route in, since no shipped
     /// program declares a `FileGrantDeclaration::Required`, so the grant below is lifted off a real
@@ -399,9 +405,9 @@ mod tests {
             e.directory.is_some(),
             "the plan narrowed the directory it holds"
         );
-        assert_eq!(unbacked(&e, &e.program.manifest(), with_dir), None);
+        assert_eq!(unbacked(&e, &e.manifest, with_dir), None);
         assert_eq!(
-            unbacked(&e, &e.program.manifest(), Held::default()),
+            unbacked(&e, &e.manifest, Held::default()),
             Some(Unbacked::Directory)
         );
 
@@ -414,9 +420,9 @@ mod tests {
         };
         e.directory = None;
         e.file = Some(f);
-        assert_eq!(unbacked(&e, &e.program.manifest(), with_dir), None);
+        assert_eq!(unbacked(&e, &e.manifest, with_dir), None);
         assert_eq!(
-            unbacked(&e, &e.program.manifest(), Held::default()),
+            unbacked(&e, &e.manifest, Held::default()),
             Some(Unbacked::File)
         );
     }
@@ -501,7 +507,7 @@ mod tests {
 
     /// **An installed program's line is planned against the manifest its bytes carry** (Fork 8 D
     /// of milestone 152, ruled 2026-09-27 on #1377), never against `IMAGE_ROW`'s row. Each assertion
-    /// would pass for the wrong reason if the manifest were read off the endowment: `IMAGE_ROW` is
+    /// would pass for the wrong reason if the manifest were read off the row: `IMAGE_ROW` is
     /// `uptime`, which takes no argument and holds no clock.
     #[test]
     fn an_installed_program_is_planned_against_its_own_manifest() {
@@ -511,7 +517,7 @@ mod tests {
              every 5s clocked\n",
         )
         .unwrap();
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
+        let mut manifests = [program_table::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = Program::LeastAuthorityDemo.manifest();
         manifests[2] = Program::Date.manifest();
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
@@ -545,9 +551,9 @@ mod tests {
         let doc = parse("every 5s tick --mem 2\n").unwrap();
         let old = Manifest {
             memory_grant: Program::MemoryGrantDepleter.manifest().memory_grant,
-            ..grant_plan::NO_NOTE_MANIFEST
+            ..program_table::NO_NOTE_MANIFEST
         };
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
+        let mut manifests = [program_table::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = old;
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert_eq!(reg.rows()[0].endowment().unwrap().memory_grant_pages, 2);
@@ -558,7 +564,7 @@ mod tests {
             ..old
         };
         match reg.plan_at_fire(0, new) {
-            Admission::Fires(e) => {
+            Admission::Fires(_, e) => {
                 assert_eq!(e.memory_grant_pages, 2);
                 assert_eq!(
                     e.reports, new.reports,
@@ -577,9 +583,9 @@ mod tests {
         let doc = parse("every 5s tick --mem 2\n").unwrap();
         let old = Manifest {
             memory_grant: Program::MemoryGrantDepleter.manifest().memory_grant,
-            ..grant_plan::NO_NOTE_MANIFEST
+            ..program_table::NO_NOTE_MANIFEST
         };
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
+        let mut manifests = [program_table::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = old;
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert!(reg.rows()[0].endowment().is_some());
@@ -591,7 +597,7 @@ mod tests {
         );
         assert!(
             matches!(
-                reg.plan_at_fire(0, grant_plan::NO_NOTE_MANIFEST),
+                reg.plan_at_fire(0, program_table::NO_NOTE_MANIFEST),
                 Admission::Refused(_)
             ),
             "a version that takes no `--mem` refuses the line that passes one",
@@ -602,28 +608,28 @@ mod tests {
     /// slot for.
     #[test]
     fn a_program_needing_what_no_timetable_endows_is_not_schedulable() {
-        assert!(schedulable(&grant_plan::NO_NOTE_MANIFEST));
+        assert!(schedulable(&program_table::NO_NOTE_MANIFEST));
         assert!(schedulable(&Program::LeastAuthorityDemo.manifest()));
         for (what, m) in [
             (
                 "entropy",
                 Manifest {
                     entropy: true,
-                    ..grant_plan::NO_NOTE_MANIFEST
+                    ..program_table::NO_NOTE_MANIFEST
                 },
             ),
             (
                 "the network",
                 Manifest {
                     network: true,
-                    ..grant_plan::NO_NOTE_MANIFEST
+                    ..program_table::NO_NOTE_MANIFEST
                 },
             ),
             (
                 "a configuration page",
                 Manifest {
                     configuration: true,
-                    ..grant_plan::NO_NOTE_MANIFEST
+                    ..program_table::NO_NOTE_MANIFEST
                 },
             ),
         ] {
@@ -638,7 +644,7 @@ mod tests {
     #[test]
     fn an_installed_calendar_line_waits_for_the_clock_and_then_for_its_manifest() {
         let doc = parse("every day at 09:00 tick 7\n").unwrap();
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
+        let mut manifests = [program_table::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = Program::LeastAuthorityDemo.manifest();
         let without = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert_eq!(
@@ -653,7 +659,7 @@ mod tests {
             },
             &manifests,
         );
-        assert!(matches!(with.rows()[0].admission, Admission::Fires(_)));
+        assert!(matches!(with.rows()[0].admission, Admission::Fires(..)));
     }
 
     /// An installed program's file operand is planned against a directory, and backed only when the
@@ -662,7 +668,7 @@ mod tests {
     #[test]
     fn an_installed_file_operand_is_planned_against_a_directory() {
         let doc = parse("every 5s wc report.txt\n").unwrap();
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
+        let mut manifests = [program_table::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = Program::Wc.manifest();
         let held = Held {
             dir: true,
@@ -670,7 +676,7 @@ mod tests {
         };
         let reg = Registry::register_installed(&doc, held, &manifests);
         assert!(
-            matches!(reg.rows()[0].admission, Admission::Fires(_)),
+            matches!(reg.rows()[0].admission, Admission::Fires(..)),
             "{:?}",
             reg.rows()[0].admission
         );

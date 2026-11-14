@@ -57,12 +57,12 @@ pub fn expansion(
 /// Every word the program hears is asked: an option-shaped word, an absolute path or one
 /// starting with `..` designates nothing; `.` designates this directory (calef's N1 ruling,
 /// 2026-09-27T06:27Z); otherwise the first component is looked up with `resolve`, and a name not
-/// here is inert bytes unless the program may create ([`grant_plan::WordGrant::Create`]). A word
+/// here is inert bytes unless the program may create ([`grant_contract::WordGrant::Create`]). A word
 /// grants its whole first component (milestone 205's BUGS). See notes/shell/the-swish-crate.md,
 /// "What a word designates".
 pub fn designation(
     line: &[u8],
-    grant: grant_plan::WordGrant,
+    grant: grant_contract::WordGrant,
     resolve: &mut dyn FnMut(&[u8]) -> Result<NameSet, Say>,
 ) -> Result<Expansion, Say> {
     let mut d = grant_plan::expand::Designation::none();
@@ -92,7 +92,7 @@ pub fn designation(
                 Some((found, is_dir)) => d.name(found, is_dir),
                 None => Ok(()),
             },
-            Err(Say::Cannot(Refusal::NoMatch)) if grant == grant_plan::WordGrant::Create => {
+            Err(Say::Cannot(Refusal::NoMatch)) if grant == grant_contract::WordGrant::Create => {
                 d.name(name, false)
             }
             Err(Say::NoDirectory) => {

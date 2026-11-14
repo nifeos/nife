@@ -13,7 +13,8 @@
 //! - A withheld promised message hangs the progenitor ([`Wiring::run_unvouched`] claimed without
 //!   [`RUN_UNVOUCHED_SLOT`], a frame not retyped); nothing can abandon a half-sent request.
 //! - An image's manifest note reaches only what these words carry, and [`crate::image_can_carry`]
-//!   refuses the rest; its [`crate::Endowment`] names the stand-in row [`crate::IMAGE_ROW`].
+//!   refuses the rest; where a caller keeps a row beside its endowment, that row is the stand-in
+//!   [`crate::IMAGE_ROW`].
 //! - The shell reads an image's note twice and the progenitor refuses a misfit with
 //!   [`SPAWN_REFUSED_BY_MANIFEST`]; only a plain line runs an image, never interruptibly.
 //! - Every activation verb, [`Activation::Vouch`] included, is open to any spawn-endpoint holder,
@@ -247,7 +248,7 @@ pub const MOUNTED_TREE_RIGHTS: u64 = 0b10_0011;
 /// tree, as `rest`, for `disk/<rest>`; the first, unchanged, for anything else.
 ///
 /// ```
-/// use grant_plan::spawnproto::{in_mounted_tree, MOUNTED_TREE_NAME};
+/// use program_table::spawnproto::{in_mounted_tree, MOUNTED_TREE_NAME};
 /// assert_eq!(in_mounted_tree(b"disk/nvme0"), Some(&b"nvme0"[..]));
 /// assert_eq!(in_mounted_tree(b"diskette"), None);
 /// assert_eq!(in_mounted_tree(MOUNTED_TREE_NAME), None);
@@ -277,7 +278,7 @@ const NAMESET_BIT: u64 = 1 << 43;
 /// delegates it from.
 ///
 /// The highest slot below the kernel's reserved fault slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`, 63);
-/// `grant_plan` does not depend on `abi`, so each binary that reads this asserts the relation. A
+/// `program_table` does not depend on `abi`, so each binary that reads this asserts the relation. A
 /// named slot, as [`crate::NETWORK_SLOT`] is: the holder probes it at `_start`, before it has
 /// allocated anything, which is the only time a probe is sound.
 ///
@@ -750,7 +751,7 @@ pub fn stored_words(records: &[u8], at: usize) -> (u64, u64, u64) {
 /// shell refuses a larger file before it sends anything and the progenitor never stages more than
 /// its image pool holds. `ripgrep` 14.1.1's image spans about 670 (`notes/ripgrep-on-nife.md`).
 ///
-/// Reserved, not spent: `IMAGE_MAXIMUM_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5
+/// Reserved, not spent: `IMAGE_MAXIMUM_PAGES * 3 + program_table::STD_REGION_PAGES` pages, about 13.5
 /// MiB, are set aside at boot for the shell's staging frames, the progenitor's copy, the child's
 /// pages and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
 ///

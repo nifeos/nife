@@ -75,7 +75,7 @@ const TERM_EP: u64 = 7;
 /// every session this process builds ([`serve_login`]), so a session can present it and cannot
 /// pass it on. A named slot rather than the ninth, because a spawner that has none leaves it
 /// empty and the other eight where they were; probed once at [`_start`] ([`HOLDS_RUN_UNVOUCHED`]).
-const RUN_UNVOUCHED: u64 = grant_plan::spawnproto::RUN_UNVOUCHED_SLOT;
+const RUN_UNVOUCHED: u64 = program_table::spawnproto::RUN_UNVOUCHED_SLOT;
 /// One page of the file service's durable window, `WRITE | GRANT` (milestone 152, Fork 8 D): the
 /// channel a durable session's timetable reads the store through. [`FS_EP`] is badged with the
 /// window's number for the two store caretakers ([`open_schedule`]). The window is shared by a

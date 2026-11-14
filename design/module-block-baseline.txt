@@ -3269,6 +3269,74 @@ crates/globally_unique_identifier_partition_table/src/testing.rs::sample_disk
 
 crates/globally_unique_identifier_partition_table/src/verification.rs
 
+crates/grant_contract/src/manifest.rs::DIAGNOSTICS_SLOT
+
+crates/grant_contract/src/manifest.rs::DOMAIN_SLOT
+
+crates/grant_contract/src/manifest.rs::ENTROPY_SLOT
+
+crates/grant_contract/src/manifest.rs::Manifest
+
+crates/grant_contract/src/manifest.rs::NETWORK_SLOT
+
+crates/grant_contract/src/manifest.rs::diagnostics_slot
+
+crates/grant_contract/src/manifest.rs::hears_words
+
+crates/grant_contract/src/manifest.rs::is_byte_stream
+
+crates/grant_contract/src/manifest.rs::letters
+
+crates/grant_contract/src/manifest.rs::new
+
+crates/grant_contract/src/manifest.rs::rights
+
+crates/grant_contract/src/manifest.rs::rights
+
+crates/grant_contract/src/manifest.rs::try_new
+
+crates/grant_contract/src/manifest/tests.rs
+
+crates/grant_contract/src/verbs.rs::ALL
+
+crates/grant_contract/src/verbs.rs::CATALOG
+
+crates/grant_contract/src/verbs.rs::CLOCK
+
+crates/grant_contract/src/verbs.rs::CONFIGURATION
+
+crates/grant_contract/src/verbs.rs::DOMAIN
+
+crates/grant_contract/src/verbs.rs::ENTROPY
+
+crates/grant_contract/src/verbs.rs::INDEXES
+
+crates/grant_contract/src/verbs.rs::INDEXES_WRITE
+
+crates/grant_contract/src/verbs.rs::INSTALLER
+
+crates/grant_contract/src/verbs.rs::MACHINE
+
+crates/grant_contract/src/verbs.rs::NETWORK
+
+crates/grant_contract/src/verbs.rs::NONE
+
+crates/grant_contract/src/verbs.rs::SHARE
+
+crates/grant_contract/src/verbs.rs::VerbGrant
+
+crates/grant_contract/src/verbs.rs::bits
+
+crates/grant_contract/src/verbs.rs::contains
+
+crates/grant_contract/src/verbs.rs::from_bits
+
+crates/grant_contract/src/verbs.rs::narrow_by_verb
+
+crates/grant_contract/src/verbs.rs::union
+
+crates/grant_contract/src/verbs.rs::verb_of_page
+
 crates/grant_plan/src/command.rs::Command
 
 crates/grant_plan/src/command.rs::Endowment
@@ -3391,57 +3459,31 @@ crates/grant_plan/src/expand.rs::only
 
 crates/grant_plan/src/expand.rs::push
 
-crates/grant_plan/src/image.rs
 
-crates/grant_plan/src/image.rs::ImageRefusal
 
-crates/grant_plan/src/image.rs::image_can_carry
 
-crates/grant_plan/src/image.rs::image_hears_words
 
-crates/grant_plan/src/image.rs::image_manifest
 
-crates/grant_plan/src/image.rs::image_request_fits
 
-crates/grant_plan/src/image/tests.rs
 
-crates/grant_plan/src/job_page_frame.rs
 
-crates/grant_plan/src/job_page_frame.rs::DONE
 
-crates/grant_plan/src/job_page_frame.rs::HEARTBEAT
 
-crates/grant_plan/src/job_page_frame.rs::INTERRUPT
 
-crates/grant_plan/src/job_page_frame.rs::STATUS
 
-crates/grant_plan/src/job_page_frame.rs::STATUS_DONE
 
-crates/grant_plan/src/job_page_frame.rs::STATUS_INTERRUPTED
 
-crates/grant_plan/src/job_windows.rs::Label
 
-crates/grant_plan/src/job_windows.rs::Windows
 
-crates/grant_plan/src/job_windows.rs::any
 
-crates/grant_plan/src/job_windows.rs::expect
 
-crates/grant_plan/src/job_windows.rs::is_bound
 
-crates/grant_plan/src/job_windows.rs::new
 
-crates/grant_plan/src/job_windows.rs::new
 
-crates/grant_plan/src/job_windows.rs::reaped
 
-crates/grant_plan/src/job_windows.rs::reaped
 
-crates/grant_plan/src/job_windows.rs::release
 
-crates/grant_plan/src/job_windows.rs::set_bound
 
-crates/grant_plan/src/job_windows.rs::take
 
 crates/grant_plan/src/lexing.rs::file_name_fits
 
@@ -3477,35 +3519,20 @@ crates/grant_plan/src/line.rs::stage_count
 
 crates/grant_plan/src/line.rs::stages
 
-crates/grant_plan/src/manifest.rs::DIAGNOSTICS_SLOT
 
-crates/grant_plan/src/manifest.rs::DOMAIN_SLOT
 
-crates/grant_plan/src/manifest.rs::ENTROPY_SLOT
 
-crates/grant_plan/src/manifest.rs::Manifest
 
-crates/grant_plan/src/manifest.rs::NETWORK_SLOT
 
-crates/grant_plan/src/manifest.rs::UNVOUCHED_STD_MANIFEST
 
-crates/grant_plan/src/manifest.rs::diagnostics_slot
 
-crates/grant_plan/src/manifest.rs::hears_words
 
-crates/grant_plan/src/manifest.rs::is_byte_stream
 
-crates/grant_plan/src/manifest.rs::letters
 
-crates/grant_plan/src/manifest.rs::new
 
-crates/grant_plan/src/manifest.rs::rights
 
-crates/grant_plan/src/manifest.rs::rights
 
-crates/grant_plan/src/manifest.rs::try_new
 
-crates/grant_plan/src/manifest/tests.rs
 
 crates/grant_plan/src/nav.rs
 
@@ -3619,13 +3646,11 @@ crates/grant_plan/src/planning.rs::Streams
 
 crates/grant_plan/src/planning.rs::check_chain
 
-crates/grant_plan/src/planning.rs::plan
 
 crates/grant_plan/src/planning.rs::plan_against
 
 crates/grant_plan/src/planning.rs::plan_against_with
 
-crates/grant_plan/src/planning.rs::plan_stage
 
 crates/grant_plan/src/planning.rs::redirect_target
 
@@ -3637,21 +3662,13 @@ crates/grant_plan/src/planning/tests/operands.rs
 
 crates/grant_plan/src/planning/tests/streams.rs
 
-crates/grant_plan/src/program/catalog.rs::ALL
 
-crates/grant_plan/src/program/catalog.rs::from_id
 
-crates/grant_plan/src/program/catalog.rs::from_name
 
-crates/grant_plan/src/program/catalog.rs::id
 
-crates/grant_plan/src/program/catalog.rs::name
 
-crates/grant_plan/src/program/manifests.rs::manifest
 
-crates/grant_plan/src/program/manifests.rs::verbs
 
-crates/grant_plan/src/program/tests.rs
 
 crates/grant_plan/src/refusal.rs::Refusal
 
@@ -3659,105 +3676,56 @@ crates/grant_plan/src/refusal.rs::message
 
 crates/grant_plan/src/refusal/tests.rs
 
-crates/grant_plan/src/spawnproto.rs
 
-crates/grant_plan/src/spawnproto.rs::Activation
 
-crates/grant_plan/src/spawnproto.rs::ActivationStatus
 
-crates/grant_plan/src/spawnproto.rs::GRANT_WORDS
 
-crates/grant_plan/src/spawnproto.rs::IMAGE_PAGE
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_FAILED
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_NO_DISPLAY
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_OK
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_REFUSED_BY_MANIFEST
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_UNVOUCHED
 
-crates/grant_plan/src/spawnproto.rs::UNDERTAKER_BADGE
 
-crates/grant_plan/src/spawnproto.rs::Wiring
 
-crates/grant_plan/src/spawnproto.rs::activation
 
-crates/grant_plan/src/spawnproto.rs::activation_reply
 
-crates/grant_plan/src/spawnproto.rs::activation_request
 
-crates/grant_plan/src/spawnproto.rs::from_word
 
-crates/grant_plan/src/spawnproto.rs::holder_from_words
 
-crates/grant_plan/src/spawnproto.rs::holder_words
 
-crates/grant_plan/src/spawnproto.rs::image_len
 
-crates/grant_plan/src/spawnproto.rs::image_pages
 
-crates/grant_plan/src/spawnproto.rs::installer_badge
 
-crates/grant_plan/src/spawnproto.rs::installer_label
 
-crates/grant_plan/src/spawnproto.rs::installer_serves
 
-crates/grant_plan/src/spawnproto.rs::is_interruptible
 
-crates/grant_plan/src/spawnproto.rs::prog_id
 
-crates/grant_plan/src/spawnproto.rs::reaped
 
-crates/grant_plan/src/spawnproto.rs::request
 
-crates/grant_plan/src/spawnproto.rs::wiring
 
 crates/grant_plan/src/tests.rs
 
-crates/grant_plan/src/verbs.rs::ALL
 
-crates/grant_plan/src/verbs.rs::CATALOG
 
-crates/grant_plan/src/verbs.rs::CLOCK
 
-crates/grant_plan/src/verbs.rs::CONFIGURATION
 
-crates/grant_plan/src/verbs.rs::DOMAIN
 
-crates/grant_plan/src/verbs.rs::ENTROPY
 
-crates/grant_plan/src/verbs.rs::INDEXES
 
-crates/grant_plan/src/verbs.rs::INDEXES_WRITE
 
-crates/grant_plan/src/verbs.rs::INSTALLER
 
-crates/grant_plan/src/verbs.rs::MACHINE
 
-crates/grant_plan/src/verbs.rs::NETWORK
 
-crates/grant_plan/src/verbs.rs::NONE
 
-crates/grant_plan/src/verbs.rs::SHARE
 
-crates/grant_plan/src/verbs.rs::VerbGrant
 
-crates/grant_plan/src/verbs.rs::bits
 
-crates/grant_plan/src/verbs.rs::contains
 
-crates/grant_plan/src/verbs.rs::from_bits
 
-crates/grant_plan/src/verbs.rs::narrow_by_verb
 
-crates/grant_plan/src/verbs.rs::union
 
-crates/grant_plan/src/verbs.rs::verb_of
 
-crates/grant_plan/src/verbs.rs::verb_of_page
 
 crates/grant_plan/src/word.rs
 
@@ -5901,6 +5869,130 @@ crates/program_argument_contract/src/lib.rs::new
 crates/program_argument_contract/src/lib.rs::parse
 
 crates/program_argument_contract/src/lib.rs::push
+
+crates/program_table/src/image.rs
+
+crates/program_table/src/image.rs::ImageRefusal
+
+crates/program_table/src/image.rs::image_can_carry
+
+crates/program_table/src/image.rs::image_hears_words
+
+crates/program_table/src/image.rs::image_manifest
+
+crates/program_table/src/image.rs::image_request_fits
+
+crates/program_table/src/image/tests.rs
+
+crates/program_table/src/job_page_frame.rs
+
+crates/program_table/src/job_page_frame.rs::DONE
+
+crates/program_table/src/job_page_frame.rs::HEARTBEAT
+
+crates/program_table/src/job_page_frame.rs::INTERRUPT
+
+crates/program_table/src/job_page_frame.rs::STATUS
+
+crates/program_table/src/job_page_frame.rs::STATUS_DONE
+
+crates/program_table/src/job_page_frame.rs::STATUS_INTERRUPTED
+
+crates/program_table/src/job_windows.rs::Label
+
+crates/program_table/src/job_windows.rs::Windows
+
+crates/program_table/src/job_windows.rs::any
+
+crates/program_table/src/job_windows.rs::expect
+
+crates/program_table/src/job_windows.rs::is_bound
+
+crates/program_table/src/job_windows.rs::new
+
+crates/program_table/src/job_windows.rs::new
+
+crates/program_table/src/job_windows.rs::reaped
+
+crates/program_table/src/job_windows.rs::reaped
+
+crates/program_table/src/job_windows.rs::release
+
+crates/program_table/src/job_windows.rs::set_bound
+
+crates/program_table/src/job_windows.rs::take
+
+crates/program_table/src/program/catalog.rs::ALL
+
+crates/program_table/src/program/catalog.rs::from_id
+
+crates/program_table/src/program/catalog.rs::from_name
+
+crates/program_table/src/program/catalog.rs::id
+
+crates/program_table/src/program/catalog.rs::name
+
+crates/program_table/src/program/manifests.rs::manifest
+
+crates/program_table/src/program/manifests.rs::verbs
+
+crates/program_table/src/program/tests.rs
+
+crates/program_table/src/spawnproto.rs
+
+crates/program_table/src/spawnproto.rs::Activation
+
+crates/program_table/src/spawnproto.rs::ActivationStatus
+
+crates/program_table/src/spawnproto.rs::GRANT_WORDS
+
+crates/program_table/src/spawnproto.rs::IMAGE_PAGE
+
+crates/program_table/src/spawnproto.rs::SPAWN_FAILED
+
+crates/program_table/src/spawnproto.rs::SPAWN_NO_DISPLAY
+
+crates/program_table/src/spawnproto.rs::SPAWN_OK
+
+crates/program_table/src/spawnproto.rs::SPAWN_REFUSED_BY_MANIFEST
+
+crates/program_table/src/spawnproto.rs::SPAWN_UNVOUCHED
+
+crates/program_table/src/spawnproto.rs::UNDERTAKER_BADGE
+
+crates/program_table/src/spawnproto.rs::Wiring
+
+crates/program_table/src/spawnproto.rs::activation
+
+crates/program_table/src/spawnproto.rs::activation_reply
+
+crates/program_table/src/spawnproto.rs::activation_request
+
+crates/program_table/src/spawnproto.rs::from_word
+
+crates/program_table/src/spawnproto.rs::holder_from_words
+
+crates/program_table/src/spawnproto.rs::holder_words
+
+crates/program_table/src/spawnproto.rs::image_len
+
+crates/program_table/src/spawnproto.rs::image_pages
+
+crates/program_table/src/spawnproto.rs::installer_badge
+
+crates/program_table/src/spawnproto.rs::installer_label
+
+crates/program_table/src/spawnproto.rs::installer_serves
+
+crates/program_table/src/spawnproto.rs::is_interruptible
+
+crates/program_table/src/spawnproto.rs::prog_id
+
+crates/program_table/src/spawnproto.rs::reaped
+
+crates/program_table/src/spawnproto.rs::request
+
+crates/program_table/src/spawnproto.rs::wiring
 
 crates/ps/src/lib.rs::Row
 
