@@ -228,7 +228,7 @@ descriptor, 18 bytes".
 - **Done.** Item 13 (two sentences, on the walk's start and the report's tail; the `get_descriptor`
   and README sentences remain) and the private locals of items 3 and 14 (`device`, `difference`,
   `shift_a_b`, `a_b`, `QEMU_USB_KEYBOARD`). The three Kani harnesses pass and the
-  walk harness's falsification patch is regenerated for the new line.
+  walk harness's falsification patch needed regenerating for the new line, and the lane did.
 - **Outstanding.** Items 1, 2, 4, 5 and 10 are the move lane's (manifest, name, scaffold files,
   review package, fuzz crate). Item 6 adds usage rows that the lane must read from the Usage
   Tables and re-run against the Linux cross-check, which a reviewer cannot do from memory.
