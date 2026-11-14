@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 223, 563, 697, 857, 1017
 decision_dependencies: 151, 197
@@ -45,7 +45,7 @@ a repository); everything else is two-way and the maintainer decides it.
 
 ### P0: blocks the move
 
-1. The crate cannot leave before the two crates it builds on.
+1. The crate cannot leave before the two crates it builds on. LEFT: no change here; the order is Decision A's.
    Finding: both dependencies are path dependencies on sibling crates that have no repository of
    their own (`nifefs`, `measured_boot`). The ruling of milestone 1017 (the contract crates leave in this order) is that a crate leaves
    bottom-up and nothing that has left depends on a path or a pin into this tree. `measured_boot`
@@ -61,7 +61,7 @@ a repository); everything else is two-way and the maintainer decides it.
 
 ### P1: before the move, and one before the next bench evening
 
-2. The crate answers half of the kernel's question, and `card_check` says SEALED for a card that
+2. The crate answers half of the kernel's question, and `card_check` says SEALED for a card that DONE (`stale_malformed_and_missing_loader_words_are_refused`; `card_check` reads the third file).
    halts.
    Finding: since the kernel began taking two digest words from the loader (`nife.progenitor`,
    `nife.base`), `kernel::trust::require` holds the progenitor to the loader's word before the trust
@@ -88,7 +88,7 @@ a repository); everything else is two-way and the maintainer decides it.
    gap to `BUGS` until the change lands.
    Door: two-way (an API addition before any release). Effort: S.
 
-3. A table line the parser rejects makes the tool report the whole table unreadable, and the words say
+3. A table line the parser rejects makes the tool report the whole table unreadable, and the words say DONE (`a_bad_table_line_is_reported_and_does_not_condemn_the_console`, `a_table_that_is_not_utf8_is_still_unreadable`).
    the progenitor will read an empty table. It will not.
    Finding: `inspect_table` returns `TableSeal::Unreadable` on the first bad line, and `explain`
    prints "the progenitor measures against an empty table and refuses the console". The progenitor
@@ -102,14 +102,14 @@ a repository); everything else is two-way and the maintainer decides it.
    Evidence: `crates/sealed_pair/src/lib.rs` lines 110 to 112, 200 to 207 and 321 to 329;
    `crates/measured_boot/src/lib.rs` lines 426 to 432; `crates/system_initializer/src/boot_steps.rs`
    lines 183 to 188 and `measurement.rs` line 16.
-   Change: keep `Unreadable` for the UTF-8 case. Add `TableDisagreement::Unparsable { line: String
+   Change: keep `Unreadable` for the UTF-8 case. Add `TableDisagreement::BadLine { line: String
    }` for each bad line. `progenitor_refuses` counts it (the program on that line is gone), and
    `explain` prints it with the line and the parser's reason, in the words `BadLine` already
    carries.
    One test with one bad line beside a good console line, asserting that the console is not named.
    Door: two-way. Effort: S.
 
-4. The crate does not stand alone, in the ten ways the template's checker lists.
+4. The crate does not stand alone, in the ten ways the template's checker lists. LEFT: move preparation waits on Decision A.
    Finding: `standalone.py` reports no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, a license
    field inherited from the workspace, and no `rust-version`. It also reports `publish = false` with
    a comment that points at `crates/publish-allowlist.txt`, `lints.workspace = true`, five lines
@@ -124,7 +124,7 @@ a repository); everything else is two-way and the maintainer decides it.
    (the two doctests, which already exist) and `## BUGS` (the four entries plus item 2).
    Door: two-way until the tag. Effort: S.
 
-5. `BOOT_PROGRAMS` restates a string `measured_boot` already owns.
+5. `BOOT_PROGRAMS` restates a string `measured_boot` already owns. DONE (`the_boot_programs_are_the_measured_boot_names`).
    Finding: `BOOT_PROGRAMS` is `["progenitor"]`, a literal, while `measured_boot::PROGENITOR` is
    the constant the kernel (`PROGENITOR_ENTRY`) and the loader read. `notes/sealed-pair.md`
    argues for one list so a kernel cannot measure a name the checkers do not know; the list's one
@@ -136,7 +136,7 @@ a repository); everything else is two-way and the maintainer decides it.
    `measured_boot::PROGENITOR` where it means the progenitor. No behavior changes today.
    Door: two-way. Effort: XS.
 
-6. The notice constant is a sentence, and it names a board in a crate that also judges QEMU images.
+6. The notice constant is a sentence, and it names a board in a crate that also judges QEMU images. LEFT: a public name, Decision B.
    Finding: `THE_BOARD_IS_THE_AUTHORITY` is a `&str` holding two sentences. A constant's name says
    what it holds. This one is the opening of its own text. It has a leading `THE_` the naming page
    refuses for assertion constants, and it says "board" where the crate's documentation says
@@ -147,7 +147,7 @@ a repository); everything else is two-way and the maintainer decides it.
    says "the board". The architect names it (decision B).
    Door: two-way until a release; a published name after. Effort: XS.
 
-7. `EntrySeal` can say "refused" with no digest, and the report then prints an empty hash.
+7. `EntrySeal` can say "refused" with no digest, and the report then prints an empty hash. DONE (`Vouch` carries the digest; the impossible pair no longer compiles).
    Finding: `digest: Option<Digest>` and `vouch: Vouch` are independent public fields. `inspect`
    never builds `vouch: Vouch::No` with `digest: None`, but the type allows it, a test builds it,
    and `explain` prints "hashes to , which is not in the kernel image's trust root" for it.
@@ -157,7 +157,7 @@ a repository); everything else is two-way and the maintainer decides it.
    fails to compile, which is the point.
    Door: two-way. Effort: XS.
 
-8. The refusal text asserts a cause.
+8. The refusal text asserts a cause. DONE (`a_kernel_from_another_build_is_refused_and_the_refusal_names_the_entry` reads the new text).
    Finding: `explain` says "They are from different builds" for every `Vouch::No`. One flipped
    byte on a card produces the same verdict, and the crate's own test
    `one_stale_half_is_named_on_its_own` builds that case. Milestone 563 (A seal check that reads bytes cannot see a check that was dropped) recorded the same sentence
@@ -170,7 +170,7 @@ a repository); everything else is two-way and the maintainer decides it.
    copy that changed one of them) as causes, and the halt as the consequence.
    Door: two-way. Effort: XS.
 
-9. One British spelling in a public parameter.
+9. One British spelling in a public parameter. LEFT: a public name, Decision B.
    Finding: the one parameter of `test_support::pair`, a `&str`, is spelled the British way. The naming page spells every name the American
    way and the template's `british_spelling.py` refuses it at a ceiling of zero, so the template's
    `check` job would be red on the first push. The parameter is public because the module is.
@@ -179,7 +179,7 @@ a repository); everything else is two-way and the maintainer decides it.
    against another's). Provisional until the architect rules.
    Door: two-way until a release. Effort: XS.
 
-10. `Unreadable` is not a `std::error::Error`, and its `Display` prints a `Debug` form.
+10. `Unreadable` is not a `std::error::Error`, and its `Display` prints a `Debug` form. DONE (`an_unreadable_error_is_a_std_error_in_words`).
     Finding: the crate is a `std` crate (`String`, `Vec`, `std::fmt::Write`) whose one error type
     implements `Display` and not `std::error::Error`, so a caller cannot put it in a `Box<dyn
     Error>` or behind `?` in a `main` that returns one. `NotAnArchive` writes `{e:?}` because
@@ -254,6 +254,16 @@ The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
 - No review package exists for this crate, so the baseline this review respected is the `Name:`
   block's two refusals and nothing else. A package would normally come first; the recording lane
   may want to say whether it owes one.
+
+## Follow-on
+
+What is left of this review: Decisions A and B are not ruled, and the items marked LEFT in the
+appendices wait on them or on a lane of their own.
+
+- **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 wait on Decision A.
+- **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
+- **Outstanding.** Items 6 and 9 (names, Decision B), 13 (unmeasured) and 14 (a harness): checked
+  against the tree, none exists yet.
 
 ## Index row
 
