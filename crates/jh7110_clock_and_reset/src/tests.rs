@@ -957,7 +957,7 @@ fn a_single_window_node_answers_with_its_one_register_property() {
         found,
         WindowLocation {
             base_physical_address: 0x1023_0000,
-            size: 0x1_0000,
+            size_bytes: 0x1_0000,
             from_tree: true,
             compatible: Some(COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR),
         }
@@ -998,7 +998,7 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
         WindowLocation::from_regions(&ALWAYS_ON_WINDOW.spellings[1], &regions, Some(names))
             .unwrap();
     assert_eq!(
-        (always_on.base_physical_address, always_on.size),
+        (always_on.base_physical_address, always_on.size_bytes),
         (ALWAYS_ON_BASE_PHYSICAL_ADDRESS, ALWAYS_ON_SIZE_BYTES)
     );
     let system =
@@ -1075,7 +1075,7 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
             window.fallback(),
             WindowLocation {
                 base_physical_address: base,
-                size: 0x1_0000,
+                size_bytes: 0x1_0000,
                 from_tree: false,
                 compatible: None,
             }

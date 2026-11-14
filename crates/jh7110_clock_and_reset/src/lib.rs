@@ -1370,7 +1370,9 @@ pub struct WindowLocation {
     /// Name: ratified 2026-11-08 (UTC), renamed to say the address is physical.
     pub base_physical_address: u64,
     /// Its size in bytes.
-    pub size: u64,
+    ///
+    /// Name: ratified 2026-11-14 (UTC), with the unit in the name.
+    pub size_bytes: u64,
     /// **True when the device tree said so, false when this is the window's constant.** The one
     /// field a caller's log must carry: a base that came from a constant is a base nobody on
     /// that machine confirmed, and a reader three months later cannot re-derive which it was.
@@ -1465,7 +1467,9 @@ pub struct RegisterWindow {
     /// Name: ratified 2026-11-08 (UTC), renamed to say the address is physical.
     pub base_physical_address: u64,
     /// The window's size in both published trees.
-    pub size: u64,
+    ///
+    /// Name: ratified 2026-11-14 (UTC), with the unit in the name.
+    pub size_bytes: u64,
 }
 
 impl RegisterWindow {
@@ -1476,7 +1480,7 @@ impl RegisterWindow {
     pub const fn fallback(&self) -> WindowLocation {
         WindowLocation {
             base_physical_address: self.base_physical_address,
-            size: self.size,
+            size_bytes: self.size_bytes,
             from_tree: false,
             compatible: None,
         }
@@ -1503,7 +1507,7 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
         },
     ],
     base_physical_address: SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
-    size: SYSTEM_TOP_GROUP_SIZE_BYTES,
+    size_bytes: SYSTEM_TOP_GROUP_SIZE_BYTES,
 };
 
 /// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
@@ -1526,7 +1530,7 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
         },
     ],
     base_physical_address: ALWAYS_ON_BASE_PHYSICAL_ADDRESS,
-    size: ALWAYS_ON_SIZE_BYTES,
+    size_bytes: ALWAYS_ON_SIZE_BYTES,
 };
 
 /// **The SYS window**, where I2C5's clock and reset live.
@@ -1549,7 +1553,7 @@ pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
         },
     ],
     base_physical_address: SYSTEM_BASE_PHYSICAL_ADDRESS,
-    size: SYSTEM_SIZE_BYTES,
+    size_bytes: SYSTEM_SIZE_BYTES,
 };
 
 impl WindowLocation {
@@ -1577,10 +1581,10 @@ impl WindowLocation {
                 _ => return None,
             },
         };
-        let (base_physical_address, size) = regions[index];
+        let (base_physical_address, size_bytes) = regions[index];
         Some(WindowLocation {
             base_physical_address,
-            size,
+            size_bytes,
             from_tree: true,
             compatible: Some(spelling.compatible),
         })

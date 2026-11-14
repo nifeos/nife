@@ -61,8 +61,8 @@ fn radons_sys_window_is_the_vendor_nodes_first_entry_found_by_name() {
     let tree = tree(PMIC_BUS_RADON);
     let found = discover_sys(&tree).unwrap();
     assert_eq!(
-        (found.base_physical_address, found.size),
-        (SYSTEM_WINDOW.base_physical_address, SYSTEM_WINDOW.size)
+        (found.base_physical_address, found.size_bytes),
+        (SYSTEM_WINDOW.base_physical_address, SYSTEM_WINDOW.size_bytes)
     );
     assert!(found.from_tree);
     assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR));
@@ -149,7 +149,7 @@ fn mainline_stgcrg_is_read_from_its_single_reg() {
     let tree = tree(STGCRG_MAINLINE);
     let found = discover(&tree).unwrap();
     assert_eq!(found.base_physical_address, 0x1023_0000);
-    assert_eq!(found.size, 0x1_0000);
+    assert_eq!(found.size_bytes, 0x1_0000);
     assert!(found.from_tree);
     assert_eq!(
         found.compatible,
@@ -167,7 +167,7 @@ fn the_vendor_clkgens_stg_window_is_found_by_name() {
         found.base_physical_address, SYSTEM_TOP_GROUP_WINDOW.base_physical_address,
         "the second window, not the first"
     );
-    assert_eq!(found.size, 0x1_0000);
+    assert_eq!(found.size_bytes, 0x1_0000);
     assert!(found.from_tree);
     assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR));
 }
@@ -227,10 +227,10 @@ fn radons_aon_window_is_the_vendor_nodes_third_entry_found_by_name() {
     let tree = tree(CLKGEN_VENDOR);
     let found = discover_aon(&tree).unwrap();
     assert_eq!(
-        (found.base_physical_address, found.size),
+        (found.base_physical_address, found.size_bytes),
         (
             ALWAYS_ON_WINDOW.base_physical_address,
-            ALWAYS_ON_WINDOW.size
+            ALWAYS_ON_WINDOW.size_bytes
         )
     );
     assert!(found.from_tree);
