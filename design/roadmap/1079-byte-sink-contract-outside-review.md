@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 151, 242
@@ -172,6 +172,14 @@ is this case; `INLINE_MAXIMUM` is a byte count and its documentation says so in 
 ## Done when
 
 The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Every item except before-the-tag item 8, and decisions A, B and D. Checked by
+  reading each item and decision in this block against the tree at this branch's head: decision C
+  and item 8 are the only ones built, and the others still describe the tree as it stands.
+- **Recorded.** The shell does not see `rm`'s exit status, since no exit status reaches a parent;
+  `notes/rm.md` keeps it in its BUGS.
 
 ## BUGS
 
