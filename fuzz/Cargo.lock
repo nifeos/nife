@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "abi"
+version = "0.1.0"
+
+[[package]]
 name = "address_space_map"
 version = "0.1.0"
 
@@ -94,6 +98,13 @@ version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
  "grant_plan",
+]
+
+[[package]]
+name = "capability_plan"
+version = "0.1.0"
+dependencies = [
+ "abi",
 ]
 
 [[package]]
@@ -256,6 +267,7 @@ dependencies = [
  "grant_plan",
  "http_response",
  "libfuzzer-sys",
+ "line_editor",
  "machine_discovery",
  "nifefs",
  "package_archive",
@@ -397,6 +409,13 @@ dependencies = [
  "libc",
  "plain",
  "redox_syscall",
+]
+
+[[package]]
+name = "line_editor"
+version = "0.1.0"
+dependencies = [
+ "capability_plan",
 ]
 
 [[package]]
