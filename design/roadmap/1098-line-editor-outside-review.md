@@ -192,15 +192,14 @@ Concrete example. `kernel/Cargo.toml` links `line_editor` to read `proto::req` a
 `terminal_contract` and the kernel no longer depends on an editor.
 
 Ruled 2026-11-14 (UTC): the cut falls in three places. `proto`, the terminal protocol's opcodes and
-badges, is the wire-only leaf crate `terminal_contract` (`crates/terminal_contract`), with no
-dependencies; its name is provisional, and its published name waits on the naming-layers decision.
-The kernel, `std_runtime_contract`, `fixtures`, `system_initializer`, `system_tests` and every
-program that speaks the protocol depend on it, not on `line_editor`. `component`, built on
-`capability_plan`, stays in this repository beside the terminal programs as the nife-only crate
-`line_editor_component` (`crates/line_editor_component`, name provisional), and `capability_plan`
-does not leave. `handoff` stays in the engine. `line_editor` depends on nothing and is listed in
-`crates/externalization-list.txt`. Because the leaf depends on nothing, it states `QUIESCED` and
-the `line_editor` program holds it equal to `hot_swap_contract::QUIESCED` at compile time (item 8).
+badges, is the wire-only leaf crate `terminal_contract`, with no dependencies; its name is
+provisional, and its published name waits on the naming-layers decision. The kernel,
+`std_runtime_contract`, `fixtures`, `system_initializer`, `system_tests` and every program that
+speaks the protocol depend on it, not on `line_editor`. `component` stays beside the terminal
+programs as the nife-only crate `line_editor_component` (name provisional), and `capability_plan`
+does not leave. `handoff` stays in the engine. `line_editor` depends on nothing
+and is listed in `crates/externalization-list.txt`. The leaf states `QUIESCED`, and the
+`line_editor` program holds it equal to `hot_swap_contract::QUIESCED` at compile time (item 8).
 Open: `terminal_contract` carries no interface identity (an interface number, a version), and
 whether it takes one under milestone 1017's family rule is not decided; none is minted.
 
