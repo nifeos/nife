@@ -5,7 +5,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 ## P1: before the first tag
 
 5. `initialize` is safe, takes no state into account, and a caller can call it again after
-   allocations. DONE (`initialize` returns `bool`: `true` for the first call, `false` and no change for any later one; `a_second_initialize_is_refused_and_changes_nothing`).
+   allocations. DONE (a later call changes nothing, and `is_initialized` answers whether one would; the signature stays `()` because a `bool` or `Result` return breaks the question-shape naming rule or leaves every caller ignoring a `Result`; `a_second_initialize_changes_nothing`).
    Finding: a second call resets `committed` to zero and sets a new `base`, but leaves talc's
    `heap_end` as it was. The next `grow` maps pages at the new base and calls `talc::extend(end, run
    + bytes)`, which registers one free gap from the old heap's top to the new run's end, across the

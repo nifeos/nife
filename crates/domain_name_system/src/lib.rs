@@ -567,8 +567,12 @@ pub enum Reject {
 
 /// A TTL as a receiver believes it: RFC 2181 section 8 says one with its most significant bit set
 /// is treated as zero.
-fn believable_ttl(ttl: u32) -> u32 {
-    if ttl & 0x8000_0000 != 0 { 0 } else { ttl }
+fn believable_time_to_live(time_to_live: u32) -> u32 {
+    if time_to_live & 0x8000_0000 != 0 {
+        0
+    } else {
+        time_to_live
+    }
 }
 
 /// The addresses a reply gave for our name, after every check passed.
@@ -755,7 +759,7 @@ impl Query {
                         return Err(Reject::ChainTooLong);
                     }
                     links += 1;
-                    ttl = ttl.min(believable_ttl(record.ttl));
+                    ttl = ttl.min(believable_time_to_live(record.ttl));
                     owner = cname_target(reply, &record).map_err(Reject::Malformed)?;
                     continue 'chain;
                 }
@@ -775,7 +779,7 @@ impl Query {
             if record.class != CLASS_IN || record.rtype != record_type::A || record.name != owner {
                 continue;
             }
-            answer.ttl = answer.ttl.min(believable_ttl(record.ttl));
+            answer.ttl = answer.ttl.min(believable_time_to_live(record.ttl));
             if let (Some(slot), Ok(address)) = (
                 answer.addresses.get_mut(answer.count as usize),
                 <[u8; 4]>::try_from(record.rdata),

@@ -554,7 +554,7 @@ fn a_seventeenth_token_is_refused_and_never_dropped() {
 /// An unplaceable token earlier on the line is the one named, not a later one that no room was
 /// left for.
 #[test]
-fn the_earliest_unplaceable_token_is_named_when_the_line_is_also_too_long() {
+fn the_earliest_token_nothing_can_place_is_named_when_the_line_is_also_too_long() {
     let parsed = parse_run(b"p -9 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 a b");
     assert_eq!(parsed.unexpected, Some(&b"-9"[..]));
 }

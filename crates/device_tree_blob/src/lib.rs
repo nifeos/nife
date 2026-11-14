@@ -302,8 +302,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -406,8 +406,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -508,8 +508,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -634,8 +634,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -703,8 +703,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -792,8 +792,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -860,8 +860,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -948,8 +948,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -1018,8 +1018,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -1108,8 +1108,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -1182,8 +1182,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_PROP => {
                     let Prop {
-                        len,
-                        name_off,
+                        length_bytes: len,
+                        name_offset: name_off,
                         value_at,
                         next,
                     } = self.prop_header(at)?;
@@ -1235,8 +1235,8 @@ impl<'a> DeviceTreeBlob<'a> {
         // Every sum below is checked, because the cell counts and `len` come from the blob and a
         // target whose `usize` is 32 bits wide can overflow them. An overflow is a refusal.
         let cell_bytes = |cells: u32| (cells as usize).checked_mul(4).ok_or(Error::Truncated);
-        let address_bytes = cell_bytes(address_cells)?;
-        let pair_bytes = address_bytes
+        let start_bytes = cell_bytes(address_cells)?;
+        let pair_bytes = start_bytes
             .checked_add(cell_bytes(size_cells)?)
             .ok_or(Error::Truncated)?;
         if pair_bytes == 0 {
@@ -1253,7 +1253,7 @@ impl<'a> DeviceTreeBlob<'a> {
         {
             let start = self.cells(cursor, address_cells)?;
             let size = self.cells(
-                cursor.checked_add(address_bytes).ok_or(Error::Truncated)?,
+                cursor.checked_add(start_bytes).ok_or(Error::Truncated)?,
                 size_cells,
             )?;
             cursor += pair_bytes;
@@ -1307,8 +1307,8 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::Truncated);
         }
         Ok(Prop {
-            len,
-            name_off,
+            length_bytes: len,
+            name_offset: name_off,
             value_at,
             next: skip_padded(value_at, len)?,
         })
@@ -1340,8 +1340,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
 /// A property header, as [`DeviceTreeBlob::prop_header`] reads it.
 struct Prop {
-    len: usize,
-    name_off: usize,
+    length_bytes: usize,
+    name_offset: usize,
     value_at: usize,
     next: usize,
 }

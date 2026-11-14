@@ -268,9 +268,9 @@ impl ClockPage {
             .compare_exchange(MAGIC, MAGIC, Ordering::AcqRel, Ordering::Acquire)
             .is_ok()
         {
-            let seq = self.word(W_SEQ).load(Ordering::Relaxed);
-            if seq & 1 != 0 {
-                self.word(W_SEQ).store(seq + 1, Ordering::Release);
+            let sequence = self.word(W_SEQ).load(Ordering::Relaxed);
+            if sequence & 1 != 0 {
+                self.word(W_SEQ).store(sequence + 1, Ordering::Release);
             }
             return;
         }

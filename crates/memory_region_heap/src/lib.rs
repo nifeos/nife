@@ -95,24 +95,37 @@ impl MemoryRegionHeap {
     /// `[base, base + maximum_bytes)`. Call once, before the first allocation, first thing in
     /// `_start`. `base` must be page-aligned and inside the user half.
     ///
-    /// **Only the first call wires the heap.** It returns `true`. A later call changes nothing and
-    /// returns `false`, because rewiring a heap that may already hold allocations would leave its
-    /// allocator owning pages the new base never mapped, and a later allocation could be handed
-    /// memory in that hole. A caller that wants to know it was the first checks the answer.
+    /// **Only the first call wires the heap.** A later call changes nothing, because rewiring a heap
+    /// that may already hold allocations would leave its allocator owning pages the new base never
+    /// mapped, and a later allocation could be handed memory in that hole. A caller that wants to
+    /// know asks [`is_initialized`](Self::is_initialized) first.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
-    pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) -> bool {
+    pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();
-        if inner.memory_region_slot != u64::MAX || inner.heap_end.is_some() || inner.committed > 0 {
-            return false;
+        if Self::wired(inner) {
+            return;
         }
         inner.memory_region_slot = memory_region_slot;
         inner.base = base;
         inner.committed = 0;
         inner.maximum = maximum_bytes & !(PAGE - 1);
-        true
+    }
+
+    /// Whether [`initialize`](Self::initialize) has run, so that a further call would change
+    /// nothing.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by maintainer/review-hostile-input-fixes.
+    pub fn is_initialized(&self) -> bool {
+        let mut g = self.lock();
+        Self::wired(g.inner())
+    }
+
+    /// Whether the heap has been wired to a budget, or has already taken pages from one.
+    fn wired(inner: &Inner) -> bool {
+        inner.memory_region_slot != u64::MAX || inner.heap_end.is_some() || inner.committed > 0
     }
 
     /// **Map the whole capped range now**, rather than on the first allocations that need it.
@@ -317,12 +330,14 @@ mod tests {
     }
 
     /// Only the first `initialize` wires the heap. A second call, before or after allocations,
-    /// changes neither the base nor the cap nor what is committed, and says so.
+    /// changes neither the base nor the cap nor what is committed.
     #[test]
-    fn a_second_initialize_is_refused_and_changes_nothing() {
+    fn a_second_initialize_changes_nothing() {
         let heap = MemoryRegionHeap::new();
-        assert!(heap.initialize(3, DEFAULT_BASE, 16 * PAGE));
-        assert!(!heap.initialize(4, DEFAULT_BASE + 64 * PAGE, 8 * PAGE));
+        assert!(!heap.is_initialized());
+        heap.initialize(3, DEFAULT_BASE, 16 * PAGE);
+        assert!(heap.is_initialized());
+        heap.initialize(4, DEFAULT_BASE + 64 * PAGE, 8 * PAGE);
 
         let mut g = heap.lock();
         let inner = g.inner();
@@ -333,11 +348,11 @@ mod tests {
         inner.committed = 4 * PAGE; // as after a grow
         drop(g);
 
-        assert!(!heap.initialize(3, DEFAULT_BASE + 64 * PAGE, 16 * PAGE));
+        heap.initialize(3, DEFAULT_BASE + 64 * PAGE, 16 * PAGE);
         assert_eq!(
             heap.committed_bytes(),
             4 * PAGE,
-            "a refused call does not reset it"
+            "a repeated call does not reset it"
         );
     }
 

@@ -12,7 +12,7 @@ a wrong verdict). Measured 2026-10-04 (UTC) on aarch64: red with exactly that co
 diff --git a/crates/domain_name_system/src/lib.rs b/crates/domain_name_system/src/lib.rs
 --- a/crates/domain_name_system/src/lib.rs
 +++ b/crates/domain_name_system/src/lib.rs
-@@ -796,7 +796,7 @@
+@@ -776,7 +776,7 @@
          let mut scan = answers;
          for _ in 0..h.ancount {
              let Ok(record) = scan.record() else { break };
@@ -20,4 +20,4 @@ diff --git a/crates/domain_name_system/src/lib.rs b/crates/domain_name_system/sr
 +            if record.class != CLASS_IN || record.rtype != record_type::A {
                  continue;
              }
-             answer.ttl = answer.ttl.min(record.ttl);
+             answer.ttl = answer.ttl.min(believable_time_to_live(record.ttl));
