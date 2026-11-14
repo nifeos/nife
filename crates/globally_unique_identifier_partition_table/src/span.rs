@@ -55,6 +55,10 @@ impl Span {
         if first_block.checked_add(blocks).is_none() {
             return None;
         }
+        // A 32-bit host cannot hold an offset past `usize::MAX`; refuse rather than truncate.
+        if offset > usize::MAX as u64 {
+            return None;
+        }
         Some(Span {
             first_block,
             blocks,

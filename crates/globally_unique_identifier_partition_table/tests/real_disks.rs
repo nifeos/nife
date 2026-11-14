@@ -422,3 +422,113 @@ fn one_disks_primary_with_a_foreign_backup_is_caught() {
         Err(Error::Backup(BackupMismatch::DiskGuid))
     );
 }
+
+/// **The backup alone opens a disk whose primary is gone**, and restores the primary byte for
+/// byte. UEFI 2.10 section 5.3.2 requires a reader to try the last block when the primary is
+/// corrupt. The head of the `sgdisk` fixture is zeroed, so only the tail is read.
+#[test]
+fn the_backup_alone_restores_the_primary_byte_for_byte() {
+    let (header_block, array) = primary(SGDISK_HEAD);
+    let original = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+
+    let (backup_array, backup_header_block) = backup(SGDISK_TAIL);
+    let table = GloballyUniqueIdentifierPartitionTable::parse_backup(
+        backup_header_block,
+        backup_array,
+        BLOCKS,
+    )
+    .expect("the backup is a valid table");
+
+    let mut restored = [0u8; BLOCK];
+    table.write_primary_header(&mut restored).unwrap();
+    assert_eq!(&restored[..], header_block, "the primary header, restored");
+    assert_eq!(table.entry_array(), original.entry_array());
+    assert_eq!(table.primary_entry_lba(), 2);
+    assert_eq!(table.partitions().count(), 3);
+    table
+        .check_backup(backup_header_block, backup_array)
+        .expect("the restored table agrees with the backup it came from");
+}
+
+/// The backup parse refuses what is not the backup of a disk of this size, and a primary header.
+#[test]
+fn parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array() {
+    let (header_block, array) = primary(SGDISK_HEAD);
+    let (backup_array, backup_header_block) = backup(SGDISK_TAIL);
+
+    assert!(matches!(
+        GloballyUniqueIdentifierPartitionTable::parse_backup(header_block, array, BLOCKS),
+        Err(Error::NotBackup { my_lba: 1 })
+    ));
+    assert!(matches!(
+        GloballyUniqueIdentifierPartitionTable::parse_backup(
+            backup_header_block,
+            backup_array,
+            BLOCKS + 1
+        ),
+        Err(Error::NotBackup { .. })
+    ));
+    let mut damaged = backup_array.to_vec();
+    damaged[0] ^= 1;
+    assert!(matches!(
+        GloballyUniqueIdentifierPartitionTable::parse_backup(backup_header_block, &damaged, BLOCKS),
+        Err(Error::EntryArrayCrc { .. })
+    ));
+}
+
+/// **A table is only this device's table if the device is the size the header says.**
+#[test]
+fn a_table_cloned_onto_another_size_of_disk_is_refused_by_the_size_check() {
+    let (header_block, array) = primary(SGDISK_HEAD);
+    let table = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    assert_eq!(table.check_disk_size(BLOCKS), Ok(()));
+    assert_eq!(
+        table.check_disk_size(BLOCKS * 2),
+        Err(Error::DiskSize {
+            header: BLOCKS,
+            device: BLOCKS * 2
+        })
+    );
+    assert_eq!(
+        table.check_disk_size(BLOCKS - 1),
+        Err(Error::DiskSize {
+            header: BLOCKS,
+            device: BLOCKS - 1
+        })
+    );
+}
+
+/// A record with a type and no blocks is noise a reader may skip, not a hybrid MBR.
+#[test]
+fn a_typed_record_of_zero_blocks_is_not_a_hybrid() {
+    let mut block = SGDISK_HEAD[..BLOCK].to_vec();
+    let second = 446 + 16;
+    block[second + 4] = 0x83;
+    globally_unique_identifier_partition_table::mbr::validate(&block, BLOCKS)
+        .expect("a zero-size record may be ignored");
+    block[second + 12] = 1;
+    assert_eq!(
+        globally_unique_identifier_partition_table::mbr::validate(&block, BLOCKS),
+        Err(Error::Mbr(MbrProblem::ExtraRecord { index: 1 }))
+    );
+}
+
+/// **`{:?}` of a table is short**, and the refusals read as sentences and as errors.
+#[test]
+fn a_table_debug_prints_a_summary_and_every_refusal_is_an_error() {
+    let (header_block, array) = primary(SGDISK_HEAD);
+    let table = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let shown = format!("{table:?}");
+    assert!(shown.len() < 600, "{} characters", shown.len());
+    assert!(shown.contains("used_entries: 3"));
+
+    let boxed: Box<dyn core::error::Error> = Box::new(Error::Backup(BackupMismatch::DiskGuid));
+    assert_eq!(
+        boxed.to_string(),
+        "the backup header disagrees about the disk GUID"
+    );
+    assert_eq!(
+        Error::Mbr(MbrProblem::ExtraRecord { index: 1 }).to_string(),
+        "the protective MBR is wrong: record 1 is a second partition: a hybrid MBR"
+    );
+}

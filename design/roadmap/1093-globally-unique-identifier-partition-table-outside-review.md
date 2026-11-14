@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -50,6 +50,7 @@ at the head this review read.
 ### P0: blocks the move to its own repository
 
 1. The sources carry nife's vocabulary, which the template's `check / standalone` refuses.
+   LEFT. The move commit strips the `Name:` blocks and the manifest comment.
    Finding: `Name:` provenance blocks at `src/lib.rs` line 13, `src/lib.rs` line 39, `src/lib.rs` line 47,
    `src/lib.rs` line 55, `src/header.rs` line 19, `src/guid.rs` line 19, `src/guid.rs` line 33, `src/mbr.rs` line 7,
    `src/table.rs` line 4 and `src/error.rs` line 3. The `publish = false` line at `Cargo.toml` line 11 carries a
@@ -140,6 +141,14 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
   says so, and a caller that knows better can edit the `Header` before writing.
 - The template's `prose_acronyms` false positive on `U+FFFD` is the template's to fix; until it
   lands, the crate rewords the one comment.
+
+## Follow-on
+
+- **Outstanding.** Items 1, 9, 10, 11 and 12 belong to the move and the rename lane; the crate
+  still carries `Name:` blocks and the old register names.
+- **Outstanding.** Item 4's `BUGS` lines in the nife callers, item 5's firm form and item 14's
+  harnesses and fuzz target.
+- **Outstanding.** The two decisions above wait for an architect; neither the type nor the `uuid` line has moved.
 
 ## Index row
 

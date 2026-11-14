@@ -5,6 +5,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
 ## P1: before the first tag
 
 2. `Entry::blocks` panics on an entry a caller can build.
+   DONE (`an_entry_whose_block_count_overflows_has_no_size`; harness `an_entrys_block_count_never_panics_and_is_exact` with its patch).
    Finding: `blocks` returns `Some(self.last_lba - self.first_lba + 1)` once `last_lba >=
    first_lba`. For `Entry::new(t, u, 0, u64::MAX)` the addition overflows: a panic
    ("attempt to add with overflow") with overflow checks on, `Some(0)` with them off. Verified in
@@ -20,6 +21,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way. Effort: XS.
 
 3. The crate cannot open a disk whose primary table has damage, and the specification requires it to.
+   DONE (`the_backup_alone_restores_the_primary_byte_for_byte`, `parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array`, `parse_backup_returns_the_table_write_backup_header_described`). LEFT: the Kani round trip, which carries four symbolic CRC chains; the host test covers both block sizes and four disk sizes.
    Finding: `parse` refuses a header whose `my_lba` is not 1 (`Error::NotPrimary`), and
    `check_backup` needs a parsed primary. So when the primary header or its array is corrupt, which
    is the case the backup exists for, the crate offers no way to read the backup, learn the
@@ -45,6 +47,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way (additive). Effort: M.
 
 4. Nothing compares the header's idea of the disk with the device.
+   PARTIAL. DONE: `check_disk_size` (`a_table_cloned_onto_another_size_of_disk_is_refused_by_the_size_check`), the `parse` documentation and the README contract. LEFT: the `BUGS` line in each nife caller, which is component code for the lane that wires the check in.
    Finding: `parse` takes the disk's size from `alternate_lba + 1` and checks every other field
    against that. A table cloned onto a smaller or larger disk, or a disk grown under its table,
    parses clean. `check_protective_mbr` then checks the MBR against the header's figure, not the
@@ -65,6 +68,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way. Effort: S.
 
 5. `parse` cannot tell where the array bytes came from, and every caller guesses block 2.
+   DONE for the cheap form (the `parse` documentation, the README example and the `EntryArrayCrc` documentation). LEFT: the firm form, which changes the signature every caller uses.
    Finding: the documentation says `entry_array` "is read from the header's `PartitionEntryLBA`",
    but a caller learns that field only from `Header::decode` or from `parse` itself. All seven nife
    callers, the fuzz target and the README example read block 2 unconditionally. The specification
@@ -84,6 +88,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way now, one-way for the firm form after the tag. Effort: S.
 
 6. The claim "no `unsafe`" is prose.
+   DONE (`#![forbid(unsafe_code)]`).
    Finding: the README and the crate root say the crate has no `unsafe`, and it has none, but
    nothing refuses one. The template's weekly fuzz opts a crate in only when its shipped source
    carries no `unsafe`, and its scan passes a crate whose roots carry `#![forbid(unsafe_code)]`
@@ -93,6 +98,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way. Effort: XS.
 
 7. Twenty-three public items have no documentation, and the lint that would say so is off.
+   DONE (every field documented, the `allow` and the `BUGS` line gone; `cargo doc` with warnings denied is clean).
    Finding: `Cargo.toml` turns `missing_docs` on and `src/lib.rs` line 17 turns it off again, for the
    eighteen fields of `Error`'s variants, four variants of `BackupMismatch` and the field of
    `MbrProblem::ExtraRecord`. The README's `BUGS` records it. The review package assigns it to the
@@ -104,6 +110,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way. Effort: S.
 
 8. The error type is not an error, and two of its parts print as Rust.
+   DONE (`a_table_debug_prints_a_summary_and_every_refusal_is_an_error`; `core::error::Error`, `Display` for both enums, `#[non_exhaustive]` on all three).
    Finding: `Error` implements `Display` and not `core::error::Error` (stable since Rust 1.81,
    under this crate's 1.89); a caller cannot put it in a `Box<dyn Error>` or behind `?` into
    `anyhow`. `BackupMismatch` and `MbrProblem` have no `Display`, so a person reads "the backup
@@ -118,6 +125,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way until the tag; the `#[non_exhaustive]` choice is one-way after it. Effort: S.
 
 9. The template's name gates are red today, on ten register names and one spelled-out word.
+   LEFT. Names are the architect's, and the rename lane the package plans applies them.
    Finding: `register_names` refuses `entry::SIZE`, `entry::SIZE_U32`, `header::HEADER_SIZE`,
    `header::at::HEADER_SIZE`, `header::at::ENTRY_SIZE`, `Header::entry_size`, `MINIMUM_BLOCK_SIZE`,
    `MAXIMUM_BLOCK_SIZE`, `mbr::SIZE_LBA` and the field `block_size`; `spelled_out` refuses the test
@@ -137,6 +145,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    package's lane.
 
 10. The template's prose gate is red on nineteen acronyms.
+   LEFT. The `prose_acronyms` gate is the template's and this tree does not carry it; the move lane runs it and applies the expansions.
     Finding: `check / standalone` wants every acronym expanded at its first use, at a ceiling of 0.
     `prose_acronyms` reports these. In the README (lines 3 and 24): UEFI, GPT and RFC. In the crate
     root (`lib.rs` line 1, `lib.rs` line 4): GPT and UEFI. In `crc.rs` line 3: IEEE and PNG. In `entry.rs` line 22,
@@ -152,6 +161,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: S.
 
 11. The repository's mutation verdict stays red until the maintainers exempt the recorded equivalents.
+   LEFT. It belongs to the move and the first full run in the new repository.
     Finding: the recorded baseline for the crate is 373 mutants, 3 missed, 2 timed out, 33 unviable.
     The triage finds six survivors equivalent: a shift of zero, three disjoint-bit `|` to `^`, one
     comparison the next check repeats, and one `usize` bound a 64-bit host cannot fail. The
@@ -167,6 +177,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: S.
 
 12. The README is not yet the template's README.
+   LEFT. The badge row, the measured Kani figures and the stranger run need the new repository.
     Finding: there is no badge row under the title (`readme_badges` fails `check / standalone` on
     it). The patch recipe says `patch -p3` (`README.md` line 71), which is the path depth inside nife,
     and the regenerated patches in the new repository apply at `-p1`. The README has no `cargo kani

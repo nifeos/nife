@@ -805,3 +805,38 @@ fn a_guid_shows_itself_and_unused_has_a_name() {
     assert_eq!(format!("{g:X}"), "12345678-9ABC-4DEF-0102-030405060708");
     assert_eq!(types::name(types::UNUSED), Some("unused"));
 }
+
+/// **A range the count cannot hold has no size.** `0 ..= u64::MAX` is 2^64 blocks, and building
+/// the entry is legal, so asking for its size must answer `None` and not overflow.
+#[test]
+fn an_entry_whose_block_count_overflows_has_no_size() {
+    let all = Entry::new(types::NIFE_DATA, PART, 0, u64::MAX);
+    assert_eq!(all.blocks(), None);
+    assert_eq!(
+        Entry::new(types::NIFE_DATA, PART, 1, u64::MAX).blocks(),
+        Some(u64::MAX)
+    );
+    assert_eq!(Entry::new(types::NIFE_DATA, PART, 5, 4).blocks(), None);
+}
+
+/// **The backup a writer lays down parses back to the table that wrote it**, on every disk size
+/// and both block sizes, which is the round trip the byte-level Kani harness cannot afford (four
+/// symbolic CRC chains).
+#[test]
+fn parse_backup_returns_the_table_write_backup_header_described() {
+    for block_size in [512usize, 4096] {
+        for blocks in [200u64, 4096, 131_072, 1 << 24] {
+            let disk = build_on(block_size, blocks, &[]).unwrap();
+            let table =
+                GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+            let again = GloballyUniqueIdentifierPartitionTable::parse_backup(
+                disk.backup(),
+                table.entry_array(),
+                blocks,
+            )
+            .unwrap_or_else(|e| panic!("{block_size} byte blocks, {blocks} blocks: {e}"));
+            assert_eq!(again.header(), table.header());
+            assert_eq!(again.backup_entry_lba(), table.backup_entry_lba());
+        }
+    }
+}

@@ -198,3 +198,19 @@ fn create_never_lays_out_a_table_parse_would_reject() {
     // compares the backup's own entry_array_lba against.
     assert_eq!(table.backup_entry_lba() + span, table.backup_header_lba());
 }
+
+/// **`blocks` never panics and counts exactly**, for every pair of bounds.
+///
+/// The count is the inclusive range's size, so `0 ..= u64::MAX` holds 2^64 blocks and is not a
+/// `u64`: `None`, as for a reversed range. Stated against 128-bit arithmetic, which cannot
+/// overflow, so the proof is not the code compared with itself.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.an_entrys_block_count_never_panics_and_is_exact.patch`
+#[kani::proof]
+fn an_entrys_block_count_never_panics_and_is_exact() {
+    let entry = Entry::new(types::NIFE_DATA, Uuid::nil(), kani::any(), kani::any());
+    let wide = u128::from(entry.last_lba)
+        .checked_sub(u128::from(entry.first_lba))
+        .map(|span| span + 1)
+        .and_then(|count| u64::try_from(count).ok());
+    assert_eq!(entry.blocks(), wide);
+}
