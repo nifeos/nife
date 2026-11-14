@@ -6,7 +6,7 @@ A kernel and the user-mode runtime of its processes share this one definition, s
 the reader cannot drift on the page's layout or its fixed virtual address.
 
 The writer learns the rate once at boot, writes the page once, and maps it read-only into every
-process, so no seqlock is needed. A parent writes a child space's page. An unknown rate is a page
+process, so no seqlock is necessary. A parent writes a child space's page. An unknown rate is a page
 of zeroes, which reads as `None`; a page never carries a fabricated default.
 
 ## The contract
@@ -20,12 +20,12 @@ of zeroes, which reads as `None`; a page never carries a fabricated default.
   the rate.
 - The fixed address is `PAGE_VIRTUAL_ADDRESS`: `0x0000_7000_0000_0000` on `x86_64`, and `0x0000_0038_0000_0000`
   on `riscv64`, where the low half of the address space ends at `0x40_0000_0000`. Each sits at
-  seven-eighths of its low half, far above every other address a program is handed.
+  seven-eighths of its low half, far above every other address a program receives.
 - A rate is believable only between `MINIMUM_PLAUSIBLE_HERTZ` (100 kilohertz, above the 32.768
   kilohertz watch crystal and far below the slowest real counter) and `MAXIMUM_PLAUSIBLE_HERTZ` (100
   gigahertz). The band exists to catch nonsense, not to police hardware, and `is_plausible(hertz)` is
   its one definition, so each architecture's boot path calls the same check.
-- The identity is frozen: the magic `TIMEBAS1`, `VERSION` 1, `INTERFACE_ID` 9, the 16-byte layout
+- The identity does not change: the magic `TIMEBAS1`, `VERSION` 1, `INTERFACE_ID` 9, the 16-byte layout
   above and both fixed addresses. A layout break ships as a new magic and version together.
 
 ## EXAMPLES
@@ -67,10 +67,10 @@ page.
 ## BUGS
 
 - The page carries one number for the life of a process, so the contract cannot express a counter
-  whose rate changes after the page is written. The writer establishes that its counter keeps one
+  whose rate changes after the writer writes the page. The writer establishes that its counter keeps one
   rate before it writes the number.
 - A process with no mapping at the fixed address faults when it reads the page, by design.
-- The rate is read once per process, so a later, better number cannot reach it.
+- A process reads the rate once, so a later, better number cannot reach it.
 
 ## Minimum Rust version
 
