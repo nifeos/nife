@@ -1,4 +1,6 @@
 //! **The reply word's error range**, in one place: see [`MAXIMUM_ERRNO`].
+//!
+//! Name: provisional, minted 2026-11-14 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 
 /// The largest error code a reply word carries: an error reply is a word in `-MAXIMUM_ERRNO..=-1`
 /// and its code is the word negated, `1..=MAXIMUM_ERRNO`. Linux's bound (`MAX_ERRNO` in
