@@ -23,15 +23,16 @@
 //! a compatibility check and not an authority check, so leaving it out costs a hostile package
 //! nothing it could have gained.
 //!
-//! Name: provisional. Moved here from `capability_manifest_note` on 2026-11-01 (UTC) so that
-//! `disk-tools` need not link `grant_plan`; the items keep the names they had there. The crate
-//! name is the architect's call under the two-way rule (reversing it costs one pull request).
+//! Name: ratified 2026-11-14 (UTC) for the crate and repository name `interfaces_note`. Moved here
+//! from `capability_manifest_note` on 2026-11-01 (UTC) so that `disk-tools` need not link
+//! `grant_plan`; the items keep the names they had there. The crates.io name is asked again with the
+//! naming-layers decision.
 
 #![no_std]
 
 /// The note's owner string, without its NUL: the same `nife` that `capability_manifest_note::OWNER`
 /// holds. Duplicated so that this crate depends on nothing; a test in that crate holds the two equal.
-const OWNER: &[u8] = b"nife";
+const OWNER: &[u8] = b"nife"; // wire literal
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
 const NAME_FIELD: usize = 8;
@@ -323,7 +324,7 @@ impl<const N: usize> InterfacesNote<N> {
 macro_rules! carry_interfaces {
     ($list:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_INTERFACES_NOTE: $crate::InterfacesNote<
             { $crate::interfaces_note_len($list.len()) },
         > = $crate::InterfacesNote::of::<{ $crate::interfaces_len($list.len()) }>($list);
@@ -489,7 +490,7 @@ mod interface_tests {
         assert_eq!(&b[..4], &5u32.to_le_bytes());
         assert_eq!(&b[4..8], &(interfaces_len(3) as u32).to_le_bytes());
         assert_eq!(&b[8..12], &INTERFACES.to_le_bytes());
-        assert_eq!(&b[12..16], b"nife");
+        assert_eq!(&b[12..16], b"nife"); // wire literal
         assert_eq!(&b[16..20], &[0, 0, 0, 0]);
         assert_eq!(b.len(), 20 + interfaces_len(3));
         assert_eq!(decode_interfaces(&b[20..]).unwrap().version_of(4), Some(7));
