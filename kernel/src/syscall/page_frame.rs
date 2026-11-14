@@ -40,8 +40,8 @@ pub(super) fn page_frame_map(
     let Some(last_va) = run_end_virtual_address(va, count) else {
         return Err(Error::BadPointer);
     };
-    if !paging::is_user_page_va::<crate::arch::mmu::Format>(va)
-        || !paging::is_user_page_va::<crate::arch::mmu::Format>(last_va)
+    if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va)
+        || !page_tables::is_user_page_va::<crate::arch::mmu::Format>(last_va)
     {
         return Err(Error::BadPointer);
     }
@@ -50,12 +50,12 @@ pub(super) fn page_frame_map(
         if !frame.rights.allows(Rights::WRITE) {
             return Err(Error::NotPermitted);
         }
-        paging::Flags::user_data()
+        page_tables::Flags::user_data()
     } else {
         if !frame.rights.allows(Rights::READ) {
             return Err(Error::NotPermitted);
         }
-        paging::Flags::user_rodata()
+        page_tables::Flags::user_rodata()
     };
     // Under the hold only for the refusal order: a region destroyed after this read refuses to
     // retype, because it is generational (§16 (object revocation)).
@@ -70,7 +70,7 @@ pub(super) fn page_frame_map(
     // One invalidate for the whole run, when this drops.
     let mut batch = mmu::UserMapBatch::new();
     for k in 0..count {
-        let (page_phys, page_va) = (phys + k * paging::PAGE_SIZE, va + k * paging::PAGE_SIZE);
+        let (page_phys, page_va) = (phys + k * page_tables::PAGE_SIZE, va + k * page_tables::PAGE_SIZE);
         // Recorded before the leaf, and refused there when the space already maps the page
         // executable: unrecordable means unmappable (§13 (capability revocation and untyped
         // reclamation)). The source is `phys`, the run's base, which a `REVOKE` scopes by

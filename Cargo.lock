@@ -876,7 +876,7 @@ dependencies = [
  "minicov",
  "nifefs",
  "page_frames",
- "paging",
+ "page_tables",
  "pci",
  "periodic_deadline",
  "primitive_benchmark_contract",
@@ -1106,7 +1106,7 @@ name = "page_frames"
 version = "0.1.0"
 
 [[package]]
-name = "paging"
+name = "page_tables"
 version = "0.1.0"
 
 [[package]]
@@ -1577,7 +1577,7 @@ dependencies = [
  "package_archive",
  "package_index",
  "page_frames",
- "paging",
+ "page_tables",
  "pgrep",
  "pmap",
  "ps",

@@ -32,7 +32,7 @@ pub fn initialize() {
 }
 
 /// **Program `IA32_PAT` so that `PWT` alone means write-combining**, which is what
-/// `paging::Flags::write_combining()` encodes and what the framebuffer is mapped with
+/// `page_tables::Flags::write_combining()` encodes and what the framebuffer is mapped with
 /// (`mmu::direct_map_claims`).
 ///
 /// Entry 1 is rewritten without the cache flush the SDM asks for, because no mapping uses it yet:
@@ -55,14 +55,14 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
     // SAFETY: CPUID advertised the MSR, so neither access can `#GP`, and every entry in the value
     // is a defined memory type. The one entry it changes is selected by no mapping on this core
     // (see above), so no cached line or TLB entry has the old type to disagree with.
-    let found = unsafe { read_msr(paging::x86_64::pat::MSR) };
-    if found != paging::x86_64::pat::VALUE {
+    let found = unsafe { read_msr(page_tables::x86_64::pat::MSR) };
+    if found != page_tables::x86_64::pat::VALUE {
         // SAFETY: as the read's.
-        unsafe { write_msr(paging::x86_64::pat::MSR, paging::x86_64::pat::VALUE) };
+        unsafe { write_msr(page_tables::x86_64::pat::MSR, page_tables::x86_64::pat::VALUE) };
     }
     crate::println!(
         "  pat         : {:#018x} on core {} (was {found:#018x}); entry 1 is write-combining",
-        paging::x86_64::pat::VALUE,
+        page_tables::x86_64::pat::VALUE,
         crate::cpu::id()
     );
 }
@@ -70,7 +70,7 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
 /// Establish `CR4.SMEP` set, so ring 0 cannot execute an instruction fetched from a page whose
 /// `U/S` bit says it belongs to ring 3.
 ///
-/// `crates/paging`'s decoder reports a user page as not kernel-executable, and that is true only
+/// `crates/page_tables`'s decoder reports a user page as not kernel-executable, and that is true only
 /// with this bit set. Setting it without `CPUID.(7,0):EBX[7]` is `#GP`, so a CPU that does not
 /// offer it is left alone and the boot line says ring 0 can execute ring-3 pages there. Per core:
 /// `CR4` is per-CPU state. See notes/x86-port/cpu-state.md.

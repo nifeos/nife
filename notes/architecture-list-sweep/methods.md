@@ -19,7 +19,7 @@ rather than trust the count.
    token and counting the families. Found the `bench/fastpath-` divergence and confirmed twelve
    families complete at three.
    Blind to: a per-architecture thing whose files do not carry the token in the name.
-   `crates/paging/src/sv39.rs` is riscv64's page-table format and this method scored that family as
+   `crates/page_tables/src/sv39.rs` is riscv64's page-table format and this method scored that family as
    incomplete until it was read by hand. So the method produces false positives, which is safe, and
    would produce a false negative for any family named the way `sv39` is.
 3. `#[cfg(target_arch)]` arm counting per file, then reading every file with a nonzero count

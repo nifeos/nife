@@ -2,7 +2,7 @@
  *
  * THE KERNEL IS LINKED HIGH AND LOADED LOW, the same shape as link-aarch64.ld and
  * link-riscv64.ld, for the same reason: the kernel lives in the high half of the address space, so
- * the portable "kernel = high half, user = low half" model (paging::Half, the user-VA gate) holds
+ * the portable "kernel = high half, user = low half" model (page_tables::Half, the user-VA gate) holds
  * identically on all three architectures (DECISIONS §17).
  *
  * WHAT IS DIFFERENT HERE, AND IT IS THE ONE STRUCTURAL DIVERGENCE OF THE THREE.
@@ -91,7 +91,7 @@ SECTIONS
      * carrying both produced ONE `PT_LOAD` marked `RWX` at 0x101000: writable and executable
      * memory, in the boot path of a kernel whose whole claim is about what a confined component can
      * reach. `crates/elf::Elf::parse` refuses such an image outright
-     * (`Error::WritableAndExecutable`) and `paging::Flags` has no constructor that can build such a
+     * (`Error::WritableAndExecutable`) and `page_tables::Flags` has no constructor that can build such a
      * page, so the kernel's own image was the one thing in the tree breaking the rule the tree
      * enforces everywhere else. Nobody noticed because nothing parses the kernel's own image; that
      * is what `script/image-permissions` is for.

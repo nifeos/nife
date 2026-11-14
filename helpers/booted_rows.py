@@ -360,7 +360,7 @@ def selftest_repo(tmp):
     git(tmp, 'init', '-q')
     pinned = commit({'system_tests/src/user/cited_tests.rs': OLD_TESTS}, 'pinned')
     commit({'system_tests/src/user/pass_tests.rs': NEW_TESTS,
-            'crates/paging/src/lib.rs': HOST_TESTS}, 'the pass')
+            'crates/page_tables/src/lib.rs': HOST_TESTS}, 'the pass')
     return pinned
 
 

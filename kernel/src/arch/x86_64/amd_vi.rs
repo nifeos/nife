@@ -76,7 +76,7 @@ const RING_BYTES: u64 = 4096;
 const RING_LEN_256: u64 = 0b1000 << 56;
 
 // --- Device table entry, 256 bits as four qwords (section 2.2.2.1, Table 7). The two this driver
-// writes are built by `paging::AmdVi`, where Kani proves them; these name fields for the tests. ---
+// writes are built by `page_tables::AmdVi`, where Kani proves them; these name fields for the tests. ---
 #[cfg(test)]
 const DTE_ROOT_MASK: u64 = 0x000f_ffff_ffff_f000;
 /// `IV`, bit 128: the interrupt-remapping half of the entry is valid. Never set here.
@@ -97,24 +97,24 @@ const INVALIDATE_WHOLE_DOMAIN: u64 = 0x7fff_ffff_ffff_f000 | 0b011;
 
 /// **The device table entry of a device that is confined**: valid, translating through the
 /// four-level table at `root`, read and write allowed so the leaves decide, tagged `domain`
-/// ([`paging::AmdVi::device_table_entry`], which `no_amd_vi_device_table_entry_sets_a_reserved_bit`
+/// ([`page_tables::AmdVi::device_table_entry`], which `no_amd_vi_device_table_entry_sets_a_reserved_bit`
 /// proves over every root and domain). A root the entry cannot hold is a panic, not a mask: the
 /// mask that was here before provisional milestone 767 would have pointed the device at another
 /// table. Every root comes from the frame allocator, so the panic is unreachable on a machine whose
 /// memory ends below 2^52.
 fn translating_dte(root: u64, domain: u16) -> [u64; 4] {
-    paging::AmdVi::device_table_entry(root, domain)
+    page_tables::AmdVi::device_table_entry(root, domain)
         .unwrap_or_else(|| panic!("AMD-Vi domain root {root:#x} does not fit a device table entry"))
 }
 
 /// **The device table entry that denies everything**: the default for every device and §163's
-/// quarantine ([`paging::AmdVi::blocked_device_table_entry`]). A four-level walk to `empty_root`,
+/// quarantine ([`page_tables::AmdVi::blocked_device_table_entry`]). A four-level walk to `empty_root`,
 /// an all-zero table, with read and write both clear; every access target-aborts and is logged.
 /// This module's header says why it is not `Mode` 0. Domain 0, which no confined device is given,
 /// because every blocked device shares the one root and the specification asks that devices
 /// sharing a domain id share their tables.
 fn blocked_dte(empty_root: u64) -> [u64; 4] {
-    paging::AmdVi::blocked_device_table_entry(empty_root)
+    page_tables::AmdVi::blocked_device_table_entry(empty_root)
         .unwrap_or_else(|| panic!("AMD-Vi empty root {empty_root:#x} does not fit an entry"))
 }
 
@@ -638,7 +638,7 @@ fn entries_of(rid: u32) -> (u32, Option<u32>) {
     (rid, (source != rid).then_some(source))
 }
 
-/// **Confine device `rid` to the domain rooted at `root`** (an [`paging::x86_64::AmdVi`] table
+/// **Confine device `rid` to the domain rooted at `root`** (an [`page_tables::x86_64::AmdVi`] table
 /// the portable seam built), in the unit the IVRS says serves it, and make that unit forget what
 /// it cached. It writes every entry [`entries_of`] names: the device's own and its alias's, where a
 /// device behind a PCIe-to-PCI bridge is translated. A device no unit serves gets no entry.
@@ -721,12 +721,12 @@ pub(crate) fn quarantine(rid: u32) {
 }
 
 /// **Every IVMD the firmware declared for `rid`**, as regions its domain must also map.
-pub(crate) fn for_each_reserved_region(rid: u32, each: &mut dyn FnMut(paging::domain::DmaRegion)) {
+pub(crate) fn for_each_reserved_region(rid: u32, each: &mut dyn FnMut(page_tables::domain::DmaRegion)) {
     let Some(ivrs) = *IVRS.lock() else {
         return;
     };
     ivrs.unity_for(rid as u16, &mut |r| {
-        each(paging::domain::DmaRegion {
+        each(page_tables::domain::DmaRegion {
             base: r.base,
             size: r.size,
             writable: r.device_may_write(),

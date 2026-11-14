@@ -31,7 +31,7 @@ read the kernel's own memory")`.
 
 **Why the defect is here and not in the mapping.** The aarch64 siblings of this record map the
 kernel's own memory user-readable, one flag at one call site, and the test then watches the
-hardware refuse. **That defect cannot be booted on RISC-V at all.** `crates/paging`'s Sv39
+hardware refuse. **That defect cannot be booted on RISC-V at all.** `crates/page_tables`'s Sv39
 encoder turns `CAP_USER` into the `U` bit, and S-mode access to a `U` page raises a page fault
 unless `sstatus.SUM` is set, which this kernel sets only inside a test helper. So a kernel that
 marked its own `.rodata` user-readable would not be a kernel userspace can read; it would be a

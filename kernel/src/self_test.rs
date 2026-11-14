@@ -210,7 +210,7 @@ fn exceptions(tally: &mut Checks) {
 /// The address is computed from this machine's RAM, one gigabyte above the direct map's end,
 /// rather than a constant that is free on one machine only. See notes/self-test-checks.md.
 fn mapping(tally: &mut Checks) {
-    use paging::Flags;
+    use page_tables::Flags;
 
     let Some(ram_top) = memory::ram_regions()
         .map(|(start, size)| start + size)

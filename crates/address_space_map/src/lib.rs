@@ -287,7 +287,7 @@ pub const fn check_image(start: u64, end: u64) -> Result<(), ImagePlacement> {
 }
 
 /// The bit at which each architecture's user half ends, so every user address is below `1 << shift`:
-/// aarch64 48, `x86_64` 47, `riscv64` under Sv39 38. Restated from `crates/paging`
+/// aarch64 48, `x86_64` 47, `riscv64` under Sv39 38. Restated from `crates/page_tables`
 /// (`PageFormat::SPLIT_SHIFT`), which this crate does not depend on.
 const LOW_HALF_SPLIT_SHIFTS: [(&str, u32); 3] = [("aarch64", 48), ("x86_64", 47), ("riscv64", 38)];
 

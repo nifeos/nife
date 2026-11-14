@@ -19,7 +19,7 @@ Two real defects, both found at harness-writing time.
   saturating arithmetic while writing `intx_interrupt_number_is_total_and_bounded`. The comment records the honest
   scope: every caller checks `pin == 0` first, so this is defense in depth rather than a live hole.
 
-One proof obligation closed, marked honestly as not a bug. `paging::domain::grant_pages` gained a
+One proof obligation closed, marked honestly as not a bug. `page_tables::domain::grant_pages` gained a
 wrap refusal because `an_enumerated_page_lies_inside_the_grant` cannot compute the grant's limit
 without it. The comment says out loud that the first draft of itself overstated this: reaching a
 wrapped address needs a `size` within a page of `2^64` and the frame allocator would run dry tens of
@@ -68,7 +68,7 @@ expression. But both are much closer to a unit test that Kani happens to execute
 something anyone could have got wrong at scale. Their siblings `be32_is_total` and `be64_is_total`
 are where the value is, and they earned it by failing.
 
-The parity family. Twenty-six of the 145 harnesses live in `crates/paging`, and six properties
+The parity family. Twenty-six of the 145 harnesses live in `crates/page_tables`, and six properties
 appear three times each, once per ISA (`aarch64.rs`, `sv39.rs`, `x86_64.rs`). That is not padding: Sv39
 has three levels where the other two have four, and the leaf codecs are genuinely different formats,
 so `index_is_always_in_bounds` is a different theorem in each file and rule 5 requires all three. It

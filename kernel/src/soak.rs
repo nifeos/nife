@@ -47,7 +47,7 @@ compile_error!(
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-use paging::Flags;
+use page_tables::Flags;
 use soak_page::MAXIMUM_WORKERS;
 
 use crate::capability_object::{Rights, interrupt_capability, rendezvous_capability};

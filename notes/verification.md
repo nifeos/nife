@@ -45,7 +45,7 @@ over 2^64 values. It reasons about them symbolically.
    - UNSATISFIABLE = no such assignment exists = the property holds for every input. The proof.
    - SATISFIABLE = here is an exact input that breaks it. A counterexample, printed for you.
 
-That is why `paging` verified in ~12 milliseconds: it is not 2^64 executions, it is one algebra
+That is why `page_tables` verified in ~12 milliseconds: it is not 2^64 executions, it is one algebra
 problem about the bits.
 
 ## What "bounded" means, and the one honest limit
@@ -55,7 +55,7 @@ two-slot table. What it cannot swallow whole is an *unbounded* loop or an arbitr
 structure, which would build an infinite formula. So Kani bounds: it unrolls loops to a limit and
 gives structures concrete sizes.
 
-The `paging` and `capability` harnesses have no unbounded loops (the four levels are literally four),
+The `page_tables` and `capability` harnesses have no unbounded loops (the four levels are literally four),
 so their proofs are *complete*, not "up to a bound." But consider a harness that reasons over
 `map_range` for a symbolic `count`, or the `Mapper` building tables. You either bound it (prove it
 for count <= N) or reach for a heavier technique (induction, a tool like Verus). "Bounded model
@@ -70,7 +70,7 @@ A proof is only as good as four things, and each is worth being blunt about:
    checks. This is the main failure mode, not solver bugs.
 2. It covers only what the model captures. Kani models Rust's semantics. It does not model the
    hardware, and `unsafe` that breaks Rust's assumptions is outside it. That is exactly why we verify
-   the pure-logic crates (`capability`, `paging`'s arithmetic) and not the `arch/` assembly: the
+   the pure-logic crates (`capability`, `page_tables`'s arithmetic) and not the `arch/` assembly: the
    model is faithful where there is no hardware and no `unsafe`. It is also why §14 promises a
    *small verified TCB with an unverified layer beneath it*, not a proof of the whole machine.
 
@@ -109,9 +109,9 @@ table and the reasoning.
 |---|---|---|---|
 | `capability` | 8 | derivation and the inheriting mint never widen rights; a deleted capability stays deleted, and deleting touches only its slot | [core](verification/core-harnesses.md) |
 | `memory_regions` | 2 | untyped carving stays within budget; a child region never frees to the allocator (no double-free) | [core](verification/core-harnesses.md) |
-| `paging` (walk) | 8 | table indices in bounds; distinct pages take distinct paths; the halves are disjoint; descriptors keep address and permissions apart | [core](verification/core-harnesses.md) |
-| `paging` (blocks) | 8 | a 2 MiB or 1 GiB leaf is aligned, inside the span and the largest that fits; block encodings on three formats | [blocks](verification/paging-blocks.md) |
-| `paging::domain` | 6 | an IOMMU domain maps exactly the granted pages, in both directions | [IOMMU](verification/iommu-domain.md) |
+| `page_tables` (walk) | 8 | table indices in bounds; distinct pages take distinct paths; the halves are disjoint; descriptors keep address and permissions apart | [core](verification/core-harnesses.md) |
+| `page_tables` (blocks) | 8 | a 2 MiB or 1 GiB leaf is aligned, inside the span and the largest that fits; block encodings on three formats | [blocks](verification/paging-blocks.md) |
+| `page_tables::domain` | 6 | an IOMMU domain maps exactly the granted pages, in both directions | [IOMMU](verification/iommu-domain.md) |
 | `page_frames` | 5 | two allocations are distinct; frames are aligned and in range | [core](verification/core-harnesses.md) |
 | `device_tree_blob` | 4 | the big-endian leaf readers are total | [core](verification/core-harnesses.md) |
 | `inter_process_communication` | 6 | at most one wait queue is non-empty; rendezvous is exact; a collected sender is forgotten | [core](verification/core-harnesses.md) |
@@ -187,7 +187,7 @@ crate is picked up with no change.
 
 - Proofs live behind `#[cfg(kani)]`. An ordinary `cargo build`/`cargo test` never compiles them,
   and the crate needs no dependency on `kani` (its intrinsics are injected only under `cargo kani`).
-- Verify pure logic first. The §7 (testing) host crates (`capability`, `paging`, `elf`,
+- Verify pure logic first. The §7 (testing) host crates (`capability`, `page_tables`, `elf`,
   `page_frames`, the ASID allocator) are the frontier: small, allocation-light, already
   host-compiled. Bounded model checking is happiest there.
 - Spread inward from the capability core, the order §14 sets: `capability`, then IPC (rendezvous,

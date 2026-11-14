@@ -38,7 +38,7 @@ emulator.
 
 Judgment, and it is the strongest one in this study: this is a defect a proof would have caught,
 the proof is already written, and the only thing missing is that the timer does not call it. That
-is the Phase-2 extraction pattern `memory_regions`, `inter_process_communication`, `dma_validator` and `paging::domain` all
+is the Phase-2 extraction pattern `memory_regions`, `inter_process_communication`, `dma_validator` and `page_tables::domain` all
 took, applied to a subsystem that has not had it yet.
 
 ## 5 and 6. The two concurrency defects, and why one tool found one of them

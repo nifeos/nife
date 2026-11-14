@@ -23,7 +23,7 @@ survivor, and nothing would have found this one.
 
 ## The finding: a second proof that could not fail
 
-`paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` is the whole of row 12's evidence for §20's
+`page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` is the whole of row 12's evidence for §20's
 claim that an IOMMU entry sets no bit the hardware treats as reserved. It stated all three of its
 assertions, and its `kani::assume`, through `VTD_ADDR_MASK`, `VTD_R` and `VTD_W`. Those are the
 three constants `Vtd::leaf_entry` builds its result out of, so the assertion read
@@ -154,14 +154,14 @@ enough to confirm that there is no excuse for leaving one unconfirmed.
   stage 3", is a gate failure rather than something somebody happens to read. It is a format change,
   so the field's spelling is an architect's.
 - **Milestone 418.**
-  Point `script/mutation` at `crates/paging`, `crates/dma_validator`, `crates/component_plan` and
+  Point `script/mutation` at `crates/page_tables`, `crates/dma_validator`, `crates/component_plan` and
   `crates/capability`, and compare its verdict against this milestone's. Risk 3's census measures whether a change to the code is
   caught; this milestone measured whether a specific assertion can catch anything. Row 12's tautology
   is exactly the shape a mutation of `VTD_ADDR_MASK` would have surfaced as a survivor, in a crate
   the census already covers, which makes "did the census already know" a question worth an answer
   rather than an assumption. If it did, the finding is that nobody read it; if it did not, that is a
   gap in the census worth its own work.
-- **Done.** `paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit`, which could not fail on the
+- **Done.** `page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit`, which could not fail on the
   address half of its own claim, and its host twin, which could not fail on it for a second reason.
   Both fixed and measured both ways. The recorded falsification is now the defect the harness was
   blind to rather than the one it always caught, with the earlier defect and its measurement kept

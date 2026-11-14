@@ -147,7 +147,7 @@ fn bss_is_the_difference_between_memsz_and_filesz() {
 /// **W^X, refused at the door.**
 ///
 /// An ELF can simply *ask* for a page that is both writable and executable, and a loader
-/// that grants it has handed the program the thing every exploit wants. `paging::Flags` has
+/// that grants it has handed the program the thing every exploit wants. `page_tables::Flags` has
 /// no `writable_and_executable()` constructor for the same reason; this is the check that
 /// stops a file talking us into building one.
 #[test]

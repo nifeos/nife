@@ -1,0 +1,23 @@
+Falsifies `page_tables::aarch64::verification::no_encoded_leaf_is_both_writable_and_executable`.
+
+The defect: `Aarch64::attrs` stops setting `PXN` on a writable page, on the reasoning that a data
+page is not code and the kernel will never branch into it. That is the reasoning W^X exists to
+refuse. The portable `Flags` constructors already keep write and execute apart, so a writable page
+reaching the encoder is a page whose descriptor must carry `PXN`, or a kernel buffer overflow in
+`kernel_data` gains an instruction pointer at EL1.
+
+Expected to fail: the harness's only assertion, on `Flags::kernel_data()` (AP[2] clear, PXN clear).
+
+diff --git a/crates/page_tables/src/aarch64.rs b/crates/page_tables/src/aarch64.rs
+index 443c961fe..96ed8197e 100644
+--- a/crates/page_tables/src/aarch64.rs
++++ b/crates/page_tables/src/aarch64.rs
+@@ -104,7 +104,7 @@ impl Aarch64 {
+             (false, true) => AP_RW_EL1,
+             (false, false) => AP_RO_EL1,
+         };
+-        if !flags.is_kernel_executable() {
++        if !flags.is_kernel_executable() && !flags.is_writable() {
+             bits |= PXN;
+         }
+         if !flags.is_user_executable() {

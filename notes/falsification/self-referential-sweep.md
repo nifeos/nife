@@ -31,9 +31,9 @@ proof is not evidence about a proof.
 | `direct_memory_access_validator::an_accepted_descriptor_is_confined` | `Desc::is_indirect`, which `check_descriptor` guards on | the indirect flag tested against the wrong bit, so an indirect table reaches the device |
 | `jh7110_entropy::ready_requires_rand_rdy_and_carries_the_words_untouched` | `assemble`, which `interpret` calls | entropy laid out big-endian |
 | `network_time_protocol::accepting_is_total_and_a_sample_is_coherent` | `Interval::is_negative`, which `accept` guards on | the predicate never true, so a negative delay is accepted |
-| `paging::sv39::the_leaf_keeps_address_and_permissions_apart` | `entry_pa`, the decoder for the encoder under test | `PPN_SHIFT` moved, so both agree on the wrong bits |
-| `paging::aarch64::the_leaf_keeps_address_and_permissions_apart` | the same round trip | the descriptor-type field dropped, so every leaf faults |
-| `paging::x86_64::the_leaf_keeps_address_and_permissions_apart` | the same round trip | the present bit dropped |
+| `page_tables::sv39::the_leaf_keeps_address_and_permissions_apart` | `entry_pa`, the decoder for the encoder under test | `PPN_SHIFT` moved, so both agree on the wrong bits |
+| `page_tables::aarch64::the_leaf_keeps_address_and_permissions_apart` | the same round trip | the descriptor-type field dropped, so every leaf faults |
+| `page_tables::x86_64::the_leaf_keeps_address_and_permissions_apart` | the same round trip | the present bit dropped |
 
 All eleven now carry a replayable record of exactly that defect, which is the point: the evidence
 that a rewrite closed a hole is a patch a machine replays, not a paragraph. `script/falsifications`
@@ -97,7 +97,7 @@ risk wants the pattern rather than 135 rows:
   `glob::matching_is_total`, `pci::the_capability_walk_terminates_on_any_device`, `elf`'s four.
 - The assertion is a constant.
   `non_volatile_memory_express::physical_region_page_pair_is_total_and_page_disciplined`,
-  `paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit`.
+  `page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit`.
 
 ### A second shape, found along the way and not this milestone's
 

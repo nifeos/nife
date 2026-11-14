@@ -178,7 +178,7 @@ either had no grant installed anywhere or had the holder switch away in time.
   would pay for one. The two paths that move whole runs batch: `revoke::revoke_region` through
   `mmu::unmap_user_pages`, and `PageFrame::MAP` through `mmu::UserMapBatch`. Each keeps the
   obligation inside the arch layer (a closure, a `Drop`) rather than handing its caller an
-  undischarged one, which is what `paging::TlbFlush` exists to prevent. The reap is worth the same
+  undischarged one, which is what `page_tables::TlbFlush` exists to prevent. The reap is worth the same
   move once `script/bench` says it matters; there are no numbers yet, because the bench path pins a
   single hart.
 - Nothing shoots down a core that is online-but-not-yet-listed. A secondary between installing

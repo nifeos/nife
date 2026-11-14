@@ -218,9 +218,9 @@ page_frames abbreviations 8
 page_frames prose_acronyms 3
 page_frames readme_acronyms 1
 page_frames register_names 6
-paging abbreviations 172
-paging prose_acronyms 57
-paging register_names 22
+page_tables abbreviations 172
+page_tables prose_acronyms 57
+page_tables register_names 22
 pci abbreviations 134
 pci prose_acronyms 27
 pci readme_acronyms 3

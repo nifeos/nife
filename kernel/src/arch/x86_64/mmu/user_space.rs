@@ -43,7 +43,7 @@ pub fn current_user_root() -> u64 {
 /// over, and the direct map covers RAM and nothing else.
 ///
 /// Name: provisional (lane `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
-pub fn walk_user(root: u64, va: u64) -> paging::Walk {
+pub fn walk_user(root: u64, va: u64) -> page_tables::Walk {
     // SAFETY: a walk allocates nothing, so the `|| None` allocator is never called, and it reads
     // only tables `readable` admits: frames the allocator manages, which the direct map covers.
     let mapper = unsafe { Mapper::<_, _, Ia32e>::new(root, Half::Low, || None, phys_to_ptr) };
@@ -101,7 +101,7 @@ pub(crate) fn share_kernel_half(root: u64) {
     unsafe {
         let dst = &mut (*phys_to_ptr(root)).entries;
         let src = &(*phys_to_ptr(kernel_root)).entries;
-        dst[paging::ENTRIES / 2..].copy_from_slice(&src[paging::ENTRIES / 2..]);
+        dst[page_tables::ENTRIES / 2..].copy_from_slice(&src[page_tables::ENTRIES / 2..]);
     }
 }
 
@@ -251,9 +251,9 @@ impl Drop for UserMapBatch {
 pub(crate) fn map_current_user_page_frame(
     va: u64,
     phys: u64,
-    flags: paging::Flags,
+    flags: page_tables::Flags,
     alloc: impl FnMut() -> Option<u64>,
-) -> Result<(), paging::MapError> {
+) -> Result<(), page_tables::MapError> {
     let root = current_root();
     // SAFETY: `root` is the live installed root; the direct map makes `phys_to_ptr` valid for every
     // table frame it reaches.
@@ -306,7 +306,7 @@ pub(crate) fn unmap_user_pages(root: u64, asid: u16, each: impl FnOnce(&mut dyn 
 /// provisional (the page-tables-outlive-destroy lane, 2026-10-05 UTC).
 ///
 /// `revoke::revoke_region` calls this for each table a region paid for before the region's pages
-/// go back: see `paging::Mapper::unlink_table` for why the cut is one entry. The flush is by ASID
+/// go back: see `page_tables::Mapper::unlink_table` for why the cut is one entry. The flush is by ASID
 /// rather than by page because the span is up to a whole table's reach and the walk caches above
 /// the leaves have to go too, and a by-tag flush reaches both on every core.
 pub(crate) fn cut_user_table(root: u64, va: u64, table: u64, asid: u16) -> Option<(u64, u64)> {
@@ -320,7 +320,7 @@ pub(crate) fn cut_user_table(root: u64, va: u64, table: u64, asid: u16) -> Optio
 
 /// Translate `va` in the space rooted at physical `root`.
 #[allow(dead_code)]
-pub fn translate_at(root: u64, va: u64) -> Option<(u64, paging::Flags)> {
+pub fn translate_at(root: u64, va: u64) -> Option<(u64, page_tables::Flags)> {
     // SAFETY: `root` is a page table; the direct map makes `phys_to_ptr` valid; a translate
     // allocates nothing, so the `|| None` allocator is never called.
     let mapper = unsafe { Mapper::<_, _, Ia32e>::new(root, Half::Low, || None, phys_to_ptr) };
@@ -329,6 +329,6 @@ pub fn translate_at(root: u64, va: u64) -> Option<(u64, paging::Flags)> {
 
 /// Translate `va` as a user address in the currently installed space.
 #[allow(dead_code)]
-pub fn translate_user(va: u64) -> Option<(u64, paging::Flags)> {
+pub fn translate_user(va: u64) -> Option<(u64, page_tables::Flags)> {
     translate_at(current_root(), va)
 }

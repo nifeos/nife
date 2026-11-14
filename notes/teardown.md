@@ -73,7 +73,7 @@ primitive is unneeded.
 
 ## The meta-lesson
 
-`paging::unmap` carried a `TODO (milestone 7): or every process exit leaks its page tables` for
+`page_tables::unmap` carried a `TODO (milestone 7): or every process exit leaks its page tables` for
 a long time. It was true of the *primitive* in isolation and false of the *kernel*, which had
 already solved teardown a better way. A later reader (a code survey, then us) read the TODO as a
 live bug and nearly "fixed" an unused method into existence.

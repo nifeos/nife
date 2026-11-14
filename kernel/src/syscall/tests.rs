@@ -24,8 +24,8 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let base = crate::memory_region::retype_page(frame_region).expect("retype 0");
     let second = crate::memory_region::retype_page(frame_region).expect("retype 1");
     let third = crate::memory_region::retype_page(frame_region).expect("retype 2");
-    assert_eq!(second, base + paging::PAGE_SIZE, "run must be contiguous");
-    assert_eq!(third, second + paging::PAGE_SIZE, "run must be contiguous");
+    assert_eq!(second, base + page_tables::PAGE_SIZE, "run must be contiguous");
+    assert_eq!(third, second + page_tables::PAGE_SIZE, "run must be contiguous");
     let frame_slot = sched::grant(crate::capability_object::page_frame_run_capability(
         base,
         crate::capability_object::page_frame_run_len(3),
@@ -38,9 +38,9 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let squatter = crate::memory_region::retype_page(frame_region).expect("retype squatter");
     crate::user::user_address_space_map(
         name,
-        va + paging::PAGE_SIZE,
+        va + page_tables::PAGE_SIZE,
         squatter,
-        paging::Flags::user_data(),
+        page_tables::Flags::user_data(),
         crate::revoke::PageMapSource::NoCapability,
     )
     .expect("the squatter maps");
@@ -63,7 +63,7 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
         "a failed MAP_INTO left the run's first page mapped: silent partial state",
     );
     assert_eq!(
-        mmu::translate_at(root, va + paging::PAGE_SIZE).map(|(phys, _)| phys),
+        mmu::translate_at(root, va + page_tables::PAGE_SIZE).map(|(phys, _)| phys),
         Some(squatter),
         "the rollback unmapped a page the failed call never mapped",
     );
@@ -111,7 +111,7 @@ fn a_slice_maps_only_its_window() {
     assert_eq!(
         capability.object,
         Object::PageFrame(
-            base + 2 * paging::PAGE_SIZE,
+            base + 2 * page_tables::PAGE_SIZE,
             crate::capability_object::page_frame_run_len(1)
         ),
         "a slice names exactly the pages asked for",
@@ -130,10 +130,10 @@ fn a_slice_maps_only_its_window() {
     .expect("the slice maps");
     assert_eq!(
         mmu::translate_at(root, va).map(|(phys, _)| phys),
-        Some(base + 2 * paging::PAGE_SIZE),
+        Some(base + 2 * page_tables::PAGE_SIZE),
         "the slice mapped its own page",
     );
-    for off in [va - paging::PAGE_SIZE, va + paging::PAGE_SIZE] {
+    for off in [va - page_tables::PAGE_SIZE, va + page_tables::PAGE_SIZE] {
         assert!(
             mmu::translate_at(root, off).is_none(),
             "a slice's mapping reached past its window",
@@ -191,7 +191,7 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
     assert_eq!(count.get(), 3, "one capability names the whole run");
     // SAFETY: the run's pages are ours, retyped above; reading the direct map is how the zeroing
     // is observed rather than assumed.
-    let zeroed = (0..3 * paging::PAGE_SIZE).step_by(512).all(|off| unsafe {
+    let zeroed = (0..3 * page_tables::PAGE_SIZE).step_by(512).all(|off| unsafe {
         core::ptr::read_volatile((mmu::phys_to_virt(phys) + off) as *const u64) == 0
     });
     assert!(
@@ -220,7 +220,7 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
     assert_eq!(one_count.get(), 1, "0 means one page");
     assert_eq!(
         last,
-        phys + 3 * paging::PAGE_SIZE,
+        phys + 3 * page_tables::PAGE_SIZE,
         "the watermark is contiguous"
     );
 

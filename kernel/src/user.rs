@@ -6,7 +6,7 @@
 
 use elf::Elf;
 use page_frames::{FRAME_SIZE, PageFrame};
-use paging::{Flags, Half, MapError, Mapper};
+use page_tables::{Flags, Half, MapError, Mapper};
 
 use crate::arch::exceptions::{TrapFrame, enter_user};
 use crate::arch::mmu::{self, phys_to_ptr};

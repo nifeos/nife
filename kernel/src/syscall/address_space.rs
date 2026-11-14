@@ -78,7 +78,7 @@ fn address_space_map_into(
                 if !frame.rights.allows(Rights::WRITE) {
                     return Err(Error::NotPermitted);
                 }
-                (phys, 1u64, paging::Flags::user_device())
+                (phys, 1u64, page_tables::Flags::user_device())
             }
             Object::PageFrame(phys, count) => {
                 // Code is W^X (`user_code` is never writable), so it needs only READ.
@@ -87,19 +87,19 @@ fn address_space_map_into(
                         if !frame.rights.allows(Rights::WRITE) {
                             return Err(Error::NotPermitted);
                         }
-                        paging::Flags::user_data()
+                        page_tables::Flags::user_data()
                     }
                     abi::address_space::MAP_CODE => {
                         if !frame.rights.allows(Rights::READ) {
                             return Err(Error::NotPermitted);
                         }
-                        paging::Flags::user_code()
+                        page_tables::Flags::user_code()
                     }
                     _ => {
                         if !frame.rights.allows(Rights::READ) {
                             return Err(Error::NotPermitted);
                         }
-                        paging::Flags::user_rodata()
+                        page_tables::Flags::user_rodata()
                     }
                 };
                 (phys, count.get(), flags)
@@ -111,8 +111,8 @@ fn address_space_map_into(
         let Some(last_va) = run_end_virtual_address(va, count) else {
             return Err(Error::BadPointer);
         };
-        if !paging::is_user_page_va::<crate::arch::mmu::Format>(va)
-            || !paging::is_user_page_va::<crate::arch::mmu::Format>(last_va)
+        if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va)
+            || !page_tables::is_user_page_va::<crate::arch::mmu::Format>(last_va)
         {
             return Err(Error::BadPointer);
         }
@@ -122,7 +122,7 @@ fn address_space_map_into(
         };
         let root = space.root();
         for k in 0..count {
-            let (page_phys, page_va) = (phys + k * paging::PAGE_SIZE, va + k * paging::PAGE_SIZE);
+            let (page_phys, page_va) = (phys + k * page_tables::PAGE_SIZE, va + k * page_tables::PAGE_SIZE);
             // `phys` is the object the capability names in both arms (§132 (what
             // `PageFrame::REVOKE` owes an overlapping run)).
             match space.map_physical_held(
@@ -139,7 +139,7 @@ fn address_space_map_into(
                     if flags.is_user_executable() {
                         crate::arch::sync_icache(
                             crate::arch::mmu::phys_to_virt(page_phys),
-                            paging::PAGE_SIZE as usize,
+                            page_tables::PAGE_SIZE as usize,
                         );
                     }
                 }
@@ -164,7 +164,7 @@ fn address_space_map_into(
 /// order `MAP_INTO` takes them, so the two are ordered whole on one `va`.
 #[inline(never)]
 fn address_space_unmap(name: u64, va: u64) -> Result<i64, Error> {
-    if !paging::is_user_page_va::<crate::arch::mmu::Format>(va) {
+    if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va) {
         return Err(Error::BadPointer);
     }
     crate::user::with_user_address_space(name, |space| {
@@ -191,7 +191,7 @@ fn address_space_unmap(name: u64, va: u64) -> Result<i64, Error> {
 ///
 /// Name: ratified 2026-11-11 (UTC). Refused `run_end_va` (`va` abbreviates "virtual address").
 pub(super) fn run_end_virtual_address(va: u64, count: u64) -> Option<u64> {
-    va.checked_add(count.checked_sub(1)?.checked_mul(paging::PAGE_SIZE)?)
+    va.checked_add(count.checked_sub(1)?.checked_mul(page_tables::PAGE_SIZE)?)
 }
 
 /// The error a mapping method answers for a page it could not map: `NotPermitted` when the space
@@ -199,10 +199,10 @@ pub(super) fn run_end_virtual_address(va: u64, count: u64) -> Option<u64> {
 /// (claim 11; `abi::Error::NotPermitted`'s second case), `OutOfMemory` when page tables or the
 /// record could not be paid for, and `BadPointer` for a misaligned, already mapped or wrong-half
 /// address or an unknown space. `MAP_INTO` and `PageFrame::MAP` both answer through it.
-pub(super) fn map_refusal(e: paging::MapError) -> Error {
+pub(super) fn map_refusal(e: page_tables::MapError) -> Error {
     match e {
-        paging::MapError::WritableAndExecutable => Error::NotPermitted,
-        paging::MapError::OutOfPageFrames => Error::OutOfMemory,
+        page_tables::MapError::WritableAndExecutable => Error::NotPermitted,
+        page_tables::MapError::OutOfPageFrames => Error::OutOfMemory,
         _ => Error::BadPointer,
     }
 }
@@ -222,7 +222,7 @@ pub(super) fn unmap_run_prefix(
     mapped: u64,
 ) {
     for k in 0..mapped {
-        let (page_phys, page_va) = (phys + k * paging::PAGE_SIZE, va + k * paging::PAGE_SIZE);
+        let (page_phys, page_va) = (phys + k * page_tables::PAGE_SIZE, va + k * page_tables::PAGE_SIZE);
         mmu::unmap_user_at(root, page_va);
         hold.forget_mapping(page_phys, root, page_va);
     }
@@ -248,7 +248,7 @@ fn address_space_futex(
         return Err(Error::NotPermitted);
     }
     if !va.is_multiple_of(4)
-        || !<crate::arch::mmu::Format as paging::PageFormat>::is_in_half(paging::Half::Low, va)
+        || !<crate::arch::mmu::Format as page_tables::PageFormat>::is_in_half(page_tables::Half::Low, va)
     {
         return Err(Error::BadPointer);
     }

@@ -49,7 +49,7 @@ fn band_index(va: u64) -> usize {
 /// The page around it lies wholly in the same band, which is what page aligned at both ends means
 /// for a band at least a page wide, and its top bits are clear on all three architectures:
 /// aarch64 splits the halves at bit 48, `x86_64` at bit 47, `riscv64` (Sv39) at bit 38, as
-/// `LOW_HALF_SPLIT_SHIFTS` restates from `crates/paging`.
+/// `LOW_HALF_SPLIT_SHIFTS` restates from `crates/page_tables`.
 /// Falsification: replayable `crates/address_space_map/falsifications/verification.every_address_below_the_ceiling_lies_in_exactly_one_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]

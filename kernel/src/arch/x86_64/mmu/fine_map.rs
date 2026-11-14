@@ -208,7 +208,7 @@ where
 }
 
 /// Map a range of *physical* addresses into the direct map at [`phys_to_virt`], in leaves no
-/// larger than `largest`. `paging::Mapper::map_span` puts a block only where it lies wholly inside
+/// larger than `largest`. `page_tables::Mapper::map_span` puts a block only where it lies wholly inside
 /// the range, so this maps exactly the pages it always did, in fewer entries.
 fn direct_map<A, P>(
     m: &mut Mapper<A, P, Ia32e>,

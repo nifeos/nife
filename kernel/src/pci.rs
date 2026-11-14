@@ -11,7 +11,7 @@
 
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 
-use paging::PAGE_SIZE;
+use page_tables::PAGE_SIZE;
 use pci::{Bar, Bdf};
 
 use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE};
@@ -259,8 +259,8 @@ fn adopt(bdf: Bdf, index: usize, bar: &pci::Bar) -> bool {
     }
     let mut pa = lo;
     while pa < hi {
-        match mmu::map_page(mmu::phys_to_virt(pa), pa, paging::Flags::device()) {
-            Ok(()) | Err(paging::MapError::AlreadyMapped) => {}
+        match mmu::map_page(mmu::phys_to_virt(pa), pa, page_tables::Flags::device()) {
+            Ok(()) | Err(page_tables::MapError::AlreadyMapped) => {}
             Err(e) => {
                 crate::println!(
                     "  pci: {:02x}:{:02x}.{} BAR{index} at {:#x} could not be mapped ({e:?}); \

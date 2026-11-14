@@ -179,7 +179,7 @@ pub(crate) fn carve(
             let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
             let confined = crate::iommu::confine(
                 d.rid,
-                &[paging::domain::DmaRegion {
+                &[page_tables::domain::DmaRegion {
                     base: dma,
                     size: pages as u64 * FRAME_SIZE,
                     writable: true,

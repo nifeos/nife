@@ -1,0 +1,46 @@
+Falsifies `page_tables::nth_allocation::a_failed_domain_build_maps_a_prefix`.
+
+The defect: a "best effort" `build_identity_domain`. A page whose tables cannot be allocated is
+skipped, the rest of the grant is mapped, and the first error is returned at the end. The kernel
+caller `expect`s the build today, but any caller that unwinds by count would leave the pages past the
+gap device-reachable.
+
+Expected to fail: assertion (2), "what is left mapped is not a prefix of the request", at
+`build_identity_domain` with allocation 0 failed.
+
+`script/falsifications --sweep paging` replays it, weekly and per pull request, since milestone
+742 (every test is falsified as routine). By hand, the same thing is:
+
+    git apply crates/page_tables/falsifications/nth_allocation.a_failed_domain_build_maps_a_prefix.patch
+    cargo test -p page_tables --test nth_allocation a_failed_domain_build_maps_a_prefix        # must fail
+    git apply -R crates/page_tables/falsifications/nth_allocation.a_failed_domain_build_maps_a_prefix.patch
+
+Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
+
+diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
+--- a/crates/page_tables/src/domain.rs
++++ b/crates/page_tables/src/domain.rs
+@@ -89,6 +89,7 @@
+     // the IOMMU would never consult.
+     // SAFETY: forwarded from this function's contract.
+     let mut m = unsafe { Mapper::<A, P, F>::new(root, Half::Low, alloc_page_frame, phys_to_ptr) };
++    let mut failed = None;
+     for r in regions {
+         // The page set comes from the proved arithmetic, not `map_range`'s unchecked
+         // `va + i * PAGE_SIZE`.
+@@ -99,10 +100,13 @@
+             let page = grant_page(*r, i).ok_or(MapError::BadRegion)?;
+             // The tables are not installed yet, so no leaf needs a flush. `AlreadyMapped` means two
+             // grants overlap, and fails the build closed.
+-            m.map(page, page, r.flags())?;
++            // Best effort: map the rest of the grant and report the first failure.
++            if let Err(e) = m.map(page, page, r.flags()) {
++                failed.get_or_insert(e);
++            }
+         }
+     }
+-    Ok(())
++    failed.map_or(Ok(()), Err)
+ }
+ 
+ // Machine-checked proofs (Kani) that the domain maps exactly the grant: the page enumeration is

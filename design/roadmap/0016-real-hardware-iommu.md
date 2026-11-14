@@ -66,7 +66,7 @@ board ships the ratified spec. That is the emulate-then-carry pattern the kernel
 on. Parity is claimed at the QEMU tier; 16a's silicon is one board first, honestly.
 
 Built 2026-07-28 (16b, both ISAs in emulation; DECISIONS §20, notes/iommu.md). The portable
-DMA-domain seam (`crate::iommu` over `paging::domain`) and the two arch drivers (SMMUv3, RISC-V
+DMA-domain seam (`crate::iommu` over `page_tables::domain`) and the two arch drivers (SMMUv3, RISC-V
 IOMMU v1.0.1). Boot bring-up (SMMU from the device tree, RISC-V IOMMU enumerated as a PCI function).
 The `iommu_platform=on` enablement with the confinement test as the loud-on-bypass guard, and the disk
 and both attacker suites passing behind the IOMMU on both boards (aarch64 118 kernel tests, riscv

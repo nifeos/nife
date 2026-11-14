@@ -166,7 +166,7 @@ network_time_protocol,Timestamp::from_unix,replace | with ^,crates/network_time_
 network_time_protocol,Timestamp::randomise_low,replace | with ^,crates/network_time_protocol/src/lib.rs,235,site,Timestamp((self.0 & !(mask as u64)) | (random & mask) as u64)
 network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,421,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
 network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,421,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
-paging,,replace | with ^,crates/paging/src/x86_64.rs,34,site,pub const VALUE: u64 = (RESET & !0xff00) | 0x01 << 8;
+paging,,replace | with ^,crates/page_tables/src/x86_64.rs,34,site,pub const VALUE: u64 = (RESET & !0xff00) | 0x01 << 8;
 pci,Bdf::ecam_offset,replace | with ^,crates/pci/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
 pci,Bdf::ecam_offset,replace | with ^,crates/pci/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
 pci,Bdf::requester_id,replace | with ^,crates/pci/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)

@@ -1355,7 +1355,7 @@ echo "actions: every uses: line is pinned to a commit SHA"
 #
 # **A marker is the word followed immediately by `(` or `:`; a mention is not.** That distinction is
 # the whole check, and getting it wrong would make this unusable: this tree has nine comments that
-# talk ABOUT a TODO ("see the TODO on `paging::unmap`", "Hardcoded on purpose, and it should stay
+# talk ABOUT a TODO ("see the TODO on `page_tables::unmap`", "Hardcoded on purpose, and it should stay
 # that way. Not a TODO.") and a `git grep -w TODO` fires on every one of them. It also fires on
 # `XXXXXXXX-XXXX-XXXX` in the GUID formatter and on `gl-one.txtXXX` in a glob test, which is why the
 # marker words are matched with the punctuation attached rather than as bare words.
@@ -2628,9 +2628,9 @@ REGISTRY = {
         'how many Kani proof harnesses crates/memory_regions carries',
         lambda: _harness_hits().get('memory_regions', 0),
     ),
-    'paging-harnesses': (
-        'how many Kani proof harnesses crates/paging carries',
-        lambda: _harness_hits().get('paging', 0),
+    'page-tables-harnesses': (
+        'how many Kani proof harnesses crates/page_tables carries',
+        lambda: _harness_hits().get('page_tables', 0),
     ),
     'page-frames-harnesses': (
         'how many Kani proof harnesses crates/page_frames carries',

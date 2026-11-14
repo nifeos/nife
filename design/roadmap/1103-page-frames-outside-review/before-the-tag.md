@@ -87,7 +87,7 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
    `containing`, `alloc`, `alloc_contiguous`, `free`, `is_used`, `stats`, `largest_free_run`,
    `bitmap_bytes` and `mark_free` / `mark_used` pass every rule this review can apply.
    Evidence: `src/lib.rs` line 17, 48, 62, `69-74`, `78`, `135`, `185`, `201`, `390`, `409-419`.
-   `crates/paging/src/tlb_flush.rs` line 41. `design/naming/crates.md` line 65.
+   `crates/page_tables/src/tlb_flush.rs` line 41. `design/naming/crates.md` line 65.
    Change: one rename lane after the architect rules Decisions 1 and 2. The lane performs the two
    public renames across the tree (about 60 `FRAME_SIZE` sites in `kernel/` and `system_tests/`) and
    the two-way ones in the crate, all shipped provisional. The rule that a crate carries no alias

@@ -5,7 +5,7 @@ built: 2026-08-03
 ---
 # 73. Name the aarch64 files aarch64, before x86_64 makes it worse
 
-Built (2026-08-03), both ISAs, for the five pairs. `crates/paging/src/aarch64.rs` is
+Built (2026-08-03), both ISAs, for the five pairs. `crates/page_tables/src/aarch64.rs` is
 deferred to calef, because the replacement is a name and names are his call; the proposal is in
 the section below. Raised 2026-08-03 by calef, from the observation that files named when this was an
 aarch64-only kernel never got renamed when RISC-V arrived and brought explicitly named twins.
@@ -62,14 +62,14 @@ unnamed file among two named siblings is ambiguous; among three it is a claim th
 because "the default" will mean whichever ISA the reader started from. §19 names x86_64 as a declared
 target, so this is a dated problem, not a hypothetical one.
 
-## `crates/paging` left this milestone (2026-08-03)
+## `crates/page_tables` left this milestone (2026-08-03)
 
 It was raised here as an asymmetry: `aarch64.rs` beside `sv39.rs`, one an ISA and one a page-table
 format. It is real, but it is not a rename, and milestone 77 carries it now. The short reason is that
 calef expects a second aarch64 configuration, which turns "rename the file" into "make room for a
 sibling on both sides", and that is a restructure with 174 call sites behind it.
 
-Milestone 73 touched nothing under `crates/paging`, and one finding is worth carrying to 77: ARM has
+Milestone 73 touched nothing under `crates/page_tables`, and one finding is worth carrying to 77: ARM has
 no short format name the way RISC-V does. `Sv39` is a single token in the privileged spec and in
 `satp`. The nearest ARM equivalent, "VMSAv8-64", names the architecture's memory system rather than
 one translation scheme. The configuration `aarch64.rs` actually implements (4 KiB granule,
@@ -179,7 +179,7 @@ stem, not just the path.
 
 ## Follow-on
 
-- **Milestone 77.** `crates/paging/src/aarch64.rs`, which left this milestone the day it was raised.
+- **Milestone 77.** `crates/page_tables/src/aarch64.rs`, which left this milestone the day it was raised.
   It is not a rename: calef expects a second aarch64 configuration, so the fix is a module per ISA
   and a type per page-table configuration, with 174 call sites behind it. The finding worth carrying
   is here too, that ARM has no short format name the way `Sv39` is one.
@@ -198,5 +198,5 @@ stem, not just the path.
 Five files carried a riscv name while their aarch64 twin carried none, so the unnamed one read as
 "the general case" and was not. Both sides now carry the ISA, and a sixth file the entry had
 missed (`qemu-virt-initrd.dtb`) came with them. `user/link.ld` is genuinely shared and was NOT
-renamed, nor was `riscv_virtio_tests.rs`, which has no twin. `crates/paging` moved OUT to
+renamed, nor was `riscv_virtio_tests.rs`, which has no twin. `crates/page_tables` moved OUT to
 milestone 77

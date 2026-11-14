@@ -73,7 +73,7 @@ comment, and milestone 200 makes the mistake unsayable everywhere at once.
   ten `PT_LOAD`s, the three `NOLOAD` reservations and the trampoline's split addresses included.
   Nothing else in the validating parser objects. So the remaining work is one linker-script change
   rather than an argument about whether a validating parser suits a boot loader, and it would also
-  make the kernel image obey the W^X rule `crates/elf` and `paging::Flags` enforce everywhere else.
+  make the kernel image obey the W^X rule `crates/elf` and `page_tables::Flags` enforce everywhere else.
   It belongs to whoever owns `kernel/link-x86_64.ld` (milestone 87's lane held it while this ran),
   not to `crates/elf`.
 

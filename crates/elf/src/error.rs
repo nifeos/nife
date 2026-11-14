@@ -67,7 +67,7 @@ pub enum Error {
     SegmentOutOfBounds,
     /// `p_memsz < p_filesz`: the segment claims to occupy less memory than it has bytes.
     SegmentTruncated,
-    /// A segment that is both writable and executable: the W^X rule `paging::Flags` holds by
+    /// A segment that is both writable and executable: the W^X rule `page_tables::Flags` holds by
     /// having no `writable_and_executable()` constructor. See notes/elf/parser.md.
     WritableAndExecutable,
     /// A segment that is neither readable nor executable. Nothing can ever touch it.

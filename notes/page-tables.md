@@ -46,7 +46,7 @@ was the same descriptor.
 Anything in between (top bits neither all-zero nor all-one) is a non-canonical address
 and faults before any table is consulted. There is no memory there and there never can be.
 
-`Half::Low` / `Half::High` in the `paging` crate encode this, and `map()` refuses an address
+`Half::Low` / `Half::High` in the `page_tables` crate encode this, and `map()` refuses an address
 from the wrong half. Without that check, mapping a kernel address into the userspace tables
 builds a mapping the CPU will *never consult*, and you chase the ghost for hours.
 
@@ -188,7 +188,7 @@ path. The constant is defined and the reason is written down, which is the hones
 ## Why this is a host-testable crate
 
 The page table format is pure logic: addresses in, descriptors out. So it lives in
-`crates/paging` and its tests run on the host in milliseconds (DECISIONS §7).
+`crates/page_tables` and its tests run on the host in milliseconds (DECISIONS §7).
 
 **The trick that makes it work:** a `Box<PageTable>` is 4 KiB-aligned (the type declares it)
 and has a real address. So the tests hand those addresses to the mapper as pretend "physical"
