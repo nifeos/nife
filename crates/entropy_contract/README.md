@@ -38,8 +38,13 @@ A `CALL` carries one request word and returns two reply words.
   0x01 to 0x0f belong to each backend. Treating an all-zero or all-equal first draw as a dead device
   is wrong with probability 2^-64 to 2^-2048 by source for zeros, and 255 in 2^64 or less for eight
   equal bytes, the safe way round.
+- `INTERFACE_ID` (12) is this interface's number in a program's `INTERFACES` note. No other
+  interface takes it, and a format change is a new version, never a new number.
 - `VERSION` (1) is the protocol's version: one number for the operation set and the reply shape. A
-  break bumps it; an addition (a new opcode, an optional field) does not.
+  break bumps it; an addition (a new opcode, an optional field) does not. A program declares the
+  pair of `INTERFACE_ID` and `VERSION`.
+- A service builds its reply with `reply`: the count, then the delivered bytes little-endian in the
+  low bytes of the word, with zeros above them.
 
 ## EXAMPLES
 
@@ -63,11 +68,13 @@ assert_eq!(MAXIMUM_BYTES, 8);
 ```
 
 `fill_with(out, call)` does that loop for you, given a closure that performs the `CALL`. It returns
-`None` if any reply is not a count or delivers fewer bytes than asked.
+`Err(Refusal::NoService)` when a reply is not a count, and `Err(Refusal::ShortReply { asked,
+delivered })` when a reply carries a different count than the request asked for. A dry device
+causes the second, so a caller can tell a missing grant from an empty source.
 
 ## What is proven
 
-Five Kani harnesses in `src/lib.rs` prove these properties, each within the stated bounds:
+Six Kani harnesses in `src/lib.rs` prove these properties, each within the stated bounds:
 
 - A request word reads back as built: for any opcode that fits the top byte and any byte count,
   `operation` returns the opcode. `requested_bytes` returns the count, clamped to
@@ -76,9 +83,13 @@ Five Kani harnesses in `src/lib.rs` prove these properties, each within the stat
   bytes, `copy_delivered_bytes` writes the least of the count, `MAXIMUM_BYTES` and the slice length.
   It writes them in little-endian order and leaves every other byte alone.
 - A fill succeeds exactly when every reply is full: for any slice of up to 17 bytes and any
-  replies, `fill_with` asks for the remainder clamped to `MAXIMUM_BYTES` each time. It answers
-  `Some` exactly when every reply delivers what it was asked for, and then holds those bytes in
-  order.
+  replies, `fill_with` asks for the remainder clamped to `MAXIMUM_BYTES` each time. It answers `Ok`
+  exactly when every reply delivers the bytes it asked for, and then holds those bytes in order.
+  Otherwise it refuses with `NoService` exactly when the reply was not a count, and with
+  `ShortReply` naming the asked and delivered counts exactly when it was.
+- A reply reads back as built: for any bytes up to 12, `reply` answers the count of the least of
+  their number and `MAXIMUM_BYTES`. `delivered_bytes` accepts that count, `copy_delivered_bytes`
+  returns the bytes in order, and every byte of the word above them is zero.
 - A repeated first draw is refused: for any first draw of up to 9 bytes, `readiness` names
   `STEP_FIRST_ALL_SAME` for a draw of at least `MAXIMUM_BYTES` bytes that repeats one nonzero value,
   and answers `READY` for every draw that is neither empty, zero nor such a repeat.
@@ -94,21 +105,62 @@ kernel error.
 
 ```sh
 cargo test
-cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
+rustup target add x86_64-unknown-none aarch64-unknown-none-softfloat riscv64imac-unknown-none-elf
+cargo build --lib --target x86_64-unknown-none   # also the other two targets
 ```
+
+The crate has no features and no dependencies, so a plain `cargo test` runs every unit test and
+doctest.
+
+### Running the proofs
+
+Install Kani first: `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani
+setup`. Setup downloads a model checker, so it needs network access. Then run every harness:
+
+```sh
+cargo kani
+```
+
+On a 2026 x86_64 desktop the six harnesses take about one minute and peak near 2.2 GB of memory,
+as `/usr/bin/time -v cargo kani` measured. To run one harness, give its full path, because
+`--exact` refuses a bare name:
+
+```sh
+cargo kani --harness verification::a_reply_reads_back_as_built --exact
+```
+
+A passing run prints lines that look alarming and mean nothing. They are the `use of an unstable
+feature` warning for `register_tool`, the `Found the following unsupported constructs` warning, and
+many `aborting path on assume(false)` lines, which are paths Kani discards on purpose. The answer
+is the last line: `Complete - 6 successfully verified harnesses, 0 failures, 6 total.`
+
+### Running one falsification patch
+
+Each file in `falsifications/` applies a small defect that turns its harness red. Apply one,
+confirm the proof fails, then undo it:
+
+```sh
+patch -p1 --no-backup-if-mismatch < falsifications/verification.readiness_is_reported_exactly_when_a_first_byte_is_nonzero.patch
+cargo kani --harness verification::readiness_is_reported_exactly_when_a_first_byte_is_nonzero --exact
+git checkout -- src
+```
+
+The failing run ends with `VERIFICATION:- FAILED` and a failed `assert_eq!` on `READY`, and the
+patched proof reports `Complete - 0 successfully verified harnesses, 1 failures, 1 total.`
 
 ## BUGS
 
 - `readiness` reads an all-zero first draw as a dead device: wrong with probability 2^-64 to
   2^-2048 by source, and the safe way round. It reads a first draw of eight or more equal bytes the
-  same way: wrong with probability at most 255 in 2^64 for eight bytes from a uniform source. A
-  shorter draw is not judged for repeats.
+  same way: wrong with probability at most 255 in 2^64 for eight bytes from a uniform source. It
+  does not judge a shorter draw for repeats.
 - Continuous health testing of the source is not part of this contract; the checks are bring-up
   only.
 
 ## Minimum Rust version
 
-Rust 1.88.
+Rust 1.88. To check it, run `rustup toolchain install 1.88 --profile minimal`, then `cargo +1.88
+test` and the bare-metal build with the same `+1.88`.
 
 ## License
 
