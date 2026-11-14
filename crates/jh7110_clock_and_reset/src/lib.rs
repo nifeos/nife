@@ -411,7 +411,7 @@ pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 /// then reset, for [`ENTROPY_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
 /// gated clock can hang.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-14 (UTC), as spelled (#3572).
 pub const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
