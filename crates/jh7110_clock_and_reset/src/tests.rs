@@ -1189,6 +1189,9 @@ fn a_malformed_assignment_is_refused() {
     refused(&gmac0_tx, &specifiers(&[(0, 0)]));
     refused(&gmac0_tx, &specifiers(&[(5, 4)]));
     refused(&gmac0_tx, &specifiers(&[(6, 4)]));
+    // A one-cell provider whose compatible names neither generator, giving the system
+    // generator's gigabit clock id: the id is no parent unless syscrg answers it.
+    refused(&gmac0_tx, &specifiers(&[(2, SYSCLK_GMAC0_GTXCLK)]));
     // A parent that is neither of the mux's inputs.
     refused(&gmac0_tx, &specifiers(&[(ALWAYS_ON_PHANDLE, 3)]));
     refused(&gmac0_tx, &specifiers(&[(SYSTEM_PHANDLE, 4)]));
