@@ -25,11 +25,24 @@
 //! default-honest shape `environment_contract::ConfigPage` uses. A zeroed frame, a page belonging
 //! to something else, or a count that disagrees with the records all answer an empty argv rather
 //! than a partial one: a program that sees half its arguments would act on a line nobody typed.
+//! That holds for damage to any one field. The layout has no checksum, so a header whose `count`
+//! and `total` both describe a prefix of the records is a shorter, consistent argv and reads as one
+//! (see BUGS below).
 
 //! # BUGS
 //!
 //! - A secret on a command line is plain bytes on this page, the ruling's known cost; §111 (inert
 //!   configuration is a read-only page) refused free-form strings on its page for this reason.
+//! - Damage to two header fields at once can read as a shorter argv. A `count` and a `total` that
+//!   both describe a prefix of the records parse as exactly that prefix, since nothing in the
+//!   layout can tell a consistently shortened line from a typed one. The page has one writer and
+//!   maps read-only, so this is a property of the format under corruption and not an attack
+//!   surface; a checksum would be a wire-format change.
+//! - [`ArgPage::from_va`] reads through a `usize` pointer, so on a target narrower than 64 bits an
+//!   address above 4 GiB would read a different page. No target built here is that narrow.
+//! - This crate is one file, `src/lib.rs`: the `std` port copies it by name, so a module split, or
+//!   an inner attribute the port cannot carry, breaks that build and not this one. A test checks
+//!   that `src/` holds no other file.
 //! - The environment does not ride here: §170 is silent on it, so it stays on §111's page.
 //!
 //! Name: ratified 2026-10-18 (calef), asked "Or should it be `program_argument_contract`?" and
@@ -160,10 +173,7 @@ impl<'a> ArgPage<'a> {
     /// Read `page`. Anything that is not a whole, consistent page is [`Self::EMPTY`]: see the
     /// crate's documentation for why a partial argv is never returned.
     pub fn parse(page: &'a [u8]) -> Self {
-        Self::check(page).unwrap_or(ArgPage {
-            records: &[],
-            count: 0,
-        })
+        Self::check(page).unwrap_or(ArgPage::EMPTY)
     }
 
     fn check(page: &'a [u8]) -> Option<Self> {
@@ -177,13 +187,18 @@ impl<'a> ArgPage<'a> {
             return None;
         }
         let records = &page[HEADER_BYTES..HEADER_BYTES + total];
-        // Walk every record now, so the iterator below can never meet a length that overruns.
+        // Walk every record now, so the iterator below can never meet a length that overruns. The
+        // walk runs until the records are used up, so its bound is the slice (each record takes at
+        // least four bytes) and not a count the page chose, and the number walked must then equal
+        // the count the header states.
         let mut rest = records;
-        for _ in 0..count {
+        let mut walked: u32 = 0;
+        while !rest.is_empty() {
             let (_, tail) = split_record(rest)?;
             rest = tail;
+            walked = walked.checked_add(1)?;
         }
-        rest.is_empty().then_some(ArgPage { records, count })
+        (walked == count).then_some(ArgPage { records, count })
     }
 
     /// Read the page mapped at `va`.
@@ -251,6 +266,54 @@ fn split_record(rest: &[u8]) -> Option<(&[u8], &[u8])> {
     (len <= body.len()).then(|| body.split_at(len))
 }
 
+/// Proofs, run by `script/verify` (the file stays one file, so they sit here).
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// A symbolic page of 48 bytes whose magic matches, so the proofs reach the records. A page
+    /// whose magic differs is refused by one comparison before anything else is read.
+    fn any_page() -> [u8; 48] {
+        let mut page: [u8; 48] = kani::any();
+        page[..8].copy_from_slice(&MAGIC);
+        page
+    }
+
+    /// **`parse` never panics, and its iterator yields exactly `len()` items**, with `is_empty`
+    /// agreeing, for any page that carries the magic.
+    /// Falsification: replayable `falsifications/verification.parse_never_panics_and_iterates_len_items.patch`
+    #[kani::proof]
+    #[kani::unwind(14)]
+    fn parse_never_panics_and_iterates_len_items() {
+        let page = any_page();
+        let args = ArgPage::parse(&page);
+        assert_eq!(args.iter().count(), args.len());
+        assert_eq!(args.is_empty(), args.len() == 0);
+    }
+
+    /// **A page that parses holds exactly the records its header states**: the arguments number
+    /// `count`, and their four-byte prefixes and bytes add up to `total` with nothing left over.
+    /// Anything else is an empty argv.
+    /// Falsification: replayable `falsifications/verification.a_parsed_page_holds_exactly_what_its_header_states.patch`
+    #[kani::proof]
+    #[kani::unwind(14)]
+    fn a_parsed_page_holds_exactly_what_its_header_states() {
+        let page = any_page();
+        let count = u32::from_le_bytes([page[8], page[9], page[10], page[11]]);
+        let total = u32::from_le_bytes([page[12], page[13], page[14], page[15]]) as usize;
+        let args = ArgPage::parse(&page);
+        if args.is_empty() {
+            return;
+        }
+        assert_eq!(args.len() as u32, count);
+        let mut sum = 0;
+        for arg in args.iter() {
+            sum += 4 + arg.len();
+        }
+        assert_eq!(sum, total);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,6 +339,47 @@ mod tests {
         let all: Vec<u8> = (0..=255).collect();
         let page = build(&[b"rg", b"a\0b\xffc", b"", &all]);
         assert_eq!(read(&page), [&b"rg"[..], b"a\0b\xffc", b"", &all]);
+    }
+
+    /// **The raw-pointer reader gives what the slice parser gives**, and a zeroed frame through it
+    /// is no arguments. This is the one path through [`ArgPage::from_va`], so the test argues its
+    /// contract: the page is a live, 4 KiB array, borrowed for the whole of the reads.
+    #[test]
+    fn a_page_read_through_its_address_matches_the_slice_reader() {
+        let page = build(&[b"rg", b"a\0b", b""]);
+        // SAFETY: `page` is a live array of `PAGE_BYTES`, readable and unwritten while `args` is used.
+        let args = unsafe { ArgPage::from_va(page.as_ptr() as u64) };
+        assert_eq!(
+            args.iter().map(<[u8]>::to_vec).collect::<Vec<_>>(),
+            read(&page)
+        );
+        assert_eq!(args.len(), 3);
+
+        let zeroed = [0u8; PAGE_BYTES];
+        // SAFETY: as above, for `zeroed`.
+        let none = unsafe { ArgPage::from_va(zeroed.as_ptr() as u64) };
+        assert!(none.is_empty() && none.iter().next().is_none());
+    }
+
+    /// **Two header fields damaged together can read as a shorter argv**, which the crate's BUGS
+    /// records: `count` and `total` that both describe the first record of two parse as that one.
+    #[test]
+    fn a_consistently_shortened_header_reads_as_the_shorter_argv() {
+        let mut page = build(&[b"rg", b"src"]);
+        page[8..12].copy_from_slice(&1u32.to_le_bytes());
+        page[12..16].copy_from_slice(&6u32.to_le_bytes());
+        assert_eq!(read(&page), [&b"rg"[..]]);
+    }
+
+    /// **This crate is one file**, because the `std` port copies `src/lib.rs` by name: a second
+    /// file here would break that build, so it fails this test first.
+    #[test]
+    fn src_holds_exactly_one_file() {
+        let names: Vec<_> = std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/src"))
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect();
+        assert_eq!(names, ["lib.rs"]);
     }
 
     /// A frame nobody assembled a page into is no arguments, not a garbage argv.
