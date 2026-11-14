@@ -254,11 +254,13 @@ pub(crate) fn build() -> bool {
             return false;
         }
     };
-    let nanos = std::time::SystemTime::now()
+    let nanoseconds = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_nanos());
-    let scratch =
-        std::env::temp_dir().join(format!("nife-basalt-build-{}-{nanos}", std::process::id()));
+    let scratch = std::env::temp_dir().join(format!(
+        "nife-basalt-build-{}-{nanoseconds}",
+        std::process::id()
+    ));
     let result = build_in(&scratch, &architectures);
     if let Err(e) = std::fs::remove_dir_all(&scratch) {
         eprintln!("basalt-build: could not remove {}: {e}", scratch.display());

@@ -19,6 +19,9 @@ library. A program built at an older nife commit reads that commit's wire format
 milestone the rows fetched programs built at the nife commit basalt pinned, so a nife change that
 broke a format one of them read could not land in one pull request.
 
+Reuse: basalt's own `helpers/packages.py`, at the pinned commit, is the build; the gate adds only a
+wrapper that gives it a build root of its own. No other build of these recipes exists.
+
 ## What is in force
 
 | row | builds | runner |
@@ -34,12 +37,12 @@ broke a format one of them read could not land in one pull request.
 - The build root is a directory of its own per run, so two builds on one host do not collide.
 - basalt's digest check fails every package built from a tree other than the one basalt pins. A run
   that exits 1 counts as built when its fresh index lists every package asked for, because the
-  script writes the index only after every package is packed.
+  script writes the index only after it packs every package.
 - A pull request's run, `full-ci` included, fetches the published programs as before.
 - basalt's `packages` workflow keeps testing the published bytes, and runs nife's `swish-check`
   rows on them, at every pin bump.
 
-The workflow is proved only in the merge queue: no pull request run takes this path.
+Only the merge queue proves the workflow: no pull request run takes this path.
 
 ## Follow-on
 

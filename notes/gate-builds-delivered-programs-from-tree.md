@@ -241,15 +241,14 @@ daily, since before that it would build on every merge group anyway.
 ## How milestone 1115 built it
 
 `cargo xtask basalt-build <architecture>...` (`xtask/src/basalt.rs`, `build`) is the build of
-section 1. Each of the four rows runs it, in a merge group and on a push to `main`, for the
-architectures it runs, and hands the repository to its `basalt-fetch` with
-`NIFE_BASALT_REPOSITORY`. A pull request's run fetches. Two details differ from the plan above,
-both because of what basalt's script does at the pinned commit:
+section 1. The four rows run it in a merge group and on a push to `main`, and hand the repository
+to `basalt-fetch` with `NIFE_BASALT_REPOSITORY`. A pull request's run fetches. Two details differ
+from the plan above, because of basalt's script at the pinned commit:
 
-- It does not pass `--update-digests`. At that commit the flag refuses a build of fewer than all
-  three architectures. The build runs without it, and a run that exits 1 counts as built when the
-  fresh index lists every package asked for: the script writes the index only after every package
-  is built and packed, so the one failure left after it is the digest check.
+- It does not pass `--update-digests`, which at that commit refuses fewer than three
+  architectures. A run that exits 1 counts as built when its fresh index lists every package asked
+  for. The script writes the index only after it packs every package, so the digest check is the one
+  failure left.
 - It does not use `/tmp/basalt-build`. The script takes no option for its build root, so the gate
   imports it and sets `BUILD_ROOT` to a directory of its own for each run. Two builds on one host
   do not collide, and nothing needs a lock.
@@ -258,9 +257,8 @@ both because of what basalt's script does at the pinned commit:
 
 - A `--no-digest-check` flag (provisional name) for basalt's `helpers/packages.py build`, so the
   gate does not infer success from a failed run: a basalt change. `xtask/src/basalt.rs`'s `BUGS`
-  section records the inference.
-- A daily bot pull request that moves `xtask/basalt-pin` to basalt's newest Release: a milestone,
-  proposed as "nife's basalt pin follows basalt's Release". `xtask/src/basalt.rs`'s `BUGS`
-  section records that the pin does not follow.
+  records the inference.
+- A daily bot pull request that moves `xtask/basalt-pin` to basalt's newest Release.
+  `xtask/src/basalt.rs`'s `BUGS` records that the pin does not follow.
 - `BUILD_ROOT` as a fixed path in basalt's `helpers/packages.py`, which the gate sets around: a
   `BUGS` entry there belongs to basalt.
