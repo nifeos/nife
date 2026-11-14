@@ -25,7 +25,7 @@
 pub const PAGE: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// `filesystem_contract`, `entropy_contract` and `line_editor::proto` use, so the contracts read alike.
+/// `filesystem_contract`, `entropy_contract` and `terminal_contract` use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The longest identity, in bytes. An identity here is **an opaque byte string and nothing more**:

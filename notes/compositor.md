@@ -121,7 +121,7 @@ Three questions Unix conflates, separated here:
   in the window-list page, so a holder of that page, and the kernel test, can witness a focus change
   rather than ask about it.
 
-Input reaches the focused client as `line_editor::proto::OPERATION_BYTES` over a `CALL`: the
+Input reaches the focused client as `terminal_contract::OPERATION_BYTES` over a `CALL`: the
 terminal contract's driver half, verbatim (notes/terminal-contract.md). So a terminal is a client of
 this compositor without either contract changing, which is what rung three needs and the reason the
 framing was reused rather than reinvented.

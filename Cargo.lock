@@ -255,6 +255,7 @@ dependencies = [
  "jh7110_entropy",
  "jiff",
  "line_editor",
+ "line_editor_component",
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
@@ -277,6 +278,7 @@ dependencies = [
  "system_initializer",
  "system_log",
  "system_log_contract",
+ "terminal_contract",
  "timetable",
  "timetable_store",
  "tock-registers",
@@ -567,7 +569,6 @@ dependencies = [
  "hot_swap_contract",
  "hot_swap_server",
  "job_mix",
- "line_editor",
  "loaded_image_check",
  "login_contract",
  "memory_region_heap",
@@ -580,6 +581,7 @@ dependencies = [
  "startup_page_contract",
  "supervision_contract",
  "system_initializer",
+ "terminal_contract",
  "timetable",
  "timetable_store",
  "user_mode_runtime",
@@ -865,7 +867,6 @@ dependencies = [
  "jh7110_entropy",
  "jh7110_watchdog",
  "job_mix",
- "line_editor",
  "login_contract",
  "machine_discovery",
  "machine_statistics_contract",
@@ -886,6 +887,7 @@ dependencies = [
  "startup_page_contract",
  "std_runtime_contract",
  "system_log_contract",
+ "terminal_contract",
  "test_times",
  "thread_wake_handshake",
  "video_terminal",
@@ -906,6 +908,10 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
 name = "line_editor"
+version = "0.1.0"
+
+[[package]]
+name = "line_editor_component"
 version = "0.1.0"
 dependencies = [
  "capability_plan",
@@ -1410,7 +1416,7 @@ name = "std_runtime_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
- "line_editor",
+ "terminal_contract",
 ]
 
 [[package]]
@@ -1495,7 +1501,7 @@ dependencies = [
  "graphics_contract",
  "installed_programs",
  "interfaces_note",
- "line_editor",
+ "line_editor_component",
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
@@ -1507,6 +1513,7 @@ dependencies = [
  "socket_contract",
  "std_runtime_contract",
  "supervision_contract",
+ "terminal_contract",
  "user_mode_runtime",
  "video_terminal",
 ]
@@ -1560,7 +1567,7 @@ dependencies = [
  "graphics_contract",
  "jiff",
  "kernel",
- "line_editor",
+ "line_editor_component",
  "login_contract",
  "machine_discovery",
  "machine_statistics_contract",
@@ -1579,6 +1586,7 @@ dependencies = [
  "startup_page_contract",
  "std_runtime_contract",
  "system_log_contract",
+ "terminal_contract",
  "timetable",
  "timetable_store",
  "video_terminal",
@@ -1591,6 +1599,10 @@ dependencies = [
  "allocator-api2",
  "lock_api",
 ]
+
+[[package]]
+name = "terminal_contract"
+version = "0.1.0"
 
 [[package]]
 name = "test_times"

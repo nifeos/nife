@@ -137,7 +137,7 @@ decision; the recommendation comes first.
    | `NAME_TEXT_MAXIMUM` | `MAXIMUM_NAME_TEXT_BYTES` | a limit opens `MAXIMUM_` and ends with its unit |
    | `GRANTS_MAXIMUM` | `MAXIMUM_GRANTS` | a count names the things, limit word first |
    | `MAXIMUM_ADDRESSES` | `MAXIMUM_IP_ADDRESSES` | an address that is not a memory location says so; `domain_name_system::MAXIMUM_ADDRESSES` follows |
-   | `OFF_NAME`, `OFF_ADDRESSES` | `NAME_OFFSET`, `IP_ADDRESSES_OFFSET` | `off` abbreviates; `_OFFSET` as the socket package proposes |
+   | `NAME_OFFSET_BYTES`, `ADDRESSES_OFFSET_BYTES` | `NAME_OFFSET`, `IP_ADDRESSES_OFFSET` | `off` abbreviates; `_OFFSET` as the socket package proposes |
    | `OPERATION_ATTACH_PAGE_FRAME` | follow the socket contract's ruling (`OPERATION_ATTACH_SHARED_PAGE` is proposed there) | names that follow a renamed thing move with it |
    | `TRANSPORT_UDP`, `TRANSPORT_TCP` | keep; add `udp` and `tcp` to the template's accepted words | they pass the acronym test, as the socket package argues |
    | `w0`, `w1` (parameters) | `first_word`, `second_word` | an abbreviation; the rule covers parameters. This is the tree's convention for message words, so the ruling applies beyond this crate |

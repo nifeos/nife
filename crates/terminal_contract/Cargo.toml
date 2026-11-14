@@ -1,0 +1,13 @@
+[package]
+name = "terminal_contract"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+# None, by design: the wire half of the terminal contract is a leaf, so
+# the kernel and every client link the words without linking the editor that serves them.
+[dependencies]

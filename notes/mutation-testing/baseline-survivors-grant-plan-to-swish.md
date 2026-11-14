@@ -213,8 +213,8 @@ Equivalent: `name`'s `|` to `^`. The generation is shifted into bits 63:32 and t
 
 ### `socket_protocol` (2)
 
-One real. `DATA_MAX` is `4096 - OFF_PAYLOAD`, and the test only asked whether a full payload *fits*
-the frame. `4096 / OFF_PAYLOAD` also fits, so the constant could shrink by 3576 bytes unnoticed. It
+One real. `DATA_MAX` is `4096 - PAYLOAD_OFFSET_BYTES`, and the test only asked whether a full payload *fits*
+the frame. `4096 / PAYLOAD_OFFSET_BYTES` also fits, so the constant could shrink by 3576 bytes unnoticed. It
 is now pinned as the whole page after the header. That refuses both a payload that overruns the
 grant and one that leaves granted bytes unreachable.
 

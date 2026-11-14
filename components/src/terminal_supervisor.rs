@@ -25,9 +25,9 @@
 #![no_main]
 
 use capability_plan::Provisions;
-use line_editor::component::{self, supervisor as s};
-use line_editor::proto;
+use line_editor_component::{self as component, supervisor as s};
 use supervision_contract::{Child as Built, ChildEndowment, Retention};
+use terminal_contract as proto;
 use user_mode_runtime::{
     Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
     notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
