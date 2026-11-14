@@ -463,8 +463,8 @@ pub(crate) const CHANNEL_STATUS_FATAL_BUS_ERROR: u32 = 1 << 12;
 /// The page of the window holding channel 0's registers, which is the page the data plane is
 /// mapped. Every `CHAN_*` offset, `DIRECT_MEMORY_ACCESS_BUS_MODE_REGISTER` and `DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER` is inside it.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
+/// Name: ratified 2026-11-14 (UTC), #3569.
+pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES: u32 = 0x1000;
 /// The register window's size in bytes, `reg`'s `0x10000` in both JH7110 trees.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3126.
@@ -485,7 +485,11 @@ mod tests {
             CHANNEL_CURRENT_RECEIVE_DESCRIPTOR_REGISTER,
             DIRECT_MEMORY_ACCESS_BUS_MODE_REGISTER,
         ] {
-            assert_eq!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
+            assert_eq!(
+                r & !0xfff,
+                DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
+                "{r:#x}"
+            );
         }
     }
 
@@ -500,7 +504,11 @@ mod tests {
             MAC_PACKET_FILTER,
             MAC_CONFIGURATION_REGISTER,
         ] {
-            assert_ne!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
+            assert_ne!(
+                r & !0xfff,
+                DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
+                "{r:#x}"
+            );
         }
     }
 

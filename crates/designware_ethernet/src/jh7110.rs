@@ -101,11 +101,13 @@ pub const COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "aon")]
 pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
-/// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
-/// the vendor's `AON_SYSCFG_12`.
+/// The AON (always-on) system controller register holding `gmac0`'s interface select, at byte
+/// offset `0xc` of the controller: mainline's `<&aon_syscon 0xc 0x12>` second cell, the vendor's
+/// `AON_SYSCFG_12`.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const GMAC0_SYSTEM_CONTROLLER_OFFSET: u64 = 0xc;
+/// Name: ratified 2026-11-14 (UTC), #3569.
+#[doc(alias = "AON_SYSCFG_12")]
+pub const GMAC0_INTERFACE_SELECT_REGISTER: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
 pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
 /// The field is three bits wide (OpenBSD's `((1U << 3) - 1) << shift`; the vendor's mask

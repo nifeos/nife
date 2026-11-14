@@ -20,7 +20,8 @@ use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
     RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
-    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
+    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK,
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
     Tails, layout, motorcomm_physical_layer_device, registers,
 };
@@ -613,7 +614,7 @@ impl NetworkInterfaceController {
             }
             let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
             let mut frame =
-                vec![0u8; (d[2] & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK) as usize];
+                vec![0u8; (d[2] & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK) as usize];
             self.memory.device_read(buffer, &mut frame);
             self.set_descriptor(
                 at,

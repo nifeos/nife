@@ -26,11 +26,12 @@ use startup_page_contract::WindowKind;
 /// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as design/naming.md asks.
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 /// The controller's DMA (direct memory access) register page
-/// (`designware_ethernet::registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE`), device memory.
+/// (`designware_ethernet::registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`),
+/// device memory.
 /// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`; this
-/// lane added `REGISTER` to match the crate's `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, replacing
+/// lane added `REGISTER` to match the crate's `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`, replacing
 /// `DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS`.
 #[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS: u64 =

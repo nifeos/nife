@@ -113,22 +113,22 @@ fn a_transmit_descriptor_keeps_its_length_inside_its_fields() {
     let word_2 = high as u32;
     let word_3 = (high >> 32) as u32;
     assert!(low == address);
-    let frame_length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK;
-    assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK == frame_length);
+    let frame_length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK;
+    assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK == frame_length);
     assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE != 0);
     assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT != 0);
     assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT != 0);
     assert!(
         word_3
-            & !(TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+            & !(TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK
                 | TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
                 | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
                 | TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT)
             == 0
     );
     assert!(
-        word_2 & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
-            == frame_length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
+        word_2 & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK
+            == frame_length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK
     );
     assert!(word_2 & TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION != 0);
 }

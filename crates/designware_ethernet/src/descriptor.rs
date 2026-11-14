@@ -96,9 +96,9 @@ pub const RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY: u32 = 1 << 15;
 /// **Receive descriptor word 3, packet length** (`RDES3_LENGTH`, `dwqereg.h`). Receive, write-back:
 /// the frame length including the CRC, valid when [`RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR`] is set.
 ///
-/// Name: ratified 2026-11-03 (UTC), #3125.
+/// Name: ratified 2026-11-14 (UTC), #3569.
 #[doc(alias = "RDES3_LENGTH")]
-pub const RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK: u32 = 0x7fff;
+pub const RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK: u32 = 0x7fff;
 
 /// **Transmit descriptor word 2, interrupt on completion** (`TDES2_IC`, `dwqereg.h`). Transmit,
 /// read format: interrupt on completion (in word 2).
@@ -110,9 +110,9 @@ pub const TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION: u32 = 1 << 31;
 /// **Transmit descriptor word 2, buffer 1 length** (`TDES2_BUF1_LEN`, `dwqereg.h`). Transmit, read
 /// format: buffer 1's length (in word 2).
 ///
-/// Name: ratified 2026-11-03 (UTC), #3125.
+/// Name: ratified 2026-11-14 (UTC), #3569.
 #[doc(alias = "TDES2_BUF1_LEN")]
-pub const TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK: u32 = 0x3fff;
+pub const TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK: u32 = 0x3fff;
 
 /// **Transmit descriptor word 3, first segment** (`TDES3_FS`, `dwqereg.h`). Transmit: first
 /// descriptor of a frame.
@@ -138,9 +138,9 @@ pub const TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE: u32 = 1 << 31;
 /// **Transmit descriptor word 3, frame length** (`TDES3_FRAME_LEN`, `dwqereg.h`). Transmit, read
 /// format: the whole frame's length.
 ///
-/// Name: ratified 2026-11-03 (UTC), #3125.
+/// Name: ratified 2026-11-14 (UTC), #3569.
 #[doc(alias = "TDES3_FRAME_LEN")]
-pub const TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK: u32 = 0x7fff;
+pub const TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK: u32 = 0x7fff;
 
 /// **Transmit descriptor word 3, error summary** (`TDES3_ES`, `dwqereg.h`). Transmit, write-back:
 /// error summary.
@@ -187,8 +187,8 @@ pub(crate) const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16) -> [u64; 2] {
-    let length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK;
-    let descriptor_word_2 = (length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK)
+    let length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK;
+    let descriptor_word_2 = (length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK)
         | TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION;
     let descriptor_word_3 = TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
         | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
@@ -211,7 +211,7 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 #[allow(dead_code)]
 pub(crate) const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION
-        & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
+        & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK
         == 0
         && (TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
             | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
@@ -220,11 +220,13 @@ pub(crate) const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
                 ^ TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
                 ^ TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT)
         && TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
-            & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+            & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK
             == 0
-        && TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+        && TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+            & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK
             == 0
-        && TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+        && TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
+            & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK
             == 0
         && ((u32::MAX as u64) << 32) & (u32::MAX as u64) == 0
 );
@@ -275,7 +277,7 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
     {
         return ReceiveVerdict::Drop;
     }
-    let wire = (descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK) as usize;
+    let wire = (descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK) as usize;
     let Some(length) = wire.checked_sub(CRC_BYTES) else {
         return ReceiveVerdict::Drop;
     };

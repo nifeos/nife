@@ -152,7 +152,7 @@ fn bring_up() -> Result<Found, Absent> {
     Ok(Found {
         handoff,
         dma_page: e.port.registers_physical_address
-            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES),
         link,
     })
 }

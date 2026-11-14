@@ -79,7 +79,7 @@ impl Tails for Channel {
         mapped(&DMA).w32(
             u64::from(
                 registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER
-                    - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
+                    - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
             ),
             tail_pointer_low_bits,
         );
@@ -88,7 +88,7 @@ impl Tails for Channel {
         mapped(&DMA).w32(
             u64::from(
                 registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER
-                    - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
+                    - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
             ),
             tail_pointer_low_bits,
         );
