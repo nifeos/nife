@@ -118,10 +118,9 @@ decides it. Line numbers are in `crates/filesystem_fixture/src/lib.rs` unless a 
    ripgrep spellings a reader types. They keep their owner's form with a `#[doc(alias)]`.
    Evidence: the helper outputs; `design/naming.md`, sections "Units", "Shapes" and "Acronyms and
    abbreviations".
-   Change: the architect rules the names (Decision 2 below). One rename lane applies them with the
+   Change: the names Decision 2 decides, provisionally. One rename lane applies them with the
    consumers, since every rename crosses nine manifests.
-   Door: the names become identifiers other repositories pin after the move; before the move they
-   are two-way. Effort: S after the ruling.
+   Door: two-way before the first tag; every repository that pins them is a nifeos one. Effort: S after the ruling.
 
 5. The crate's names are not ratified and no review package exists.
    Finding: `script/crate-standalone` step 0 fails on the crate name (provisional) and on 244
@@ -145,7 +144,8 @@ The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's.
+Decision 1 is a one-way door. Decision 2 is decided, provisionally. Everything else above is the
+maintainer's.
 
 ### Decision 1: the repository `nifeos/filesystem_fixture` is created, after `filesystem_contract` has left
 
@@ -229,6 +229,12 @@ Prior art: Linux's `fs/` spells `dentry` and `inode` because those are terms of 
 `set_modified`, `read_dir` and `remove_dir` (Unix's words kept, its own words whole). The concrete
 example is `TOUCH_MTIME_ADVANCED`. The template's gate names the fix (`modification_time`), and the
 tree already spells `set_modified` on the std side of the same wire.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Every pinner is a nifeos repository and the rename is one lane, so
+the door is two-way. The three tables hold as written, with no alias of the old spellings. The
+command names a reader types (`rm`, `RMDIR_*`, `PWD_*`, `RG_*` and the rest of the last row) keep
+their spelling, each with `#[doc(alias)]` and a doc line naming the command. Item 4 is the work.
 
 ## Done when
 
