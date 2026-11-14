@@ -55,44 +55,50 @@ fn a_link_is_decoded_only_from_what_the_registers_say() {
         control_1000base_t,
         status_1000base_t,
     ) {
-        assert!(
-            basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS != 0
-        );
-        assert!(basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE == 0);
-        if basic_mode_control
-            & management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
-            == 0
-        {
+        assert!(basic_mode_status & management_data_io::BASIC_MODE_STATUS_LINK_STATUS != 0);
+        assert!(basic_mode_control & management_data_io::BASIC_MODE_CONTROL_ISOLATE == 0);
+        if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE == 0 {
             assert!(
                 link.full_duplex
-                    == (basic_mode_control
-                        & management_data_input_output::BASIC_MODE_CONTROL_FULL_DUPLEX
+                    == (basic_mode_control & management_data_io::BASIC_MODE_CONTROL_FULL_DUPLEX
                         != 0)
             );
         } else {
             assert!(
-                basic_mode_status
-                    & management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
+                basic_mode_status & management_data_io::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
                     != 0
             );
             let common = autonegotiation_advertisement & link_partner_abilities;
-            let gigabit_full =
-                control_1000base_t & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX != 0 && status_1000base_t & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE != 0;
-            let gigabit_half =
-                control_1000base_t & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX != 0 && status_1000base_t & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE != 0;
+            let gigabit_full = control_1000base_t
+                & management_data_io::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
+                != 0
+                && status_1000base_t
+                    & management_data_io::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
+                    != 0;
+            let gigabit_half = control_1000base_t
+                & management_data_io::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
+                != 0
+                && status_1000base_t
+                    & management_data_io::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
+                    != 0;
             match link.speed {
-                motorcomm_physical_layer_device::Speed::Thousand => {
+                link::Speed::Thousand => {
                     assert!(gigabit_full || gigabit_half);
                     assert!(link.full_duplex == gigabit_full);
                 }
-                motorcomm_physical_layer_device::Speed::Hundred => {
+                link::Speed::Hundred => {
                     assert!(!gigabit_full && !gigabit_half);
-                    assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) != 0);
+                    assert!(common & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) != 0);
                 }
-                motorcomm_physical_layer_device::Speed::Ten => {
+                link::Speed::Ten => {
                     assert!(!gigabit_full && !gigabit_half);
-                    assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) == 0);
-                    assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T) != 0);
+                    assert!(common & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) == 0);
+                    assert!(
+                        common
+                            & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+                                | management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T)
+                            != 0
+                    );
                 }
             }
         }
@@ -113,22 +119,22 @@ fn a_transmit_descriptor_keeps_its_length_inside_its_fields() {
     let word_2 = high as u32;
     let word_3 = (high >> 32) as u32;
     assert!(low == address);
-    let frame_length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK;
-    assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK == frame_length);
+    let frame_length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK;
+    assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK == frame_length);
     assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE != 0);
     assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT != 0);
     assert!(word_3 & TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT != 0);
     assert!(
         word_3
-            & !(TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+            & !(TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK
                 | TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
                 | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
                 | TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT)
             == 0
     );
     assert!(
-        word_2 & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
-            == frame_length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
+        word_2 & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK
+            == frame_length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK
     );
     assert!(word_2 & TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION != 0);
 }
@@ -138,31 +144,30 @@ fn a_transmit_descriptor_keeps_its_length_inside_its_fields() {
 /// field, the operation bits say read or write as asked, and the busy bit that starts the command
 /// is set.
 ///
-/// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_management_data_input_output_command_word_keeps_each_address_in_its_own_field.patch`
+/// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_management_data_io_command_word_keeps_each_address_in_its_own_field.patch`
 #[kani::proof]
-fn a_management_data_input_output_command_word_keeps_each_address_in_its_own_field() {
+fn a_management_data_io_command_word_keeps_each_address_in_its_own_field() {
     let device: u8 = kani::any();
     let register: u8 = kani::any();
     let write: bool = kani::any();
-    let word = management_data_input_output::command_word(device, register, write);
+    let word = management_data_io::command_word(device, register, write);
     assert!(
-        (word >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT) & 0x1f
+        (word >> management_data_io::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT) & 0x1f
             == (device & 0x1f) as u32
     );
     assert!(
-        (word >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f
-            == (register & 0x1f) as u32
+        (word >> management_data_io::REGISTER_ADDRESS_SHIFT) & 0x1f == (register & 0x1f) as u32
     );
     assert!(
-        (word >> management_data_input_output::CLOCK_RANGE_SHIFT) & 0xf
-            == management_data_input_output::CLOCK_RANGE_500_TO_800_MEGAHERTZ
+        (word >> management_data_io::CLOCK_RANGE_SHIFT) & 0xf
+            == management_data_io::CLOCK_RANGE_500_TO_800_MEGAHERTZ
     );
-    assert!(word & management_data_input_output::COMMAND_BUSY != 0);
+    assert!(word & management_data_io::COMMAND_BUSY != 0);
     let operation = word & (0x3 << 2);
     if write {
-        assert!(operation == management_data_input_output::OPERATION_COMMAND_WRITE);
+        assert!(operation == management_data_io::OPERATION_COMMAND_WRITE);
     } else {
-        assert!(operation == management_data_input_output::OPERATION_COMMAND_READ);
+        assert!(operation == management_data_io::OPERATION_COMMAND_READ);
     }
     assert!(word >> 26 == 0);
 }

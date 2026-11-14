@@ -140,13 +140,13 @@ pub const fn mac_hardware_feature_register(index: u32) -> u32 {
 /// Name: ratified 2026-11-03 (UTC), #3126.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR")]
 #[doc(alias = "MAC_MDIO_ADDR")]
-pub const MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER: u32 = 0x0200;
+pub const MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER: u32 = 0x0200;
 /// **MDIO (management data input/output) data register** (`GMAC_MAC_MDIO_DATA`, `dwqereg.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3126.
 #[doc(alias = "GMAC_MAC_MDIO_DATA")]
 #[doc(alias = "MAC_MDIO_DATA")]
-pub const MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER: u32 = 0x0204;
+pub const MAC_MANAGEMENT_DATA_IO_DATA_REGISTER: u32 = 0x0204;
 /// **MAC address 0, high register** (`GMAC_MAC_ADDR0_HI`, `dwqereg.h`): the station address's high
 /// half (bytes 4 and 5).
 ///
@@ -463,8 +463,8 @@ pub(crate) const CHANNEL_STATUS_FATAL_BUS_ERROR: u32 = 1 << 12;
 /// The page of the window holding channel 0's registers, which is the page the data plane is
 /// mapped. Every `CHAN_*` offset, `DIRECT_MEMORY_ACCESS_BUS_MODE_REGISTER` and `DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER` is inside it.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
+/// Name: ratified 2026-11-14 (UTC), #3569.
+pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES: u32 = 0x1000;
 /// The register window's size in bytes, `reg`'s `0x10000` in both JH7110 trees.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3126.
@@ -485,7 +485,11 @@ mod tests {
             CHANNEL_CURRENT_RECEIVE_DESCRIPTOR_REGISTER,
             DIRECT_MEMORY_ACCESS_BUS_MODE_REGISTER,
         ] {
-            assert_eq!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
+            assert_eq!(
+                r & !0xfff,
+                DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
+                "{r:#x}"
+            );
         }
     }
 
@@ -494,13 +498,17 @@ mod tests {
     #[test]
     fn the_administrative_registers_are_off_the_direct_memory_access_register_page() {
         for r in [
-            MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
-            MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+            MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
+            MAC_MANAGEMENT_DATA_IO_DATA_REGISTER,
             MAC_ADDRESS_0_HIGH_REGISTER,
             MAC_PACKET_FILTER,
             MAC_CONFIGURATION_REGISTER,
         ] {
-            assert_ne!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
+            assert_ne!(
+                r & !0xfff,
+                DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
+                "{r:#x}"
+            );
         }
     }
 

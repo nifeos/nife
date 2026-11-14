@@ -15,10 +15,10 @@
 use crate::{Hardware, registers};
 
 /// **CSR clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
-/// field in [`registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER`].
+/// field in [`registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER`].
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
-#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER_CR_SHIFT")]
+#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER_CR_SHIFT")]
 pub const CLOCK_RANGE_SHIFT: u32 = 8;
 /// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
@@ -231,7 +231,8 @@ pub const fn command_word(physical_layer_device_address: u8, register: u8, write
 /// `command_word` names this constant. Each operand enters through its own field mask.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
         | (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
         | (0x1f << REGISTER_ADDRESS_SHIFT)
@@ -249,7 +250,7 @@ pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "mdio")]
-pub trait ManagementDataInputOutput {
+pub trait ManagementDataIo {
     /// Read register `register` of the PHY at `physical_layer_device_address`.
     fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error>;
     /// Write `value` to register `register` of the PHY at `physical_layer_device_address`.
@@ -272,7 +273,7 @@ impl<H: Hardware> Bus<'_, H> {
         loop {
             if self
                 .0
-                .read(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER)
+                .read(registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER)
                 & COMMAND_BUSY
                 == 0
             {
@@ -290,18 +291,16 @@ impl<H: Hardware> Bus<'_, H> {
     }
 }
 
-impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
+impl<H: Hardware> ManagementDataIo for Bus<'_, H> {
     fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
         self.wait(physical_layer_device_address, register)?;
         self.0.write(
-            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+            registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
             command_word(physical_layer_device_address, register, false),
         );
         self.wait(physical_layer_device_address, register)?;
-        Ok(self
-            .0
-            .read(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER) as u16)
+        Ok(self.0.read(registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER) as u16)
     }
 
     fn write(
@@ -312,11 +311,11 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
     ) -> Result<(), Error> {
         self.wait(physical_layer_device_address, register)?;
         self.0.write(
-            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+            registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER,
             u32::from(value),
         );
         self.0.write(
-            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+            registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
             command_word(physical_layer_device_address, register, true),
         );
         self.wait(physical_layer_device_address, register)
@@ -329,7 +328,7 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
 pub fn physical_layer_device_id(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
 ) -> Result<u32, Error> {
     let high = bus.read(
@@ -348,7 +347,8 @@ pub fn physical_layer_device_id(
 /// exclusion for `physical_layer_device_id` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
+#[allow(dead_code)]
+pub(crate) const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
     assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
@@ -356,7 +356,7 @@ pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
 ///
 /// Name: ratified 2026-11-03 (UTC), #3128.
 pub fn is_link_up(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
 ) -> Result<bool, Error> {
     let _ = bus.read(physical_layer_device_address, BASIC_MODE_STATUS_REGISTER)?;
@@ -372,7 +372,7 @@ pub fn is_link_up(
 ///
 /// Name: ratified 2026-11-03 (UTC), #3128.
 pub fn restart_autonegotiation(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
 ) -> Result<(), Error> {
     let basic_mode_control =
@@ -391,7 +391,8 @@ pub fn restart_autonegotiation(
 /// `restart_autonegotiation` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () = assert!(
     BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE & BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART == 0
 );
 
@@ -439,7 +440,7 @@ mod tests {
     impl Hardware for Pair {
         fn read(&mut self, offset: u32) -> u32 {
             match offset {
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => {
+                registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER => {
                     if self.address & COMMAND_BUSY != 0 && !self.stuck {
                         if self.busy_reads == 0 {
                             self.address &= !COMMAND_BUSY;
@@ -452,17 +453,17 @@ mod tests {
                     }
                     self.address
                 }
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data,
+                registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER => self.data,
                 _ => panic!("MDIO touched {offset:#x}, outside its two registers"),
             }
         }
         fn write(&mut self, offset: u32, value: u32) {
             self.writes.push((offset, value));
             match offset {
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => {
+                registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER => {
                     self.address = value;
                 }
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = value,
+                registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER => self.data = value,
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
             }
         }
@@ -481,7 +482,7 @@ mod tests {
         assert_eq!(
             hardware.writes,
             [(
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+                registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
                 command_word(4, BASIC_MODE_STATUS_REGISTER, false)
             )]
         );
@@ -502,12 +503,9 @@ mod tests {
         assert_eq!(
             hardware.writes,
             [
+                (registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER, 0x1200),
                 (
-                    registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
-                    0x1200
-                ),
-                (
-                    registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+                    registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
                     command_word(1, BASIC_MODE_CONTROL_REGISTER, true)
                 )
             ]
@@ -563,7 +561,7 @@ mod tests {
         dropped_since_read: bool,
     }
 
-    impl ManagementDataInputOutput for Latched {
+    impl ManagementDataIo for Latched {
         fn read(&mut self, _physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
             if register == BASIC_MODE_STATUS_REGISTER {
                 let up = self.link_now && !self.dropped_since_read;
