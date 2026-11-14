@@ -7,16 +7,15 @@
 //! a budget of its own, the boot's entropy service, the devices the kernel set aside and the three
 //! programs it builds as bytes (`boot_ladder::self_test_program`). This program builds each child
 //! from that budget and supervises it, writes each check's line into a transcript the progenitor
-//! copies to the console, then the verdict (`boot_ladder::SELF_TEST`), and exits. Every check here
+//! copies to the console, then the verdict (`boot_ladder::Heads::self_test`), and exits. Every check here
 //! runs on every architecture, and one the machine has nothing for says `absent` and why. See
 //! notes/self-test-checks.md, "The two halves".
 //!
 //! # BUGS
 //!
 //! - `budget` and `teardown` bracket the machine's free-frame count, sound only while nothing else
-//!   on any core allocates or frees in their window.
-//! - The draws in `trng` and `entropy` are calls with no deadline: a service that never answers
-//!   holds the boot.
+//!   on any core allocates or frees in their window. - The draws in `true_random_number_generator`
+//!   and `entropy` are calls with no deadline: a service that never answers holds the boot.
 //! - `supervised` checks that the faulting pc lies in the child's code, not which instruction.
 //!
 //! Name: provisional. Considered `self_test` (says nothing of when it runs) and `boot_checks` (the
@@ -46,6 +45,12 @@ use user_mode_runtime::{
 };
 
 user_mode_runtime::program_entry!(start);
+
+/// **The heads of this system's boot lines**, of which this program prints the verdict and the
+/// subject lines; the kernel and `serial_console` build the same heads from the same name.
+///
+/// Name: provisional.
+const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 
 const KERNEL_HALF_VA: u64 = address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
 const TRANSCRIPT_VA: u64 = address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
@@ -79,7 +84,7 @@ const CHECK_LINES_END: usize = contract::TRANSCRIPT_BYTES - VERDICT_RESERVE;
 /// in the first free slot, and an empty slot is how an absent device reads.
 struct Grants {
     entropy: bool,
-    trng: bool,
+    true_random_number_generator: bool,
     disk: bool,
 }
 
@@ -154,9 +159,16 @@ impl Report {
 
     /// **Name a thread this program is about to see die on purpose**, so a gate reading the
     /// kernel's report of the kill can tell it from a death nobody meant
-    /// (`boot_ladder::SELF_TEST_SUBJECT`). Written before the death is taken.
+    /// (`boot_ladder::Heads::self_test_subject`). Written before the death is taken.
     fn subject(&mut self, thread: u64, check: &'static str) {
-        self.line(CHECK_LINES_END, SubjectLine { thread, check });
+        self.line(
+            CHECK_LINES_END,
+            SubjectLine {
+                heads: HEADS,
+                thread,
+                check,
+            },
+        );
     }
 
     /// Record that the machine has nothing for the check to test, and why.
@@ -184,7 +196,7 @@ macro_rules! check {
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let grants = Grants {
         entropy: is_granted(slot::ENTROPY),
-        trng: is_granted(slot::RANDOM_NUMBER_GENERATOR),
+        true_random_number_generator: is_granted(slot::TRUE_RANDOM_NUMBER_GENERATOR),
         disk: [
             slot::DISK_TRANSPORT,
             slot::DISK_INTERRUPT,
@@ -209,7 +221,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     budget(&mut r, &images, deadline.as_ref());
     supervised(&mut r, &images);
     teardown(&mut r, &images);
-    blockdev(&mut r, &half, &images, &grants, deadline.as_ref());
+    block_device(&mut r, &half, &images, &grants, deadline.as_ref());
     jh7110(&mut r, &half, &grants);
     entropy(&mut r, &half, &images, &grants);
 
@@ -224,7 +236,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         );
     }
     let tally = r.tally;
-    r.line(contract::TRANSCRIPT_BYTES, tally.verdict());
+    r.line(contract::TRANSCRIPT_BYTES, tally.verdict(HEADS));
     send(slot::REPORT, message::DONE, r.at as u64, tally.to_packed());
     user_mode_runtime::exit()
 }
@@ -666,10 +678,16 @@ fn teardown(r: &mut Report, images: &Images) {
 /// `block_driver` gets disk 0's confined transport, its interrupt and a DMA page, parses nifefs
 /// itself and reports `motd`'s first eight bytes; nothing else issues a virtio command. Absent on
 /// a machine with no virtio disk, which is every boot `boot-check` makes and every board.
-fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: Option<&Deadline>) {
+fn block_device(
+    r: &mut Report,
+    half: &KernelHalf,
+    images: &Images,
+    g: &Grants,
+    d: Option<&Deadline>,
+) {
     if !g.disk {
         r.absent(
-            check!("blockdev"),
+            check!("block_device"),
             format_args!("no virtio block device on this machine, over MMIO or PCIe"),
         );
         return;
@@ -682,7 +700,7 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
     let bytes = images.bytes[image::BLOCK_DRIVER];
     if bytes.is_empty() {
         r.record(
-            check!("blockdev"),
+            check!("block_device"),
             false,
             format_args!("a {transport} disk, but no block_driver program"),
         );
@@ -695,7 +713,7 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
         slot::BUDGET,
     ) {
         r.record(
-            check!("blockdev"),
+            check!("block_device"),
             false,
             format_args!("a {transport} disk, but its DMA page would not map"),
         );
@@ -719,7 +737,7 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
         Ok(c) => c,
         Err(why) => {
             r.record(
-                check!("blockdev"),
+                check!("block_device"),
                 false,
                 format_args!("a {transport} disk, but its driver could not be spawned: {why}"),
             );
@@ -736,14 +754,14 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
     }
     let Some(head) = reported.map(u64::to_le_bytes) else {
         r.record(
-            check!("blockdev"),
+            check!("block_device"),
             false,
             format_args!("a user-level driver on the {transport} disk did not report within 5s"),
         );
         return;
     };
     r.record(
-        check!("blockdev"),
+        check!("block_device"),
         &head == MOTD_HEAD,
         format_args!(
             "a user-level driver read motd off the {transport} disk through its own nifefs parse: {head:?}"
@@ -754,11 +772,11 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
 /// **The JH7110's clock controller ungated its TRNG, and the TRNG serves a client, timed.**
 ///
 /// `clock` is the controller's before and after, as the kernel's bring-up recorded them in its
-/// half. `trng` is two device generations that differ, drawn here through the confined driver, with
-/// the bring-up and the draw timed. Absent on every machine but a JH7110.
+/// half. `true_random_number_generator` is two device generations that differ, drawn here through
+/// the confined driver, with the bring-up and the draw timed. Absent on every machine but a JH7110.
 fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
     if !cfg!(target_arch = "riscv64") {
-        for name in [check!("clock"), check!("trng")] {
+        for name in [check!("clock"), check!("true_random_number_generator")] {
             r.absent(name, format_args!("no JH7110 on this architecture"));
         }
         return;
@@ -769,7 +787,10 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
             check!("clock"),
             format_args!("{why}, so no clock was ungated"),
         );
-        r.absent(check!("trng"), format_args!("{why}"));
+        r.absent(
+            check!("true_random_number_generator"),
+            format_args!("{why}"),
+        );
         return;
     }
     let registers = half.word(word::RANDOM_NUMBER_GENERATOR_REGISTERS);
@@ -781,7 +802,7 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         None
     };
     if let Some(why) = refusal {
-        for name in [check!("clock"), check!("trng")] {
+        for name in [check!("clock"), check!("true_random_number_generator")] {
             r.record(
                 name,
                 false,
@@ -791,9 +812,9 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         return;
     }
     clock(r, half);
-    if !half.has(flag::RANDOM_NUMBER_GENERATOR_ANSWERED) || !g.trng {
+    if !half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED) || !g.true_random_number_generator {
         r.record(
-            check!("trng"),
+            check!("true_random_number_generator"),
             false,
             format_args!("JH7110 TRNG at {registers:#x}: its driver did not answer within 5s"),
         );
@@ -801,10 +822,10 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
     }
     let report = half.word(word::RANDOM_NUMBER_GENERATOR_REPORT);
     let status = (half.word(word::RANDOM_NUMBER_GENERATOR_REPORT + 1) >> 32) as u32;
-    let d = draw_twice(slot::RANDOM_NUMBER_GENERATOR);
+    let d = draw_twice(slot::TRUE_RANDOM_NUMBER_GENERATOR);
     let bytes = d.first + d.second;
     r.record(
-        check!("trng"),
+        check!("true_random_number_generator"),
         report == entropy_contract::READY && d.is_good(),
         format_args!(
             "JH7110 TRNG at {registers:#x} (tree says {}): report {report:#x}, STAT {status:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {bytes} bytes in {} us ({} bytes/s); crate jh7110_entropy {} at {}",
@@ -913,7 +934,7 @@ fn draw_twice(service: u64) -> Draw {
 /// device. Two 32-byte draws that differ. A machine with no source reports this check absent.
 fn entropy(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants) {
     let (service, source) = if half.has(flag::RANDOM_NUMBER_GENERATOR_FOUND) {
-        if !g.trng {
+        if !g.true_random_number_generator {
             r.record(
                 check!("entropy"),
                 false,
@@ -923,7 +944,7 @@ fn entropy(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants) {
             );
             return;
         }
-        (slot::RANDOM_NUMBER_GENERATOR, "the JH7110 TRNG")
+        (slot::TRUE_RANDOM_NUMBER_GENERATOR, "the JH7110 TRNG")
     } else if g.entropy {
         let source = match images.entropy_source {
             entropy_source::INSTRUCTION => "the CPU's seed instruction",

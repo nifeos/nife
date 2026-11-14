@@ -99,8 +99,8 @@ pub mod flag {
     pub const RANDOM_NUMBER_GENERATOR_WIRED: u64 = 1 << 4;
     /// The service sent its readiness report before the kernel's deadline.
     ///
-    /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_ANSWERED: u64 = 1 << 5;
+    /// Name: ratified 2026-11-14 (UTC), block 1078.
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED: u64 = 1 << 5;
     /// The bring-up had a clock-and-reset window to work on, so [`super::word::CLOCK_BEFORE`] and
     /// the words after it mean something.
     ///
@@ -126,11 +126,11 @@ pub mod flag {
     ///
     /// Name: provisional.
     pub const RANDOM_NUMBER_GENERATOR_256_BIT: u64 = 1 << 11;
-    /// The progenitor holds disk 0's virtio-mmio trio for the `blockdev` check.
+    /// The progenitor holds disk 0's virtio-mmio trio for the `block_device` check.
     ///
     /// Name: provisional.
     pub const DISK_MEMORY_MAPPED: u64 = 1 << 12;
-    /// The progenitor holds disk 0's virtio-pci trio for the `blockdev` check.
+    /// The progenitor holds disk 0's virtio-pci trio for the `block_device` check.
     ///
     /// Name: provisional.
     pub const DISK_PCI: u64 = 1 << 13;
@@ -206,7 +206,7 @@ mod tests {
             flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY,
             flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING,
             flag::RANDOM_NUMBER_GENERATOR_WIRED,
-            flag::RANDOM_NUMBER_GENERATOR_ANSWERED,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED,
             flag::CLOCK_REPORTED,
             flag::CLOCK_RUNNING,
             flag::CLOCK_RELEASED,
