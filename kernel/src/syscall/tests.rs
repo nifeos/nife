@@ -24,8 +24,16 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let base = crate::memory_region::retype_page(frame_region).expect("retype 0");
     let second = crate::memory_region::retype_page(frame_region).expect("retype 1");
     let third = crate::memory_region::retype_page(frame_region).expect("retype 2");
-    assert_eq!(second, base + page_tables::PAGE_SIZE, "run must be contiguous");
-    assert_eq!(third, second + page_tables::PAGE_SIZE, "run must be contiguous");
+    assert_eq!(
+        second,
+        base + page_tables::PAGE_SIZE,
+        "run must be contiguous"
+    );
+    assert_eq!(
+        third,
+        second + page_tables::PAGE_SIZE,
+        "run must be contiguous"
+    );
     let frame_slot = sched::grant(crate::capability_object::page_frame_run_capability(
         base,
         crate::capability_object::page_frame_run_len(3),
@@ -191,9 +199,11 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
     assert_eq!(count.get(), 3, "one capability names the whole run");
     // SAFETY: the run's pages are ours, retyped above; reading the direct map is how the zeroing
     // is observed rather than assumed.
-    let zeroed = (0..3 * page_tables::PAGE_SIZE).step_by(512).all(|off| unsafe {
-        core::ptr::read_volatile((mmu::phys_to_virt(phys) + off) as *const u64) == 0
-    });
+    let zeroed = (0..3 * page_tables::PAGE_SIZE)
+        .step_by(512)
+        .all(|off| unsafe {
+            core::ptr::read_volatile((mmu::phys_to_virt(phys) + off) as *const u64) == 0
+        });
     assert!(
         zeroed,
         "every page of the run must be zeroed, not only the first"

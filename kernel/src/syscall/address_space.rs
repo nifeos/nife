@@ -122,7 +122,10 @@ fn address_space_map_into(
         };
         let root = space.root();
         for k in 0..count {
-            let (page_phys, page_va) = (phys + k * page_tables::PAGE_SIZE, va + k * page_tables::PAGE_SIZE);
+            let (page_phys, page_va) = (
+                phys + k * page_tables::PAGE_SIZE,
+                va + k * page_tables::PAGE_SIZE,
+            );
             // `phys` is the object the capability names in both arms (§132 (what
             // `PageFrame::REVOKE` owes an overlapping run)).
             match space.map_physical_held(
@@ -222,7 +225,10 @@ pub(super) fn unmap_run_prefix(
     mapped: u64,
 ) {
     for k in 0..mapped {
-        let (page_phys, page_va) = (phys + k * page_tables::PAGE_SIZE, va + k * page_tables::PAGE_SIZE);
+        let (page_phys, page_va) = (
+            phys + k * page_tables::PAGE_SIZE,
+            va + k * page_tables::PAGE_SIZE,
+        );
         mmu::unmap_user_at(root, page_va);
         hold.forget_mapping(page_phys, root, page_va);
     }
@@ -248,7 +254,10 @@ fn address_space_futex(
         return Err(Error::NotPermitted);
     }
     if !va.is_multiple_of(4)
-        || !<crate::arch::mmu::Format as page_tables::PageFormat>::is_in_half(page_tables::Half::Low, va)
+        || !<crate::arch::mmu::Format as page_tables::PageFormat>::is_in_half(
+            page_tables::Half::Low,
+            va,
+        )
     {
         return Err(Error::BadPointer);
     }

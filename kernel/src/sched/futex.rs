@@ -129,7 +129,10 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
 pub(super) fn clear_and_wake(va: u64) {
     if va == 0
         || !va.is_multiple_of(4)
-        || !<crate::arch::mmu::Format as page_tables::PageFormat>::is_in_half(page_tables::Half::Low, va)
+        || !<crate::arch::mmu::Format as page_tables::PageFormat>::is_in_half(
+            page_tables::Half::Low,
+            va,
+        )
     {
         return;
     }

@@ -905,7 +905,10 @@ fn owner_index(rid: u32) -> Option<usize> {
 /// must also map (VT-d 4.1 section 3.16). [`crate::iommu::confine`] adds them to every domain it
 /// builds, so confining a USB controller or the GPU never takes away memory the firmware still
 /// DMAs into. Name: provisional (milestone 594).
-pub(crate) fn for_each_reserved_region(rid: u32, each: &mut dyn FnMut(page_tables::domain::DmaRegion)) {
+pub(crate) fn for_each_reserved_region(
+    rid: u32,
+    each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+) {
     if super::amd_vi::is_active() {
         return super::amd_vi::for_each_reserved_region(rid, each);
     }

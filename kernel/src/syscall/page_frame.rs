@@ -70,7 +70,10 @@ pub(super) fn page_frame_map(
     // One invalidate for the whole run, when this drops.
     let mut batch = mmu::UserMapBatch::new();
     for k in 0..count {
-        let (page_phys, page_va) = (phys + k * page_tables::PAGE_SIZE, va + k * page_tables::PAGE_SIZE);
+        let (page_phys, page_va) = (
+            phys + k * page_tables::PAGE_SIZE,
+            va + k * page_tables::PAGE_SIZE,
+        );
         // Recorded before the leaf, and refused there when the space already maps the page
         // executable: unrecordable means unmappable (§13 (capability revocation and untyped
         // reclamation)). The source is `phys`, the run's base, which a `REVOKE` scopes by

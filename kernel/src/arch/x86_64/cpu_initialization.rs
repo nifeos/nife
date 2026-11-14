@@ -58,7 +58,12 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
     let found = unsafe { read_msr(page_tables::x86_64::pat::MSR) };
     if found != page_tables::x86_64::pat::VALUE {
         // SAFETY: as the read's.
-        unsafe { write_msr(page_tables::x86_64::pat::MSR, page_tables::x86_64::pat::VALUE) };
+        unsafe {
+            write_msr(
+                page_tables::x86_64::pat::MSR,
+                page_tables::x86_64::pat::VALUE,
+            )
+        };
     }
     crate::println!(
         "  pat         : {:#018x} on core {} (was {found:#018x}); entry 1 is write-combining",
