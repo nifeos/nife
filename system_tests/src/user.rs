@@ -9,13 +9,13 @@
 
 // The imports `kernel/src/user.rs` makes for itself. Its children saw them through `use super::*`,
 // private or not; a glob across crates sees only `pub` items, so the suite's half repeats them.
-#[allow(unused_imports)]
-use static_elf::Elf;
 pub use kernel::system_test_access::user::*;
 #[allow(unused_imports)]
 use page_frames::{FRAME_SIZE, PageFrame};
 #[allow(unused_imports)]
 use paging::{Flags, Half, MapError, Mapper};
+#[allow(unused_imports)]
+use static_elf::Elf;
 
 #[allow(unused_imports)]
 use crate::arch::exceptions::{TrapFrame, enter_user};

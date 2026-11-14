@@ -84,7 +84,9 @@ fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
 
     assert_eq!(
         load(&image, 0, &[]).err(),
-        Some(LoadError::NotLoadable(static_elf::Error::WritableAndExecutable)),
+        Some(LoadError::NotLoadable(
+            static_elf::Error::WritableAndExecutable
+        )),
         "a second, writable-executable segment loaded behind a benign first one: the W^X check \
          did not reach every segment",
     );
@@ -135,7 +137,11 @@ fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
 #[test_case]
 fn a_segment_whose_address_range_wraps_is_refused() {
     let vaddr = u64::MAX - page_frames::FRAME_SIZE + 1; // the last page of the space
-    let image = forged_sized(vaddr, static_elf::PF_R | static_elf::PF_X, 4 * page_frames::FRAME_SIZE);
+    let image = forged_sized(
+        vaddr,
+        static_elf::PF_R | static_elf::PF_X,
+        4 * page_frames::FRAME_SIZE,
+    );
 
     // `AddressSpace` is not `Debug`; keep only the entry point so a success is printable.
     let outcome = load(&image, 0, &[]).map(|(_space, entry)| entry);

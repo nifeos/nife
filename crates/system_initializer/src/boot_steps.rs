@@ -282,7 +282,8 @@ pub(super) fn read_boot_programs(fs: &nifefs::Fs<'static>, table: &str) -> BootP
 /// names the table refused; an entry the archive lacks is never a refusal.
 #[inline(never)]
 pub(super) fn measure_spawnable(fs: &nifefs::Fs<'static>, table: &str) -> Spawnable {
-    let mut progs: [Option<static_elf::Elf>; grant_plan::PROGRAM_COUNT] = core::array::from_fn(|_| None);
+    let mut progs: [Option<static_elf::Elf>; grant_plan::PROGRAM_COUNT] =
+        core::array::from_fn(|_| None);
     let mut refused = [""; grant_plan::PROGRAM_COUNT];
     let mut refused_n = 0usize;
     let mut absent = [false; grant_plan::PROGRAM_COUNT];
@@ -663,7 +664,12 @@ fn start_console(
 /// with the console's bytes (§175 (where the kernel's own output goes once userspace owns the
 /// console), ruling B). The ring's grants are released either way.
 #[inline(never)]
-fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&static_elf::Elf<'static>>, request: u64) {
+fn start_system_log(
+    g: &BootEndowment,
+    ut: u64,
+    log_elf: Option<&static_elf::Elf<'static>>,
+    request: u64,
+) {
     if let Some(log_program) = log_elf
         && is_granted(g.kernel_ring)
         && is_granted(g.kernel_ring_cursor)

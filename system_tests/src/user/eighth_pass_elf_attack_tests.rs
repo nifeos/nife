@@ -103,7 +103,11 @@ fn an_elf_whose_segment_arithmetic_overflows_is_refused_as_an_overflow() {
 fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
     let reach =
         mmu::KERNEL_VA_BASE.wrapping_sub(address_space_map::IMAGE_BASE) + page_frames::FRAME_SIZE;
-    let image = forged(address_space_map::IMAGE_BASE, static_elf::PF_R | static_elf::PF_X, reach);
+    let image = forged(
+        address_space_map::IMAGE_BASE,
+        static_elf::PF_R | static_elf::PF_X,
+        reach,
+    );
 
     let refused = load(&image, 0, &[]).err();
     assert!(
@@ -160,7 +164,9 @@ fn an_elf_dressing_writable_executable_in_vendor_bits_is_refused() {
 
     assert_eq!(
         load(&image, 0, &[]).err(),
-        Some(LoadError::NotLoadable(static_elf::Error::WritableAndExecutable)),
+        Some(LoadError::NotLoadable(
+            static_elf::Error::WritableAndExecutable
+        )),
         "OS/vendor flag bits turned a writable executable request into one the loader stopped \
          checking",
     );

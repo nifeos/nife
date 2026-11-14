@@ -40,9 +40,15 @@ use object::{LittleEndian as LE, pe, pod};
 /// `IMAGE_FILE_MACHINE_*` and the `R_*_RELATIVE` type, for each machine this converts.
 fn machine(elf_machine: static_elf::Machine) -> Option<(pe::Machine, static_elf::RelocationType)> {
     match elf_machine {
-        static_elf::EM_X86_64 => Some((pe::IMAGE_FILE_MACHINE_AMD64, static_elf::R_X86_64_RELATIVE)),
-        static_elf::EM_AARCH64 => Some((pe::IMAGE_FILE_MACHINE_ARM64, static_elf::R_AARCH64_RELATIVE)),
-        static_elf::EM_RISCV => Some((pe::IMAGE_FILE_MACHINE_RISCV64, static_elf::R_RISCV_RELATIVE)),
+        static_elf::EM_X86_64 => {
+            Some((pe::IMAGE_FILE_MACHINE_AMD64, static_elf::R_X86_64_RELATIVE))
+        }
+        static_elf::EM_AARCH64 => {
+            Some((pe::IMAGE_FILE_MACHINE_ARM64, static_elf::R_AARCH64_RELATIVE))
+        }
+        static_elf::EM_RISCV => {
+            Some((pe::IMAGE_FILE_MACHINE_RISCV64, static_elf::R_RISCV_RELATIVE))
+        }
         _ => None,
     }
 }
@@ -196,7 +202,9 @@ fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Erro
             static_elf::DT_RELA => rela = Some(value),
             static_elf::DT_RELASZ => relasz = value,
             static_elf::DT_RELAENT => relaent = value,
-            static_elf::DT_REL | static_elf::DT_RELR => return Err(Error::UnsupportedRelocationTable),
+            static_elf::DT_REL | static_elf::DT_RELR => {
+                return Err(Error::UnsupportedRelocationTable);
+            }
             static_elf::DT_PLTRELSZ | static_elf::DT_JMPREL if value != 0 => {
                 return Err(Error::UnsupportedRelocationTable);
             }
@@ -215,7 +223,8 @@ fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Erro
             .and_then(|at| usize::try_from(at).ok())
             .and_then(|at| image.get(at..))
             .ok_or(Error::Truncated)?;
-        let (entry, _) = pod::from_bytes::<static_elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
+        let (entry, _) =
+            pod::from_bytes::<static_elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
         let (r_offset, r_addend) = (entry.r_offset(LE), entry.r_addend(LE) as u64);
         let kind = entry.r_type(LE, false);
         if kind == static_elf::R_RISCV_NONE {

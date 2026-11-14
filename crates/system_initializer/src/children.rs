@@ -158,7 +158,11 @@ const RECLAIM_ATTEMPTS: usize = 64;
 /// `kernel::user::virtio_service::wire_net_server`'s, slot for slot, with
 /// `socket_contract::NO_LISTEN_GRANT`. The caller deletes the trio; this deletes everything else it
 /// made but the endpoint. Failures trap: one means the boot's arithmetic is wrong.
-pub(super) fn build_net_stack(ut: u64, program: &static_elf::Elf, g: &BootEndowment) -> (u64, u64, u64) {
+pub(super) fn build_net_stack(
+    ut: u64,
+    program: &static_elf::Elf,
+    g: &BootEndowment,
+) -> (u64, u64, u64) {
     let mapped = map_page_frame(g.virtio_net_dma, NET_DMA_PEEK_VA, true, ut);
     must_ok(mapped);
     // SAFETY: just mapped read/write, one page; the offset is inside it and outside
@@ -523,7 +527,10 @@ type SessionArm = (u64, u64, u64, Option<u64>, u64);
 /// Build and start `gpu_driver` from the session's region, on `components/src/gpu_driver.rs`'s
 /// slots 0 to 5, and wait for its `UP`. On success the display endpoint and the driver's report
 /// endpoint, which the terminal phase needs next.
-fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &static_elf::Elf) -> Result<(u64, u64), ()> {
+fn start_gpu_driver(
+    l: &GraphicalTerminalLaunch,
+    gpu_program: &static_elf::Elf,
+) -> Result<(u64, u64), ()> {
     let GraphicalTerminalLaunch {
         own_ut,
         region,

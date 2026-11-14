@@ -427,7 +427,10 @@ mod tests {
             Ok(_) => panic!("accepted an image that must be refused"),
             Err(why) => why,
         };
-        assert_eq!(sentence(&bytes), refusal(static_elf::Error::WritableAndExecutable));
+        assert_eq!(
+            sentence(&bytes),
+            refusal(static_elf::Error::WritableAndExecutable)
+        );
         assert_eq!(sentence(&[]), refusal(static_elf::Error::TooSmall));
     }
 

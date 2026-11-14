@@ -10,8 +10,8 @@
 
 #![no_main]
 
-use static_elf::Elf;
 use libfuzzer_sys::fuzz_target;
+use static_elf::Elf;
 
 fuzz_target!(|data: &[u8]| {
     // The shell's streaming note reader runs on bytes nobody has parsed as a program yet, so it is

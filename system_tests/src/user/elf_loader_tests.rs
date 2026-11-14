@@ -85,7 +85,9 @@ fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
 
     assert_eq!(
         load(&image, 0, &[]).err(),
-        Some(LoadError::NotLoadable(static_elf::Error::WritableAndExecutable)),
+        Some(LoadError::NotLoadable(
+            static_elf::Error::WritableAndExecutable
+        )),
     );
 }
 
@@ -101,7 +103,11 @@ fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
 fn an_image_too_large_for_its_band_is_refused_as_too_large() {
     use address_space_map::{IMAGE, IMAGE_BASE, ImagePlacement, PAGE, STACK};
 
-    let image = forged_elf_sized(IMAGE_BASE, static_elf::PF_R | static_elf::PF_X, IMAGE.bytes() + PAGE);
+    let image = forged_elf_sized(
+        IMAGE_BASE,
+        static_elf::PF_R | static_elf::PF_X,
+        IMAGE.bytes() + PAGE,
+    );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
@@ -165,7 +171,8 @@ fn a_bad_binary_is_refused_rather_than_panicking() {
 #[test_case]
 fn the_initial_ramdisk_holds_a_native_executable() {
     let image = loader_subject_image();
-    let e = static_elf::Elf::parse(image).expect("the initial ramdisk is not a loadable native ELF");
+    let e =
+        static_elf::Elf::parse(image).expect("the initial ramdisk is not a loadable native ELF");
 
     assert_eq!(
         e.entry(),

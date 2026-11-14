@@ -103,7 +103,11 @@ fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
     out[56..58].copy_from_slice(&2u16.to_le_bytes()); // phnum
     let segments = [
         (static_elf::PF_R | static_elf::PF_X, base, PAGE),
-        (static_elf::PF_R | static_elf::PF_W, base + PAGE, (IMAGE_PAGES - 1) * PAGE),
+        (
+            static_elf::PF_R | static_elf::PF_W,
+            base + PAGE,
+            (IMAGE_PAGES - 1) * PAGE,
+        ),
     ];
     for (i, (flags, vaddr, memsz)) in segments.into_iter().enumerate() {
         let ph = &mut out[EHDR + i * PHDR..EHDR + (i + 1) * PHDR];
