@@ -122,7 +122,7 @@ table and the reasoning.
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
 | `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
 | `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
-| `glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
+| `byte_glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
 
 Three things the table cannot say:
 
@@ -152,7 +152,7 @@ The cost of a proof is the shape of the code, not the size of the claim:
   meets one of them.
 - A loop Kani bounds too loosely, plus symbolic slice offsets, put whole-parse ELF totality out of
   reach. Proving the loopless leaf arithmetic recovered the panic surface in under a second.
-- Two loops became one in `glob`, and an unwind bound derived from a measurement replaced one from
+- Two loops became one in `byte_glob`, and an unwind bound derived from a measurement replaced one from
   algebra ([`verification/glob-proofs.md`](verification/glob-proofs.md)).
 - A loop over leaf sizes ran past ten minutes; two `if`s and a mask prove in 0.05 s
   ([`verification/paging-blocks.md`](verification/paging-blocks.md)).

@@ -17,13 +17,13 @@ fn the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for() {
     let p = tree::GLOB_PATTERN;
     for name in [tree::GLOB_ONE, tree::GLOB_TWO] {
         assert!(
-            glob::matches(p, name.as_bytes()),
+            byte_glob::matches(p, name.as_bytes()),
             "{name} is in the granted set and the pattern does not match it",
         );
     }
     for name in [tree::GLOB_MISS, tree::GLOB_DIR, tree::GLOB_INNER] {
         assert!(
-            !glob::matches(p, name.as_bytes()),
+            !byte_glob::matches(p, name.as_bytes()),
             "{name} is a control and the pattern matches it, so it proves nothing",
         );
     }
@@ -53,13 +53,13 @@ fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
     let p = tree::MANY_PATTERN;
     for name in tree::MANY_NAMES {
         assert!(
-            glob::matches(p, name.as_bytes()),
+            byte_glob::matches(p, name.as_bytes()),
             "{name} is staged for the sweep and the pattern does not match it",
         );
         assert!(grant::fits(name.as_bytes()), "{name} does not fit a grant");
     }
     assert!(
-        !glob::matches(p, tree::MANY_MISS.as_bytes()),
+        !byte_glob::matches(p, tree::MANY_MISS.as_bytes()),
         "the control matches, so 'the batches are the match' proves nothing",
     );
     assert!(

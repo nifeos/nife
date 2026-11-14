@@ -53,7 +53,7 @@ interfaces = [
     "capability_plan",
     "capability_manifest_note",
     "interfaces_note",
-    "glob",
+    "byte_glob",
     "documentation",
     "device_tree_blob",
     "machine_discovery",

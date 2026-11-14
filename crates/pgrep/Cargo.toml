@@ -12,7 +12,7 @@ license.workspace = true
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
-glob = { version = "0.1.0", path = "../glob" }
+byte_glob = { version = "0.1.0", path = "../byte_glob" }
 ps = { version = "0.1.0", path = "../ps" }
 
 [lints]

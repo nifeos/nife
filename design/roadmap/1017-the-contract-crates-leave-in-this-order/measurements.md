@@ -51,7 +51,7 @@ What each column means:
 | `entropy_contract` | 0 | 1 | 4 | 1 | 17 | 16 | 32 | 30 | 0 | 2 | 5 |
 | `environment_contract` | 0 | 0 | 3 | 1 | 14 | 12 | 23 | 21 | 0 | 7 | 8 |
 | `filesystem_contract` | 0 | 1 | 10 | 1 | 52 | 45 | 118 | 105 | 0 | 263 | 305 |
-| `glob` | 0 | 1 | 2 | 0 | 10 | 9 | 24 | 22 | 0 | 0 | 0 |
+| `byte_glob` | 0 | 1 | 2 | 0 | 10 | 9 | 24 | 22 | 0 | 0 | 0 |
 | `globally_unique_identifier_partition_table` | 0 | 0 | 4 | 0 | 31 | 27 | 59 | 50 | 0 | 75 | 103 |
 | `program_argument_contract` | 0 | 1 | 0 | 0 | 11 | 9 | 12 | 10 | 2 | 1 | 1 |
 | `socket_contract` | 0 | 1 | 4 | 1 | 28 | 26 | 49 | 45 | 0 | 6 | 21 |
@@ -89,7 +89,7 @@ pull request #3022's `carry_interfaces!` brings into every program.
 | package | crates of the 22 it reaches | with the note macro |
 |---|---|---|
 | `disk-tools` | 12: `abi`, `address_space_map`, `block_roster_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `filesystem_contract`, `filesystem_fixture`, `globally_unique_identifier_partition_table`, `socket_contract`, `user_mode_runtime` | 18 |
-| `process-tools` | 13: `abi`, `address_space_map`, `byte_sink_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `glob`, `grant_plan`, `machine_statistics_contract`, `program_argument_contract`, `socket_contract`, `user_mode_runtime` | 16 |
+| `process-tools` | 13: `abi`, `address_space_map`, `byte_sink_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `byte_glob`, `grant_plan`, `machine_statistics_contract`, `program_argument_contract`, `socket_contract`, `user_mode_runtime` | 16 |
 | `core-tools` | 15: the 13 of `process-tools` less `machine_statistics_contract`, plus `calendar`, `environment_contract` and `filesystem_contract` | 18 |
 
 The macro has lived in the leaf crate `interfaces_note` since 2026-11-01 (UTC), so "with the note
@@ -115,7 +115,7 @@ references are in the proposal's table. `grant_plan`'s `../../..` strings are pa
 own tests, not files. Fuzz targets build `byte_sink_contract`, `capability_manifest_note`,
 `domain_name_resolution_contract`, `domain_name_system`, `filesystem_contract`,
 `globally_unique_identifier_partition_table` and `grant_plan`. Files in nife that name a crate's
-path range from 5 (`glob`) to 36 (`user_mode_runtime`).
+path range from 5 (`byte_glob`) to 36 (`user_mode_runtime`).
 
 `nifeos/jh7110_entropy` at `9b8769f`: its `Cargo.toml` has 31 lines and no path or `git` dependency.
 `git grep` finds `nifeos/nife` only in its README and two documents, and its workflows call

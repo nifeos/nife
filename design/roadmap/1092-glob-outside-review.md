@@ -7,9 +7,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1092. `glob`: what an outside maintainer would fix before the crate leaves
+# 1092. `byte_glob`: what an outside maintainer would fix before the crate leaves
 
-Raised by a read-only outside review of `crates/glob` at `nifeos/nife@cf1328af6`, read the way a
+Raised by a read-only outside review of the crate then at `crates/glob` (now `crates/byte_glob`) at `nifeos/nife@cf1328af6`, read the way a
 maintainer meeting it for the first time would. The review changed nothing and opened nothing; every
 item below is work for a lane. No review package exists for this crate yet, so the baseline the review
 took as settled is the crate's own record: [notes/glob.md](../../notes/glob.md),
@@ -17,7 +17,7 @@ took as settled is the crate's own record: [notes/glob.md](../../notes/glob.md),
 and [notes/verification/glob-proofs.md](../../notes/verification/glob-proofs.md). The four scope
 decisions those record are `**` out, qualifiers out, POSIX classes out and a leading dot special by
 default. They stay closed here. So do the one-backtrack algorithm, the three-byte proof domain and
-the ratified crate name `glob`. The exception is where a later rule or a fact outside the tree bears
+the ratified crate name `byte_glob`. The exception is where a later rule or a fact outside the tree bears
 on them, and the text says so where it does. Milestone 1017 (the contract crates leave in this order) places the crate
 at step 5 and owns the move; this block owns the findings that land inside that path.
 
@@ -50,7 +50,7 @@ maintainer decides it.
 
 ### P0: the name, the names, and what does not stand alone
 
-#### P0-1. The crate name is taken on crates.io
+#### P0-1. The crate name was taken on crates.io
 
 `glob` is rust-lang/glob, version 0.3.4, over 700 million downloads, the most widely used glob
 crate in the ecosystem. The ratification of the crate name as a standard term, which it is, did not weigh the registry. The tree already knows the other crate: the survey behind
@@ -64,9 +64,9 @@ crate and rust-lang's cannot name them both without a `package =` rename. The ho
 makes this latent, not absent: a name chosen for a repository and then changed for publication is two
 names for one thing.
 
-Change: ratify a qualified registry name before the move creates the repository, and apply it in the tree
-first (three dependents and the manifest), under the rename rules of `design/naming.md`. Decision 1
-below carries the recommendation. Evidence: `crates/glob/Cargo.toml` line 2; the registry. One-way.
+Change: the crate is `byte_glob` in the tree, in the directory, the package, the library and every
+caller, under the rename rules of `design/naming.md`. Decision 1 below records the ruling. Evidence:
+the manifest's `name` line; the registry. One-way.
 S for the rename, since the crate is small and has three dependents.
 
 #### P0-2. Seven public names carry no provenance and are not ratified
@@ -76,7 +76,7 @@ S for the rename, since the crate is small and has three dependents.
 glob` reports "no block" for each, and `design/module-block-baseline.txt` lines 3146 to 3158 hold
 them as baseline violators. The move strips `Name:` blocks, so whatever is not ratified in a review
 package before the move leaves the tree as an unratified public API. The names themselves are mostly
-right; Decision 2 below lists them with one recommended change. Evidence: `crates/glob/src/lib.rs`
+right; Decision 2 below lists them with one recommended change. Evidence: `crates/byte_glob/src/lib.rs`
 lines 33, 76, 91, 102, 118, 140 and 236. One-way (public API). S, once ruled.
 
 #### P0-3. The integration test links two crates that do not leave with it
@@ -89,7 +89,7 @@ matcher. Its own header says it lives here only because the fixture crate does n
 matcher; a dev-dependency the other way creates no cycle and is the ordinary shape.
 
 Change: move the file to `crates/filesystem_fixture/tests/` (or `crates/grant_plan/tests/`, which
-already depends on `glob`) with `glob` as a dev-dependency, and delete the two dev-dependencies here.
+already depends on `byte_glob`) with `byte_glob` as a dev-dependency, and delete the two dev-dependencies here.
 Two-way. S.
 
 #### P0-4. The shipped text cites the tree it is leaving
@@ -143,8 +143,8 @@ repository is red. Change: `naive_matches` or `exhaustive_matches`. Two-way. S.
 
 #### P1-2. The falsification patches and their records are written for the tree's paths
 
-All six patches diff `a/crates/glob/src/lib.rs`, and the six `Falsification: replayable` records
-name `crates/glob/falsifications/<name>.patch`. The template's `falsify.py` accepts only
+All six patches diff `a/crates/byte_glob/src/lib.rs`, and the six `Falsification: replayable` records
+name `crates/byte_glob/falsifications/<name>.patch`. The template's `falsify.py` accepts only
 `falsifications/<module.path>.<harness>.patch` (its `CONVENTIONAL` regex) and applies with `git apply
 -p1` at the crate root, so each would fail as "no longer applies", which the gate counts as a failure
 and never a skip. The hunk headers are also about 150 lines stale; they apply at an offset today
@@ -206,12 +206,15 @@ are not reopened.
 
 ### Decision 1. The registry name of the crate (P0-1)
 
-Recommendation: `byte_glob`.
+Ruled 2026-11-14 (UTC): the crate is named `byte_glob`, in code and package alike. `crates/glob` is
+`crates/byte_glob`, the package and the library are `byte_glob`, and every caller says
+`byte_glob::matches`. The old name carries no `doc(alias)`. The `Name:` block is ratified for
+`byte_glob`. The reasoning that led here follows.
 
 Background. The crate is a glob matcher, and `glob` is the right word for it. On crates.io that word
 belongs to rust-lang's crate, which matches `str` patterns against paths, supports `**`, and has
 over 700 million downloads. A crate name is the one name nobody can change after a publish, and the move creates the repository with whatever name the crate then has. The in-tree ratification of
-`glob` stands as a description; the question is the qualifier.
+`glob` stood as a description; the question was the qualifier.
 
 The naming page's rule for crates: one word where one will do, an underscore where the name qualifies
 a thing. One word will not do, so the qualifier should say what distinguishes this matcher from the
@@ -223,7 +226,7 @@ Options, each verified free on crates.io:
 
 - `byte_glob`: names the one property every other Rust glob crate lacks and the crate's own doc
   leads with ("Bytes, as `fnmatch(3)` in the C locale"). Reads at a call site as
-  `byte_glob::matches(pattern, name)`. Recommended.
+  `byte_glob::matches(pattern, name)`. Ruled.
 - `name_glob` or `filename_glob`: names the scope (one name, no path). `name_glob` is terse and
   slightly ambiguous ("a glob of names"); `filename_glob` is clear and long.
 - `component_glob`: names the scope in path vocabulary a Unix reader knows and others do not.
@@ -231,7 +234,7 @@ Options, each verified free on crates.io:
 - `fnmatch`: the C function's name, free, and a standard term; refused by the naming page because it
   is an abbreviation ("filename match") and a crate takes a noun.
 
-Concrete example. With the recommendation, `swish`'s manifest line becomes
+Concrete example. With the ruling, `swish`'s manifest line becomes
 `byte_glob = { version = "0.1.0", git = ..., rev = ... }` and `words.rs` reads
 `byte_glob::has_magic(token)`. Without a change, the template's release dry run for this crate would
 print the trusted-publishing door for a crate owned by rust-lang, and the registry would refuse a real run.
@@ -280,7 +283,7 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 ## Index row
 
-An outside reading of `glob` before it leaves. Six items block the move. Another crate holds the crate name on crates.io (Decision 1 rules it). Seven public names lack ratification (Decision 2). A test links two
+An outside reading of `byte_glob` before it leaves. Six items block the move. Another crate holds the crate name on crates.io (Decision 1 rules it). Seven public names lack ratification (Decision 2). A test links two
 staying crates. Shipped text carries nife citations. The manifest inherits from the workspace. There
 is no README. Seven go before the first tag: a test name the question gate refuses, patch paths, the
 inline proof module, `forbid(unsafe_code)`, the missing `/` caveat, the module doc's opening, and

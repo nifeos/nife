@@ -8,12 +8,12 @@ use super::*;
 
 /// **Whether this token is a designation to resolve rather than a word to print.**
 ///
-/// `glob::has_magic` first, deliberately: an [`echo`] word is arbitrary text (`a:b` is not a path
+/// `byte_glob::has_magic` first, deliberately: an [`echo`] word is arbitrary text (`a:b` is not a path
 /// and must not be refused as one), so nothing asks whether a token is a *nameable* path until it is
 /// established that it is a pattern at all. Once it is, a pattern anywhere but the last component is
 /// refused, because selecting directories to walk is an authority question (notes/glob.md).
 pub fn is_pattern(token: &[u8]) -> Result<bool, Refusal> {
-    if !glob::has_magic(token) {
+    if !byte_glob::has_magic(token) {
         return Ok(false);
     }
     grant_plan::expand::magic_component(token)
@@ -83,7 +83,7 @@ pub fn designation(
         let name = rest.split(|&b| b == b'/').next().unwrap_or(rest);
         // A quoted word with a glob byte in it is bytes the program hears, never a pattern this
         // shell expands: asking the directory for it would designate whatever it matched.
-        if rest.first() == Some(&b'/') || name == b".." || name.is_empty() || glob::has_magic(name)
+        if rest.first() == Some(&b'/') || name == b".." || name.is_empty() || byte_glob::has_magic(name)
         {
             return Ok(());
         }

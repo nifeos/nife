@@ -99,7 +99,7 @@ pub fn each_word(
         let end = token.as_ptr() as usize - rest.as_ptr() as usize + token.len();
         rest = &rest[end..];
         let w = word::read(token)?;
-        if !w.quoted && glob::has_magic(w.text) {
+        if !w.quoted && byte_glob::has_magic(w.text) {
             return Err(Refusal::PatternInArguments);
         }
         f(w.text)?;

@@ -67,7 +67,7 @@ SCRATCH = pathlib.Path('target/interface-stability')
 # says protocol), and the named formats two programs agree on. Three members sit outside that
 # note's census: `capability_manifest_note` was born on 2026-09-26, after it, and is exactly the
 # kind of crate the division names; `machine_statistics_contract` holds the one definition of where
-# each word of the kernel's statistics page lives, and `glob` is the pattern language the shell's
+# each word of the kernel's statistics page lives, and `byte_glob` is the pattern language the shell's
 # expansion and its grant share. Membership is by the crate's name TODAY; a week in the past counts
 # the crates whose directory later became one of these (LINEAGE below), which is a restatement like
 # every other series on the metrics page.
@@ -79,7 +79,7 @@ CONTRACTS = (
     'login_contract', 'machine_statistics_contract', 'socket_contract', 'std_runtime_contract',
     'supervision_contract',
     'hot_swap_contract',
-    'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'glob',
+    'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'byte_glob',
     'globally_unique_identifier_partition_table', 'grant_plan', 'capability_plan', 'compositor',
     'line_editor', 'capability_manifest_note',
     # Two more of the formats the first cut links, added 2026-10-29 (UTC) by

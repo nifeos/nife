@@ -493,7 +493,7 @@ direct_memory_access_validator	127	the DMA-confinement validator, no descriptor 
 network_time_protocol	20	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	34	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	56	the partition table's CRC-32, its round trips, and partitions that overlap
-glob	545	matching is total, and a hostile pattern cannot be made to blow up
+byte_glob	545	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth
 subtree_scope	216	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 counter_frequency_contract	4	the counter frequency page: a frame reads as unknown exactly when its magic differs, and a built page reads back its rate

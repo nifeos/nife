@@ -147,7 +147,7 @@ alternative. It waits until a contract changes on its own schedule, which #1389 
 The judgment calls, each a place the table could reasonably differ:
 
 - `calendar` and `entropy_backend` are in `runtime`, since they are the time and randomness a libc
-  provides. `glob`, `documentation`, `boot_ladder`, `device_tree_blob` and `machine_discovery` are
+  provides. `byte_glob`, `documentation`, `boot_ladder`, `device_tree_blob` and `machine_discovery` are
   in `contracts`. Each is a pattern language, a store, a byte sequence, a
   page or a machine description that two programs read the same way.
 - `line_editor` is an interface of `terminal`, and `compositor` of `display`. Each crate is the

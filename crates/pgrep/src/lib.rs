@@ -9,7 +9,7 @@
 //! # BUGS
 //!
 //! - The selector cannot be typed at the prompt, so the shipped `pgrep` is `pgrep '*'`.
-//! - It is glob (`glob::Dot::Ordinary`), not an extended regex: `pgrep 'r.*'` does not work.
+//! - It is glob (`byte_glob::Dot::Ordinary`), not an extended regex: `pgrep 'r.*'` does not work.
 //! - No exit status: "nothing matched" is a diagnostic sentence, since `exit` takes no code.
 //! - "none of the N processes" counts the domain as this walk saw it, not members born mid-walk.
 //! - The survey cursor must never be exposed here: it leaks thread-table density.
@@ -91,15 +91,15 @@ impl Selector {
     /// [`NONE`](Selector::NONE). The names are `ps::state_name`'s, so the word a person types is the
     /// word `ps` printed in the `STATE` column and there is no second vocabulary to learn.
     ///
-    /// `glob::Dot::Ordinary`, because a state name never begins with a dot and the leading-dot rule
+    /// `byte_glob::Dot::Ordinary`, because a state name never begins with a dot and the leading-dot rule
     /// is a filename-listing convention (see this module's `BUGS`).
     pub fn from_pattern(pattern: &[u8]) -> Selector {
         let mut mask = 0u64;
         for code in STATES {
-            if glob::matches_with(
+            if byte_glob::matches_with(
                 pattern,
                 ps::state_name(code).as_bytes(),
-                glob::Dot::Ordinary,
+                byte_glob::Dot::Ordinary,
             ) {
                 mask |= 1 << code;
             }

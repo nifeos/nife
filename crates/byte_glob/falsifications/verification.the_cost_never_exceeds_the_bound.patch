@@ -1,14 +1,14 @@
-Falsifies `glob::verification::the_cost_never_exceeds_the_bound`.
+Falsifies `byte_glob::verification::the_cost_never_exceeds_the_bound`.
 
 The defect: `cost_bound` loses its dependence on the name length: the backtracking term is dropped, so a
 pattern that backtracks across a long name is charged as though it never did.
 
 Expected to fail: the harness's `assert!(steps <= cost_bound(plen, nlen))`.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
 index 661ecd445..cbfa0b7af 100644
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -376,6 +376,4 @@ pub const fn cost_bound(pattern_len: usize, name_len: usize) -> usize {
          .saturating_mul(name_len.saturating_add(pattern_len).saturating_add(1));
 -    iterations

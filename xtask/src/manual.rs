@@ -31,7 +31,7 @@ const DOC_BUNDLES: &[(&str, &[&str])] = &[
             "notes/capabilities.md",
         ],
     ),
-    ("glob", &["notes/glob.md"]),
+    ("byte_glob", &["notes/glob.md"]),
 ];
 
 /// Where the store is staged on the host before it is imported into the filesystem image.
