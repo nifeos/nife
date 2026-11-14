@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-08-30
 milestone_dependencies: none
 decision_dependencies: 46, unwritten
@@ -211,6 +211,17 @@ nife image until it is given.
 - The 1 KiB and 2 KiB mount failures are not yet explained.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
   round.
+
+## Follow-on
+
+- **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
+  upstream work, our own tests and the conditions above.
+- **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the safety
+  arguments, the cast replacement, the fuzz targets and the Kani harnesses. Each text goes to the
+  architect before anyone files it.
+- **Outstanding.** Our side: the oracle, the image corpus, the write-reordering and power-cut sweeps,
+  hostile-image fuzzing, and `ext4_server` itself.
+- **Outstanding.** The adoption ruling under §46 (dependency rule), which no lane can give.
 
 ## Index row
 
