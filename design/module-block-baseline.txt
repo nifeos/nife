@@ -1073,7 +1073,6 @@ crates/clock_contract/src/lib.rs::ClockPage
 
 crates/clock_contract/src/lib.rs::GOLDFISH
 
-crates/clock_contract/src/lib.rs::MAGIC
 
 crates/clock_contract/src/lib.rs::NONE
 
