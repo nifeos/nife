@@ -288,11 +288,11 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
   `management_data_io` rename ruled the same day is built too.
 
-- **Outstanding.** The other review items stay open. They are the manifest and README work (items
-  2 and 7 onward), the bounds on `receive` and `reclaim` (item 3), the visibility rule for register
-  constants (item 6), the template's address rule and acronym findings (items 1 and 11) and the
-  stranger run. The architect still has to rule the two Motorcomm alias sets and the remaining
-  renames the register gate names. A lane builds each ruling when it arrives.
+- **Outstanding.** The other review items stay open. Those are the manifest and README work (items
+  2 and 7 onward), the bounds on `receive` and `reclaim` (item 3) and the visibility rule for
+  register constants (item 6). They also include the template's address rule and acronym findings
+  (items 1 and 11) and the stranger run. The architect still has to rule the two Motorcomm alias
+  sets and the remaining renames the register gate names. A lane builds each ruling when it arrives.
 
 ## Index row
 
