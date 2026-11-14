@@ -21,8 +21,8 @@ The first four rows are radon's and live in a board profile (milestone 324 part 
 | `uboot` | radon | `U-Boot ` followed by a word that is not `SPL`/`TPL`, or `StarFive #` | runbook, confirmed both ways |
 | `handoff` | radon | `Starting kernel ...` | runbook, confirmed |
 | `banner` | every | `boot_ladder::Heads::banner` (`nife on `) | `kernel/src/main.rs`, confirmed |
-| `machine` | every | `boot_ladder::Heads::machine` | milestone 268 |
-| `selftest` | every | `boot_ladder::Heads::self_test` | milestone 268 |
+| `machine` | every | `boot_ladder::Heads::machine` | milestone 268 (every architecture boots the same way) |
+| `selftest` | every | `boot_ladder::Heads::self_test` | milestone 268 (every architecture boots the same way) |
 | `tour` | riscv64 | `boot_ladder::Heads::tour` | `kernel/src/main.rs`, confirmed |
 | `prompt` | every | `boot_ladder::Heads::prompt` | milestone 268 |
 | `soak` | every | `soak-test: started` | milestone 219 |

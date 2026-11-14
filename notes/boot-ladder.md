@@ -17,9 +17,9 @@ $
 The heads of those four lines live in one crate, `crates/boot_ladder`, because three binaries agree
 on them (the kernel, `swish`, and `serial_console`) and AGENTS.md rule 7 says that makes them a
 crate. The crate fixes each head's shape and takes the system's name from its caller, so it names
-no system: nife builds one `boot_ladder::Heads` from `nife` in each program that prints or reads a
-head (the kernel's console, `swish`, `boot_self_test` and `serial_console`, whose `HEADS` xtask
-reads). The tails carry numbers and are free to improve; a matcher keys on the head only.
+no system. nife builds one `boot_ladder::Heads` from `nife` in each program that prints or reads a
+head: the kernel's console, `swish`, `boot_self_test` and `serial_console`, whose `HEADS` xtask
+reads. The tails carry numbers and are free to improve; a matcher keys on the head only.
 
 ## Why the ladder exists at all
 

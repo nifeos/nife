@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: NOT-STARTED
 raised: 2026-11-11
 milestone_dependencies: 972, 1017
 decision_dependencies: 305
@@ -108,18 +108,18 @@ go for creating it; that is not a new decision.
 ### The heads are fixed shapes after the caller's system name
 
 Ruled 2026-11-14 (UTC), option A. The crate names no system. It fixes the shape of each head and
-takes the system's name from its caller: `Heads::new(name)` yields the seven heads that begin with
-the name (`banner`, `machine`, `self_test`, `self_test_subject`, `tour`, `prompt`, `screen_held`),
-each a `Head` that prints through `Display` and matches a line in place, so neither side allocates
-and the kernel can use it. nife passes `nife`, so every byte printed and matched is the one stored
+takes the system's name from its caller. `Heads::new(name)` yields the seven heads that begin with
+the name (`banner`, `machine`, `self_test`, `self_test_subject`, `tour`, `prompt`, `screen_held`).
+Each is a `Head` that prints through `Display` and matches a line in place, so neither side
+allocates and the kernel can use it. nife passes `nife`, so every byte printed and matched is the one stored
 logs, board profiles and gates already hold, and a test in `serial_console` pins the nife heads to
 those bytes.
 
-The nine shapes are ratified as printed: `<system> on `, `<system> machine: `,
+The ruling ratifies the nine shapes as printed: `<system> on `, `<system> machine: `,
 `<system> self-test: `, `<system> self-test subject: thread `,
 `<system>: the capability core runs on `, `<system> capability shell`,
 `<system> screen: held for the host; `, and inside the verdict `FAILED: ` and `absent: `. The shell
-banner's text is unchanged and takes no period. The names of the accessors and types are
+banner keeps its text and takes no period. The names of the accessors and types are
 provisional, under the decision below.
 
 Prior art (recalled, not read in this review, unless stated): seL4's `sel4test` ends a green run with one fixed sentence that its CI harness matches. Zephyr's `twister` console harness matches `PROJECT EXECUTION SUCCESSFUL` or `FAILED`. Linux's KTAP (`Documentation/dev-tools/ktap.rst`)
@@ -159,10 +159,10 @@ Example: a third-party console reader written against the released crate reads
 ### The printed check names spell out their words
 
 Ruled 2026-11-14 (UTC). Of the fifteen names the verdict prints, `blockdev` becomes `block_device`
-and `trng` becomes `true_random_number_generator`. The other thirteen, `device_interrupt` included,
-are ratified as printed. The self-test program's slot and the kernel half's flag that name the
-generator follow: `TRUE_RANDOM_NUMBER_GENERATOR` and `TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED`. No
-list of old spellings is kept: a reader matches the current names only, and a stored log that
+and `trng` becomes `true_random_number_generator`. The ruling ratifies the
+other thirteen as printed, `device_interrupt` included. The self-test program's slot and the kernel half's flag that name the
+generator follow: `TRUE_RANDOM_NUMBER_GENERATOR` and `TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED`. The
+crate keeps no list of old spellings: a reader matches the current names only, and a stored log that
 prints an older one is history.
 
 Prior art: Linux kselftest names its suites by directory and abbreviates freely (`bpf`, `kvm`,
@@ -178,8 +178,8 @@ The comparison with nearby work is in [the appendix](1078-boot-ladder-outside-re
 
 ## What needs the architect
 
-The ten public names, above; the heads and the check names are ruled. Nothing else here is one-way: the manifest, the README, the tests, the
-`Verdict` type and the nife-side gate are the maintainer's.
+The ten public names, above; the architect has ruled on the heads and the check names. Nothing
+else here is one-way: the manifest, the README, the tests, the `Verdict` type and the nife-side gate are the maintainer's.
 
 ## Done when
 
@@ -201,4 +201,4 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 ## Index row
 
-An outside review of `boot_ladder` before it leaves found three manifest and file items that block the move. It found six to land before the first tag. They are a shared `Verdict` type so the printer and its three readers agree by construction, `const` invariants on the check list, real tests, eight hand-spelled literals in `xtask`, ten names to ratify, and a false boundary claim. It found four items for later. The heads are ruled to be fixed shapes after a system name the caller supplies, ratified as printed, and the check names `block_device` and `true_random_number_generator` are ruled with the other thirteen ratified. One ruling remains for the architect: three renames among the ten public names.
+An outside review of `boot_ladder` before it leaves found three manifest and file items that block the move. It found six to land before the first tag. They are a shared `Verdict` type so the printer and its three readers agree by construction, `const` invariants on the check list, real tests, eight hand-spelled literals in `xtask`, ten names to ratify, and a false boundary claim. It found four items for later. Two rulings hold. The heads are fixed shapes after a system name the caller supplies, ratified as printed. Two check names become `block_device` and `true_random_number_generator`, and the other thirteen stand as printed. One ruling remains for the architect: three renames among the ten public names.

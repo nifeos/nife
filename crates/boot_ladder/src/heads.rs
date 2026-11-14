@@ -47,6 +47,8 @@ impl<'a> Heads<'a> {
     ///
     /// Deliberately generic across architectures: a recogniser that knew only one board's wording
     /// would report a healthy board of another kind as never having booted.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn banner(&self) -> Head<'a> {
         self.head(" on ")
     }
@@ -56,6 +58,8 @@ impl<'a> Heads<'a> {
     /// Printed by the kernel as the **last** line of its machine description, and that position is
     /// the point: reaching it means the whole description printed, which is the claim a ladder rung
     /// should make. A header would only have meant the block started.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn machine(&self) -> Head<'a> {
         self.head(" machine: ")
     }
@@ -67,6 +71,8 @@ impl<'a> Heads<'a> {
     /// kernel's; the kernel prints it itself only when it has no such program to hand the rest to.
     /// [`crate::verdict::Verdict`] renders it. The counts are there on success as well as on
     /// failure, so that "ran nothing and passed" is distinguishable from "ran the set and passed".
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn self_test(&self) -> Head<'a> {
         self.head(" self-test: ")
     }
@@ -78,6 +84,8 @@ impl<'a> Heads<'a> {
     /// Deliberately not [`self_test`](Heads::self_test) with more after it: a matcher that finds
     /// the verdict by its head must not find this line. [`crate::verdict::SubjectLine`] renders it
     /// and [`crate::verdict::subject_thread`] reads it back.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn self_test_subject(&self) -> Head<'a> {
         self.head(" self-test subject: thread ")
     }
@@ -89,6 +97,8 @@ impl<'a> Heads<'a> {
     /// hands over to the first program, so it says the machine was described and the kernel's half
     /// of [`SELF_TEST_CHECKS`](crate::SELF_TEST_CHECKS) ran. The
     /// [`self_test`](Heads::self_test) verdict follows it and says whether they passed.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn tour(&self) -> Head<'a> {
         self.head(": the capability core runs on ")
     }
@@ -100,6 +110,8 @@ impl<'a> Heads<'a> {
     /// signal that the boot finished. Match it whole, without the period.
     ///
     /// See the crate's `BUGS` for why the banner and not the prompt itself.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn prompt(&self) -> Head<'a> {
         self.head(" capability shell")
     }
@@ -110,6 +122,8 @@ impl<'a> Heads<'a> {
     /// Not a rung, but a line two binaries agree on: the kernel prints it when its boot command
     /// line asks it to hold, and a host that wants a screendump waits for it, takes the dump and
     /// answers. A boot that was not asked to hold never prints it.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1078-console-heads-name-the-system`.
     pub const fn screen_held(&self) -> Head<'a> {
         self.head(" screen: held for the host; ")
     }

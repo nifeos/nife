@@ -404,7 +404,8 @@ fn riscv64_from_our_volume() -> bool {
 
 /// The lines every stick boot must print, in [`stick_boot`]'s order and for its reasons. The
 /// self-test verdict is its prefix here, because what follows the count depends on the machine
-/// (a check whose device it lacks is `absent`); [`verdict_failed`] is what requires it green.
+/// (a check whose device it lacks is `absent`); [`verdict_failed`] is what requires it green. The
+/// first is the loader's banner, which still names milestone 87 (the x86_64 bare-metal machine).
 fn booted() -> [String; 3] {
     [
         "nife uefi_loader: milestone 87".to_string(),
