@@ -19,7 +19,7 @@ module links nife's `capability_plan`, and the cut leaves that module here first
 crate name (ratified), `Event::Suspend`, `Event::Tab` and the badge and opcode values of `proto` as
 settled, together with §232 (the `line_editor` swap contract) and §295 (the line editor's crate
 root splits into module files). No review package exists for this crate under
-`notes/crate-reviews/`, so the baseline is thinner than the other crates' and this block says so.
+`notes/crate-reviews/`, so the baseline is thinner than other crates'.
 Three names #2797 ratified, `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM`, are reopened here. The later unit rule (design/naming.md, "Units": a limit opens `MAXIMUM_` and ends with its unit) contradicts them. The rule in force is that a release review rechecks a name ratified before a later rule.
 
 Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
@@ -161,10 +161,14 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
 
 ## Follow-on
 
-- **Outstanding.** Items 1 to 4: the move commit's manifest and license work, the cut of `proto`
-  and `component` (Decision 1), the public names (Decisions 2 and 3) and the gate spellings that
-  follow the cut. The ledger names each with its reason. Checked by reading the ledger rows
-  against the crate after the commit that built the done items.
+- **Outstanding.** Items 1, 3 and 4: the move commit's manifest and license work, the public names
+  (Decisions 2 and 3) and the gate spellings that follow the cut. The ledger names each with its
+  reason.
+- **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
+  the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
+  program holds the two `QUIESCED` values equal.
+- **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
+  as open.
 
 ## Decisions for the architect
 
@@ -258,16 +262,6 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). 
   re-verify it against its source.
 - Whether `abbreviations.py` is a gate or a report in the template's `check` job stays
   unverified; item 4 lists its 40 findings either way.
-
-## Follow-on
-
-- **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
-  the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
-  program holds the two `QUIESCED` values equal.
-- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decisions 2 and 3; none was started, which a
-  read of the items against the crate confirms.
-- **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
-  as open.
 
 ## Index row
 

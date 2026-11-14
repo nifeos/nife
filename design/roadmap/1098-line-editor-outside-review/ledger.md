@@ -17,7 +17,7 @@ names the reason it waits.
 | 6 fuzz targets | DONE | `fuzz/fuzz_targets/line_editor_feed.rs` and `line_editor_handoff.rs` |
 | 6 Kani harnesses | DONE | `a_control_sequence_leaves_the_cursor_inside_the_line` and `a_range_delete_removes_exactly_its_range`, each with a falsification patch |
 | 7 handoff layout | DONE | the `handoff` module documents the layout, the 2688-byte bound and the bump rule; `the_blob_layout_is_pinned_byte_for_byte` and `a_full_blob_is_the_documented_size` hold them |
-| 8 one `QUIESCED` | LEFT | the wire half left for `terminal_contract`, a leaf with no dependencies by design; a test holding it equal to `hot_swap_contract` belongs in the component that links both |
+| 8 one `QUIESCED` | DONE | a `const` assertion in the `line_editor` program holds the two values equal |
 | 9 stack copies | DONE | `yank` reads the kill buffer in place (`a_yank_into_a_nearly_full_line_inserts_what_fits`); `restore` reads each history entry in place and `RawQueue::save` writes the ring in two runs (`a_handed_off_discipline_carries_on_where_the_old_one_stopped`, `a_wrapped_raw_queue_round_trips`) |
 | 10 `csi_move` bound | DONE | a `const` assertion ties the buffer to `LINE_MAXIMUM`, a `debug_assert` holds the distance; `the_largest_cursor_move_is_a_whole_sequence` |
 | 11 three repaints | DONE | `start_line` and `clear_and_repaint` call `repaint`; the existing repaint tests hold the bytes |

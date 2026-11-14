@@ -205,7 +205,7 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 - **Outstanding.** The three decisions above (the owner string, the public names, the crate name), which the architect rules. Checked: ledger rows 4, 9 (public lengths) and 10.
 - **Outstanding.** The move's own work: manifest rows, README and license files, the citation rewrite with the passive-voice pass, the fuzz opt-in and the carried mutation exemptions (items 1, 2, 3, 5, 11, 15). Checked: each needs the moved repository or the template's gates.
 
-What is done and what is left, item by item, is in [the ledger](1096-interfaces-note-outside-review/ledger.md).
+[The ledger](1096-interfaces-note-outside-review/ledger.md) lists each item with its state.
 
 ## Done when
 

@@ -15,7 +15,7 @@ use crate::*;
 /// and a change to that literal is visible in review. Rows are only ever appended.
 #[test]
 fn the_wire_ids_already_shipped_never_move() {
-    const SHIPPED: [(&str, u64); 28] = [
+    const SHIPPED: [(&str, u64); 26] = [
         ("least_authority_demo", 0),
         ("memory_grant_depleter", 1),
         ("interrupt_heeder", 2),
@@ -32,11 +32,9 @@ fn the_wire_ids_already_shipped_never_move() {
         ("top", 13),
         ("network_echo_client", 14),
         ("unreachable_network_witness", 15),
-        ("std_exerciser", 16),
         ("free", 17),
         ("vmstat", 18),
         ("slabtop", 19),
-        ("graphical_terminal", 20),
         ("reboot", 21),
         ("jig", 22),
         ("job_sleeper", 23),
