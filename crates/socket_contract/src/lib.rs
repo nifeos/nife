@@ -448,7 +448,8 @@ pub mod ephemeral {
         fn a_position_is_a_port_in_range_and_the_clock_never_runs_backwards() {
             let position: u64 = kani::any();
             let port = port_at(position);
-            assert!(port >= LO && port <= HI);
+            // `HI` is the port type's maximum, so only the lower bound can fail.
+            assert!(port >= LO);
             let earlier: u64 = kani::any();
             let later: u64 = kani::any();
             kani::assume(earlier <= later);
