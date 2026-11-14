@@ -30,7 +30,7 @@
 /// does not. Version 1 includes the reply to a spawner's control `CALL` ([`refusal`]).
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its version. The
-/// value is frozen at 1, ruled 2026-11-14 (UTC) (milestone 1086, item 3).
+/// value is frozen at 1, ruled 2026-11-14 (UTC).
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 11, naming the name resolver
@@ -40,7 +40,7 @@ pub const VERSION: u32 = 1;
 /// tree to it. A program declares the pair of this id and [`VERSION`].
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface
-/// identity. The value is frozen at 11, ruled 2026-11-14 (UTC) (milestone 1086, item 3).
+/// identity. The value is frozen at 11, ruled 2026-11-14 (UTC).
 pub const INTERFACE_ID: u64 = 11;
 
 mod wire;

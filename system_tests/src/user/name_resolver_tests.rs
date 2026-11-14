@@ -405,9 +405,9 @@ fn grant_answered(service: RendezvousId, badge: u32, zone: &[u8]) -> Result<(), 
     answer
 }
 
-/// **A spawner that `CALL`s a grant's last piece is told whether the grant took, and why not**
-/// (milestone 1086, decision 2): a good zone is accepted, a zone that is not a host name is refused
-/// as `BadZone`, and a forget for a badge that holds nothing is refused as `NoSuchGrant`.
+/// **A spawner that `CALL`s a grant's last piece learns whether the grant took, and why not**: the
+/// resolver accepts a good zone, refuses a zone that is not a host name as `BadZone`, and refuses a
+/// forget for a badge that holds nothing as `NoSuchGrant`.
 ///
 /// No network and no entropy service: a grant asks neither, so one endpoint nobody serves stands
 /// in for both, and the test runs on every machine.

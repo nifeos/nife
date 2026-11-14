@@ -16,8 +16,8 @@ the next lanes change before the crate moves to `nifeos/domain_name_resolution_c
 There is no review package for this crate in `notes/crate-reviews/`, so this block has no settled
 baseline to defer to. It takes as settled only what the tree itself records.
 The architect ratified the crate name (`src/lib.rs` lines 22 to 24). Pull request #2797 ratified
-the three constants `NAME_TEXT_MAXIMUM`, `MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`. The interface
-identity, `INTERFACE_ID` 11 and `VERSION` 1, is frozen (decision 3). Milestone 956 (the linked
+the three constants `NAME_TEXT_MAXIMUM`, `MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`. The architect
+froze the interface identity, `INTERFACE_ID` 11 and `VERSION` 1 (decision 3). Milestone 956 (the linked
 interfaces carry checkable versions) minted it, and
 `design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md` lists it. The
 crate has its place in the order of extraction, step 6 of milestone 1017 (the contract crates leave
@@ -153,15 +153,15 @@ decision; the recommendation comes first.
 
 2. The reply word to a control `CALL` (item 6). Ruled 2026-11-14 (UTC), option A. The reply uses
    `Outcome`'s packing, a status byte and a detail byte, exactly as a resolve reply does.
-   `status::OK` (0) means the message was accepted. `status::BAD_REQUEST` (10) means it was refused,
-   and the detail byte carries the `Refusal` by its number in `wire::refusal`: `UnknownOperation` 1,
-   `BadgeZero` 2, `OutOfOrder` 3, `TooLong` 4, `BadZone` 5, `Full` 6, `NoSuchGrant` 7. The numbers
-   are stable, and `DENIED` (1) does not answer a control message. The resolver sends the packed
-   word (`Control::reply`). The spawner `CALL`s the last piece of each grant and reads the answer
-   (`control_answer`); earlier pieces stay one-way `SEND`s. A refused grant is no grant: the spawner
-   forgets the entry and the spawn fails.
+   `status::OK` (0) means the resolver accepted the message. `status::BAD_REQUEST` (10) means it
+   refused the message, and the detail byte carries the `Refusal` by its number in
+   `wire::refusal`: `UnknownOperation` 1, `BadgeZero` 2, `OutOfOrder` 3, `TooLong` 4, `BadZone` 5,
+   `Full` 6, `NoSuchGrant` 7. The numbers stay fixed, and `DENIED` (1) does not answer a control
+   message. The resolver sends the packed word (`Control::reply`). The spawner `CALL`s the last
+   piece of each grant and reads the answer (`control_answer`); earlier pieces stay one-way `SEND`s.
+   A refusal means no grant: the spawner forgets the entry and the spawn fails.
 
-3. The interface identity (item 5). Ruled 2026-11-14 (UTC), option A. The identity is frozen at
+3. The interface identity (item 5). Ruled 2026-11-14 (UTC), option A. The ruling freezes the identity at
    `INTERFACE_ID` 11 and `VERSION` 1. Version 1 includes the control reply of decision 2, with no
    bump, because the earlier bare reply was never part of the contract.
 
@@ -177,7 +177,7 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
   spelled-out words, unit symbols), which this block ran by hand. A later template release may add
   more.
 - The size of `Grants` is from reading. A size test (item 14) would make it measured.
-- A spawner whose grant is refused fails the spawn without saying why, since nothing in the spawner
+- A spawner whose grant the resolver refuses fails the spawn without saying why, since nothing in the spawner
   writes a line once the shell runs (`crates/system_initializer` BUGS).
 - Decision 1 asks for `first_word` and `second_word` where the tree writes `w0` and `w1` in many
   contracts. Ruling it for this crate alone leaves the tree inconsistent. Ruling it for the tree is

@@ -93,4 +93,4 @@ and `std` layouts of a child's table.
   `CALL`s) fails the job's spawn, and the shell sees only "could not spawn". The resolver sends the
   reason, and the spawner reads it, but nothing writes a line from this process once the shell is
   running: `announce` is for before the shell starts, and the system log has no writers yet. The
-  reason is printed once this process has somewhere to write it.
+  reason waits for this process to have somewhere to write it.

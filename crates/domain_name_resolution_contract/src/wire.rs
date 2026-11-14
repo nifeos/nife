@@ -167,21 +167,35 @@ pub mod status {
 /// No other status answers a control message. The numbers are fixed: a new reason takes the next
 /// one, and none is reused.
 ///
-/// Name: provisional (milestone 1086's lane), for the module and its constants.
+/// Name: provisional.
 pub mod refusal {
     /// The first word names an operation the spawner does not have.
+    ///
+    /// Name: provisional.
     pub const UNKNOWN_OPERATION: u8 = 1;
     /// The message names badge 0, the spawner's own, which holds no grant.
+    ///
+    /// Name: provisional.
     pub const BADGE_ZERO: u8 = 2;
     /// A piece arrived out of order, or a continuation for a grant nobody started.
+    ///
+    /// Name: provisional.
     pub const OUT_OF_ORDER: u8 = 3;
     /// The zone is longer than a name can be.
+    ///
+    /// Name: provisional.
     pub const TOO_LONG: u8 = 4;
     /// The zone's text is not a host name.
+    ///
+    /// Name: provisional.
     pub const BAD_ZONE: u8 = 5;
     /// Every window already belongs to another badge.
+    ///
+    /// Name: provisional.
     pub const FULL: u8 = 6;
     /// A forget for a badge that holds no window.
+    ///
+    /// Name: provisional.
     pub const NO_SUCH_GRANT: u8 = 7;
 }
 

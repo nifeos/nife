@@ -151,7 +151,7 @@ const STASHED: usize = 4;
 /// **Why [`SpawnEndpoint::grant_resolver`] returned no badge**, which decides whether waiting for
 /// a reap can help.
 ///
-/// Name: provisional (milestone 1086's lane).
+/// Name: provisional.
 enum NoGrant {
     /// No badge or capability slot is free now, and a due reap may free one.
     Wait,

@@ -59,7 +59,7 @@ impl Control {
     /// **The reply to a control `CALL`** that did this: [`status::OK`], or
     /// [`status::BAD_REQUEST`] with the [`Refusal`]'s code in the detail byte ([`refusal`]).
     ///
-    /// Name: provisional (milestone 1086's lane).
+    /// Name: provisional.
     pub const fn reply(self) -> Outcome {
         match self {
             Control::Refused(why) => Outcome {
@@ -77,7 +77,7 @@ impl Control {
 impl Refusal {
     /// **This refusal's number on the wire**, one of [`refusal`].
     ///
-    /// Name: provisional (milestone 1086's lane).
+    /// Name: provisional.
     pub const fn code(self) -> u8 {
         match self {
             Refusal::UnknownOperation => refusal::UNKNOWN_OPERATION,
@@ -93,7 +93,7 @@ impl Refusal {
     /// **The refusal a number on the wire names**, or `None` for a number [`refusal`] does not
     /// have.
     ///
-    /// Name: provisional (milestone 1086's lane).
+    /// Name: provisional.
     pub const fn from_code(code: u8) -> Option<Refusal> {
         Some(match code {
             refusal::UNKNOWN_OPERATION => Refusal::UnknownOperation,
@@ -113,7 +113,7 @@ impl Refusal {
 /// no control reply (a `CALL` the kernel failed, or a status or detail the contract does not
 /// have). A spawner treats both errors alike: the badge holds no grant.
 ///
-/// Name: provisional (milestone 1086's lane).
+/// Name: provisional.
 pub const fn control_answer(word: u64) -> Result<(), Option<Refusal>> {
     match Outcome::from_word(word) {
         Some(Outcome {
