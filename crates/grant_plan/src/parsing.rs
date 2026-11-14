@@ -27,10 +27,7 @@ pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8
 
 /// [`tokenize`], and also the part of `line` it did not reach because `out` was full: empty when
 /// every token fit, and otherwise a slice that starts at or before the first token left over.
-fn tokenize_prefix<'a, 'b>(
-    line: &'a [u8],
-    out: &'b mut [&'a [u8]],
-) -> (&'b [&'a [u8]], &'a [u8]) {
+fn tokenize_prefix<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> (&'b [&'a [u8]], &'a [u8]) {
     let mut n = 0;
     let mut i = 0;
     let mut c = word::Cursor::new();
