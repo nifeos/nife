@@ -45,7 +45,7 @@
 //! ```
 
 /// "No deadline": the cached earliest when nothing is armed. A timer armed at exactly this value is
-/// pending forever (until cancelled), which is the same thing said the other way round.
+/// pending forever (until canceled), which is the same thing said the other way round.
 pub const NEVER: u64 = u64::MAX;
 
 /// What [`Timer::arm`] decided.
@@ -90,7 +90,7 @@ impl<T: Copy> Timer<T> {
     }
 
     /// **Disarm.** `true` if a deadline was pending and now never will fire; `false` if nothing
-    /// was armed (never armed, already fired, or already cancelled). A caller that gets `false`
+    /// was armed (never armed, already fired, or already canceled). A caller that gets `false`
     /// back knows the signal, if any, has already been sent.
     pub fn cancel(&mut self) -> bool {
         self.armed.take().is_some()
@@ -242,12 +242,12 @@ mod verification {
         }
     }
 
-    /// **A cancelled or re-armed timer never fires its old deadline.** Arm for `d1` with target
+    /// **A canceled or re-armed timer never fires its old deadline.** Arm for `d1` with target
     /// 1, then either cancel or re-arm for `d2` with target 2; at any later `now` the timer yields
     /// target 1 never, and target 2 exactly when `d2` has passed.
-    /// Falsification: replayable `crates/inter_process_communication/falsifications/timer.verification.a_cancelled_or_rearmed_timer_never_fires_stale.patch`
+    /// Falsification: replayable `crates/inter_process_communication/falsifications/timer.verification.a_canceled_or_rearmed_timer_never_fires_stale.patch`
     #[kani::proof]
-    fn a_cancelled_or_rearmed_timer_never_fires_stale() {
+    fn a_canceled_or_rearmed_timer_never_fires_stale() {
         let mut t: Timer<u8> = Timer::new();
         let (d1, t0): (u64, u64) = (kani::any(), kani::any());
         kani::assume(d1 > t0);

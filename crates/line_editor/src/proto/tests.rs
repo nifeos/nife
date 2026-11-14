@@ -116,3 +116,9 @@ fn each_badge_admits_exactly_its_surface() {
         );
     }
 }
+
+/// The two definitions of the quiesce reply word are one value, so a drift in either shows here.
+#[test]
+fn the_quiesce_reply_is_the_one_hot_swap_contract_uses() {
+    assert_eq!(proto::QUIESCED, hot_swap_contract::QUIESCED);
+}

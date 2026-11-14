@@ -363,8 +363,12 @@ mod verification {
                 assert!(had_waiter);
                 assert!(got == waiter);
             }
-            Signal::ToBound(_) => assert!(!had_waiter && bound),
-            Signal::Counted => assert!(!had_waiter && !bound),
+            Signal::ToBound(_) => {
+                assert!(!had_waiter && bound);
+            }
+            Signal::Counted => {
+                assert!(!had_waiter && !bound);
+            }
             Signal::Empty => panic!("a non-zero signal reported nothing to deliver"),
         }
     }
@@ -484,7 +488,7 @@ mod tests {
     #[test]
     fn diagnostics_and_drain_agree_with_the_state() {
         let (mut a, mut b) = (node(), node());
-        let (pa, pb) = (NonNull::from(&mut *a), NonNull::from(&mut *b));
+        let (pointer_a, pointer_b) = (NonNull::from(&mut *a), NonNull::from(&mut *b));
         let mut n: Notification<N> = Notification::default();
         assert!(n.is_idle() && n.invariant_holds());
         assert_eq!(n.debug_counts(), (0, 0));
@@ -494,7 +498,7 @@ mod tests {
         assert_eq!(n.debug_counts(), (2, 0));
         let mut drained = Vec::new();
         n.drain_waiters(|w| drained.push(w.as_non_null()));
-        assert_eq!(drained, vec![pa, pb]);
+        assert_eq!(drained, vec![pointer_a, pointer_b]);
         assert!(n.is_idle());
         assert_eq!(
             n.signal(0, true),
@@ -538,7 +542,7 @@ mod tests {
     #[test]
     fn remove_waiter_keeps_the_rest_in_order() {
         let (mut a, mut b, mut c) = (node(), node(), node());
-        let (pa, pb, pc) = (
+        let (pointer_a, pointer_b, pointer_c) = (
             NonNull::from(&mut *a),
             NonNull::from(&mut *b),
             NonNull::from(&mut *c),
@@ -547,10 +551,10 @@ mod tests {
         assert_eq!(n.wait(token(&mut a)), Wait::Blocked);
         assert_eq!(n.wait(token(&mut b)), Wait::Blocked);
         assert_eq!(n.wait(token(&mut c)), Wait::Blocked);
-        assert!(n.remove_waiter(pb).is_some_and(|t| t == pb));
-        assert!(n.remove_waiter(pb).is_none());
-        assert!(matches!(n.signal(1, false), Signal::Woke(t, 1) if t == pa));
-        assert!(matches!(n.signal(2, false), Signal::Woke(t, 2) if t == pc));
+        assert!(n.remove_waiter(pointer_b).is_some_and(|t| t == pointer_b));
+        assert!(n.remove_waiter(pointer_b).is_none());
+        assert!(matches!(n.signal(1, false), Signal::Woke(t, 1) if t == pointer_a));
+        assert!(matches!(n.signal(2, false), Signal::Woke(t, 2) if t == pointer_c));
         assert_eq!(n.signal(4, false), Signal::Counted);
         assert_eq!(n.poll(), 4);
         assert_eq!(n.poll(), 0);

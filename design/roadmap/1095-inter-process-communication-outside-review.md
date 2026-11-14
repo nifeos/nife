@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 101, 154
@@ -264,6 +264,10 @@ left and the kernel pins its revision. The same step, one level down.
 Concrete example: after the move, the manifest line reads
 `intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`,
 the form the kernel already uses for the two crates that left.
+
+## Ledger
+
+What is done and what is left, item by item, is in [the appendix](1095-inter-process-communication-outside-review/ledger.md).
 
 ## Done when
 

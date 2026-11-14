@@ -87,6 +87,9 @@ enum EscState {
     Esc,
     Csi { params: [u16; 2], n: usize },
     Ss3,
+    /// Inside an X10 mouse report, `ESC [ M`, which is followed by three payload bytes (button,
+    /// column, row) that are not keys. `remaining` counts the payload bytes still to drop.
+    Mouse { remaining: u8 },
 }
 
 /// The editing engine. One per terminal; a few KiB of fixed buffers, no allocation.
@@ -235,9 +238,7 @@ impl LineDisc {
         let n = prompt.len().min(PROMPT_MAXIMUM);
         self.prompt[..n].copy_from_slice(&prompt[..n]);
         self.prompt_len = n;
-        out.put(&self.prompt[..n]);
-        out.put(&self.buf[..self.len]);
-        csi_left(out, self.len - self.cur);
+        self.repaint(out);
     }
 
     /// Feed one wire byte; echo goes to `out`. See [`Event`] for what came of it.
@@ -366,6 +367,8 @@ impl LineDisc {
                         }
                     }
                     b'O' => self.esc = EscState::Ss3,
+                    // A second escape (a Meta-prefixed key, or a double press) is one introducer.
+                    ESC => self.esc = EscState::Esc,
                     _ => {} // an escape we do not speak; drop it and the introducer
                 }
                 Some(Event::None)
@@ -380,8 +383,13 @@ impl LineDisc {
                         self.esc = EscState::Csi { params, n };
                     }
                     b';' => {
-                        n += 1;
+                        n = n.saturating_add(1);
                         self.esc = EscState::Csi { params, n };
+                    }
+                    // `ESC [ M` with no parameters opens an X10 mouse report: three payload bytes
+                    // follow, and none of them is a key.
+                    b'M' if n == 0 && params[0] == 0 => {
+                        self.esc = EscState::Mouse { remaining: 3 };
                     }
                     // A final byte: dispatch. Unknown finals are dropped whole, which is what
                     // makes unrecognized keys (F-keys, mouse noise) harmless.
@@ -391,6 +399,14 @@ impl LineDisc {
                 Some(Event::None)
             }
             EscState::Ss3 => Some(self.csi_final(b, 0, out)),
+            EscState::Mouse { remaining } => {
+                if remaining > 1 {
+                    self.esc = EscState::Mouse {
+                        remaining: remaining - 1,
+                    };
+                }
+                Some(Event::None)
+            }
         }
     }
 
@@ -436,9 +452,7 @@ impl LineDisc {
     /// ^L: clear the screen and paint the prompt and the line, cursor where it was.
     fn clear_and_repaint(&mut self, out: &mut impl Sink) {
         out.put(b"\x1b[2J\x1b[H");
-        out.put(&self.prompt[..self.prompt_len]);
-        out.put(&self.buf[..self.len]);
-        csi_left(out, self.len - self.cur);
+        self.repaint(out);
     }
 
     /// A CSI (or SS3) final byte, with its first numeric parameter.
@@ -550,9 +564,8 @@ impl LineDisc {
         }
         self.buf.copy_within(self.cur..self.len, self.cur + n);
         // A yank of the kill buffer into the line it was cut from cannot overlap: kill is a
-        // separate buffer, copied out at kill time.
-        let kill = self.kill;
-        self.buf[self.cur..self.cur + n].copy_from_slice(&kill[..n]);
+        // separate field, copied out at kill time, so the two borrows are disjoint.
+        self.buf[self.cur..self.cur + n].copy_from_slice(&self.kill[..n]);
         self.len += n;
         self.cur += n;
         out.put(&self.buf[self.cur - n..self.len]);
@@ -652,6 +665,10 @@ fn csi_right(out: &mut impl Sink, n: usize) {
 }
 
 fn csi_move(out: &mut impl Sink, n: usize, dir: u8) {
+    // The 11-byte sequence below holds ESC, `[`, up to eight digits and the final byte. Every
+    // caller passes a distance inside a line, and `LINE_MAXIMUM` is three digits.
+    const { assert!(LINE_MAXIMUM < 100_000_000) };
+    debug_assert!(n <= LINE_MAXIMUM);
     match n {
         0 => {}
         1 => out.put(&[ESC, b'[', dir]),

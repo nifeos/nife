@@ -1,5 +1,6 @@
 use super::*;
 use crate::handoff;
+use crate::{LINE_MAXIMUM, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue};
 use crate::test_support::{Screen, feed_all};
 extern crate std;
 use std::vec::Vec;
@@ -192,4 +193,91 @@ fn the_raw_queue_crosses_a_swap_in_order_across_the_wrap() {
     let mut r = handoff::Reader::new(&page[..n]).unwrap();
     assert_eq!(empty.restore(&mut r), Some(()));
     assert!(empty.is_empty());
+}
+
+/// **The blob's bytes are pinned**: a small editor state written by hand, field by field, so a
+/// reordered or resized field fails here and not in a swap. Every word is a little-endian `u32`;
+/// a field is its length word then its bytes; the history ring is eight fields in slot order.
+#[test]
+fn the_blob_layout_is_pinned_byte_for_byte() {
+    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    d.start_line(b"$", &mut s);
+    feed_all(&mut d, &mut s, b"ab\x02"); // "ab", cursor between the two
+    let mut page = [0u8; 256];
+    let mut w = handoff::Writer::new(&mut page);
+    d.save(&mut w);
+    let n = w.finish().unwrap();
+
+    let mut want: Vec<u8> = Vec::new();
+    want.extend_from_slice(b"LEDT"); // MAGIC 0x5444_454c, little-endian
+    want.extend_from_slice(&1u32.to_le_bytes()); // LAYOUT
+    want.extend_from_slice(&2u32.to_le_bytes()); // the line: length
+    want.extend_from_slice(b"ab"); //   and bytes
+    want.extend_from_slice(&1u32.to_le_bytes()); // the cursor
+    want.extend_from_slice(&0u32.to_le_bytes()); // the kill buffer: empty
+    want.extend_from_slice(&1u32.to_le_bytes()); // the prompt: length
+    want.extend_from_slice(b"$"); //   and bytes
+    want.extend_from_slice(&0u32.to_le_bytes()); // history entries held
+    want.extend_from_slice(&0u32.to_le_bytes()); // the next history slot
+    for _ in 0..HIST {
+        want.extend_from_slice(&0u32.to_le_bytes()); // eight empty history slots
+    }
+    assert_eq!(&page[..n], &want[..]);
+}
+
+/// **The blob has an upper bound**: with every buffer full the editor's part is the header, the
+/// line, the cursor, the kill buffer, the prompt, two history words and eight full history
+/// slots, 2688 bytes, and the raw queue's part is a length word and up to 64 bytes. Both fit the
+/// one page the terminal's handoff frame has.
+#[test]
+fn a_full_blob_is_the_documented_size() {
+    let mut d = LineDisc::new();
+    d.len = LINE_MAXIMUM;
+    d.kill_len = LINE_MAXIMUM;
+    d.prompt_len = PROMPT_MAXIMUM;
+    for entry in &mut d.hist {
+        entry.1 = LINE_MAXIMUM;
+    }
+    let mut page = [0u8; 4096];
+    let mut w = handoff::Writer::new(&mut page);
+    d.save(&mut w);
+    assert_eq!(w.finish(), Some(2688));
+
+    let mut q = RawQueue::new();
+    q.push(&[7; RAW_QUEUE_MAXIMUM]);
+    let mut w = handoff::Writer::new(&mut page);
+    q.save(&mut w);
+    assert_eq!(w.finish(), Some(8 + 4 + RAW_QUEUE_MAXIMUM));
+}
+
+/// A raw queue whose bytes wrap past the end of its ring is saved oldest first and restored whole.
+#[test]
+fn a_wrapped_raw_queue_round_trips() {
+    let mut q = RawQueue::new();
+    q.push(&[1; 60]);
+    q.pop8();
+    q.pop8();
+    q.pop8();
+    q.pop8();
+    q.pop8();
+    q.pop8();
+    q.pop8(); // 56 popped: head is at 56
+    q.push(&[9, 9, 9, 9, 9, 9, 9, 9, 8, 8]); // wraps the ring
+    let mut page = [0u8; 128];
+    let mut w = handoff::Writer::new(&mut page);
+    q.save(&mut w);
+    let n = w.finish().unwrap();
+    let mut got = RawQueue::new();
+    got.restore(&mut handoff::Reader::new(&page[..n]).unwrap())
+        .unwrap();
+    let mut a = Vec::new();
+    let mut b = Vec::new();
+    while let Some((k, v)) = q.pop8() {
+        a.extend_from_slice(&v.to_le_bytes()[..k]);
+    }
+    while let Some((k, v)) = got.pop8() {
+        b.extend_from_slice(&v.to_le_bytes()[..k]);
+    }
+    assert_eq!(a, b);
+    assert_eq!(a.len(), 4 + 10);
 }

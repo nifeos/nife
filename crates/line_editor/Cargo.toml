@@ -13,3 +13,7 @@ workspace = true
 # live replacement)): what a supervisor must route to a `line_editor` it can replace, beside the wire
 # half in `proto`, where `hot_swap_contract` keeps its own.
 capability_plan = { version = "0.1.0", path = "../capability_plan" }
+
+[dev-dependencies]
+# The quiesce reply word is defined here and in the hot-swap contract; a test holds the two equal.
+hot_swap_contract = { version = "0.1.0", path = "../hot_swap_contract" }
