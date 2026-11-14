@@ -227,27 +227,12 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 The architect froze the identity on 2026-11-11 (#3516). One item waits on a family decision.
 
-### Which spelling the page crates use for their private offset constants (item 10)
+### How the page crates spell their offset constants (item 10)
 
-Background. Each fixed-layout page crate names the byte position of a field with a private
-constant, and this crate writes `OFF_MAGIC` and `OFF_HERTZ`. The sibling page crates use the same
-`OFF_` prefix. The constants are private, so no caller or published name depends on them. The
-question is whether a stranger reading one crate should meet `OFF_` or a spelled-out `_OFFSET`
-suffix, and the answer has to be the same in every page crate or the family reads as inconsistent.
-
-Recommendation: leave `OFF_` for now and decide once for the whole family of page crates in one
-sweep, because renaming one crate alone makes it the odd one out and the template's abbreviations
-check only reports. If the family chooses to spell it out, the names are `MAGIC_OFFSET` and
-`HERTZ_OFFSET`.
-
-Prior art. The Linux kernel and OpenBSD both abbreviate field offsets in private headers
-(`_OFF`, `_OFFSET` are both common); neither enforces one spelling across subsystems (unverified in
-detail). nife's own rule spells out units and register names and leaves private locals alone.
-
-Concrete example. `crates/block_roster_contract` uses `HEADER_BYTES` and `ENTRY_BYTES`, while this
-crate uses `OFF_HERTZ`; a reader moving between the two sees two spellings for one idea.
-
-Door: two-way (private). Not changed by this lane, which never renames.
+Ruled 2026-11-14 (UTC) for the whole family: the byte position of a page field or region-layout
+field is named `<FIELD>_OFFSET_BYTES`, with the field name spelled out under `design/naming.md`.
+This crate's constants are `MAGIC_OFFSET_BYTES` and `HERTZ_OFFSET_BYTES`. A constant that counts
+words says `_OFFSET_WORDS`. No old spelling is kept as an alias.
 
 ## Done when
 
@@ -278,9 +263,7 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 
 ## Follow-on
 
-- **Outstanding.** Item 10, the spelling of the page crates' private offset constants: a family
-  decision for an architect, written up under the decisions above. Checked 2026-11-14 against
-  `crates/counter_frequency_contract/src/lib.rs`, where `OFF_MAGIC` and `OFF_HERTZ` stand.
+- **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.
 - **Outstanding.** The move itself, which waits on milestone 1017's order and on the architect's
   clearing of the review.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`

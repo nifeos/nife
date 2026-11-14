@@ -118,7 +118,7 @@ loop {
     let (REP_OK, _, Some(conn)) = call_receiving(listener, OPERATION_ACCEPT, 0) else { break };
     send_capability(conn, frame, rights::READ | rights::WRITE, OPERATION_ATTACH_PAGE_FRAME);
     let (len, _) = call(conn, OPERATION_RECEIVE, 0);
-    // ... read the request out of the frame at FRAME_VA + OFF_PAYLOAD, write the answer back ...
+    // ... read the request out of the frame at FRAME_VA + PAYLOAD_OFFSET_BYTES, write the answer back ...
     let _ = call(conn, OPERATION_SEND, reply_len);
     let _ = call(conn, OPERATION_CLOSE, 0);   // the listener is untouched by this
     capability_delete(conn);

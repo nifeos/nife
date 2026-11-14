@@ -13,9 +13,9 @@ diff --git a/crates/counter_frequency_contract/src/lib.rs b/crates/counter_frequ
 @@ -150,7 +150,7 @@ const _: () = assert!(PAGE_VIRTUAL_ADDRESS <= usize::MAX as u64);
  pub fn build_page(hertz: u64) -> [u8; PAGE_CONTENT_BYTES] {
      let mut page = [0u8; PAGE_CONTENT_BYTES];
-     page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
--    page[OFF_HERTZ..OFF_HERTZ + 8].copy_from_slice(&hertz.to_le_bytes());
-+    page[OFF_HERTZ..OFF_HERTZ + 8].copy_from_slice(&hertz.to_be_bytes());
+     page[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8].copy_from_slice(&MAGIC);
+-    page[HERTZ_OFFSET_BYTES..HERTZ_OFFSET_BYTES + 8].copy_from_slice(&hertz.to_le_bytes());
++    page[HERTZ_OFFSET_BYTES..HERTZ_OFFSET_BYTES + 8].copy_from_slice(&hertz.to_be_bytes());
      page
  }
  
