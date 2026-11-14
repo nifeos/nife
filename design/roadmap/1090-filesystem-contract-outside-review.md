@@ -151,8 +151,8 @@ Only one-way doors. Each with the background first, then the recommendation.
 ### A. The reserved on-disk name: ruled 2026-11-14 (UTC)
 
 In force: the extended-attribute store lives in a directory in the image root named
-`.extended-attributes` (`xattr::STORE_DIR`, `src/xattr.rs` line 77). The constant's own name is
-decided in B. Every name-taking verb refuses that name with `EINVAL`, in every directory and at
+`.extended-attributes` (`xattr::STORE_DIR`, `src/xattr.rs` line 77). Decision B rules the
+constant's own name. Every name-taking verb refuses that name with `EINVAL`, in every directory and at
 every depth of a path, and `READDIR` skips it, so it is both a disk layout and a wire rule. The name
 says what the directory holds and names no project. `redoxfs_host extract` and upstream's FUSE
 mount carry it out as a directory. A recovery listing of an image shows
@@ -232,7 +232,7 @@ non-negative word is a result. `reply_err` asserts its code is in `1..=MAXIMUM_E
 build: a bad code is a bug in the sender, and a release build that skipped the check would put a
 success-looking or protocol-violating word on the wire. Two Kani harnesses prove the decoding for
 every `i64`, and unit tests pin -1, -4095, -4096 and `i64::MIN`. Every reply any current server
-sends is unchanged. Loosening the bound later is compatible; tightening is not.
+sends keeps its word. Loosening the bound later is compatible; tightening is not.
 
 Prior art. Linux `include/linux/err.h` (`MAX_ERRNO`, `IS_ERR_VALUE`); FreeBSD returns errno in a
 separate register with the carry flag, which this two-word protocol does not have; 9P2000.L
