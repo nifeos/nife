@@ -38,6 +38,13 @@ children run inside their parent's units), `script/verify-riscv64` through it, `
 scripts takes nothing; run `script/verify --only <crate>` instead. CI takes no pool, because a runner
 runs one job on one machine (`GITHUB_ACTIONS`, or `NIFE_KANI_POOL=off`).
 
+`script/verify` takes its units and its heavy slot together, and never waits for one while it holds
+the other. It waits for the units holding nothing, then for a slot holding no units, then takes the
+units again or starts over. So runs waiting for the Kani pool hold no heavy slot, and a lint or a
+build does not queue behind them. The other paths take their slot first, as every heavy script does,
+and hold it while they wait for units.
+
 Before starting a proof, `python3 helpers/heavy_slot.py --status` shows the heavy slots and the Kani
 units, and for every holder its lane, worktree and command line. `helpers/kani-pool-selftest.sh`
-proves that the third run waits, that a run weighs its harnesses and that CI runs as before.
+proves that the third run waits, that a run weighs its harnesses, that CI runs as before, and that
+a run waiting for the pool holds no heavy slot.

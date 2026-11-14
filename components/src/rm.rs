@@ -12,9 +12,12 @@
 //!
 //! - **slot 0**: the narrowed directory endpoint, `WRITE`; [`fs::ROOT`] on it is **the directory
 //!   the name is in**, because taking a name away is an operation on a directory.
-//! - **slot 1**: a report endpoint, `WRITE`: framed text, then one [`byte_sink_contract::eof`]
-//!   carrying the verdict ([`filesystem_contract::rm`], [`verdict`]). Output at slot 1, unlike
-//!   every other program, so both wirings agree (notes/rm.md, "The program's shape").
+//! - **slot 1**: a report endpoint, `WRITE`: framed text, then one end of stream
+//!   ([`byte_sink_contract::eof`], its reserved words zero). Output at slot 1, unlike every other
+//!   program, so both wirings agree (notes/rm.md, "The program's shape").
+//! - **slot 2** ([`rm::VERDICT_SLOT`]): a verdict endpoint, `WRITE`, optional: the exit status
+//!   and the count, once, after the end of stream ([`filesystem_contract::rm`], [`verdict`]). The
+//!   shell leaves it empty.
 //! - **[`PAGE_VA`]**: the page shared with the FS server. The name and options ride in the three
 //!   `START` words, packed by [`filesystem_contract::grant`].
 //!
@@ -42,8 +45,10 @@ use user_mode_runtime::{call, exit, send};
 
 /// The granted directory capability: this program's whole authority.
 const DIR: u64 = 0;
-/// Where the diagnostics, the `-v` lines and the verdict go.
+/// Where the diagnostics and the `-v` lines go, ended by one end of stream.
 const REPORT: u64 = 1;
+/// Where the verdict goes, after the report has ended.
+const VERDICT: u64 = rm::VERDICT_SLOT;
 /// The page shared with the FS server.
 const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 
@@ -324,16 +329,18 @@ fn text(bytes: &[u8]) {
     }
 }
 
-/// **The last message, and it closes the stream** ([`byte_sink_contract::eof`]) rather than inventing a
-/// terminator of its own.
+/// **Close the report, then send the verdict on its own endpoint** ([`filesystem_contract::rm`]).
 ///
 /// This program's manifest declares [`grant_plan::OutputDeclaration::Bytes`], the sink contract:
-/// self-framing byte messages ending in `OPERATION_EOF`, which the shell reads through
-/// `byte_sink_contract::unpack`, so `rm -rv logs | wc` works. `OPERATION_EOF` uses only the first
-/// word, so the status and the count ride in the two the contract leaves free, on the one message
-/// that can carry a status without racing the text.
+/// self-framing byte messages ending in `(eof(), 0, 0)`, which the shell reads through
+/// `byte_sink_contract::unpack`, so `rm -rv logs | wc` works. The contract reserves the end of
+/// stream's other two words, so the status and the count cannot ride there; they go to
+/// [`VERDICT`]. A `SEND` returns only once its message is received, so the verdict cannot overtake
+/// the text: when it goes out, the reader already holds every line and the end. With no verdict
+/// endpoint the second `SEND` is refused, and nothing is lost that the spawner asked for.
 fn verdict(status: u64, count: u64) {
-    send(REPORT, byte_sink_contract::eof(), status, count);
+    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(VERDICT, status, count, 0);
 }
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
@@ -418,8 +425,9 @@ fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
         Ok(()) => rm::OK,
         Err(errno) => rm::status(errno),
     };
-    // The verdict, last and once. Anything this run printed went out before it, so a receiver that
-    // takes this as its first message knows the run printed nothing, which is `rm(1)`'s default.
+    // The end of stream and then the verdict, last and once. Anything this run printed went out
+    // before them, so a report that holds only the end means the run printed nothing, which is
+    // `rm(1)`'s default.
     verdict(status, count);
     exit();
 }
