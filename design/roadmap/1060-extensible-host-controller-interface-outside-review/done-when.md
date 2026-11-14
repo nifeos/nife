@@ -28,8 +28,8 @@ An appendix to [the milestone](../1060-extensible-host-controller-interface-outs
   consumes (P1-12, P1-13).
 - The documentation of `Event::Transfer` says the pointer is a TRB address only while the driver
   issues no Event Data TRBs, and the variant has no `event_data` field (P1-14).
-- P1-6 and P1-7 have closed, and each P1 item closed by a pull request that cites this block by
-  number. The release review has ratified or renamed every provisional name of P1-3, P1-8, P1-12
+- P1-6 and P1-7 have closed, and each P1 item closed by a pull request in the crate's repository,
+  recorded in this block's Follow-on. The release review has ratified or renamed every provisional name of P1-3, P1-8, P1-12
   and P1-13.
 - `cargo test`, `cargo kani`, `cargo mutants` (none missed, none unexempted) and the three fuzz
   targets pass at the commit any tag lands on, and every new harness arrives with its patch.

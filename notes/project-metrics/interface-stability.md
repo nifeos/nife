@@ -49,7 +49,7 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 
 ## What broke in 2026W46
 
-Read at `cfabdf163982` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `b81853a72fe6` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_CAPABILITY_DELETE` `SYS_CAPABILITY_DELETE`
 > - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_EXIT` `SYS_EXIT`

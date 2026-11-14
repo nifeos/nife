@@ -147,8 +147,9 @@ harness.
   own `proofs / kani` and `proofs / falsify` jobs prove the four harnesses.
 - End condition 1 holds: nife builds against the repository at that commit and its `main` is green.
   Condition 2 holds: the first scheduled weekly run, on 2026-11-02 (UTC), is green. Condition 4
-  holds: `docs/stranger-test.md` there records a run on 2026-10-31. Condition 3 waits on a release
-  dry run. Condition 5 counts four weeks from `v0.1.1`, so it ends no earlier than 2026-11-29.
+  holds: `docs/stranger-test.md` there records a run on 2026-10-31. Condition 3 holds: the
+  `release` workflow's gate and rehearse jobs passed at `522b98b` on 2026-11-11 (UTC), run
+  42997968584. Condition 5 counts four weeks from `v0.1.1`, so it ends no earlier than 2026-11-29.
 - A bump of the pin is a separate pull request citing the landed commit as
   `nifeos/jh7110_entropy@<sha>`.
 
@@ -246,9 +247,9 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** The soak's end conditions 2 to 5 and release steps 7 to 9. Checked 2026-10-31
-  (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
-  semver period yet, and `crates/jh7110_entropy` is gone from this tree.
+- **Outstanding.** The soak's end condition 5 and release steps 7 to 9. Checked 2026-11-14
+  (UTC): conditions 1 to 4 hold (*The soak* above), the four weeks of condition 5 end no earlier
+  than 2026-11-29, and nothing has published.
 - **Recorded.** Ruled 2026-11-02 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
   `nifeos/jh7110_entropy` at the commit of its tag `v0.1.1` (`rev = "53b022b55b42a6dfc7eb670c438f0d3463da8db5"`, with `version = "0.1.1"`).
   A crates.io version replaces the pin after the soak release dry run.

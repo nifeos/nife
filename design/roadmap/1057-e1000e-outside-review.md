@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 815
 decision_dependencies: none
@@ -34,40 +34,8 @@ Nothing in this block lifts that hold, and a green gate here is not permission t
 
 ## What the review covered
 
-The reviewer verified these firsthand, in a fresh clone on a Linux host with Rust 1.99.1:
-
-- `cargo build` for the host and for `aarch64-unknown-none-softfloat`,
-  `riscv64imac-unknown-none-elf` and `x86_64-unknown-none`: all four build clean.
-- `cargo test`: 67 unit tests and 2 doctests pass. `cargo clippy --all-targets` reports no warning,
-  `cargo doc` with warnings as errors is clean, and `cargo deny check` passes advisories, bans,
-  licenses and sources (one unmatched allowance, `Zlib`, is a note, not a failure).
-- `cargo kani` (Kani 0.68.0, CBMC 6.11.0): 3 of 3 harnesses verify. With all three falsification
-  patches applied in a copy, 3 of 3 fail, each at the assertion its patch header names.
-- `cargo mutants` over `src/data_plane.rs` and `src/descriptor.rs` (100 mutants): 82 caught, 7
-  missed, 7 unviable, 4 timeouts. The tests catch every mutant in `data_plane.rs` or time it out.
-  The 7 survivors are all OR-to-XOR swaps in `descriptor.rs` that the compile-time assertions
-  beside them argue are equivalent.
-- The GitHub state of the repository: no tag, no release, two merged pull requests, no issue.
-  `check` and `proofs` pass on `main`. The latest `weekly` run failed in two jobs (`stranger
-  cadence` and `mutation`), and its five mutation shards reported 82 missed, 711 caught, 27
-  unviable and 4 timeouts in all.
-- Every register offset and bit constant, against FreeBSD's `e1000_regs.h`, `e1000_defines.h`,
-  `e1000_ich8lan.h` and `if_em.h` and Linux's `regs.h` and `defines.h` as the reviewer knows them.
-  The full I219 sequences, against FreeBSD `main`'s `e1000_ich8lan.c`, `e1000_phy.c`,
-  `e1000_mac.c` and `if_em.c`, fetched for the purpose. No offset or bit is wrong. The write of the
-  PCI vendor id to the read-only `STRAP` register around the global reset looks like an invention;
-  it is FreeBSD's own (`e1000_reset_hw_ich8lan`). The 2.5 second wait on the Management Engine and
-  the ten-second flash cycle bound are FreeBSD's values.
-
-Inferred, not verified: the behavior of any sequence on silicon, and the effect of the register
-writes the port omits (P1-2).
-
-Not run: anything on hardware or under QEMU, the stranger test, `cargo-semver-checks` (no baseline
-tag exists), a full mutation run outside the two files above, Miri (the weekly job ran it green),
-and the `release` workflow of the template. The reviewer pushed, tagged, branched and opened
-nothing in the repository.
-
-Effort sizes: S is an hour, M a day, L more, or a bench.
+What the review read, ran and left unrun is in
+[the coverage appendix](1057-e1000e-outside-review/what-the-review-covered.md).
 
 ## Findings, prioritized
 
@@ -132,9 +100,9 @@ package placed the tag on the move commit. Since then pull request #2 of the rep
 public register constants, so a baseline there would report those renames as breaks against the
 first release.
 
-Ruled 2026-11-09: a baseline git tag `v0.1.0`, placed on the first commit on `main` at which the
-weekly gates pass, after P0-2 and P0-3 land. It is a git tag only: no publish and no release run.
-Placing it still needs the go of the architect at that time. One-way (a tag is a number others
+Ruled: a baseline git tag `v0.1.0-pre.1`, placed on the first commit on `main` at which the
+weekly gates pass, after P0-2 and P0-3 land. It is a git tag only, with no publish; plain `v0.1.0`
+waits for the crates.io release. The tag sits on `ef01cef`. One-way (a tag is a number others
 compare against). S.
 
 ### P1: before the first release
@@ -238,9 +206,8 @@ No one-way door is open for the architect except the go to place the tag.
 1. The method names of `Hardware` (P0-1). Ruled 2026-11-09: `read` and `write` stay, `read16`
    becomes `read_flash_status`, and the six names are ratified. `read_u64` and `write_u64` on
    `DirectMemoryAccessRegion` stay.
-2. Which commit carries `v0.1.0` (P0-4). Ruled 2026-11-09: the first commit on `main` at which the
-   weekly gates pass, after P0-2 and P0-3; a git tag only. Placing it waits for the go of the
-   architect at that time.
+2. Which commit carries `v0.1.0-pre.1` (P0-4). Ruled: the first commit on `main` at which the
+   weekly gates pass, after P0-2 and P0-3; a git tag only. It sits on `ef01cef`.
 3. The ring size stays a constant for 0.1 (P2-6). The maintainers decide this provisionally, since
    deferring changes nothing: the README's BUGS records that each ring holds 16 entries and that a
    later version may change that. Generalizing the size later changes the layout constants, the
@@ -265,6 +232,34 @@ hardware steps.
   asked for anything yet, so the order may change once anyone does.
 - Hardware figures stay absent until P1-7 runs; the cost of one tail write per frame (P2-4) and the
   effect of the omitted writes (P1-2) are unmeasured.
+
+## Follow-on
+
+Checked 2026-11-14 (UTC) against `nifeos/e1000e`. Its tag `v0.1.0-pre.1` sits on `ef01cef`, the
+merge of #21; `main` is `1df6505`, the merge of #24.
+
+- **Done.** Before the tag, P0-1, P1-1 and P2-15 landed in `nifeos/e1000e` #5, and P0-2 in #3 and
+  #17. P1-2 and P1-5 landed in #9, P1-8 in #18, and P2-3, P2-10, P2-12 and P2-13 in #7. P1-3, P1-4
+  and P2-14 landed in #6, with the description set through the API. P0-3's first run is #4, and
+  #22 records the cold run of 2026-11-11.
+- **Done.** P0-4 landed as the tag `v0.1.0-pre.1` on `ef01cef`. P1-6 landed in `nifeos/e1000e` #8,
+  #14 and #22, the receive-cursor harness of #22 after the tag. P2-1 and P2-2 landed in #23 after
+  the tag, and P2-5 in #9 and #23.
+- **Recorded.** P2-6 and P2-7 are entries in the README's BUGS (`nifeos/e1000e` #9): the ring size
+  stays 16, and the test doubles stay private with the example as their public form.
+- **Outstanding.** P1-7, the I219 run with a cable: issue `nifeos/e1000e#10` is open, and the
+  README's BUGS says no version of the crate has run on an I219. Read from the issue list and the
+  README on `main`.
+- **Outstanding.** P2-4, one tail write per frame: neither fixed nor a BUGS entry or an issue;
+  `nifeos/e1000e` #23 says it was not done. Read from the README and the issue list.
+- **Outstanding.** P2-8 and P2-11 in part: the fuzz targets cover the transmit ring and the flush
+  but not the receive ring, with `public-crash-inputs: false`, and the harnesses of #14 carry no
+  per-assertion falsification lines. Neither gap is in BUGS. Read from `fuzz/` and the fuzz caller.
+- **Outstanding.** P2-9, the link-up half: issue `nifeos/e1000e#11` is open, with a BUGS line.
+- **Outstanding.** Proofs on a tagged commit and P2-16's pin: the seventh harness came after the
+  tag, so it proves on `main` (run 43107117484) and not on `ef01cef`, and every caller pins
+  `nifeos/crate-workflows` at `2e651d8`, which is no template release. Read from the run list and
+  the workflow files.
 
 ## Index row
 
