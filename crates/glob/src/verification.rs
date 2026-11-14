@@ -9,7 +9,7 @@
 
 use super::*;
 
-/// **Three, measured rather than chosen**: four bytes each passed 3 GB and ten minutes. Three
+/// **Three, measured rather than chosen**: four bytes each passed 3 gigabytes and ten minutes. Three
 /// reaches `[a]`, `\*a`, a trailing backslash, an unterminated bracket and two stars; `[!a]`
 /// and `[a-b]` are reached by `a_negated_class_is_the_exact_complement_of_the_class`.
 const P: usize = 3;

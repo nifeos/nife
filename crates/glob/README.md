@@ -19,7 +19,7 @@ Three things a caller does not guess:
 A malformed pattern means itself: an unterminated `[` is a literal `[`, and a trailing `\` is a
 literal `\`. There is no error case, because a pattern is untrusted input and an error path for
 every typo is a cost. There are no `**`, no zsh-style qualifiers (they need type, time and size per
-candidate, which is more authority than listing a directory) and no POSIX classes.
+candidate, which is more authority than listing a directory) and no POSIX (Portable Operating System Interface) classes.
 
 ## The contract
 
@@ -33,32 +33,6 @@ candidate, which is more authority than listing a directory) and no POSIX classe
 
 Syntax: `*` any run of bytes, `?` one byte, `[abc]` a set, `[a-z]` a range, `[!abc]` or `[^abc]` the
 complement, `\x` the byte `x`, anything else itself.
-
-## How it avoids blowup
-
-The matcher keeps exactly one backtrack point, the most recent `*`, which is the algorithm
-`fnmatch` implementations use to avoid the exponential split a recursive matcher tries. A retry
-position advances monotonically, so a match makes at most `name_bytes + 1` backtracks, and between
-two of them the name position plus the pattern position strictly increases. The work is polynomial
-in the two lengths with no term in the number of `*`s. `has_magic` and `literal` are not counted by
-`match_steps`: each decodes a `[` by scanning to its closing `]`, so `n` unterminated brackets cost
-about `n * n / 2` byte reads.
-
-## Corners
-
-Every row is a place a real implementation has been wrong, and a test pins it.
-
-| input | answer | why |
-|---|---|---|
-| `[foo` | literal `[foo` | no closing `]`, so it was never a bracket expression |
-| `[]]` | matches `]` | `]` right after `[` or `[!` is a member |
-| `[a-]` | matches `a` and `-` | a `-` with nothing after it is a member, not a range |
-| `[-a]` | matches `-` and `a` | the same rule at the other end |
-| `[z-a]` | matches nothing | a reversed range is empty, the answer that cannot grant more |
-| `[\]]` | matches `]` | POSIX has no escapes in brackets; glibc and bash honor one |
-| `a\` | matches `a\` | a trailing backslash has nothing to escape |
-| empty pattern | matches only the empty name | |
-| `[[:alpha:]]` | matches `a]`, `:]`, ... | no POSIX classes: the class `[[:alpha:]` then a literal `]` |
 
 ## EXAMPLES
 
@@ -85,6 +59,32 @@ itself, `*` and `?` have their base meanings, the dot rule touches only names th
 dot, and a negated class is the exact complement of its class. The length-independent claims are
 host tests: an exhaustive cross-check against a naive matcher over every pattern of up to five
 bytes and every name of up to three, and a 100,000-byte adversarial run held under the bound.
+
+## How it avoids blowup
+
+The matcher keeps exactly one backtrack point, the most recent `*`, which is the algorithm
+`fnmatch` implementations use to avoid the exponential split a recursive matcher tries. A retry
+position advances monotonically, so a match makes at most `name_bytes + 1` backtracks, and between
+two of them the name position plus the pattern position strictly increases. The work is polynomial
+in the two lengths with no term in the number of `*`s. `has_magic` and `literal` are not counted by
+`match_steps`: each decodes a `[` by scanning to its closing `]`, so `n` unterminated brackets cost
+about `n * n / 2` byte reads.
+
+## Corners
+
+Every row is a place a real implementation has been wrong, and a test pins it.
+
+| input | answer | why |
+|---|---|---|
+| `[foo` | literal `[foo` | no closing `]`, so it was never a bracket expression |
+| `[]]` | matches `]` | `]` right after `[` or `[!` is a member |
+| `[a-]` | matches `a` and `-` | a `-` with nothing after it is a member, not a range |
+| `[-a]` | matches `-` and `a` | the same rule at the other end |
+| `[z-a]` | matches nothing | a reversed range is empty, the answer that cannot grant more |
+| `[\]]` | matches `]` | POSIX has no escapes in brackets; glibc and bash honor one |
+| `a\` | matches `a\` | a trailing backslash has nothing to escape |
+| empty pattern | matches only the empty name | |
+| `[[:alpha:]]` | matches `a]`, `:]`, ... | no POSIX classes: the class `[[:alpha:]` then a literal `]` |
 
 ## Building and testing
 

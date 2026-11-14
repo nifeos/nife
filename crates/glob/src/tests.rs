@@ -382,7 +382,7 @@ fn a_star_followed_by_a_long_tail_stays_polynomial() {
 /// Every unterminated bracket in a long pattern rescans to the end, which is the one place the
 /// per-step cost is not constant. Bounded, and the bound knows about it.
 #[test]
-fn a_pattern_full_of_unterminated_brackets_stays_inside_its_bound() {
+fn a_pattern_full_of_open_brackets_stays_inside_its_bound() {
     let pattern = [b'['; 400];
     let name = [b'['; 400];
     let (hit, steps) = match_steps(&pattern[..], &name[..], Dot::Ordinary);
