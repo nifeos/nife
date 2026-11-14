@@ -206,7 +206,7 @@ Only the one-way doors went to the architect. Everything else above is the maint
 Ruled by the architect, 2026-11-14 (UTC). The argument page leaves nife as built, with milestone
 672's layout, `VERSION` 1 and `INTERFACE_ID` 18. The magic `nifeargv` stays unnumbered until
 milestone 994 (the cross-repository pair is tested where the pin is) moves the pair test to basalt.
-In the change at 994, the magic is replaced by a numbered magic that does not spell nife, so one
+In the change at 994, a numbered magic that does not spell nife replaces it, so one
 break and one basalt rebuild carry both. There is no checksum (item 9) and the length prefix stays
 four bytes.
 
@@ -225,9 +225,9 @@ The code keeps the old names until a lane renames them.
 
 ### The repository
 
-Ruled by the architect, 2026-11-14 (UTC). The review is cleared. The repository
-`nifeos/program_argument_contract` is created after the three renames above and milestone 994 land.
-It is tagged `v0.1.0-pre.1` after the move check and a release dry run, with `publish = false`.
+Ruled by the architect, 2026-11-14 (UTC), who cleared the review. A lane creates the repository
+`nifeos/program_argument_contract` after the three renames above and milestone 994 land.
+It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with `publish = false`.
 
 ## Done when
 
@@ -255,5 +255,5 @@ An outside review of `program_argument_contract` before it leaves. Four items bl
 manifest and a repository that do not stand alone, text that reaches back into nife, and seven names
 the template's gate refuses). Five land before the first tag (the content-length name, three Kani
 harnesses, a test for the one `unsafe` function, the mutation exemption, and an honest statement of
-what all-or-nothing covers), and six come later. Three rulings are recorded:
+what all-or-nothing covers), and six come later. This block records three rulings:
 the layout leaves as built with the magic unnumbered, three provisional public names, and the repository.
