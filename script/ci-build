@@ -150,8 +150,8 @@ test-aarch64-riscv64|ci|script/test --arch aarch64,riscv64
 test-x86_64|ci|script/test --arch x86_64 --no-host
 test-host|ci|cargo xtask test --host-only
 swish-check|local|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check && script/swish-check --arch aarch64 --input-race
-swish-check-aarch64-riscv64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check --arch aarch64 && script/swish-check --arch riscv64 && script/swish-check --arch aarch64 --input-race
-swish-check-x86_64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check --arch x86_64
+swish-check-aarch64-riscv64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/region-check --arch aarch64 && script/region-check --arch riscv64 && script/swish-check --arch aarch64 && script/swish-check --arch riscv64 && script/swish-check --arch aarch64 --input-race
+swish-check-x86_64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/region-check --arch x86_64 && script/swish-check --arch x86_64
 rg-threads-aarch64-riscv64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 cargo test -p walk_pricing && NIFE_RIPGREP_REQUIRED=1 NIFE_SMP=4 script/test --arch aarch64,riscv64 --test ripgrep && NIFE_IOPING_REQUIRED=1 NIFE_HACKBENCH_REQUIRED=1 NIFE_SPEEDTEST1_REQUIRED=1 script/test --arch aarch64,riscv64 --test unmodified_
 rg-threads-x86_64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 NIFE_SMP=4 script/test --arch x86_64 --test ripgrep && NIFE_IOPING_REQUIRED=1 NIFE_HACKBENCH_REQUIRED=1 NIFE_SPEEDTEST1_REQUIRED=1 script/test --arch x86_64 --test unmodified_
 boot-check|local|script/boot-check
@@ -236,6 +236,8 @@ TABLE
 #                       `boot-check` job after that row.
 #   boot-file-size-check builds the release x86_64 UEFI image (a release kernel and archive, which
 #                       only `stick` and `install-boot` build otherwise) to budget its size.
+#   region-check        is not a row of its own: it is the first step of the two `swish-check-*` ci
+#                       rows, which build the same debug programs, so it costs a read of their ELFs.
 #   stack-frame-check   builds the kernel test binary twice; `-Z emit-stack-sizes` changes the
 #                       build, so the artifacts the `test` check just made cannot be reused.
 #   stack-depth-check   the same build as the row above, sharing its artifacts.
