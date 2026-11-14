@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -244,6 +244,18 @@ Concrete example. `reply_errno(-5_000_000_000)` is `Some(71)`, where a truncatin
 ## Done when
 
 The checks are in [the appendix](1090-filesystem-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Every item in this block and its appendices, and decision B. Checked by reading
+  each item and decision against the tree at this branch's head: decisions A and C are the only
+  parts built (the store directory is `.extended-attributes` in the crate, the server, the host
+  tool and the notes, and the reply word's error range is bounded with its proofs), and the items
+  still describe the tree as it stands.
+- **Decision.** `design/decisions/0099-apple-metadata-at-rest.md` still names the store directory
+  `.nife-attrs` in its bytes-at-rest row and in its closing paragraph. Under decision A the name is
+  `.extended-attributes`. A lane does not change a decision's words, so the change waits for the
+  decision's owner to approve it.
 
 ## BUGS
 
