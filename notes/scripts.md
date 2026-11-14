@@ -111,7 +111,7 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/stack-depth-check` | How deep a kernel thread stack can get, by walking the call graph. |
 | `script/build-is-reproducible` | The same commit builds the same bytes, from any path. |
 | `script/fastpath-footprint` | An upper bound on the IPC fastpath's instruction footprint. |
-| `script/boot-file-size-check` | The release `BOOTX64.EFI` against a 16 MiB budget, a quarter of its slot; prints the breakdown. |
+| `script/boot-file-size-check` | The release `BOOTX64.EFI` against a 16 MiB budget; prints the breakdown. |
 | `script/image-permissions` | Shipped images obey W^X. |
 | `script/crate-probes` | Build fifty crates.io crates against the patched `std`. |
 | `script/crypto-probes` | Which TLS providers build for nife. |
