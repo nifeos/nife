@@ -3,8 +3,8 @@
 //! and payload reached as methods over offsets, each bounds-checked through
 //! [`MappedWindow`]. Each program maps its own frame wherever
 //! its image leaves room, so the type is constructed with its base. It lives here rather than in
-//! `crates/socket_contract` because `MappedWindow` cannot compile for the host and that crate's
-//! wire format is host-tested. See notes/user-mode-runtime.md.
+//! `crates/socket_contract` because a contract crate never links the runtime: the dependency runs
+//! from this crate to that one. See notes/user-mode-runtime.md.
 
 //! ```no_run
 //! use user_mode_runtime::socket_frame::Frame;
@@ -30,7 +30,7 @@
 //! give the two copies a way to disagree. The module takes its name from the contract it reads,
 //! `socket_frame`, so `socket_contract::` stays the one place a reader looks for the wire.
 
-use socket_contract::{OFF_DST_IP, OFF_DST_PORT, OFF_LEN, OFF_PAYLOAD};
+use socket_contract::{DATA_MAXIMUM, OFF_DST_IP, OFF_DST_PORT, OFF_LEN, OFF_PAYLOAD};
 
 use crate::mapped_window::{MappedWindow, PAGE};
 
@@ -89,6 +89,19 @@ impl Frame {
         self.window.r16(OFF_DST_PORT)
     }
 
+    /// Read the length field at `OFF_LEN`: what the last `RECEIVE` wrote, or what [`set_len`](Self::set_len)
+    /// cleared it to, so a client can watch for the reply.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes, for
+    /// std's `len`.
+    #[allow(
+        clippy::len_without_is_empty,
+        reason = "a header field, not a collection"
+    )]
+    pub fn len(&self) -> u16 {
+        self.window.r16(OFF_LEN)
+    }
+
     /// Write the length field at `OFF_LEN`. The stack never reads it: a `SEND*` takes its length
     /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
     /// that clears it before a `RECEIVE` to watch for the reply.
@@ -106,7 +119,7 @@ impl Frame {
     /// a reply word's length, and a peer's idea of a length is data, so the clamp against
     /// `out.len()` is the bounds check's first line rather than the caller's job.
     pub fn payload_read(&self, n: usize, out: &mut [u8]) -> usize {
-        let n = n.min(out.len());
+        let n = n.min(out.len()).min(DATA_MAXIMUM);
         self.window.copy_to_slice(OFF_PAYLOAD, &mut out[..n]);
         n
     }
