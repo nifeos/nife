@@ -148,6 +148,18 @@ pub(super) struct SpawnEndpoint {
 /// How many first messages [`SpawnEndpoint`] keeps from senders it is not serving.
 const STASHED: usize = 4;
 
+/// **Why [`SpawnEndpoint::grant_resolver`] returned no badge**, which decides whether waiting for
+/// a reap can help.
+///
+/// Name: provisional (milestone 1086's lane).
+enum NoGrant {
+    /// No badge or capability slot is free now, and a due reap may free one.
+    Wait,
+    /// There is no resolver, or it refused the grant, or its answer was no answer: no reap changes
+    /// that.
+    Refused,
+}
+
 /// **How many installer holders may be alive at once** (milestone 809): one reply endpoint each.
 /// A spawn that would be one more is refused. `jig` is a foreground job, so one is the usual
 /// number and four is a pipeline of them.
@@ -173,25 +185,50 @@ impl SpawnEndpoint {
     }
 
     /// **Grant job `label` a resolver badge for `zone`** (milestone 892), and return a fresh badged
-    /// copy of the resolver's endpoint for the caller to place and delete. `None` with no resolver,
-    /// with every badge held by a live job, or if the kernel refused the copy (and then the grant is
-    /// forgotten at once).
+    /// copy of the resolver's endpoint for the caller to place and delete. [`NoGrant::Wait`] with
+    /// every badge held by a live job, or if the kernel refused the copy (and then the grant is
+    /// forgotten at once): a due reap may change either. [`NoGrant::Refused`] with no resolver, or
+    /// when the resolver refused the grant, which no reap changes.
+    ///
+    /// Every piece but the last is a `SEND`. The last is a `CALL`, and the resolver's answer
+    /// (`domain_name_resolution_contract::control_answer`) says whether the grant is in force. A
+    /// refusal, or a word that is no answer, is no grant: the badge is forgotten in the resolver
+    /// too, so its window is free, and the entry here stays free. The reason has nowhere to be
+    /// written yet (the crate's BUGS).
     ///
     /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
     /// The pull request records no other name considered.
-    pub(super) fn grant_resolver(&mut self, label: u64, zone: &str) -> Option<u64> {
-        let ep = self.resolver?;
-        let entry = self.resolving.iter().position(Option::is_none)?;
+    fn grant_resolver(&mut self, label: u64, zone: &str) -> Result<u64, NoGrant> {
+        let ep = self.resolver.ok_or(NoGrant::Refused)?;
+        let entry = self
+            .resolving
+            .iter()
+            .position(Option::is_none)
+            .ok_or(NoGrant::Wait)?;
         let badge = entry as u32 + 1;
-        for (w0, w1) in domain_name_resolution_contract::grant_messages(badge, zone.as_bytes())? {
-            send(ep, w0, w1, 0);
+        let mut pieces = domain_name_resolution_contract::grant_messages(badge, zone.as_bytes())
+            .ok_or(NoGrant::Refused)?
+            .peekable();
+        let mut answer = Err(None);
+        while let Some((w0, w1)) = pieces.next() {
+            if pieces.peek().is_some() {
+                send(ep, w0, w1, 0);
+            } else {
+                answer = domain_name_resolution_contract::control_answer(call(ep, w0, w1).0);
+            }
+        }
+        if answer.is_err() {
+            if let Some((w0, w1)) = domain_name_resolution_contract::forget_message(badge) {
+                send(ep, w0, w1, 0);
+            }
+            return Err(NoGrant::Refused);
         }
         self.resolving[entry] = Some(label);
         match badged(ep, badge as u64) {
-            Ok(copy) => Some(copy),
+            Ok(copy) => Ok(copy),
             Err(()) => {
                 self.forget_resolver(label);
-                None
+                Err(NoGrant::Wait)
             }
         }
     }
@@ -199,13 +236,20 @@ impl SpawnEndpoint {
     /// **A resolver badge for `zone`, when the job may hold one** (milestone 892): the badged copy,
     /// and whether a job that should hold one is going without, which refuses its spawn. A badge
     /// every live job holds may be one a finished job's due reap frees, as a window may, so this
-    /// waits for the reaps that are due before it gives up. `zone` is `None` for a job the table
-    /// names no zone for or that is not eligible; on a boot with no resolver nothing is owed.
+    /// waits for the reaps that are due before it gives up. A grant the resolver refused is given
+    /// up at once, since no reap changes it. `zone` is `None` for a job the table names no zone for
+    /// or that is not eligible; on a boot with no resolver nothing is owed.
     pub(super) fn resolver_for(&mut self, label: u64, zone: Option<&str>) -> (Option<u64>, bool) {
         let Some(zone) = zone.filter(|_| self.resolver.is_some()) else {
             return (None, false);
         };
-        let copy = self.until_reaped(|s| s.grant_resolver(label, zone));
+        let copy = self
+            .until_reaped(|s| match s.grant_resolver(label, zone) {
+                Ok(copy) => Some(Some(copy)),
+                Err(NoGrant::Refused) => Some(None),
+                Err(NoGrant::Wait) => None,
+            })
+            .flatten();
         (copy, copy.is_none())
     }
 

@@ -89,3 +89,8 @@ and `std` layouts of a child's table.
   pool is one region smaller until reboot. nife's `std` never splits (its allocator only `MAP`s), so
   this takes a program written to do it. Closing it needs a right that allows `MAP` and not `SPLIT`,
   which is the syscall surface and an architect's call.
+- A grant the name resolver refuses (its answer to the grant's last piece, which the spawner
+  `CALL`s) fails the job's spawn, and the shell sees only "could not spawn". The resolver sends the
+  reason, and the spawner reads it, but nothing writes a line from this process once the shell is
+  running: `announce` is for before the shell starts, and the system log has no writers yet. The
+  reason is printed once this process has somewhere to write it.

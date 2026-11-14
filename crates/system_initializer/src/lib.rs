@@ -25,6 +25,7 @@
 //! - Native slot 1 is the source or the `--mem` budget, safe only while no manifest has both.
 //! - No boot shows a base digest refusal's UART line: the kernel halts first; host tests cover it.
 //! - `refusal_console` copies `console`'s polled transmit per architecture rather than sharing it.
+//! - A grant the resolver refuses fails the spawn without saying why: nothing writes a line here.
 //!
 //! Name: ratified 2026-08-04 (calef). `BootEndowment` ratified the same day.
 
