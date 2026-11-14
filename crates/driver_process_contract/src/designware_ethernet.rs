@@ -13,9 +13,7 @@ use designware_ethernet::bring_up::{Account, AddressSource, Error, Inputs};
 use designware_ethernet::cache_coherence::{Observation, Payload, Verdict};
 use designware_ethernet::link::{Link, Speed};
 use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
-use designware_ethernet::{
-    management_data_input_output as mdio, network_interface_controller as controller,
-};
+use designware_ethernet::{management_data_io as mdio, network_interface_controller as controller};
 use startup_page_contract::WindowKind;
 
 /// The DMA region, `designware_ethernet::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The same address as
@@ -274,7 +272,7 @@ fn outcome_code(outcome: Result<bool, Error>) -> (u64, u64) {
         Ok(linked) => (0, u64::from(linked)),
         Err(Error::Silent { version }) => (1, u64::from(version)),
         Err(Error::NoStationAddress) => (2, 0),
-        Err(Error::ManagementDataInputOutput(mdio::Error::Timeout {
+        Err(Error::ManagementDataIo(mdio::Error::Timeout {
             physical_layer_device_address,
             register,
         })) => (
@@ -303,7 +301,7 @@ fn outcome_from_code(code: u64, detail: u64) -> Option<Result<bool, Error>> {
         2 => narrow(0).map(|_| Err(Error::NoStationAddress))?,
         3 => {
             let d = narrow(16)?;
-            Err(Error::ManagementDataInputOutput(mdio::Error::Timeout {
+            Err(Error::ManagementDataIo(mdio::Error::Timeout {
                 physical_layer_device_address: d as u8,
                 register: (d >> 8) as u8,
             }))
@@ -551,7 +549,7 @@ mod tests {
                 version: 0xffff_ffff,
             },
             Error::NoStationAddress,
-            Error::ManagementDataInputOutput(mdio::Error::Timeout {
+            Error::ManagementDataIo(mdio::Error::Timeout {
                 physical_layer_device_address: 3,
                 register: 0x1e,
             }),

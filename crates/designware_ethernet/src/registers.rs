@@ -140,13 +140,13 @@ pub const fn mac_hardware_feature_register(index: u32) -> u32 {
 /// Name: ratified 2026-11-03 (UTC), #3126.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR")]
 #[doc(alias = "MAC_MDIO_ADDR")]
-pub const MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER: u32 = 0x0200;
+pub const MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER: u32 = 0x0200;
 /// **MDIO (management data input/output) data register** (`GMAC_MAC_MDIO_DATA`, `dwqereg.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3126.
 #[doc(alias = "GMAC_MAC_MDIO_DATA")]
 #[doc(alias = "MAC_MDIO_DATA")]
-pub const MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER: u32 = 0x0204;
+pub const MAC_MANAGEMENT_DATA_IO_DATA_REGISTER: u32 = 0x0204;
 /// **MAC address 0, high register** (`GMAC_MAC_ADDR0_HI`, `dwqereg.h`): the station address's high
 /// half (bytes 4 and 5).
 ///
@@ -498,8 +498,8 @@ mod tests {
     #[test]
     fn the_administrative_registers_are_off_the_direct_memory_access_register_page() {
         for r in [
-            MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
-            MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+            MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
+            MAC_MANAGEMENT_DATA_IO_DATA_REGISTER,
             MAC_ADDRESS_0_HIGH_REGISTER,
             MAC_PACKET_FILTER,
             MAC_CONFIGURATION_REGISTER,

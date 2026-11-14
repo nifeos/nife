@@ -24,7 +24,7 @@
 //! Name: ratified 2026-11-03 (UTC), #3122.
 
 use crate::link::{Link, Speed};
-use crate::management_data_input_output::{self, ManagementDataInputOutput};
+use crate::management_data_io::{self, ManagementDataIo};
 
 /// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`,
 /// matched exactly there; OpenBSD matches the OUI and model.
@@ -166,72 +166,55 @@ pub(crate) const fn link_from_registers(
     control_1000base_t: u16,
     status_1000base_t: u16,
 ) -> Option<Link> {
-    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS == 0
-        || basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE != 0
+    if basic_mode_status & management_data_io::BASIC_MODE_STATUS_LINK_STATUS == 0
+        || basic_mode_control & management_data_io::BASIC_MODE_CONTROL_ISOLATE != 0
     {
         return None;
     }
-    if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
-        == 0
-    {
-        let speed = if basic_mode_control
-            & management_data_input_output::BASIC_MODE_CONTROL_SPEED_1000
-            != 0
-        {
+    if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE == 0 {
+        let speed = if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_SPEED_1000 != 0 {
             Speed::Thousand
-        } else if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_SPEED_100
-            != 0
-        {
+        } else if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_SPEED_100 != 0 {
             Speed::Hundred
         } else {
             Speed::Ten
         };
         return Some(Link {
             speed,
-            full_duplex: basic_mode_control
-                & management_data_input_output::BASIC_MODE_CONTROL_FULL_DUPLEX
+            full_duplex: basic_mode_control & management_data_io::BASIC_MODE_CONTROL_FULL_DUPLEX
                 != 0,
         });
     }
-    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
-        == 0
-    {
+    if basic_mode_status & management_data_io::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE == 0 {
         return None;
     }
     let common = autonegotiation_advertisement & link_partner_abilities;
     let (speed, full_duplex) = if control_1000base_t
-        & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
+        & management_data_io::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
         != 0
         && status_1000base_t
-            & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
+            & management_data_io::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
             != 0
     {
         (Speed::Thousand, true)
-    } else if control_1000base_t
-        & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
-        != 0
+    } else if control_1000base_t & management_data_io::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX != 0
         && status_1000base_t
-            & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
+            & management_data_io::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
             != 0
     {
         (Speed::Thousand, false)
-    } else if common
-        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
-        != 0
+    } else if common & management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX != 0
     {
         (Speed::Hundred, true)
     } else if common
-        & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
-            | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX)
+        & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
+            | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX)
         != 0
     {
         (Speed::Hundred, false)
-    } else if common
-        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
-        != 0
-    {
+    } else if common & management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX != 0 {
         (Speed::Ten, true)
-    } else if common & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T != 0 {
+    } else if common & management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T != 0 {
         (Speed::Ten, false)
     } else {
         return None;
@@ -246,8 +229,8 @@ pub(crate) const fn link_from_registers(
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
 pub(crate) const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () = assert!(
-    management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
-        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+    management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
+        & management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
         == 0
 );
 
@@ -478,10 +461,10 @@ pub(crate) const fn strapped_voltage_millivolts(chip_configuration: u16) -> u32 
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn read_extended(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
     extended: u16,
-) -> Result<u16, management_data_input_output::Error> {
+) -> Result<u16, management_data_io::Error> {
     bus.write(
         physical_layer_device_address,
         EXTENDED_REGISTER_ADDRESS_PORT,
@@ -494,11 +477,11 @@ pub fn read_extended(
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn write_extended(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
     extended: u16,
     value: u16,
-) -> Result<(), management_data_input_output::Error> {
+) -> Result<(), management_data_io::Error> {
     bus.write(
         physical_layer_device_address,
         EXTENDED_REGISTER_ADDRESS_PORT,
@@ -513,12 +496,12 @@ pub fn write_extended(
 
 /// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
 fn modify_extended(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
     extended: u16,
     clear: u16,
     set: u16,
-) -> Result<u16, management_data_input_output::Error> {
+) -> Result<u16, management_data_io::Error> {
     let value = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;
     write_extended(bus, physical_layer_device_address, extended, value)?;
     Ok(value)
@@ -549,10 +532,10 @@ pub struct Applied {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn configure(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
     settings: &Settings,
-) -> Result<Applied, management_data_input_output::Error> {
+) -> Result<Applied, management_data_io::Error> {
     let saved = bus.read(
         physical_layer_device_address,
         EXTENDED_REGISTER_ADDRESS_PORT,
@@ -645,11 +628,11 @@ pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIE
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn apply_speed(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
     settings: &Settings,
     speed: Speed,
-) -> Result<u16, management_data_input_output::Error> {
+) -> Result<u16, management_data_io::Error> {
     let inverted = match speed {
         Speed::Ten => settings.transmit_clock_inverted[0],
         Speed::Hundred => settings.transmit_clock_inverted[1],
@@ -681,38 +664,23 @@ pub fn apply_speed(
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `link`: a verb phrase, since it reads the registers.
 pub fn read_link(
-    bus: &mut impl ManagementDataInputOutput,
+    bus: &mut impl ManagementDataIo,
     physical_layer_device_address: u8,
-) -> Result<Option<Link>, management_data_input_output::Error> {
+) -> Result<Option<Link>, management_data_io::Error> {
     let address = physical_layer_device_address;
-    let _ = bus.read(
-        address,
-        management_data_input_output::BASIC_MODE_STATUS_REGISTER,
-    )?;
-    let basic_mode_status = bus.read(
-        address,
-        management_data_input_output::BASIC_MODE_STATUS_REGISTER,
-    )?;
-    let basic_mode_control = bus.read(
-        address,
-        management_data_input_output::BASIC_MODE_CONTROL_REGISTER,
-    )?;
+    let _ = bus.read(address, management_data_io::BASIC_MODE_STATUS_REGISTER)?;
+    let basic_mode_status = bus.read(address, management_data_io::BASIC_MODE_STATUS_REGISTER)?;
+    let basic_mode_control = bus.read(address, management_data_io::BASIC_MODE_CONTROL_REGISTER)?;
     let autonegotiation_advertisement = bus.read(
         address,
-        management_data_input_output::AUTONEGOTIATION_ADVERTISEMENT_REGISTER,
+        management_data_io::AUTONEGOTIATION_ADVERTISEMENT_REGISTER,
     )?;
     let link_partner_abilities = bus.read(
         address,
-        management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER,
+        management_data_io::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER,
     )?;
-    let control_1000base_t = bus.read(
-        address,
-        management_data_input_output::CONTROL_1000BASE_T_REGISTER,
-    )?;
-    let status_1000base_t = bus.read(
-        address,
-        management_data_input_output::STATUS_1000BASE_T_REGISTER,
-    )?;
+    let control_1000base_t = bus.read(address, management_data_io::CONTROL_1000BASE_T_REGISTER)?;
+    let status_1000base_t = bus.read(address, management_data_io::STATUS_1000BASE_T_REGISTER)?;
     Ok(link_from_registers(
         basic_mode_status,
         basic_mode_control,
@@ -767,7 +735,7 @@ mod tests {
 
     #[test]
     fn the_clause_22_registers_decode_every_speed_and_duplex() {
-        use management_data_input_output::*;
+        use management_data_io::*;
         let up = BASIC_MODE_STATUS_LINK_STATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE;
         let advertise = AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
             | AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
@@ -867,7 +835,7 @@ mod tests {
 
     #[test]
     fn a_link_that_is_down_or_still_negotiating_decodes_to_none() {
-        use management_data_input_output::*;
+        use management_data_io::*;
         let all = AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
             | AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
             | AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
@@ -902,7 +870,7 @@ mod tests {
 
     #[test]
     fn with_negotiation_off_the_forced_bits_decide() {
-        use management_data_input_output::*;
+        use management_data_io::*;
         let up = BASIC_MODE_STATUS_LINK_STATUS;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
         let go = |basic_mode_control| link_from_registers(up, basic_mode_control, 0, 0, 0, 0);
@@ -980,7 +948,7 @@ mod tests {
     fn the_link_reads_none_until_a_cable_resolves_it() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
         assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), None);
-        assert!(!management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
+        assert!(!management_data_io::is_link_up(&mut physical_layer_device, 0).unwrap());
         let gigabit = Link {
             speed: Speed::Thousand,
             full_duplex: true,
@@ -990,7 +958,7 @@ mod tests {
             read_link(&mut physical_layer_device, 0).unwrap(),
             Some(gigabit)
         );
-        assert!(management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
+        assert!(management_data_io::is_link_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]

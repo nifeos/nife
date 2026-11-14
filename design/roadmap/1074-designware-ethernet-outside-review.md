@@ -123,7 +123,7 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 
 5. Sixteen compile-time gates were public API.
    Finding: `pub const …_DO_NOT_OVERLAP: ()` items sit in every public module:
-   `network_interface_controller` (lines 220, 251, 468, 541), `management_data_input_output`
+   `network_interface_controller` (lines 220, 251, 468, 541), `management_data_io`
    (234, 351, 394), `motorcomm_physical_layer_device` (140, 281, 586), `jh7110` (77, 136) and
    `cache_coherence` (62). They exist so a mutation exclusion can cite them, and docs.rs will list
    unit-typed constants beside the API. The three in `descriptor.rs` sit in a private module
@@ -136,14 +136,14 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 6. The visibility of register and clause 22 constants follows no rule.
    Finding: `MAC_CONFIGURATION_REGISTER` is `pub(crate)` (`src/registers.rs:22`) while seven of its <!-- line-citation: exception. Reason: pinned -->
    bits are `pub` (lines 36 to 79). `BASIC_MODE_CONTROL_RESET` and
-   `BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE` are `pub` (`src/management_data_input_output.rs:88,180`) <!-- line-citation: exception. Reason: pinned -->
+   `BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE` are `pub` (`src/management_data_io.rs:88,180`) <!-- line-citation: exception. Reason: pinned -->
    while the registers they live in and `BASIC_MODE_STATUS_LINK_STATUS` are `pub(crate)`. The
-   `ManagementDataInputOutput` trait takes `register: u8`, yet a caller or an implementer must
+   `ManagementDataIo` trait takes `register: u8`, yet a caller or an implementer must
    restate `0x00` and `0x01`. No caller outside the crate uses any of the stray public bits; the
    callers reach `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`, `REGISTER_WINDOW_BYTES`, the two tail
    pointer registers, `MAC_ADDRESS_0_HIGH_REGISTER`, `MAC_ADDRESS_0_LOW_REGISTER` and
    `CHANNEL_STATUS_REGISTER`.
-   Change: one rule, written at the top of `registers` and `management_data_input_output`. The
+   Change: one rule, written at the top of `registers` and `management_data_io`. The
    compatible choice is the narrow one: `pub(crate)` for every constant no caller uses, since
    widening later breaks nobody and narrowing later breaks everybody. The whole-map alternative is
    also defensible: every BSD `*reg.h` and Linux's `dwmac4.h` publish the complete map, and a kernel
@@ -189,11 +189,11 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 
 10. Two rename artifacts in documentation.
    Finding: `CLOCK_RANGE_SHIFT` carries
-   `#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER_CR_SHIFT")]`
-   (`src/management_data_input_output.rs:21`), a spelling no source has; its doc comment names the <!-- line-citation: exception. Reason: pinned -->
+   `#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER_CR_SHIFT")]`
+   (`src/management_data_io.rs:21`), a spelling no source has; its doc comment names the <!-- line-citation: exception. Reason: pinned -->
    real one, `GMAC_MAC_MDIO_ADDR_CR_SHIFT`, and `register_names` flags the mismatch. The two
    `100BASE-TX` constants open their doc comments with their own names in the place the source
-   spelling goes (`src/management_data_input_output.rs:129,134`) where every neighbor opens with <!-- line-citation: exception. Reason: pinned -->
+   spelling goes (`src/management_data_io.rs:129,134`) where every neighbor opens with <!-- line-citation: exception. Reason: pinned -->
    `ANLPAR_…`; the aliases `ANLPAR_TX_FD` and `ANLPAR_TX` are right.
    Change: the alias reads `GMAC_MAC_MDIO_ADDR_CR_SHIFT`; the two openings read `(ANLPAR_TX_FD,
    OpenBSD mii.h)` and `(ANLPAR_TX, OpenBSD mii.h)`.
@@ -201,7 +201,7 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 
 11. `100BASE-TX` meets the spelled-out gate.
    Finding: `spelled_out.py` refuses `AUTONEGOTIATION_LINK_PARTNER_100BASE_TX` and
-   `…_100BASE_TX_FULL_DUPLEX` (`src/management_data_input_output.rs:133,139`): `tx` is on the <!-- line-citation: exception. Reason: pinned -->
+   `…_100BASE_TX_FULL_DUPLEX` (`src/management_data_io.rs:133,139`): `tx` is on the <!-- line-citation: exception. Reason: pinned -->
    spelled-out list and the helper never keeps a source spelling for an integer constant. The
    review package accepted the names as the standard's term, and `design/naming.md` says a
    specification's term of art keeps its spelling inside a name this tree authors. `100BASE-TX` is

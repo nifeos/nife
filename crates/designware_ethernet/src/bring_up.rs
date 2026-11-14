@@ -14,8 +14,8 @@ use crate::link::{Link, Speed};
 use crate::motorcomm_physical_layer_device::{self, Settings, SettingsSource};
 use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
-    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, jh7110, layout,
-    management_data_input_output, registers,
+    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, jh7110, layout, management_data_io,
+    registers,
 };
 
 /// **What the bring-up drives**: the controller's register window (the [`Hardware`] it is), its
@@ -97,7 +97,7 @@ pub enum Error {
     NoStationAddress,
     /// An MDIO command did not complete.
     #[doc(alias = "mdio")]
-    ManagementDataInputOutput(management_data_input_output::Error),
+    ManagementDataIo(management_data_io::Error),
     /// The PHY is not the YT8531 these board settings are for.
     UnknownPhysicalLayerDevice {
         /// What it answered.
@@ -224,11 +224,9 @@ fn bring_up_physical_layer_device(
     account: &mut Account,
 ) -> Result<(), Error> {
     let device = inputs.physical_layer_device_address;
-    account.physical_layer_device_id = management_data_input_output::physical_layer_device_id(
-        &mut management_data_input_output::Bus(port),
-        device,
-    )
-    .map_err(Error::ManagementDataInputOutput)?;
+    account.physical_layer_device_id =
+        management_data_io::physical_layer_device_id(&mut management_data_io::Bus(port), device)
+            .map_err(Error::ManagementDataIo)?;
     if account.physical_layer_device_id
         != motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
     {
@@ -237,11 +235,11 @@ fn bring_up_physical_layer_device(
         });
     }
     let applied = motorcomm_physical_layer_device::configure(
-        &mut management_data_input_output::Bus(port),
+        &mut management_data_io::Bus(port),
         device,
         &inputs.physical_layer_device,
     )
-    .map_err(Error::ManagementDataInputOutput)?;
+    .map_err(Error::ManagementDataIo)?;
     account.physical_layer_device = Some((
         applied.voltage_millivolts,
         inputs.physical_layer_device.source,
@@ -257,18 +255,15 @@ fn wait_for_link(
     account: &mut Account,
 ) -> Result<Option<Link>, Error> {
     let device = inputs.physical_layer_device_address;
-    management_data_input_output::restart_autonegotiation(
-        &mut management_data_input_output::Bus(&mut *port),
-        device,
-    )
-    .map_err(Error::ManagementDataInputOutput)?;
+    management_data_io::restart_autonegotiation(&mut management_data_io::Bus(&mut *port), device)
+        .map_err(Error::ManagementDataIo)?;
     let started = port.now_microseconds();
     let link = loop {
         if let Some(l) = motorcomm_physical_layer_device::read_link(
-            &mut management_data_input_output::Bus(&mut *port),
+            &mut management_data_io::Bus(&mut *port),
             device,
         )
-        .map_err(Error::ManagementDataInputOutput)?
+        .map_err(Error::ManagementDataIo)?
         {
             break Some(l);
         }
@@ -281,12 +276,12 @@ fn wait_for_link(
     account.link = link;
     if let Some(l) = link {
         motorcomm_physical_layer_device::apply_speed(
-            &mut management_data_input_output::Bus(&mut *port),
+            &mut management_data_io::Bus(&mut *port),
             device,
             &inputs.physical_layer_device,
             l.speed,
         )
-        .map_err(Error::ManagementDataInputOutput)?;
+        .map_err(Error::ManagementDataIo)?;
         controller::start(port, l, false);
     }
     Ok(link)
@@ -340,7 +335,7 @@ fn zero(port: &mut impl Port) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_1_REGISTER;
+    use crate::management_data_io::PHYSICAL_LAYER_DEVICE_ID_1_REGISTER;
     use crate::simulator::{Memory, NetworkInterfaceController};
 
     const REGION: u64 = 0x4800_0000;

@@ -15,7 +15,7 @@ use std::vec;
 use std::vec::Vec;
 
 use crate::link::{Link, Speed};
-use crate::management_data_input_output::{self, ManagementDataInputOutput};
+use crate::management_data_io::{self, ManagementDataIo};
 use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
@@ -196,10 +196,10 @@ impl PhysicalLayerDevice {
     /// each one cleared.
     pub(crate) fn yt8531_at_1800_millivolts() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
-        registers[management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_1_REGISTER as usize] =
+        registers[management_data_io::PHYSICAL_LAYER_DEVICE_ID_1_REGISTER as usize] =
             (motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16)
                 as u16;
-        registers[management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_2_REGISTER as usize] =
+        registers[management_data_io::PHYSICAL_LAYER_DEVICE_ID_2_REGISTER as usize] =
             motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
         let mut extended = BTreeMap::new();
         extended.insert(
@@ -222,8 +222,8 @@ impl PhysicalLayerDevice {
             motorcomm_physical_layer_device::EXTENDED_PAD_DRIVE_STRENGTH_REGISTER,
             0xffff,
         );
-        registers[management_data_input_output::BASIC_MODE_CONTROL_REGISTER as usize] =
-            management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE;
+        registers[management_data_io::BASIC_MODE_CONTROL_REGISTER as usize] =
+            management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE;
         PhysicalLayerDevice {
             registers,
             extended,
@@ -248,51 +248,58 @@ impl PhysicalLayerDevice {
     }
 }
 
-impl ManagementDataInputOutput for PhysicalLayerDevice {
+impl ManagementDataIo for PhysicalLayerDevice {
     fn read(
         &mut self,
         _physical_layer_device_address: u8,
         register: u8,
-    ) -> Result<u16, management_data_input_output::Error> {
+    ) -> Result<u16, management_data_io::Error> {
         let register = register & 0x1f;
         Ok(match register {
-            motorcomm_physical_layer_device::EXTENDED_REGISTER_DATA_PORT => {
-                self.extended(self.registers[motorcomm_physical_layer_device::EXTENDED_REGISTER_ADDRESS_PORT as usize])
-            }
-            management_data_input_output::BASIC_MODE_STATUS_REGISTER => {
+            motorcomm_physical_layer_device::EXTENDED_REGISTER_DATA_PORT => self.extended(
+                self.registers
+                    [motorcomm_physical_layer_device::EXTENDED_REGISTER_ADDRESS_PORT as usize],
+            ),
+            management_data_io::BASIC_MODE_STATUS_REGISTER => {
                 if self.link.is_some() {
-                    management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS
-                        | management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
+                    management_data_io::BASIC_MODE_STATUS_LINK_STATUS
+                        | management_data_io::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
                 } else {
                     0
                 }
             }
-            management_data_input_output::AUTONEGOTIATION_ADVERTISEMENT_REGISTER => {
-                management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
-                    | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
-                    | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
-                    | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T
+            management_data_io::AUTONEGOTIATION_ADVERTISEMENT_REGISTER => {
+                management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
+                    | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+                    | management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+                    | management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T
             }
-            management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER => self.link.map_or(0, |l| match l.speed {
-                Speed::Thousand => 0,
-                Speed::Hundred if l.full_duplex => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
-                Speed::Hundred => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX,
-                Speed::Ten if l.full_duplex => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX,
-                Speed::Ten => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T,
-            }),
-            management_data_input_output::CONTROL_1000BASE_T_REGISTER => {
-                management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
-                    | management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
+            management_data_io::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER => {
+                self.link.map_or(0, |l| match l.speed {
+                    Speed::Thousand => 0,
+                    Speed::Hundred if l.full_duplex => {
+                        management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
+                    }
+                    Speed::Hundred => management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX,
+                    Speed::Ten if l.full_duplex => {
+                        management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+                    }
+                    Speed::Ten => management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T,
+                })
             }
-            management_data_input_output::STATUS_1000BASE_T_REGISTER => match self.link {
+            management_data_io::CONTROL_1000BASE_T_REGISTER => {
+                management_data_io::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
+                    | management_data_io::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
+            }
+            management_data_io::STATUS_1000BASE_T_REGISTER => match self.link {
                 Some(Link {
                     speed: Speed::Thousand,
                     full_duplex: true,
-                }) => management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE,
+                }) => management_data_io::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE,
                 Some(Link {
                     speed: Speed::Thousand,
                     full_duplex: false,
-                }) => management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE,
+                }) => management_data_io::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE,
                 _ => 0,
             },
             r => self.registers[r as usize],
@@ -303,7 +310,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
         _physical_layer_device_address: u8,
         register: u8,
         value: u16,
-    ) -> Result<(), management_data_input_output::Error> {
+    ) -> Result<(), management_data_io::Error> {
         let register = register & 0x1f;
         match register {
             motorcomm_physical_layer_device::EXTENDED_REGISTER_DATA_PORT => {
@@ -313,10 +320,10 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
                     value,
                 );
             }
-            management_data_input_output::BASIC_MODE_CONTROL_REGISTER => {
+            management_data_io::BASIC_MODE_CONTROL_REGISTER => {
                 self.registers[0] = value
-                    & !(management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART
-                        | management_data_input_output::BASIC_MODE_CONTROL_RESET);
+                    & !(management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART
+                        | management_data_io::BASIC_MODE_CONTROL_RESET);
             }
             r => self.registers[r as usize] = value,
         }
@@ -672,33 +679,31 @@ impl Hardware for NetworkInterfaceController {
                 self.registers.insert(offset, value);
                 self.reset_left = Some(self.reset_polls);
             }
-            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER
-                if value & management_data_input_output::COMMAND_BUSY != 0 =>
+            registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER
+                if value & management_data_io::COMMAND_BUSY != 0 =>
             {
                 let physical_layer_device = ((value
-                    >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
+                    >> management_data_io::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
                     & 0x1f) as u8;
-                let register =
-                    ((value >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f) as u8;
-                if value & (0x3 << 2) == management_data_input_output::OPERATION_COMMAND_READ {
+                let register = ((value >> management_data_io::REGISTER_ADDRESS_SHIFT) & 0x1f) as u8;
+                if value & (0x3 << 2) == management_data_io::OPERATION_COMMAND_READ {
                     let r = self
                         .physical_layer_device
                         .read(physical_layer_device, register)
                         .unwrap();
                     self.registers.insert(
-                        registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+                        registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER,
                         u32::from(r),
                     );
                 } else {
-                    let data = self
-                        .register(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER)
-                        as u16;
+                    let data =
+                        self.register(registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER) as u16;
                     self.physical_layer_device
                         .write(physical_layer_device, register, data)
                         .unwrap();
                 }
                 self.registers
-                    .insert(offset, value & !management_data_input_output::COMMAND_BUSY);
+                    .insert(offset, value & !management_data_io::COMMAND_BUSY);
             }
             registers::CHANNEL_STATUS_REGISTER => {
                 let s = self.register(offset) & !value;
@@ -732,11 +737,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn management_data_input_output_through_the_controller_reaches_the_physical_layer_device() {
+    fn management_data_io_through_the_controller_reaches_the_physical_layer_device() {
         let mut network_interface_controller =
             NetworkInterfaceController::new(0, Memory::coherent(0));
-        let id = management_data_input_output::physical_layer_device_id(
-            &mut management_data_input_output::Bus(&mut network_interface_controller),
+        let id = management_data_io::physical_layer_device_id(
+            &mut management_data_io::Bus(&mut network_interface_controller),
             0,
         )
         .unwrap();

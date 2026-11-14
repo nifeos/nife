@@ -87,7 +87,7 @@ pub mod cache_coherence;
 pub mod jh7110;
 pub mod link;
 #[doc(alias = "mdio")]
-pub mod management_data_input_output;
+pub mod management_data_io;
 pub mod motorcomm_physical_layer_device;
 pub mod network_interface_controller;
 pub mod registers;

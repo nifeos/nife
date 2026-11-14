@@ -69,7 +69,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MILLISECONDS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_management_data_input_output`] under QEMU.
+    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_management_data_io`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
