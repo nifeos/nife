@@ -16,7 +16,10 @@ $
 
 The heads of those four lines live in one crate, `crates/boot_ladder`, because three binaries agree
 on them (the kernel, `swish`, and `serial_console`) and AGENTS.md rule 7 says that makes them a
-crate. The tails carry numbers and are free to improve; a matcher keys on the head only.
+crate. The crate fixes each head's shape and takes the system's name from its caller, so it names
+no system: nife builds one `boot_ladder::Heads` from `nife` in each program that prints or reads a
+head (the kernel's console, `swish`, `boot_self_test` and `serial_console`, whose `HEADS` xtask
+reads). The tails carry numbers and are free to improve; a matcher keys on the head only.
 
 ## Why the ladder exists at all
 
@@ -123,7 +126,7 @@ against the list, and changing the set is an edit to that one list.
 
 ## The screen hold
 
-`boot_ladder::SCREEN_HELD` exists because the alternative was sampling. The window between the
+`boot_ladder::Heads::screen_held` exists because the alternative was sampling. The window between the
 kernel painting its tour and the handover clearing it closes in guest time, so no host-side
 deadline widens it. On 2026-09-20 (UTC) a loaded `script/test` run caught zero rows where the same
 leg run alone caught 56. Holding the screen until the host answers on the serial line means the

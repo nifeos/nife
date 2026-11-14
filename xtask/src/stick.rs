@@ -405,17 +405,19 @@ fn riscv64_from_our_volume() -> bool {
 /// The lines every stick boot must print, in [`stick_boot`]'s order and for its reasons. The
 /// self-test verdict is its prefix here, because what follows the count depends on the machine
 /// (a check whose device it lacks is `absent`); [`verdict_failed`] is what requires it green.
-const BOOTED: [&str; 3] = [
-    "nife uefi_loader: milestone 87",
-    boot_ladder::SELF_TEST,
-    "nife: handing the system to the userspace progenitor.",
-];
+fn booted() -> [String; 3] {
+    [
+        "nife uefi_loader: milestone 87".to_string(),
+        serial_console::HEADS.self_test().to_string(),
+        "nife: handing the system to the userspace progenitor.".to_string(),
+    ]
+}
 
 /// The self-test verdict line's `FAILED:` list, if this transcript has a red one.
 fn verdict_failed(transcript: &str) -> Option<&str> {
     let line = transcript
         .lines()
-        .find(|l| l.contains(boot_ladder::SELF_TEST))?;
+        .find(|l| serial_console::HEADS.self_test().is_in(l))?;
     let at = line.find(boot_ladder::SELF_TEST_FAILED)?;
     Some(line[at..].trim_end())
 }
@@ -503,7 +505,11 @@ fn boot_and_check(
     };
     let transcript = String::from_utf8_lossy(&output.stdout).into_owned();
     let mut passed = true;
-    for wanted in BOOTED.iter().chain(also) {
+    for wanted in booted()
+        .iter()
+        .map(String::as_str)
+        .chain(also.iter().copied())
+    {
         if !transcript.contains(wanted) {
             eprintln!("{who}: {arch}: the transcript is missing {wanted:?}");
             passed = false;

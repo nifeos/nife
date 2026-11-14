@@ -28,7 +28,7 @@ const SERIAL_GRACE_SECONDS: u64 = 120;
 
 /// Boot one of the two board architectures, `arch`, with a `ramfb` and read the tour back off it.
 ///
-/// Returns true when `boot_ladder::SELF_TEST` was decoded off the screen glyph by glyph and the
+/// Returns true when the verdict's head (`boot_ladder::Heads::self_test`) was decoded off the screen glyph by glyph and the
 /// serial line carried it too. The UART transcript alone is identical with the screen black, so
 /// the screen read is the claim: the `fw_cfg` conversation, the address the kernel handed over, the
 /// byte order, the stride and the font. The machine has no virtio-gpu, because `screendump` with no
@@ -89,12 +89,12 @@ pub(crate) fn screen_boot(arch: &str) -> bool {
     // bound) for the serial line to carry it too before stopping the machine.
     if seen
         .as_deref()
-        .is_some_and(|text| text.contains(boot_ladder::SELF_TEST))
+        .is_some_and(|text| serial_console::HEADS.self_test().is_in(text))
     {
         let deadline =
             std::time::Instant::now() + std::time::Duration::from_secs(SERIAL_GRACE_SECONDS);
         while std::time::Instant::now() < deadline
-            && !read_so_far().contains(boot_ladder::SELF_TEST)
+            && !serial_console::HEADS.self_test().is_in(&read_so_far())
             && matches!(child.try_wait(), Ok(None))
         {
             std::thread::sleep(std::time::Duration::from_millis(250));
@@ -190,7 +190,7 @@ fn start_ramfb_boot(
 fn screen_showed_the_tour(seen: Option<&str>, arch: &str, shot: &std::path::Path) -> bool {
     let mut ok = true;
     match seen {
-        Some(text) if text.contains(boot_ladder::SELF_TEST) => {
+        Some(text) if serial_console::HEADS.self_test().is_in(text) => {
             let rows: Vec<&str> = text.lines().filter(|l| !l.is_empty()).collect();
             eprintln!(
                 "screen-boot: read {} non-blank row(s) of the {arch} tour back off a ramfb, ending",
@@ -203,7 +203,7 @@ fn screen_showed_the_tour(seen: Option<&str>, arch: &str, shot: &std::path::Path
         Some(text) => {
             eprintln!(
                 "screen-boot: the screen never showed `{}`. Last screen read ({}):",
-                boot_ladder::SELF_TEST,
+                serial_console::HEADS.self_test(),
                 shot.display()
             );
             for line in text.lines().filter(|l| !l.is_empty()) {
@@ -224,7 +224,7 @@ fn screen_showed_the_tour(seen: Option<&str>, arch: &str, shot: &std::path::Path
 /// **The serial line, as the control**: false when the tour never reached it either. When
 /// anything has failed (the screen, per `screen_ok`, or this), the transcript's tail is printed.
 fn serial_control_holds(transcript: &str, screen_ok: bool) -> bool {
-    let serial_ok = transcript.contains(boot_ladder::SELF_TEST);
+    let serial_ok = serial_console::HEADS.self_test().is_in(&transcript);
     // The serial line is the control: the same marker on the channel the screen replaces separates
     // "the screen mechanism is broken" from "the machine did not boot".
     if !serial_ok {
@@ -265,7 +265,7 @@ fn watch(sock: &str, shot: &std::path::Path) -> Option<String> {
             .ok()
             .and_then(|bytes| serial_console::screen::read(&bytes).ok())
         {
-            if text.contains(boot_ladder::SELF_TEST) {
+            if serial_console::HEADS.self_test().is_in(&text) {
                 return Some(text);
             }
             if !text.trim().is_empty() {

@@ -7,7 +7,7 @@
 //! a budget of its own, the boot's entropy service, the devices the kernel set aside and the three
 //! programs it builds as bytes (`boot_ladder::self_test_program`). This program builds each child
 //! from that budget and supervises it, writes each check's line into a transcript the progenitor
-//! copies to the console, then the verdict (`boot_ladder::SELF_TEST`), and exits. Every check here
+//! copies to the console, then the verdict (`boot_ladder::Heads::self_test`), and exits. Every check here
 //! runs on every architecture, and one the machine has nothing for says `absent` and why. See
 //! notes/self-test-checks.md, "The two halves".
 //!
@@ -46,6 +46,12 @@ use user_mode_runtime::{
 };
 
 user_mode_runtime::program_entry!(start);
+
+/// **The heads of this system's boot lines**, of which this program prints the verdict and the
+/// subject lines; the kernel and `serial_console` build the same heads from the same name.
+///
+/// Name: provisional.
+const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 
 const KERNEL_HALF_VA: u64 = address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
 const TRANSCRIPT_VA: u64 = address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
@@ -154,9 +160,16 @@ impl Report {
 
     /// **Name a thread this program is about to see die on purpose**, so a gate reading the
     /// kernel's report of the kill can tell it from a death nobody meant
-    /// (`boot_ladder::SELF_TEST_SUBJECT`). Written before the death is taken.
+    /// (`boot_ladder::Heads::self_test_subject`). Written before the death is taken.
     fn subject(&mut self, thread: u64, check: &'static str) {
-        self.line(CHECK_LINES_END, SubjectLine { thread, check });
+        self.line(
+            CHECK_LINES_END,
+            SubjectLine {
+                heads: HEADS,
+                thread,
+                check,
+            },
+        );
     }
 
     /// Record that the machine has nothing for the check to test, and why.
@@ -224,7 +237,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         );
     }
     let tally = r.tally;
-    r.line(contract::TRANSCRIPT_BYTES, tally.verdict());
+    r.line(contract::TRANSCRIPT_BYTES, tally.verdict(HEADS));
     send(slot::REPORT, message::DONE, r.at as u64, tally.to_packed());
     user_mode_runtime::exit()
 }

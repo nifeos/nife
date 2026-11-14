@@ -129,7 +129,7 @@ exclude_globs = [
     # The boot self-tests (milestone 268 (every architecture boots the same way)). `cfg(not(any(test, feature = "system_tests", feature =
     # "bench")))` compiles them into a production boot and into no test image, so a mutant there
     # is unreachable in both tiers: the group above, worn from the other side. Their checker is
-    # the boot ladder verdict (`boot_ladder::SELF_TEST`), which a program reads, and
+    # the boot ladder verdict (`boot_ladder::Heads::self_test`), which a program reads, and
     # notes/self-test-checks.md holds the checks.
     "kernel/src/self_test.rs",
 

@@ -1,57 +1,20 @@
-//! **Each rung's marker**, the stable head of the line that announces it, and the other lines two
-//! binaries agree on. The crate root re-exports every one, so a reader names them
-//! `boot_ladder::BANNER`. See notes/boot-ladder.md.
+//! **The words inside the self-test verdict, and its list of checks.** The verdict's head is
+//! [`Heads::self_test`](crate::Heads::self_test); these follow it. The crate root re-exports every
+//! one, so a reader names them `boot_ladder::SELF_TEST_FAILED`. See notes/boot-ladder.md.
 //!
 //! Name: provisional. A child named for what it holds, so the crate root is an index (§282 (when a
 //! file is split, the parent becomes an index)).
 
-/// **The earliest line: `nife on <architecture> (...)`.**
-///
-/// Printed by `kernel_main` as the first thing after `console::initialize`, on every architecture since
-/// milestone 268. aarch64 had no such line before it, so this rung was unreachable there for as
-/// long as the recogniser has existed. It says the console works and it says nothing else, which
-/// is exactly the claim wanted at first light on a board where the console is the thing in doubt.
-///
-/// Deliberately generic across the three: a recogniser that knew only the VisionFive 2's wording
-/// would report a healthy aarch64 or `x86_64` board as never having booted.
-pub const BANNER: &str = "nife on ";
-
-/// **The machine description finished: `nife machine: <arch>, <n> processor(s), ...`.**
-///
-/// Printed by `kernel/src/machine_description.rs`'s `print_machine_description` as its **last**
-/// line, and that position is the point: reaching it means the whole description printed, which is
-/// the claim a ladder rung should make. A header would only have meant the block started.
-pub const MACHINE: &str = "nife machine: ";
-
-/// **The self-test verdict: `nife self-test: 13 of 13 passed`, `... , 2 absent: <names>`, or
-/// `... , 1 FAILED: <names>`.**
-///
-/// Printed by `boot_self_test`, the userspace program the progenitor runs before the shell, once
-/// it has run its checks on top of the kernel's (`kernel/src/self_test.rs`); the kernel prints it
-/// itself only when it has no progenitor to hand the rest to. [`crate::verdict::Verdict`] renders it. The
-/// counts are there on success as well as on failure, so that "ran nothing and passed" is
-/// distinguishable from "ran the set and passed".
-pub const SELF_TEST: &str = "nife self-test: ";
-
-/// **The head of the line naming a thread the self-test kills on purpose**, before its death is
-/// taken: `nife self-test subject: thread 19, which the userspace check kills on purpose`.
-///
-/// Deliberately not [`SELF_TEST`] with more after it: a matcher that finds the verdict by its head
-/// must not find this line. [`crate::verdict::SubjectLine`] renders it and
-/// [`crate::verdict::subject_thread`] reads it back.
-///
-/// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
-pub const SELF_TEST_SUBJECT: &str = "nife self-test subject: thread ";
-
 /// **What a red verdict says before it names the checks that failed.**
 ///
 /// Uppercase, the tree's word for a failed check, which other boot lines also use. It appears
-/// *inside* a [`SELF_TEST`] line, after any [`SELF_TEST_ABSENT`] list; a matcher wanting a failed
-/// verdict must find both.
+/// *inside* a [`self_test`](crate::Heads::self_test) line, after any [`SELF_TEST_ABSENT`] list; a
+/// matcher wanting a failed verdict must find both.
 pub const SELF_TEST_FAILED: &str = "FAILED: ";
 
 /// **What a verdict says before it names the checks this machine had nothing for** (calef's ruling
-/// of 2026-10-20 (UTC) on #2447): `nife self-test: 9 of 13 passed, 3 absent: blockdev clock trng`.
+/// of 2026-10-20 (UTC) on #2447): `<system> self-test: 9 of 13 passed, 3 absent: blockdev clock
+/// trng`.
 ///
 /// An absent check neither passed nor failed: the machine has no device for it to test, and the
 /// kernel's line for that check says which. The verdict stays green unless something says
@@ -107,30 +70,3 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
 /// Name: provisional (milestone 890 (riscv64 and `x86_64` join the shared boot path)'s lane,
 /// 2026-10-20 UTC).
 pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
-
-/// **The boot's middle stages ran to their end**: `nife: the capability core runs on <arch>.`
-///
-/// Printed by `kernel_main` on all three architectures after the kernel's own self-test checks,
-/// just before the hand-over, so it says the machine was described and the kernel's half of
-/// [`SELF_TEST_CHECKS`] ran. The [`SELF_TEST`] verdict follows it, from the hand-over, and says
-/// whether they passed. The `<arch>` is the kernel's own `arch::NAME`.
-pub const TOUR: &str = "nife: the capability core runs on ";
-
-/// **Userspace is up and the shell is offering a prompt.**
-///
-/// `components/src/swish.rs` prints this immediately before its first `$ `. It is the terminal
-/// state of a default boot: milestone 268 decided that *nothing halts*, and that the prompt rather
-/// than a halt is the signal that the boot finished.
-///
-/// See this module's `BUGS` for why the banner and not the prompt itself.
-pub const PROMPT: &str = "nife capability shell";
-
-/// **The kernel is holding the screen open for a host that wants to photograph it**
-/// (milestone 445 (the screen check stops sampling and starts asking)), and will clear it as soon as one byte comes
-/// back on the serial line. *Wording provisional, like every other constant here.*
-///
-/// Not a rung, but a line two binaries agree on: `kernel::console::yield_screen` prints it when the
-/// boot command line carried `machine_discovery::framebuffer::SCREEN_HOLD`, and `cargo xtask
-/// uefi-boot` waits for it, takes its screendump and answers. A boot that was not asked to hold
-/// never prints it. Why it asks rather than samples is in notes/boot-ladder.md, "The screen hold".
-pub const SCREEN_HELD: &str = "nife screen: held for the host; ";

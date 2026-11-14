@@ -12,7 +12,7 @@ checks themselves, which the modules' doc comments link to. The checks are the c
 ## The two halves
 
 The kernel runs `exceptions`, `mapping`, `frames`, `timer`, `scheduler`, `preemption` and
-`device_interrupt`, prints their lines and then `boot_ladder::TOUR`'s. No check there spawns a user
+`device_interrupt`, prints their lines and then `boot_ladder::Heads::tour`'s. No check there spawns a user
 program or starts a service, so a kernel that leaves services to userspace keeps its self-test. The
 other eight, `userspace`, `budget`, `supervised`, `teardown`, `blockdev`, `clock`, `trng` and
 `entropy`, run in `boot_self_test`, which the progenitor builds before the shell.
@@ -40,7 +40,7 @@ other eight, `userspace`, `budget`, `supervised`, `teardown`, `blockdev`, `clock
   On `x86_64` the screen is the shell's terminal by then, and the verdict reaches it as every
   console line does. The architect ruled on this path on 2026-11-11 (UTC).
 - Before a check takes the death of a child it kills on purpose, the program names the child's
-  thread in a `boot_ladder::SELF_TEST_SUBJECT` line, in decimal, as the kernel's kill report
+  thread in a `boot_ladder::Heads::self_test_subject` line, in decimal, as the kernel's kill report
   prints it. `userspace`, `supervised` and both rounds of `teardown` do so. `swish-check` removes
   exactly those threads' kill reports and fails every other kill after the hand-over, as the
   architect ruled on 2026-11-11 (UTC).

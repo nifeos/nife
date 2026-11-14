@@ -132,7 +132,7 @@ fn paint_the_verdict() -> Option<crate::sched::RendezvousId> {
     crate::sched::spawn(move || {
         let [packed, ..] = crate::sched::ipc_receive(verdict);
         let tally = boot_ladder::verdict::Tally::from_packed(packed);
-        crate::console::paint_on_screen(format_args!("{}\n", tally.verdict()));
+        crate::console::paint_on_screen(format_args!("{}\n", tally.verdict(crate::console::HEADS)));
     })?;
     Some(verdict)
 }
