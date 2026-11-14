@@ -44,25 +44,78 @@ fn read_reg(slot: u64, offset: u64) -> u32 {
     unsafe { core::ptr::read_volatile(va as *const u32) }
 }
 
+/// The only `Version` the kernel's scan accepts: modern virtio-mmio. Version 1 is the legacy
+/// layout, whose registers differ; version 3 is not defined for this window. The check is here and
+/// in no driver (1113 Decision 3).
+const SUPPORTED_VERSION: u32 = 2;
+
+/// What the three identity registers of one slot say.
+#[derive(Debug, PartialEq, Eq)]
+enum SlotIdentity {
+    /// No `virt` magic: not a virtio-mmio slot at all.
+    NotVirtio,
+    /// A virtio slot with no device behind it (`DeviceID` 0), whatever its version.
+    Empty,
+    /// A device whose `Version` is not [`SUPPORTED_VERSION`]. No walk offers it.
+    Refused { version: u32, device_id: u32 },
+    /// A modern device of this type.
+    Device(u32),
+}
+
+/// Classify a slot from its three identity registers. Pure, so a test can drive it with any values.
+fn classify(magic: u32, version: u32, device_id: u32) -> SlotIdentity {
+    if magic != MAGIC {
+        SlotIdentity::NotVirtio
+    } else if device_id == 0 {
+        SlotIdentity::Empty
+    } else if version != SUPPORTED_VERSION {
+        SlotIdentity::Refused { version, device_id }
+    } else {
+        SlotIdentity::Device(device_id)
+    }
+}
+
+/// Slots already reported as refused, one bit each (a slot number is below 64 on every arch), so
+/// the three walks and every later scan say it once.
+static REPORTED_REFUSED: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+
+/// The device type in `slot`, or `None` if the slot is not virtio, is empty, or holds a device the
+/// kernel refuses because its `Version` is not 2. The one place every scan reads a slot, so the
+/// walks (first of a type, count, `n`-th) cannot disagree about which slots exist. Reports a
+/// refused slot once, in every build.
+fn slot_device_id(slot: u64) -> Option<u32> {
+    let magic = read_reg(slot, REG_MAGIC);
+    if magic != MAGIC {
+        return None; // skip the other two reads on a slot with no device at all
+    }
+    match classify(
+        magic,
+        read_reg(slot, REG_VERSION),
+        read_reg(slot, REG_DEVICE_ID),
+    ) {
+        SlotIdentity::Device(id) => Some(id),
+        SlotIdentity::NotVirtio | SlotIdentity::Empty => None,
+        SlotIdentity::Refused { version, device_id } => {
+            let bit = 1u64 << (slot % 64);
+            let before = REPORTED_REFUSED.fetch_or(bit, core::sync::atomic::Ordering::Relaxed);
+            if before & bit == 0 {
+                crate::println!(
+                    "  virtio: slot {slot} (device type {device_id}) is Version {version}; the kernel needs 2, skipping it"
+                );
+            }
+            None
+        }
+    }
+}
+
 /// Scan the bus for the first virtio device of type `device_id`. The kernel's whole knowledge of a
 /// device at this layer is its type number and its slot; which driver claims the type is a userspace
 /// decision (see `virtio_service`).
 fn find_by_device_id(device_id: u32) -> Option<VirtioMmioDevice> {
     for slot in 0..mmu::virtio_slots() {
-        if read_reg(slot, REG_MAGIC) != MAGIC {
-            continue; // not a virtio-mmio slot at all
+        if slot_device_id(slot) != Some(device_id) {
+            continue; // not virtio, empty, refused, or some other kind of device
         }
-        if read_reg(slot, REG_DEVICE_ID) != device_id {
-            continue; // empty, or some other kind of device
-        }
-
-        // We require modern virtio (version 2); the register is read for the debug assertion.
-        debug_assert_eq!(
-            read_reg(slot, REG_VERSION),
-            2,
-            "expected modern virtio-mmio"
-        );
-
         return Some(VirtioMmioDevice {
             mmio_phys: VIRTIO_MMIO_BASE + slot * SLOT_STRIDE,
             intid: VIRTIO_INTERRUPT_NUMBER_BASE + slot as u32,
@@ -78,11 +131,11 @@ pub(crate) fn find_block_device() -> Option<VirtioMmioDevice> {
 
 /// How many virtio block devices are on the mmio bus, for the roster and for
 /// [`find_block_device_n`], where it marks the end of the mmio half. The same walk as
-/// [`mmio_block_device_n`], so the ordinals agree by construction; reads two ID registers per slot.
+/// [`mmio_block_device_n`], so the ordinals agree by construction; reads up to three ID registers per slot.
 pub(crate) fn count_block_devices() -> usize {
     let mut n = 0;
     for slot in 0..mmu::virtio_slots() {
-        if read_reg(slot, REG_MAGIC) == MAGIC && read_reg(slot, REG_DEVICE_ID) == DEVICE_ID_BLOCK {
+        if slot_device_id(slot) == Some(DEVICE_ID_BLOCK) {
             n += 1;
         }
     }
@@ -142,7 +195,7 @@ pub(crate) fn find_block_device_n(n: usize) -> Option<BlockDevice> {
 fn mmio_block_device_n(n: usize) -> Option<VirtioMmioDevice> {
     let mut seen = 0;
     for slot in 0..mmu::virtio_slots() {
-        if read_reg(slot, REG_MAGIC) != MAGIC || read_reg(slot, REG_DEVICE_ID) != DEVICE_ID_BLOCK {
+        if slot_device_id(slot) != Some(DEVICE_ID_BLOCK) {
             continue;
         }
         if seen == n {
