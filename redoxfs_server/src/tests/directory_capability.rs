@@ -918,7 +918,7 @@ fn unlink_takes_the_name_and_leaves_the_object_for_whoever_holds_it() {
         .into_iter()
         .map(|(n, _)| n)
         .collect();
-    assert!(!names.contains(&"doomed".to_string()), "listing: {names:?}");
+    assert!(!names.iter().any(|n| n == "doomed"), "listing: {names:?}");
 
     // And the object is not: the handle opened before the unlink still reads its bytes.
     let mut buf = [0u8; 64];
@@ -978,7 +978,7 @@ fn rmdir_removes_an_empty_directory_and_refuses_one_with_a_name_in_it() {
         .map(|(n, _)| n)
         .collect();
     assert!(
-        names.contains(&"deeper".to_string()),
+        names.iter().any(|n| n == "deeper"),
         "the refused directory is still there: {names:?}",
     );
 
@@ -994,7 +994,7 @@ fn rmdir_removes_an_empty_directory_and_refuses_one_with_a_name_in_it() {
         .into_iter()
         .map(|(n, _)| n)
         .collect();
-    assert!(!names.contains(&"deeper".to_string()), "listing: {names:?}");
+    assert!(!names.iter().any(|n| n == "deeper"), "listing: {names:?}");
     assert_eq!(
         srv.open_dir(sub, &named("deeper"), dir::ALL)
             .err()
@@ -1102,11 +1102,11 @@ fn a_recursive_removal_is_a_loop_of_individually_safe_steps() {
         .into_iter()
         .map(|(n, _)| n)
         .collect();
-    assert!(!names.contains(&"sub".to_string()), "root holds {names:?}");
+    assert!(!names.iter().any(|n| n == "sub"), "root holds {names:?}");
     // And nothing outside the walk moved. The walk removes what it enumerated and nothing else,
     // which is the property the guest test then makes about a *capability* rather than a loop.
-    assert!(names.contains(&"other".to_string()));
-    assert!(names.contains(&"motd".to_string()));
+    assert!(names.iter().any(|n| n == "other"));
+    assert!(names.iter().any(|n| n == "motd"));
 }
 
 /// The refusals, which are what stop `rm` from meaning more than it says. A directory is

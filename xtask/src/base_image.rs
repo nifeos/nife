@@ -1795,8 +1795,8 @@ programs = ["progenitor", "swish", "jig"]
             definition
         );
         let test = with_test_programs(definition, true).unwrap();
-        assert!(test.programs.contains(&"progenitor".to_string()));
-        assert!(test.programs.contains(&"kernel_test_subject".to_string()));
+        assert!(test.programs.iter().any(|p| p == "progenitor"));
+        assert!(test.programs.iter().any(|p| p == "kernel_test_subject"));
     }
 
     #[test]
