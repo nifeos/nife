@@ -98,6 +98,8 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// [`Self::check_backup`] against the real primary says whether a restore is needed. The
     /// normalization assumes the primary array sits at block 2, which every tool writes and the
     /// specification does not require.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
     pub fn parse_backup(
         backup_block: &[u8],
         backup_entries: &'a [u8],
@@ -344,6 +346,8 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// a smaller or larger disk, or a disk grown under its table, is a resize for a tool to
     /// perform, and not a table to accept. [`GloballyUniqueIdentifierPartitionTable::parse`] cannot
     /// make this check because it never sees the device.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
     pub fn check_disk_size(&self, device_blocks: u64) -> Result<(), Error> {
         if self.block_count() == device_blocks {
             Ok(())

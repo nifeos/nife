@@ -114,6 +114,8 @@ pub mod throughput {
     /// fresh space until the old one is freed. The bytes are pinned rather than the transfer count,
     /// so two runs move the same file however the requests are shaped, and a before and an after
     /// compare.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
     pub const TOTAL: u64 = 1024 * 1024;
 
     /// Transfers per phase: [`TOTAL`] divided by [`UNIT`]. 256 at one page, 16 at sixteen.
