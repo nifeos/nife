@@ -474,6 +474,7 @@ elf	67	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	2	the physical frame allocator
 address_space_map	4	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 allocation_cache	4	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
+byte_sink_contract	5	the byte-sink framing: any prefix round-trips, the decoder is total, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	2	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
 device_tree_blob	3	the device-tree parser's leaf readers
 inter_process_communication	12	the rendezvous state machine

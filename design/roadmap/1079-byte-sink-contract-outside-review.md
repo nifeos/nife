@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 151, 242
@@ -43,6 +43,8 @@ The comparison with nearby work is in [the appendix](1079-byte-sink-contract-out
 
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the release (a published name, a published wire behavior, a layout, a dependency, a license). Everything else is two-way, and the maintainer decides it.
+
+The ledger of what landed and what is left is in [the appendix](1079-byte-sink-contract-outside-review/ledger.md).
 
 ### P0: blocks the move or any publish
 
@@ -170,6 +172,12 @@ is this case; `INLINE_MAXIMUM` is a byte count and its documentation says so in 
 ## Done when
 
 The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions A to D, the move's items 1 (scaffold) and 14, and items 12 and 13.
+  Checked against `crates/byte_sink_contract/src/lib.rs`: `req` still takes two `u64`, `pack`
+  still returns a four-tuple and `pub mod fixture` is still there.
 
 ## BUGS
 

@@ -119,9 +119,6 @@ dependencies = [
 [[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
-dependencies = [
- "abi",
-]
 
 [[package]]
 name = "byteorder"
