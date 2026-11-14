@@ -97,9 +97,10 @@ repositories, and the domain, and through the domain every image (§250).
 |---|---|---|---|
 | Keep `nifeos` | the nife operating system | ours on GitHub; crates.io `nifeos` free; the domain ours | names the kernel of one binary interface; milestone 120 kept the organization apart from the OS for this reason, and an ambient-authority binary interface under it would read as a subsidiary of the capability one |
 | A publisher name tied to no binary interface, such as the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
-| `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; it narrows to one binary interface |
+| `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; `nife` now names one kernel (layer 4) |
 
-No leaning. Whether `nifeos` still fits depends on what `nife` comes to name (layer 3).
+No leaning. `nife` now names today's kernel, the capability microkernel, and whether `nifeos` still
+fits is ruling 3.
 
 ## Layer 2: the library of components
 
@@ -128,19 +129,17 @@ This layer carries the expensive names: `target_os`, the published ABI crate, th
 directory and triple, the SDK crates and the in-binary names. Only a binary interface the project
 defines needs a name; one it adopts, such as Linux's, already has one.
 
-The ABI crate's published name comes first. Every published ABI crate names its system: `sel4-sys`,
-`fuchsia-zircon-sys`, `hermit-abi`, `wasi`, `r-efi`, `redox_syscall`. The capability binary
-interface has an ABI today, and both capability kernels share it.
+Every published ABI crate names its system: `sel4-sys`, `fuchsia-zircon-sys`, `hermit-abi`,
+`wasi`, `r-efi`, `redox_syscall`.
 
-| option for the capability binary interface | what it says | checks | weakness |
+| binary interface | name | ABI crate | status |
 |---|---|---|---|
-| Keep `nife` | Suess's nickel-iron core, as milestone 120 chose | crates.io `nife`, `nife_abi`, `nife-abi`, `nife-sys`, `nife_sdk` and `nife-sdk` free; GitHub `nife` a user; the search found no software project named nife, only the NiFe nickel-iron battery and the historical Saft Nife brand | narrows `nife` from the whole project to one binary interface, so the microkernel needs its own or a qualified name; milestone 120 records that search boxes autocorrect "nife" to "knife" |
-| A new name for the binary interface, with `nife` kept for the microkernel | the kernel keeps its name and the platform gets one | depends on the word | `target_os = "nife"` and every in-binary `nife` move to the new word or stay as an old spelling; 45 `target_os` lines and 155 triple lines move |
-| A descriptive name such as `capability` | what the binary interface's programs may assume | crates.io `capability_abi` and `capability_kernel_abi` free | generic, since seL4, Zircon, Hubris and Genode all have capability kernels with ABIs; fails the test that a published ABI crate names its system |
+| capability | Moho | `moho_abi` | ruled 2026-11-14 (UTC); the main page holds the checks and what moves when |
+| ambient-authority | open | open | named in a later ruling |
 
-An ambient-authority binary interface needs no name until the project defines one rather than
-adopting Linux's. The tree already holds two pairs of
-candidates, and milestone 120 turned both down for other uses.
+The ambient-authority binary interface needs no name until the project defines one rather than
+adopting Linux's. The tree already holds two pairs of candidates, and milestone 120 turned both
+down for other uses.
 
 - `sial` and `sima`, Suess's names for the crust. crates.io `sial` is free and `sima` taken (a
   string matcher, 795 downloads). GitHub users hold both. SiMa.ai makes edge-AI chips, and SIAL
@@ -149,23 +148,19 @@ candidates, and milestone 120 turned both down for other uses.
 - `kamacite` and `taenite`, the two nickel-iron phases in meteoric iron. crates.io has neither, and
   GitHub users hold both. Milestone 120 keeps them for components.
 
-Leaning, on evidence, for the capability binary interface only: if `nife` keeps a meaning, the
-capability binary interface should have it. The 45 `target_os` lines, the 155 triple lines, the
-`std-nife` port and the in-binary owner string already sit at that layer. Every `nife_*` crate name
-it needs is free, and keeping them costs no edit.
-
 ## Layer 4: individual kernels
 
 A kernel's name touches its repository, its image file name and its boot log, and no program sees
-it.
+it. `nife` is the name of today's kernel, the capability microkernel (ruled 2026-11-14 UTC, with
+ruling 2). What stays open is its repository's name and the names of the other kernels.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
-| Keep `nife-kernel` for the microkernel (ruled 2026-11-03 as the repository's name, not created) and add `nife-monokernel` | the binary interface and the shape | crates.io `nife_kernel`, `nife_micro` and `nife_mono` free; both repository names free | `nife-kernel` stops being unique once a second kernel exists, so the microkernel may want `nife-microkernel` |
-| A proper name per kernel, such as `kamacite` and `taenite` within `nife` | each kernel is a phase of the binary interface's metal | as layer 3 | two more words to learn and say; takes the names milestone 120 keeps for components |
-| `nife` for the microkernel and a new word for the binary interface | today's kernel keeps the project's first name | as layer 3 | the binary interface carries the expensive names and needs the new word for them |
+| Keep `nife-kernel` for the microkernel's repository (ruled 2026-11-03, not created) and add a named monokernel beside it | the kernel's name, then what it is | crates.io `nife_kernel` free; the repository name free | `nife-kernel` reads as the project's only kernel once a second exists |
+| `nife` for the microkernel and a proper name for each other kernel, such as `kamacite` and `taenite` | each kernel a word of its own | as layer 3 | takes the names milestone 120 keeps for components |
+| `nife-microkernel` and `nife-monokernel` | one name and the shape | crates.io `nife_micro` and `nife_mono` free; both repository names free | makes the monokernel a variant of nife rather than a kernel of its own |
 
-No leaning. These names cost little, and the right shape follows from layer 3.
+No leaning. These names cost little.
 
 ## Layer 5: distributions
 

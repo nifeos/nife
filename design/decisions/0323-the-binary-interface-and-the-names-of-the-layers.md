@@ -10,9 +10,9 @@ raised: 2026-11-12
 The maintainer raised this on 2026-11-12 (UTC), on the intent that the crates are the product: a
 library of components from which the project builds several operating systems. Counts come from
 `nifeos/nife@a3c7d4647` and `nifeos/basalt@ecdfee7`, and each gives its command so a reviewer can
-take it again at merge. The architect ruled question 1, what the layer above a kernel is, on
-2026-11-14 (UTC), and this file states that rule. Rulings 2 to 6, each layer's name, are still open,
-and this file lays out the options for each. The appendix, [the five
+take it again at merge. The architect ruled question 1, what the layer above a kernel is, and ruling
+2, the capability binary interface's name, on 2026-11-14 (UTC), and this file states both rules.
+Rulings 3 to 6 are still open, and this file lays out the options for each. The appendix, [the five
 layers](0323-the-binary-interface-and-the-names-of-the-layers/the-five-layers.md), holds the
 inventory, the reversibility of each layer and every candidate name with its checks.
 
@@ -172,14 +172,41 @@ The rule also puts the expensive names in the fewest places. The in-binary names
 and the published ABI crate exist once per binary interface rather than once per kernel. It costs
 more work, since two kernels must keep serving one binary interface, so it does not rest on effort.
 
+## The capability binary interface is Moho
+
+Ruled 2026-11-14 (UTC).
+
+- The capability binary interface is named Moho, the boundary between the Earth's crust and its
+  mantle (the Mohorovičić discontinuity).
+- Its published ABI crate is `moho_abi`, and the name in code matches the package name, as it does
+  for `byte_glob`.
+- `nife` stays the name of today's kernel, the capability microkernel.
+- The ambient-authority binary interface takes its name in a later ruling.
+
+The checks, run 2026-11-14 (UTC). On crates.io, `moho_abi`, `moho-abi`, `moho_sys`, `moho-sys`,
+`moho_sdk` and `moho-sdk` are free, and the bare `moho` is a game library abandoned in 2017. On
+GitHub, the user `moho` exists and holds no repositories. `moho.org` is registered and offered for
+sale, and another party holds `moho.dev`. Moho, the animation software, is well known. Two web
+searches found no operating system, kernel, ABI or Rust target named Moho. Nobody has yet checked
+the rustc target list, LLVM or the Linux sources.
+
+What moves, and when. The tree still spells the capability binary interface `nife` in
+`target_os = "nife"`, the `unknown-nife` triples, the `std-nife` port and the `abi` crate
+(`crates/abi`). Renaming them waits on a separate plan lane, which sets their order and the rename
+of `crates/abi` to `moho_abi`. The names inside binaries stay as they are: the ELF note owner `nife`, section names
+such as `.note.nife.manifest`, and magics such as `NIFESLOT` and `NIFESTK1`. They fall under the
+wire-literal exemption, ruled 2026-11-14 (UTC): a marked owner string, section name or magic may
+spell nife.
+
 ## The order of the later rulings
 
 Hardest to change first. The maintainer brings each as its own ruling, one at a time.
 
 1. What the layer above a kernel is. Ruled 2026-11-14 (UTC): its binary interface, which carries
    `target_os`, the ABI crate and the in-binary names.
-2. The capability binary interface's name. It turns one-way at the first crates.io publish and at
-   the first upstream Rust merge, and the published name of `crates/abi` waits on it.
+2. The capability binary interface's name. Ruled 2026-11-14 (UTC): Moho, with the ABI crate
+   `moho_abi`, and `nife` stays the capability microkernel's name. The ambient-authority binary
+   interface's name stays open.
 3. The organization and the domain. GitHub redirects most of a rename, every image names the
    domain, and anyone may claim an organization's old name. This ruling includes whether `nifeos`
    stays.
@@ -190,19 +217,16 @@ Hardest to change first. The maintainer brings each as its own ruling, one at a 
 
 ## What waits on these rulings
 
-- The crates.io name of `crates/abi`, decision A of milestone 1075 (`abi`: what an outside
-  maintainer would fix before the move). Discussed, not ruled. `capability_kernel_abi` reads as
-  too generic, since seL4, Zircon, Hubris and Genode all have capability kernels with ABIs. Each
-  published ABI crate names its system (`sel4-sys`, `fuchsia-zircon-sys`, `hermit-abi`, `wasi`,
-  `r-efi`, `redox_syscall`). Both capability kernels share this one. It has to publish, because a
-  crates.io crate cannot depend on a git crate, so a `getrandom` backend needs it. It becomes the
-  bottom of the SDK. A rename in code wins over a package-only rename (1,784 uses in 238 files,
-  none in basalt). It waits on ruling 2, the capability binary interface's name.
+- The rename of `crates/abi` to `moho_abi`, decision A of milestone 1075 (`abi`: what an outside
+  maintainer would fix before the move), with `target_os`, the triples and the `std` port. Ruling 2
+  settles the name, and the rename in code (1,784 uses in 238 files, none in basalt) waits on the
+  plan lane above. The crate has to publish, because a crates.io crate cannot depend on a git
+  crate, so a `getrandom` backend needs it. Both capability kernels share it.
 - The published names of the 25 page-contract crates (`*_contract`), which every binary interface
   may share. They wait on ruling 4.
-- The kernel's own repository and name. Milestone 1039 (the kernel leaves nife) names it
+- The kernel's own repository. Milestone 1039 (the kernel leaves nife) names it
   `nifeos/nife-kernel`. With a second capability kernel, that name may need to say which. It waits
-  on rulings 2 and 6.
+  on ruling 6.
 - The website's domain, from milestone 1018 (the design record moves to `nifeos/record` and is
-  published as a website), and the rule that a leaving crate never mentions nife. That rule means
-  something different if `nife` comes to name one binary interface. Both wait on rulings 2 and 3.
+  published as a website), and the rule that a leaving crate never mentions nife (now the name of
+  one kernel). Both wait on ruling 3.
