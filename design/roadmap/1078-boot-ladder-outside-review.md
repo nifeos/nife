@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 972, 1017
 decision_dependencies: 305
@@ -184,6 +184,19 @@ else here is one-way: the manifest, the README, the tests, the `Verdict` type an
 ## Done when
 
 The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** The heads: the crate fixes each head's shape and takes the system's name from its
+  caller, and nife passes `nife`, so every byte stays the same.
+- **Done.** The two check names: `block_device` and `true_random_number_generator`, with the slot
+  and flag that name the generator, and the other thirteen marked ratified.
+- **Outstanding.** The other items of this review, listed above and in its appendices.
+- **Outstanding.** The three renames among the ten public names, which wait for the architect.
+- **Outstanding.** Eight constants in `boot_ladder::kernel_half` still begin
+  `RANDOM_NUMBER_GENERATOR_` (`FOUND`, `STATUS_OKAY`, `PROGRAM_MISSING`, `WIRED`, `256_BIT`,
+  `REGISTERS`, `REPORT`, `BRING_UP_TICKS`). The check-names ruling named only the slot and the
+  answered flag; aligning these is a two-way door for the maintainer.
 
 ## BUGS
 
