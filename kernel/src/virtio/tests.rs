@@ -677,3 +677,30 @@ fn a_device_nobody_bound_outlives_other_threads() {
     assert!(read_register(id, REG_STATUS).is_some());
     assert!(release_borrowed(id, dma));
 }
+
+/// A slot whose `Version` is not 2 is refused whatever the device type, so a legacy or future
+/// device is never handed to a driver written for the modern layout (1113 Decision 3).
+#[test_case]
+fn a_slot_whose_version_is_not_2_is_refused() {
+    for version in [0, 1, 3, u32::MAX] {
+        assert_eq!(
+            classify(MAGIC, version, DEVICE_ID_BLOCK),
+            SlotIdentity::Refused {
+                version,
+                device_id: DEVICE_ID_BLOCK
+            }
+        );
+    }
+    assert_eq!(
+        classify(MAGIC, 2, DEVICE_ID_BLOCK),
+        SlotIdentity::Device(DEVICE_ID_BLOCK)
+    );
+}
+
+/// Slots that are not devices stay quiet whatever their version.
+#[test_case]
+fn a_slot_without_magic_or_device_is_not_reported_as_refused() {
+    assert_eq!(classify(0, 1, DEVICE_ID_NET), SlotIdentity::NotVirtio);
+    assert_eq!(classify(MAGIC, 1, 0), SlotIdentity::Empty);
+    assert_eq!(classify(MAGIC, 2, 0), SlotIdentity::Empty);
+}
