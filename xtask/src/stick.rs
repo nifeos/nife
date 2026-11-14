@@ -427,7 +427,7 @@ fn verdict_failed(transcript: &str) -> Option<&str> {
 /// path for aarch64)), as every aarch64 cloud machine is; the loader writes a tree from the tables
 /// (§278 (an ACPI machine reaches the aarch64 kernel as a device tree the loader writes)). Builds
 /// the aarch64 payload alone, release like the stick; `stick-boot` boots `acpi=off`. Asserts
-/// [`BOOTED`] and the loader's ACPI line, so a firmware offering a tree cannot pass by booting the
+/// [`booted`] and the loader's ACPI line, so a firmware offering a tree cannot pass by booting the
 /// other path. Boots twice: the stick directory on QEMU's default GICv2 with a `GICv2m` frame, then
 /// the cloud boot disk ([`crate::cloud_image`]) a person imports into Oracle, so every run boots it,
 /// with `gic-version=3` (the only `virt` with an ITS under TCG), asserting the loader's GICv3 and
@@ -480,7 +480,7 @@ pub(super) fn acpi_boot() -> bool {
 const ACPI_LINE: &str = "uefi_loader: no device tree; describing this machine from ACPI";
 
 /// Boot `medium` (the stick directory or a raw disk) for `arch` and check the transcript holds
-/// [`BOOTED`] and `also`, with no panic. `who` prefixes every line, so a failure names the gate
+/// [`booted`] and `also`, with no panic. `who` prefixes every line, so a failure names the gate
 /// that saw it.
 fn boot_and_check(
     who: &str,

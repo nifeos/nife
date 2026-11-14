@@ -13,7 +13,7 @@ pub const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 /// nife's heads print exactly the bytes every stored log, board profile and gate holds.
 #[cfg(test)]
 #[test]
-fn nife_heads_are_the_bytes_the_logs_hold() {
+fn the_heads_print_the_bytes_the_logs_hold() {
     let printed = [
         HEADS.banner(),
         HEADS.machine(),

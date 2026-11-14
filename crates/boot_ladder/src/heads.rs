@@ -237,7 +237,7 @@ mod tests {
     /// The three matchers answer as `str`'s methods do for the joined head, including where a
     /// name overlaps itself and where the name appears earlier without its shape.
     #[test]
-    fn the_matchers_agree_with_the_joined_string() {
+    fn the_three_readers_agree_with_the_joined_string() {
         let texts = [
             "",
             "example on riscv64",
@@ -266,8 +266,8 @@ mod tests {
                 }
             }
         }
-        let aa = Heads::new("aa").banner();
-        assert_eq!(aa.find_in("aaa on "), Some(1..7));
+        let doubled = Heads::new("aa").banner();
+        assert_eq!(doubled.find_in("aaa on "), Some(1..7));
     }
 
     /// Every head but the shell banner ends in a space or punctuation, the boundary a reader

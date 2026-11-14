@@ -224,7 +224,7 @@ fn screen_showed_the_tour(seen: Option<&str>, arch: &str, shot: &std::path::Path
 /// **The serial line, as the control**: false when the tour never reached it either. When
 /// anything has failed (the screen, per `screen_ok`, or this), the transcript's tail is printed.
 fn serial_control_holds(transcript: &str, screen_ok: bool) -> bool {
-    let serial_ok = serial_console::HEADS.self_test().is_in(&transcript);
+    let serial_ok = serial_console::HEADS.self_test().is_in(transcript);
     // The serial line is the control: the same marker on the channel the screen replaces separates
     // "the screen mechanism is broken" from "the machine did not boot".
     if !serial_ok {
