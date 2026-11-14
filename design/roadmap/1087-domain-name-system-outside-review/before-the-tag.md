@@ -27,7 +27,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
    helper did not flag either here, so a gap in the helper stays unconfirmed. The written rule is
    clear without it. Evidence: lines 47 and 50; `design/naming.md`, "Units". Change:
    `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`, with the four nife callers that name them updated in
-   the same pull request. This is Decision 1. Door: one-way. Effort: XS.
+   the same pull request. Decision 1 decides this, provisionally. Door: two-way before the first tag. Effort: XS.
 
 7. Public names a stranger cannot read without the specification, and names the template's gate
    refuses. Finding, part a: `Header::{qdcount, ancount, nscount, arcount}` and `Header::rcode`
@@ -54,7 +54,8 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
    maintainer's: `position`, `..._past_the_limit_...`, and a doc opening or `len_bytes`. Whatever
    the rulings, every kept specification term gets `#[doc(alias)]` and an opening expansion, and the
    crate's `.github/accepted-words` lists `tcp`, `udp`, `cname` and `ttl` with reasons if the
-   abbreviations report names them. Door: one-way for parts a and b; two-way for c and d. Effort: S
+   abbreviations report names them. Decisions 2 and 3 decide parts a and b, provisionally. Door: two-way before the first tag.
+   Effort: S
    for the rename pull request across the four nife callers.
 
 8. The crate believes a TTL with its high bit set as written.
