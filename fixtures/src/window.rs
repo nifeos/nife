@@ -429,7 +429,7 @@ fn report_every_keystroke() -> ! {
         // an unclamped count shifts past 63 at `k == 8` and spins up to 2^32 times.
         // `display_terminal.rs` and `line_editor.rs` both clamp here; this was the one that
         // did not (milestone 43, notes/shared-page-audit.md finding 4).
-        let n = line_editor::proto::len(w0).min(8);
+        let n = terminal_contract::len(w0).min(8);
         for k in 0..n {
             count += 1;
             send(REPORT, status::WIN_INPUT, (bytes >> (8 * k)) & 0xff, count);

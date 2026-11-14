@@ -146,8 +146,8 @@ jh7110_clock_and_reset,with_divider,replace | with ^,1,or_xor,equivalent,unclass
 jh7110_clock_and_reset,with_parent,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 job_mix,,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
 job_mix,order,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
-line_editor,,replace << with >>,2,shift,equivalent,unclassified,noise,
-line_editor,req,replace | with ^,1,or_xor,equivalent,unclassified,noise,
+line_editor,,replace << with >>,2,shift,equivalent,unclassified,noise,yes
+line_editor,req,replace | with ^,1,or_xor,equivalent,unclassified,noise,yes
 line_editor,supervisor::image_lengths,replace | with ^,4,or_xor,equivalent,unclassified,noise,
 loaded_image_check,stack_aligned,replace stack_aligned -> bool with true,1,other,gap,,gap,
 loaded_image_check,stack_works,replace stack_works -> bool with true,1,other,equivalent,unclassified,algebraic,

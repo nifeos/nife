@@ -6,6 +6,17 @@
 //! socket, with an opcode, one argument and one reply word. The stack names a socket only by its
 //! kernel-stamped [`SOCKET_BADGE`], so a closed socket's copies reach nothing. A port claim is
 //! granted at spawn ([`listen_grant`], [`udp_bind_grant`]), never assumed.
+//!
+//! # Vocabulary
+//!
+//! The contract assumes a small capability kernel. A *capability* is an unforgeable handle to one
+//! object, and holding it is the right to use it. A *`CALL`* is the one synchronous request on a
+//! capability: an opcode, one argument word, and a reply of one or two words (and sometimes a new
+//! capability). A *badge* is a number the kernel stamps on every request that arrived through a
+//! capability, so the receiver learns which object was meant without trusting the caller. The
+//! *shared frame* is one page of memory a socket's holder and the stack both map, carrying the
+//! destination and the payload (see [`PAYLOAD_OFFSET_BYTES`]); `SEND_CAPABILITY` delegates it. The kernel's
+//! interface crate defines the operations and rights themselves.
 
 //! # BUGS
 //!
@@ -53,13 +64,13 @@ pub const OPERATION_OPEN_UDP: u64 = 2;
 pub const OPERATION_OPEN_TCP: u64 = 3;
 /// `CALL(udp socket, OPERATION_SENDTO, length)`: UDP send. The argument word is the payload length
 /// in bytes, at most [`DATA_MAXIMUM`]; a larger one is answered [`REP_ERR`]. The destination is in
-/// the frame header and the payload at [`OFF_PAYLOAD`]. The frame's [`OFF_LEN`] is not read. Replies
+/// the frame header and the payload at [`PAYLOAD_OFFSET_BYTES`]. The frame's [`LENGTH_OFFSET_BYTES`] is not read. Replies
 /// [`REP_OK`], or [`REP_ERR`].
 pub const OPERATION_SENDTO: u64 = 4;
 /// `CALL(socket, OPERATION_RECEIVE, 0)`: block until a datagram or segment arrives, and write it to
 /// the frame. The argument word is ignored: pass 0. Replies the payload length in bytes, which is
-/// also written at [`OFF_LEN`]; 0 means the stream has closed, and [`REP_ERR`] a failure. A UDP
-/// reply also writes the sender's address and port at [`OFF_DST_IP`] and [`OFF_DST_PORT`].
+/// also written at [`LENGTH_OFFSET_BYTES`]; 0 means the stream has closed, and [`REP_ERR`] a failure. A UDP
+/// reply also writes the sender's address and port at [`DESTINATION_ADDRESS_OFFSET_BYTES`] and [`DESTINATION_PORT_OFFSET_BYTES`].
 pub const OPERATION_RECEIVE: u64 = 5;
 /// `CALL(tcp socket, OPERATION_CONNECT, 0)`: connect to the destination in the frame header. The
 /// argument word is ignored: pass 0. Replies [`CONNECT_ESTABLISHED`] or [`CONNECT_REFUSED`], or
@@ -67,17 +78,17 @@ pub const OPERATION_RECEIVE: u64 = 5;
 pub const OPERATION_CONNECT: u64 = 6;
 /// `CALL(tcp socket, OPERATION_SEND, length)`: TCP send. The argument word is the payload length in
 /// bytes, at most [`DATA_MAXIMUM`]; a larger one is answered [`REP_ERR`]. The payload is at
-/// [`OFF_PAYLOAD`]. The frame's [`OFF_LEN`] is not read. Replies the count of bytes the stack
+/// [`PAYLOAD_OFFSET_BYTES`]. The frame's [`LENGTH_OFFSET_BYTES`] is not read. Replies the count of bytes the stack
 /// accepted, which may be fewer than `length` when its buffer is short: send the rest.
 ///
 /// ```
-/// use socket_contract::{DATA_MAXIMUM, OFF_LEN, OFF_PAYLOAD, OPERATION_SEND};
+/// use socket_contract::{DATA_MAXIMUM, LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES, OPERATION_SEND};
 ///
 /// // A client's side of a send: the payload goes in the frame, and the length goes in the
-/// // argument word of the `CALL`. It never writes `OFF_LEN`.
+/// // argument word of the `CALL`. It never writes `LENGTH_OFFSET_BYTES`.
 /// let mut frame = [0u8; 4096];
 /// let payload = b"hello out!";
-/// let at = OFF_PAYLOAD as usize;
+/// let at = PAYLOAD_OFFSET_BYTES as usize;
 /// frame[at..at + payload.len()].copy_from_slice(payload);
 /// let (operation, argument) = (OPERATION_SEND, payload.len() as u64);
 ///
@@ -86,8 +97,8 @@ pub const OPERATION_CONNECT: u64 = 6;
 /// assert!(argument <= DATA_MAXIMUM as u64);
 /// let sent = &frame[at..at + argument as usize];
 /// assert_eq!(sent, payload);
-/// // Nothing was written at `OFF_LEN`.
-/// assert_eq!(frame[OFF_LEN as usize..OFF_LEN as usize + 2], [0, 0]);
+/// // Nothing was written at `LENGTH_OFFSET_BYTES`.
+/// assert_eq!(frame[LENGTH_OFFSET_BYTES as usize..LENGTH_OFFSET_BYTES as usize + 2], [0, 0]);
 /// ```
 pub const OPERATION_SEND: u64 = 7;
 /// `CALL(socket, OPERATION_CLOSE, 0)`: close the socket and drop its frame mapping. The argument
@@ -393,7 +404,9 @@ pub mod ephemeral {
 
         /// The next port at `milliseconds` on the boot clock that `held` does not say a live socket
         /// holds. Bounded by the range, so it always returns; a stack holds far fewer sockets than
-        /// the range has ports, so in practice the first or second candidate is free.
+        /// the range has ports, so in practice the first or second candidate is free. When every
+        /// port is held it returns the port the cursor stands at anyway, held or not, and says
+        /// nothing: the caller's socket table is smaller than the range, so this cannot arise there.
         pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> u16 {
             self.next = self.next.max(clock(milliseconds));
             for _ in 0..SPAN {
@@ -420,6 +433,28 @@ pub mod ephemeral {
 
     fn port_at(position: u64) -> u16 {
         LO + (position % SPAN) as u16
+    }
+
+    /// Machine-checked proofs, run with `cargo kani`: the clock and the position-to-port map hold
+    /// for every input, which the sampled tests below cannot say.
+    #[cfg(kani)]
+    mod verification {
+        use super::*;
+
+        /// **A port is always in the range, and the clock never runs backwards**: for any position
+        /// the port lies in `LO..=HI`, and for any two times the later one's clock is not earlier.
+        /// Falsification: replayable `crates/socket_contract/falsifications/ephemeral.verification.a_position_is_a_port_in_range_and_the_clock_never_runs_backwards.patch`
+        #[kani::proof]
+        fn a_position_is_a_port_in_range_and_the_clock_never_runs_backwards() {
+            let position: u64 = kani::any();
+            let port = port_at(position);
+            // `HI` is the port type's maximum, so only the lower bound can fail.
+            assert!(port >= LO);
+            let earlier: u64 = kani::any();
+            let later: u64 = kani::any();
+            kani::assume(earlier <= later);
+            assert!(clock(earlier) <= clock(later));
+        }
     }
 
     #[cfg(test)]
@@ -523,21 +558,37 @@ pub mod stack_slots {
 ///   +0x006  u16    len       payload length, written by RECEIVE only
 ///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
 /// ```
-pub const OFF_DST_IP: u64 = 0x000;
+///
+/// Name: ratified 2026-11-14 (UTC) (#3571).
+pub const DESTINATION_ADDRESS_OFFSET_BYTES: u64 = 0x000;
 /// The destination port, right after the destination Internet Protocol (IP) address.
-pub const OFF_DST_PORT: u64 = 0x004;
-/// The payload length of a received datagram or segment, little-endian. Only `RECEIVE` writes it,
+///
+/// Name: ratified 2026-11-14 (UTC) (#3571).
+pub const DESTINATION_PORT_OFFSET_BYTES: u64 = 0x004;
+/// The payload length of a received datagram or segment. Every multi-byte frame field is
+/// little-endian; the lease word, by contrast, carries its address big-endian in its low 32 bits,
+/// because that is the order an address is read in. Only `RECEIVE` writes it,
 /// and nothing in this contract reads it: a send carries its length in the argument word of its
 /// `CALL`, checked against [`DATA_MAXIMUM`], and ignores this field. A client may clear it before
 /// a `RECEIVE` to watch for the reply.
-pub const OFF_LEN: u64 = 0x006;
+///
+/// Name: ratified 2026-11-14 (UTC) (#3571).
+pub const LENGTH_OFFSET_BYTES: u64 = 0x006;
 /// Where the payload bytes start.
-pub const OFF_PAYLOAD: u64 = 0x008;
+///
+/// Name: ratified 2026-11-14 (UTC) (#3571).
+pub const PAYLOAD_OFFSET_BYTES: u64 = 0x008;
+
+/// The shared frame's size in bytes: one 4 KiB page. [`DATA_MAXIMUM`] derives from it, and a client
+/// runtime that maps the frame can import it.
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+pub const FRAME_BYTES: usize = 4096;
 
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const DATA_MAXIMUM: usize = 4096 - OFF_PAYLOAD as usize;
+pub const DATA_MAXIMUM: usize = FRAME_BYTES - PAYLOAD_OFFSET_BYTES as usize;
 
 /// The inbound gate's shared facts, for the programs that must agree on them. The host's copy is
 /// deliberately not here: the host side spells them again, so the gate proves two independently
@@ -702,13 +753,20 @@ mod tests {
     /// the wrong host rather than failing.
     #[test]
     fn the_frame_header_fields_do_not_overlap() {
-        let mut offs: [u64; 3] = [OFF_DST_IP, OFF_DST_PORT, OFF_LEN];
+        let mut offs: [u64; 3] = [
+            DESTINATION_ADDRESS_OFFSET_BYTES,
+            DESTINATION_PORT_OFFSET_BYTES,
+            LENGTH_OFFSET_BYTES,
+        ];
         offs.sort_unstable();
         for w in offs.windows(2) {
             assert_ne!(w[0], w[1], "two header fields share an offset");
         }
         for o in offs {
-            assert!(o < OFF_PAYLOAD, "header field {o} runs into the payload");
+            assert!(
+                o < PAYLOAD_OFFSET_BYTES,
+                "header field {o} runs into the payload"
+            );
         }
     }
 
@@ -718,7 +776,7 @@ mod tests {
     #[test]
     fn a_full_payload_fills_the_shared_frame_exactly() {
         assert_eq!(
-            OFF_PAYLOAD as usize + DATA_MAXIMUM,
+            PAYLOAD_OFFSET_BYTES as usize + DATA_MAXIMUM,
             4096,
             "the payload is not the whole frame minus its header"
         );
@@ -955,5 +1013,24 @@ mod verification {
         let both = listen | bind;
         assert_eq!(grant_allows(both, port), grant_allows(listen, port));
         assert_eq!(udp_grant_allows(both, port), udp_grant_allows(bind, port));
+    }
+
+    /// **A peer word round-trips for every address and port**: for any four octets and any port,
+    /// [`word_peer`] of [`peer_word`] gives them back, and a word with a bit above 47 set names no peer.
+    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_peer_word_round_trips_for_every_host_and_port.patch`
+    #[kani::proof]
+    fn a_peer_word_round_trips_for_every_host_and_port() {
+        let octets: [u8; 4] = kani::any();
+        let port: u16 = kani::any();
+        let word = peer_word(octets, port);
+        assert_eq!(word >> 48, 0);
+        if word != 0 {
+            assert_eq!(word_peer(word), Some((octets, port)));
+        } else {
+            assert_eq!(word_peer(word), None);
+        }
+        let stray: u64 = kani::any();
+        kani::assume(stray >> 48 != 0);
+        assert_eq!(word_peer(stray), None);
     }
 }

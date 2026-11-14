@@ -74,7 +74,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             let mut got = [0u8; 64];
             let n = n.min(got.len());
             for (i, b) in got[..n].iter_mut().enumerate() {
-                *b = WINDOW.r8(OFF_PAYLOAD + i as u64);
+                *b = WINDOW.r8(PAYLOAD_OFFSET_BYTES + i as u64);
             }
             let mut addr = [0u8; 24];
             let a = render_peer(&mut addr);
@@ -118,14 +118,14 @@ fn converse(socket: u64, frame: u64) -> Result<usize, &'static [u8]> {
         return Err(b"handing the stack the shared page");
     }
     for (i, &b) in ECHO_PEER_IP.iter().enumerate() {
-        WINDOW.w8(OFF_DST_IP + i as u64, b);
+        WINDOW.w8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    WINDOW.w16(OFF_DST_PORT, ECHO_PEER_PORT);
+    WINDOW.w16(DESTINATION_PORT_OFFSET_BYTES, ECHO_PEER_PORT);
     if call(socket, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return Err(b"connecting");
     }
     for (i, &b) in MSG.iter().enumerate() {
-        WINDOW.w8(OFF_PAYLOAD + i as u64, b);
+        WINDOW.w8(PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, OPERATION_SEND, MSG.len() as u64).0 != MSG.len() as u64 {
         return Err(b"sending");

@@ -31,7 +31,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
 
@@ -39,7 +39,7 @@ use user_mode_runtime::{call, exit, send};
 /// answers.
 const REPORT: u64 = 0;
 /// **The screen's write endpoint** (slot 1): arm 0's line discipline, arm 1's `display_terminal`.
-/// On either arm the contract is `OPERATION_WRITE` over one page, `line_editor::proto`'s
+/// On either arm the contract is `OPERATION_WRITE` over one page, `terminal_contract`'s
 /// control-by-message, bulk-by-shared-page split.
 const WRITE: u64 = 1;
 /// **The keystroke endpoint** (slot 2): arm 0's line discipline again (it serves both classes on

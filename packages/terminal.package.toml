@@ -7,7 +7,12 @@
 name = "terminal"
 kind = "base"
 home = { repo = "terminal", status = "provisional" }
-interfaces = ["line_editor"]
+interfaces = [
+    "line_editor",
+    # What a supervisor routes to the terminal it can replace (milestone 1098 (`line_editor`: what
+    # an outside maintainer would fix before it leaves), decision 1).
+    "line_editor_component",
+]
 programs = [
     "console",
     "input",

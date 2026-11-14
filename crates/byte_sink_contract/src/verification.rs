@@ -61,14 +61,23 @@ fn classify_separates_the_three_outcomes() {
     assert_eq!(classify(returned) == Sent::Gone, returned == GONE);
 }
 
-/// **An end-of-stream message unpacks as `Eof` whatever its second and third words hold**, and its
-/// first word equals no bytes message of any length.
-/// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.end_of_stream_ignores_its_other_words.patch`
+/// **An end of stream decodes from exactly one message**: over every three words, [`unpack`]
+/// answers [`Msg::Eof`] if and only if they are `(eof(), 0, 0)`.
+/// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.an_end_of_stream_decodes_exactly_from_its_one_message.patch`
 #[kani::proof]
-fn end_of_stream_ignores_its_other_words() {
-    let (w1, w2): (u64, u64) = kani::any();
+fn an_end_of_stream_decodes_exactly_from_its_one_message() {
+    let w0: u64 = kani::any();
+    let w1: u64 = kani::any();
+    let w2: u64 = kani::any();
     let mut out = [0u8; INLINE_MAXIMUM];
-    assert_eq!(unpack(eof(), w1, w2, &mut out), Msg::Eof);
+    let decoded = unpack(w0, w1, w2, &mut out);
+    assert_eq!(decoded == Msg::Eof, (w0, w1, w2) == (eof(), 0, 0));
+}
+
+/// **An end-of-stream first word equals no bytes message of any length.**
+/// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.end_of_stream_is_no_bytes_message.patch`
+#[kani::proof]
+fn end_of_stream_is_no_bytes_message() {
     let n: u64 = kani::any();
     kani::assume(n <= INLINE_MAXIMUM as u64);
     assert_ne!(eof(), req(OPERATION_BYTES, n));

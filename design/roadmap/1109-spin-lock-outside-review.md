@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 953, 1017
 decision_dependencies: 39, 46
@@ -79,7 +79,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P0
 
-1. The crate's only proof runs nowhere after the move. `crates/spin_lock/src/lib.rs` line 307
+1. The crate's only proof runs nowhere after the move. `crates/spin_lock/src/lib.rs` line 307 LEFT: the template's.
    holds the five loom models, and `script/interleaving-check` runs them as nife's required
    `interleavings` job. The template has no loom job: `check.yml` runs `cargo test` without
    `--cfg loom`, so the models are not compiled, and `proofs.yml`'s `falsify.py` reports
@@ -93,7 +93,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `thread_wake_handshake`, `work_steal_slot`), and `clock_contract` is in step 2 of milestone
    1017's order, so the job serves more than this crate. Effort M. Two-way.
 
-2. The crate does not stand alone. `standalone.py` on the source as it is reports: no README,
+2. The crate does not stand alone. `standalone.py` on the source as it is reports: no README, LEFT: move work.
    no `LICENSE-MIT`, no `LICENSE-APACHE`, 6 lines that cite paths into nife (first
    `src/lib.rs` line 8; `notes/memory-ordering.md`, `notes/interleaving.md`,
    `notes/interleaving/what-was-modeled.md`, `script/interleaving-check`, `kernel/src/sync.rs`),
@@ -104,7 +104,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `Name:` blocks (the standing ruling), rewrites the citations as plain prose, writes the manifest
    literals, and adds the two license files and the README (item 8). Effort S. Two-way.
 
-3. The scaffold's lint table breaks this crate. `sample/Cargo.toml` in the template lists
+3. The scaffold's lint table breaks this crate. `sample/Cargo.toml` in the template lists LEFT: move work.
    `check-cfg = ['cfg(kani)']` only. With that table the standalone copy fails
    `cargo clippy --all-targets -- -D warnings` with 14 `unexpected cfg condition name: loom`
    errors (verified). nife hides this in `[workspace.lints.rust]`, which does not move. Fix: the
@@ -114,7 +114,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P1
 
-4. Another crate already holds the name on crates.io. crates.io treats `_` and `-` as the same character
+4. Another crate already holds the name on crates.io. crates.io treats `_` and `-` as the same character LEFT: the architect's (decision below).
    in a crate name, and `spin-lock` 0.2.1 exists (verified by the API: `spin_lock` resolves to it).
    The ratified name cannot go to the registry, ever, under the registry's rules. Nothing breaks today:
    nife and basalt pin by git `rev`, and a standing ruling holds publishing for every crate.
@@ -123,7 +123,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    review found; see "Decisions for the architect". Effort S if ruled before the move, L after.
    One-way.
 
-5. The test modules are invisible to cargo-mutants' test-module skip. `src/lib.rs` line 227 is
+5. The test modules are invisible to cargo-mutants' test-module skip. `src/lib.rs` line 227 is DONE (both modules behind `#[cfg(test)]`).
    `#[cfg(all(test, not(loom)))]` and `src/lib.rs` line 307 is `#[cfg(all(test, loom))]`. cargo-mutants
    skips a module behind a plain `#[cfg(test)]` and does not read `all(...)`. So `cargo mutants
    --list` on the crate alone names 28 mutants. Eight of them are in `tests::` and `interleavings::`
@@ -136,13 +136,13 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `#[cfg(not(loom))]` or `#[cfg(loom)]`; the listing then drops to 20 (verified). Effort S.
    Two-way.
 
-6. The one equivalent survivor needs its exemption line. `pause` at `src/lib.rs` line 98: off
+6. The one equivalent survivor needs its exemption line. `pause` at `src/lib.rs` line 98: off LEFT: move work.
    loom its body is `core::hint::spin_loop()`, which nothing can observe, so "replace pause with
    ()" survives; the recorded triage calls it equivalent. The template refuses a survivor without a
    `.github/mutants-exempts` line that gives the reason. Fix: one line at the move, with the
    triage's reason. Effort S. Two-way.
 
-7. The second falsification is a hand step, not a gate. `notes/interleaving/what-was-modeled.md`
+7. The second falsification is a hand step, not a gate. `notes/interleaving/what-was-modeled.md` LEFT: the template's.
    records that weakening the compare-exchange's success ordering to Relaxed fails the four
    positive models; this review replayed it (4 failures, the should-panic model passing). The
    in-crate should-panic model (`a_relaxed_release_publishes_nothing`, `src/lib.rs` line 472) keeps
@@ -153,7 +153,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    failure count, not Kani's line). Until then the README says the step is manual. Effort M.
    Two-way.
 
-8. No README, no example, no doc-test. `cargo test` runs 0 doc-tests. A stranger has only the
+8. No README, no example, no doc-test. `cargo test` runs 0 doc-tests. A stranger has only the LEFT: move work.
    crate-level comment, which opens "The kernel's spinlock" and refers to `InterruptSafeMutex` and
    nife's notes. Fix: write the README the scaffold asks for. `## EXAMPLES` holds a static
    `SpinLock<u32>` incremented under `lock()` and read back, as a doc-test on `SpinLock`. `## What
@@ -165,14 +165,14 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `README-crate.md` assumes Kani in "Running the proofs" and "Running one falsification patch";
    those sections need a loom form. Effort M. Two-way.
 
-9. The standard library's accessors are missing. `std::sync::Mutex` and `spin::Mutex` both
+9. The standard library's accessors are missing. `std::sync::Mutex` and `spin::Mutex` both DONE (`the_standard_methods_read_and_move_the_data`, `debug_prints_the_data_when_free_and_does_not_spin_when_held`; `get_mut` and `into_inner` are absent under `--cfg loom`).
    have `get_mut(&mut self) -> &mut T`, `into_inner(self) -> T`, `Default`, `From<T>` and `Debug`.
    The rule that a method takes std's spelling and meaning where std has one settles the names,
    and adding them is compatible. `Debug` for `SpinLock` should print through `try_lock` and write
    `<locked>` on refusal, as std does, so a debug print never spins. The guard gets `Debug` and
    `Display` through `T`. Effort S each. Two-way.
 
-10. The documentation speaks to the kernel's reader. `src/lib.rs` lines 1 to 22 and the `lock` doc at
+10. The documentation speaks to the kernel's reader. `src/lib.rs` lines 1 to 22 and the `lock` doc at DONE (crate documentation).
   `src/lib.rs` line 131 say what the crate does and nothing a stranger needs about what it does not do. A
   second `lock()` on the thread that holds the lock spins forever (std says a reentrant lock may
   panic or deadlock; a spinlock always deadlocks). A panic while holding releases the lock and
@@ -183,7 +183,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P2
 
-11. Say what the models do not check. `read` and `write` (`src/lib.rs` line 77, `src/lib.rs` line 87)
+11. Say what the models do not check. `read` and `write` (`src/lib.rs` line 77, `src/lib.rs` line 87) DONE (crate documentation).
     return loom's pointer out of `with` and `with_mut`, which loom's documentation names as the
     pattern it does not track for duration. The causality check still fires on every access, which
     is the property the crate claims, and the review confirmed it. Fix: say so in the comment at
@@ -191,26 +191,26 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
     in the guard under `cfg(loom)` so the guard tracks the duration too. Effort S for the words, M for
     the pointers. Two-way.
 
-12. `T: ?Sized`. std and `spin` both allow it; nothing here needs `Sized` except `new`.
+12. `T: ?Sized`. std and `spin` both allow it; nothing here needs `Sized` except `new`. LEFT: loom's cell is sized.
     Relaxing the bound on the type and the guard is compatible. Effort S. Two-way.
 
-13. `repr(C)` reads as a promise. `src/lib.rs` lines 46 to 50 says the flag sits at offset 0 so an
+13. `repr(C)` reads as a promise. `src/lib.rs` lines 46 to 50 says the flag sits at offset 0 so an DONE (the comment).
     inlined `lock` needs no offset arithmetic. The fields are private, so no caller can rely on the
     layout soundly, and the codegen claim is on nobody's record this review found (unverified).
     Fix: either cite a measurement in the comment or say the layout is an implementation choice
     and not part of the API. Effort S. Two-way.
 
-14. Pick the `rust-version`. The crate builds and tests on 1.85, the edition's floor
+14. Pick the `rust-version`. The crate builds and tests on 1.85, the edition's floor LEFT: move work.
     (verified); every review package so far writes 1.88. Either is defensible; the number is the
     maintainer's. Effort S. Two-way.
 
-15. Loom's lockfile footprint. In a repository of its own the crate's `Cargo.lock` holds 31
+15. Loom's lockfile footprint. In a repository of its own the crate's `Cargo.lock` holds 31 LEFT: awareness only.
     packages, 30 of them loom's tree (`tracing-subscriber`, `regex-automata`, `generator`,
     `windows-sys` among them). `cargo deny` passes them (verified), and Dependabot will open bumps
     for a tree only the model run links. No action beyond awareness; the README says why the
     lockfile is large. Effort S. Two-way.
 
-16. Considered and not recommended. `is_locked` (not std; `try_lock` answers it) and `try_lock_weak`
+16. Considered and not recommended. `is_locked` (not std; `try_lock` answers it) and `try_lock_weak` LEFT: not recommended.
   (no caller). Also not recommended: a `lock_api::RawMutex` impl (a third-party dependency, which
   needs its own ruling and would give loom nothing), and a fair or ticket variant (the kernel's
   sections are short and the layer above this crate masks interrupts).
@@ -273,6 +273,12 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 - The review did not run the template's workflows, because no repository exists; every template
   finding comes from running the template's helpers and reading its workflow files.
 - This review found nothing security-relevant against this crate.
+
+## Follow-on
+
+- **Milestone 1017.** The crate moves in its order; the move lane takes the items marked move work.
+- **Outstanding.** Items 1, 7 and 12: the template has no loom job; loom's cell is sized.
+- **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new dependency.
 
 ## Index row
 

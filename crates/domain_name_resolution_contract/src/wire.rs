@@ -18,15 +18,19 @@ pub const NAME_TEXT_MAXIMUM: usize = 253;
 pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
-pub const OFF_NAME: usize = 0x000;
+///
+/// Name: ratified 2026-11-14 (UTC) (#3571).
+pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// Where the resolver writes the addresses in the client's page, four bytes each, in the order the
 /// name server gave them.
-pub const OFF_ADDRESSES: usize = 0x100;
+///
+/// Name: ratified 2026-11-14 (UTC) (#3571).
+pub const ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
 // The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
 // addresses end inside the page.
-const _: () = assert!(OFF_NAME + NAME_TEXT_MAXIMUM < OFF_ADDRESSES);
-const _: () = assert!(OFF_ADDRESSES + 4 * MAXIMUM_ADDRESSES <= 4096);
+const _: () = assert!(NAME_OFFSET_BYTES + NAME_TEXT_MAXIMUM < ADDRESSES_OFFSET_BYTES);
+const _: () = assert!(ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_ADDRESSES <= 4096);
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
 ///
@@ -181,7 +185,7 @@ pub struct Outcome {
     pub status: u8,
     /// What else the status carries: a reject code, a response code, a network step, or 0.
     pub detail: u8,
-    /// How many addresses the resolver wrote at [`OFF_ADDRESSES`]: 0 unless the status is OK.
+    /// How many addresses the resolver wrote at [`ADDRESSES_OFFSET_BYTES`]: 0 unless the status is OK.
     pub count: u8,
 }
 

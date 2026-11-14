@@ -662,7 +662,7 @@ pub struct Manifest {
     /// **Whether the program's standard input is the owner's console** (milestone 892 (a std
     /// program at the prompt holds the network and a resolver); calef, 2026-10-19 (UTC), on #2405:
     /// "a"). The spawn service places the terminal endpoint, badged
-    /// `line_editor::proto::STDIN_BADGE`, at `std_runtime_contract::STDIN_SLOT`, and the program reads
+    /// `terminal_contract::STDIN_BADGE`, at `std_runtime_contract::STDIN_SLOT`, and the program reads
     /// the lines typed while it runs: what `jig install` asks the owner's yes through. Only a
     /// program in this table may hold it, as only the owner's console grants the installer: no
     /// image may declare it ([`image_can_carry`](crate::image_can_carry)) and no note may carry it.

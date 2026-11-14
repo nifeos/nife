@@ -1,0 +1,21 @@
+Falsifies `byte_sink_contract::verification::an_end_of_stream_decodes_exactly_from_its_one_message`.
+
+The defect: the decoder reads the opcode alone and ignores the rest of an end-of-stream message.
+A writer can then put a status in the two reserved words, or a length in the first word, and
+every sink takes it as an ordinary end.
+
+Expected to fail: the harness's `assert_eq!`, on any end-of-stream first word paired with a
+non-zero second or third word.
+
+diff --git a/crates/byte_sink_contract/src/lib.rs b/crates/byte_sink_contract/src/lib.rs
+--- a/crates/byte_sink_contract/src/lib.rs
++++ b/crates/byte_sink_contract/src/lib.rs
+@@ -259,7 +259,7 @@ pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg
+             out[8..].copy_from_slice(&w2.to_le_bytes());
+             Msg::Bytes(n)
+         }
+-        OPERATION_EOF if w0 == eof() && w1 == 0 && w2 == 0 => Msg::Eof,
++        OPERATION_EOF => Msg::Eof,
+         _ => Msg::Malformed,
+     }
+ }

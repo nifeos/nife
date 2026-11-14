@@ -12,7 +12,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
   pin every shipped wire id.
 - `cargo doc` with warnings denied, `cargo clippy --all-targets`, `cargo test`, and the builds for
   `x86_64-unknown-none` and `riscv64imac-unknown-none-elf` are green on the new repository.
-- `tokenize` refuses a line it could not hold in full, with a test of seventeen tokens.
+- `parse_run` refuses a line the tokenizer could not hold in full, with a test of seventeen tokens (met).
 - At least the eight harnesses of item 5 exist, each with a falsification patch that the template's
   `falsify` job replays red.
 - Every public limit in bytes ends `_BYTES`, no public name carries a word from the spelled-out

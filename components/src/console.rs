@@ -48,7 +48,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::{
     Received, call, cntfrq, now, receive, receive_bound, send, timer_arm, timer_cancel,
 };

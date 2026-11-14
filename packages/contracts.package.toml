@@ -34,6 +34,9 @@ interfaces = [
     "std_runtime_contract",
     "supervision_contract",
     "hot_swap_contract",
+    # The terminal's wire words, which the kernel, the terminal and its clients link (milestone
+    # 1098 (`line_editor`: what an outside maintainer would fix before it leaves), decision 1).
+    "terminal_contract",
     "elf",
     "measured_boot",
     "package_archive",

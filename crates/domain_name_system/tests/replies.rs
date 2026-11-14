@@ -329,6 +329,58 @@ fn addresses_past_the_cap_are_dropped_and_the_rest_kept() {
     );
 }
 
+/// RFC 2181 section 8: a TTL with its most significant bit set is read as zero. An answer is good
+/// for the shortest of its records' lifetimes, so one such record on the chain or among the
+/// addresses makes the whole answer good for no time at all, rather than for about 136 years.
+#[test]
+fn a_ttl_with_the_high_bit_set_is_zero() {
+    for high in [0x8000_0000u32, 0xffff_ffff] {
+        let address_only = Reply::to(OURS)
+            .record(&wire(OURS), record_type::A, CLASS_IN, high, &[10, 0, 2, 9])
+            .bytes;
+        let answer = Query::new(OUR_ID, OURS)
+            .unwrap()
+            .accept(&address_only)
+            .unwrap();
+        assert_eq!(answer.ttl(), 0, "{high:#x} on the address");
+
+        let on_the_chain = Reply::to(OURS)
+            .record(
+                &wire(OURS),
+                record_type::CNAME,
+                CLASS_IN,
+                high,
+                &wire("o.nife.test"),
+            )
+            .record(
+                &wire("o.nife.test"),
+                record_type::A,
+                CLASS_IN,
+                300,
+                &[10, 0, 2, 9],
+            )
+            .bytes;
+        let answer = Query::new(OUR_ID, OURS)
+            .unwrap()
+            .accept(&on_the_chain)
+            .unwrap();
+        assert_eq!(answer.ttl(), 0, "{high:#x} on the CNAME");
+    }
+
+    // The control: the largest TTL with the bit clear is believed as written.
+    let largest = Reply::to(OURS)
+        .record(
+            &wire(OURS),
+            record_type::A,
+            CLASS_IN,
+            0x7fff_ffff,
+            &[10, 0, 2, 9],
+        )
+        .bytes;
+    let answer = Query::new(OUR_ID, OURS).unwrap().accept(&largest).unwrap();
+    assert_eq!(answer.ttl(), 0x7fff_ffff);
+}
+
 #[test]
 fn the_ttl_is_the_smallest_on_the_chain_and_among_the_addresses() {
     let r = Reply::to(OURS)
