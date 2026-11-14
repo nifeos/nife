@@ -113,6 +113,14 @@ words, packed by `filesystem_contract::grant` exactly as a per-file grant's name
 costs no extra frame, and holds nothing that names a progenitor, a terminal, or the filesystem
 above its grant.
 
+The report is a byte sink and ends as every sink stream does, with `(eof(), 0, 0)`. The exit
+status and the count of names removed go after it, once, to a verdict endpoint at slot 2
+(`filesystem_contract::rm::VERDICT_SLOT`). A `SEND` returns only once its message is received, so
+the verdict cannot overtake the text: a reader drains the report to its end, then receives the
+verdict. The kernel's `start_granted_dir` and `start_granted_set` grant that endpoint when the
+caller asks (`verdict: true`). The spawn service leaves slot 2 empty, so at the prompt the second
+`SEND` is refused and `rm` exits.
+
 ## BUGS
 
 - **`rm a/b/c.txt` is refused at the interactive prompt** (phase 3 of the capability shell). The progenitor
@@ -120,13 +128,15 @@ above its grant.
   built. `rm rmtree/rm-solo` and `rm gate.txt` both work and `script/swish-check` gates both on
   every architecture: the first descends one name with `OPENDIR`, the second narrows the root with
   `NARROW`, the verb §173 (narrowing the root of the shell's namespace) ruled. See notes/dir-capability.md's BUGS.
-- **The end of the stream is the verdict**, and it must not look like a byte count. The report channel
-  carries text frames (first word = a byte count, at most 16) and then `byte_sink_contract::eof()`, whose
-  first word is `OPERATION_EOF << 56`; the status and the removal count ride in the two words that message
-  leaves free. A receiver reads "the first message ends the stream" as "the run printed nothing",
-  which is what makes `rm(1)`'s silence-on-success checkable. `filesystem_contract::fixture::VERDICT`
-  would not do: no reader that is not a guest test can decode it, so the program could not be piped
-  even though its manifest declares the sink contract.
+- **The shell does not see `rm`'s exit status.** The spawn service grants no verdict endpoint,
+  and the shell reads no exit status from any program it spawns (`SYSCALL_EXIT` carries none). The
+  status and count reach a guest test, through the verdict endpoint, and nothing at the prompt. A
+  status carried on the death message would reach every program at once; that is a change to the
+  syscall surface and has no milestone yet.
+- **A report that holds only its end means the run printed nothing**, and that is checkable
+  because a text frame's first word is a byte count of at most 16, which no end of stream equals.
+  The status cannot ride the end of stream's other two words, since the sink contract reserves
+  them and a sink refuses a message that sets them.
 - **No `rm -i`.** There is no prompting anywhere in this system, so the flag has nothing to mean.
 - **Recursion depth is real stack**, since the program has no allocator and each level holds a listing
   buffer by value. `rm` asks for 4 stack pages. A deep enough tree will exhaust it, and the failure
