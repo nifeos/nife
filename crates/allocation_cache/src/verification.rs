@@ -23,8 +23,8 @@ fn a_request_lands_in_a_class_that_holds_it() {
             assert!(align <= GRID && size <= LARGEST);
             let bytes = class_bytes(c);
             assert!(bytes >= size);
-            assert!(bytes > size.saturating_sub(1) && bytes <= size.max(1) + GRID - 1);
-            assert!(bytes % GRID == 0);
+            assert!(bytes > size.saturating_sub(1) && bytes < size.max(1) + GRID);
+            assert!(bytes.is_multiple_of(GRID));
         }
         None => assert!(align > GRID || size > LARGEST),
     }
