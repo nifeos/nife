@@ -19,12 +19,12 @@ pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
 ///
-/// Name: ratified 2026-11-14 (UTC), nifeos/nife#3571.
+/// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// Where the resolver writes the addresses in the client's page, four bytes each, in the order the
 /// name server gave them.
 ///
-/// Name: ratified 2026-11-14 (UTC), nifeos/nife#3571.
+/// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).

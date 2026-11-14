@@ -524,22 +524,22 @@ pub mod stack_slots {
 ///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
 /// ```
 ///
-/// Name: ratified 2026-11-14 (UTC), nifeos/nife#3571.
+/// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const DESTINATION_ADDRESS_OFFSET_BYTES: u64 = 0x000;
 /// The destination port, right after the destination Internet Protocol (IP) address.
 ///
-/// Name: ratified 2026-11-14 (UTC), nifeos/nife#3571.
+/// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const DESTINATION_PORT_OFFSET_BYTES: u64 = 0x004;
 /// The payload length of a received datagram or segment, little-endian. Only `RECEIVE` writes it,
 /// and nothing in this contract reads it: a send carries its length in the argument word of its
 /// `CALL`, checked against [`DATA_MAXIMUM`], and ignores this field. A client may clear it before
 /// a `RECEIVE` to watch for the reply.
 ///
-/// Name: ratified 2026-11-14 (UTC), nifeos/nife#3571.
+/// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const LENGTH_OFFSET_BYTES: u64 = 0x006;
 /// Where the payload bytes start.
 ///
-/// Name: ratified 2026-11-14 (UTC), nifeos/nife#3571.
+/// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const PAYLOAD_OFFSET_BYTES: u64 = 0x008;
 
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
