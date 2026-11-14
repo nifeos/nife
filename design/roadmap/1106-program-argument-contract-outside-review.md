@@ -115,8 +115,8 @@ otherwise.
    Evidence: `spelled_out.py` output; `design/naming.md`, "Acronyms and abbreviations",
    "Registers and constants" and "Crates"; `design/naming/crates.md`, "Page contract crates".
    Change: `ArgumentPage`, `push(argument)`, `from_virtual_address(virtual_address)`, and
-   `argument` and `arguments` for the bindings. The public two are names, so the architect
-   ratifies them in the crate's name review before the move (decision 2 below); the lane renames
+   `argument` and `arguments` for the bindings. The public two are names, which decision 2 below
+   decides, provisionally, and the architect ratifies in the crate's name review; the lane renames
    the bindings and the test helper without a ruling. The `std` overlay's `sys/args/nife.rs` and
    its generator follow the rename, since the file arrives verbatim.
    Door: the two public names are one-way once released and two-way today; the bindings are
@@ -124,16 +124,16 @@ otherwise.
 
 ### P1: before the first tag
 
-5. `CAPACITY` carries no unit and is not the family's name.
+5. `CAPACITY` carries no unit.
    Finding: the constant is the number of record bytes one page holds (4,080). The naming rule says
-   a length or a limit carries its unit, and the page-contract family table names the length of a
-   page's content, which is less than a page, `PAGE_CONTENT_BYTES`. `grant_plan` spells the unit
-   for it in prose ("4,080 bytes") because the name does not.
+   a length or a limit carries its unit. `grant_plan` spells the unit for it in prose ("4,080
+   bytes") because the name does not.
    Evidence: line 49; `design/naming/crates.md`, "Page contract crates";
    `crates/grant_plan/src/refusal.rs` line 187.
-   Change: `PAGE_CONTENT_BYTES`, with `CAPACITY` gone (no alias for a nife spelling before the
-   first release). `grant_plan` follows in the same pull request.
-   Door: a public name, one-way once released; two-way today. Ratified in decision 2. Effort: XS.
+   Change: `MAXIMUM_RECORDS_BYTES`, as decision 2 decides, provisionally, with `CAPACITY` gone (no
+   alias for a nife spelling before the first release). The family's `PAGE_CONTENT_BYTES` counts
+   the header too, so it does not fit. `grant_plan` follows in the same pull request.
+   Door: a public name, one-way once released; two-way today. Effort: XS.
 
 6. The crate has no proof, and the template's front page promises one.
    Finding: no `#[kani::proof]` and no `falsifications/`. Three sibling contract crates
@@ -199,7 +199,8 @@ The P2 items are in [the appendix](1106-program-argument-contract-outside-review
 
 ## Decisions for the architect
 
-Only the one-way doors. Everything else above is the maintainer's.
+The one-way doors, and the three names, which the maintainer decides provisionally in decision 2.
+Everything else above is the maintainer's.
 
 ### The layout leaves as built, with the magic still unnumbered
 
@@ -249,6 +250,15 @@ word list tells an author to say whose arguments; `counter_frequency_contract::C
 is the family's ratified form. Example: `let page = unsafe {
 ArgumentPage::from_virtual_address(ARGS_PAGE) };` in the `std` overlay replaces the one call that
 exists.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. `ArgPage` (`src/lib.rs` line 148) becomes `ArgumentPage`,
+and `from_va(va)` (line 195) becomes `from_virtual_address(virtual_address)`. `CAPACITY` (line 49)
+becomes `MAXIMUM_RECORDS_BYTES`, not `PAGE_CONTENT_BYTES`. In the family, `PAGE_CONTENT_BYTES` is
+the bytes a page's content occupies with its header included (`crates/base_digest_contract/src/lib.rs`
+line 69), while `CAPACITY` is the room for records after the header, 4,080 bytes. A limit opens
+`MAXIMUM_` and ends with its unit. No old spelling stays as an alias. Ratifying the names stays the
+architect's.
 
 ### The repository
 
