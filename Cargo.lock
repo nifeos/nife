@@ -615,10 +615,6 @@ dependencies = [
 [[package]]
 name = "glob"
 version = "0.1.0"
-dependencies = [
- "filesystem_contract",
- "filesystem_fixture",
-]
 
 [[package]]
 name = "globally_unique_identifier_partition_table"
@@ -636,6 +632,7 @@ name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "filesystem_contract",
+ "filesystem_fixture",
  "glob",
  "primitive_benchmark_contract",
  "program_argument_contract",
@@ -909,6 +906,7 @@ name = "line_editor"
 version = "0.1.0"
 dependencies = [
  "capability_plan",
+ "hot_swap_contract",
 ]
 
 [[package]]

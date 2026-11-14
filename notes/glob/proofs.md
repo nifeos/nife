@@ -31,10 +31,11 @@ subsystems) rule 1 in practice: restructure the code, do not weaken the claim.
 ## The cost
 
 The honest cost is recorded, since a gate people skip is worse than none. The six harnesses take
-about ten minutes of solver time. That makes this the largest single entry in `script/verify` after
-`calendar`'s seven. Two thirds of it is the two harnesses that quantify over a symbolic-length
-pattern and a symbolic-length name (199s and 186s). The other four are 92, 57, 53 and 1. The
-lever that worked was cutting the dot rule's name bound from three bytes to two, which is sound
+minutes of solver time, which makes this one of the larger entries in `script/verify`. Most of it is
+the two harnesses that quantify over a symbolic-length pattern and a symbolic-length name. The
+per-harness seconds are not recorded here, because they are facts about one host and one Kani version
+and drift between runs (the negated-class harness has measured from about one minute to over three).
+The lever that worked was cutting the dot rule's name bound from three bytes to two, which is sound
 because that rule is a predicate on the name's first byte. The lever that did not work, measured and
 recorded so nobody re-tries it, was restating a restriction as `kani::assume` instead of an early
 `return`: 181s became 186s, which is noise.

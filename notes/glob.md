@@ -48,7 +48,7 @@ pub fn matches_with(pattern: &[u8], name: &[u8], dot: Dot) -> bool;
 pub fn has_magic(pattern: &[u8]) -> bool;
 pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]>;
 pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize);
-pub const fn cost_bound(pattern_len: usize, name_len: usize) -> usize;
+pub const fn cost_bound(pattern_bytes: usize, name_bytes: usize) -> usize;
 ```
 
 Six functions, and each is there for a caller that exists:
@@ -164,7 +164,7 @@ together they are the whole argument:
 The work is therefore polynomial in the two lengths, with no term that grows with the number of
 `*`s. That last part is the entire difference between this and the naive matcher.
 
-The bound is not left as prose. `cost_bound(pattern_len, name_len)` computes it from the two lengths
+The bound is not left as prose. `cost_bound(pattern_bytes, name_bytes)` computes it from the two lengths
 alone, before any matching happens, saturating rather than wrapping (a wrapped bound would be a small
 number, and every `steps <= bound` assertion would then be checking nothing). `match_steps` reports
 what a match actually cost, counting every pattern byte examined including the ones a bracket
@@ -183,7 +183,7 @@ Six Kani harnesses, run by `script/verify`, and the split with the host tests is
 | harness | what it quantifies over |
 |---|---|
 | `matching_is_total` | every pattern of 0..=3 arbitrary bytes against every name of 0..=3 arbitrary bytes, both `Dot` settings: no panic, no overflow, no out-of-bounds index, and the loop terminates |
-| `the_cost_never_exceeds_the_bound` | the same domain: `steps <= cost_bound(pattern_len, name_len)`, which is the *accounting* rather than the blowup (see below) |
+| `the_cost_never_exceeds_the_bound` | the same domain: `steps <= cost_bound(pattern_bytes, name_bytes)`, which is the *accounting* rather than the blowup (see below) |
 | `no_magic_means_the_pattern_is_its_own_only_match` | the same domain: if `has_magic` is false, the pattern matches a name **iff** that name is `literal(pattern)` |
 | `star_matches_anything_and_question_matches_one_byte` | every name of 0..=3 arbitrary bytes: `*` and `**` always match, `?` matches iff the name is one byte, `??` iff two, `*?*` iff non-empty |
 | `the_dot_rule_only_touches_names_that_start_with_a_dot` | the same domain: `Special` is never more permissive than `Ordinary`, it is permissive only for a pattern opening with a literal `.`, and for a name not starting with `.` the two settings are **identical** |
@@ -193,8 +193,8 @@ Three bytes was measured rather than chosen: four bytes each was tried and aband
 and past ten minutes. Three bytes reaches every byte value, 2^48 pattern/name pairs per harness. It
 does not quantify over length. Reaching it took two restructurings, per DECISIONS §46 (thin
 primitives or whole subsystems) rule 1: the bracket expression is scanned in one pass, and the unwind bound (11) is measured by a test rather
-than guessed. The six harnesses cost about ten minutes of solver time, the largest entry in
-`script/verify` after `calendar`. Kani also found a real defect, in a harness rather than the code.
+than guessed. The six harnesses cost minutes of solver time, one of the larger entries in
+`script/verify`. Kani also found a real defect, in a harness rather than the code.
 
 The length-independent claims are the host tests' job. An exhaustive cross-check against a naive
 matcher takes every pattern of length 0..=5, over one representative of each syntactic role. It

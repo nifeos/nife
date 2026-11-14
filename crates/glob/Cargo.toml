@@ -2,23 +2,31 @@
 name = "glob"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "An fnmatch-style glob matcher over bytes for one file name: total, allocation-free, with a cost bound and Kani proofs"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "glob", "fnmatch", "pattern-matching"]
+categories = ["no-std", "algorithms", "filesystem"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+include = ["src/**", "falsifications/**", "README.md", "LICENSE-*"]
 
-# Milestone 47's pattern matcher, and only the matcher: a pattern and a name in, a yes or no out.
-# No filesystem access, no enumeration, no allocation, no dependency on filesystem_contract or grant_plan. The
-# milestone's finding is that the interesting question is what a match *grants* (a caretaker
-# attenuated to a name set), and that is a separate lane; this is the part that is pure computation
-# and can be proved. DECISIONS §46 rule 1: it is on the verification path, so we write it.
-# See notes/glob.md.
+# A pattern matcher, and only the matcher: a pattern and a name in, a yes or no out. No filesystem
+# access, no enumeration, no allocation and no dependency. The part of globbing that is pure
+# computation, so that it can be proved.
 
 [dependencies]
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(loom)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
 
-# The staged glob fixtures are checked against the matcher in `tests/fixture_agreement.rs`. The
-# fixture and the filesystem contract do not depend on the matcher, so the test lives here.
-[dev-dependencies]
-filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
-filesystem_fixture = { version = "0.1.0", path = "../filesystem_fixture" }
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

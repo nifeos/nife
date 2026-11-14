@@ -6,6 +6,8 @@ An appendix to [the milestone](../1092-glob-outside-review.md).
 
 #### P2-1. `has_magic` and `literal` have no cost bound, and the doc says the work is bounded
 
+DONE (the module doc names which function the bound covers and the scanners' own bound).
+
 The module doc says "the work is bounded by `cost_bound`" (`src/lib.rs` lines 8 to 9). Only `match_steps` is.
 `has_magic` and `literal` decode each `[` by scanning to the closing `]` or the end, so a pattern of
 n unterminated brackets costs about n²/2 byte reads in either function, with no counter. Harmless at
@@ -13,6 +15,8 @@ shell-word lengths, and still a claim the doc overstates. Change: say which func
 covers, and give the two scanners their own one-line bound in the doc. Two-way. S.
 
 #### P2-2. `.*` matches `.` and `..`
+
+DONE for the matcher (the module doc and README state that `.` and `..` are ordinary names). LEFT: the `grant_plan` note, since whether its enumeration yields them is unverified.
 
 `matches(b".*", b"..")` is `true` and the test at `src/lib.rs` line 506 pins it. That is historical shell
 behavior, and bash 5.2 changed its default (`globskipdots`) so that `.*` no longer yields the two
@@ -24,6 +28,8 @@ them. Two-way. S.
 
 #### P2-3. `match_steps` returns a tuple and calls its own value unstable
 
+PARTIAL. The doc and README state the one promise (`steps` is at most `cost_bound`). LEFT: a named return type is a new public name for an architect.
+
 `match_steps` returns `(bool, usize)` and its doc says the count "is not stable across changes to
 this crate". A published function whose second value is explicitly unstable is a compatibility
 statement no tool checks. Change: a named return (`Outcome { matched, steps }`) whose doc states the
@@ -32,6 +38,8 @@ keep the tuple and state the promise in the README. Two-way before the first rel
 after. S.
 
 #### P2-4. No fuzz target, for a crate that qualifies for the weekly opt-in
+
+LEFT. A fuzz target is a new `fuzz/` crate and the weekly opt-in is a separate ruling; it wants a lane of its own.
 
 The crate has no `unsafe` and takes two untrusted byte strings, which is what the weekly fuzz run
 is for, and `fuzz/Cargo.toml` names no target for it. The naive matcher that the exhaustive test
@@ -42,6 +50,8 @@ matcher moves behind `#[cfg(any(test, fuzzing))]` or into the target. M.
 
 #### P2-5. Two harnesses quantify over one dot rule where both are cheap
 
+DONE (both harnesses take a symbolic `Dot` through `any_dot()`, and the first uses `any_lengths()`).
+
 `the_cost_never_exceeds_the_bound` and `no_magic_means_the_pattern_is_its_own_only_match` fix
 `Dot::Ordinary`. Under `Dot::Special` the first is trivially stronger (a refused name costs zero
 steps) and the second is the claim the shell's grant planner relies on with the default rule. Both
@@ -51,6 +61,8 @@ loop. The first also redefines its own `SHORT` bound instead of calling `any_len
 
 #### P2-6. The recorded solver times no longer describe a run
 
+DONE (`notes/glob/proofs.md` and `notes/glob.md` drop the per-harness seconds).
+
 `notes/glob/proofs.md` gives the four cheaper harnesses as 92, 57, 53 and 1 seconds and the total as
 about ten minutes. One run here took the negated-class harness to 190 seconds under Kani 0.68.0 on
 another host, and the star harness to 2. The figures are environment facts, not crate facts. Change:
@@ -59,11 +71,15 @@ the per-harness seconds, or states them as one measurement with its Kani version
 
 #### P2-7. `Elem` is an abbreviation
 
+DONE (`Element`).
+
 The private enum `Elem` (`src/lib.rs` line 257) is "element" with a decoder. The naming page's first
 failure mode is an abbreviation that needs one; `spelled_out` does not list this word, so nothing
 refuses it. Change: `Element`. Two-way. S.
 
 #### P2-8. No benchmark behind the "polynomial" claim
+
+LEFT. A benchmark needs a benchmark harness the crate does not have; a lane of its own.
 
 Every comparable crate publishes a number; this one proves an inequality and asserts
 `steps < 40 * NAME_LEN` in a test. A `benches/` with the three adversarial shapes (`a*a*...*b`,
