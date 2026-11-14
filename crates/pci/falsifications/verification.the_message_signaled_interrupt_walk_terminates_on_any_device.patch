@@ -1,4 +1,4 @@
-Falsifies `pci::verification::the_msi_walk_terminates_on_any_device`.
+Falsifies `pci::verification::the_message_signaled_interrupt_walk_terminates_on_any_device`.
 
 The defect: the MSI walk's hop bound is raised from 64 to 65, the off-by-one a later edit that
 "rounds the bound up to be safe" would make. The walk still terminates, but it reads one more

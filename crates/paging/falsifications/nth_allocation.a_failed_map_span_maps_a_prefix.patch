@@ -18,11 +18,11 @@ Expected to fail: assertion (2), "what is left mapped is not a prefix of the req
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
-index 57461d545..b81d5e418 100644
+index b1520b3fc..d9fc74b01 100644
 --- a/crates/paging/src/mapper.rs
 +++ b/crates/paging/src/mapper.rs
-@@ -230,12 +230,16 @@ where
-             return Err(MapError::Misaligned);
+@@ -303,12 +303,16 @@ where
+             return Err(MapError::BadRegion);
          }
          let mut done = 0;
 +        let mut failed = None;
@@ -39,4 +39,4 @@ index 57461d545..b81d5e418 100644
 +        failed.map_or(Ok(()), Err)
      }
  
-     /// Map `count` consecutive pages.
+     /// Map `count` consecutive pages. A run whose end passes `u64::MAX` in either address space is

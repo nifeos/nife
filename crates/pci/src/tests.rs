@@ -1072,22 +1072,26 @@ fn every_bus_number_is_its_own_bit_in_the_seen_set() {
 /// still reaches the end of the list.
 #[test]
 fn a_vendor_capability_shorter_than_its_type_needs_is_skipped() {
-    let mut cfg = FakeCfg::new();
-    let bdf = Bdf {
+    let mut configuration = FakeCfg::new();
+    let location = Bdf {
         bus: 0,
         dev: 1,
         func: 0,
     };
-    cfg.space.insert(
+    configuration.space.insert(
         (0, 1, 0, 0x40),
         u32::from_le_bytes([0x09, 0x50, 12, VIRTIO_CAPABILITY_COMMON]),
     );
-    cfg.space.insert(
+    configuration.space.insert(
         (0, 1, 0, 0x50),
         u32::from_le_bytes([0x09, 0x70, 16, VIRTIO_CAPABILITY_NOTIFY]),
     );
     let mut seen = 0;
-    virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |_| seen += 1);
+    virtio_capabilities(
+        location,
+        &mut |b, o| configuration.read32(b, o),
+        &mut |_| seen += 1,
+    );
     assert_eq!(seen, 0);
 }
 
@@ -1113,8 +1117,8 @@ fn a_device_or_function_past_its_field_is_masked_to_it() {
 /// **The MSI walk ends on a cycle and on a list that never names MSI**, in at most 64 hops, the
 /// same discipline as the other two walks.
 #[test]
-fn the_msi_walk_ends_on_a_cyclic_list() {
-    let bdf = Bdf {
+fn the_message_signaled_interrupt_walk_ends_on_a_cyclic_list() {
+    let location = Bdf {
         bus: 0,
         dev: 1,
         func: 0,
@@ -1129,6 +1133,6 @@ fn the_msi_walk_ends_on_a_cyclic_list() {
             _ => 0,
         }
     };
-    assert_eq!(msi_capability(bdf, &mut cyclic), None);
+    assert_eq!(msi_capability(location, &mut cyclic), None);
     assert_eq!(reads, 2 + 64);
 }

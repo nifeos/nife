@@ -32,11 +32,11 @@ and `paging`'s Kani harnesses reason about the encoder rather than the construct
 the honest scope of a kernel-test falsification and is stated in script/falsifications' BUGS.
 
 diff --git a/crates/paging/src/flags.rs b/crates/paging/src/flags.rs
-index 03860e171..fa453076e 100644
+index 6bd2dd54c..37826ad58 100644
 --- a/crates/paging/src/flags.rs
 +++ b/crates/paging/src/flags.rs
-@@ -37,7 +37,7 @@ pub struct Flags(u64);
- impl Flags {
+@@ -95,7 +95,7 @@ impl Flags {
+ 
      /// Kernel code: readable and executable by the kernel, never writable, never user.
      pub const fn kernel_code() -> Self {
 -        Flags(ACCESS_KERNEL_EXEC | ACCESS_GLOBAL)

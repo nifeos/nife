@@ -60,14 +60,14 @@ impl PageFrame {
         PageFrame(addr)
     }
 
-    /// The frame at `addr`, or `None` when `addr` is not frame-aligned: the fallible form of
-    /// [`from_addr`](Self::from_addr), for a caller that holds an address it has not checked.
+    /// The frame at `physical_address`, or `None` when it is not frame-aligned: the fallible form
+    /// of [`from_addr`](Self::from_addr), for a caller that holds an address it has not checked.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
     #[must_use]
-    pub const fn try_from_address(addr: u64) -> Option<Self> {
-        if addr.is_multiple_of(FRAME_SIZE) {
-            Some(PageFrame(addr))
+    pub const fn try_aligned(physical_address: u64) -> Option<Self> {
+        if physical_address.is_multiple_of(FRAME_SIZE) {
+            Some(PageFrame(physical_address))
         } else {
             None
         }

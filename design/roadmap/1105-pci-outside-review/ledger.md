@@ -15,8 +15,8 @@ Names minted by this work: none.
   slots and no other header probes any.
 - 5, 6 LEFT: renames of public names, each for the architect's ratification.
 - 7 LEFT: the documentation rewrite, with the move.
-- 8 PARTIAL: `the_msi_walk_terminates_on_any_device` arrives with its falsification patch
-  (`the_msi_walk_ends_on_a_cyclic_list` is its host twin). The factoring of the three walks into one
+- 8 PARTIAL: `the_message_signaled_interrupt_walk_terminates_on_any_device` arrives with its falsification patch
+  (`the_message_signaled_interrupt_walk_ends_on_a_cyclic_list` is its host twin). The factoring of the three walks into one
   and the ceiling proof are not done.
 - P2 `cap_len`: DONE (`a_vendor_capability_shorter_than_its_type_needs_is_skipped`).
 - P2 `intx_interrupt_number` precondition: LEFT; `intx_pin_through_bridge` is a new public name.

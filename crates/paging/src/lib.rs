@@ -16,7 +16,7 @@
 //! `PageTable::entries` is public, so a caller can bypass the format. The Sv39 device bit
 //! (`SW_DEVICE`) is software bookkeeping in a bit the hardware ignores; a machine with Svpbmt
 //! would want bits 62:61, and no format here sets them. `Sv39Mae`'s memory-type values come from
-//! Linux's `pgtable-64.h` alone: the search for a vendor document that gives the T-Head MAEE bits
+//! Linux's `pgtable-64.h` alone: the search for a vendor document that gives the T-Head memory attribute extension (MAEE) bits
 //! found none. `Vtd` and `AmdVi` set `SPLIT_SHIFT` to 47 as a ceiling, so a domain over a frame
 //! above 128 TiB gets `WrongHalf`, an error about a concept I/O virtual addresses do not have.
 //!

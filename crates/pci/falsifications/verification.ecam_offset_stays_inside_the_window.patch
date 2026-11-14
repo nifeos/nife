@@ -10,10 +10,15 @@ above 127, where a config read leaves the 256-bus window the kernel mapped and t
 accessor touches whatever is next in the address space.
 
 diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
+index a8fcf6f38..c42bc1f84 100644
 --- a/crates/pci/src/lib.rs
 +++ b/crates/pci/src/lib.rs
-@@ -102,3 +102,3 @@ impl Bdf {
+@@ -33,7 +33,7 @@ impl Bdf {
+     /// `dev` and `func` are the 5- and 3-bit fields of the address; a larger value is masked to its
+     /// field here, so it can never land on the next bus's or the next device's page.
      pub fn ecam_offset(self) -> u64 {
--        ((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
-+        ((self.bus as u64) << 21) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
+-        ((self.bus as u64) << 20)
++        ((self.bus as u64) << 21)
+             | (((self.dev & 0x1f) as u64) << 15)
+             | (((self.func & 0x7) as u64) << 12)
      }

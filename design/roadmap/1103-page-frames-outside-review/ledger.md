@@ -20,7 +20,7 @@ the code.
 | 11 `#[must_use]` | DONE | the eleven items, with a reason on `alloc` and `alloc_contiguous` |
 | 12 `free` for a run | LEFT | no caller uses it yet; the two kernel loops stay until a lane takes the symmetric API |
 | 13 alignment | DONE | a `# BUGS` entry on `alloc_contiguous` |
-| 14 fallible `from_addr` | DONE | `an_unaligned_address_is_refused_without_a_panic`; `PageFrame::try_from_address` (provisional) |
+| 14 fallible `from_addr` | DONE | `an_unaligned_address_is_refused_without_a_panic`; `PageFrame::try_aligned` (provisional) |
 | 15 64-bit `usize` | DONE | a `const` assertion at the crate root |
 | 16 `Name:` paragraph | DONE | the paragraph says what the word collided with |
 | 17 mutation exemptions | LEFT | written in the new repository |

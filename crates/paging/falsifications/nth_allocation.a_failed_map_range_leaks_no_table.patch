@@ -19,10 +19,10 @@ path reaches `map`; this record names the one it was written for.
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
-index 57461d545..c94e4676a 100644
+index b1520b3fc..9e1e1646f 100644
 --- a/crates/paging/src/mapper.rs
 +++ b/crates/paging/src/mapper.rs
-@@ -108,6 +108,7 @@ where
+@@ -190,6 +190,7 @@ where
          }
  
          let mut table_pa = self.root;
@@ -30,23 +30,18 @@ index 57461d545..c94e4676a 100644
  
          // Descend through every level but the last, creating intermediate tables as we go.
          for level in 0..F::LEVELS - 1 {
-@@ -117,7 +118,13 @@ where
+@@ -199,9 +200,16 @@ where
              let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
  
              if !F::is_present(*entry) {
--                let new = (self.alloc_page_frame)().ok_or(MapError::OutOfPageFrames)?;
-+                let Some(new) = (self.alloc_page_frame)() else {
+-                let new = self.fresh_table()?;
++                let Ok(new) = self.fresh_table() else {
 +                    // "Atomic" map: take back what this call installed. Unlinks, never frees.
 +                    if let Some(e) = first {
 +                        unsafe { *e = 0 };
 +                    }
 +                    return Err(MapError::OutOfPageFrames);
 +                };
- 
-                 // SAFETY: a fresh frame from the allocator. Zero it before it becomes reachable by
-                 // the hardware, or the walk reads whatever garbage was in RAM and follows it.
-@@ -126,6 +133,7 @@ where
-                 }
  
                  *entry = F::table_entry(new, level);
 +                first.get_or_insert(entry as *mut u64);

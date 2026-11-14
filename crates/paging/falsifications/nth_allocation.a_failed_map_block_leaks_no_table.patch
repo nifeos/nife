@@ -19,10 +19,10 @@ Expected to fail: assertion (1), "table frame(s) handed out and unreachable from
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
-index 57461d545..d36699aa1 100644
+index b1520b3fc..6de17d019 100644
 --- a/crates/paging/src/mapper.rs
 +++ b/crates/paging/src/mapper.rs
-@@ -179,17 +179,25 @@ where
+@@ -255,13 +255,21 @@ where
          let leaf_level = F::LEVELS - 1 - size.levels_above_bottom();
  
          let mut table_pa = self.root;
@@ -32,18 +32,14 @@ index 57461d545..d36699aa1 100644
              // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
              let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
              if !F::is_present(*entry) {
--                let new = (self.alloc_page_frame)().ok_or(MapError::OutOfPageFrames)?;
-+                let Some(new) = (self.alloc_page_frame)() else {
+-                let new = self.fresh_table()?;
++                let Ok(new) = self.fresh_table() else {
 +                    // "Atomic" map: take back what this call installed. Unlinks, never frees.
 +                    if let Some(e) = first {
 +                        unsafe { *e = 0 };
 +                    }
 +                    return Err(MapError::OutOfPageFrames);
 +                };
-                 // SAFETY: a fresh frame, zeroed before it becomes reachable (see `map`).
-                 unsafe {
-                     (*(self.phys_to_ptr)(new)).entries = [0; ENTRIES];
-                 }
                  *entry = F::table_entry(new, level);
 +                first.get_or_insert(entry as *mut u64);
              } else if F::is_block(*entry) {

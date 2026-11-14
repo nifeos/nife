@@ -281,34 +281,34 @@ mod verification {
 
     /// **`parse` never panics, and its iterator yields exactly `len()` items**, with `is_empty`
     /// agreeing, for any page that carries the magic.
-    /// Falsification: replayable `falsifications/verification.parse_never_panics_and_iterates_len_items.patch`
+    /// Falsification: replayable `crates/program_argument_contract/falsifications/verification.parse_never_panics_and_iterates_len_items.patch`
     #[kani::proof]
     #[kani::unwind(14)]
     fn parse_never_panics_and_iterates_len_items() {
         let page = any_page();
-        let args = ArgPage::parse(&page);
-        assert_eq!(args.iter().count(), args.len());
-        assert_eq!(args.is_empty(), args.len() == 0);
+        let parsed = ArgPage::parse(&page);
+        assert_eq!(parsed.iter().count(), parsed.len());
+        assert_eq!(parsed.is_empty(), parsed.len() == 0);
     }
 
     /// **A page that parses holds exactly the records its header states**: the arguments number
     /// `count`, and their four-byte prefixes and bytes add up to `total` with nothing left over.
     /// Anything else is an empty argv.
-    /// Falsification: replayable `falsifications/verification.a_parsed_page_holds_exactly_what_its_header_states.patch`
+    /// Falsification: replayable `crates/program_argument_contract/falsifications/verification.a_parsed_page_holds_exactly_what_its_header_states.patch`
     #[kani::proof]
     #[kani::unwind(14)]
     fn a_parsed_page_holds_exactly_what_its_header_states() {
         let page = any_page();
         let count = u32::from_le_bytes([page[8], page[9], page[10], page[11]]);
         let total = u32::from_le_bytes([page[12], page[13], page[14], page[15]]) as usize;
-        let args = ArgPage::parse(&page);
-        if args.is_empty() {
+        let parsed = ArgPage::parse(&page);
+        if parsed.is_empty() {
             return;
         }
-        assert_eq!(args.len() as u32, count);
+        assert_eq!(parsed.len() as u32, count);
         let mut sum = 0;
-        for arg in args.iter() {
-            sum += 4 + arg.len();
+        for argument in parsed.iter() {
+            sum += 4 + argument.len();
         }
         assert_eq!(sum, total);
     }
@@ -345,15 +345,15 @@ mod tests {
     /// is no arguments. This is the one path through [`ArgPage::from_va`], so the test argues its
     /// contract: the page is a live, 4 KiB array, borrowed for the whole of the reads.
     #[test]
-    fn a_page_read_through_its_address_matches_the_slice_reader() {
+    fn a_page_read_through_its_virtual_address_matches_the_slice_reader() {
         let page = build(&[b"rg", b"a\0b", b""]);
-        // SAFETY: `page` is a live array of `PAGE_BYTES`, readable and unwritten while `args` is used.
-        let args = unsafe { ArgPage::from_va(page.as_ptr() as u64) };
+        // SAFETY: `page` is a live array of `PAGE_BYTES`, readable and unwritten while `parsed` is used.
+        let parsed = unsafe { ArgPage::from_va(page.as_ptr() as u64) };
         assert_eq!(
-            args.iter().map(<[u8]>::to_vec).collect::<Vec<_>>(),
+            parsed.iter().map(<[u8]>::to_vec).collect::<Vec<_>>(),
             read(&page)
         );
-        assert_eq!(args.len(), 3);
+        assert_eq!(parsed.len(), 3);
 
         let zeroed = [0u8; PAGE_BYTES];
         // SAFETY: as above, for `zeroed`.
@@ -364,7 +364,7 @@ mod tests {
     /// **Two header fields damaged together can read as a shorter argv**, which the crate's BUGS
     /// records: `count` and `total` that both describe the first record of two parse as that one.
     #[test]
-    fn a_consistently_shortened_header_reads_as_the_shorter_argv() {
+    fn a_consistently_shortened_header_reads_as_the_shorter_arguments() {
         let mut page = build(&[b"rg", b"src"]);
         page[8..12].copy_from_slice(&1u32.to_le_bytes());
         page[12..16].copy_from_slice(&6u32.to_le_bytes());
@@ -374,7 +374,7 @@ mod tests {
     /// **This crate is one file**, because the `std` port copies `src/lib.rs` by name: a second
     /// file here would break that build, so it fails this test first.
     #[test]
-    fn src_holds_exactly_one_file() {
+    fn source_holds_exactly_one_file() {
         let names: Vec<_> = std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/src"))
             .unwrap()
             .map(|e| e.unwrap().file_name())

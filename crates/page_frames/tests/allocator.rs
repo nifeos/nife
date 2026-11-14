@@ -392,11 +392,11 @@ fn a_span_that_ends_mid_frame_is_covered_but_not_whole() {
 #[test]
 fn an_unaligned_address_is_refused_without_a_panic() {
     assert_eq!(
-        PageFrame::try_from_address(BASE),
+        PageFrame::try_aligned(BASE),
         Some(PageFrame::from_addr(BASE))
     );
-    assert_eq!(PageFrame::try_from_address(BASE + 1), None);
-    assert_eq!(PageFrame::try_from_address(u64::MAX), None);
+    assert_eq!(PageFrame::try_aligned(BASE + 1), None);
+    assert_eq!(PageFrame::try_aligned(u64::MAX), None);
 }
 
 #[test]

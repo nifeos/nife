@@ -561,8 +561,8 @@ pub fn virtio_capabilities(
         // capability holds (20 for the notify one, which carries a multiplier). A function that
         // states less is bad data, and the fields past its end belong to the next entry.
         let capability_length = (head >> 16) & 0xff;
-        let cfg_type_of_head = (head >> 24) & 0xff;
-        let least_length = if cfg_type_of_head == VIRTIO_CAPABILITY_NOTIFY as u32 {
+        let configuration_type_of_head = (head >> 24) & 0xff;
+        let least_length = if configuration_type_of_head == VIRTIO_CAPABILITY_NOTIFY as u32 {
             20
         } else {
             16
@@ -1008,17 +1008,17 @@ mod verification {
     /// like the virtio capability walk and the MSI-X walk. It reads the
     /// status and the list pointer once and one head per hop, at most 64 hops, so 66 reads; and a
     /// capability it finds sits at a nonzero offset that is a multiple of four.
-    /// Falsification: replayable `crates/pci/falsifications/verification.the_msi_walk_terminates_on_any_device.patch`
+    /// Falsification: replayable `crates/pci/falsifications/verification.the_message_signaled_interrupt_walk_terminates_on_any_device.patch`
     #[kani::proof]
     #[kani::unwind(66)]
-    fn the_msi_walk_terminates_on_any_device() {
-        let bdf = Bdf {
+    fn the_message_signaled_interrupt_walk_terminates_on_any_device() {
+        let location = Bdf {
             bus: kani::any(),
             dev: kani::any(),
             func: kani::any(),
         };
         let mut reads = 0u32;
-        let found = msi_capability(bdf, &mut |_, _| {
+        let found = msi_capability(location, &mut |_, _| {
             reads += 1;
             kani::any()
         });

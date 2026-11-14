@@ -6,9 +6,11 @@ reads as a tidy bound, since 16 is the unsynchronized stratum and 15 sits right 
 Expected to fail: the harness's `expect("a consistent exchange is refused")`, on a stratum of 15,
 the farthest a synchronized server may be from a reference clock.
 
+diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
+index c7b75703b..707f22cf4 100644
 --- a/crates/network_time_protocol/src/lib.rs
 +++ b/crates/network_time_protocol/src/lib.rs
-@@ -724,7 +724,7 @@
+@@ -727,7 +727,7 @@ impl Query {
          if p.is_kiss_of_death() {
              return Err(Reject::KissOfDeath(p.reference_id));
          }
