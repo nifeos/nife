@@ -6,7 +6,7 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
   released template revision the new repository pins.
 - `README.md` and the crate-root `BUGS` state the dependency on `filesystem_contract` and its form
   after the contract leaves. 1017's step 2 row no longer pairs the two crates. No test that
-  links `glob` lives in this crate.
+  links `byte_glob` lives in this crate.
 - `prose_acronyms`, `typos`, `spelled_out`, `register_names`, `unit_symbols`, `british_spelling`
   and `question_shape` from the template, run over the crate with the arguments the `standalone`
   job passes, report zero findings.

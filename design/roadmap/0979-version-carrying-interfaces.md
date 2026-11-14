@@ -73,7 +73,7 @@ carries a version constant per wire format; a pure library is named by its crate
   scope is the syscall, method and error numbers a program matches.
 - `address_space_map` is layout constants the loader and the kernel compile in. One constant,
   provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
-- `glob` is a library with no peer and no wire, so it carries no constant. Its version is its
+- `byte_glob` is a library with no peer and no wire, so it carries no constant. Its version is its
   crate version, the semantic version in its `Cargo.toml`, which question 3's declaration reads.
 - `machine_statistics_contract` is a shared-page format; its first word is the magic `MACHSTA1`.
   The page gains a version word beside it (a new index in the `word` module, provisionally
@@ -106,7 +106,7 @@ prose to drift (§311). Placement follows the interface's kind:
 - The syscall ABI: the check happens at spawn, already ruled. §235 puts the ABI revision a program
   built against into its manifest note, "so the progenitor can refuse one it no longer supports";
   the comparison pits the note's declared version against the kernel's `ABI_VERSION` constant.
-- A link-time library (`glob`): no run-time check exists; the declaration of question 3 records the
+- A link-time library (`byte_glob`): no run-time check exists; the declaration of question 3 records the
   crate version from the link graph and `Cargo.lock`, and assembly checks the record.
 
 A refusal names both sides: "the server serves 2 and 1; the client built against 3".

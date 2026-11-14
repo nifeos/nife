@@ -56,7 +56,7 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   may reference back into it. The tools no longer leave first. The leaf pilot `jh7110_entropy` goes
   first, then the contract crates bottom-up, and this cut comes after the shared crates it links
   have moved and carry versions. §247's other conditions and its destination stand. Its condition 4 (`abi`,
-  `address_space_map`, `glob` and `machine_statistics_protocol` stable under 610's rule for four
+  `address_space_map`, `byte_glob` and `machine_statistics_protocol` stable under 610's rule for four
   weeks) gives way to a new gate (ruled 2026-11-01 (UTC)). No time-based measure remains, and a crate
   whose interface still breaks may leave, each break a new version and a new tagged release. A
   crate leaves when it falls under milestone 956, has a tagged release whose commit carries the
@@ -125,7 +125,7 @@ a two-repo change.
    - `components` is split so the moving programs are in crates of their own (milestone 691).
    - The moving repository builds without a clone of this one: §235's S2 archive (milestone 607 (nife is built and updated from packages)
      item 4), or a dated, recorded exception for a git dependency on `nife` at a commit.
-   - Every interface the cut links (`abi`, `address_space_map`, `glob`,
+   - Every interface the cut links (`abi`, `address_space_map`, `byte_glob`,
      `machine_statistics_contract`) carries a checkable version, which for a pure library is its crate version.
      The moved package declares what it links (milestone 956 (the linked interfaces carry checkable versions), minted
      2026-10-28 UTC). The cut re-derives the linked set at its start rather than trusting this

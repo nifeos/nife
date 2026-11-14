@@ -1,14 +1,14 @@
-Falsifies `glob::verification::matching_is_total`.
+Falsifies `byte_glob::verification::matching_is_total`.
 
 The defect: the backtrack no longer advances `star_absorbed`, so the retry resumes at the same name position
 with the same pattern position. A pattern like `*a` against `b` loops forever.
 
 Expected to fail: the unwinding assertion on the match loop in `match_steps`, reached through the harness's `match_steps` call: the loop no longer runs out of work.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
 index 661ecd445..79d9e819d 100644
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -350,3 +350,2 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize) {
              Some(resume) => {
 -                star_absorbed += 1;

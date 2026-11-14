@@ -400,7 +400,7 @@ fn a_damaged_composite_leaves_the_rest_of_the_screen_alone() {
     // 698,880 pixels, each with a call into `expected_screen_pixel`. Natively that is
     // microseconds; under Miri's interpreter it measured **over 44 minutes and had not
     // finished**, which is more than the whole weekly job's budget for one test (milestone
-    // 238). So it strides under `cfg(miri)`, the convention `glob` and `network_time_protocol` already use.
+    // 238). So it strides under `cfg(miri)`, the convention `byte_glob` and `network_time_protocol` already use.
     //
     // **The stride never skips a row the damage rectangle touches**, which is the half of this
     // test that has something to prove: the damaged region is 9x7, so the composited-pixel
@@ -427,7 +427,7 @@ fn a_damaged_composite_leaves_the_rest_of_the_screen_alone() {
             checked += 1;
         }
     }
-    // The completeness pin, the same one `glob` carries: a stride that silently stopped
+    // The completeness pin, the same one `byte_glob` carries: a stride that silently stopped
     // covering the screen would otherwise still pass.
     assert_eq!(
         checked,

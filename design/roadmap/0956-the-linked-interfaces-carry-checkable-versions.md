@@ -102,7 +102,7 @@ table. No registry outside it exists.
 |---|---|
 | 1 | `abi` |
 | 2 | `address_space_map` |
-| 3 | retired, `glob` |
+| 3 | retired, `byte_glob` |
 | 4 | `machine_statistics_contract` |
 | 5 | `block_roster_contract` |
 | 6 | `byte_sink_contract` |
@@ -128,7 +128,7 @@ table. No registry outside it exists.
 A reserved row holds a number for a ruled wire whose crate has not landed; the crate's pull request
 replaces it with the crate's row. An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
 one in `fs`. The check also classifies every crate the cut links. Four define no run-time format
-and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
+and stay Rust APIs: `calendar`, `domain_name_system`, `byte_glob` and
 `globally_unique_identifier_partition_table`. Its `NOT_A_FORMAT` table gives each reason.
 
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so

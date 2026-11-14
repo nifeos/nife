@@ -144,7 +144,7 @@ in nife until the end. Step 9 of the order places it.
 Linked set, read from `cargo metadata` on 2026-11-01 (UTC): the server and the host tool reach 10 of
 the 22 through normal dependencies (`address_space_map`, `capability_manifest_note`,
 `domain_name_resolution_contract`, `domain_name_system`, `filesystem_contract`, `filesystem_fixture`,
-`glob`, `globally_unique_identifier_partition_table`, `grant_plan`, `program_argument_contract`).
+`byte_glob`, `globally_unique_identifier_partition_table`, `grant_plan`, `program_argument_contract`).
 They also reach two crates outside the 22, `subtree_scope` and `memory_region_heap`, which leave
 first (`memory_region_heap` only for the target build's `el0` feature, with `user_mode_runtime`
 and `abi` behind it). `entropy_contract` is named in `mkfs.rs` prose and is not a dependency, so it
@@ -181,7 +181,7 @@ the read-only checks of that day:
 
 Ruled 2026-11-01 (UTC): no. The ruling of 2026-10-27 (contribute rows wait until a published crate
 has users who ask upstream) covers the upstream offer only. The four contribute crates among the 22
-(`globally_unique_identifier_partition_table` at step 2, `glob` and `domain_name_system` at step 5,
+(`globally_unique_identifier_partition_table` at step 2, `byte_glob` and `domain_name_system` at step 5,
 `calendar` at step 8) move in the order like the other 18. Each gets its own repository, tag and
 version and a consumer pins it by `rev` with the version stated. Each waits for the architect's hand
 review under amended §247 (the split begins with basalt holding nife, and `procps` moves first). Nothing is offered upstream, published or sent; that stays gated on the

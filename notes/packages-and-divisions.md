@@ -29,7 +29,7 @@ and provisional.
 | contracts | 27 | `abi`, every `*_protocol`, and the formats two programs agree on: `elf`, `measured_boot`, `package_archive`, `installed_programs`, `boot_slot`, `nifefs`, the partition table, `grant_plan`, `component_plan`, `compositor`, `line_editor` |
 | runtime | 2 | `user_mode_runtime`, `allocation_cache`; with them the `std` overlay (`patches/std-nife`, 4,486 lines) and `targets/` |
 | boot | 6 | `uefi_loader`, `boot_ladder`, the two consoles, `bitmap_font`, `sealed_pair` |
-| services | 22 | `components` (50 binaries), `system_initializer`, drivers, `swish`, `ps` and its siblings, `calendar`, `glob` |
+| services | 22 | `components` (50 binaries), `system_initializer`, drivers, `swish`, `ps` and its siblings, `calendar`, `byte_glob` |
 | fixtures | 6 | `fixtures` (44 binaries), `coremark`, `job_mix`, `soak_page`, `c_seam`, `loaded_image_check` |
 | host | 3 | `xtask`, `portable_executable`, `stick_maker`; with them `script/` and `helpers/` |
 
@@ -208,7 +208,7 @@ Sources: [Fuchsia packages](https://fuchsia.dev/fuchsia-src/concepts/packages/pa
 ## BUGS
 
 - The division assignment is a judgment per crate, not a measurement. A crate such as `calendar`
-  or `glob` is a leaf library that any division could own; moving it moves a few edges.
+  or `byte_glob` is a leaf library that any division could own; moving it moves a few edges.
 - Commit counts include checkpoints, and the path mapping puts `script/` and `.github/` in host.
 - The image sizes are stale local builds from 2026-09-10 to 2026-09-21, not a fresh build. Lanes
   gate in CI, and this lane built nothing.

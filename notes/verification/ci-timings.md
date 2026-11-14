@@ -54,7 +54,7 @@ of each crate from run 42523187972:
 
 | crate | median | largest harness |
 |---|---|---|
-| `glob` | 9.1 min | 9.0 min, `no_magic_means_the_pattern_is_its_own_only_match` |
+| `byte_glob` | 9.1 min | 9.0 min, `no_magic_means_the_pattern_is_its_own_only_match` |
 | `designware_mobile_storage` | 9.0 min | 2.2 min, four bring-up harnesses near that size |
 | `file_allocation_table` | 8.7 min | 3.5 min, `a_write_extends_the_chain_to_the_size_and_stays_inside_it` |
 | `machine_discovery` | 5.9 min | 7.1 min, `every_hex_field_the_loader_writes_is_one_the_kernel_reads_back` |
@@ -77,7 +77,7 @@ Four shards put the job past the 85% warning of its 20-minute budget, which #335
 hold the slowest job near 60% of it. A sixth buys under two minutes while the driver crates
 (`designware_mobile_storage`, `extensible_host_controller_interface` and
 `non_volatile_memory_express`, about 10 serial minutes) are in the table, and nothing once they
-leave, because `glob`'s one harness then sets the pace. `helpers/verify_times.py` keeps the table
+leave, because `byte_glob`'s one harness then sets the pace. `helpers/verify_times.py` keeps the table
 current, and [notes/project-metrics.md](../project-metrics.md) charts it.
 
 The dangerous failure mode is a crate that lands in no shard, because an unproved crate is

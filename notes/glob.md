@@ -1,6 +1,6 @@
 # The glob matcher
 
-`crates/glob`, milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
+`crates/byte_glob`, milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
 out. No IO, no syscalls, no directory, no allocation, no capability, and no idea what a file is.
 
 This note is the working reference: what the crate does, the four scope decisions it settled and why,

@@ -1,13 +1,13 @@
-Falsifies `glob::verification::star_matches_anything_and_question_matches_one_byte`.
+Falsifies `byte_glob::verification::star_matches_anything_and_question_matches_one_byte`.
 
 The defect: once the name is spent, the matcher skips `?` as well as `*`, so `?` matches the empty name.
 
 Expected to fail: the harness's `assert_eq!(matches_with(b"?", n, Dot::Ordinary), nlen == 1)` at `nlen == 0`.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
 index 661ecd445..e8819b448 100644
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -295,3 +295,3 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize) {
              // left of the pattern has to be able to match emptiness, and only `*` can.
 -            while pattern.get(j) == Some(&b'*') {

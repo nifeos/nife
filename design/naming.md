@@ -30,7 +30,7 @@ against three failure modes:
 - Generic words that could name almost anything in an operating system: `compose`, `measure`,
   `regions`, `slots`, `frames`.
 - Against both, standard terms a reader already knows are the best names available: `elf`, `pci`,
-  `paging`, `glob`. That covers shape too, so `supply-chain` keeps its hyphen. This is a naming
+  `paging`, `byte_glob`. That covers shape too, so `supply-chain` keeps its hyphen. This is a naming
   authority, not a license to rename everything.
 
 ## Acronyms and abbreviations

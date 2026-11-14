@@ -787,7 +787,7 @@ documentation = { version = "0.1.0", path = "../crates/documentation" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
 # The shell's own logic (milestone 70): the routing of a typed line, the pattern-versus-text
 # question, and every sentence the prompt prints. `components/src/swish/` is the same program it was and
-# keeps all the IO; what moved is what a host test can reach. `glob` left this manifest in the same
+# keeps all the IO; what moved is what a host test can reach. `byte_glob` left this manifest in the same
 # change, because `has_magic` was reached only from the function that moved.
 swish = { version = "0.1.0", path = "../crates/swish" }
 # The scheduler's decision half (milestone 129): the document, the four answers registration can
