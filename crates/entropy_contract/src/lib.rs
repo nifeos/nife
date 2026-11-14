@@ -533,7 +533,7 @@ mod tests {
         assert_eq!(requested_bytes(request(GET, 0)), 0);
     }
 
-    /// **The property the whole error story rests on**: no count the service can send collides with
+    /// The property the whole error story rests on: no count the service can send collides with
     /// any error the kernel can return, so "no entropy capability" is distinguishable from "no
     /// entropy" without a probe. A kernel that answers a failed `CALL` with an error number from -1
     /// to -8 puts one of these words in the first register.
@@ -573,11 +573,11 @@ mod tests {
         assert_eq!(out, [0x01, 0x02, 0x03, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA]);
     }
 
-    /// **The defect this function exists to prevent**: a service holding a
+    /// The defect this function exists to prevent: a service holding a
     /// bufferful of zeros must not be able to report [`READY`]. Asserted against every width a
-    /// backend actually draws, because the predicate is "no nonzero byte anywhere" rather than
-    /// "the first word is zero", and a check written the second way would pass this test at 8
-    /// bytes and let a 256-byte direct memory access (DMA) page through.
+    /// backend draws, because the predicate is "no nonzero byte anywhere" rather than "the first
+    /// word is zero". A check written the second way would pass at 8 bytes and let a 256-byte
+    /// direct memory access (DMA) page through.
     #[test]
     fn an_all_zero_first_draw_is_never_ready() {
         // The three widths a backend actually draws: the instruction's eight bytes, the JH7110's
@@ -598,9 +598,9 @@ mod tests {
         );
     }
 
-    /// **And a device that gave nothing is a different failure from one that gave zeros.** Both
-    /// refuse [`READY`]; a bench session reading the report word has to be able to tell a gated
-    /// clock from a source that answered wrongly, which is what the two steps are for.
+    /// A device that gave nothing is a different failure from one that gave zeros. Both refuse
+    /// [`READY`]. A bench session reading the report word has to tell a gated clock from a source
+    /// that answered wrongly, which is what the two steps are for.
     #[test]
     fn nothing_at_all_and_all_zero_bytes_are_distinguishable() {
         assert_eq!(readiness([]), bring_up_failure(STEP_NO_FIRST_BYTES));
@@ -625,7 +625,7 @@ mod tests {
         assert_eq!(readiness(first_bytes), READY);
     }
 
-    /// **A source stuck on one nonzero value is refused**, under its own step, from eight bytes up.
+    /// A source stuck on one nonzero value is refused, under its own step, from eight bytes up.
     /// A draw that varies anywhere, a short draw and the doc example's sparse draw stay ready.
     #[test]
     fn a_repeated_nonzero_first_draw_is_refused_under_its_own_step() {
@@ -681,7 +681,7 @@ mod tests {
 mod verification {
     use super::*;
 
-    /// **A request word carries its opcode and its clamped byte count**: for any opcode that fits
+    /// A request word carries its opcode and its clamped byte count. For any opcode that fits
     /// the top byte and any byte count, [`operation`] reads back the opcode and
     /// [`requested_bytes`] reads back the count, clamped to [`MAXIMUM_BYTES`].
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_request_word_carries_its_opcode_and_clamped_count.patch`
@@ -695,10 +695,10 @@ mod verification {
         assert_eq!(requested_bytes(request_word), byte_count.min(MAXIMUM_BYTES));
     }
 
-    /// **Copying writes exactly the delivered bytes, and nothing past them**: for any byte count,
-    /// any reply word and any slice of up to twelve bytes, [`copy_delivered_bytes`] returns the
-    /// least of the count, [`MAXIMUM_BYTES`] and the slice's length, writes that many low bytes of
-    /// the word in little-endian order, and leaves every other byte of the buffer as it was.
+    /// Copying writes exactly the delivered bytes, and nothing past them. For any byte count, any
+    /// reply word and any slice of up to twelve bytes, [`copy_delivered_bytes`] returns the least
+    /// of the count, [`MAXIMUM_BYTES`] and the slice's length. It writes that many low bytes of the
+    /// word in little-endian order and leaves every other byte of the buffer as it was.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.copying_writes_exactly_the_delivered_bytes.patch`
     #[kani::proof]
     #[kani::unwind(13)]
@@ -721,11 +721,11 @@ mod verification {
         }
     }
 
-    /// **A fill succeeds exactly when every reply is full, and a refusal says which kind**: for any
+    /// A fill succeeds exactly when every reply is full, and a refusal says which kind. For any
     /// slice of up to seventeen bytes and any replies, [`fill_with`] asks for the remainder clamped
-    /// to [`MAXIMUM_BYTES`] each time and answers `Ok` exactly when every reply it received
-    /// delivered what it asked for, then holds the delivered bytes in order after one request per
-    /// eight bytes, rounded up. Otherwise it stops at the first reply that was not full:
+    /// to [`MAXIMUM_BYTES`] each time. It answers `Ok` exactly when every reply delivered what it
+    /// asked for, and then holds the delivered bytes in order after one request per eight bytes,
+    /// rounded up. Otherwise it stops at the first reply that was not full. The refusal is
     /// [`Refusal::NoService`] exactly when that reply's first word was not a count, and
     /// [`Refusal::ShortReply`], naming what was asked and what came, exactly when it was.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_fill_succeeds_exactly_when_every_reply_is_full.patch`
@@ -774,8 +774,8 @@ mod verification {
         }
     }
 
-    /// **A reply reads back as built**: for any bytes up to twelve, [`reply`] answers a count of the
-    /// least of their number and [`MAXIMUM_BYTES`], [`delivered_bytes`] accepts that count,
+    /// A reply reads back as built. For any bytes up to twelve, [`reply`] answers a count of the
+    /// least of their number and [`MAXIMUM_BYTES`]. [`delivered_bytes`] accepts that count,
     /// [`copy_delivered_bytes`] returns exactly those bytes in order, and every byte of the word
     /// above the count is zero.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_reply_reads_back_as_built.patch`
@@ -802,10 +802,10 @@ mod verification {
         }
     }
 
-    /// **Readiness refuses a repeated first draw, and only a repeated one**: for any first draw of
-    /// up to nine bytes, [`readiness`] names [`STEP_NO_FIRST_BYTES`] for an empty draw,
-    /// [`STEP_FIRST_ALL_ZERO`] for a draw of zeros and [`STEP_FIRST_ALL_SAME`] for a draw of at
-    /// least [`MAXIMUM_BYTES`] bytes that repeats one nonzero value, and is [`READY`] for every
+    /// Readiness refuses a repeated first draw, and only a repeated one. For any first draw of up to
+    /// nine bytes, [`readiness`] names [`STEP_NO_FIRST_BYTES`] for an empty draw and
+    /// [`STEP_FIRST_ALL_ZERO`] for a draw of zeros. It names [`STEP_FIRST_ALL_SAME`] for a draw of
+    /// at least [`MAXIMUM_BYTES`] bytes that repeats one nonzero value, and is [`READY`] for every
     /// other draw.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes.patch`
     #[kani::proof]
@@ -829,10 +829,10 @@ mod verification {
         }
     }
 
-    /// **Readiness is reported exactly when a first byte is nonzero**: for any first draw of up to
-    /// four bytes, [`readiness`] answers [`READY`] exactly when one of them is nonzero, and
-    /// otherwise names [`STEP_NO_FIRST_BYTES`] for an empty draw and [`STEP_FIRST_ALL_ZERO`] for
-    /// one of zeros. A draw this short is never judged for repeats.
+    /// Readiness is reported exactly when a first byte is nonzero. For any first draw of up to four
+    /// bytes, [`readiness`] answers [`READY`] exactly when one of them is nonzero. Otherwise it
+    /// names [`STEP_NO_FIRST_BYTES`] for an empty draw and [`STEP_FIRST_ALL_ZERO`] for one of
+    /// zeros. A draw this short is never judged for repeats.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.readiness_is_reported_exactly_when_a_first_byte_is_nonzero.patch`
     #[kani::proof]
     #[kani::unwind(6)]
