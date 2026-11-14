@@ -72,6 +72,8 @@ implies coverage the project does not have.
 | `acpi_firmware_tables` | firmware (ACPI) | IOMMU identity mappings stay whole pages |
 | `machine_description_from_device_tree` | firmware (device tree) | readers no proof reaches |
 | `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
+| `line_editor_feed` | a serial console | cursor <= length <= LINE_MAXIMUM after every byte and call |
+| `line_editor_handoff` | a granted frame | a handoff blob is refused, or restored to a state that carries on unchanged |
 
 ### And the ones deliberately not fuzzed
 

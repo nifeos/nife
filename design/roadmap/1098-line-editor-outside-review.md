@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 232, 295
@@ -229,7 +229,7 @@ sees it is bytes, not columns, which the one-row `BUGS` entry makes a live disti
 
 ## Done when
 
-The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
+The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). What is done and what is left, item by item, is in [the ledger](1098-line-editor-outside-review/ledger.md).
 
 ## BUGS
 

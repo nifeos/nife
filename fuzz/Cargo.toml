@@ -75,6 +75,7 @@ grant_plan = { path = "../crates/grant_plan" }
 domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
 package_index = { path = "../crates/package_index" }
 video_terminal = { path = "../crates/video_terminal" }
+line_editor = { path = "../crates/line_editor" }
 
 # **The firmware-byte readers** (`acpi_firmware_tables` and `machine_description_from_device_tree`).
 machine_discovery = { path = "../crates/machine_discovery" }
@@ -218,6 +219,20 @@ bench = false
 [[bin]]
 name = "video_terminal_feed"
 path = "fuzz_targets/video_terminal_feed.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "line_editor_feed"
+path = "fuzz_targets/line_editor_feed.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "line_editor_handoff"
+path = "fuzz_targets/line_editor_handoff.rs"
 test = false
 doc = false
 bench = false

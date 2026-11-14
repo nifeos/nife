@@ -1,7 +1,6 @@
 use super::*;
-use crate::handoff;
-use crate::{LINE_MAXIMUM, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue};
 use crate::test_support::{Screen, feed_all};
+use crate::{LINE_MAXIMUM, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue, handoff};
 extern crate std;
 use std::vec::Vec;
 

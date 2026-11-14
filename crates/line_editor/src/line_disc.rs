@@ -12,7 +12,11 @@ use crate::output::Sink;
 /// The longest line the discipline will assemble. Longer input is refused with a bell.
 ///
 /// Name: ratified 2026-10-27 (#2797).
+#[cfg(not(kani))]
 pub const LINE_MAXIMUM: usize = 256;
+/// The proofs run over a line of 16 bytes: the solver cannot finish a symbolic move inside 256.
+#[cfg(kani)]
+pub const LINE_MAXIMUM: usize = 16;
 /// How many history entries the ring holds.
 pub const HIST: usize = 8;
 /// The longest prompt the discipline will repaint. Longer prompts are truncated.
@@ -85,11 +89,16 @@ pub enum Event {
 enum EscState {
     Idle,
     Esc,
-    Csi { params: [u16; 2], n: usize },
+    Csi {
+        params: [u16; 2],
+        n: usize,
+    },
     Ss3,
     /// Inside an X10 mouse report, `ESC [ M`, which is followed by three payload bytes (button,
     /// column, row) that are not keys. `remaining` counts the payload bytes still to drop.
-    Mouse { remaining: u8 },
+    Mouse {
+        remaining: u8,
+    },
 }
 
 /// The editing engine. One per terminal; a few KiB of fixed buffers, no allocation.
@@ -665,27 +674,28 @@ fn csi_right(out: &mut impl Sink, n: usize) {
 }
 
 fn csi_move(out: &mut impl Sink, n: usize, dir: u8) {
-    // The 11-byte sequence below holds ESC, `[`, up to eight digits and the final byte. Every
-    // caller passes a distance inside a line, and `LINE_MAXIMUM` is three digits.
-    const { assert!(LINE_MAXIMUM < 100_000_000) };
+    // The distance is a position inside a line, so it fits sixteen bits, and five decimal digits
+    // hold any sixteen-bit number. The sequence buffer is sized from those two facts.
+    const { assert!(LINE_MAXIMUM <= u16::MAX as usize) };
+    const DIGITS: usize = 5;
     debug_assert!(n <= LINE_MAXIMUM);
     match n {
         0 => {}
         1 => out.put(&[ESC, b'[', dir]),
         _ => {
             // One contiguous put per sequence: a sink must never see half an escape.
-            let mut seq = [0u8; 11];
+            let mut seq = [0u8; 3 + DIGITS];
             seq[0] = ESC;
             seq[1] = b'[';
-            let mut i = 10;
-            let mut v = n;
-            while v > 0 {
-                i -= 1;
-                seq[i] = b'0' + (v % 10) as u8;
-                v /= 10;
+            let mut start = 2 + DIGITS;
+            let mut rest = n as u16;
+            while rest > 0 {
+                start -= 1;
+                seq[start] = b'0' + (rest % 10) as u8;
+                rest /= 10;
             }
-            seq.copy_within(i..10, 2);
-            let digits = 10 - i;
+            seq.copy_within(start..2 + DIGITS, 2);
+            let digits = 2 + DIGITS - start;
             seq[2 + digits] = dir;
             out.put(&seq[..3 + digits]);
         }
@@ -694,3 +704,6 @@ fn csi_move(out: &mut impl Sink, n: usize, dir: u8) {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(kani)]
+mod verification;
