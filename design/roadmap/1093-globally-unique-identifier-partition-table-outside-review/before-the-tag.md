@@ -5,7 +5,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
 ## P1: before the first tag
 
 2. `Entry::blocks` panics on an entry a caller can build.
-   DONE (`an_entry_whose_block_count_overflows_has_no_size`; harness `an_entrys_block_count_never_panics_and_is_exact` with its patch).
+   DONE (`an_entry_whose_block_count_overflows_has_no_size`; harness `an_entries_block_count_never_panics_and_is_exact` with its patch).
    Finding: `blocks` returns `Some(self.last_lba - self.first_lba + 1)` once `last_lba >=
    first_lba`. For `Entry::new(t, u, 0, u64::MAX)` the addition overflows: a panic
    ("attempt to add with overflow") with overflow checks on, `Some(0)` with them off. Verified in

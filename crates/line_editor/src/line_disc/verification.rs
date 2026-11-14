@@ -35,7 +35,7 @@ fn any_editor() -> LineDisc {
 /// accumulated parameters and separator count, and any next byte, `continue_escape` ends with
 /// `cursor <= length`, and the length does not grow: a digit, a separator, a final byte that moves, deletes or
 /// is unknown, and a malformed byte all keep it.
-/// Falsification: replayable `crates/line_editor/falsifications/verification.a_control_sequence_leaves_the_cursor_inside_the_line.patch`
+/// Falsification: replayable `crates/line_editor/falsifications/line_disc.verification.a_control_sequence_leaves_the_cursor_inside_the_line.patch`
 #[kani::proof]
 #[kani::unwind(5)]
 #[kani::solver(minisat)]
@@ -55,7 +55,7 @@ fn a_control_sequence_leaves_the_cursor_inside_the_line() {
 /// `delete_range(a, b)` shortens the line by `b - a`, keeps the bytes outside the range in order,
 /// and puts the cursor where the doc comment says: shifted back by the removed count when it was
 /// at or past `b`, at `a` when it was inside the range or at `a`.
-/// Falsification: replayable `crates/line_editor/falsifications/verification.a_range_delete_removes_exactly_its_range.patch`
+/// Falsification: replayable `crates/line_editor/falsifications/line_disc.verification.a_range_delete_removes_exactly_its_range.patch`
 #[kani::proof]
 #[kani::unwind(5)]
 #[kani::solver(minisat)]

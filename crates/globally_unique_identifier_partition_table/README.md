@@ -66,7 +66,7 @@ Nine Kani harnesses, in `src/verification.rs`, each with a falsification patch i
 - `crc32_matches_its_bitwise_definition` and `a_single_byte_change_always_changes_the_crc`
 - `an_entry_survives_the_round_trip` and `a_guid_survives_the_on_disk_layout`
 - `a_headers_fields_survive_the_round_trip` and `the_header_fields_partition_the_block`
-- `overlap_is_exactly_sharing_a_block` and `an_entrys_block_count_never_panics_and_is_exact`
+- `overlap_is_exactly_sharing_a_block` and `an_entries_block_count_never_panics_and_is_exact`
 - `create_never_lays_out_a_table_parse_would_reject`
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked

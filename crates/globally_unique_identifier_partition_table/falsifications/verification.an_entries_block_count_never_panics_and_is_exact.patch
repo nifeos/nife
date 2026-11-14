@@ -1,4 +1,4 @@
-Falsifies `globally_unique_identifier_partition_table::verification::an_entrys_block_count_never_panics_and_is_exact`.
+Falsifies `globally_unique_identifier_partition_table::verification::an_entries_block_count_never_panics_and_is_exact`.
 
 The defect: `blocks` subtracts and adds with the plain operators once the range is not reversed,
 so the range `0 ..= u64::MAX` overflows: a panic with overflow checks on, a count of zero with

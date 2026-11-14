@@ -204,9 +204,9 @@ fn create_never_lays_out_a_table_parse_would_reject() {
 /// The count is the inclusive range's size, so `0 ..= u64::MAX` holds 2^64 blocks and is not a
 /// `u64`: `None`, as for a reversed range. Stated against 128-bit arithmetic, which cannot
 /// overflow, so the proof is not the code compared with itself.
-/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.an_entrys_block_count_never_panics_and_is_exact.patch`
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.an_entries_block_count_never_panics_and_is_exact.patch`
 #[kani::proof]
-fn an_entrys_block_count_never_panics_and_is_exact() {
+fn an_entries_block_count_never_panics_and_is_exact() {
     let entry = Entry::new(types::NIFE_DATA, Uuid::nil(), kani::any(), kani::any());
     let wide = u128::from(entry.last_lba)
         .checked_sub(u128::from(entry.first_lba))
