@@ -10,10 +10,10 @@ raised: 2026-11-12
 The maintainer raised this on 2026-11-12 (UTC), on the intent that the crates are the product: a
 library of components from which the project builds several operating systems. Counts come from
 `nifeos/nife@a3c7d4647` and `nifeos/basalt@ecdfee7`, and each gives its command so a reviewer can
-take it again at merge. The architect ruled question 1, what the layer above a kernel is, ruling 2,
-the capability binary interface's name, and ruling 3, the organization, on 2026-11-14 (UTC), and
-this file states those rules. Rulings 4 to 6 are still open, and this file lays out the options for
-each. The appendix, [the five
+take it again at merge. On 2026-11-14 (UTC) the architect ruled question 1, what the layer above a
+kernel is, and rulings 2 to 6: the capability binary interface's name, the organization, the
+library, the distribution and the kernels. This file states those rules and the names still to
+choose. The appendix, [the five
 layers](0323-the-binary-interface-and-the-names-of-the-layers/the-five-layers.md), holds the
 inventory, the reversibility of each layer and every candidate name with its checks.
 
@@ -206,38 +206,76 @@ Ruled 2026-11-14 (UTC).
 - The GitHub organization stays `nifeos` for now.
 - The organization's name and the library's name are one decision, ruling 4, taken before the
   first crates.io publish.
-- OSOS (open source operating systems) is a candidate for ruling 4, to use if it is available. Its
-  availability checks come first, and they come back to the architect before any rename.
 
-## The order of the later rulings
+## The organization and the library share one name
 
-Hardest to change first. The maintainer brings each as its own ruling, one at a time.
+Ruled 2026-11-14 (UTC).
+
+- The organization and the library share one name. The organization expects to take the
+  library's name, and the domain is that name plus `.org`.
+- The architect chooses the name before the first crates.io publish. Availability checks come
+  first, and they come back to the architect before any rename. OSOS (open source operating
+  systems) is a candidate, to use if it is available.
+- Crate names stay descriptive, and the page-contract crates take no common prefix. The project
+  can add a prefix later, but it cannot take one away.
+
+## basalt stays the distribution for Moho
+
+Ruled 2026-11-14 (UTC).
+
+- basalt stays the first-party distribution, and it serves the Moho binary interface.
+- It builds images on either capability kernel and picks the kernel per image.
+- A distribution for the ambient-authority binary interface takes its own name when one exists.
+- Nothing changes name, so the index host in every image stays valid, as §250 (an image names its
+  distribution's package index) requires.
+
+## Each kernel has a name of its own
+
+Ruled 2026-11-14 (UTC).
+
+- Each kernel takes a name of its own, not a qualified form of another kernel's such as
+  `nife-monokernel`.
+- `nife` is the name of the capability microkernel, and it stays so.
+- The capability monokernel and the ambient-authority kernels take their names when they exist.
+
+## The six rulings
+
+All six are ruled, hardest to change first.
 
 1. What the layer above a kernel is. Ruled 2026-11-14 (UTC): its binary interface, which carries
    `target_os`, the ABI crate and the in-binary names.
 2. The capability binary interface's name. Ruled 2026-11-14 (UTC): Moho, with the ABI crate
    `moho_abi`, and `nife` stays the capability microkernel's name. The ambient-authority binary
-   interface's name stays open.
+   interface's name is still to choose.
 3. The organization. Ruled 2026-11-14 (UTC): it stays `nifeos` for now.
-4. The organization's name and the library's name, together, before the first crates.io publish,
-   and with them the published names of the shared page-contract crates. OSOS is a candidate,
-   checked first. GitHub redirects most of an organization rename, every image names the domain,
-   and anyone may claim an organization's old name.
-5. Distributions, starting with whether `basalt` stays and which binary interface it targets.
-6. Individual kernels: repositories, images and boot logs only, the cheapest names here.
+4. The library. Ruled 2026-11-14 (UTC): the organization and the library share one name, the domain
+   is that name plus `.org`, and the page-contract crates take no common prefix. The architect
+   chooses the name before the first crates.io publish, after its checks. GitHub redirects most of
+   an organization rename, every image names the domain, and anyone may claim an organization's old
+   name.
+5. Distributions. Ruled 2026-11-14 (UTC): `basalt` stays, for the Moho binary interface, and picks
+   the kernel per image. An ambient-authority distribution takes its name later.
+6. Individual kernels. Ruled 2026-11-14 (UTC): each kernel has a name of its own, `nife` stays the
+   capability microkernel's, and the others take theirs when they exist.
+
+## The names still to choose
+
+Each of these is chosen before it is first published, with its availability checked first.
+
+- The shared name of the organization and the library, which sets the domain (ruling 4). OSOS is a
+  candidate.
+- The ambient-authority binary interface's name (ruling 2).
+- The name of each further kernel, starting with the capability monokernel (ruling 6).
+- The name of a distribution for the ambient-authority binary interface, once one exists (ruling
+  5).
 
 ## What waits on these rulings
 
 - The rename of `crates/abi` to `moho_abi`, decision A of milestone 1075 (`abi`: what an outside
   maintainer would fix before the move), with `target_os`, the triples and the `std` port. Ruling 2
   settles the name, and the rename in code (1,784 uses in 238 files, none in basalt) waits on the
-  plan lane above. The crate has to publish, because a crates.io crate cannot depend on a git
-  crate, so a `getrandom` backend needs it. Both capability kernels share it.
-- The published names of the 25 page-contract crates (`*_contract`), which every binary interface
-  may share. They wait on ruling 4.
-- The kernel's own repository. Milestone 1039 (the kernel leaves nife) names it
-  `nifeos/nife-kernel`. With a second capability kernel, that name may need to say which. It waits
-  on ruling 6.
+  plan lane above. The crate has to publish, because a crates.io crate cannot depend on a git crate,
+  so a `getrandom` backend needs it. Both capability kernels share it.
 - The website's domain, from milestone 1018 (the design record moves to `nifeos/record` and is
   published as a website), and the rule that a leaving crate never mentions nife (now the name of
-  one kernel). Both wait on ruling 4.
+  one kernel). Both wait on the choice of the shared name.

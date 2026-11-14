@@ -2,7 +2,7 @@
 
 Part of the survey behind [§323 (the binary interface, and the names of the project's
 layers)](../0323-the-binary-interface-and-the-names-of-the-layers.md). That page holds the
-rule on the binary interface. This one holds what each layer's name touches, how reversible
+rules in force. This one holds what each layer's name touches, how reversible
 each is, and the candidates. Candidate names here are options, not rulings, and a leaning appears
 only where evidence decides it.
 
@@ -93,14 +93,14 @@ names checked there, only suffixed forms came back free: `nife-os`, `craton-os`,
 It touches the 294 `github.com/nifeos` lines, the 22 Cargo pins, basalt's `pins.toml`, 15
 repositories, and the domain, and through the domain every image (§250).
 
-Ruled 2026-11-14 (UTC), ruling 3: the organization stays `nifeos` for now. Its name and the
-library's (layer 2) are one decision, ruling 4, taken before the first crates.io publish. The
-options below are the options for ruling 4.
+Ruled 2026-11-14 (UTC), ruling 3: the organization stays `nifeos` for now. Ruling 4, the same
+day, gives it the library's name (layer 2), with the domain that name plus `.org`, chosen before
+the first crates.io publish. The options below are the candidates for that one name.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
 | Keep `nifeos` | the nife operating system | ours on GitHub; crates.io `nifeos` free; the domain ours | names the kernel of one binary interface; milestone 120 kept the organization apart from the OS for this reason, and an ambient-authority binary interface under it would read as a subsidiary of the capability one |
-| A publisher name tied to no binary interface, such as the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
+| A publisher name tied to no binary interface, the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
 | OSOS | open source operating systems; one name for the organization and the library | not yet run; they come back before any rename | availability unknown until the checks run |
 | `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; `nife` now names one kernel (layer 4) |
 
@@ -115,19 +115,22 @@ It touches almost nothing in code. Crates take the name of what they do (`file_a
 rule. So the library's name lives in the website, the organization profile and README text. It is
 not a platform: the binary interface is.
 
-The exception is the crates every binary interface shares, the page contracts, if they publish under
-a common prefix rather than each under its own descriptive name.
+Ruled 2026-11-14 (UTC), ruling 4: the library and the organization share one name, the
+organization expects to take it, and the domain is that name plus `.org`. The architect chooses the
+name before the first crates.io publish, after its checks. Crate names stay descriptive, and the
+page contracts, which every binary interface shares, take no common prefix. The project can add a
+prefix later, but it cannot take one away. The options below are the candidates for the shared
+name.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
-| The organization's name (Genode's shape: Genode Labs publishes the Genode OS Framework) | the library is what the organization makes | as layer 1 | ties a rename of either to the other |
-| No name of its own | the crates stand alone | none needed | the website and talks have no word for the whole |
+| OSOS (layer 1) | open source operating systems | not yet run | availability unknown until the checks run |
 | `craton` | the old, stable core of a continent, on which the rest grows | crates.io free; GitHub `craton` a user (1 repository), `craton-os` free; others hold `craton.org` and `craton.dev`; an OpenStack inventory project shares the name (`python-cratonclient`) | a craton is neither core nor rock nor mineral, so it breaks milestone 120's tiers |
 | `quarry` | where every distribution's stone comes from | crates.io `quarry` taken (0.2.0, 729 downloads, "mining type information"); GitHub `quarry` a user, `quarry-os` free; `quarry.org` parked | a verb as well as a noun; the crate name has gone |
 | `lithosphere` or `outcrop` | the rock layer; where rock shows at the surface | crates.io free; GitHub users hold both (0 repositories) | long; no tie to components |
 
-The architect decides this name with the organization's, as ruling 4 before the first crates.io
-publish; OSOS (layer 1) is a candidate for both. Nothing in the tree depends on it.
+Genode has the same shape: Genode Labs publishes the Genode OS Framework. Nothing in the tree
+depends on the name.
 
 ## Layer 3: binary interfaces
 
@@ -158,7 +161,11 @@ down for other uses.
 
 A kernel's name touches its repository, its image file name and its boot log, and no program sees
 it. `nife` is the name of today's kernel, the capability microkernel (ruled 2026-11-14 UTC, with
-ruling 2). What stays open is its repository's name and the names of the other kernels.
+ruling 2).
+
+Ruled 2026-11-14 (UTC), ruling 6: each kernel has a name of its own, never a qualified form of
+another's. `nife` stays the capability microkernel's name, and the capability monokernel and the
+ambient-authority kernels take theirs when they exist. The options weighed were these.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
@@ -166,7 +173,8 @@ ruling 2). What stays open is its repository's name and the names of the other k
 | `nife` for the microkernel and a proper name for each other kernel, such as `kamacite` and `taenite` | each kernel a word of its own | as layer 3 | takes the names milestone 120 keeps for components |
 | `nife-microkernel` and `nife-monokernel` | one name and the shape | crates.io `nife_micro` and `nife_mono` free; both repository names free | makes the monokernel a variant of nife rather than a kernel of its own |
 
-No leaning. These names cost little.
+The ruling is a variant of the second row: each further kernel takes a word of its own, chosen
+when it exists, with its availability checked before it is first published.
 
 ## Layer 5: distributions
 
@@ -209,6 +217,9 @@ interface.
 | A rock for each binary interface, keeping the convention | the distribution's character | each candidate needs its own check | moves the index host in every image, which the project can only add beside the old one |
 
 Milestone 120's convention needs no change for several binary interfaces: distributions are rocks,
-with no limit on their number, named by whoever makes one, and only `basalt` reserved. No leaning on
-the name. Whether basalt belongs to the capability binary interface or spans several is part of
-ruling 5.
+with no limit on their number, named by whoever makes one, and only `basalt` reserved.
+
+Ruled 2026-11-14 (UTC), ruling 5: `basalt` stays the first-party distribution, for the Moho binary
+interface. It builds images on either capability kernel and picks the kernel per image. A
+distribution for the ambient-authority binary interface takes its own name when one exists. No
+name changes, and the index host that every image names stays valid.
