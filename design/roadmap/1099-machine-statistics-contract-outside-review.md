@@ -106,18 +106,18 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Decisions for the architect
 
-One one-way door was open, and Decision 1 below is ruled. The ratification table of item 1 is the architect's by the naming rule
+One one-way door was open, and Decision 1 below carries its ruling. The ratification table of item 1 is the architect's by the naming rule
 and sits after it with the review's flags; it is not a decision in the sense of this section.
 Everything else above is two-way and the maintainer decides it.
 
 ### Decision 1: Freeze the contract's identity before it leaves, with the line count inside it
 
-Ruled 2026-11-14 (UTC), option A. The rule in force: the identity is frozen as built. `MAGIC` is
-`MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VA` is the fixed pair page. The page is
-one header line of eight words plus one eight-word line per processor, 576 bytes, and header words 6
-and 7 are reserved and read zero. The processor-line count is this crate's own constant,
-`PROCESSOR_LINES` (name provisional), in place of the re-export of
-`current_cpu_contract::CPU_ID_BOUND`. A compile-time assertion holds it equal to that bound, so a
+Ruling of 2026-11-14 (UTC), option A. The rule in force: the identity stays as built. `MAGIC` is
+`MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VA` is the fixed pair page. The page
+holds one header line of eight words plus one eight-word line per processor, 576 bytes, and header
+words 6 and 7 stay reserved and read zero. The processor-line count belongs to this crate as its
+own constant, `PROCESSOR_LINES` (name provisional), and replaces the re-export of
+`current_cpu_contract::CPU_ID_BOUND`. A compile-time assertion keeps it equal to that bound, so a
 change to the bound fails this crate's build until this page's magic and version move too.
 
 Background. Three programs under `components/src/` declare this interface by the pair (`INTERFACE_ID`, `VERSION`) in their `INTERFACES` note. The kernel and the spawn service compile in the fixed address. Every reader compares `MAGIC` and the version word. The kernel and every reader compute the layout from `word::LINE` and `CPU_ID_BOUND`. Once a pin outside nife builds one of those programs, a change to any of these values has to move every pin in one image. Milestone 1017 (the contract crates leave in this order) measured that cost from two reverts. The identity
