@@ -73,8 +73,8 @@ pub const ENOTSUP: i32 = 95;
 /// `redoxfs_host extract` and upstream's FUSE mount carry it out with the files, a decision and not
 /// a leak.
 ///
-/// **BUGS.** No file anywhere on a nife filesystem can be called `.nife-attrs`, at any rights.
-pub const STORE_DIR: &str = ".nife-attrs";
+/// **BUGS.** No file anywhere on a nife filesystem can be called `.extended-attributes`, at any rights.
+pub const STORE_DIR: &str = ".extended-attributes";
 
 /// Pack [`fs::SETXATTR`]'s second word: the value's type code in the high 32 bits, its length in
 /// the low 32. The name's length rides in the request word's own length field, as every other
