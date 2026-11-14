@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -242,6 +242,15 @@ a microsecond clock, as the low-bit randomizer documentation itself computes.
 ## Done when
 
 The checks are in [the appendix](1102-network-time-protocol-outside-review/done-when.md).
+
+## Ledger
+
+The ledger of each item is in [the appendix](1102-network-time-protocol-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** Items 1, 2, 6, 8, 10, 11 and the fuzz half of 9 are the new repository's, and wait on Decision 1. Checked against `crates/network_time_protocol` and the ledger above.
+- **Outstanding.** Items 4, 5, 17, 18 and 22 are public names and a public layout, which wait on Decisions 2 and 3.
 
 ## BUGS
 

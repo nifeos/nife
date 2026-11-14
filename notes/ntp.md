@@ -22,7 +22,7 @@ client tests are in [`ntp/`](ntp/README.md).
 ## Why the protocol is a crate and not part of a component
 
 The same reason `filesystem_contract` and `graphics_contract` are crates. A wire format is arithmetic and byte layout,
-cheap to get wrong and expensive to debug from inside a QEMU boot against a live server. Here it is 21 host tests and 7 Kani harnesses, all done in
+cheap to get wrong and expensive to debug from inside a QEMU boot against a live server. Here it is host tests and Kani harnesses, all done in
 under a second with no emulator.
 
 It also puts the boundary in the right place. The client holds a network capability and a
