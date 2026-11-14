@@ -12,7 +12,8 @@
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 use jh7110_clock_and_reset::{
     ALWAYS_ON_WINDOW, MAXIMUM_REGISTER_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES,
-    PowerManagementChipBus, RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, WindowLocation,
+    PowerManagementChipBus, RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, TransmitParent,
+    WindowLocation,
 };
 
 /// **Find the STG clock and reset window in `tree`**, where the TRNG's clocks and reset live.
@@ -117,4 +118,34 @@ pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PowerManagementChipBus, Err
         );
     }
     Ok(PowerManagementChipBus::without_power_management_chip())
+}
+
+/// **Read the first Ethernet port's transmit clock parent out of `tree`**: the `assigned-clocks`
+/// and `assigned-clock-parents` of the port [`super::designware_ethernet::discover`] finds,
+/// mainline's `compatible` tried first, handed to [`jh7110_clock_and_reset::gmac0_transmit_parent`].
+/// A tree naming no port, or a port that assigns no parent (the vendor tree), gets
+/// [`TransmitParent::Unassigned`].
+///
+/// # Errors
+///
+/// Propagates [`Error`] if the blob is malformed.
+///
+/// Name: provisional.
+pub fn first_ethernet_port_transmit_parent(
+    tree: &DeviceTreeBlob<'_>,
+) -> Result<TransmitParent, Error> {
+    for compatible in designware_ethernet::jh7110::COMPATIBLES {
+        if tree
+            .node_prop_compatible(compatible, b"compatible")?
+            .is_none()
+        {
+            continue;
+        }
+        return jh7110_clock_and_reset::gmac0_transmit_parent(
+            tree.node_prop_compatible(compatible, b"assigned-clocks")?,
+            tree.node_prop_compatible(compatible, b"assigned-clock-parents")?,
+            |phandle, name| tree.phandle_prop(phandle, name),
+        );
+    }
+    Ok(TransmitParent::Unassigned)
 }

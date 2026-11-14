@@ -9,9 +9,12 @@ use jh7110_clock_and_reset::{
     ALWAYS_ON_WINDOW, COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
     COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR, COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
     COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR, COMPATIBLE_VENDOR_CLOCK_GENERATOR,
-    SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, Step,
+    GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+    SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, Step, TransmitParent,
 };
-use machine_discovery::jh7110::clock_and_reset::{discover, discover_aon, discover_sys, pmic_bus};
+use machine_discovery::jh7110::clock_and_reset::{
+    discover, discover_aon, discover_sys, first_ethernet_port_transmit_parent, pmic_bus,
+};
 
 const STGCRG_MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-stgcrg-mainline.dtb");
 const CLKGEN_VENDOR: &[u8] = include_bytes!("fixtures/jh7110-clkgen-vendor.dtb");
@@ -27,6 +30,10 @@ const PMIC_BUS_RADON: &[u8] = include_bytes!("fixtures/jh7110-pmic-bus-radon.dtb
 const PMIC_BUS_MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-pmic-bus-mainline.dtb");
 const PMIC_BUS_FOREIGN: &[u8] = include_bytes!("fixtures/jh7110-pmic-bus-foreign.dtb");
 const PMIC_BUS_OVERFULL: &[u8] = include_bytes!("fixtures/jh7110-pmic-bus-overfull.dtb");
+
+/// The Ethernet ports as mainline's v1.3B tree describes them, and as the vendor tree radon serves.
+const GMAC_MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-gmac-mainline.dtb");
+const GMAC_VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");
 
 /// The plan a tree that names nothing usable gets: I2C5's one gate, then its one reset.
 const CONSTANT_PLAN: &[Step] = &[Step::EnableClock(143), Step::DeassertReset(81)];
@@ -279,4 +286,27 @@ fn the_foreign_tree_names_neither() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller_physical_window, None);
     assert_eq!(bus.power_management_chip_bus_address, None);
+}
+
+#[test]
+fn mainlines_v1_3b_tree_feeds_gmac0s_transmit_clock_from_its_rmii_clock() {
+    assert_eq!(
+        first_ethernet_port_transmit_parent(&tree(GMAC_MAINLINE)),
+        Ok(TransmitParent::Assigned(
+            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+        ))
+    );
+}
+
+#[test]
+fn a_tree_that_assigns_no_transmit_parent_gives_no_parent_step() {
+    // The vendor tree's gmac0 has no assigned-clock-parents, and QEMU's has no gmac0 at all.
+    assert_eq!(
+        first_ethernet_port_transmit_parent(&tree(GMAC_VENDOR)),
+        Ok(TransmitParent::Unassigned)
+    );
+    assert_eq!(
+        first_ethernet_port_transmit_parent(&tree(QEMU_RISCV64_VIRT)),
+        Ok(TransmitParent::Unassigned)
+    );
 }

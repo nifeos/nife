@@ -233,12 +233,19 @@ pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 3;
 #[doc(alias = "JH7110_AONCLK_GMAC0_TX")]
 #[doc(alias = "gmac0 transmit clock")]
 pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT: u32 = 5;
-/// `gmac0_tx`'s parent on a VisionFive 2 v1.3B: `gmac0_rmii_rtx`, mainline's
-/// `assigned-clock-parents` for `&gmac0` in `jh7110-starfive-visionfive-2-v1.3b.dts` beside
-/// `starfive,tx-use-rgmii-clk`, and the same bit the vendor U-Boot sets. A board whose EEPROM
-/// reports PCB revision `0xb2` is a v1.3B.
+/// `JH7110_AONCLK_GMAC0_RMII_RTX` \[mainline-ids\], **4**: `gmac0`'s reduced media-independent
+/// interface (RMII) reference clock, the clock a tree's `assigned-clock-parents` names when it
+/// feeds `gmac0_tx` from it.
 #[doc(alias = "JH7110_AONCLK_GMAC0_RMII_RTX")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 =
+    4;
+/// `gmac0_tx`'s mux input 1, `gmac0_rmii_rtx`: the field value that selects
+/// [`ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT`], the same bit the
+/// vendor U-Boot sets.
 pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 = 1;
+/// `gmac0_tx`'s mux input 0, `gmac0_gtxclk`: the field value that selects
+/// [`SYSCLK_GMAC0_GTXCLK`], the SYS-domain gigabit transmit clock, which is the mux's reset value.
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT: u32 = 0;
 /// `JH7110_AONRST_GMAC0_AXI` \[mainline-ids\], `gmac0`'s `stmmaceth` reset. Bit 0 at `0x38`.
 #[doc(alias = "JH7110_AONRST_GMAC0_AXI")]
 pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 0;
@@ -267,26 +274,174 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_GMAC0_PTP),
 ];
 
-/// **`gmac0`'s AON-domain clocks, its transmit clock's parent, and both its resets**, in Linux's
-/// probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
+/// **`gmac0`'s AON-domain clocks and both its resets**, in Linux's probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
 /// before deasserting either reset. OpenBSD's `dwqe_fdt_attach` differs: it enables `stmmaceth` and
 /// `pclk`, deasserts both resets, then enables `tx` and `gtx`. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
 /// \[mainline-clk-header\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
+///
+/// The transmit clock's parent is the board's, not the chip's, so it is not a step here: a tree
+/// assigns it, and [`gmac0_transmit_parent`] reads that assignment. A caller walks the parent step
+/// before this plan, since a mux is switched while its gate is still off.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled
 /// out).
 pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
     Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE),
     Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
-    Step::SelectParent {
-        clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
-        parent: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
-    },
     Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT),
     Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE),
     Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
+
+/// **`gmac0_tx` fed from `gmac0_rmii_rtx`**: the parent mainline's VisionFive 2 v1.3B tree
+/// assigns, `jh7110-starfive-visionfive-2-v1.3b.dts` (\[mainline-v1.3b-dts\]):
+///
+/// ```text
+/// &gmac0 {
+///     starfive,tx-use-rgmii-clk;
+///     assigned-clocks = <&aoncrg JH7110_AONCLK_GMAC0_TX>;
+///     assigned-clock-parents = <&aoncrg JH7110_AONCLK_GMAC0_RMII_RTX>;
+/// };
+/// ```
+///
+/// [`gmac0_transmit_parent`] answers this step for that tree. It is the value for a caller that
+/// has no tree to read, and a board whose EEPROM reports PCB revision `0xb2` is a v1.3B. The
+/// v1.2A board file describes no `gmac0`, so it assigns no parent.
+///
+/// [mainline-v1.3b-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2-v1.3b.dts
+///
+/// Name: provisional.
+pub const GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: Step =
+    Step::SelectParent {
+        clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+        parent: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+    };
+
+/// **What a `gmac0` node's `assigned-clocks` and `assigned-clock-parents` say about `gmac0_tx`.**
+///
+/// Name: provisional.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TransmitParent {
+    /// The node assigns `gmac0_tx` no parent: no step, and the mux keeps what is in it.
+    Unassigned,
+    /// The step that selects the parent the node assigns, always a [`Step::SelectParent`] of
+    /// `gmac0_tx` with one of its two inputs.
+    Assigned(Step),
+    /// The properties do not read as one-cell specifiers in two lists the parents cannot outrun,
+    /// `gmac0_tx` is assigned twice, or its parent is neither of the mux's two inputs. Nothing is
+    /// stored, and a caller logs the refusal.
+    Refused,
+}
+
+/// Which provider a specifier in `assigned-clocks` or `assigned-clock-parents` names.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AssignedClockProvider {
+    AlwaysOn,
+    System,
+    Other,
+}
+
+/// **Read one `<phandle id>` specifier of an assigned-clocks list**, or `None` when its provider
+/// has other than one cell, which leaves the rest of the list unreadable.
+fn assigned_clock<'t, E>(
+    specifier: &[u8; 8],
+    provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<Option<(AssignedClockProvider, u32)>, E> {
+    let [p0, p1, p2, p3, i0, i1, i2, i3] = *specifier;
+    let phandle = u32::from_be_bytes([p0, p1, p2, p3]);
+    let id = u32::from_be_bytes([i0, i1, i2, i3]);
+    if provider(phandle, b"#clock-cells")? != Some(&[0, 0, 0, 1][..]) {
+        return Ok(None);
+    }
+    let names = |compatible: &[u8], want: &[u8]| compatible.split(|&b| b == 0).any(|c| c == want);
+    let kind = match provider(phandle, b"compatible")? {
+        Some(c) if names(c, COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR) => {
+            AssignedClockProvider::AlwaysOn
+        }
+        Some(c) if names(c, COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR) => {
+            AssignedClockProvider::System
+        }
+        _ => AssignedClockProvider::Other,
+    };
+    Ok(Some((kind, id)))
+}
+
+/// **`gmac0_tx`'s parent, as a `gmac0` node assigns it**: the node's `assigned-clocks` and
+/// `assigned-clock-parents`, read the way [`DevicePlan::from_specifiers`] reads `clocks` and
+/// `resets`, with `provider` the same phandle lookup.
+///
+/// The binding (\[assigned-clocks\]) pairs the two lists entry by entry. An entry whose clock is
+/// mainline's `aoncrg` clock `JH7110_AONCLK_GMAC0_TX` (5) gives the step, and its parent must be
+/// one of the mux's two inputs: `aoncrg` clock `JH7110_AONCLK_GMAC0_RMII_RTX` (4) or `syscrg`
+/// clock `JH7110_SYSCLK_GMAC0_GTXCLK` (108). Every other entry is another clock's business and is
+/// passed over. A clocks list longer than the parents list is the binding's way of assigning
+/// rates alone, so the extra clocks are not read. Either property `None` gives
+/// [`TransmitParent::Unassigned`].
+///
+/// Linux's `of_clk_set_defaults` applies the same lists before the driver probes, and also takes
+/// an entry of a bare phandle `0` to mean "leave this one". This reader refuses that and any
+/// provider of more than one cell rather than guess the stride; both published JH7110 trees use
+/// one cell.
+///
+/// [assigned-clocks]: https://github.com/devicetree-org/dt-schema/blob/v2024.11/dtschema/schemas/clock/clock.yaml
+///
+/// # Errors
+///
+/// Propagates the first error `provider` returns.
+///
+/// Name: provisional.
+pub fn gmac0_transmit_parent<'t, E>(
+    assigned_clocks: Option<&[u8]>,
+    assigned_clock_parents: Option<&[u8]>,
+    mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<TransmitParent, E> {
+    let (Some(clocks), Some(parents)) = (assigned_clocks, assigned_clock_parents) else {
+        return Ok(TransmitParent::Unassigned);
+    };
+    let ((clocks, []), (parents, [])) = (clocks.as_chunks::<8>(), parents.as_chunks::<8>()) else {
+        return Ok(TransmitParent::Refused);
+    };
+    if parents.len() > clocks.len() {
+        return Ok(TransmitParent::Refused);
+    }
+    let mut found = None;
+    for (clock, parent) in clocks.iter().zip(parents) {
+        let (Some(clock), Some(parent)) = (
+            assigned_clock(clock, &mut provider)?,
+            assigned_clock(parent, &mut provider)?,
+        ) else {
+            return Ok(TransmitParent::Refused);
+        };
+        if clock
+            != (
+                AssignedClockProvider::AlwaysOn,
+                ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+            )
+        {
+            continue;
+        }
+        let input = match parent {
+            (
+                AssignedClockProvider::AlwaysOn,
+                ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+            ) => ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+            (AssignedClockProvider::System, SYSCLK_GMAC0_GTXCLK) => {
+                ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT
+            }
+            _ => return Ok(TransmitParent::Refused),
+        };
+        if found.is_some() {
+            return Ok(TransmitParent::Refused);
+        }
+        found = Some(Step::SelectParent {
+            clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+            parent: input,
+        });
+    }
+    Ok(found.map_or(TransmitParent::Unassigned, TransmitParent::Assigned))
+}
 
 /// Where one reset lives: which word to write, which word to watch, and which bit in both.
 ///
@@ -1677,6 +1832,20 @@ mod verification {
         }
     }
 
+    /// The phandle lookup for an assigned-clocks list: an even phandle is `aoncrg` and an odd one
+    /// `syscrg`, both with one cell. It answers by phandle alone, so the solver can pick either
+    /// provider for every specifier and still afford the proof; the other answers (another
+    /// provider, a different cell count, an error) are covered by the host tests, not proved.
+    fn split_provider(phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
+        if name != b"compatible" {
+            Ok(Some(&[0, 0, 0, 1]))
+        } else if phandle % 2 == 0 {
+            Ok(Some(COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR))
+        } else {
+            Ok(Some(COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR))
+        }
+    }
+
     /// **`with_parent` changes only the mux field**: for every word and every parent, each bit
     /// outside [`CLOCK_MULTIPLEXER_MASK`] is as it was (the enable bit and the divider among them), and
     /// the field holds the parent's low four bits, so an over-wide parent never spills.
@@ -1738,9 +1907,10 @@ mod verification {
     }
 
     /// **Every fixed plan ungates its clocks before it releases a reset**: the TRNG's, both halves
-    /// of the Ethernet controller's, the PMIC bus's and both SD/MMC slots' plans hold only ids
-    /// inside their own domain, put every clock step ahead of every reset release, and choose a
-    /// clock's parent before enabling that clock.
+    /// of the Ethernet controller's, the PMIC bus's and both SD/MMC slots' plans, and the v1.3B
+    /// transmit parent walked before the Ethernet controller's AON half, hold only ids inside
+    /// their own domain, put every clock step ahead of every reset release, and choose a clock's
+    /// parent before enabling that clock.
     /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.every_fixed_plan_ungates_its_clocks_before_releasing_a_reset.patch`
     #[kani::proof]
     #[kani::unwind(8)]
@@ -1760,6 +1930,58 @@ mod verification {
         ));
         assert!(ungates_before_releasing(SD_IO_BRING_UP[0], &SYSTEM));
         assert!(ungates_before_releasing(SD_IO_BRING_UP[1], &SYSTEM));
+        assert!(ungates_before_releasing(
+            &with_parent_first(
+                GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+            ),
+            &ALWAYS_ON
+        ));
+    }
+
+    /// `parent` followed by [`GMAC0_ALWAYS_ON_BRING_UP`], the order a caller walks them in.
+    fn with_parent_first(parent: Step) -> [Step; 6] {
+        let mut plan = [parent; 6];
+        let mut i = 0;
+        while i < GMAC0_ALWAYS_ON_BRING_UP.len() {
+            plan[i + 1] = GMAC0_ALWAYS_ON_BRING_UP[i];
+            i += 1;
+        }
+        plan
+    }
+
+    /// **A transmit parent read from a tree is one of `gmac0_tx`'s two inputs**: for an
+    /// `assigned-clocks` of two specifiers and an `assigned-clock-parents` of one or two, of any
+    /// bytes, answered by `aoncrg` and `syscrg`, an assigned step selects a parent of `gmac0_tx`
+    /// and no other clock, with mux input 0 or 1, and walked before [`GMAC0_ALWAYS_ON_BRING_UP`] it
+    /// keeps that plan's order: the parent is chosen while the clock is gated, ahead of every
+    /// reset release.
+    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs.patch`
+    #[kani::proof]
+    #[kani::unwind(8)]
+    fn a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs() {
+        let clocks: [u8; 16] = kani::any();
+        let parents: [u8; 16] = kani::any();
+        let parents = if kani::any() {
+            &parents[..8]
+        } else {
+            &parents[..]
+        };
+
+        if let Ok(TransmitParent::Assigned(step)) =
+            gmac0_transmit_parent(Some(&clocks), Some(parents), split_provider)
+        {
+            assert!(matches!(
+                step,
+                Step::SelectParent {
+                    clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+                    parent: 0 | 1,
+                }
+            ));
+            assert!(ungates_before_releasing(
+                &with_parent_first(step),
+                &ALWAYS_ON
+            ));
+        }
     }
 
     /// **A plan built from a device's specifiers holds only usable steps, in order**: for two

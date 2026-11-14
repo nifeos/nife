@@ -162,7 +162,7 @@ fn the_ethernet_port_comes_up_as_the_ruling_example_says() {
             refused: 0,
         }
     );
-    // SYS 108, 111, 109, then AON 3, 2, the parent of 5, 5, then AON resets 0 and 1.
+    // SYS 108, 111, 109, then the parent of AON 5, then AON 3, 2, 5, then AON resets 0 and 1.
     let clocks: Vec<_> = f.writes().into_iter().map(|(w, o, _)| (w, o)).collect();
     use WindowName::{AlwaysOn, System};
     let r0 = ALWAYS_ON.reset_bit(0).unwrap().assert_offset;
@@ -172,9 +172,9 @@ fn the_ethernet_port_comes_up_as_the_ruling_example_says() {
             (System, 108 * 4),
             (System, 111 * 4),
             (System, 109 * 4),
+            (AlwaysOn, 5 * 4),
             (AlwaysOn, 3 * 4),
             (AlwaysOn, 2 * 4),
-            (AlwaysOn, 5 * 4),
             (AlwaysOn, 5 * 4),
             (AlwaysOn, r0),
             (AlwaysOn, r0),

@@ -314,7 +314,7 @@ fn register_names_index_by_name_not_by_position() {
 }
 
 #[test]
-fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while_gated() {
+fn gmac0s_plans_ungate_every_clock_before_either_reset_and_leave_the_parent_to_the_tree() {
     let first_reset = GMAC0_ALWAYS_ON_BRING_UP
         .iter()
         .position(|s| matches!(s, Step::DeassertReset(_)))
@@ -329,15 +329,21 @@ fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while
             .iter()
             .all(|s| matches!(s, Step::EnableClock(_)))
     );
-    let mux = GMAC0_ALWAYS_ON_BRING_UP
-        .iter()
-        .position(|s| matches!(s, Step::SelectParent { .. }))
-        .unwrap();
-    let enable = GMAC0_ALWAYS_ON_BRING_UP
-        .iter()
-        .position(|s| *s == Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT))
-        .unwrap();
-    assert!(mux < enable);
+    // The board's parent is not the chip's plan: the tree assigns it.
+    assert!(
+        !GMAC0_ALWAYS_ON_BRING_UP
+            .iter()
+            .any(|s| matches!(s, Step::SelectParent { .. }))
+    );
+    assert!(GMAC0_ALWAYS_ON_BRING_UP.contains(&Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT)));
+    let Step::SelectParent { clock, parent } =
+        GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+    else {
+        panic!("the v1.3B parent is a parent step");
+    };
+    assert_eq!(clock, ALWAYS_ON_CLOCK_GMAC0_TRANSMIT);
+    assert!(ALWAYS_ON.clock_offset(clock).is_some());
+    assert_eq!(parent, 1);
     // Every identifier is inside its domain, so neither plan can be rejected.
     for s in GMAC0_ALWAYS_ON_BRING_UP {
         match *s {
@@ -1095,4 +1101,114 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
             }
         );
     }
+}
+
+/// [`provider`]'s phandles for mainline's `aoncrg` and `syscrg`.
+const ALWAYS_ON_PHANDLE: u32 = 4;
+const SYSTEM_PHANDLE: u32 = 1;
+
+#[test]
+fn a_v1_3b_tree_assigns_gmac0_tx_the_rmii_clock() {
+    // `&gmac0 { assigned-clocks = <&aoncrg 5>; assigned-clock-parents = <&aoncrg 4>; }`
+    let clocks = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
+    let parents = specifiers(&[(ALWAYS_ON_PHANDLE, 4)]);
+    assert_eq!(
+        gmac0_transmit_parent(Some(&clocks), Some(&parents), provider),
+        Ok(TransmitParent::Assigned(
+            GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT
+        ))
+    );
+}
+
+#[test]
+fn a_tree_may_feed_gmac0_tx_from_the_system_gigabit_clock_among_other_assignments() {
+    // The receive clock's rate-only entry and an unrelated clock are passed over.
+    let clocks = specifiers(&[
+        (SYSTEM_PHANDLE, 60),
+        (ALWAYS_ON_PHANDLE, 5),
+        (ALWAYS_ON_PHANDLE, 7),
+    ]);
+    let parents = specifiers(&[(SYSTEM_PHANDLE, 61), (SYSTEM_PHANDLE, 108)]);
+    // gmac0_tx's id under a provider that is not `aoncrg` is not gmac0_tx.
+    let other = specifiers(&[(6, 5)]);
+    assert_eq!(
+        gmac0_transmit_parent(Some(&other), Some(&specifiers(&[(6, 4)])), provider),
+        Ok(TransmitParent::Unassigned)
+    );
+    assert_eq!(
+        gmac0_transmit_parent(Some(&clocks), Some(&parents), provider),
+        Ok(TransmitParent::Assigned(Step::SelectParent {
+            clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+            parent: 0,
+        }))
+    );
+}
+
+#[test]
+fn a_tree_without_assigned_clock_parents_gives_no_parent_step() {
+    let clocks = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
+    assert_eq!(
+        gmac0_transmit_parent(Some(&clocks), None, provider),
+        Ok(TransmitParent::Unassigned)
+    );
+    assert_eq!(
+        gmac0_transmit_parent(None, None, provider),
+        Ok(TransmitParent::Unassigned)
+    );
+    // Parents for other clocks only, and gmac0_tx's entry past the end of the parents list
+    // (a rate-only assignment), say nothing about gmac0_tx either.
+    let clocks = specifiers(&[(SYSTEM_PHANDLE, 60), (ALWAYS_ON_PHANDLE, 5)]);
+    let parents = specifiers(&[(SYSTEM_PHANDLE, 61)]);
+    assert_eq!(
+        gmac0_transmit_parent(Some(&clocks), Some(&parents), provider),
+        Ok(TransmitParent::Unassigned)
+    );
+}
+
+#[test]
+fn a_malformed_assignment_is_refused() {
+    let refused = |clocks: &[u8], parents: &[u8]| {
+        assert_eq!(
+            gmac0_transmit_parent(Some(clocks), Some(parents), provider),
+            Ok(TransmitParent::Refused)
+        );
+    };
+    let gmac0_tx = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
+    let rmii = specifiers(&[(ALWAYS_ON_PHANDLE, 4)]);
+    // A length that is not whole specifiers.
+    refused(&gmac0_tx[..7], &rmii);
+    refused(&gmac0_tx, &rmii[..4]);
+    // More parents than clocks.
+    refused(
+        &gmac0_tx,
+        &specifiers(&[(ALWAYS_ON_PHANDLE, 4), (ALWAYS_ON_PHANDLE, 4)]),
+    );
+    // A provider the lookup does not know, the binding's "leave this one" phandle 0, a two-cell
+    // provider, and a one-cell provider that is neither generator.
+    refused(&gmac0_tx, &specifiers(&[(0x99, 4)]));
+    refused(&gmac0_tx, &specifiers(&[(0, 0)]));
+    refused(&gmac0_tx, &specifiers(&[(5, 4)]));
+    refused(&gmac0_tx, &specifiers(&[(6, 4)]));
+    // A parent that is neither of the mux's inputs.
+    refused(&gmac0_tx, &specifiers(&[(ALWAYS_ON_PHANDLE, 3)]));
+    refused(&gmac0_tx, &specifiers(&[(SYSTEM_PHANDLE, 4)]));
+    // gmac0_tx assigned twice.
+    refused(
+        &specifiers(&[(ALWAYS_ON_PHANDLE, 5), (ALWAYS_ON_PHANDLE, 5)]),
+        &specifiers(&[(ALWAYS_ON_PHANDLE, 4), (ALWAYS_ON_PHANDLE, 4)]),
+    );
+}
+
+#[test]
+fn a_provider_error_reaches_the_caller() {
+    let clocks = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
+    let parents = specifiers(&[(ALWAYS_ON_PHANDLE, 4)]);
+    assert_eq!(
+        gmac0_transmit_parent(
+            Some(&clocks),
+            Some(&parents),
+            |_, _| Err::<Option<&[u8]>, _>(7)
+        ),
+        Err(7)
+    );
 }
