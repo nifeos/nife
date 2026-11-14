@@ -158,8 +158,9 @@ under the header's fallback name, silently. Measured on a member named `bin/` pl
 100-byte name with no `bin/`. Its own documentation names the limit ("PAX-only paths or file sizes"
 do not work).
 
-`package_archive` carries two Kani harnesses, and rule 6 says the crates Kani proves are written
-rather than taken. A taken tar reader under the loader would sit outside that.
+`package_archive` carries two Kani harnesses, and rule 6 takes a crate in their place only when it
+carries proofs of the same properties. Taking `tar-no-std` waits on those proofs, ours contributed
+upstream if it lacks them, and on a fix for the pax-path gap above.
 
 ## Stock tools
 

@@ -1,21 +1,19 @@
 Falsifies `subtree_scope::proofs::a_badge_with_no_window_is_never_open`.
 
-The defect: `Bindings::of` folds a nonzero badge at or past `B` onto badge 0 again, so a badge the
+The defect: `Bindings::of` folds a nonzero badge at or past `B` to open, so a badge the
 server has no window for carries the whole endpoint's authority.
 
 Expected to fail: the assertion that a badge past the table was never open.
 
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
-index 8d43b8c25..1c32fd686 100644
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -246,9 +246,6 @@ impl<const B: usize> Bindings<B> {
-     /// What `badge` is. Badge 0 is always [`Binding::Open`]; a nonzero badge at or past `B` is
-     /// always [`Binding::Revoked`].
-     pub fn of(&self, badge: u64) -> Binding {
--        if badge != 0 && badge >= B as u64 {
--            return Binding::Revoked;
--        }
+@@ -298,7 +298,7 @@
          match Self::index(badge) {
-             0 => Binding::Open,
-             i => self.state[i],
+             Some(0) => Binding::Open,
+             Some(i) => self.state[i],
+-            None => Binding::Revoked,
++            None => Binding::Open,
+         }
+     }
+ 

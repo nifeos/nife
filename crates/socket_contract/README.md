@@ -62,10 +62,12 @@ assert!(!names_a_socket(0)); // an unbadged front door
 
 ## What is proven
 
-Three Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
+Five Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
 A listen grant admits exactly its range and no UDP port, a UDP bind grant admits exactly its range
-and no listen port, and each half of a composed grant answers exactly as it does alone. Run them
-with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
+and no listen port, and each half of a composed grant answers exactly as it does alone. Two more
+prove that a peer word reads back as the address and port it was made from, for every address and
+port, and that the ephemeral clock never runs backwards and every position maps to a port in the
+range. Run them with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
 frame layout.
 
 Each patch under `falsifications/` names the harness or test it breaks, and applying it with

@@ -299,9 +299,7 @@ pub fn timer_cancel(timer_slot: u64) -> i64 {
 /// caller with an empty one keeps whatever it did before (its `BUGS` says which).
 pub fn retype_sleeper(memory_region_slot: u64, reserved: u64) -> Option<(u64, u64)> {
     for slot in 0..reserved {
-        // SAFETY: `svc`/`ecall`/`syscall` with a method no object has: a held slot answers
-        // `BadMethod` and does nothing, and an empty one answers `NoSuchSlot`.
-        if unsafe { invoke(slot, u64::MAX, 0, 0, 0) } == abi::Error::NoSuchSlot as i64 {
+        if !objects::is_granted(slot) {
             return None;
         }
     }

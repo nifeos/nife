@@ -33,7 +33,7 @@
 #![no_main]
 
 use graphics_contract as gfx;
-use user_mode_runtime::mapped_window::MappedWindow;
+use user_mode_runtime::mapped_window::{MappedWindow, WindowInteger};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
@@ -185,11 +185,11 @@ fn mw(off: u64, v: u32) {
 // touches no memory.
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, DMA_PAGE_FRAMES * 4096) };
 
-fn direct_memory_access_write<T>(off: u64, val: T) {
+fn direct_memory_access_write<T: WindowInteger>(off: u64, val: T) {
     WINDOW.write(off, val);
 }
 
-fn direct_memory_access_read<T: Copy>(off: u64) -> T {
+fn direct_memory_access_read<T: WindowInteger>(off: u64) -> T {
     WINDOW.read(off)
 }
 
