@@ -108,9 +108,9 @@ pub fn check_path(path: &[u8]) -> Result<(), Refusal> {
 /// [`Refusal::MountCrossing`]), and it carries `parent & (DESCEND | hop)`, refused as
 /// [`Refusal::Narrowed`] if that is less than it asked for. `DESCEND` is added here rather than
 /// left to the caller, so no server can build a walk whose steps cannot be walked on from.
-/// Bits of `hop` outside the contract's rights are dropped by the comparison, so they neither widen nor
-/// refuse a step. `lookup` is the server's: it finds a name in a directory and says what
-/// it is, and it is the only thing here that touches the filesystem, and its own errors (a device error, say) pass through as they are.
+/// Bits of `hop` outside the contract's rights are dropped by the comparison, so they neither widen
+/// nor refuse a step. `lookup` is the server's and the only thing here that touches the
+/// filesystem: it finds a name in a directory and says what it is, and its own errors pass through.
 ///
 /// # Examples
 ///
@@ -134,12 +134,9 @@ pub fn check_path(path: &[u8]) -> Result<(), Refusal> {
 /// assert_eq!((node, last), (2, &b"x"[..]));
 ///
 /// assert_eq!(walk(0, all, b"s/x", dir::READ, lookup).unwrap_err(), Refusal::Symlink);
-/// // A grant that carries only `READ` cannot be narrowed into one that asks for `WRITE` too.
-/// let read_only = Rights::root(dir::DESCEND | dir::READ);
-/// assert_eq!(
-///     walk(0, read_only, b"a/x", dir::WRITE, lookup).unwrap_err(),
-///     Refusal::Narrowed
-/// );
+/// let read_only = Rights::root(dir::DESCEND | dir::READ); // cannot be narrowed into WRITE
+/// let narrowed = walk(0, read_only, b"a/x", dir::WRITE, lookup);
+/// assert_eq!(narrowed.unwrap_err(), Refusal::Narrowed);
 /// ```
 pub fn walk<N: Copy, E: From<Refusal>>(
     start: N,

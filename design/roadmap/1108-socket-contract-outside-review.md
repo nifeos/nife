@@ -93,7 +93,7 @@ released, so its names are two-way today and the package's naming table stands.
 
 ### P1: before the first release
 
-3. `ACCEPT` carries no peer address, and the tree already lists it as a contract change. DONE (`a_peer_word_round_trips_and_refuses_what_no_stack_writes`, Kani `a_peer_word_round_trips_for_every_address_and_port`; the stack and std read the word; D2 ruled 2026-11-11).
+3. `ACCEPT` carries no peer address, and the tree already lists it as a contract change. DONE (`a_peer_word_round_trips_and_refuses_what_no_stack_writes`, Kani `a_peer_word_round_trips_for_every_host_and_port`; the stack and std read the word; D2 ruled 2026-11-11).
    Finding: `OPERATION_ACCEPT` answers `REP_OK` and the connection's capability. The stack's
    second reply word is always 0 (`socket_server.rs`, every `reply(to, word, 0)`), and the new
    connection has no frame yet to carry an address in. `notes/net.md` line 173 records that an

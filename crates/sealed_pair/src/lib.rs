@@ -122,7 +122,7 @@ pub enum TableDisagreement {
     Missing(String),
     /// A line of the table that the one manifest parser rejects, kept whole. The progenitor skips
     /// the line, so only the program it named is refused, and the rest of the table still counts.
-    Unparsable {
+    BadLine {
         /// The line as it stands in the table.
         line: String,
         /// The parser's reason, in its own words.
@@ -139,7 +139,7 @@ pub enum TableSeal {
     Absent,
     /// The table is present but is not UTF-8. The progenitor reads an empty table, which vouches
     /// for nothing, and the console is refused. A line the parser rejects is not this: it is an
-    /// [`TableDisagreement::Unparsable`] in a table that was read.
+    /// [`TableDisagreement::BadLine`] in a table that was read.
     Unreadable,
     /// The table was read. An empty `disagreements` is the healthy case.
     Checked {
@@ -312,7 +312,7 @@ impl Seal {
                             out,
                             "  `{n}` is in the table and not in the archive (harmless at boot)"
                         ),
-                        TableDisagreement::Unparsable { line, reason } => writeln!(
+                        TableDisagreement::BadLine { line, reason } => writeln!(
                             out,
                             "  the table line `{line}` is rejected ({reason}); the program it \
                              names will not be loaded"
@@ -428,14 +428,14 @@ pub fn inspect_with_words(
 }
 
 /// The kernel's third question: do the loader's words parse, and are they the archive's digests?
-fn inspect_words(words: &str, fs: &nifefs::Fs<'_>) -> WordsSeal {
+fn inspect_words(words: &str, files: &nifefs::Fs<'_>) -> WordsSeal {
     use measured_boot::loader_digests::{Word, parse};
     let given = match parse(words.trim()) {
         Ok(given) => given,
         Err(why) => return WordsSeal::Refused(why),
     };
     let mut disagreeing = Vec::new();
-    if fs
+    if files
         .read(measured_boot::PROGENITOR)
         .is_some_and(|b| measured_boot::sha256(b) != given.progenitor)
     {
@@ -443,7 +443,7 @@ fn inspect_words(words: &str, fs: &nifefs::Fs<'_>) -> WordsSeal {
     }
     // A missing table is reported by the table's own verdict; the word is judged when there is
     // something for it to disagree with.
-    if fs
+    if files
         .read(measured_boot::PROGRAM_MEASUREMENTS)
         .is_some_and(|b| measured_boot::sha256(b) != given.base)
     {
@@ -467,7 +467,7 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
         // is lost. It is reported, with the parser's reason, and the rest of the table still counts.
         match entry {
             Ok(pair) => listed.push(pair),
-            Err(bad) => disagreements.push(TableDisagreement::Unparsable {
+            Err(bad) => disagreements.push(TableDisagreement::BadLine {
                 line: bad.line.to_string(),
                 reason: format!("{:?}", bad.why),
             }),
@@ -500,7 +500,7 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
         TableDisagreement::Changed(n)
         | TableDisagreement::Unlisted(n)
         | TableDisagreement::Missing(n) => n.clone(),
-        TableDisagreement::Unparsable { line, .. } => line.clone(),
+        TableDisagreement::BadLine { line, .. } => line.clone(),
     });
     TableSeal::Checked { disagreements }
 }
@@ -550,11 +550,14 @@ pub mod test_support {
     /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
     pub fn words_for(archive: &[u8]) -> String {
         use measured_boot::loader_digests::{LoaderDigests, MAXIMUM_BYTES, encode};
-        let fs = nifefs::Fs::parse(archive).expect("an archive");
+        let files = nifefs::Fs::parse(archive).expect("an archive");
         let digests = LoaderDigests {
-            progenitor: measured_boot::sha256(fs.read(measured_boot::PROGENITOR).expect("packed")),
+            progenitor: measured_boot::sha256(
+                files.read(measured_boot::PROGENITOR).expect("packed"),
+            ),
             base: measured_boot::sha256(
-                fs.read(measured_boot::PROGRAM_MEASUREMENTS)
+                files
+                    .read(measured_boot::PROGRAM_MEASUREMENTS)
                     .expect("packed"),
             ),
         };
@@ -828,7 +831,7 @@ mod tests {
         assert!(
             disagreements
                 .iter()
-                .any(|d| matches!(d, TableDisagreement::Unparsable { line, .. } if line.starts_with("progenitor"))),
+                .any(|d| matches!(d, TableDisagreement::BadLine { line, .. } if line.starts_with("progenitor"))),
             "{disagreements:?}"
         );
         assert!(seal.progenitor_refuses());
@@ -859,9 +862,9 @@ mod tests {
         let seal = inspect_with_words(&kernel, &archive, Some(&good)).expect("readable");
         assert!(seal.is_sealed(), "{seal:?}");
         // The card file ends in a newline.
-        let with_newline = format!("{good}\n");
+        let with_final_line_end = format!("{good}\n");
         assert!(
-            inspect_with_words(&kernel, &archive, Some(&with_newline))
+            inspect_with_words(&kernel, &archive, Some(&with_final_line_end))
                 .unwrap()
                 .is_sealed()
         );

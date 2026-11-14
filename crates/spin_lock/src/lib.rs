@@ -323,7 +323,7 @@ mod tests {
     }
 
     #[test]
-    fn the_standard_accessors_read_and_move_the_data() {
+    fn the_standard_methods_read_and_move_the_data() {
         let mut lock = SpinLock::from(3u32);
         *lock.get_mut() += 1;
         assert_eq!(*lock.lock(), 4);

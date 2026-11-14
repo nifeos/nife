@@ -1,4 +1,4 @@
-Falsifies `socket_contract::verification::a_peer_word_round_trips_for_every_address_and_port`.
+Falsifies `socket_contract::verification::a_peer_word_round_trips_for_every_host_and_port`.
 
 The defect: `peer_word` packs the address one bit too low, so it overlaps the port's top bit and the
 word no longer reads back as the pair it was made from.

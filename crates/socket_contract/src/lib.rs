@@ -1001,9 +1001,9 @@ mod verification {
 
     /// **A peer word round-trips for every address and port**: for any four octets and any port,
     /// [`word_peer`] of [`peer_word`] gives them back, and a word with a bit above 47 set names no peer.
-    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_peer_word_round_trips_for_every_address_and_port.patch`
+    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_peer_word_round_trips_for_every_host_and_port.patch`
     #[kani::proof]
-    fn a_peer_word_round_trips_for_every_address_and_port() {
+    fn a_peer_word_round_trips_for_every_host_and_port() {
         let octets: [u8; 4] = kani::any();
         let port: u16 = kani::any();
         let word = peer_word(octets, port);

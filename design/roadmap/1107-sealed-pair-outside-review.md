@@ -102,7 +102,7 @@ a repository); everything else is two-way and the maintainer decides it.
    Evidence: `crates/sealed_pair/src/lib.rs` lines 110 to 112, 200 to 207 and 321 to 329;
    `crates/measured_boot/src/lib.rs` lines 426 to 432; `crates/system_initializer/src/boot_steps.rs`
    lines 183 to 188 and `measurement.rs` line 16.
-   Change: keep `Unreadable` for the UTF-8 case. Add `TableDisagreement::Unparsable { line: String
+   Change: keep `Unreadable` for the UTF-8 case. Add `TableDisagreement::BadLine { line: String
    }` for each bad line. `progenitor_refuses` counts it (the program on that line is gone), and
    `explain` prints it with the line and the parser's reason, in the words `BadLine` already
    carries.

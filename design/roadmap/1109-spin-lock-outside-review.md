@@ -165,7 +165,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `README-crate.md` assumes Kani in "Running the proofs" and "Running one falsification patch";
    those sections need a loom form. Effort M. Two-way.
 
-9. The standard library's accessors are missing. `std::sync::Mutex` and `spin::Mutex` both DONE (`the_standard_accessors_read_and_move_the_data`, `debug_prints_the_data_when_free_and_does_not_spin_when_held`; `get_mut` and `into_inner` are absent under `--cfg loom`).
+9. The standard library's accessors are missing. `std::sync::Mutex` and `spin::Mutex` both DONE (`the_standard_methods_read_and_move_the_data`, `debug_prints_the_data_when_free_and_does_not_spin_when_held`; `get_mut` and `into_inner` are absent under `--cfg loom`).
    have `get_mut(&mut self) -> &mut T`, `into_inner(self) -> T`, `Default`, `From<T>` and `Debug`.
    The rule that a method takes std's spelling and meaning where std has one settles the names,
    and adding them is compatible. `Debug` for `SpinLock` should print through `try_lock` and write
