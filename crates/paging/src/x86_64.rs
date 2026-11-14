@@ -23,8 +23,9 @@ pub mod pat {
     pub const MSR: u32 = 0x277;
 
     /// The power-on value, entries 0 to 7: WB, WT, UC-, UC, WB, WT, UC-, UC (one byte each, low
-    /// byte first). From the Intel SDM's PAT chapter, recalled rather than re-read; the kernel
-    /// prints what it finds before it writes, so a machine that disagrees says so.
+    /// byte first). The Intel SDM, volume 3, "PAT Initial Value" (memory type encodings 06 WB, 04 WT, 07 UC-,
+    /// 00 UC); the kernel also prints what it finds before it writes, so a machine that disagrees
+    /// says so.
     pub const RESET: u64 = 0x0007_0406_0007_0406;
 
     /// **The value this kernel programs: the power-on table with entry 1 changed from
@@ -997,16 +998,7 @@ mod verification {
         let pa: u64 = kani::any();
         kani::assume(pa & !ADDR_MASK == 0);
 
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
@@ -1034,16 +1026,7 @@ mod verification {
         let pa: u64 = kani::any();
         kani::assume(pa & !ADDR_MASK == 0);
 
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 
@@ -1069,16 +1052,7 @@ mod verification {
         } else {
             (PageSize::Size1GiB, 0x000f_ffff_c000_0000u64)
         };
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
@@ -1130,16 +1104,7 @@ mod verification {
         // Masking is `leaf_entry`'s job, so the assertions below expect `pa & ADDRESS_BITS`.
         let pa: u64 = kani::any();
 
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 

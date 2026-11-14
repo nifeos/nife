@@ -8,6 +8,18 @@
 //! `unmap` refuses to take a 4 KiB bite out of one ([`MapError::InsideBlock`]), and `translate`
 //! stops at one and adds the offset. Nothing splits a block.
 //!
+//! # BUGS
+//!
+//! What this crate does not do, each a defensible non-goal for the kernel that uses it: it cannot
+//! change the flags of a live mapping (unmap, then map), has no `unmap_block`, no range walk, and
+//! no reclamation of an emptied intermediate table (a space's tables are freed wholesale).
+//! `PageTable::entries` is public, so a caller can bypass the format. The Sv39 device bit
+//! (`SW_DEVICE`) is software bookkeeping in a bit the hardware ignores; a machine with Svpbmt
+//! would want bits 62:61, and no format here sets them. `Sv39Mae`'s memory-type values come from
+//! Linux's `pgtable-64.h` alone: the search for a vendor document that gives the T-Head MAEE bits
+//! found none. `Vtd` and `AmdVi` set `SPLIT_SHIFT` to 47 as a ceiling, so a domain over a frame
+//! above 128 TiB gets `WrongHalf`, an error about a concept I/O virtual addresses do not have.
+//!
 //! Name: ratified 2026-08-01 (calef, the naming tenet): a standard term that is already right.
 
 #![cfg_attr(not(test), no_std)]

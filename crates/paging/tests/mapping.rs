@@ -655,3 +655,82 @@ fn a_walk_never_reads_a_table_the_caller_refuses() {
         WalkEnd::OtherHalf
     );
 }
+
+/// **A run that has no end is refused before it maps anything**: a count whose byte length
+/// overflows, and one whose end passes `u64::MAX` in either address space, answer
+/// [`MapError::BadRegion`] and leave the tables empty (no table frame is taken).
+#[test]
+fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
+    let _tables = TableGuard;
+    let budget = Cell::new(16);
+    let mut m = mapper(&budget);
+    let f = Flags::kernel_data();
+
+    assert_eq!(
+        m.map_range(0x1000, 0x1000, u64::MAX, f),
+        Err(MapError::BadRegion)
+    );
+    assert_eq!(
+        m.map_range(0x1000, 0x1000, (1 << 52) - 1, f),
+        Err(MapError::BadRegion)
+    );
+    assert_eq!(
+        m.map_range(0x1000, u64::MAX - PAGE_SIZE + 1, 2, f),
+        Err(MapError::BadRegion)
+    );
+    let top = u64::MAX - PAGE_SIZE + 1;
+    assert_eq!(
+        m.map_span(0x1000, top, 2 * PAGE_SIZE, f, paging::PageSize::Size4KiB),
+        Err(MapError::BadRegion)
+    );
+    assert_eq!(
+        m.map_span(top, 0x1000, 2 * PAGE_SIZE, f, paging::PageSize::Size4KiB),
+        Err(MapError::BadRegion)
+    );
+    assert_eq!(budget.get(), 16, "a refused run takes no table frame");
+    assert!(m.translate(0x1000).is_none());
+}
+
+/// **A frame the allocator returns without 4 KiB alignment is refused before it is written
+/// through**, with [`MapError::Misaligned`], and nothing is mapped.
+#[test]
+fn a_misaligned_frame_from_the_allocator_is_refused() {
+    let _tables = TableGuard;
+    let root = fresh_table();
+    // SAFETY: `root` is a fresh, zeroed, aligned table and the cast is the identity; the
+    // allocator breaks its alignment obligation on purpose, which the mapper must catch before
+    // it writes through the frame.
+    let mut m: Mapper<_, fn(u64) -> *mut PageTable, Fmt> = unsafe {
+        Mapper::new(
+            root,
+            Half::Low,
+            || Some(fresh_table() + 8),
+            phys_to_ptr as fn(u64) -> *mut PageTable,
+        )
+    };
+    assert_eq!(
+        m.map(0x40_0000, 0x4000_0000, Flags::user_data()),
+        Err(MapError::Misaligned)
+    );
+    assert!(m.translate(0x40_0000).is_none());
+}
+
+/// `MapError` is a `core::error::Error` with a message for every variant.
+#[test]
+fn a_map_error_displays_and_is_an_error() {
+    fn takes_error(_: &dyn core::error::Error) {}
+    for e in [
+        MapError::OutOfPageFrames,
+        MapError::Misaligned,
+        MapError::AlreadyMapped,
+        MapError::WrongHalf,
+        MapError::NotMapped,
+        MapError::InsideBlock,
+        MapError::UnsupportedSize,
+        MapError::BadRegion,
+        MapError::WritableAndExecutable,
+    ] {
+        takes_error(&e);
+        assert!(!e.to_string().is_empty());
+    }
+}

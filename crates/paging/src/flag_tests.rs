@@ -1,16 +1,6 @@
 use super::*;
 
-const ALL: [Flags; 9] = [
-    Flags::kernel_code(),
-    Flags::kernel_rodata(),
-    Flags::kernel_data(),
-    Flags::device(),
-    Flags::user_code(),
-    Flags::user_rodata(),
-    Flags::user_data(),
-    Flags::user_device(),
-    Flags::user_device_read_only(),
-];
+const ALL: [Flags; 11] = Flags::ALL;
 
 /// **W^X, as a property of the type rather than of our discipline.** No constructor returns a
 /// page that is both writable and executable, over every constructor there is.
@@ -83,7 +73,7 @@ fn user_mappings_are_tagged_and_kernel_mappings_are_global() {
 
 /// **`bits()` returns the word, not a constant.** The formats encode through the predicates,
 /// so nothing else in this crate reads the raw word back, and a `bits()` that returned 0 or 1
-/// would survive every other test here. Expected values hand-assembled from the CAP_* bit
+/// would survive every other test here. Expected values hand-assembled from the `ACCESS_*` bit
 /// positions above: write 0, user 1, user-exec 2, kernel-exec 3, global 4, device 5.
 #[test]
 fn bits_returns_the_exact_capability_word() {
@@ -154,4 +144,23 @@ fn write_combining_is_a_kind_of_device_memory() {
     assert!(f.is_device() && f.is_write_combining() && f.is_writable() && f.is_global());
     assert!(!f.is_user_accessible() && !f.is_kernel_executable() && !f.is_user_executable());
     assert!(!Flags::device().is_write_combining());
+}
+
+/// **`Flags::ALL` lists every public constructor.** Counted from the source of `flags.rs`: every
+/// `pub const fn name() -> Self` is one, so a new constructor that is not in the list fails here.
+#[test]
+fn all_lists_every_public_constructor() {
+    let source = include_str!("flags.rs");
+    let constructors = source
+        .lines()
+        .filter(|l| {
+            l.trim_start().starts_with("pub const fn ") && l.trim_end().ends_with("() -> Self {")
+        })
+        .count();
+    assert_eq!(Flags::ALL.len(), constructors);
+    for (i, a) in Flags::ALL.iter().enumerate() {
+        for b in &Flags::ALL[i + 1..] {
+            assert_ne!(a, b, "two constructors are listed as one");
+        }
+    }
 }

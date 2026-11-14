@@ -42,8 +42,7 @@ pub(crate) const THE_ACCESS_BITS_SHARE_NO_BIT: () = {
 ///
 /// **W^X is a property of the constructors, not of the encoders.** No `leaf_entry` refuses a
 /// `Flags` with both `ACCESS_WRITE` and an exec bit; no `pub` constructor builds one and `from_access`
-/// is `pub(crate)`, and `nothing_is_both_writable_and_executable` does not iterate
-/// `write_combining`. So `notes/confinement-claims.md` row 11 would not survive a new in-crate
+/// is `pub(crate)`, and the tests and proofs iterate [`Flags::ALL`]. So `notes/confinement-claims.md` row 11 would not survive a new in-crate
 /// constructor that got it wrong; a refusal or `debug_assert!` in each encoder would hold it.
 ///
 /// # Examples
@@ -75,6 +74,23 @@ pub(crate) const THE_ACCESS_BITS_SHARE_NO_BIT: () = {
 pub struct Flags(u64);
 
 impl Flags {
+    /// **Every constructor's result, once each**, for a test or a proof that must hold over all of
+    /// them. A test checks that this list is as long as the number of public constructors, so a
+    /// new constructor cannot be left out of it.
+    pub const ALL: [Flags; 11] = [
+        Flags::kernel_code(),
+        Flags::kernel_rodata(),
+        Flags::kernel_data(),
+        Flags::device(),
+        Flags::write_combining(),
+        Flags::user_code(),
+        Flags::user_rodata(),
+        Flags::user_data(),
+        Flags::user_device(),
+        Flags::user_device_read_only(),
+        Flags::user_write_combining(),
+    ];
+
     /// Kernel code: readable and executable by the kernel, never writable, never user.
     pub const fn kernel_code() -> Self {
         Flags(ACCESS_KERNEL_EXEC | ACCESS_GLOBAL)
