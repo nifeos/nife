@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1108-socket-contract-outside-review.md).
 
-7. The one piece of logic beyond the grants has no proof.
+7. The one piece of logic beyond the grants has no proof. PARTIAL: Kani `a_position_is_a_port_in_range_and_the_clock_never_runs_backwards` with its patch; the fallback is documented. LEFT: the loop harness over `held` (16384 iterations) and the no-reuse arithmetic harness; `Option<u16>` is a signature change.
    Finding: the three harnesses prove the grant packing and checks, which is the authority. The
    frame layout, the badge predicate and the lease round trip are tests of fixed values, which is
    enough for constants. `ephemeral::Ports::next` (lines 331 to 341) is a loop with a clock, a
@@ -21,7 +21,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    second is the honest shape and costs one `match` in `socket_table.rs`.
    Door: two-way (an unreleased signature). Effort: M.
 
-8. Offsets, lengths and byte orders mix types and go unstated.
+8. Offsets, lengths and byte orders mix types and go unstated. PARTIAL: `FRAME_BYTES` added and the byte order stated. LEFT: one type for offsets and lengths (touches five component sites).
    Finding: `OFF_*` are `u64` and `DATA_MAXIMUM` is `usize`, so every caller casts
    (`DATA_MAXIMUM as u64` at five sites in `components/`, `OFF_PAYLOAD as usize` in the crate's
    own line 471). `DATA_MAXIMUM = 4096 - OFF_PAYLOAD` hardcodes the page size with no constant for
@@ -37,7 +37,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    is the way an address reads.
    Door: two-way before the release; the types become one-way after. Effort: S.
 
-9. Names where this review reads a later rule differently from the package.
+9. Names where this review reads a later rule differently from the package. LEFT: names, the architect's pass.
    Finding: the package proposes keeping `Ports::next` and `polled_wait::next`. The rule that a
    method takes std's spelling asks for std's meaning too; `Iterator::next` takes no argument and
    returns `Option`, while `Ports::next(milliseconds, held)` takes two and returns a `u16`, and
@@ -55,7 +55,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    name"), so the rule has a record rather than passing by silence.
    Door: two-way. Effort: S, in the package's rename lane.
 
-10. Inline "name provisional" prose survives the move.
+10. Inline "name provisional" prose survives the move. LEFT: the prose goes with the `Name:` blocks at the move.
     Finding: the move strips `Name:` blocks. The crate also carries the words inside ordinary
     sentences: "Names provisional." (line 65), "Name provisional." (lines 74, 84), "Names
     provisional." (line 440), "The module's name is provisional." (lines 213, 292), and
@@ -66,7 +66,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
     move. Line 22 becomes a `Name:` block in the recorded form.
     Door: two-way. Effort: S.
 
-11. The documentation refers to things the crate does not define.
+11. The documentation refers to things the crate does not define. DONE (a Vocabulary section in the crate documentation).
     Finding: `PageFrame` (line 451) is a kernel type; `SEND_CAPABILITY`, `CALL`, `WRITE | GRANT`,
     `BADGE`, `UNMAP` (lines 46, 442 to 448) are kernel operations and rights; "the kernel-stamped"
     badge assumes the reader knows the kernel stamps badges. The package lists `PageFrame`. A

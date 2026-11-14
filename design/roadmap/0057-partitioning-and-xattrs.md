@@ -202,7 +202,7 @@ scale, and so did the block-device lane.
   carries it with the condition that would change it.
 - **Recorded.** `notes/host-recovery.md` says an attribute's type code cannot survive extraction,
   because no host filesystem has a per-attribute type word. Each dropped code is named and counted
-  and the raw `.nife-attrs` store still comes out beside the tree as its only home, which is also
+  and the raw `.extended-attributes` store still comes out beside the tree as its only home, which is also
   why a recovered tree carries one directory the user did not put there.
 - **Recorded.** `notes/host-recovery.md` draws the consequence for pin bumps: a reader must match
   the on-disk format version, so a bump to a different format strands every image already written
