@@ -8,7 +8,6 @@ Expected to fail: the harness's `assert!(s.retyped_to <= s.watermark, "retyped p
 for a child whose own retypes reach past its last live grandchild.
 
 diff --git a/crates/memory_regions/src/watermark.rs b/crates/memory_regions/src/watermark.rs
-index f868d30ba..ce8efa054 100644
 --- a/crates/memory_regions/src/watermark.rs
 +++ b/crates/memory_regions/src/watermark.rs
 @@ -65,5 +65,5 @@ pub fn coalesced_watermark(watermark: u64, retyped_to: u64, live_to: u64, quiesc

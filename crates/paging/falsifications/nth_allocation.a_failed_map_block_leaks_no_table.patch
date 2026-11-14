@@ -19,7 +19,6 @@ Expected to fail: assertion (1), "table frame(s) handed out and unreachable from
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
-index b1520b3fc..6de17d019 100644
 --- a/crates/paging/src/mapper.rs
 +++ b/crates/paging/src/mapper.rs
 @@ -255,13 +255,21 @@ where

@@ -7,7 +7,6 @@ Expected to fail: the harness's `expect("a consistent exchange is refused")`, on
 the farthest a synchronized server may be from a reference clock.
 
 diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
-index c7b75703b..707f22cf4 100644
 --- a/crates/network_time_protocol/src/lib.rs
 +++ b/crates/network_time_protocol/src/lib.rs
 @@ -727,7 +727,7 @@ impl Query {

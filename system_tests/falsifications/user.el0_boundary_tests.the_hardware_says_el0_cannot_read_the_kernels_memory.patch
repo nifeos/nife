@@ -32,7 +32,6 @@ and `paging`'s Kani harnesses reason about the encoder rather than the construct
 the honest scope of a kernel-test falsification and is stated in script/falsifications' BUGS.
 
 diff --git a/crates/paging/src/flags.rs b/crates/paging/src/flags.rs
-index 6bd2dd54c..37826ad58 100644
 --- a/crates/paging/src/flags.rs
 +++ b/crates/paging/src/flags.rs
 @@ -95,7 +95,7 @@ impl Flags {

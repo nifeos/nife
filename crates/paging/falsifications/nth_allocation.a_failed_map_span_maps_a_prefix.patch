@@ -18,7 +18,6 @@ Expected to fail: assertion (2), "what is left mapped is not a prefix of the req
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
-index b1520b3fc..d9fc74b01 100644
 --- a/crates/paging/src/mapper.rs
 +++ b/crates/paging/src/mapper.rs
 @@ -303,12 +303,16 @@ where

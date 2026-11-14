@@ -9,7 +9,6 @@ run.root_ceilings)), "a split child's ceilings are not its root's share")`, on a
 child.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
-index ee5a9ded7..f87ae7122 100644
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
 @@ -203,9 +203,6 @@ impl Ceilings {

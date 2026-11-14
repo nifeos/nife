@@ -19,7 +19,6 @@ path reaches `map`; this record names the one it was written for.
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
-index b1520b3fc..9e1e1646f 100644
 --- a/crates/paging/src/mapper.rs
 +++ b/crates/paging/src/mapper.rs
 @@ -190,6 +190,7 @@ where
