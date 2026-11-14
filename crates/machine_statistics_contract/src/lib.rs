@@ -165,9 +165,9 @@ pub unsafe fn counter<'a>(page_va: u64, index: usize) -> &'a AtomicU64 {
             "the page address must fit a pointer"
         );
     };
-    let address = (page_va + (index as u64) * 8) as usize;
+    let word_virtual_address = (page_va + (index as u64) * 8) as usize;
     // SAFETY: the caller's contract: in bounds, aligned, mapped for `'a`.
-    unsafe { AtomicU64::from_ptr(address as *mut u64) }
+    unsafe { AtomicU64::from_ptr(word_virtual_address as *mut u64) }
 }
 
 /// One cpu's line, as a reader sees it.
@@ -389,10 +389,10 @@ mod verification {
 
     /// **Every accessor of a snapshot of any admitted page returns without panicking**, and the
     /// byte totals saturate where the product would overflow.
-    /// Falsification: replayable `crates/machine_statistics_contract/falsifications/verification.every_accessor_is_total_over_an_admitted_page.patch`
+    /// Falsification: replayable `crates/machine_statistics_contract/falsifications/verification.every_reading_is_total_over_an_admitted_page.patch`
     #[kani::proof]
     #[kani::unwind(10)]
-    fn every_accessor_is_total_over_an_admitted_page() {
+    fn every_reading_is_total_over_an_admitted_page() {
         let mut words = any_words();
         words[word::MAGIC] = u64::from_le_bytes(MAGIC);
         words[word::VERSION] = u64::from(VERSION);
@@ -514,7 +514,7 @@ mod tests {
     /// **No accessor panics, and each saturates, on a page the reader accepted.** Every counter at
     /// `u64::MAX` under a valid header is a page a foreign or corrupted writer could leave.
     #[test]
-    fn a_page_of_maximal_counters_saturates_every_accessor() {
+    fn a_page_of_maximal_counters_saturates_every_reading() {
         let mut w = prepared();
         w[word::TOTAL_FRAMES] = u64::MAX;
         w[word::FREE_FRAMES] = u64::MAX;
@@ -544,10 +544,10 @@ mod tests {
     #[test]
     fn read_returns_what_the_writer_stored_through_counter() {
         let mut frame = Frame([0; WORDS]);
-        let address = frame.0.as_mut_ptr() as u64;
+        let frame_virtual_address = frame.0.as_mut_ptr() as u64;
         for (i, word) in build_header(4096, 100).iter().enumerate() {
             // SAFETY: `frame` is aligned, `WORDS` long and lives past every use below.
-            unsafe { counter(address, i) }.store(*word, Ordering::Relaxed);
+            unsafe { counter(frame_virtual_address, i) }.store(*word, Ordering::Relaxed);
         }
         let line = word::cpu(2);
         for (offset, value) in [
@@ -556,10 +556,10 @@ mod tests {
             (word::RUNNABLE, 3),
         ] {
             // SAFETY: as above; `line + offset < WORDS`.
-            unsafe { counter(address, line + offset) }.store(value, Ordering::Relaxed);
+            unsafe { counter(frame_virtual_address, line + offset) }.store(value, Ordering::Relaxed);
         }
         // SAFETY: the same buffer, still live.
-        let s = unsafe { Snapshot::read(address) }.expect("a prepared frame");
+        let s = unsafe { Snapshot::read(frame_virtual_address) }.expect("a prepared frame");
         assert_eq!((s.frame_bytes, s.tick_hertz), (4096, 100));
         assert_eq!(s.online_cpus(), 1);
         assert_eq!((s.busy_ticks(), s.runnable()), (9, 3));
