@@ -66,9 +66,8 @@ fn system_provider(_phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, 
 }
 
 /// The phandle lookup for an assigned-clocks list: an even phandle is `aoncrg` and an odd one
-/// `syscrg`, both with one cell. It answers by phandle alone, so the solver can pick either
-/// provider for every specifier and still afford the proof; the other answers (another
-/// provider, a different cell count, an error) are covered by the host tests, not proved.
+/// `syscrg`, both with one cell. The other answers (another provider, a different cell count, an
+/// error) are covered by the host tests, not proved.
 fn split_provider(phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
     if name != b"compatible" {
         Ok(Some(&[0, 0, 0, 1]))
@@ -182,26 +181,53 @@ fn with_parent_first(parent: Step) -> [Step; 6] {
     plan
 }
 
-/// **A transmit parent read from a tree is one of `gmac0_tx`'s two inputs**: for an
-/// `assigned-clocks` of two specifiers and an `assigned-clock-parents` of one or two, of any
-/// bytes, answered by `aoncrg` and `syscrg`, an assigned step selects a parent of `gmac0_tx`
-/// and no other clock, with mux input 0 or 1, and walked before [`GMAC0_ALWAYS_ON_BRING_UP`] it
-/// keeps that plan's order: the parent is chosen while the clock is gated, ahead of every
-/// reset release.
+/// **A transmit parent read from a tree is one of `gmac0_tx`'s two inputs**: for one
+/// `assigned-clocks` specifier and one `assigned-clock-parents` specifier, each naming `aoncrg` or
+/// `syscrg` with any clock id, an assigned step selects a parent of `gmac0_tx` and no other clock,
+/// with mux input 0 or 1, and walked before [`GMAC0_ALWAYS_ON_BRING_UP`] it keeps that plan's
+/// order: the parent is chosen while the clock is gated, ahead of every reset release.
+///
+/// The four provider pairs are separate calls with a constant phandle each, so every lookup
+/// answers one known compatible string; a symbolic phandle made the solver compare against both
+/// strings at once and ran past the queue's time limit. Every entry reaches the step through the
+/// same match, so one entry covers it, and the host tests cover the rest: longer lists (another
+/// clock's entry skipped, `gmac0_tx` assigned twice, more parents than clocks), other providers,
+/// other cell counts and malformed lengths.
 /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs.patch`
 #[kani::proof]
-#[kani::unwind(8)]
+#[kani::unwind(24)]
 fn a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs() {
-    let clocks: [u8; 16] = kani::any();
-    let parents: [u8; 16] = kani::any();
-    let parents = if kani::any() {
-        &parents[..8]
-    } else {
-        &parents[..]
+    // `split_provider` answers an even phandle as `aoncrg` and an odd one as `syscrg`.
+    const ALWAYS_ON_PHANDLE: u32 = 2;
+    const SYSTEM_PHANDLE: u32 = 3;
+    let clock: u32 = kani::any();
+    let parent: u32 = kani::any();
+    match (kani::any::<bool>(), kani::any::<bool>()) {
+        (false, false) => {
+            transmit_parent_is_an_input(ALWAYS_ON_PHANDLE, clock, ALWAYS_ON_PHANDLE, parent)
+        }
+        (false, true) => {
+            transmit_parent_is_an_input(ALWAYS_ON_PHANDLE, clock, SYSTEM_PHANDLE, parent)
+        }
+        (true, false) => {
+            transmit_parent_is_an_input(SYSTEM_PHANDLE, clock, ALWAYS_ON_PHANDLE, parent)
+        }
+        (true, true) => transmit_parent_is_an_input(SYSTEM_PHANDLE, clock, SYSTEM_PHANDLE, parent),
+    }
+}
+
+/// The body of the harness above for one provider pair: builds the two specifiers and checks
+/// what `gmac0_transmit_parent` answers.
+fn transmit_parent_is_an_input(clock_phandle: u32, clock: u32, parent_phandle: u32, parent: u32) {
+    let specifier = |phandle: u32, id: u32| {
+        let ([p0, p1, p2, p3], [i0, i1, i2, i3]) = (phandle.to_be_bytes(), id.to_be_bytes());
+        [p0, p1, p2, p3, i0, i1, i2, i3]
     };
+    let clocks = specifier(clock_phandle, clock);
+    let parents = specifier(parent_phandle, parent);
 
     if let Ok(TransmitParent::Assigned(step)) =
-        gmac0_transmit_parent(Some(&clocks), Some(parents), split_provider)
+        gmac0_transmit_parent(Some(&clocks), Some(&parents), split_provider)
     {
         assert!(matches!(
             step,
