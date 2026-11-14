@@ -113,11 +113,11 @@ caller's at the first tag.
 
 ### The crate's name
 
-Ruled 2026-11-14 (UTC), decision N1, option A: the crate is `address_space_layout`, in code and as
-the package name, with no `package =` rename and no `doc(alias)` of the earlier spelling. The rule
-in force is that nife's vocabulary rule sets `map` aside where the kernel uses it as a verb, and
-"layout" is the word the crate already uses for itself. The rename is done in this tree, and the
-crate's `Name:` block is ratified.
+Decision N1, option A, 2026-11-14 (UTC): the crate is `address_space_layout`, in code and as the
+package name, with no `package =` rename and no `doc(alias)` of the earlier spelling. The rule in
+force: nife's vocabulary rule sets `map` aside where the kernel uses it as a verb, and "layout" is
+the word the crate already uses for itself. This tree carries the rename, and the crate's `Name:`
+block says ratified.
 
 ### The address and length constants
 
@@ -182,4 +182,4 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 
 ## Index row
 
-An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. It leaves two names for the architect: the address and length constants, and a whole-window check. The crate's own name is ruled and renamed.
+An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. It leaves two names for the architect: the address and length constants, and a whole-window check. The crate's own name has its ruling and its rename.
