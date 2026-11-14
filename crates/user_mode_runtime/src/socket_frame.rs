@@ -30,7 +30,10 @@
 //! give the two copies a way to disagree. The module takes its name from the contract it reads,
 //! `socket_frame`, so `socket_contract::` stays the one place a reader looks for the wire.
 
-use socket_contract::{OFF_DST_IP, OFF_DST_PORT, OFF_LEN, OFF_PAYLOAD};
+use socket_contract::{
+    DESTINATION_ADDRESS_OFFSET_BYTES, DESTINATION_PORT_OFFSET_BYTES, LENGTH_OFFSET_BYTES,
+    PAYLOAD_OFFSET_BYTES,
+};
 
 use crate::mapped_window::{MappedWindow, PAGE};
 
@@ -68,38 +71,39 @@ impl Frame {
     /// and the fields a UDP `RECEIVE` reply carries the sender's endpoint back in.
     pub fn set_dst(&self, ip: [u8; 4], port: u16) {
         for (i, &b) in ip.iter().enumerate() {
-            self.window.w8(OFF_DST_IP + i as u64, b);
+            self.window
+                .w8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
         }
-        self.window.w16(OFF_DST_PORT, port);
+        self.window.w16(DESTINATION_PORT_OFFSET_BYTES, port);
     }
 
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
-    /// `OFF_DST_IP` in `socket_contract`).
+    /// `DESTINATION_ADDRESS_OFFSET_BYTES` in `socket_contract`).
     pub fn dst_ip(&self) -> [u8; 4] {
         let mut ip = [0u8; 4];
         for (i, b) in ip.iter_mut().enumerate() {
-            *b = self.window.r8(OFF_DST_IP + i as u64);
+            *b = self.window.r8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
         }
         ip
     }
 
     /// The destination port, or the sender's after a UDP `RECEIVE` (the layout note on
-    /// `OFF_DST_PORT` in `socket_contract`).
+    /// `DESTINATION_PORT_OFFSET_BYTES` in `socket_contract`).
     pub fn dst_port(&self) -> u16 {
-        self.window.r16(OFF_DST_PORT)
+        self.window.r16(DESTINATION_PORT_OFFSET_BYTES)
     }
 
-    /// Write the length field at `OFF_LEN`. The stack never reads it: a `SEND*` takes its length
+    /// Write the length field at `LENGTH_OFFSET_BYTES`. The stack never reads it: a `SEND*` takes its length
     /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
     /// that clears it before a `RECEIVE` to watch for the reply.
     pub fn set_len(&self, len: u16) {
-        self.window.w16(OFF_LEN, len);
+        self.window.w16(LENGTH_OFFSET_BYTES, len);
     }
 
     /// Write `bytes` at the start of the payload. An overlong slice panics at the window's
     /// bounds check rather than running past the frame.
     pub fn payload_write(&self, bytes: &[u8]) {
-        self.window.copy_from_slice(OFF_PAYLOAD, bytes);
+        self.window.copy_from_slice(PAYLOAD_OFFSET_BYTES, bytes);
     }
 
     /// Read up to `n` bytes of payload into `out`, returning how many were read. `n` is usually
@@ -107,7 +111,8 @@ impl Frame {
     /// `out.len()` is the bounds check's first line rather than the caller's job.
     pub fn payload_read(&self, n: usize, out: &mut [u8]) -> usize {
         let n = n.min(out.len());
-        self.window.copy_to_slice(OFF_PAYLOAD, &mut out[..n]);
+        self.window
+            .copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut out[..n]);
         n
     }
 }

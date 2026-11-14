@@ -57,7 +57,7 @@ This lane ran each check in its own worktree, on this branch.
 | `script/crate-move --dry-run` | builds and tests at 1.88, and every patch applies with no offset and no fuzz. Three findings, all known template bugs (the scaffold's mentions of nife, its architect line and its path into nife), and two crate lines: the `fixture` message bytes `nife-in!` and `nife-out!` |
 | `cargo test -p socket_contract` | 20 unit tests and 5 doctests pass; one doctest is the README's example |
 | `cargo clippy --all-targets`, `cargo doc` with warnings denied | no warning |
-| the template's naming checks over `src/lib.rs` | `spelled_out`, `unit_symbols`, `question_shape`, `british_spelling` and `contract_names`: 169 names, 0 refused. `register_names` refuses `OFF_LEN` (a length carries its unit). `abbreviations`, report only: 20 components |
+| the template's naming checks over `src/lib.rs` | `spelled_out`, `unit_symbols`, `question_shape`, `british_spelling` and `contract_names`: 169 names, 0 refused. `register_names` refuses `LENGTH_OFFSET_BYTES` (a length carries its unit). `abbreviations`, report only: 20 components |
 | `script/names socket_contract` | the crate name ratified; three items provisional; one ratified; the rest have no block |
 | `script/lint` | passes |
 
@@ -85,7 +85,7 @@ baseline) and the template's workflows, which run in the repository.
 | badges | `SOCKET_BADGE` (bit 63), `names_a_socket(badge)` |
 | replies | `REP_OK`, `REP_ERR` (bit 32), `CONNECT_ESTABLISHED`, `CONNECT_REFUSED`, `LISTEN_GRANTED`, `LISTEN_DENIED`, `LISTEN_IN_USE` |
 | port grants | `NO_LISTEN_GRANT`, `listen_grant(lo, hi)`, `grant_allows(grant, port)`, `udp_bind_grant(lo, hi)`, `udp_grant_allows(grant, port)` |
-| shared page | `OFF_DST_IP`, `OFF_DST_PORT`, `OFF_LEN`, `OFF_PAYLOAD`, `DATA_MAXIMUM` |
+| shared page | `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES`, `DATA_MAXIMUM` |
 | `stack_slots` | `MINT` (7), `OWN_SPACE` (8) |
 | `lease` | `NO_NAMESERVER`, `ipv4_word(octets)`, `word_ipv4(word)` |
 | `ephemeral` | `LO`, `HI`, `SPAN`, `PER_SECOND`, `Ports`, `Ports::new`, `Ports::next(milliseconds, held)` |
@@ -106,7 +106,7 @@ No nife type appears in a signature. What a stranger may find surprising:
 ## Rulings
 
 - A send's length travels in the `CALL` argument word, checked against `DATA_MAXIMUM`, and
-  `OFF_LEN` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
+  `LENGTH_OFFSET_BYTES` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
   note, every `OPERATION_` constant's documentation, the README and the client runtime's frame
   accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
   argument. 
@@ -140,7 +140,7 @@ crate has not left, so each is a two-way door.
 | `NO_LISTEN_GRANT` | `NO_PORT_GRANT` | the empty word for both halves |
 | `listen_grant`, `udp_bind_grant` | keep; parameters `lo`, `hi` become `start`, `end` | the standard library's words for an inclusive range |
 | `grant_allows`, `udp_grant_allows` | `listen_grant_allows`, `udp_bind_grant_allows` | each names the grant its packer makes |
-| `OFF_DST_IP`, `OFF_DST_PORT`, `OFF_LEN`, `OFF_PAYLOAD` | `DESTINATION_IP_ADDRESS_OFFSET`, `DESTINATION_PORT_OFFSET`, `PAYLOAD_LENGTH_OFFSET`, `PAYLOAD_OFFSET` | `off`, `dst` and `len` abbreviate; `_OFFSET` as in `CPU_WORD_OFFSET`; an IP address takes `ip` before `_ADDRESS` |
+| `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | `DESTINATION_IP_ADDRESS_OFFSET`, `DESTINATION_PORT_OFFSET`, `PAYLOAD_LENGTH_OFFSET`, `PAYLOAD_OFFSET` | `off`, `dst` and `len` abbreviate; `_OFFSET` as in `CPU_WORD_OFFSET`; an IP address takes `ip` before `_ADDRESS` |
 | `DATA_MAXIMUM` | `MAXIMUM_PAYLOAD_BYTES` | a limit opens `MAXIMUM_` and ends with its unit |
 | `stack_slots::MINT`, `OWN_SPACE` | `MINTING_ENDPOINT_SLOT`, `OWN_ADDRESS_SPACE_SLOT` | `mint` is a verb and `space` half a term; `_SLOT` as in `ACTIVATION_SLOT` |
 | `lease::NO_NAMESERVER` | `NO_NAME_SERVER` | two words |
@@ -153,8 +153,8 @@ crate has not left, so each is a two-way door.
 | `polled_wait::next`'s `now`, `last_frame`, `tick` | `now_ticks`, `last_frame_ticks`, `ticks_per_scheduler_tick` | each is in counter ticks; the unit is spelled nowhere in the signature |
 | `fixture`'s items | not proposed | decision 2 below would take them out of the crate |
 
-Names that would follow a rename elsewhere: `domain_name_resolution_contract` carries `OFF_NAME`
-and `OFF_ADDRESSES` in the same style, and several contracts use `REP_OK` and `REP_ERR`.
+Names that would follow a rename elsewhere: `domain_name_resolution_contract` carries `NAME_OFFSET_BYTES`
+and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_OK` and `REP_ERR`.
 
 ## What still blocks the move
 

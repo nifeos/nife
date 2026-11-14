@@ -54,14 +54,14 @@ released, so its names are two-way today and the package's naming table stands.
 
 1. The contract's text and its wire disagree on where a send's length travels.
    Finding: the layout note at `crates/socket_contract/src/lib.rs` lines 454 to 459 says the
-   `len` field at `OFF_LEN` is "in for SEND*, out for RECEIVE". The documentation of
+   `len` field at `LENGTH_OFFSET_BYTES` is "in for SEND*, out for RECEIVE". The documentation of
    `OPERATION_SENDTO` and `OPERATION_SEND` (lines 53 to 60) says "payload in the frame" and
-   nothing about the argument word. The stack never reads `OFF_LEN`: `components/src/socket_server.rs`
+   nothing about the argument word. The stack never reads `LENGTH_OFFSET_BYTES`: `components/src/socket_server.rs`
    lines 172 and 182 pass the `CALL`'s argument as the length, and `socket_operations.rs` lines
    45 and 328 bound that argument by `DATA_MAXIMUM`. The std platform layer and the test client
-   both pass the length as the argument and never write `OFF_LEN` (`nife.rs` lines 496 and 856,
+   both pass the length as the argument and never write `LENGTH_OFFSET_BYTES` (`nife.rs` lines 496 and 856,
    `socket_test_client.rs` line 406). A client written from the crate's text, which writes
-   `OFF_LEN` and passes 0, sends nothing and hears that it sent nothing. The only writer of `OFF_LEN`
+   `LENGTH_OFFSET_BYTES` and passes 0, sends nothing and hears that it sent nothing. The only writer of `LENGTH_OFFSET_BYTES`
    is the stack's `RECEIVE` (`socket_operations.rs` line 116), and its only reader is
    `components/src/socket_squatter.rs` line 164, which polls it as a "data arrived" flag.
    Evidence: the lines above.
@@ -72,7 +72,7 @@ released, so its names are two-way today and the package's naming table stands.
    count of bytes the stack accepted, which may be short. `SENDTO` replies `REP_OK`. `RECEIVE`
    replies the count written to the frame. The layout note says
    `RECEIVE` writes `len` and nobody the contract requires reads it; a test asserts that
-   `OFF_LEN`'s documentation and `OPERATION_SEND`'s agree (a doc test that sends from a fake frame
+   `LENGTH_OFFSET_BYTES`'s documentation and `OPERATION_SEND`'s agree (a doc test that sends from a fake frame
    is enough). The README's "Replies" bullet changes with it. This is item D1 below, since the
    choice of which side carries the length is a wire-format door; the recommendation is to ratify
    the implementation.
@@ -164,13 +164,13 @@ additions it did not raise.
 ### D1. Where a send's length travels
 
 Background. A client fills the shared frame with a payload and asks the stack to send it. The
-stack must learn how many bytes to send. The frame has a `len` field at `OFF_LEN`, and the `CALL`
+stack must learn how many bytes to send. The frame has a `len` field at `LENGTH_OFFSET_BYTES`, and the `CALL`
 has an argument word. The crate's text says the field; the stack, the std platform layer and the
 test client all use the argument word, and nobody writes the field before a send. The two agree
 only by accident of one tree holding both sides. Once the crate leaves, a second
 implementation follows the text.
 
-Recommendation: ratify the argument word as the carrier, and make `OFF_LEN` an output of
+Recommendation: ratify the argument word as the carrier, and make `LENGTH_OFFSET_BYTES` an output of
 `RECEIVE` only. The argument arrives with the request atomically and the kernel's
 word bounds it, so the stack checks one value against `DATA_MAXIMUM` before it touches the frame. A length in
 the frame is a second copy of the same fact that a client could leave stale. The alternative,
@@ -181,9 +181,9 @@ Prior art: `send(2)` and `write(2)` take the length as an argument and return th
 `smoltcp::socket::tcp::Socket::send_slice` and `embedded-nal`'s `send` take a slice and return the
 count; io_uring's submission entry carries its length beside the buffer address (unverified).
 
-Example: a client writes `b"nife-out!"` at `OFF_PAYLOAD` and issues `CALL(connection,
+Example: a client writes `b"nife-out!"` at `PAYLOAD_OFFSET_BYTES` and issues `CALL(connection,
 OPERATION_SEND, 9)`; the stack replies 9, or fewer if its buffer is short, and the client sends
-the rest. It never touches `OFF_LEN`.
+the rest. It never touches `LENGTH_OFFSET_BYTES`.
 
 ### D2. Whether `ACCEPT` tells the client who connected
 

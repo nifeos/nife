@@ -2,14 +2,14 @@
 
 An appendix to [the milestone](../1073-counter-frequency-contract-outside-review.md).
 
-10. The private offset constants abbreviate.
-    Finding: `OFF_MAGIC` and `OFF_HERTZ` shorten "offset". The word is not on the refused list
-    and the sibling page crates use the same prefix, so this is a family question rather than a
-    defect; the template's abbreviations check is report-only.
-    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 88 to 89.
-    Change: `MAGIC_OFFSET` and `HERTZ_OFFSET`, when the family decides, in every page crate at
-    once.
-    Door: two-way (private). Effort: XS.
+10. The page crates spell their offset constants `<FIELD>_OFFSET_BYTES`.
+    Rule in force (ruled 2026-11-14 UTC, for the whole family): the position of a page field or
+    region-layout field is named `<FIELD>_OFFSET_BYTES`, with the field name spelled out under
+    `design/naming.md` (`MAGIC_OFFSET_BYTES`, `HERTZ_OFFSET_BYTES`,
+    `TIME_ZONE_LENGTH_OFFSET_BYTES`). The suffix names the unit, so a constant that counts words
+    says `_OFFSET_WORDS`. No old spelling is kept as an alias.
+    Evidence: `crates/counter_frequency_contract/src/lib.rs`.
+    Door: two-way (private).
 
 11. The reader test in nife compares the user-space number with the kernel's and stays in nife.
     Finding: `system_tests/src/user/counter_frequency_tests.rs` drives the whole path through QEMU.

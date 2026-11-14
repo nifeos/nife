@@ -28,7 +28,7 @@ Verified firsthand, on a fresh shallow clone of `main` at the merge of #3467:
   `crates/installed_programs` and `fuzz/fuzz_targets/capability_manifest_note_decode.rs`. The last
   five use `is_canonical_zone` and the two limits only.
 - The rendered rustdoc of the crate root shows the layout table with its header and first row as a
-  table and its second row as literal pipe characters. The cause is that the row for `OFF_ADDRESSES`
+  table and its second row as literal pipe characters. The cause is that the row for `ADDRESSES_OFFSET_BYTES`
   breaks across two source lines (`src/lib.rs` lines 7 to 12).
 - The recorded mutation figures are the census rows in `notes/project-metrics/mutation-census.csv`
   (the latest: 157 mutants, 134 caught, 6 missed, 0 timed out, 17 unviable) and the six missed sites
