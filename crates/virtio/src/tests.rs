@@ -170,3 +170,47 @@ fn a_header_length_past_the_frame_is_refused() {
     let f = offer_frame(&[53, 1, 2, 255]);
     assert_eq!(parse(&f[..30], 30), None);
 }
+
+/// A reset is complete when `Status` reads back as 0, and not when the write returns. A device that
+/// takes a few reads to answer is waited for, one that answers at once is not read more than once,
+/// and one that never answers is given up on after the bound rather than waited for forever.
+#[test]
+fn a_reset_waits_for_status_to_read_back_as_zero() {
+    use core::cell::Cell;
+
+    // Answers 0 only on the fourth read.
+    let reads = Cell::new(0u32);
+    let written = Cell::new(None);
+    let slow = reset_until_zero(
+        |value| written.set(Some(value)),
+        || {
+            reads.set(reads.get() + 1);
+            if reads.get() >= 4 { 0 } else { 0x3 }
+        },
+    );
+    assert!(slow);
+    assert_eq!(written.get(), Some(0), "the reset is a write of 0");
+    assert_eq!(reads.get(), 4, "it stops at the first 0 it reads");
+
+    // Already 0: one read.
+    let reads = Cell::new(0u32);
+    assert!(reset_until_zero(
+        |_| {},
+        || {
+            reads.set(reads.get() + 1);
+            0
+        }
+    ));
+    assert_eq!(reads.get(), 1);
+
+    // Never 0: the bound, and a false answer.
+    let reads = Cell::new(0u32);
+    assert!(!reset_until_zero(
+        |_| {},
+        || {
+            reads.set(reads.get() + 1);
+            0x3
+        }
+    ));
+    assert_eq!(reads.get(), RESET_POLLS);
+}
