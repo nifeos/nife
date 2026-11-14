@@ -1,0 +1,17 @@
+Falsifies `entropy_contract::verification::a_reply_reads_back_as_built`.
+
+The defect: `reply` forgets the clamp and counts every byte it was given. Past eight bytes the
+count is no count at all, and the copy past the word's eight bytes cannot hold them.
+
+Expected to fail: the harness, on the slice index that runs past the word's eight bytes.
+
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
+--- a/crates/entropy_contract/src/lib.rs
++++ b/crates/entropy_contract/src/lib.rs
+@@ -354,5 +354,5 @@
+ #[must_use]
+ pub fn reply(delivered: &[u8]) -> (u64, u64) {
+-    let count = delivered.len().min(MAXIMUM_BYTES as usize);
++    let count = delivered.len();
+     let mut bytes = [0u8; MAXIMUM_BYTES as usize];
+     bytes[..count].copy_from_slice(&delivered[..count]);
