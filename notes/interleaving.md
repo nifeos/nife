@@ -48,8 +48,8 @@ the search: this kernel puts almost everything behind a ranked interrupt-safe lo
 and fetch-op outside test code:
 
 - `crates/work_steal_slot` (new, milestone 80 (loom)): the work-steal request slot. The pilot.
-- `crates/clock_contract`: the clock page's seqlock. Cross-*address-space*, hand-rolled, with an
-  explicit fence in the reader. This one the roadmap did not name, and it is where the bug was.
+- `crates/clock_contract`: the clock page's two copies and publish count. Cross-*address-space*,
+  hand-rolled, with an explicit fence on each side. This one the roadmap did not name, and it is where the bug was.
 - `kernel/src/smp.rs`: the boot roster. `HWID`/`STARTABLE` written relaxed, then `ROSTER` stored
   with a release; readers acquire `ROSTER` and then read the arrays. A textbook array publication,
   correct as written, and single-shot at boot.
@@ -63,7 +63,7 @@ and fetch-op outside test code:
 
 ## What was modeled
 
-30 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
+32 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
 `script/interleaving-check`.
 
 The harness number is written in digits because `script/lint`'s marker reads small cardinals and no
@@ -80,7 +80,7 @@ timing table already said "all four crates".
 | Crate | Protocol | What the model holds |
 |---|---|---|
 | `crates/work_steal_slot` | the work-steal request slot, a compare-exchange mailbox; the pilot | one steal per victim per round, each request served exactly once, release/acquire publication, and a relaxed pairing that must fail |
-| `crates/clock_contract` | the clock page's seqlock, across address spaces | no torn reading, a generation that matches its pair, serialized writers; this is where the bug was |
+| `crates/clock_contract` | the clock page's two copies and publish count, across address spaces | no torn reading, including across two publishes; a generation that matches its pair; a stopped writer never makes a reader wait; serialized writers; this is where the bug was |
 | `crates/thread_wake_handshake` | block/wake, in the gaps between `SCHED` critical sections (2026-08-14) | a wake racing a switch-out resumes on a saved context; three historical races rebuilt as `#[should_panic]` reconstructions |
 | `crates/memory_corruption_canary_gate` | the corruption canary's arm/check/disarm (2026-08-15) | armer and checker exclusion, disarm's quiescence, single-flight checking; the old two-flag protocol failed on the first run |
 | `crates/memory_regions` | the untyped region claim (2026-08-18) | exactly one destroyer reclaims; a witness harness asserts the pre-#316 protocol double-frees |
@@ -213,12 +213,12 @@ $ script/interleaving-check a_reader_never_sees_half_a_publish
 ```
 
 Reproduce the clock bug, to see what a loom failure looks like before trusting a green run. Delete
-the `fence(Ordering::Release)` from `ClockPage::publish` and:
+the `fence(Ordering::Release)` from `ClockPage::fill` and:
 
 ```
 $ script/interleaving-check -p clock_contract
-thread '...a_reader_never_sees_half_a_publish' panicked at crates/clock_contract/src/lib.rs:738:26:
-a torn reading: (1, 2000) is neither publish
+thread '...a_reader_across_two_publishes_never_returns_a_torn_pair' panicked at ...
+a torn reading across two publishes: (1, 3000, 1)
 ```
 
 Add a protocol of your own. Four steps, and the third is the one that is easy to get wrong:
@@ -236,7 +236,10 @@ Add a protocol of your own. Four steps, and the third is the one that is easy to
 3. Give every spin loop a yield. Loom's scheduler is cooperative, so a thread spinning on
    `core::hint::spin_loop()` can starve the writer whose progress it is waiting for and the model
    never terminates. `clock_contract` has a `spin_hint()` helper that is `loom::thread::yield_now()`
-   under the cfg and the hint otherwise; copy that shape.
+   under the cfg and the hint otherwise; copy that shape. A thread that only loads and never
+   spins needs the opposite care: on the model's main thread it can finish before a spawned
+   writer has a pending operation, and loom then explores one execution. `clock_contract`'s
+   harnesses run each reader on a thread of its own for that reason.
 4. Add the crate to `script/interleaving-check`'s package list, write the harnesses, and falsify
    each one before believing it.
 5. Gate that the caller still calls it, which is the step this note did not have until milestone

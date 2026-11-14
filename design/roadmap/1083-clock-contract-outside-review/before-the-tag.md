@@ -31,20 +31,11 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    publishes; nife pins the crate by `rev` meanwhile"). The move adds `repository`.
    Door: two-way. Effort: S.
 
-5. The reader's spin has no bound, and the layout is about to freeze.
-   Finding: `ClockPage::read` (`src/lib.rs` line 272 to 299) spins while the sequence word is odd. The
-   crate says so in its `BUGS` twice (lines 209 and `README.md`) and the clock note says the same.
-   The readers include the standard library's `SystemTime::now` in every process
-   (`patches/std-nife/overlay/std/src/sys/time/nife.rs` line 130), which calls `read` with no bound of its
-   own. Decision 1 asks whether the page layout should make readers wait-free before `VERSION` 1 freezes. This item is the lane that follows the ruling.
-   Why it matters: after the identity freezes, changing the layout costs a `VERSION` and a new magic
-   and every pin moves. Before it, the change costs one lane and a re-run of the loom models.
-   Change: per Decision 1. If the ruling keeps the seqlock, the item closes by stating the hazard
-   once in the `ClockPage` doc with the words "by design" and the reason, so a stranger does not
-   file it as a bug.
-   Door: one-way if the layout changes (the whole point of deciding it now). Effort: M for the
-   layout change (the algorithms, the four loom models, the host tests, the overlay's generated copy,
-   the clock program and `date`); S for the documentation-only outcome.
+5. A reader of the page never waits on a writer.
+   Done, per Decision 1: the page keeps two copies and a publish count, and `read` retries only when
+   a publish finished during it. The crate's `BUGS` records the one hazard left: a writer stopped
+   holding the claim blocks later writers and no reader.
+   Door: one-way, taken before the identity froze.
 
 6. The docs call `initialize` a once-only step, and its only caller runs it on every start.
    Finding: `initialize` (`src/lib.rs` line 254) says the writer does it "once, before anyone else has a

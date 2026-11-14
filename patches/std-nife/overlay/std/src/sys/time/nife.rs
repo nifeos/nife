@@ -10,8 +10,9 @@
 //! # `SystemTime` is the counter plus a granted offset (milestone 51, DECISIONS §43)
 //!
 //! Wall-clock time is **counter + offset**, and the offset lives in a page the clock service
-//! publishes and a reader holds **read-only**. So `SystemTime::now()` is two loads and an add, with
-//! no server round trip, and adjusting the wall clock cannot move `Instant` **by construction**.
+//! publishes and a reader holds **read-only**. So `SystemTime::now()` is a few loads and an add,
+//! with no server round trip and no wait on the clock service, and adjusting the wall clock cannot
+//! move `Instant` **by construction**.
 //! Reading the clock is an authority: slot [`rt::CLOCK_SLOT`] holds a `PageFrame` capability naming
 //! the clock page, which the loader maps read-only at [`rt::CLOCK_PAGE`]. A program given neither
 //! **does not know what time it is**, and this file says so rather than guessing.

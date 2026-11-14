@@ -9,6 +9,14 @@
 //! written, so a clock step cannot perturb `Instant`. Every time is nanoseconds since the Unix
 //! epoch in a `u64`, which runs out in 2554.
 //!
+//! # Identity
+//!
+//! The page's identity is frozen: [`MAGIC`] is the ASCII `CLOCKv01`, [`VERSION`] is 1 and
+//! [`INTERFACE_ID`] is 8. So is its layout: [`WORDS`] is seven 64-bit words, the magic, the
+//! publish count, the writers' claim, then the state and the offset of copy 0 and of copy 1, in
+//! that order. The id stays 8 for good. A layout break ships as a new magic and a new version
+//! together, never a new id, and a retired value is never reused.
+//!
 //! # BUGS
 //!
 //! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`, kept for
@@ -24,8 +32,8 @@
 struct ReadmeExample;
 
 // The atomics are loom's under `--cfg loom` and the real ones otherwise, which is what lets
-// the `loom` model checker replay this seqlock under every interleaving the C11 model permits (build
-// with `RUSTFLAGS="--cfg loom"`). The algorithms below are written once and are the ones the
+// the `loom` model checker replay the clock page under every interleaving the C11 model permits
+// (build with `RUSTFLAGS="--cfg loom"`). The algorithms below are written once and are the ones the
 // clock service runs: only where the words live differs, and that is not what is being checked.
 #[cfg(not(loom))]
 use core::sync::atomic::{AtomicU64, Ordering, fence};
@@ -35,12 +43,12 @@ use loom::sync::atomic::{AtomicU64, Ordering, fence};
 
 /// Give the model checker a scheduling point inside a spin, and the CPU a hint outside one.
 ///
-/// A seqlock spins while the other side holds the sequence. On real hardware that is a few
+/// A writer spins while another writer holds the claim. On real hardware that is a few
 /// instructions and `spin_loop` is the right hint. Under loom it is a **liveness hazard**: loom's
 /// scheduler is cooperative, and a thread that spins without yielding can starve the writer whose
 /// progress the spin is waiting for, so the model never terminates. `yield_now` tells loom this is
 /// a point where the other thread must be allowed to run, which is exactly what the hardware does
-/// for free.
+/// for free. A reader never spins, so it never calls this.
 #[inline]
 fn spin_hint() {
     #[cfg(loom)]
@@ -150,11 +158,14 @@ pub mod state {
 }
 
 // ================================================================================================
-// The clock page: the read authority, and the set authority, are mappings of these thirty-two bytes.
+// The clock page: the read authority, and the set authority, are mappings of these fifty-six bytes.
 // ================================================================================================
 
 /// The page's first word, so a reader can tell a published clock page from a zeroed frame or from
 /// somebody else's page. ASCII `CLOCKv01`, big-endian in the source so it reads in a hex dump.
+///
+/// Name: ratified 2026-11-14 (UTC, #3576), with its value `CLOCKv01`: the identity freeze of that
+/// date. The name every contract crate uses for its page's first word.
 pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 
 /// The clock page layout's version, the digits [`MAGIC`] carries. A reader's check is the magic
@@ -162,7 +173,8 @@ pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 /// and a break bumps this and re-mints the magic's digits in one change, which the changelog
 /// records.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-14 (UTC, #3576), with its value 1: the identity freeze of that date. The
+/// name every contract crate uses for its layout version.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 8, naming the clock page and its
@@ -170,18 +182,33 @@ pub const VERSION: u32 = 1;
 /// change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-14 (UTC, #3576), with its value 8: the identity freeze of that date. The
+/// name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 8;
 
-/// The words the clock page uses. The rest of the frame is reserved and must read as zero: a
-/// future field is a new index here, and an old reader that never learned about it is unaffected.
-pub const WORDS: usize = 4;
+/// The words the clock page uses: seven, in the order the word indices below list them. The rest of
+/// the frame is reserved and must read as zero: a future field is a new index here, and an old
+/// reader that never learned about it is unaffected.
+pub const WORDS: usize = 7;
 
-/// Word indices, named so the layout is one list rather than four scattered offsets.
-const W_MAGIC: usize = 0;
-const W_SEQ: usize = 1;
-const W_STATE: usize = 2;
-const W_OFFSET: usize = 3;
+// The layout, one list rather than seven scattered offsets. Word 0 is the magic, word 1 the publish
+// count, word 2 the writers' claim, then two copies of the state and the offset: copy 0 in words 3
+// and 4, copy 1 in words 5 and 6. The publish count's low bit names the copy readers use.
+const MAGIC_WORD_INDEX: usize = 0;
+const PUBLISH_WORD_INDEX: usize = 1;
+const CLAIM_WORD_INDEX: usize = 2;
+const STATE_WORD_INDEX: [usize; 2] = [3, 5];
+const OFFSET_WORD_INDEX: [usize; 2] = [4, 6];
+
+/// The claim word's two values. A writer moves it from free to held with a compare-exchange before
+/// it touches anything else, and back to free once its publish is visible. No reader looks at it.
+const CLAIM_FREE: u64 = 0;
+const CLAIM_HELD: u64 = 1;
+
+/// The copy that holds the publish numbered `generation`: its low bit.
+const fn copy_for(generation: u64) -> usize {
+    (generation & 1) as usize
+}
 
 /// What a reader gets out of the page in one consistent look.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -193,20 +220,39 @@ pub struct Reading {
     /// Wall-clock nanoseconds at monotonic zero. Meaningless unless [`state::is_known`].
     #[doc(alias = "offset in nanoseconds")]
     pub offset_nanos: u64,
-    /// How many times the page has been published to, which is `seq / 2`. A reader that cares
-    /// whether the clock stepped under it (a log, a cache with an expiry) compares this across two
-    /// readings instead of comparing timestamps and guessing.
+    /// How many times the page has been published to: the publish count this reading came with. A
+    /// reader that cares whether the clock stepped under it (a log, a cache with an expiry)
+    /// compares this across two readings instead of comparing timestamps and guessing.
     pub generation: u64,
 }
 
-/// **The clock page**, as seen through one process's mapping of it: a seqlock, because readers
-/// are many, writers are several (so the claim is a compare-exchange), and no lock can be held
-/// across an address-space boundary. Its memory ordering is load-bearing on ARM and RISC-V.
+/// **The clock page**, as seen through one process's mapping of it. Readers are many, writers are
+/// several (any process holding the page read/write), and no lock can be held across an
+/// address-space boundary, so the page keeps two copies of the time and a publish count, and **a
+/// reader never waits on a writer**.
+///
+/// The writer fills the copy the current count does not name, then advances the count, which moves
+/// every later reader to the new copy in one store. A reader loads the count, reads the copy it
+/// names, and loads the count again: equal means the pair is whole. Unequal means a publish
+/// finished during the read, and the reader goes again; a writer that has stopped finishes nothing,
+/// so it never makes a reader retry. Writers exclude each other through a separate claim word,
+/// which readers never touch, so a writer that stops holding the claim blocks only later writers.
+///
+/// This is Linux's seqcount latch (`raw_write_seqcount_latch` in `include/linux/seqlock.h`)
+/// with one copy written per publish instead of both, and FreeBSD's `timehands` ring
+/// (`sys/kern/kern_tc.c`) at its default of two records, with the generation kept in one word
+/// rather than in each record. The orderings, and what each pairs with, are at the stores and loads below and in
+/// notes/clock.md.
 ///
 /// # BUGS
 ///
-/// - The orderings are checked against C11 by loom, not against ARM's or RISC-V's model.
-/// - A writer killed between its claim and its release leaves every reader spinning forever.
+/// - The orderings are checked against C11 by loom, not against Arm's or RISC-V's model.
+/// - A writer stopped while it holds the claim blocks every later writer until something clears the
+///   claim. Readers keep reading the last publish. Nothing in this crate can tell a writer that
+///   stopped for good from one that is only slow, so nothing here clears a claim it did not take.
+/// - The publish count is a `u64` and wraps after 2^64 publishes, at which point a reader that slept
+///   across exactly 2^64 of them would accept a torn pair. A publish a nanosecond would take five
+///   centuries to get there.
 #[derive(Debug, Clone, Copy)]
 pub struct ClockPage {
     base: *const AtomicU64,
@@ -237,13 +283,13 @@ impl ClockPage {
     }
 
     fn word(&self, i: usize) -> &AtomicU64 {
-        // SAFETY: `new`'s contract is a mapped frame; `i` is always one of the W_* constants, all
-        // of which are inside WORDS and therefore inside the frame.
+        // SAFETY: `new`'s contract is a mapped frame; `i` is always one of the `*_WORD_INDEX`
+        // constants, all of which are below WORDS and therefore inside the frame.
         unsafe { &*self.base.add(i) }
     }
 
     /// Stamp a fresh frame as a clock page in the unknown state. The writer does this once, before
-    /// anyone else has a mapping, so it needs no sequence claim.
+    /// anyone else has a mapping, so it needs no claim.
     ///
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
@@ -252,89 +298,144 @@ impl ClockPage {
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
-        self.word(W_SEQ).store(0, Ordering::Relaxed);
-        self.word(W_STATE).store(state::UNKNOWN, Ordering::Relaxed);
-        self.word(W_OFFSET).store(0, Ordering::Relaxed);
-        self.word(W_MAGIC).store(MAGIC, Ordering::Release);
+        self.word(PUBLISH_WORD_INDEX).store(0, Ordering::Relaxed);
+        self.word(CLAIM_WORD_INDEX)
+            .store(CLAIM_FREE, Ordering::Relaxed);
+        for copy in 0..2 {
+            self.word(STATE_WORD_INDEX[copy])
+                .store(state::UNKNOWN, Ordering::Relaxed);
+            self.word(OFFSET_WORD_INDEX[copy])
+                .store(0, Ordering::Relaxed);
+        }
+        // Release: a reader whose acquire load in `read` sees the magic sees every store above.
+        self.word(MAGIC_WORD_INDEX).store(MAGIC, Ordering::Release);
     }
 
-    /// One consistent look at the page. Never blocks a writer, and never fails: a page without the
-    /// magic reads as [`state::UNKNOWN`], which is the truth about a frame nobody has published to.
+    /// One consistent look at the page. Never blocks a writer, never waits on one, and never
+    /// fails: a page without the magic reads as [`state::UNKNOWN`], which is the truth about a
+    /// frame nobody has published to.
+    ///
+    /// It loops only while publishes finish during its own look, which a stopped writer cannot do.
     pub fn read(&self) -> Reading {
         const UNKNOWN: Reading = Reading {
             state: state::UNKNOWN,
             offset_nanos: 0,
             generation: 0,
         };
-        if self.word(W_MAGIC).load(Ordering::Acquire) != MAGIC {
+        // Acquire: pairs with the release store of the magic in `initialize`.
+        if self.word(MAGIC_WORD_INDEX).load(Ordering::Acquire) != MAGIC {
             return UNKNOWN;
         }
         loop {
-            let s1 = self.word(W_SEQ).load(Ordering::Acquire);
-            if s1 & 1 != 0 {
-                // A writer holds it. Spin: a publish is four stores long.
-                spin_hint();
-                continue;
-            }
-            let st = self.word(W_STATE).load(Ordering::Relaxed);
-            let off = self.word(W_OFFSET).load(Ordering::Relaxed);
-            // Keep the two data loads above the second sequence load. Without this the compiler or
-            // the machine may reorder them after it, and the check would validate nothing. Removing
-            // it fails the same three loom harnesses the writer's release fence does, so both
-            // halves of the pair are checked rather than argued.
-            //
-            // PAIR: the writer's `fence(Ordering::Release)` after its claim of the sequence in
-            // `publish`, below in this file. **Both halves must be here**, because a reader is in a
-            // different address space and reaches this page with no syscall at all: there is no IPC
-            // rendezvous underneath to supply the edge, as there is for a page handed over by a
-            // message.
-            fence(Ordering::Acquire);
-            if self.word(W_SEQ).load(Ordering::Relaxed) == s1 {
-                return Reading {
-                    state: st,
-                    offset_nanos: off,
-                    generation: s1 / 2,
-                };
+            if let Some(reading) = self.read_once() {
+                return reading;
             }
         }
+    }
+
+    /// One attempt at a reading: `None` when a publish finished while it read, so the copy it read
+    /// may have been rewritten under it.
+    fn read_once(&self) -> Option<Reading> {
+        // Acquire: pairs with the release store of the publish count in `flip`, so the copy this
+        // count names holds at least the pair that publish wrote.
+        let generation = self.word(PUBLISH_WORD_INDEX).load(Ordering::Acquire);
+        let copy = copy_for(generation);
+        let st = self.word(STATE_WORD_INDEX[copy]).load(Ordering::Relaxed);
+        let off = self.word(OFFSET_WORD_INDEX[copy]).load(Ordering::Relaxed);
+        // Keep the two data loads above the second load of the count. Without it the compiler or
+        // the machine may move them after it, and the check would validate nothing.
+        //
+        // PAIR: the writer's `fence(Ordering::Release)` before its data stores in `fill`. If
+        // either data load above read a store made after that fence, the two fences synchronize,
+        // and the count the writer read before its fence (one below its own publish, and above the
+        // `generation` this reader holds) is visible to the load below. So a copy rewritten under
+        // this reader always shows as a moved count. Both halves must be here, because a reader is
+        // in a different address space and reaches this page with no syscall: no message
+        // rendezvous underneath supplies the edge.
+        fence(Ordering::Acquire);
+        // Equal, not "within one": a count one above ours can belong to a writer that is already
+        // filling our copy for the publish after it, and equality is what proves no publish
+        // finished. The full 64-bit count, not the copy bit, is what lets a reader that slept
+        // across two publishes see that it did.
+        (self.word(PUBLISH_WORD_INDEX).load(Ordering::Relaxed) == generation).then_some(Reading {
+            state: st,
+            offset_nanos: off,
+            generation,
+        })
     }
 
     /// Write a new state and offset. **This is the set authority**: it needs nothing but a
     /// read/write mapping, because being able to write the offset is what setting the clock means.
     ///
-    /// Returns the new generation.
+    /// Waits while another writer holds the claim, and never makes a reader wait. Returns the new
+    /// generation.
     pub fn publish(&self, new_state: u64, offset_nanoseconds: u64) -> u64 {
-        let claimed = loop {
-            let s = self.word(W_SEQ).load(Ordering::Relaxed);
-            if s & 1 != 0 {
-                spin_hint();
-                continue;
-            }
-            // Acquire on success so our stores below cannot be hoisted above the claim. It is NOT
-            // what makes the claim visible before them; see the release fence after this loop.
-            if self
-                .word(W_SEQ)
-                .compare_exchange_weak(s, s + 1, Ordering::Acquire, Ordering::Relaxed)
-                .is_ok()
-            {
-                break s;
-            }
-        };
-        // **The odd sequence must be visible BEFORE the data it protects**, or a reader can see
-        // the new offset under an even, unchanged sequence and pass revalidation with a torn
-        // reading. A store-store barrier, Linux's `smp_wmb()` in `write_seqcount_begin`: `AcqRel`
-        // or `SeqCst` on the compare-exchange still tears, because an RMW orders accesses around
-        // itself, not its own store ahead of the plain stores after it.
+        self.claim();
+        let generation = self.fill(new_state, offset_nanoseconds);
+        self.flip(generation);
+        self.release();
+        generation
+    }
+
+    /// Take the writers' claim, waiting while another writer holds it.
+    fn claim(&self) {
+        while !self.try_claim() {
+            spin_hint();
+        }
+    }
+
+    /// Take the writers' claim if it is free.
+    fn try_claim(&self) -> bool {
+        // Acquire on success: pairs with the release store in `release`, so this writer sees the
+        // last writer's publish count and its copy's stores, and its own stores to that copy two
+        // publishes later are ordered after them.
+        self.word(CLAIM_WORD_INDEX)
+            .compare_exchange_weak(CLAIM_FREE, CLAIM_HELD, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+    }
+
+    /// Write the pair into the copy readers are not using, and return the generation it is for.
+    /// The caller holds the claim.
+    fn fill(&self, new_state: u64, offset_nanoseconds: u64) -> u64 {
+        // Relaxed: only a claim holder stores the count, and the claim's acquire already made the
+        // last holder's store visible here.
+        let generation = self
+            .word(PUBLISH_WORD_INDEX)
+            .load(Ordering::Relaxed)
+            .wrapping_add(1);
+        let copy = copy_for(generation);
+        // **The count read above must be visible before the data stores below**, to any reader
+        // that sees one of them. Those stores rewrite the copy that readers holding the count two
+        // below `generation` read, and such a reader detects it only by finding the count moved.
+        // A store-store barrier, Linux's `smp_wmb()` at the head of `raw_write_seqcount_latch`.
+        // The claim's acquire does not do this: an acquire orders later accesses after itself,
+        // not earlier stores ahead of later ones.
         //
-        // PAIR: the reader's `fence(Ordering::Acquire)` in `read`, the load-load half: it keeps
-        // the revalidating load of `W_SEQ` behind the data. Loom fails with either one removed.
+        // PAIR: the reader's `fence(Ordering::Acquire)` in `read_once`.
         fence(Ordering::Release);
-        self.word(W_STATE).store(new_state, Ordering::Relaxed);
-        self.word(W_OFFSET)
+        self.word(STATE_WORD_INDEX[copy])
+            .store(new_state, Ordering::Relaxed);
+        self.word(OFFSET_WORD_INDEX[copy])
             .store(offset_nanoseconds, Ordering::Relaxed);
-        // Release: everything above is visible to any reader that sees the even sequence below.
-        self.word(W_SEQ).store(claimed + 2, Ordering::Release);
-        (claimed + 2) / 2
+        generation
+    }
+
+    /// Move readers to the copy `fill` wrote.
+    fn flip(&self, generation: u64) {
+        // Release: pairs with the reader's acquire load of the count in `read_once`, so a reader
+        // that sees `generation` sees the pair `fill` stored for it.
+        self.word(PUBLISH_WORD_INDEX)
+            .store(generation, Ordering::Release);
+    }
+
+    /// Give the claim back.
+    fn release(&self) {
+        // Release: pairs with the next writer's acquire in `try_claim`, carrying this publish's
+        // count and copy to it. Without it the next writer may read a count older than this
+        // publish's and fill the copy readers are using. Loom does not fail when this is relaxed,
+        // so this one rests on the argument alone.
+        self.word(CLAIM_WORD_INDEX)
+            .store(CLAIM_FREE, Ordering::Release);
     }
 }
 
@@ -739,27 +840,33 @@ mod tests {
         });
     }
 
-    /// The seqlock's invariant, stated where a refactor will trip over it: a reader must never
-    /// return data it took from under an odd sequence.
+    /// The page's whole reason for two copies, stated where a refactor will trip over it: a writer
+    /// that stops anywhere inside a publish leaves the last publish readable, at once and whole. A
+    /// single-threaded test can call `read` here because a reader no longer waits on anything.
     #[test]
-    fn a_reader_never_returns_data_from_a_half_written_page() {
+    fn a_writer_stopped_inside_a_publish_leaves_the_last_publish_readable() {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
             page.publish(state::RTC, 7);
-            // Stand where a writer stands mid-publish: sequence odd, data torn (a new state with the
-            // old offset). A single-threaded test cannot let `read` spin, so this checks the guard
-            // directly rather than calling it.
-            frame[W_SEQ].store(3, Ordering::Relaxed);
-            frame[W_STATE].store(state::SYNCED, Ordering::Relaxed);
+            let before = page.read();
+
+            // A writer takes the claim and fills the other copy, then stops for good.
+            page.claim();
+            assert_eq!(page.fill(state::SYNCED, 11), 2);
             assert_eq!(
-                frame[W_SEQ].load(Ordering::Relaxed) & 1,
-                1,
-                "odd means a writer holds it, and `read` spins rather than taking this"
+                page.read_once(),
+                Some(before),
+                "a stopped writer must not make a reader retry, let alone wait"
             );
-            // Finish the publish the way `publish` would, and the reading is whole again.
-            frame[W_OFFSET].store(11, Ordering::Relaxed);
-            frame[W_SEQ].store(4, Ordering::Release);
+            assert!(
+                !page.try_claim(),
+                "and it still holds the claim against writers"
+            );
+
+            // The writer that resumes finishes the publish the way `publish` would.
+            page.flip(2);
+            page.release();
             assert_eq!(
                 page.read(),
                 Reading {
@@ -769,6 +876,102 @@ mod tests {
                 }
             );
         });
+    }
+
+    /// How long [`finishes_promptly`] waits. A publish or a read takes microseconds; this leaves a
+    /// loaded machine room and stays under the mutation tool's own timeout.
+    const WATCHDOG: std::time::Duration = std::time::Duration::from_secs(5);
+
+    /// A page on a frame that lives for the rest of the test process, so threads can share it.
+    fn leaked_page() -> ClockPage {
+        let frame: &'static [AtomicU64; WORDS] =
+            Box::leak(Box::new([const { AtomicU64::new(0) }; WORDS]));
+        // SAFETY: the frame is leaked, so it is live, sized and aligned for the page for the rest of
+        // the process, which outlives every copy of the page.
+        unsafe { ClockPage::new(frame.as_ptr() as u64) }
+    }
+
+    /// Run `f` on its own thread and end the whole test process if it has not returned within
+    /// [`WATCHDOG`]. The failure these tests look for is a publish or a read that spins for ever,
+    /// and a hung test would only hold the suite open until the mutation tool's timeout, which
+    /// reports a hang rather than a failure. Exiting turns the spin into a failing run, and it
+    /// ends the other tests that spin with it.
+    fn finishes_promptly<T: Send + 'static>(
+        what: &str,
+        f: impl FnOnce() -> T + Send + 'static,
+    ) -> T {
+        let (done, finished) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = done.send(f());
+        });
+        match finished.recv_timeout(WATCHDOG) {
+            Ok(value) => value,
+            Err(_) => {
+                std::eprintln!("{what} did not finish within {WATCHDOG:?}; ending the test run");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    /// With no other writer, a publish takes and gives back the claim, and a read returns the
+    /// last publish on its first look.
+    #[test]
+    fn a_publish_and_a_read_finish_with_no_other_writer() {
+        let page = leaked_page();
+        let (first, second) = finishes_promptly("two publishes and a read", move || {
+            page.initialize();
+            page.publish(state::RTC, 7);
+            page.publish(state::SYNCED, 11);
+            (page.read_once(), page.read())
+        });
+        let want = Reading {
+            state: state::SYNCED,
+            offset_nanos: 11,
+            generation: 2,
+        };
+        assert_eq!(first, Some(want), "a look with no publish running is whole");
+        assert_eq!(second, want);
+    }
+
+    /// A publish waits while another writer holds the claim, and finishes once it is given back.
+    #[test]
+    fn a_publish_waits_for_a_claim_another_writer_holds() {
+        let page = leaked_page();
+        finishes_promptly("the first publish", move || {
+            page.initialize();
+            page.publish(state::RTC, 7);
+        });
+        assert!(page.try_claim(), "the first publish gave the claim back");
+        let waiting = std::thread::spawn(move || page.publish(state::SYNCED, 11));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        assert_eq!(
+            page.read().generation,
+            1,
+            "a publish must not run while another writer holds the claim"
+        );
+        page.release();
+        assert_eq!(
+            finishes_promptly("the waiting publish", move || waiting.join().unwrap()),
+            2
+        );
+        assert_eq!(page.read().generation, 2);
+    }
+
+    /// The frozen layout, word by word, as literals: a publish writes the copy the new count
+    /// names and leaves the other copy holding the publish before it.
+    #[test]
+    fn the_layout_keeps_its_frozen_words() {
+        let frame = [const { AtomicU64::new(0) }; WORDS];
+        let words = || frame.each_ref().map(|w| w.load(Ordering::Relaxed));
+        with_page(&frame, |page| {
+            page.initialize();
+            assert_eq!(words(), [MAGIC, 0, 0, 0, 0, 0, 0]);
+            page.publish(state::RTC, 7);
+            assert_eq!(words(), [MAGIC, 1, 0, 0, 0, state::RTC, 7]);
+            page.publish(state::SYNCED, 9);
+            assert_eq!(words(), [MAGIC, 2, 0, state::SYNCED, 9, state::RTC, 7]);
+        });
+        assert_eq!(WORDS, 7);
     }
 
     /// The request word is a wire format shared with the clock service at runtime; `req` and `operation`
@@ -785,9 +988,10 @@ mod tests {
         assert_eq!(propose::operation(0), 0);
     }
 
-    /// The page's identity, written out as literals. A reader built against another value reads
+    /// The frozen identity, written out as literals. A reader built against another value reads
     /// the page as no clock page at all, so a change here is a new version of the interface, never
-    /// an edit: bump [`VERSION`] and the magic's digits together, and this test with them.
+    /// an edit: a layout break bumps [`VERSION`] and the magic's digits together, and this test
+    /// with them, and the id never changes.
     #[test]
     fn the_identity_is_the_one_readers_were_built_against() {
         assert_eq!(MAGIC.to_be_bytes(), *b"CLOCKv01");
@@ -810,20 +1014,33 @@ mod tests {
 }
 
 // ================================================================================================
-// The seqlock under loom: every interleaving, and every reordering C11 permits.
+// The clock page under loom: every interleaving, and every reordering C11 permits.
 // ================================================================================================
 #[cfg(all(test, loom))]
 mod interleavings {
-    //! **The clock page is a sharp weak-memory target.** It is a hand-rolled seqlock whose two
-    //! halves run in *different address spaces*, with no lock available between them, and its own
-    //! documentation says the memory ordering is the point rather than decoration. On x86 a sloppy
-    //! version passes forever; on the aarch64 and riscv64 this project targets it does not.
+    //! **The clock page is a sharp weak-memory target.** It is a hand-rolled lock-free protocol
+    //! whose reader and writers run in *different address spaces*, with no lock available between
+    //! them, and its own documentation says the memory ordering is the point rather than
+    //! decoration. On x86 a sloppy version passes forever; on the aarch64 and riscv64 this project
+    //! targets it does not.
+    //!
+    //! The models hold three claims: a reader never returns a torn pair (two harnesses, one of
+    //! them across two publishes), a stopped writer never makes a reader wait, and two writers
+    //! never interleave.
+    //!
+    //! Each ordering on the page was weakened in turn and the run repeated: every one fails some
+    //! harness except the relaxed release of the claim, which loom passes. That one rests on the
+    //! argument at `release`.
     //!
     //! Run with `RUSTFLAGS="--cfg loom" cargo test --release`.
 
     use loom::thread;
 
     use super::*;
+
+    /// What a frame holds before `initialize`: whatever its last owner left there, which is
+    /// neither the magic nor any state a reader accepts.
+    const LEFTOVER: u64 = 0xA5A5_A5A5_A5A5_A5A5;
 
     /// A clock page backed by loom atomics rather than by a mapped frame.
     ///
@@ -832,19 +1049,33 @@ mod interleavings {
     /// per-execution state and cannot be conjured from an address. Leaking a real array of loom
     /// atomics and pointing the ordinary `ClockPage` at it means **the algorithm under test is the
     /// algorithm that ships**: `read`, `publish` and `initialize` are not reimplemented here, only
-    /// the addressing is. The leak is per model execution and is four words wide.
+    /// the addressing is. The leak is per model execution and is seven words wide.
+    ///
+    /// Every word starts as [`LEFTOVER`], not zero. A zeroed copy reads as `UNKNOWN` with offset
+    /// zero, which is also what `initialize` writes, so on a zeroed frame a reader that got past
+    /// the magic too early would read a plausible page and no harness could tell.
     fn page() -> ClockPage {
-        let words: &'static [AtomicU64; WORDS] = Box::leak(Box::new([
-            AtomicU64::new(0),
-            AtomicU64::new(0),
-            AtomicU64::new(0),
-            AtomicU64::new(0),
-        ]));
+        let words: &'static [AtomicU64; WORDS] =
+            Box::leak(Box::new(core::array::from_fn(|_| AtomicU64::new(LEFTOVER))));
         // SAFETY: `ClockPage::new` wants a mapped, 8-byte-aligned frame of at least `WORDS` words
         // that stays mapped for the value's life. A leaked array of exactly `WORDS` atomics is all
         // three: it is aligned by the type, it is never freed, and `word()` indexes it with the
         // same pointer arithmetic it would use on a frame.
         unsafe { ClockPage::new(words.as_ptr() as u64) }
+    }
+
+    /// Runs `read` on a thread of its own, and hands back its handle.
+    ///
+    /// The reader never stores and never spins, so on the model's main thread it finishes before
+    /// a spawned writer has a pending operation, and loom's partial-order reduction then sees no
+    /// race to explore: a harness written that way ran once. A reader on its own thread is
+    /// pending beside the writer, so every interleaving of the two is explored. Making the flip a
+    /// relaxed store is caught this way and was missed the other way.
+    fn spawn_reader<T: 'static>(
+        page: ClockPage,
+        read: impl FnOnce(ClockPage) -> T + 'static,
+    ) -> thread::JoinHandle<T> {
+        thread::spawn(move || read(page))
     }
 
     /// Non-vacuity, across executions rather than within one. A model checker explores every
@@ -867,11 +1098,12 @@ mod interleavings {
         }
     }
 
-    /// **The seqlock's whole reason to exist: a reader never sees half a publish.**
+    /// **A reader never sees half a publish.**
     ///
     /// The state and the offset are a matched pair (a state of `SYNCED` with the offset from
     /// before the sync is a wrong wall clock, not a crash, which is the worst kind of bug to leave
-    /// possible). A reader that catches the writer mid-publish must retry, never blend.
+    /// possible). A reader that races a publish gets the publish before it or the publish itself,
+    /// never a blend.
     #[test]
     fn a_reader_never_sees_half_a_publish() {
         static SAW_THE_OLD: Reached = Reached::new();
@@ -887,7 +1119,7 @@ mod interleavings {
                 thread::spawn(move || p.publish(state::SYNCED, 2_000))
             };
 
-            let r = page.read();
+            let r = spawn_reader(page, |p| p.read()).join().unwrap();
             match (r.state, r.offset_nanos) {
                 (state::RTC, 1_000) => SAW_THE_OLD.mark(),
                 (state::SYNCED, 2_000) => SAW_THE_NEW.mark(),
@@ -901,11 +1133,59 @@ mod interleavings {
         SAW_THE_NEW.assert("an execution where the reader gets in after the publish");
     }
 
+    /// **A reader that sleeps across two publishes never returns a torn pair.**
+    ///
+    /// The second of two publishes rewrites the copy a slow reader is reading, so this is the case
+    /// the two copies alone cannot protect: only the full publish count can. The reader here is
+    /// `read`'s own loop over `read_once`, unrolled so the harness can mark that a retry happened.
+    /// Removing the writer's release fence in `fill`, or the reader's acquire fence in
+    /// `read_once`, fails this harness.
+    #[test]
+    fn a_reader_across_two_publishes_never_returns_a_torn_pair() {
+        static RETRIED: Reached = Reached::new();
+        static SAW_THE_LAST: Reached = Reached::new();
+
+        loom::model(|| {
+            let page = page();
+            page.initialize();
+            page.publish(state::RTC, 1_000);
+
+            let writer = {
+                let p = page;
+                thread::spawn(move || {
+                    p.publish(state::SYNCED, 2_000);
+                    p.publish(state::SET, 3_000);
+                })
+            };
+
+            let r = spawn_reader(page, |p| {
+                loop {
+                    match p.read_once() {
+                        Some(r) => break r,
+                        None => RETRIED.mark(),
+                    }
+                }
+            })
+            .join()
+            .unwrap();
+            match (r.state, r.offset_nanos, r.generation) {
+                (state::RTC, 1_000, 1) | (state::SYNCED, 2_000, 2) => {}
+                (state::SET, 3_000, 3) => SAW_THE_LAST.mark(),
+                other => panic!("a torn reading across two publishes: {other:?}"),
+            }
+
+            writer.join().unwrap();
+        });
+
+        RETRIED.assert("an execution where a publish finished during a read");
+        SAW_THE_LAST.assert("an execution where the reader gets in after both publishes");
+    }
+
     /// **The generation is what a reader compares, so it must count publishes and not retries.**
     ///
     /// `Reading::generation` exists so a log or an expiring cache can ask "did the clock step under
     /// me" without comparing timestamps and guessing. That makes it a value the reader depends on,
-    /// not a diagnostic, and it is derived from the same sequence word the tearing check uses.
+    /// not a diagnostic, and it is the same publish count that names the copy and checks the read.
     #[test]
     fn the_generation_a_reader_sees_matches_the_pair_it_read() {
         loom::model(|| {
@@ -917,7 +1197,7 @@ mod interleavings {
                 thread::spawn(move || p.publish(state::RTC, 1_000))
             };
 
-            let r = page.read();
+            let r = spawn_reader(page, |p| p.read()).join().unwrap();
             // Generation 0 is the initialized page nobody has published to; 1 is the one publish.
             let expected = if r.state == state::UNKNOWN { 0 } else { 1 };
             assert_eq!(
@@ -931,11 +1211,10 @@ mod interleavings {
 
     /// **Two writers serialize rather than corrupt.**
     ///
-    /// The crate's own documentation says this and says why: the capability layout permits several
-    /// processes to hold a read/write mapping, so claiming the sequence is a compare-exchange
-    /// rather than a plain store, and a seqlock that assumed one writer would corrupt silently.
-    /// "Would corrupt silently" is a claim about interleavings, which only a model checker can
-    /// check.
+    /// Several processes may hold a read/write mapping, so writers take a claim word with a
+    /// compare-exchange before they touch the count or a copy. Two writers that both read the same
+    /// count would fill the same copy and publish the same generation; "would corrupt silently" is
+    /// a claim about interleavings, which only a model checker can check.
     #[test]
     fn two_writers_serialise_rather_than_corrupt_the_page() {
         static BOTH_LANDED: Reached = Reached::new();
@@ -962,17 +1241,95 @@ mod interleavings {
                 r.generation, 2,
                 "two publishes did not advance the page twice"
             );
+            let last = if g1 == 2 {
+                (state::RTC, 1_000)
+            } else {
+                (state::SYNCED, 2_000)
+            };
+            assert_eq!(
+                (r.state, r.offset_nanos),
+                last,
+                "the page does not hold the pair of the writer that published last: {r:?}"
+            );
             assert!(
-                matches!(
-                    (r.state, r.offset_nanos),
-                    (state::RTC, 1_000) | (state::SYNCED, 2_000)
-                ),
-                "the page holds a pair neither writer published: {r:?}"
+                page.try_claim(),
+                "the claim was left held after both writers finished"
             );
             BOTH_LANDED.mark();
         });
 
         BOTH_LANDED.assert("any execution at all");
+    }
+
+    /// **A stopped writer never makes a reader wait.**
+    ///
+    /// The writer stops for good at each point inside a publish: holding the claim, after filling
+    /// the spare copy, and after the flip but before it gives the claim back. While it holds the
+    /// claim and has not flipped, a reader's very first attempt succeeds and returns the last
+    /// publish. Once it has flipped, the reader may retry once, because a publish finished, and
+    /// then reads one publish or the other whole. In every case the claim stays held, so the
+    /// stopped writer blocks later writers and nobody else.
+    #[test]
+    fn a_stopped_writer_never_makes_a_reader_wait() {
+        #[derive(Clone, Copy, PartialEq)]
+        enum StopsAfter {
+            Claiming,
+            Filling,
+            Flipping,
+        }
+        static SAW_THE_NEW: Reached = Reached::new();
+
+        for stops_after in [
+            StopsAfter::Claiming,
+            StopsAfter::Filling,
+            StopsAfter::Flipping,
+        ] {
+            loom::model(move || {
+                let page = page();
+                page.initialize();
+                page.publish(state::RTC, 1_000);
+                let before = page.read();
+
+                let writer = {
+                    let p = page;
+                    thread::spawn(move || {
+                        p.claim();
+                        if stops_after == StopsAfter::Claiming {
+                            return;
+                        }
+                        let generation = p.fill(state::SYNCED, 2_000);
+                        if stops_after == StopsAfter::Filling {
+                            return;
+                        }
+                        p.flip(generation);
+                        // And the writer stops here, the claim never given back.
+                    })
+                };
+
+                if stops_after == StopsAfter::Flipping {
+                    let r = spawn_reader(page, |p| p.read()).join().unwrap();
+                    match (r.state, r.offset_nanos, r.generation) {
+                        (state::RTC, 1_000, 1) => {}
+                        (state::SYNCED, 2_000, 2) => SAW_THE_NEW.mark(),
+                        other => panic!("a torn reading beside a stopped writer: {other:?}"),
+                    }
+                } else {
+                    assert_eq!(
+                        spawn_reader(page, |p| p.read_once()).join().unwrap(),
+                        Some(before),
+                        "a writer that never flipped made a reader retry"
+                    );
+                }
+
+                writer.join().unwrap();
+                assert!(
+                    !page.try_claim(),
+                    "a later writer took the claim a stopped writer still holds"
+                );
+            });
+        }
+
+        SAW_THE_NEW.assert("an execution where the reader gets in after the stopped writer's flip");
     }
 
     /// **A page is recognizable only once it is whole.**
@@ -997,7 +1354,7 @@ mod interleavings {
                 })
             };
 
-            let r = page.read();
+            let r = spawn_reader(page, |p| p.read()).join().unwrap();
             match (r.state, r.offset_nanos) {
                 (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
                 (state::RTC, 1_000) => SAW_INITIALISED.mark(),

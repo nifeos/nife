@@ -63,8 +63,8 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
         destination: "sys/pal/nife/fsproto.rs",
     },
     // The wall-clock contract (DECISIONS §43 (reading the clock is a page)), so the time PAL reads the clock page with the same
-    // seqlock and the same layout the clock service publishes it with. A drift here would be a
-    // torn read of a timestamp rather than a compile error.
+    // publish protocol and the same layout the clock service publishes it with. A drift here would
+    // be a torn read of a timestamp rather than a compile error.
     CopiedFile {
         package: "clock_contract",
         file: "src/lib.rs",

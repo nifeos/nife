@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -27,7 +27,7 @@ Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov.
 ## Goal
 
 A stranger who finds `clock_contract` in its own repository can tell in one screen what it is for
-and what it is not (a contract three programs link; it sets no clock on its own). The stranger can build, test and model-check it from the README alone. The template's required checks are green for the crate's own reasons from the first commit. Every claim the documentation makes about the seqlock holds. Either the page layout designs out the one liveness hazard the crate documents twice, before that layout freezes, or a recorded ruling keeps it on purpose.
+and what it is not (a contract three programs link; it sets no clock on its own). The stranger can build, test and model-check it from the README alone. The template's required checks are green for the crate's own reasons from the first commit. Every claim the documentation makes about the clock page holds, and a reader of the page never waits on a writer.
 
 ## What was checked, and how
 
@@ -91,72 +91,48 @@ The P2 items are in [the appendix](1083-clock-contract-outside-review/later-item
 
 The P1 items are in [the appendix](1083-clock-contract-outside-review/before-the-tag.md).
 
-## Decisions for the architect
+## Decisions
 
-Only one-way doors. Each with plain background first, the recommendation, prior art and a concrete
-example. Order matters: Decision 1 before Decision 2, because a layout change is free until the
-identity freezes and costs a version afterward.
+Only one-way doors. Decisions 1 and 2 have their rulings; Decision 3 waits for the architect.
 
-### Decision 1. Whether `VERSION` 1 of the page lets readers wait on a writer
+### Decision 1. A reader of the page never waits on a writer
 
-Background. The clock page is a seqlock: a writer flips the sequence word odd, stores the state and
-the offset, and flips it even again. A reader that finds the sequence odd spins until it is even.
-The crate documents, twice, that a writer stopped between the two flips leaves every reader spinning
-with no bound. The readers include the standard library's `SystemTime::now` in every process that
-holds a read mapping. The writer is not the kernel; in this tree it is the `clock` program, a user
-process, and the design allows any process holding the page read/write to publish. The move will freeze the identity values that name this layout (`VERSION` 1, the magic's digits) so the crate can leave. After that, changing the layout is a new version, a new magic and a move of every pin.
-Nothing outside nife has acted on the layout yet.
+Ruled 2026-11-14 (UTC), option A: the page keeps two copies of the time and a publish count, and
+`VERSION` 1 is that layout.
 
-Recommendation: change the layout before the freeze so that a reader never waits on a writer, and
-freeze that. Two slots instead of one: the writer fills the slot the current publish count does not
-name, then advances the count with a release store. A reader loads the count, reads the slot the
-count names, fences, and loads the count again; equal means the pair is whole, and unequal means a
-publish completed during the read, so the reader goes again. A reader therefore retries only when a writer finished, never while a writer stalls. Writers still exclude each other, through a separate
-claim word, so a writer that stops with the claim held blocks later writers, which is the right
-party to block. The page grows from four words to seven (magic, publish count, claim, two pairs of
-state and offset), still one frame. `generation` keeps its meaning (the publish count). The policy,
-the propose protocol and every public name but `WORDS` stay as they are. The four loom models are
-rewritten to the new shape and keep their claims; the model that checks two writers serialize gains
-the claim word.
+The writer takes a separate claim word, fills the copy the count does not name, advances the count
+and gives the claim back. A reader loads the count, reads the copy its low bit names, fences, and
+loads the count again. It retries only when they differ, which means a publish finished during its
+read, so a writer that stops never makes a reader wait. Writers exclude each other through the claim
+word; a writer that stops holding it blocks later writers, which is the right party to block. The
+page is seven words: magic, publish count, claim, then the state and the offset of copy 0 and of
+copy 1. `generation` is the publish count. The policy, the propose protocol and every public name
+but `WORDS` are as they were.
 
-Why this over the alternatives. Keeping the seqlock and documenting the hazard is the cheapest and
-is what Linux's vDSO does, but Linux's writer is the kernel. Bounding the spin and returning
-`UNKNOWN` after some number of turns changes no layout. It turns a stall into a wrong answer in
-every process at once and, through the overlay, into a panic in `SystemTime::now`. The right number of turns is a guess that differs per machine. The two-slot layout removes the hazard rather
-than bounding it, costs three words, and is the shape two operating systems with wait-free readers
-already use. If the architect prefers the cheaper path, the second alternative is the one to take,
-and item 5 then also records the bound.
+The reason is who the writer is. Linux's vDSO keeps a seqlock because its only writer is the
+kernel. Here the writer is the `clock` program, a user process, and any process holding the page
+read/write may publish, so a writer stopped mid-publish must not stop `SystemTime::now` in every
+process. Bounding the reader's spin instead would have turned a stall into a wrong answer everywhere
+at once. The orderings, what each pairs with, and the comparison with Linux's latch and FreeBSD's
+`timehands` are in the crate and in notes/clock.md.
 
-Prior art (recalled, not re-read for this review): FreeBSD's `timehands` is a ring of records; the
-writer fills the next and swaps a pointer, and `binuptime` retries only when the generation it read
-moved. Windows's `KUSER_SHARED_DATA` publishes `SystemTime` as three words the writer stores in a
-fixed order, and a reader retries while the two high words differ. Both make the reader wait-free
-without a lock. Linux's vDSO keeps the seqlock because its only writer cannot die.
+Concrete example. The clock service is publishing an accepted proposal, and its supervisor stops it
+between the claim and the release. Every reader keeps reading the previous pair with its
+generation, and `date` answers. The next writer waits on the claim; item 6's restart is the one
+place that has to deal with a claim its own earlier run left held.
 
-Concrete example. The clock service is publishing an accepted proposal, and its supervisor stops it between the claim and the release. Today: every later call to `SystemTime::now` in every
-process spins forever, and `date` hangs. With two slots, every reader keeps reading the previous
-pair with its generation. The service's restart finds the claim word held and the magic present. The restart's first publish (after item 6's idempotent `initialize`) is the only thing that has
-to deal with a stale claim. It can do so because the claim word can carry the writer's intent to
-reclaim after a restart.
+### Decision 2. The identity: `INTERFACE_ID` 8, `VERSION` 1, magic `CLOCKv01`
 
-### Decision 2. Freeze the identity: `INTERFACE_ID` 8, `VERSION` 1, magic `CLOCKv01`
+Ruled 2026-11-14 (UTC), option A: the identity freezes as interface 8, version 1, magic
+`CLOCKv01`, taking effect with Decision 1's layout, so version 1 is the seven-word page.
 
-Background. Milestone 1017 asks for ratified identity values before a contract crate leaves,
-because they are what a peer compares. A reader built against one magic reads a page of another as
-no clock at all, and every program's `INTERFACES` note declares the pair of id and version. The
-review package records that the three values match row 8 of milestone 956 (the linked interfaces carry checkable versions)'s table and that fifteen
-programs already declare the pair (not re-verified here). Their `Name:` blocks read provisional.
-The two contract crates frozen before this one took the same shape: id, version 1, and a magic
-where the contract is a page.
-
-Recommendation: freeze all three as they stand, after Decision 1's lane lands, so that `VERSION` 1
-names the layout that ships. If Decision 1 keeps the seqlock, freeze them now. Either way the host
-test `the_identity_is_the_one_readers_were_built_against` already pins the literals and is the
-regression guard.
-
-Prior art: the identity table of milestone 956 and the two earlier freezes in this tree; outside
-it, a magic plus a version word is the shape of every on-disk and shared-page format a reader
-refuses rather than misreads.
+Milestone 1017 asks for ratified identity values before a contract crate leaves, because they are
+what a peer compares. A reader built against one magic reads a page of another as no clock at all,
+and every program's `INTERFACES` note declares the pair of id and version. A later layout break
+ships as a new magic and a new version together, never a new id. The crate header and README state
+the identity, `MAGIC`, `VERSION` and `INTERFACE_ID` carry ratified `Name:` blocks, and the host
+tests `the_identity_is_the_one_readers_were_built_against` and `the_layout_keeps_its_frozen_words`
+pin the values and the words as literals.
 
 Concrete example. A program built against `CLOCKv01` meets a page stamped `CLOCKv02`: `read` returns
 `UNKNOWN`, the program says it does not know the time, and the program does not claim it is 1970.
@@ -185,11 +161,19 @@ rule says.
 
 The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md).
 
+## Follow-on
+
+- **Done.** Item 5 of [before the tag](1083-clock-contract-outside-review/before-the-tag.md),
+  item 12 of [later items](1083-clock-contract-outside-review/later-items.md), and Decisions 1 and
+  2: pull request #3576, on branch `milestone/1083-clock-page-two-copies`.
+- **Outstanding.** Items 1 to 4 and 6 to 9 before the tag, and items 10, 11 and 13 to 15 for later,
+  each checked against `crates/clock_contract` at #3576's head and still true there.
+- **Outstanding.** Decision 3, the public names, still waits for the architect.
+
 ## BUGS
 
-- The prior-art box comes from memory, not a re-read. A lane that acts on Decision 1 should read FreeBSD's
-  `kern_tc.c` and the Windows `KSYSTEM_TIME` layout before copying either shape, and should record
-  what it finds in the crate's notes, not in this block.
+- The Windows row of the prior-art appendix comes from memory, not a re-read; this lane checked the Linux
+  and FreeBSD rows against their sources.
 - Item 3's line numbers wait on the first full mutation run in the new repository; the reasons are
   the regression note's and stand.
 - Item 6 assumes a restart of the `clock` program on the same frame is possible or will be; the review found no supervisor entry and looked for none beyond `crates/system_initializer`.
@@ -201,4 +185,4 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 
 ## Index row
 
-An outside review of `clock_contract` before it leaves. Two required checks are red on the first commit (the template's naming and prose gates, and clippy without nife's `clippy.toml`). Seven items land before the move finishes, and six wait for later. One layout question needs settling before the identity freezes: whether a reader may ever wait on a writer.
+An outside review of `clock_contract` before it leaves. Two required checks are red on the first commit (the template's naming and prose gates, and clippy without nife's `clippy.toml`). Seven items land before the move finishes, and six wait for later. The page's layout and identity are settled: two copies so a reader never waits on a writer, frozen as interface 8, version 1, magic `CLOCKv01`. The public names wait on a ruling.
