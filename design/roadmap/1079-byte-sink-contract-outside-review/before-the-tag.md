@@ -70,19 +70,13 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    Change: `neighbors`, `authorize`, `neighbor`.
    Door: two-way. Effort: XS.
 
-8. The contract leaves the end-of-stream message's second and third words undefined, and one program uses them.
-   Finding: the contract says an `OPERATION_EOF` first word has a zero count and says nothing about `w1` and `w2`. `unpack` discards them. `rm` sends its exit status and its removal count in them,
-   and `filesystem_contract::rm` documents that as `rm`'s report format. Every generic reader drops
-   them: the shell's pipeline reader and its direct reader return on `Eof` without looking, so past a
-   `|` the verdict reaches nobody; only the kernel-side filesystem fixture tests read it. An
-   alternative sink implementer cannot tell whether to preserve, ignore or refuse non-zero words
-   there.
-   Evidence: `src/lib.rs` lines 48 to 55, 87 to 90, 243; `components/src/rm.rs` lines 327 to 337;
-   `crates/filesystem_contract/src/rm.rs` lines 1 to 8; `components/src/swish/pipeline.rs` line
-   843; `components/src/swish/running.rs` line 1260; `crates/filesystem_fixture/src/tests.rs`
-   lines 498 to 506.
-   Change: the contract states what the two words are, decision C. Under the recommended ruling the documentation says a writer sends zero and a sink ignores them. Either `rm` records its use as a private agreement between `rm` and its test reader that this contract does not cover, or the verdict moves to a channel of its own.
-   Door: one-way (wire format), decision C. Effort: XS for the text; S if `rm` changes.
+8. The end-of-stream message's second and third words are reserved, decision C.
+   Finding: an alternative sink implementer needs a rule for `w1` and `w2` of an `OPERATION_EOF`
+   message, and `rm`'s status and count need somewhere to go that is not the stream.
+   Change: `unpack` refuses any end of stream but `(eof(), 0, 0)` as malformed, with a test and a
+   Kani harness, and `rm` sends its verdict on an endpoint of its own after its report ends
+   (`filesystem_contract::rm`). Every other writer in the tree already sent zero.
+   Door: one-way (wire format), decision C, ruled. Effort: S.
 
 9. Names that a later rule reopens at release review.
    Finding: `INLINE_MAXIMUM` is a limit without its unit, and the units rule says a limit opens
