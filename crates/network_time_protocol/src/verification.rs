@@ -160,7 +160,7 @@ fn a_consistent_exchange_is_accepted() {
     let round = t4.wrapping_sub(t1) as i64 as i128;
     kani::assume(server >= 0 && round >= server);
     kani::assume(t3 != 0);
-    kani::assume(stratum >= 1 && stratum <= MAXIMUM_STRATUM);
+    kani::assume((1..=MAXIMUM_STRATUM).contains(&stratum));
     let packet = Packet {
         leap: leap::NONE,
         version: VERSION,
