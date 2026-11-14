@@ -87,8 +87,7 @@ The P1 items are in [the appendix](1088-elf-outside-review/before-the-tag.md).
 ## Decisions for the architect
 
 Three doors a release would close. Each is reversible today and stays so until a tag or a publish.
-A recording lane brings them one at a time, in this order, each with the background below and the
-recommendation first.
+All three are decided, provisionally.
 
 ### D1. Which machine the parser accepts: a constant of the build, or an input
 
@@ -128,6 +127,14 @@ that can afford it). cole14 `elf`, `object` and `goblin` (option B's shape: the 
 `e_machine`). Concrete example: a basalt image step on an x86_64 build host validating every member
 of an aarch64 package before it ships, which option A allows with one call and options C refuses.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: `Elf::parse` keeps the build's machine, a
+second constructor takes the machine, and three public machine constants carry the `EM_` spelling
+as `#[doc(alias)]`. The constructor's and the constants' names stay provisional. `KNOWN_MACHINES`,
+`FOREIGN_MACHINES`, `NATIVE_MACHINE` and `machine_no_nife_build_accepts` leave the public surface,
+which is the part a release would close. The before-the-move item on the machine surface is the
+work.
+
 ### D2. Whether the loader's policy stays inside the parser
 
 Background. Five of the eighteen refusals are not the ELF format's rules but this loader's. They are
@@ -160,6 +167,13 @@ Prior art: OpenBSD `exec_elf.c` (W^X refused by the kernel, with a per-file opt-
 kernel. Under A it must link its kernel W^X-clean, as this tree's x86_64 kernel had to be (the RWX
 trampoline segment was a real refusal, fixed in the linker script), and under B it would flip a
 field.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: all five refusals stay, with no knobs, and
+the overlap check's page size becomes an input. The README lists the five as this loader's policy.
+The five are `WritableAndExecutable`, `SegmentsOverlap`, `EntryNotExecutable`,
+`TooManyProgramHeaders` and the refusal of anything but a static `ET_EXEC` (`src/error.rs` lines
+60 to 83). The before-the-tag item on the overlap check is the work.
 
 ### D3. The public names before anyone outside spells them
 
@@ -197,6 +211,11 @@ users come from the specification. This crate's users come from a loader, and th
 rule already decided which way that goes. Concrete example: `kernel/src/user/loader.rs` line 234
 reads `let file_hi = seg.vaddr + seg.data.len() as u64;`, which under A reads
 `seg.virtual_address + seg.data.len() as u64` and says what it adds.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: the table as written, with the ELF
+specification's spelling as `#[doc(alias)]` and no alias of this tree's earlier spelling. The
+before-the-tag item on the public vocabulary is the work.
 
 ### Held, not asked now: the crates.io name
 

@@ -124,15 +124,14 @@ otherwise.
 
 ### P1: before the first tag
 
-5. `CAPACITY` carries no unit and is not the family's name.
+5. `CAPACITY` carries no unit.
    Finding: the constant is the number of record bytes one page holds (4,080). The naming rule says
-   a length or a limit carries its unit, and the page-contract family table names the length of a
-   page's content, which is less than a page, `PAGE_CONTENT_BYTES`. `grant_plan` spells the unit
-   for it in prose ("4,080 bytes") because the name does not.
+   a length or a limit carries its unit. `grant_plan` spells the unit for it in prose ("4,080
+   bytes") because the name does not.
    Evidence: line 49; `design/naming/crates.md`, "Page contract crates";
    `crates/grant_plan/src/refusal.rs` line 187.
-   Change: `PAGE_CONTENT_BYTES`, with `CAPACITY` gone (no alias for a nife spelling before the
-   first release). `grant_plan` follows in the same pull request.
+   Change: `MAXIMUM_RECORDS_BYTES`, as the rulings name it, with `CAPACITY` gone (no alias for a
+   nife spelling before the first release). `grant_plan` follows in the same pull request.
    Door: a public name, one-way once released; two-way today. Provisional, see the rulings. Effort: XS.
 
 6. The crate has no proof, and the template's front page promises one.

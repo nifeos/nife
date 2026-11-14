@@ -33,7 +33,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    review's helper results, and the Decision 1 table as proposed names. It also holds provenance
    (milestone 1019 item 2), the standalone result, and the recommendation. Add one row in the
    index.
-   Door: two-way (a note); the names it tables are Decision 1. Effort: M.
+   Door: two-way (a note); the names it tables are Decision 1's, decided provisionally. Effort: M.
 
 6. The usage table stops at 0x63, so a non-US keyboard loses keys silently.
    Finding: `evdev_code` answers `None` for several usages. One is usage 0x64, the ISO key beside

@@ -100,7 +100,8 @@ the gates refuse.
    public and used by three callers.
    Evidence: `src/lib.rs` line 30. `fixtures/src/network_time_test_server.rs` lines 118, 155, 157,
    228, 229. `components/src/network_time_client.rs` lines 159, 177.
-   Change: `PACKET_BYTES`, with the callers renamed in the same move (Decision 2).
+   Change: `PACKET_BYTES`, with the callers renamed in the same move, as Decision 2 decides,
+   provisionally.
    Door: a public name. Two-way today. Effort: XS, plus the callers.
 
 5. British spellings in names.
@@ -113,7 +114,8 @@ the gates refuse.
    Evidence: `src/lib.rs` lines 124, 226, 524, 886, 1101. `src/verification.rs` line 80.
    the falsification patch of that harness under `falsifications/`.
    `components/src/network_time_client.rs` line 319.
-   Change: `randomize_low_bits`, `Unsynchronized`, `UNSYNCHRONIZED` (Decision 2). The test and
+   Change: `Unsynchronized` and `UNSYNCHRONIZED`, as Decision 2 decides, provisionally; the
+   low-bit randomizer leaves under Decision 3. The test and
    harness names `parse_then_serialize_is_the_identity` and
    `randomizing_the_low_bits_touches_only_the_low_bits`, with the patch file renamed and its header
    and `notes/ntp/what-is-proved.md` updated. Any name kept on purpose needs the kept form at the
@@ -140,9 +142,9 @@ the gates refuse.
    `NANOSECONDS_PER_SECOND`, so the dependency would also inherit a rename.
    Evidence: `Cargo.toml` line 19. `src/lib.rs` line 48. `notes/crate-reviews/clock-contract.md`
    line 133.
-   Change: Decision 1. The recommendation is a private `NANOSECONDS_PER_SECOND` in the crate and no
-   dependency at all.
-   Door: one-way (a dependency). Effort: XS.
+   Change: a private `NANOSECONDS_PER_SECOND` in the crate and no dependency at all, as Decision 1
+   decides, provisionally.
+   Door: two-way; it removes a dependency. Effort: XS.
 
 ### P2: later
 
@@ -157,7 +159,8 @@ The P1 items are in [the appendix](1102-network-time-protocol-outside-review/bef
 Only the doors somebody outside the repository would act on after the release, and the names, which
 are the architect's by rule. Each gives the background first, then the recommendation, then prior
 art and an example. Nothing here reopens the crate name, the era pivot, the 48-byte rule or the
-unauthenticated scope.
+unauthenticated scope. All three are decided, provisionally, below; ratifying the names stays the
+architect's.
 
 ### Decision 1. Does the crate keep a dependency on `clock_contract` for one constant?
 
@@ -181,6 +184,13 @@ Example: with the dependency, `cargo tree -p network_time_protocol` for a user's
 shows `clock_contract`. That crate's README is about a seqlock-protected clock page in an operating
 system they have never heard of. A `cargo update` can break their build when that crate renames a
 constant. Without it, the tree shows one crate.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+publish, which the architect may revisit. Removing a dependency on an own crate needs no
+dependency ruling. The crate drops `clock_contract`, its only `[dependencies]` entry, and defines a
+private `NANOSECONDS_PER_SECOND` in `src/lib.rs`, as `core::time` defines its own privately. The
+constant has nine uses: `src/lib.rs` lines 181, 261, 272, 273, 274, 289 and 329, and
+`src/verification.rs` lines 56 and 70, after the import at `src/lib.rs` line 48. Item 7 is the work.
 
 ### Decision 2. The public names the template's gates refuse, and the ones a later rule reopens
 
@@ -217,6 +227,14 @@ Example: a user reading `Timestamp::from_unix(seconds, nanoseconds)` and its doc
 meets `UNIX_MINIMUM..UNIX_LIMIT` and has to learn that `LIMIT` is exclusive. With
 `MINIMUM_UNIX_SECONDS..=MAXIMUM_UNIX_SECONDS` the range reads the way every std range does.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+publish, which the architect may revisit. The table above is the rule, with two rows settled
+elsewhere. `MAXIMUM_UNIX_SECONDS` is inclusive. `abs_ticks` is dropped, since no caller outside the
+crate uses it. The low-bit randomizer is removed under Decision 3, so its row renames nothing; its
+test still takes the American spelling. No old spelling stays as an alias. `PACKET_LEN` has seven
+call sites outside the crate, in `components/src/network_time_client.rs` and
+`fixtures/src/network_time_test_server.rs`. Items 4, 5, 18 and 22 are the work.
+
 ### Decision 3. Do `Query::new` and the low-bit randomizer leave before the first publish?
 
 Background: `Query::with_nonce` puts 64 random bits on the wire and keeps the true send time
@@ -238,6 +256,12 @@ the caller's timestamp (its documentation does not describe a nonce).
 Example: a user who writes `Query::new(now)` because it is the first constructor in the
 documentation ships a client whose replies an off-path attacker forges with about 4,096 guesses on
 a microsecond clock, as the low-bit randomizer documentation itself computes.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+publish, which the architect may revisit. Both leave: the stricter surface, since adding a
+constructor later is compatible and removing one is not. `Query::new` (`src/lib.rs` line 616) and
+the low-bit randomizer (line 226) have no caller outside the crate. The one NTP caller in nife is
+`Query::with_nonce` at `components/src/network_time_client.rs` line 153. Item 17 is the work.
 
 ## Done when
 

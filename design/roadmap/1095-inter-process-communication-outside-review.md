@@ -105,11 +105,11 @@ The comparison with nearby work is in [the appendix](1095-inter-process-communic
    there; `T: Send` then fails to parse as a bound. The kernel never imports it, which is why
    nothing has noticed. A stranger's first `use` will.
    Evidence: `src/lib.rs` line 37; `src/rendezvous.rs` line 66.
-   Change: the architect's decision (D1 below). The crate's own vocabulary is "verdict"
+   Change: the names D1 below decides, provisionally. The crate's own vocabulary is "verdict"
    (`src/rendezvous.rs` lines 64, 81; `src/notification.rs` line 79), so `SendVerdict` and
    `ReceiveVerdict` are the names the documentation already uses in prose; `Signal`, `Wait` and
    `Arm` would follow for one shape across the four modules.
-   Door: one-way at publish (a public name). Effort: S.
+   Door: two-way before the first tag. Effort: S.
 
 5. **Names the template's ceiling-zero gates refuse.**
    Finding, one line each:
@@ -188,8 +188,8 @@ The P2 items are in [the appendix](1095-inter-process-communication-outside-revi
 
 ## Decisions for the architect
 
-Only one-way doors. Each is one decision, with the background first and the recommendation
-before the alternatives.
+Each is one decision, with the background first and the recommendation before the alternatives.
+D1 and D2 are decided, provisionally.
 
 ### D1. The names of the verdict enums
 
@@ -214,6 +214,11 @@ with a trait. seL4's equivalents are not types at all (a C function's side effec
 Concrete example: today, `use inter_process_communication::{Rendezvous, Send}; fn park<T: Send>()`
 fails to compile with "expected trait, found enum `Send`". With the recommendation it compiles,
 and `match ep.send(me) { SendVerdict::Blocked => ..., }` reads as the documentation already does.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The five take the `Verdict` suffix: `SendVerdict`,
+`ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict`, with no alias. Item 4 is the
+work.
 
 ### D2. Whether the timer and the futex table stay in this crate
 
@@ -241,6 +246,10 @@ them under one lock, which is what this crate mirrors.
 Concrete example: a crates.io search for "futex wait queue" finds `parking_lot_core` and
 `futex`, never a crate named for inter-process communication. A search for "rendezvous endpoint
 seL4" would find this one, and `timer::NEVER` in the sidebar would surprise the reader.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The four modules stay together, and the scope is settled at the publish review if this
+crate ever goes to one. Nothing is published and nothing outside nife links the crate.
 
 ### D3. The order of leaving: `intrusive_queue` first
 

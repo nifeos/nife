@@ -11,8 +11,8 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
     hundreds, so nothing in the tree meets it; a stranger's first small example does. Nothing in the
     documentation says so.
     Evidence: `src/table.rs` lines 134 to 137 and 185 to 194.
-    Change: say it in `insert_root_with_ceilings` and `for_child_of`, and see Decision 4 for the
-    share itself. Door: two-way (the policy is one-way after publish; Decision 4). Effort: XS.
+    Change: say it in `insert_root_with_ceilings` and `for_child_of`, and in a `BUGS` line of the
+    crate, as Decision 4 decides, provisionally. Door: two-way. Effort: XS.
 
 11. `spent` walks the whole table and, for every entry, its parent chain.
     Finding: for `Frames` and each `Object` kind, `spent` filters all `N` slots through

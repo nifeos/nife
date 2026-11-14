@@ -17,8 +17,7 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
     stronger one, and the documentation has to spend two paragraphs steering readers away from it.
     Evidence: `src/lib.rs` lines 218 to 236 and 613 to 622; `grep -rn "Query::new"` and a search for the low-bit randomizer
     finds no NTP caller.
-    Change: Decision 3 asks whether both leave before the first publish. If they stay, `new` gains a
-    `# Security` paragraph and the README's BUGS names it.
+    Change: remove both before the first publish, as Decision 3 decides, provisionally.
     Door: a public surface, two-way today. Effort: XS.
 
 18. `Short` exposes its field while `Timestamp` and `Interval` hide theirs.
@@ -55,5 +54,5 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
     Finding: it returns `self.0.unsigned_abs()`, and the rule prefers std's spelling where std has
     one. No caller uses it.
     Evidence: `src/lib.rs` lines 342 to 345.
-    Change: Decision 2 (drop it, or `unsigned_abs_ticks`). Door: public name, two-way today.
+    Change: drop it, as Decision 2 decides, provisionally. Door: public name, two-way today.
     Effort: XS.

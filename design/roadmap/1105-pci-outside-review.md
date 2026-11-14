@@ -24,8 +24,8 @@ open. It does not reopen the two ratified names, the closure-over-`(bdf, offset)
 access in the kernel.
 
 Milestone 1034 (a runbook for moving a crate out of nife) owns the move itself. Milestone 1064 (PCI
-enumeration leaves the kernel) says the crate "moves with the server"; the decision below asks
-whether it leaves first.
+enumeration leaves the kernel) says the crate "moves with the server"; the crate leaves first, as
+the held item below records.
 
 Reuse: `script/crate-move`, `script/crate-standalone`, the template `nifeos/crate-workflows` and
 its name gates, Kani, cargo-mutants and the crate's own fake configuration spaces (`FakeCfg`,
@@ -140,13 +140,19 @@ Concrete example. `crates/driver_process_contract/Cargo.toml` would read
 and the import `use pci_configuration_space::{Bdf, virtio_capabilities}`, or with the alias,
 `pci = { package = "pci_configuration_space", ... }` and the call sites unchanged.
 
-### Not a decision here, but held for the architect's awareness
+### When the crate moves: before the bus server
 
 Milestone 1064 says the crate "moves with the server", and the server waits on milestones 317,
 1062 and 1068. The crate has no dependency on any of them, the kernel and `driver_process_contract`
 both link it today, and a bus server will link it the same way. Moving it first is the shape the
-contract order already uses for every leaf, and reversing it costs one copy back. The maintainer
-rules it; this review recommends moving first, after items 1 through 8.
+contract order already uses for every leaf, and reversing it costs one copy back. This review
+recommends moving first, after items 1 through 8.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The crate moves first, after items 1 through 8, as every leaf of milestone 1017 (the order the contract crates leave in) does, and
+the bus server links it from its repository when it comes. The crate's manifest has no
+`[dependencies]` table, only a test dependency on `device_tree_blob`, so it waits on none of
+milestones 317, 1062 and 1068. The move still waits on the package name above.
 
 ## Done when
 

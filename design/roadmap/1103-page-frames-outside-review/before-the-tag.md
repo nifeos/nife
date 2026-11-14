@@ -78,7 +78,8 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
    public: the constant `FRAME_SIZE` is a length without its unit, where the rule says a length
    carries its unit and the tree's precedent for the same quantity is `PAGE_BYTES` (Decision 1).
    `addr` and `from_addr` carry an abbreviation a reader decodes, where the one sibling with the
-   same accessor spells `address` (Decision 2). The rest are two-way or private: the parameters
+   same accessor spells `address`; Decision 2 decides `physical_address` and
+   `from_physical_address`, provisionally. The rest are two-way or private: the parameters
    `size: u64` of `mark_free` and `mark_used` and `span: u64` of `page_frames_in` hold byte counts
    and carry no unit (`bytes`, `span_bytes`). `Stats::total` and `Stats::used` count frames and name
    the count (`frames`, `used_frames`), and `Stats::free()` shares its word with the verb

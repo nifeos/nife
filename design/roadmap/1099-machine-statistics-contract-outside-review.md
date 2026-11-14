@@ -62,8 +62,8 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    `virtual_address` (the spelled-out rule covers parameters), and the review's flags beside the
    names they concern. Items 9 and 10 add names; the same pull request carries them so the table is
    ratified once.
-   Door: one-way after the move (every name goes public); the ratification is the architect's by
-   rule. Effort: S for the lane.
+   Door: two-way before the first tag; the maintainer decides the names, provisionally, under "The
+   ratification table of item 1", and the ratification is the architect's by rule. Effort: S for the lane.
 
 2. The manifest and the files a stranger needs.
    Finding: `license.workspace = true` and `[lints] workspace = true` come from the workspace; there is no
@@ -158,6 +158,13 @@ might misread, it says so here; the lane carries these beside the rows.
   `context_switches`, `interrupts`, `runnable`, `MAGIC`, `VERSION`, `INTERFACE_ID`, `FRAME_BYTES`,
   `TICK_HERTZ`, `TOTAL_FRAMES`, `FREE_FRAMES`, `BUSY_TICKS`, `IDLE_TICKS`, `CONTEXT_SWITCHES`,
   `INTERRUPTS`, `RUNNABLE`, `cpu`: units spelled out, std spellings where std has one, no flag.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The names the table carries into item 1's pull request are these.
+`PAGE_CONTENT_BYTES` and `PAGE_VIRTUAL_ADDRESS`, with the parameters `page_va` and `va` as
+`virtual_address`. `PAGE_WORDS` and `word::LINE_WORDS`. `Snapshot` stays, and a lane rewords the module
+sentence. `counter` becomes `atomic_word`. The rest stay as written. There is no alias of the
+old spellings. Ratifying the table stays the architect's.
 
 ## Done when
 

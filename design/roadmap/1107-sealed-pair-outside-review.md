@@ -144,7 +144,7 @@ a repository); everything else is two-way and the maintainer decides it.
    every refusal.
    Evidence: `crates/sealed_pair/src/lib.rs` lines 238 to 242; `xtask/src/card_check.rs` line 79.
    Change: a name for what it is, `AUTHORITY_NOTICE`, with the text saying "the kernel" where it
-   says "the board". The architect names it (decision B).
+   says "the board", as decision B decides, provisionally.
    Door: two-way until a release; a published name after. Effort: XS.
 
 7. `EntrySeal` can say "refused" with no digest, and the report then prints an empty hash. DONE (`Vouch` carries the digest; the impossible pair no longer compiles).
@@ -175,8 +175,8 @@ a repository); everything else is two-way and the maintainer decides it.
    way and the template's `british_spelling.py` refuses it at a ceiling of zero, so the template's
    `check` job would be red on the first push. The parameter is public because the module is.
    Evidence: `crates/sealed_pair/src/lib.rs` lines 406 and 410.
-   Change: `flavor`, or better `build: &str`, which is what the argument names (one build's pair
-   against another's). Provisional until the architect rules.
+   Change: `build: &str`, which is what the argument names (one build's pair against another's), as
+   decision B decides, provisionally.
    Door: two-way until a release. Effort: XS.
 
 10. `Unreadable` is not a `std::error::Error`, and its `Display` prints a `Debug` form. DONE (`an_unreadable_error_is_a_std_error_in_words`).
@@ -196,7 +196,8 @@ The P2 items are in [the appendix](1107-sealed-pair-outside-review/later-items.m
 
 ## Decisions for the architect
 
-Only the one-way doors. Each with the background first and a recommendation.
+The one-way doors, each with the background first and a recommendation, and the two names of B,
+which the maintainer decides provisionally.
 
 ### A. Whether `sealed_pair` leaves at all, and in whose company
 
@@ -237,6 +238,14 @@ Prior art. The standard library names a constant for what it holds (`EPSILON`, `
 its opening words; this tree's naming page refuses `THE_` on an assertion constant for the same
 reason. A concrete example: `card_check` prints the constant after every refusal, so a reader meets the name at one call site and the text at every bench.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, since these are names
+in an unreleased crate that is not leaving, which the architect may revisit.
+`THE_BOARD_IS_THE_AUTHORITY` (`src/lib.rs` line 241, one caller at `xtask/src/card_check.rs` line
+79) becomes `AUTHORITY_NOTICE`, because a constant's name says what it holds and the naming page
+refuses `THE_`. The parameter of `test_support::pair` (line 406) becomes `build`, which also drops
+the British spelling. No old spelling stays as an alias. The renames do not wait for decision A.
+Items 6 and 9 are the work. Ratifying the names stays the architect's.
+
 ## Done when
 
 The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
@@ -257,12 +266,12 @@ The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
 
 ## Follow-on
 
-What is left of this review: Decisions A and B are not ruled, and the items marked LEFT in the
-appendices wait on them or on a lane of their own.
+What is left of this review: Decision A waits on the architect, the maintainer has decided
+Decision B, provisionally, and the items marked LEFT in the appendices wait on them or on a lane of their own.
 
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 wait on Decision A.
 - **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
-- **Outstanding.** Items 6 and 9 (names, Decision B), 13 (unmeasured) and 14 (a harness): checked
+- **Outstanding.** Items 6 and 9 (the renames of Decision B), 13 (unmeasured) and 14 (a harness): checked
   against the tree, none exists yet.
 
 ## Index row

@@ -18,10 +18,10 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
    that a limit opens `MAXIMUM_` and ends with its unit. The `socket_contract` package treats its
    own `DATA_MAXIMUM` the same way, as a name a release review reopens. Why it matters: the template
    runs these checks at a ceiling of zero, so the first pull request in the new repository is red
-   for names, and a renamed public constant after the tag is a break. Change: the proposals in the
-   decisions below, applied by one rename lane after the ruling. The lane covers the std copy and
+   for names, and a renamed public constant after the tag is a break. Change: the names decision 1
+   decides, provisionally, applied by one rename lane. The lane covers the std copy and
    `domain_name_system::MAXIMUM_ADDRESSES`, which `src/lib.rs` line 50 asserts equal. `xtask` regenerates `resolveproto.rs` from `src/wire.rs`, and the farm's consumer
-   `nife.rs` lines 1138 to 1215 follows. Door: one-way at the tag; two-way until then. Effort: S for
+   `nife.rs` lines 1138 to 1215 follows. Door: two-way before the first tag. Effort: S for
    the rename, plus the std farm.
 
 5. Ratify the interface identity before the crate leaves.

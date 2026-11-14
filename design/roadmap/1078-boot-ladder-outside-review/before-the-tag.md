@@ -71,9 +71,13 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
    Finding: `PROMPT` (`src/lib.rs` line 132) names the shell's banner line, and the crate's `BUGS` (lines 14 to 15) admits it. `SELF_TEST_CHECKS_EARLIER` (line 115) holds counts, not checks. `TOUR` (line 123) names the line `nife: the capability core runs on <arch>.` by an internal
    word a stranger has no way to read. The other seven say what they hold.
    Why it matters: a published name is one-way, and a name is the claim a reader meets first.
-   Change: the decisions section below carries the recommendation; one rename lane applies the
-   ruling, and `serial_console`'s `Stage::Prompt` and `Stage::Tour` follow the renamed constants.
-   Door: one-way at release. Effort: S.
+   Change: as the second decision decides, provisionally: `PROMPT` to `SHELL_BANNER`,
+   `SELF_TEST_CHECKS_EARLIER` to `EARLIER_SELF_TEST_CHECK_COUNTS`, `TOUR` to `CORE_RUNS`, the
+   other eight kept. One rename lane applies it, and `serial_console`'s `Stage::Prompt` and
+   `Stage::Tour` follow the renamed constants. The same lane gives the provisional names of the
+   `self_test_program` module (`src/self_test_program.rs`) the same pass against the naming rules
+   and lists what it proposes; those names are not yet decided.
+   Door: two-way before the first tag. Effort: S.
 
 9. The crate doc's boundary claim is false for one head, and the crate never states the matching rule.
    Finding: lines 7 to 8 say every constant carries its own trailing space or punctuation so a match is on a boundary. `PROMPT` is `"nife capability shell"` with neither; the shell prints

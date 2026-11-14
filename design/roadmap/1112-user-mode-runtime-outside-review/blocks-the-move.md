@@ -100,9 +100,9 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    compile. Reword the manifest comment.
    Door: two-way. Effort: M.
 
-5. Eight build scripts in nife reach `link.ld` by a relative path into this crate's directory.
+5. Nine build scripts in nife reach `link.ld` by a relative path into this crate's directory.
    Finding: `components`, `fixtures`, `jig`, `redoxfs_server`, `std_exerciser`,
-   `cryptography_exerciser`, `pinned_tls_exerciser` and `mdr` each pass
+   `cryptography_exerciser`, `pinned_tls_exerciser`, `mdr` and `c_library` each pass
    `-T<manifest dir>/../crates/user_mode_runtime/link.ld` to the linker, and
    `address_space_map`'s test does `include_str!("../../user_mode_runtime/link.ld")`. After the
    move the file is in a dependency's source directory, which a consumer's build script has no
@@ -117,5 +117,5 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    binary links with `-Tlink.x`. Concrete example: `jig/build.rs` loses its two path lines and
    gains `println!("cargo::rustc-link-arg=-Tlink.ld")`. The `address_space_map` test moves here
    (item 4) and reads the file by `include_str!("../link.ld")`.
-   Door: the mechanism is what a program outside nife uses to link, so it is one-way after the
-   first release; see the decisions section. Effort: M, counting the eight consumers.
+   Door: two-way until `disk-tools` leaves, as Decision 2 decides, provisionally. Effort: M,
+   counting the nine consumers.

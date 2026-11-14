@@ -101,8 +101,9 @@ The P1 items are in [the appendix](1078-boot-ladder-outside-review/before-the-ta
 
 ## Decisions for the architect
 
-Only one-way doors. Each states the background first, then the recommendation, prior art and a
-concrete example. The repository itself follows the standing rule that clearing this review is the
+Each states the background first, then the recommendation, prior art and a concrete example.
+The ten public names are Rust identifiers, a two-way door before the first tag, and the maintainer
+has decided them, provisionally; the wordings and the printed check names wait for the architect. The repository itself follows the standing rule that clearing this review is the
 go for creating it; that is not a new decision.
 
 ### The eight wordings become the released contract
@@ -148,6 +149,15 @@ misnomer is in their code too.
 Example: a third-party console reader written against the released crate reads
 `boot_ladder::SHELL_BANNER` and knows without the `BUGS` entry that it is not waiting for a `$ `.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `PROMPT` becomes `SHELL_BANNER`, `SELF_TEST_CHECKS_EARLIER` becomes
+`EARLIER_SELF_TEST_CHECK_COUNTS` and `TOUR` becomes `CORE_RUNS`. `BANNER`, `MACHINE`, `SELF_TEST`,
+`SELF_TEST_SUBJECT`, `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and `SCREEN_HELD`
+keep their names. `SELF_TEST_SUBJECT` (`src/rungs.rs` line 44) is the head added after the review
+and is kept with the rest. The bytes each constant holds are the wordings decision above, not this
+one. The `self_test_program` module (`src/self_test_program.rs`), added after the review, holds
+about twenty more provisional names this decision does not cover; item 8 carries their pass as
+work.
+
 ### The printed check names
 
 Background. The verdict prints fifteen names, and board profiles name them, so they are a contract the moment the crate ships. `blockdev` is an abbreviation of two English words the
@@ -172,7 +182,7 @@ The comparison with nearby work is in [the appendix](1078-boot-ladder-outside-re
 
 ## What needs the architect
 
-Decisions 1 to 3 above. Nothing else here is one-way: the manifest, the README, the tests, the
+Decisions 1 and 3 above; decision 2 is decided, provisionally. Nothing else here is one-way: the manifest, the README, the tests, the
 `Verdict` type and the nife-side gate are the maintainer's.
 
 ## Done when

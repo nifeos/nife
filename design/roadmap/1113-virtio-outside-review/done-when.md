@@ -5,8 +5,8 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 - The architect rules Decision 1. Then either the crate's roles live in the drivers package   beside
   `block_driver.rs` with no crate boundary, or a review package for `virtio` exists in
   `notes/crate-reviews/` with a row in the index and this review's items answered in it.
-- The ring layout constants have one home (Decision 2) and every driver in the tree, this one
-  included, imports them; or each copy carries a `BUGS` entry naming the proved source.
+- The ring layout constants have one home in `abi::virtio` (Decision 2) and every driver in the
+  tree, this one included, imports them.
 - `find_file`, `pattern_byte`, `ip_checksum`, `build_dhcp_discover` and `parse_dhcp_offer` take a
   buffer and have host tests, including a DHCP OFFER whose options end at the last byte of the
   received length and a frame shorter than the previous one.

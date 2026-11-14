@@ -54,9 +54,9 @@ dependency). Everything else is two-way and the maintainer decides it.
    first.
    Evidence: `crates/memory_region_heap/src/lib.rs` lines 11, 29, 54, 80, 98, 119, 128.
    `design/module-block-baseline.txt` lines 5190 to 5198. `helpers/name_release.py --draft`.
-   Change: one lane writes the five missing blocks, brings the seven names to the architect as one
-   table (Decision A below carries the recommendation), and applies the ruling.
-   Door: one-way (public names). Effort: S plus the ruling.
+   Change: one lane writes the five missing blocks with the names Decision A decides,
+   provisionally, and brings the table to the architect for ratification.
+   Door: two-way before the first tag. Effort: S plus the ruling.
 
 2. The `talc` dependency does not survive the move as written, and three path dependencies point
    into nife.
@@ -71,9 +71,9 @@ dependency). Everything else is two-way and the maintainer decides it.
    repositories will exist, and the lines become `git` and `rev` pins with `version` beside them.
    Evidence: `crates/memory_region_heap/Cargo.toml` lines 19 to 28. `vendor/talc.pin`.
    `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`, "Where `talc` goes at step 9".
-   Change: Decision B below. Whatever the ruling, the move lane states in the README which `talc`
+   Change: as Decision B below decides, provisionally. The move lane states in the README which `talc`
    the crate builds against and what the unpatched package lacks.
-   Door: one-way (a dependency). Effort: S.
+   Door: two-way; no new dependency is asked. Effort: S.
 
 3. The manifest and the files a stranger needs.
    Finding: no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, no `rust-version`, `license` and
@@ -100,11 +100,11 @@ dependency). Everything else is two-way and the maintainer decides it.
    at zero (unverified which). Either reads as a red or a vacuous green.
    Evidence: `src/lib.rs` lines 119 and 165. `Cargo.toml` lines 11 to 14. The template's
    `helpers/spelled_out.py`, `helpers/question_shape.py`, `helpers/coverage-floor.sh`.
-   Change: rename the binding to `virtual_address` now (XS). For `commit_all`, Decision A carries
-   the recommendation. For the tests, item 8 is the real fix. Until it lands, the move lane either
+   Change: rename the binding to `virtual_address` now (XS). `commit_all` returns
+   `Result<(), CommitShortfall>`, as Decision A decides, provisionally. For the tests, item 8 is the real fix. Until it lands, the move lane either
    exempts `src/lib.rs` in `.github/coverage-exemptions` with the stated reason ("every path ends in
    a syscall; tested under QEMU") or lands item 8 first.
-   Door: `va` is two-way. `commit_all` is one-way (a public name). Effort: XS, plus item 8.
+   Door: two-way before the first tag. Effort: XS, plus item 8.
 
 ### P2: later
 
@@ -116,7 +116,7 @@ The P1 items are in [the appendix](1100-memory-region-heap-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's.
+Both are decided, provisionally. Everything else above is the maintainer's.
 
 ### A. The seven public names, and the shape of `commit_all`
 
@@ -149,6 +149,15 @@ ceiling of zero.
 
 Not taken. `commit_all` returning the committed byte count (a `u64` the caller must compare against
 a cap it has to know), and `is_fully_committed` (a question, but the function acts).
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Nothing is published, and every name changes by one pull
+request until the first release. `memory_region_heap`, `MemoryRegionHeap`, `new`, `initialize` and
+`committed_bytes` keep their spelling. `DEFAULT_BASE` becomes `DEFAULT_BASE_VIRTUAL_ADDRESS`.
+`commit_all` returns `Result<(), CommitShortfall>` rather than `Short`, a generic word that
+`network_time_protocol` also uses for another type (`src/lib.rs` line 283). The one caller
+discards the value (`components/src/swish/heap.rs` line 54). Ratifying the names stays the
+architect's. Items 1 and 4 are the work.
 
 ### B. Which `talc` the crate builds against outside nife
 
@@ -183,6 +192,13 @@ Concrete example. The crate repository's `check` runs its host tests (item 8) ag
 of a 64-bit address space. basalt's image, built in nife's workspace, links the patched source. If
 upstream stays silent past the next monthly `script/vendor-watch` report, the question returns as a
 fork request, which this block does not make.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. No new dependency is asked: `talc` is already approved,
+and the recommendation is the manifest as it reads (`Cargo.toml` line 27). The crate depends on
+crates.io `talc` 5.1.1, unpatched in its own repository. nife's root `[patch.crates-io]` keeps the
+fixed source in every image, and the README says what the release lacks. When a `talc` release
+carries pull request 57, the crate bumps and the README sentence goes. Item 2 is the work.
 
 Not taken. A git pin on upstream at a revision carrying the fix (there is none; the pull request has
 not merged). A fork under `nifeos` (refused in the step 9 appendix as needing its own approval). A

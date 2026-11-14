@@ -64,8 +64,8 @@ because `tests/fuzz_seed.rs` and `system_tests` iterate them (`KNOWN_MACHINES` 3
 no project, and a published crate that lists "the machines some build accepts" lists one
 organization's targets.
 
-Change: the shape is decision D1's. Whatever D1 rules, `machine_no_nife_build_accepts` leaves the
-public surface before the move (it has two callers, both tests in this crate), and the three
-constants either move behind `cfg(test)` and into `system_tests`' own forgery helper, or stay public
-under D1's vocabulary. Door: one-way at release, two-way now. Effort: S for the function, M with the
+Change: the shape decision D1 decides, provisionally. `machine_no_nife_build_accepts` leaves the
+public surface before the move (it has two callers, both tests in this crate). The three constants
+move behind `cfg(test)`, and `system_tests`' forgeries take the machine from the three public
+machine constants D1 adds. Door: two-way before the first tag. Effort: S for the function, M with the
 callers if the constants move.

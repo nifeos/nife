@@ -178,6 +178,10 @@ POSIX write `argv` and `cwd` as they are.
 Example. A reader of `grant_plan::navigation::Bindings::lookup(name).position()` knows what came
 back without opening the module.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The eight renames hold, with `job_page_frame` becoming
+`job_channel_page`, and no alias of the old spellings. `Cwd` and `argv` stay. Item 7 is the work.
+
 ### Limits carry their unit, and four fields named `len`
 
 Background. The units rule post-dates most of this crate's ratified limits, and the release review

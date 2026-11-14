@@ -84,8 +84,8 @@ The P1 items are in [the appendix](1113-virtio-outside-review/before-the-tag.md)
 
 ## Decisions for the architect
 
-Only one-way doors. Each with the background first, then the recommendation, prior art and a
-concrete example.
+Two decisions, each with the background first, then the recommendation, prior art and a
+concrete example. The maintainer decides Decision 2, provisionally, below.
 
 ### Decision 1. Whether `crates/virtio` leaves this tree, and as what
 
@@ -154,6 +154,18 @@ Concrete example. `kernel/src/virtio.rs` lines 426 to 442 aliases the validator;
 and `:99-101` and `components/src/virtio_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
 `0x100`, `0x200`. After the move, each of those is `abi::virtio::RING_...` and a change to the
 proved layout is a compile error in every driver.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The layout values are already the agreement between kernel and driver and do not change;
+only the home of their names moves, inside unreleased crates. They stay relevant after the virtio
+default ruling of 2026-11-11, because every mediated grant still uses `SETUP_QUEUE` at the
+validator's layout. The five constants (`crates/direct_memory_access_validator/src/lib.rs` lines
+294 to 304) move to `abi::virtio`, beside the DMA-layout fact already there
+(`crates/abi/src/virtio.rs` line 38), with `RING_END`, which the validator derives from them and
+the kernel also aliases. The validator and the kernel alias them from there. The present names fail
+the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
+names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
+maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
 
 ## Done when
 
