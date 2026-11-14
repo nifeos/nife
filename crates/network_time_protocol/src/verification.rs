@@ -136,3 +136,52 @@ fn accepting_is_total_and_a_sample_is_coherent() {
         assert!(s.response.mode == mode::SERVER);
     }
 }
+
+/// **A consistent exchange is accepted, with the RFC's offset and delay.** Without this, an
+/// `accept` that refused every packet would satisfy
+/// [`accepting_is_total_and_a_sample_is_coherent`]. From any four timestamps whose modular
+/// differences are non-negative and whose round trip covers the server's turnaround, a version 4,
+/// mode 4 reply with a stratum in 1 to 15, a non-zero transmit timestamp and a root distance under
+/// the maximum is accepted, and its delay is `(T4 - T1) - (T3 - T2)` and its offset
+/// `((T2 - T1) + (T3 - T4)) / 2`.
+/// Falsification: replayable `crates/network_time_protocol/falsifications/verification.a_consistent_exchange_is_accepted.patch`
+#[kani::proof]
+#[kani::unwind(49)]
+fn a_consistent_exchange_is_accepted() {
+    let t1: u64 = kani::any();
+    let t2: u64 = kani::any();
+    let t3: u64 = kani::any();
+    let t4: u64 = kani::any();
+    let nonce: u64 = kani::any();
+    let stratum: u8 = kani::any();
+    let root_delay: u32 = kani::any();
+    let root_dispersion: u32 = kani::any();
+    let server = t3.wrapping_sub(t2) as i64 as i128;
+    let round = t4.wrapping_sub(t1) as i64 as i128;
+    kani::assume(server >= 0 && round >= server);
+    kani::assume(t3 != 0);
+    kani::assume((1..=MAXIMUM_STRATUM).contains(&stratum));
+    let packet = Packet {
+        leap: leap::NONE,
+        version: VERSION,
+        mode: mode::SERVER,
+        stratum,
+        poll: 6,
+        precision: 0,
+        root_delay: Short(root_delay),
+        root_dispersion: Short(root_dispersion),
+        reference_id: [0; 4],
+        reference: Timestamp::ZERO,
+        origin: Timestamp::from_bits(nonce),
+        receive: Timestamp::from_bits(t2),
+        transmit: Timestamp::from_bits(t3),
+    };
+    kani::assume(packet.root_distance() < MAXIMUM_ROOT_DISTANCE);
+    let q = Query::with_nonce(Timestamp::from_bits(t1), Timestamp::from_bits(nonce));
+    let sample = q.accept(&packet.to_bytes(), Timestamp::from_bits(t4));
+    let sample = sample.expect("a consistent exchange is refused");
+    assert_eq!(sample.delay.ticks(), round - server);
+    let to_server = t2.wrapping_sub(t1) as i64 as i128;
+    let from_server = t3.wrapping_sub(t4) as i64 as i128;
+    assert_eq!(sample.offset.ticks(), (to_server + from_server) / 2);
+}

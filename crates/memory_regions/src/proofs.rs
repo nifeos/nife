@@ -110,7 +110,7 @@ fn destroy_never_frees_a_child_to_the_allocator() {
 
 /// **Reclaiming holes never lowers the watermark under anything still held, and never raises
 /// it.** Under it stay the region's own retypes and every live child; an in-flight sibling
-/// (not quiescent) leaves it where the LIFO rule put it. Together with
+/// (not quiescent) leaves it where the last-in-first-out rule put it. Together with
 /// `split_stays_within_budget_and_progresses`, that is why a page carved after a reclaim is one
 /// nothing else holds.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.coalescing_never_reclaims_a_held_page.patch`
@@ -152,29 +152,20 @@ use crate::table::RegionSnapshot;
 /// The regions the subtree-ceiling harnesses drive: a root, a child and a grandchild.
 const REGIONS: usize = 3;
 /// Every counted kind, in [`Ceilings`] order.
-const KINDS: [Counted; 8] = [
-    Counted::Object(ObjectKind::Rendezvous),
-    Counted::Object(ObjectKind::AddressSpace),
-    Counted::Object(ObjectKind::Thread),
-    Counted::Object(ObjectKind::KernelPool),
-    Counted::Object(ObjectKind::Notification),
-    Counted::Object(ObjectKind::Timer),
-    Counted::Object(ObjectKind::Process),
-    Counted::Region,
-];
+const KINDS: [Counted; 8] = {
+    let mut kinds = [Counted::Region; 8];
+    let mut i = 0;
+    while i < ObjectKind::ALL.len() {
+        kinds[i] = Counted::Object(ObjectKind::ALL[i]);
+        i += 1;
+    }
+    kinds
+};
 /// Where [`Counted::Region`] sits in [`KINDS`].
 const REGION_COUNT: usize = 7;
 
 fn any_object_kind() -> ObjectKind {
-    match kani::any::<u8>() % 7 {
-        0 => ObjectKind::Rendezvous,
-        1 => ObjectKind::AddressSpace,
-        2 => ObjectKind::Thread,
-        3 => ObjectKind::KernelPool,
-        4 => ObjectKind::Notification,
-        5 => ObjectKind::Timer,
-        _ => ObjectKind::Process,
-    }
+    ObjectKind::ALL[(kani::any::<u8>() % ObjectKind::ALL.len() as u8) as usize]
 }
 
 /// The ceilings region `r` of a tree lives under, when its root's are `root`: the root's own, or a
@@ -196,7 +187,7 @@ fn same_ceilings(a: Ceilings, b: Ceilings) -> bool {
     KINDS.into_iter().all(|c| a.get(c) == b.get(c))
 }
 
-fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
+fn is_same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
     match (a, b) {
         (None, None) => true,
         (Some(a), Some(b)) => {
@@ -338,9 +329,9 @@ impl Run {
     }
 
     /// Whether every region's snapshot is the one in `before`.
-    fn unmoved_since(&self, before: [Option<RegionSnapshot>; REGIONS]) -> bool {
+    fn is_unmoved_since(&self, before: [Option<RegionSnapshot>; REGIONS]) -> bool {
         let now = self.snapshots();
-        (0..REGIONS).all(|r| same_snapshot(now[r], before[r]))
+        (0..REGIONS).all(|r| is_same_snapshot(now[r], before[r]))
     }
 
     /// Which parts of the invariant every live region of the tree holds.
@@ -429,7 +420,7 @@ fn a_refused_carve_moves_nothing() {
         let kind = any_object_kind();
         let refused = run.carve(r, kind);
         if refused {
-            assert!(run.unmoved_since(before), "a refusal moved something");
+            assert!(run.is_unmoved_since(before), "a refusal moved something");
             assert!(run.table.len() == regions, "a refusal left a region");
         }
         let own = before[r].expect("a region of the tree");
@@ -457,7 +448,7 @@ fn a_refused_split_moves_nothing() {
         let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
         let refused = run.split(r).is_none();
         if refused {
-            assert!(run.unmoved_since(before), "a refusal moved something");
+            assert!(run.is_unmoved_since(before), "a refusal moved something");
             assert!(run.table.len() == regions, "a refusal left a region");
         }
         let own = before[r].expect("a region of the tree");
@@ -488,7 +479,7 @@ fn a_split_refused_for_a_full_table_moves_nothing() {
         let regions = run.table.len();
         let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
         assert!(run.split(r).is_none(), "a full table took a child");
-        assert!(run.unmoved_since(before), "a refusal moved something");
+        assert!(run.is_unmoved_since(before), "a refusal moved something");
         assert!(run.table.len() == regions, "a refusal left a region");
         let own = before[r].expect("a region of the tree");
         let counted = Counted::Region;
@@ -609,12 +600,40 @@ fn a_release_of_nothing_held_moves_nothing() {
     let released = run.table.release_object(run.name(0), kind);
     assert!(!released, "a release of nothing held was taken");
     assert!(
-        run.unmoved_since(before),
+        run.is_unmoved_since(before),
         "a refused release moved something"
     );
     kani::cover!(
         root.live.get(Counted::Object(kind)) > 0,
         "the child holds an object of the kind"
+    );
+}
+
+/// **A return keeps every region's run where the table's discipline puts it**: from any state of
+/// a root, a child and a grandchild, claiming the grandchild and giving its pages back leaves every
+/// live region with `retyped_to <= watermark <= pages`, and the child's run inside the part of the
+/// root's pages already spent. Every other harness assumes these as its start state; this is the one
+/// that checks the table keeps them across a claim and a return.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_return_keeps_every_run_inside_its_parents_spent_part.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_return_keeps_every_run_inside_its_parents_spent_part() {
+    let mut run = Run::any(3, false, true);
+    let claim = run.table.claim_for_destroy(run.name(2));
+    kani::cover!(claim.is_some(), "the grandchild is claimed");
+    if let Some(claim) = claim {
+        run.table.return_to_parent(&claim);
+    }
+    let snaps = run.snapshots();
+    for s in snaps.into_iter().flatten() {
+        assert!(s.retyped_to <= s.watermark, "retyped past the watermark");
+        assert!(s.watermark <= s.pages, "watermark past the region");
+    }
+    let (root, child) = (snaps[0].expect("root"), snaps[1].expect("child"));
+    assert!(
+        child.base_page >= root.base_page
+            && child.base_page + child.pages <= root.base_page + root.watermark,
+        "a child's run left its parent's spent part"
     );
 }
 

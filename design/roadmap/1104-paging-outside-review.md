@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -236,6 +236,14 @@ Prior art. `x86_64` 0.15.5: `Size4KiB`, `Size2MiB`, `Size1GiB`. `page_table_mult
 
 Concrete example. `m.map_span(va, pa, len, flags, PageSize::Size1GiB)` becomes
 `m.map_span(virtual_address, physical_address, len, flags, PageSize::OneGibibyte)`.
+
+## Ledger
+
+The ledger is in [the appendix](1104-paging-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** The renames, aliases, the crate name and the leaf-size spelling (items 2, 5, 6 and 14) wait on the architect, and the move preparation (items 1, 3, 4, 9, 11) waits on the move. Items 12 (moving `WritableAndExecutable`), 15 (new methods), 17 and 19 are small and unstarted. Checked against the ledger.
 
 ## Done when
 

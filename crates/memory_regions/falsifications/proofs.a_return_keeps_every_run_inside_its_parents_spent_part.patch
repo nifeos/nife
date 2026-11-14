@@ -1,0 +1,19 @@
+Falsifies `memory_regions::proofs::a_return_keeps_every_run_inside_its_parents_spent_part`.
+
+The defect: the reclaim after a return drops the floor of the parent's own retypes and lowers the
+watermark to where its highest live child ends. It reads as the whole of the reclaim, since a hole
+is what the pass exists to close, and the pages the parent retyped for itself sit below no child.
+
+Expected to fail: the harness's `assert!(s.retyped_to <= s.watermark, "retyped past the watermark")`,
+for a child whose own retypes reach past its last live grandchild.
+
+diff --git a/crates/memory_regions/src/watermark.rs b/crates/memory_regions/src/watermark.rs
+--- a/crates/memory_regions/src/watermark.rs
++++ b/crates/memory_regions/src/watermark.rs
+@@ -65,5 +65,5 @@ pub fn coalesced_watermark(watermark: u64, retyped_to: u64, live_to: u64, quiesc
+     if !quiescent {
+         return watermark;
+     }
+-    retyped_to.max(live_to).min(watermark)
++    live_to.min(watermark)
+ }

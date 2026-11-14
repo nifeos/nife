@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: 16, 113
@@ -206,6 +206,15 @@ recommendation; today both children get 0.
 ## Done when
 
 The checks are in [the appendix](1101-memory-regions-outside-review/done-when.md).
+
+## Ledger
+
+The ledger of each item is in [the appendix](1101-memory-regions-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** Items 2, 5, 6(a), 6(d), 6(e), 8's repository fields and 9 wait on Decision 1 (whether the crate leaves) and on the naming pass. Checked against `crates/memory_regions` and the ledger above.
+- **Outstanding.** Item 3's overflow harness, item 11's per-parent page count, item 14's recorded times and item 16's `Drop` panic are open one-way or measurement work. Checked against `crates/memory_regions/src/proofs.rs`.
 
 ## BUGS
 

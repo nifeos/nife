@@ -11,9 +11,9 @@ child.
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
-@@ -178,9 +178,6 @@
-     /// and [`CHILD_SHARE_OF_ROOT`] of the root's, kind by kind. Every split region of one tree
-     /// therefore has the same ceilings, which is why a split reads only its parent's.
+@@ -203,9 +203,6 @@ impl Ceilings {
+     /// therefore has the same ceilings, which is why a split reads only its parent's. Integer
+     /// division: a root ceiling under the share (sixteen) gives every child zero of that kind.
      fn for_child_of(parent: &Region) -> Ceilings {
 -        if parent.parent != NO_PARENT {
 -            return parent.ceilings;

@@ -133,7 +133,7 @@ edit that drops its hop bound goes unnoticed. One fixture test holds the ceiling
 (`walk` never reads a bus at or above `ceiling`), and the doc comment argues it. A proof would need
 the device loop unrolled 32 times per bus and may not finish (unverified), which is the kind of
 limit the proofs module should state.
-Fix: add `the_msi_walk_terminates_on_any_device` with a falsification patch; factor the three
+Fix: add `the_message_signaled_interrupt_walk_terminates_on_any_device` with a falsification patch; factor the three
 capability walks over one private `capabilities(bdf, read32, &mut dyn FnMut(offset, head) -> bool)`
 so one proof covers all three; try a ceiling proof at `ceiling <= 2` and record the result either
 way in the module's doc comment.

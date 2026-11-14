@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: none
@@ -167,6 +167,15 @@ takes the chance to use the method the crate already has for that rounding.
 ## Done when
 
 The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
+
+## Ledger
+
+The ledger of each item is in [the appendix](1103-page-frames-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** Items 1, 2, 3 (the remaining citations) and 17 are the move's, and item 8 waits on Decisions 1 and 2. Checked against `crates/page_frames` and the ledger above.
+- **Outstanding.** Item 12 (a `free` for a run) has no caller switched, and item 10's regeneration fault is in the move tooling.
 
 ## BUGS
 

@@ -1,0 +1,16 @@
+Falsifies `page_frames::verification::a_contiguous_run_was_free_and_is_now_used`.
+
+The defect: `alloc_contiguous` marks `count - 1` frames used, leaving the last frame of the run
+free. It reads as an off-by-one on an inclusive range, and the counter still says `count`.
+
+Expected to fail: the harness's `assert!(fa.get(j), "a frame of the run was left free")`. In the
+kernel the last frame of a DMA ring would be handed to the next caller while the device writes it.
+
+diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
+--- a/crates/page_frames/src/lib.rs
++++ b/crates/page_frames/src/lib.rs
+@@ -295,3 +295,3 @@
+             if run == count {
+-                for j in run_start..run_start + count {
++                for j in run_start..run_start + count - 1 {
+                     self.set(j, true);

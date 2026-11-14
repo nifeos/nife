@@ -4259,6 +4259,8 @@ PINNED = {
     # region is pinned, childless or claimable. The two enums are its selector.
     ("-", "ObjectKind", "enum"),
     ("-", "PageUse", "enum"),
+    # A constant list of the kinds: it names no region, so nothing can be held past its truth.
+    ("-", "ALL", "const"),
     ("RegionTable", "spent", "&self"),
     ("RegionTable", "insert_root", "&mut self"),
     ("RegionTable", "split", "&mut self"),

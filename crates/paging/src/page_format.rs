@@ -12,7 +12,8 @@ use super::*;
 ///
 /// **The top bits of a virtual address are not translated**: they select which set of tables to
 /// use (aarch64 `TTBR0`/`TTBR1`; on RISC-V one `satp` per space, the sign-extended top bit telling
-/// the halves apart), and the index comes from the lower bits identically for both halves. A
+/// the halves apart; on x86 one `CR3` per space, with the sign-extended bit 47 telling the halves
+/// apart), and the index comes from the lower bits identically for both halves. A
 /// higher-half kernel is a separate set of tables. See notes/page-tables.md.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Half {
@@ -52,11 +53,13 @@ pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
 /// encode-and-decode-a-leaf). Every format here is 512-entry / 4 KiB / 4 KiB, so [`ENTRIES`] and
 /// [`PAGE_SIZE`] are shared and not part of the trait.
 pub trait PageFormat {
-    /// Translation levels. aarch64: 4. Sv39: 3.
+    /// Translation levels. aarch64: 4. Sv39: 3. `Ia32e`, `Vtd` and `AmdVi`: 4.
     const LEVELS: usize;
 
     /// The bit position that splits the low (user) half from the high (kernel) half. aarch64: 48
-    /// (bits 63:48 select the half). Sv39: 38 (bits 63:38, the sign-extended top VA bit and above).
+    /// (bits 63:48 select the half). Sv39: 38 (bits 63:38, the sign-extended top VA bit and above). `Ia32e`: 47 (bit 47 sign-extended
+    /// through bit 63). `Vtd` and `AmdVi`: 47 as a ceiling and not a split, since I/O virtual
+    /// addresses have no halves: every address below 128 TiB counts as the low half.
     const SPLIT_SHIFT: u32;
 
     /// Is this entry present (valid)?

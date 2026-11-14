@@ -1,0 +1,20 @@
+Falsifies `pci::verification::the_message_signaled_interrupt_walk_terminates_on_any_device`.
+
+The defect: the MSI walk's hop bound is raised from 64 to 65, the off-by-one a later edit that
+"rounds the bound up to be safe" would make. The walk still terminates, but it reads one more
+configuration dword than the contract the kernel's enumeration budget is written against.
+
+Expected to fail: the harness's `assert!(reads <= 66)`, on a device whose list never ends.
+
+diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
+--- a/crates/pci/src/lib.rs
++++ b/crates/pci/src/lib.rs
+@@ -689,7 +689,7 @@
+         return None;
+     }
+     let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
+-    for _ in 0..64 {
++    for _ in 0..65 {
+         if at == 0 {
+             return None;
+         }

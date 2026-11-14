@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: 46, 154, 305
@@ -147,6 +147,14 @@ Milestone 1064 says the crate "moves with the server", and the server waits on m
 both link it today, and a bus server will link it the same way. Moving it first is the shape the
 contract order already uses for every leaf, and reversing it costs one copy back. The maintainer
 rules it; this review recommends moving first, after items 1 through 8.
+
+## Ledger
+
+The ledger is in [the appendix](1105-pci-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** The renames (items 5 and 6) and the package name wait on the architect, and the move preparation (items 1, 2, 7 and the P2 patch, table and exemption items) waits on the move. Item 8 lacks the one-walk factoring and the ceiling proof, and `intx_pin_through_bridge` and the fuzz targets are unstarted. Checked against the ledger.
 
 ## Done when
 

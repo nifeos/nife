@@ -1,0 +1,17 @@
+Falsifies `page_frames::verification::the_used_count_is_the_number_of_set_bits`.
+
+The defect: `alloc_contiguous` counts one frame used for a run of `count`. It reads as a
+bookkeeping slip, and every allocator harness but this one builds the struct with a counter it
+never reads.
+
+Expected to fail: the harness's `assert_eq!(fa.used, set_bits)`, on a run of two or more frames.
+`Stats::free` then reports frames that are not free, which the kernel prints and a test boots on.
+
+diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
+--- a/crates/page_frames/src/lib.rs
++++ b/crates/page_frames/src/lib.rs
+@@ -298,3 +298,3 @@
+                 }
+-                self.used += count;
++                self.used += 1;
+                 return Some(PageFrame(self.base + run_start as u64 * FRAME_SIZE));

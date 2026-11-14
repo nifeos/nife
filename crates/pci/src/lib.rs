@@ -13,6 +13,7 @@
 //! `peripheral_component_interconnect` (§154).
 
 #![cfg_attr(not(test), no_std)]
+#![forbid(unsafe_code)]
 // milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 24-item
 // worklist (notes/doc-coverage.md) is burned down.
 #![allow(missing_docs)]
@@ -28,8 +29,13 @@ pub struct Bdf {
 impl Bdf {
     /// The function's byte offset inside the ECAM window: 4 KB per function, laid out
     /// `bus:8 | dev:5 | fn:3 | offset:12`. This shift-and-or IS the ECAM spec.
+    ///
+    /// `dev` and `func` are the 5- and 3-bit fields of the address; a larger value is masked to its
+    /// field here, so it can never land on the next bus's or the next device's page.
     pub fn ecam_offset(self) -> u64 {
-        ((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
+        ((self.bus as u64) << 20)
+            | (((self.dev & 0x1f) as u64) << 15)
+            | (((self.func & 0x7) as u64) << 12)
     }
 
     /// The **PCIe requester id**: the 16-bit `bus:8 | dev:5 | fn:3` a function stamps on every
@@ -37,7 +43,7 @@ impl Bdf {
     /// looks a device up by. Both `virt` boards publish an identity `iommu-map` in the device tree,
     /// so this number is exactly the id the IOMMU sees. See kernel/src/iommu.rs (milestone 16b).
     pub fn requester_id(self) -> u32 {
-        ((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
+        ((self.bus as u32) << 8) | (((self.dev & 0x1f) as u32) << 3) | ((self.func & 0x7) as u32)
     }
 }
 
@@ -551,7 +557,17 @@ pub fn virtio_capabilities(
         let head = read32(bdf, at);
         let capability_id = (head & 0xff) as u8;
         let next = ((head >> 8) & 0xfc) as u64;
-        if capability_id == CAPABILITY_ID_VENDOR {
+        // `cap_len`, byte 2: virtio 1.2 section 4.1.4 fixes 16 bytes as the least a vendor
+        // capability holds (20 for the notify one, which carries a multiplier). A function that
+        // states less is bad data, and the fields past its end belong to the next entry.
+        let capability_length = (head >> 16) & 0xff;
+        let configuration_type_of_head = (head >> 24) & 0xff;
+        let least_length = if configuration_type_of_head == VIRTIO_CAPABILITY_NOTIFY as u32 {
+            20
+        } else {
+            16
+        };
+        if capability_id == CAPABILITY_ID_VENDOR && capability_length >= least_length {
             // struct virtio_pci_cap: u8 id, next, cap_len, cfg_type; u8 bar; 3 pad; u32 offset,
             // length; the notify capability carries one extra u32 after that.
             let cfg_type = ((head >> 24) & 0xff) as u8;
@@ -661,7 +677,9 @@ impl MsiCapability {
     }
 }
 
-/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_capability`].
+/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_capability`]:
+/// at most 64 entries, so a cycle in the list ends the walk, and an offset that is a multiple of
+/// four, since the list's pointers drop their low two bits.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
 /// `msi_cap` under the capability ruling of 2026-10-06 (UTC).
@@ -871,9 +889,7 @@ mod verification {
             dev: kani::any(),
             func: kani::any(),
         };
-        // dev and func are 5- and 3-bit fields by construction of every caller (enumerate
-        // produces them from bounded loops); the offset must hold for all such values.
-        kani::assume(bdf.dev < 32 && bdf.func < 8);
+        // No assumption on `dev` and `func`: the offset masks them to their fields.
         assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000);
     }
 
@@ -985,6 +1001,30 @@ mod verification {
             assert!(capability.table_size >= 1 && capability.table_size <= 2048);
             assert!(capability.table_bar < 8);
             assert!(capability.table_offset % 8 == 0);
+        }
+    }
+
+    /// **The MSI capability walk terminates and never panics**, on any device response at all,
+    /// like the virtio capability walk and the MSI-X walk. It reads the
+    /// status and the list pointer once and one head per hop, at most 64 hops, so 66 reads; and a
+    /// capability it finds sits at a nonzero offset that is a multiple of four.
+    /// Falsification: replayable `crates/pci/falsifications/verification.the_message_signaled_interrupt_walk_terminates_on_any_device.patch`
+    #[kani::proof]
+    #[kani::unwind(66)]
+    fn the_message_signaled_interrupt_walk_terminates_on_any_device() {
+        let location = Bdf {
+            bus: kani::any(),
+            dev: kani::any(),
+            func: kani::any(),
+        };
+        let mut reads = 0u32;
+        let found = msi_capability(location, &mut |_, _| {
+            reads += 1;
+            kani::any()
+        });
+        assert!(reads <= 66);
+        if let Some(capability) = found {
+            assert!(capability.capability_offset != 0 && capability.capability_offset % 4 == 0);
         }
     }
 
