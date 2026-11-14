@@ -2439,9 +2439,7 @@ crates/filesystem_contract/src/lib.rs::READY
 
 crates/filesystem_contract/src/lib.rs::operation
 
-crates/filesystem_contract/src/lib.rs::reply_err
 
-crates/filesystem_contract/src/lib.rs::reply_errno
 
 crates/filesystem_contract/src/lib.rs::req
 
@@ -2462,6 +2460,10 @@ crates/filesystem_contract/src/nameset.rs::encode
 crates/filesystem_contract/src/nameset.rs::iter
 
 crates/filesystem_contract/src/nameset/tests.rs
+
+crates/filesystem_contract/src/reply.rs::reply_err
+
+crates/filesystem_contract/src/reply.rs::reply_errno
 
 crates/filesystem_contract/src/rm.rs
 

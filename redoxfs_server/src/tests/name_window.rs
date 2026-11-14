@@ -291,3 +291,117 @@ fn rename_refuses_a_refused_name_in_either_operand_and_changes_nothing() {
         "RENAME refused a legal pair"
     );
 }
+
+/// **The reserved store name is refused at every depth, by every name-taking verb, and listed in no
+/// directory.** The root-level arms above drive `handle` with the name under the root; this one
+/// drives each verb from a subdirectory handle, drives the path-taking verbs (`OPEN`, `OPENDIR`)
+/// with the name as a middle and as a last step, and plants a node of that name in the
+/// subdirectory behind the server's back to show a listing hides it there too.
+#[test]
+fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
+    use filesystem_contract::xattr::STORE_DIR;
+
+    let mut srv = server_with_tree();
+    let root = fs::ROOT as u32;
+    let sub = srv
+        .open_dir(root, &named("sub"), filesystem_contract::dir::ALL)
+        .unwrap();
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+
+    // Every verb whose operand is a name, from the subdirectory handle.
+    for &code in &[
+        fs::OPEN,
+        fs::OPENDIR,
+        fs::CREATE,
+        fs::MKDIR,
+        fs::UNLINK,
+        fs::RMDIR,
+        fs::GETMTIME,
+        fs::SETMTIME,
+        fs::SETMTIME_AT,
+    ] {
+        let len = stage(&mut window, STORE_DIR.as_bytes());
+        let (r0, _) = srv.handle(
+            0,
+            fs::req(code, sub as u64, len),
+            0,
+            &mut window,
+            &mut NoEdges,
+        );
+        assert_eq!(
+            r0,
+            -(EINVAL as i64),
+            "verb {code} took the store name in a subdirectory"
+        );
+    }
+
+    // The path-taking verbs, with the name as a middle step and as the last step.
+    for path in [
+        format!("sub/{STORE_DIR}"),
+        format!("{STORE_DIR}/x"),
+        format!("sub/{STORE_DIR}/x"),
+    ] {
+        for &code in &[fs::OPEN, fs::OPENDIR] {
+            let len = stage(&mut window, path.as_bytes());
+            let (r0, _) = srv.handle(
+                0,
+                fs::req(code, fs::ROOT, len),
+                0,
+                &mut window,
+                &mut NoEdges,
+            );
+            assert_eq!(r0, -(EINVAL as i64), "verb {code} walked the path {path:?}");
+        }
+    }
+
+    // RENAME between directories, the store name in either operand.
+    let sub_rename = |srv: &mut Server<DiskMemory>, window: &mut [u8], src: &[u8], dst: &[u8]| {
+        window[..src.len()].copy_from_slice(src);
+        window[src.len()..src.len() + dst.len()].copy_from_slice(dst);
+        let w1 = fs::rename_dst(fs::ROOT, dst.len() as u64);
+        srv.handle(
+            0,
+            fs::req(fs::RENAME, sub as u64, src.len() as u64),
+            w1,
+            window,
+            &mut NoEdges,
+        )
+        .0
+    };
+    assert_eq!(
+        sub_rename(&mut srv, &mut window, b"inner", STORE_DIR.as_bytes()),
+        -(EINVAL as i64),
+        "RENAME took the store name as a destination from a subdirectory",
+    );
+    assert_eq!(
+        sub_rename(&mut srv, &mut window, STORE_DIR.as_bytes(), b"anywhere"),
+        -(EINVAL as i64),
+        "RENAME took the store name as a source from a subdirectory",
+    );
+
+    // A node with that name in the subdirectory, made under the server, is not listed.
+    srv.fs
+        .tx(|transaction| {
+            let (ptr, _) = srv_lookup_sub(transaction)?;
+            transaction.create_node(ptr, STORE_DIR, redoxfs::Node::MODE_FILE | 0o600, 0, 0)?;
+            Ok(())
+        })
+        .unwrap();
+    let listed = list(&mut srv, sub, BLOCK).unwrap();
+    assert!(
+        listed.iter().any(|(n, _)| n == "inner"),
+        "the control entry vanished: {listed:?}"
+    );
+    assert!(
+        !listed.iter().any(|(n, _)| n == STORE_DIR),
+        "a subdirectory listing named the store: {listed:?}",
+    );
+}
+
+/// The `sub` directory's node in the root, for a test that plants an entry under it.
+fn srv_lookup_sub<D: redoxfs::Disk>(
+    transaction: &mut redoxfs::Transaction<D>,
+) -> syscall::Result<(redoxfs::TreePtr<redoxfs::Node>, ())> {
+    let node = transaction.find_node(redoxfs::TreePtr::root(), "sub")?;
+    Ok((node.ptr(), ()))
+}

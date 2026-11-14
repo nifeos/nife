@@ -46,6 +46,9 @@ pub fn map_page_frame(frame_slot: u64, va: u64, writable: bool, memory_region_sl
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify ... `is_granted`." Refused `holds_capability` (the
 /// boolean-predicate worklist had already given this probe its `is_` shape).
+///
+/// Relies on the kernel answering an unknown method on a held slot with `BadMethod` and on an
+/// empty slot with `NoSuchSlot`, which is what tells the two apart.
 pub fn is_granted(slot: u64) -> bool {
     /// A method number no object type defines, so the invocation can only ever be refused.
     const NO_SUCH_METHOD: u64 = 0xffff;
