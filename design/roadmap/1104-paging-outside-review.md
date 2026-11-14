@@ -266,7 +266,7 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 - **Outstanding.** Every P0 item but the crate name, every P1 item and every P2 item above. The
   crate's tree holds none of their fixes yet, as a read of `crates/page_tables` shows.
 - **Outstanding.** Decision 2, the spelling of the leaf sizes, waits for the architect. The enum in
-  `crates/page_tables/src/lib.rs` still holds `Size4KiB`, `Size2MiB` and `Size1GiB`.
+  `crates/page_tables/src/page_size.rs` still holds `Size4KiB`, `Size2MiB` and `Size1GiB`.
 
 ## Index row
 

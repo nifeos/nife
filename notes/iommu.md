@@ -18,7 +18,7 @@ frames it may reach.
 
 ## The seam: one domain builder, two page-table formats
 
-The payoff of the format-generic `page_tables` crate (DECISIONS §17, the second architecture and the page-table format trait) shows up a second time here. An
+The payoff of the format-generic `page_tables` crate (DECISIONS §17 (the second architecture: RISC-V, and the page-table format trait)) shows up a second time here. An
 IOMMU walks the *CPU's own* page-table format: the aarch64 SMMUv3 walks VMSAv8-64, the ratified
 RISC-V IOMMU (v1.0.1) walks Sv39. Those are the same two formats `Mapper` already builds for process
 address spaces. So a device's DMA domain is not a new kind of table. It is a `Mapper` filled with an
