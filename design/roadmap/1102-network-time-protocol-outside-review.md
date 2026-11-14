@@ -249,7 +249,7 @@ The ledger of each item is in [the appendix](1102-network-time-protocol-outside-
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 2, 6, 8, 10, 11 and the fuzz half of 9 are the new repository's, and wait on Decision 1. Checked against `crates/network_time_protocol` and the ledger above.
+- **Outstanding.** Items 1, 2, 3, 6, 8, 10, 11 and the fuzz half of 9 are the new repository's, and wait on Decision 1. Checked against `crates/network_time_protocol` and the ledger above.
 - **Outstanding.** Items 4, 5, 17, 18 and 22 are public names and a public layout, which wait on Decisions 2 and 3.
 
 ## BUGS

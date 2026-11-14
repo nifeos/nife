@@ -6,7 +6,7 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
 |---|---|---|
 | 1 manifest does not stand alone | LEFT | move work; the new repository inlines the license and lints |
 | 2 README, licenses, changelog, stranger record | LEFT | move work, and the stranger run is a person's |
-| 3 contract-crate gate | DONE | the crate root opens with `(network_time_protocol, RFC 5905)` |
+| 3 contract-crate gate | LEFT | the template's kept-name form `(network_time_protocol, RFC 5905)` trips clippy's `doc_markdown` here, and backticks may not satisfy the gate; the move settles which |
 | 4 `PACKET_LEN` unit | LEFT | a public name; Decision 2 |
 | 5 British spellings in names | LEFT | public names and the harness name; Decision 2 |
 | 6 acronyms | LEFT | doc-comment sweep that belongs with the README rewrite of item 2 |

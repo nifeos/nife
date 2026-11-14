@@ -1,4 +1,4 @@
-//! (network_time_protocol, RFC 5905) **The NTPv4 wire format**, as pure computation: no socket, clock, service or policy.
+//! **The NTPv4 wire format** (RFC 5905), as pure computation: no socket, clock, service or policy.
 //!
 //! The clock service owns the offset and the authority to set it; these 48 bytes and the arithmetic
 //! over them are here. Unauthenticated NTPv4 only, with no NTS (RFC 8915) and no RFC 5905
