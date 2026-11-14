@@ -52,7 +52,7 @@ released, so its names are two-way today and the package's naming table stands.
 
 ### P0: blocks the move
 
-1. The contract's text and its wire disagree on where a send's length travels. DONE (every `OPERATION_` states its argument and reply words; the `OPERATION_SEND` doc test sends with the length as the argument; `OFF_LEN` says only `RECEIVE` writes it; D1 ruled 2026-11-11).
+1. The contract's text and its wire disagree on where a send's length travels. DONE (every `OPERATION_` states its argument and reply words; the `OPERATION_SEND` doc test sends with the length as the argument; `LENGTH_OFFSET_BYTES` says only `RECEIVE` writes it; D1 ruled 2026-11-11).
    Finding: the layout note at `crates/socket_contract/src/lib.rs` lines 454 to 459 says the
    `len` field at `LENGTH_OFFSET_BYTES` is "in for SEND*, out for RECEIVE". The documentation of
    `OPERATION_SENDTO` and `OPERATION_SEND` (lines 53 to 60) says "payload in the frame" and
