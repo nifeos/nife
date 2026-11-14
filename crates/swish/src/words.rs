@@ -83,7 +83,10 @@ pub fn designation(
         let name = rest.split(|&b| b == b'/').next().unwrap_or(rest);
         // A quoted word with a glob byte in it is bytes the program hears, never a pattern this
         // shell expands: asking the directory for it would designate whatever it matched.
-        if rest.first() == Some(&b'/') || name == b".." || name.is_empty() || byte_glob::has_magic(name)
+        if rest.first() == Some(&b'/')
+            || name == b".."
+            || name.is_empty()
+            || byte_glob::has_magic(name)
         {
             return Ok(());
         }
