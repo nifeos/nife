@@ -7,7 +7,7 @@ license.workspace = true
 
 # Bare-metal only, through user_mode_runtime's syscalls, so no host bench or doctest targets. The
 # host unit tests drive the growth and wiring logic at a reached cap, which makes no syscall; a
-# test that would map a page belongs behind a page-source seam (milestone 1100 item 8).
+# test that would map a page belongs behind a page-source seam (item 8 of milestone 1100 (the outside review of the memory-region heap)).
 [lib]
 bench = false
 doctest = false

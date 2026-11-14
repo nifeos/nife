@@ -140,17 +140,17 @@ into an `Error`.
   end of RAM. The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has
   met is QEMU `virt`'s, under 64 KiB, and a VisionFive 2's U-Boot tree is under 32 KiB.
 - `be32` and `be64` add with `checked_add`, because every offset comes out of the blob. The
-  verification module proves both total. Every walker's cursor step goes through the same checks:
-  `prop_header` reads a property's length and name offset, and refuses one whose value would pass
-  the end of the structure block; `skip_padded` and `skip_name` step over padded data with a
-  checked add. On a target whose `usize` is 32 bits a length near `u32::MAX` therefore ends the
-  walk as `Truncated` where an unchecked sum would wrap or panic. A 64-bit host cannot build that
-  input through a blob, so the unit tests in `src/lib.rs` hold the helpers to it and the verification
-  module proves `skip_padded` never wraps.
+  verification module proves both total.
+- Every walker checks its cursor steps too. `prop_header` reads a property's length and name
+  offset, and refuses one whose value would pass the end of the structure block. `skip_padded` and
+  `skip_name` step over padded data with a checked add. On a target whose `usize` is 32 bits, a
+  length near `u32::MAX` ends the walk as `Truncated`, where an unchecked sum would wrap or panic.
+  A 64-bit host cannot build that input through a blob. The unit tests in `src/lib.rs` hold the
+  helpers to it, and the verification module proves `skip_padded` never wraps.
 - **Every walker stops at the end of the structure block.** `from_bytes` reads `size_dt_struct`
   (version 17 and later; before that the block ends at the strings block, as libfdt reads it) and
-  refuses a block that runs past the blob. A block with no `FDT_END` is `Truncated`, not read on
-  into the strings block as tokens.
+  refuses a block that runs past the blob. A block with no `FDT_END` ends the walk as `Truncated`, and nothing
+  reads the strings block as tokens.
 - A `reg` pair whose `start + size` wraps is `Error::RegionOverflow`. `Region::end` still
   saturates, because `Region` is `pub` with `pub` fields and anyone can build one. That is the
   argument `elf::Segment::page_range` makes too: a type anyone can construct has to hold on its

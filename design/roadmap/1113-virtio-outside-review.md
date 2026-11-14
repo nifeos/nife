@@ -160,9 +160,9 @@ proved layout is a compile error in every driver.
 Background. A virtio-mmio device reports a version in the register at `0x004`: 1 for the legacy
 layout, 2 for the layout the specification now describes. The driver checks the magic value and
 nothing else, so it would drive a legacy device with the modern handshake and find out by its
-queues failing. The direct transport (the virtio-pci path of 1062 step 7) has no such register: its
-`read` answers a made-up magic and zero for any offset it does not name, so a check written against
-the mmio register would refuse every direct grant unless that transport also answers it. QEMU's
+queues failing. The direct transport (the virtio-pci path of 1062 step 7) has no such register. Its
+`read` answers a made-up magic and zero for any offset it does not name. A check written against
+the mmio register would therefore refuse every direct grant, unless that transport also answers it. QEMU's
 `virt` machine offers legacy mmio devices unless told otherwise, so which version the test suites
 meet today is a measurement this review did not make.
 
@@ -176,7 +176,7 @@ Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 a
 a layout each and refuses any other. Redox's `virtio-core` is PCI-only and has no such register.
 
 Concrete example. A board whose firmware offers a version 1 block device today boots to a driver
-that hangs after the handshake; with the check it stops at once with a sentence that names the
+that hangs after the handshake. With the check it stops at once, and the sentence names the
 register it read.
 
 ## Done when

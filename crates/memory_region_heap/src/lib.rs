@@ -307,7 +307,7 @@ mod tests {
 
     /// A heap wired to a slot, a base and a cap, with every page of the cap already committed, so
     /// the next `grow` is at the cap and issues no syscall.
-    fn heap_at_its_cap() -> MemoryRegionHeap {
+    fn heap_at_its_maximum() -> MemoryRegionHeap {
         let heap = MemoryRegionHeap::new();
         heap.initialize(3, DEFAULT_BASE, 16 * PAGE);
         let mut g = heap.lock();
@@ -345,8 +345,8 @@ mod tests {
     /// `grow` must not claim it did: `alloc` retries after a `true`, and a retry that changes
     /// nothing would loop forever.
     #[test]
-    fn a_grow_of_nothing_at_the_cap_is_a_refusal() {
-        let heap = heap_at_its_cap();
+    fn a_grow_of_nothing_at_the_maximum_is_a_refusal() {
+        let heap = heap_at_its_maximum();
         let mut g = heap.lock();
         let inner = g.inner();
         assert!(!MemoryRegionHeap::grow(inner, 0));
