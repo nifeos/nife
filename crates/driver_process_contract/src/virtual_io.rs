@@ -10,8 +10,9 @@
 //! - One register window, at most [`MAXIMUM_REGISTER_PAGES`] pages: a function whose four
 //!   structures touch more distinct pages than that is refused, and its starter grants mediated.
 //!
-//! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-contract, after the
-//! device family it serves, as this crate's other modules are named after their device crates.
+//! Name: ratified 2026-11-14 (UTC), after the device family it serves, as this crate's other
+//! modules are named after their device crates. `virtio` expands to `virtual_io`, keeping `io`
+//! whole as every name does.
 
 use pci::{
     Bdf, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE, VIRTIO_CAPABILITY_ISR,
@@ -265,7 +266,7 @@ pub enum WindowRefusal {
 /// BAR 1, so the window is those four pages in order:
 ///
 /// ```
-/// use driver_process_contract::virtual_input_output::{Structure, Structures, Withheld, register_window};
+/// use driver_process_contract::virtual_io::{Structure, Structures, Withheld, register_window};
 ///
 /// let s = |offset, length| Structure { bar: 4, offset, length };
 /// let structures = Structures {
