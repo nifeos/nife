@@ -102,7 +102,7 @@ timed wait) and treats no answer as a hang. A `CALL` takes no deadline, so a sta
 and the deadline is on its forwarded answer. The bound is `QUIESCE_BOUND_MILLISECONDS`, 250 ms, about forty
 times the slowest healthy answer measured on three ISAs. `terminal_supervisor` does the same for
 `line_editor`, with a stand-in built from its own image and its own `QUIESCE_BOUND_MILLISECONDS`, measured
-against `line_editor`'s answer (`line_editor::component::supervisor`).
+against `line_editor`'s answer (`line_editor_component::supervisor`).
 
 The bound belongs to the supervisor, not to the manifest and not to the client. A contract cannot
 know the machine, and a client that is parked inside its `CALL` cannot act. It is denominated in

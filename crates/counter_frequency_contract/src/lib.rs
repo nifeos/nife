@@ -93,15 +93,15 @@ pub fn is_plausible(hertz: u64) -> bool {
     (MINIMUM_PLAUSIBLE_HERTZ..=MAXIMUM_PLAUSIBLE_HERTZ).contains(&hertz)
 }
 
-const OFF_MAGIC: usize = 0;
-const OFF_HERTZ: usize = OFF_MAGIC + 8;
+const MAGIC_OFFSET_BYTES: usize = 0;
+const HERTZ_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
 
 /// **The size of the page's content** in bytes: the magic, then one little-endian `u64`. This is
 /// not a page size. The mapped page is one whole frame (4096 bytes), and this is how much of it
 /// carries data; the rest is zeroes.
 ///
 /// Name: ratified 2026-11-01 (#3059), renamed from `PAGE_BYTES`.
-pub const PAGE_CONTENT_BYTES: usize = OFF_HERTZ + 8;
+pub const PAGE_CONTENT_BYTES: usize = HERTZ_OFFSET_BYTES + 8;
 
 /// **The fixed virtual address the kernel maps this page at**, in every `x86_64` and every
 /// `riscv64` process, shared by the writer and the reader through this crate. `riscv64` has its own,
@@ -149,8 +149,8 @@ const _: () = assert!(PAGE_VIRTUAL_ADDRESS <= usize::MAX as u64);
 /// Name: ratified 2026-11-01 (#3059). Kept.
 pub fn build_page(hertz: u64) -> [u8; PAGE_CONTENT_BYTES] {
     let mut page = [0u8; PAGE_CONTENT_BYTES];
-    page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
-    page[OFF_HERTZ..OFF_HERTZ + 8].copy_from_slice(&hertz.to_le_bytes());
+    page[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8].copy_from_slice(&MAGIC);
+    page[HERTZ_OFFSET_BYTES..HERTZ_OFFSET_BYTES + 8].copy_from_slice(&hertz.to_le_bytes());
     page
 }
 
@@ -222,11 +222,11 @@ impl CounterFrequencyPage {
     /// Name: ratified 2026-11-06, renamed from `hz`. The unit is spelled out.
     pub fn hertz(&self) -> Option<u64> {
         let bytes = self.bytes();
-        if bytes[OFF_MAGIC..OFF_MAGIC + 8] != MAGIC {
+        if bytes[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8] != MAGIC {
             return None;
         }
         let mut raw = [0u8; 8];
-        raw.copy_from_slice(&bytes[OFF_HERTZ..OFF_HERTZ + 8]);
+        raw.copy_from_slice(&bytes[HERTZ_OFFSET_BYTES..HERTZ_OFFSET_BYTES + 8]);
         Some(u64::from_le_bytes(raw))
     }
 }
@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn an_unrecognized_magic_reads_as_unknown() {
         let mut bytes = build_page(1_000_000_000);
-        bytes[OFF_MAGIC] ^= 0xff;
+        bytes[MAGIC_OFFSET_BYTES] ^= 0xff;
         with_page(&bytes, |page| {
             assert_eq!(page.hertz(), None);
         });
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {
-        assert_eq!(OFF_HERTZ, 8);
+        assert_eq!(HERTZ_OFFSET_BYTES, 8);
         assert_eq!(PAGE_CONTENT_BYTES, 16);
         assert!(PAGE_CONTENT_BYTES < 4096, "the page must fit in one frame");
     }

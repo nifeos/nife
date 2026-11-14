@@ -50,7 +50,7 @@ pub(crate) fn udp_sendto(
     };
     let dst = read_dst(window);
     let mut buf = vec![0u8; len];
-    window.copy_to_slice(OFF_PAYLOAD, &mut buf);
+    window.copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut buf);
     if sockets
         .get_mut::<udp::Socket>(sk.handle)
         .send_slice(&buf, dst)
@@ -104,16 +104,16 @@ pub(crate) fn sock_receive(
                 // answer whoever asked, as TFTP's transfer ids do.
                 let IpAddress::Ipv4(src) = meta.endpoint.addr;
                 for (i, &b) in src.octets().iter().enumerate() {
-                    window.w8(OFF_DST_IP + i as u64, b);
+                    window.w8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
                 }
-                window.w16(OFF_DST_PORT, meta.endpoint.port);
+                window.w16(DESTINATION_PORT_OFFSET_BYTES, meta.endpoint.port);
                 n
             }
             Err(_) => 0,
         }
     };
-    window.copy_from_slice(OFF_PAYLOAD, &buf[..n]);
-    window.w16(OFF_LEN, n as u16);
+    window.copy_from_slice(PAYLOAD_OFFSET_BYTES, &buf[..n]);
+    window.w16(LENGTH_OFFSET_BYTES, n as u16);
     n as u64
 }
 
@@ -341,7 +341,7 @@ pub(crate) fn tcp_send(
         return REP_ERR;
     };
     let mut buf = vec![0u8; len];
-    window.copy_to_slice(OFF_PAYLOAD, &mut buf);
+    window.copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut buf);
     let sent = sockets
         .get_mut::<tcp::Socket>(sk.handle)
         .send_slice(&buf)

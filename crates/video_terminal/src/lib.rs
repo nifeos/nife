@@ -23,7 +23,7 @@ pub mod script;
 /// What the display terminal reports to whoever spawned it.
 ///
 /// **Status, not contract**: no client can ask for any of this, and it is here rather than in the
-/// terminal contract (`line_editor::proto`) because it is about the *component*, not about the terminal
+/// terminal contract (`terminal_contract`) because it is about the *component*, not about the terminal
 /// a program talks to. The engine above is sans-IO and this module is three constants; nothing in
 /// the engine reads them.
 pub mod status;

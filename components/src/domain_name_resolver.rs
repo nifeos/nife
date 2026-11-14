@@ -32,8 +32,8 @@
 
 use abi::rights;
 use domain_name_resolution_contract::{
-    self as protocol, Grants, MAXIMUM_ADDRESSES, NAME_TEXT_MAXIMUM, OFF_ADDRESSES, OFF_NAME,
-    Outcome, endowment, network_step, status,
+    self as protocol, ADDRESSES_OFFSET_BYTES, Grants, MAXIMUM_ADDRESSES, NAME_OFFSET_BYTES,
+    NAME_TEXT_MAXIMUM, Outcome, endowment, network_step, status,
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
 use socket_contract as socket;
@@ -248,7 +248,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     }
     let mut text = [0u8; NAME_TEXT_MAXIMUM + 1];
     for (i, b) in text[..len].iter_mut().enumerate() {
-        *b = page.r8((OFF_NAME + i) as u64);
+        *b = page.r8((NAME_OFFSET_BYTES + i) as u64);
     }
     let Some(name) = core::str::from_utf8(&text[..len])
         .ok()
@@ -271,7 +271,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     let addresses = answer.addresses();
     for (k, a) in addresses.iter().enumerate().take(MAXIMUM_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
-            page.w8((OFF_ADDRESSES + 4 * k + j) as u64, b);
+            page.w8((ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
         }
     }
     (
@@ -482,29 +482,29 @@ fn socket_page() -> Option<u64> {
 
 fn set_destination(server: &Server) {
     for (i, &b) in server.ip.iter().enumerate() {
-        SOCKET.w8(socket::OFF_DST_IP + i as u64, b);
+        SOCKET.w8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET.w16(socket::OFF_DST_PORT, server.port);
+    SOCKET.w16(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
 }
 
 /// The source of the datagram a UDP `RECEIVE` just delivered.
 fn source() -> ([u8; 4], u16) {
     let mut ip = [0u8; 4];
     for (i, b) in ip.iter_mut().enumerate() {
-        *b = SOCKET.r8(socket::OFF_DST_IP + i as u64);
+        *b = SOCKET.r8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
     }
-    (ip, SOCKET.r16(socket::OFF_DST_PORT))
+    (ip, SOCKET.r16(socket::DESTINATION_PORT_OFFSET_BYTES))
 }
 
 fn write_payload(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        SOCKET.w8(socket::OFF_PAYLOAD + i as u64, b);
+        SOCKET.w8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
 }
 
 fn read_payload(out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = SOCKET.r8(socket::OFF_PAYLOAD + i as u64);
+        *b = SOCKET.r8(socket::PAYLOAD_OFFSET_BYTES + i as u64);
     }
 }
 

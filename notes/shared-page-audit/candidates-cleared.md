@@ -90,7 +90,7 @@ formed over the shared mapping, in the server, in `std::net`'s PAL, or in `netwo
 writer can change the bytes that go out and can corrupt nothing. The PAL's half is generated from
 `crates/socket_contract` by `xtask`, so the offsets cannot drift.
 
-One thing there is worth naming before somebody tidies it: `OFF_LEN` is a length field in the page
+One thing there is worth naming before somebody tidies it: `LENGTH_OFFSET_BYTES` is a length field in the page
 that nothing reads. The server writes it on receive and no client consults it; every length that
 matters travels in a register. It is documented as "in for `SEND*`, out for `RECEIVE`", which is an
 invitation. The first change that makes the server honor the header length converts a contract with

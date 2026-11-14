@@ -44,8 +44,8 @@ fn read(phys: u64, len: usize) -> [u8; 8] {
 }
 
 fn rawmode(term: sched::RendezvousId, on: bool) {
-    let w0 = line_editor::proto::req(
-        line_editor::proto::OPERATION_RAWMODE,
+    let w0 = terminal_contract::req(
+        terminal_contract::OPERATION_RAWMODE,
         if on { OPERATION_ON } else { OPERATION_OFF },
     );
     let r = sched::ipc_call(term, [w0, 0]);
@@ -59,12 +59,12 @@ fn send_bytes(term: sched::RendezvousId, bytes: &[u8]) -> [u64; 3] {
     for (i, &b) in bytes.iter().enumerate() {
         w1 |= (b as u64) << (8 * i);
     }
-    let w0 = line_editor::proto::req(line_editor::proto::OPERATION_BYTES, bytes.len() as u64);
+    let w0 = terminal_contract::req(terminal_contract::OPERATION_BYTES, bytes.len() as u64);
     sched::ipc_call(term, [w0, w1])
 }
 
 fn read_raw(term: sched::RendezvousId) -> (usize, [u8; 8]) {
-    let w0 = line_editor::proto::req(line_editor::proto::OPERATION_READRAW, 0);
+    let w0 = terminal_contract::req(terminal_contract::OPERATION_READRAW, 0);
     let r = sched::ipc_call(term, [w0, 0]);
     (r[0] as usize, r[1].to_le_bytes())
 }
@@ -139,7 +139,7 @@ fn raw_mode_delivers_control_bytes_literally() {
         "^C must arrive as a literal byte in raw mode"
     );
 
-    let intr_w0 = line_editor::proto::req(line_editor::proto::OPERATION_INTRCOUNT, 0);
+    let intr_w0 = terminal_contract::req(terminal_contract::OPERATION_INTRCOUNT, 0);
     let r = sched::ipc_call(w.term, [intr_w0, 0]);
     assert_eq!(
         r[0], 0,
@@ -173,20 +173,20 @@ fn raw_mode_delivers_control_bytes_literally() {
 fn the_two_input_models_refuse_each_other() {
     let (w, held) = svc::start();
 
-    let readraw_w0 = line_editor::proto::req(line_editor::proto::OPERATION_READRAW, 0);
+    let readraw_w0 = terminal_contract::req(terminal_contract::OPERATION_READRAW, 0);
     let r = sched::ipc_call(w.term, [readraw_w0, 0]);
     assert_eq!(
         r[0],
-        line_editor::proto::BAD_REQUEST,
+        terminal_contract::BAD_REQUEST,
         "OPERATION_READRAW while raw mode is off must be refused",
     );
 
     rawmode(w.term, true);
-    let readline_w0 = line_editor::proto::req(line_editor::proto::OPERATION_READLINE, 0);
+    let readline_w0 = terminal_contract::req(terminal_contract::OPERATION_READLINE, 0);
     let r = sched::ipc_call(w.term, [readline_w0, 0]);
     assert_eq!(
         r[0],
-        line_editor::proto::BAD_REQUEST,
+        terminal_contract::BAD_REQUEST,
         "OPERATION_READLINE while raw mode is on must be refused",
     );
     held.release_or_fail("raw_mode_service");
@@ -252,7 +252,7 @@ fn switching_mode_abandons_a_parked_read_of_the_other_kind() {
     let report = sched::create_rendezvous_from(endpoints).expect("no report rendezvous");
     let term = w.term;
     sched::spawn(move || {
-        let w0 = line_editor::proto::req(line_editor::proto::OPERATION_READLINE, 0);
+        let w0 = terminal_contract::req(terminal_contract::OPERATION_READLINE, 0);
         let r = sched::ipc_call(term, [w0, 0]);
         sched::ipc_send(report, [r[0], r[1], 0]);
     })
@@ -265,7 +265,7 @@ fn switching_mode_abandons_a_parked_read_of_the_other_kind() {
     let [r0, ..] = sched::ipc_receive(report);
     assert_eq!(
         r0,
-        line_editor::proto::BAD_REQUEST,
+        terminal_contract::BAD_REQUEST,
         "entering raw mode must fail a parked OPERATION_READLINE rather than hang it",
     );
 
@@ -285,7 +285,7 @@ fn switching_mode_abandons_a_parked_read_of_the_other_kind() {
     let [n2, ..] = sched::ipc_receive(report2);
     assert_eq!(
         n2,
-        line_editor::proto::BAD_REQUEST,
+        terminal_contract::BAD_REQUEST,
         "leaving raw mode must fail a parked OPERATION_READRAW rather than hang it",
     );
     held.release_or_fail("raw_mode_service");
@@ -309,7 +309,7 @@ fn operation_write_ignores_raw_mode_and_operation_readline_survives_a_round_trip
         // this test is the only writer, and no request naming it is in flight yet.
         unsafe { core::ptr::write_volatile((base + i as u64) as *mut u8, b) };
     }
-    let w0 = line_editor::proto::req(line_editor::proto::OPERATION_WRITE, text.len() as u64);
+    let w0 = terminal_contract::req(terminal_contract::OPERATION_WRITE, text.len() as u64);
     let r = sched::ipc_call(w.term, [w0, 0]);
     assert_eq!(
         r[0],
@@ -328,7 +328,7 @@ fn operation_write_ignores_raw_mode_and_operation_readline_survives_a_round_trip
     // mode off actually re-enabled the line discipline rather than leaving OPERATION_BYTES stuck.
     rawmode(w.term, false);
     send_bytes(w.term, b"hi\r");
-    let w0 = line_editor::proto::req(line_editor::proto::OPERATION_READLINE, 0);
+    let w0 = terminal_contract::req(terminal_contract::OPERATION_READLINE, 0);
     let r = sched::ipc_call(w.term, [w0, 0]);
     assert_eq!(
         r[0], 2,
@@ -379,7 +379,7 @@ fn a_keystroke_edited_by_the_client_costs_two_more_round_trips() {
         // SAFETY: the app-output frame this test allocated; `line_editor` maps it read-only and
         // reads it only inside the `OPERATION_WRITE` below.
         unsafe { core::ptr::write_volatile(app_out as *mut u8, bytes[0]) };
-        let w0 = line_editor::proto::req(line_editor::proto::OPERATION_WRITE, 1);
+        let w0 = terminal_contract::req(terminal_contract::OPERATION_WRITE, 1);
         let r = sched::ipc_call(w.term, [w0, 0]);
         assert_eq!(r[0], 1, "OPERATION_WRITE did not consume the echoed byte");
     }
@@ -408,14 +408,14 @@ fn a_keystroke_edited_by_the_client_costs_two_more_round_trips() {
 /// discipline), fatal risk 7's confinement claim).
 ///
 /// A keyboardless `graphical_terminal` session reads the boot discipline through a copy badged
-/// [`line_editor::proto::RAW_ONLY_BADGE`], served only `OPERATION_RAWMODE` and `OPERATION_READRAW`.
+/// [`terminal_contract::RAW_ONLY_BADGE`], served only `OPERATION_RAWMODE` and `OPERATION_READRAW`.
 /// Its cooked `ls\r` is refused, the unbadged reader gets exactly the driver's later line, other
 /// requests are refused, and the raw half still works, so a terminal refusing everything fails.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.raw_mode_tests.a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them.patch`
 #[test_case]
 fn a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them() {
-    use line_editor::proto::{self, BAD_REQUEST, RAW_ONLY_BADGE};
+    use terminal_contract::{self as proto, BAD_REQUEST, RAW_ONLY_BADGE};
     let (w, held) = svc::start();
     // The kernel's own delivery of a badged `CALL`: the badge lands in `x3` of the server's
     // `RECEIVE_CAPABILITY`, as it would for a user program holding the copy.
@@ -502,7 +502,7 @@ fn a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them() {
 /// Falsification: replayable `system_tests/falsifications/user.raw_mode_tests.a_copy_badged_as_stdin_reads_the_typed_line_and_nothing_else.patch`
 #[test_case]
 fn a_copy_badged_as_stdin_reads_the_typed_line_and_nothing_else() {
-    use line_editor::proto::{self, BAD_REQUEST, STDIN_BADGE};
+    use terminal_contract::{self as proto, BAD_REQUEST, STDIN_BADGE};
     let (w, held) = svc::start();
     let stdin = |operation: u64, len: u64, w1: u64| {
         sched::ipc_call_badged(w.term, [proto::req(operation, len), w1], STDIN_BADGE)

@@ -91,7 +91,7 @@ pub const RESOLVER_SLOT: u64 = 9;
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const RESOLVER_SLOTS: [u64; 8] = [RESOLVER_SLOT, 22, 23, 24, 25, 26, 27, 28];
 
-/// **Standard input: the terminal endpoint, badged `line_editor::proto::STDIN_BADGE`** (milestone
+/// **Standard input: the terminal endpoint, badged `terminal_contract::STDIN_BADGE`** (milestone
 /// 892; calef, 2026-10-19 (UTC), on #2405: "a"). std's `Stdin::read` asks it for the line being
 /// typed, eight bytes at a time (`OPERATION_READ_LINE_BYTES`); an empty slot is end of input at
 /// once. Placed only for a program whose manifest sets `grant_plan::Manifest::console_input`.
@@ -99,7 +99,7 @@ pub const RESOLVER_SLOTS: [u64; 8] = [RESOLVER_SLOT, 22, 23, 24, 25, 26, 27, 28]
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const STDIN_SLOT: u64 = 29;
 
-/// **The word std `CALL`s [`STDIN_SLOT`] with**: `line_editor::proto::OPERATION_READ_LINE_BYTES` in
+/// **The word std `CALL`s [`STDIN_SLOT`] with**: `terminal_contract::OPERATION_READ_LINE_BYTES` in
 /// the opcode bits, no length. Restated as a number for the PAL, which cannot name `line_editor`;
 /// this crate's test pins it to the terminal's own encoding.
 ///
@@ -203,7 +203,7 @@ mod tests {
     /// The stdin request is the terminal's own encoding of its read, which the PAL cannot import.
     #[test]
     fn the_stdin_request_is_the_terminals_read() {
-        use line_editor::proto;
+        use terminal_contract as proto;
         assert_eq!(
             STDIN_READ_REQUEST,
             proto::req(proto::OPERATION_READ_LINE_BYTES, 0)
