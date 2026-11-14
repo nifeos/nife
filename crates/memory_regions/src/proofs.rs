@@ -614,17 +614,72 @@ fn a_release_of_nothing_held_moves_nothing() {
 /// live region with `retyped_to <= watermark <= pages`, and the child's run inside the part of the
 /// root's pages already spent. Every other harness assumes these as its start state; this is the one
 /// that checks the table keeps them across a claim and a return.
+///
+/// **One assumption, stated.** `Run::any` leaves a parent's retyped pages free to overlap a live
+/// child's run, which no sequence of the table's calls produces (a retype lands above every child
+/// that exists, and a split above every retype before it). The harness assumes the states without
+/// that overlap. Building the start state from real calls instead runs CBMC out of memory, so the
+/// reachability evidence is a host test, `no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages`,
+/// which replays every call sequence of up to five calls and checks the same rule after each call.
+/// The covers below keep the assumption from emptying the proof: a state with retyped pages below
+/// a live grandchild and one with them above it both reach the claim.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_return_keeps_every_run_inside_its_parents_spent_part.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn a_return_keeps_every_run_inside_its_parents_spent_part() {
-    let mut run = Run::any(3, false, true);
-    let claim = run.table.claim_for_destroy(run.name(2));
-    kani::cover!(claim.is_some(), "the grandchild is claimed");
-    if let Some(claim) = claim {
-        run.table.return_to_parent(&claim);
+    // A root, a child and a grandchild in any state, built without `Run::any`'s counts and
+    // ceilings, which this proof never reads and which make it far slower than the shard allows.
+    // Each region sits inside its parent's spent part, retyped pages end by its watermark, and
+    // the two parents hold at least the one child they have.
+    let mut table = RegionTable::<4>::new();
+    let mut names = [0u64; 3];
+    let mut parent = NO_PARENT;
+    let (mut spent_from, mut spent_to) = (0u64, u64::MAX);
+    for (r, name) in names.iter_mut().enumerate() {
+        let base_page: u64 = kani::any();
+        let pages: u64 = kani::any();
+        let watermark: u64 = kani::any();
+        let retyped_to: u64 = kani::any();
+        kani::assume(retyped_to <= watermark && watermark <= pages);
+        kani::assume(spent_from <= base_page && base_page <= spent_to);
+        kani::assume(pages <= spent_to - base_page);
+        let children: u32 = if r < 2 { kani::any() } else { 0 };
+        kani::assume(r == 2 || (1..=2).contains(&children));
+        *name = table
+            .insert_in_any_state(
+                parent,
+                (base_page, pages, watermark, retyped_to),
+                false,
+                children,
+                (Ceilings::UNLIMITED, Ceilings::from_counts([0; 8]), [0; 7]),
+            )
+            .expect("the table has room for the tree");
+        parent = *name;
+        (spent_from, spent_to) = (base_page, base_page + watermark);
     }
-    let snaps = run.snapshots();
+    let before = names.map(|n| table.snapshot(n));
+    for (parent, child) in [(0, 1), (1, 2)] {
+        if let (Some(p), Some(c)) = (before[parent], before[child]) {
+            let start = c.base_page - p.base_page;
+            kani::assume(p.retyped_to <= start || p.retyped_to > start + c.pages);
+        }
+    }
+    let claim = table.claim_for_destroy(names[2]);
+    kani::cover!(
+        claim.is_some() && before[1].is_some_and(|c| c.retyped_to > 0),
+        "the grandchild is claimed under a child with retyped pages"
+    );
+    kani::cover!(
+        claim.is_some()
+            && before[1]
+                .zip(before[2])
+                .is_some_and(|(c, g)| c.retyped_to > g.base_page - c.base_page + g.pages),
+        "the child retyped pages after its grandchild was split"
+    );
+    if let Some(claim) = claim {
+        table.return_to_parent(&claim);
+    }
+    let snaps = names.map(|n| table.snapshot(n));
     for s in snaps.into_iter().flatten() {
         assert!(s.retyped_to <= s.watermark, "retyped past the watermark");
         assert!(s.watermark <= s.pages, "watermark past the region");

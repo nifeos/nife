@@ -221,6 +221,11 @@ The ledger of each item is in [the appendix](1101-memory-regions-outside-review/
 - Items 2, 5, 6 and 8 describe what the template's gates report from the helpers run by hand at the
   template's head and from a `--no-build` dry run of the move. No workflow ran. A lane checks each
   against a built staged tree before acting.
+- The Kani harness `a_return_keeps_every_run_inside_its_parents_spent_part` assumes that a parent's
+  retyped pages never overlap a live child's run. Building the start state from the table's real
+  calls runs CBMC out of memory, so a host test replays every sequence of up to five calls and
+  checks that rule after each one; sequences longer than five calls and a table past four regions
+  are not covered by either.
 - The prior-art rows and the decisions' prior art are from memory where marked unverified; a lane
   confirms the sources before a decision cites them.
 - This review reads item 3's release-profile consequence from the workspace manifest and has not
