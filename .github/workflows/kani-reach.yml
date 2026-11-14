@@ -57,11 +57,9 @@ jobs:
       - name: Plan each package
         id: plan
         env:
-          # The 2026-10-04 scaled run: every row of script/verify's table but the three the pilot
-          # measured (nifefs, elf, kernel) and the two whose cost was estimated at 90 CPU-hours
-          # between them (glob, calendar); shard counts from that estimate. See the note.
-          # Shard counts are from the 2026-10-04 cost estimate (notes/kani-reach-2026-10-04.md).
-          # glob and calendar are left out by default: estimated at 90 CPU-hours between them.
+          # Every row of script/verify's table but glob, which the 2026-10-04 cost estimate
+          # (notes/kani-reach-2026-10-04.md) put among the most expensive and which is left out
+          # by default. Shard counts are from that estimate.
           # A `package:shards:only` entry runs one shard of n, which is how a lost shard is
           # rerun with a fix (`gh run rerun` replays the old commit).
           PACKAGES: ${{ github.event.inputs.packages }}

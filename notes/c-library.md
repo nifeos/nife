@@ -181,7 +181,7 @@ Three findings against this note's predictions:
   crates, it is 1,311 lines (`c_library/src/platform/nife.rs`), because `std` already holds every
   client nife needs: files, clock, heap and standard streams.
 - Of relibc's thirty-odd crates, one survived. `libm`, for `math.h`. The rest were replaced by
-  a few lines each or by what the tree already had (`crates/calendar` for `chrono`).
+  a few lines each or by what the tree already had (`jiff` for `chrono`).
 - The soft-float ABI is where C and Rust disagree. C on a soft-float target passes a `double`
   vararg in a general register, and Rust's `va_arg::<f64>` on aarch64 and x86_64 reads the
   floating-point save area. relibc's `printf` printed every `double` as 0 until it read the bits as

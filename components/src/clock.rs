@@ -272,7 +272,7 @@ mod cmos {
     ///
     /// `None` when the reading is not a real calendar date. Every field zero, which is what a
     /// CMOS with a dead battery and no host to seed it reads as, is the case this exists to catch
-    /// (`calendar::Civil::new` refuses month 0 and day 0). The caller still runs a date through
+    /// (`jiff::civil::DateTime::new` refuses month 0 and day 0). The caller still runs a date through
     /// `policy::is_plausible`, as it does every RTC's.
     pub(super) fn read_unix_nanoseconds() -> Option<u64> {
         let raw = loop {
@@ -321,8 +321,18 @@ mod cmos {
         // No century byte; see notes/clock.md.
         let year = 2000 + i32::from(year);
 
-        let civil = calendar::Civil::new(year, month, day, hour, minute, second).ok()?;
-        let seconds = u64::try_from(civil.to_unix()).ok()?;
+        let reading = jiff::civil::DateTime::new(
+            i16::try_from(year).ok()?,
+            i8::try_from(month).ok()?,
+            i8::try_from(day).ok()?,
+            i8::try_from(hour).ok()?,
+            i8::try_from(minute).ok()?,
+            i8::try_from(second).ok()?,
+            0,
+        )
+        .ok()?;
+        let epoch = jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0);
+        let seconds = u64::try_from(reading.duration_since(epoch).as_secs()).ok()?;
         Some(seconds * clock_contract::NS_PER_SECOND)
     }
 }

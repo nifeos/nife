@@ -24,6 +24,9 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
+/// The bound on CPU ids, re-exported from the current-CPU page. This page's layout depends on it
+/// (see [`WORDS`]), so its identity follows the same rule as that page's: any change to the value
+/// re-mints [`MAGIC`] and bumps [`VERSION`] in the same change.
 pub use current_cpu_contract::CPU_ID_BOUND;
 
 /// The page's first word: what tells a prepared page from a frame nobody has written.

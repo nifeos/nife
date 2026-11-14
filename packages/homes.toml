@@ -129,11 +129,6 @@ paths = ["notes/glyphs/bitmap-font.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/calendar alone; it leaves with that crate (§315)"
-paths = ["notes/calendar.md", "notes/verification/calendar-proofs.md"]
-
-[[home]]
-status = "undecided"
 reason = "about crates/capability_plan alone; it leaves with that crate (§315)"
 paths = ["notes/component-manifest/capability-plan.md"]
 

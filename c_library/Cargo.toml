@@ -22,8 +22,9 @@ crate-type = ["rlib"]
 # library, stage 1: files, clock and memory)).
 c_library_errno = { path = "../crates/c_library_errno" }
 # Unix seconds to a civil date and back, for `gmtime` and `mktime`, in place of relibc's
-# `chrono` and `chrono-tz` (milestone 835).
-calendar = { path = "../crates/calendar" }
+# `chrono` and `chrono-tz` (milestone 835). `jiff` with default features off; the dependency was
+# ruled 2026-11-12 (UTC) under §46, and notes/calendar.md says why it was chosen.
+jiff = { version = "0.2.43", default-features = false }
 # `math.h`: relibc's own Rust `math` module, which wraps this crate (rust-lang's port of musl's
 # libm, the code compiler-builtins also carries). A §46 (thin primitives or whole subsystems; we
 # write everything in between) ruling is asked on the pull request.

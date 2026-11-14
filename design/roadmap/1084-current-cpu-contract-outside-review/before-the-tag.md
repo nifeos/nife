@@ -4,7 +4,7 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
 
 ## P1: before the first tag
 
-5. `cpu()` hands back an id the documented consumer cannot use.
+5. `cpu()` hands back an id the documented consumer cannot use. DONE (Decision A, ruled 2026-11-12 UTC).
    Finding: `cpu()` answers `Some(word as usize)` for every word other than `UNSCHEDULED`, with no
    comparison against `CPU_ID_BOUND`. Every documented consumer indexes a `[_; CPU_ID_BOUND]` by
    the answer (the doc example at lines 85 to 96, `user_mode_runtime::current_cpu`'s example). A

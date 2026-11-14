@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 204
@@ -160,6 +160,13 @@ Concrete example. A kernel with a bound of 16 publishes CPU 9 to a program built
 program reads `None` for every word, and its standard library walks on one thread, which is the
 degradation the crate already documents for a magic mismatch.
 
+Ruled 2026-11-12 (UTC): option A. The bound is part of the page's identity. A change to
+`CPU_ID_BOUND` re-mints `MAGIC` and bumps `VERSION` in the same change, and the constant's
+documentation says so. `cpu()` answers `None` for a published id at or past the bound. The
+documentation of `machine_statistics_contract`'s re-export states that its identity follows the
+same rule. Tests cover an id one below the bound (accepted) and an id at the bound
+(refused). Item 5 is done by the pull request that carries this ruling.
+
 ### Decision B. The names
 
 Background. Ratification covers the crate's name; 18 public names lack it, and the standalone gate refuses the move until every name a stranger meets has it. The page-contract family rule pre-rules two, and the table lists them for completeness only. One pull request carries the table below as
@@ -210,6 +217,14 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 - The prior-art rows marked "recalled" were not read in their sources during this review.
 - The review ran no mutation census and found none recorded for this crate; the first run in the
   crate's own repository is the first figure.
+
+## Follow-on
+
+What is left of this review: Decision B (the names) is not ruled, and every other before-the-tag
+item except item 5, plus the P0 and P2 items, is open.
+
+- **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
+  rename pass of Decision B and the P0 items above land, so the standalone gate can pass.
 
 ## Index row
 

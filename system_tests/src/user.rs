@@ -125,8 +125,8 @@ mod clock_tests;
 /// **`date`** (milestone 51; DECISIONS §43, notes/date.md).
 ///
 /// The command that makes the wall clock visible to a person, and the first thing in the tree that
-/// exercises `crates/calendar` against a clock the machine read. One portable binary over one
-/// host-tested contract, so **both ISAs run literally these tests** (DECISIONS §19). They prove
+/// exercises `jiff`'s civil arithmetic against a clock the machine read. One portable binary over
+/// one host-tested contract, so **both ISAs run literally these tests** (DECISIONS §19). They prove
 /// the printed text, parsed back, names the instant the kernel computes from the page, and that
 /// **an unknown clock produces a sentence rather than 1970 or a panic** (DECISIONS §43 listed that
 /// as proven by construction only): a frame nobody has published to is an honest unknown clock.

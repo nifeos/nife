@@ -145,10 +145,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "calendar"
-version = "0.1.0"
-
-[[package]]
 name = "capability"
 version = "0.1.0"
 
@@ -215,7 +211,6 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "calendar",
  "capability_manifest_note",
  "capability_plan",
  "clock_contract",
@@ -250,6 +245,7 @@ dependencies = [
  "interfaces_note",
  "jh7110_clock_and_reset_devices",
  "jh7110_entropy",
+ "jiff",
  "line_editor",
  "login_contract",
  "machine_statistics_contract",
@@ -789,6 +785,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "jiff"
+version = "0.2.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26699905cc795a23e3949585cc7ba3ee8ade090872a27e4316304a777297894a"
+dependencies = [
+ "jiff-core",
+ "jiff-static",
+ "portable-atomic",
+ "portable-atomic-util",
+]
+
+[[package]]
+name = "jiff-core"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffe6854081f5ac0a3046a9b223729ccd7a20b1e0e8277e44dc0660eedf67dfe2"
+dependencies = [
+ "log",
+]
+
+[[package]]
+name = "jiff-static"
+version = "0.2.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b4ff49b2887190c760b86207b55cdcaabbdecaf7a0660d68aa2ed6f652abf0a"
+dependencies = [
+ "jiff-core",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "job_mix"
 version = "0.1.0"
 
@@ -1105,6 +1134,21 @@ name = "pmap"
 version = "0.1.0"
 dependencies = [
  "abi",
+]
+
+[[package]]
+name = "portable-atomic"
+version = "1.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85"
+
+[[package]]
+name = "portable-atomic-util"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10ab3eb7f3becc3a1cbc4f2c6f20267996cfc1a6467a873763411b136a122715"
+dependencies = [
+ "portable-atomic",
 ]
 
 [[package]]
@@ -1496,7 +1540,6 @@ dependencies = [
  "block_roster_contract",
  "byte_sink_contract",
  "c_program_fixture",
- "calendar",
  "capability_witness_contract",
  "clock_contract",
  "compositor",
@@ -1515,6 +1558,7 @@ dependencies = [
  "filesystem_fixture",
  "grant_plan",
  "graphics_contract",
+ "jiff",
  "kernel",
  "line_editor",
  "login_contract",
@@ -1592,9 +1636,9 @@ dependencies = [
 name = "timetable"
 version = "0.1.0"
 dependencies = [
- "calendar",
  "clock_contract",
  "grant_plan",
+ "jiff",
  "periodic_deadline",
 ]
 

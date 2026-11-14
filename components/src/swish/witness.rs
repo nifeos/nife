@@ -963,7 +963,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
 
     // `touch -t <RFC 3339>`, a real command line the parser has to split into three tokens
     // (`touch`, `-t`, the instant, the name) and dispatch to `fs::SETMTIME_AT` with the seconds
-    // value `calendar` decoded from it. The buffer is sized for exactly this one line: "touch -t "
+    // value `jiff` decoded from it. The buffer is sized for exactly this one line: "touch -t "
     // (9) + the RFC 3339 text (20) + " " (1) + the name (at most 16, `run_name`'s own bound).
     const AT_PREFIX: &[u8] = b"touch -t ";
     let mut at_cmd = [0u8; 9 + 20 + 1 + 16];

@@ -1,0 +1,21 @@
+Falsifies `counter_frequency_contract::verification::hertz_answers_none_exactly_when_the_magic_differs`.
+
+The defect: the reader compares seven of the magic's eight bytes. A frame whose first seven bytes
+match and whose eighth differs is then read as a page, so a foreign frame yields a rate it never
+carried.
+
+Expected to fail: the harness's `assert_eq!(page.hertz(), None)`, on a frame whose last magic byte
+differs.
+
+diff --git a/crates/counter_frequency_contract/src/lib.rs b/crates/counter_frequency_contract/src/lib.rs
+--- a/crates/counter_frequency_contract/src/lib.rs
++++ b/crates/counter_frequency_contract/src/lib.rs
+@@ -222,7 +222,7 @@ impl CounterFrequencyPage {
+     /// Name: ratified 2026-11-06, renamed from `hz`. The unit is spelled out.
+     pub fn hertz(&self) -> Option<u64> {
+         let bytes = self.bytes();
+-        if bytes[OFF_MAGIC..OFF_MAGIC + 8] != MAGIC {
++        if bytes[OFF_MAGIC..OFF_MAGIC + 7] != MAGIC[..7] {
+             return None;
+         }
+         let mut raw = [0u8; 8];

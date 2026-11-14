@@ -48,6 +48,7 @@ mod measure;
 mod network_bench;
 mod package;
 mod portable_executable;
+mod region_check;
 mod restamp;
 mod rollback;
 mod scanout;
