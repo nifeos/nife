@@ -22,6 +22,8 @@ use crate::host::workspace_root;
 /// The names `script/board-image` writes and copies onto a card.
 const CARD_KERNEL: &str = "nife-vf2.img";
 const CARD_ARCHIVE: &str = "nife-initial-ramdisk.img";
+/// The loader's two digest words, the third file of the set.
+const CARD_WORDS: &str = "nife-initial-ramdisk.img.loader-digests";
 
 /// Where the last `script/board-image` left the payload.
 fn built_payload() -> PathBuf {
@@ -41,6 +43,9 @@ struct Pair {
     kernel_path: Option<PathBuf>,
     /// The file on disk holding the archive, on the same terms.
     archive_path: Option<PathBuf>,
+    /// The loader's two digest words, from the file beside the archive on a card. A stick has none:
+    /// its loader checks them when it is built.
+    words: Option<String>,
 }
 
 /// **The command.** Exit codes are the contract, because this is meant to be run from a script and
@@ -64,7 +69,11 @@ pub(crate) fn card_check(arg: Option<String>) -> std::process::ExitCode {
 
     let mut refused = false;
     for pair in &pairs {
-        let seal = match sealed_pair::inspect(&pair.kernel, &pair.archive) {
+        let seal = match sealed_pair::inspect_with_words(
+            &pair.kernel,
+            &pair.archive,
+            pair.words.as_deref(),
+        ) {
             Ok(seal) => seal,
             Err(why) => {
                 println!("UNREADABLE: {} {why}", pair.archive_label);
@@ -112,6 +121,7 @@ fn collect(root: &Path) -> Result<Vec<Pair>, String> {
             archive: read(&archive)?,
             kernel_path: Some(kernel),
             archive_path: Some(archive),
+            words: std::fs::read_to_string(root.join(CARD_WORDS)).ok(),
         });
     } else if kernel.is_file() || archive.is_file() {
         // Half a pair is the failure milestone 217 (the card carries a kernel and an archive
@@ -186,6 +196,7 @@ fn embedded(path: &Path) -> Result<Pair, String> {
         archive,
         kernel_path: None,
         archive_path: None,
+        words: None,
     })
 }
 
@@ -216,15 +227,15 @@ fn print_the_fix(pair: &Pair) {
     match (kernel_is_current, archive_is_current) {
         (Some(true), Some(false)) => println!(
             "  The kernel is the one this tree last built and the archive is not, so the ARCHIVE \
-             is stale.\n  Copy the set (never one file):\n    script/board-image --card {card}"
+             is stale.\n  Copy the set of three files (never one):\n    script/board-image --card {card}"
         ),
         (Some(false), Some(true)) => println!(
             "  The archive is the one this tree last built and the kernel is not, so the KERNEL is \
-             stale.\n  Copy the set (never one file):\n    script/board-image --card {card}"
+             stale.\n  Copy the set of three files (never one):\n    script/board-image --card {card}"
         ),
         (Some(false), Some(false)) => println!(
             "  Neither file is the one this tree last built, so this payload is older than \
-             {}.\n  Build and copy the set:\n    script/board-image --card {card}",
+             {}.\n  Build and copy the set of three files:\n    script/board-image --card {card}",
             built_payload().display()
         ),
         (Some(true), Some(true)) => println!(
@@ -236,7 +247,7 @@ fn print_the_fix(pair: &Pair) {
         ),
         _ => println!(
             "  Which half is stale cannot be said from here: {} holds no payload to compare \
-             against.\n  Build one and copy the set:\n    script/board-image --card {card}",
+             against.\n  Build one and copy the set of three files:\n    script/board-image --card {card}",
             built_payload().display()
         ),
     }

@@ -251,7 +251,7 @@ fn a_directory_carries_attributes_and_rmdir_takes_them_with_it() {
 
 /// The last attribute takes the store directory with it, so a filesystem holding no attributes is
 /// byte-for-byte one that never held any (`redoxfs_host extract` would otherwise recover an
-/// unexplained empty `.nife-attrs`).
+/// unexplained empty `.extended-attributes`).
 ///
 /// Both ways of emptying it are exercised: `remove_xattr` writes an empty blob and `unlink` purges
 /// one, and only the first goes through `write_attrs`. The middle assertion keeps it honest: while a

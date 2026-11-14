@@ -4,7 +4,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
 
 ## P2: later
 
-11. `Refusal::errno` restates numbers the contract defines.
+11. `Refusal::errno` restates numbers the contract defines. LEFT: needs contract constants that do not exist for four errnos.
     Finding: `EPERM`, `ENOTDIR` and `EINVAL` exist in `filesystem_contract::dir` (and `EISDIR`,
     which item 4 needs); the crate writes 1, 20 and 22 again. `ENOENT`, `ELOOP`, `EXDEV` and
     `EBADF` have no constant in the contract. The numbers are Linux's generic values (`ELOOP` is 40
@@ -16,7 +16,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
     saying whose numbering the rest follow.
     Door: two-way. Effort: XS.
 
-12. `admit` takes three `u64` words in a row.
+12. `admit` takes three `u64` words in a row. LEFT: a signature change with newtypes.
     Finding: `admit(binding, badge, requested, owner)`; swapping `badge` and `requested` compiles,
     and the one call site is the only thing that keeps them straight.
     Evidence: `crates/subtree_scope/src/lib.rs` lines 183 to 188; `redoxfs_server/src/server.rs`
@@ -25,14 +25,14 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
     for the last parameter. The server's `u32` handles widen at the call as they do now.
     Door: two-way before the tag. Effort: S.
 
-13. `#![cfg_attr(not(test), no_std)]` where `#![no_std]` would do.
+13. `#![cfg_attr(not(test), no_std)]` where `#![no_std]` would do. DONE (`#![no_std]`; the tests pass under it).
     Finding: the tests use only `core` macros as far as reading shows; a plain `#![no_std]` would
     say the same thing without the branch. Unverified: that the test module compiles under it.
     Evidence: `crates/subtree_scope/src/lib.rs` line 22.
     Change: try `#![no_std]`; keep the attribute if a test needs `std`.
     Door: two-way. Effort: XS.
 
-14. The doc says nothing about how the hop word masks.
+14. The doc says nothing about how the hop word masks. DONE (`undefined_bits_of_the_hop_word_change_nothing`; `walk`'s doc says so).
     Finding: `walk` compares `rights.attenuate(DESCEND | hop)` with `Rights::root(DESCEND | hop)`,
     so the comparison silently drops bits of `hop` outside `dir::ALL`, and the contract's `PARENT_RIGHTS`
     sentinel, if it reached `walk` unresolved, would ask for `DESCEND` alone. The directory verb
@@ -44,7 +44,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
     Change: one sentence in `walk`'s doc, and a unit test with a hop word that has a high bit set.
     Door: two-way. Effort: XS.
 
-15. The README should say where this crate is stricter than Linux.
+15. The README should say where this crate is stricter than Linux. LEFT: the README is move work.
     Finding: `..` meets a refusal everywhere, where `openat2` with `RESOLVE_BENEATH` accepts a `..` that
     stays beneath; a symbolic link is never followed, where `cap-std` follows one whose target
     stays beneath. A reader coming from either will file these as bugs unless the README names them
