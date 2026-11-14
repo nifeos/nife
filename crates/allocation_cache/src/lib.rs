@@ -1,11 +1,30 @@
-//! **`allocation_cache`**: a bounded stash of freed blocks in front of the shared heap, so most
+//! **`allocation_cache`**: a bounded stash of freed blocks in front of a shared heap, so most
 //! allocations never take the heap's lock. The algorithm only: it never locks, maps or reads a CPU
-//! id, and its owner decides who touches it. `std` gives each thread one, and
-//! `cargo xtask std-src` generates this file into `std` as `sys/alloc/nife/allocation_cache.rs`.
+//! id, and its owner decides who touches it.
 //!
 //! A class is a block size on a 16-byte grid ([`GRID`]) up to [`LARGEST`], under one heap layout,
-//! [`class_layout`]; the owner sends the heap cached sizes only under [`heap_layout`]. See
-//! `notes/std/allocation.md` for why one thread owns a cache and why blocks of a class are fungible.
+//! [`class_layout`]. A [`Cache`] holds a stack of freed blocks per class. Blocks of one class are
+//! fungible: the heap sees the same layout at both ends, so any cached block can answer any
+//! request of its class.
+//!
+//! # What the owner promises
+//!
+//! 1. **One owner at a time.** A [`Cache`] is neither `Send` nor `Sync`; its owner keeps it where
+//!    one thread reaches it.
+//! 2. **[`refill`](Cache::refill) and [`spill`](Cache::spill) run under whatever excludes the other
+//!    users of the heap**, once per batch, so the heap's lock is taken once for several blocks.
+//! 3. **Every block a [`spill`](Cache::spill) or [`drain`](Cache::drain) hands back goes to the
+//!    heap under [`class_layout`]`(class)`**, and every block the heap hands to
+//!    [`refill`](Cache::refill) was allocated under it. A block that only meets
+//!    [`put`](Cache::put)'s contract (a slice of a stack array, as the example uses) must never be
+//!    handed on to a heap.
+//!
+//! The heap also has to see [`heap_layout`] on the path that never touches a cache. A block may be
+//! allocated before its owner has a cache and freed into one afterward, and the cache then treats
+//! it as [`class_bytes`] long; a heap that rounds or tags its own way would have given a smaller
+//! block to the shorter request.
+//!
+//! An all-zero [`Cache`] is empty, so one may live in memory a runtime zeroes.
 //!
 //! # Examples
 //!
@@ -26,8 +45,14 @@
 //! # BUGS
 //!
 //! - A cached block cannot coalesce until it is spilled: up to [`MOST_CACHED_BYTES`] (34,816) per
-//!   cache, about half a mebibyte for sixteen threads. A thread's cache is spilled at its end.
-//! - [`DEPTH`] (glibc's `tcache` count) and [`LARGEST`] are chosen, not measured per workload.
+//!   cache. The owner spills at its end with [`drain`](Cache::drain); a [`Cache`] dropped while it
+//!   holds blocks leaks them, because it cannot free.
+//! - [`DEPTH`] (glibc's `tcache` count) and [`LARGEST`] are chosen, not measured per workload, and
+//!   they do not move: they are constants, not parameters of [`Cache`].
+//! - A block freed by an owner other than the one that allocated it lands in the freeing owner's
+//!   cache, bounded by [`DEPTH`] and spilled at the bound.
+//! - [`class`] and [`class_bytes`] take bare `usize`. An index that did not come from [`class`]
+//!   panics in [`Cache`]'s methods, or overflows in [`class_bytes`].
 //!
 //! Name: provisional, minted 2026-10-10 (UTC) by the lane for milestone 561 (a per-CPU
 //! allocator is what the current-CPU page was for), for what it holds rather than its owner.
@@ -63,14 +88,15 @@ pub const fn class(size: usize, align: usize) -> Option<usize> {
     if align > GRID {
         return None;
     }
+    // Compare before rounding: `next_multiple_of` wraps near `usize::MAX`, which would pass the bound.
+    if size > LARGEST {
+        return None;
+    }
     let effective = if size == 0 {
         GRID
     } else {
         size.next_multiple_of(GRID)
     };
-    if effective > LARGEST {
-        return None;
-    }
     Some(effective / GRID - 1)
 }
 
@@ -117,8 +143,14 @@ struct Free {
 }
 
 const _: () = assert!(core::mem::size_of::<Free>() <= GRID);
+// `put` casts a `GRID`-aligned block to a `Free`, so the grid must satisfy its alignment.
+const _: () = assert!(core::mem::align_of::<Free>() <= GRID);
 
 /// **One owner's stash**: a stack of freed blocks per class, each at most [`DEPTH`] deep.
+///
+/// The owner's rules are in the crate documentation: one owner at a time, batches under the
+/// heap's exclusion, and every block handed back goes to the heap under [`class_layout`]. An
+/// all-zero `Cache` is empty, so it can live in memory a runtime zeroes.
 ///
 /// `const` so it can sit inside a statically made structure (`std`'s per-thread block). It holds raw
 /// pointers into memory it does not own, so it is neither `Send` nor `Sync`: its owner keeps it
@@ -126,6 +158,16 @@ const _: () = assert!(core::mem::size_of::<Free>() <= GRID);
 pub struct Cache {
     heads: [*mut Free; CLASSES],
     counts: [u8; CLASSES],
+}
+
+/// Prints the count per class and never a pointer, so a cache sits in a `#[derive(Debug)]` struct.
+impl core::fmt::Debug for Cache {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Cache")
+            .field("counts", &self.counts)
+            .field("cached_bytes", &self.cached_bytes())
+            .finish()
+    }
 }
 
 impl Default for Cache {
@@ -169,7 +211,9 @@ impl Cache {
     /// # Safety
     ///
     /// `block` is [`class_bytes`]`(class)` bytes, writable, aligned to [`GRID`], and from now on
-    /// used by nothing but this cache, until [`take`](Self::take) or a spill hands it back.
+    /// used by nothing but this cache, until [`take`](Self::take) or a spill hands it back. A block
+    /// the owner means to [`spill`](Self::spill) or [`drain`](Self::drain) into a heap also has to
+    /// be one that heap accepts under [`class_layout`]`(class)`; the crate documentation says so.
     pub unsafe fn put(&mut self, class: usize, block: NonNull<u8>) -> Result<(), NonNull<u8>> {
         if self.count(class) >= DEPTH {
             return Err(block);
@@ -188,7 +232,8 @@ impl Cache {
         Ok(())
     }
 
-    /// Hand up to [`BATCH`] blocks of `class` to `give`, which returns them to the heap. Call it
+    /// Hand up to [`BATCH`] blocks of `class` to `give`, which returns them to the heap. It hands
+    /// back only blocks that [`put`](Self::put) or [`refill`](Self::refill) took. Call it
     /// holding the heap's lock, once, rather than locking per block.
     pub fn spill(&mut self, class: usize, mut give: impl FnMut(NonNull<u8>)) {
         for _ in 0..BATCH {
@@ -221,7 +266,8 @@ impl Cache {
         taken
     }
 
-    /// Hand every block to `give` with its class, leaving the cache empty: a thread's end.
+    /// Hand every block to `give` with its class, leaving the cache empty: an owner's end. It
+    /// hands back only blocks that [`put`](Self::put) or [`refill`](Self::refill) took.
     pub fn drain(&mut self, mut give: impl FnMut(usize, NonNull<u8>)) {
         for c in 0..CLASSES {
             while let Some(b) = self.take(c) {
@@ -230,6 +276,9 @@ impl Cache {
         }
     }
 }
+
+#[cfg(kani)]
+mod verification;
 
 #[cfg(test)]
 mod tests {
@@ -271,7 +320,7 @@ mod tests {
     /// the same layout and only a class's blocks are fungible. The one change is an empty layout,
     /// over-aligned past the grid, which becomes one byte, since talc refuses an empty one.
     #[test]
-    fn an_uncached_request_reaches_the_heap_as_asked_unless_empty() {
+    fn a_request_without_a_class_reaches_the_heap_as_asked_unless_empty() {
         for (size, align) in [(LARGEST + 1, 8), (4096, 4096), (1, 2 * GRID)] {
             let l = Layout::from_size_align(size, align).unwrap();
             assert_eq!(heap_layout(l), l);
@@ -298,6 +347,42 @@ mod tests {
         assert_eq!(class(1, GRID), Some(0));
         assert_eq!(class(LARGEST, GRID), Some(CLASSES - 1));
         assert_eq!(class(1, GRID + 1), None);
+    }
+
+    /// A cache prints its counts, not its pointers.
+    #[test]
+    fn a_cache_prints_counts_and_not_pointers() {
+        let mut block = [0u128; 1];
+        let mut cache = Cache::new();
+        // SAFETY: 16 writable, grid-aligned bytes nobody else uses while the cache holds them.
+        assert!(unsafe { cache.put(0, NonNull::from(&mut block).cast()) }.is_ok());
+        let text = std::format!("{cache:?}");
+        assert!(text.contains("cached_bytes: 16"), "{text}");
+        assert!(!text.contains("0x"), "{text}");
+    }
+
+    /// A size no `Layout` reaches is refused, not wrapped: rounding `usize::MAX` up to the grid
+    /// wraps to zero, which would pass the bound.
+    #[test]
+    fn a_size_near_the_top_of_usize_has_no_class() {
+        assert_eq!(class(usize::MAX, 8), None);
+        assert_eq!(class(usize::MAX - GRID + 1, 8), None);
+        assert_eq!(class(LARGEST + 1, 8), None);
+        assert_eq!(class(LARGEST, 8), Some(CLASSES - 1));
+        assert_eq!(class(0, 1), Some(0));
+    }
+
+    /// An all-zero cache is empty, which the std overlay relies on when it zeroes a thread block.
+    #[test]
+    fn an_all_zero_cache_is_empty() {
+        // SAFETY: `Cache` holds null raw pointers and byte counters, valid when all-zero.
+        let zeroed: Cache = unsafe { core::mem::zeroed() };
+        assert_eq!(zeroed.cached_bytes(), 0);
+        for c in 0..CLASSES {
+            assert_eq!(zeroed.count(c), 0);
+        }
+        let mut zeroed = zeroed;
+        assert_eq!(zeroed.take(0), None);
     }
 
     /// A spill gives back half a full class and a refill into an empty one takes half a class, so

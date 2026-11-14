@@ -1,0 +1,21 @@
+Falsifies `allocation_cache::verification::a_request_lands_in_a_class_that_holds_it`.
+
+The defect: `class_bytes` answers one byte short of the class's grid step, so a block of the
+largest request in each class is smaller than the request.
+
+Expected to fail: the harness's claim that `class_bytes(c) >= size`; Kani reports the assertion
+reachable at `size = 16`.
+
+diff --git a/crates/allocation_cache/src/lib.rs b/crates/allocation_cache/src/lib.rs
+index d42a4df59..eced71611 100644
+--- a/crates/allocation_cache/src/lib.rs
++++ b/crates/allocation_cache/src/lib.rs
+@@ -102,7 +102,7 @@ pub const fn class(size: usize, align: usize) -> Option<usize> {
+ 
+ /// The effective size of a class's blocks.
+ pub const fn class_bytes(class: usize) -> usize {
+-    (class + 1) * GRID
++    (class + 1) * GRID - 1
+ }
+ 
+ /// The layout every block of `class` is allocated from, and freed to, the heap under.
