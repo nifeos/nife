@@ -52,8 +52,8 @@ one-way after. The items say which.
 
 1. The reader panics on a length byte past its field, and the documentation says it cannot.
    Finding: `read_field` (`src/lib.rs` line 304 to `:310`) slices `page[data_off..data_off + n]` with `n`
-   read from the page. `bytes()` is exactly `PAGE_BYTES` (99) long, so a `TERM` length above 24, a
-   `LANG` length above 49 or a `TZ` length above 90 indexes past the slice and panics. The doc
+   read from the page. `bytes()` is exactly `PAGE_BYTES` (107) long, so a `TERM` length above 32, a
+   `LANG` length above 57 or a `TZ` length above 98 indexes past the slice and panics. The doc
    comment at `:300` to `:303` says a foreign or corrupt page answers "absence rather than a panic".
    The test comment at `:523` to `:529` says the page "must not read out of bounds or panic" and
    then tests only a length of zero. The crate docs of `program_argument_contract` cite this reader
@@ -79,7 +79,7 @@ one-way after. The items say which.
    contract, and a later release can loosen the stricter reader, but once a program depends on the looser one, no release can tighten it. Door: two-way until the move, since only pages a conforming writer
    never produces change behavior. The maintainer can decide it. Effort: S.
 
-3. The pre-ruled family and rule names. Finding: `PAGE_BYTES` (`src/lib.rs` line 162) is 99 bytes of
+3. The pre-ruled family and rule names. Finding: `PAGE_BYTES` (`src/lib.rs` line 162) is 107 bytes of
    content, and the page contract family rule in `design/naming/crates.md` names that
    `PAGE_CONTENT_BYTES`, reserving `PAGE_BYTES` for a real page size. `helpers/name_release.py
    --draft` prints the rename as pre-ruled. `ConfigPage` (`:337`) breaks the spelled-out rule
@@ -112,7 +112,7 @@ one-way after. The items say which.
    template's `proofs.yml` would run nothing. `block_roster_contract`'s
    `read_is_total_and_every_counted_entry_is_gettable` is the shape this crate lacks: for any bytes,
    `read` neither panics nor indexes out of bounds. The review's trial of that harness over a fully
-   symbolic 99-byte page did not finish in seven minutes ("What was checked"). The expensive part is
+   symbolic page did not finish in seven minutes ("What was checked"). The expensive part is
    `from_utf8` over a symbolic slice of up to 255 bytes, and it is also the part that does not
    matter: the bound to prove is on the slice, not on its decoding. Change: a `verification` module
    with three harnesses, each with a falsification patch the template's `falsify` job replays red.
@@ -173,21 +173,27 @@ The P2 items are in [the appendix](1089-environment-contract-outside-review/late
 Only the one-way doors. Each states the background, the recommendation first, the prior art and
 one concrete example.
 
-### Freeze the identity: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, and the 99-byte layout
+### Freeze the identity: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, and the 107-byte layout
+
+Ruled 2026-11-14 (UTC): option A, which widens the terminal type field from 24 to 32 bytes and
+then freezes the identity.
+
+In force. `INTERFACE_ID` is 13, `VERSION` is 1 and `MAGIC` is `ENVCONF1`. The layout starts with 8
+bytes of magic. Then `TZ`, `LANG` and `TERM` each take one length byte and a field of 40, 24 and 32
+bytes. The sum is 8 + 1 + 40 + 1 + 24 + 1 + 32 = 107 bytes, inside one frame. The version stays 1
+because nothing outside nife has read the page. A fourth key is a new version by the contract's own
+rule, so nothing is reserved. A host test pins the identity and the widths as literals.
 
 Background. A program's `INTERFACES` note declares the pair of this id and version, and the
 progenitor refuses a mismatch at spawn. A shared page is single-version: a reader built for one
-magic reads another's page as no configuration at all. Once a program outside nife builds against these values, changing any of them is a coordinated release across repositories, which is why
-milestone 1017 asks for ratified values before a contract crate leaves. The layout is: 8 bytes of
-magic, then for each of `TZ`, `LANG`, `TERM` one length byte and a field of 40, 24 and 24 bytes,
-99 bytes in all, inside one frame.
-
-Recommendation. Freeze all four as they are. The review measured the caps against the real
-databases: 40 bytes for a zone against 32 for the longest IANA name. 24 for a locale against 20 for
-the longest glibc name with a modifier (`ca_ES.UTF-8@valencia`, recalled, unverified). 24 for a
-terminal type against 15 in the list and 21 for the longest common terminfo names
-(`screen.xterm-256color`, recalled, unverified). The length byte and the fields leave nothing to
-reserve, because a fourth key is a new version by the contract's own rule, not a gap to fill.
+magic reads another's page as no configuration at all. Once a program outside nife builds against
+these values, changing any of them is a coordinated release across repositories, which is why
+milestone 1017 asks for ratified values before a contract crate leaves. The review measured the
+caps against the real databases. A zone takes 40 bytes against 32 for the longest IANA name. A
+locale takes 24 against 20 for the longest glibc name with a modifier (`ca_ES.UTF-8@valencia`,
+recalled, unverified). A terminal type took 24 against 15 in the list and 21 for the longest
+common terminfo names (`screen.xterm-256color`, recalled, unverified), which left little
+headroom, hence the widening to 32.
 
 Prior art. `block_roster_contract`, `entropy_contract` and `counter_frequency_contract` each froze
 their identity before leaving. Linux never renumbers an `AT_*` auxiliary-vector key and never
