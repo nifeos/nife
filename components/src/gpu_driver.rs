@@ -119,16 +119,16 @@ const VIRTQ_DESC_F_WRITE: u16 = 2;
 // The ring offsets are the kernel's contract (kernel/src/virtio.rs: queue q's rings sit at
 // q * 0x200 + {0x000, 0x080, 0x100}); queue 0 is the only one we use. The request and response
 // buffers sit above both queues' ring blocks, the same place the net driver puts its packet buffers.
-const OFF_DESC: u64 = 0x000;
-const OFF_AVAIL: u64 = 0x080;
-const OFF_USED: u64 = 0x100;
+const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000;
+const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080;
+const USED_RING_OFFSET_BYTES: u64 = 0x100;
 /// The control request the device reads. The largest command we send is 56 bytes.
-const OFF_REQ: u64 = 0x400;
+const REQUEST_OFFSET_BYTES: u64 = 0x400;
 /// The control response the device writes. `GET_DISPLAY_INFO`'s reply is 408 bytes (a header plus 16
 /// scanout descriptions), which is what sizes this and why it is the last thing in page 0.
-const OFF_RESP: u64 = 0x600;
+const RESPONSE_OFFSET_BYTES: u64 = 0x600;
 /// The surface: page 1 onward, `gfx::SURFACE_PAGE_FRAMES` frames of it, shared with the client.
-const OFF_SURFACE: u64 = 0x1000;
+const SURFACE_OFFSET_BYTES: u64 = 0x1000;
 
 // --- virtio-gpu control commands and responses (virtio spec 5.7). ---
 const CMD_GET_DISPLAY_INFO: u32 = 0x0100;
@@ -204,33 +204,33 @@ fn die(code: u64) -> ! {
 
 /// Write one 16-byte descriptor into queue 0's table: `{ u64 addr; u32 len; u16 flags; u16 next }`.
 fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
-    let b = OFF_DESC + i * 16;
+    let b = DESCRIPTOR_TABLE_OFFSET_BYTES + i * 16;
     direct_memory_access_write::<u64>(b, addr);
     direct_memory_access_write::<u32>(b + 8, len);
     direct_memory_access_write::<u16>(b + 12, flags);
     direct_memory_access_write::<u16>(b + 14, next);
 }
 
-/// Write a control header at `OFF_REQ`: the command type, and zeros for everything else. We use no
+/// Write a control header at `REQUEST_OFFSET_BYTES`: the command type, and zeros for everything else. We use no
 /// fences (the used ring is our completion) and no 3D contexts, so every other field is zero.
 fn write_hdr(cmd: u32) {
-    direct_memory_access_write::<u32>(OFF_REQ, cmd);
-    direct_memory_access_write::<u32>(OFF_REQ + 4, 0); // flags: no VIRTIO_GPU_FLAG_FENCE
-    direct_memory_access_write::<u64>(OFF_REQ + 8, 0); // fence_id
-    direct_memory_access_write::<u32>(OFF_REQ + 16, 0); // ctx_id
-    direct_memory_access_write::<u32>(OFF_REQ + 20, 0); // ring_idx + padding
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES, cmd);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + 4, 0); // flags: no VIRTIO_GPU_FLAG_FENCE
+    direct_memory_access_write::<u64>(REQUEST_OFFSET_BYTES + 8, 0); // fence_id
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + 16, 0); // ctx_id
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + 20, 0); // ring_idx + padding
 }
 
-/// Write a `virtio_gpu_rect` at `OFF_REQ + at`.
+/// Write a `virtio_gpu_rect` at `REQUEST_OFFSET_BYTES + at`.
 fn write_rect(at: u64, x: u32, y: u32, w: u32, h: u32) {
-    direct_memory_access_write::<u32>(OFF_REQ + at, x);
-    direct_memory_access_write::<u32>(OFF_REQ + at + 4, y);
-    direct_memory_access_write::<u32>(OFF_REQ + at + 8, w);
-    direct_memory_access_write::<u32>(OFF_REQ + at + 12, h);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + at, x);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + at + 4, y);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + at + 8, w);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + at + 12, h);
 }
 
-/// **Submit the control command sitting at `OFF_REQ` and wait for the device's reply.** Returns the
-/// response type the device wrote into `OFF_RESP`.
+/// **Submit the control command sitting at `REQUEST_OFFSET_BYTES` and wait for the device's reply.** Returns the
+/// response type the device wrote into `RESPONSE_OFFSET_BYTES`.
 ///
 /// Two descriptors: the request, which the device reads, and the response buffer, which it writes.
 /// Both are inside our DMA region, so the kernel's validator passes them; a bug that aimed either
@@ -239,28 +239,31 @@ fn write_rect(at: u64, x: u32, y: u32, w: u32, h: u32) {
 fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
     // Zero the response type first: a stale OK from the previous command must not be readable as
     // this command's answer.
-    direct_memory_access_write::<u32>(OFF_RESP, 0);
+    direct_memory_access_write::<u32>(RESPONSE_OFFSET_BYTES, 0);
 
     write_desc(
         0,
-        direct_memory_access_phys + OFF_REQ,
+        direct_memory_access_phys + REQUEST_OFFSET_BYTES,
         req_len,
         VIRTQ_DESC_F_NEXT,
         1,
     );
     write_desc(
         1,
-        direct_memory_access_phys + OFF_RESP,
+        direct_memory_access_phys + RESPONSE_OFFSET_BYTES,
         512,
         VIRTQ_DESC_F_WRITE,
         0,
     );
 
-    let used_before: u16 = direct_memory_access_read::<u16>(OFF_USED + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(OFF_AVAIL + 2);
-    direct_memory_access_write::<u16>(OFF_AVAIL + 4 + (idx as u64 % QSIZE as u64) * 2, 0); // ring[idx] = head 0
+    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
+    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
+    direct_memory_access_write::<u16>(
+        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    ); // ring[idx] = head 0
     virtio_ring_barrier(); // the descriptors and the ring slot must be visible before idx moves
-    direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
     virtio_ring_barrier(); // idx must be visible before the kernel rings the device
 
     // The kernel validates both descriptors against our DMA region, copies them into the shadow
@@ -280,8 +283,8 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
         mw(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT); // re-enable the line the kernel masked when it fired
         virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
-            return direct_memory_access_read::<u32>(OFF_RESP);
+        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
+            return direct_memory_access_read::<u32>(RESPONSE_OFFSET_BYTES);
         }
     }
     die(E_NO_COMPLETION)
@@ -340,8 +343,8 @@ fn initialize(direct_memory_access_phys: u64) -> (u32, u32) {
     }
     // The reply is a header then 16 `virtio_gpu_display_one`, each a rect plus enabled and flags.
     // Scanout 0's rect starts right after the header.
-    let dw: u32 = direct_memory_access_read::<u32>(OFF_RESP + HDR_LEN + 8);
-    let dh: u32 = direct_memory_access_read::<u32>(OFF_RESP + HDR_LEN + 12);
+    let dw: u32 = direct_memory_access_read::<u32>(RESPONSE_OFFSET_BYTES + HDR_LEN + 8);
+    let dh: u32 = direct_memory_access_read::<u32>(RESPONSE_OFFSET_BYTES + HDR_LEN + 12);
     if dw < gfx::WIDTH || dh < gfx::HEIGHT {
         die(E_DISPLAY_TOO_SMALL);
     }
@@ -353,10 +356,10 @@ fn initialize(direct_memory_access_phys: u64) -> (u32, u32) {
 fn bring_up_surface(direct_memory_access_phys: u64) {
     // RESOURCE_CREATE_2D: a host-side image of our geometry and format.
     write_hdr(CMD_RESOURCE_CREATE_2D);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN, RESOURCE_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 4, gfx::FORMAT);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 8, gfx::WIDTH);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 12, gfx::HEIGHT);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 4, gfx::FORMAT);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 8, gfx::WIDTH);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 12, gfx::HEIGHT);
     if submit(direct_memory_access_phys, (HDR_LEN + 16) as u32) != RESP_OK_NODATA {
         die(E_CREATE_2D);
     }
@@ -367,14 +370,14 @@ fn bring_up_surface(direct_memory_access_phys: u64) {
     // an entry pointing anywhere else would fail to translate and the device would refuse the
     // command. See notes/framebuffer-contract.md.
     write_hdr(CMD_RESOURCE_ATTACH_BACKING);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN, RESOURCE_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 4, 1); // nr_entries
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 4, 1); // nr_entries
     direct_memory_access_write::<u64>(
-        OFF_REQ + HDR_LEN + 8,
-        direct_memory_access_phys + OFF_SURFACE,
+        REQUEST_OFFSET_BYTES + HDR_LEN + 8,
+        direct_memory_access_phys + SURFACE_OFFSET_BYTES,
     ); // entry addr
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 16, gfx::SURFACE_BYTES); // entry length
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 20, 0); // entry padding
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 16, gfx::SURFACE_BYTES); // entry length
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 20, 0); // entry padding
     if submit(direct_memory_access_phys, (HDR_LEN + 24) as u32) != RESP_OK_NODATA {
         die(E_ATTACH_BACKING);
     }
@@ -382,8 +385,8 @@ fn bring_up_surface(direct_memory_access_phys: u64) {
     // SET_SCANOUT: this resource, whole, is what the display shows.
     write_hdr(CMD_SET_SCANOUT);
     write_rect(HDR_LEN, 0, 0, gfx::WIDTH, gfx::HEIGHT);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 16, SCANOUT_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 20, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 16, SCANOUT_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 20, RESOURCE_ID);
     if submit(direct_memory_access_phys, (HDR_LEN + 24) as u32) != RESP_OK_NODATA {
         die(E_SET_SCANOUT);
     }
@@ -405,17 +408,20 @@ fn flush(direct_memory_access_phys: u64, x: u32, y: u32, w: u32, h: u32) -> i64 
     write_rect(HDR_LEN, x, y, w, h);
     // The offset of the rectangle's first pixel in the backing. The device walks rows of `stride`
     // from here, so this is the one place the surface's stride reaches the device.
-    direct_memory_access_write::<u64>(OFF_REQ + HDR_LEN + 16, gfx::offset_of(x, y) as u64);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 24, RESOURCE_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 28, 0); // padding
+    direct_memory_access_write::<u64>(
+        REQUEST_OFFSET_BYTES + HDR_LEN + 16,
+        gfx::offset_of(x, y) as u64,
+    );
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 24, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 28, 0); // padding
     if submit(direct_memory_access_phys, (HDR_LEN + 32) as u32) != RESP_OK_NODATA {
         return gfx::EINVAL;
     }
 
     write_hdr(CMD_RESOURCE_FLUSH);
     write_rect(HDR_LEN, x, y, w, h);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 16, RESOURCE_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 20, 0); // padding
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 16, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 20, 0); // padding
     if submit(direct_memory_access_phys, (HDR_LEN + 24) as u32) != RESP_OK_NODATA {
         return gfx::EINVAL;
     }
@@ -424,7 +430,7 @@ fn flush(direct_memory_access_phys: u64, x: u32, y: u32, w: u32, h: u32) -> i64 
 
 /// Read pixel `i` of the surface, through our own mapping of the shared frames.
 fn surface_pixel(i: usize) -> u32 {
-    direct_memory_access_read::<u32>(OFF_SURFACE + (i * 4) as u64)
+    direct_memory_access_read::<u32>(SURFACE_OFFSET_BYTES + (i * 4) as u64)
 }
 
 /// Attack this driver's own confinement: bring the device up honestly, then attach `victim`, a
@@ -441,10 +447,10 @@ fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     initialize(direct_memory_access_phys);
 
     write_hdr(CMD_RESOURCE_CREATE_2D);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN, RESOURCE_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 4, gfx::FORMAT);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 8, gfx::WIDTH);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 12, gfx::HEIGHT);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 4, gfx::FORMAT);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 8, gfx::WIDTH);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 12, gfx::HEIGHT);
     if submit(direct_memory_access_phys, (HDR_LEN + 16) as u32) != RESP_OK_NODATA {
         die(E_CREATE_2D);
     }
@@ -454,11 +460,11 @@ fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     // then records nothing, so one translation and one fault ask the same question without a flood
     // (notes/framebuffer-contract/iommu-escape-test.md).
     write_hdr(CMD_RESOURCE_ATTACH_BACKING);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN, RESOURCE_ID);
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 4, 1); // nr_entries
-    direct_memory_access_write::<u64>(OFF_REQ + HDR_LEN + 8, victim); // OUTSIDE the grant
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 16, 4); // one pixel: see above
-    direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN + 20, 0);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN, RESOURCE_ID);
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 4, 1); // nr_entries
+    direct_memory_access_write::<u64>(REQUEST_OFFSET_BYTES + HDR_LEN + 8, victim); // OUTSIDE the grant
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 16, 4); // one pixel: see above
+    direct_memory_access_write::<u32>(REQUEST_OFFSET_BYTES + HDR_LEN + 20, 0);
     let resp = submit(direct_memory_access_phys, (HDR_LEN + 24) as u32);
 
     // Report what the device said about the attach. The kernel test decides whether the barrier held,
@@ -484,7 +490,7 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // physical addresses, and the progenitor that builds this driver holds the run as a capability
     // and knows none, so whoever built this process wrote the base into the tail of the first page
     // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
-    // `OFF_RESP`'s 408 bytes).
+    // `RESPONSE_OFFSET_BYTES`'s 408 bytes).
     // SAFETY: the whole run was just mapped read/write at `DMA_VA`, and the offset is inside its
     // first page.
     let direct_memory_access_phys = unsafe {

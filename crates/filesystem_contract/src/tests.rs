@@ -41,3 +41,41 @@ fn errors_are_negated_errnos_and_invert() {
     assert_eq!(reply_errno(0), None);
     assert_eq!(reply_errno(4096), None); // a byte count is a success, not an error
 }
+
+#[test]
+fn the_error_range_is_bounded_at_both_ends() {
+    // The bounds: -1 and -MAXIMUM_ERRNO are the first and last errors.
+    assert_eq!(MAXIMUM_ERRNO, 4095);
+    assert_eq!(reply_errno(-1), Some(1));
+    assert_eq!(reply_errno(-4095), Some(4095));
+    // One past the bound is a protocol violation, and so is the word with no negation.
+    assert_eq!(reply_errno(-4096), Some(EPROTO));
+    assert_eq!(reply_errno(i64::MIN), Some(EPROTO));
+    assert_eq!(reply_errno(-5_000_000_000), Some(EPROTO)); // once a truncated 705_032_704
+    assert_eq!(EPROTO, 71);
+    // Success never reads as an error, at its own bounds.
+    assert_eq!(reply_errno(0), None);
+    assert_eq!(reply_errno(i64::MAX), None);
+    // The sender's end of the same bounds.
+    assert_eq!(reply_err(1), -1);
+    assert_eq!(reply_err(MAXIMUM_ERRNO), -4095);
+}
+
+#[test]
+#[should_panic(expected = "1..=MAXIMUM_ERRNO")]
+fn a_sender_cannot_send_zero_as_an_error() {
+    // Zero would be a success on the wire.
+    let _ = reply_err(0);
+}
+
+#[test]
+#[should_panic(expected = "1..=MAXIMUM_ERRNO")]
+fn a_sender_cannot_send_a_code_past_the_bound() {
+    let _ = reply_err(MAXIMUM_ERRNO + 1);
+}
+
+#[test]
+#[should_panic(expected = "1..=MAXIMUM_ERRNO")]
+fn a_sender_cannot_send_a_negative_code() {
+    let _ = reply_err(-2);
+}

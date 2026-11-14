@@ -21,7 +21,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::{Event, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RawQueue, Sink, proto};
+use line_editor::{Event, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RawQueue, Sink};
+use terminal_contract as proto;
 use user_mode_runtime::{Reply, call, receive, receive_request, reply, send};
 
 /// The terminal endpoint (slot 0): clients CALL requests here; we serve it with `RECEIVE_CAPABILITY`. Its
@@ -74,9 +75,14 @@ const APP_IN_VA: u64 = address_space_map::pair_page(0x0090_0000);
 const PAGE: usize = 4096;
 
 /// Where a supervisor maps the handoff page when it starts us with `START_HANDOFF`. Declared in
-/// `line_editor::component`, beside the capability half of the contract.
-const HANDOFF_VA: u64 = line_editor::component::HANDOFF_VA;
-const HANDOFF_BYTES: usize = PAGE * line_editor::component::HANDOFF_PAGES as usize;
+/// `line_editor_component`, beside the capability half of the contract.
+const HANDOFF_VA: u64 = line_editor_component::HANDOFF_VA;
+const HANDOFF_BYTES: usize = PAGE * line_editor_component::HANDOFF_PAGES as usize;
+
+// The quiesce reply this terminal sends is the word every swappable component answers with. The
+// wire contract depends on nothing, so it states the value and this program, which links both,
+// holds the two equal (rule 7: what two binaries agree on is one definition).
+const _: () = assert!(proto::QUIESCED == hot_swap_contract::QUIESCED);
 
 /// How many completed lines the type-ahead queue holds. A user typing while the application is
 /// busy loses nothing until this overflows, and then the newest line is dropped with a bell,

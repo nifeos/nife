@@ -67,16 +67,16 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_map::runtime_window(0x1800_0
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 pub const PAGE_BYTES: usize = address_space_map::PAGE as usize;
 
-const OFF_MAGIC: usize = 0;
-const OFF_COUNT: usize = OFF_MAGIC + 8;
-const OFF_ENTRIES: usize = OFF_COUNT + 8;
+const MAGIC_OFFSET_BYTES: usize = 0;
+const COUNT_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
+const ENTRIES_OFFSET_BYTES: usize = COUNT_OFFSET_BYTES + 8;
 const ENTRY_BYTES: usize = 16;
 
 /// **How many windows one page can list**: the page less its sixteen-byte header, in sixteen-byte
 /// entries.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-pub const MAXIMUM_WINDOWS: usize = (PAGE_BYTES - OFF_ENTRIES) / ENTRY_BYTES;
+pub const MAXIMUM_WINDOWS: usize = (PAGE_BYTES - ENTRIES_OFFSET_BYTES) / ENTRY_BYTES;
 
 /// **Which window an entry describes**: a number minted by the contract crate both sides
 /// link, so the agreement is code. Zero names none.
@@ -148,11 +148,12 @@ pub fn write(page: &mut [u8], windows: &[Window]) -> Result<(), Refusal> {
             return Err(Refusal::DuplicateKind(w.kind));
         }
     }
-    page[OFF_MAGIC..OFF_COUNT].copy_from_slice(&MAGIC);
-    page[OFF_COUNT..OFF_COUNT + 4].copy_from_slice(&(windows.len() as u32).to_le_bytes());
-    page[OFF_COUNT + 4..OFF_ENTRIES].fill(0);
+    page[MAGIC_OFFSET_BYTES..COUNT_OFFSET_BYTES].copy_from_slice(&MAGIC);
+    page[COUNT_OFFSET_BYTES..COUNT_OFFSET_BYTES + 4]
+        .copy_from_slice(&(windows.len() as u32).to_le_bytes());
+    page[COUNT_OFFSET_BYTES + 4..ENTRIES_OFFSET_BYTES].fill(0);
     for (n, w) in windows.iter().enumerate() {
-        let at = OFF_ENTRIES + n * ENTRY_BYTES;
+        let at = ENTRIES_OFFSET_BYTES + n * ENTRY_BYTES;
         page[at..at + 4].copy_from_slice(&w.kind.0.to_le_bytes());
         page[at + 4..at + 8].copy_from_slice(&w.pages.to_le_bytes());
         page[at + 8..at + 16].copy_from_slice(&w.virtual_address.to_le_bytes());
@@ -175,11 +176,11 @@ impl<'a> StartupPage<'a> {
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub fn parse(bytes: &'a [u8]) -> Option<StartupPage<'a>> {
-        if bytes.len() < PAGE_BYTES || bytes[OFF_MAGIC..OFF_COUNT] != MAGIC {
+        if bytes.len() < PAGE_BYTES || bytes[MAGIC_OFFSET_BYTES..COUNT_OFFSET_BYTES] != MAGIC {
             return None;
         }
         let mut count = [0u8; 4];
-        count.copy_from_slice(&bytes[OFF_COUNT..OFF_COUNT + 4]);
+        count.copy_from_slice(&bytes[COUNT_OFFSET_BYTES..COUNT_OFFSET_BYTES + 4]);
         let count = u32::from_le_bytes(count) as usize;
         (count <= MAXIMUM_WINDOWS).then_some(StartupPage { bytes, count })
     }
@@ -207,7 +208,7 @@ impl<'a> StartupPage<'a> {
     pub fn windows(&self) -> impl Iterator<Item = Window> + 'a {
         let bytes = self.bytes;
         (0..self.count).map(move |n| {
-            let at = OFF_ENTRIES + n * ENTRY_BYTES;
+            let at = ENTRIES_OFFSET_BYTES + n * ENTRY_BYTES;
             let word = |from: usize, to: usize| {
                 let mut b = [0u8; 8];
                 b[..to - from].copy_from_slice(&bytes[at + from..at + to]);

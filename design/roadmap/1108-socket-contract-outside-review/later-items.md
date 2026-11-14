@@ -23,8 +23,8 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
 
 8. Offsets, lengths and byte orders mix types and go unstated. PARTIAL: `FRAME_BYTES` added and the byte order stated. LEFT: one type for offsets and lengths (touches five component sites).
    Finding: `OFF_*` are `u64` and `DATA_MAXIMUM` is `usize`, so every caller casts
-   (`DATA_MAXIMUM as u64` at five sites in `components/`, `OFF_PAYLOAD as usize` in the crate's
-   own line 471). `DATA_MAXIMUM = 4096 - OFF_PAYLOAD` hardcodes the page size with no constant for
+   (`DATA_MAXIMUM as u64` at five sites in `components/`, `PAYLOAD_OFFSET_BYTES as usize` in the crate's
+   own line 471). `DATA_MAXIMUM = 4096 - PAYLOAD_OFFSET_BYTES` hardcodes the page size with no constant for
    it; `user_mode_runtime` brings its own `PAGE`. The text gives the byte order for `dst_port` alone
    ("little-endian", line 456). It gives none for `len`. The std layer comments that it matches
    (`nife.rs` line 219). The lease word is big-endian in the low 32 bits, so one contract carries

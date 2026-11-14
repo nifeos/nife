@@ -51,11 +51,12 @@ fn bytes_that_are_not_a_page_read_as_none() {
     let mut page = [0u8; PAGE_BYTES];
     write(&mut page, &[]).unwrap();
     assert!(
-        StartupPage::parse(&page[..OFF_ENTRIES]).is_none(),
+        StartupPage::parse(&page[..ENTRIES_OFFSET_BYTES]).is_none(),
         "a header alone, magic and all, is not a page"
     );
     assert_eq!(StartupPage::parse(&page).unwrap().windows().count(), 0);
-    page[OFF_COUNT..OFF_COUNT + 4].copy_from_slice(&(MAXIMUM_WINDOWS as u32 + 1).to_le_bytes());
+    page[COUNT_OFFSET_BYTES..COUNT_OFFSET_BYTES + 4]
+        .copy_from_slice(&(MAXIMUM_WINDOWS as u32 + 1).to_le_bytes());
     assert!(StartupPage::parse(&page).is_none());
 }
 
@@ -111,7 +112,10 @@ fn a_full_page_fits_its_maximum() {
         .map(|k| window(WindowKind(k), k as u64 * 0x1000, 1))
         .collect();
     write(&mut page, &windows).unwrap();
-    assert_eq!(OFF_ENTRIES + MAXIMUM_WINDOWS * ENTRY_BYTES, PAGE_BYTES);
+    assert_eq!(
+        ENTRIES_OFFSET_BYTES + MAXIMUM_WINDOWS * ENTRY_BYTES,
+        PAGE_BYTES
+    );
     assert!(StartupPage::parse(&page).unwrap().windows().eq(windows));
 }
 
