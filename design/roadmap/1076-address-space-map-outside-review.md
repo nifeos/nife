@@ -108,8 +108,9 @@ The comparison with nearby work is in [the appendix](1076-address-space-map-outs
 
 ## Decisions for the architect
 
-Three one-way doors. Each is a public name that becomes the repository's, crates.io's or every
-caller's at the first tag.
+The crate's name and the address and length constants are public names that become the
+repository's, crates.io's or every caller's at the first tag. The whole-window check is a two-way
+door before the first tag, and the maintainer has decided it, provisionally.
 
 ### The crate's name
 
@@ -173,6 +174,13 @@ checking `HEAP`). Keeping the one-page functions means no caller changes.
 Prior art: `vm-memory` checks a region's range against its neighbors once, as data, when the code builds the memory. nife checks at the use site, at compile time, which is the design choice §171 made.
 
 Concrete example: `crates/process_builder/src/lib.rs` lines 51 to 54 builds `SCRATCH_WINDOW` from two `runtime_window` calls, one for the start and one for the end. With `window` it is one call that also proves the 64 MiB between them lies in the band.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The crate gains one function,
+`pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64`, which asserts
+both arguments page aligned and `band.holds(start, start + bytes)` and returns the start. The three
+one-page functions become one-line wrappers over it with `PAGE_BYTES`, and their callers do not
+change. The name `window` ships provisional. Item 9 is the work.
 
 ## Done when
 

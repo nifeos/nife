@@ -80,8 +80,11 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
    already the whole-range check, and `std_runtime_contract` calls it directly for that reason.
    Evidence: `src/lib.rs` lines 11 to 14 and 171 to 206; `crates/std_runtime_contract/src/lib.rs` line 272;
    `notes/address-space-map.md`, BUGS, first entry.
-   Change: see decision 3 below. The three one-page functions stay for their 222 call sites.
-   Door: one-way (a new public name). Effort: S in the crate.
+   Change: as decision 3 below decides, provisionally: add `window(band, start_virtual_address,
+   bytes)`, asserting alignment and `band.holds`, and make the three one-page functions wrappers
+   over it, so their 222 call sites stay. `process_builder`'s `SCRATCH_WINDOW` checks its whole
+   64 MiB with one `window` call.
+   Door: two-way before the first tag (a new public name, provisional). Effort: S in the crate.
 
 10. Five `const` assertions raise a future-incompatibility warning under Kani's toolchain.
     Finding: `const _: () = assert!(...);` puts a macro with a trailing semicolon in expression
