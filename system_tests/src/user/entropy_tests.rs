@@ -209,6 +209,18 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
         "an unknown opcode should be answered with no bytes",
     );
 
+    for bit in [8, 31, 55] {
+        let r = crate::sched::ipc_call(
+            w.request,
+            [entropy_contract::request(entropy_contract::GET, 8) | (1 << bit), 0],
+        );
+        assert_eq!(
+            r[0],
+            entropy_contract::NO_ENTROPY,
+            "a request with reserved bit {bit} set should be answered with no bytes",
+        );
+    }
+
     let mut after = [0u8; 8];
     assert_eq!(
         w.get(8, &mut after),

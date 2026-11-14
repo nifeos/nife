@@ -14,6 +14,8 @@
 //!   nonzero bytes is read the same way: wrong with probability at most 255 in 2^64 from a uniform
 //!   source.
 //! - The check is bring-up only. Continuous health testing is a decision still to be made.
+//! - A service answers an unknown operation with [`NO_ENTROPY`], so a client cannot tell that
+//!   from a dry source. The reply has no room for a third answer.
 //! - No request carries [`VERSION`], and the service answers no query for the versions it serves,
 //!   so a client built against another version is not refused at bind.
 //!
@@ -44,8 +46,10 @@ pub const MAXIMUM_BYTES: u64 = 8;
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The protocol's version, one for the operation set and the reply shape together: one constant
-/// per wire format. A break bumps it. An addition (a new opcode, an optional field) owes no bump.
-/// A program declares it beside [`INTERFACE_ID`]. No peer checks it at bind yet (see this crate's
+/// per wire format. A break bumps it. A new opcode is an addition and owes no bump, since a
+/// service that does not know it answers [`NO_ENTROPY`]. A new field in the request word is not
+/// an addition: a service refuses every request with bits 55:8 set (see [`request_is_well_formed`]),
+/// so a field there is a new operation or a bump of this constant. A program declares it beside [`INTERFACE_ID`]. No peer checks it at bind yet (see this crate's
 /// `BUGS`).
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its version.
@@ -61,7 +65,8 @@ pub const VERSION: u32 = 1;
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 12;
 
-/// Give me this many random bytes. The only operation. [`request`] and [`requested_bytes`] clamp
+/// Give me this many random bytes. The only operation. A service answers any other opcode with
+/// [`NO_ENTROPY`]. [`request`] and [`requested_bytes`] clamp
 /// the byte count to [`MAXIMUM_BYTES`], so a client that asks for more is answered rather than
 /// refused.
 ///
@@ -88,6 +93,34 @@ pub const fn request(operation: u64, byte_count: u64) -> u64 {
     };
     (operation << OPERATION_SHIFT) | clamped
 }
+
+/// Whether a request word is well formed: bits 55:8, which carry no defined meaning, are zero.
+///
+/// A service answers a request for which this is false with [`NO_ENTROPY`], whatever its opcode.
+/// A client sends zero in those bits, which [`request`] does. Refusing what is not defined, rather
+/// than ignoring it, leaves those bits free for a later version to give a meaning without an old
+/// service misreading it. The opcode and the byte count are not judged here: an unknown opcode is
+/// answered [`NO_ENTROPY`] by the service's own dispatch, and a count above [`MAXIMUM_BYTES`] is
+/// clamped by [`requested_bytes`].
+///
+/// # Examples
+///
+/// ```
+/// use entropy_contract::{GET, request, request_is_well_formed};
+///
+/// assert!(request_is_well_formed(request(GET, 8)));
+/// assert!(!request_is_well_formed(request(GET, 8) | (1 << 8)));
+/// assert!(!request_is_well_formed(request(GET, 8) | (1 << 55)));
+/// ```
+///
+/// Name: provisional, minted for the reserved bits of the request word; awaiting a naming pass.
+#[must_use]
+pub const fn request_is_well_formed(request_word: u64) -> bool {
+    request_word & RESERVED_REQUEST_BITS == 0
+}
+
+/// Bits 55:8 of a request word: reserved, sent as zero.
+const RESERVED_REQUEST_BITS: u64 = ((1u64 << OPERATION_SHIFT) - 1) & !0xff;
 
 /// The opcode of a request word.
 ///
@@ -285,8 +318,9 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
 /// landed: the least of `byte_count`, [`MAXIMUM_BYTES`] and the length of `out`.
 ///
 /// Little-endian, and only the low `byte_count` bytes are meaningful. The rest of the word is
-/// whatever the service had left in the register and carries no entropy, so a caller that read
-/// them would be mixing zeros into a key and believing otherwise. The returned count is the
+/// zero: a service puts nothing but zeros past the delivered bytes (see [`reply`]). Those bytes
+/// carry no entropy, so a caller that read them would be mixing zeros into a key and believing
+/// otherwise. The returned count is the
 /// result: a caller that ignores it has filled less than it thinks.
 ///
 /// # Examples
@@ -332,7 +366,9 @@ pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) 
 /// Build a reply from the bytes a service delivers: the count and the word that carries them.
 ///
 /// At most [`MAXIMUM_BYTES`] bytes are delivered, and any beyond that are left out. The word holds
-/// them little-endian in its low bytes and zeros above. Reading the pair back with
+/// them little-endian in its low bytes and zeros above, and a service puts nothing else in the
+/// word: bytes past the delivered count are zero, so a reply never carries a byte the client did
+/// not ask for, and none that another client could be handed. Reading the pair back with
 /// [`delivered_bytes`] and [`copy_delivered_bytes`] yields the delivered bytes, so a service and
 /// its tests make the reply with the same function the client reads it with.
 ///
@@ -426,6 +462,34 @@ mod tests {
         assert_eq!(calls, 2);
         assert_eq!(out[..8], [1, 2, 3, 4, 5, 6, 7, 8]);
         assert_eq!(out[8..], [2, 4, 6, 8, 10, 12, 14, 16]);
+    }
+
+    /// Only bits 55:8 make a request ill formed; the opcode and the count do not.
+    #[test]
+    fn reserved_request_bits_are_refused() {
+        assert!(request_is_well_formed(request(GET, 0)));
+        assert!(request_is_well_formed(request(0xff, 8)));
+        assert!(request_is_well_formed(0xff));
+        for bit in 8..56 {
+            assert!(!request_is_well_formed(request(GET, 8) | (1 << bit)), "bit {bit}");
+        }
+        for bit in (0..8).chain(56..64) {
+            assert!(request_is_well_formed(1 << bit), "bit {bit}");
+        }
+    }
+
+    /// A reply holds zeros past the delivered count, for every length including one too long.
+    #[test]
+    fn a_reply_is_zero_past_the_delivered_bytes() {
+        for length in 0..=12usize {
+            let bytes = [0xffu8; 12];
+            let (count, word) = reply(&bytes[..length]);
+            let delivered = length.min(MAXIMUM_BYTES as usize);
+            assert_eq!(count, delivered as u64);
+            for (index, byte) in word.to_le_bytes().iter().enumerate() {
+                assert_eq!(*byte, if index < delivered { 0xff } else { 0 }, "{length}/{index}");
+            }
+        }
     }
 
     /// A short answer on the second trip refuses the whole fill, and the refusal says what was
