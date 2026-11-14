@@ -1,0 +1,19 @@
+#!/bin/sh
+# script/region-check: a spawned program must fit the job region it is spawned into.
+#
+# Builds every program the shell can spawn (debug, for one architecture), reads each image's loaded
+# pages from its ELF, and compares them with the region `grant_plan::job_region_pages` hands it,
+# less the stack, tables and a margin. A program that has grown past its region fails here, naming
+# the program, its size in pages and the region, instead of in a QEMU suite as "could not spawn".
+# See xtask/src/region_check.rs and notes/system-initializer/budgets.md ("The region check").
+#
+#     script/region-check                      # aarch64
+#     script/region-check --arch x86_64
+#     script/region-check --no-build           # measure what target/ already holds
+#
+# Name: provisional (2026-11-14, lane program-region-size-check). The family's `-check` suffix is
+# the pass/fail gate's.
+
+set -e
+cd "$(dirname "$0")/.."
+exec cargo xtask region-check "$@"
