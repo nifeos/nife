@@ -40,7 +40,7 @@ Verified firsthand, on a fresh shallow clone of `main` at the merge of #3467:
   crate's own. The one fuzz target that links it (`capability_manifest_note_decode`) links other
   crates of the tree as well, so the dry run keeps it here.
 
-Inferred from reading, not run: the size of `Grants` (item 14), the behavior of the spawner when a grant draws a refusal (item 6), and the template's live workflows over the staged tree.
+Inferred from reading, not run: the size of `Grants` (item 14) and the template's live workflows over the staged tree.
 
 Not run: a mutation census (outside its window), the template's heavy jobs (coverage, Miri,
 semver), a stranger test, `script/crate-standalone`, and the dry run's build half.
