@@ -824,91 +824,48 @@ crates/c_seam/src/lib.rs::pattern_far
 
 crates/c_seam/src/lib.rs::pattern_ro
 
-crates/calendar/src/lib.rs::Civil
 
-crates/calendar/src/lib.rs::DateTime
 
-crates/calendar/src/lib.rs::Error
 
-crates/calendar/src/lib.rs::Format
 
-crates/calendar/src/lib.rs::Formatted
 
-crates/calendar/src/lib.rs::SECONDS_PER_DAY
 
-crates/calendar/src/lib.rs::UTC
 
-crates/calendar/src/lib.rs::UtcOffset
 
-crates/calendar/src/lib.rs::Weekday
 
-crates/calendar/src/lib.rs::abbrev
 
-crates/calendar/src/lib.rs::as_bytes
 
-crates/calendar/src/lib.rs::as_str
 
-crates/calendar/src/lib.rs::as_str
 
-crates/calendar/src/lib.rs::civil
 
-crates/calendar/src/lib.rs::day
 
-crates/calendar/src/lib.rs::day_of_year
 
-crates/calendar/src/lib.rs::days_in_month
 
-crates/calendar/src/lib.rs::days_since_epoch
 
-crates/calendar/src/lib.rs::format
 
-crates/calendar/src/lib.rs::format
 
-crates/calendar/src/lib.rs::from_hm
 
-crates/calendar/src/lib.rs::from_minutes
 
-crates/calendar/src/lib.rs::from_unix
 
-crates/calendar/src/lib.rs::from_unix
 
-crates/calendar/src/lib.rs::hour
 
-crates/calendar/src/lib.rs::is_leap_year
 
-crates/calendar/src/lib.rs::iso_number
 
-crates/calendar/src/lib.rs::minute
 
-crates/calendar/src/lib.rs::minutes
 
-crates/calendar/src/lib.rs::month
 
-crates/calendar/src/lib.rs::name
 
-crates/calendar/src/lib.rs::new
 
-crates/calendar/src/lib.rs::new
 
-crates/calendar/src/lib.rs::offset
 
-crates/calendar/src/lib.rs::parse_rfc3339
 
-crates/calendar/src/lib.rs::parse_rfc3339_bytes
 
-crates/calendar/src/lib.rs::second
 
-crates/calendar/src/lib.rs::seconds
 
-crates/calendar/src/lib.rs::to_unix
 
-crates/calendar/src/lib.rs::to_unix
 
-crates/calendar/src/lib.rs::weekday
 
-crates/calendar/src/lib.rs::year
 
-crates/calendar/src/tests.rs
 
 crates/capability/src/lib.rs::ALL
 

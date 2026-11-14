@@ -36,7 +36,7 @@ network_time_protocol = { version = "0.1.0", path = "../crates/network_time_prot
 # The process listing (milestone 126 (the `procps` package)). The kernel's survey tests drive
 # `ps::collect`, the real program's real loop, against the real `endpoint::SURVEY`, so the cursor
 # protocol is proved end to end rather than by a second copy of the walk written in a test. Same
-# rule as `grant_plan`, `byte_sink_contract` and `calendar` above: no party has its own copy of a
+# rule as `grant_plan` and `byte_sink_contract` above: no party has its own copy of a
 # shared definition.
 ps = { version = "0.1.0", path = "../crates/ps" }
 # The filter over that listing (milestone 126). Driven by the same tests for the same reason, and
@@ -62,7 +62,6 @@ byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" 
 # The system log's wire contracts (milestone 613 (a system log service: the in-memory half)): the
 # suite plays the spawner and a reader, so it links the words they agree on rather than copies.
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
-calendar = { version = "0.1.0", path = "../crates/calendar" }
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
 clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
@@ -91,6 +90,9 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 # document the store test writes to disk, byte for byte.
 timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
+# The `date` tests parse what `date` printed back with the crate that printed it (ruled
+# 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
+jiff = { version = "0.2.43", default-features = false }
 line_editor = { version = "0.1.0", path = "../crates/line_editor" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }

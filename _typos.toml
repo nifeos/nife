@@ -92,7 +92,7 @@ Vas = "Vas"
 VAS = "VAS"
 # "AB-BA deadlock", the standard name for the lock-ordering failure §-many discusses.
 BA = "BA"
-# IST, a timezone abbreviation in the calendar crate's tables.
+# IST, the x86_64 interrupt stack table (kernel/src/arch/x86_64/ist.rs).
 ist = "ist"
 # The `mis-` prefix, hyphenated: "mis-reported", "mis-citation". The checker sees the fragment.
 mis = "mis"

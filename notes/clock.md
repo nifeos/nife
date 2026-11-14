@@ -271,7 +271,8 @@ wants to check first, and a `no_std` component simply reads the page.
   block and the choice is open. The distinction worth holding onto: *reading* time is ambient and
   harmless, *blocking* on time is a scheduler interaction, and that is the part that wants a
   capability.
-- **Calendar, `date` and NTP are other programs.** The propose endpoint is the seam NTP arrives at,
+- **Printing dates, `date` and NTP are other programs.** The service uses `jiff` only to turn an
+  RTC reading into Unix seconds. The propose endpoint is the seam NTP arrives at,
   and the sanity floor above is the anchor its NTS bootstrap needs. See notes/calendar.md and
   notes/date.md.
 - No alarm interrupt. Both RTCs have one; nothing here uses it. The service reads the clock once

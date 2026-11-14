@@ -122,7 +122,6 @@ table and the reasoning.
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
 | `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
 | `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
-| `calendar` | 11 | the date algorithms are mutual inverses over the whole range | [calendar](verification/calendar-proofs.md) |
 | `glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
 
 Three things the table cannot say:
@@ -146,11 +145,11 @@ Three things the table cannot say:
 
 ## Where BMC's cost actually is
 
-The cost of a proof is the shape of the code, not the size of the claim. Four crates measured it:
+The cost of a proof is the shape of the code, not the size of the claim:
 
-- A symbolic 64-bit division is the expensive part of a calendar, and a symbolic-length slice costs
-  more than the parser it wraps. The calendar was factored along that seam and verifies in about
-  seven minutes, the largest single entry ([`verification/calendar-proofs.md`](verification/calendar-proofs.md)).
+- A symbolic 64-bit division is expensive, and a symbolic-length slice costs more than the parser
+  it wraps. Code that does both proves fastest when it is factored along that seam, so each harness
+  meets one of them.
 - A loop Kani bounds too loosely, plus symbolic slice offsets, put whole-parse ELF totality out of
   reach. Proving the loopless leaf arithmetic recovered the panic surface in under a second.
 - Two loops became one in `glob`, and an unwind bound derived from a measurement replaced one from
@@ -168,7 +167,7 @@ script/verify
 
 It self-installs Kani on first run (its own nightly toolchain and a CBMC backend), then runs
 `cargo kani` over every package carrying harnesses. The harness count is generated weekly into
-`notes/project-metrics.md`; the harnesses sit across 39 packages <!--count:harness-crates-->. Not
+`notes/project-metrics.md`; the harnesses sit across 38 packages <!--count:harness-crates-->. Not
 every host compiles all of them: two in `kernel/src/arch/x86_64/interrupt_controller.rs` run only on
 an x86_64 host.
 
