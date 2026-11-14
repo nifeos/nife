@@ -4,7 +4,7 @@ An appendix to [the milestone](../1105-pci-outside-review.md).
 
 **3. `read_bars` turns any writable-bits mask into a size, and the size is a power of two only when
 the mask is contiguous.**
-Where: `crates/pci/src/lib.rs` lines 401 to 408 and 411 to 419.
+Where: `crates/pci_configuration_space/src/lib.rs` lines 401 to 408 and 411 to 419.
 Why: the specification says the writable bits of a memory BAR are the high bits above the size,
 and the crate computes `size = !mask + 1` on that assumption. A function that answers the probe
 with a non-contiguous mask, or a 64-bit BAR whose upper dword reads back with no writable bit, gets
@@ -23,7 +23,7 @@ Effort: S. Door: two-way.
 
 **4. `read_bars` probes six slots on any header, and a 64-bit type in the sixth slot probes a
 seventh.**
-Where: `crates/pci/src/lib.rs` lines 373 to 425 (the loop), `:394-399` (the upper half at `off + 4`).
+Where: `crates/pci_configuration_space/src/lib.rs` lines 373 to 425 (the loop), `:394-399` (the upper half at `off + 4`).
 Why: on a type-1 header, slots 2 through 5 are the bus numbers, the I/O base and limit and the
 memory base and limit. The write-ones probe rewrites them and restores them, which is a transient
 misrouting of everything behind the bridge. The doc comment says "a type-0 header" and every caller
@@ -41,7 +41,7 @@ Effort: S. Door: two-way.
 
 **5. Names the template's gates refuse at a ceiling of zero.**
 Where and what, each a rename:
-- `mem32_window` (`crates/pci/src/lib.rs` line 751): `mem` is a spelled-out word. Recommend
+- `mem32_window` (`crates/pci_configuration_space/src/lib.rs` line 751): `mem` is a spelled-out word. Recommend
   `memory_window_32_bit`, or `non_prefetchable_memory_window`, since the function also refuses the
   prefetchable entry.
 - `CLASS_NVME` (`:74`): `nvme` is a spelled-out word. Recommend
@@ -111,7 +111,7 @@ Fix: the same rename lane as item 5, one ratification list.
 Effort: M with item 5. Door: two-way until the first tag.
 
 **7. The documentation assumes this tree, and 26 public items have none.**
-Where: `crates/pci/src/lib.rs` line 18 (`#![allow(missing_docs)]` against a 24-item worklist), the
+Where: `crates/pci_configuration_space/src/lib.rs` line 18 (`#![allow(missing_docs)]` against a 24-item worklist), the
 undocumented fields of `Bdf`, `BridgeBuses`, `Function` and `VirtioCapability`, and the constants at
 `:45-54, :95, :104, :126, :133-136`. Doc comments at `:4, :38, :79, :131, :514, :566, :638,
 :656, :711-713` cite `notes/pcie.md`, `kernel/src/iommu.rs`, `kernel/src/virtio.rs`,
@@ -126,7 +126,7 @@ the `allow`. Write the README from item 2 so its EXAMPLES section is the
 Effort: M. Door: two-way.
 
 **8. The MSI capability walk has no proof, and nothing proves the ceiling.**
-Where: `crates/pci/src/lib.rs` lines 598 to 619 (`msi_capability`), `:256-303` (`walk`).
+Where: `crates/pci_configuration_space/src/lib.rs` lines 598 to 619 (`msi_capability`), `:256-303` (`walk`).
 Why: `msix_capability` and `virtio_capabilities` each prove termination on any device;
 `msi_capability` is the same loop written a third time, and neither harness covers it. A future
 edit that drops its hop bound goes unnoticed. One fixture test holds the ceiling property

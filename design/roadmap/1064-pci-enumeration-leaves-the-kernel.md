@@ -11,7 +11,7 @@ needs_person: no
 
 *(The number, title and slug are provisional.)*
 
-Reuse: `crates/pci` already holds the decode logic and moves with the server. The prior art for
+Reuse: `crates/pci_configuration_space` already holds the decode logic and moves with the server. The prior art for
 the kernel objects is in §319.
 
 Ruled 2026-11-10 (UTC): PCI enumeration leaves the kernel, last of the extractions. It comes after
@@ -29,7 +29,7 @@ IOMMU offers it), which this milestone waits on.
 ## Today
 
 `kernel/src/pci.rs` (691 code lines) walks ECAM, places BARs, chooses MSI or INTx and brings
-virtio-pci up; `crates/pci` (1,050 code lines) holds the decode logic. NVMe, e1000e, xHCI and
+virtio-pci up; `crates/pci_configuration_space` (1,050 code lines) holds the decode logic. NVMe, e1000e, xHCI and
 virtio-pci all reach their devices through it.
 
 ## What gates it

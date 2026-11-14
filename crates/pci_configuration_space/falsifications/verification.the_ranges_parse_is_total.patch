@@ -10,9 +10,9 @@ reaches bytes 28..32 of a 28-byte entry. The input is firmware's device tree, th
 hostile-input class as a device's config space, so a panic here is a kernel that a malformed
 `ranges` property takes down during boot.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -686,3 +686,3 @@ pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
          let cpu_addr = (cell(3) << 32) | cell(4);
 -        let size = (cell(5) << 32) | cell(6);
