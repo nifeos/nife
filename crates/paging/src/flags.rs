@@ -77,6 +77,8 @@ impl Flags {
     /// **Every constructor's result, once each**, for a test or a proof that must hold over all of
     /// them. A test checks that this list is as long as the number of public constructors, so a
     /// new constructor cannot be left out of it.
+    ///
+    /// Name: provisional (lane milestone/1101-1113-outside-review-fixes, 2026-11-14 UTC).
     pub const ALL: [Flags; 11] = [
         Flags::kernel_code(),
         Flags::kernel_rodata(),
