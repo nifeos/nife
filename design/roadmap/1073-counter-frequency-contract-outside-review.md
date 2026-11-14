@@ -225,7 +225,7 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 ## Decisions for the architect
 
-The identity is frozen (ruled 2026-11-11, #3516). One item is held for a family decision.
+The architect froze the identity on 2026-11-11 (#3516). One item waits on a family decision.
 
 ### Which spelling the page crates use for their private offset constants (item 10)
 
@@ -273,14 +273,24 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 - The kernel's writer caches the page's physical frame on first use; if `frequency_checked` is
   `None` at that moment, every later process reads the zeroed frame (`kernel/src/user/loader.rs`
   lines 159 to 190). That is kernel behavior the kernel's own BUGS should carry, outside this
-  crate; it is noted here because the crate's contract does not cover it.
+  crate, and this note records it because the crate's contract does not cover it.
 - Nobody re-ran the mutation census; the carried baseline row reads "missed 0".
+
+## Follow-on
+
+- **Outstanding.** Item 10, the spelling of the page crates' private offset constants: a family
+  decision for an architect, written up under the decisions above. Checked 2026-11-14 against
+  `crates/counter_frequency_contract/src/lib.rs`, where `OFF_MAGIC` and `OFF_HERTZ` stand.
+- **Outstanding.** The move itself, which waits on milestone 1017's order and on the architect's
+  clearing of the review.
+- **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
+  item 12: no change until the next API change.
 
 ## Index row
 
 An outside review of `counter_frequency_contract` before it leaves this tree. Items 1 to 9 and 11
-have landed: the `std` farm's source lookup, the stable clippy failure, the BUGS entries in the
-contract's own terms, the band the reader applies, the pointer-width assertion, the manifest
-comment, the documentation fixes, the template's prose gates, two Kani harnesses, and a README
-sentence on where the end-to-end test lives. The identity is frozen. One item waits for the
+have landed. They cover the `std` farm's source lookup, the stable clippy failure and the BUGS
+entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
+assertion, the manifest comment and the documentation fixes. The rest are the template's prose
+gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. The identity does not change. One item waits for the
 architect: the spelling of the page crates' private offset constants, a family decision.
