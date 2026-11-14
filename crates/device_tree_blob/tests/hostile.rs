@@ -1195,3 +1195,29 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
         }
     }
 }
+
+/// `node_reg` answers for the first node whose name matches, and stops there, as `node_prop` does.
+/// A first match with no `reg` is zero regions; a later match's `reg` is never used in its place.
+#[test]
+fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"uart@1");
+    b.end_node();
+    b.begin_node(b"uart@2");
+    b.prop(b"reg", &reg64(0x2000, 0x100));
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.node_prop(b"uart@", b"reg"), Ok(None));
+    assert_eq!(dt.node_reg(b"uart@", &mut out), Ok(0));
+
+    // The control: asked for the second node by its own name, it answers.
+    assert_eq!(dt.node_reg(b"uart@2", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x2000, 0x100));
+}

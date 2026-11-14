@@ -323,7 +323,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// per-depth stack, so a device nested under `/soc` reads as well as one under the root. A GIC
     /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
     /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
-    /// is the correct lookup. A node deeper than the stack is not matched. See notes/device-tree.md
+    /// is the correct lookup. The first match is the answer: one with no `reg` yields zero regions, and
+    /// a later match's `reg` is never read in its place. A node deeper than the stack is not matched. See notes/device-tree.md
     /// ("Finding a node").
     pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // #address-cells/#size-cells declared by the node at each depth, applying to its children.
@@ -368,9 +369,12 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_END_NODE => {
                     if target_at == Some(depth) {
-                        // We have walked the whole node. If it had a `reg` we already decoded
-                        // it; either way, stop looking.
-                        target_at = None;
+                        // We have walked the whole node. If it had a `reg` the `FDT_PROP` arm
+                        // already returned its regions, so this node has none. The answer is
+                        // zero regions, as `node_prop` answers `None` and `node_reg_compatible`
+                        // answers zero for a match with no `reg`: the first match is the answer,
+                        // and a later node's `reg` is not a substitute for it.
+                        return Ok(0);
                     }
                     depth = depth.saturating_sub(1);
                 }
