@@ -71,7 +71,7 @@ can neither use nor adopt`, both flat and bridged. The number to watch is still 
 
 ## The design fork, decided, and what the measurement changed
 
-Option 2, the bridge walk. `crates/pci` grew `bridge_buses` (the type-1 header's primary,
+Option 2, the bridge walk. `crates/pci_configuration_space` grew `bridge_buses` (the type-1 header's primary,
 secondary and subordinate bus numbers), `Function` (what a census needs to print), and `walk`. The
 walk descends breadth-first over a 256-bit visited set so that a cycle in firmware's bus numbering
 terminates rather than recursing. `enumerate` is now `walk` with the topology dropped.
@@ -120,7 +120,7 @@ the floor; `pci::ecam_buses()` is the answer, and all three architectures' `map_
 - [x] `pci::find_nvme_device()` finds the Micron, or the census proves it is not there. Found on
       xenon 2026-10-04 at `01:00.0`, behind `00:1b.0`, and driven from EL0 in three bench boots.
 - [x] `script/test` green on all three architectures; host tests for the bridge arithmetic in
-      `crates/pci`, plus a Kani proof that the walk's queue stays inside its array whatever firmware
+      `crates/pci_configuration_space`, plus a Kani proof that the walk's queue stays inside its array whatever firmware
       wrote in the bridges.
 - [x] The roadmap block carries what the census actually found.
 

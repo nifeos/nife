@@ -32,7 +32,7 @@ filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
 non_volatile_memory_express = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "27aa19c957a340b720b8b7ce44de32a8405d6950" }
 # The virtio window is drawn from the function's capability list, which `pci` walks.
-pci = { version = "0.1.0", path = "../pci" }
+pci_configuration_space = { version = "0.1.0", path = "../pci_configuration_space" }
 # Each window's kind is a startup page entry kind.
 startup_page_contract = { version = "0.1.0", path = "../startup_page_contract" }
 

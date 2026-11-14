@@ -246,7 +246,7 @@ Stated plainly, because a demonstrator's caveats are part of the deliverable.
   keys, no other layout.
 - No bell, visual or otherwise. `BEL` is consumed.
 - No mouse. `virtio-tablet-pci` presents the same PCI device id as the keyboard, which is
-  recorded in `crates/pci` so that a machine carrying both would be a known problem rather than a
+  recorded in `crates/pci_configuration_space` so that a machine carrying both would be a known problem rather than a
   surprise. We attach only a keyboard.
 - No key repeat of our own. The device's repeats are honored; nothing here generates them.
 - The font survey's own tool and candidates have limits (wide glyphs clipped, narrow fonts drawn at

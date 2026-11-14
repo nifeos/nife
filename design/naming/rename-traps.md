@@ -9,7 +9,7 @@ who only needs to name, ratify or rename something should not have to open it.*
 
 ## A neighbouring crate's identifiers are the hardware's, not yours
 
-`crates/pci` holds `CLASS_NVME`, `PciNvmeDevice` and `find_nvme_device`, and none of them moved.
+`crates/pci_configuration_space` holds `CLASS_NVME`, `PciNvmeDevice` and `find_nvme_device`, and none of them moved.
 They name the PCI class code the specification defines (`01:08:02`), the same way `satp.ASID` and
 `flush_asid` named a hardware field through the first rename under §154 (the acronym test). This is
 the

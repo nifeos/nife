@@ -77,7 +77,7 @@ that pull request's merge commit, on a 4-core Linux box, the tool pinned at 27.1
 |---|---|---|---|---|
 | A | #950 `f81efb1` | documentation only, one file in `design/` | 0 | **3.7s** |
 | B | #943 `82ebda6` | one crate, four lines, all inside a doc comment | 0 | **3.9s** |
-| C | #934 `cbf5edc` | `crates/pci` plus five kernel files | 70 | **61s** |
+| C | #934 `cbf5edc` | `crates/pci_configuration_space` plus five kernel files | 70 | **61s** |
 | D | #955 `b74c556` | a rename across 70 files, six crates, kernel, xtask | 0 | **3.8s** |
 | (1) | #927 `aa6a50b` | one crate, proofs plus the parser fixes they forced | 22 | **14.3s** |
 

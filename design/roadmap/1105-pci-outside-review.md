@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1105. `pci`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of `crates/pci` as a stranger to this tree would meet it, on a fresh
+Raised by a read-only review of `crates/pci_configuration_space` as a stranger to this tree would meet it, on a fresh
 shallow clone of `main` and a checkout of `nifeos/crate-workflows`. It changes nothing; it lists
 what the next lanes change, and the one decision the architect must take before a repository
 exists.
@@ -57,7 +57,7 @@ more), and the door. A name is two-way until the crate's first tagged release an
 
 **1. The fixture tests read two files outside the crate and link `device_tree_blob` by path, so the
 crate cannot leave.**
-Where: `crates/pci/Cargo.toml` lines 12 to 15; `crates/pci/tests/qemu_virt_dtb.rs` lines 17 to 18, 52 and 147 to 148.
+Where: `crates/pci_configuration_space/Cargo.toml` lines 12 to 15; `crates/pci_configuration_space/tests/qemu_virt_dtb.rs` lines 17 to 18, 52 and 147 to 148.
 Why: the rule a crate leaves under is that every crate it links has left or leaves with it, and no
 file in it names a nife path. `device_tree_blob` has no move plan the review could find
 (unverified), and the two `include_bytes!` reach into `crates/device_tree_blob/tests/fixtures/` and
@@ -76,7 +76,7 @@ Effort: S. Door: two-way.
 
 **2. The template's gates are red on the staged tree for reasons `script/crate-move` does not
 remove.**
-Where: `crates/pci/Cargo.toml` (whole file), `crates/pci/src/lib.rs` lines 4, 11 to 13, 38, 51 to 53, 79, 146 to 148, 170, 514, 563 to 566, 638 and 655 to 656, and the regenerated
+Where: `crates/pci_configuration_space/Cargo.toml` (whole file), `crates/pci_configuration_space/src/lib.rs` lines 4, 11 to 13, 38, 51 to 53, 79, 146 to 148, 170, 514, 563 to 566, 638 and 655 to 656, and the regenerated
 `falsifications/verification.a_fresh_bus_queue_holds_the_root_and_nothing_else.patch`.
 Why: `check / standalone` fails on no README, no license files, `license.workspace`,
 `lints.workspace`, no `rust-version`, `publish = false`, 5 section citations, 7 paths into nife and
@@ -107,38 +107,20 @@ The P2 items are in [the appendix](1105-pci-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-One one-way door is open. Everything else above the maintainer rules as provisional.
+No one-way door is open. Everything else above the maintainer rules as provisional.
 
 ### The package name, because `pci` is taken on crates.io
 
-Background. A crate on crates.io has one name, and `pci` belongs to a 0.0.1 release from another
-author, nine years dormant, with 61 downloads in the last 90 days. crates.io transfers a name only
-with its owner's consent, and the publishing hold means nothing publishes soon. But creating the repository
-sets its name and the manifest's `package.name`, the naming rules say
-a directory holding a package carries exactly the package's name, and every consumer's `use pci::`
-line follows the package name. Changing it after `nifeos/pci` exists and the kernel pins it is a
-rename across three manifests and two repositories.
+In force since 2026-11-14 (UTC): the package is named `pci_configuration_space`, its directory is
+`crates/pci_configuration_space`, and the repository, when it exists, carries the same name. A crate
+on crates.io has one name, and `pci` belongs to a 0.0.1 release from another author, nine years
+dormant. The short name `pci` stays ratified under §154 (the acronym test is whether the phrase is
+spoken), and the `Name:` note in `crates/pci_configuration_space/src/lib.rs` states both. The noun
+names what the crate decodes, it passes every naming gate, and it is free.
 
-Recommendation. Name the package `pci_configuration_space`, create the repository under that name,
-and keep `pci` only as the kernel's local alias (`pci = { package = "pci_configuration_space", ... }`)
-if you want the shorter call sites. The name is the noun for what the crate decodes, it passes
-every gate (`configuration` is the spelled-out form), and it is free. The crate name `pci` stays
-ratified for the module in this tree until the move; nothing in §154 reopens, since `pci` keeps
-its spelling inside the longer name.
-
-Alternatives. Ask the owner of `pci` for the name: a reversible step with an unknown answer and a
-repository that waits to exist until the answer comes. Publish never, and keep `pci` as a git-only
-dependency: this is the current state under the hold, and it leaves the repository name wrong the
-day the hold lifts. `pci_decode`: a verb, which the crate rule refuses.
-
-Prior art. `pci_types` and `pci-ids` both took qualified names; `pci_types`'s README gives no
-reason, and whether that reason applied to the `pci` already taken remains unverified. Linux's and the BSDs' trees name the
-layer `pci` because they own their namespaces.
-
-Concrete example. `crates/driver_process_contract/Cargo.toml` would read
-`pci_configuration_space = { version = "0.1.0", git = "https://github.com/nifeos/pci_configuration_space", rev = "<commit>" }`
-and the import `use pci_configuration_space::{Bdf, virtio_capabilities}`, or with the alias,
-`pci = { package = "pci_configuration_space", ... }` and the call sites unchanged.
+Consumers import the crate under its package name, as the tree did for `glob` becoming `byte_glob`:
+every manifest names `pci_configuration_space` with no `package =` rename, and every path reads
+`pci_configuration_space::`. The short name `pci` is no longer an import.
 
 ### Not a decision here, but held for the architect's awareness
 

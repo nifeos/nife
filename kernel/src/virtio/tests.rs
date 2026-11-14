@@ -249,7 +249,7 @@ fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {
         device_type: 2,
         notify_addr: [0; MAXIMUM_QUEUES],
         isr: 0x4010_2000,
-        msix_vector: pci::VIRTIO_MSIX_NO_VECTOR,
+        msix_vector: pci_configuration_space::VIRTIO_MSIX_NO_VECTOR,
         device_config: None,
     };
     assert!(

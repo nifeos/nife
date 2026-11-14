@@ -8,9 +8,11 @@
 //! standard header: ids, command and status, class, the **BARs** (where its register blocks live)
 //! and the capability list pointer, whose vendor capabilities carry what virtio-modern needs.
 //!
-//! Name: ratified 2026-09-18 (calef, §154 (the acronym test is whether the phrase is spoken)):
-//! nobody says "peripheral component interconnect", so it stays `pci`. Refused
-//! `peripheral_component_interconnect` (§154).
+//! Name: the short name `pci` is ratified 2026-09-18 (calef, §154 (the acronym test is whether the
+//! phrase is spoken)): nobody says "peripheral component interconnect", so it stays `pci`. Refused
+//! `peripheral_component_interconnect` (§154). The package is named `pci_configuration_space`,
+//! ruled 2026-11-14 (UTC) because `pci` is taken on crates.io, and the repository will carry that
+//! name.
 
 #![cfg_attr(not(test), no_std)]
 // milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 24-item
@@ -311,7 +313,7 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
 /// Enumerating a bus with no bus: a test's closure over an array stands in for the ECAM window.
 ///
 /// ```
-/// use pci::{Bdf, VENDOR_ID, VIRTIO_VENDOR, enumerate};
+/// use pci_configuration_space::{Bdf, VENDOR_ID, VIRTIO_VENDOR, enumerate};
 ///
 /// // A config space with exactly one device: modern virtio-blk at 00:01.0. Everything else reads
 /// // 0xffff, which is the bus's way of saying nobody is home.
@@ -785,7 +787,7 @@ pub fn msix_capability(
 /// # Examples
 ///
 /// ```
-/// use pci::intx_interrupt_number;
+/// use pci_configuration_space::intx_interrupt_number;
 ///
 /// // Four devices, each on INTA, spread across four interrupt inputs rather than sharing one.
 /// let base = 32;
@@ -863,7 +865,7 @@ mod verification {
     /// 256-bus window size (`0x1000_0000`), so `ecam_base + ecam_offset() + off` for off < 4096
     /// cannot escape a correctly-sized mapping. This is the arithmetic the kernel's volatile
     /// accessors trust.
-    /// Falsification: replayable `crates/pci/falsifications/verification.ecam_offset_stays_inside_the_window.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.ecam_offset_stays_inside_the_window.patch`
     #[kani::proof]
     fn ecam_offset_stays_inside_the_window() {
         let bdf = Bdf {
@@ -881,7 +883,7 @@ mod verification {
     /// device, and
     /// pin, no underflow (the pin-0 case that used to panic in debug builds) and no overflow,
     /// and the result is within `base..=base+3` whenever that range exists.
-    /// Falsification: replayable `crates/pci/falsifications/verification.intx_interrupt_number_is_total_and_bounded.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.intx_interrupt_number_is_total_and_bounded.patch`
     #[kani::proof]
     #[doc(alias = "irq")]
     fn intx_interrupt_number_is_total_and_bounded() {
@@ -898,7 +900,7 @@ mod verification {
     /// the size probe with garbage; the decode must never panic, and each BAR it keeps has a
     /// power-of-two size and an end that does not overflow, which is what the kernel's placement
     /// and bounds arithmetic rely on.
-    /// Falsification: replayable `crates/pci/falsifications/verification.read_bars_is_total_for_any_device.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.read_bars_is_total_for_any_device.patch`
     #[kani::proof]
     #[kani::unwind(8)]
     fn read_bars_is_total_for_any_device() {
@@ -924,7 +926,7 @@ mod verification {
     /// writable and every one below it is not, so the size is exactly the region the mask
     /// describes. And every mask that does describe a region, the width's address bits from some
     /// power of two up, gets that size back rather than a refusal.
-    /// Falsification: replayable `crates/pci/falsifications/verification.a_bar_size_is_where_the_writable_bits_begin.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.a_bar_size_is_where_the_writable_bits_begin.patch`
     #[kani::proof]
     fn a_bar_size_is_where_the_writable_bits_begin() {
         let decode_bits = if kani::any() {
@@ -953,7 +955,7 @@ mod verification {
     /// form any graph at all; the walk visits at most 64 entries and the callback fires at
     /// most that often. This is the bounded-walk discipline (the virtqueue chain walk's twin)
     /// proved rather than argued.
-    /// Falsification: replayable `crates/pci/falsifications/verification.the_capability_walk_terminates_on_any_device.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.the_capability_walk_terminates_on_any_device.patch`
     #[kani::proof]
     #[kani::unwind(66)]
     fn the_capability_walk_terminates_on_any_device() {
@@ -972,7 +974,7 @@ mod verification {
     /// `1..=2048` and the `+ 1` cannot overflow a `u16`; a device that answers every config read
     /// with garbage must still leave the kernel with a bounded, non-panicking answer, because
     /// this walk runs during enumeration of hardware nobody has vetted.
-    /// Falsification: replayable `crates/pci/falsifications/verification.the_msix_walk_terminates_and_bounds_its_table_size.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.the_msix_walk_terminates_and_bounds_its_table_size.patch`
     #[kani::proof]
     #[kani::unwind(66)]
     fn the_msix_walk_terminates_and_bounds_its_table_size() {
@@ -996,7 +998,7 @@ mod verification {
     /// 256: [`BusQueue::from_the_root`] establishes it and this proves `enqueue` preserves it from
     /// any reachable state. A harness pushing 256 times needed an unwind past three hundred and
     /// did not finish in twenty minutes.
-    /// Falsification: replayable `crates/pci/falsifications/verification.the_bus_queue_stays_inside_its_array_on_any_firmware.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.the_bus_queue_stays_inside_its_array_on_any_firmware.patch`
     #[kani::proof]
     fn the_bus_queue_stays_inside_its_array_on_any_firmware() {
         fn queued(seen: &[u64; 4]) -> usize {
@@ -1025,7 +1027,7 @@ mod verification {
     /// separately because an induction with no base case proves nothing, and the base case here is
     /// exactly the kind of one-line fact that gets changed by someone adjusting
     /// [`BusQueue::from_the_root`] without reading the harness next to it.
-    /// Falsification: replayable `crates/pci/falsifications/verification.a_fresh_bus_queue_holds_the_root_and_nothing_else.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.a_fresh_bus_queue_holds_the_root_and_nothing_else.patch`
     #[kani::proof]
     fn a_fresh_bus_queue_holds_the_root_and_nothing_else() {
         let q = BusQueue::from_the_root();
@@ -1038,7 +1040,7 @@ mod verification {
     /// the same hostile-input class as a device's config space: any byte string at all must
     /// come back as an answer or a `None`, never a panic. Three entries covers every branch
     /// (the loop is per-entry with no state across iterations).
-    /// Falsification: replayable `crates/pci/falsifications/verification.the_ranges_parse_is_total.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.the_ranges_parse_is_total.patch`
     #[kani::proof]
     #[kani::unwind(4)]
     fn the_ranges_parse_is_total() {

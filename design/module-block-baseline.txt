@@ -5710,97 +5710,97 @@ crates/paging/src/x86_64.rs::blocked_device_table_entry
 
 crates/paging/src/x86_64.rs::device_table_entry
 
-crates/pci/src/lib.rs::BAR0
+crates/pci_configuration_space/src/lib.rs::BAR0
 
-crates/pci/src/lib.rs::BUS_NUMBERS
+crates/pci_configuration_space/src/lib.rs::BUS_NUMBERS
 
-crates/pci/src/lib.rs::Bar
+crates/pci_configuration_space/src/lib.rs::Bar
 
-crates/pci/src/lib.rs::Bdf
+crates/pci_configuration_space/src/lib.rs::Bdf
 
-crates/pci/src/lib.rs::CLASS_NVME
+crates/pci_configuration_space/src/lib.rs::CLASS_NVME
 
-crates/pci/src/lib.rs::CLASS_REVISION
+crates/pci_configuration_space/src/lib.rs::CLASS_REVISION
 
-crates/pci/src/lib.rs::CLASS_XHCI
+crates/pci_configuration_space/src/lib.rs::CLASS_XHCI
 
-crates/pci/src/lib.rs::CMD_BUS_MASTER
+crates/pci_configuration_space/src/lib.rs::CMD_BUS_MASTER
 
-crates/pci/src/lib.rs::CMD_MEMORY_SPACE
+crates/pci_configuration_space/src/lib.rs::CMD_MEMORY_SPACE
 
-crates/pci/src/lib.rs::COMMAND
+crates/pci_configuration_space/src/lib.rs::COMMAND
 
-crates/pci/src/lib.rs::HEADER_TYPE
+crates/pci_configuration_space/src/lib.rs::HEADER_TYPE
 
-crates/pci/src/lib.rs::HEADER_TYPE_BRIDGE
+crates/pci_configuration_space/src/lib.rs::HEADER_TYPE_BRIDGE
 
-crates/pci/src/lib.rs::INTERRUPT_PIN
+crates/pci_configuration_space/src/lib.rs::INTERRUPT_PIN
 
-crates/pci/src/lib.rs::MESSAGE_CONTROL
+crates/pci_configuration_space/src/lib.rs::MESSAGE_CONTROL
 
-crates/pci/src/lib.rs::MSIX_ENABLE
+crates/pci_configuration_space/src/lib.rs::MSIX_ENABLE
 
-crates/pci/src/lib.rs::MSIX_ENTRY_BYTES
+crates/pci_configuration_space/src/lib.rs::MSIX_ENTRY_BYTES
 
-crates/pci/src/lib.rs::MSIX_ENTRY_MASKED
+crates/pci_configuration_space/src/lib.rs::MSIX_ENTRY_MASKED
 
-crates/pci/src/lib.rs::MSIX_FUNCTION_MASK
+crates/pci_configuration_space/src/lib.rs::MSIX_FUNCTION_MASK
 
-crates/pci/src/lib.rs::MSI_64_BIT
+crates/pci_configuration_space/src/lib.rs::MSI_64_BIT
 
-crates/pci/src/lib.rs::MSI_ENABLE
+crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
-crates/pci/src/lib.rs::VENDOR_ID
+crates/pci_configuration_space/src/lib.rs::VENDOR_ID
 
-crates/pci/src/lib.rs::VIRTIO_BLK_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_GPU_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_GPU_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_INPUT_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_INPUT_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
+crates/pci_configuration_space/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
 
-crates/pci/src/lib.rs::VIRTIO_NET_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_NET_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_RNG_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_BLOCK
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_BLOCK
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_ENTROPY
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_ENTROPY
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_GPU
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_GPU
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_INPUT
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_INPUT
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_NET
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_NET
 
-crates/pci/src/lib.rs::VIRTIO_VENDOR
+crates/pci_configuration_space/src/lib.rs::VIRTIO_VENDOR
 
-crates/pci/src/lib.rs::address_low
+crates/pci_configuration_space/src/lib.rs::address_low
 
-crates/pci/src/lib.rs::bridge_buses
+crates/pci_configuration_space/src/lib.rs::bridge_buses
 
-crates/pci/src/lib.rs::data
+crates/pci_configuration_space/src/lib.rs::data
 
-crates/pci/src/lib.rs::ecam_offset
+crates/pci_configuration_space/src/lib.rs::ecam_offset
 
-crates/pci/src/lib.rs::enumerate
+crates/pci_configuration_space/src/lib.rs::enumerate
 
-crates/pci/src/lib.rs::mem32_window
+crates/pci_configuration_space/src/lib.rs::mem32_window
 
-crates/pci/src/lib.rs::read_bars
+crates/pci_configuration_space/src/lib.rs::read_bars
 
-crates/pci/src/lib.rs::requester_id
+crates/pci_configuration_space/src/lib.rs::requester_id
 
-crates/pci/src/lib.rs::walk
+crates/pci_configuration_space/src/lib.rs::walk
 
-crates/pci/src/tests.rs
+crates/pci_configuration_space/src/tests.rs
 
 crates/pgrep/src/lib.rs::BLOCKED
 

@@ -356,7 +356,7 @@ const MSI_VECTORS: u32 = SPURIOUS_VECTOR as u32 - MSI_VECTOR_BASE as u32;
 /// `Interrupt::ACKNOWLEDGE` have nothing to do. See notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 215).
-pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
+pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci_configuration_space::MsiTarget)> {
     let offset = MSI_NEXT.fetch_add(1, Ordering::Relaxed);
     if offset >= MSI_VECTORS {
         // Do not hand back a vector outside the band: it would land on the spurious vector or on
@@ -367,7 +367,7 @@ pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
     let destination = local_apic_id();
     let target = match super::iommu::remap_message(requester_id, vector as u8, destination) {
         Ok(Some(remapped)) => remapped,
-        Ok(None) => pci::MsiTarget {
+        Ok(None) => pci_configuration_space::MsiTarget {
             address: LOCAL_APIC_MSI_BASE | ((destination as u64) << 12),
             data: vector,
         },

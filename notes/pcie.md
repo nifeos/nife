@@ -79,7 +79,7 @@ no sharing) is the modern mechanism and a deliberate later step. Nothing we driv
 The swizzle is a hardcoded formula with a **witness**: host tests parse the riscv fixture's
 device tree and hold `intx_interrupt_number` against all sixteen of the machine's own
 `interrupt-map` entries
-(crates/pci/tests/qemu_virt_dtb.rs), the UART pattern. The ECAM base was a constant held the same
+(crates/pci_configuration_space/tests/qemu_virt_dtb.rs), the UART pattern. The ECAM base was a constant held the same
 way; it is now parsed from the tree (above), and the same test pins the parse to the old value.
 
 ## What is proven, and where the edges are

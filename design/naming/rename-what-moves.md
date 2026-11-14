@@ -116,7 +116,7 @@ If yes, the name is not ours and does not move. One question settles the class t
 most occurrences in every rename so far.
 
 It kept `satp.ASID` and `TTBR0_EL1.ASID` (fields in two instruction-set manuals). It kept
-`crates/pci`'s `CLASS_NVME` and `find_nvme_device` through the rename of the `nvme` crate:
+`crates/pci_configuration_space`'s `CLASS_NVME` and `find_nvme_device` through the rename of the `nvme` crate:
 `01:08:02` is a class code the NVM Express specification defines, and it keeps that name whatever
 this tree calls its driver. Likewise `.dtb` is a file format `dtc` writes
 and QEMU reads, and `GUID Partition Table` is UEFI's phrase, so both kept their names through the

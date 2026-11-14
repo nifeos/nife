@@ -11,7 +11,7 @@
 //! hardcode-with-a-witness pattern as the UART test in the `device_tree_blob` crate.
 
 use device_tree_blob::{DeviceTreeBlob, Region};
-use pci::{intx_interrupt_number, mem32_window};
+use pci_configuration_space::{intx_interrupt_number, mem32_window};
 
 const QEMU_RISCV_VIRT: &[u8] =
     include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");

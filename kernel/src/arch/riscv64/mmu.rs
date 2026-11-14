@@ -216,7 +216,7 @@ pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 pub(crate) const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// The PLIC input for INTx line A on `virt`'s root complex; B, C and D follow, by the standard
-/// swizzle in `pci::intx_interrupt_number`.
+/// swizzle in `pci_configuration_space::intx_interrupt_number`.
 #[doc(alias = "irq")]
 pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 32;
 
