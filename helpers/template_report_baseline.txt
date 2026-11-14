@@ -17,6 +17,10 @@ boot_slot abbreviations 8
 boot_slot prose_acronyms 5
 boot_slot readme_acronyms 1
 boot_slot register_names 3
+byte_glob abbreviations 22
+byte_glob prose_acronyms 3
+byte_glob readme_acronyms 1
+byte_glob register_names 3
 byte_sink_contract abbreviations 9
 byte_sink_contract prose_acronyms 3
 c_library_errno abbreviations 45
@@ -115,10 +119,6 @@ firmware_configuration prose_acronyms 4
 firmware_configuration readme_acronyms 2
 firmware_configuration register_names 9
 free abbreviations 5
-glob abbreviations 22
-glob prose_acronyms 3
-glob readme_acronyms 1
-glob register_names 3
 globally_unique_identifier_partition_table abbreviations 72
 globally_unique_identifier_partition_table prose_acronyms 19
 globally_unique_identifier_partition_table register_names 10

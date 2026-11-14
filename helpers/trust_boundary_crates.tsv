@@ -19,6 +19,7 @@ bitmap_font	shared	components,kernel,uefi_loader
 block_roster_contract	shared	retired
 boot_ladder	shared	components,fixtures,kernel
 boot_slot	shared	components,kernel,uefi_loader
+byte_glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 byte_sink_contract	shared	components,fixtures,kernel,std
 byte_sink_proto	shared	retired
 byte_sink_protocol	shared	retired
@@ -87,7 +88,7 @@ free	userspace	components
 fs_proto	shared	retired
 generational_table	kernel	retired
 gfx_proto	shared	retired
-glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+glob	shared	retired
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
