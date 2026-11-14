@@ -1,8 +1,8 @@
 # §323 appendix: the five layers
 
-Part of the survey behind [§323 (what a kernel family is, and the names of the project's
-layers)](../0323-what-a-kernel-family-is-and-the-names-of-the-layers.md). That page holds the
-question and the recommendation. This one holds what each layer's name touches, how reversible
+Part of the survey behind [§323 (the binary interface, and the names of the project's
+layers)](../0323-the-binary-interface-and-the-names-of-the-layers.md). That page holds the
+rule on the binary interface. This one holds what each layer's name touches, how reversible
 each is, and the candidates. Candidate names here are options, not rulings, and a leaning appears
 only where evidence decides it.
 
@@ -31,11 +31,11 @@ matches. The tree has 6,931 tracked files.
 | `basalt` | 1,411 | 267 | `git grep -c basalt` |
 | `abi::` | 2,179 | 441 | `git grep -c -E '\babi::'` |
 
-Of the 119 entries under `crates/`, one package name contains `nife` (`nifefs`), and none carries
-it as a prefix. Under (a), `abi` would take a family prefix on publishing, and so might the 25
-`*_contract` crates (`ls -d crates/*_contract`). The 1,784 uses of `abi` in 238 files, counted for
-milestone 1075 (`abi`: what an outside maintainer would fix before the move), measure uses of the
-crate rather than lines naming the path.
+Of the 119 entries under `crates/`, one package name contains `nife` (`nifefs`), and none carries it
+as a prefix. `abi` would take the capability binary interface's prefix on publishing, and so might
+the 25 `*_contract` crates (`ls -d crates/*_contract`). The 1,784 uses of `abi` in 238 files,
+counted for milestone 1075 (`abi`: what an outside maintainer would fix before the move), measure
+uses of the crate rather than lines naming the path.
 
 basalt at `nifeos/basalt@ecdfee7` has 32 tracked files. `nife` appears on 448 lines in 26 of
 them and `basalt` on 147 lines in 26. No line sets `target_os`, and `pins.toml` holds one pin,
@@ -95,9 +95,9 @@ repositories, and the domain, and through the domain every image (§250).
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
-| Keep `nifeos` | the nife operating system | ours on GitHub; crates.io `nifeos` free; the domain ours | names one family's kernel; milestone 120 kept the organization apart from the OS for this reason, and an ambient-authority family under it would read as a subsidiary of the capability one |
-| A publisher name tied to no family, such as the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
-| `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; under (a) it narrows to one family |
+| Keep `nifeos` | the nife operating system | ours on GitHub; crates.io `nifeos` free; the domain ours | names the kernel of one binary interface; milestone 120 kept the organization apart from the OS for this reason, and an ambient-authority binary interface under it would read as a subsidiary of the capability one |
+| A publisher name tied to no binary interface, such as the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
+| `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; it narrows to one binary interface |
 
 No leaning. Whether `nifeos` still fits depends on what `nife` comes to name (layer 3).
 
@@ -107,11 +107,10 @@ It touches almost nothing in code. Crates take the name of what they do (`file_a
 `e1000e`), and the rule for a leaving crate says it never mentions nife. Milestone 1082
 (`capability_manifest_note`: what an outside maintainer would fix before it leaves) states that
 rule. So the library's name lives in the website, the organization profile and README text. It is
-not a platform under either answer: under (a) the family is the platform, and under (b) each
-kernel is.
+not a platform: the binary interface is.
 
-The exception is the crates every family shares, the page contracts, if they publish under a common
-prefix rather than each under its own descriptive name.
+The exception is the crates every binary interface shares, the page contracts, if they publish under
+a common prefix rather than each under its own descriptive name.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
@@ -123,23 +122,24 @@ prefix rather than each under its own descriptive name.
 
 No leaning. Nothing in the tree depends on this name, so it can wait until last at no cost.
 
-## Layer 3: kernel families
+## Layer 3: binary interfaces
 
-Under (a) this layer carries the expensive names: `target_os`, the published ABI crate, the `std`
-port's directory and triple, the SDK crates and the in-binary names. Under (b) it carries only
-prose.
+This layer carries the expensive names: `target_os`, the published ABI crate, the `std` port's
+directory and triple, the SDK crates and the in-binary names. Only a binary interface the project
+defines needs a name; one it adopts, such as Linux's, already has one.
 
 The ABI crate's published name comes first. Every published ABI crate names its system: `sel4-sys`,
-`fuchsia-zircon-sys`, `hermit-abi`, `wasi`, `r-efi`, `redox_syscall`. The capability family has an
-ABI today, and both capability kernels would share it.
+`fuchsia-zircon-sys`, `hermit-abi`, `wasi`, `r-efi`, `redox_syscall`. The capability binary
+interface has an ABI today, and both capability kernels share it.
 
-| option for the capability family | what it says | checks | weakness |
+| option for the capability binary interface | what it says | checks | weakness |
 |---|---|---|---|
-| Keep `nife` | Suess's nickel-iron core, as milestone 120 chose | crates.io `nife`, `nife_abi`, `nife-abi`, `nife-sys`, `nife_sdk` and `nife-sdk` free; GitHub `nife` a user; the search found no software project named nife, only the NiFe nickel-iron battery and the historical Saft Nife brand | narrows `nife` from the whole project to one family, so the microkernel needs its own or a qualified name; milestone 120 records that search boxes autocorrect "nife" to "knife" |
-| A new family name, with `nife` kept for the microkernel | the kernel keeps its name and the platform gets one | depends on the word | `target_os = "nife"` and every in-binary `nife` move to the new word or stay as an old spelling; 45 `target_os` lines and 155 triple lines move |
-| A descriptive name such as `capability` | what the family's programs may assume | crates.io `capability_abi` and `capability_kernel_abi` free | generic, since seL4, Zircon, Hubris and Genode all have capability kernels with ABIs; fails the test that a published ABI crate names its system |
+| Keep `nife` | Suess's nickel-iron core, as milestone 120 chose | crates.io `nife`, `nife_abi`, `nife-abi`, `nife-sys`, `nife_sdk` and `nife-sdk` free; GitHub `nife` a user; the search found no software project named nife, only the NiFe nickel-iron battery and the historical Saft Nife brand | narrows `nife` from the whole project to one binary interface, so the microkernel needs its own or a qualified name; milestone 120 records that search boxes autocorrect "nife" to "knife" |
+| A new name for the binary interface, with `nife` kept for the microkernel | the kernel keeps its name and the platform gets one | depends on the word | `target_os = "nife"` and every in-binary `nife` move to the new word or stay as an old spelling; 45 `target_os` lines and 155 triple lines move |
+| A descriptive name such as `capability` | what the binary interface's programs may assume | crates.io `capability_abi` and `capability_kernel_abi` free | generic, since seL4, Zircon, Hubris and Genode all have capability kernels with ABIs; fails the test that a published ABI crate names its system |
 
-The ambient-authority family needs no name until it has an ABI. The tree already holds two pairs of
+An ambient-authority binary interface needs no name until the project defines one rather than
+adopting Linux's. The tree already holds two pairs of
 candidates, and milestone 120 turned both down for other uses.
 
 - `sial` and `sima`, Suess's names for the crust. crates.io `sial` is free and `sima` taken (a
@@ -149,23 +149,23 @@ candidates, and milestone 120 turned both down for other uses.
 - `kamacite` and `taenite`, the two nickel-iron phases in meteoric iron. crates.io has neither, and
   GitHub users hold both. Milestone 120 keeps them for components.
 
-Leaning, on evidence, for the capability family only: if `nife` keeps a meaning, the family should
-have it. Under (a), the 45 `target_os` lines, the 155 triple lines, the `std-nife` port and the
-in-binary owner string already sit at family level. Every `nife_*` crate name the family needs is
-free, and keeping them costs no edit. The leaning holds only on (a).
+Leaning, on evidence, for the capability binary interface only: if `nife` keeps a meaning, the
+capability binary interface should have it. The 45 `target_os` lines, the 155 triple lines, the
+`std-nife` port and the in-binary owner string already sit at that layer. Every `nife_*` crate name
+it needs is free, and keeping them costs no edit.
 
 ## Layer 4: individual kernels
 
-Under (a), a kernel's name touches its repository, its image file name and its boot log, and no
-program sees it. Under (b), it takes on everything in layer 3.
+A kernel's name touches its repository, its image file name and its boot log, and no program sees
+it.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
-| Keep `nife-kernel` for the microkernel (ruled 2026-11-03 as the repository's name, not created) and add `nife-monokernel` | the family and the shape | crates.io `nife_kernel`, `nife_micro` and `nife_mono` free; both repository names free | `nife-kernel` stops being unique once a second kernel exists, so the microkernel may want `nife-microkernel` |
-| A proper name per kernel, such as `kamacite` and `taenite` within `nife` | each kernel is a phase of the family's metal | as layer 3 | two more words to learn and say; takes the names milestone 120 keeps for components |
-| `nife` for the microkernel and a new word for the family | today's kernel keeps the project's first name | as layer 3 | the family carries the expensive names and needs the new word for them |
+| Keep `nife-kernel` for the microkernel (ruled 2026-11-03 as the repository's name, not created) and add `nife-monokernel` | the binary interface and the shape | crates.io `nife_kernel`, `nife_micro` and `nife_mono` free; both repository names free | `nife-kernel` stops being unique once a second kernel exists, so the microkernel may want `nife-microkernel` |
+| A proper name per kernel, such as `kamacite` and `taenite` within `nife` | each kernel is a phase of the binary interface's metal | as layer 3 | two more words to learn and say; takes the names milestone 120 keeps for components |
+| `nife` for the microkernel and a new word for the binary interface | today's kernel keeps the project's first name | as layer 3 | the binary interface carries the expensive names and needs the new word for them |
 
-No leaning. Under (a) these names cost little, and the right shape follows from layer 3.
+No leaning. These names cost little, and the right shape follows from layer 3.
 
 ## Layer 5: distributions
 
@@ -197,16 +197,17 @@ Prior art, read unless marked:
   product level distro", and a starting point for others. basalt plays that role here: the
   first-party distribution that tests the components.
 
-Under (a), a distribution built for one family runs on any of its kernels. It belongs to that
-family and picks a kernel per image, as a Fuchsia product binds one platform. It can span families,
-as Debian's ports show, but then builds every package once per family. Under (b), a distribution
-belongs to one kernel or builds once per kernel.
+A distribution built for one binary interface runs on any kernel that serves it. It belongs to
+that binary interface and picks a kernel per image, as a Fuchsia product binds one platform. It can
+span binary interfaces, as Debian's ports show, but then builds every package once per binary
+interface.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
-| Keep `basalt` | the commonest volcanic rock and the workhorse; the rock that sima is (milestone 120) | as above; the repository and the host belong to the organization | none found in the tree; says nothing of the family |
-| A family-specific rock, keeping the convention | the distribution's character | each candidate needs its own check | moves the index host in every image, which the project can only add beside the old one |
+| Keep `basalt` | the commonest volcanic rock and the workhorse; the rock that sima is (milestone 120) | as above; the repository and the host belong to the organization | none found in the tree; says nothing of the binary interface |
+| A rock for each binary interface, keeping the convention | the distribution's character | each candidate needs its own check | moves the index host in every image, which the project can only add beside the old one |
 
-Milestone 120's convention needs no change for several families: distributions are rocks, with no
-limit on their number, named by whoever makes one, and only `basalt` reserved. No leaning on the
-name. Whether basalt belongs to the capability family or spans families follows from question 1.
+Milestone 120's convention needs no change for several binary interfaces: distributions are rocks,
+with no limit on their number, named by whoever makes one, and only `basalt` reserved. No leaning on
+the name. Whether basalt belongs to the capability binary interface or spans several is part of
+ruling 5.
