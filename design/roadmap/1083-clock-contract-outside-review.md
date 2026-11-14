@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -160,6 +160,15 @@ rule says.
 ## Done when
 
 The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** Item 5 of [before the tag](1083-clock-contract-outside-review/before-the-tag.md),
+  item 12 of [later items](1083-clock-contract-outside-review/later-items.md), and Decisions 1 and
+  2: pull request #3576, on branch `milestone/1083-clock-page-two-copies`.
+- **Outstanding.** Items 1 to 4 and 6 to 9 before the tag, and items 10, 11 and 13 to 15 for later,
+  each checked against `crates/clock_contract` at #3576's head and still true there.
+- **Outstanding.** Decision 3, the public names, still waits for the architect.
 
 ## BUGS
 
