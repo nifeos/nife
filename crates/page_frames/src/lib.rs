@@ -7,7 +7,7 @@
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
 //! `frames`, which collided with `crates/compositor`'s own use of "frame" for a rendered screen
-//! update, the collision DECISIONS §113 had already found for the kernel's capability object, which
+//! update, the collision DECISIONS §113 (eleven kernel object and identifier names move to the plain, standard term) had already found for the kernel's capability object, which
 //! is named `PageFrame` too. This crate is the physical-page allocator that backs those page
 //! frames.
 
