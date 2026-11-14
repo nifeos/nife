@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: none
@@ -207,6 +207,12 @@ reads as three layouts; `VERSION => ...` in that list reads as a mistake.
 ## Done when
 
 The checks are in [the appendix](1082-capability-manifest-note-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** The P0, P1 and P2 items of this review, and the decisions for the architect other
+  than the wire literal. This pull request lands the wire literal marker (the lint and the move
+  check accept `// wire literal`) and nothing else of the block.
 
 ## BUGS
 
