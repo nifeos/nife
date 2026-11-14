@@ -1,6 +1,6 @@
 # Ledger
 
-An appendix to [the milestone](../1097-intrusive-queue-outside-review.md). Each item is DONE with
+An appendix to [the milestone](../1097-intrusive-queue-outside-review.md). Each item reads DONE with
 the test or harness that holds it, or LEFT with the reason.
 
 | item | state | where |

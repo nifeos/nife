@@ -21,7 +21,7 @@
 //!   with `to_le_bytes`, and an ELF note's own header is in the file's byte order, so a big-endian
 //!   file would carry a header this crate does not write.
 //! - The linker must keep the section: the link script has to `KEEP` the input section
-//!   `.note.nife.manifest` into an output section inside a `PT_NOTE` segment, and that segment
+//!   the macro names into an output section inside a `PT_NOTE` segment, and that segment
 //!   has to lie in a readable `PT_LOAD`. A program whose link script drops it carries no note,
 //!   which the next rule reads as declaring nothing.
 //! - An absent note, and an absent entry for an interface, pass [`Interfaces::check_served`]: only

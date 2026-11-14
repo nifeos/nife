@@ -222,9 +222,13 @@ Concrete example: `let first = ready.pop_front()?; inbox.push_back(first);` read
 leaving one queue for another, with the token named nowhere because the types carry it. A name
 that said `dequeue` or `take_front` would read as well but would stop matching `VecDeque`.
 
-## Ledger
+## Follow-on
 
-What is done and what is left, item by item, is in [the appendix](1097-intrusive-queue-outside-review/ledger.md).
+- **Outstanding.** Decision 1 (the `Send` bound) and decision 2 (the seven names), which the architect rules. Checked: ledger rows 4 and 6.
+- **Outstanding.** The move's own work: manifest, front page and repository skeleton (items 1 to 3). Checked: each needs the new repository.
+- **Outstanding.** The kernel's `mint_token` from the stored pointer (item 5), the `remove` and `extract_if`-shaped methods (item 9) and one shared test node (item 13). Checked: the first is kernel code, the second adds public names, the third waits for the move.
+
+What is done and what is left, item by item, is in [the ledger](1097-intrusive-queue-outside-review/ledger.md).
 
 ## Done when
 

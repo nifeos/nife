@@ -265,9 +265,13 @@ Concrete example: after the move, the manifest line reads
 `intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`,
 the form the kernel already uses for the two crates that left.
 
-## Ledger
+## Follow-on
 
-What is done and what is left, item by item, is in [the appendix](1095-inter-process-communication-outside-review/ledger.md).
+- **Outstanding.** The three decisions above (the verdict names, the scope of the crate, the order of leaving), which the architect rules. Checked: the ledger's LEFT rows for items 2, 4, 10 and the public halves of items 5, 12, 13 and 16 are exactly these.
+- **Outstanding.** The move's own work: the review package, the stand-alone text, the manifest rows, `docs/design.md` with a README, and one full mutation run in the new repository (items 1, 3, 6, 7, 9). Checked: none of it can run before the crate has its own repository.
+- **Outstanding.** Options for the maintainer after the move: the one-queue layout, one shared test node and an iterator on `intrusive_queue` (items 11, 12, 15). Checked: each changes proofs or another crate.
+
+What is done and what is left, item by item, is in [the ledger](1095-inter-process-communication-outside-review/ledger.md).
 
 ## Done when
 
