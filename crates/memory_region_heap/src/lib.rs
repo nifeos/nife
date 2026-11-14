@@ -95,15 +95,24 @@ impl MemoryRegionHeap {
     /// `[base, base + maximum_bytes)`. Call once, before the first allocation, first thing in
     /// `_start`. `base` must be page-aligned and inside the user half.
     ///
+    /// **Only the first call wires the heap.** It returns `true`. A later call changes nothing and
+    /// returns `false`, because rewiring a heap that may already hold allocations would leave its
+    /// allocator owning pages the new base never mapped, and a later allocation could be handed
+    /// memory in that hole. A caller that wants to know it was the first checks the answer.
+    ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
-    pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) {
+    pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) -> bool {
         let mut g = self.lock();
         let inner = g.inner();
+        if inner.memory_region_slot != u64::MAX || inner.heap_end.is_some() || inner.committed > 0 {
+            return false;
+        }
         inner.memory_region_slot = memory_region_slot;
         inner.base = base;
         inner.committed = 0;
         inner.maximum = maximum_bytes & !(PAGE - 1);
+        true
     }
 
     /// **Map the whole capped range now**, rather than on the first allocations that need it.
@@ -305,6 +314,31 @@ mod tests {
         g.inner().committed = 16 * PAGE;
         drop(g);
         heap
+    }
+
+    /// Only the first `initialize` wires the heap. A second call, before or after allocations,
+    /// changes neither the base nor the cap nor what is committed, and says so.
+    #[test]
+    fn a_second_initialize_is_refused_and_changes_nothing() {
+        let heap = MemoryRegionHeap::new();
+        assert!(heap.initialize(3, DEFAULT_BASE, 16 * PAGE));
+        assert!(!heap.initialize(4, DEFAULT_BASE + 64 * PAGE, 8 * PAGE));
+
+        let mut g = heap.lock();
+        let inner = g.inner();
+        assert_eq!(
+            (inner.memory_region_slot, inner.base, inner.maximum),
+            (3, DEFAULT_BASE, 16 * PAGE)
+        );
+        inner.committed = 4 * PAGE; // as after a grow
+        drop(g);
+
+        assert!(!heap.initialize(3, DEFAULT_BASE + 64 * PAGE, 16 * PAGE));
+        assert_eq!(
+            heap.committed_bytes(),
+            4 * PAGE,
+            "a refused call does not reset it"
+        );
     }
 
     /// A request for zero bytes at the cap maps nothing, so it cannot have grown the heap, and
