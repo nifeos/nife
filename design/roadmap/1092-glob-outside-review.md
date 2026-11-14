@@ -283,13 +283,8 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 ## Follow-on
 
-What is left of this review: Decision 1 is built, so the crate is `byte_glob` in the directory, the
-package, the library and every caller. Decision 2 (the seven public names), the integration test that
-moves to a crate that stays, the falsification patches and records written for the tree's paths, and
-every other item above are open.
-
-- **Milestone 1017.** The contract crates leave in its order. This crate moves at step 5, after the
-  open items here land, so the standalone gate can pass.
+Decision 1 is built. Decision 2 (the seven public names), the integration test, the falsification
+patches and every other item above are open. Milestone 1017 moves the crate at step 5, after they land.
 
 ## Index row
 
