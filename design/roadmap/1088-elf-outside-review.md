@@ -226,8 +226,8 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Done.** The rename to `static_elf` (decision A of the crate name): the directory, the package,
-  every dependent, the lock files, the package tables, the gate tables and baselines, and the notes
+- **Done.** The rename to `static_elf`. It covers the directory, the package and every dependent.
+  It covers the lock files, the package tables, the gate tables and baselines. It covers the notes
   that name the crate.
 - **Outstanding.** Every finding above, the three decisions D1 to D3, and the move to its own
   repository. None of them was started; the rename changes no behavior and no public item.

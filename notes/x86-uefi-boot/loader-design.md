@@ -39,7 +39,7 @@ caller could apply:
 ```
 
 So `static_elf::Segment` carries `p_paddr` beside `p_vaddr` (milestone 196 (a physical address on
-`static_elf::Segment`)), and `uefi_loader/src/image.rs` places each segment by it. The loader reads the
+`elf::Segment`)), and `uefi_loader/src/image.rs` places each segment by it. The loader reads the
 kernel with `Elf::parse` and its whole validation battery, which the x86_64 image passes because its
 trampoline's code and data ship as separate segments (milestone 208 (the x86_64 kernel image ships
 an RWX segment)).
