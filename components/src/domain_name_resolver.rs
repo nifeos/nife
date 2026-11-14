@@ -339,7 +339,7 @@ fn transaction_id() -> Result<u16, Fail> {
         return Err(Fail::Status(Outcome::of(status::NO_ENTROPY)));
     }
     let mut bytes = [0u8; 2];
-    entropy_contract::copy_delivered_bytes(n, r1, &mut bytes);
+    let _ = entropy_contract::copy_delivered_bytes(n, r1, &mut bytes);
     Ok(u16::from_le_bytes(bytes))
 }
 
