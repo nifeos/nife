@@ -928,7 +928,8 @@ impl<'a> DeviceTreeBlob<'a> {
         }
     }
 
-    /// The regions carved out by the `/reserved-memory` node's children.
+    /// The regions carved out by the root's `reserved-memory` node's children. A node of that name
+    /// anywhere deeper is not the reservation list and is not read.
     ///
     /// The other place firmware names memory the OS must not touch, beside the block
     /// [`reserved_regions`](Self::reserved_regions) reads; on RISC-V, OpenSBI reserves its PMP-guarded
@@ -953,7 +954,10 @@ impl<'a> DeviceTreeBlob<'a> {
                     at += align4(name.len() + 1);
                     depth += 1;
 
-                    if resv_depth.is_none() && name == b"reserved-memory" {
+                    // A child of the root only, as `memory_regions` reads `/memory`: one nested under
+                    // another node is not the reservation list, and its children would be decoded
+                    // with the root's cell counts rather than their own parent's.
+                    if resv_depth.is_none() && depth == 2 && name == b"reserved-memory" {
                         resv_depth = Some(depth);
                     }
                 }

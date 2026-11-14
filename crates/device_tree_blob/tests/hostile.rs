@@ -1221,3 +1221,45 @@ fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
     assert_eq!(dt.node_reg(b"uart@2", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x100));
 }
+
+/// Only the root's `reserved-memory` child is the reservation list. One nested deeper (here under
+/// `/soc`, whose own widths differ from the root's) names no memory the machine has to keep, and
+/// its children must not be decoded with the root's cell counts.
+#[test]
+fn a_reserved_memory_node_below_the_root_is_not_the_reservation_list() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &1u32.to_be_bytes());
+    b.prop(b"#size-cells", &1u32.to_be_bytes());
+    b.begin_node(b"soc");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"reserved-memory");
+    b.begin_node(b"fw@80000000");
+    b.prop(b"reg", &reg64(0x8000_0000, 0x4_0000));
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 4];
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(0));
+
+    // The control: the same node at the root is read, with the root's widths.
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"reserved-memory");
+    b.begin_node(b"fw@80000000");
+    b.prop(b"reg", &reg64(0x8000_0000, 0x4_0000));
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x8000_0000, 0x4_0000));
+}
