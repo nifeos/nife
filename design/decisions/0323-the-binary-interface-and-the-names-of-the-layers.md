@@ -10,9 +10,10 @@ raised: 2026-11-12
 The maintainer raised this on 2026-11-12 (UTC), on the intent that the crates are the product: a
 library of components from which the project builds several operating systems. Counts come from
 `nifeos/nife@a3c7d4647` and `nifeos/basalt@ecdfee7`, and each gives its command so a reviewer can
-take it again at merge. The architect ruled question 1, what the layer above a kernel is, and ruling
-2, the capability binary interface's name, on 2026-11-14 (UTC), and this file states both rules.
-Rulings 3 to 6 are still open, and this file lays out the options for each. The appendix, [the five
+take it again at merge. The architect ruled question 1, what the layer above a kernel is, ruling 2,
+the capability binary interface's name, and ruling 3, the organization, on 2026-11-14 (UTC), and
+this file states those rules. Rulings 4 to 6 are still open, and this file lays out the options for
+each. The appendix, [the five
 layers](0323-the-binary-interface-and-the-names-of-the-layers/the-five-layers.md), holds the
 inventory, the reversibility of each layer and every candidate name with its checks.
 
@@ -193,10 +194,20 @@ the rustc target list, LLVM or the Linux sources.
 What moves, and when. The tree still spells the capability binary interface `nife` in
 `target_os = "nife"`, the `unknown-nife` triples, the `std-nife` port and the `abi` crate
 (`crates/abi`). Renaming them waits on a separate plan lane, which sets their order and the rename
-of `crates/abi` to `moho_abi`. The names inside binaries stay as they are: the ELF note owner `nife`, section names
-such as `.note.nife.manifest`, and magics such as `NIFESLOT` and `NIFESTK1`. They fall under the
-wire-literal exemption, ruled 2026-11-14 (UTC): a marked owner string, section name or magic may
-spell nife.
+of `crates/abi` to `moho_abi`. The names inside binaries stay as they are: the ELF note owner
+`nife`, section names such as `.note.nife.manifest`, and magics such as `NIFESLOT` and `NIFESTK1`.
+They fall under the wire-literal exemption, ruled 2026-11-14 (UTC): a marked owner string, section
+name or magic may spell nife.
+
+## The organization stays nifeos for now
+
+Ruled 2026-11-14 (UTC).
+
+- The GitHub organization stays `nifeos` for now.
+- The organization's name and the library's name are one decision, ruling 4, taken before the
+  first crates.io publish.
+- OSOS (open source operating systems) is a candidate for ruling 4, to use if it is available. Its
+  availability checks come first, and they come back to the architect before any rename.
 
 ## The order of the later rulings
 
@@ -207,11 +218,11 @@ Hardest to change first. The maintainer brings each as its own ruling, one at a 
 2. The capability binary interface's name. Ruled 2026-11-14 (UTC): Moho, with the ABI crate
    `moho_abi`, and `nife` stays the capability microkernel's name. The ambient-authority binary
    interface's name stays open.
-3. The organization and the domain. GitHub redirects most of a rename, every image names the
-   domain, and anyone may claim an organization's old name. This ruling includes whether `nifeos`
-   stays.
-4. The library, if its name differs from the organization's, and with it the published names of
-   the shared page-contract crates.
+3. The organization. Ruled 2026-11-14 (UTC): it stays `nifeos` for now.
+4. The organization's name and the library's name, together, before the first crates.io publish,
+   and with them the published names of the shared page-contract crates. OSOS is a candidate,
+   checked first. GitHub redirects most of an organization rename, every image names the domain,
+   and anyone may claim an organization's old name.
 5. Distributions, starting with whether `basalt` stays and which binary interface it targets.
 6. Individual kernels: repositories, images and boot logs only, the cheapest names here.
 
@@ -229,4 +240,4 @@ Hardest to change first. The maintainer brings each as its own ruling, one at a 
   on ruling 6.
 - The website's domain, from milestone 1018 (the design record moves to `nifeos/record` and is
   published as a website), and the rule that a leaving crate never mentions nife (now the name of
-  one kernel). Both wait on ruling 3.
+  one kernel). Both wait on ruling 4.

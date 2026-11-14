@@ -93,14 +93,19 @@ names checked there, only suffixed forms came back free: `nife-os`, `craton-os`,
 It touches the 294 `github.com/nifeos` lines, the 22 Cargo pins, basalt's `pins.toml`, 15
 repositories, and the domain, and through the domain every image (§250).
 
+Ruled 2026-11-14 (UTC), ruling 3: the organization stays `nifeos` for now. Its name and the
+library's (layer 2) are one decision, ruling 4, taken before the first crates.io publish. The
+options below are the options for ruling 4.
+
 | option | what it says | checks | weakness |
 |---|---|---|---|
 | Keep `nifeos` | the nife operating system | ours on GitHub; crates.io `nifeos` free; the domain ours | names the kernel of one binary interface; milestone 120 kept the organization apart from the OS for this reason, and an ambient-authority binary interface under it would read as a subsidiary of the capability one |
 | A publisher name tied to no binary interface, such as the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
+| OSOS | open source operating systems; one name for the organization and the library | not yet run; they come back before any rename | availability unknown until the checks run |
 | `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; `nife` now names one kernel (layer 4) |
 
-No leaning. `nife` now names today's kernel, the capability microkernel, and whether `nifeos` still
-fits is ruling 3.
+`nife` now names today's kernel, the capability microkernel, so `nifeos` names the organization
+after one kernel.
 
 ## Layer 2: the library of components
 
@@ -121,7 +126,8 @@ a common prefix rather than each under its own descriptive name.
 | `quarry` | where every distribution's stone comes from | crates.io `quarry` taken (0.2.0, 729 downloads, "mining type information"); GitHub `quarry` a user, `quarry-os` free; `quarry.org` parked | a verb as well as a noun; the crate name has gone |
 | `lithosphere` or `outcrop` | the rock layer; where rock shows at the surface | crates.io free; GitHub users hold both (0 repositories) | long; no tie to components |
 
-No leaning. Nothing in the tree depends on this name, so it can wait until last at no cost.
+The architect decides this name with the organization's, as ruling 4 before the first crates.io
+publish; OSOS (layer 1) is a candidate for both. Nothing in the tree depends on it.
 
 ## Layer 3: binary interfaces
 
