@@ -288,7 +288,7 @@ mod verification {
         let page = any_page();
         let parsed = ArgPage::parse(&page);
         assert_eq!(parsed.iter().count(), parsed.len());
-        assert_eq!(parsed.is_empty(), parsed.len() == 0);
+        assert_eq!(parsed.is_empty(), parsed.iter().next().is_none());
     }
 
     /// **A page that parses holds exactly the records its header states**: the arguments number
