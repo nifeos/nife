@@ -25,8 +25,8 @@
 use std::collections::BTreeMap;
 
 use grant_plan::{DirectoryGrantDeclaration, Program, StartupContract, job_region_pages};
+use object::Endianness;
 use object::read::elf::{ElfFile64, ProgramHeader};
-use object::{Endianness, Object};
 
 use crate::host::{flag_value, workspace_root};
 use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
