@@ -133,8 +133,8 @@ The P1 items are in [the appendix](1111-usb-outside-review/before-the-tag.md).
 ## Decisions for the architect
 
 Three decisions, each decided provisionally below. The maintainer rules everything else above as
-provisional. The published crate name `universal_serial_bus` is ruled already and is not reopened
-here.
+provisional. The ruling on the published crate name `universal_serial_bus` stands, and nothing here
+reopens it.
 
 ### Decision 1. The public names the template's gates refuse
 
@@ -209,8 +209,8 @@ driver feeds them into its own keymap (`components/src/usb_keyboard_driver.rs`, 
 code, ...)` near line 906). `changes` (`boot_keyboard.rs` line 245) emits HID usages, modifiers as
 0xe0 to 0xe7, in the same order and under the same bound. The driver maps each usage through
 `evdev_code` (line 121), and `MODIFIER_CODES` (line 43) leaves the public surface. It also follows
-the rule that the usage table follows the HID Usage Tables. The evdev form would have been chosen
-only for effort.
+the rule that the usage table follows the HID Usage Tables. The block chose the evdev form only
+for effort.
 
 ### Decision 3. One result type for the three parsers, and a speed for the control packet size
 
@@ -270,6 +270,6 @@ block the move: a manifest that cannot stand alone, a crate that contradicts its
 lacks its promised alias, and thirty names the template's gates refuse. Seven land before the tag.
 They are the scaffold files, a review package the crate never had, and a usage table that stops
 short of every non-US keyboard. They also cover the two-interface paths no proof or test reaches, a
-lenient short-descriptor rule, a doubled release, and the missing fuzz target. Four wait for later. Three decisions are decided, provisionally: the public rename table, that
+lenient short-descriptor rule, a doubled release, and the missing fuzz target. Four wait for later. The maintainer has decided three decisions, provisionally: the public rename table, that
 `changes` speaks HID usages, and one result type for the parsers with a speed for the control
 packet size.

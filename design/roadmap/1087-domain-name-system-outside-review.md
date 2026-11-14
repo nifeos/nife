@@ -235,7 +235,7 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 which the architect may revisit. The recommendation holds: `MAXIMUM_IPV4_ADDRESSES`,
 `Answer::ipv4_addresses()` and its field, `Reject::NoIpv4Address` and the test names to match,
 with no template exemption. The contract crate's assertion and `reject_code` arm follow, and the
-code number 9 does not change. Item 7 part b is the work, and milestone 1086 decision 1 takes
+code number 9 does not change. Item 7 part b is the work, and milestone 1086 (the resolver contract's outside review) decision 1 takes
 `MAXIMUM_IPV4_ADDRESSES` to match.
 
 ## Done when

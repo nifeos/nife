@@ -131,8 +131,7 @@ otherwise.
    Evidence: line 49; `design/naming/crates.md`, "Page contract crates";
    `crates/grant_plan/src/refusal.rs` line 187.
    Change: `MAXIMUM_RECORDS_BYTES`, as decision 2 decides, provisionally, with `CAPACITY` gone (no
-   alias for a nife spelling before the first release). The family's `PAGE_CONTENT_BYTES` counts
-   the header too, so it does not fit. `grant_plan` follows in the same pull request.
+   alias for a nife spelling before the first release). `grant_plan` follows in the same pull request.
    Door: a public name, one-way once released; two-way today. Effort: XS.
 
 6. The crate has no proof, and the template's front page promises one.
@@ -199,8 +198,7 @@ The P2 items are in [the appendix](1106-program-argument-contract-outside-review
 
 ## Decisions for the architect
 
-The one-way doors, and the three names, which the maintainer decides provisionally in decision 2.
-Everything else above is the maintainer's.
+The one-way doors, and the three names of decision 2. Everything else above is the maintainer's.
 
 ### The layout leaves as built, with the magic still unnumbered
 

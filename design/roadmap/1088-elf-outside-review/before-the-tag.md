@@ -77,9 +77,9 @@ with no alias and a doc that says only "`p_flags`". `NoteSegment::p_align` and `
 break the unit and count rules too, with no outside reader. `vaddr` has 7 uses in callers, `paddr`
 5, `memsz` 3, the flag constants 48. The rename is decision D3's; this item is the sweep once ruled.
 
-Change: the names D3 decides, provisionally, applied by one rename lane across the crate and its
-eleven dependents, with the spec spelling in each doc comment's first sentence and in
-`#[doc(alias)]`, and no alias for this tree's earlier spelling (the rule before a first release).
+Change: one rename lane applies the names D3 decides, provisionally, across the crate and its
+eleven dependents. The spec spelling goes in each doc comment's first sentence and in
+`#[doc(alias)]`. No alias carries this tree's earlier spelling (the rule before a first release).
 Door: two-way before the first tag. Effort: M.
 
 #### A README a stranger can follow, and an example that is not a twenty-line forgery

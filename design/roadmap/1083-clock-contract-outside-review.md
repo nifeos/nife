@@ -181,8 +181,8 @@ Concrete example. After the rename, the overlay's `monotonic_nanos` reads
 keeps its own spelling as the rule says.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The package's table holds as written: `NS_PER_SECOND` becomes
-`NANOSECONDS_PER_SECOND`; `NANOS_PER_SEC` and `wall_nanos` are deleted; `Reading::offset_nanos`
-becomes `offset_nanoseconds`; `va` becomes `virtual_address`; `propose::req` becomes `request`; `w0`
+`NANOSECONDS_PER_SECOND`, and `NANOS_PER_SEC` and `wall_nanos` go. `Reading::offset_nanos`
+becomes `offset_nanoseconds`; `va` becomes `virtual_address`; `propose::req` becomes `request`. `w0`
 becomes `word`; `state::SYNCED` becomes `SYNCHRONIZED`; `RTC` and `rtc` become `REAL_TIME_CLOCK` and
 `real_time_clock`, each with `#[doc(alias = "RTC")]`; `CMOS`, `PL031`, `GOLDFISH` and `WORDS` keep
 their names. No alias carries an old spelling. The std overlay reads the old names on more than one

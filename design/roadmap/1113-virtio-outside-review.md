@@ -85,7 +85,7 @@ The P1 items are in [the appendix](1113-virtio-outside-review/before-the-tag.md)
 ## Decisions for the architect
 
 Two decisions, each with the background first, then the recommendation, prior art and a
-concrete example. Decision 2 is decided, provisionally, below.
+concrete example. The maintainer decides Decision 2, provisionally, below.
 
 ### Decision 1. Whether `crates/virtio` leaves this tree, and as what
 
@@ -164,7 +164,7 @@ validator's layout. The five constants (`crates/direct_memory_access_validator/s
 (`crates/abi/src/virtio.rs` line 38), with `RING_END`, which the validator derives from them and
 the kernel also aliases. The validator and the kernel alias them from there. The present names fail
 the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
-names in `abi`, provisional, and they join milestone 1075's pinned-value list and version gate
+names in `abi`, provisional, and they join milestone 1075's (the `abi` outside review) pinned-value list and version gate
 (1075 item 11). Item 3 is the work.
 
 ## Done when

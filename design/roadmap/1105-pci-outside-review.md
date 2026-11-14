@@ -149,7 +149,7 @@ contract order already uses for every leaf, and reversing it costs one copy back
 recommends moving first, after items 1 through 8.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
-revisit. The crate moves first, after items 1 through 8, as every leaf of milestone 1017 does, and
+revisit. The crate moves first, after items 1 through 8, as every leaf of milestone 1017 (the order the contract crates leave in) does, and
 the bus server links it from its repository when it comes. The crate's manifest has no
 `[dependencies]` table, only a test dependency on `device_tree_blob`, so it waits on none of
 milestones 317, 1062 and 1068. The move still waits on the package name above.

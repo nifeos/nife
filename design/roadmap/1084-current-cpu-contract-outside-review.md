@@ -206,8 +206,8 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 `thread_page_virtual_address`; the parameters `page_va` and `va` become `page_virtual_address` and
 `virtual_address`; `build_page_allowing` becomes `build_page_with`. `CPU_ID_BOUND` keeps its name
 over `MAXIMUM_CPUS`, with Decision A's rule in its documentation. The changed row is
-`CPU_WORD_OFFSET` (`src/lib.rs` line 121): the table keeps it because an offset carries no unit
-suffix, but the 2026-11-14 family-wide ruling names every page-field offset `<FIELD>_OFFSET_BYTES`,
+`CPU_WORD_OFFSET` (`src/lib.rs` line 121). The table keeps it because an offset carries no unit
+suffix. But the 2026-11-14 family-wide ruling names every page-field offset `<FIELD>_OFFSET_BYTES`,
 so it takes that form in the offset sweep, with the crate's private `OFF_` constants. Every other
 name in the table keeps its spelling. No old-name alias. Item 4 is the work.
 
