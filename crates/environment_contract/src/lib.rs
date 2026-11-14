@@ -142,11 +142,12 @@ pub const MAXIMUM_TIME_ZONE_BYTES: usize = 40;
 pub const MAXIMUM_LOCALE_BYTES: usize = 24;
 
 /// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERMINAL_TYPES`]
-/// (`screen-256color` is the longest at 15) with headroom to grow.
+/// (`screen-256color` is the longest at 15) and the longer common terminfo names (such as
+/// `screen.xterm-256color`, 21 bytes) with headroom to grow.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "TERM")]
-pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 24;
+pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 32;
 
 const OFF_MAGIC: usize = 0;
 const OFF_TZ_LEN: usize = OFF_MAGIC + 8;
@@ -156,8 +157,8 @@ const OFF_LANG: usize = OFF_LANG_LEN + 1;
 const OFF_TERM_LEN: usize = OFF_LANG + MAXIMUM_LOCALE_BYTES;
 const OFF_TERM: usize = OFF_TERM_LEN + 1;
 
-/// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
-/// under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
+/// The whole page's size in bytes: magic, then one length-prefixed field per declared key, 8 + 1 +
+/// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
 pub const PAGE_BYTES: usize = OFF_TERM + MAXIMUM_TERMINAL_TYPE_BYTES;
 
@@ -643,5 +644,19 @@ mod tests {
         assert_eq!(OFF_TERM, OFF_TERM_LEN + 1);
         assert_eq!(PAGE_BYTES, OFF_TERM + MAXIMUM_TERMINAL_TYPE_BYTES);
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
+    }
+
+    /// The frozen identity and widths, as literals: a change to any of them is a new version of
+    /// the interface, so it must fail here first.
+    #[test]
+    fn the_frozen_identity_and_widths_are_pinned() {
+        assert_eq!(&MAGIC, b"ENVCONF1");
+        assert_eq!(VERSION, 1);
+        assert_eq!(INTERFACE_ID, 13);
+        assert_eq!(MAXIMUM_TIME_ZONE_BYTES, 40);
+        assert_eq!(MAXIMUM_LOCALE_BYTES, 24);
+        assert_eq!(MAXIMUM_TERMINAL_TYPE_BYTES, 32);
+        assert_eq!(PAGE_BYTES, 107);
+        assert_eq!(MAGIC[7], b'0' + VERSION as u8);
     }
 }

@@ -36,6 +36,12 @@ buffer nothing else can see, and only *then* mapped read-only into the process t
 There is nothing to race, so `environment_contract::ConfigPage` is a plain length-prefixed byte layout with no
 atomics at all.
 
+## The layout
+
+Interface 13, version 1, magic `ENVCONF1`. After the 8-byte magic, each of `TZ`, `LANG` and `TERM`
+is one length byte and a field of 40, 24 and 32 bytes: 107 bytes in all, inside one frame. The
+widths and the identity are pinned by a host test in the crate.
+
 ## What's built end to end
 
 - `crates/environment_contract`: the page layout, the three validated domains, `PageBuilder` (assemble,
