@@ -109,7 +109,7 @@ The P2 items are in [the appendix](1105-pci-outside-review/later-items.md).
 
 No one-way door is open. Everything else above the maintainer rules as provisional.
 
-### The package name, because `pci` is taken on crates.io
+### The package name, because another author holds `pci` on crates.io
 
 In force since 2026-11-14 (UTC): the package name is `pci_configuration_space`, its directory is
 `crates/pci_configuration_space`, and the repository, when it exists, carries the same name. Another

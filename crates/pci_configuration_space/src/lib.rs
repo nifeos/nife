@@ -8,11 +8,10 @@
 //! standard header: ids, command and status, class, the **BARs** (where its register blocks live)
 //! and the capability list pointer, whose vendor capabilities carry what virtio-modern needs.
 //!
-//! Name: the short name `pci` is ratified 2026-09-18 (calef, §154 (the acronym test is whether the
-//! phrase is spoken)): nobody says "peripheral component interconnect", so it stays `pci`. Refused
-//! `peripheral_component_interconnect` (§154). The package is named `pci_configuration_space`,
-//! ruled 2026-11-14 (UTC) because `pci` is taken on crates.io, and the repository will carry that
-//! name.
+//! Name: ratified 2026-09-18 (calef, §154 (the acronym test is whether the phrase is spoken)):
+//! nobody says "peripheral component interconnect", so the short name stays `pci`. Refused
+//! `peripheral_component_interconnect` (§154). The package name is `pci_configuration_space`, ruled
+//! 2026-11-14 (UTC) because `pci` is taken on crates.io; the repository will carry that name.
 
 #![cfg_attr(not(test), no_std)]
 // milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 24-item
