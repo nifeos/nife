@@ -67,8 +67,8 @@ SECTIONS
      * that places it, so every other `.note*` a toolchain adds is still thrown away. A program that
      * carries no note gets an empty section here and a PT_NOTE with no notes in it, which reads as
      * "no manifest". */
-    .note.nife : ALIGN(4) {
-        KEEP(*(.note.nife.*))
+    .note.nife : ALIGN(4) { /* wire literal */
+        KEEP(*(.note.nife.*)) /* wire literal */
     } :rodata :note
 
     .data : ALIGN(4096) {

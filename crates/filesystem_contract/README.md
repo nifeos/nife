@@ -10,7 +10,9 @@ and never reads an opcode.
 Each request is an endpoint `CALL` of two words, answered through a one-shot reply capability. Bytes
 travel only in a region the two parties share. A reply's first word is an `i64`: a non-negative
 result, or the negated errno (`reply_err` and `reply_errno` are the one place that convention is
-defined). The opcode sits in bits 63:56 of the first word (`OPERATION_SHIFT`, `req`, `operation`).
+defined). A word in `-4095..=-1` is the error code `1..=4095` (`MAXIMUM_ERRNO`); any other negative
+word is a protocol violation that reads as `EPROTO` (71), never as success; the sender's
+`reply_err` refuses a code outside `1..=4095`. The opcode sits in bits 63:56 of the first word (`OPERATION_SHIFT`, `req`, `operation`).
 
 ## The contract
 
@@ -68,9 +70,10 @@ kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloa
 checker, so it needs network access. CI uses version 0.68.0, and another version may verify
 differently.
 
-Three Kani harnesses in `src/dir.rs`, each with a falsification patch in `falsifications/`:
-`attenuate_never_widens`, `a_grandchild_is_bounded_by_the_root` and
-`a_root_carries_nothing_undefined`. Rerun them with `cargo kani`; applying a patch with
+Five Kani harnesses, each with a falsification patch in `falsifications/`. Three are in
+`src/dir.rs`: `attenuate_never_widens`, `a_grandchild_is_bounded_by_the_root` and
+`a_root_carries_nothing_undefined`. Two are in `src/lib.rs` and prove the reply word's error
+range for every `i64`: `every_word_decodes_within_the_bound` and `a_sent_code_round_trips`. Rerun them with `cargo kani`; applying a patch with
 `patch -p3` from the crate root makes its harness fail.
 
 ## Building and testing

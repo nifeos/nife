@@ -20,7 +20,9 @@ The rules every step keeps:
 - No record of names travels. The move commit deletes every `Name:` block. Git history in this
   tree, with the ratifying pull requests, is the only provenance record; the crate repository
   carries no table and no provenance file.
-- The crate never mentions nife, in its source, README, docs, manifest or commit messages.
+- The crate never mentions nife, in its source, README, docs, manifest or commit messages. A wire
+  literal (bytes already on a wire or in built programs, such as an owner string) may keep the
+  word on a line that ends `// wire literal`; the lint lists those lines. Prose never names nife.
 - The naming gates run in the crate repository, through the shared template
   `nifeos/crate-workflows` pinned at a release commit.
 - The owned runners never run fork code. A crate repository runs on GitHub-hosted runners only,
@@ -282,9 +284,9 @@ publishes.
 ## BUGS
 
 - The template's newest release lacks the naming gates. `spelled_out.py`, `unit_symbols.py`,
-  the passive-voice, history-phrase and function-length checks are on the template's `main` but in
-  no `v*` release; `v7` is the newest. A move pinned at a release runs none of them, and the
-  pilot pins a commit between releases. A template release, adopted by the canary, closes it.
+  the passive-voice, history-phrase and function-length checks are on `main` but in no release;
+  `v7` is the newest. A move pinned at a release runs none of them. A template release, adopted by
+  the canary, closes it.
 - The template's orphan check misreads modules declared in `foo.rs`. A `mod tests;` in
   `src/foo.rs` resolves to `src/foo/tests.rs`, and the check looks for `src/tests.rs`. It reports
   35 false orphans in `file_allocation_table`, so `check / standalone` would fail its first run.
@@ -295,12 +297,10 @@ publishes.
   `.cargo/mutants-baseline.txt` into the staged `.github/mutants-exempts` as a comment, and the
   follow-up list says to delete the row here. The template's gate wants one `<file>:<line> # <reason>`
   line per surviving mutant, and the census records four counts (caught, missed, timeout, unviable)
-  and no locations, so the lines cannot be written mechanically. The crate repository's first
-  `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull
-  request there. The dry run does not run cargo-mutants.
-- The dry run's nife check skips a word joined to another by an underscore, so it passes an
-  identifier such as `NIFE_DATA` that `helpers/lint_externalized_crates.py` reports. Read that
-  lint's count for the crate as well.
+  and no locations, so the lines cannot be written mechanically. The first `weekly / mutation` run in the crate repository fails on each survivor and names it;
+  the move lane lists them in one pull request there.
+- The dry run's nife check skips a word joined by an underscore, so it passes an identifier such
+  as `NIFE_DATA`. Read `helpers/lint_externalized_crates.py`'s count for the crate as well.
 - Condition 3 is unmeasured on the pilot. Its release runs were the two that made its tags, and
   none ran with `dry-run=true`, so whether a dry run of an already tagged version passes the gate is
   unknown.
