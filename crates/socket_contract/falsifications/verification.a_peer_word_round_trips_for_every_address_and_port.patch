@@ -1,0 +1,19 @@
+Falsifies `socket_contract::verification::a_peer_word_round_trips_for_every_address_and_port`.
+
+The defect: `peer_word` packs the address one bit too low, so it overlaps the port's top bit and the
+word no longer reads back as the pair it was made from.
+
+Expected to fail: the harness's `assert_eq!` on `word_peer(word)`.
+
+diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
+--- a/crates/socket_contract/src/lib.rs
++++ b/crates/socket_contract/src/lib.rs
+@@ -135,7 +135,7 @@
+ ///
+ /// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+ pub const fn peer_word(octets: [u8; 4], port: u16) -> u64 {
+-    (u32::from_be_bytes(octets) as u64) << 16 | port as u64
++    (u32::from_be_bytes(octets) as u64) << 15 | port as u64
+ }
+ 
+ /// The peer a [`peer_word`] names, or `None` for the word 0 that a reply without a peer carries

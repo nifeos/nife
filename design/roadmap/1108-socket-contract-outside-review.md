@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1000
 decision_dependencies: none
@@ -52,7 +52,7 @@ released, so its names are two-way today and the package's naming table stands.
 
 ### P0: blocks the move
 
-1. The contract's text and its wire disagree on where a send's length travels.
+1. The contract's text and its wire disagree on where a send's length travels. DONE (every `OPERATION_` states its argument and reply words; the `OPERATION_SEND` doc test sends with the length as the argument; `OFF_LEN` says only `RECEIVE` writes it; D1 ruled 2026-11-11).
    Finding: the layout note at `crates/socket_contract/src/lib.rs` lines 454 to 459 says the
    `len` field at `OFF_LEN` is "in for SEND*, out for RECEIVE". The documentation of
    `OPERATION_SENDTO` and `OPERATION_SEND` (lines 53 to 60) says "payload in the frame" and
@@ -78,7 +78,7 @@ released, so its names are two-way today and the package's naming table stands.
    the implementation.
    Door: the text is two-way; the wire choice it records is one-way. Effort: S.
 
-2. The manifest's `publish` comment points outside the repository.
+2. The manifest's `publish` comment points outside the repository. LEFT: a move step; the manifest line is rewritten at the move.
    Finding: `Cargo.toml` line 11 reads `publish = false     # the default; the allowlist lint holds
    the exception (crates/publish-allowlist.txt)`. That file is nife's and will not be in the new
    repository; the crate is not on the allowlist today. The template's `check / standalone`
@@ -93,7 +93,7 @@ released, so its names are two-way today and the package's naming table stands.
 
 ### P1: before the first release
 
-3. `ACCEPT` carries no peer address, and the tree already lists it as a contract change.
+3. `ACCEPT` carries no peer address, and the tree already lists it as a contract change. DONE (`a_peer_word_round_trips_and_refuses_what_no_stack_writes`, Kani `a_peer_word_round_trips_for_every_address_and_port`; the stack and std read the word; D2 ruled 2026-11-11).
    Finding: `OPERATION_ACCEPT` answers `REP_OK` and the connection's capability. The stack's
    second reply word is always 0 (`socket_server.rs`, every `reply(to, word, 0)`), and the new
    connection has no frame yet to carry an address in. `notes/net.md` line 173 records that an
@@ -108,7 +108,7 @@ released, so its names are two-way today and the package's naming table stands.
    `hand_over` for an accepted connection, and the std layer reads it for `peer_addr`.
    Door: one-way (a wire format). Effort: M across crate, stack and std; S in the crate.
 
-4. The reply vocabulary leaves two outcomes a client must handle unstated.
+4. The reply vocabulary leaves two outcomes a client must handle unstated. DONE (the operation, `REP_OK` and `CONNECT_*` docs state the replies; `RECEIVE` 0 is the end of the stream and a short `SEND` count means send the rest).
    Finding: `REP_OK`'s documentation (`lib.rs` line 104) says "Non-negative is success, and
    `RECEIVE` replies its length here instead". `SEND` also replies a length, and a short one when
    smoltcp's buffer is full (`socket_operations.rs` lines 338 to 343: `sent as u64`). `RECEIVE`
@@ -122,7 +122,7 @@ released, so its names are two-way today and the package's naming table stands.
    as "send the rest". Lands with item 1.
    Door: two-way (it documents the wire as spoken). Effort: S.
 
-5. The README does not yet meet the template's scaffold.
+5. The README does not yet meet the template's scaffold. LEFT: README scaffold sections belong to the move lane's staged tree.
    Finding: against `scaffold/README-crate.md` the README lacks several things. It has no badge row
    and no `rustup target add` line before the bare-metal build. It does not say how long `cargo
    kani` takes or its peak memory. It does not say how to run one harness (`cargo kani --harness
@@ -137,7 +137,7 @@ released, so its names are two-way today and the package's naming table stands.
    a README to fail against.
    Door: two-way. Effort: S.
 
-6. The three surviving mutants need exemptions, or the release gate reads a red verdict.
+6. The three surviving mutants need exemptions, or the release gate reads a red verdict. LEFT: `.github/mutants-exempts` exists only in the new repository.
    Finding: the census records 93 mutants, 87 caught, 3 missed, 0 timeouts, 3 unviable, in three
    consecutive weekly runs. The triage classifies all three as equivalent. Two are `|` to `^` in
    `listen_grant` (line 147) and `udp_bind_grant` (line 195), where the operands have no bit in
@@ -161,7 +161,7 @@ The P2 items are in [the appendix](1108-socket-contract-outside-review/later-ite
 Only one-way doors. The package's five decisions stand and are not repeated; these two are
 additions it did not raise.
 
-### D1. Where a send's length travels
+### D1. Where a send's length travels (ruled 2026-11-11 UTC as recommended)
 
 Background. A client fills the shared frame with a payload and asks the stack to send it. The
 stack must learn how many bytes to send. The frame has a `len` field at `OFF_LEN`, and the `CALL`
@@ -185,7 +185,7 @@ Example: a client writes `b"nife-out!"` at `OFF_PAYLOAD` and issues `CALL(connec
 OPERATION_SEND, 9)`; the stack replies 9, or fewer if its buffer is short, and the client sends
 the rest. It never touches `OFF_LEN`.
 
-### D2. Whether `ACCEPT` tells the client who connected
+### D2. Whether `ACCEPT` tells the client who connected (ruled 2026-11-11 UTC as recommended)
 
 Background. A listener's `ACCEPT` replies with the new connection's capability and nothing else.
 The connection has no frame yet, so the peer's address has nowhere to ride, and std reports
@@ -222,6 +222,17 @@ The checks are in [the appendix](1108-socket-contract-outside-review/done-when.m
   the same code, and no source line has changed since.
 - The prior-art rows for Linux's port range and Fuchsia's socket protocol are from memory. The
   crates.io figures and the smoltcp and embedded-nal signatures come from a check.
+
+## Follow-on
+
+What is left: the move steps (items 2, 5, 6), the names (item 9), the inline provisional prose
+(item 10), and the parts of items 7 and 8 marked LEFT in the appendix.
+
+- **Milestone 1017.** The crate moves in its order, and the move lane takes items 2, 5, 6 and 10.
+- **Outstanding.** Item 7's loop harness and no-reuse arithmetic harness, `Ports::next` returning
+  an option, and item 8's single offset type: checked against `crates/socket_contract/src/lib.rs`,
+  none exists.
+- **Refused.** Nothing here renames; item 9 waits for the naming pass.
 
 ## Index row
 
