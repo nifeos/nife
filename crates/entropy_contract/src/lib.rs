@@ -471,7 +471,10 @@ mod tests {
         assert!(request_is_well_formed(request(0xff, 8)));
         assert!(request_is_well_formed(0xff));
         for bit in 8..56 {
-            assert!(!request_is_well_formed(request(GET, 8) | (1 << bit)), "bit {bit}");
+            assert!(
+                !request_is_well_formed(request(GET, 8) | (1 << bit)),
+                "bit {bit}"
+            );
         }
         for bit in (0..8).chain(56..64) {
             assert!(request_is_well_formed(1 << bit), "bit {bit}");
@@ -487,7 +490,11 @@ mod tests {
             let delivered = length.min(MAXIMUM_BYTES as usize);
             assert_eq!(count, delivered as u64);
             for (index, byte) in word.to_le_bytes().iter().enumerate() {
-                assert_eq!(*byte, if index < delivered { 0xff } else { 0 }, "{length}/{index}");
+                assert_eq!(
+                    *byte,
+                    if index < delivered { 0xff } else { 0 },
+                    "{length}/{index}"
+                );
             }
         }
     }

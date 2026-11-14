@@ -212,7 +212,10 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
     for bit in [8, 31, 55] {
         let r = crate::sched::ipc_call(
             w.request,
-            [entropy_contract::request(entropy_contract::GET, 8) | (1 << bit), 0],
+            [
+                entropy_contract::request(entropy_contract::GET, 8) | (1 << bit),
+                0,
+            ],
         );
         assert_eq!(
             r[0],
