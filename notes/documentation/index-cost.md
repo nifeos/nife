@@ -11,7 +11,7 @@ An appendix to [`notes/documentation.md`](../documentation.md), which states the
 | `manual` | 1 | 1222 | 1222 | 34011 | 57344 | 5 |
 | `swish` | 2 | 1820 | 2143 | 91736 | 81920 | 5 |
 | `kernel` | 3 | 2461 | 3369 | 101022 | 106496 | 6 |
-| `glob` | 1 | 882 | 882 | 20019 | 40960 | 4 |
+| `byte_glob` | 1 | 882 | 882 | 20019 | 40960 | 4 |
 
 246,788 bytes of markdown produce 286,720 bytes of index, which is 1.16x. That is the number worth
 arguing with rather than the pleasant ones.

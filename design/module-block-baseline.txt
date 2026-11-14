@@ -628,6 +628,20 @@ crates/boot_slot/src/lib.rs::select_excluding
 
 crates/boot_slot/src/lib.rs::unreadable
 
+crates/byte_glob/src/lib.rs::Dot
+
+crates/byte_glob/src/lib.rs::cost_bound
+
+crates/byte_glob/src/lib.rs::has_magic
+
+crates/byte_glob/src/lib.rs::literal
+
+crates/byte_glob/src/lib.rs::match_steps
+
+crates/byte_glob/src/lib.rs::matches
+
+crates/byte_glob/src/lib.rs::matches_with
+
 crates/byte_sink_contract/src/lib.rs::BAD
 
 crates/byte_sink_contract/src/lib.rs::DONE
@@ -3096,20 +3110,6 @@ crates/free/src/lib.rs::ShareRefusal
 crates/free/src/lib.rs::write_diagnostics
 
 crates/free/src/lib.rs::write_report
-
-crates/glob/src/lib.rs::Dot
-
-crates/glob/src/lib.rs::cost_bound
-
-crates/glob/src/lib.rs::has_magic
-
-crates/glob/src/lib.rs::literal
-
-crates/glob/src/lib.rs::match_steps
-
-crates/glob/src/lib.rs::matches
-
-crates/glob/src/lib.rs::matches_with
 
 crates/globally_unique_identifier_partition_table/src/crc.rs
 

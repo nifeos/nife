@@ -1,14 +1,14 @@
-Falsifies `glob::verification::no_magic_means_the_pattern_is_its_own_only_match`.
+Falsifies `byte_glob::verification::no_magic_means_the_pattern_is_its_own_only_match`.
 
 The defect: `literal` copies the pattern byte at the escape rather than the byte the escape names, so `\*`
 comes out as a backslash while the matcher still treats it as `*`.
 
 Expected to fail: the harness's `assert_eq!(matches_with(p, n, Dot::Ordinary), n == lit)`.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
 index 661ecd445..8db60d9a3 100644
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -255,3 +255,4 @@ pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]> {
              Elem::Byte { byte, next } => {
 -                *out.get_mut(n)? = byte;

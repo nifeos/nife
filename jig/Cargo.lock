@@ -90,6 +90,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+
+[[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
@@ -472,14 +476,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
- "glob",
+ "byte_glob",
  "program_argument_contract",
 ]
 

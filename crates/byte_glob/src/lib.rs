@@ -21,7 +21,8 @@
 //! | anything else | itself |
 
 //!
-//! Name: ratified 2026-08-01 (calef, the naming tenet): a standard term that is already right.
+//! Name: ratified 2026-11-14 (UTC) for `byte_glob`: the standard term glob, with the bytes it matches
+//! said in the name.
 
 #![no_std]
 
@@ -47,7 +48,7 @@ pub enum Dot {
 /// # Examples
 ///
 /// ```
-/// use glob::{matches, matches_with, has_magic, literal, Dot};
+/// use byte_glob::{matches, matches_with, has_magic, literal, Dot};
 ///
 /// assert!(matches(b"*.txt", b"notes.txt"));
 /// assert!(!matches(b"*.txt", b"notes.md"));
@@ -82,7 +83,7 @@ pub fn matches(pattern: &[u8], name: &[u8]) -> bool {
 /// # Examples
 ///
 /// ```
-/// use glob::{matches, matches_with, Dot};
+/// use byte_glob::{matches, matches_with, Dot};
 ///
 /// assert!(!matches(b"*", b".config"));                       // `*` does not list dotfiles
 /// assert!(matches(b".*", b".config"));                       // an explicit dot does
@@ -902,7 +903,7 @@ mod verification {
     /// For every pattern and name of up to three arbitrary bytes, under both [`Dot`] settings: no
     /// panic, overflow or out-of-bounds index, and the loop terminates within the unwinding bound,
     /// which is the property that matters for an untrusted pattern.
-    /// Falsification: replayable `crates/glob/falsifications/verification.matching_is_total.patch`
+    /// Falsification: replayable `crates/byte_glob/falsifications/verification.matching_is_total.patch`
     #[kani::proof]
     #[kani::unwind(11)]
     fn matching_is_total() {
@@ -924,7 +925,7 @@ mod verification {
     /// matcher exceeds on three bytes, but an off-by-one in the charging shows here. Separate from
     /// totality because `cost_bound`'s multiplies on top of the match loop exhausted the solver.
     /// See notes/glob/proofs.md.
-    /// Falsification: replayable `crates/glob/falsifications/verification.the_cost_never_exceeds_the_bound.patch`
+    /// Falsification: replayable `crates/byte_glob/falsifications/verification.the_cost_never_exceeds_the_bound.patch`
     #[kani::proof]
     #[kani::unwind(11)]
     fn the_cost_never_exceeds_the_bound() {
@@ -943,7 +944,7 @@ mod verification {
     /// **A pattern with no magic in it matches exactly one name: itself, unescaped**, over every
     /// pattern of up to three arbitrary bytes, escape corners and unterminated brackets included.
     /// The shell's grant planner rests on it: if [`has_magic`] says no, it asks for one name.
-    /// Falsification: replayable `crates/glob/falsifications/verification.no_magic_means_the_pattern_is_its_own_only_match.patch`
+    /// Falsification: replayable `crates/byte_glob/falsifications/verification.no_magic_means_the_pattern_is_its_own_only_match.patch`
     #[kani::proof]
     #[kani::unwind(11)]
     fn no_magic_means_the_pattern_is_its_own_only_match() {
@@ -966,7 +967,7 @@ mod verification {
     /// The two base cases, over every name of up to three arbitrary bytes. Stated with
     /// [`Dot::Ordinary`] so they are claims about the matcher; the leading-dot policy is the next
     /// harness, separately, because it is a separate thing.
-    /// Falsification: replayable `crates/glob/falsifications/verification.star_matches_anything_and_question_matches_one_byte.patch`
+    /// Falsification: replayable `crates/byte_glob/falsifications/verification.star_matches_anything_and_question_matches_one_byte.patch`
     #[kani::proof]
     #[kani::unwind(12)]
     fn star_matches_anything_and_question_matches_one_byte() {
@@ -989,7 +990,7 @@ mod verification {
     /// literal `.`, and any other name matches identically under both settings. The name is bounded
     /// at two bytes, enough for a predicate on its first byte; the pattern keeps three so `.*`,
     /// `\.x` and `[.]` are reachable. See notes/glob/proofs.md.
-    /// Falsification: replayable `crates/glob/falsifications/verification.the_dot_rule_only_touches_names_that_start_with_a_dot.patch`
+    /// Falsification: replayable `crates/byte_glob/falsifications/verification.the_dot_rule_only_touches_names_that_start_with_a_dot.patch`
     #[kani::proof]
     #[kani::unwind(9)]
     fn the_dot_rule_only_touches_names_that_start_with_a_dot() {
@@ -1020,7 +1021,7 @@ mod verification {
     ///
     /// The body excludes `!` and `^` at its head (`[!!y]` is the complement of `[!y]`, as Kani's
     /// counterexample showed), and `]` and `\`, which make the two spellings different patterns.
-    /// Falsification: replayable `crates/glob/falsifications/verification.a_negated_class_is_the_exact_complement_of_the_class.patch`
+    /// Falsification: replayable `crates/byte_glob/falsifications/verification.a_negated_class_is_the_exact_complement_of_the_class.patch`
     #[kani::proof]
     #[kani::unwind(10)]
     fn a_negated_class_is_the_exact_complement_of_the_class() {

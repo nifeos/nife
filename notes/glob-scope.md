@@ -1,6 +1,6 @@
 # What glob deliberately does not match
 
-*Name: provisional. The design argument behind `crates/glob`'s module doc, kept here because §267
+*Name: provisional. The design argument behind `crates/byte_glob`'s module doc, kept here because §267
 (a comment states the constraint as it is now) puts the argument in a note and the constraint in
 the doc.*
 

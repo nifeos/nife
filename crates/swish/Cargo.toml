@@ -48,7 +48,7 @@ filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # `has_magic`, and only that. Whether an arbitrary word is a pattern at all is asked before anything
 # treats it as a path, so `echo a:b` prints text instead of being refused as a name. Expansion itself
 # is `grant_plan::expand`; this crate moved the dependency off `user`, which no longer uses it.
-glob = { version = "0.1.0", path = "../glob" }
+byte_glob = { version = "0.1.0", path = "../byte_glob" }
 
 # `index::Ranked` and `index::Found`, so `apropos`'s answer is rendered here with everything else
 # the user reads (milestone 40 phase 2). The *reading* of a shard is `manual`'s and needs a

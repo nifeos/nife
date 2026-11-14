@@ -94,7 +94,7 @@ glyph_atlas = { version = "0.1.0", path = "../crates/glyph_atlas" }
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 # The programs the shell can spawn (milestone 150): the packer refuses to build an archive missing
 # one, because a `Prog` whose binary is not packed compiles, passes every host test and cannot be
-# spawned. `no_std` with one in-tree dependency (`glob`), so it costs the host build nothing.
+# spawned. `no_std` with one in-tree dependency (`byte_glob`), so it costs the host build nothing.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for

@@ -122,7 +122,7 @@ done
 # --- 4. Exit aggregation ---------------------------------------------------------------------
 out="$tmp/fail.out"
 : >"$log"
-NIFE_SELFTEST_FAIL_CRATE=glob
+NIFE_SELFTEST_FAIL_CRATE=byte_glob
 export NIFE_SELFTEST_FAIL_CRATE
 # The same fixture as the four-child run above. Without it the memory guard reads the real machine,
 # and a host small enough to refuse the run forks no child at all, which is a refusal this
