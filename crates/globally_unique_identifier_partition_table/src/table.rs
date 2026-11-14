@@ -112,7 +112,7 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
             .ok_or(Error::TableOverlapsUsable)?;
         if backup.my_lba != last {
             return Err(Error::NotBackup {
-                my_lba: backup.my_lba,
+                claimed_block: backup.my_lba,
             });
         }
         if backup.alternate_lba != PRIMARY_HEADER_LBA {

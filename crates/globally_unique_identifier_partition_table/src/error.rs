@@ -69,7 +69,7 @@ pub enum Error {
     /// was given a header that says it lives somewhere other than the last block of the disk.
     NotBackup {
         /// The block the header says it lives at.
-        my_lba: u64,
+        claimed_block: u64,
     },
     /// The disk the header describes is not the size of the device.
     /// See [`GloballyUniqueIdentifierPartitionTable::check_disk_size`](crate::GloballyUniqueIdentifierPartitionTable::check_disk_size).
@@ -220,10 +220,10 @@ impl core::fmt::Display for Error {
             Error::NotPrimary { my_lba } => {
                 write!(f, "header says it lives at LBA {my_lba}, not 1")
             }
-            Error::NotBackup { my_lba } => {
+            Error::NotBackup { claimed_block } => {
                 write!(
                     f,
-                    "header says it lives at LBA {my_lba}, not the last block"
+                    "header says it lives at LBA {claimed_block}, not the last block"
                 )
             }
             Error::DiskSize { header, device } => {
@@ -323,7 +323,7 @@ mod tests {
                 computed: 2,
             },
             Error::NotPrimary { my_lba: 9 },
-            Error::NotBackup { my_lba: 9 },
+            Error::NotBackup { claimed_block: 9 },
             Error::DiskSize {
                 header: 8,
                 device: 9,

@@ -458,7 +458,7 @@ fn parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array() {
 
     assert!(matches!(
         GloballyUniqueIdentifierPartitionTable::parse_backup(header_block, array, BLOCKS),
-        Err(Error::NotBackup { my_lba: 1 })
+        Err(Error::NotBackup { claimed_block: 1 })
     ));
     assert!(matches!(
         GloballyUniqueIdentifierPartitionTable::parse_backup(
