@@ -153,11 +153,10 @@ impl Default for LineDisc {
 }
 
 impl LineDisc {
-    /// An empty discipline: no line in progress, no history, prompt unset. `const` on purpose: a
-    /// user process here gets one 4 KiB page of stack (`kernel/src/user.rs`'s `USER_STACK_VA`),
-    /// and this struct is a few KiB before the temporary a stack-local move would make, so
-    /// `components/src/line_editor.rs` holds it in a `static` rather than in `_start`'s own frame
-    /// (`display_terminal.rs`'s `TERMINAL` is the same fix for the same reason, one program over).
+    /// An empty discipline: no line in progress, no history, prompt unset. `const` on purpose: the
+    /// struct is a few KiB before the temporary a stack-local move would make, so a program with a
+    /// small stack (one 4 KiB page, say) holds it in a `static` rather than in its entry point's
+    /// own frame.
     pub const fn new() -> Self {
         LineDisc {
             buf: [0; LINE_MAXIMUM],
