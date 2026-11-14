@@ -107,13 +107,15 @@ pub mod domain {
 /// The page's first eight bytes, so a reader can tell an assembled config page from a zeroed
 /// frame or from somebody else's page. ASCII, ends unpadded at 8 bytes so the ASCII reads
 /// straight in a hex dump the way `clock_contract::MAGIC` does.
+///
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
 /// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
 /// interface-stability discipline owes.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 13, naming the inert-configuration
@@ -122,7 +124,7 @@ pub const VERSION: u32 = 1;
 /// versions) holds the table of numbers, and `script/lint` holds the tree to it. A program declares
 /// the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const INTERFACE_ID: u64 = 13;
 
 /// The most bytes a `TZ` value may occupy. Longer than every entry in [`domain::KNOWN_TIME_ZONES`]
