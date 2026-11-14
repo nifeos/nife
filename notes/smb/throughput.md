@@ -54,7 +54,7 @@ are taken from the means.
 
 ## Where the rest went, and it is one number in a different contract
 
-The socket contract chunks at 4080 bytes. `socket_contract::DATA_MAXIMUM` is `4096 - OFF_PAYLOAD`,
+The socket contract chunks at 4080 bytes. `socket_contract::DATA_MAXIMUM` is `4096 - PAYLOAD_OFFSET_BYTES`,
 because a client and `net_stack` share exactly one frame. So `send_all` and `recv_into` in
 `smb_server` cross that contract about seventeen times in each direction per 64 KiB SMB message. That
 did not change, and is now what a transfer costs. A 64 KiB write went from ~985 ms to ~206 ms per

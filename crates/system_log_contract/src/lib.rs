@@ -365,7 +365,7 @@ pub mod kernel_ring {
     /// How many records the ring holds. The first slot's worth of words is the header.
     pub const SLOTS: u64 = (WORDS / SLOT_WORDS - 1) as u64;
     /// The header's first word once the kernel has formatted the ring.
-    pub const MAGIC: u64 = u64::from_le_bytes(*b"nifeklog");
+    pub const MAGIC: u64 = u64::from_le_bytes(*b"nifeklog"); // wire literal
     /// A slot's sequence word while the kernel is writing it.
     pub const BUSY: u64 = u64::MAX;
     /// A slot's sequence word before anything was written to it.

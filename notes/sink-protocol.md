@@ -46,7 +46,7 @@ The difference is whether the writer learns anything. A CALL would return "bytes
 for a self-framing message is always "all of them", and it would pay a second IPC hop on the hottest
 path in the system to say so. Back-pressure does not need the reply: SEND blocks until a receiver
 takes the message, so the rendezvous is the flow control, which is the property
-`line_editor::proto::OPERATION_BYTES` had already written down.
+`terminal_contract::OPERATION_BYTES` had already written down.
 
 SEND makes the reader of a pipe an ordinary program that does nothing but `receive`. With a CALL
 protocol every pipe reader would owe a reply, which means every program on the right of a `|` would

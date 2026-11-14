@@ -35,8 +35,8 @@ use domain_name_resolution_contract::fixture::{
     CASES, ECHO_FAILED, ECHO_NO_ADDRESS, ECHO_OK, ECHO_SKIPPED, WITH_NETWORK,
 };
 use domain_name_resolution_contract::{
-    OFF_ADDRESSES, OFF_NAME, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE, Outcome, endowment,
-    request, status,
+    ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE,
+    Outcome, endowment, request, status,
 };
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
@@ -88,12 +88,12 @@ fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
 /// One resolve: the reply word and the first address, packed.
 fn resolve(name: &[u8]) -> (u64, u64) {
     for (i, &b) in name.iter().enumerate() {
-        RESOLVER_PAGE.w8((OFF_NAME + i) as u64, b);
+        RESOLVER_PAGE.w8((NAME_OFFSET_BYTES + i) as u64, b);
     }
     let (word, _ttl) = call(RESOLVER, request(OPERATION_RESOLVE), name.len() as u64);
     let mut a = [0u8; 4];
     for (j, b) in a.iter_mut().enumerate() {
-        *b = RESOLVER_PAGE.r8((OFF_ADDRESSES + j) as u64);
+        *b = RESOLVER_PAGE.r8((ADDRESSES_OFFSET_BYTES + j) as u64);
     }
     (word, endowment::server(a))
 }
@@ -128,21 +128,24 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {
-        SOCKET_PAGE.w8(socket::OFF_DST_IP + i as u64, b);
+        SOCKET_PAGE.w8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET_PAGE.w16(socket::OFF_DST_PORT, socket::fixture::ECHO_PEER_PORT);
+    SOCKET_PAGE.w16(
+        socket::DESTINATION_PORT_OFFSET_BYTES,
+        socket::fixture::ECHO_PEER_PORT,
+    );
     if call(socket, socket::OPERATION_CONNECT, 0).0 != socket::CONNECT_ESTABLISHED {
         return ECHO_FAILED;
     }
     for (i, &b) in MSG.iter().enumerate() {
-        SOCKET_PAGE.w8(socket::OFF_PAYLOAD + i as u64, b);
+        SOCKET_PAGE.w8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, socket::OPERATION_SEND, MSG.len() as u64).0 == MSG.len() as u64
         && call(socket, socket::OPERATION_RECEIVE, 0).0 == MSG.len() as u64
         && MSG
             .iter()
             .enumerate()
-            .all(|(i, &b)| SOCKET_PAGE.r8(socket::OFF_PAYLOAD + i as u64) == b)
+            .all(|(i, &b)| SOCKET_PAGE.r8(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
     {
         ECHO_OK
     } else {

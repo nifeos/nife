@@ -1,4 +1,16 @@
-// This module's docs are on its `pub mod` line in `lib.rs`.
+//! The inter-process communication (IPC) framing of the terminal contract
+//! (notes/terminal-contract.md): opcodes, flags, badges and limits shared by the terminal, its
+//! clients, its supervisor and the kernel-side tests. This is a **userspace protocol**, not the
+//! kernel's application binary interface (ABI): the kernel routes these words without reading them.
+//!
+//! A wire-only leaf: it depends on nothing, so the kernel and every client link the words without
+//! linking the editor that serves them. The editing engine is the `line_editor` crate, and what a
+//! supervisor routes to a terminal it can replace is `line_editor_component`.
+//!
+//! Name: provisional (`terminal_contract`, the `_contract` suffix design/naming.md gives a wire
+//! contract); its published name waits on the naming-layers decision.
+
+#![no_std]
 
 /// Request opcode, in bits 63:56 of the first `CALL` word. The low 32 bits carry a length
 /// or count; bits 55:32 are reserved and must be zero.
@@ -43,7 +55,7 @@ pub const OPERATION_PRINT: u64 = 5;
 /// Application → terminal: switch the terminal between line-discipline and raw mode
 /// (milestone 169). `len` is 1 to enter raw mode, 0 to leave it. Replied immediately, r0 = 0.
 ///
-/// While raw mode is on, [`OPERATION_BYTES`] bypasses [`super::LineDisc`] entirely, and each burst
+/// While raw mode is on, [`OPERATION_BYTES`] bypasses the line editor entirely, and each burst
 /// the driver delivers reaches the application through [`OPERATION_READRAW`]. `OPERATION_READLINE`
 /// is refused (`BAD_REQUEST`) in raw mode and `OPERATION_READRAW` outside it. Switching either way
 /// abandons the line in progress in the mode being left, as `^C` does; history and the kill buffer
@@ -185,7 +197,7 @@ pub const CTL_HANDOFF: u64 = 3;
 
 /// `line_editor`'s third start argument, a set of bits a supervisor passes (milestone 23 (a
 /// capability-routed component OS with live replacement)). `START_HANDOFF`: a handoff page is
-/// mapped at [`HANDOFF_VA`](super::component::HANDOFF_VA), so a quiesce writes the blob there.
+/// mapped at `line_editor_component::HANDOFF_VA`, so a quiesce writes the blob there.
 /// `START_ABSORB`: this instance replaces another, so it reads that blob before serving and
 /// tells its supervisor [`NOTE_ABSORBED`] or [`NOTE_NOT_ABSORBED`] on the slot after its control
 /// endpoint.

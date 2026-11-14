@@ -13,7 +13,7 @@
 #![no_std]
 
 /// The opcode's position in the first word: bits 63:56, the same place `filesystem_contract` and
-/// `line_editor::proto` put theirs. One spelling for "the wire contract" across the tree.
+/// `terminal_contract` put theirs. One spelling for "the wire contract" across the tree.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The framing's version, one for the message set and the inline packing together (calef's ruling

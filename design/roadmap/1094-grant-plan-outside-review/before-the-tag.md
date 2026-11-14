@@ -4,7 +4,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
 
 ## P1: before the first release
 
-4. The tokenizer drops a seventeenth token on the floor.
+4. The tokenizer drops a seventeenth token on the floor. DONE (`a_seventeenth_token_is_refused_and_never_dropped`, `the_earliest_token_nothing_can_place_is_named_when_the_line_is_also_too_long`; `parse_run` records the first token the buffer had no room for as `unexpected`, and `tokenize` keeps its signature).
    Finding: `tokenize` writes into a caller's array and stops when it is full ("Tokens past
    `out.len()` are dropped"), and `parse_run` gives it sixteen slots. The crate's own rule, stated
    at `Refusal::Unexpected` and again at `ParsedInvocation::unexpected`, is that the crate refuses a token nothing can

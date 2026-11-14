@@ -124,7 +124,7 @@ which is honest rather than reckless precisely because the hot-swap story is wha
 
 ## The component's slots
 
-`line_editor::component` declares what a supervisor routes to a `line_editor` it can replace.
+`line_editor_component` declares what a supervisor routes to a `line_editor` it can replace.
 Both declarations put the terminal in slot 0 and the output sink in slot 1. The console's reply
 endpoint takes slot 2 when there is one, then come the control endpoint and the supervisor's
 notification endpoint. `line_editor` learns the control slot from its second start argument and
@@ -200,7 +200,7 @@ Its limits, which `components/src/graphical_terminal.rs` lists as BUGS:
 - A session runs no program. Its lines are echoed and nothing else.
 - Arm 1 has no line editing. The only edits are `^C` and retyping.
 - Arm 1 can switch the boot discipline's mode under the shell. Slot 2 on that arm is the boot
-  discipline's endpoint badged `line_editor::proto::RAW_ONLY_BADGE`, under milestone 709 (a
+  discipline's endpoint badged `terminal_contract::RAW_ONLY_BADGE`, under milestone 709 (a
   graphical terminal session on the no-keyboard arm holds only the raw half of the boot discipline).
   So a session can neither type nor take a line the boot shell reads, and cannot print to the UART.
   Flipping the mode while the shell is between reads abandons what the shell had half typed and

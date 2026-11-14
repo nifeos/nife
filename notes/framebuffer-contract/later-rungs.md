@@ -33,7 +33,7 @@ Two predictions in the list came out exactly as written, and one was answered di
 - Damage tracking: the compositor flushes one rectangle per frame, and the test poisons the rest of
   the scanout and finds the poison intact. As predicted, no driver change.
 - Input: the keyboard's routing question turned out to be the compositor's, as predicted. The
-  answer reuses `line_editor::proto::OPERATION_BYTES` verbatim.
+  answer reuses `terminal_contract::OPERATION_BYTES` verbatim.
 - Several surfaces, differently. The prediction was "a compositor holding one endpoint per client
   surface needs a driver change and not a contract change". Rung two holds one endpoint for all its
   clients instead. A shared endpoint carries no sender identity, so per-client surfaces are

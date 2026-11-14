@@ -105,8 +105,8 @@ tree on 2026-10-27 (UTC) and found these rows stale:
   features off) and owns only how a GPT stores an identifier. The GPT row no longer counts a second crate.
 - `intrusive_fifo` is now `intrusive_queue`.
 - `http_response` now depends on `httparse`, so it is no longer free of dependencies.
-- `video_terminal` depends on `address_space_map` and `glyph_atlas`, and `line_editor` on
-  `capability_plan`, so neither is class B (bound to a sibling crate) any more.
+- `video_terminal` depends on `address_space_map` and `glyph_atlas`, so it is not class B (bound
+  to a sibling crate) any more. `line_editor` depends on nothing.
 - Someone else holds `coremark` on crates.io (created 2026-10-12, an unrelated port), so that name is not free.
 
 The architect ruled the first three releases; see milestone 857's release order and
@@ -140,7 +140,10 @@ Three rulings of 2026-11-01 (UTC) change the dispositions above, and this sectio
 | `address_space_identifier`, `cpu_set` | internal | moves | An ASID allocator and a hart-mask set, both pure logic with no dependencies |
 | `bitmap_font` | internal | moves | A glyph table and a pure function, with no dependencies |
 | `coremark` | internal | moves; close call | A `no_std` CoreMark-derived benchmark any Rust target can run. Close: the name is EEMBC's and taken on crates.io, so it may leave only under a new one |
-| `video_terminal`, `line_editor` | internal | moves after a cut; close call | The VT engine and the line discipline are sans-IO. Close: each `component.rs` links nife's `address_space_map` or `capability_plan`, so the cut leaves those modules here first |
+| `video_terminal` | internal | moves after a cut; close call | The VT engine is sans-IO. Close: its `component.rs` links nife's `address_space_map`, so the cut leaves that module here first |
+| `line_editor` | internal | moves | The line editor is sans-IO and depends on nothing; its state handoff stays in it, and the terminal contract lives outside it (milestone 1098 (`line_editor`: what an outside maintainer would fix before it leaves), decision 1) |
+| `terminal_contract` | internal | joins the contract crates | The terminal protocol's opcodes and badges, a wire-only leaf with no dependencies. Its name is provisional, and its published name waits on the naming-layers decision |
+| `line_editor_component` | internal | stays | What a supervisor routes to a replaceable `line_editor`, built on `capability_plan`, which stays; it sits beside the terminal programs. Its name is provisional |
 | `cryptography_provider` | internal | moves | A `rustls` provider is consumable outside nife; its alpha state bears on publishing, not on moving |
 | `redoxfs` | fork 8: internal | open | Redox's crate, vendored here with two patches; where the copy goes when its programs leave is open |
 

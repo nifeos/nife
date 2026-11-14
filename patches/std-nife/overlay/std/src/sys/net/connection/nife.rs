@@ -212,22 +212,22 @@ fn fr8(va: u64) -> u8 {
 fn set_dst(id: u64, ip: Ipv4Addr, port: u16) {
     let base = page_frame_va(id);
     for (i, b) in ip.octets().iter().enumerate() {
-        fw8(base + OFF_DST_IP + i as u64, *b);
+        fw8(base + DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, *b);
     }
     // Port, little-endian, matching the frame header (netproto).
-    fw8(base + OFF_DST_PORT, port as u8);
-    fw8(base + OFF_DST_PORT + 1, (port >> 8) as u8);
+    fw8(base + DESTINATION_PORT_OFFSET_BYTES, port as u8);
+    fw8(base + DESTINATION_PORT_OFFSET_BYTES + 1, (port >> 8) as u8);
 }
 
 fn write_payload(id: u64, buf: &[u8]) {
-    let base = page_frame_va(id) + OFF_PAYLOAD;
+    let base = page_frame_va(id) + PAYLOAD_OFFSET_BYTES;
     for (i, b) in buf.iter().enumerate() {
         fw8(base + i as u64, *b);
     }
 }
 
 fn read_payload(id: u64, off: usize, out: &mut [u8]) {
-    let base = page_frame_va(id) + OFF_PAYLOAD + off as u64;
+    let base = page_frame_va(id) + PAYLOAD_OFFSET_BYTES + off as u64;
     for (i, b) in out.iter_mut().enumerate() {
         *b = fr8(base + i as u64);
     }
@@ -1148,7 +1148,7 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
         ensure_resolver_page(&held, i)?;
         // The resolver may have written answers over the name, so it goes in again each time.
         for (k, &b) in name.iter().enumerate() {
-            fw8(page + (resolve::OFF_NAME + k) as u64, b);
+            fw8(page + (resolve::NAME_OFFSET_BYTES + k) as u64, b);
         }
         let (word, _ttl) = rt::call(
             rt::RESOLVER_SLOTS[i],
@@ -1171,7 +1171,7 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
             let count = (outcome.count as usize).min(resolve::MAXIMUM_ADDRESSES);
             let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAXIMUM_ADDRESSES];
             for (k, a) in addresses.iter_mut().take(count).enumerate() {
-                let at = page + (resolve::OFF_ADDRESSES + 4 * k) as u64;
+                let at = page + (resolve::ADDRESSES_OFFSET_BYTES + 4 * k) as u64;
                 *a = Ipv4Addr::new(fr8(at), fr8(at + 1), fr8(at + 2), fr8(at + 3));
             }
             return Ok(LookupHost { addresses, count, next: 0, port });

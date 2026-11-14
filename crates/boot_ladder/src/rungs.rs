@@ -14,14 +14,14 @@
 ///
 /// Deliberately generic across the three: a recogniser that knew only the VisionFive 2's wording
 /// would report a healthy aarch64 or `x86_64` board as never having booted.
-pub const BANNER: &str = "nife on ";
+pub const BANNER: &str = "nife on "; // wire literal
 
 /// **The machine description finished: `nife machine: <arch>, <n> processor(s), ...`.**
 ///
 /// Printed by `kernel/src/machine_description.rs`'s `print_machine_description` as its **last**
 /// line, and that position is the point: reaching it means the whole description printed, which is
 /// the claim a ladder rung should make. A header would only have meant the block started.
-pub const MACHINE: &str = "nife machine: ";
+pub const MACHINE: &str = "nife machine: "; // wire literal
 
 /// **The self-test verdict: `nife self-test: 13 of 13 passed`, `... , 2 absent: <names>`, or
 /// `... , 1 FAILED: <names>`.**
@@ -31,7 +31,7 @@ pub const MACHINE: &str = "nife machine: ";
 /// itself only when it has no progenitor to hand the rest to. [`crate::verdict::Verdict`] renders it. The
 /// counts are there on success as well as on failure, so that "ran nothing and passed" is
 /// distinguishable from "ran the set and passed".
-pub const SELF_TEST: &str = "nife self-test: ";
+pub const SELF_TEST: &str = "nife self-test: "; // wire literal
 
 /// **The head of the line naming a thread the self-test kills on purpose**, before its death is
 /// taken: `nife self-test subject: thread 19, which the userspace check kills on purpose`.
@@ -41,7 +41,7 @@ pub const SELF_TEST: &str = "nife self-test: ";
 /// [`crate::verdict::subject_thread`] reads it back.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
-pub const SELF_TEST_SUBJECT: &str = "nife self-test subject: thread ";
+pub const SELF_TEST_SUBJECT: &str = "nife self-test subject: thread "; // wire literal
 
 /// **What a red verdict says before it names the checks that failed.**
 ///
@@ -114,7 +114,7 @@ pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
 /// just before the hand-over, so it says the machine was described and the kernel's half of
 /// [`SELF_TEST_CHECKS`] ran. The [`SELF_TEST`] verdict follows it, from the hand-over, and says
 /// whether they passed. The `<arch>` is the kernel's own `arch::NAME`.
-pub const TOUR: &str = "nife: the capability core runs on ";
+pub const TOUR: &str = "nife: the capability core runs on "; // wire literal
 
 /// **Userspace is up and the shell is offering a prompt.**
 ///
@@ -123,7 +123,7 @@ pub const TOUR: &str = "nife: the capability core runs on ";
 /// than a halt is the signal that the boot finished.
 ///
 /// See this module's `BUGS` for why the banner and not the prompt itself.
-pub const PROMPT: &str = "nife capability shell";
+pub const PROMPT: &str = "nife capability shell"; // wire literal
 
 /// **The kernel is holding the screen open for a host that wants to photograph it**
 /// (milestone 445 (the screen check stops sampling and starts asking)), and will clear it as soon as one byte comes
@@ -133,4 +133,4 @@ pub const PROMPT: &str = "nife capability shell";
 /// boot command line carried `machine_discovery::framebuffer::SCREEN_HOLD`, and `cargo xtask
 /// uefi-boot` waits for it, takes its screendump and answers. A boot that was not asked to hold
 /// never prints it. Why it asks rather than samples is in notes/boot-ladder.md, "The screen hold".
-pub const SCREEN_HELD: &str = "nife screen: held for the host; ";
+pub const SCREEN_HELD: &str = "nife screen: held for the host; "; // wire literal

@@ -87,7 +87,7 @@ Two-way.
 ### P1: land before the tag
 
 **P1-1. `node_reg` does not stop at the first match; its documentation and its siblings say it
-does.** `src/lib.rs` lines 320 to 327 says "the `reg` regions of the first node whose name starts with
+does.** DONE (`node_reg_stops_at_the_first_matching_node_even_without_a_reg`). `src/lib.rs` lines 320 to 327 says "the `reg` regions of the first node whose name starts with
 `prefix`", and the comment at `:369-376` says "either way, stop looking", but the code clears
 `target_at` and keeps matching. Probe: a root with `uart@1` (no `reg`) then `uart@2` (`reg`) gives
 `node_reg(b"uart@")` one region, `uart@2`'s, while `node_prop(b"uart@", b"reg")` on the same blob
@@ -99,7 +99,7 @@ pass `plic@`, `serial@10000000` and `smmuv3@`. On every fixture the first match 
 the shape above. Effort S. Two-way.
 
 **P1-2. `reserved_memory_regions` matches a `reserved-memory` node at any depth and decodes its
-children with the root's widths.** `src/lib.rs` line 952 matches the name wherever it first appears;
+children with the root's widths.** DONE (`a_reserved_memory_node_below_the_root_is_not_the_reservation_list`). `src/lib.rs` line 952 matches the name wherever it first appears;
 `:973-982` reads cell counts at depth 1 only, and `:932` documents "each depth-3 child's `reg`".
 Probe: a root declaring 1/1 with `/soc` declaring 2/2 and `/soc/reserved-memory/fw@80000000`
 carrying a 2/2 `reg` yields two regions, `{0, 2 GiB}` and `{0, 256 KiB}`, neither of which the tree
@@ -108,7 +108,7 @@ RAM the machine never gets. Linux resolves the path `/reserved-memory` and reads
 (the memory scan it shares the file with reads root children only, which this review verified; the reserved-memory scan stays unverified). The fix: match at depth 2 only, as `memory_regions` and
 `initial_ramdisk` do, and a hostile test of the nested shape. Effort S. Two-way.
 
-**P1-3. Offset arithmetic has no check on a target whose `usize` is 32 bits.** Every walker adds a
+**P1-3. Offset arithmetic has no check on a target whose `usize` is 32 bits.** DONE (the first of the two fixes: every cursor step is checked; `a_property_length_past_the_blob_is_truncated_in_every_lookup`, the helper tests in `src/lib.rs`, and the `skip_padded_never_wraps` harness with its falsification patch). The wrap itself needs a 32-bit `usize`, so no blob test on a 64-bit host fails before the fix. Every walker adds a
 blob-supplied `u32` to a cursor without a check. The sums are `at + align4(len)` (`src/lib.rs` line 285,
 `:382`, `:481`, `:604`, `:670`, `:756`, `:820`, `:906`, `:969`, `:1056`, `:1127`). Next come
 `self.off_strings + name_off` (`:287`, `:384`, `:483`, `:606`, `:672`, `:758`, `:823`, `:909`,
@@ -126,7 +126,7 @@ compile_error!(...)` and say so in the README. The first is the honest one for a
 `no_std`. The second is cheaper and closes the door on 32-bit users. Effort M for the first, S for
 the second. Two-way.
 
-**P1-4. The walk is never confined to the structure block.** `from_bytes` (`src/lib.rs` lines 162 to 193)
+**P1-4. The walk is never confined to the structure block.** DONE (`a_structure_block_without_its_end_token_is_truncated_not_read_into_the_strings`, `the_declared_structure_size_bounds_the_walk`, `a_blob_older_than_version_17_ends_its_structure_at_the_strings`). `from_bytes` (`src/lib.rs` lines 162 to 193)
 reads the magic, `totalsize`, `last_comp_version` and three offsets, and never reads `version`
 (offset 20), `size_dt_strings` (32) or `size_dt_struct` (36). A walker runs from `off_struct` until
 `FDT_END`, an unknown token or the end of the blob. A structure block that lacks `FDT_END` is

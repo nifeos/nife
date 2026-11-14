@@ -42,12 +42,12 @@ positions rather than a `capability_plan` declaration because two of them are no
 budget and two frame runs, which `capability_plan::Direction` has no word for. A declaration for
 this program is milestone 597 (a program carries its manifest in an ELF note)'s to write.
 
-A supervisor starts the terminal with a control endpoint in `CONTROL` and `line_editor::proto`'s
+A supervisor starts the terminal with a control endpoint in `CONTROL` and `terminal_contract`'s
 start bits in its third argument. A quiesce is `OPERATION_QUIESCE` on the endpoint it serves,
-through a copy badged `line_editor::proto::SUPERVISOR_BADGE` (refused on any other), answered
+through a copy badged `terminal_contract::SUPERVISOR_BADGE` (refused on any other), answered
 `QUIESCED`, after which it reads only `CONTROL`. Unlike `line_editor`'s, its handoff run
 is not mapped at build. It comes from the machine's swap reserve
-(`line_editor::component::supervisor::SWAP_RESERVE_PAGES`), which exists only while a swap holds
+(`line_editor_component::supervisor::SWAP_RESERVE_PAGES`), which exists only while a swap holds
 it. So it arrives with `CTL_HANDOFF`, a `SEND_CAPABILITY` on `CONTROL`, and is mapped at
 `HANDOFF_ADDRESS`. The blob is written into it and answered `NOTE_WRITTEN` on `SUPERVISOR`. A
 replacement started with `START_ABSORB` takes the same message before it serves.

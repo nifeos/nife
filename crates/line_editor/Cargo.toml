@@ -8,8 +8,5 @@ license.workspace = true
 [lints]
 workspace = true
 
+# None: the engine links nothing of the system it serves.
 [dependencies]
-# The capability half of the terminal contract (milestone 23 (a capability-routed component OS with
-# live replacement)): what a supervisor must route to a `line_editor` it can replace, beside the wire
-# half in `proto`, where `hot_swap_contract` keeps its own.
-capability_plan = { version = "0.1.0", path = "../capability_plan" }

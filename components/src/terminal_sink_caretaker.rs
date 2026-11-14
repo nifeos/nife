@@ -29,7 +29,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::{call, receive};
 
 /// Slot 0: the sink endpoint, held `READ`. Its clients hold `WRITE` on the same object and nothing

@@ -92,6 +92,8 @@ members = [
     "crates/subtree_scope",
     "crates/intrusive_queue",
     "crates/line_editor",
+    "crates/line_editor_component",
+    "crates/terminal_contract",
     "crates/loaded_image_check",
     "crates/documentation",
     "crates/domain_name_system",

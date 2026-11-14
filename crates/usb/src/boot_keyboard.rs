@@ -67,7 +67,7 @@ impl BootReport {
         keys: [0; 6],
     };
 
-    /// Parse a report. `None` for fewer than [`REPORT_LEN`] bytes, and for a **phantom** report
+    /// Parse a report. A buffer longer than eight bytes is accepted and its tail ignored. `None` for fewer than [`REPORT_LEN`] bytes, and for a **phantom** report
     /// (any slot holding [`ERROR_ROLL_OVER`] or the two other error usages, 2 and 3), which a
     /// driver must ignore rather than read as every key released.
     pub fn parse(b: &[u8]) -> Option<BootReport> {
@@ -249,9 +249,11 @@ pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u1
             event(code, after.modifiers & (1 << bit) != 0);
         }
     }
-    for &usage in &before.keys {
+    for (i, &usage) in before.keys.iter().enumerate() {
+        // `before.keys[..i]` so a usage a confused device reports twice is released once.
         if usage != 0
             && !after.holds(usage)
+            && !before.keys[..i].contains(&usage)
             && let Some(code) = evdev_code(usage)
         {
             event(code, false);
@@ -283,7 +285,7 @@ mod tests {
         BootReport::parse(&b).unwrap()
     }
 
-    fn diff(a: &BootReport, b: &BootReport) -> Vec<(u16, bool)> {
+    fn difference(a: &BootReport, b: &BootReport) -> Vec<(u16, bool)> {
         let mut v = Vec::new();
         changes(a, b, &mut |c, p| v.push((c, p)));
         v
@@ -368,7 +370,7 @@ mod tests {
     #[test]
     fn shift_and_a_letter_together_deliver_shift_first() {
         assert_eq!(
-            diff(&BootReport::RELEASED, &report(0x20, &[0x04])), // right shift + a
+            difference(&BootReport::RELEASED, &report(0x20, &[0x04])), // right shift + a
             [(54, true), (30, true)]
         );
     }
@@ -377,20 +379,23 @@ mod tests {
     #[test]
     fn a_held_modifier_is_quiet_and_its_release_is_a_release() {
         let shift_a = report(0x20, &[0x04]);
-        let shift_ab = report(0x20, &[0x04, 0x05]);
-        assert_eq!(diff(&shift_a, &shift_ab), [(48, true)]);
-        assert_eq!(diff(&shift_ab, &report(0, &[0x04, 0x05])), [(54, false)]);
+        let shift_a_b = report(0x20, &[0x04, 0x05]);
+        assert_eq!(difference(&shift_a, &shift_a_b), [(48, true)]);
+        assert_eq!(
+            difference(&shift_a_b, &report(0, &[0x04, 0x05])),
+            [(54, false)]
+        );
     }
 
     /// A roll: `a` still held, `b` pressed, then `a` released while `b` stays.
     #[test]
     fn a_roll_presses_each_key_once_and_releases_it_once() {
         let a = report(0, &[0x04]);
-        let ab = report(0, &[0x04, 0x05]);
+        let a_b = report(0, &[0x04, 0x05]);
         let b = report(0, &[0x05]);
-        assert_eq!(diff(&a, &ab), [(48, true)]);
+        assert_eq!(difference(&a, &a_b), [(48, true)]);
         // Slot order is not promised, so `b` moving to slot 0 must not read as a new press.
-        assert_eq!(diff(&ab, &b), [(30, false)]);
+        assert_eq!(difference(&a_b, &b), [(30, false)]);
     }
 
     #[test]
@@ -403,8 +408,17 @@ mod tests {
     #[test]
     fn a_duplicated_usage_presses_once() {
         assert_eq!(
-            diff(&BootReport::RELEASED, &report(0, &[0x04, 0x04])),
+            difference(&BootReport::RELEASED, &report(0, &[0x04, 0x04])),
             [(30, true)]
+        );
+    }
+
+    /// A device that reports one usage in two slots of the earlier report releases it once.
+    #[test]
+    fn a_duplicated_usage_releases_once() {
+        assert_eq!(
+            difference(&report(0, &[0x04, 0x04]), &BootReport::RELEASED),
+            [(30, false)]
         );
     }
 }
