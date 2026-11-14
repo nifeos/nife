@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 672, 994, 1017
 decision_dependencies: 170
@@ -228,6 +228,15 @@ The code keeps the old names until a lane renames them.
 Ruled by the architect, 2026-11-14 (UTC), who cleared the review. A lane creates the repository
 `nifeos/program_argument_contract` after the three renames above and milestone 994 land.
 It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with `publish = false`.
+
+## Follow-on
+
+- **Done.** The three rulings above, recorded in this block, and the matching step in milestone
+  994's block.
+- **Outstanding.** Items 1 to 15 above, each to be checked against `crates/program_argument_contract`
+  when its lane starts.
+- **Outstanding.** The three renames of the rulings, then milestone 994, then the repository and
+  its `v0.1.0-pre.1` tag.
 
 ## Done when
 
