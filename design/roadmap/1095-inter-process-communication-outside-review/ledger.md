@@ -1,7 +1,7 @@
 # Ledger
 
 An appendix to [the milestone](../1095-inter-process-communication-outside-review.md). Each item
-is DONE with the test or harness that holds it, or LEFT with the reason.
+reads DONE with the test or harness that holds it, or LEFT with the reason.
 
 | item | state | where |
 |---|---|---|
