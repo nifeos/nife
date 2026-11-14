@@ -75,17 +75,20 @@ pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
 /// **A client resolves the name in its page.** A `CALL` whose second word is the name's length in
 /// bytes. The reply is an [`Outcome`] word and the answer's TTL in seconds.
 pub const OPERATION_RESOLVE: u64 = 2;
-/// **The spawner grants a badge a zone.** A plain `SEND` through the unbadged capability, whose
-/// first word is a [`control_word`] and whose second carries up to eight bytes of the zone's dotted
-/// text, little-endian. Offset 0 starts the zone afresh, so a re-grant replaces rather than
-/// appends. Starting at 0x10 so that no client opcode is ever also a control opcode.
+/// **The spawner grants a badge a zone.** A `SEND` or a `CALL` through the unbadged capability,
+/// whose first word is a [`control_word`] and whose second carries up to eight bytes of the zone's
+/// dotted text, little-endian. Offset 0 starts the zone afresh, so a re-grant replaces rather than
+/// appends. The spawner `CALL`s the last piece of each grant, and the reply's first word says
+/// whether the grant is in force ([`Outcome`], as described at [`refusal`]). Starting at 0x10 so
+/// that no client opcode is ever also a control opcode.
 pub const OPERATION_GRANT: u64 = 0x10;
 /// **The spawner withdraws a badge's grant.** A plain `SEND` or a `CALL` through the unbadged
 /// capability, whose first word is a [`control_word`] naming the badge, with offset and total 0;
-/// the second word is unused. From then on the badge is denied every name, the resolver gives up
-/// the page that badge attached, and the window is free for the next grant. A spawner that outlives
-/// its clients sends one when each client ends, which is what lets a resolver serve more than
-/// [`GRANTS_MAXIMUM`] clients in its life (milestone 892 (a std program at the prompt holds the
+/// the second word is unused. A `CALL` is answered as a grant's last piece is ([`refusal`]). From
+/// then on the badge is denied every name, the resolver gives up the page that badge attached, and
+/// the window is free for the next grant. A spawner that outlives its clients sends one when each
+/// client ends, which is what lets a resolver serve more than [`GRANTS_MAXIMUM`] clients in its
+/// life (milestone 892 (a std program at the prompt holds the
 /// network and a resolver); provisional).
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
@@ -150,8 +153,36 @@ pub mod status {
     pub const NO_ENTROPY: u8 = 8;
     /// The socket contract refused the resolver. The detail byte names the step.
     pub const NETWORK: u8 = 9;
-    /// An operation this protocol does not have, or a resolve from the spawner's own badge.
+    /// **The request was refused as malformed**: an operation this protocol does not have, a
+    /// resolve from the spawner's own badge, or a control message the grant table refused. For a
+    /// control message the detail byte is one of [`refusal`](super::refusal), the reason.
     pub const BAD_REQUEST: u8 = 10;
+}
+
+/// **Why a control message was refused**: the detail byte of the reply to a control `CALL` whose
+/// status is [`status::BAD_REQUEST`]. The reply to a control `CALL` is an [`Outcome`] word, packed
+/// exactly as a resolve reply's first word, with a count of 0 and a second word of 0. Its status is
+/// [`status::OK`] when the message was accepted (a piece taken, a grant in force, a grant
+/// withdrawn), or [`status::BAD_REQUEST`] with one of these in the detail byte when it was refused.
+/// No other status answers a control message. The numbers are fixed: a new reason takes the next
+/// one, and none is reused.
+///
+/// Name: provisional (milestone 1086's lane), for the module and its constants.
+pub mod refusal {
+    /// The first word names an operation the spawner does not have.
+    pub const UNKNOWN_OPERATION: u8 = 1;
+    /// The message names badge 0, the spawner's own, which holds no grant.
+    pub const BADGE_ZERO: u8 = 2;
+    /// A piece arrived out of order, or a continuation for a grant nobody started.
+    pub const OUT_OF_ORDER: u8 = 3;
+    /// The zone is longer than a name can be.
+    pub const TOO_LONG: u8 = 4;
+    /// The zone's text is not a host name.
+    pub const BAD_ZONE: u8 = 5;
+    /// Every window already belongs to another badge.
+    pub const FULL: u8 = 6;
+    /// A forget for a badge that holds no window.
+    pub const NO_SUCH_GRANT: u8 = 7;
 }
 
 /// Which step of the socket contract refused the resolver: [`status::NETWORK`]'s detail byte. Moved

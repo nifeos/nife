@@ -323,3 +323,103 @@ fn a_zone_is_spelled_one_way() {
         );
     }
 }
+
+/// Every refusal, in declaration order. A new variant that is not added here fails the match in
+/// `the_refusal_numbers_are_stable` at compile time, not at the wire.
+const REFUSALS: [Refusal; 7] = [
+    Refusal::UnknownOperation,
+    Refusal::BadgeZero,
+    Refusal::OutOfOrder,
+    Refusal::TooLong,
+    Refusal::BadZone,
+    Refusal::Full,
+    Refusal::NoSuchGrant,
+];
+
+#[test]
+fn the_refusal_numbers_are_stable() {
+    // The numbers are on the wire: a spawner built against one version reads them from a resolver
+    // built against another. Changing one is a break, so this pins every one by value.
+    for (refusal, code) in REFUSALS.into_iter().zip(1u8..) {
+        let pinned = match refusal {
+            Refusal::UnknownOperation => 1,
+            Refusal::BadgeZero => 2,
+            Refusal::OutOfOrder => 3,
+            Refusal::TooLong => 4,
+            Refusal::BadZone => 5,
+            Refusal::Full => 6,
+            Refusal::NoSuchGrant => 7,
+        };
+        assert_eq!(refusal.code(), pinned, "{refusal:?}");
+        assert_eq!(
+            refusal.code(),
+            code,
+            "{refusal:?} is out of declaration order"
+        );
+        assert_eq!(Refusal::from_code(code), Some(refusal));
+    }
+    assert_eq!(Refusal::from_code(0), None);
+    assert_eq!(Refusal::from_code(8), None);
+    assert_eq!(Refusal::from_code(u8::MAX), None);
+}
+
+#[test]
+fn a_control_reply_is_packed_as_a_resolve_reply() {
+    assert_eq!(Control::Partial.reply().word(), status::OK as u64);
+    assert_eq!(Control::Granted(3).reply().word(), status::OK as u64);
+    assert_eq!(Control::Forgotten(3).reply().word(), status::OK as u64);
+    for refusal in REFUSALS {
+        let word = Control::Refused(refusal).reply().word();
+        assert_eq!(
+            word,
+            status::BAD_REQUEST as u64 | (refusal.code() as u64) << 8,
+            "{refusal:?}"
+        );
+        assert_eq!(control_answer(word), Err(Some(refusal)));
+    }
+    assert_eq!(control_answer(status::OK as u64), Ok(()));
+}
+
+#[test]
+fn a_word_that_is_no_control_reply_is_no_grant() {
+    // A failed `CALL` (a negative number), a status the control reply never carries (the old
+    // bare 1 among them), a detail on an acceptance, an address count, and an unknown reason.
+    for word in [
+        -1i64 as u64,
+        status::DENIED as u64,
+        status::OK as u64 | 1 << 8,
+        status::OK as u64 | 1 << 16,
+        status::BAD_REQUEST as u64,
+        status::BAD_REQUEST as u64 | 8 << 8,
+        status::BAD_REQUEST as u64 | (refusal::BAD_ZONE as u64) << 8 | 1 << 16,
+    ] {
+        assert_eq!(control_answer(word), Err(None), "{word:#x}");
+    }
+}
+
+#[test]
+fn the_last_piece_of_a_grant_says_whether_it_took() {
+    let mut g = Grants::new();
+    let messages: Vec<_> = grant_messages(3, b"a.long.example.test").unwrap().collect();
+    let (last, pieces) = messages.split_last().unwrap();
+    for &(w0, w1) in pieces {
+        assert_eq!(control_answer(g.control(w0, w1).reply().word()), Ok(()));
+    }
+    assert_eq!(
+        control_answer(g.control(last.0, last.1).reply().word()),
+        Ok(())
+    );
+
+    // Two pieces: the first is taken, and only the last can see that the zone does not parse.
+    let bad: Vec<_> = grant_messages(4, b"example..test").unwrap().collect();
+    assert_eq!(bad.len(), 2);
+    assert_eq!(
+        control_answer(g.control(bad[0].0, bad[0].1).reply().word()),
+        Ok(())
+    );
+    assert_eq!(
+        control_answer(g.control(bad[1].0, bad[1].1).reply().word()),
+        Err(Some(Refusal::BadZone))
+    );
+    assert_eq!(g.granted(4), None);
+}
