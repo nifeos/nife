@@ -16,11 +16,11 @@ use super::*;
 fn field_bytes_never_panics_for_any_length_byte() {
     let mut page = [0u8; PAGE_BYTES];
     let length: u8 = kani::any();
-    page[TERMINAL_TYPE_LENGTH_OFFSET] = length;
+    page[TERMINAL_TYPE_LENGTH_OFFSET_BYTES] = length;
     let read = field_bytes(
         &page,
-        TERMINAL_TYPE_LENGTH_OFFSET,
-        TERMINAL_TYPE_OFFSET,
+        TERMINAL_TYPE_LENGTH_OFFSET_BYTES,
+        TERMINAL_TYPE_OFFSET_BYTES,
         MAXIMUM_TERMINAL_TYPE_BYTES,
     );
     if usize::from(length) > MAXIMUM_TERMINAL_TYPE_BYTES {

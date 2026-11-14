@@ -154,18 +154,18 @@ pub const MAXIMUM_LOCALE_BYTES: usize = 24;
 #[doc(alias = "TERM")]
 pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 24;
 
-const MAGIC_OFFSET: usize = 0;
-const TIME_ZONE_LENGTH_OFFSET: usize = MAGIC_OFFSET + 8;
-const TIME_ZONE_OFFSET: usize = TIME_ZONE_LENGTH_OFFSET + 1;
-const LOCALE_LENGTH_OFFSET: usize = TIME_ZONE_OFFSET + MAXIMUM_TIME_ZONE_BYTES;
-const LOCALE_OFFSET: usize = LOCALE_LENGTH_OFFSET + 1;
-const TERMINAL_TYPE_LENGTH_OFFSET: usize = LOCALE_OFFSET + MAXIMUM_LOCALE_BYTES;
-const TERMINAL_TYPE_OFFSET: usize = TERMINAL_TYPE_LENGTH_OFFSET + 1;
+const MAGIC_OFFSET_BYTES: usize = 0;
+const TIME_ZONE_LENGTH_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
+const TIME_ZONE_OFFSET_BYTES: usize = TIME_ZONE_LENGTH_OFFSET_BYTES + 1;
+const LOCALE_LENGTH_OFFSET_BYTES: usize = TIME_ZONE_OFFSET_BYTES + MAXIMUM_TIME_ZONE_BYTES;
+const LOCALE_OFFSET_BYTES: usize = LOCALE_LENGTH_OFFSET_BYTES + 1;
+const TERMINAL_TYPE_LENGTH_OFFSET_BYTES: usize = LOCALE_OFFSET_BYTES + MAXIMUM_LOCALE_BYTES;
+const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
 /// under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
-pub const PAGE_BYTES: usize = TERMINAL_TYPE_OFFSET + MAXIMUM_TERMINAL_TYPE_BYTES;
+pub const PAGE_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
 ///
@@ -265,25 +265,25 @@ impl<'a> PageBuilder<'a> {
     /// zero, which is what [`ConfigPage`] reads as absent.
     pub fn build(&self) -> [u8; PAGE_BYTES] {
         let mut page = [0u8; PAGE_BYTES];
-        page[MAGIC_OFFSET..MAGIC_OFFSET + 8].copy_from_slice(&MAGIC);
+        page[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8].copy_from_slice(&MAGIC);
         write_field(
             &mut page,
-            TIME_ZONE_LENGTH_OFFSET,
-            TIME_ZONE_OFFSET,
+            TIME_ZONE_LENGTH_OFFSET_BYTES,
+            TIME_ZONE_OFFSET_BYTES,
             MAXIMUM_TIME_ZONE_BYTES,
             self.tz,
         );
         write_field(
             &mut page,
-            LOCALE_LENGTH_OFFSET,
-            LOCALE_OFFSET,
+            LOCALE_LENGTH_OFFSET_BYTES,
+            LOCALE_OFFSET_BYTES,
             MAXIMUM_LOCALE_BYTES,
             self.lang,
         );
         write_field(
             &mut page,
-            TERMINAL_TYPE_LENGTH_OFFSET,
-            TERMINAL_TYPE_OFFSET,
+            TERMINAL_TYPE_LENGTH_OFFSET_BYTES,
+            TERMINAL_TYPE_OFFSET_BYTES,
             MAXIMUM_TERMINAL_TYPE_BYTES,
             self.term,
         );
@@ -432,7 +432,7 @@ impl ConfigPage {
     }
 
     fn is_recognized(&self) -> bool {
-        self.bytes()[MAGIC_OFFSET..MAGIC_OFFSET + 8] == MAGIC
+        self.bytes()[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8] == MAGIC
     }
 
     /// `TZ`, or `None` if this process holds no config page, the page is unrecognized, `TZ` was
@@ -443,8 +443,8 @@ impl ConfigPage {
             .then(|| {
                 read_field(
                     self.bytes(),
-                    TIME_ZONE_LENGTH_OFFSET,
-                    TIME_ZONE_OFFSET,
+                    TIME_ZONE_LENGTH_OFFSET_BYTES,
+                    TIME_ZONE_OFFSET_BYTES,
                     MAXIMUM_TIME_ZONE_BYTES,
                 )
             })
@@ -459,8 +459,8 @@ impl ConfigPage {
             .then(|| {
                 read_field(
                     self.bytes(),
-                    LOCALE_LENGTH_OFFSET,
-                    LOCALE_OFFSET,
+                    LOCALE_LENGTH_OFFSET_BYTES,
+                    LOCALE_OFFSET_BYTES,
                     MAXIMUM_LOCALE_BYTES,
                 )
             })
@@ -475,8 +475,8 @@ impl ConfigPage {
             .then(|| {
                 read_field(
                     self.bytes(),
-                    TERMINAL_TYPE_LENGTH_OFFSET,
-                    TERMINAL_TYPE_OFFSET,
+                    TERMINAL_TYPE_LENGTH_OFFSET_BYTES,
+                    TERMINAL_TYPE_OFFSET_BYTES,
                     MAXIMUM_TERMINAL_TYPE_BYTES,
                 )
             })
@@ -628,9 +628,12 @@ mod tests {
     #[test]
     fn a_length_past_its_field_reads_that_field_as_absent() {
         let fields = [
-            (TIME_ZONE_LENGTH_OFFSET, MAXIMUM_TIME_ZONE_BYTES),
-            (LOCALE_LENGTH_OFFSET, MAXIMUM_LOCALE_BYTES),
-            (TERMINAL_TYPE_LENGTH_OFFSET, MAXIMUM_TERMINAL_TYPE_BYTES),
+            (TIME_ZONE_LENGTH_OFFSET_BYTES, MAXIMUM_TIME_ZONE_BYTES),
+            (LOCALE_LENGTH_OFFSET_BYTES, MAXIMUM_LOCALE_BYTES),
+            (
+                TERMINAL_TYPE_LENGTH_OFFSET_BYTES,
+                MAXIMUM_TERMINAL_TYPE_BYTES,
+            ),
         ];
         for (corrupted, (length_offset, maximum_bytes)) in fields.into_iter().enumerate() {
             for length in (maximum_bytes + 1)..=usize::from(u8::MAX) {
@@ -671,7 +674,7 @@ mod tests {
     }
 
     /// A recognized page whose field carries bytes that are not a member of the key's domain
-    /// (a writer other than [`PageBuilder`], or a zone name with trailing NUL bytes) reads that
+    /// (a writer other than [`PageBuilder`], or a zone name with trailing zero bytes) reads that
     /// key as absent, and leaves the other keys alone.
     #[test]
     fn a_recognized_page_carrying_a_non_member_reads_that_key_as_absent() {
@@ -684,7 +687,7 @@ mod tests {
             .unwrap()
             .build();
         // `UTC` followed by a NUL, one byte longer than the member.
-        bytes[TIME_ZONE_LENGTH_OFFSET] = 4;
+        bytes[TIME_ZONE_LENGTH_OFFSET_BYTES] = 4;
         with_page(&bytes, |page| {
             assert_eq!(page.tz(), None);
             assert_eq!(page.lang(), Some("C"));
@@ -692,10 +695,10 @@ mod tests {
         });
         // A well-formed UTF-8 value the lists do not hold.
         let mut bytes = PageBuilder::new().lang("C").unwrap().build();
-        bytes[LOCALE_OFFSET] = b'X';
+        bytes[LOCALE_OFFSET_BYTES] = b'X';
         with_page(&bytes, |page| assert_eq!(page.lang(), None));
         let mut bytes = PageBuilder::new().term("xterm").unwrap().build();
-        bytes[TERMINAL_TYPE_OFFSET] = b'X';
+        bytes[TERMINAL_TYPE_OFFSET_BYTES] = b'X';
         with_page(&bytes, |page| assert_eq!(page.term(), None));
     }
 
@@ -721,14 +724,18 @@ mod tests {
     fn a_length_equal_to_its_maximum_reads_the_whole_field() {
         let fields = [
             (
-                TIME_ZONE_LENGTH_OFFSET,
-                TIME_ZONE_OFFSET,
+                TIME_ZONE_LENGTH_OFFSET_BYTES,
+                TIME_ZONE_OFFSET_BYTES,
                 MAXIMUM_TIME_ZONE_BYTES,
             ),
-            (LOCALE_LENGTH_OFFSET, LOCALE_OFFSET, MAXIMUM_LOCALE_BYTES),
             (
-                TERMINAL_TYPE_LENGTH_OFFSET,
-                TERMINAL_TYPE_OFFSET,
+                LOCALE_LENGTH_OFFSET_BYTES,
+                LOCALE_OFFSET_BYTES,
+                MAXIMUM_LOCALE_BYTES,
+            ),
+            (
+                TERMINAL_TYPE_LENGTH_OFFSET_BYTES,
+                TERMINAL_TYPE_OFFSET_BYTES,
                 MAXIMUM_TERMINAL_TYPE_BYTES,
             ),
         ];
@@ -749,7 +756,7 @@ mod tests {
         let mut bytes = PageBuilder::new().tz("UTC").unwrap().build();
         // Corrupt the length byte to zero after building, simulating an assembler that wrote
         // the magic but never declared the time zone.
-        bytes[TIME_ZONE_LENGTH_OFFSET] = 0;
+        bytes[TIME_ZONE_LENGTH_OFFSET_BYTES] = 0;
         with_page(&bytes, |page| {
             assert_eq!(page.tz(), None);
         });
@@ -768,7 +775,7 @@ mod tests {
             .term("dumb")
             .unwrap()
             .build();
-        bytes[MAGIC_OFFSET] ^= 0xff; // flip one byte of the magic
+        bytes[MAGIC_OFFSET_BYTES] ^= 0xff; // flip one byte of the magic
         with_page(&bytes, |page| {
             assert_eq!(page.tz(), None);
             assert_eq!(page.lang(), None);
@@ -785,18 +792,21 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {
-        assert_eq!(TIME_ZONE_LENGTH_OFFSET, 8);
-        assert_eq!(TIME_ZONE_OFFSET, 9);
-        assert_eq!(LOCALE_LENGTH_OFFSET, 9 + MAXIMUM_TIME_ZONE_BYTES);
-        assert_eq!(LOCALE_OFFSET, LOCALE_LENGTH_OFFSET + 1);
+        assert_eq!(TIME_ZONE_LENGTH_OFFSET_BYTES, 8);
+        assert_eq!(TIME_ZONE_OFFSET_BYTES, 9);
+        assert_eq!(LOCALE_LENGTH_OFFSET_BYTES, 9 + MAXIMUM_TIME_ZONE_BYTES);
+        assert_eq!(LOCALE_OFFSET_BYTES, LOCALE_LENGTH_OFFSET_BYTES + 1);
         assert_eq!(
-            TERMINAL_TYPE_LENGTH_OFFSET,
-            LOCALE_OFFSET + MAXIMUM_LOCALE_BYTES
+            TERMINAL_TYPE_LENGTH_OFFSET_BYTES,
+            LOCALE_OFFSET_BYTES + MAXIMUM_LOCALE_BYTES
         );
-        assert_eq!(TERMINAL_TYPE_OFFSET, TERMINAL_TYPE_LENGTH_OFFSET + 1);
+        assert_eq!(
+            TERMINAL_TYPE_OFFSET_BYTES,
+            TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1
+        );
         assert_eq!(
             PAGE_BYTES,
-            TERMINAL_TYPE_OFFSET + MAXIMUM_TERMINAL_TYPE_BYTES
+            TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES
         );
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
     }
