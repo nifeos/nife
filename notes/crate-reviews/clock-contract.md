@@ -11,11 +11,12 @@ the leaves `disk-tools` links. It describes the crate as `main` plus this branch
 ## In one paragraph
 
 The wall clock as a contract between a clock service and everything that reads or sets the time.
-Reading is a read-only mapping of a 32-byte clock page, setting is a read/write mapping of the same
+Reading is a read-only mapping of a 56-byte clock page, setting is a read/write mapping of the same
 page, and proposing a time is a two-word message the service answers with `policy::decide`. Wall
 time is the monotonic counter plus an offset, and only the offset is ever written, so a step never
-moves `Instant`. The page is a seqlock whose reader and writers sit in different address spaces,
-and four loom models check its two fences against the C11 memory model. The crate is `no_std`, has
+moves `Instant`. The page keeps two copies of the time and a publish count, so a reader never waits
+on a writer, and its reader and writers sit in different address spaces. Six loom models check its
+orderings against the C11 memory model. The crate is `no_std`, has
 no run-time dependency, and has `unsafe` in one place: `ClockPage::new` takes a raw address. It has
 no Kani harness. Nothing in it points back into nife. Four names carry ratified blocks, six
 provisional ones and the rest none.
@@ -31,7 +32,7 @@ provisional ones and the rest none.
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest |
 | `publish` | `false`; milestone 1017 keeps the moved contract crates unpublished under §305 (git dependencies on `nifeos/*` only, pinned to a landed commit) until their own release milestone |
 | dependencies | none at run time; `loom = "0.7"` only under `cfg(loom)`, which only a model-checking run sets |
-| size | one `src/lib.rs` of 1,004 lines: about 567 of library, 238 of host tests and 199 of loom models |
+| size | one `src/lib.rs` of 1,277 lines: about 664 of library, 260 of host tests and 351 of loom models |
 | package | `cargo package` packs 8 files, 73.7 KiB (23.3 KiB compressed), and builds from the packed copy |
 
 ## Who in nife depends on it
@@ -88,7 +89,7 @@ has no baseline) and the template's workflows, which run in the repository.
 | kind | items |
 |---|---|
 | conversion | `NS_PER_SECOND`, `wall_nanoseconds(offset_nanoseconds, monotonic_nanoseconds)`, `offset_for(wall_nanoseconds, monotonic_nanoseconds)`; the overlay's spellings `NANOS_PER_SEC` and `wall_nanos` |
-| page identity and layout | `MAGIC`, `VERSION`, `INTERFACE_ID`, `WORDS` (4) |
+| page identity and layout | `MAGIC`, `VERSION`, `INTERFACE_ID`, `WORDS` (7) |
 | the page | `ClockPage`, `unsafe const fn new(va: u64)`, `initialize`, `read -> Reading`, `publish(new_state, offset_nanoseconds) -> u64` |
 | a reading | `Reading { state, offset_nanos, generation }` |
 | `state` | `UNKNOWN` (0), `RTC` (1), `SET` (2), `SYNCED` (3), `is_known(state)` |
@@ -106,18 +107,19 @@ What a stranger may find surprising:
 - `ClockPage` is `Copy`, `Send` and `Sync` by `unsafe impl` around a raw pointer; `new`'s safety
   contract carries the whole burden. `publish` on a read-only mapping faults the caller, which the
   documentation calls the correct outcome.
-- `read` never fails: a frame without the magic reads as `UNKNOWN`. It spins while a writer holds
-  the sequence, and a writer killed mid-publish leaves every reader spinning; both `BUGS` sections
-  say so.
+- `read` never fails and never waits on a writer: a frame without the magic reads as `UNKNOWN`,
+  and a read retries only when a publish finished during it. A writer stopped while it holds the
+  claim blocks later writers, and nothing clears the claim; both `BUGS` sections say so.
 - `propose` defines no reply layout type: the reply is two words, documented on `PROPOSE` and
   `STATE`.
 
 ## Proofs
 
-No Kani harness, and so no falsification patch; the README says so. The loom models check four
-claims about the seqlock: a reader never sees half a publish, a reading's generation matches its
-pair, two writers serialize, and a reader racing `initialize` sees an unrecognized page or a whole
-one. Each model asserts that some execution reached each branch it expects. Loom judges against C11, not the
+No Kani harness, and so no falsification patch; the README says so. The loom models check six
+claims about the page: a reader never sees half a publish, a reader across two publishes never
+returns a torn pair, a reading's generation matches its pair, two writers serialize, a stopped
+writer never makes a reader wait, and a reader racing `initialize` sees an unrecognized page or a
+whole one. Each model asserts that some execution reached each branch it expects. Loom judges against C11, not the
 Arm or RISC-V model, and the crate's `BUGS` says that too.
 
 ## Names
@@ -144,10 +146,10 @@ renames none of them. Each proposal is provisional; nothing outside nife has act
 | `WORDS` | constant | a count of the page's words | keep |
 | the other 30 items of the draft table, the modules `state`, `propose`, `status` and `policy`, and the fields `state` and `generation` | | pass every rule | ratify as written; `INTERFACE_ID` and `VERSION` with the identity values |
 
-Private names, for the move lane: `W_SEQ` (`seq`), `W_OFFSET` (refused by `register_names`), the
-locals `s1`, `st`, `off` and `s`, and two loom test names and two statics that the template's
-`british_spelling` check refuses. Proposed: `WORD_MAGIC`, `WORD_SEQUENCE`, `WORD_STATE`,
-`WORD_OFFSET`, spelled-out locals, and the American spellings. `notes/interleaving.md`,
+Private names, for the move lane: the word indices are `MAGIC_WORD_INDEX`, `PUBLISH_WORD_INDEX`,
+`CLAIM_WORD_INDEX`, `STATE_WORD_INDEX` and `OFFSET_WORD_INDEX`. The locals `st` and `off`, and two
+loom test names and two statics that the template's `british_spelling` check refuses, remain.
+Proposed: spelled-out locals and the American spellings. `notes/interleaving.md`,
 `notes/interleaving/what-was-modeled.md` and the mutation regression note cite the test names, so
 they move together.
 

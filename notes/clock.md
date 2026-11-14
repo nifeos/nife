@@ -51,8 +51,8 @@ requires the counter to have moved only by the cost of the round trip.
 | authority | the capability | cost of a read/write |
 |---|---|---|
 | none | nothing | the machine does not know what time it is, and says so |
-| read | the clock page, `MAP_READ_ONLY` | two loads and an add; no syscall, no server |
-| set | the clock page, `MAP_READ_WRITE` | one seqlock publish; nothing polices it |
+| read | the clock page, `MAP_READ_ONLY` | a few loads and an add; no syscall, no server, no wait |
+| set | the clock page, `MAP_READ_WRITE` | one publish; nothing polices it |
 | propose | the propose endpoint, `WRITE` | one `CALL`; the service may refuse |
 
 Nothing new was needed in the kernel: the ladder is `PageFrame` with `READ`, `PageFrame` with `WRITE`, and
@@ -67,40 +67,53 @@ setting the clock *means*. §33 (the compositor's authority is memory) settled t
 authority is memory, not messages"). §43 records the alternative (a minted endpoint carrying a
 badge, §25's tracked later step) and why this design does not need it.
 
-## The seqlock, and why the memory ordering is load-bearing
+## Two copies, and why the memory ordering is load-bearing
 
-The clock page is four words: a magic, a sequence, a state, and the offset. Readers are many and
-writers are few. There is no lock a process could hold across an address-space boundary, so it is
-a seqlock:
+The clock page is seven words: the magic, a publish count, the writers' claim, and two copies of the
+state and the offset. Readers are many and writers are few. There is no lock a process could hold
+across an address-space boundary, and a reader must never wait on a writer, because a writer that
+stops mid-update would otherwise stop `SystemTime::now` in every process on the machine.
 
-- a writer claims the sequence with a compare-exchange from even to odd (writers are multiple by
-  the capability layout, even if two racing is not a design anyone wants), stores the data, then
-  releases the sequence to even;
-- a reader takes the sequence, reads the data, fences, and takes the sequence again; equal and even
-  means the reading is whole.
+- A writer takes the claim with a compare-exchange from free to held (writers are multiple by the
+  capability layout, even if two racing is not a design anyone wants), fills the copy the count's
+  low bit does not name, advances the count, and gives the claim back.
+- A reader loads the count, reads the copy its low bit names, fences, and loads the count again.
+  Equal means the reading is whole. Unequal means a publish finished during the read, so it reads
+  again. A writer that has stopped finishes nothing, so it never makes a reader retry.
 
 This is the project's rule 4 in a place where it matters. On a strongly ordered machine a sloppy
-version passes every test forever, and on ARM and RISC-V it does not. The acquire on the writer's
-claim keeps its stores from being hoisted above it. The release keeps them all visible to any reader
-that sees the even sequence. The reader's fence keeps its data loads from sinking below the second
-sequence read, which is what makes the check mean anything.
+version passes every test forever, and on ARM and RISC-V it does not. Each ordering is stated at its
+load or store in `clock_contract` with what it pairs with. Two of them carry the case two copies
+alone cannot. A reader holding count *g* reads copy *g* mod 2. Two publishes later, the writer of
+*g*+2 rewrites that copy while the reader is still in it. The reader must then see a count above
+*g* on its second load. The writer's release fence before its data stores, paired with the reader's
+acquire fence before that load, guarantees it: a reader that saw any word the writer stored after its
+fence also sees the count the writer read before it, which is *g*+1. Linux's latch has the same
+barrier, the `smp_wmb()` at the head of `raw_write_seqcount_latch`. The comparison is equality,
+not "within one", for the same reason: a count one higher can belong to a writer already refilling
+the reader's copy.
 
-The writer also needs a release fence between its claim and its data stores, Linux's `smp_wmb()`
-in `write_seqcount_begin`. Without it a reader can see the new offset while the sequence still
-reads even and unchanged, pass its revalidation, and return a state from one publish beside an
-offset from another. `AcqRel` and even `SeqCst` on the compare-exchange still tear, because an
-acquire or release RMW orders accesses around itself, and what is needed is its own store ordered
-ahead of the plain stores after it. The bug is not reachable on x86, QEMU's TCG explores almost
-none of the orderings that produce it, and milestone 80 (Loom: the hand-rolled atomic protocols,
-model-checked) found it
-([interleaving.md](interleaving.md)).
+| | writers serialized by | copies | a reader retries when |
+|---|---|---|---|
+| Linux seqcount latch, `include/linux/seqlock.h` | the caller | two, both written per modification | the count changed |
+| Linux vDSO time, `include/vdso/helpers.h` | the kernel's timekeeping update (not in that file) | one | the count is odd (it spins), or changed |
+| FreeBSD `timehands`, `sys/kern/kern_tc.c` | a spin mutex | a ring of up to sixteen | its record's generation is zero or changed |
+| this page | the claim word, on the page | two, one written per publish | the count changed |
 
-Two limits stand. The orderings are checked against C11, not ARM's or RISC-V's model: loom
-searches the C11 model, so a tear it finds is real and a clean run proves nothing about either
-ISA. Litmus-level confidence would need herd7-style tooling, and nothing yet reads this page from
-two physical cores under load. A reader's spin while a writer holds the sequence has no bound. The
-window is four stores wide and the writer holds no lock, so nothing can be preempted into a
-deadlock, but a writer killed inside it leaves the page odd for good.
+The Linux and FreeBSD rows were read in those files, except where the vDSO row says otherwise. Linux's latch writes both copies per
+modification because it keeps an older value readable for a reader that interrupts its own writer
+(NMI context); a clock page reader never runs inside its writer, so one copy per publish is enough.
+FreeBSD keeps a generation in each record and zeroes it while the record is rewritten; here the one
+count does both jobs, which is what makes the page seven words and not more. Windows publishes its
+time in `KUSER_SHARED_DATA` with a pair of high-part words checked against each other; that is from
+memory, not read for this page.
+
+Two limits stand. The orderings are checked against C11, not ARM's or RISC-V's model: loom searches
+the C11 model, so a tear it finds is real and a clean run proves nothing about either ISA.
+Litmus-level confidence would need herd7-style tooling, and nothing yet reads this page from two
+physical cores under load. And a writer stopped while it holds the claim blocks every later writer,
+because nothing can tell a writer that stopped from one that is slow; readers keep reading the last
+publish.
 
 A torn read here would be a wrong time rather than a crash, which is the worst kind of bug to leave
 possible, so the invariant has its own test in `clock_contract`.

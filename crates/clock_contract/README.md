@@ -14,19 +14,21 @@ epoch in a `u64`, which runs out in 2554.
 
 ## The contract
 
-- The page: four 64-bit words (`WORDS`), the rest of the frame reserved and zero. Word 0 is `MAGIC`
-  (ASCII `CLOCKv01`), word 1 a sequence number, word 2 the state, word 3 the offset in nanoseconds.
-  A frame without the magic reads as the unknown state. `VERSION` (1) is the digits of the magic: a
+- The page: seven 64-bit words (`WORDS`), the rest of the frame reserved and zero. Word 0 is
+  `MAGIC` (ASCII `CLOCKv01`), word 1 the publish count, word 2 the writers' claim, words 3 and 4 the
+  state and the offset in nanoseconds of copy 0, and words 5 and 6 the same for copy 1. The publish
+  count's low bit names the copy readers use. A frame without the magic reads as the unknown state. `VERSION` (1) is the digits of the magic: a
   reader built for one version reads another's page as no clock at all. A layout break bumps both.
 - States (`state`): `UNKNOWN`, `RTC`, `SET`, `SYNCED`. `UNKNOWN` is a real answer. A machine with no
   usable clock must say so; reporting 1970 plus uptime is the failure this contract exists to
   prevent.
-- `ClockPage` is the page as seen through one mapping. It is a seqlock, because there are many
-  readers, several writers and no lock can cross an address space. `read` never blocks a writer and
-  returns one consistent `Reading` (state, offset, generation, where generation counts publishes).
-  `publish` claims the sequence with a compare-exchange, so writers exclude each other.
-  `new` is `unsafe`: the address must be a mapped, 8-byte-aligned frame that stays mapped.
-  A writer killed between its claim and its release leaves every reader spinning.
+- `ClockPage` is the page as seen through one mapping. There are many readers, several writers and
+  no lock can cross an address space, so a reader never waits on a writer. `publish` takes the claim
+  word with a compare-exchange, so writers exclude each other, fills the copy the count does not
+  name, advances the count and gives the claim back. `read` returns one consistent `Reading` (state,
+  offset, generation, where generation is the publish count), and retries only when a publish
+  finished during its own read, which a stopped writer never does. `new` is `unsafe`: the address
+  must be a mapped, 8-byte-aligned frame that stays mapped.
 - The conversion: `wall_nanoseconds(offset, monotonic)` saturates rather than wraps, and `offset_for` is its
   inverse.
 - Proposals (`propose`, `status`): a request is `req(PROPOSE)` with the proposed time as the second
@@ -66,20 +68,24 @@ assert_eq!(
 
 ## What is proven
 
-There are no Kani harnesses. The loom run checks the seqlock's two memory-ordering fences against
-the C11 model, not against the Arm or RISC-V memory models.
+There are no Kani harnesses. The loom run checks three claims against the C11 model, not against the
+Arm or RISC-V memory models: a reader never returns a torn pair, including a reader that sleeps
+across two publishes; a writer stopped at any point inside a publish never makes a reader wait; and
+two writers never interleave. Weakening any ordering on the page fails one of them, except the
+release that gives the claim back, which loom passes and the argument in the source carries.
 
 ## Building and testing
 
 ```sh
 cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
-RUSTFLAGS="--cfg loom" cargo test --release      # the seqlock under every interleaving loom permits
+RUSTFLAGS="--cfg loom" cargo test --release      # the clock page under every interleaving loom permits
 ```
 
 ## BUGS
 
-- A writer killed between its claim and its release leaves every reader spinning.
+- A writer stopped while it holds the claim blocks every later writer until something clears the
+  claim. Readers keep reading the last publish. Nothing here clears a claim it did not take.
 - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`,
   kept for a standard-library overlay, which reads them by those names. Use the newer spellings.
 

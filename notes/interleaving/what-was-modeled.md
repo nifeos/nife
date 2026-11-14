@@ -31,15 +31,20 @@ on the weakly ordered ISAs this project runs on.
 
 ## `crates/clock_contract`, the second protocol
 
-A seqlock over a shared page. The clock service writes, and every process holding a read mapping
-reads, with no lock available between them because they are in different address spaces. Its own
-documentation says the memory ordering is the point rather than decoration.
+Two copies of the time and a publish count over a shared page. The clock service writes, and every
+process holding a read mapping reads, with no lock available between them because they are in
+different address spaces. Its own documentation says the memory ordering is the point rather than
+decoration. Each reader runs on a thread of its own, and the frame starts as leftover bytes rather
+than zeros, so that weakening any ordering but one fails a harness (the crate's loom module names
+the one).
 
 | Harness | Property |
 |---|---|
-| `a_reader_never_sees_half_a_publish` | the state and the offset are a matched pair; a reader that catches the writer mid-publish retries rather than blending |
+| `a_reader_never_sees_half_a_publish` | the state and the offset are a matched pair; a reader that races a publish gets the publish before it or the publish itself, never a blend |
+| `a_reader_across_two_publishes_never_returns_a_torn_pair` | the second of two publishes rewrites the copy a slow reader is in; the full count, carried by a fence on each side, makes that reader retry |
+| `a_stopped_writer_never_makes_a_reader_wait` | a writer that stops holding the claim, after filling, or after its flip never makes a reader's first attempt fail before the flip, and keeps the claim so later writers wait |
 | `the_generation_a_reader_sees_matches_the_pair_it_read` | `Reading::generation` is a value callers depend on (did the clock step under me), not a diagnostic, so it must agree with the pair it arrived with |
-| `two_writers_serialise_rather_than_corrupt_the_page` | the crate says several processes may hold the page read/write and the compare-exchange serializes them; "would corrupt silently" is a claim about interleavings |
+| `two_writers_serialise_rather_than_corrupt_the_page` | several processes may hold the page read/write and the claim word's compare-exchange serializes them; the page ends holding the last writer's pair, with the claim free |
 | `a_racing_reader_sees_an_unrecognised_page_or_a_whole_one` | `init` writes the magic last with a release, so a reader racing the first publish gets `UNKNOWN` or a whole page, never a recognized page with garbage in it |
 
 ## `crates/thread_wake_handshake`, the block/wake protocol (2026-08-14)
