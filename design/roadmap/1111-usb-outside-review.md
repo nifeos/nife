@@ -111,7 +111,7 @@ maintainer decides it.
    Evidence: `crates/usb/src/descriptor.rs` lines 20 to 27, 63, 76, 111, 124, 159, 195, 234, 238,
    260; `crates/usb/src/boot_keyboard.rs` lines 34 and 38; `crates/usb/src/request.rs` lines 38
    and 124.
-   Change: the public renames are Decision 1. The private ones belong to the maintainer. Rename
+   Change: the public renames are Decision 1's table, decided provisionally. Rename
    locals `config` to `configuration` and `max_packet` to `maximum_packet_bytes`. Rename the test
    `the_class_requests_address_the_interface` to `the_class_requests_are_sent_to_the_interface`
    (the gate reads a leading `address` as a verb). Rename the binding `address` in the walk to
@@ -119,7 +119,7 @@ maintainer decides it.
    caller changes with the public names: `usb_keyboard_driver.rs` reads `keyboard.max_packet`,
    `descriptor::DEVICE_LEN`, `descriptor::CONFIGURATION_LEN`, `REPORT_LEN` and
    `control_max_packet`.
-   Door: public names are one-way (Decision 1); private names are two-way. Effort: M, counting the
+   Door: two-way before the first release. Effort: M, counting the
    caller.
 
 ### P2: later
@@ -132,7 +132,9 @@ The P1 items are in [the appendix](1111-usb-outside-review/before-the-tag.md).
 
 ## Decisions for the architect
 
-Only one-way doors. The maintainer rules everything else above as provisional.
+Three decisions, each decided provisionally below. The maintainer rules everything else above as
+provisional. The published crate name `universal_serial_bus` is ruled already and is not reopened
+here.
 
 ### Decision 1. The public names the template's gates refuse
 
@@ -165,6 +167,14 @@ byte this crate calls `address`. Concrete example: after the change the driver r
 `keyboard.maximum_packet_bytes` where it reads `keyboard.max_packet`, and the sentence in
 `context::endpoint(...)`'s call site needs no comment to say what unit it passes.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. These are names in an unreleased crate, and `usb`
+itself is not the name it publishes under. The table above is the rule, every row as recommended,
+including `parse(bytes)`. The specification's spellings stay as aliases (`bMaxPacketSize0`,
+`wTotalLength`, `wLength`, `ErrorRollOver`, `bcdUSB`). No old spelling of this tree stays as an
+alias. The premises hold at `crates/usb/src/descriptor.rs` lines 20 to 27, 76, 111, 159 and 195,
+and `boot_keyboard.rs` line 34. Item 3 is the work. Ratifying the names stays the architect's.
+
 ### Decision 2. What `changes` emits: Linux key codes or HID usages
 
 Background. `changes(before, after, event)` calls `event(code, pressed)` with `code` an evdev
@@ -192,6 +202,16 @@ evdev by definition, which does not hold for a crate. Concrete example: left shi
 report, today `[(42, true), (35, true)]`, would be `[(0xe1, true), (0x0b, true)]`, and the driver's
 closure maps each through `evdev_code`.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. The door is not one-way, as the background above
+reads it. Before the first release the only caller is in nife, and the codes cross no wire: the
+driver feeds them into its own keymap (`components/src/usb_keyboard_driver.rs`, `keys.event(EV_KEY,
+code, ...)` near line 906). `changes` (`boot_keyboard.rs` line 245) emits HID usages, modifiers as
+0xe0 to 0xe7, in the same order and under the same bound. The driver maps each usage through
+`evdev_code` (line 121), and `MODIFIER_CODES` (line 43) leaves the public surface. It also follows
+the rule that the usage table follows the HID Usage Tables. The evdev form would have been chosen
+only for effort.
+
 ### Decision 3. One result type for the three parsers, and a speed for the control packet size
 
 Background. `ConfigurationHeader::parse` answers `Result<_, Refusal>`; `DeviceDescriptor::parse`
@@ -215,6 +235,14 @@ malformed case and never a bare failure; the `usb-host` crate's trait models spe
 Concrete example: a device descriptor whose `bDescriptorType` is 2 answers
 `Err(Refusal::NotThatDescriptor)` and the driver's bring-up report says so instead of "bad device
 descriptor, 18 bytes".
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. These are signatures in an unreleased crate with one
+caller. The recommendation is the rule. `DeviceDescriptor::parse` (`descriptor.rs` line 88) returns
+`Result<DeviceDescriptor, Refusal>`, as `ConfigurationHeader::parse` (line 133) already does, and
+`BootReport::parse` keeps `Option`. The four-way `Speed` replaces `superspeed: bool` (line 111), and
+the driver's call at `components/src/usb_keyboard_driver.rs` line 460 gains the four-way match.
+Item 11 is the work.
 
 ## Done when
 
@@ -242,5 +270,6 @@ block the move: a manifest that cannot stand alone, a crate that contradicts its
 lacks its promised alias, and thirty names the template's gates refuse. Seven land before the tag.
 They are the scaffold files, a review package the crate never had, and a usage table that stops
 short of every non-US keyboard. They also cover the two-interface paths no proof or test reaches, a
-lenient short-descriptor rule, a doubled release, and the missing fuzz target. Four wait for later. Three one-way doors go to the architect: the public rename table, whether `changes` speaks evdev or HID, and one result type for
-the parsers with a speed for the control packet size.
+lenient short-descriptor rule, a doubled release, and the missing fuzz target. Four wait for later. Three decisions are decided, provisionally: the public rename table, that
+`changes` speaks HID usages, and one result type for the parsers with a speed for the control
+packet size.
