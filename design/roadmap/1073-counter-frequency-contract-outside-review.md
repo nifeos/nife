@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -50,6 +50,23 @@ The comparison with nearby work is in [the prior art appendix](1073-counter-freq
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the move (a published name, a wire value, a
 layout, a fixed address, a dependency); everything else is two-way and the maintainer decides it.
+
+### Where each item stands
+
+| item | state |
+|---|---|
+| 1, the `std` farm reads the source by path | landed, #3514 |
+| 2, clippy red on stable | landed, #3513 |
+| 3, BUGS in the contract's own terms | landed, #3556 |
+| 4, the band is the reader's to apply | landed, #3556: `hertz` documents it, a test pins `Some(0)`, `cntfrq_checked` applies `is_plausible` on both architectures |
+| 5, pointer-width assertion | landed, #3556 |
+| 6, manifest `publish` comment | landed, #3556 |
+| 7, documentation a stranger reads | landed, #3556, with the review package's three move edits and its proposed items 1 and 2 |
+| 8, the template's prose gates | landed, #3556 |
+| 9, two Kani harnesses with falsification patches | landed, #3556, and the verify table has a row for the crate |
+| 10, private offset constants | held: a family decision, written up below |
+| 11, README says where the end-to-end test lives | landed, #3556 |
+| 12, `Debug` prints the address | no change, folds into the next API change |
 
 ### P0: blocks the move or the first green run
 
@@ -208,40 +225,29 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 ## Decisions for the architect
 
-One one-way door is open. Everything else above is two-way and the maintainer decides it.
+The architect froze the identity on 2026-11-11 (#3516). One item waits on a family decision.
 
-### Freeze the contract's identity before it leaves
+### Which spelling the page crates use for their private offset constants (item 10)
 
-Background. Five programs under `components/src/` declare this interface by the pair
-(`INTERFACE_ID`, `VERSION`) in their `INTERFACES` note, the kernel and every process compile in
-`PAGE_VIRTUAL_ADDRESS`, and every reader compares `MAGIC`. Once a pin outside nife builds one of
-those programs, a change to any of these values has to move every pin in one image. Milestone 1017
-(the contract crates leave in this order) describes that cost from the two reverts it measured. The
-package lists ratifying `INTERFACE_ID = 9` as the architect's item. The sibling contracts that left
-before this one each had their identity frozen as a set, and the fixed addresses belong in this
-crate's set because a program acts on them exactly as it acts on the magic.
+Background. Each fixed-layout page crate names the byte position of a field with a private
+constant, and this crate writes `OFF_MAGIC` and `OFF_HERTZ`. The sibling page crates use the same
+`OFF_` prefix. The constants are private, so no caller or published name depends on them. The
+question is whether a stranger reading one crate should meet `OFF_` or a spelled-out `_OFFSET`
+suffix, and the answer has to be the same in every page crate or the family reads as inconsistent.
 
-Recommendation first: freeze the identity as it stands. `MAGIC` is `TIMEBAS1`, `VERSION` is 1,
-`INTERFACE_ID` is 9, `PAGE_VIRTUAL_ADDRESS` is `0x0000_7000_0000_0000` on `x86_64` and
-`0x0000_0038_0000_0000` on `riscv64`, and `PAGE_CONTENT_BYTES` is 16 with the magic at offset 0
-and the little-endian rate at offset 8. Every value is already compiled into the kernel, the
-runtime, the `std` platform layer and five programs. None of the items above needs any of them to
-change. A later layout break has a path already: a new magic and version together, which the
-reader refuses by construction.
+Recommendation: leave `OFF_` for now and decide once for the whole family of page crates in one
+sweep, because renaming one crate alone makes it the odd one out and the template's abbreviations
+check only reports. If the family chooses to spell it out, the names are `MAGIC_OFFSET` and
+`HERTZ_OFFSET`.
 
-Prior art. Arm fixed the meaning of `CNTFRQ_EL0` in the architecture and never moved it. OpenBSD's
-`timekeep` page carries a version constant that libc compares before trusting the layout, and a
-mismatch means no page rather than a misread one (unverified in detail). FreeBSD's `vdso_timekeep`
-carries `tk_ver` for the same reason (unverified in detail). The design here is the same shape:
-the magic is the version, and the reader refuses what it does not recognize.
+Prior art. The Linux kernel and OpenBSD both abbreviate field offsets in private headers
+(`_OFF`, `_OFFSET` are both common); neither enforces one spelling across subsystems (unverified in
+detail). nife's own rule spells out units and register names and leaves private locals alone.
 
-Concrete example. `components/src/free.rs` declares `(counter_frequency_contract::INTERFACE_ID,
-counter_frequency_contract::VERSION)`. Suppose `INTERFACE_ID` changed to 14 after a pin built
-`free`. The image's interface check would refuse `free` until its pin moved, and the move would have
-to carry `disk_surveyor`, `printenv`, `rm`, `slabtop` and `top` in the same pull request.
+Concrete example. `crates/block_roster_contract` uses `HEADER_BYTES` and `ENTRY_BYTES`, while this
+crate uses `OFF_HERTZ`; a reader moving between the two sees two spellings for one idea.
 
-The alternative, left open, is to renumber or re-mint before the first move while every consumer
-is still in this tree. Nothing in this review found a reason to.
+Door: two-way (private). Not changed by this lane, which never renames.
 
 ## Done when
 
@@ -267,14 +273,24 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 - The kernel's writer caches the page's physical frame on first use; if `frequency_checked` is
   `None` at that moment, every later process reads the zeroed frame (`kernel/src/user/loader.rs`
   lines 159 to 190). That is kernel behavior the kernel's own BUGS should carry, outside this
-  crate; it is noted here because the crate's documentation currently describes it.
+  crate, and this note records it because the crate's contract does not cover it.
 - Nobody re-ran the mutation census; the carried baseline row reads "missed 0".
+
+## Follow-on
+
+- **Outstanding.** Item 10, the spelling of the page crates' private offset constants: a family
+  decision for an architect, written up under the decisions above. Checked 2026-11-14 against
+  `crates/counter_frequency_contract/src/lib.rs`, where `OFF_MAGIC` and `OFF_HERTZ` stand.
+- **Outstanding.** The move itself, which waits on milestone 1017's order and on the architect's
+  clearing of the review.
+- **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
+  item 12: no change until the next API change.
 
 ## Index row
 
-An outside review of `counter_frequency_contract` before it leaves this tree. Two items block the
-move or its first green run: the `std` farm's path copy of the source, and a clippy failure on
-stable. Seven land before the first tag. They are a stale kernel claim in the BUGS section, an unapplied
-rate band in the readers, a pointer truncation on narrow targets, a manifest comment into nife,
-four documentation fixes, the template's incoming prose gates, and two Kani harnesses. Three follow
-later, and one one-way door waits for the architect: freezing the identity set as it stands.
+An outside review of `counter_frequency_contract` before it leaves this tree. Items 1 to 9 and 11
+have landed. They cover the `std` farm's source lookup, the stable clippy failure and the BUGS
+entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
+assertion, the manifest comment and the documentation fixes. The rest are the template's prose
+gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. The identity does not change. One item waits for the
+architect: the spelling of the page crates' private offset constants, a family decision.

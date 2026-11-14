@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["no-std", "timer", "shared-page"]
 categories = ["no-std", "embedded", "date-and-time"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # stays false until the release that publishes this crate
 
 # The counter frequency page: one definition of the read-only page that carries the calibrated
 # counter rate into every process on the architectures with no register that says it, so the
