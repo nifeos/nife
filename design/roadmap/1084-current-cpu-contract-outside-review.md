@@ -103,10 +103,10 @@ layout, an identity, a dependency); everything else is two-way and the maintaine
    page-contract family rule.
    Evidence: `src/lib.rs` lines 35, 42, 51, 73, 98, 108, 115, 121, 127, 141, 149, 159, 179, 211,
    228, 255, 269, 277; the gate's output.
-   Change: one pull request that carries the `--draft` table, with Decision B below as its ask. Then one rename lane applies the ratified spellings in the crate, the kernel (six sites), the
+   Change: the `--draft` table as Decision B below decides it, provisionally. Then one rename lane applies those spellings in the crate, the kernel (six sites), the
    runtime, the fixtures, the system tests and `xtask/src/farm`. Ratified names get their blocks in
    the commit that applies them; the move commit strips them.
-   Door: one-way (published names). Effort: S for the rename lane once ruled.
+   Door: two-way before the first tag (Decision B). Effort: S for the rename lane.
 
 ### P2: later
 
@@ -118,7 +118,8 @@ The P1 items are in [the appendix](1084-current-cpu-contract-outside-review/befo
 
 ## Decisions for the architect
 
-Only the one-way doors. The architect rules on each one on its own.
+Decision A was the architect's. Decision B is two-way before the first tag, and the maintainer has
+decided it, provisionally.
 
 ### Decision A. Is the bound on CPU ids part of this page's identity?
 
@@ -200,6 +201,16 @@ Prior art: the sibling package ratified 13 names in one pull request with the sa
 Concrete example: after the rename, the reader's one line in a runtime reads
 `CurrentCpuPage::new(PAGE_VIRTUAL_ADDRESS)`, which is the sibling's shape to the word.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The table holds as written, with one row changed. `PAGE_BYTES` becomes
+`PAGE_CONTENT_BYTES` and `PAGE_VA` becomes `PAGE_VIRTUAL_ADDRESS`; `thread_page_va` becomes
+`thread_page_virtual_address`; the parameters `page_va` and `va` become `page_virtual_address` and
+`virtual_address`; `build_page_allowing` becomes `build_page_with`. `CPU_ID_BOUND` keeps its name
+over `MAXIMUM_CPUS`, with Decision A's rule in its documentation. The changed row is
+`CPU_WORD_OFFSET` (`src/lib.rs` line 121): the table keeps it because an offset carries no unit
+suffix, but the 2026-11-14 family-wide ruling names every page-field offset `<FIELD>_OFFSET_BYTES`,
+so it takes that form in the offset sweep, with the crate's private `OFF_` constants. Every other
+name in the table keeps its spelling. No old-name alias. Item 4 is the work.
+
 ## Done when
 
 The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-when.md).
@@ -220,7 +231,7 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-What is left of this review: Decision B (the names) is not ruled, and every other before-the-tag
+What is left of this review: the rename pass of Decision B (decided provisionally), and every other before-the-tag
 item except item 5, plus the P0 and P2 items, is open.
 
 - **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
