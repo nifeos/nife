@@ -10,6 +10,12 @@
 //! - It duplicates the kernel's check; if they disagree, the kernel is right ([`Seal::explain`]).
 //! - A refusal names the archive's digest, never the kernel's; `cargo xtask card-check` has it.
 //! - Nothing checks a boot script or `extlinux.conf`, or forces a hand-written card through this.
+//!   The loader's digest words are checked only when a caller passes them ([`inspect_with_words`]).
+//! - `nifefs::write_image` does not refuse duplicate names, and an entry whose name is not UTF-8 is
+//!   skipped: the first duplicate is hashed twice and the second never, and neither can be read by
+//!   the kernel, so the verdict is right and the dead bytes go unreported.
+//! - In the stick path the haystack contains the archive, so an archive entry that embedded another
+//!   entry's raw digest would make a pair read as vouched with no digest in the kernel. No entry does.
 //! - It asks whether a digest is present, not whether the kernel checks it; notes/sealed-pair.md.
 //!
 //! Name: provisional: the thing (a sealed pair), not the act. Refused `card_check` (three of the
@@ -25,7 +31,7 @@ use measured_boot::Digest;
 /// included, is measured through the archive's table (`kernel::trust::require_program_in`). One
 /// list for `xtask::measure`, `uefi_loader`'s build and [`inspect`]; see notes/sealed-pair.md, "One
 /// list of boot programs".
-pub const BOOT_PROGRAMS: [&str; 1] = ["progenitor"];
+pub const BOOT_PROGRAMS: [&str; 1] = [measured_boot::PROGENITOR];
 
 /// Every archive entry a kernel image's trust root may name: the boot programs it can enter, plus
 /// the measurement table it vouches for on the progenitor's behalf (milestone 104, init measures
@@ -54,7 +60,9 @@ pub enum Unreadable {
 impl std::fmt::Display for Unreadable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotAnArchive(e) => write!(f, "not a nifefs archive ({e:?})"),
+            Self::NotAnArchive(e) => {
+                write!(f, "not a nifefs archive ({})", archive_error_words(*e))
+            }
             Self::NoProgenitor => {
                 write!(f, "carries no `progenitor`, so no kernel can enter it")
             }
@@ -62,27 +70,41 @@ impl std::fmt::Display for Unreadable {
     }
 }
 
+impl std::error::Error for Unreadable {}
+
+/// One phrase for each way `nifefs` refuses an image, since `nifefs::Error` has no `Display`.
+fn archive_error_words(e: nifefs::Error) -> &'static str {
+    match e {
+        nifefs::Error::BadMagic => "it does not start with the archive magic",
+        nifefs::Error::TooManyFiles => "its directory claims more entries than an archive holds",
+        nifefs::Error::NameTooLong => "an entry name is longer than the format allows",
+        nifefs::Error::NameHasNul => "an entry name contains a NUL byte",
+        nifefs::Error::OutOfBounds => "an entry's data runs past the end of the image",
+        nifefs::Error::Truncated => "the image is shorter than the directory",
+    }
+}
+
 /// What a kernel image says about one archive entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Vouch {
-    /// The digest of this entry's bytes is in the kernel image. The kernel will enter it.
-    Yes,
-    /// The kernel image does not carry this digest. The kernel halts at `MEASURED BOOT REFUSED`
-    /// rather than enter it, which is the refusal this crate exists to move off the bench.
-    No,
+    /// The digest of this entry's bytes, carried here, is in the kernel image. The kernel will
+    /// enter it.
+    Yes(Digest),
+    /// The kernel image does not carry this digest of the archive's entry, carried here. The kernel
+    /// halts at `MEASURED BOOT REFUSED` rather than enter it, which is the refusal this crate
+    /// exists to move off the bench.
+    No(Digest),
     /// The archive does not carry this entry. Not every archive carries every boot program, and a
     /// kernel refuses to enter a name it has no measurement for, so nothing is waved through.
     Absent,
 }
 
-/// One entry's verdict, with the digest the archive's bytes actually have.
+/// One entry's verdict. The digest the archive's bytes actually have travels inside the verdict.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EntrySeal {
     /// The archive entry's name, as the trust root spells it.
     pub name: &'static str,
-    /// The SHA-256 of the entry's bytes, or `None` when the archive has no such entry.
-    pub digest: Option<Digest>,
-    /// Whether the kernel image carries that digest.
+    /// Whether the kernel image carries the SHA-256 of the entry's bytes.
     pub vouch: Vouch,
 }
 
@@ -98,6 +120,14 @@ pub enum TableDisagreement {
     /// The table names a program the archive does not carry. Harmless at boot, and a sign the
     /// table and the archive came from different builds.
     Missing(String),
+    /// A line of the table that the one manifest parser rejects, kept whole. The progenitor skips
+    /// the line, so only the program it named is refused, and the rest of the table still counts.
+    Unparsable {
+        /// The line as it stands in the table.
+        line: String,
+        /// The parser's reason, in its own words.
+        reason: String,
+    },
 }
 
 /// What the archive's own measurement table says about the archive (milestone 104's half of the
@@ -107,13 +137,31 @@ pub enum TableSeal {
     /// The archive carries no table. The kernel refuses to start a progenitor that can vouch for
     /// nothing, so this halts as surely as a digest mismatch does.
     Absent,
-    /// The table is present but is not UTF-8, or holds a line the one manifest parser rejects. The
-    /// progenitor reads an empty table, which vouches for nothing, and the console is refused.
+    /// The table is present but is not UTF-8. The progenitor reads an empty table, which vouches
+    /// for nothing, and the console is refused. A line the parser rejects is not this: it is an
+    /// [`TableDisagreement::Unparsable`] in a table that was read.
     Unreadable,
     /// The table was read. An empty `disagreements` is the healthy case.
     Checked {
         /// Every way the table and the archive fail to describe each other, sorted by name.
         disagreements: Vec<TableDisagreement>,
+    },
+}
+
+/// What the loader's two digest words say about the archive.
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WordsSeal {
+    /// No words were given to judge.
+    NotGiven,
+    /// The words do not parse. The kernel refuses them with the same reason.
+    Refused(measured_boot::loader_digests::Refusal),
+    /// The words parsed. The listed ones are not the digest of the archive's entry, which halts
+    /// the boot at `MEASURED BOOT REFUSED`. Empty is the healthy case.
+    Checked {
+        /// Each word that disagrees with the archive.
+        disagreeing: Vec<measured_boot::loader_digests::Word>,
     },
 }
 
@@ -124,6 +172,8 @@ pub struct Seal {
     pub entries: Vec<EntrySeal>,
     /// The progenitor's side of the chain.
     pub table: TableSeal,
+    /// The loader's two words against the archive; [`WordsSeal::NotGiven`] when none were passed.
+    pub words: WordsSeal,
 }
 
 impl Seal {
@@ -133,7 +183,7 @@ impl Seal {
     /// archive does not carry is not a refusal here, because the kernel only measures what it is
     /// about to enter; a missing `progenitor` is refused earlier, by [`inspect`] itself.
     pub fn kernel_refuses(&self) -> bool {
-        self.entries.iter().any(|e| e.vouch == Vouch::No)
+        self.entries.iter().any(|e| matches!(e.vouch, Vouch::No(_)))
     }
 
     /// **The progenitor's decision**: would the first process fail to vouch for what it loads?
@@ -149,9 +199,21 @@ impl Seal {
         }
     }
 
-    /// Whether this pair boots: neither side refuses.
+    /// **The kernel's other decision**: would it halt at `MEASURED BOOT REFUSED` on the loader's
+    /// words? False when no words were given.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+    pub fn words_refuse(&self) -> bool {
+        match &self.words {
+            WordsSeal::NotGiven => false,
+            WordsSeal::Refused(_) => true,
+            WordsSeal::Checked { disagreeing } => !disagreeing.is_empty(),
+        }
+    }
+
+    /// Whether this pair boots: neither side refuses, and the loader's words, if given, agree.
     pub fn is_sealed(&self) -> bool {
-        !self.kernel_refuses() && !self.progenitor_refuses()
+        !self.kernel_refuses() && !self.words_refuse() && !self.progenitor_refuses()
     }
 
     /// The verdict as a person at a bench wants it, given the two paths being judged.
@@ -164,7 +226,7 @@ impl Seal {
             let vouched = self
                 .entries
                 .iter()
-                .filter(|e| e.vouch == Vouch::Yes)
+                .filter(|e| matches!(e.vouch, Vouch::Yes(_)))
                 .count();
             return format!(
                 "SEALED: {kernel} vouches for {archive} ({vouched} measured entries, and the \
@@ -176,16 +238,40 @@ impl Seal {
         if self.kernel_refuses() {
             let _ = writeln!(
                 out,
-                "NOT SEALED: {kernel} does not vouch for {archive}. They are from different \
-                 builds, and this pair halts at MEASURED BOOT REFUSED after the power cycle."
+                "NOT SEALED: {kernel} does not vouch for {archive}. The usual causes are \
+                 a kernel and an archive from different builds, or a copy that changed one of \
+                 them. Either way this pair halts at MEASURED BOOT REFUSED after the power cycle."
             );
-            for e in self.entries.iter().filter(|e| e.vouch == Vouch::No) {
+            for e in &self.entries {
+                if let Vouch::No(digest) = &e.vouch {
+                    let _ = writeln!(
+                        out,
+                        "  the kernel image does not carry the digest of this archive's `{}`: it \
+                         hashes to {}, which is not in the trust root",
+                        e.name,
+                        hex_string(digest)
+                    );
+                }
+            }
+        }
+        match &self.words {
+            WordsSeal::NotGiven => {}
+            WordsSeal::Refused(why) => {
                 let _ = writeln!(
                     out,
-                    "  entry `{}` hashes to {}, which is not in the kernel image's trust root",
-                    e.name,
-                    e.digest.as_ref().map_or_else(String::new, hex_string)
+                    "NOT SEALED: the loader's digest words are refused ({why:?}), and the kernel \
+                     halts at MEASURED BOOT REFUSED."
                 );
+            }
+            WordsSeal::Checked { disagreeing } => {
+                for word in disagreeing {
+                    let _ = writeln!(
+                        out,
+                        "NOT SEALED: the loader's `{}` word is not the digest of {archive}'s \
+                         entry, so the kernel halts at MEASURED BOOT REFUSED.",
+                        word.key()
+                    );
+                }
             }
         }
         match &self.table {
@@ -225,6 +311,11 @@ impl Seal {
                         TableDisagreement::Missing(n) => writeln!(
                             out,
                             "  `{n}` is in the table and not in the archive (harmless at boot)"
+                        ),
+                        TableDisagreement::Unparsable { line, reason } => writeln!(
+                            out,
+                            "  the table line `{line}` is rejected ({reason}); the program it \
+                             names will not be loaded"
                         ),
                     };
                 }
@@ -274,8 +365,39 @@ pub const THE_BOARD_IS_THE_AUTHORITY: &str = "The kernel's own check is the auth
 /// assert!(seal.explain("nife-vf2.img", "nife-initial-ramdisk.img").contains("progenitor"));
 /// ```
 pub fn inspect(kernel: &[u8], archive: &[u8]) -> Result<Seal, Unreadable> {
+    inspect_with_words(kernel, archive, None)
+}
+
+/// **Judge a kernel image, an archive and the loader's two digest words.** [`inspect`] with the
+/// third question the kernel asks: the words a loader hands over (`nife.progenitor`, `nife.base`)
+/// must parse and must be the digests of the archive's `progenitor` and measurement table. On a
+/// card they travel as the file `nife-initial-ramdisk.img.loader-digests`. `None` asks nothing of
+/// them (a stick's loader checks its own words when it is built).
+///
+/// # Errors
+///
+/// As [`inspect`].
+///
+/// # Examples
+///
+/// ```
+/// # use sealed_pair::{inspect_with_words, test_support};
+/// let (kernel, archive) = test_support::matched_pair();
+/// let words = test_support::words_for(&archive);
+/// assert!(inspect_with_words(&kernel, &archive, Some(&words)).unwrap().is_sealed());
+/// let (_, other) = test_support::other_pair();
+/// let stale = test_support::words_for(&other);
+/// assert!(!inspect_with_words(&kernel, &archive, Some(&stale)).unwrap().is_sealed());
+/// ```
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+pub fn inspect_with_words(
+    kernel: &[u8],
+    archive: &[u8],
+    words: Option<&str>,
+) -> Result<Seal, Unreadable> {
     let fs = nifefs::Fs::parse(archive).map_err(Unreadable::NotAnArchive)?;
-    if fs.read(BOOT_PROGRAMS[0]).is_none() {
+    if fs.read(measured_boot::PROGENITOR).is_none() {
         return Err(Unreadable::NoProgenitor);
     }
 
@@ -284,21 +406,16 @@ pub fn inspect(kernel: &[u8], archive: &[u8]) -> Result<Seal, Unreadable> {
         .map(|name| match fs.read(name) {
             None => EntrySeal {
                 name,
-                digest: None,
                 vouch: Vouch::Absent,
             },
             Some(bytes) => {
                 let digest = measured_boot::sha256(bytes);
                 let vouch = if contains(kernel, &digest) {
-                    Vouch::Yes
+                    Vouch::Yes(digest)
                 } else {
-                    Vouch::No
+                    Vouch::No(digest)
                 };
-                EntrySeal {
-                    name,
-                    digest: Some(digest),
-                    vouch,
-                }
+                EntrySeal { name, vouch }
             }
         })
         .collect();
@@ -306,7 +423,33 @@ pub fn inspect(kernel: &[u8], archive: &[u8]) -> Result<Seal, Unreadable> {
     Ok(Seal {
         entries,
         table: inspect_table(&fs),
+        words: words.map_or(WordsSeal::NotGiven, |w| inspect_words(w, &fs)),
     })
+}
+
+/// The kernel's third question: do the loader's words parse, and are they the archive's digests?
+fn inspect_words(words: &str, fs: &nifefs::Fs<'_>) -> WordsSeal {
+    use measured_boot::loader_digests::{Word, parse};
+    let given = match parse(words.trim()) {
+        Ok(given) => given,
+        Err(why) => return WordsSeal::Refused(why),
+    };
+    let mut disagreeing = Vec::new();
+    if fs
+        .read(measured_boot::PROGENITOR)
+        .is_some_and(|b| measured_boot::sha256(b) != given.progenitor)
+    {
+        disagreeing.push(Word::Progenitor);
+    }
+    // A missing table is reported by the table's own verdict; the word is judged when there is
+    // something for it to disagree with.
+    if fs
+        .read(measured_boot::PROGRAM_MEASUREMENTS)
+        .is_some_and(|b| measured_boot::sha256(b) != given.base)
+    {
+        disagreeing.push(Word::Base);
+    }
+    WordsSeal::Checked { disagreeing }
 }
 
 /// Milestone 104's half: does the archive's own measurement table describe the archive it is in?
@@ -318,17 +461,19 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
         return TableSeal::Unreadable;
     };
     let mut listed: Vec<(&str, Digest)> = Vec::new();
+    let mut disagreements = Vec::new();
     for entry in measured_boot::manifest_entries(text) {
-        // A line the one parser rejects is what the progenitor turns into an empty table, so it is
-        // reported as unreadable rather than skipped: skipping would make this check pass a card
-        // whose console the progenitor will refuse.
+        // The progenitor skips a line the one parser rejects, so only the program that line named
+        // is lost. It is reported, with the parser's reason, and the rest of the table still counts.
         match entry {
             Ok(pair) => listed.push(pair),
-            Err(_) => return TableSeal::Unreadable,
+            Err(bad) => disagreements.push(TableDisagreement::Unparsable {
+                line: bad.line.to_string(),
+                reason: format!("{:?}", bad.why),
+            }),
         }
     }
 
-    let mut disagreements = Vec::new();
     // The table measures every entry in the archive except itself, which cannot contain its own
     // digest (`initial_ramdisk_writer::measurement_table`).
     for e in fs.entries() {
@@ -355,6 +500,7 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
         TableDisagreement::Changed(n)
         | TableDisagreement::Unlisted(n)
         | TableDisagreement::Missing(n) => n.clone(),
+        TableDisagreement::Unparsable { line, .. } => line.clone(),
     });
     TableSeal::Checked { disagreements }
 }
@@ -372,7 +518,8 @@ pub fn embedded_archive(blob: &[u8]) -> Option<&[u8]> {
         .filter(|(_, w)| *w == nifefs::MAGIC)
         .map(|(at, _)| &blob[at..])
         .find(|candidate| {
-            nifefs::Fs::parse(candidate).is_ok_and(|fs| fs.read(BOOT_PROGRAMS[0]).is_some())
+            nifefs::Fs::parse(candidate)
+                .is_ok_and(|fs| fs.read(measured_boot::PROGENITOR).is_some())
         })
 }
 
@@ -397,6 +544,24 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
 /// exist to make.
 pub mod test_support {
     use super::{BOOT_PROGRAMS, measured_entries};
+
+    /// The loader's two words for `archive`, as the card's `.loader-digests` file carries them.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+    pub fn words_for(archive: &[u8]) -> String {
+        use measured_boot::loader_digests::{LoaderDigests, MAXIMUM_BYTES, encode};
+        let fs = nifefs::Fs::parse(archive).expect("an archive");
+        let digests = LoaderDigests {
+            progenitor: measured_boot::sha256(fs.read(measured_boot::PROGENITOR).expect("packed")),
+            base: measured_boot::sha256(
+                fs.read(measured_boot::PROGRAM_MEASUREMENTS)
+                    .expect("packed"),
+            ),
+        };
+        let mut out = [0u8; MAXIMUM_BYTES];
+        let n = encode(&digests, &mut out);
+        String::from_utf8(out[..n].to_vec()).expect("ascii")
+    }
 
     /// Pack an archive holding the named programs plus the measurement table that describes them,
     /// and a stand-in kernel image carrying exactly the digests a real one's trust root would.
@@ -484,12 +649,12 @@ mod tests {
         let seal = Seal {
             entries: vec![EntrySeal {
                 name: "progenitor",
-                digest: None,
-                vouch: Vouch::No,
+                vouch: Vouch::No(measured_boot::sha256(b"x")),
             }],
             table: TableSeal::Checked {
                 disagreements: Vec::new(),
             },
+            words: WordsSeal::NotGiven,
         };
         assert!(!seal.is_sealed());
         let text = seal.explain("kernel", "archive");
@@ -516,14 +681,17 @@ mod tests {
         assert!(seal.kernel_refuses());
         // Every measured entry differs between the two builds, which is what a rebuild does.
         for e in &seal.entries {
-            assert_eq!(e.vouch, Vouch::No, "{e:?}");
+            assert!(matches!(e.vouch, Vouch::No(_)), "{e:?}");
         }
         let text = seal.explain("nife-vf2.img", "nife-initial-ramdisk.img");
         assert!(text.contains("MEASURED BOOT REFUSED"), "{text}");
-        assert!(text.contains("`progenitor` hashes to"), "{text}");
+        assert!(text.contains("`progenitor`: it hashes to"), "{text}");
         assert!(text.contains("trust root"), "{text}");
         // The digest printed is the archive's, so a person can check it with shasum.
-        let want = hex_string(&seal.entries[0].digest.expect("present"));
+        let Vouch::No(digest) = seal.entries[0].vouch else {
+            panic!("refused");
+        };
+        let want = hex_string(&digest);
         assert!(text.contains(&want), "{text}");
     }
 
@@ -542,9 +710,11 @@ mod tests {
 
         let seal = inspect(&kernel, &archive).expect("readable");
         assert!(seal.kernel_refuses());
-        assert_eq!(seal.entries[0].vouch, Vouch::No);
+        assert!(matches!(seal.entries[0].vouch, Vouch::No(_)));
         assert!(
-            seal.entries[1..].iter().all(|e| e.vouch == Vouch::Yes),
+            seal.entries[1..]
+                .iter()
+                .all(|e| matches!(e.vouch, Vouch::Yes(_))),
             "{seal:?}"
         );
     }
@@ -625,6 +795,109 @@ mod tests {
             "{}",
             seal.explain("k", "a")
         );
+    }
+
+    /// Pack `files` into an archive.
+    fn pack(files: &[(&str, &[u8])]) -> Vec<u8> {
+        let mut archive = vec![0u8; nifefs::image_size(files)];
+        let n = nifefs::write_image(files, &mut archive).expect("fits");
+        archive.truncate(n);
+        archive
+    }
+
+    /// One bad line beside a good console line costs only the program the bad line named. The old
+    /// report called the whole table unreadable and said the console would be refused.
+    #[test]
+    fn a_bad_table_line_is_reported_and_does_not_condemn_the_console() {
+        let progenitor = b"a progenitor".as_slice();
+        let console = b"a console".as_slice();
+        let digest = measured_boot::digest_text(&measured_boot::sha256(console));
+        let digest = core::str::from_utf8(&digest).expect("ascii").to_string();
+        let table = format!("console {digest}\nprogenitor not-a-digest\n");
+        let archive = pack(&[
+            ("progenitor", progenitor),
+            ("console", console),
+            (measured_boot::PROGRAM_MEASUREMENTS, table.as_bytes()),
+        ]);
+        let mut kernel = measured_boot::sha256(progenitor).to_vec();
+        kernel.extend_from_slice(&measured_boot::sha256(table.as_bytes()));
+        let seal = inspect(&kernel, &archive).expect("readable");
+        let TableSeal::Checked { disagreements } = &seal.table else {
+            panic!("the table was read: {seal:?}");
+        };
+        assert!(
+            disagreements
+                .iter()
+                .any(|d| matches!(d, TableDisagreement::Unparsable { line, .. } if line.starts_with("progenitor"))),
+            "{disagreements:?}"
+        );
+        assert!(seal.progenitor_refuses());
+        let text = seal.explain("kernel", "archive");
+        assert!(text.contains("progenitor not-a-digest"), "{text}");
+        assert!(!text.contains("`console`"), "{text}");
+        assert!(!text.contains("cannot be read"), "{text}");
+    }
+
+    #[test]
+    fn a_table_that_is_not_utf8_is_still_unreadable() {
+        let archive = pack(&[
+            ("progenitor", b"p"),
+            (measured_boot::PROGRAM_MEASUREMENTS, &[0xff, 0xfe]),
+        ]);
+        let seal = inspect(&measured_boot::sha256(b"p"), &archive).expect("readable");
+        assert_eq!(seal.table, TableSeal::Unreadable);
+    }
+
+    /// A card whose kernel and archive are one build and whose loader words are another's reads as
+    /// refused, and each kind of bad word is said in words.
+    #[test]
+    fn stale_malformed_and_missing_loader_words_are_refused() {
+        let (kernel, archive) = matched_pair();
+        let (_, other) = other_pair();
+
+        let good = test_support::words_for(&archive);
+        let seal = inspect_with_words(&kernel, &archive, Some(&good)).expect("readable");
+        assert!(seal.is_sealed(), "{seal:?}");
+        // The card file ends in a newline.
+        let with_newline = format!("{good}\n");
+        assert!(
+            inspect_with_words(&kernel, &archive, Some(&with_newline))
+                .unwrap()
+                .is_sealed()
+        );
+
+        let stale = test_support::words_for(&other);
+        let seal = inspect_with_words(&kernel, &archive, Some(&stale)).expect("readable");
+        assert!(!seal.is_sealed());
+        assert!(!seal.kernel_refuses() && !seal.progenitor_refuses());
+        let text = seal.explain("k", "a");
+        assert!(text.contains("`nife.progenitor` word"), "{text}");
+        assert!(text.contains("`nife.base` word"), "{text}");
+
+        for bad in ["", "nife.progenitor=zz nife.base=zz"] {
+            let seal = inspect_with_words(&kernel, &archive, Some(bad)).expect("readable");
+            assert!(matches!(seal.words, WordsSeal::Refused(_)), "{bad}");
+            assert!(!seal.is_sealed(), "{bad}");
+        }
+        assert_eq!(
+            inspect(&kernel, &archive).unwrap().words,
+            WordsSeal::NotGiven
+        );
+    }
+
+    #[test]
+    fn an_unreadable_error_is_a_std_error_in_words() {
+        let e: Box<dyn std::error::Error> =
+            Box::new(Unreadable::NotAnArchive(nifefs::Error::Truncated));
+        assert_eq!(
+            e.to_string(),
+            "not a nifefs archive (the image is shorter than the directory)"
+        );
+    }
+
+    #[test]
+    fn the_boot_programs_are_the_measured_boot_names() {
+        assert_eq!(BOOT_PROGRAMS, [measured_boot::PROGENITOR]);
     }
 
     #[test]
