@@ -443,6 +443,7 @@ impl core::fmt::Display for Error {
     }
 }
 
+// Index exception (2026-11-14): the marker impl of the error above, kept beside its `Display`.
 impl core::error::Error for Error {}
 
 #[cfg(test)]
