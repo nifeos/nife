@@ -1,5 +1,7 @@
 //! **A spawned program must fit the region it is spawned into** (`cargo xtask region-check`,
-//! `script/region-check`; both names provisional).
+//! `script/region-check`).
+//!
+//! Name: provisional, minted 2026-11-14 (UTC) by lane program-region-size-check.
 //!
 //! The shell splits a fixed region off its budget for every native job
 //! (`grant_plan::job_region_pages`: `JOB_REGION_PAGES`, or `DIRECTORY_JOB_REGION_PAGES` behind a
@@ -32,7 +34,7 @@ use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
 /// Pages one address space costs beyond its image and stack: the thread control block, the
 /// address-space root, the intermediate tables for the windows a child touches (two
 /// gigabyte-level tables, and on `x86_64` three more for the timebase page) and the mapping
-/// records of §13. Provisional: `top` (31 image pages) passes at 60 and cannot be built at 48, so
+/// records of §13 (capability revocation and untyped reclamation). Provisional: `top` (31 image pages) passes at 60 and cannot be built at 48, so
 /// the true figure lies between 18 and 29 less its twelve stack pages.
 const TABLES_AND_RECORDS: u64 = 8;
 

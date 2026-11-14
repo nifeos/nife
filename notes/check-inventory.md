@@ -103,7 +103,6 @@ checks that gate a pull request)); the measurements are 2026-09-03's.*
 | `cpu-matrix` | ci `cpu matrix` | yes | green |
 | `fastpath-footprint` | ci `fastpath footprint` | yes | green |
 | `stack-frame-check` | ci `stack frames` | yes | green |
-| `region-check` | ci `swish-check` (first step of the same rows) | yes, with that job | new |
 | `stack-depth-check` | ci `stack frames` (same job) | yes | green |
 | `fuzz` | ci `fuzz` | yes | green |
 | `supply-chain` | ci `supply chain`, `vendor-watch` | yes | green |
