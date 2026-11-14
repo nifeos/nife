@@ -68,8 +68,8 @@ their text.
 
 ### Item 6, landed
 
-6. Three rules the services keep are written in the contract: an unknown opcode is answered
-   `NO_ENTROPY`; a request word with any of bits 55:8 set is answered `NO_ENTROPY`; the reply's
+6. The contract states three rules the services keep: a service answers an unknown opcode with
+   `NO_ENTROPY`; it answers a request word with any of bits 55:8 set with `NO_ENTROPY`; the reply's
    byte word holds zeros past the delivered count. The reasoning is in decision 2.
 
 ## Decisions
@@ -87,11 +87,11 @@ Ruled by the maintainer, provisional: the readiness step `0x12` keeps the name
 
 Ruled by the architect, 2026-11-14 (UTC). The contract states what a service does:
 
-- An unknown operation is answered `NO_ENTROPY`. The crate's `BUGS` says a client cannot tell that
+- A service answers an unknown operation with `NO_ENTROPY`. The crate's `BUGS` says a client cannot tell that
   from a dry source. The alternative, a reply code for "unknown operation", would widen the
   reply's first word past "a count or not a count".
-- A request word with any of bits 55:8 set is answered `NO_ENTROPY`, and a client sends zero
-  there. This is the restrictive form, the same shape as the clock-and-reset wire rule (section
+- A service answers a request word with any of bits 55:8 set with `NO_ENTROPY`, and a client
+  sends zero there. This is the restrictive form, the same shape as the clock-and-reset wire rule (section
   320 (the jh7110 clock-and-reset wire)): a later version can give those bits a meaning without an
   old service misreading them. It means `VERSION`'s promise that an optional field owes no bump no
   longer holds: a new field is a new operation or a bump.
