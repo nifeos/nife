@@ -13,16 +13,21 @@ use super::*;
 /// looking at, not a number that wants raising.
 pub(super) const CLIENT_EXTRA_STACK: usize = 8;
 
+// The slot [`spawn_fs_client`] grants a verdict endpoint at is the one `rm` sends on.
+const _: () = assert!(filesystem_contract::rm::VERDICT_SLOT == 2);
+
 /// The pages a granted client's endpoints are retyped from: its caretaker's two, the program's
-/// report, and one spare. One page per endpoint, so a grant's whole wiring goes back with one
-/// region.
+/// report, and its verdict endpoint when it asks for one (`rm`'s, `filesystem_contract::rm`). One
+/// page per endpoint, so a grant's whole wiring goes back with one region.
 pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 
-/// Spawn one client holding exactly a file-service endpoint, a report endpoint and its view of
-/// the shared page. Returns the client's thread.
+/// Spawn one client holding exactly a file-service endpoint, a report endpoint, an optional
+/// verdict endpoint and its view of the shared page. Returns the client's thread.
 ///
 /// `role`, `arg` and `arg2` are the client's three `START` words. `report` is the caller's, so a
 /// granted client's comes out of the region its caretaker's endpoints do and goes back with them.
+/// `verdict`, when given, is granted at slot 2 (`filesystem_contract::rm::VERDICT_SLOT`), the
+/// endpoint `rm` sends its exit status on after its report ends; with `None` slot 2 stays empty.
 ///
 /// `extra_stack` is pages below the one `run` maps, at most [`CLIENT_EXTRA_STACK`]. A shell's need
 /// tracks the largest value `grant_plan` hands it; an overflow presents as a data abort on `sp`,
@@ -37,6 +42,7 @@ pub(crate) fn spawn_fs_client(
     arg2: u64,
     extra_stack: usize,
     report: RendezvousId,
+    verdict: Option<RendezvousId>,
 ) -> crate::thread::ThreadId {
     assert!(
         extra_stack <= CLIENT_EXTRA_STACK,
@@ -55,6 +61,13 @@ pub(crate) fn spawn_fs_client(
             m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
             m.phys = page_frame();
         }
+        let grants = [
+            rendezvous_capability(file_ep, Rights::WRITE), // slot 0: CALL the FS server
+            rendezvous_capability(report, Rights::WRITE),  // slot 1: report to the kernel
+            // slot 2: the verdict, after the report ends. With no verdict endpoint this entry is
+            // sliced off below, so the stand-in is never granted.
+            rendezvous_capability(verdict.unwrap_or(report), Rights::WRITE),
+        ];
         run(
             client_image,
             Spawn {
@@ -62,10 +75,7 @@ pub(crate) fn spawn_fs_client(
                 arg1: arg,
                 // `rm` is started as a grant is (`filesystem_contract::grant`); others pass zero.
                 arg2,
-                grants: &[
-                    rendezvous_capability(file_ep, Rights::WRITE), // slot 0: CALL the FS server
-                    rendezvous_capability(report, Rights::WRITE),  // slot 1: report to the kernel
-                ],
+                grants: &grants[..if verdict.is_some() { 3 } else { 2 }],
                 maps: &maps[..n + extra_stack],
                 windows: &[],
             },
@@ -98,6 +108,7 @@ pub fn start(
         0,
         0,
         report,
+        None,
     );
     Some((readiness, report))
 }
