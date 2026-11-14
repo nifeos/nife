@@ -92,19 +92,19 @@ fn the_watermark_falls_only_when_quiescent_and_never_rises() {
 /// states the table reaches, which CBMC cannot build in memory.
 #[test]
 fn no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages() {
-    const OPS: u32 = 4 * (3 + 2) + 3;
+    const CALLS: u32 = 4 * (3 + 2) + 3;
     const DEPTH: u32 = 5;
-    for code in 0..OPS.pow(DEPTH) {
+    for code in 0..CALLS.pow(DEPTH) {
         let mut table = RegionTable::<4>::new();
         let root = table.insert_root(0x100, 6).unwrap();
         // (name, parent index, retyped_to) of each region made, in order.
         let mut made: Vec<(u64, Option<usize>, u64)> = vec![(root, None, 0)];
         let mut rest = code;
         for _ in 0..DEPTH {
-            let op = rest % OPS;
-            rest /= OPS;
-            if op < 20 {
-                let (region, kind) = ((op / 5) as usize, op % 5);
+            let call = rest % CALLS;
+            rest /= CALLS;
+            if call < 20 {
+                let (region, kind) = ((call / 5) as usize, call % 5);
                 let Some(&(name, _, _)) = made.get(region) else {
                     continue;
                 };
@@ -115,7 +115,7 @@ fn no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages()
                 } else if let Some(child) = table.split(name, u64::from(kind - 2)) {
                     made.push((child, Some(region), 0));
                 }
-            } else if let Some(&(name, Some(_), _)) = made.get((op - 19) as usize) {
+            } else if let Some(&(name, Some(_), _)) = made.get((call - 19) as usize) {
                 table.unpin(name);
                 if let Some(claim) = table.claim_for_destroy(name) {
                     table.return_to_parent(&claim);
