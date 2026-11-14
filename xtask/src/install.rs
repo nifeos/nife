@@ -79,7 +79,13 @@ pub(crate) fn vars_path() -> PathBuf {
 /// **`ls`, typed at the shell's first prompt**: the banner, then the `$ ` after it. The banner comes
 /// first so that `$ ` is read only once the shell exists; a send's marker is looked for after the
 /// previous one's, and an empty send types nothing.
-pub(crate) const LS_AT_THE_PROMPT: [(&str, &str); 2] = [(boot_ladder::PROMPT, ""), ("$ ", "ls\r")];
+pub(crate) fn ls_at_the_prompt() -> [(&'static str, &'static str); 2] {
+    [(&SHELL_BANNER, ""), ("$ ", "ls\r")]
+}
+
+/// The shell's banner as text, the first marker [`ls_at_the_prompt`] waits for.
+static SHELL_BANNER: std::sync::LazyLock<String> =
+    std::sync::LazyLock::new(|| serial_console::HEADS.prompt().to_string());
 
 /// **The gate.** `true` only if both boots did what they were supposed to.
 pub(crate) fn install_boot() -> bool {
@@ -96,8 +102,8 @@ pub(crate) fn install_boot() -> bool {
         &empty_esp_dir(),
         true,
         &[
-            LS_AT_THE_PROMPT[0],
-            LS_AT_THE_PROMPT[1],
+            ls_at_the_prompt()[0],
+            ls_at_the_prompt()[1],
             // And then read the file back, which is what makes this an install rather than a boot.
             ("made-on-target", "wc made-on-target\r"),
             // **The disk tree, beside the filesystem on the same disk** (milestone 834 (ioping on nife and Linux)): the
@@ -181,7 +187,7 @@ fn stick_on_the_installed_machine() -> bool {
         &install_esp_dir(),
         false,
         // `ls` asks for the filesystem, which is what a person at a live stick does first.
-        &LS_AT_THE_PROMPT,
+        &ls_at_the_prompt(),
         "nife capability shell.",
         300,
         // A few seconds after the prompt, so a write the mount or `ls` started has landed.

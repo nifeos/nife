@@ -115,7 +115,7 @@ fn the_verdict_after_the_tour_is_what_a_self_test_wait_waits_for() {
     );
     assert!(progress.has_reached(Stage::Tour));
     progress.observe_line(
-        "nife self-test: 11 of 15 passed, 4 absent: blockdev device_interrupt clock trng",
+        "nife self-test: 11 of 15 passed, 4 absent: block_device device_interrupt clock true_random_number_generator",
     );
     assert!(progress.has_reached(Stage::SelfTest));
     assert_eq!(
@@ -900,18 +900,23 @@ fn line_feeder_tail_reads_back_the_pending_bytes() {
 
 /// **An `absent` the board does not allow is a failure** (calef's ruling of 2026-10-20 (UTC) on
 /// #2447: `absent` must never hide a device that should be there). radon has a TRNG, so a radon
-/// boot that reports `trng` absent lost a device, and the verdict's green count does not save it.
-/// The same line from an emulator, which may lack every device, stays green.
+/// boot that reports `true_random_number_generator` absent lost a device, and the verdict's green
+/// count does not save it. The same line from an emulator, which may lack every device, stays
+/// green.
 #[test]
 fn an_absence_the_board_forbids_is_a_failure() {
     let n = boot_ladder::SELF_TEST_CHECKS.len();
-    let line = format!("nife self-test: {} of {n} passed, 1 absent: trng\n", n - 1);
+    let line = format!(
+        "nife self-test: {} of {n} passed, 1 absent: true_random_number_generator\n",
+        n - 1
+    );
 
     let on_radon = feed(&board::RADON, &line);
     assert_eq!(
         on_radon.failure(),
         Some(&Failure::SelfTestFailed(
-            "trng (absent on radon, which has the device for it)".to_string()
+            "true_random_number_generator (absent on radon, which has the device for it)"
+                .to_string()
         )),
     );
 
@@ -929,7 +934,7 @@ fn an_absence_the_board_forbids_is_a_failure() {
 fn absences_and_failures_are_read_apart() {
     let n = boot_ladder::SELF_TEST_CHECKS.len();
     let line = format!(
-        "nife self-test: {} of {n} passed, 2 absent: blockdev device_interrupt, 1 FAILED: \
+        "nife self-test: {} of {n} passed, 2 absent: block_device device_interrupt, 1 FAILED: \
         entropy\n",
         n - 3
     );
@@ -940,6 +945,6 @@ fn absences_and_failures_are_read_apart() {
     );
     assert_eq!(
         BootProgress::verdict_absences(&line).collect::<Vec<_>>(),
-        ["blockdev", "device_interrupt"],
+        ["block_device", "device_interrupt"],
     );
 }

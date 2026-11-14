@@ -216,14 +216,15 @@ pub struct BootEndowment {
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_page: u64,
     /// The request endpoint of the JH7110 true random number generator (TRNG) service, `WRITE |
-    /// GRANT`, which the `clock` and `trng` checks draw through. **Absent** on every machine but a
-    /// JH7110; [`boot`](crate::boot) probes. Passed to `boot_self_test` and then deleted.
+    /// GRANT`, which the `clock` and `true_random_number_generator` checks draw through. **Absent**
+    /// on every machine but a JH7110; [`boot`](crate::boot) probes. Passed to `boot_self_test` and
+    /// then deleted.
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_random_number_generator: u64,
-    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the `blockdev`
-    /// check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot) probes. Passed to
-    /// `boot_self_test` and then deleted.
+    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the
+    /// `block_device` check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot)
+    /// probes. Passed to `boot_self_test` and then deleted.
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_disk: [u64; 3],

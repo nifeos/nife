@@ -404,18 +404,21 @@ fn riscv64_from_our_volume() -> bool {
 
 /// The lines every stick boot must print, in [`stick_boot`]'s order and for its reasons. The
 /// self-test verdict is its prefix here, because what follows the count depends on the machine
-/// (a check whose device it lacks is `absent`); [`verdict_failed`] is what requires it green.
-const BOOTED: [&str; 3] = [
-    "nife uefi_loader: milestone 87",
-    boot_ladder::SELF_TEST,
-    "nife: handing the system to the userspace progenitor.",
-];
+/// (a check whose device it lacks is `absent`); [`verdict_failed`] is what requires it green. The
+/// first is the loader's banner, which still names milestone 87 (the x86_64 bare-metal machine).
+fn booted() -> [String; 3] {
+    [
+        "nife uefi_loader: milestone 87".to_string(),
+        serial_console::HEADS.self_test().to_string(),
+        "nife: handing the system to the userspace progenitor.".to_string(),
+    ]
+}
 
 /// The self-test verdict line's `FAILED:` list, if this transcript has a red one.
 fn verdict_failed(transcript: &str) -> Option<&str> {
     let line = transcript
         .lines()
-        .find(|l| l.contains(boot_ladder::SELF_TEST))?;
+        .find(|l| serial_console::HEADS.self_test().is_in(l))?;
     let at = line.find(boot_ladder::SELF_TEST_FAILED)?;
     Some(line[at..].trim_end())
 }
@@ -424,7 +427,7 @@ fn verdict_failed(transcript: &str) -> Option<&str> {
 /// path for aarch64)), as every aarch64 cloud machine is; the loader writes a tree from the tables
 /// (§278 (an ACPI machine reaches the aarch64 kernel as a device tree the loader writes)). Builds
 /// the aarch64 payload alone, release like the stick; `stick-boot` boots `acpi=off`. Asserts
-/// [`BOOTED`] and the loader's ACPI line, so a firmware offering a tree cannot pass by booting the
+/// [`booted`] and the loader's ACPI line, so a firmware offering a tree cannot pass by booting the
 /// other path. Boots twice: the stick directory on QEMU's default GICv2 with a `GICv2m` frame, then
 /// the cloud boot disk ([`crate::cloud_image`]) a person imports into Oracle, so every run boots it,
 /// with `gic-version=3` (the only `virt` with an ITS under TCG), asserting the loader's GICv3 and
@@ -477,7 +480,7 @@ pub(super) fn acpi_boot() -> bool {
 const ACPI_LINE: &str = "uefi_loader: no device tree; describing this machine from ACPI";
 
 /// Boot `medium` (the stick directory or a raw disk) for `arch` and check the transcript holds
-/// [`BOOTED`] and `also`, with no panic. `who` prefixes every line, so a failure names the gate
+/// [`booted`] and `also`, with no panic. `who` prefixes every line, so a failure names the gate
 /// that saw it.
 fn boot_and_check(
     who: &str,
@@ -503,7 +506,11 @@ fn boot_and_check(
     };
     let transcript = String::from_utf8_lossy(&output.stdout).into_owned();
     let mut passed = true;
-    for wanted in BOOTED.iter().chain(also) {
+    for wanted in booted()
+        .iter()
+        .map(String::as_str)
+        .chain(also.iter().copied())
+    {
         if !transcript.contains(wanted) {
             eprintln!("{who}: {arch}: the transcript is missing {wanted:?}");
             passed = false;
