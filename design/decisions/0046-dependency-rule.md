@@ -24,6 +24,9 @@ shipping graph, and an architect rules on each one.
 4. Write our own only with a stated reason, recorded in the milestone block's `Reuse:` line.
 
 The bar applies to every third-party crate a nife image links, including one already in the tree.
+A shipped crate short of the bar stays in use, is listed as debt in
+[notes/third-party-dependency-debt.md](../../notes/third-party-dependency-debt.md), and gets upstream
+contributions until it meets the bar.
 Host tools stay outside it: a crate that only a build or a test on the host runs is gated by
 `deny.toml` and `script/supply-chain` alone, as §240 (TOML in xtask) records for `xtask`.
 
