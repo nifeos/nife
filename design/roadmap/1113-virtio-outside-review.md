@@ -164,8 +164,8 @@ validator's layout. The five constants (`crates/direct_memory_access_validator/s
 (`crates/abi/src/virtio.rs` line 38), with `RING_END`, which the validator derives from them and
 the kernel also aliases. The validator and the kernel alias them from there. The present names fail
 the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
-names in `abi`, provisional, and they join milestone 1075's (the `abi` outside review) pinned-value list and version gate
-(1075 item 11). Item 3 is the work.
+names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
+maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
 
 ## Done when
 
