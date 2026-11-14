@@ -1,4 +1,20 @@
-// This module's docs are on its `pub mod` line in `lib.rs`.
+//! What a supervisor routes to a `line_editor` it can replace (milestone 23 (a
+//! capability-routed component OS with live replacement)): the capability half of the terminal
+//! contract, beside the wire half in `terminal_contract`.
+//!
+//! It holds two declarations, one per output sink: the console's two-endpoint protocol, older than
+//! §12 (call/reply IPC: a one-shot reply capability), which needs a reply endpoint, and
+//! `display_terminal`'s one `CALL`, which does not. Both keep the slot order `line_editor` reads,
+//! which the `const` assertions hold them to; notes/line-discipline.md ("The component's slots")
+//! gives the order.
+//!
+//! It stays in this tree beside the terminal programs and `capability_plan`, while the editing
+//! engine, the `line_editor` crate, depends on neither.
+//!
+//! Name: provisional (`line_editor_component`), for the crate; provisional (the lane for milestone
+//! 23, 2026-09-27) for both constants, `HANDOFF_VA` and the role and contract strings.
+
+#![no_std]
 
 use capability_plan::Direction::{Serve, Use};
 use capability_plan::{CapabilityNeed, MapNeed, PageKind, Requirements, StateHandoff};
@@ -101,7 +117,7 @@ pub const DISPLAY: Requirements = Requirements {
 /// kernel's own test: one list both builders and the supervisor read (AGENTS.md rule 7).
 /// The supervisor holds every object a `line_editor` is built from, with `GRANT`, and the terminal
 /// endpoint with `WRITE` too, so it can send `OPERATION_QUIESCE` through the copy it badges
-/// [`proto::SUPERVISOR_BADGE`](crate::proto::SUPERVISOR_BADGE).
+/// `terminal_contract::SUPERVISOR_BADGE`.
 ///
 /// Start arguments: the output sink's mode (`MODE_CONSOLE` = 0 or `MODE_DISPLAY` = 1), the
 /// lengths of the images copied to [`ELF_VA`](supervisor::ELF_VA) and

@@ -187,15 +187,15 @@ impl LineDisc {
     /// Discard whatever line is in progress: the edit buffer, the cursor, and any history
     /// browsing. History and the kill buffer are untouched, because neither belongs to the line
     /// that was in progress. No echo; the caller prints whatever tells the human why, or nothing
-    /// (`^C`'s own `"^C\r\n"` is the caller side of that choice, and [`proto::OPERATION_RAWMODE`](crate::proto::OPERATION_RAWMODE)'s
-    /// mode switch prints nothing at all).
+    /// (`^C`'s own `"^C\r\n"` is the caller side of that choice, and a switch to raw mode
+    /// prints nothing at all).
     pub fn abandon(&mut self) {
         self.len = 0;
         self.cur = 0;
         self.browse = None;
     }
 
-    /// **Resume a read the reader re-issued after [`proto::FLAG_RETRY`](crate::proto::FLAG_RETRY)**: remember `prompt` as
+    /// **Resume a read the reader re-issued after a retry reply**: remember `prompt` as
     /// [`start_line`](LineDisc::start_line) does, but paint nothing, because the screen already
     /// shows the prompt and the half-typed line. Painting again would print them twice.
     pub fn resume_line(&mut self, prompt: &[u8]) {

@@ -635,8 +635,7 @@ impl TerminalWiring {
             for (k, &b) in chunk.iter().enumerate() {
                 w1 |= (b as u64) << (8 * k);
             }
-            let w0 =
-                line_editor::proto::req(line_editor::proto::OPERATION_BYTES, chunk.len() as u64);
+            let w0 = terminal_contract::req(terminal_contract::OPERATION_BYTES, chunk.len() as u64);
             assert_eq!(
                 crate::sched::ipc_call(self.term, [w0, w1])[0],
                 0,

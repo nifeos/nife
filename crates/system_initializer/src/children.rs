@@ -819,7 +819,7 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 }
 
 /// **Build the terminal: `terminal_supervisor`, which builds `line_editor` from `td_bytes`.**
-/// `capabilities` is in `line_editor::component::supervisor`'s slot order after its budget (the terminal
+/// `capabilities` is in `line_editor_component::supervisor`'s slot order after its budget (the terminal
 /// endpoint with every right, the output sink, the three pages, and the console's reply endpoint in
 /// console mode), and is copied, not moved. `ut` is where the loader's tables come from and
 /// `budget` is the region the supervisor is made of: the same root at boot, `own_ut` and the job
@@ -834,7 +834,7 @@ pub(super) fn build_terminal(
     mode: u64,
     capabilities: &[(u64, u64)],
 ) {
-    use line_editor::component::supervisor as s;
+    use line_editor_component::supervisor as s;
     let budget_pages = must(memory_region_split(budget, s::BUDGET_PAGES));
     let mut all = [(0u64, 0u64); 8];
     all[0] = (budget_pages, abi::rights::ALL);

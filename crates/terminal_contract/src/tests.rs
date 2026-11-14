@@ -1,4 +1,4 @@
-use crate::proto;
+use crate as proto;
 
 /// `FLAG_RETRY` is distinguishable from every other read reply, in both shapes: a line reply
 /// of length zero with no flags is an empty line, and a raw reply always carries 1..=8 bytes.

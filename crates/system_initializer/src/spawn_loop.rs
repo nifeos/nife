@@ -1025,7 +1025,7 @@ impl Service<'_> {
         let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
         let wants_stdin = std_layout && wants.console_input && !quiet;
         let stdin = wants_stdin
-            .then(|| badged(self.c.boot_terminal, line_editor::proto::STDIN_BADGE).ok())
+            .then(|| badged(self.c.boot_terminal, terminal_contract::STDIN_BADGE).ok())
             .flatten();
         (stdin, wants_stdin && stdin.is_none())
     }
