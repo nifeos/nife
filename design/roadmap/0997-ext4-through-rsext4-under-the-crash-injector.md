@@ -60,8 +60,9 @@ RedoxFS's, and the fork above has a ruling.
 ## BUGS
 
 - Nothing here runs `rsext4` under nife; the builds are link-only.
-- `rsext4`'s repository was last pushed 2026-04-02, while crates.io carries releases through
-  2026-09-21, so where its development happens is not yet established.
+- `rsext4` is developed in `rcore-os/tgoskits` under `fs/rsext4`; the `Starry-OS/rsext4` repository
+  that crates.io names is not where its releases come from. Milestone 190 (ext4, read and write)
+  holds the plan for working with that upstream.
 
 ## Index row
 
