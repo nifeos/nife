@@ -190,7 +190,7 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 
 ## Done when
 
-The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md).
+The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md). What is done and what is left, item by item, is in [the ledger](1100-memory-region-heap-outside-review/ledger.md).
 
 ## BUGS
 
