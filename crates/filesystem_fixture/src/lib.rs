@@ -1060,7 +1060,7 @@ pub mod attrs {
     pub const NAME: &[u8] = b"user.com.apple.metadata";
     /// Its value: opaque bytes, which is exactly what `streams_xattr` stores.
     pub const VALUE: &[u8] = b"CRK57: an opaque byte string\n";
-    /// Its type code, `'CSTR'` in the BeOS filesystem's spelling. Non-zero on purpose: a layer that silently
+    /// Its type code, `'CSTR'` in the `BeOS` filesystem's spelling. Non-zero on purpose: a layer that silently
     /// wrote [`filesystem_contract::xattr::RAW`] would pass a test whose fixture used the default.
     pub const KIND: u32 = 0x4353_5452;
 }
