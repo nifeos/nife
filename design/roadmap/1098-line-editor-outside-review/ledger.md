@@ -10,7 +10,7 @@ names the reason it waits.
 | 3 public names | LEFT | decisions 2 and 3 (`LineEditor`, `HISTORY_LINES`, the three limits) |
 | 4 gate spellings, `proto` and `component` | LEFT | they belong to the contract crate after the cut; the engine's private fields and parameters land with item 3's renames |
 | 5 bindings, limits and `BUGS` | DONE | `crates/line_editor/README.md` and the crate documentation carry the bindings table, the limits and the `BUGS` list |
-| 5 Meta prefix | DONE | `a_doubled_escape_is_one_introducer` |
+| 5 Meta prefix | DONE | `a_doubled_escape_is_one_prefix` |
 | 5 mouse report | DONE | `a_mouse_report_is_dropped_with_its_payload` |
 | 5 non-ASCII input | DONE | stated in `BUGS`; `a_byte_above_ascii_is_dropped_without_echo` pins the behavior |
 | 6 `forbid(unsafe_code)` | DONE | `#![forbid(unsafe_code)]` in `lib.rs` |

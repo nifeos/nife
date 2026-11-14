@@ -610,7 +610,7 @@ fn a_long_control_sequence_parameter_saturates() {
 /// A second Escape is the same introducer, not a dropped one: a Meta-prefixed arrow (`ESC ESC [ A`)
 /// recalls history, where it used to leave `[A` in the line.
 #[test]
-fn a_doubled_escape_is_one_introducer() {
+fn a_doubled_escape_is_one_prefix() {
     let (mut d, mut s) = (LineDisc::new(), Screen::new());
     feed_all(&mut d, &mut s, b"first\r");
     feed_all(&mut d, &mut s, b"\x1b\x1b[A");

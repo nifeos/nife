@@ -1,13 +1,16 @@
 # line_editor
 
-A sans-IO, allocation-free line editor for a serial terminal. Bytes go in one at a time, and echo
-comes out through a `Sink`.
+An allocation-free line editor for a serial terminal that does no input or output of its own. Bytes
+go in one at a time, and echo comes out through a `Sink`.
 
-The editor edits at a cursor, moves by control characters and ANSI sequences, kills and yanks,
-keeps eight lines of history, ends a line on CR, LF or CRLF, and reports `^C`, `^D`, `^Z` and Tab as
-an `Event`. It does no IO, holds a few KiB of fixed buffers and never allocates.
+The editor edits at a cursor, moves by control characters and ANSI (American National Standards
+Institute) escape sequences, kills and yanks, keeps eight lines of history, ends a line on a
+carriage return (CR), a line feed (LF) or a carriage return line feed (CRLF), and reports `^C`,
+`^D`, `^Z` and Tab as an `Event`. It holds a few KiB of fixed buffers and never allocates.
 
-## Key bindings
+## The contract
+
+### Key bindings
 
 | Input | Effect |
 |---|---|
@@ -26,7 +29,7 @@ an `Event`. It does no IO, holds a few KiB of fixed buffers and never allocates.
 | `^C`, `^Z` | discard the line, and report an interrupt or a suspend |
 | Tab | reported as an event; the caller decides what it means |
 
-## Limits
+### Limits
 
 | Constant | Value | What it bounds |
 |---|---|---|
@@ -35,7 +38,7 @@ an `Event`. It does no IO, holds a few KiB of fixed buffers and never allocates.
 | `HIST` | 8 | history lines held; the oldest is overwritten |
 | `RAW_QUEUE_MAXIMUM` | 64 | bytes a `RawQueue` holds; a burst past it is dropped |
 
-## Example
+## EXAMPLES
 
 ```rust
 use line_editor::{Event, LineDisc, Sink};
@@ -57,11 +60,23 @@ assert_eq!(editor.feed(b'\r', &mut out), Event::Line);
 assert_eq!(editor.line(), b"hello");
 ```
 
+## What is proven
+
+Two Kani harnesses (`src/line_disc/verification.rs`), each with a falsification patch that turns it
+red: a control sequence leaves the cursor inside the line, and a range delete removes exactly its
+range. The rest is host tests.
+
 ## Handoff
 
 `LineDisc::save` and `restore` write and read the editor's state as a blob whose layout is
 documented on the `handoff` module and pinned by a test. A change to the layout bumps
 `handoff::LAYOUT`.
+
+## Building and testing
+
+```sh
+cargo test
+```
 
 ## BUGS
 
@@ -72,8 +87,10 @@ documented on the `handoff` module and pinned by a test. A change to the layout 
 - A Meta-prefixed key (Escape, then a key other than `[` or `O`) is dropped with its introducer.
 - A prompt past the limit is truncated.
 
-## Building and testing
+## Minimum Rust version
 
-```sh
-cargo test
-```
+The workspace's pinned toolchain; no older version is tested.
+
+## License
+
+Licensed under either of MIT or Apache-2.0, at your option.
