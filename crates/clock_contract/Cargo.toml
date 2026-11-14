@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["no-std", "clock", "seqlock"]
 categories = ["no-std", "embedded", "date-and-time"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # `false` until the release that publishes; that release deletes the line
 
 # The wall-clock contract: the layout of the shared clock page that IS the read authority, the
 # small propose protocol the clock service serves, and the policy it applies to a proposal. Pure
