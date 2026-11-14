@@ -91,7 +91,8 @@ or identity, a dependency); everything else is two-way and the maintainer decide
    Evidence: `src/line_disc.rs` lines 15, 17, 21 and 128; `src/raw_queue.rs` lines 16 and 60.
    Change: `LineDisc` becomes `LineEditor` (a crate that holds a component's logic takes the component's name; `rustyline` and `noline` both call theirs `Editor`). `HIST` becomes `HISTORY_LINES` (a count of things names the things). `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM` become `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES`. `pop8` becomes `pop_up_to_eight` or takes a `[u8; 8]` return that
    says it. No `doc(alias)` for the old spellings before the first release, per the rule in force.
-   Door: one-way once tagged; decisions 2 and 3 below. Effort: S.
+   Door: two-way before the first tag; decision 2 below decides `LineEditor` and `HISTORY_LINES`,
+   provisionally, and decision 3 the limits. Effort: S.
 
 4. Names the template's day-one gates refuse, in `proto` and `component`, and in parameters.
    Finding: `spelled_out.py` fails at a ceiling of 0 on `HANDOFF_VA`, `ELF_VA` (`va` abbreviates
@@ -163,7 +164,8 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
 
 ## Decisions for the architect
 
-Only one-way doors. Each gives the background first, then the recommendation.
+Each gives the background first, then the recommendation. The engine's type and constant names are
+decided, provisionally.
 
 ### Where the cut falls: `proto` and `component` leave the crate, `handoff` stays
 
@@ -208,6 +210,11 @@ Prior art. `rustyline` and `noline` call the type `Editor`; linenoise calls its 
 Concrete example. `components/src/swish/prompt.rs` holds `static mut EDITOR: line_editor::LineDisc`;
 after the rename the declaration reads `line_editor::LineEditor`, which is what the variable
 already calls it.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. `LineDisc` becomes `LineEditor` and `HIST` becomes
+`HISTORY_LINES`, with no alias; `Event::Eof` keeps the standard library's spelling. Item 3 is the
+work.
 
 ### The three ratified limits, reopened under the unit rule
 
