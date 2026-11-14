@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 956, 1017
 decision_dependencies: 171, 305
@@ -40,6 +40,8 @@ Effort: S is half a day for a lane or less, M a day or two, L more. A door is on
 outside the repository acts on it after the first tag (a public name, a published behavior, a layout, an identity, a dependency). Everything else is two-way, and the maintainer decides it.
 Line numbers are from `crates/address_space_map/src/lib.rs` at `137639a3` unless a path says
 otherwise.
+
+The ledger of what landed and what is left is in [the appendix](1076-address-space-map-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -177,6 +179,12 @@ Concrete example: `crates/process_builder/src/lib.rs` lines 51 to 54 builds `SCR
 ## Done when
 
 The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** The three decisions, items 15 and 17, and the move's items 2, 3, 5, 11 and 13,
+  which an architect rules or the move lane does. Checked against `crates/address_space_map`: the
+  crate has no README, `Band::new` or `window`, and still inherits its manifest from the workspace.
 
 ## BUGS
 

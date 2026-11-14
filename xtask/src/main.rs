@@ -43,6 +43,7 @@ mod icount;
 mod inbound;
 mod inspect;
 mod install;
+mod link_script_base;
 mod manual;
 mod measure;
 mod network_bench;

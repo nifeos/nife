@@ -1,36 +1,79 @@
 //! **The user address-space map**: which band of a process's low half holds what, the same on all
-//! three architectures (§171 (where a program image starts), option D).
+//! three architectures.
 //!
-//! The bands tile `[0, 2 GiB)` with no gap (a `const` assert holds that, and Kani proves it per address); above 2 GiB only the timebase
-//! page (`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`) is assigned. A new page goes in the first band that
-//! fits, asked in the order the note gives, and a pair page is checked at compile time by
-//! [`pair_page`]. The image band ends at 2 GiB because `x86_64` builds with `code-model: small`
-//! ([`CODE_MODEL_CEILING`]), and [`STACK`]'s lowest page is never mapped ([`MAXIMUM_STACK_PAGES`]).
-//! See notes/address-space-map.md for the table of bands and why each number is what it is.
-
+//! The bands tile `[0, 2 GiB)` with no gap (a `const` assert holds that, and Kani proves it per
+//! address). Above 2 GiB only the timebase page is assigned.
+//!
+//! | band | start | end | size | what goes in it |
+//! |---|---|---|---|---|
+//! | [`NULL_GUARD`] | `0x0000_0000` | `0x0020_0000` | 2 MiB | nothing, ever |
+//! | [`PAIR_PAGES`] | `0x0020_0000` | `0x1000_0000` | 254 MiB | pages one builder agrees with the one program it builds, and a program's private windows |
+//! | [`RUNTIME_WINDOWS`] | `0x1000_0000` | `0x4000_0000` | 768 MiB | windows a loader or runtime places for a program |
+//! | [`HEAP`] | `0x4000_0000` | `0x5000_0000` | 256 MiB | the heap and nothing else |
+//! | [`SERVICE_WINDOWS`] | `0x5000_0000` | `0x6000_0000` | 256 MiB | large windows a service contract names |
+//! | [`IMAGE`] | `0x6000_0000` | `0x7F00_0000` | 496 MiB | the program's code and data |
+//! | [`STACK`] | `0x7F00_0000` | `0x7FFF_0000` | 16 MiB less 64 KiB | the stack, growing down; its lowest page is never mapped |
+//! | [`PROCESS_PAGES`] | `0x7FFF_0000` | `0x8000_0000` | 64 KiB | pages the kernel maps into every process unasked |
+//!
+//! # Where a new page goes
+//!
+//! Ask in order, and stop at the first yes.
+//!
+//! 1. Is it the program's code or data? [`IMAGE`].
+//! 2. Is it the stack? [`STACK`], down from [`STACK_TOP_PAGE`].
+//! 3. Does the kernel map it into every process without being asked? [`PROCESS_PAGES`].
+//! 4. Is it the heap? [`HEAP`].
+//! 5. Does a loader or a runtime place it, for programs that did not choose the address?
+//!    [`RUNTIME_WINDOWS`], with a written argument for the address in the crate that owns it.
+//! 6. Is it a large window a service contract names for several programs? [`SERVICE_WINDOWS`].
+//! 7. Otherwise it is a pair page: [`PAIR_PAGES`]. Two pairs never share an address space, so pairs
+//!    reuse addresses freely.
+//!
+//! Then write it with the band's function, so the compiler checks it: [`pair_page`],
+//! [`runtime_window`] and [`service_window`] return their argument unchanged and stop the build if
+//! it is outside the band or not page aligned.
+//!
+//! # Why these numbers
+//!
+//! - **The image band ends at 2 GiB** ([`CODE_MODEL_CEILING`]) because `x86_64` builds with
+//!   `code-model: small` and a static relocation model, which promise that every symbol fits a
+//!   sign-extended 32-bit immediate. The other two architectures would accept a higher image; one
+//!   layout for all three is the rule.
+//! - **The stack sits directly above the image**, so the one limit on an image is the stack's base,
+//!   and a refusal can say exactly that ([`check_image`]). The lowest page of [`STACK`] is never
+//!   mapped, so a stack at its limit faults before it touches the last page of a full image
+//!   ([`MAXIMUM_STACK_PAGES`]).
+//! - **The process pages sit beside the stack**, so they share its page tables: the stack's top
+//!   page and the current-CPU page lie in one 2 MiB window.
+//!
 //! # BUGS
 //!
-//! - Pair pages are checked for membership, not for collisions within one process; fixtures with
-//!   several windows assert their own disjointness (`components/src/swish.rs`).
-//! - `std_runtime_contract` and `counter_frequency_contract` restate their numbers, pinned by tests.
-//! - The userspace loader reports a too-large image as "could not spawn", not [`check_image`]'s why.
+//! - Pair pages are checked for membership, not for collisions within one process; a program with
+//!   several windows asserts their disjointness itself.
+//! - A band function checks one page. A window of many pages whose first page sits near a band's
+//!   top runs into the next band unseen; [`Band::holds`] is the whole-range check.
+//! - Other crates restate some of these numbers, pinned by their own tests.
+//! - A loader that reports a too-large image as "could not spawn" hides [`check_image`]'s reason.
+//! - **The layout is fixed.** Every band and every fixed window sits at one address in every
+//!   process on every architecture, so there is no address-space layout randomization. The design
+//!   buys a pair page checked at compile time and one linker script; it gives up the
+//!   unpredictability that a randomizing system offers an attacker's guess.
 //!
 //! Name: provisional: a map of one address space; `user_layout` and `address_space` were set aside.
 
 #![cfg_attr(not(test), no_std)]
+#![forbid(unsafe_code)]
 
 /// The layout's version: the bands, the pair-page arithmetic and the fixed windows a loader and a
-/// kernel compile in from this crate, all one map. One constant for the whole layout (calef's
-/// ruling of 2026-10-29 UTC, PR #2852, question 1); nothing checks it at run time, and the
-/// declaration of milestone 956 (the linked interfaces carry checkable versions) names it.
+/// kernel compile in from this crate, all one map. One constant for the whole layout; nothing
+/// checks it at run time, and a program's declaration of the interfaces it links names it.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 2, naming the address-space layout constants. The number
-/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
-/// holds the ids of every crate apart. A program declares the pair of this id and [`VERSION`]
-/// (milestone 956 (the linked interfaces carry checkable versions)).
+/// is the crate's to keep across a rename and no other interface ever reuses it; the ids of
+/// every interface crate must differ. A program declares the pair of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const INTERFACE_ID: u64 = 2;
@@ -53,9 +96,9 @@ impl Band {
         self.end - self.start
     }
 
-    /// Is `va` inside the band?
-    pub const fn contains(&self, va: u64) -> bool {
-        va >= self.start && va < self.end
+    /// Is `virtual_address` inside the band?
+    pub const fn contains(&self, virtual_address: u64) -> bool {
+        virtual_address >= self.start && virtual_address < self.end
     }
 
     /// Does the whole of `[start, end)` lie inside the band? An empty or inverted range does not.
@@ -77,39 +120,37 @@ pub const NULL_GUARD: Band = Band {
 };
 
 /// **Pages one builder agrees with the one program it builds.** See question 7 in the crate docs.
-/// The kernel test harnesses, the fixtures, `hello`'s roles and the progenitor's native children
-/// all place their shared windows here, and pairs reuse addresses freely. A program's own private
-/// windows go here as well.
+/// Test harnesses, fixtures and a builder's native children place their shared windows here, and
+/// pairs reuse addresses freely. A program's own private windows go here as well.
 pub const PAIR_PAGES: Band = Band {
     start: NULL_GUARD.end,
     end: 0x1000_0000,
 };
 
-/// **Windows a loader or runtime places on a program's behalf**: std's runtime pages
-/// (`std_runtime_contract`), std's per-socket frames, a builder's scratch cursor, the initial
-/// ramdisk window the kernel hands the progenitor, the swap image window.
+/// **Windows a loader or runtime places on a program's behalf**: a standard library's runtime
+/// pages and per-socket frames, a builder's scratch cursor, an initial ramdisk window, a swap image
+/// window.
 pub const RUNTIME_WINDOWS: Band = Band {
     start: PAIR_PAGES.end,
     end: 0x4000_0000,
 };
 
-/// **The heap.** `std_runtime_contract::HEAP_BASE` and `memory_region_heap::DEFAULT_BASE` are
-/// its start, and std's `HEAP_MAXIMUM` is its width. A program with no heap still leaves it empty.
+/// **The heap.** A heap's base is this band's start, and its maximum is this band's width. A
+/// program with no heap still leaves it empty.
 pub const HEAP: Band = Band {
     start: RUNTIME_WINDOWS.end,
     end: 0x5000_0000,
 };
 
 /// **Large windows a service contract names**, which several programs speaking one protocol share:
-/// the block channel (`0x5000_0000`, 8 MiB, used by the filesystem server, the installer, the disk
-/// partitioner and `mkfs`), the C seam's grant pages, the screen aperture.
+/// a block channel (`0x5000_0000`, 8 MiB), a C seam's grant pages, a screen aperture.
 pub const SERVICE_WINDOWS: Band = Band {
     start: HEAP.end,
     end: 0x6000_0000,
 };
 
-/// **The program's own ELF segments.** `crates/user_mode_runtime/link.ld` links at [`IMAGE_BASE`],
-/// and a host test here holds the two to the same number.
+/// **The program's own ELF segments.** A program's linker script links at [`IMAGE_BASE`], and the
+/// host test that holds the two to the same number lives with the script's owner, not here.
 pub const IMAGE: Band = Band {
     start: SERVICE_WINDOWS.end,
     end: 0x7F00_0000,
@@ -129,7 +170,7 @@ pub const PROCESS_PAGES: Band = Band {
 };
 
 /// Every band, in address order, with the name a message or a table prints.
-pub const BANDS: [(&str, Band); 8] = [
+pub const BANDS: &[(&str, Band)] = &[
     ("NULL_GUARD", NULL_GUARD),
     ("PAIR_PAGES", PAIR_PAGES),
     ("RUNTIME_WINDOWS", RUNTIME_WINDOWS),
@@ -144,13 +185,11 @@ pub const BANDS: [(&str, Band); 8] = [
 pub const IMAGE_BASE: u64 = IMAGE.start;
 
 /// **The stack pointer a thread starts with.** Stacks grow down, so this is one past the highest
-/// stack byte. Was `kernel::user::USER_STACK_TOP` and `supervision_contract::CHILD_STACK_VA + PAGE`,
-/// both `0x50_1000`.
+/// stack byte.
 pub const STACK_TOP: u64 = STACK.end;
 
 /// **The highest stack page**: the one page every loader maps, and the page below which a program
-/// given a deeper stack gets the rest. Was `kernel::user::USER_STACK_VA` and
-/// `supervision_contract::CHILD_STACK_VA`, both `0x50_0000`.
+/// given a deeper stack gets the rest.
 pub const STACK_TOP_PAGE: u64 = STACK_TOP - PAGE;
 
 /// **The most stack pages a loader may map**, down from [`STACK_TOP_PAGE`]. One fewer than the band
@@ -160,7 +199,7 @@ pub const STACK_TOP_PAGE: u64 = STACK_TOP - PAGE;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_STACK_PAGES: u64 = STACK.bytes() / PAGE - 1;
 
-/// **Where the kernel maps the current-CPU page** (`current_cpu_contract::PAGE_VA`): the last page
+/// **Where the kernel maps the current-CPU page**: the last page
 /// of [`PROCESS_PAGES`], in the same 2 MiB page-table window as [`STACK_TOP_PAGE`].
 pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
 
@@ -168,41 +207,44 @@ pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
 /// `const CTL_VA: u64 = pair_page(0x60_0000);`. The value is unchanged, so the address still reads
 /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
 /// aligned, stops the build instead of colliding with a runtime page at run time.
-pub const fn pair_page(va: u64) -> u64 {
-    assert!(va.is_multiple_of(PAGE), "a pair page must be page aligned");
+pub const fn pair_page(virtual_address: u64) -> u64 {
     assert!(
-        PAIR_PAGES.contains(va),
+        virtual_address.is_multiple_of(PAGE),
+        "a pair page must be page aligned"
+    );
+    assert!(
+        PAIR_PAGES.contains(virtual_address),
         "a pair page must lie in PAIR_PAGES (address_space_map)"
     );
-    va
+    virtual_address
 }
 
 /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`RUNTIME_WINDOWS`].
-pub const fn runtime_window(va: u64) -> u64 {
+pub const fn runtime_window(virtual_address: u64) -> u64 {
     assert!(
-        va.is_multiple_of(PAGE),
+        virtual_address.is_multiple_of(PAGE),
         "a runtime window must be page aligned"
     );
     assert!(
-        RUNTIME_WINDOWS.contains(va),
+        RUNTIME_WINDOWS.contains(virtual_address),
         "a runtime window must lie in RUNTIME_WINDOWS (address_space_map)"
     );
-    va
+    virtual_address
 }
 
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`SERVICE_WINDOWS`].
-pub const fn service_window(va: u64) -> u64 {
+pub const fn service_window(virtual_address: u64) -> u64 {
     assert!(
-        va.is_multiple_of(PAGE),
+        virtual_address.is_multiple_of(PAGE),
         "a service window must be page aligned"
     );
     assert!(
-        SERVICE_WINDOWS.contains(va),
+        SERVICE_WINDOWS.contains(virtual_address),
         "a service window must lie in SERVICE_WINDOWS (address_space_map)"
     );
-    va
+    virtual_address
 }
 
 /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
@@ -287,8 +329,8 @@ pub const fn check_image(start: u64, end: u64) -> Result<(), ImagePlacement> {
 }
 
 /// The bit at which each architecture's user half ends, so every user address is below `1 << shift`:
-/// aarch64 48, `x86_64` 47, `riscv64` under Sv39 38. Restated from `crates/paging`
-/// (`PageFormat::SPLIT_SHIFT`), which this crate does not depend on.
+/// aarch64 48, `x86_64` 47, `riscv64` under Sv39 38. Restated from the paging code's per-format
+/// split shift, which this crate does not depend on.
 const LOW_HALF_SPLIT_SHIFTS: [(&str, u32); 3] = [("aarch64", 48), ("x86_64", 47), ("riscv64", 38)];
 
 // The map's shape, checked where every consumer compiles it: the bands tile
@@ -336,12 +378,13 @@ const _: () = {
 };
 
 // The derived constants, checked where every consumer compiles them.
-const _: () = assert!(IMAGE_BASE.is_multiple_of(2 * 1024 * 1024));
-const _: () = assert!(STACK_TOP_PAGE >> 21 == CURRENT_CPU_PAGE >> 21);
-const _: () = assert!(STACK.contains(STACK_TOP_PAGE) && STACK_TOP_PAGE.is_multiple_of(PAGE));
-const _: () = assert!(STACK_TOP_PAGE - (MAXIMUM_STACK_PAGES - 1) * PAGE == STACK.start + PAGE);
-const _: () =
+const _: () = {
+    assert!(IMAGE_BASE.is_multiple_of(2 * 1024 * 1024));
+    assert!(STACK_TOP_PAGE >> 21 == CURRENT_CPU_PAGE >> 21);
+    assert!(STACK.contains(STACK_TOP_PAGE) && STACK_TOP_PAGE.is_multiple_of(PAGE));
+    assert!(STACK_TOP_PAGE - (MAXIMUM_STACK_PAGES - 1) * PAGE == STACK.start + PAGE);
     assert!(PROCESS_PAGES.bytes() == 16 * PAGE && PROCESS_PAGES.contains(CURRENT_CPU_PAGE));
+};
 
 #[cfg(kani)]
 mod verification;
@@ -349,35 +392,6 @@ mod verification;
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// **The linker script and the map agree**, which is the one thing a reader of either most
-    /// needs to be true. The script is parsed, not grepped for a spelling, so a reformatted line
-    /// still counts and a moved base fails here with both numbers.
-    #[test]
-    fn the_user_linker_script_links_at_the_image_base() {
-        let script = include_str!("../../user_mode_runtime/link.ld");
-        let bases: Vec<u64> = script
-            .lines()
-            .map(str::trim)
-            // The base is the one `. =` that sets a number; `. = ALIGN(..)` lines only round up.
-            .filter(|l| l.starts_with(". =") && !l.contains("ALIGN"))
-            .map(|l| {
-                let hex = l
-                    .trim_start_matches(". =")
-                    .trim()
-                    .trim_end_matches(';')
-                    .trim()
-                    .trim_start_matches("0x")
-                    .replace('_', "");
-                u64::from_str_radix(&hex, 16).expect("the linker script's `. =` is not hex")
-            })
-            .collect();
-        assert_eq!(
-            bases,
-            vec![IMAGE_BASE],
-            "crates/user_mode_runtime/link.ld does not link at IMAGE_BASE"
-        );
-    }
 
     #[test]
     #[allow(clippy::assertions_on_constants)]
@@ -455,9 +469,10 @@ mod tests {
 
     #[test]
     fn the_band_checks_accept_their_own_band_and_nothing_else() {
-        for (name, band) in BANDS {
-            let va = band.start;
-            let std_panics = |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(va)).is_err();
+        for &(name, band) in BANDS {
+            let virtual_address = band.start;
+            let std_panics =
+                |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(virtual_address)).is_err();
             assert_eq!(
                 !std_panics(pair_page),
                 band == PAIR_PAGES,
