@@ -172,6 +172,7 @@ pub const MAXIMUM_SHORT_OPTIONS: usize = 8;
 /// value, not a pointer at the shell, nothing after planning can change what an endowment means.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Endowment {
+    /// The program the plan was made for.
     pub program: Program,
     /// The integer argument to start it with (0 when the program takes none).
     pub program_argument: u64,
@@ -247,6 +248,7 @@ pub struct FileGrant {
     /// Owned rather than borrowed from the line, because a pattern that matched exactly one file is
     /// a legitimate way to designate one and that name came from a directory listing.
     pub name: Name,
+    /// Whether the grant includes the right to write.
     pub writable: bool,
 }
 

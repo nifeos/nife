@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -203,7 +203,7 @@ Example. A test holds `Refusal::FileNotNameable`'s sentence against `MAXIMUM_FIL
 
 ## Done when
 
-The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
+The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md). The state of each item is in [the ledger](1094-grant-plan-outside-review/ledger.md).
 
 ## BUGS
 
@@ -221,6 +221,13 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
   download figures come from crates.io.
 - The review measured the sizes with the tree's nightly on one 64-bit host. They match on every
   64-bit target by construction (no pointers in the values), and the review measured no other.
+
+## Follow-on
+
+- **Outstanding.** The three decisions (the boundary, the eight names, the limits) and every item that
+  follows from them; `crates/grant_plan/src/program/` and `Cargo.toml` still read as before.
+- **Outstanding.** Item 5's harnesses, item 11's by-reference signatures, item 13's `programs!`
+  assertion, item 16 and item 19; the ledger says why each waits.
 
 ## Index row
 

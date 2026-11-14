@@ -102,7 +102,7 @@ const ACTIVATION_BIT: u64 = 1 << 40;
 
 /// **The caller presents the run-unvouched capability: one `SEND` on it follows the delegation**
 /// (DECISIONS §219 gate D2, ruled by calef 2026-09-26). Meaningful with [`IMAGE_BIT`]; the
-/// progenitor honours it on any request, so a caller that sets it is never left blocked in its
+/// progenitor honors it on any request, so a caller that sets it is never left blocked in its
 /// `SEND`.
 ///
 /// A message rather than a capability, because the capability lacks `GRANT` and the kernel will not
@@ -383,7 +383,7 @@ pub fn activation(w1: u64, w2: u64) -> Option<Option<Activation>> {
 pub enum ActivationStatus {
     /// Done: word 1 is the generation now live.
     Done = 0,
-    /// The image's catalogue does not vouch for these bytes (DECISIONS §195 (a reviewed recipe
+    /// The image's catalog does not vouch for these bytes (DECISIONS §195 (a reviewed recipe
     /// vouches for a package)), or they are not a package at all. Nothing was written.
     NotCataloged = 1,
     /// A vouched package with no program the installer can find. Nothing was written.
@@ -647,7 +647,7 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXI
 /// The ask kinds a [`ActivationStatus::NotApproved`] refusal's third message carries, for an
 /// undelegated badge's `--approved` install (milestone 911): the grant the entry did not cover,
 /// which the owner's console may read. A zone's or a directory's name rides words 1 and 2
-/// ([`pack_name`]); the others ride the kind alone. The kinds are this crate's own numbers; the
+/// (`pack_name`); the others ride the kind alone. The kinds are this crate's own numbers; the
 /// check that mints them maps `installed_programs::Granted` onto them, and the gate's zone row
 /// is what catches a swapped pair.
 ///

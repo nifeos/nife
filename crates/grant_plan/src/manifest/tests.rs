@@ -76,3 +76,31 @@ fn an_installer_region_holds_one_more_package() {
     };
     assert_eq!(named_std_region_pages(&plain), STD_REGION_PAGES);
 }
+
+/// **Every shipped manifest agrees with itself**: a widening option a directory grant names is one
+/// the manifest declares, so the planner's narrow reading of an undeclared one never happens to a
+/// program of ours.
+#[test]
+fn every_shipped_manifest_is_well_formed() {
+    for &p in Program::ALL {
+        assert!(p.manifest().is_well_formed(), "{p:?}");
+    }
+}
+
+/// **A manifest naming a widening option it does not declare is not well formed**, and declaring
+/// the option makes it so.
+#[test]
+fn a_widening_option_must_be_declared() {
+    let rm = Program::Rm.manifest();
+    assert!(rm.is_well_formed());
+    let undeclared = Manifest {
+        short_options: ShortOptions::new(b"f"),
+        ..rm
+    };
+    assert!(!undeclared.is_well_formed());
+    let declared = Manifest {
+        short_options: ShortOptions::new(b"fr"),
+        ..rm
+    };
+    assert!(declared.is_well_formed());
+}

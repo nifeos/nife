@@ -440,7 +440,12 @@ pub enum MemoryGrantDeclaration {
     Forbidden,
     /// The program must be granted a budget in `[min, max]` pages. Omitting it is
     /// [`Refusal::MemoryGrantRequired`](crate::Refusal::MemoryGrantRequired); out of range is [`Refusal::MemoryGrantOutOfRange`](crate::Refusal::MemoryGrantOutOfRange).
-    Required { minimum: u64, maximum: u64 },
+    Required {
+        /// The fewest pages the program accepts.
+        minimum: u64,
+        /// The most pages the program accepts.
+        maximum: u64,
+    },
 }
 
 /// A program's expectation about a **file grant**, milestone 31 (a capability shell: designation is authorization) phase 2.
@@ -457,7 +462,10 @@ pub enum FileGrantDeclaration {
     Forbidden,
     /// The program is granted exactly one file, `writable` or not. Omitting it is
     /// [`Refusal::FileRequired`](crate::Refusal::FileRequired).
-    Required { writable: bool },
+    Required {
+        /// Whether the program needs to write the file.
+        writable: bool,
+    },
 }
 
 /// A program's expectation about a **directory grant**, milestone 47's `rm -r`.
@@ -483,7 +491,37 @@ pub enum DirectoryGrantDeclaration {
     /// descend into one.
     ///
     /// Name: ratified 2026-10-18 (calef: "Yes"). This covers the `subtree_option` field.
-    Required { subtree_option: Option<u8> },
+    Required {
+        /// The short option that widens the grant to the subtree, if the program declares one.
+        subtree_option: Option<u8>,
+    },
+}
+
+impl Manifest {
+    /// Whether the manifest agrees with itself. Today that is one rule: a directory grant that
+    /// names a widening option declares that option, since [`plan`](crate::plan) reads an
+    /// undeclared one as "no widening" and says nothing. A manifest that fails here is a bug in
+    /// whoever wrote it, and a caller that builds manifests checks this before planning.
+    ///
+    /// Name: provisional.
+    pub const fn is_well_formed(&self) -> bool {
+        match self.directory {
+            DirectoryGrantDeclaration::Required {
+                subtree_option: Some(letter),
+            } => {
+                let letters = self.short_options.letters();
+                let mut i = 0;
+                while i < letters.len() {
+                    if letters[i] == letter {
+                        return true;
+                    }
+                    i += 1;
+                }
+                false
+            }
+            _ => true,
+        }
+    }
 }
 
 /// A program's SHILL-style manifest: the endowment it declares it expects. The shell checks the
@@ -491,7 +529,9 @@ pub enum DirectoryGrantDeclaration {
 /// mystery hang inside a program that did not get what it needed. See notes/program-manifest.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Manifest {
+    /// What the program takes as its integer argument.
     pub program_argument: ProgramArgumentDeclaration,
+    /// What the program takes as a memory grant.
     pub memory_grant: MemoryGrantDeclaration,
     /// A per-file grant, milestone 31 phase 2. See [`FileGrantDeclaration`] for why the direction lives here
     /// and the name lives on the command line.

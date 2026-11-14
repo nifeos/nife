@@ -55,3 +55,17 @@ fn only_a_program_that_declares_a_share_view_is_sent_one() {
         assert_eq!(spawnproto::held_shares(*p), p.manifest().share, "{p:?}");
     }
 }
+
+/// **The by-value sizes of the planning types are pinned**, so a field added to one shows its cost
+/// in a failing test and not in a shell that overflowed its stack. The planning functions take and
+/// return these by value, and the crate has already paid for two stack overflows that way. Raising
+/// a number here is a decision to make on purpose. The numbers are for a 64-bit target.
+#[cfg(target_pointer_width = "64")]
+#[test]
+fn the_planning_types_have_the_sizes_the_stack_budget_assumes() {
+    use core::mem::size_of;
+    assert_eq!(size_of::<Endowment>(), 2344);
+    assert_eq!(size_of::<Holdings>(), 1008);
+    assert_eq!(size_of::<expand::NameSet>(), 544);
+    assert_eq!(size_of::<nav::Cwd>(), 144);
+}

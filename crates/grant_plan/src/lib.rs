@@ -15,9 +15,6 @@
 //! `supervision_contract::ChildEndowment`). Not named for `swish`: seven things use it.
 
 #![no_std]
-// milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 22-item
-// worklist (notes/doc-coverage.md) is burned down.
-#![allow(missing_docs)]
 
 /// The version of the capability slot numbers the progenitor grants into and a program reads: 1. A
 /// break bumps it, with the dated ledger entry the interface-stability discipline owes; an addition

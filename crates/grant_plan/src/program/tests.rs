@@ -12,11 +12,10 @@ use crate::*;
 /// **a name keeps its id** while it exists, and **an id is never reused** by another name once
 /// its program is gone. Removing a program therefore leaves this table alone and its id a hole;
 /// a program added later needs no row here, because its id is a literal in its own declaration
-/// and a change to that literal is visible in review. Rows are only ever appended, and only if
-/// someone wants a later id pinned the same way.
+/// and a change to that literal is visible in review. Rows are only ever appended.
 #[test]
 fn the_wire_ids_already_shipped_never_move() {
-    const SHIPPED: [(&str, u64); 13] = [
+    const SHIPPED: [(&str, u64); 28] = [
         ("least_authority_demo", 0),
         ("memory_grant_depleter", 1),
         ("interrupt_heeder", 2),
@@ -30,6 +29,21 @@ fn the_wire_ids_already_shipped_never_move() {
         ("uptime", 10),
         ("printenv", 11),
         ("uuid", 12),
+        ("top", 13),
+        ("network_echo_client", 14),
+        ("unreachable_network_witness", 15),
+        ("std_exerciser", 16),
+        ("free", 17),
+        ("vmstat", 18),
+        ("slabtop", 19),
+        ("graphical_terminal", 20),
+        ("reboot", 21),
+        ("jig", 22),
+        ("job_sleeper", 23),
+        ("null_syscall", 24),
+        ("sink_producer", 25),
+        ("sink_consumer", 26),
+        ("map_el0", 27),
     ];
     for (name, id) in SHIPPED {
         match Program::from_name(name.as_bytes()) {
@@ -111,7 +125,7 @@ fn no_program_declares_both_a_file_and_an_input() {
 /// The id, the name and [`PROGRAM_COUNT`] are generated from one declaration (`programs!`), so
 /// this states the contract the progenitor relies on: it sizes its table by [`PROGRAM_COUNT`] and
 /// indexes it by id, so every declared id must fit, and an id nothing declares must decode to
-/// `None` rather than to a neighbour.
+/// `None` rather than to a neighbor.
 #[test]
 fn prog_id_round_trips() {
     assert!(

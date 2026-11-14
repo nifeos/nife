@@ -221,7 +221,7 @@ fn is_op(b: u8) -> bool {
     b == b'|' || b == b'<' || b == b'>'
 }
 
-/// **Whether a `2>` starts here**, which is the one operator this grammar cannot recognise from a
+/// **Whether a `2>` starts here**, which is the one operator this grammar cannot recognize from a
 /// single byte.
 ///
 /// `word_start` is where the current word began, and the digit only counts as an operator at a word
