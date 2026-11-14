@@ -16,8 +16,8 @@ capability to it:
 ```
 
 - The spawner holds the one unbadged capability and mints a badged copy per client. It tells the
-  resolver what each badge may resolve with `OPERATION_GRANT` (`grant_messages`). Only badge 0 is
-  read as a grant, so a client cannot widen its own. The spawner `CALL`s each grant's last piece,
+  resolver what each badge may resolve with `OPERATION_GRANT` (`grant_messages`). The resolver
+  reads only badge 0's messages as grants, so a client cannot widen its own. The spawner `CALL`s each grant's last piece,
   and the reply (`control_answer`) is `status::OK`, or `status::BAD_REQUEST` with the `Refusal`'s
   number (`refusal`) in the detail byte. The spawner treats a refusal as no grant.
 - A client delegates one page (`OPERATION_ATTACH_PAGE_FRAME`), writes a host name into it, and
