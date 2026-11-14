@@ -12,7 +12,7 @@ allocatable.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -187,3 +187,3 @@ impl<'a> PageFrameAllocator<'a> {
+@@ -224,3 +224,3 @@
      pub fn mark_free(&mut self, start: u64, size: u64) {
 -        for i in self.whole_frames_in(start, size) {
 +        for i in self.page_frame_range(start, size) {

@@ -1,18 +1,24 @@
 //! A physical frame allocator: hands out 4 KiB pages of physical memory from a bitmap, one bit per
-//! frame. It is the bottom of the memory hierarchy; page tables, the kernel heap, DMA buffers and
-//! user pages all ask it, and nothing is underneath it to ask. Pure logic with no `unsafe`, so its
+//! frame. It is the bottom of the memory hierarchy; page tables, the kernel heap, direct memory
+//! access (DMA) buffers and user pages all ask it, and nothing is underneath it to ask. Pure logic with no `unsafe`, so its
 //! tests run on the host (DECISIONS §7 (testing: QEMU harness and host-testable crates)).
 //! notes/physical-memory.md has why a bitmap and not a free list (contiguous runs for DMA, and host
 //! testability), and the bootstrap order.
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
-//! `frames`: the same collision DECISIONS §113 already found and fixed for the kernel's `PageFrame`
-//! capability type (renamed to `PageFrame`) against `crates/compositor`'s own use of "frame" for a
-//! rendered screen update. This crate is the physical-page allocator that backs those page frames.
+//! `frames`, which collided with `crates/compositor`'s own use of "frame" for a rendered screen
+//! update, the collision DECISIONS §113 had already found for the kernel's capability object, which
+//! is named `PageFrame` too. This crate is the physical-page allocator that backs those page
+//! frames.
 
-#![cfg_attr(not(test), no_std)]
+#![no_std]
+#![forbid(unsafe_code)]
 
-/// 4 KiB. The unit the MMU translates in ([notes/mmu.md]), so it is the unit we
+// The casts between `u64` and `usize` below (a frame count, a bitmap index) are exact only where
+// `usize` holds 64 bits; a narrower target would truncate them silently.
+const _: () = assert!(usize::BITS >= 64, "page_frames needs a 64-bit usize");
+
+/// 4 KiB. The unit the memory management unit (MMU) translates in, so it is the unit we
 /// allocate in.
 pub const FRAME_SIZE: u64 = 4096;
 
@@ -32,7 +38,7 @@ pub const FRAME_SIZE: u64 = 4096;
 /// assert_eq!(PageFrame::containing(0x4000_0FFF).addr(), 0x4000_0000);
 /// assert_eq!(PageFrame::containing(0x4000_1000).addr(), 0x4000_1000);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PageFrame(u64);
 
 impl PageFrame {
@@ -45,6 +51,7 @@ impl PageFrame {
     ///
     /// # Panics
     /// If `addr` is not frame-aligned.
+    #[must_use]
     pub const fn from_addr(addr: u64) -> Self {
         assert!(
             addr.is_multiple_of(FRAME_SIZE),
@@ -53,12 +60,27 @@ impl PageFrame {
         PageFrame(addr)
     }
 
+    /// The frame at `addr`, or `None` when `addr` is not frame-aligned: the fallible form of
+    /// [`from_addr`](Self::from_addr), for a caller that holds an address it has not checked.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    #[must_use]
+    pub const fn try_from_address(addr: u64) -> Option<Self> {
+        if addr.is_multiple_of(FRAME_SIZE) {
+            Some(PageFrame(addr))
+        } else {
+            None
+        }
+    }
+
     /// The frame containing `addr`, rounding down.
+    #[must_use]
     pub const fn containing(addr: u64) -> Self {
         PageFrame(addr - addr % FRAME_SIZE)
     }
 
     /// The physical address of this frame's first byte.
+    #[must_use]
     pub const fn addr(self) -> u64 {
         self.0
     }
@@ -75,6 +97,7 @@ pub struct Stats {
 
 impl Stats {
     /// Frames currently available: `total - used`.
+    #[must_use]
     pub fn free(&self) -> usize {
         self.total - self.used
     }
@@ -83,7 +106,7 @@ impl Stats {
 /// One bit per frame. `1` means used.
 ///
 /// **Everything starts used**: a frame is handed out only after someone has said its range is real
-/// RAM, so an unknown address (an MMIO hole) is never allocated. notes/physical-memory.md, "Guilty
+/// RAM, so an unknown address (a memory-mapped input and output (MMIO) hole) is never allocated. notes/physical-memory.md, "Guilty
 /// until proven innocent".
 ///
 /// # Examples
@@ -127,13 +150,26 @@ pub struct PageFrameAllocator<'a> {
 
 impl<'a> PageFrameAllocator<'a> {
     /// Bytes of bitmap needed to track `frames` frames.
+    #[must_use]
     pub const fn bitmap_bytes(frames: usize) -> usize {
         frames.div_ceil(8)
     }
 
-    /// How many frames span `[base, base + span)`.
+    /// How many **whole** frames fit in `span` bytes, truncating a partial frame at the end. For
+    /// the frames a span must reach, partial ones included, use
+    /// [`page_frames_covering`](Self::page_frames_covering).
+    #[must_use]
     pub const fn page_frames_in(span: u64) -> usize {
         (span / FRAME_SIZE) as usize
+    }
+
+    /// How many frames `span` bytes touch, rounding a partial frame at the end up: the count a
+    /// bitmap must track to reach the end of the span.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    #[must_use]
+    pub const fn page_frames_covering(span: u64) -> usize {
+        span.div_ceil(FRAME_SIZE) as usize
     }
 
     /// Create an allocator covering `total` frames starting at `base`, with **every
@@ -169,6 +205,7 @@ impl<'a> PageFrameAllocator<'a> {
     }
 
     /// The allocator's current occupancy.
+    #[must_use]
     pub fn stats(&self) -> Stats {
         Stats {
             total: self.total,
@@ -212,6 +249,7 @@ impl<'a> PageFrameAllocator<'a> {
     }
 
     /// Allocate one frame.
+    #[must_use = "a dropped frame stays marked used and is leaked"]
     pub fn alloc(&mut self) -> Option<PageFrame> {
         let i = (self.hint..self.total)
             .chain(0..self.hint)
@@ -229,7 +267,15 @@ impl<'a> PageFrameAllocator<'a> {
     /// physical addresses directly, with no MMU in the way to paper over a scattered
     /// buffer, so a virtio ring at milestone 8 needs its frames genuinely adjacent.
     ///
-    /// The scan is O(total) and dumb. It is called rarely and never in a hot path.
+    /// The scan is O(total) and dumb. It is called rarely and never in a hot path. The scan hint
+    /// that [`alloc`](Self::alloc) advances stays where it was: the hint is only a place to start
+    /// looking, and the next `alloc` skips over the run's now-used frames and still answers a free
+    /// frame.
+    ///
+    /// # BUGS
+    /// - The run has no alignment beyond one frame. A device that needs more cannot ask; an
+    ///   `alloc_contiguous_aligned(count, align_frames)` lands when a caller appears.
+    #[must_use = "a dropped run stays marked used and is leaked"]
     pub fn alloc_contiguous(&mut self, count: usize) -> Option<PageFrame> {
         if count == 0 || count > self.total {
             return None;
@@ -266,6 +312,7 @@ impl<'a> PageFrameAllocator<'a> {
     ///
     /// Same O(total) scan as `alloc_contiguous` and for the same reason: it is an instrument, called
     /// between tests, never in a hot path.
+    #[must_use]
     pub fn largest_free_run(&self) -> usize {
         let mut best = 0;
         let mut run = 0;
@@ -298,6 +345,7 @@ impl<'a> PageFrameAllocator<'a> {
     }
 
     /// Is this frame currently allocated? Test-support, and useful in assertions.
+    #[must_use]
     pub fn is_used(&self, frame: PageFrame) -> Option<bool> {
         Some(self.get(self.index_of(frame)?))
     }
@@ -504,6 +552,103 @@ mod verification {
             assert!(f.addr().is_multiple_of(FRAME_SIZE));
             assert!(f.addr() >= base);
             assert!(f.addr() < base + 8 * FRAME_SIZE);
+        }
+    }
+
+    /// **`mark_used` claims exactly the frames the range touches.** From an all-free bitmap, over
+    /// any aligned base and any `start` and `size`, a frame is used afterwards when and only when
+    /// it overlaps `[start, start + size)`: a region that ends mid-frame still owns that frame, and
+    /// no frame it does not touch is claimed. The end is compared in `u128`, so a range that wraps
+    /// the address space is held to its true end.
+    /// Falsification: replayable `crates/page_frames/falsifications/verification.mark_used_claims_exactly_the_frames_the_range_touches.patch`
+    #[kani::proof]
+    #[kani::unwind(9)]
+    fn mark_used_claims_exactly_the_frames_the_range_touches() {
+        let base: u64 = kani::any();
+        kani::assume(base.is_multiple_of(FRAME_SIZE));
+        kani::assume(base.checked_add(8 * FRAME_SIZE).is_some());
+        let start: u64 = kani::any();
+        let size: u64 = kani::any();
+
+        let mut bitmap = [0u8; 1]; // eight frames, all free
+        let mut fa = PageFrameAllocator {
+            bitmap: &mut bitmap,
+            base,
+            total: 8,
+            used: 0,
+            hint: 0,
+        };
+        fa.mark_used(start, size);
+
+        let i: usize = kani::any();
+        kani::assume(i < 8);
+        let frame_start = u128::from(base) + i as u128 * u128::from(FRAME_SIZE);
+        let frame_end = frame_start + u128::from(FRAME_SIZE);
+        let end = u128::from(start) + u128::from(size);
+        let touched = size > 0 && frame_start < end && frame_end > u128::from(start);
+        assert_eq!(fa.get(i), touched);
+    }
+
+    /// **The `used` counter is the number of set bits, after any one operation.** From any bitmap
+    /// whose counter agrees, `mark_free`, `mark_used`, `alloc`, `alloc_contiguous` or `free` of a
+    /// used frame leaves the counter equal to the popcount, which is what `Stats::free` reports.
+    /// Falsification: replayable `crates/page_frames/falsifications/verification.the_used_count_is_the_number_of_set_bits.patch`
+    #[kani::proof]
+    #[kani::unwind(9)]
+    fn the_used_count_is_the_number_of_set_bits() {
+        let mut bm: [u8; 1] = kani::any();
+        let used = bm[0].count_ones() as usize;
+        let mut fa = PageFrameAllocator {
+            bitmap: &mut bm,
+            base: 0,
+            total: 8,
+            used,
+            hint: kani::any(),
+        };
+        kani::assume(fa.hint <= 8);
+        match kani::any::<u8>() % 5 {
+            0 => fa.mark_free(kani::any(), kani::any()),
+            1 => fa.mark_used(kani::any(), kani::any()),
+            2 => {
+                let _ = fa.alloc();
+            }
+            3 => {
+                let _ = fa.alloc_contiguous(kani::any());
+            }
+            _ => {
+                let i: usize = kani::any();
+                kani::assume(i < 8 && fa.get(i));
+                fa.free(PageFrame(i as u64 * FRAME_SIZE));
+            }
+        }
+        let set_bits: usize = fa.bitmap[0].count_ones() as usize;
+        assert_eq!(fa.used, set_bits);
+    }
+
+    /// **A successful `alloc_contiguous` returns a run that was all free and is now all used.**
+    /// For every bitmap and every count, the `count` frames from the one returned were each free
+    /// before the call and are each used after it.
+    /// Falsification: replayable `crates/page_frames/falsifications/verification.a_contiguous_run_was_free_and_is_now_used.patch`
+    #[kani::proof]
+    #[kani::unwind(9)]
+    fn a_contiguous_run_was_free_and_is_now_used() {
+        let mut bm: [u8; 1] = kani::any();
+        let before = bm[0];
+        let mut fa = PageFrameAllocator {
+            bitmap: &mut bm,
+            base: 0,
+            total: 8,
+            used: 0,
+            hint: 0,
+        };
+        let count: usize = kani::any();
+        if let Some(first) = fa.alloc_contiguous(count) {
+            let first = (first.addr() / FRAME_SIZE) as usize;
+            assert!(count >= 1 && first + count <= 8);
+            for j in first..first + count {
+                assert!(before & (1 << j) == 0, "a frame of the run was not free");
+                assert!(fa.get(j), "a frame of the run was left free");
+            }
         }
     }
 }

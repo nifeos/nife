@@ -11,7 +11,7 @@ than the frame it reserved the bit for.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -250,3 +250,3 @@ impl<'a> PageFrameAllocator<'a> {
+@@ -260,3 +260,3 @@
          self.hint = i + 1;
 -        Some(PageFrame(self.base + i as u64 * FRAME_SIZE))
 +        Some(PageFrame(self.base + i as u64))

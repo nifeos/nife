@@ -358,8 +358,8 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
         .chain(forbidden.iter().map(|r| r.end()))
         .max()
         .unwrap();
-    // Round up: a `forbidden` region need not be frame-aligned, and `page_frames_in` truncates.
-    let total_frames = PageFrameAllocator::page_frames_in(top.next_multiple_of(FRAME_SIZE) - base);
+    // A `forbidden` region need not be frame-aligned, so the span rounds up to cover its last frame.
+    let total_frames = PageFrameAllocator::page_frames_covering(top - base);
 
     // --- the bootstrap problem ---
     //

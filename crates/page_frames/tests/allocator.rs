@@ -363,3 +363,61 @@ fn the_longest_free_run_is_not_the_free_count() {
     let a = PageFrameAllocator::new(BASE, 64, &mut bits);
     assert_eq!(a.largest_free_run(), 0);
 }
+
+#[test]
+fn a_span_that_ends_mid_frame_is_covered_but_not_whole() {
+    // (span in bytes, whole frames, frames touched)
+    let cases = [
+        (0, 0, 0),
+        (1, 0, 1),
+        (FRAME_SIZE - 1, 0, 1),
+        (FRAME_SIZE, 1, 1),
+        (FRAME_SIZE + 1, 1, 2),
+        (0x800_0000, 32768, 32768),
+    ];
+    for (span, whole, touched) in cases {
+        assert_eq!(
+            PageFrameAllocator::page_frames_in(span),
+            whole,
+            "whole {span}"
+        );
+        assert_eq!(
+            PageFrameAllocator::page_frames_covering(span),
+            touched,
+            "covering {span}"
+        );
+    }
+}
+
+#[test]
+fn an_unaligned_address_is_refused_without_a_panic() {
+    assert_eq!(
+        PageFrame::try_from_address(BASE),
+        Some(PageFrame::from_addr(BASE))
+    );
+    assert_eq!(PageFrame::try_from_address(BASE + 1), None);
+    assert_eq!(PageFrame::try_from_address(u64::MAX), None);
+}
+
+#[test]
+fn a_frame_can_key_a_set() {
+    let mut set = std::collections::HashSet::new();
+    set.insert(PageFrame::from_addr(BASE));
+    assert!(set.contains(&PageFrame::containing(BASE + 5)));
+}
+
+#[test]
+fn a_contiguous_run_leaves_the_next_alloc_a_free_frame() {
+    let mut bits = [0u8; 8];
+    let mut a = allocator(&mut bits);
+    let first = a.alloc().unwrap();
+    let run = a.alloc_contiguous(4).unwrap();
+    let next = a.alloc().unwrap();
+    assert_eq!(first.addr(), BASE);
+    assert_eq!(run.addr(), BASE + FRAME_SIZE);
+    assert_eq!(
+        next.addr(),
+        BASE + 5 * FRAME_SIZE,
+        "the scan steps over the run"
+    );
+}
