@@ -284,9 +284,10 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 
 ## Follow-on
 
-- **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above: the `link`
-  module, the sixteen `pub(crate)` gates and the five renamed constants, together with the
-  `management_data_io` rename that followed the same day.
+- **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above. They are
+  the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
+  `management_data_io` rename ruled the same day is built too.
+
 - **Outstanding.** The other review items stay open. They are the manifest and README work (items
   2 and 7 onward), the bounds on `receive` and `reclaim` (item 3), the visibility rule for register
   constants (item 6), the template's address rule and acronym findings (items 1 and 11) and the
