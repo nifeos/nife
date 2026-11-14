@@ -418,7 +418,7 @@ mod tests {
 
     /// The accessors report what `initialize` was given, the cap rounded down to a page.
     #[test]
-    fn the_accessors_report_the_cap_and_the_base() {
+    fn the_accessors_report_the_maximum_and_the_base() {
         let heap = MemoryRegionHeap::new();
         assert_eq!((heap.maximum_bytes(), heap.base_virtual_address()), (0, 0));
         heap.initialize(3, DEFAULT_BASE_VIRTUAL_ADDRESS, 16 * PAGE + 7);

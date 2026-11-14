@@ -193,15 +193,14 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 
 ## Follow-on
 
-Done. The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on decision
-A: the names, the rename, the `Result` return, the two accessors and the local binding. Decision B
-is recorded as the rule in force.
-
-Outstanding. The manifest keeps its path dependencies and its `talc` line as they stand, and the
-README and license files are not written: the move lane does them (items 2 and 3, to the rule of
-decision B). Item 4's test half, the P1 items before the tag and the P2 items are not started.
-`script/crate-standalone` step 0 still needs the move lane to strip the blocks. `Short`,
-`maximum_bytes` and `base_virtual_address` are provisional until a name review.
+- **Done.** The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on
+  decision A: the names, the rename, the `Result` return, the two accessors and the local binding.
+  Decision B is recorded as the rule in force.
+- **Outstanding.** The manifest keeps its path dependencies and its `talc` line as they stand, and the
+  README and license files are not written: the move lane does them (items 2 and 3, to the rule of
+  decision B). Item 4's test half, the P1 items before the tag and the P2 items are not started.
+  `script/crate-standalone` step 0 still needs the move lane to strip the blocks. `Short`,
+  `maximum_bytes` and `base_virtual_address` are provisional until a name review.
 
 ## Done when
 
