@@ -132,9 +132,9 @@ two-way and the maintainer decides it.
    spelled-out name a reader searches for by its abbreviation.
    Why it matters: `check / standalone` runs these at a ceiling of 0; a ratified name failing a
    check needs an exemption outside the `Name:` block, and an unratified one needs a ruling.
-   Change: Decision B rules the names; one rename lane applies them at the end, then adds the
-   exemption for `blk::SIZE` with its reason and the aliases.
-   Door: one-way at release; the architect's before it. Effort: S for the lane, after the ruling.
+   Change: the names Decision B decides, provisionally; one rename lane applies them at the end,
+   then adds the exemption for `blk::SIZE` with its reason and the aliases.
+   Door: two-way before the first tag. Effort: S for the lane, after the ruling.
 
 ### P2: later
 
@@ -226,6 +226,11 @@ Concrete example. A caretaker that reads `verb::of(operation).takes_name()` toda
 `verb::of(operation).takes_name()` still; one that compares `grant::spec_rights(w)` reads
 `grant::specification_rights(w)`; a client that sends `fs::req(fs::GETMTIME, ..)` sends
 `fs::req(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The table holds as written, applied by one lane, and
+`STORE_DIRECTORY` holds whatever value Decision A rules. The POSIX verb and errno names keep their
+spelling, each with `#[doc(alias)]` and a line naming the source. No alias of the old spellings.
 
 ### C. The error range of a reply word
 
