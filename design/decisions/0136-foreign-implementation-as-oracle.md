@@ -15,8 +15,8 @@ number provisional until the merge queue lands it.)*
 ## What is being decided
 
 When a mature implementation of a format or protocol exists in a language or under a license this
-project would not ship, or falls short of the bar in §46 (thin primitives or whole subsystems; we
-write everything in between), what role it may take.
+project would not ship, what role it may take. The same question holds for one that falls short of
+the bar in §46 (thin primitives or whole subsystems; we write everything in between).
 
 The rule: it runs on the host, outside the shipping graph, as the reference our implementation is
 differentially tested against. It is a tool, not a dependency.

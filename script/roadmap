@@ -307,8 +307,8 @@ def unheld_promotions(added, held):
 
 
 # ---- `Reuse:`: a new milestone names what it considered taking (§46, 2026-10-04) ------------------
-# §46 (ruled 2026-11-14 UTC) makes taking a crate that meets its bar the default in every layer,
-# and writing our own needs a stated reason. The record is a
+# §46 (thin primitives or whole subsystems), ruled 2026-11-14 (UTC), makes taking a crate that
+# meets its bar the default in every layer, and writing our own needs a stated reason. The record is a
 # `Reuse:` line in the block's prose, or a `## Reuse` section. It names at least one candidate
 # considered, or says `none exists` and what was searched. The line is written plain, as §46 spells
 # it. A bold `**Reuse:**` still reads, because blocks carried it until milestone 791 (bold that a

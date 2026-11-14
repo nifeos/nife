@@ -34,7 +34,7 @@ A crate meets all four. The block or pull request that proposes it shows each on
 1. **A safety argument at every `unsafe` use.** Each `unsafe` block carries a comment that says why
    it is sound, and each `unsafe fn` and `unsafe trait` states its preconditions in a `# Safety`
    section. That is the rule nife holds its own code to (`clippy::undocumented_unsafe_blocks`, and
-   milestone 112 for `# Safety`). The unsafe code a crate's macros generate counts as the crate's
+   milestone 112 (the SAFETY comments that bind nobody) for `# Safety`). The unsafe code a crate's macros generate counts as the crate's
    own. A crate with no `unsafe` meets this condition as it stands.
 2. **Proofs matching ours.** Where nife would prove a property of this code with Kani, because a
    claim nife makes rests on it, the crate carries a proof of the same property. Where nife would

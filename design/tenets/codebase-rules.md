@@ -38,14 +38,14 @@ requirements are known.
    subsystems). A dependency on one of our own `nifeos` crates needs no ruling when its git
    `rev` is a full commit on that repository's main (2026-11-09). What the rule buys is a
    standard that does not depend on who wrote the code. Writing is cheap for agents, and code
-   written here has had no exposure outside this tree, so a crate that many systems run and that
+   we write here has had no exposure outside this tree, so a crate that many systems run and that
    meets our bar carries evidence we cannot produce for ourselves. The bar keeps that from costing
    us anything we hold our own code to: a safety argument at every `unsafe` use, proofs matching
    ours where a claim rests on the code, all three architectures, and an upstream that maintains
    it. Contributing upstream to bring a crate to the bar spends the effort writing would have
-   spent, and leaves the exposure intact. Where correctness is won by exposure rather than by
-   reading the specification, take it: that is why §46 says take the cryptography and never write
-   it. Vendor only what must be patched.
+   spent, and leaves the exposure intact. Where exposure, not the specification, wins
+   correctness, take it: that is why §46 says take the cryptography and never write
+   it. Vendor only what needs a patch.
 
 7. **Anything two binaries must agree on is a crate, never a `#[path]` module** (calef, 2026-08-01).
    If a constant, an opcode, a layout, or an error code is shared by more than one program, it goes
