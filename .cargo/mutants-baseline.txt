@@ -34,6 +34,7 @@ documentation 966 30 50 41
 domain_name_resolution_contract 112 6 0 17
 domain_name_system 200 3 4 21
 e1000e 705 72 4 9
+elf 178 0 4 40
 entropy_contract 37 3 0 0
 environment_contract 46 0 0 7
 extensible_host_controller_interface 419 55 0 23
@@ -82,7 +83,6 @@ sealed_pair 63 0 0 6
 slabtop 18 0 0 0
 soak_page 22 0 0 0
 socket_contract 80 2 0 2
-static_elf 178 0 4 40
 std_runtime_contract 4 0 0 0
 stick_maker 226 2 4 17
 subtree_scope 57 1 0 4

@@ -67,7 +67,6 @@ domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exer
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	retired
-static_elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 entropy_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
 entropy_proto	shared	retired
 entropy_protocol	shared	retired
@@ -171,6 +170,7 @@ socket_proto	shared	retired
 socket_protocol	shared	retired
 spin_lock	kernel	kernel
 startup_page_contract	shared	components,fixtures,kernel
+static_elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 std_runtime_contract	shared	components,fixtures,jig,kernel,std
 std_runtime_protocol	shared	retired
 steal_request	kernel	retired
