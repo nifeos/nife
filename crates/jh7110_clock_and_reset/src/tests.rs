@@ -335,7 +335,7 @@ fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while
         .unwrap();
     let enable = GMAC0_ALWAYS_ON_BRING_UP
         .iter()
-        .position(|s| *s == Step::EnableClock(AONCLK_GMAC0_TX))
+        .position(|s| *s == Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT))
         .unwrap();
     assert!(mux < enable);
     // Every identifier is inside its domain, so neither plan can be rejected.
@@ -358,9 +358,18 @@ fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while
 fn the_word_offsets_match_the_vendor_u_boots_own_constants() {
     // The vendor U-Boot writes `AON_CRG_BASE + 0x14` for gmac0's transmit clock and `0x1c` for
     // its receive clock (`jh7110-regs.h`): indices 5 and 7, one word each.
-    assert_eq!(ALWAYS_ON.clock_offset(AONCLK_GMAC0_TX), Some(0x14));
+    assert_eq!(
+        ALWAYS_ON.clock_offset(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT),
+        Some(0x14)
+    );
     assert_eq!(ALWAYS_ON.clock_offset(7), Some(0x1c));
-    assert_eq!(ALWAYS_ON.reset_bit(AONRST_GMAC0_AHB).unwrap().mask, 1 << 1);
+    assert_eq!(
+        ALWAYS_ON
+            .reset_bit(ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS)
+            .unwrap()
+            .mask,
+        1 << 1
+    );
     assert_eq!(SYSTEM.clock_offset(SYSCLK_GMAC0_GTXC), Some(0x1bc));
 }
 
@@ -620,7 +629,7 @@ fn all_resets_are_released_counts_the_released_against_the_planned() {
 
 #[test]
 fn each_sd_input_output_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_system_domain() {
-    for plan in SD_INPUT_OUTPUT_BRING_UP {
+    for plan in SD_IO_BRING_UP {
         assert!(matches!(plan.last(), Some(Step::DeassertReset(_))));
         assert_eq!(plan.len(), 3);
         for s in plan {
@@ -631,8 +640,13 @@ fn each_sd_input_output_plan_ungates_both_clocks_before_its_reset_and_stays_in_t
             }
         }
     }
-    assert_eq!(SYSTEM.clock_offset(SYSCLK_SDIO1_SDCARD), Some(0x178));
-    let r = SYSTEM.reset_bit(SYSRST_SDIO1_AHB).unwrap();
+    assert_eq!(
+        SYSTEM.clock_offset(SYSTEM_CLOCK_SD_IO_1_SD_CARD),
+        Some(0x178)
+    );
+    let r = SYSTEM
+        .reset_bit(SYSTEM_RESET_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS)
+        .unwrap();
     assert_eq!(
         (r.assert_offset, r.status_offset, r.mask),
         (0x300, 0x310, 1 << 1)

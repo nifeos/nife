@@ -24,10 +24,10 @@ struct ReadmeExample;
 use jh7110_clock_and_reset::{
     ALWAYS_ON, CLOCK_ENABLE, Domain, ENTROPY_BRING_UP, GMAC0_ALWAYS_ON_BRING_UP,
     GMAC0_SYSTEM_BRING_UP, InterIntegratedCircuitClockWords, MAXIMUM_SD_CARD_DIVIDER,
-    POWER_MANAGEMENT_CHIP_BUS_BRING_UP, SD_INPUT_OUTPUT_BRING_UP, SYSTEM,
+    POWER_MANAGEMENT_CHIP_BUS_BRING_UP, SD_IO_BRING_UP, SYSTEM,
     SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0,
     SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION, SYSTEM_CLOCK_BUS_ROOT,
-    SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD,
+    SYSTEM_CLOCK_SD_IO_SD_CARD,
     SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS,
     SYSTEM_TOP_GROUP, Step, advanced_extensible_interface_configuration_0_hertz, clock_divider,
     is_clock_enabled, is_deasserted, sd_card_divider_for, with_divider, with_parent,
@@ -164,17 +164,17 @@ pub const DEVICES: [Device; 5] = [
         base_physical_address: 0x1601_0000,
         parts: &[Part {
             window: WindowName::System,
-            plan: SD_INPUT_OUTPUT_BRING_UP[0],
+            plan: SD_IO_BRING_UP[0],
         }],
-        rated_clock: Some(SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[0]),
+        rated_clock: Some(SYSTEM_CLOCK_SD_IO_SD_CARD[0]),
     },
     Device {
         base_physical_address: 0x1602_0000,
         parts: &[Part {
             window: WindowName::System,
-            plan: SD_INPUT_OUTPUT_BRING_UP[1],
+            plan: SD_IO_BRING_UP[1],
         }],
-        rated_clock: Some(SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[1]),
+        rated_clock: Some(SYSTEM_CLOCK_SD_IO_SD_CARD[1]),
     },
     Device {
         base_physical_address: 0x1205_0000,

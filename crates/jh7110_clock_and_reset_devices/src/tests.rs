@@ -353,7 +353,7 @@ fn radon_like() -> Fake {
     // DACPD and DSMPD set, FBDIV 99; POSTDIV1 0 (divide by 1); PREDIV 2.
     f.words[system_controller][0x2c / 4] = 1 << 15 | 1 << 16 | 99 << 17;
     f.words[system_controller][0x34 / 4] = 2;
-    f.words[system][SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[1] as usize] = CLOCK_ENABLE | 2;
+    f.words[system][SYSTEM_CLOCK_SD_IO_SD_CARD[1] as usize] = CLOCK_ENABLE | 2;
     f
 }
 

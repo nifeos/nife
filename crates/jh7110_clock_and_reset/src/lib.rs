@@ -220,26 +220,31 @@ const VENDOR_CLOCK_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aon";
 const VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
 
 /// `JH7110_AONCLK_GMAC0_AHB` \[mainline-ids\]: a gate, `gmac0`'s `pclk`. Word `0x08`.
-pub(crate) const AONCLK_GMAC0_AHB: u32 = 2;
+#[doc(alias = "JH7110_AONCLK_GMAC0_AHB")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 2;
 /// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its CSR and bus clock). Word `0x0c`.
-pub(crate) const AONCLK_GMAC0_AXI: u32 = 3;
-/// **`gmac0` transmit clock** (`AONCLK_GMAC0_TX`, `JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
+#[doc(alias = "JH7110_AONCLK_GMAC0_AXI")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 3;
+/// **`gmac0` transmit clock** (`JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
 /// `gmac0_rmii_rtx` (1). Word `0x14`, which the vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
 /// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii` in \[vendor-board\]).
 ///
 /// [vendor-board]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/board/starfive/visionfive2/starfive_visionfive2.c
 #[doc(alias = "JH7110_AONCLK_GMAC0_TX")]
 #[doc(alias = "gmac0 transmit clock")]
-pub(crate) const AONCLK_GMAC0_TX: u32 = 5;
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT: u32 = 5;
 /// `gmac0_tx`'s parent on a VisionFive 2 v1.3B: `gmac0_rmii_rtx`, mainline's
 /// `assigned-clock-parents` for `&gmac0` in `jh7110-starfive-visionfive-2-v1.3b.dts` beside
 /// `starfive,tx-use-rgmii-clk`, and the same bit the vendor U-Boot sets. A board whose EEPROM
 /// reports PCB revision `0xb2` is a v1.3B.
-pub(crate) const AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX: u32 = 1;
+#[doc(alias = "JH7110_AONCLK_GMAC0_RMII_RTX")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 = 1;
 /// `JH7110_AONRST_GMAC0_AXI` \[mainline-ids\], `gmac0`'s `stmmaceth` reset. Bit 0 at `0x38`.
-pub(crate) const AONRST_GMAC0_AXI: u32 = 0;
+#[doc(alias = "JH7110_AONRST_GMAC0_AXI")]
+pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 0;
 /// `JH7110_AONRST_GMAC0_AHB`, `gmac0`'s `ahb` reset. Bit 1 at `0x38`.
-pub(crate) const AONRST_GMAC0_AHB: u32 = 1;
+#[doc(alias = "JH7110_AONRST_GMAC0_AHB")]
+pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 1;
 
 /// `JH7110_SYSCLK_GMAC0_GTXCLK` \[mainline-ids\]: a gated divider of PLL0, the parent of
 /// `gmac0_gtxc`. Word `0x1b0` of the SYS window.
@@ -272,15 +277,15 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled
 /// out).
 pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
-    Step::EnableClock(AONCLK_GMAC0_AXI),
-    Step::EnableClock(AONCLK_GMAC0_AHB),
+    Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE),
+    Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
     Step::SelectParent {
-        clock: AONCLK_GMAC0_TX,
-        parent: AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX,
+        clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+        parent: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
     },
-    Step::EnableClock(AONCLK_GMAC0_TX),
-    Step::DeassertReset(AONRST_GMAC0_AXI),
-    Step::DeassertReset(AONRST_GMAC0_AHB),
+    Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT),
+    Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE),
+    Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
 
 /// Where one reset lives: which word to write, which word to watch, and which bit in both.
@@ -417,17 +422,17 @@ pub const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];
 
-/// **eMMC controller bus clock** (`SYSCLK_SDIO0_AHB`, `JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
+/// **eMMC controller bus clock** (`JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
 /// **91**: the eMMC socket's controller's bus clock, `biu` in both trees. Word `0x16c`.
 #[doc(alias = "JH7110_SYSCLK_SDIO0_AHB")]
 #[doc(alias = "emmc controller bus clock")]
-pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
-/// **microSD controller bus clock** (`SYSCLK_SDIO1_AHB`, `JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
+pub(crate) const SYSTEM_CLOCK_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 91;
+/// **microSD controller bus clock** (`JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
 /// controller's bus clock. Word `0x170`.
 #[doc(alias = "JH7110_SYSCLK_SDIO1_AHB")]
 #[doc(alias = "microsd controller bus clock")]
-pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
-/// **eMMC controller card clock** (`SYSCLK_SDIO0_SDCARD`, `JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
+pub(crate) const SYSTEM_CLOCK_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 92;
+/// **eMMC controller card clock** (`JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
 /// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
 /// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
 /// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
@@ -437,21 +442,21 @@ pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// [vendor-board-dts-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/arch/riscv/dts/starfive_visionfive2.dts
 #[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
 #[doc(alias = "emmc controller card clock")]
-pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
-/// **microSD controller card clock** (`SYSCLK_SDIO1_SDCARD`, `JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
+pub(crate) const SYSTEM_CLOCK_SD_IO_0_SD_CARD: u32 = 93;
+/// **microSD controller card clock** (`JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
 #[doc(alias = "JH7110_SYSCLK_SDIO1_SDCARD")]
 #[doc(alias = "microsd controller card clock")]
-pub(crate) const SYSCLK_SDIO1_SDCARD: u32 = 94;
-/// **eMMC controller reset** (`SYSRST_SDIO0_AHB`, `JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
+pub(crate) const SYSTEM_CLOCK_SD_IO_1_SD_CARD: u32 = 94;
+/// **eMMC controller reset** (`JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
 /// word at `0x300`.
 #[doc(alias = "JH7110_SYSRST_SDIO0_AHB")]
 #[doc(alias = "emmc controller reset")]
-pub(crate) const SYSRST_SDIO0_AHB: u32 = 64;
-/// **microSD controller reset** (`SYSRST_SDIO1_AHB`, `JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
+pub(crate) const SYSTEM_RESET_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 64;
+/// **microSD controller reset** (`JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
 #[doc(alias = "JH7110_SYSRST_SDIO1_AHB")]
 #[doc(alias = "microsd controller reset")]
-pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
+pub(crate) const SYSTEM_RESET_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 65;
 
 /// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
 /// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
@@ -460,17 +465,19 @@ pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 /// the vendor U-Boot has already brought the microSD controller up to load the boot script, and a
 /// caller can read whether it left it that way before it walks the plan.
 ///
-/// Name: ratified 2026-10-26 (UTC); renamed 2026-11-08 (UTC) to spell out the controller's name.
-pub const SD_INPUT_OUTPUT_BRING_UP: [&[Step]; 2] = [
+/// Name: ratified 2026-11-14 (UTC). The controller's name `SDIO` is written `SD_IO`, keeping `io`
+/// whole as every name does.
+#[doc(alias = "sdio")]
+pub const SD_IO_BRING_UP: [&[Step]; 2] = [
     &[
-        Step::EnableClock(SYSCLK_SDIO0_AHB),
-        Step::EnableClock(SYSCLK_SDIO0_SDCARD),
-        Step::DeassertReset(SYSRST_SDIO0_AHB),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_0_SD_CARD),
+        Step::DeassertReset(SYSTEM_RESET_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS),
     ],
     &[
-        Step::EnableClock(SYSCLK_SDIO1_AHB),
-        Step::EnableClock(SYSCLK_SDIO1_SDCARD),
-        Step::DeassertReset(SYSRST_SDIO1_AHB),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_1_SD_CARD),
+        Step::DeassertReset(SYSTEM_RESET_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS),
     ],
 ];
 
@@ -932,7 +939,7 @@ pub const fn inter_integrated_circuit_5_clock_frequency(
 
 /// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
 /// divider. The parent of both the PMIC bus's clock chain ([`inter_integrated_circuit_5_clock_frequency`]) and the SD/MMC
-/// controllers' card clocks ([`SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD`]), each a registration in the vendor clock driver.
+/// controllers' card clocks ([`SYSTEM_CLOCK_SD_IO_SD_CARD`]), each a registration in the vendor clock driver.
 ///
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
@@ -968,10 +975,11 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
 /// **Each SD/MMC controller's card clock** (`ciu` in the tree), by controller index: the eMMC
 /// socket's, then the microSD slot's. Each divides [`advanced_extensible_interface_configuration_0_hertz`] by its own one-based divider.
 ///
-/// Name: ratified 2026-11-05 (UTC), #3279.
+/// Name: ratified 2026-11-14 (UTC). `SDIO` is written `SD_IO`, for [`SD_IO_BRING_UP`]'s reason.
 #[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
-pub const SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD: [u32; 2] =
-    [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
+#[doc(alias = "JH7110_SYSCLK_SDIO1_SDCARD")]
+pub const SYSTEM_CLOCK_SD_IO_SD_CARD: [u32; 2] =
+    [SYSTEM_CLOCK_SD_IO_0_SD_CARD, SYSTEM_CLOCK_SD_IO_1_SD_CARD];
 
 /// The card clocks' largest divider (the vendor driver registers them with a maximum of 15).
 ///
@@ -1750,14 +1758,8 @@ mod verification {
             POWER_MANAGEMENT_CHIP_BUS_BRING_UP,
             &SYSTEM
         ));
-        assert!(ungates_before_releasing(
-            SD_INPUT_OUTPUT_BRING_UP[0],
-            &SYSTEM
-        ));
-        assert!(ungates_before_releasing(
-            SD_INPUT_OUTPUT_BRING_UP[1],
-            &SYSTEM
-        ));
+        assert!(ungates_before_releasing(SD_IO_BRING_UP[0], &SYSTEM));
+        assert!(ungates_before_releasing(SD_IO_BRING_UP[1], &SYSTEM));
     }
 
     /// **A plan built from a device's specifiers holds only usable steps, in order**: for two
