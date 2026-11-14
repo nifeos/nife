@@ -550,8 +550,8 @@ pub enum Reject {
     /// The server's own claimed distance from a reference clock reaches [`MAXIMUM_ROOT_DISTANCE`].
     RootDistance,
     /// The server's reference timestamp is later than its transmit timestamp: it claims to have
-    /// last synchronised after it sent this reply, which RFC 5905's reference `packet()` routine
-    /// refuses. A zero reference timestamp, which says only that the server never synchronised, is
+    /// last synchronized after it sent this reply, which RFC 5905's reference `packet()` routine
+    /// refuses. A zero reference timestamp, which says only that the server never synchronized, is
     /// not judged here.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
@@ -1134,7 +1134,7 @@ mod tests {
         let dest = Timestamp::from_bits(0x0000_0002_0000_0000);
         p.receive = Timestamp::from_bits(0xFFFF_FFFF_8000_0000);
         assert!(q.accept(&p.to_bytes(), dest).is_ok());
-        // A zero reference says only "never synchronised" and is not judged.
+        // A zero reference says only "never synchronized" and is not judged.
         p.reference = Timestamp::ZERO;
         assert!(q.accept(&p.to_bytes(), dest).is_ok());
     }

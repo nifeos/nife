@@ -275,8 +275,6 @@ pub enum PageUse {
 /// let _ = (claim.pages(), second.pages());
 /// ```
 ///
-/// The same sequence without the offending line compiles and runs, so the two above fail on it.
-///
 /// ```
 /// let mut table = memory_regions::RegionTable::<2>::new();
 /// let name = table.insert_root(0x1000, 4).unwrap();

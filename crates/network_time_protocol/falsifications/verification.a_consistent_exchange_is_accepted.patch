@@ -1,10 +1,10 @@
 Falsifies `network_time_protocol::verification::a_consistent_exchange_is_accepted`.
 
 The defect: the stratum check refuses `MAXIMUM_STRATUM` itself, `>=` where the rule is `>`. It
-reads as a tidy bound, since 16 is the unsynchronised stratum and 15 sits right under it.
+reads as a tidy bound, since 16 is the unsynchronized stratum and 15 sits right under it.
 
 Expected to fail: the harness's `expect("a consistent exchange is refused")`, on a stratum of 15,
-the farthest a synchronised server may be from a reference clock.
+the farthest a synchronized server may be from a reference clock.
 
 --- a/crates/network_time_protocol/src/lib.rs
 +++ b/crates/network_time_protocol/src/lib.rs

@@ -16,7 +16,7 @@
 //! how many child regions, live in a region's whole subtree at once. [`RegionTable`] holds all of
 //! it and has the worked example.
 //!
-//! //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
+//! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
 //! `regions`, which collides with `crates/compositor`'s damaged-screen "region". DECISIONS §113
 //! (eleven kernel object and identifier names move) found that when naming `MemoryRegion`, the
 //! kernel object whose accounting this crate is.
