@@ -45,7 +45,7 @@ pub struct LsEntry {
     pub kind: Kind,
     /// How many extended attributes this entry carries. Rendered as `@`, which is the marker macOS
     /// `ls -l` uses for the same fact, so a listing says that there is metadata here **before** the
-    /// reader has to know that `.nife-attrs` exists.
+    /// reader has to know that `.extended-attributes` exists.
     pub attrs: usize,
 }
 

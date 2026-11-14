@@ -17,7 +17,7 @@ use crate::verdict::Tally;
 /// The page's first word: `NIFESTK1` as little-endian bytes. A page without it is not this page.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).
-pub const MAGIC: u64 = u64::from_le_bytes(*b"NIFESTK1");
+pub const MAGIC: u64 = u64::from_le_bytes(*b"NIFESTK1"); // wire literal
 
 /// **Where each fact sits in the page**, in 64-bit words from its start.
 ///
