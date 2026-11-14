@@ -4,12 +4,12 @@ The defect: the fall-through arm of `reap_decision` authorizes any corpse, not o
 one this rendezvous supervises. Written the way it would actually arrive, as a
 "reaping is harmless, it only collects the dead" simplification: the liveness test
 is kept, so every hand-written test about a live stranger still passes, and only the
-supervision relationship is dropped. That is DECISIONS §32's whole claim gone, and
+supervision relationship is dropped. That is the whole claim gone, and
 with it the property that a supervisor cannot collect (and so free the pages of)
 another supervisor's child.
 
-Expected to fail: `assert_eq!(fault_ep, Some(invoked), "reaped through the wrong
-rendezvous")` in the `Reap::Permitted` arm, on any `fault_ep` that is `None` or
+Expected to fail: `assert_eq!(supervising_rendezvous, Some(invoked), "reaped through the wrong
+rendezvous")` in the `Reap::Permitted` arm, on any `supervising_rendezvous` that is `None` or
 names some other rendezvous while `dead` holds.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs

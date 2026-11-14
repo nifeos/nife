@@ -469,3 +469,61 @@ fn the_global_high_water_mark_is_never_below_a_table_that_reached_it() {
         "a recorded peak carries the table it came from"
     );
 }
+
+/// A slot number too wide for `usize` names nothing, on every target: on a 32-bit `usize`,
+/// truncation would let `2^32 + k` name slot `k`.
+#[test]
+fn a_slot_past_the_width_of_usize_names_nothing() {
+    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    cs.put(
+        0,
+        Capability {
+            object: Obj::Console,
+            rights: Rights::READ,
+        },
+    )
+    .unwrap();
+    for slot in [1u64 << 32, (1 << 32) + 1, u64::MAX] {
+        assert_eq!(cs.get(slot).err(), Some(Error::NoSuchSlot), "{slot:#x}");
+        assert_eq!(cs.delete(slot).err(), Some(Error::NoSuchSlot), "{slot:#x}");
+        let again = Capability {
+            object: Obj::Console,
+            rights: Rights::READ,
+        };
+        assert_eq!(
+            cs.put(slot, again).err(),
+            Some(Error::NoSuchSlot),
+            "{slot:#x}"
+        );
+    }
+    assert!(cs.get(0).is_ok());
+}
+
+/// A sweep may keep state between slots, which is why it takes `FnMut`, as `retain` does.
+#[test]
+fn a_sweep_may_count_what_it_deletes() {
+    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    for _ in 0..3 {
+        cs.insert(Capability {
+            object: Obj::Console,
+            rights: Rights::READ,
+        })
+        .unwrap();
+    }
+    let mut seen = 0;
+    cs.delete_matching(|_| {
+        seen += 1;
+        true
+    });
+    assert_eq!(seen, 3);
+    assert!(cs.is_empty());
+}
+
+/// `Error` prints, so it sits behind `?` into a boxed error.
+#[test]
+fn an_error_prints_and_is_an_error() {
+    extern crate std;
+    use std::string::ToString;
+    let error: &dyn core::error::Error = &Error::NoFreeSlot;
+    assert_eq!(error.to_string(), "the table is full");
+}

@@ -9,33 +9,33 @@ the function's own doc comment calls deliberate. The channel it opens is a probe
 supervisor invokes `REAP` on a tid it does not own and learns from the answer
 whether some other supervisor's child is still running.
 
-Expected to fail: `assert_eq!(reap_decision(fault_ep, invoked, true),
-reap_decision(fault_ep, invoked, false))` under `kani::assume(fault_ep !=
+Expected to fail: `assert_eq!(reap_decision(supervising_rendezvous, invoked, true),
+reap_decision(supervising_rendezvous, invoked, false))` under `kani::assume(supervising_rendezvous !=
 Some(invoked))`. The second assertion in the harness,
-`assert_eq!(reap_decision(fault_ep, invoked, true), Reap::NotSupervised)`, still
+`assert_eq!(reap_decision(supervising_rendezvous, invoked, true), Reap::NotSupervised)`, still
 holds under this defect, because the `dead` path is untouched; it is the first
 assertion, the one comparing the two liveness values, that catches it.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index d65bed7d..612fd281 100644
+index a5b8f24b3..eb5cd9e0c 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -167,14 +167,11 @@ pub enum Reap {
- /// The supervision check comes first, so a live stranger and a stale name give the same answer;
- /// liveness is disclosed only inside the relationship.
- pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -> Reap {
+@@ -170,14 +170,11 @@ pub const fn reap_decision(
+     invoked_rendezvous: u64,
+     dead: bool,
+ ) -> Reap {
 +    if !dead {
 +        return Reap::StillAlive;
 +    }
-     match fault_ep {
--        Some(ep) if ep == invoked_ep => {
+     match supervising_rendezvous {
+-        Some(rendezvous) if rendezvous == invoked_rendezvous => {
 -            if dead {
 -                Reap::Permitted
 -            } else {
 -                Reap::StillAlive
 -            }
 -        }
-+        Some(ep) if ep == invoked_ep => Reap::Permitted,
++        Some(rendezvous) if rendezvous == invoked_rendezvous => Reap::Permitted,
          _ => Reap::NotSupervised,
      }
  }

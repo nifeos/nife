@@ -6,7 +6,7 @@ The defect: the subset test tolerates one right's worth of slack,
 **The defect is chosen to discriminate, and that is the point of this record.** The obvious
 mutation here is the dropped `!` that `verification.subset_is_reflexive.patch` uses, and it does
 turn this harness red too, which would have recorded nothing the reflexive patch does not
-already record. §134 (a harness carries a machine-replayable falsification record, or it is not evidence) names these harnesses as the tree's clearest candidates for proving trivia,
+already record. These harnesses are the clearest candidates for proving trivia,
 so the useful question is whether transitivity catches anything its neighbours do not. This
 defect answers it: the relation above stays **reflexive** (`a & !a` is zero, and zero bits is
 not more than one), so `subset_is_reflexive` stays green, and only transitivity sees it.

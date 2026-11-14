@@ -7,9 +7,9 @@ This is the single most plausible error in a one-line bitwise predicate.
 Expected to fail: `assert_eq!(derived.rights.0 & !src_rights.0, 0)` in
 `derive_never_widens_rights`, on a request holding a bit the source lacks.
 
-**This is the record that could not exist before milestone 211.** Milestone 194 applied
-exactly this diff and measured ten of the crate's twelve harnesses staying green under
-it, the central theorem among them, because the theorem asserted
+**This record discriminates where an earlier one did not.** Applied to an older harness,
+exactly this diff left ten of the crate's twelve harnesses green, the central theorem among
+them, because the theorem asserted
 `derived.rights.is_subset_of(src_rights)` while `derive` guards on
 `rights.is_subset_of(src.rights)`: one wrong predicate satisfied both sides. The harness
 now states the subset relation as `x & !y == 0`, which the implementation does not get

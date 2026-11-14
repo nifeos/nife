@@ -3,8 +3,8 @@ Falsifies `capability::a_deleted_capability_stays_deleted`.
 The defect: `delete` reports success without clearing the slot: it asks `slot`
 whether anything is there instead of calling `empty`. It still refuses an
 empty or out-of-range slot, so it looks like a delete from the outside and every
-error-path test still passes; what it no longer does is consume. DECISIONS §12's
-one-shot Reply is exactly this operation, so with this defect a server's Reply
+error-path test still passes; what it no longer does is consume. A one-shot
+reply capability is exactly this operation, so with this defect a server's Reply
 capability survives its own invocation and a caller can be answered twice, or a
 stale Reply can be replayed against a rendezvous whose caller has gone.
 
@@ -13,30 +13,16 @@ harness's three assertions, on any table state whose named slot was occupied. Th
 two `get`/`delete` lines below it state the same break through the accessors and
 are not reached, because the first panics.
 
-**Re-cut 2026-09-02 for milestone 231**, which added `used` and `peak` beside the
-slots and moved the line this applies against. The defect is unchanged and still
-reachable: `shrank` is untouched, so this version also drives the occupancy count
-one below the truth, which is a second symptom of the same single edit rather than
-a different defect. That second symptom is not what this harness reads, and it is
-deliberately left to `the_count_is_the_slots`, whose whole subject it is.
-
-**Re-cut 2026-09-27 (UTC) for milestone 126 (the `procps` package)**, which put the
-slots behind a private `storage` module whose only two writers are `fill` and
-`empty`, and gave the table a free-slot word beside `used` and `peak`. The defect is unchanged
-and still reachable; because it now bypasses `empty` entirely, the free-slot word and
-the count both stay put, which is consistent with the array this defect leaves
-occupied, so only this harness sees it.
-
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index 7c197bdf4..4a938c53b 100644
+index a5b8f24b3..5a28e3cf5 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -491,7 +491,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
- 
+@@ -483,7 +483,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
      /// Drop a capability. The object may still exist; **we simply can no longer name it.**
      pub fn delete(&mut self, slot: u64) -> Result<(), Error> {
--        self.empty(slot as usize).ok_or(Error::NoSuchSlot)?;
-+        self.slot(slot as usize).ok_or(Error::NoSuchSlot)?;
+         let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
+-        self.empty(slot).ok_or(Error::NoSuchSlot)?;
++        self.slot(slot).ok_or(Error::NoSuchSlot)?;
          Ok(())
      }
  

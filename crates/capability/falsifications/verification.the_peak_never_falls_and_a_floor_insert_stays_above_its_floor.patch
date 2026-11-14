@@ -1,0 +1,22 @@
+Falsifies `capability::the_peak_never_falls_and_a_floor_insert_stays_above_its_floor`.
+
+The defect: `first_free_from` shifts its mask the wrong way, so the lowest free slot "at or above
+the floor" is the lowest free slot below the end of the floor's complement, and a floor insert can
+land under its floor.
+
+Expected to fail: `assert!(slot >= floor, "a floor insert landed below its floor")`, on any table
+with a free slot below a nonzero floor.
+
+diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+index a5b8f24b3..af7d3fd74 100644
+--- a/crates/capability/src/lib.rs
++++ b/crates/capability/src/lib.rs
+@@ -302,7 +302,7 @@ mod storage {
+             let above = if floor >= 64 {
+                 0
+             } else {
+-                self.free & (u64::MAX << floor)
++                self.free & (u64::MAX >> floor)
+             };
+             (above != 0).then(|| above.trailing_zeros() as usize)
+         }
