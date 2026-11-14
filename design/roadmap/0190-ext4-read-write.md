@@ -13,12 +13,12 @@ calef's ext4 drives hold the family's borg repositories. They were formatted by 
 `mke2fs` defaults, `metadata_csum` among them, and they will not be reformatted. So nife reads and
 writes ext4 as Linux wrote it. The requirement is standing and has no deadline.
 
-The implementation is the Rust crate `rsext4`, brought up to the bar of §46 (thin primitives or
-whole subsystems; we write everything in between) by contributing to it upstream, and tested here
-against libext2fs and against Linux itself under §136 (a mature foreign implementation earns its
-place as an oracle, not as a dependency). This milestone is milestone 140's (mount a drive this
-system did not create) ext4 row. It does not change 140's order for FAT32 or ext2, and it does not
-touch RedoxFS.
+The implementation is the Rust crate `rsext4`. We bring it up to the bar of §46 (thin primitives
+or whole subsystems; we write everything in between) by contributing to it upstream. We test it here
+against libext2fs and against Linux itself, under §136 (a mature foreign implementation earns its
+place as an oracle, not as a dependency). This is the ext4 row of milestone 140 (mount a drive this
+system did not create). It does not change 140's order for FAT32 or ext2, and it does not touch
+RedoxFS.
 
 Reuse: `rsext4` 0.9.2 on crates.io (Apache-2.0, `no_std` with `alloc`, depending on `bitflags` and
 `thiserror`), developed in `rcore-os/tgoskits` under `fs/rsext4`. The `Starry-OS/rsext4`
@@ -39,27 +39,27 @@ around it.
 Measured 2026-11-14 (UTC) on a Linux host with e2fsprogs 1.47, against `rsext4` 0.9.2 through its
 public API:
 
-- **Read.** On a 640 MiB image `mke2fs` made with its defaults (3,025 entries, an extent tree of
+- Read. On a 640 MiB image `mke2fs` made with its defaults (3,025 entries, an extent tree of
   depth 2, an htree directory), every file read back byte-identical to what Linux wrote. Images
   with 1 KiB and 2 KiB blocks failed to mount with an `Io` error. The test device reported
   4,096-byte sectors, which may be the cause; the crate's own round-trip tests at those block sizes
   pass.
-- **Write, bug 1.** When a directory grows past its inline extents into a level-1 extent leaf, the
+- Write, bug 1. When a directory grows past its inline extents into a level-1 extent leaf, the
   directory's `i_blocks` comes out 16 sectors short. It reproduces at every size tried from 300 to
   3,000 entries. `e2fsck -fn` exits 4 ("i_blocks is 488, should be 504"). The directory's contents
   are correct.
-- **Write, bug 2.** `truncate_inode` on a file whose extent tree has depth 2 returns
+- Write, bug 2. `truncate_inode` on a file whose extent tree has depth 2 returns
   `Corrupted { op: "extent:empty_index" }` in 2 of 8 seeds. It is not atomic: when it fails, the
   bytes from the new end of file to the end of that block are already zeroed.
-- **Journal.** It writes descriptor, revoke and commit blocks with journal checksum v3, and Linux's
+- Journal. It writes descriptor, revoke and commit blocks with journal checksum v3, and Linux's
   `e2fsck` replays them. Across two images, 158 power-cut points all recovered to a clean volume.
   It commits only on `sync()` or unmount. In 2 of 79 cuts on one image the `needs_recovery` flag was
   cleared before the journal's start was reset; both recovered, and the order is still wrong.
-- **`unsafe`.** Eleven uses. Nine are the hardware CRC32C paths for aarch64 and x86_64. Two are in
+- `unsafe`. Eleven uses. Nine are the hardware CRC32C paths for aarch64 and x86_64. Two are in
   `blockgroup_description/table.rs`, which casts a `&[u8]` to `*const Ext4GroupDesc` and to
   `*mut Ext4GroupDesc` with no `SAFETY` comment and no proof of alignment.
-- **Fuzzing and proofs.** The crate has no fuzz targets and no Kani harnesses.
-- **Targets.** It builds unchanged for nife's three targets, measured by milestone 997 (ext4
+- Fuzzing and proofs. The crate has no fuzz targets and no Kani harnesses.
+- Targets. It builds unchanged for nife's three targets, measured by milestone 997 (ext4
   through rsext4, under milestone 37's crash injector). Nothing has run it under nife.
 
 Not yet tested: a mount by the kernel rather than `e2fsck`, writes reordered between flushes,
@@ -84,25 +84,25 @@ Every contribution goes to `rcore-os/tgoskits`, against `fs/rsext4`. That reposi
 own `AGENTS.md` and `CLAUDE.md`, so its maintainers work with agents themselves. Its policy on
 agent-written submissions is read, and followed, before the first one.
 
-1. **The `i_blocks` fix**, with its reproducer as a test in the crate: grow a directory to 300
+1. The `i_blocks` fix, with its reproducer as a test in the crate: grow a directory to 300
    entries, unmount, and require `e2fsck -fn` to exit 0.
-2. **The truncate fix**, with its reproducer: the failing seeds as fixed inputs, a check that
+2. The truncate fix, with its reproducer: the failing seeds as fixed inputs, a check that
    truncation of a depth-2 tree succeeds, and a check that a failed truncation leaves the file's
    bytes as they were. Atomicity is the larger half of this fix.
-3. **The recovery-flag order.** The journal's start is reset before `needs_recovery` is cleared,
+3. The recovery-flag order. The journal's start is reset before `needs_recovery` is cleared,
    with the power-cut point that showed it as a test.
-4. **Fuzz targets**: mount and walk an arbitrary image; parse a superblock, a group descriptor
+4. Fuzz targets: mount and walk an arbitrary image; parse a superblock, a group descriptor
    table, an extent tree, a directory block and an htree index; and replay an arbitrary journal.
    Each target runs under `cargo fuzz` with a seed corpus of small images `mke2fs` made.
-5. **The `unsafe` review.** A `SAFETY` comment on each of the nine CRC32C uses, stating the CPU
+5. The `unsafe` review. A `SAFETY` comment on each of the nine CRC32C uses, stating the CPU
    feature the call needs and where it is detected. For the two group-descriptor casts, a sound
    replacement: decode each field from the byte slice with `from_le_bytes`, or use a
    zero-copy derive that checks size and alignment, so the casts and their `unsafe` go. The
    replacement keeps the 32-byte and 64-byte descriptor sizes and is tested against both.
-6. **Kani harnesses that match ours.** The claims nife proves of its own on-disk parsers, written
-   for `rsext4`'s: decoding a superblock, a group descriptor, an extent header or entry, or a
-   directory entry reads only inside the slice it was given, for every input up to a stated bound;
-   a directory block walk ends and stays inside its block; the software CRC32C equals the bitwise
+6. Kani harnesses that match ours. The claims nife proves of its own on-disk parsers, written
+   for `rsext4`'s. Decoding a superblock, a group descriptor, an extent header or entry, or a
+   directory entry reads only inside the slice it was given, for every input up to a stated bound.
+   A directory block walk ends and stays inside its block. The software CRC32C equals the bitwise
    definition. Harnesses that upstream does not want are kept here, against the crate's public
    API.
 
@@ -122,36 +122,36 @@ the oracle that every phase is judged by.
 
 | phase | what | judged by |
 |---|---|---|
-| **1** | **Read-only**: one confined `ext4_server` holding one block-device capability, with `rsext4` mounted read-only | the oracle, read half, over the corpus |
-| **2** | **The differential oracle**: `rsext4` against libext2fs and against Linux, in `tools/`, on the host | itself, in CI, before any write is trusted |
-| **3** | **Write**, `metadata_csum` on every write | `e2fsck -fn` exits 0 after each operation; Linux reads back what nife wrote |
-| **4** | **jbd2**: `rsext4`'s journal, which Linux replays | power cut, then Linux replay, then `e2fsck -fn` |
+| 1 | Read-only: one confined `ext4_server` holding one block-device capability, with `rsext4` mounted read-only | the oracle, read half, over the corpus |
+| 2 | The differential oracle: `rsext4` against libext2fs and against Linux, in `tools/`, on the host | itself, in CI, before any write is trusted |
+| 3 | Write, `metadata_csum` on every write | `e2fsck -fn` exits 0 after each operation; Linux reads back what nife wrote |
+| 4 | jbd2: `rsext4`'s journal, which Linux replays | power cut, then Linux replay, then `e2fsck -fn` |
 
-**The oracle.** A host harness in `tools/`, its own workspace, `std`, never in the shipping graph,
+The oracle. A host harness in `tools/`, its own workspace, `std`, never in the shipping graph,
 the pattern `tools/redoxfs_host` set. For reads, it extracts every file and directory listing
 through `rsext4` and through `debugfs`, and requires them equal. For writes, it applies an operation
 sequence through `rsext4`, then judges the image with `e2fsck -fn` and reads it back through
 `debugfs`. Bugs 1 and 2 are its first two fixed cases.
 
 The corpus is images `mke2fs` makes with its defaults and with 1 KiB, 2 KiB and 4 KiB blocks, on
-devices with 512-byte and 4,096-byte sectors, plus extent depths 0 to 2, htree directories,
+devices with 512-byte and 4,096-byte sectors. It adds extent depths 0 to 2, htree directories,
 `orphan_file`, and a volume over 1 GiB. calef's own drives join it read-only, after a `dumpe2fs -h`
 on each shows the feature set phase 1 must support. Their borg repositories verify themselves, so
 `borg check` after a round trip is an end-to-end result no synthetic image gives.
 
-**Write reordering.** A block device between `rsext4` and the image records every write and every
+Write reordering. A block device between `rsext4` and the image records every write and every
 flush. For each interval between two flushes, the sweep persists the interval's writes in other
 orders and cuts power after each prefix of each order, then lets Linux replay and runs
 `e2fsck -fn`. A device may reorder writes between barriers, so a volume that recovers only from
 the order it was written in is wrong.
 
-**Power cuts and lying devices.** Milestone 997 puts `rsext4` behind milestone 37's (Prove
-RedoxFS's crash consistency) injector, with power cuts, torn writes and dropped writes. Phase 4
+Power cuts and lying devices. Milestone 997 puts `rsext4` behind the injector of milestone 37
+(Prove RedoxFS's crash consistency), with power cuts, torn writes and dropped writes. Phase 4
 reuses that glue and judges with Linux replay. It adds what 997 does not: a mount on a real Linux
 kernel in a virtual machine as well as `e2fsck` replay.
 
-**Hostile images.** nife's fuzz rotation runs the upstream targets over this corpus, under
-milestone 42's (supply chain and fuzzing in CI) runner, and also drives `ext4_server` over the
+Hostile images. nife's fuzz rotation runs the upstream targets over this corpus, under the
+runner of milestone 42 (supply chain and fuzzing in CI), and also drives `ext4_server` over the
 block-device seam with mutated images. A drive nife did not write is untrusted input, and the
 server holding it is confined so that a parser bug costs one server.
 
