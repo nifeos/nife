@@ -878,6 +878,85 @@ mod tests {
         });
     }
 
+    /// How long [`finishes_promptly`] waits. A publish or a read takes microseconds; this leaves a
+    /// loaded machine room and stays under the mutation tool's own timeout.
+    const WATCHDOG: std::time::Duration = std::time::Duration::from_secs(5);
+
+    /// A page on a frame that lives for the rest of the test process, so threads can share it.
+    fn leaked_page() -> ClockPage {
+        let frame: &'static [AtomicU64; WORDS] =
+            Box::leak(Box::new([const { AtomicU64::new(0) }; WORDS]));
+        // SAFETY: the frame is leaked, so it is live, sized and aligned for the page for the rest of
+        // the process, which outlives every copy of the page.
+        unsafe { ClockPage::new(frame.as_ptr() as u64) }
+    }
+
+    /// Run `f` on its own thread and end the whole test process if it has not returned within
+    /// [`WATCHDOG`]. The failure these tests look for is a publish or a read that spins for ever,
+    /// and a hung test would only hold the suite open until the mutation tool's timeout, which
+    /// reports a hang rather than a failure. Exiting turns the spin into a failing run, and it
+    /// ends the other tests that spin with it.
+    fn finishes_promptly<T: Send + 'static>(
+        what: &str,
+        f: impl FnOnce() -> T + Send + 'static,
+    ) -> T {
+        let (done, finished) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = done.send(f());
+        });
+        match finished.recv_timeout(WATCHDOG) {
+            Ok(value) => value,
+            Err(_) => {
+                std::eprintln!("{what} did not finish within {WATCHDOG:?}; ending the test run");
+                std::process::exit(1)
+            }
+        }
+    }
+
+    /// With no other writer, a publish takes and gives back the claim, and a read returns the
+    /// last publish on its first look.
+    #[test]
+    fn a_publish_and_a_read_finish_with_no_other_writer() {
+        let page = leaked_page();
+        let (first, second) = finishes_promptly("two publishes and a read", move || {
+            page.initialize();
+            page.publish(state::RTC, 7);
+            page.publish(state::SYNCED, 11);
+            (page.read_once(), page.read())
+        });
+        let want = Reading {
+            state: state::SYNCED,
+            offset_nanos: 11,
+            generation: 2,
+        };
+        assert_eq!(first, Some(want), "a look with no publish running is whole");
+        assert_eq!(second, want);
+    }
+
+    /// A publish waits while another writer holds the claim, and finishes once it is given back.
+    #[test]
+    fn a_publish_waits_for_a_claim_another_writer_holds() {
+        let page = leaked_page();
+        finishes_promptly("the first publish", move || {
+            page.initialize();
+            page.publish(state::RTC, 7);
+        });
+        assert!(page.try_claim(), "the first publish gave the claim back");
+        let waiting = std::thread::spawn(move || page.publish(state::SYNCED, 11));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        assert_eq!(
+            page.read().generation,
+            1,
+            "a publish must not run while another writer holds the claim"
+        );
+        page.release();
+        assert_eq!(
+            finishes_promptly("the waiting publish", move || waiting.join().unwrap()),
+            2
+        );
+        assert_eq!(page.read().generation, 2);
+    }
+
     /// The frozen layout, word by word, as literals: a publish writes the copy the new count
     /// names and leaves the other copy holding the publish before it.
     #[test]
