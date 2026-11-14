@@ -6,7 +6,8 @@
 §204 (how userspace asks where a thread runs) decided the mechanism: observing another thread is a
 rendezvous selector, and a thread observing itself reads a per-thread page shaped like Linux's
 `rseq(2)` ([the decision](../design/decisions/0204-how-userspace-asks-where-a-thread-runs.md)).
-This note carries the crate's design; its doc comments link here.
+This note carries the crate's design; its doc comments link here. What the kernel's tests prove
+about the page is in [the current-CPU page and its tests](scheduler/the-current-cpu-page.md).
 
 ## Why a page, and why one crate
 
