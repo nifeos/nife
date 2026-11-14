@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 248, 252
@@ -169,7 +169,19 @@ decision; the recommendation comes first.
 
 The checks are in [the appendix](1086-domain-name-resolution-contract-outside-review/done-when.md).
 
-## BUGS
+## Follow-on
+
+- **Done.** Item 6, the reply to a control `CALL` (decision 2): `wire::refusal` numbers each
+  `Refusal`, the resolver answers with `Control::reply`, and the spawner `CALL`s the last piece of
+  each grant and treats a refusal as no grant. A system test reads `BadZone` and `NoSuchGrant`.
+- **Done.** Item 5, the interface identity (decision 3): the crate's docs state `INTERFACE_ID` 11
+  and `VERSION` 1 as frozen.
+- **Outstanding.** Every other item of this review: items 1 to 3 before the move, items 4 and 7 to
+  11 before the tag, and items 12 to 14 for later. Decision 1, the names, waits on its ruling.
+- **Outstanding.** A runtime log channel for the spawner. The spawner reads the reason for a
+  refused grant, but nothing lets it write a line once the shell runs, so a lane that gives it one
+  also prints that reason.
+
 
 - This block has no review package to defer to. If a package follows it, that package's rulings win where they differ, and this block then changes to say so.
 - The dry run ran without its build half and against the template at `v7` from a local checkout.
