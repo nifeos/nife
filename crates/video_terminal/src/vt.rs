@@ -105,6 +105,16 @@ impl Vt {
     /// cannot report. **`const`, so a terminal can live in `.bss`**; the clamps are spelled out
     /// because `Ord::clamp` is not `const`. A runtime geometry constructs once, typically at
     /// `(1, 1)`, and calls [`Vt::reset_to`] (see the struct doc).
+    // The return slot alone is a whole `Vt`, so any function that returns one by value is over
+    // clippy's frame threshold, however it builds the value. This one exists to be evaluated at
+    // compile time into a `static`, where it has no frame at all; a runtime call is a host tool's
+    // or a test's, on a host thread's stack, and `script/stack-frame-check` holds the kernel's
+    // frames. The heap is not an alternative: the crate is `no_std` without `alloc`, and its users
+    // keep the terminal in `.bss`.
+    #[allow(
+        clippy::large_unopt_stack_frames,
+        reason = "returns a Vt by value so that it can be const-evaluated into a static"
+    )]
     pub const fn new(cols: u32, rows: u32) -> Vt {
         let cols = Self::clamp_cols(cols);
         let rows = Self::clamp_rows(rows, cols);
