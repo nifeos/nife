@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -49,6 +49,8 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the release (a public name, a published behavior, a
 wire layout, a dependency). Everything else is two-way and the maintainer decides it. Line numbers
 are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
+
+The ledger of what landed and what is left is in [the appendix](1087-domain-name-system-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -224,6 +226,12 @@ template's gate reports zero findings on the crate.
 ## Done when
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 and 2 and every item the ledger leaves, which wait for #3559 to merge
+  or for an architect. Checked against `crates/domain_name_system/src/lib.rs` on `main`: the label
+  and header lengths keep their names and the crate has no README.
 
 ## BUGS
 
