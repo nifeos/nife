@@ -11,7 +11,7 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
   explicit license, explicit lints). Its dependency on `domain_name_system` is a pinned `git`
   dependency. The README carries `EXAMPLES` and `BUGS`, the three-party sequence, the page layout,
   the reply words and the two tiers of zone spelling.
-- The architect has ruled decisions 1 to 3. The names, the control reply word and the identity apply
+- The architect has ruled decisions 2 and 3, and decision 1 is decided. The names, the control reply word and the identity apply
   in nife, in the std farm's copy and in `domain_name_system`. The template's `spelled_out.py`,
   `register_names.py`, `unit_symbols.py` and `question_shape.py` report 0 over the staged tree.
 - `Outcome::from_word` refuses a count over the limit and an undefined status, with tests. The
