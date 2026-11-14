@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -116,41 +116,32 @@ The P1 items are in [the appendix](1100-memory-region-heap-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's.
+Two one-way doors. Everything else above is the maintainer's. Decision A is ruled and in force.
+Decision B is open.
 
-### A. The seven public names, and the shape of `commit_all`
+### A. The seven public names, and the shape of `commit_all` (ruled 2026-11-14 UTC)
 
-Background. A crate that leaves carries no `Name:` blocks, so the architect must ratify every name a
-stranger meets before the move commit. Five of the six public items have no block. The crate name
-and `initialize` are provisional. The template's `question_shape` helper refuses `commit_all`
-because it returns `bool` through a shared reference, and the template has no baseline. The naming
-rules exempt "a function that acts and reports whether it worked", which `commit_all` is, but the
-helper cannot see that through `&self` (its header calls this a known false stop), and the kept form
-it offers is for names another project owns.
+The rule in force, option A (block 1100 decision A):
 
-Recommendation first. Ratify `memory_region_heap`, `MemoryRegionHeap`, `initialize`,
-`committed_bytes` and `new` as they stand. Rename `DEFAULT_BASE` to `DEFAULT_BASE_VIRTUAL_ADDRESS`
-under the rule that an address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location. Keep
-the name `commit_all` and change what it returns: `Result<(), Short>` where `Short` carries the
-bytes that the heap could not commit. The helper does not judge a `Result`, the shape honors the
-rule's exemption, and the one caller (`components/src/swish/heap.rs`) discards the value today, so
-no call site changes meaning. Item 13's two accessors, `maximum_bytes` and `base_virtual_address`,
-ride in the same table.
+- `memory_region_heap`, `MemoryRegionHeap`, `initialize`, `committed_bytes` and `new` are ratified
+  as they stand. Each public item carries a `Name:` block that reads ratified.
+- `DEFAULT_BASE` is `DEFAULT_BASE_VIRTUAL_ADDRESS`, under the rule that an address is
+  `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location.
+- `commit_all` keeps its name and returns `Result<(), Short>`, where `Short` carries the bytes the
+  heap could not commit. `Short` is provisional. The one caller, the shell's `initialize_heap`,
+  discards the value with `let _ =`.
+- `maximum_bytes` and `base_virtual_address` are the two accessors of item 13. Both are
+  provisional.
+- The local binding `va` is `virtual_address` (item 4).
 
-Prior art. `Vec::try_reserve` returns `Result<(), TryReserveError>` for exactly this shape: act, and
-say how it failed. `std_runtime_contract::HEAP_BASE` is the same value as `DEFAULT_BASE` under
-another spelling. The move is the moment to make the two agree or to make one defer to the other.
-`address_space_map::HEAP.start` is where both come from.
+Prior art. `Vec::try_reserve` returns `Result<(), TryReserveError>` for exactly this shape: act,
+and say how it failed. `std_runtime_contract::HEAP_BASE` is the same value as the heap's default
+base under another spelling; the move is the moment to make the two agree or to make one defer to
+the other. `address_space_map::HEAP.start` is where both come from.
 
-Concrete example. After the ruling, swish's `initialize_heap` reads
-`HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-swish::HEAP_MAXIMUM_BYTES); let _ = HEAP.commit_all();` and the template's name checks pass at a
-ceiling of zero.
+### B. Which `talc` the crate builds against outside nife (open)
 
-Not taken. `commit_all` returning the committed byte count (a `u64` the caller must compare against
-a cap it has to know), and `is_fully_committed` (a question, but the function acts).
-
-### B. Which `talc` the crate builds against outside nife
+Not ruled. Nothing in this block decides it.
 
 Background. nife builds `talc` from `vendor/talc`, the crates.io 5.1.1 package plus upstream pull
 request 57, through `[patch.crates-io]` in each workspace root. A `[patch]` table does not travel
@@ -187,6 +178,14 @@ fork request, which this block does not make.
 Not taken. A git pin on upstream at a revision carrying the fix (there is none; the pull request has
 not merged). A fork under `nifeos` (refused in the step 9 appendix as needing its own approval). A
 `[patch]` instruction in the README for consumers (an instruction a build cannot check).
+
+## Follow-on
+
+The architect's ruling on decision A is applied: the names, the rename, the `Result` return, the two
+accessors and the local binding. What remains is open. Decision B (which `talc`) is unruled. Items 2
+and 3 (the dependency and the manifest), item 4's test half, the P1 items before the tag and the P2
+items are not started. The `script/crate-standalone` step 0 still needs the move lane to strip the
+blocks, and `Short`, `maximum_bytes` and `base_virtual_address` are provisional until a name review.
 
 ## Done when
 
