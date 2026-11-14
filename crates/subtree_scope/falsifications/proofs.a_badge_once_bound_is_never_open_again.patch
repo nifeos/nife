@@ -6,15 +6,14 @@ whole endpoint back.
 Expected to fail: the assertion that a badge once bound is never open again.
 
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
-index f5ee46265..f488c8292 100644
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -274,7 +274,7 @@ impl<const B: usize> Bindings<B> {
-         let i = Self::index(badge);
-         match self.state[i] {
-             Binding::Bound { root } if i != 0 => {
--                self.state[i] = Binding::Revoked;
-+                self.state[i] = Binding::Open;
-                 Ok(root)
-             }
-             _ => Err(Refusal::Refused),
+@@ -348,7 +348,7 @@
+             Binding::SyncOnly => None,
+             _ => return Err(Refusal::Refused),
+         };
+-        self.state[i] = Binding::Revoked;
++        self.state[i] = Binding::Open;
+         Ok(held)
+     }
+ }
