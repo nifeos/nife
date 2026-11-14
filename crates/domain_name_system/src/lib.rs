@@ -565,6 +565,12 @@ pub enum Reject {
     NoAddress,
 }
 
+/// A TTL as a receiver believes it: RFC 2181 section 8 says one with its most significant bit set
+/// is treated as zero.
+fn believable_ttl(ttl: u32) -> u32 {
+    if ttl & 0x8000_0000 != 0 { 0 } else { ttl }
+}
+
 /// The addresses a reply gave for our name, after every check passed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Answer {
@@ -580,7 +586,9 @@ impl Answer {
         &self.addresses[..self.count as usize]
     }
 
-    /// The smallest TTL along the chain: how long the whole answer may be believed.
+    /// The smallest TTL along the chain: how long the whole answer may be believed, in seconds.
+    /// A record whose TTL has its most significant bit set counts as zero, as RFC 2181 section 8
+    /// directs, so an answer carrying one is good for no time.
     pub fn ttl(&self) -> u32 {
         self.ttl
     }
@@ -747,7 +755,7 @@ impl Query {
                         return Err(Reject::ChainTooLong);
                     }
                     links += 1;
-                    ttl = ttl.min(record.ttl);
+                    ttl = ttl.min(believable_ttl(record.ttl));
                     owner = cname_target(reply, &record).map_err(Reject::Malformed)?;
                     continue 'chain;
                 }
@@ -767,7 +775,7 @@ impl Query {
             if record.class != CLASS_IN || record.rtype != record_type::A || record.name != owner {
                 continue;
             }
-            answer.ttl = answer.ttl.min(record.ttl);
+            answer.ttl = answer.ttl.min(believable_ttl(record.ttl));
             if let (Some(slot), Ok(address)) = (
                 answer.addresses.get_mut(answer.count as usize),
                 <[u8; 4]>::try_from(record.rdata),
