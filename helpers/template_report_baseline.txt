@@ -218,10 +218,10 @@ page_frames register_names 6
 paging abbreviations 172
 paging prose_acronyms 57
 paging register_names 22
-pci abbreviations 134
-pci prose_acronyms 27
-pci readme_acronyms 3
-pci register_names 9
+pci_configuration_space abbreviations 134
+pci_configuration_space prose_acronyms 27
+pci_configuration_space readme_acronyms 3
+pci_configuration_space register_names 9
 periodic_deadline abbreviations 2
 periodic_deadline prose_acronyms 2
 pgrep abbreviations 9

@@ -114,7 +114,7 @@ definition of `Symbol`.
 - **The precision is poor, and for a reason this proposal's escape does not cover.** The sample
   mixes true stale pointers (`capability::CSpace`, which §113 renamed) with kernel modules that
   share a crate's name: `pci::find_block_device` and `virtio::register` live in
-  `kernel/src/pci.rs` and `kernel/src/virtio.rs`, not in `crates/pci` or `crates/virtio`.
+  `kernel/src/pci.rs` and `kernel/src/virtio.rs`, not in `crates/pci_configuration_space` or `crates/virtio`.
 
 So the symbol check wants two things the path check does not: resolve against both namespaces
 (`crates/<c>/src` and `kernel/src/<c>.rs` or `kernel/src/<c>/`), then remeasure before deciding

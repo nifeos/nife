@@ -989,7 +989,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 179	180	context	at-creation	2026-08-26	2026-08-26	Text selection in the terminal (drag to select, the mechanism M-180's clipboard would need a
 179	142	context	at-creation	2026-08-26	2026-08-26	RECLASSIFIED-NEGATION: interaction. Independent of M-142's type-and-scanout work: a pointer needs no font decision
 138	37	context	later	2026-08-22	2026-08-18	- **`CachedDisk`'s 64 slots were sized against a small test fixture and M-37's crash-test
-179	29	context	UNKNOWN	83	2026-08-26	PCI device id as M-29's keyboard (`crates/pci::VIRTIO_INPUT_MODERN`), so device discovery
+179	29	context	UNKNOWN	83	2026-08-26	PCI device id as M-29's keyboard (`crates/pci_configuration_space::VIRTIO_INPUT_MODERN`), so device discovery
 180	179	context	at-creation	2026-08-26	2026-08-26	named limitation the way mouse support is (see M-179). This file is that gap's first record.
 180	179	context	at-creation	2026-08-26	2026-08-26	**Gate: DECISION.** Not a driver or a wiring question like M-179's: a clipboard is shared,
 138	37	context	later	2026-09-03	2026-08-18	  sized against a small test fixture and M-37's crash-test heap budget, not against a real
