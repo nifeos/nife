@@ -186,10 +186,10 @@ fn every_number_a_refusal_names_is_its_constants_value() {
         );
     };
 
-    let not_nameable = Refusal::FileNotNameable.message();
-    says(not_nameable, crate::MAXIMUM_FILE_NAME);
-    says(not_nameable, crate::nav::MAXIMUM_DIRECTORY_NAME);
-    says(not_nameable, crate::nav::MAXIMUM_DEPTH);
+    let refused_file_name = Refusal::FileNotNameable.message();
+    says(refused_file_name, crate::MAXIMUM_FILE_NAME);
+    says(refused_file_name, crate::nav::MAXIMUM_DIRECTORY_NAME);
+    says(refused_file_name, crate::nav::MAXIMUM_DEPTH);
     let too_many = Refusal::TooManyNames.message();
     says(too_many, crate::expand::MAXIMUM_NAMES);
     says(too_many, crate::expand::NAME_BYTES);

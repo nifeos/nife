@@ -91,16 +91,16 @@ fn every_shipped_manifest_is_well_formed() {
 /// the option makes it so.
 #[test]
 fn a_widening_option_must_be_declared() {
-    let rm = Program::Rm.manifest();
-    assert!(rm.is_well_formed());
+    let remove_manifest = Program::Rm.manifest();
+    assert!(remove_manifest.is_well_formed());
     let undeclared = Manifest {
         short_options: ShortOptions::new(b"f"),
-        ..rm
+        ..remove_manifest
     };
     assert!(!undeclared.is_well_formed());
     let declared = Manifest {
         short_options: ShortOptions::new(b"fr"),
-        ..rm
+        ..remove_manifest
     };
     assert!(declared.is_well_formed());
 }
