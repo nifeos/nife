@@ -97,7 +97,7 @@ the reader's copy.
 |---|---|---|---|
 | Linux seqcount latch, `include/linux/seqlock.h` | the caller | two, both written per modification | the count changed |
 | Linux vDSO time, `include/vdso/helpers.h` | the kernel's timekeeping update (not in that file) | one | the count is odd (it spins), or changed |
-| FreeBSD `timehands`, `sys/kern/kern_tc.c` | a spin mutex | a ring of up to sixteen | its record's generation is zero or changed |
+| FreeBSD `timehands`, `sys/kern/kern_tc.c` | a spin mutex | a ring, two by default and up to sixteen | its record's generation is zero or changed |
 | this page | the claim word, on the page | two, one written per publish | the count changed |
 
 The Linux and FreeBSD rows were read in those files, except where the vDSO row says otherwise. Linux's latch writes both copies per

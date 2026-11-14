@@ -240,8 +240,8 @@ pub struct Reading {
 ///
 /// This is Linux's seqcount latch (`raw_write_seqcount_latch` in `include/linux/seqlock.h`)
 /// with one copy written per publish instead of both, and FreeBSD's `timehands` ring
-/// (`sys/kern/kern_tc.c`) cut to two records with the generation kept in one word rather than in
-/// each record. The orderings, and what each pairs with, are at the stores and loads below and in
+/// (`sys/kern/kern_tc.c`) at its default of two records, with the generation kept in one word
+/// rather than in each record. The orderings, and what each pairs with, are at the stores and loads below and in
 /// notes/clock.md.
 ///
 /// # BUGS
