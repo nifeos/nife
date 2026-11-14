@@ -14,7 +14,7 @@
 //! | [`IMAGE`] | `0x6000_0000` | `0x7F00_0000` | 496 MiB | the program's code and data |
 //! | [`STACK`] | `0x7F00_0000` | `0x7FFF_0000` | 16 MiB less 64 KiB | the stack, growing down; its lowest page is never mapped |
 //! | [`PROCESS_PAGES`] | `0x7FFF_0000` | `0x8000_0000` | 64 KiB | pages the kernel maps into every process unasked |
-//!
+
 //! # Where a new page goes
 //!
 //! Ask in order, and stop at the first yes.
@@ -32,7 +32,7 @@
 //! Then write it with the band's function, so the compiler checks it: [`pair_page`],
 //! [`runtime_window`] and [`service_window`] return their argument unchanged and stop the build if
 //! it is outside the band or not page aligned.
-//!
+
 //! # Why these numbers
 //!
 //! - **The image band ends at 2 GiB** ([`CODE_MODEL_CEILING`]) because `x86_64` builds with
@@ -45,7 +45,7 @@
 //!   ([`MAXIMUM_STACK_PAGES`]).
 //! - **The process pages sit beside the stack**, so they share its page tables: the stack's top
 //!   page and the current-CPU page lie in one 2 MiB window.
-//!
+
 //! # BUGS
 //!
 //! - Pair pages are checked for membership, not for collisions within one process; a program with

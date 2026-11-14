@@ -26,9 +26,9 @@ An appendix to [the milestone](../1085-device-tree-blob-outside-review.md).
 
 ## The ledger
 
-What this lane did with the items, kept here because the block itself and every source file the
-items touch (`crates/device_tree_blob/src/lib.rs` and its hostile-input tests) are changed by an
-open pull request (#3559), and a second edit to them would collide.
+This lane did the following with the items. The ledger sits here because an open pull request
+(#3559) changes the block itself and every source file the items touch, which are
+`crates/device_tree_blob/src/lib.rs` and its hostile-input tests, so a second edit would collide.
 
 | item | state |
 |---|---|

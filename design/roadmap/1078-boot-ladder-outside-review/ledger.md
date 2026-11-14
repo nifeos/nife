@@ -12,5 +12,5 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
 | 7 | done for the three literals that remained, now `boot_ladder::PROMPT` in `xtask/src/swish_check`; the `script/lint` grep is left because a new lint section is a reviewed interface |
 | 8, 10 | left: decisions 2 and 3 |
 | 9 | done: the crate doc states the matching rule and that the shell banner matches whole; decision 1 keeps the period out of `PROMPT` |
-| 11, 12 | left: item 11 is the README's; item 12 waits on milestone 972 |
+| 11, 12 | left: item 11 is the README's; item 12 waits on milestone 972 (the boot stick's shared names are code) |
 | 13 | done: the doc says the banner's tail is free text and a reader takes the architecture from `MACHINE`'s tail |

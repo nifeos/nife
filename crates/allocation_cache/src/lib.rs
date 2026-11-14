@@ -6,7 +6,7 @@
 //! [`class_layout`]. A [`Cache`] holds a stack of freed blocks per class. Blocks of one class are
 //! fungible: the heap sees the same layout at both ends, so any cached block can answer any
 //! request of its class.
-//!
+
 //! # What the owner promises
 //!
 //! 1. **One owner at a time.** A [`Cache`] is neither `Send` nor `Sync`; its owner keeps it where
@@ -25,7 +25,7 @@
 //! block to the shorter request.
 //!
 //! An all-zero [`Cache`] is empty, so one may live in memory a runtime zeroes.
-//!
+
 //! # Examples
 //!
 //! ```
@@ -41,7 +41,7 @@
 //! assert!(unsafe { cache.put(c, p) }.is_ok());
 //! assert_eq!((cache.take(c), cache.take(c)), (Some(p), None)); // then the caller goes to the heap
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - A cached block cannot coalesce until it is spilled: up to [`MOST_CACHED_BYTES`] (34,816) per

@@ -106,7 +106,7 @@ ceiling` into an `AtomicU32` so the pair is read from one instant. It lets the k
 see that the mark moved without walking 256 thread tables under the scheduler lock. `fetch_max`
 suffices because the peak sits in the high half. A `static` cannot be keyed by a const generic, so
 `PEAK` does not say which table set it; the kernel has exactly one instantiation, and
-the scheduler (`kernel/src/sched/`) scans for the owning thread once, only when it is about to print.
+the scheduler (`kernel/src/sched/`) scans for the owning thread once. It scans only when it is about to print.
 
 ## The proofs
 

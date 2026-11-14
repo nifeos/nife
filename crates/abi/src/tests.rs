@@ -335,39 +335,65 @@ fn every_public_number_is_pinned() {
     use std::string::String;
     use std::vec::Vec;
 
-    const SOURCES: &[(&str, &str)] = &[
-        ("", include_str!("lib.rs")),
-        ("address_space", include_str!("address_space.rs")),
-        ("console", include_str!("console.rs")),
-        ("cycle_counter", include_str!("cycle_counter.rs")),
-        ("fault", include_str!("fault.rs")),
-        ("futex", include_str!("futex.rs")),
-        ("interrupt", include_str!("interrupt.rs")),
-        ("memory_region", include_str!("memory_region.rs")),
-        ("notification", include_str!("notification.rs")),
-        ("object_type", include_str!("object_type.rs")),
-        ("page_frame", include_str!("page_frame.rs")),
-        ("port_range", include_str!("port_range.rs")),
-        ("process", include_str!("process.rs")),
-        ("reboot", include_str!("reboot.rs")),
-        ("rendezvous", include_str!("rendezvous.rs")),
-        ("reply", include_str!("reply.rs")),
-        ("rights", include_str!("rights.rs")),
-        ("survey", include_str!("survey.rs")),
-        (
-            "thread_control_block",
-            include_str!("thread_control_block.rs"),
-        ),
-        ("timer", include_str!("timer.rs")),
-        ("uart", include_str!("uart.rs")),
-        ("usage", include_str!("usage.rs")),
-        ("virtio", include_str!("virtio.rs")),
+    // Read at run time, not with `include_str!`, which the orphan-source lint reads as a module
+    // declaration of the same file.
+    const MODULES: &[&str] = &[
+        "",
+        "address_space",
+        "console",
+        "cycle_counter",
+        "fault",
+        "futex",
+        "interrupt",
+        "memory_region",
+        "notification",
+        "object_type",
+        "page_frame",
+        "port_range",
+        "process",
+        "reboot",
+        "rendezvous",
+        "reply",
+        "rights",
+        "survey",
+        "thread_control_block",
+        "timer",
+        "uart",
+        "usage",
+        "virtio",
     ];
-    let pinned_text = include_str!("tests.rs");
+    let source_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/src/");
+    let read = |file: &str| {
+        std::fs::read_to_string(std::format!("{source_dir}{file}"))
+            .unwrap_or_else(|e| panic!("cannot read {file}: {e}"))
+    };
+    let sources: Vec<(&str, String)> = MODULES
+        .iter()
+        .map(|&m| {
+            let file = if m.is_empty() {
+                String::from("lib.rs")
+            } else {
+                format!("{m}.rs")
+            };
+            (m, read(&file))
+        })
+        .collect();
+    let pinned_text = read("tests.rs");
+    // A module file this list leaves out would hide its numbers from the count.
+    for entry in std::fs::read_dir(source_dir).unwrap() {
+        let name = entry.unwrap().file_name().into_string().unwrap();
+        if let Some(stem) = name.strip_suffix(".rs") {
+            let known = matches!(stem, "lib" | "tests" | "display") || MODULES.contains(&stem);
+            assert!(
+                known,
+                "{name} is not in MODULES, so its numbers are not counted"
+            );
+        }
+    }
 
     let mut unpinned: Vec<String> = Vec::new();
     let mut counted = 0;
-    for (module, source) in SOURCES {
+    for (module, source) in &sources {
         for line in source.lines() {
             let line = line.trim_start();
             let Some(rest) = line.strip_prefix("pub const ") else {
