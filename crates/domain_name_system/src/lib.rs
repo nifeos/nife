@@ -746,8 +746,10 @@ impl Query {
         // Follow the chain from our name. Every record was read above, so these rescans cannot fail.
         let mut owner = self.name;
         let mut ttl = u32::MAX;
-        let mut links = 0usize;
-        'chain: loop {
+        // A bounded loop rather than a counter beside an endless one: `links` is how many links
+        // were followed before this pass, and no pass after the last can start, so a reply that
+        // chains in a circle ends here however the count is kept.
+        'chain: for links in 0..=MAXIMUM_CHAIN {
             let mut scan = answers.clone();
             for _ in 0..h.ancount {
                 let Ok(record) = scan.record() else { break };
@@ -758,7 +760,6 @@ impl Query {
                     if links == MAXIMUM_CHAIN {
                         return Err(Reject::ChainTooLong);
                     }
-                    links += 1;
                     ttl = ttl.min(believable_time_to_live(record.ttl));
                     owner = cname_target(reply, &record).map_err(Reject::Malformed)?;
                     continue 'chain;
