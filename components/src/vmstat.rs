@@ -41,8 +41,8 @@ use machine_statistics_contract::{PAGE_VA, Snapshot};
 use user_mode_runtime::{exit, is_granted, monotonic_nanoseconds, send};
 
 const REPORT: u64 = 0;
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
-const MACHINE_SLOT: u64 = grant_plan::MACHINE_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
+const MACHINE_SLOT: u64 = grant_contract::MACHINE_SLOT;
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
@@ -81,8 +81,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

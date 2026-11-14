@@ -75,7 +75,7 @@ itself.
 
 ## The wire, and the one thing the progenitor had to learn
 
-`grant_plan::spawnproto` grew two bits in the request word and two positions in the delegation
+`program_table::spawnproto` grew two bits in the request word and two positions in the delegation
 order:
 
 ```text

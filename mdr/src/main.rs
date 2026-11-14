@@ -22,7 +22,7 @@
 //!
 //! - **It reads the whole input before it writes a byte**, because CommonMark needs the whole
 //!   document (a link can be defined at the foot of the page). A page is bounded by the heap, which
-//!   is the job's region (`grant_plan::STD_REGION_PAGES`); past it, allocation fails and ends it.
+//!   is the job's region (`program_table::STD_REGION_PAGES`); past it, allocation fails and ends it.
 //! - `mdr <page> > out.txt` is refused, naming the fix (notes/pipes.md).
 //! - No pager: a keypress needs the terminal endpoint, whose read side is the keyboard.
 //! - Eighty columns always, and plain text only: the terminal contract cannot say either.

@@ -2,11 +2,12 @@
 //!
 //! On a nife command line *designation is authorization* (Mark Miller's principle): naming a
 //! resource in a command is how you grant it. The crate performs no IO and makes no syscalls.
-//! [`parse`] turns a line of bytes into a [`Command`]. For a program invocation, [`plan`] places
-//! its tokens into the slots the program's [`Manifest`] declares ([`Program::manifest`]) and yields
-//! an [`Endowment`], exactly what to grant the child, or a typed [`Refusal`] the shell prints at the
-//! prompt. [`spawnproto`] is the spawn protocol's word layout. See notes/grant-expression.md, its
-//! appendix grant-expression/grant-plan-crate.md, and notes/program-manifest.md.
+//! [`parse`] turns a line of bytes into a [`Command`]. For a program invocation, [`plan_against`]
+//! places its tokens into the slots a program's [`Manifest`] declares and yields an [`Endowment`],
+//! exactly what to grant the child, or a typed [`Refusal`] the shell prints at the prompt. The
+//! manifest is the caller's to supply: this crate knows no program, and the declarations it plans
+//! against are `grant_contract`'s. See notes/grant-expression.md, its appendix
+//! grant-expression/grant-plan-crate.md, and notes/program-manifest.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `capsh`. Refused `capsh` (Linux's
 //! `capsh(1)` is a different tool). Refused `designation`, `designate` and `designator` (the user
@@ -19,38 +20,15 @@
 // worklist (notes/doc-coverage.md) is burned down.
 #![allow(missing_docs)]
 
-/// The version of the capability slot numbers the progenitor grants into and a program reads: 1. A
-/// break bumps it, with the dated ledger entry the interface-stability discipline owes; an addition
-/// an older peer ignores does not.
-///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
-pub const VERSION: u32 = 1;
-
-/// This interface's identity in a program's `INTERFACES` note: 17, naming the capability slot
-/// numbers the progenitor grants into and a program reads. The number is this interface's for good:
-/// no other interface takes it, and a format change is a new version, never a new number. Milestone
-/// 956 (the linked interfaces carry checkable versions) holds the table of numbers, and
-/// `script/lint` holds the tree to it. A program declares the pair of this id and [`VERSION`].
-///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
-pub const INTERFACE_ID: u64 = 17;
-
 pub mod expand;
-pub mod image;
-pub mod job_page_frame;
-pub mod job_windows;
 pub mod line;
 pub mod nav;
-pub mod spawnproto;
-pub mod verbs;
 pub mod word;
 
 mod command;
 mod escalation;
-mod manifest;
 mod parsing;
 mod planning;
-mod program;
 mod refusal;
 #[cfg(test)]
 mod test_support;
@@ -62,35 +40,22 @@ pub use command::{
     TouchOperands, rmopt,
 };
 pub use escalation::{Action, COOP_GRACE_TICKS, Escalation};
-pub use image::{
-    IMAGE_ROW, ImageRefusal, NO_NOTE_MANIFEST, Vouch, image_can_carry, image_hears_words,
-    image_manifest, image_request_fits,
-};
-pub use manifest::{
-    CATALOG_SLOT, DIAGNOSTICS_SLOT, DIRECTORY_JOB_REGION_PAGES, DOMAIN_SLOT,
-    DirectoryGrantDeclaration, ENTROPY_SLOT, FileGrantDeclaration, INDEX_SOURCES_SLOT,
-    INSTALLER_REPLY_SLOT, INSTALLER_SLOT, IndexStoreDeclaration, InputDeclaration, JOB_POOL_PAGES,
-    JOB_REGION_PAGES, MACHINE_SLOT, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest,
-    MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
-    POWER_MANAGEMENT_CHIP_ROUTE_SLOT, ProgramArgumentDeclaration, REBOOT_SLOT, SHARE_SLOT,
-    SHELL_CONFIGURATION_SLOT, SHELL_CONFIGURATION_VIRTUAL_ADDRESS, STD_REGION_PAGES, SYNC_SLOT,
-    ShortOptions, StartupContract, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant,
-    image_region_pages, job_region_pages, named_std_region_pages,
-};
+// The declarations a line is planned against, in scope under the names the modules here always
+// used. Not re-exported: each item has one public path, in `grant_contract`.
+pub(crate) use grant_contract::*;
 pub use parsing::{
     BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,
-    job_operand, kill_operands, parse, parse_run, tokenize, user_verb, vouch_verb, vouched_name,
+    job_operand, kill_operands, parse, parse_run, tokenize, user_verb, verb_of, vouch_verb,
+    vouched_name,
 };
 pub(crate) use planning::nav_refusal;
 pub use planning::{
-    Streams, check_chain, plan, plan_against, plan_against_with, plan_stage, redirect_target,
+    ISOLATION_WORD, Streams, check_chain, plan_against, plan_against_with, redirect_target,
 };
-pub use program::{PROGRAM_COUNT, Program};
+// The rows the tests plan against, as a caller would pass them (see the dev dependency's comment).
+#[cfg(test)]
+use program_table::Program;
 pub use refusal::{CapabilityKind, Refusal};
-pub use verbs::{
-    MAXIMUM_VERB, ManifestAuthorities, VerbGrant, delegated_within, narrow_by_verb, verb_of,
-    verb_of_page,
-};
 
 mod lexing;
 

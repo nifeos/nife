@@ -17,7 +17,7 @@ use crate::{Admission, Registry, Schedule, recurrence};
 /// What `caps least_authority_demo 7` prints at the prompt (milestone 31 (a capability shell:
 /// designation is authorization)), for every entry, at registration, before the first tick. Not
 /// `swish::write_preview`, whose sentences name the shell's own budget and endpoints and would be
-/// false about a scheduler; the decision cannot drift, since both get it from `grant_plan::plan`.
+/// false about a scheduler; the decision cannot drift, since both get it from `program_table::plan`.
 ///
 /// # Examples
 ///
@@ -47,7 +47,7 @@ pub fn write_plan(reg: &Registry<'_>, out: &mut dyn FnMut(&[u8])) {
         out(r.entry.command);
         out(b"\n");
         match r.admission {
-            Admission::Fires(e) => write_grant(&e, r.entry.command, reg.held.report, out),
+            Admission::Fires(_, e) => write_grant(&e, r.entry.command, reg.held.report, out),
             Admission::Refused(refusal) => {
                 out(b"    will not fire: ");
                 out(refusal.message().as_bytes());
@@ -127,8 +127,8 @@ fn write_u64(v: u64, out: &mut [u8]) -> usize {
 /// **What the child will hold, and nothing else.** The `caps` half.
 fn write_grant(e: &Endowment, command: &[u8], report: bool, out: &mut dyn FnMut(&[u8])) {
     out(b"    grants ");
-    // The word typed, not `e.program`'s name: an installed program's endowment is filed under
-    // `grant_plan::IMAGE_ROW`, whose name is not the program's.
+    // The word typed, not the row's name: an installed program is filed under
+    // `program_table::IMAGE_ROW`, whose name is not the program's.
     out(grant_plan::parse_run(command).program);
     out(b" exactly:\n");
     if report {
@@ -211,7 +211,7 @@ impl Audit {
     /// something, and a reader would rather be told the endowment is wide than be told nothing.
     pub fn saw(&mut self, name: &str) {
         self.held += 1;
-        let planned = grant_plan::Program::from_name(name.as_bytes())
+        let planned = program_table::Program::from_name(name.as_bytes())
             .is_some_and(|p| self.plan & (1 << p.id()) != 0);
         if !planned {
             self.beyond += 1;
@@ -268,7 +268,7 @@ impl Audit {
 
 #[cfg(test)]
 mod tests {
-    use grant_plan::Program;
+    use program_table::Program;
 
     use super::*;
     use crate::test_support::{REFERENCE, shown};

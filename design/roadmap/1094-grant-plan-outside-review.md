@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -152,9 +152,17 @@ programs that implement them and rolled each by a pinned revision (1017's prior-
 Shill separated the contract language from the scripts.
 
 Example. After the split, `swish` plans a line with
-`grant_plan::plan_against_with(&run, manifest, &holds, &expanded, &streams)` and sends
+`grant_plan::plan_against_with(&run, manifest, holds, expanded, streams)` and sends
 `spawnproto::request(program.id(), endowment.program_argument, ...)` from its own table; a
 `std` program reads `DOMAIN_SLOT` from the leaf crate and links no parser.
+
+Ruled 2026-11-14 (UTC): the three parts, as recommended, and the split is built.
+`grant_plan` is the planner, and `Endowment::manifest` is the manifest its plan used. The leaf
+crate is `crates/grant_contract`; its name is provisional, and its published name waits on the
+naming-layers decision. The catalog, `spawnproto`, `job_windows`, `job_page_frame`, `image` and
+the region budgets are in `crates/program_table`, a provisional name, whose `plan` and
+`plan_stage` return the row beside the endowment. No slot number, `INTERFACE_ID`, `VERSION` or word
+layout changed.
 
 ### Public names that need a decoder
 
@@ -219,8 +227,24 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
   across files, so the first run after it is the one that counts.
 - The prior-art table's rows for POSIX, zsh, Plan 9, Shill and Plash come from memory, not a re-read; the
   download figures come from crates.io.
+- `grant_plan`'s tests plan against `program_table`'s catalog through a dev-dependency, so the
+  crate cannot run its tests outside this tree until they plan against manifests of their own. The
+  move lane writes those before 1017 step 6.
+- `ISOLATION_WORD` (`b"swish"`) is still in `grant_plan`, and is now public so the catalog can
+  refuse the word before resolving it. It names nife's shell, so the crate cannot leave with it;
+  the move lane makes it a value the caller passes.
 - The review measured the sizes with the tree's nightly on one 64-bit host. They match on every
   64-bit target by construction (no pointers in the values), and the review measured no other.
+
+## Follow-on
+
+- **Done.** P0 item 1, the split, carried by lane milestone/1094-grant-plan-split: `grant_plan`,
+  `crates/grant_contract` and `crates/program_table` build and test on their own.
+- **Outstanding.** P0 items 2 and 3, the P1 items, the P2 items and the two remaining decisions
+  (the eight names and the units). None of them has a lane; read against the code on 2026-11-14.
+- **Recorded.** `grant_plan`'s tests still plan against the catalog, and `ISOLATION_WORD` still
+  names the shell; both are in this block's BUGS, beside
+  `design/roadmap/1094-grant-plan-outside-review.md`.
 
 ## Index row
 

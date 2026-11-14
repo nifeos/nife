@@ -98,7 +98,7 @@ It shows that `echo *.txt` prints exactly the authority `rm *.txt` would transfe
 a shell holding a real directory capability behind a real `fs_subtree_caretaker`. They share the
 expander, which is the point of there being one, and do not share the plumbing. `echo` goes from
 text to words, expansion and print. The grant goes from parse to positionals, expansion,
-`grant_plan::plan`, the grant's names and a rendering. So a planner that narrowed, reordered or added
+`program_table::plan`, the grant's names and a rendering. So a planner that narrowed, reordered or added
 to a set shows up as a disagreement.
 
 Three refusals stop the agreement from being vacuous the other way. One is a pattern that matched

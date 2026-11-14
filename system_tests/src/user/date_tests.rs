@@ -82,7 +82,7 @@ fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
     let diag = crate::sched::create_rendezvous_from(region).expect("no rendezvous from region");
     crate::sched::spawn(move || {
         crate::sched::grant_at(
-            grant_plan::DIAGNOSTICS_SLOT,
+            grant_contract::DIAGNOSTICS_SLOT,
             rendezvous_capability(diag, Rights::WRITE),
         )
         .expect("date's declared diagnostic slot was already occupied");

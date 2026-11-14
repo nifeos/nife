@@ -46,7 +46,7 @@ const CLOCK_SLOT: u64 = 1;
 /// answer. "The time is unknown" is a statement about the run, not the time, so it stays out of a
 /// redirected file. The slot is the one `grant_plan`'s manifest declares: a program that declares
 /// none has no second stream, and `2>` aimed at it is refused at the prompt.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Where the wiring maps the clock page, read-only. Must match `kernel/src/user.rs`'s
 /// `date_tests::CLOCK_VA`.
@@ -93,8 +93,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

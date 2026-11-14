@@ -46,10 +46,10 @@ const REPORT: u64 = 0;
 
 /// **The process domain**: a supervision endpoint carrying `ENUMERATE`. Everything this program can
 /// see comes through here, and nothing else in the capability table names a process.
-const DOMAIN_SLOT: u64 = grant_plan::DOMAIN_SLOT;
+const DOMAIN_SLOT: u64 = grant_contract::DOMAIN_SLOT;
 
 /// The declared second stream (DECISIONS §67): complaints about the run, never about the domain.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Whether this process was granted a second stream, decided once in [`_start`].
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
@@ -87,8 +87,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,
@@ -122,7 +122,7 @@ fn rows() -> &'static mut [ps::Row] {
 
 user_mode_runtime::program_entry!(start);
 
-/// `a1` is the state mask, in `grant_plan::spawnproto`'s integer-argument position: the progenitor starts every
+/// `a1` is the state mask, in `program_table::spawnproto`'s integer-argument position: the progenitor starts every
 /// child `start_child(child, 0, arg, 0)`, so the endowment's `arg` is the second register and the first
 /// is always zero. Zero means every state (`pgrep::Selector::from_wire`), which is what a shell that
 /// cannot spell a selector sends and is why an unfiltered `pgrep` prints the whole domain rather than

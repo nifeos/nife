@@ -93,7 +93,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -253,13 +253,14 @@ dependencies = [
  "elf",
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
- "grant_plan",
+ "grant_contract",
  "http_response",
  "libfuzzer-sys",
  "machine_discovery",
  "nifefs",
  "package_archive",
  "package_index",
+ "program_table",
  "redoxfs",
  "redoxfs_server",
  "system_log",
@@ -304,10 +305,18 @@ name = "glyph_atlas"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
@@ -493,6 +502,14 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "quote"

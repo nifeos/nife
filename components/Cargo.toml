@@ -609,7 +609,7 @@ bench = false
 # person can type that needs randomness: before it, the entropy grant reached only what the system
 # spawned (`credentialer` at boot, `disk_partitioner` under the kernel's test harness), so a
 # program's dependence on unpredictable bytes was real and unreachable from a prompt. Its whole
-# authority is `grant_plan::Manifest::entropy`, which the progenitor endows and no token on the command line
+# authority is `grant_contract::Manifest::entropy`, which the progenitor endows and no token on the command line
 # can name. Portable, so both ISAs' archives carry it. **Provisional name.**
 [[bin]]
 name = "uuid"
@@ -711,7 +711,9 @@ boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
 # (thin primitives or whole subsystems); default features off, so no `std`, no `alloc` and no time
 # zone database, only fixed offsets. See notes/calendar.md.
 jiff = { version = "0.2.43", default-features = false }
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # A program's manifest carried in its own bytes (milestone 597 (a program carries its manifest in an
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program
 # carries one with `capability_manifest_note::carry!`.

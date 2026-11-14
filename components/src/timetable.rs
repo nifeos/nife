@@ -1,5 +1,5 @@
 //! **The timetable: scheduled execution where every entry is a grant.** A cron whose entries are
-//! grant expressions, planned at registration by `grant_plan::plan` and printed before the first
+//! grant expressions, planned at registration by `program_table::plan` and printed before the first
 //! tick. Compromising this process yields the entries' summed endowments, not the system.
 //!
 //! It holds `timetable::contract`'s table and nothing else: the plan page, an untyped budget, the
@@ -29,7 +29,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use grant_plan::spawnproto;
+use program_table::spawnproto;
 use timetable::{Registry, contract, registration};
 use user_mode_runtime::{
     capability_delete, exit, monotonic_nanoseconds, reap, receive_fault, send, yield_now,
@@ -240,9 +240,9 @@ fn resolve_or_fail(reg: &Registry<'_>, programs: &Programs) -> Images {
     match resolve(reg, programs) {
         Ok(images) => images,
         Err(i) => {
-            if let Some(e) = reg.rows()[i].endowment() {
+            if let Some(program) = reg.rows()[i].program() {
                 say(b"timetable: no such program in the archive: ");
-                say(e.program.name().as_bytes());
+                say(program.name().as_bytes());
                 say(b"\n");
             }
             done(E_IMAGE)
@@ -326,31 +326,31 @@ impl Tally {
         // An installed program is resolved and planned again now; when either fails the beat is
         // skipped, never retried (`BUGS`).
         let loaded;
-        // `declared` is the manifest the job's bytes carry: an installed row's endowment is filed
-        // under `grant_plan::IMAGE_ROW`, so nothing may be read off its `prog`.
-        let (elf, e, declared) = match images[i].as_ref() {
+        // Each endowment holds the manifest its job was planned against: an installed row's is
+        // the one its bytes carry.
+        let (elf, e) = match images[i].as_ref() {
             None => return,
-            Some(Image::Archived(elf)) => (elf, registered, registered.program.manifest()),
+            Some(Image::Archived(elf)) => (elf, registered),
             Some(Image::Installed(p)) => {
                 let Some((elf, m)) = load_current(p) else {
                     return;
                 };
-                let timetable::Admission::Fires(e) = reg.plan_at_fire(i, m) else {
+                let timetable::Admission::Fires(_, e) = reg.plan_at_fire(i, m) else {
                     return;
                 };
                 loaded = elf;
-                (&loaded, e, m)
+                (&loaded, e)
             }
         };
 
         if e.memory_grant_pages > 0 {
-            let clock = self.holds_clock && declared.clock;
+            let clock = self.holds_clock && e.manifest.clock;
             self.fire_exclusive(elf, e, clock);
             return;
         }
 
         // A full budget waits for one corpse and tries once more; a second failure is wiring.
-        let clock = self.holds_clock && declared.clock;
+        let clock = self.holds_clock && e.manifest.clock;
         if !fire(elf, e.program_argument, self.held.report, clock) {
             if self.outstanding == 0 {
                 // Nothing is out to wait for.
@@ -418,8 +418,10 @@ fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
         return Ok(images);
     };
     for (i, row) in reg.rows().iter().enumerate() {
-        let Some(e) = row.endowment() else { continue };
-        let Some(bytes) = fs.read(e.program.name()) else {
+        let Some(program) = row.program() else {
+            continue;
+        };
+        let Some(bytes) = fs.read(program.name()) else {
             return Err(i);
         };
         let Ok(elf) = elf::Elf::parse(bytes) else {
@@ -436,8 +438,14 @@ fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
 /// installed, cannot be read, or needs what no timetable endows (`timetable::schedulable`).
 fn resolve_installed(
     doc: &timetable::Document<'_>,
-) -> Result<([grant_plan::Manifest; timetable::MAXIMUM_ENTRIES], Images), usize> {
-    let mut manifests = [grant_plan::NO_NOTE_MANIFEST; timetable::MAXIMUM_ENTRIES];
+) -> Result<
+    (
+        [grant_contract::Manifest; timetable::MAXIMUM_ENTRIES],
+        Images,
+    ),
+    usize,
+> {
+    let mut manifests = [program_table::NO_NOTE_MANIFEST; timetable::MAXIMUM_ENTRIES];
     let mut images: Images = [const { None }; timetable::MAXIMUM_ENTRIES];
     for (i, entry) in doc.entries().iter().enumerate() {
         let word = grant_plan::parse_run(entry.command).program;
@@ -462,7 +470,7 @@ fn resolve_installed(
 /// **What an installed row's name runs now**: the live generation's entry for it, staged and
 /// parsed, and the manifest its bytes carry. `None` when the name no longer resolves, the bytes do
 /// not hash to the entry, or they need what no timetable endows (`timetable::schedulable`).
-fn load_current(p: &Installed) -> Option<(elf::Elf<'static>, grant_plan::Manifest)> {
+fn load_current(p: &Installed) -> Option<(elf::Elf<'static>, grant_contract::Manifest)> {
     let name = core::str::from_utf8(&p.name[..p.len]).ok()?;
     let (len, _) = store::load(name)?;
     let elf = elf::Elf::parse(store::staged(len)).ok()?;
@@ -481,7 +489,8 @@ fn load_current(p: &Installed) -> Option<(elf::Elf<'static>, grant_plan::Manifes
     // the progenitor endows an installed program run at the prompt. No network: a timetable endows
     // none (`timetable::schedulable`), whatever the owner granted at the prompt.
     let m =
-        grant_plan::image_manifest(declared, grant_plan::Vouch::Vouched { network: false }).ok()?;
+        program_table::image_manifest(declared, program_table::Vouch::Vouched { network: false })
+            .ok()?;
     timetable::schedulable(&m).then_some((elf, m))
 }
 

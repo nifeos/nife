@@ -23,7 +23,7 @@ the launch.
 
 ## What changed
 
-- The protocol carries devices (`crates/grant_plan/src/spawnproto.rs`). `GRAPHICS_BIT` and
+- The protocol carries devices (`crates/program_table/src/spawnproto.rs`). `GRAPHICS_BIT` and
   `KEYBOARD_BIT` announce the gpu's four caps and the keyboard's three. They are delegated after
   the `--mem` untyped and before the machine statistics page. `SHELL_GPU_SLOT` (22) names the
   seven-slot block 22-28 in the shell. Const assertions fence it against `SHELL_CONFIG_SLOT` below

@@ -153,20 +153,20 @@ pub const UNVOUCHED_SENTENCE: &[u8] = b"  refused: those bytes are not among the
 
 /// **What the prompt says when a file's own manifest refuses the line** (milestone 597
 /// (a program carries its manifest in an ELF note)), one sentence per
-/// [`grant_plan::ImageRefusal`]. The shell prints it at the prompt when it can tell before sending
+/// [`program_table::ImageRefusal`]. The shell prints it at the prompt when it can tell before sending
 /// anything, and for the progenitor's [`spawnproto::SPAWN_REFUSED_BY_MANIFEST`] when it cannot.
-pub fn image_refusal_sentence(r: grant_plan::ImageRefusal) -> &'static [u8] {
+pub fn image_refusal_sentence(r: program_table::ImageRefusal) -> &'static [u8] {
     match r {
-        grant_plan::ImageRefusal::Unreadable => {
+        program_table::ImageRefusal::Unreadable => {
             b"  refused: that file carries a manifest note that cannot be read (malformed, a later version, or two of them)\n"
         }
-        grant_plan::ImageRefusal::NotCarried => {
+        program_table::ImageRefusal::NotCarried => {
             b"  refused: its manifest asks for a file, a directory, an input, an option, a second stream or the std runtime, which a file run by its path cannot be given yet\n"
         }
-        grant_plan::ImageRefusal::ExceedsVouch => {
+        program_table::ImageRefusal::ExceedsVouch => {
             b"  refused: nobody vouched for those bytes, and their manifest asks the line for more than unvouched bytes may hold\n"
         }
-        grant_plan::ImageRefusal::NetworkNotGranted => {
+        program_table::ImageRefusal::NetworkNotGranted => {
             b"  refused: its manifest asks for the network, and no owner's grant of the network is recorded for it among the installed programs\n"
         }
     }
@@ -230,8 +230,8 @@ pub const VOUCH_USAGE: &[u8] =
 /// What a malformed `user` line is answered with, changing nothing (milestone 152 (durable delegation)).
 pub const USER_USAGE: &[u8] = b"  user suspend <name> | user resume <name>\n";
 
-/// Report what the spawned program did, in terms of the grant it was given.
-pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
+/// Report what `program`, spawned, did, in terms of the grant it was given.
+pub fn write_outcome(program: Program, e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
     if answer == spawnproto::SPAWN_FAILED || answer == spawnproto::SPAWN_NOT_IN_IMAGE {
         out(spawn_failure_sentence(answer));
         return;
@@ -254,7 +254,7 @@ pub fn write_outcome(e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
         out(FAULTED_SENTENCE);
         return;
     }
-    match e.program {
+    match program {
         Program::LeastAuthorityDemo => {
             out(b"  a process at EL0 computed ");
             write_num(e.program_argument, out);

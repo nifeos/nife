@@ -39,7 +39,7 @@ use capability_manifest_note::{
     VERB_RECORD, VERBS_VERSION, ZONED_VERSION, decode, decode_subtree_grants, decode_verbs, encode,
     service, zones,
 };
-use grant_plan::{IndexStoreDeclaration, MAXIMUM_VERB, ManifestAuthorities};
+use grant_contract::{IndexStoreDeclaration, MAXIMUM_VERB, ManifestAuthorities};
 use libfuzzer_sys::{fuzz_mutator, fuzz_target};
 
 fuzz_target!(|data: &[u8]| {
@@ -199,7 +199,7 @@ fn build_zoned(base: &[u8], random: &mut Random) -> Vec<u8> {
     let mut out = if base.len() >= 56 {
         base[..56].to_vec()
     } else {
-        encode(&grant_plan::NO_NOTE_MANIFEST).to_vec()
+        encode(&program_table::NO_NOTE_MANIFEST).to_vec()
     };
     let mut picks: Vec<&str> = (0..random.below(MAXIMUM_ZONES + 1))
         .map(|_| ZONE_POOL[random.below(ZONE_POOL.len())])

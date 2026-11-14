@@ -59,7 +59,9 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
 # `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
+# The spawn protocol's slots are the program table's.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
 # through the same seqlock the service publishes with, so no party has its own copy of the layout.

@@ -1,13 +1,10 @@
 //! **What a program may be granted, as types**: the output and input specs, option letters,
-//! the slots the progenitor endows at, `Manifest`, `StartupContract`, and the region a `std` image is built
-//! in.
+//! the slots the progenitor endows at, `Manifest` and `StartupContract`.
 //!
 //! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
 //! private modules)).
 //!
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
-
-use crate::spawnproto;
 
 /// **What a program's output slot carries.** Declared per program because this system has two
 /// conventions for "a program said something" and they are not interchangeable; see
@@ -17,7 +14,7 @@ use crate::spawnproto;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum OutputDeclaration {
     /// Nothing. The program holds no output capability (the interrupt demonstrators report through
-    /// a shared frame). Redirecting it is [`Refusal::NotAByteStream`](crate::Refusal::NotAByteStream), and so is piping it, because
+    /// a shared frame). Redirecting it is `grant_plan::Refusal::NotAByteStream`, and so is piping it, because
     /// there is no slot to substitute.
     Silent,
     /// One or more raw `u64` answers on the result endpoint, read by the shell and rendered by it.
@@ -71,12 +68,12 @@ impl OutputDeclaration {
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum InputDeclaration {
-    /// The program reads nothing. Giving it an input is [`Refusal::InputForbidden`](crate::Refusal::InputForbidden) rather than a
+    /// The program reads nothing. Giving it an input is `grant_plan::Refusal::InputForbidden` rather than a
     /// capability it would never receive on, because a slot nobody reads is authority that moved
     /// for no reason.
     Forbidden,
     /// The program reads an input stream and cannot do anything without one. A line that gives it
-    /// none is [`Refusal::InputRequired`](crate::Refusal::InputRequired) **at the prompt**, which is a check Unix cannot make.
+    /// none is `grant_plan::Refusal::InputRequired` **at the prompt**, which is a check Unix cannot make.
     Required {
         /// **Whether this program's output may begin before its input has ended.** `wc` counts to
         /// end of stream and then prints one line, so it is `false`; a filter that transforms as it
@@ -84,7 +81,7 @@ pub enum InputDeclaration {
         ///
         /// It decides whether this shell can run a line at all: a `SEND` blocks on its one receiver,
         /// so a shell feeding a stage cannot also receive from it. A `false` stage is a barrier that
-        /// absorbs the whole stream first, and a chain needs one ([`check_chain`](crate::check_chain)).
+        /// absorbs the whole stream first, and a chain needs one (`grant_plan::check_chain`).
         /// See notes/pipes/one-wait-point.md.
         writes_while_reading: bool,
     },
@@ -98,13 +95,14 @@ pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 
 /// **The most short options one program may declare.** Sixteen, which is far above the three `rm`
 /// declares and well inside the 64 bits of
-/// [`Endowment::short_options`](crate::Endowment::short_options). Not
-/// [`MAXIMUM_SHORT_OPTIONS`](crate::MAXIMUM_SHORT_OPTIONS), which bounds what one line may type
+/// `grant_plan::Endowment::short_options`. Not
+/// `grant_plan::MAXIMUM_SHORT_OPTIONS`, which bounds what one line may type
 /// rather than what a program may accept.
 ///
 /// A bound at all because a manifest is now also bytes a program carries (milestone 597,
-/// provisional: a program carries its manifest in an ELF note), and a decoded manifest has to hold
-/// its letters by value rather than point at a `'static` string the program's bytes are not.
+/// provisional: a program carries its manifest in an Executable and Linkable Format (ELF) note),
+/// and a decoded manifest has to hold its letters by value rather than point at a `'static` string
+/// the program's bytes are not.
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
 pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
@@ -116,7 +114,7 @@ pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 /// Every constructor checks the same three things, so a manifest compiled in and a manifest decoded
 /// from a note cannot disagree about what a well-formed option set is: at most
 /// [`MAXIMUM_DECLARED_SHORT_OPTIONS`] letters, each an ASCII letter or digit, and no letter twice
-/// (a repeated letter would give one option two bits, and [`plan`](crate::plan) reads the first).
+/// (a repeated letter would give one option two bits, and `program_table::plan` reads the first).
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -298,76 +296,28 @@ pub const SYNC_SLOT: u64 = 14;
 /// PMIC (power management integrated circuit) route**, on a board
 /// that has one (milestone 1062 (the device control planes leave the kernel), step 5; §251
 /// (restarting the machine is a kernel object the progenitor hands out), "A board's PMIC route runs
-/// in userspace"). Twenty-three, one past the highest slot this crate named before it. Empty
+/// in userspace"). Twenty-three, one past the highest slot named before it. Empty
 /// everywhere else, which is every machine CI boots. `WRITE` alone, the right to `CALL` the route.
 /// The reboot declaration carries it, since restarting the board is the only thing the route does.
 ///
 /// Name: provisional.
 pub const POWER_MANAGEMENT_CHIP_ROUTE_SLOT: u64 = 23;
 
-/// **What the progenitor endows a child whose bytes nobody vouched for**, when the caller presented
-/// the run-unvouched capability (DECISIONS §219 gate D2, ruled by calef 2026-09-26: *"Yes, allow
-/// the clock and config pages."*).
-///
-/// The ruling in one value. Of the authorities the progenitor endows from a manifest rather than
-/// from the line, an unvouched child gets the two read-only pages and none of the rest. Everything
-/// else it holds is what the caller delegated, the output alone (slot 0, then the clock page and
-/// the configuration page, for a native child). The bytes' own declaration is not consulted, and
-/// [`image_manifest`](crate::image_manifest) refuses one that asks the line to designate more.
-///
-/// Name: provisional (milestone 198 rung 3a, 2026-09-26).
-pub const UNVOUCHED_MANIFEST: Manifest = Manifest {
-    program_argument: ProgramArgumentDeclaration::Forbidden,
-    memory_grant: MemoryGrantDeclaration::Forbidden,
-    file: FileGrantDeclaration::Forbidden,
-    directory: DirectoryGrantDeclaration::Forbidden,
-    short_options: NO_SHORT_OPTIONS,
-    output: OutputDeclaration::Bytes,
-    input: InputDeclaration::Forbidden,
-    reports: true,
-    interruptible: false,
-    clock: true,
-    domain: false,
-    configuration: true,
-    entropy: false,
-    network: false,
-    machine: false,
-    share: false,
-    reboot: false,
-    sync: false,
-    installer: false,
-    catalog: false,
-    indexes: IndexStoreDeclaration::Forbidden,
-    activation_directory: false,
-    console_input: false,
-    startup: StartupContract::Native,
-};
-
-/// **[`UNVOUCHED_MANIFEST`] for bytes built against nife's `std`** (milestone 205 (how a foreign
-/// program is told what to do)): the same two pages, in the `std` layout (clock at slot 5,
-/// configuration at slot 7), plus the line's words at slot 8, which §170 ruled carry no authority.
-/// No entropy, network or domain, whatever the note asks. Name: provisional.
-pub const UNVOUCHED_STD_MANIFEST: Manifest = Manifest {
-    program_argument: ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
-    startup: StartupContract::Std,
-    ..UNVOUCHED_MANIFEST
-};
-
 /// A program's expectation about the integer argument (`least_authority_demo 9`'s `9`).
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ProgramArgumentDeclaration {
-    /// The program consumes an argument; omitting it is [`Refusal::ProgramArgumentRequired`](crate::Refusal::ProgramArgumentRequired).
+    /// The program consumes an argument; omitting it is `grant_plan::Refusal::ProgramArgumentRequired`.
     Required,
-    /// The program takes no argument; supplying one is [`Refusal::ProgramArgumentForbidden`](crate::Refusal::ProgramArgumentForbidden).
+    /// The program takes no argument; supplying one is `grant_plan::Refusal::ProgramArgumentForbidden`.
     Forbidden,
     /// **The program hears the line's words as its argv, as bytes** (milestone 205 (how a foreign
     /// program is told what to do), DECISIONS §170). Every word after the program's name, up to the
     /// first operator, reaches it unquoted after `argv[0]`, unclassified, since §170 ruled these
     /// bytes carry no authority; such a manifest declares no positional grant. A word that names
-    /// something is granted it as the [`WordGrant`] says ([`expand::Designation`](crate::expand::Designation)).
-    /// Only a `std` program can read an argv ([`argv`](crate::argv)). Name: provisional (2026-09-26).
+    /// something is granted it as the [`WordGrant`] says (`grant_plan::expand::Designation`).
+    /// Only a `std` program can read an argv (`grant_plan::argv`). Name: provisional (2026-09-26).
     Words(WordGrant),
 }
 
@@ -436,10 +386,10 @@ impl WordGrant {
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MemoryGrantDeclaration {
-    /// The program takes no memory grant; supplying one is [`Refusal::MemoryGrantForbidden`](crate::Refusal::MemoryGrantForbidden).
+    /// The program takes no memory grant; supplying one is `grant_plan::Refusal::MemoryGrantForbidden`.
     Forbidden,
     /// The program must be granted a budget in `[min, max]` pages. Omitting it is
-    /// [`Refusal::MemoryGrantRequired`](crate::Refusal::MemoryGrantRequired); out of range is [`Refusal::MemoryGrantOutOfRange`](crate::Refusal::MemoryGrantOutOfRange).
+    /// `grant_plan::Refusal::MemoryGrantRequired`; out of range is `grant_plan::Refusal::MemoryGrantOutOfRange`.
     Required { minimum: u64, maximum: u64 },
 }
 
@@ -453,10 +403,10 @@ pub enum MemoryGrantDeclaration {
 /// Name: ratified 2026-10-18 (calef: "Approve the family"), with the suffix `Declaration`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum FileGrantDeclaration {
-    /// The program takes no file; naming one is [`Refusal::FileForbidden`](crate::Refusal::FileForbidden).
+    /// The program takes no file; naming one is `grant_plan::Refusal::FileForbidden`.
     Forbidden,
     /// The program is granted exactly one file, `writable` or not. Omitting it is
-    /// [`Refusal::FileRequired`](crate::Refusal::FileRequired).
+    /// `grant_plan::Refusal::FileRequired`.
     Required { writable: bool },
 }
 
@@ -464,7 +414,7 @@ pub enum FileGrantDeclaration {
 ///
 /// The rung above [`FileGrantDeclaration`]: the program is granted a capability to the directory
 /// that holds what the command names, because removing a name is an operation on that directory.
-/// The planned grant attenuates it to the names designated ([`DirectoryGrant`](crate::DirectoryGrant)).
+/// The planned grant attenuates it to the names designated (`grant_plan::DirectoryGrant`).
 /// The fields say what the program will do, not the filesystem contract's rights: the shell
 /// translates, so a command line is checked without linking the filesystem.
 ///
@@ -501,7 +451,7 @@ pub struct Manifest {
     /// name out) is an operation on a directory and not on a file.
     pub directory: DirectoryGrantDeclaration,
     /// **The short options this program accepts**, as their letters, in the order their bits are
-    /// numbered ([`Endowment::short_options`](crate::Endowment::short_options)). Empty for a program that takes none, which is every program
+    /// numbered (`grant_plan::Endowment::short_options`). Empty for a program that takes none, which is every program
     /// but `rm` today.
     ///
     /// The manifest owns this so the shell refuses `-q` at the prompt rather than pass a letter
@@ -515,7 +465,7 @@ pub struct Manifest {
     /// that answers with a number in a register cannot have a file put behind it, because a file
     /// sink would receive a word it has no way to read as bytes.
     ///
-    /// Declaring it is what lets `least_authority_demo 5 > out.txt` be [`Refusal::NotAByteStream`](crate::Refusal::NotAByteStream) at the prompt
+    /// Declaring it is what lets `least_authority_demo 5 > out.txt` be `grant_plan::Refusal::NotAByteStream` at the prompt
     /// instead of a file full of nothing. Unix has no equivalent because on Unix every program's
     /// stdout is bytes by construction; here the register fastpath is real and older than the sink
     /// contract, so the two conventions coexist and the manifest is where they are told apart.
@@ -549,7 +499,7 @@ pub struct Manifest {
     ///
     /// [`clock`](Manifest::clock)'s family: a read-only mapping of the three inert values
     /// (`TZ`, `LANG`, `TERM`), with no object through which to change what a shell hands its
-    /// children. [`Program::Printenv`](crate::Program::Printenv) declares it.
+    /// children. `Program::Printenv` declares it.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
     pub configuration: bool,
@@ -580,7 +530,7 @@ pub struct Manifest {
     ///
     /// [`clock`](Manifest::clock)'s family. §225 grants it to every login by default, withholdable
     /// by the owner (`system_initializer::GRANT_MACHINE_PAGE`): the shell holds it at
-    /// [`spawnproto::MACHINE_PAGE_SLOT`] and sends it with the request, so a withheld session's
+    /// `spawnproto::MACHINE_PAGE_SLOT` and sends it with the request, so a withheld session's
     /// programs say they cannot see the machine.
     ///
     /// **Provisional field name.**
@@ -599,7 +549,7 @@ pub struct Manifest {
     /// The authority to restart the machine: the kernel grants the progenitor the one there is.
     /// Without the declaration the kernel refuses the invoke with `abi::Error::NoSuchSlot`. It syncs
     /// nothing (§251); the program syncs through [`Manifest::sync`]. Exactly one program declares
-    /// it, and no image can ([`image_can_carry`](crate::image_can_carry)). See
+    /// it, and no image can (`image_can_carry`). See
     /// notes/program-manifest.md ("What the line cannot name").
     ///
     /// **Provisional field name.**
@@ -610,7 +560,7 @@ pub struct Manifest {
     /// verb. It names no directory and reaches no file. The progenitor makes one for the job from
     /// a client window the job holds until it is reaped, places it, and keeps no copy.
     ///
-    /// Only `reboot` declares it, and no image can ([`image_can_carry`](crate::image_can_carry)),
+    /// Only `reboot` declares it, and no image can (`image_can_carry`),
     /// because a sync stalls every client's queue.
     ///
     /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server
@@ -665,7 +615,7 @@ pub struct Manifest {
     /// `terminal_contract::STDIN_BADGE`, at `std_runtime_contract::STDIN_SLOT`, and the program reads
     /// the lines typed while it runs: what `jig install` asks the owner's yes through. Only a
     /// program in this table may hold it, as only the owner's console grants the installer: no
-    /// image may declare it ([`image_can_carry`](crate::image_can_carry)) and no note may carry it.
+    /// image may declare it (`image_can_carry`) and no note may carry it.
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
     pub console_input: bool,
@@ -727,102 +677,9 @@ pub enum StartupContract {
     /// Capabilities in order, the output first. Every program in `components/` and `fixtures/`.
     Native,
     /// `std_runtime_contract`'s fixed slots, its shared pages, and a heap carved from
-    /// [`STD_REGION_PAGES`]. A program built with `-Zbuild-std` for a `*-unknown-nife`
+    /// `STD_REGION_PAGES`. A program built with `-Zbuild-std` for a `*-unknown-nife`
     /// target.
     Std,
-}
-
-/// **The region the progenitor builds a `std` program in, and then hands it as its heap**, in pages
-/// (milestone 595 (provisional)). The shell prints it in `caps` and the progenitor spends it, so it
-/// is here, where both read it.
-///
-/// One region, so one reclaim returns all of it: the child is built from it first, and the same
-/// region, narrowed to `WRITE`, is its allocator's budget at
-/// `std_runtime_contract::MEMORY_REGION_SLOT`. 256 pages of heap, the test harness's
-/// `BUDGET_PAGES`, plus 128 for the build; not a measured high-water mark. See
-/// notes/grant-expression/grant-plan-crate.md ("The `std` region").
-///
-/// Name: provisional.
-pub const STD_REGION_PAGES: u64 = 256 + 128;
-
-/// **The region a named `std` program is built in**, in pages: [`STD_REGION_PAGES`], plus one
-/// package's worth ([`spawnproto::IMAGE_MAXIMUM_PAGES`]) for a program that declares
-/// [`Manifest::installer`] (milestone 809 (the package client becomes a program)).
-///
-/// A package manager reads a whole package into one run of its own pages before it sends it a page
-/// at a time, so the run is its buffer and its frames. It comes from the progenitor's image pool,
-/// which is sized for a package's bytes. See notes/grant-expression/grant-plan-crate.md ("The `std`
-/// region").
-///
-/// Name: provisional.
-pub const fn named_std_region_pages(m: &Manifest) -> u64 {
-    STD_REGION_PAGES
-        + if m.installer {
-            spawnproto::IMAGE_MAXIMUM_PAGES
-        } else {
-            0
-        }
-}
-
-/// **One native job's region**, in pages: everything a spawned program is made of, so a single
-/// reclaim frees all of it (milestone 933 (every job is built the way a supervised job is)). The
-/// shell splits it off its own budget for a job it holds, and the progenitor used to split it off
-/// its job pool, so both read the number here. Counted from the largest debug image the prompt
-/// spawns, its stack, a thread control block, an address-space root, the tables for the windows a
-/// child touches and the mapping records of §13 (capability revocation and untyped reclamation);
-/// see notes/system-initializer/budgets.md.
-///
-/// Name: provisional, moved here from `system_initializer` by milestone 933's lane.
-pub const JOB_REGION_PAGES: u64 = 60;
-
-/// **One directory-granted native job's region**: the program, the `fs_subtree_caretaker` that
-/// carries its grant and the two endpoints between them, out of one carve (§92 (a caretaker is
-/// supervised by the client it serves)). See notes/system-initializer/budgets.md.
-///
-/// Name: provisional, moved here from `system_initializer` by milestone 933's lane.
-pub const DIRECTORY_JOB_REGION_PAGES: u64 = 98;
-
-/// **The jobs a pool holds at once**: six native regions and one `std` region. The progenitor's job
-/// pool was this size, and the shell's budget carries the same mix for the jobs it holds (milestone
-/// 933). Small on purpose, as the pool was: `script/swish-check` runs more jobs through it than it
-/// could hold without the regions coming back, so widening it silently retires that gate. See
-/// notes/system-initializer/budgets.md.
-///
-/// Name: provisional (milestone 933's lane).
-pub const JOB_POOL_PAGES: u64 = JOB_REGION_PAGES * 6 + STD_REGION_PAGES;
-
-/// **The region a job from the program table is built in**, in pages: the `std` region for a `std`
-/// program, else [`DIRECTORY_JOB_REGION_PAGES`] behind a directory grant and [`JOB_REGION_PAGES`]
-/// otherwise. `m` is the manifest after the line's verb narrowed it. The shell splits exactly this
-/// many pages for a job it holds, and the progenitor refuses a job whose region is short.
-///
-/// Name: provisional (milestone 933's lane).
-pub const fn job_region_pages(m: &Manifest, directory_grant: bool) -> u64 {
-    if matches!(m.startup, StartupContract::Std) {
-        named_std_region_pages(m)
-    } else if directory_grant {
-        DIRECTORY_JOB_REGION_PAGES
-    } else {
-        JOB_REGION_PAGES
-    }
-}
-
-/// **The region a file run by its path is built in**, in pages: what a named program of the same
-/// runtime gets ([`STD_REGION_PAGES`], or `native` for the progenitor's native job), plus the
-/// image's own pages (milestone 595 (the shell runs a `std` program), 2026-09-27).
-///
-/// A named program's region was sized around its image, and every one in the archive is small. A
-/// file is not: `rg`'s image is nearly twice a `std` region by itself, so a fixed size would either
-/// refuse it or leave it no heap. Adding the image keeps what a program has left after its build
-/// the same whichever way it arrived, at the price of counting a small image's pages twice.
-///
-/// Name: provisional.
-pub const fn image_region_pages(image_pages: u64, startup: StartupContract, native: u64) -> u64 {
-    image_pages
-        + match startup {
-            StartupContract::Std => STD_REGION_PAGES,
-            StartupContract::Native => native,
-        }
 }
 
 #[cfg(test)]

@@ -123,9 +123,12 @@ globally_unique_identifier_partition_table prose_acronyms 19
 globally_unique_identifier_partition_table register_names 10
 glyph_atlas abbreviations 16
 glyph_atlas prose_acronyms 1
-grant_plan abbreviations 233
-grant_plan prose_acronyms 23
-grant_plan register_names 4
+grant_contract abbreviations 11
+grant_contract prose_acronyms 1
+grant_contract register_names 1
+grant_plan abbreviations 155
+grant_plan prose_acronyms 6
+grant_plan register_names 2
 graphics_contract abbreviations 9
 graphics_contract prose_acronyms 7
 graphics_contract readme_acronyms 2
@@ -242,6 +245,9 @@ program_argument_contract prose_acronyms 2
 program_argument_contract readme_acronyms 1
 program_asks abbreviations 8
 program_asks prose_acronyms 2
+program_table abbreviations 63
+program_table prose_acronyms 16
+program_table register_names 1
 ps abbreviations 12
 ps prose_acronyms 1
 screen_console abbreviations 37

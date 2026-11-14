@@ -35,7 +35,7 @@ changes. So deleting it buys the same simplification and costs nothing anyone wa
 
 Upstream `watch` re-runs an arbitrary command, which this one could not. Re-running a named command
 needs a program to hold spawn authority. Here that belongs to the shell alone
-(`grant_plan::spawnproto`), and is granted to nothing the shell spawns: an interruptible child is
+(`program_table::spawnproto`), and is granted to nothing the shell spawns: an interruptible child is
 built with no capabilities in its capability table at all. So there was no route from "a program is
 running" to "that program can start a second one". That is the same category of gap `top`, `pwdx`
 and `w` were blocked on.

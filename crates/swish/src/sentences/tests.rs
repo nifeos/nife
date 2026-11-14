@@ -74,7 +74,7 @@ fn a_spawn_that_failed_says_so_whatever_the_program_was() {
         Program::MemoryGrantDepleter,
         Program::Date,
     ] {
-        let s = shown(|o| write_outcome(&endowment(prog), spawnproto::SPAWN_FAILED, o));
+        let s = shown(|o| write_outcome(prog, &endowment(prog), spawnproto::SPAWN_FAILED, o));
         assert!(s.contains("could not spawn"), "{prog:?}: {s}");
     }
 }
@@ -84,7 +84,12 @@ fn a_spawn_that_failed_says_so_whatever_the_program_was() {
 #[test]
 fn a_program_missing_from_the_image_is_not_reported_as_out_of_memory() {
     let s = shown(|o| {
-        write_outcome(&endowment(Program::Date), spawnproto::SPAWN_NOT_IN_IMAGE, o);
+        write_outcome(
+            Program::Date,
+            &endowment(Program::Date),
+            spawnproto::SPAWN_NOT_IN_IMAGE,
+            o,
+        );
     });
     assert_eq!(
         s,
@@ -101,13 +106,13 @@ fn the_two_programs_that_answer_with_a_number_report_it_in_their_own_terms() {
     let mut e = endowment(Program::LeastAuthorityDemo);
     e.program_argument = 7;
     assert_eq!(
-        shown(|o| write_outcome(&e, 49, o)),
+        shown(|o| write_outcome(Program::LeastAuthorityDemo, &e, 49, o)),
         "  a process at EL0 computed 7*7 = 49\n"
     );
 
     let mut e = endowment(Program::MemoryGrantDepleter);
     e.memory_grant_pages = 16;
-    let s = shown(|o| write_outcome(&e, 14, o));
+    let s = shown(|o| write_outcome(Program::MemoryGrantDepleter, &e, 14, o));
     // Both numbers, because the gap between them is the page tables the grant paid for, and a
     // reader who sees only one of them cannot tell that the grant was honored.
     assert!(s.contains("mapped 14 pages"), "{s}");
@@ -125,7 +130,7 @@ fn a_program_that_reports_elsewhere_prints_nothing_here() {
         Program::InterruptHeeder,
         Program::InterruptIgnorer,
     ] {
-        assert_eq!(shown(|o| write_outcome(&endowment(prog), 0, o)), "");
+        assert_eq!(shown(|o| write_outcome(prog, &endowment(prog), 0, o)), "");
     }
 }
 
@@ -141,7 +146,7 @@ fn every_program_that_answers_in_words_renders_its_answer() {
         if p.manifest().output != OutputDeclaration::Words {
             continue;
         }
-        let s = shown(|o| write_outcome(&endowment(p), 441, o));
+        let s = shown(|o| write_outcome(p, &endowment(p), 441, o));
         assert!(
             s.contains("441"),
             "{} answers in a register and write_outcome has no arm to print it:\n{s:?}",

@@ -11,28 +11,12 @@ use crate::line::{Sink, Source};
 use crate::{
     CapabilityKind, DirectoryGrant, DirectoryGrantDeclaration, Endowment, FileGrant,
     FileGrantDeclaration, Holdings, InputDeclaration, Manifest, MemoryGrantDeclaration,
-    ParsedInvocation, Program, ProgramArgumentDeclaration, Refusal, check_words, expand, line, nav,
+    ParsedInvocation, ProgramArgumentDeclaration, Refusal, check_words, expand, line, nav,
     parse_u64,
 };
 
-/// Check a parsed invocation against the program's manifest and produce the exact [`Endowment`] to
-/// grant, or the [`Refusal`] to print. The whole authority decision lives here: after this returns
-/// `Ok`, the shell grants precisely what the `Endowment` names and the child can reach nothing
-/// else.
-///
-/// The program is resolved first, because "there is no such program" is a fact about the system.
-/// `expanded` is what the line's patterns matched, since the endowment is the set;
-/// [`Expansion::none`] for a line with no pattern. See notes/glob-grant.md.
-pub fn plan(
-    run: &ParsedInvocation<'_>,
-    holds: Holdings,
-    expanded: Expansion,
-) -> Result<Endowment, Refusal> {
-    plan_stage(run, holds, expanded, Streams::default())
-}
-
 /// **What the operators decided for this stage**: which capability its output slot gets and which
-/// its input slot gets. [`line::split`] and the shell between them produce it; [`plan_stage`] checks
+/// its input slot gets. [`line::split`] and the shell between them produce it; [`plan_against_with`] checks
 /// it against the program's manifest.
 ///
 /// It is a pair rather than two arguments because the two are one question asked in two directions,
@@ -55,36 +39,13 @@ pub struct Streams {
 /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 pub const ISOLATION_WORD: &[u8] = b"swish";
 
-/// [`plan`], with the operators' answer folded in.
-///
-/// The stream check comes **after** the grant check and not before, deliberately. A line can be
-/// wrong about both (`least_authority_demo > out.txt` names no integer *and* has no bytes to write), and the
-/// grant refusal is the one that reads truer: what a program is endowed is a bigger fact about the
-/// line than where its output was going to go.
-pub fn plan_stage(
-    run: &ParsedInvocation<'_>,
-    holds: Holdings,
-    expanded: Expansion,
-    streams: Streams,
-) -> Result<Endowment, Refusal> {
-    // Ahead of resolving the program, for the reason [`ParsedInvocation::misquoted`] states: a line whose
-    // words cannot be read has no reliable first word either.
-    if let Some(r) = run.misquoted {
-        return Err(r);
-    }
-    // The isolation form (milestone 52, DECISIONS §160) has its spelling reserved and no child
-    // behind it yet, so the shell says that instead of calling `swish` a program that is not there.
-    if run.program == ISOLATION_WORD {
-        return Err(Refusal::IsolationNotBuilt);
-    }
-    let prog = Program::from_name(run.program).ok_or(Refusal::NoSuchProgram)?;
-    plan_against_with(run, prog, prog.manifest(), holds, expanded, streams)
-}
-
-/// [`plan`]'s second half, against an **explicit** manifest rather than the static table.
-///
-/// It exercises manifest shapes no shipped program declares, and it is the call a composer makes
-/// with a component's own manifest (milestone 23 (a capability-routed component OS)).
+/// Check a parsed invocation against a program's manifest and produce the exact [`Endowment`] to
+/// grant, or the [`Refusal`] to print. The whole authority decision lives here: after this returns
+/// `Ok`, the shell grants precisely what the `Endowment` names and the child can reach nothing
+/// else. The caller resolves the program and supplies its manifest; a composer passes a
+/// component's own (milestone 23 (a capability-routed component OS)). `expanded` is what the
+/// line's patterns matched, since the endowment is the set; [`Expansion::none`] for a line with no
+/// pattern. See notes/glob-grant.md.
 ///
 /// **This is where the positional tokens acquire meaning**, in the order typed: the integer
 /// argument first if the manifest declares one, then the file. A token past the last declared slot
@@ -93,19 +54,17 @@ pub fn plan_stage(
 /// See notes/glob-grant.md ("The shell expands before it plans").
 pub fn plan_against(
     run: &ParsedInvocation<'_>,
-    prog: Program,
     m: Manifest,
     holds: Holdings,
     expanded: Expansion,
 ) -> Result<Endowment, Refusal> {
-    plan_against_with(run, prog, m, holds, expanded, Streams::default())
+    plan_against_with(run, m, holds, expanded, Streams::default())
 }
 
 /// [`plan_against`], with the operators' answer. The one that does the work; the other two are the
 /// spellings without a pipeline on the line.
 pub fn plan_against_with(
     run: &ParsedInvocation<'_>,
-    prog: Program,
     m: Manifest,
     holds: Holdings,
     expanded: Expansion,
@@ -186,7 +145,7 @@ pub fn plan_against_with(
     let diagnostics = check_streams(m, streams)?;
 
     Ok(Endowment {
-        program: prog,
+        manifest: m,
         program_argument: arg,
         memory_grant_pages: mem_pages,
         file,
@@ -491,9 +450,8 @@ pub fn check_chain(shell_feeds_head: bool, plans: &[Option<Endowment>]) -> Resul
         // there is no second process to deadlock against.
         None => Ok(()),
         // The tail's output goes to the terminal's sink adapter, not back to this shell. This
-        // trusts that `writes_while_reading` rides only on a byte-stream output rather than
-        // re-checking `e.program.manifest()`, because `e` may have been planned against a different
-        // manifest ([`plan_against_with`]).
+        // trusts that `writes_while_reading` rides only on a byte-stream output and does not
+        // re-check `e.manifest`'s output kind; no shipped manifest declares it.
         Some(e) if matches!(e.sink, Sink::Report) => Ok(()),
         Some(_) => Err(Refusal::NoReaderButThisShell),
     }

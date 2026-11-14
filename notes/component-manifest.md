@@ -40,7 +40,7 @@ stable endpoint cannot become its server, and the test that proves it endows an 
 honest client's exact capabilities. One character wrong in `client_caps` and that test fails for a
 reason no reader could find from the operator's source.
 
-## Is a component manifest the same thing as `grant_plan::Manifest`?
+## Is a component manifest the same thing as `grant_contract::Manifest`?
 
 It has to be asked, because `crates/grant_plan` already has a `Manifest` and it already does the
 declaring-what-you-need job: `ProgramArgumentDeclaration`, `MemoryGrantDeclaration`, `FileGrantDeclaration`, `DirectoryGrantDeclaration`, the short options a program
@@ -50,7 +50,7 @@ declared without saying so. A second parallel manifest concept with a similar na
 comprehension disaster in a tree whose first tenet is that a reader meets a name before anything else.
 
 They are siblings, not one thing, and the difference fits in a sentence.
-`grant_plan::Manifest` declares **what a human at a prompt may designate** for a program;
+`grant_contract::Manifest` declares **what a human at a prompt may designate** for a program;
 `capability_plan::Requirements` declares **what a supervisor must route before a component can serve
 anyone**. Four differences follow, each checkable against the code rather than a matter of taste.
 
@@ -59,7 +59,7 @@ person types a file name and the typing is the grant. Every field of its manifes
 token from a line into a slot, or about refusing a line at the prompt. A component is started by a
 supervisor with nothing typed.
 
-The vocabularies are disjoint. Nothing in `grant_plan::Manifest` can name an endpoint, a device
+The vocabularies are disjoint. Nothing in `grant_contract::Manifest` can name an endpoint, a device
 or a shared page. Nothing in `Requirements` can name an argument or a short option. The nearest thing
 to an overlap is memory, and even there `MemoryGrantDeclaration::Required { min, max }` is a *range a person picks
 from* with `--mem N`, while a component's page count is an exact number the supervisor must supply.
@@ -69,7 +69,7 @@ central refusal turns on. `Direction::Serve` is `READ` and `Direction::Use` is `
 endpoint object. `grant_plan` has no field that could carry it, and no program the shell spawns would
 ever set one, because a shell-spawned program is a client of everything it holds.
 
-The keys are different, and this is the one that decides drop-in. `grant_plan::Manifest` is
+The keys are different, and this is the one that decides drop-in. `grant_contract::Manifest` is
 reachable only through `Program`, a **closed enum with a static table compiled into the shell**. Adding a
 component to it would mean adding a variant and recompiling the shell, which is the exact opposite of
 what a vendor drop-in is. `Requirements` is a value the *contract crate* owns, so a build that speaks
@@ -77,7 +77,7 @@ the contract is wired by code that never heard of that build.
 
 What the two **do** share is a shape, and the shape is the reusable idea rather than the struct: a
 declaration, plus what the wirer holds, checked into an endowment or a typed refusal, before anything
-is spawned. `grant_plan::plan(run, holdings, expansion)` and `capability_plan::plan(reqs,
+is spawned. `program_table::plan(run, holdings, expansion)` and `capability_plan::plan(reqs,
 provisions)` are the same function over different worlds, and each crate's refusal enum is the same
 kind of answer. That parallel is why the crate's name ends in `plan` and not `manifest`: the echo is
 the part worth teaching, and the distinguishing word carries the difference.
@@ -310,7 +310,7 @@ not that another component is what supplies it.
   (call/reply IPC: a one-shot reply capability), §16 (object revocation: reclaim the objects a
   process built)
 - notes/live-replacement.md for the swap itself, its two witnesses, and the latency ladder
-- notes/program-manifest.md and notes/grant-expression.md for `grant_plan::Manifest`, the sibling
+- notes/program-manifest.md and notes/grant-expression.md for `grant_contract::Manifest`, the sibling
 - notes/verification.md for what the Kani harnesses cover and what they do not
 - Fuchsia's component manifests (`use`/`offer`/`expose`) and seL4's CapDL, the two prior arts the
   roadmap block names

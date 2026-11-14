@@ -9,12 +9,15 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-# The type a note carries. The note is `grant_plan::Manifest` in bytes, so the vocabulary is the one
-# the shell already binds lines against and the progenitor already endows from.
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+# The type a note carries. The note is `grant_contract::Manifest` in bytes, so the vocabulary is the
+# one the shell already binds lines against and the progenitor already endows from.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
 # The zone limits and spelling, which are the resolver's: a manifest asks for what a badge can carry.
 domain_name_resolution_contract = { path = "../domain_name_resolution_contract" }
 
 [dev-dependencies]
 # Only to hold its note header to this crate's: the leaf crate repeats `OWNER` so it can depend on nothing.
 interfaces_note = { path = "../interfaces_note" }
+# The shipped programs' manifests, which the tests encode and decode; the library never names a
+# program.
+program_table = { version = "0.1.0", path = "../program_table" }

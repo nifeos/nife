@@ -45,7 +45,7 @@ The shell holds a job from the program table, started by a plain line or by `&`.
 pipeline stages, a file run by its path, an installer holder or the graphical terminal; BUGS lists
 each.
 
-- The request. `Wiring::held` (`crates/grant_plan/src/spawnproto.rs`) puts up to three capabilities
+- The request. `Wiring::held` (`crates/program_table/src/spawnproto.rs`) puts up to three capabilities
   after the interrupt pair. The first is a region the shell split off its budget, sized by
   `grant_plan::job_region_pages` so both sides count the same pages. The second is the shell's exit
   endpoint. The third, for `free` and `slabtop`, is the shell's budget narrowed to `ENUMERATE`.

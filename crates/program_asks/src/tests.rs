@@ -15,13 +15,13 @@ use super::*;
 
 /// The manifest every fixture program carries, with the asks a test adds on top. Two consts,
 /// because the note constructors are `const fn` and their bindings' types pin the notes' lengths.
-const MANIFEST_NETWORK: grant_plan::Manifest = grant_plan::Manifest {
+const MANIFEST_NETWORK: grant_contract::Manifest = grant_contract::Manifest {
     network: true,
-    ..grant_plan::Program::Uptime.manifest()
+    ..program_table::Program::Uptime.manifest()
 };
-const MANIFEST_PLAIN: grant_plan::Manifest = grant_plan::Manifest {
+const MANIFEST_PLAIN: grant_contract::Manifest = grant_contract::Manifest {
     network: false,
-    ..grant_plan::Program::Uptime.manifest()
+    ..program_table::Program::Uptime.manifest()
 };
 
 /// A one-`PT_LOAD` ELF whose one `PT_NOTE` segment carries `whole_note`: the bytes

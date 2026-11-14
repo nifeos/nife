@@ -25,7 +25,7 @@ fn redirecting_and_piping_change_one_field_and_nothing_else() {
     // And everything else is identical, which is the claim. Compared field by field rather than
     // by clearing `sink` and comparing wholes, so a field added later has to be thought about.
     for other in [b, c] {
-        assert_eq!(a.program, other.program);
+        assert_eq!(a.manifest, other.manifest);
         assert_eq!(a.program_argument, other.program_argument);
         assert_eq!(a.memory_grant_pages, other.memory_grant_pages);
         assert_eq!(a.file, other.file);
@@ -448,15 +448,7 @@ fn plan_as(m: Manifest, text: &[u8], streams: Streams) -> Endowment {
     let Command::Run(r) = parse(text) else {
         panic!()
     };
-    plan_against_with(
-        &r,
-        Program::Wc,
-        m,
-        WITH_DIRECTORY,
-        Expansion::none(),
-        streams,
-    )
-    .unwrap()
+    plan_against_with(&r, m, WITH_DIRECTORY, Expansion::none(), streams).unwrap()
 }
 
 /// **The declaration reaches the endowment**, which is what lets a whole line be checked rather

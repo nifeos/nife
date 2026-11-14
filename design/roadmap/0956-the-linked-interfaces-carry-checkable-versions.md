@@ -116,7 +116,7 @@ table. No registry outside it exists.
 | 14 | `filesystem_contract::blk` |
 | 15 | `filesystem_contract::fs` |
 | 16 | `filesystem_fixture` |
-| 17 | `grant_plan` |
+| 17 | `grant_contract` |
 | 18 | `program_argument_contract` |
 | 19 | `socket_contract` |
 | 20 | `user_mode_runtime` |
@@ -127,14 +127,15 @@ table. No registry outside it exists.
 
 A reserved row holds a number for a ruled wire whose crate has not landed; the crate's pull request
 replaces it with the crate's row. An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
-one in `fs`. The check also classifies every crate the cut links. Four define no run-time format
-and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
+one in `fs`. The check also classifies every crate the cut links. Five define no run-time format
+and stay Rust APIs: `calendar`, `domain_name_system`, `glob`, `grant_plan` and
 `globally_unique_identifier_partition_table`. Its `NOT_A_FORMAT` table gives each reason.
 
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
 carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
-not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
-moving them into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
+not reach `grant_plan`. The `Manifest` type and the slot constants live in the leaf crate
+`grant_contract`, which carries interface 17 (milestone 1094 (`grant_plan`: what an outside
+maintainer would fix before it leaves)).
 
 ## What this block does not do
 

@@ -66,13 +66,13 @@ atomics at all.
 ## What this does not do, and why
 
 - Corrected 2026-09-26: a shipped program does declare this page. This bullet said no
-  `Manifest` field existed; `grant_plan::Manifest::configuration` and `printenv` landed 2026-08-26 and
+  `Manifest` field existed; `grant_contract::Manifest::configuration` and `printenv` landed 2026-08-26 and
   the real progenitor endows the page to any child that declares it (milestone 47 (navigation and naming)'s
   `design/roadmap/0047-navigation-and-naming/environment.md`). `date` still does not read `TZ`, for the
   reason `notes/calendar.md` gives.
 - The `caps` preview extension DECISIONS §111 (inert configuration is a validated page) asks for is built (2026-09-26). The progenitor
   places the frame it endows children with in the boot shell too, `READ` without `GRANT`, at
-  `grant_plan::SHELL_CONFIGURATION_SLOT` (21) and maps it at `grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS` (both names
+  `grant_contract::SHELL_CONFIGURATION_SLOT` (21) and maps it at `grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS` (both names
   ratified, calef, 2026-10-18). `caps printenv` then prints the three values from that frame, so the preview is
   what the child will read rather than a copy of the defaults that could drift:
 

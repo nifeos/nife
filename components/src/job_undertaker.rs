@@ -30,7 +30,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use grant_plan::spawnproto;
+use program_table::spawnproto;
 use user_mode_runtime::{reap, receive_fault, send, yield_now};
 
 /// The supervision endpoint the progenitor endows every job with, held `READ`: the right to receive deaths

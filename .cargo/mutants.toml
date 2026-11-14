@@ -302,13 +302,13 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
     # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
     # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
-    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
-    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
+    "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
+    "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
     # The const-level shift survivors are command.rs's RECURSIVE and verbs.rs's CLOCK, both
     # `1 << 0`, the identity; the rest of each file's constant shifts are pinned by existing
     # tests, which stay.
     "^crates/grant_plan/src/command\\.rs:\\d+:\\d+: replace << with >>$",
-    "^crates/grant_plan/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/grant_contract/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
     # serial_console: decode_exact's three pixel channels, each a byte shifted to its own third
     # of the word, per THE_PIXEL_CHANNELS_SHARE_NO_BIT, beside the function.
     "^crates/serial_console/src/screen\\.rs:\\d+:\\d+: replace \\| with \\^ in decode_exact$",

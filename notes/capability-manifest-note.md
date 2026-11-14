@@ -11,14 +11,14 @@ granted is in [component-manifest.md](component-manifest.md).
 
 `encode` panics on the manifests the layout has no spelling for, and in a constant that panic is a
 compile error rather than a note nobody can read. They are a declared second stream at a slot other
-than `grant_plan::DIAGNOSTICS_SLOT`, and a subtree option that is not one of the declared letters
-or is declared without a directory grant. They also include `grant_plan::Manifest::reboot` and
+than `grant_contract::DIAGNOSTICS_SLOT`, and a subtree option that is not one of the declared letters
+or is declared without a directory grant. They also include `grant_contract::Manifest::reboot` and
 `sync`, and, since milestone 809 (the package client becomes a program), `installer` and `catalog`.
 No image may be endowed those, and `jig` is endowed from the table.
 
 `reboot` and `sync` have no byte on purpose (milestone 805 (`reboot` at the prompt), DECISIONS §251
 (restarting the machine is a kernel object the progenitor hands out)). A note is how installed bytes
-ask for authority, and `grant_plan::image_can_carry` refuses both to every image. A byte for either
+ask for authority, and `program_table::image_can_carry` refuses both to every image. A byte for either
 would spell a request no reader may grant. Leaving it out keeps the layout's last zero byte for
 version 2 and keeps the wire format unamended. The one program that declares them is endowed from
 `grant_plan`'s table, which carries no note.
@@ -26,9 +26,9 @@ version 2 and keeps the wire format unamended. The one program that declares the
 ## The verb table, note type 3
 
 `VERBS` (milestone 809, its option V2) carries a list of (verb, grants) pairs,
-`grant_plan::VerbGrant`'s bytes. Each entry names one word a line may give after the program's name,
+`grant_contract::VerbGrant`'s bytes. Each entry names one word a line may give after the program's name,
 and which of the manifest's progenitor-endowed authorities that line is granted
-(`grant_plan::narrow_by_verb`). A word not in the table is granted none of them. It is its own note
+(`grant_contract::narrow_by_verb`). A word not in the table is granted none of them. It is its own note
 rather than a field of `MANIFEST`, because a manifest is one fixed-length value every reader copies,
 and a table of words is not. Most programs carry none.
 
@@ -39,7 +39,7 @@ installed with `jig`)). Until a reader honors it, the progenitor refuses install
 it, rather than endow them with every verb's grants at once.
 
 The descriptor is a version word, a count word, and exactly that many records, each the word
-zero-padded to `grant_plan::MAXIMUM_VERB` bytes, then the grants' bits little-endian, then two zero
+zero-padded to `grant_contract::MAXIMUM_VERB` bytes, then the grants' bits little-endian, then two zero
 bytes. Its length varies, as calef ruled on #1903 (2026-10-10 UTC). One table still has one
 encoding, because the records are sorted ascending by their words' bytes and each verb appears once.
 

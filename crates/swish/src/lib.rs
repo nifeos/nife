@@ -48,15 +48,14 @@ use endowment::write_config_values;
 pub use endowment::{write_census, write_holdings};
 use environment_contract::ConfigPage;
 use filesystem_contract::dir;
+use grant_contract::{OutputDeclaration, ProgramArgumentDeclaration};
 use grant_plan::expand::{Expansion, NameSet};
 use grant_plan::line::{self, Line};
 use grant_plan::nav::{self, Refused};
-use grant_plan::{
-    Command, Endowment, Holdings, OutputDeclaration, ParsedInvocation, Program,
-    ProgramArgumentDeclaration, Refusal, Streams, spawnproto,
-};
+use grant_plan::{Command, Endowment, Holdings, ParsedInvocation, Refusal, Streams};
 pub use number::write_num;
 pub use preview::{Vouched, write_capabilities, write_image_capabilities, write_preview};
+use program_table::{Program, spawnproto};
 pub use reclaim::{BudgetReturn, is_reclaimed_within, reclaim_budget_within, write_budget_left};
 pub use routing::{Route, route};
 pub use say::{HEAP_MAXIMUM_BYTES, Say, write_say};

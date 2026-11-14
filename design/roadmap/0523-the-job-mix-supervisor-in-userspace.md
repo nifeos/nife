@@ -166,7 +166,7 @@ Three options, and all three are an architect's:
   `sched`'s and not `arch`'s. Costs: a syscall return contract that today means only "ok", and every
   caller that compares it to zero.
 - B. A fourth word from `SURVEY`. Fits an existing method and a supervision endpoint is already
-  the thing that names a domain's threads. `crates/grant_plan/src/program/catalog.rs::Program` already reserves
+  the thing that names a domain's threads. `crates/program_table/src/program/catalog.rs::Program` already reserves
   the idea of a fourth `SURVEY` word for scheduled CPU *time* (milestone 282 (a thread's CPU time, and the `top` it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
   This would want to be decided alongside that rather than ahead of it.
 - C. An EL0-readable core id, written by the context switch into a register the way milestone

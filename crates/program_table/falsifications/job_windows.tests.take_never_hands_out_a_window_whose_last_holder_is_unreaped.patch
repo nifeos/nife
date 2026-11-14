@@ -1,4 +1,4 @@
-Falsifies `grant_plan::job_windows::tests::take_never_hands_out_a_window_whose_last_holder_is_unreaped`.
+Falsifies `program_table::job_windows::tests::take_never_hands_out_a_window_whose_last_holder_is_unreaped`.
 
 The defect: `Windows::take` skips the reaped check and hands out the next window in the rotation,
 which is the pool before milestone 685 (a job is finished when its memory is back). It still
@@ -8,10 +8,10 @@ changes.
 Expected to fail: the seventh take, which gets window 1 while its holder, job 1, is unreaped
 ("a seventh job got a window while all six holders were unreaped").
 
-diff --git a/crates/grant_plan/src/job_windows.rs b/crates/grant_plan/src/job_windows.rs
+diff --git a/crates/program_table/src/job_windows.rs b/crates/program_table/src/job_windows.rs
 index 78fcb64..5cac26a 100644
---- a/crates/grant_plan/src/job_windows.rs
-+++ b/crates/grant_plan/src/job_windows.rs
+--- a/crates/program_table/src/job_windows.rs
++++ b/crates/program_table/src/job_windows.rs
 @@ -92,7 +92,7 @@ impl Windows {
          let n = self.end - self.first;
          let w = (0..n)

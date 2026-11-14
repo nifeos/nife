@@ -21,9 +21,11 @@ boot_ladder = { version = "0.1.0", path = "../boot_ladder" }
 machine_statistics_contract = { version = "0.1.0", path = "../machine_statistics_contract" }
 nifefs = { version = "0.1.0", path = "../nifefs" }
 elf = { version = "0.1.0", path = "../elf" }
-# The grant expression and its wire form: what the shell resolved a typed line into, and the
-# protocol init decodes on the other side of the spawn channel. This crate is that other side.
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+# The manifests and slot numbers a child is endowed by, and the spawn protocol's wire form with the
+# program table it names: the protocol init decodes on the other side of the spawn channel. This
+# crate is that other side, and it plans no line, so it does not link the planner.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+program_table = { version = "0.1.0", path = "../program_table" }
 # The wire format of a manifest a program carries in its own bytes (milestone 597 (a program carries
 # its manifest in an ELF note), provisional): the progenitor endows a file's bytes from the note
 # they carry.

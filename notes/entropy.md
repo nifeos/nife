@@ -249,9 +249,9 @@ it.
 - **A program at the prompt can hold entropy, since milestone 111** (2026-09-05). This entry used to
   read "`init` does not endow the shell with entropy", and its own last sentence ("future work with
   no design problem in it") turned out to be right: no new mechanism, no new right, nothing on the
-  wire. `grant_plan::Manifest::entropy` joined `clock`, `domain` and `config`. The progenitor reads
+  wire. `grant_contract::Manifest::entropy` joined `clock`, `domain` and `config`. The progenitor reads
   the declaration and places a `WRITE` view of the entropy service's request endpoint at
-  `grant_plan::ENTROPY_SLOT`. A program that did not declare it holds an empty slot there and
+  `grant_contract::ENTROPY_SLOT`. A program that did not declare it holds an empty slot there and
   `entropy_contract::delivered` answers `None` rather than a short count. `components/src/uuid.rs` is the
   first consumer a person can type, and `caps uuid` prints the row.
 

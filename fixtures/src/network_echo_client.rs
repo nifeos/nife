@@ -4,7 +4,7 @@
 //! Opens a TCP connection to the QEMU runners' echo peer (`socket_contract::fixture::ECHO_PEER_IP`,
 //! port `ECHO_PEER_PORT`), sends [`MSG`], and prints what comes back. The real progenitor spawns it
 //! through the real spawn service, holding exactly what its manifest
-//! (`grant_plan::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
+//! (`program_table::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
 //! green `script/swish-check` line for it is the claim about the system a person boots. A fixture
 //! and not a tool, because its peer exists only inside a QEMU runner.
 
@@ -19,7 +19,7 @@
 //!
 //! - slot 0: its output, the sink contract (`crates/byte_sink_contract`).
 //! - slot 1: the `--mem` budget, which pays for its socket page (the network grant has no memory).
-//! - slot 10 ([`grant_plan::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
+//! - slot 10 ([`grant_contract::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
 //!   manifest declares `network`; empty when the progenitor built no stack (`x86_64`, or `NIFE_NET`
 //!   unset), and then this prints why and sends nothing.
 //! - while it runs, the capability of the socket it opened (from `OPEN_TCP`), which reaches that
@@ -46,7 +46,7 @@ const OUT: u64 = 0;
 /// The `--mem` budget.
 const MEMORY_REGION: u64 = 1;
 /// The stack's endpoint, where the manifest's declaration puts it.
-const STACK: u64 = grant_plan::NETWORK_SLOT;
+const STACK: u64 = grant_contract::NETWORK_SLOT;
 
 /// Where this program maps the page it shares with the stack. Any address its own image does not
 /// use; `socket_test_client`'s choice, because that one is known to be clear of a small program.

@@ -68,7 +68,7 @@ Expand once and grant what was shown, from the shell's side:
 ```rust
 // components/src/swish/: one expander, two callers
 let shown = nav.expand(b"gl-*.txt")?;              // what `echo` prints
-let e = grant_plan::plan(&spec, holdings(&nav), Expansion::at(0, shown))?;
+let e = program_table::plan(&spec, holdings(&nav), Expansion::at(0, shown))?;
 assert_eq!(e.dir.unwrap().names, shown);           // and what `rm` would hold
 ```
 

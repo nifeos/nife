@@ -113,7 +113,7 @@ pub(super) const LINES: &[Line] = &[
             "provenance: vouched by activation generation 1 (digest sha256:",
             // **No note, the default** (milestone 597 (a program carries its manifest in an ELF
             // note), provisional): `noteless` carries no manifest note, so it is bound and endowed
-            // as `grant_plan::NO_NOTE_MANIFEST`, its output alone.
+            // as `program_table::NO_NOTE_MANIFEST`, its output alone.
             "it carries no manifest note, so it asks for its output and nothing else",
         ],
     ),

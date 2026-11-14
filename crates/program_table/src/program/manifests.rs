@@ -8,11 +8,66 @@
 
 use crate::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
-    InputDeclaration, Manifest, MemoryGrantDeclaration, NO_SHORT_OPTIONS, OutputDeclaration,
-    Program, ProgramArgumentDeclaration, ShortOptions, StartupContract, VerbGrant, WordGrant,
-    verbs,
+    InputDeclaration, Manifest, ManifestAuthorities, MemoryGrantDeclaration, NO_SHORT_OPTIONS,
+    OutputDeclaration, Program, ProgramArgumentDeclaration, ShortOptions, StartupContract,
+    VerbGrant, WordGrant,
 };
 
+/// **`jig`'s verbs** (milestone 809; the spellings are apt's, ruled 2026-10-10 by calef), sorted
+/// by their bytes, which `capability_manifest_note`'s record requires. Each holds the least it
+/// needs: `update` and `install` reach the index over TLS, so they take the network, the clock and
+/// entropy; `install` also takes the installer, the catalog (to resolve a name and check what
+/// arrives) and reads the index store, and `update` writes it. `remove` and `rollback` hold the
+/// installer alone. `list` reads the catalog and the store, and `list -u` (calef, 2026-10-17 UTC)
+/// only the activation directory, comparing what is installed with the index copy beneath it.
+pub(crate) const JIG_VERBS: &[VerbGrant] = &[
+    VerbGrant {
+        verb: "approve",
+        // The owner's console compiles the file and sends the records; the store is read
+        // through the activation directory for the diff the re-approval shows (milestone 911
+        // (scripted installs grant only what the owner's approval file allows)). Standard
+        // input rides with the installer, which is what the one yes is read through.
+        authorities: ManifestAuthorities::INSTALLER.union(ManifestAuthorities::ACTIVATION),
+    },
+    VerbGrant {
+        verb: "install",
+        authorities: ManifestAuthorities::INSTALLER
+            .union(ManifestAuthorities::CATALOG)
+            .union(ManifestAuthorities::NETWORK)
+            .union(ManifestAuthorities::INDEXES)
+            .union(ManifestAuthorities::CLOCK)
+            .union(ManifestAuthorities::ENTROPY),
+    },
+    VerbGrant {
+        verb: "list",
+        authorities: ManifestAuthorities::CATALOG.union(ManifestAuthorities::INDEXES),
+    },
+    VerbGrant {
+        verb: "list -u",
+        authorities: ManifestAuthorities::ACTIVATION,
+    },
+    VerbGrant {
+        verb: "remove",
+        authorities: ManifestAuthorities::INSTALLER,
+    },
+    VerbGrant {
+        verb: "revoke",
+        // The owner's console drops the named approval; the name rides the request.
+        authorities: ManifestAuthorities::INSTALLER,
+    },
+    VerbGrant {
+        verb: "rollback",
+        authorities: ManifestAuthorities::INSTALLER,
+    },
+    VerbGrant {
+        verb: "update",
+        authorities: ManifestAuthorities::NETWORK
+            .union(ManifestAuthorities::INDEXES)
+            .union(ManifestAuthorities::INDEXES_WRITE)
+            .union(ManifestAuthorities::CLOCK)
+            .union(ManifestAuthorities::ENTROPY),
+    },
+];
 impl Program {
     /// **What each verb of this program is granted, when its manifest is narrowed by the line's
     /// first word** (milestone 809 (the package client becomes a program), its option V2): empty
@@ -20,7 +75,7 @@ impl Program {
     /// always. [`narrow_by_verb`](crate::narrow_by_verb) reads it, and the shell and the progenitor both call that.
     pub const fn verbs(self) -> &'static [VerbGrant] {
         match self {
-            Program::Jig => verbs::JIG_VERBS,
+            Program::Jig => JIG_VERBS,
             _ => &[],
         }
     }

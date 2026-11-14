@@ -94,7 +94,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -476,10 +476,18 @@ name = "glob"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
@@ -564,13 +572,14 @@ dependencies = [
  "elf",
  "entropy_backend",
  "filesystem_contract",
- "grant_plan",
+ "grant_contract",
  "http_response",
  "installed_programs",
  "measured_boot",
  "package_archive",
  "package_index",
  "pinned_tls_client",
+ "program_table",
  "socket_contract",
  "std_runtime_contract",
  "user_mode_runtime",
@@ -798,6 +807,14 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "quote"

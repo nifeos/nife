@@ -52,7 +52,7 @@ WAIVERS = {
     "filesystem_contract": (20, PENDING),
     "filesystem_fixture": (18, PENDING),
     "globally_unique_identifier_partition_table": (21, PENDING),
-    "grant_plan": (102, PENDING),
+    "grant_plan": (54, PENDING),
     "machine_statistics_contract": (1, PENDING),
     "program_argument_contract": (2, PENDING),
     "socket_contract": (2, PENDING),

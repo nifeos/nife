@@ -9,12 +9,12 @@
 
 // The manifest the note carries: an unvouched program's grants are §219 (how the shell names an
 // installed program to the spawner)'s whatever this says, so it declares the least that is true.
-capability_manifest_note::carry!(grant_plan::Manifest {
-    program_argument: grant_plan::ProgramArgumentDeclaration::Words(
-        grant_plan::WordGrant::ReadOnly
+capability_manifest_note::carry!(grant_contract::Manifest {
+    program_argument: grant_contract::ProgramArgumentDeclaration::Words(
+        grant_contract::WordGrant::ReadOnly
     ),
-    startup: grant_plan::StartupContract::Std,
-    ..grant_plan::UNVOUCHED_MANIFEST
+    startup: grant_contract::StartupContract::Std,
+    ..program_table::UNVOUCHED_MANIFEST
 });
 
 fn main() {

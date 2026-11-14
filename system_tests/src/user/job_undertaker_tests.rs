@@ -120,7 +120,7 @@ fn spawn_job_undertaker_with(
                 crate::capability_object::rendezvous_capability_badged(
                     spawn,
                     Rights::WRITE,
-                    grant_plan::spawnproto::UNDERTAKER_BADGE,
+                    program_table::spawnproto::UNDERTAKER_BADGE,
                 ),
             ),
         ] {
@@ -252,15 +252,15 @@ fn job_undertaker_returns_every_finished_job_to_the_pool() {
 ///
 /// After collecting a job, `job_undertaker` sends `spawnproto::reaped(label, tid)` (label: the job's
 /// supervision badge) on its `UNDERTAKER_BADGE` endpoint; the job's window frees on that message,
-/// not before (`grant_plan::job_windows::Windows`). The booted half of confinement claim 24 (fatal
+/// not before (`program_table::job_windows::Windows`). The booted half of confinement claim 24 (fatal
 /// risk 7's criterion (a)); the host test is the rule. The replayable falsification breaks the
 /// label; none reaches the region's return, which an early announcement still meets on one core.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.job_undertaker_tests.job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free.patch`
 #[test_case]
 fn job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free() {
-    use grant_plan::job_windows::Windows;
-    use grant_plan::spawnproto;
+    use program_table::job_windows::Windows;
+    use program_table::spawnproto;
 
     /// The job's label, as the progenitor would have minted it. Any nonzero value.
     const LABEL: u64 = 0x685;

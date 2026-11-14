@@ -90,8 +90,8 @@ pub const RAW_ONLY_BADGE: u64 = 1;
 /// 2026-10-19 (UTC), on #2405: "a"). The terminal serves [`OPERATION_READ_LINE_BYTES`] on it and refuses everything else
 /// with [`BAD_REQUEST`], so its holder reads the lines the owner types and can neither type one,
 /// print, nor switch modes. The spawn service mints it for a program whose manifest sets
-/// `grant_plan::Manifest::console_input`, which only `grant_plan`'s table can, and std reads it at
-/// `std_runtime_contract::STDIN_SLOT`.
+/// `grant_contract::Manifest::console_input`, which only `program_table`'s catalog can, and std
+/// reads it at `std_runtime_contract::STDIN_SLOT`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const STDIN_BADGE: u64 = 2;

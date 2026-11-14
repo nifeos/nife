@@ -49,7 +49,7 @@ process that can write the file without opening a second session.
 
 This costs the milestone nothing, and that is the test of whether it is the right shape. What a
 redirected program holds is unchanged: one endpoint, `WRITE`, no way to ask what is behind it. There
-is no new message, no change to `grant_plan::spawnproto`, and no change in the progenitor.
+is no new message, no change to `program_table::spawnproto`, and no change in the progenitor.
 `Sink::File` and `Source::File` still exist in the plan, because the manifest check needs them
 (`least_authority_demo 9 > out.txt` is still `NotAByteStream`), and the wiring simply does not need
 a capability for them.

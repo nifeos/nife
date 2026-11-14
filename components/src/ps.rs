@@ -61,10 +61,10 @@ const REPORT: u64 = 0;
 /// out from under the real supervisor, and a domain names its members without acting on them. A
 /// named slot, not the next free one, so it does not move with whatever else a line granted (as §67
 /// (a program's second stream is a declaration) did for diagnostics).
-const DOMAIN_SLOT: u64 = grant_plan::DOMAIN_SLOT;
+const DOMAIN_SLOT: u64 = grant_contract::DOMAIN_SLOT;
 
 /// The declared second stream (DECISIONS §67): complaints about the run, never about the domain.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Whether this process was granted a second stream, decided once in [`_start`].
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
@@ -102,8 +102,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

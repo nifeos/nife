@@ -4,7 +4,7 @@
 //!
 //! The negative control for `network_echo_client`, and the unvouched child of DECISIONS §219 (how
 //! the shell names an installed program to the spawner) gate D2. Its manifest
-//! (`grant_plan::Program::UnreachableNetworkWitness`) declares nothing, so the spawn service must
+//! (`program_table::Program::UnreachableNetworkWitness`) declares nothing, so the spawn service must
 //! leave the process domain, entropy and network slots empty; it asks each anyway with a real
 //! request, then lists every slot it holds. An endowed authority turns its line into `REACHED` and
 //! the census gains that slot; `script/swish-check` fails on either.
@@ -25,7 +25,7 @@
 //! By name it is a vouched program with an empty manifest, endowed the output alone. As
 //! `installed/unvouched` (`xtask/src/disk.rs`), stripped so no digest matches, it is bytes nobody
 //! vouched for, run by a session holding the run-unvouched capability, and must be endowed what the
-//! line delegated plus the clock and configuration pages (`grant_plan::UNVOUCHED_MANIFEST`):
+//! line delegated plus the clock and configuration pages (`program_table::UNVOUCHED_MANIFEST`):
 //! `slots held: 0 1 2`. Only a child the spawn service spawned can report what it was given.
 
 //! # What its note asks
@@ -70,20 +70,20 @@ const OUT: u64 = 0;
 /// **What this program's note asks for, which is more than it is ever given.** Its compiled-in
 /// manifest (`Program::UnreachableNetworkWitness`), plus the three authorities it probes. See the
 /// module documentation for why a witness carries a note that overreaches.
-const NOTE_ASKS: grant_plan::Manifest = grant_plan::Manifest {
+const NOTE_ASKS: grant_contract::Manifest = grant_contract::Manifest {
     network: true,
     entropy: true,
     domain: true,
-    ..grant_plan::Program::UnreachableNetworkWitness.manifest()
+    ..program_table::Program::UnreachableNetworkWitness.manifest()
 };
 
 capability_manifest_note::carry!(NOTE_ASKS);
 
 // The lines below name the slots in prose; this keeps the prose honest if a constant moves.
-const _: () = assert!(grant_plan::NETWORK_SLOT == 10);
-const _: () = assert!(grant_plan::ENTROPY_SLOT == 9);
-const _: () = assert!(grant_plan::DOMAIN_SLOT == 7);
-const _: () = assert!(grant_plan::REBOOT_SLOT == 13);
+const _: () = assert!(grant_contract::NETWORK_SLOT == 10);
+const _: () = assert!(grant_contract::ENTROPY_SLOT == 9);
+const _: () = assert!(grant_contract::DOMAIN_SLOT == 7);
+const _: () = assert!(grant_contract::REBOOT_SLOT == 13);
 
 user_mode_runtime::program_entry!(start);
 
@@ -97,7 +97,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // (§255 (each socket is its own capability)), which is the probe's doing and not the spawner's.
     let mut line = [0u8; 96];
     let n = census(&mut line);
-    let (r0, _, socket) = call_receiving(grant_plan::NETWORK_SLOT, OPERATION_OPEN_TCP, 0);
+    let (r0, _, socket) = call_receiving(grant_contract::NETWORK_SLOT, OPERATION_OPEN_TCP, 0);
     if let Some(socket) = socket {
         let _ = call(socket, OPERATION_CLOSE, 0);
     }
@@ -109,7 +109,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         _ => b"network: REACHED. a program that declared no network was handed one\n",
     });
     let (r0, _) = call(
-        grant_plan::ENTROPY_SLOT,
+        grant_contract::ENTROPY_SLOT,
         entropy_contract::request(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
         0,
     );
@@ -123,7 +123,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // `SURVEY` from cursor 0: an empty slot is `NoSuchSlot`, a view of a domain answers with a
     // cursor, and a capability without `ENUMERATE` is `NotPermitted`, which still means something
     // is there.
-    let (r0, _, _) = survey(grant_plan::DOMAIN_SLOT, 0);
+    let (r0, _, _) = survey(grant_contract::DOMAIN_SLOT, 0);
     say(match r0 {
         r if r == no_slot => b"domain: refused (no capability at slot 7)\n",
         r if r < 0 => {
@@ -133,7 +133,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     });
     // The reboot object answers only when it refuses, so a held one never gets here (see the
     // module documentation); `DeviceRefused` is a held one whose firmware said no.
-    let r0 = user_mode_runtime::reboot(grant_plan::REBOOT_SLOT);
+    let r0 = user_mode_runtime::reboot(grant_contract::REBOOT_SLOT);
     say(match r0 {
         r if r == no_slot => b"reboot: refused (no capability at slot 13)\n",
         _ => b"reboot: REACHED. a program that declared no reboot was handed the reboot object\n",

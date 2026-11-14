@@ -6,7 +6,7 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::expand::{Name, NameSet};
-use crate::{ParsedInvocation, Program, line, nav};
+use crate::{Manifest, ParsedInvocation, line, nav};
 
 /// A parsed command line. The shell dispatches on this; only [`Command::Run`] carries a grant
 /// expression that must be planned against a manifest.
@@ -135,7 +135,7 @@ pub enum Command<'a> {
     Bg(&'a [u8]),
     /// A program invocation: `<prog> [--mem N] [token ...]`. Named `Run` for the act of running a
     /// program, not for a verb on the line; milestone 47 deleted the verb. A first word that is not
-    /// a builtin lands here even when no such program exists, and [`plan`](crate::plan) answers
+    /// a builtin lands here even when no such program exists, and the shell's planner answers
     /// [`Refusal::NoSuchProgram`](crate::Refusal::NoSuchProgram), which is the "there is nothing there to name" shape of
     /// no-ambient-authority applied to programs.
     Run(ParsedInvocation<'a>),
@@ -172,7 +172,12 @@ pub const MAXIMUM_SHORT_OPTIONS: usize = 8;
 /// value, not a pointer at the shell, nothing after planning can change what an endowment means.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Endowment {
-    pub program: Program,
+    /// **The declared needs this endowment was planned against**: the manifest the caller passed,
+    /// after any narrowing by the line's verb it did first. Everything below was decided from it,
+    /// so a reader asks this, never a table of programs, what the child declared.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
+    pub manifest: Manifest,
     /// The integer argument to start it with (0 when the program takes none).
     pub program_argument: u64,
     /// Pages of untyped to split from the shell's own budget and grant (0 = none).
@@ -282,7 +287,7 @@ pub struct DirectoryGrant {
 }
 
 /// **`rm`'s options**, by the bit they occupy in [`Endowment::short_options`], which is their position in
-/// [`Program::Rm`]'s manifest. Named here so the shell, the program and the tests share one definition
+/// `rm`'s manifest. Named here so the shell, the program and the tests share one definition
 /// rather than three copies of an ordering; `rm_options_are_numbered_by_their_position` pins them.
 pub mod rmopt {
     /// `-r`: recurse. It is also `rm`'s `subtree_option`, so typing it visibly widens the grant.
