@@ -106,9 +106,10 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 2, 6, 9, 12 and 13: the ratification table, the move commit's
-  manifest, licenses and README, the line count (Decision 1), the header and line namespaces, the
-  dry run against the standalone check and the end-to-end note for the README. The ledger names
+- **Outstanding.** Items 1, 2, 6, 9, 12 and 13. They are the ratification table, the move
+  commit's manifest, licenses and README, and the line count (Decision 1). The rest are the header
+  and line namespaces, the dry run against the standalone check and the README's end-to-end note.
+  The ledger names
   each with its reason. Checked by reading the ledger rows against the crate after the commit that
   built the done items.
 
@@ -169,7 +170,7 @@ might misread, it says so here; the lane carries these beside the rows.
 
 ## Done when
 
-The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). [The ledger](1099-machine-statistics-contract-outside-review/ledger.md) says, item by item, what is done and what waits.
+The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). [The ledger](1099-machine-statistics-contract-outside-review/ledger.md) says, item by item, what this block finished and what waits.
 
 ## BUGS
 

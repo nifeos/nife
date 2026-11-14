@@ -236,7 +236,7 @@ sees it is bytes, not columns, which the one-row `BUGS` entry makes a live disti
 
 ## Done when
 
-The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). [The ledger](1098-line-editor-outside-review/ledger.md) says, item by item, what is done and what waits.
+The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). [The ledger](1098-line-editor-outside-review/ledger.md) says, item by item, what this block finished and what waits.
 
 ## BUGS
 

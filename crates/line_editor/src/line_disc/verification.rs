@@ -1,6 +1,6 @@
-//! Machine-checked proofs (DECISIONS §14, the project's direction: a verified-Rust capability
-//! microkernel) for the two pieces of the engine that do index arithmetic on input nobody here
-//! chose: the escape parser and the range delete. The editor's
+//! Machine-checked proofs, which §14 (the project's direction) asks of the kernel's neighbours, for
+//! the two pieces of the engine that do index arithmetic on input nobody here chose: the escape
+//! parser and the range delete. The editor's
 //! invariant is `cursor <= length <= LINE_MAXIMUM`, and every edit has to keep it.
 //!
 //! Name: provisional, for the module and the file.
