@@ -1,13 +1,13 @@
 //! **The kernel's half of the self-test, as the page the kernel hands the progenitor**
-//! (milestone 1063 (the boot self-test's spawning checks run from userspace)). The kernel runs the
+//! The kernel runs the
 //! checks of its own internals, prints their lines and writes this page; the progenitor maps it,
 //! read-only, into `boot_self_test`, which runs the checks that need a user program and prints the
 //! one verdict.
 //!
 //! The page carries the kernel's tally, the facts the moved checks need and cannot learn at user
 //! level (a kernel address to fault on, what the JH7110 bring-up answered), and whether the build
-//! injects a failure. Two programs agree on it, so it is code here and not prose (§311 (a contract
-//! is code, not prose)). See notes/self-test-checks.md, "The two halves".
+//! injects a failure. Two programs agree on it, so it is code here and not prose (a contract
+//! two programs agree on is code, not prose).
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for whose half the page carries.
