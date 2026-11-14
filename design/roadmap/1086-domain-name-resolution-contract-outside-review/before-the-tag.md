@@ -6,9 +6,9 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
 
 4. The limits and offsets carry no unit and abbreviate, against the rules now in force. Finding:
    `NAME_TEXT_MAXIMUM` (`src/wire.rs` line 13) is a limit in bytes with no unit and the limit word
-   last. `GRANTS_MAXIMUM` (line 29) is a count with the limit word last. `OFF_NAME` and
-   `OFF_ADDRESSES` (lines 21, 24) abbreviate `offset`. `MAXIMUM_ADDRESSES` (line 18) and
-   `OFF_ADDRESSES` trip the template's address rule, which wants a qualifier that says the address
+   last. `GRANTS_MAXIMUM` (line 29) is a count with the limit word last. `NAME_OFFSET_BYTES` and
+   `ADDRESSES_OFFSET_BYTES` (lines 21, 24) abbreviate `offset`. `MAXIMUM_ADDRESSES` (line 18) and
+   `ADDRESSES_OFFSET_BYTES` trip the template's address rule, which wants a qualifier that says the address
    is not a memory location (`IP_ADDRESS`, as `GATEWAY_IP_ADDRESS` passes in that helper's own
    test). The field `text_len` (`src/grants.rs` line 64) is a length with no unit, and the template
    counts fields. Two local bindings `op` (`src/grants.rs` line 124, `src/wire.rs` line 207 as
@@ -54,7 +54,7 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
    does the same (`src/grants.rs` line 134). The resolver accepts a resolve of `NAME_TEXT_MAXIMUM +
    1` bytes (`components/src/domain_name_resolver.rs` line 246). The std client refuses anything
    over `NAME_TEXT_MAXIMUM` (`nife.rs` line 1144). Nothing asserts that the name field ends before
-   `OFF_ADDRESSES` (0x100, 256 bytes, against a 254-byte name: true today, by three bytes,
+   `ADDRESSES_OFFSET_BYTES` (0x100, 256 bytes, against a 254-byte name: true today, by three bytes,
    unchecked) or that the addresses end inside a page. Change: state the trailing-dot allowance
    once, at the limit's definition, and have the resolver and the std client read the same
    expression. Add the layout assertions a page contract carries (`const _: () = assert!(NAME_OFFSET

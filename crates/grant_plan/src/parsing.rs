@@ -13,14 +13,21 @@ use crate::{
 
 /// Split a command line into whitespace-separated tokens, writing them into `out` and returning
 /// the filled prefix. A tiny `no_std` tokenizer: no allocation, bounded by `out.len()`. Tokens
-/// past `out.len()` are dropped (a command line with more than a handful of tokens is a mistake,
-/// not a workload).
+/// past `out.len()` are not returned; [`parse_run`], which gives it sixteen slots, refuses the
+/// first of them rather than losing it, so a caller that needs every token reads a line it knows
+/// to be short, or walks it one token at a time as `each_word` does.
 ///
 /// **Whitespace inside quotes is not a separator** (milestone 67). The quotes stay on the token,
 /// because this function's job is where a token ends and [`word::read`]'s is what it means; a
 /// caller that wants the name rather than the spelling asks for it. That split is what lets
 /// [`parse_run`] refuse `a"b"` in one place instead of every scanner having to.
 pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8]] {
+    split_tokens(line, out).0
+}
+
+/// [`tokenize`], and also the part of `line` it did not reach because `out` was full: empty when
+/// every token fit, and otherwise a slice that starts at or before the first token left over.
+fn split_tokens<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> (&'b [&'a [u8]], &'a [u8]) {
     let mut n = 0;
     let mut i = 0;
     let mut c = word::Cursor::new();
@@ -40,7 +47,7 @@ pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8
             n += 1;
         }
     }
-    &out[..n]
+    (&out[..n], &line[i..])
 }
 
 /// **Assemble the argv of a program that hears words** (milestone 205 (how a foreign program is
@@ -307,7 +314,7 @@ pub fn vouched_name(path: &[u8]) -> Option<&[u8]> {
 /// capability transfer.
 pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
     let mut toks: [&[u8]; 16] = [b""; 16];
-    let toks = tokenize(line, &mut toks);
+    let (toks, left_over) = split_tokens(line, &mut toks);
 
     let mut memory_grant = None;
     let mut program: &[u8] = b"";
@@ -373,6 +380,14 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
             unexpected = Some(t);
         }
         i += 1;
+    }
+
+    // A token the buffer had no room for is one nothing can place, the same as one past
+    // `MAXIMUM_POSITIONALS`: dropping it would lose authority the person typed. The first
+    // unplaceable token in line order is the one named, so a flag earlier on the line wins.
+    if unexpected.is_none() {
+        let mut one = [&b""[..]; 1];
+        unexpected = tokenize(left_over, &mut one).first().copied();
     }
 
     ParsedInvocation {

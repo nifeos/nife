@@ -5,7 +5,7 @@
 //! `system_initializer`'s session, and `terminal_supervisor`), so the four agree through one list
 //! (AGENTS.md rule 7), and the page budgets a supervisor sets aside for it. Under a supervisor the
 //! handoff run arrives with `CTL_HANDOFF` on [`CONTROL`] and is mapped at [`HANDOFF_ADDRESS`]. A
-//! quiesce is refused unless it comes through a copy badged `line_editor::proto::SUPERVISOR_BADGE`.
+//! quiesce is refused unless it comes through a copy badged `terminal_contract::SUPERVISOR_BADGE`.
 //! The swap and the measured budgets are in notes/video-terminal/handoff-and-component.md.
 //!
 //! Name: provisional (the lane for milestone 23, 2026-10-19 UTC), for this module and every item
@@ -87,7 +87,7 @@ pub const SWAP_PAGES: u64 = BAY_PAGES + crate::handoff::HANDOFF_PAGES;
 pub const SUPERVISOR_PAGES: u64 = BAY_PAGES + 4 + 4;
 
 // The sizes written out, so a changed operator in a sum is a build error rather than a reserve
-// that quietly no longer fits (`line_editor::component`'s precedent; the mutation gate's
+// that quietly no longer fits (`line_editor_component`'s precedent; the mutation gate's
 // survivors on these lines, 2026-10-19).
 const _: () = assert!(BAY_PAGES == 264);
 const _: () = assert!(SWAP_PAGES == 396);

@@ -250,7 +250,7 @@ nife: handing the system to the userspace progenitor.
 nife self-test subject: thread 19, which the userspace check kills on purpose
   self-test       : userspace  ok      a program at user level read 0xffff0000403961e0: killed, and the kernel survived
 nife self-test subject: thread 8589934611, which the supervised check kills on purpose
-nife self-test: 12 of 15 passed, 3 absent: device_interrupt clock trng
+nife self-test: 12 of 15 passed, 3 absent: device_interrupt clock true_random_number_generator
 nife capability shell. naming a resource in a command IS granting it.
 ";
 

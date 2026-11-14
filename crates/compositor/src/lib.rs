@@ -518,7 +518,7 @@ pub fn composite(screen: &mut [u32], sources: &[&[u32]], n: usize, damage: Rect)
 /// The IPC the compositor serves, and the shared-memory layouts that carry everything the IPC
 /// deliberately does not.
 ///
-/// Request words are packed the way `graphics_contract` and `line_editor::proto` pack theirs (opcode in bits
+/// Request words are packed the way `graphics_contract` and `terminal_contract` pack theirs (opcode in bits
 /// 63:56), and the helpers are re-exported rather than redefined so all three contracts read alike.
 pub mod proto {
     pub use graphics_contract::{operand, operation, req};
@@ -629,7 +629,7 @@ pub mod proto {
     ///
     /// Keystrokes arrive here rather than in message words because the doorbell is shared, so a
     /// keystroke in a message would be forgeable. The compositor forwards them to the focused
-    /// client as `line_editor::proto::OPERATION_BYTES`, the terminal contract's driver half
+    /// client as `terminal_contract::OPERATION_BYTES`, the terminal contract's driver half
     /// verbatim (notes/terminal-contract.md), so a terminal needs no change to be a client.
     pub mod ring {
         /// u32, compositor: bytes consumed.

@@ -31,12 +31,12 @@ A contract has a wire half and an IPC half, and they are independent.
   [line-discipline.md](line-discipline.md) with the engine that produces it.
 - The IPC half is the protocol on the endpoints: the opcodes, the flags, the shared pages.
   This is what a client and the drivers must speak, and it is the substance of this note. The
-  framing constants live in `line_editor::proto` so the server, its clients, and the kernel-side
+  framing constants live in `terminal_contract` so the server, its clients, and the kernel-side
   tests share one definition.
 
 The protocol is a userspace protocol, not kernel ABI. The kernel routes these words the way
 it routes any IPC (§10, §12); it never reads an opcode. Adding an opcode is a change to this note
-and to `line_editor::proto`, not a change to the syscall surface.
+and to `terminal_contract`, not a change to the syscall surface.
 
 ## The IPC protocol
 

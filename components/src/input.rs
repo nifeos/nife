@@ -19,7 +19,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait};
 
 // Unused on x86_64: there is no page for it to name (`user::UART_PHYS` is zero, DECISIONS §121),

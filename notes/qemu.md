@@ -214,7 +214,7 @@ forever, by design, exactly like real hardware. So every interactive run must be
   mapping, none of which was wrong.
 
   So the kernel is *asked* to stop. `screen-hold` on the boot command line makes
-  `kernel::console::yield_screen` announce `boot_ladder::SCREEN_HELD` on the serial line and wait up
+  `kernel::console::yield_screen` announce `boot_ladder::Heads::screen_held` on the serial line and wait up
   to ten seconds for a byte back before it clears the screen. So the dump is taken against a state
   that is not going anywhere. Three runs at a one-minute load average of 17, 32 and 38 on an
   eight-core Mac each read exactly 95 rows. Two things carry beyond it:
