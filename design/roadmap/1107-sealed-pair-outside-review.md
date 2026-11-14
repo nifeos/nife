@@ -241,7 +241,7 @@ reason. A concrete example: `card_check` prints the constant after every refusal
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, since these are names
 in an unreleased crate that is not leaving, which the architect may revisit.
 `THE_BOARD_IS_THE_AUTHORITY` (`src/lib.rs` line 241, one caller at `xtask/src/card_check.rs` line
-79) becomes `AUTHORITY_NOTICE`, because a constant is named for what it holds and the naming page
+79) becomes `AUTHORITY_NOTICE`, because a constant's name says what it holds and the naming page
 refuses `THE_`. The parameter of `test_support::pair` (line 406) becomes `build`, which also drops
 the British spelling. No old spelling stays as an alias. The renames do not wait for decision A.
 Items 6 and 9 are the work. Ratifying the names stays the architect's.
@@ -266,8 +266,8 @@ The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
 
 ## Follow-on
 
-What is left of this review: Decision A is not ruled, the maintainer has decided Decision B,
-provisionally, and the items marked LEFT in the appendices wait on them or on a lane of their own.
+What is left of this review: Decision A waits on the architect, the maintainer has decided
+Decision B, provisionally, and the items marked LEFT in the appendices wait on them or on a lane of their own.
 
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 wait on Decision A.
 - **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.

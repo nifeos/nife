@@ -237,12 +237,9 @@ Concrete example: a device descriptor whose `bDescriptorType` is 2 answers
 descriptor, 18 bytes".
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
-release, which the architect may revisit. These are signatures in an unreleased crate with one
-caller. The recommendation is the rule. `DeviceDescriptor::parse` (`descriptor.rs` line 88) returns
-`Result<DeviceDescriptor, Refusal>`, as `ConfigurationHeader::parse` (line 133) already does, and
-`BootReport::parse` keeps `Option`. The four-way `Speed` replaces `superspeed: bool` (line 111), and
-the driver's call at `components/src/usb_keyboard_driver.rs` line 460 gains the four-way match.
-Item 11 is the work.
+release, which the architect may revisit. `DeviceDescriptor::parse` (`descriptor.rs` line 88)
+returns `Result<DeviceDescriptor, Refusal>`, and `BootReport::parse` keeps `Option`. The four-way
+`Speed` replaces `superspeed: bool` (line 111). Item 11 is the work.
 
 ## Follow-on
 
@@ -260,8 +257,7 @@ Item 11 is the work.
 - **Outstanding.** Items 1, 2, 4, 5 and 10 are the move lane's (manifest, name, scaffold files,
   review package, fuzz crate). Item 6 adds usage rows that the lane must read from the Usage
   Tables and re-run against the Linux cross-check, which a reviewer cannot do from memory.
-- **Outstanding.** Item 11 and the public renames of item 3 are the work of Decisions 3 and 1,
-  which the maintainer has decided, provisionally.
+- **Outstanding.** Item 11 and the public renames of item 3, the work of Decisions 3 and 1.
 
 ## Done when
 
