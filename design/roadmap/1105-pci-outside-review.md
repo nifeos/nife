@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: 46, 154, 305
@@ -133,6 +133,15 @@ rules it; this review recommends moving first, after items 1 through 8.
 ## Done when
 
 The checks are in [the appendix](1105-pci-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** The package name and the import rule: the package is `pci_configuration_space`, in
+  `crates/pci_configuration_space`, and every consumer imports it under that name.
+- **Outstanding.** The other review items, which the maintainer rules as provisional and later
+  lanes build.
+- **Outstanding.** Creating the repository under the new name, after the architect clears the
+  review.
 
 ## BUGS
 
