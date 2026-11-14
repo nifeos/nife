@@ -4,7 +4,7 @@
 
 §46 (thin primitives, whole subsystems and everything in between) applies its four-part bar to
 every third-party crate a nife image links, the ones already shipped included. A shipped crate short
-of the bar stays in use, is listed here as debt, and gets upstream contributions until it meets the
+of the bar stays in use, appears here as debt, and gets upstream contributions until it meets the
 bar. Each entry below names a crate and the parts it fails. An entry leaves when the crate meets
 the part, and the list is empty when every shipped crate meets the whole bar.
 
@@ -14,22 +14,22 @@ Measured 2026-11-14 (UTC) at the tip of the pull request that wrote this note.
 
 - Which crates ship: `notes/dependency-standards-census/tools/classify.py` replays each image build's
   cargo flags through `cargo tree -e normal`, as the census did. A crate ships when a build that
-  produces part of an image links it. The two vendored trees that ship as third-party code,
-  `vendor/redoxfs` and `vendor/talc`, are measured with them. `vendor/relibc` is a seed nife owns
+  produces part of an image links it. The census measures the two vendored trees that ship as third-party code,
+  `vendor/redoxfs` and `vendor/talc`, with them. `vendor/relibc` is a seed nife owns
   and is outside this list.
 - Safety argument (part 1): `safety_comment_coverage` and `unsafe_fn_contracts` from the census's
   `measure.py`, plus the same test for `unsafe trait`. An entry fails when any unsafe block lacks a
   comment containing "safety", or any `unsafe fn` or `unsafe trait` lacks a `# Safety` section.
   The scan is textual over the whole package, not resolved against the features and targets nife
-  builds, so a crate whose unsafe code sits behind a cfg nife never enables can be listed in error.
-  smoltcp 0.14.0 was read by hand: its only unsafe code is in the `std` raw-socket files nife does
-  not compile, so it meets the part. Unsafe code that a crate's macros generate is not counted.
+  builds, so a crate whose unsafe code sits behind a cfg nife never enables can appear in error.
+  A hand read of smoltcp 0.14.0 found that its only unsafe code is in the `std` raw-socket files nife does
+  not compile, so it meets the part. The scan skips unsafe code that a crate's macros generate.
   `libc` declares its functions in `extern` blocks, which this scan does not read as unsafe
   functions, and fails on the others.
 - Three architectures (part 3): `cargo check --locked --offline` of the kernel, `components`,
   `fixtures` and `redoxfs_server` for the aarch64, riscv64 and x86_64 targets finished clean, so
   every crate those graphs link builds on all three. The `jig`, `c_library` and `uefi_loader` graphs
-  need the std overlay or the loader's artifacts and were not rebuilt here, so their crates carry
+  need the std overlay or the loader's artifacts and this pass did not rebuild them, so their crates carry
   no entry for this part on that basis alone.
 - Proofs (part 2) and maintained upstream (part 4) are judgements, not scans. The census's
   `registry.tsv` and `upstream-practices.tsv` hold the older evidence, and the pull request that
