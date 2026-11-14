@@ -657,6 +657,19 @@ mod tests {
         }
     }
 
+    /// No domain member holds a zero byte, so a length that runs past a member into the zeroes after
+    /// it never spells another member. The Kani harness that bounds its length byte relies on this.
+    #[test]
+    fn no_domain_member_holds_a_zero_byte() {
+        for list in [
+            domain::KNOWN_TIME_ZONES,
+            domain::KNOWN_LOCALES,
+            domain::KNOWN_TERMINAL_TYPES,
+        ] {
+            assert!(list.iter().all(|value| !value.as_bytes().contains(&0)));
+        }
+    }
+
     /// A recognized page whose field carries bytes that are not a member of the key's domain
     /// (a writer other than [`PageBuilder`], or a zone name with trailing NUL bytes) reads that
     /// key as absent, and leaves the other keys alone.

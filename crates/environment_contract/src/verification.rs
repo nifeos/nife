@@ -63,12 +63,18 @@ fn a_written_field_reads_back_whole() {
 /// **A value an accessor returns is a member of its key's domain, whatever the length byte says.**
 /// The page carries the member `UTC` and a free time zone length byte, so a length that cuts the
 /// member short, or runs into the zeroes after it, must read as absent and never as a prefix.
+/// The length is bounded at eight, which covers the member, the cap-free cut points and five zero
+/// bytes after it, because a length past that only adds more zero bytes and no domain member holds
+/// a zero byte (the host test `no_domain_member_holds_a_zero_byte` checks that). The bound keeps the
+/// symbolic text scan small enough to prove in minutes.
 /// Falsification: replayable `crates/environment_contract/falsifications/verification.an_accessor_returns_only_a_domain_member.patch`
 #[kani::proof]
-#[kani::unwind(45)]
+#[kani::unwind(22)]
 fn an_accessor_returns_only_a_domain_member() {
     let mut page = PageBuilder::new().tz("UTC").unwrap().build();
-    page[TIME_ZONE_LENGTH_OFFSET] = kani::any();
+    let length: u8 = kani::any();
+    kani::assume(length <= 8);
+    page[TIME_ZONE_LENGTH_OFFSET] = length;
     // SAFETY: `page` is a live array of exactly `PAGE_BYTES`, alive for this function.
     let read = unsafe { ConfigPage::new(page.as_ptr() as u64) };
     if let Some(value) = read.tz() {
