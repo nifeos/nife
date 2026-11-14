@@ -144,15 +144,15 @@ fn start(server: u64, port_and_transport: u64, _unused: u64) -> ! {
 fn serve(state: &mut State, server: &Server, socket_ready: bool) {
     let r = receive_request(SERVICE);
     if r.badge == 0 {
-        // The spawner's unbadged capability, and nothing else, can say this. A control `CALL` gets
-        // an answer so a spawner that called is not left blocked; a delegation is deleted.
+        // The spawner's unbadged capability, and nothing else, can say this. A control `CALL` is
+        // answered with what the message did (`Control::reply`: accepted, or refused and why); a
+        // delegation is deleted.
         let control = state.grants.control(r.w0, r.w1);
         if let protocol::Control::Forgotten(window) = control {
             give_up_window(state, window);
         }
         if let Some(to) = r.delivered.into_reply() {
-            let refused = matches!(control, protocol::Control::Refused(_));
-            let _ = reply(to, refused as u64, 0);
+            let _ = reply(to, control.reply().word(), 0);
         }
         return;
     }

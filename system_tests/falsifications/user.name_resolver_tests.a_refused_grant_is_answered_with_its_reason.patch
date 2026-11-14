@@ -1,0 +1,25 @@
+Falsifies `system_tests::user::name_resolver_tests::a_refused_grant_is_answered_with_its_reason`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is the resolver answering a control `CALL` with the bare word it sent before the reply
+was in the contract: 0 for accepted and 1 for refused, with no reason. An accepted grant still reads
+as `status::OK`, but a refused one is no control reply at all, so the spawner cannot tell why.
+
+Expected to fail: `assert_eq!(grant_answered(service, BAD, b"example..test"), Err(Some(Refusal::BadZone)), ...)`,
+with `left: Err(None)`. Confirmed red on 2026-11-14 (UTC) on aarch64 with
+`cargo xtask test --arch aarch64 --test a_refused_grant_is_answered`.
+
+diff --git a/components/src/domain_name_resolver.rs b/components/src/domain_name_resolver.rs
+index 2b9528eee..693558c7b 100644
+--- a/components/src/domain_name_resolver.rs
++++ b/components/src/domain_name_resolver.rs
+@@ -152,7 +152,7 @@ fn serve(state: &mut State, server: &Server, socket_ready: bool) {
+             give_up_window(state, window);
+         }
+         if let Some(to) = r.delivered.into_reply() {
+-            let _ = reply(to, control.reply().word(), 0);
++            let _ = reply(to, matches!(control, protocol::Control::Refused(_)) as u64, 0);
+         }
+         return;
+     }

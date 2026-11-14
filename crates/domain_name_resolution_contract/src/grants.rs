@@ -8,7 +8,10 @@
 
 use domain_name_system::Name;
 
-use crate::{GRANTS_MAXIMUM, NAME_TEXT_MAXIMUM, OPERATION_FORGET, OPERATION_GRANT, control_fields};
+use crate::{
+    GRANTS_MAXIMUM, NAME_TEXT_MAXIMUM, OPERATION_FORGET, OPERATION_GRANT, Outcome, control_fields,
+    refusal, status,
+};
 
 /// Why [`Grants::check`] refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,6 +53,81 @@ pub enum Refusal {
     Full,
     /// A forget for a badge that holds no window.
     NoSuchGrant,
+}
+
+impl Control {
+    /// **The reply to a control `CALL`** that did this: [`status::OK`], or
+    /// [`status::BAD_REQUEST`] with the [`Refusal`]'s code in the detail byte ([`refusal`]).
+    ///
+    /// Name: provisional.
+    pub const fn reply(self) -> Outcome {
+        match self {
+            Control::Refused(why) => Outcome {
+                status: status::BAD_REQUEST,
+                detail: why.code(),
+                count: 0,
+            },
+            Control::Partial | Control::Granted(_) | Control::Forgotten(_) => {
+                Outcome::of(status::OK)
+            }
+        }
+    }
+}
+
+impl Refusal {
+    /// **This refusal's number on the wire**, one of [`refusal`].
+    ///
+    /// Name: provisional.
+    pub const fn code(self) -> u8 {
+        match self {
+            Refusal::UnknownOperation => refusal::UNKNOWN_OPERATION,
+            Refusal::BadgeZero => refusal::BADGE_ZERO,
+            Refusal::OutOfOrder => refusal::OUT_OF_ORDER,
+            Refusal::TooLong => refusal::TOO_LONG,
+            Refusal::BadZone => refusal::BAD_ZONE,
+            Refusal::Full => refusal::FULL,
+            Refusal::NoSuchGrant => refusal::NO_SUCH_GRANT,
+        }
+    }
+
+    /// **The refusal a number on the wire names**, or `None` for a number [`refusal`] does not
+    /// have.
+    ///
+    /// Name: provisional.
+    pub const fn from_code(code: u8) -> Option<Refusal> {
+        Some(match code {
+            refusal::UNKNOWN_OPERATION => Refusal::UnknownOperation,
+            refusal::BADGE_ZERO => Refusal::BadgeZero,
+            refusal::OUT_OF_ORDER => Refusal::OutOfOrder,
+            refusal::TOO_LONG => Refusal::TooLong,
+            refusal::BAD_ZONE => Refusal::BadZone,
+            refusal::FULL => Refusal::Full,
+            refusal::NO_SUCH_GRANT => Refusal::NoSuchGrant,
+            _ => return None,
+        })
+    }
+}
+
+/// **What the resolver answered a control `CALL`**, from the reply's first word: `Ok` when the
+/// message was accepted, `Err(Some(why))` when it was refused, and `Err(None)` for a word that is
+/// no control reply (a `CALL` the kernel failed, or a status or detail the contract does not
+/// have). A spawner treats both errors alike: the badge holds no grant.
+///
+/// Name: provisional.
+pub const fn control_answer(word: u64) -> Result<(), Option<Refusal>> {
+    match Outcome::from_word(word) {
+        Some(Outcome {
+            status: status::OK,
+            detail: 0,
+            count: 0,
+        }) => Ok(()),
+        Some(Outcome {
+            status: status::BAD_REQUEST,
+            detail,
+            count: 0,
+        }) => Err(Refusal::from_code(detail)),
+        _ => Err(None),
+    }
 }
 
 #[derive(Clone, Copy)]

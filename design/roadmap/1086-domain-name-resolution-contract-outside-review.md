@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 248, 252
@@ -16,10 +16,10 @@ the next lanes change before the crate moves to `nifeos/domain_name_resolution_c
 There is no review package for this crate in `notes/crate-reviews/`, so this block has no settled
 baseline to defer to. It takes as settled only what the tree itself records.
 The architect ratified the crate name (`src/lib.rs` lines 22 to 24). Pull request #2797 ratified
-the three constants `NAME_TEXT_MAXIMUM`, `MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`. The interface
-identity `INTERFACE_ID` 11 and `VERSION` 1 is provisional. Milestone 956 (the linked interfaces
-carry checkable versions) minted it, and
-`design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md` lists it at line 113. The
+the three constants `NAME_TEXT_MAXIMUM`, `MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`. The architect
+froze the interface identity, `INTERFACE_ID` 11 and `VERSION` 1 (decision 3). Milestone 956 (the linked
+interfaces carry checkable versions) minted it, and
+`design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md` lists it. The
 crate has its place in the order of extraction, step 6 of milestone 1017 (the contract crates leave
 in this order), after `domain_name_system` has left in step 5. The rule that
 a release review rechecks names ratified before a later naming rule applies here, as it did to
@@ -151,24 +151,19 @@ decision; the recommendation comes first.
    once that one holds dotted text and the other wire bytes. `NAME_TEXT_MAXIMUM` beside
    `MAXIMUM_NAME_BYTES` reads as two spellings of one thing.
 
-2. The reply word to a control `CALL` (item 6). Recommendation: define it in the contract in
-   `Outcome`'s packing, with status 0 for accepted and 1 for refused (the values the resolver sends
-   today) and the `Refusal` code in the detail byte. The spawner then `CALL`s the last piece of each
-   grant. Background: the word exists on the wire and in the resolver, and in no definition. A
-   contract that others implement against must say it. Prior art: FreeBSD's casper services answer
-   every request with an `errno`. Fuchsia's FIDL methods return a status. This crate's own `Outcome`
-   already packs a status and a detail into one word, so the resolve and control replies would share
-   one shape. Concrete example: a spawner that grants `nife..test` today gets no word and hands the
-   client a badge that resolves nothing. With the ruling it reads status 1, detail `BadZone`, and
-   can refuse the spawn or log it.
+2. The reply word to a control `CALL` (item 6). Ruled 2026-11-14 (UTC), option A. The reply uses
+   `Outcome`'s packing, a status byte and a detail byte, exactly as a resolve reply does.
+   `status::OK` (0) means the resolver accepted the message. `status::BAD_REQUEST` (10) means it
+   refused the message, and the detail byte carries the `Refusal` by its number in
+   `wire::refusal`: `UnknownOperation` 1, `BadgeZero` 2, `OutOfOrder` 3, `TooLong` 4, `BadZone` 5,
+   `Full` 6, `NoSuchGrant` 7. The numbers stay fixed, and `DENIED` (1) does not answer a control
+   message. The resolver sends the packed word (`Control::reply`). The spawner `CALL`s the last
+   piece of each grant and reads the answer (`control_answer`); earlier pieces stay one-way `SEND`s.
+   A refusal means no grant: the spawner forgets the entry and the spawn fails.
 
-3. The interface identity (item 5). Recommendation: ratify `INTERFACE_ID` 11 and `VERSION` 1
-   unchanged. Background: milestone 956 assigned 11 and `script/lint` holds the tree to the table.
-   Milestone 1017 asks for the ratification before a contract leaves and makes a change to these
-   values the only `needs-architect` hold on a contract crate. Prior art: `block_roster_contract`
-   and `socket_contract` went or go the same way with their own numbers. Concrete example: a
-   program's `INTERFACES` note declares `(11, 1)`. A resolver built against a later `VERSION` 2
-   refuses the pair, which is what the number is for.
+3. The interface identity (item 5). Ruled 2026-11-14 (UTC), option A. The ruling freezes the identity at
+   `INTERFACE_ID` 11 and `VERSION` 1. Version 1 includes the control reply of decision 2, with no
+   bump, because the earlier bare reply was never part of the contract.
 
 ## Done when
 
@@ -181,12 +176,26 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
   The template's head carries checks `v7` lacks (passive voice, history phrases, function length,
   spelled-out words, unit symbols), which this block ran by hand. A later template release may add
   more.
-- The size of `Grants` and the spawner's behavior on a refused grant are from reading. A size test
-  (item 14) and a spawner test that `CALL`s a bad zone (item 6) would make both measured.
+- The size of `Grants` is from reading. A size test (item 14) would make it measured.
+- A spawner whose grant the resolver refuses fails the spawn without saying why, since nothing in the spawner
+  writes a line once the shell runs (`crates/system_initializer` BUGS).
 - Decision 1 asks for `first_word` and `second_word` where the tree writes `w0` and `w1` in many
   contracts. Ruling it for this crate alone leaves the tree inconsistent. Ruling it for the tree is
   a rename beyond this block, and the recording lane should say which the architect chose.
 - Item 2 waits on the same question as the `socket_contract` package's decision 2. Whichever gets its ruling first settles the shape for both.
+
+## Follow-on
+
+- **Done.** Item 6, the reply to a control `CALL` (decision 2): `wire::refusal` numbers each
+  `Refusal`, the resolver answers with `Control::reply`, and the spawner `CALL`s the last piece of
+  each grant and treats a refusal as no grant. A system test reads `BadZone` and `NoSuchGrant`.
+- **Done.** Item 5, the interface identity (decision 3): the crate's docs state `INTERFACE_ID` 11
+  and `VERSION` 1 as frozen.
+- **Outstanding.** Every other item of this review: items 1 to 3 before the move, items 4 and 7 to
+  11 before the tag, and items 12 to 14 for later. Decision 1, the names, waits on its ruling.
+- **Outstanding.** A runtime log channel for the spawner. The spawner reads the reason for a
+  refused grant, but nothing lets it write a line once the shell runs, so a lane that gives it one
+  also prints that reason.
 
 ## Index row
 
@@ -195,4 +204,5 @@ An outside review of `domain_name_resolution_contract` before it leaves. Three i
 Eight land before the first tag. They are the reopened names, the interface identity, an undefined
 control reply word, three bounds for one field, an unchecked reply count, the README and a broken
 doc table, a proof over the grant table, and the six equivalent mutants. Three more are for later.
-Three decisions go to the architect: the names, the control reply word and the identity.
+Three decisions go to the architect: the names, the control reply word (ruled) and the identity
+(ruled).

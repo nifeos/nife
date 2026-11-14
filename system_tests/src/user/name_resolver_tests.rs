@@ -17,7 +17,8 @@
 
 use domain_name_resolution_contract::fixture::{self, CASES};
 use domain_name_resolution_contract::{
-    GRANTS_MAXIMUM, Outcome, endowment, forget_message, grant_messages, status,
+    GRANTS_MAXIMUM, Outcome, Refusal, control_answer, endowment, forget_message, grant_messages,
+    status,
 };
 
 use super::*;
@@ -385,6 +386,68 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_client() {
 
     w.held
         .release_or_fail("net_stack, domain_name_resolver and its forgotten clients");
+}
+
+/// Play the spawner's half of a grant as the progenitor does: every piece a `SEND` but the last,
+/// which is a `CALL`, and the resolver's answer to it.
+fn grant_answered(service: RendezvousId, badge: u32, zone: &[u8]) -> Result<(), Option<Refusal>> {
+    let mut pieces = grant_messages(badge, zone)
+        .expect("a zone short enough to send")
+        .peekable();
+    let mut answer = Err(None);
+    while let Some((w0, w1)) = pieces.next() {
+        if pieces.peek().is_some() {
+            crate::sched::ipc_send(service, [w0, w1, 0]);
+        } else {
+            answer = control_answer(crate::sched::ipc_call(service, [w0, w1])[0]);
+        }
+    }
+    answer
+}
+
+/// **A spawner that `CALL`s a grant's last piece learns whether the grant took, and why not**: the
+/// resolver accepts a good zone, refuses a zone that is not a host name as `BadZone`, and refuses a
+/// forget for a badge that holds nothing as `NoSuchGrant`.
+///
+/// No network and no entropy service: a grant asks neither, so one endpoint nobody serves stands
+/// in for both, and the test runs on every machine.
+///
+/// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_refused_grant_is_answered_with_its_reason.patch`
+#[test_case]
+fn a_refused_grant_is_answered_with_its_reason() {
+    const GOOD: u32 = 0x1086;
+    const BAD: u32 = 0x1087;
+    const NEVER: u32 = 0x1088;
+    let mut held = Holding::new();
+    let region = crate::memory_region::create(1).expect("no endpoint region for the stand-in");
+    let nobody = crate::sched::create_rendezvous_from(region).expect("no stand-in endpoint");
+    held.add_region(region);
+    let service = start_resolver(nobody, nobody, &mut held);
+
+    assert_eq!(
+        grant_answered(service, GOOD, b"a.long.example.test"),
+        Ok(()),
+        "a grant of a good zone, in three pieces, was not accepted",
+    );
+    assert_eq!(
+        grant_answered(service, BAD, b"example..test"),
+        Err(Some(Refusal::BadZone)),
+        "a zone with an empty label was not refused as BadZone",
+    );
+    let (w0, w1) = forget_message(NEVER).expect("a forgettable badge");
+    assert_eq!(
+        control_answer(crate::sched::ipc_call(service, [w0, w1])[0]),
+        Err(Some(Refusal::NoSuchGrant)),
+        "a forget for a badge that holds nothing was not refused as NoSuchGrant",
+    );
+    let (w0, w1) = forget_message(GOOD).expect("a forgettable badge");
+    assert_eq!(
+        control_answer(crate::sched::ipc_call(service, [w0, w1])[0]),
+        Ok(()),
+        "a forget for a granted badge was not accepted",
+    );
+
+    held.release_or_fail("domain_name_resolver and its stand-in endpoint");
 }
 
 /// The badge `std_resolve`'s capability carries, granted the same zone as the native client's.
