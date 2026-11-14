@@ -148,19 +148,16 @@ The P1 items are in [the appendix](1090-filesystem-contract-outside-review/befor
 
 Only one-way doors. Each with the background first, then the recommendation.
 
-### A. The reserved on-disk name `.nife-attrs`
+### A. The reserved on-disk name: ruled 2026-11-14 (UTC)
 
-Background. The extended-attribute store lives in a directory in the image root named
-`xattr::STORE_DIR = ".nife-attrs"` (`src/xattr.rs` line 77). Every name-taking verb refuses that name
-with `EINVAL` and `READDIR` skips it, so it is both a disk layout and a wire rule. It contains the
-word `nife`, so the externalization lint refuses it, and `typos` reads it as a misspelling of
-`knife`. Changing it changes what a recovery tool looks for and what an existing image holds. Nife
-has no installs, so no image outside the maintainers' own exists today (the ruling that text may
-stay public while nife has no users rests on the same fact).
-
-Recommendation: rename it now, before the move, to a name that says what it holds and names no
-project: `.extended-attributes`. The `redoxfs_host` extractor and upstream's FUSE mount carry it
-out as a directory either way. Add a `_typos.toml` entry only if the chosen name needs one.
+In force: the extended-attribute store lives in a directory in the image root named
+`.extended-attributes` (`xattr::STORE_DIR`, `src/xattr.rs` line 77). The constant's own name is
+decided in B. Every name-taking verb refuses that name with `EINVAL`, in every directory and at
+every depth of a path, and `READDIR` skips it, so it is both a disk layout and a wire rule. The name
+says what the directory holds and names no project. `redoxfs_host extract` and upstream's FUSE
+mount carry it out as a directory. A recovery listing of an image shows
+`.extended-attributes/0000002a`. Nife has no installs, so no image outside the maintainers' own
+carried the earlier name.
 
 Prior art. Samba's `streams_depot` keeps alternate streams under a `.streams` directory named for
 the mechanism, not the vendor. macOS writes AppleDouble `._name` files and `.DS_Store`, both named
@@ -168,10 +165,9 @@ for the format or the feature. ext4 and NTFS keep attributes inside the inode or
 and reserve no name. Where this crate differs: it reserves one name at every depth, which is the
 cost of a layer above an unchanged RedoxFS format.
 
-Concrete example. A client that today gets `EINVAL` for `CREATE ".nife-attrs"` gets `EINVAL` for
-`CREATE ".extended-attributes"` instead, and `READDIR` of a root that holds the store returns one
-fewer entry under the new name. A recovery listing of an image shows `.extended-attributes/0000002a`
-where it showed `.nife-attrs/0000002a`.
+Concrete example. A client gets `EINVAL` for `CREATE ".extended-attributes"` in the root and in any
+subdirectory, `OPEN "sub/.extended-attributes"` is `EINVAL`, and `READDIR` of a root that holds the
+store does not list it.
 
 ### B. The names the gates refuse, and the units on the ratified limits
 
@@ -227,25 +223,23 @@ Concrete example. A caretaker that reads `verb::of(operation).takes_name()` toda
 `grant::specification_rights(w)`; a client that sends `fs::req(fs::GETMTIME, ..)` sends
 `fs::req(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.
 
-### C. The error range of a reply word
+### C. The error range of a reply word: ruled 2026-11-14 (UTC)
 
-Background. A reply's first word is an `i64`; negative is a negated errno. Nothing bounds the
-errno, so `reply_errno` must map every negative word, and `i64::MIN` has no negation. Linux
-settled the same convention by bounding it: an error is `-4095..=-1`, and anything else is a
-value. The bound is a statement about the wire that every implementer reads.
-
-Recommendation: adopt Linux's bound, `MAXIMUM_ERRNO = 4095`, now, before any implementer outside
-nife exists. A negative word outside `-MAXIMUM_ERRNO..=-1` is a protocol violation and decodes as
-`EPROTO` (71), so it is never read as success. `reply_err` asserts its argument is in
-`1..=MAXIMUM_ERRNO`. Every reply any current server sends is unchanged. Tightening later would
-not be compatible; this is the restrictive choice.
+In force: a reply's first word is an `i64`. A word in `-4095..=-1` is the error code `1..=4095`
+(`MAXIMUM_ERRNO`, Linux's bound). Any other negative word is a protocol violation, and
+`reply_errno` reads it as `EPROTO` (71), never as success and never as a truncated code. A
+non-negative word is a result. `reply_err` asserts its code is in `1..=MAXIMUM_ERRNO` in every
+build: a bad code is a bug in the sender, and a release build that skipped the check would put a
+success-looking or protocol-violating word on the wire. Two Kani harnesses prove the decoding for
+every `i64`, and unit tests pin -1, -4095, -4096 and `i64::MIN`. Every reply any current server
+sends is unchanged. Loosening the bound later is compatible; tightening is not.
 
 Prior art. Linux `include/linux/err.h` (`MAX_ERRNO`, `IS_ERR_VALUE`); FreeBSD returns errno in a
 separate register with the carry flag, which this two-word protocol does not have; 9P2000.L
 carries the errno as its own field.
 
-Concrete example. Today `reply_errno(-5_000_000_000)` is `Some(705_032_704)` (a truncated
-cast). Under the rule it is `Some(71)`, and `reply_errno(-2)` stays `Some(2)`.
+Concrete example. `reply_errno(-5_000_000_000)` is `Some(71)`, where a truncating cast gave
+`Some(705_032_704)`, and `reply_errno(-2)` is `Some(2)`.
 
 ## Done when
 
@@ -270,5 +264,5 @@ An outside review of `filesystem_contract` before it leaves nife. Five items are
 commit (the stand-alone text, clippy's proper-noun list, the falsification patch paths, one
 uncovered file, 22 names the gates refuse). Eight come before the first tag (a non-total errno
 decoder, packers that mask, seven unproven properties, the equivalent-mutant list, the README and
-prose gates, the `rm` module). Nine are for later. Three decisions go to the architect: the on-disk
-`.nife-attrs` name, the naming pass with units, and a bound on the error range of a reply word.
+prose gates, the `rm` module). Nine are for later. Three decisions went to the architect: the on-disk
+name (A, ruled), the naming pass with units (B, open), and a bound on the error range of a reply word (C, ruled).
