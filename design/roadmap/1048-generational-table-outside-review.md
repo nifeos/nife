@@ -127,10 +127,11 @@ license and the crate name. This block does not reopen them.
 Checked 2026-11-14 (UTC) against `nifeos/generational_table`, whose tag `v0.1.0-pre.1` sits on the
 head of `main` (`4fb6bb7`, the merge of #16), so every pull request below is in the tagged commit.
 
-- **Done.** Items 2, 5 to 12, 14 and 15 landed in `nifeos/generational_table` #9 to #16: the slot
-  check on narrow targets (#9, #14), the five methods and `Ord` (#10), the docs.rs front page,
-  `deny.toml` and `rust-version` 1.85 (#11), the benchmark, the cursor scan and the layout record
-  (#12), and the mutation caller with the template fix of `nifeos/crate-workflows#50` (#15, #16).
+- **Done.** Items 2, 5 to 12, 14 and 15 landed in `nifeos/generational_table` #9 to #16. The slot
+  check on narrow targets is #9 and #14, and the five methods and `Ord` are #10. The docs.rs front
+  page, `deny.toml` and `rust-version` 1.85 are #11. The benchmark, the cursor scan and the layout
+  record are #12. The mutation caller, with the template fix of `nifeos/crate-workflows#50`, is #15
+  and #16.
   Ten harnesses carry ten falsification patches, and proofs run 43001273410 passed at `4fb6bb7`.
 - **Done.** Item 3's pre-release part landed in `nifeos/generational_table` #11: the README's
   build-and-prove section, the one-line Kani install and a stranger run dated 2026-11-09 that found

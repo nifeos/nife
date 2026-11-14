@@ -38,31 +38,8 @@ against, so placing one is a separate question for the architect.
 
 ## What the review covered
 
-The reviewer ran these firsthand at `bea0257`, in a fresh clone on an x86_64 Linux host:
-
-| check | result |
-|---|---|
-| `cargo build`, `cargo test`, `cargo clippy --all-targets`, `cargo doc` with warnings denied | clean on stable 1.99.1 and on 1.88, the `rust-version`; 30 unit tests and 2 doctests |
-| `cargo build --lib` for `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf`, `x86_64-unknown-none` | all three build; `src/` holds no `unsafe` |
-| `cargo kani` (0.68.0) | 7 of 7 harnesses verify with no warning |
-| the falsification patches | each fails its own harness; four name the promised assertion in the summary, three fail at an `assert_eq` or `assert_ne` that Kani reports as a placeholder |
-| `cargo mutants` (27.1.0) over `src/` without `src/verification.rs` | 367 mutants: 277 caught, 49 missed, 41 unviable, no timeout |
-| the three `cargo-fuzz` targets | 30 seconds each on nightly, no finding |
-| `cargo deny check`, `cargo package --list` | pass, with two warnings for unmatched license allowances; the package ships `src/`, the patches and the repository's `.github/` |
-| every public name against [design/naming.md](../naming.md) | no finding against a ratified name |
-| each decoded field against the xHCI 1.2 positions the reviewer recalls | no field misplaced |
-
-Rechecked for this block on `main`: every file and symbol each item cites, and the template pin, 33
-commits behind the template's `main`. The weekly run on `bea0257` fails in `mutation` and in
-`stranger cadence` and passes its other jobs. The builds, tests, proofs, mutation counts and fuzz
-runs come from the review; this block did not rerun them.
-
-Inferred, not verified: the specification bounds of P1-5 and P1-7 (BUGS).
-
-Not run: anything on hardware, `cargo semver-checks` (no release exists), Miri (green weekly), a
-long fuzz campaign, a release dry run and the template's name-check helpers.
-
-Effort sizes: XS is under an hour for a lane, S half a day, M a day or two.
+What the review read, ran and left unrun is in
+[the coverage appendix](1060-extensible-host-controller-interface-outside-review/what-the-review-covered.md).
 
 ## Findings, prioritized
 
@@ -318,10 +295,10 @@ The checks, and the hardware steps the review claims none of, are in
 Checked 2026-11-14 (UTC) against `nifeos/extensible_host_controller_interface`. Its tag
 `v0.1.0-pre.1` sits on `2394d80`, the merge of #6; `main` is `f0b468b`, 36 commits further on.
 
-- **Done.** P1-1 landed in `nifeos/extensible_host_controller_interface` #5 before the tag. P0-1
-  landed in #7 and #8; P1-9 in #8; P1-4, P1-6 and P1-7 in #9; P2-2 in #10; P1-8 in #12; P1-11,
-  P1-12 and P1-14 in #13; P1-13 in #14; P2-1, P2-4 to P2-9 and P2-11 in #15; all after the tag.
-  Thirteen harnesses carry thirteen patches.
+- **Done.** P1-1 landed in `nifeos/extensible_host_controller_interface` #5 before the tag. After
+  it, P0-1 landed in #7 and #8, P1-9 in #8, P1-4, P1-6 and P1-7 in #9, P2-2 in #10 and P1-8 in
+  #12. P1-11, P1-12 and P1-14 landed in #13, P1-13 in #14, and P2-1, P2-4 to P2-9 and P2-11 in
+  #15. Thirteen harnesses carry thirteen patches.
 - **Outstanding.** P1-2: the stranger run and the build section landed in #2 and #4, but the Kani
   install line still breaks across two README lines. Read from the README on `main`.
 - **Outstanding.** P1-3 and P1-5: #9 and #11 landed `EndpointType` and the ring size bounds, but #11

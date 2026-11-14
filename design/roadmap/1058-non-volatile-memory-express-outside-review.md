@@ -38,34 +38,8 @@ Nothing in this block lifts that hold, and a green gate here is not permission t
 
 ## What the review covered
 
-The reviewer verified these firsthand, in a fresh clone of `main` on one Linux host:
-
-- `cargo build`, `cargo test` (29 unit tests and 7 doctests), `cargo clippy`, `cargo doc` and
-  `cargo fmt --check`, all with warnings denied: clean on 1.99.1 and on 1.88, the `rust-version`. The same
-  tests pass on 1.85 with `--ignore-rust-version`.
-- The crate builds for `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` and
-  `x86_64-unknown-none`.
-- Kani 0.68.0 verifies all ten harnesses in about 14 seconds in total. Each of the ten
-  falsification patches applies, fails exactly its own harness at the assertion its header names,
-  and reverses to a clean tree.
-- `cargo mutants` over the whole crate: 247 mutants, 161 caught, 76 missed, 10 unviable, no
-  timeout. The 76 misses sit on exactly the 28 source lines that `.github/mutants-exempts` lists:
-  six production lines whose OR-to-XOR and shift swaps act on disjoint bits, and 22 lines inside
-  `#[cfg(kani)]` harness bodies that the ordinary tests never compile.
-- All three `cargo-fuzz` targets ran 20 seconds each with no finding. `typos` and
-  `cargo deny check` pass, and `cargo package --list` ships 55 files.
-- No `unsafe` in `src/`, and no mention of this tree beyond the App secret names in `release.yml`.
-- Through the GitHub API: the last weekly run green in every job, nine required checks, no tag.
-
-Inferred, not verified: the ordering hazard of P1-6, read from the API shape and two consumers.
-The page-size mismatch of P1-9 is also inferred, since nobody built a kernel with 16 KiB pages
-against the crate.
-
-Not run: `cargo semver-checks` (no baseline exists), Miri (green in the weekly job), a long fuzz
-campaign, the release dry run, the name checks of the template at its head, and anything that needs
-a controller. The reviewer changed nothing in the repository.
-
-Effort sizes: XS is under an hour, S half a day, M a day or two.
+What the review read, ran and left unrun is in
+[the coverage appendix](1058-non-volatile-memory-express-outside-review/what-the-review-covered.md).
 
 ## Findings, prioritized
 
@@ -322,15 +296,15 @@ Checked 2026-11-14 (UTC) against `nifeos/non_volatile_memory_express`. Its tag `
 on `27aa19c`, the merge of #14; `main` is `5cdfeae`, 60 commits further on. Every item but P1-13
 landed after the tag.
 
-- **Done.** P0-1 landed in `nifeos/non_volatile_memory_express` #15; P1-4 in #17; P1-1 to P1-3,
-  P1-5 and P1-14 in #19; P1-6 to P1-8, P1-11, P1-12, P2-8 to P2-10 in #16, with P1-6's phase helper,
-  `Completion::is_phase_tag_set`, in #23; P1-9 in #20; P1-10 in #22; P2-7 in #18. P0-2's four
-  register names were already on `main`.
+- **Done.** P0-1 landed in `nifeos/non_volatile_memory_express` #15, P1-4 in #17, P1-9 in #20,
+  P1-10 in #22 and P2-7 in #18. P1-1 to P1-3, P1-5 and P1-14 landed in #19. P1-6 to P1-8, P1-11,
+  P1-12 and P2-8 to P2-10 landed in #16, and P1-6's phase helper, `Completion::is_phase_tag_set`,
+  in #23. P0-2's four register names were already on `main`.
 - **Done.** P2-1 landed in `nifeos/non_volatile_memory_express` #26, P2-2 in #23, P2-3 in #21, P2-4
   in #24 (`MDTS` and `NN` only), P2-5 in #25 and P2-6 in #27. The repository's `falsifications/`
   holds 18 patches.
-- **Outstanding.** P1-13's pin: the mutation caller landed in #13 and `check / mutation-diff` is
-  required, but every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no template
+- **Outstanding.** P1-13's pin: the mutation caller landed in #13 and the ruleset requires
+  `check / mutation-diff`, but every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no template
   release, and no full mutation run covers `5cdfeae`. Read from the workflow files and the run list.
 - **Outstanding.** The names minted after the tag, which #16 to #27 list as provisional for the
   release review, and the new stranger run: `docs/stranger-test.md` still reads `Last run:
