@@ -383,7 +383,7 @@ fn every_public_number_is_pinned() {
     for entry in std::fs::read_dir(source_dir).unwrap() {
         let name = entry.unwrap().file_name().into_string().unwrap();
         if let Some(stem) = name.strip_suffix(".rs") {
-            let known = matches!(stem, "lib" | "tests" | "display") || MODULES.contains(&stem);
+            let known = matches!(stem, "lib" | "tests") || MODULES.contains(&stem);
             assert!(
                 known,
                 "{name} is not in MODULES, so its numbers are not counted"
