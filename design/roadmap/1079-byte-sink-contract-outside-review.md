@@ -84,7 +84,7 @@ The P1 items are in [the appendix](1079-byte-sink-contract-outside-review/before
 ## Decisions for the architect
 
 Only one-way doors. Each gives the background, then the recommendation, then prior art and one
-concrete example. The maintainer brings them one at a time. C is ruled.
+concrete example. The maintainer brings them one at a time. C has its ruling.
 
 ### A. Does the byte-sink contract ever get a wire version operation?
 
@@ -130,15 +130,15 @@ about a file created on a test image by a program the reader cannot find.
 
 Ruled 2026-11-14 (UTC), option A: a writer sends zero in both, and a sink refuses an end of stream
 with either word non-zero as `Msg::Malformed`. `unpack` decodes `Msg::Eof` only from the exact
-message `(eof(), 0, 0)`, so a first word with any bit set below the opcode is refused the same way,
+message `(eof(), 0, 0)`, so a first word with any bit set below the opcode fails the same way,
 which is what its documentation says the low 32 bits are. A Kani harness proves that equivalence
 over every three words, with a falsification patch.
 
 `rm` reports its exit status and its count on a verdict endpoint of its own, slot 2
 (`filesystem_contract::rm::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
-its message is received, so the verdict cannot overtake the text, and a reader drains the report
-before receiving it. The spawn service leaves that slot empty, so at the prompt the send is refused
-and `rm` exits; the kernel's granted-directory and granted-set wirings grant it when a test asks.
+a receiver takes its message, so the verdict cannot overtake the text, and a reader drains the report
+before receiving it. The spawn service leaves that slot empty, so at the prompt the kernel refuses the
+send and `rm` exits; the kernel's granted-directory and granted-set wirings grant it when a test asks.
 
 Prior art: Unix delivers a producer's exit status through `wait(2)` to its parent, never through the
 pipe; `set -o pipefail` reads statuses from the supervisor, not the stream. HTTP chunked transfer

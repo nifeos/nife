@@ -78,10 +78,9 @@ semantics does, and it is the opcode list that makes that true rather than polic
   OPERATION_EOF   = 1    len = 0        the writer is finished; w1 = w2 = 0
 ```
 
-An end of stream is exactly `(eof(), 0, 0)`. Its two later words are reserved: a writer sends zero,
-and `unpack` refuses any other end of stream as malformed, so no writer can give those words a
-meaning that a sink would then have to know. A program with a result to report after its stream
-(`rm`'s exit status) sends it on an endpoint of its own.
+An end of stream is exactly `(eof(), 0, 0)`: a writer sends zero in its two later words, and
+`unpack` refuses any other end of stream as malformed. A result due after the stream (`rm`'s exit
+status) goes on an endpoint of its own.
 
 `OPERATION_BYTES` is zero on purpose. With the opcode at zero a bytes message's first word is
 exactly its byte count, which is bit for bit the framing std's stdout already sent. So unifying the
