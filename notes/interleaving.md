@@ -63,7 +63,7 @@ and fetch-op outside test code:
 
 ## What was modeled
 
-30 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
+31 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
 `script/interleaving-check`.
 
 The harness number is written in digits because `script/lint`'s marker reads small cardinals and no
@@ -80,7 +80,7 @@ timing table already said "all four crates".
 | Crate | Protocol | What the model holds |
 |---|---|---|
 | `crates/work_steal_slot` | the work-steal request slot, a compare-exchange mailbox; the pilot | one steal per victim per round, each request served exactly once, release/acquire publication, and a relaxed pairing that must fail |
-| `crates/clock_contract` | the clock page's seqlock, across address spaces | no torn reading, a generation that matches its pair, serialized writers; this is where the bug was |
+| `crates/clock_contract` | the clock page's seqlock, across address spaces | no torn reading, a generation that matches its pair, serialized writers, a restarted `initialize` invisible to a reader; this is where the bug was |
 | `crates/thread_wake_handshake` | block/wake, in the gaps between `SCHED` critical sections (2026-08-14) | a wake racing a switch-out resumes on a saved context; three historical races rebuilt as `#[should_panic]` reconstructions |
 | `crates/memory_corruption_canary_gate` | the corruption canary's arm/check/disarm (2026-08-15) | armer and checker exclusion, disarm's quiescence, single-flight checking; the old two-flag protocol failed on the first run |
 | `crates/memory_regions` | the untyped region claim (2026-08-18) | exactly one destroyer reclaims; a witness harness asserts the pre-#316 protocol double-frees |

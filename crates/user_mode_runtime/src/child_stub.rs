@@ -19,13 +19,13 @@
 #[cfg(target_arch = "aarch64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [
     0xD280_0000,
-    0xD280_0001,
-    0xD280_0000 | (1u32 << 5) | 2, // movz x2, #1  (the done word)
+    0xD280_0001 | ((abi::rendezvous::SEND as u32) << 5), // movz x1, #SEND
+    0xD280_0000 | (1u32 << 5) | 2,                       // movz x2, #1  (the done word)
     0xD280_0003,
     0xD280_0004,
     0xD280_0000 | ((abi::SYSCALL_INVOKE as u32) << 5) | 8,
     0xD400_0001,
-    0xD280_0008,
+    0xD280_0008 | ((abi::SYSCALL_EXIT as u32) << 5), // movz x8, #SYSCALL_EXIT
     0xD400_0001,
 ];
 

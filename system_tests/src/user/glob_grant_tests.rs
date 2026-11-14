@@ -47,7 +47,7 @@ fn what_a_shell_shows_is_what_a_set_grant_takes_away() {
 /// is not the only thing it could ever do. There is no `REMOVE` in it at all, which is the point
 /// of `echo` being the half that demonstrates this: **showing the authority costs none of it.**
 fn shell_expanded() -> Option<u64> {
-    let (report, held) = fs_service::start_granted_dir(
+    let (report, _, held) = fs_service::start_granted_dir(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("fs_subtree_caretaker")
@@ -66,6 +66,7 @@ fn shell_expanded() -> Option<u64> {
             // witness's stack, measured", and its BUGS for the smaller frame that should replace
             // the seventh page.
             stack_pages: 7,
+            verdict: false,
         },
     )?;
     let [tag, verdict, ..] = sched::ipc_receive(report);
@@ -99,7 +100,7 @@ fn assert_shell_agreed(v: u64) {
 fn run_rm(name: &str, flags: u64) -> (u64, u64) {
     // An empty name is the whole namespace, which packs as two zero words.
     let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
-    let (report, held) = fs_service::start_granted_set(
+    let (report, verdict, held) = fs_service::start_granted_set(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("fs_nameset_caretaker")
@@ -116,21 +117,33 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
             arg: lo,
             arg2: hi,
             stack_pages: 6,
+            verdict: true,
         },
     )
     .expect("the FS service was wired by the shell phase");
+    let verdict = verdict.expect("a grant asked for a verdict endpoint hands one back");
 
     for _ in 0..MAXIMUM_MESSAGES {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
-        // `rm` ends with the sink contract's end of stream, the verdict in the two words
-        // `OPERATION_EOF` leaves free. The shell phase reports a `VERDICT` bitmap instead.
+        // `rm` ends its report with the sink contract's end of stream, its reserved words zero,
+        // and then sends the verdict on its own endpoint (`filesystem_contract::rm`). The shell
+        // phase reports a `VERDICT` bitmap instead.
         if w0 == eof() {
+            assert_eq!(
+                (w1, w2),
+                (0, 0),
+                "an end of stream's reserved words are zero"
+            );
+            let [status, removed, _, _, _] = sched::ipc_receive(verdict);
             held.release_or_fail("rm's set grant");
-            return (w1, w2);
+            return (status, removed);
         }
-        assert!(w0 <= 16, "neither a verdict nor a text frame: {w0:#x}");
+        assert!(
+            w0 <= 16,
+            "neither an end of stream nor a text frame: {w0:#x}"
+        );
     }
-    panic!("rm sent {MAXIMUM_MESSAGES} messages and never a verdict");
+    panic!("rm sent {MAXIMUM_MESSAGES} messages and never ended its report");
 }
 
 /// **The attacker, and it is `rm` itself.** Told to remove a name that exists, sits one

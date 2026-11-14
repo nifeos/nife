@@ -124,8 +124,7 @@ Neither "adapt" (track upstream with a platform layer added) nor a clean-room re
 
 That is calef's expectation made concrete: relibc's approach, nife's library. Would this still win
 if a clean rewrite cost the same? Yes. The seeded code carries years of conformance fixes a rewrite
-would have to rediscover, and CLAUDE.md rule 6 asks for adapted code first outside the crates Kani
-proves. Would vendoring still lose if it cost the same? Also yes, because the divergence would be
+would have to rediscover, and AGENTS.md rule 6 asks for adapted code first. Would vendoring still lose if it cost the same? Also yes, because the divergence would be
 the larger part of the code, and a pin whose patch is bigger than its source is a fork that says it
 is not one.
 

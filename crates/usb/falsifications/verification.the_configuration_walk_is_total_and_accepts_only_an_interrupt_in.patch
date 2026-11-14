@@ -6,11 +6,10 @@ endpoint some keyboards carry) is returned as the keyboard's input endpoint.
 Expected to fail: the harness's `assert!(k.endpoint & 0x80 != 0, "an IN endpoint")`.
 
 diff --git a/crates/usb/src/descriptor.rs b/crates/usb/src/descriptor.rs
-index cb5c8bef7..c394d7bf8 100644
 --- a/crates/usb/src/descriptor.rs
 +++ b/crates/usb/src/descriptor.rs
-@@ -214,3 +214,3 @@ pub fn find_boot_keyboard(config: &[u8]) -> Result<BootKeyboard, Refusal> {
+@@ -252,3 +252,3 @@
                      let interrupt = d[3] & 0x3 == 0x3;
--                    let inbound = address & 0x80 != 0;
+-                    let inbound = endpoint_number_and_direction & 0x80 != 0;
 +                    let inbound = true;
-                     let number = address & 0x0f;
+                     let number = endpoint_number_and_direction & 0x0f;

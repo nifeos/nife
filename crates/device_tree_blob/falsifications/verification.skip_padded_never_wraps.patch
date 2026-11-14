@@ -1,0 +1,18 @@
+Falsifies `device_tree_blob::verification::skip_padded_never_wraps`.
+
+The defect: the checked add that steps a cursor over padded data becomes a wrapping add. A property
+length near the top of a 32-bit `usize` then moves the cursor backwards, to a position the walk has
+already read, and a hostile blob can make the walk revisit it. Both spellings add two numbers.
+
+Expected to fail: the harness's own `assert!(next >= at)`, for a position and length whose padded
+sum passes `usize::MAX`.
+
+diff --git a/crates/device_tree_blob/src/lib.rs b/crates/device_tree_blob/src/lib.rs
+index ed17aa9f6..9b4cceb6f 100644
+--- a/crates/device_tree_blob/src/lib.rs
++++ b/crates/device_tree_blob/src/lib.rs
+@@ -1269,3 +1269,3 @@ fn skip_padded(at: usize, n: usize) -> Result<usize, Error> {
+     align4(n)
+-        .and_then(|padded| at.checked_add(padded))
++        .map(|padded| at.wrapping_add(padded))
+         .ok_or(Error::Truncated)

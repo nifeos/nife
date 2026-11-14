@@ -4,7 +4,7 @@
     python3 helpers/heavy_slot.py <job> -- <command> [args...]
     python3 helpers/heavy_slot.py --held      # exit 0 when an ancestor of the caller holds a slot
     python3 helpers/heavy_slot.py --status
-    python3 helpers/heavy_slot.py --pool kani --units <n> <job> -- <command> [args...]
+    python3 helpers/heavy_slot.py --pool kani --units <n> <job> -- <command> [args...]  # and a slot
     python3 helpers/heavy_slot.py --pool kani --size | --weight [<row>... | --table] | --held
 
 A script does not call this directly. It sources helpers/heavy-slot.sh, which re-executes the script
@@ -96,8 +96,11 @@ process. Two containers that share one slot directory and each run a heavy scrip
 tell their pid 1s apart, so one can run inside the other's slot. Give each container its own
 NIFE_HEAVY_SLOT_DIR.
 
-BUGS: script/verify takes its heavy slot before its Kani units, so a run that waits for units holds
-a heavy slot it does nothing with, and a build or a lint that needs only the slot waits behind it.
+`--pool kani --units` takes a heavy-job slot as well, unless an ancestor holds one, and never
+waits for one while it holds the other (`acquire_units_and_slot`). So a script/verify run waiting
+for units holds no slot, and a build or a lint that needs only a slot does not wait behind it. A
+job that already holds a slot when it asks for units (script/verify-riscv64, a script/falsifications
+sweep) still holds that slot while it waits.
 
 Order. A job waits for a slot in ticket order, through helpers/heavy_ledger.py: the job that began
 waiting first starts first, and a slot freed while several wait goes to the oldest. The ledger counts
@@ -370,28 +373,58 @@ def held_by_ancestor(n, directory):
     return any(holder_pid(r) in family for r in held.values())
 
 
+def try_units(job, n, directory, units):
+    """Lock `units` of the `n` units in `directory` at once and return their fds, or return None and
+    the holders' records when that many are not free. All or none."""
+    units = min(units, n)
+    mine, held = try_slots(n, directory)
+    if len(mine) >= units:
+        keep = sorted(mine)[:units]
+        for i, fd in mine.items():
+            if i not in keep:
+                os.close(fd)
+        for i in keep:
+            record(mine[i], i, job, units)
+        return [mine[i] for i in keep], held
+    for fd in mine.values():
+        os.close(fd)
+    return None, held
+
+
 def acquire_units(job, n, directory, units):
     """Block until `units` slots are locked at once, and return their fds. All or none."""
     units = min(units, n)
     announced = False
     while True:
-        mine, held = try_slots(n, directory)
-        if len(mine) >= units:
-            keep = sorted(mine)[:units]
-            for i, fd in mine.items():
-                if i not in keep:
-                    os.close(fd)
-            for i in keep:
-                record(mine[i], i, job, units)
-            return [mine[i] for i in keep]
-        for fd in mine.values():
-            os.close(fd)
+        fds, held = try_units(job, n, directory, units)
+        if fds is not None:
+            return fds
         if not announced:
             print(f"heavy-slot: {job} is waiting for {units} of {n} Kani units "
                   f"({directory}, {UNIT_GIB} GiB each); the rest are held by:\n{describe(held)}",
                   file=sys.stderr, flush=True)
             announced = True
         time.sleep(POLL_SECONDS)
+
+
+def acquire_units_and_slot(job, n, directory, units):
+    """Block until this process holds `units` Kani units and a heavy-job slot, and return their fds.
+
+    It never waits for one while it holds the other. It waits for the units holding nothing, lets
+    them go, waits in the ledger for a slot holding no units, and then takes the units without
+    waiting; when they were taken in between, it lets the slot go and starts again. A run that waits
+    for units therefore keeps no slot from a build or a lint, and a run that waits for a slot keeps
+    no units from a job that already holds a slot and waits for units (script/verify-riscv64 and a
+    script/falsifications sweep do), so the two waits cannot deadlock."""
+    while True:
+        for fd in acquire_units(job, n, directory, units):
+            os.close(fd)
+        slot = acquire(job, slot_count(), slot_dir())
+        fds, _ = try_units(job, n, directory, units)
+        if fds is not None:
+            return slot + fds
+        for fd in slot:
+            os.close(fd)
 
 
 def take_kani(harnesses, job):
@@ -486,7 +519,11 @@ def pool_main(argv):
         sep = argv.index("--")
         job, command = argv[2], argv[sep + 1:]
         if n:
-            for fd in acquire_units(job, n, slot_dir("kani"), units):
+            if held_by_ancestor(slot_count(), slot_dir()):
+                fds = acquire_units(job, n, slot_dir("kani"), units)
+            else:
+                fds = acquire_units_and_slot(job, n, slot_dir("kani"), units)
+            for fd in fds:
                 os.set_inheritable(fd, True)
         os.execvp(command[0], command)
     sys.exit("usage: heavy_slot.py --pool kani (--size [<row>...] | --weight [<row>... | --table] | "

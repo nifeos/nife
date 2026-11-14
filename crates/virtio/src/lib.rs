@@ -94,12 +94,12 @@ const VIRTIO_BLK_T_FLUSH: u32 = 4;
 const F_FLUSH_LO: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
-const OFF_DESC: u64 = 0x000; // 16 * QSIZE = 128 bytes
-const OFF_AVAIL: u64 = 0x080; // 6 + 2*QSIZE
-const OFF_USED: u64 = 0x100; // 6 + 8*QSIZE
-const OFF_HEADER: u64 = 0x200; // 16-byte blk request header
-const OFF_DATA: u64 = 0x400; // 512-byte block buffer
-const OFF_STATUS: u64 = 0x600; // 1-byte status
+const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QSIZE = 128 bytes
+const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QSIZE
+const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QSIZE
+const REQUEST_HEADER_OFFSET_BYTES: u64 = 0x200; // 16-byte blk request header
+const DATA_OFFSET_BYTES: u64 = 0x400; // 512-byte block buffer
+const STATUS_OFFSET_BYTES: u64 = 0x600; // 1-byte status
 
 const BLOCK: usize = 512;
 
@@ -201,6 +201,32 @@ fn direct_memory_access_read<T: Copy>(off: u64) -> T {
     unsafe { core::ptr::read_volatile((region() + off) as *const T) }
 }
 
+/// How many times the driver reads `Status` after a reset before it gives up. The specification
+/// has the driver wait for the device to answer 0, with no bound of its own; a device that never
+/// does is not one this driver can initialize, and a bounded wait turns that into a stop.
+const RESET_POLLS: u32 = 1_000_000;
+
+/// Write 0 to the device's status, which resets it, and read `Status` back until it is 0, giving up
+/// after `RESET_POLLS` reads. Returns whether the device reported the reset complete. `write` and
+/// `read` are the status register's two accesses, so the loop can be tested without a device.
+///
+/// The specification has the driver read `Status` back as 0 before it reinitializes (virtio 1.2,
+/// device initialization, reset step): a device may take time to reset, and a driver that writes
+/// `ACKNOWLEDGE` first races the reset, which can then clear it.
+fn reset_until_zero(mut write: impl FnMut(u32), mut read: impl FnMut() -> u32) -> bool {
+    write(0);
+    (0..RESET_POLLS).any(|_| read() == 0)
+}
+
+/// Reset the device and wait for it to say so. Stops the driver when it never does, as the other
+/// handshake checks do.
+fn reset_device() {
+    assert!(
+        reset_until_zero(|value| mw(STATUS, value), || mr(STATUS)),
+        "the device never read back Status 0 after a reset"
+    );
+}
+
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
 /// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
@@ -217,7 +243,7 @@ fn initialize() {
 fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
-    mw(STATUS, 0);
+    reset_device();
     mw(STATUS, S_ACKNOWLEDGE);
     mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
 
@@ -246,7 +272,7 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     mw(STATUS, S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK);
     assert!(mr(STATUS) & S_FEATURES_OK != 0);
 
-    // The layout constants (OFF_DESC/AVAIL/USED) are the contract the kernel uses.
+    // The layout constants (DESCRIPTOR_TABLE_OFFSET_BYTES/AVAIL/USED) are the contract the kernel uses.
     assert!(setup_queue(VIRTIO, QSIZE as u64, 0) == 0);
 
     mw(
@@ -281,7 +307,7 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     // It must be a nifefs image.
     let mut magic = [0u8; 8];
     for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(OFF_DATA + i as u64);
+        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
     }
     assert!(magic == nifefs::MAGIC);
 
@@ -294,7 +320,7 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     // proves the actual file data came off the disk and across the EL0 boundary.
     let mut head = [0u8; 8];
     for (i, b) in head.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(OFF_DATA + i as u64);
+        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
     }
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
@@ -327,35 +353,35 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
     let mut magic = [0u8; 8];
     for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(OFF_DATA + i as u64);
+        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
     }
     assert!(magic == nifefs::MAGIC);
     let scratch = find_file(b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     // Write the pattern...
     for i in 0..BLOCK {
-        direct_memory_access_write::<u8>(OFF_DATA + i as u64, pattern_byte(i));
+        direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, pattern_byte(i));
     }
     write_block(direct_memory_access_phys, scratch);
 
     // ...wipe the buffer so a read that silently does nothing cannot pass, and read it back.
     for i in 0..BLOCK {
-        direct_memory_access_write::<u8>(OFF_DATA + i as u64, 0);
+        direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, 0);
     }
     read_block(direct_memory_access_phys, scratch);
     for i in 0..BLOCK {
-        assert!(direct_memory_access_read::<u8>(OFF_DATA + i as u64) == pattern_byte(i));
+        assert!(direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64) == pattern_byte(i));
     }
     let mut head = [0u8; 8];
     for (i, b) in head.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(OFF_DATA + i as u64);
+        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
     }
 
     // The write must have landed on ITS block and nothing else: the superblock still parses and
     // the read-path file is still in the directory.
     read_block(direct_memory_access_phys, 0);
     for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(OFF_DATA + i as u64);
+        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
     }
     assert!(magic == nifefs::MAGIC);
     assert!(find_file(b"motd").is_some());
@@ -377,13 +403,13 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
     let mut magic = [0u8; 8];
     for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(OFF_DATA + i as u64);
+        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
     }
     assert!(magic == nifefs::MAGIC);
     let scratch = find_file(b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     for i in 0..BLOCK {
-        direct_memory_access_write::<u8>(OFF_DATA + i as u64, 0xAB);
+        direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, 0xAB);
     }
     let _used_before = submit_block(direct_memory_access_phys, scratch, VIRTIO_BLK_T_OUT);
 
@@ -405,10 +431,13 @@ pub fn run_attack(direct_memory_access_phys: u64) -> ! {
     // A single descriptor pointing OUTSIDE our DMA region, marked device-writable.
     write_desc(0, KERNEL_ADDR, 512, VIRTQ_DESC_F_WRITE, 0);
 
-    let idx: u16 = direct_memory_access_read::<u16>(OFF_AVAIL + 2);
-    direct_memory_access_write::<u16>(OFF_AVAIL + 4 + (idx as u64 % QSIZE as u64) * 2, 0);
+    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
+    direct_memory_access_write::<u16>(
+        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    );
     virtio_ring_barrier();
-    direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
     virtio_ring_barrier();
 
     // Submit. The kernel walks the descriptor, sees KERNEL_ADDR is outside our region, and refuses.
@@ -435,25 +464,28 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
 
     // The indirect TABLE lives in our region (the header scratch area). Its one entry aims the
     // device at kernel memory, device-writable.
-    direct_memory_access_write::<u64>(OFF_HEADER, KERNEL_ADDR); // inner desc addr
-    direct_memory_access_write::<u32>(OFF_HEADER + 8, 512); // inner desc len
-    direct_memory_access_write::<u16>(OFF_HEADER + 12, VIRTQ_DESC_F_WRITE); // inner desc flags
-    direct_memory_access_write::<u16>(OFF_HEADER + 14, 0); // inner desc next
+    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES, KERNEL_ADDR); // inner desc addr
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 8, 512); // inner desc len
+    direct_memory_access_write::<u16>(REQUEST_HEADER_OFFSET_BYTES + 12, VIRTQ_DESC_F_WRITE); // inner desc flags
+    direct_memory_access_write::<u16>(REQUEST_HEADER_OFFSET_BYTES + 14, 0); // inner desc next
 
     // desc[0]: flagged INDIRECT, pointing at the in-region table above. Wholly in-region, so only
     // the INDIRECT handling stands between this and a kernel-memory DMA.
     write_desc(
         0,
-        direct_memory_access_phys + OFF_HEADER,
+        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
         16,
         VIRTQ_DESC_F_INDIRECT,
         0,
     );
 
-    let idx: u16 = direct_memory_access_read::<u16>(OFF_AVAIL + 2);
-    direct_memory_access_write::<u16>(OFF_AVAIL + 4 + (idx as u64 % QSIZE as u64) * 2, 0);
+    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
+    direct_memory_access_write::<u16>(
+        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    );
     virtio_ring_barrier();
-    direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
     virtio_ring_barrier();
 
     // The kernel refuses the indirect descriptor and never rings the device.
@@ -474,9 +506,9 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
 /// Only the `nifefs::ENTRIES_IN_FIRST_BLOCK` entries inside block 0 are visible; reading further
 /// would read past the DMA data buffer. The disk this walks holds three files.
 fn find_file(name: &[u8]) -> Option<u32> {
-    let count = direct_memory_access_read::<u32>(OFF_DATA + 8) as usize;
+    let count = direct_memory_access_read::<u32>(DATA_OFFSET_BYTES + 8) as usize;
     for i in 0..count.min(nifefs::ENTRIES_IN_FIRST_BLOCK) as u64 {
-        let entry = OFF_DATA + nifefs::HEADER_LEN as u64 + i * nifefs::ENTRY_LEN as u64;
+        let entry = DATA_OFFSET_BYTES + nifefs::HEADER_LEN as u64 + i * nifefs::ENTRY_LEN as u64;
         let mut matches = true;
         for (j, &want) in name.iter().enumerate() {
             if direct_memory_access_read::<u8>(entry + j as u64) != want {
@@ -503,10 +535,10 @@ fn find_file(name: &[u8]) -> Option<u32> {
 /// and a write (`T_OUT`) does not; the kernel checks every address on NOTIFY, whatever the flag.
 fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u16 {
     // The request header the device reads: type, reserved, sector.
-    direct_memory_access_write::<u32>(OFF_HEADER, req_type);
-    direct_memory_access_write::<u32>(OFF_HEADER + 4, 0);
-    direct_memory_access_write::<u64>(OFF_HEADER + 8, sector);
-    direct_memory_access_write::<u8>(OFF_STATUS, 0xff); // the device overwrites this with 0 on success
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, req_type);
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
+    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, sector);
+    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff); // the device overwrites this with 0 on success
 
     let data_flags = if req_type == VIRTIO_BLK_T_IN {
         VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE // read: the device fills our buffer
@@ -517,7 +549,7 @@ fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u
     // desc[0]: header, device reads it.          NEXT -> 1
     write_desc(
         0,
-        direct_memory_access_phys + OFF_HEADER,
+        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
         16,
         VIRTQ_DESC_F_NEXT,
         1,
@@ -525,7 +557,7 @@ fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u
     // desc[1]: data buffer, direction above.     NEXT -> 2
     write_desc(
         1,
-        direct_memory_access_phys + OFF_DATA,
+        direct_memory_access_phys + DATA_OFFSET_BYTES,
         BLOCK as u32,
         data_flags,
         2,
@@ -533,7 +565,7 @@ fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u
     // desc[2]: status byte, device WRITES it.  (end of chain)
     write_desc(
         2,
-        direct_memory_access_phys + OFF_STATUS,
+        direct_memory_access_phys + STATUS_OFFSET_BYTES,
         1,
         VIRTQ_DESC_F_WRITE,
         0,
@@ -541,11 +573,14 @@ fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u
 
     // Publish the head descriptor (index 0) in the available ring.
     // avail: { u16 flags; u16 idx; u16 ring[QSIZE]; }
-    let used_before: u16 = direct_memory_access_read::<u16>(OFF_USED + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(OFF_AVAIL + 2);
-    direct_memory_access_write::<u16>(OFF_AVAIL + 4 + (idx as u64 % QSIZE as u64) * 2, 0); // ring[idx] = head 0
+    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
+    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
+    direct_memory_access_write::<u16>(
+        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    ); // ring[idx] = head 0
     virtio_ring_barrier(); // the descriptor and ring entry must be visible before we bump idx
-    direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
     virtio_ring_barrier(); // idx must be visible before we notify
 
     // The kernel rings the device only if every published descriptor stays inside our DMA region.
@@ -574,13 +609,13 @@ fn complete_block(used_before: u16) {
         interrupt_acknowledge(INTERRUPT);
 
         virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
+        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
             break; // our request is on the used ring; this wakeup was really ours
         }
         // The used ring has not moved, so that wakeup belonged to someone else (a stale completion
         // from a dead driver, most likely). Wait again for our own.
     }
-    let st = direct_memory_access_read::<u8>(OFF_STATUS);
+    let st = direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES);
     if st != 0 {
         report_code(0xE200 | st as u64); // device reported a non-OK status
     }
@@ -610,7 +645,7 @@ fn report_code(code: u64) -> ! {
 
 /// Write one 16-byte descriptor: { u64 addr; u32 len; u16 flags; u16 next; }.
 fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
-    let base = OFF_DESC + i * 16;
+    let base = DESCRIPTOR_TABLE_OFFSET_BYTES + i * 16;
     direct_memory_access_write::<u64>(base, addr);
     direct_memory_access_write::<u32>(base + 8, len);
     direct_memory_access_write::<u16>(base + 12, flags);
@@ -696,7 +731,7 @@ fn ip_checksum(off: u64, len: u64) -> u16 {
 fn initialize_net() {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt"
 
-    mw(STATUS, 0);
+    reset_device();
     mw(STATUS, S_ACKNOWLEDGE);
     mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
 
@@ -1045,8 +1080,8 @@ const BLK_REQ: u64 = 0;
 /// The block server's DMA region is `1 + blk::TRANSFER_BLOCKS` contiguous pages
 /// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header and status, and pages
 /// `1..=blk::TRANSFER_BLOCKS` are the data buffer, which is the region shared with the FS server.
-/// `BLK_OFF_DATA` is that page-1 offset. See notes/virtio.md ("The block server").
-const BLK_OFF_DATA: u64 = 0x1000;
+/// `BLOCK_SERVER_DATA_OFFSET_BYTES` is that page-1 offset. See notes/virtio.md ("The block server").
+const BLOCK_SERVER_DATA_OFFSET_BYTES: u64 = 0x1000;
 
 /// The block server's readiness endpoint (slot 3): SEND once after the device is up, so the test
 /// can tell a device-bring-up hang from a first-read hang. See `kernel/src/user/fs_service.rs`.
@@ -1151,11 +1186,11 @@ fn complete_blk(used_before: u16) -> bool {
         mw(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT);
         virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
+        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
             break; // our request is on the used ring; this wakeup was really ours
         }
     }
-    direct_memory_access_read::<u8>(OFF_STATUS) == 0
+    direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES) == 0
 }
 
 /// Read `count` contiguous filesystem blocks starting at `sector` in a single virtio request,
@@ -1191,33 +1226,36 @@ fn blk_flush(direct_memory_access_phys: u64) -> bool {
 /// byte it writes. No data descriptor, because a flush moves no data (virtio 1.2 §5.2.6.1); a chain
 /// with one would be describing a transfer the device was never asked to make.
 fn submit_flush(direct_memory_access_phys: u64) -> u16 {
-    direct_memory_access_write::<u32>(OFF_HEADER, VIRTIO_BLK_T_FLUSH);
-    direct_memory_access_write::<u32>(OFF_HEADER + 4, 0);
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, VIRTIO_BLK_T_FLUSH);
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
     // The sector field is unused for a flush and the spec says to set it to 0; written so no stale
     // sector from the previous request is left in the header.
-    direct_memory_access_write::<u64>(OFF_HEADER + 8, 0);
-    direct_memory_access_write::<u8>(OFF_STATUS, 0xff);
+    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, 0);
+    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff);
 
     write_desc(
         0,
-        direct_memory_access_phys + OFF_HEADER,
+        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
         16,
         VIRTQ_DESC_F_NEXT,
         1,
     );
     write_desc(
         1,
-        direct_memory_access_phys + OFF_STATUS,
+        direct_memory_access_phys + STATUS_OFFSET_BYTES,
         1,
         VIRTQ_DESC_F_WRITE,
         0,
     );
 
-    let used_before: u16 = direct_memory_access_read::<u16>(OFF_USED + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(OFF_AVAIL + 2);
-    direct_memory_access_write::<u16>(OFF_AVAIL + 4 + (idx as u64 % QSIZE as u64) * 2, 0);
+    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
+    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
+    direct_memory_access_write::<u16>(
+        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    );
     virtio_ring_barrier();
-    direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
     virtio_ring_barrier();
 
     // As `submit_blk`: the kernel validates every descriptor against the region.
@@ -1229,14 +1267,14 @@ fn submit_flush(direct_memory_access_phys: u64) -> u16 {
 
 /// Build and publish the three-descriptor chain for a `count`-block transfer and ring the device
 /// through the kernel. Mirrors [`submit_block`] but with one data descriptor spanning `count`
-/// contiguous blocks at [`BLK_OFF_DATA`] (milestone 138 step 4): virtio-blk asks only that its
+/// contiguous blocks at [`BLOCK_SERVER_DATA_OFFSET_BYTES`] (milestone 138 step 4): virtio-blk asks only that its
 /// length be whole sectors. Returns the used-ring index from before the submit, which
 /// [`complete_block`] compares against.
 fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count: u64) -> u16 {
-    direct_memory_access_write::<u32>(OFF_HEADER, req_type);
-    direct_memory_access_write::<u32>(OFF_HEADER + 4, 0);
-    direct_memory_access_write::<u64>(OFF_HEADER + 8, sector);
-    direct_memory_access_write::<u8>(OFF_STATUS, 0xff);
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, req_type);
+    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
+    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, sector);
+    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff);
 
     let data_flags = if req_type == VIRTIO_BLK_T_IN {
         VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE // read: the device fills the data pages
@@ -1246,31 +1284,34 @@ fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count:
     let data_len = count * blk::BLOCK_SIZE as u64;
     write_desc(
         0,
-        direct_memory_access_phys + OFF_HEADER,
+        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
         16,
         VIRTQ_DESC_F_NEXT,
         1,
     );
     write_desc(
         1,
-        direct_memory_access_phys + BLK_OFF_DATA,
+        direct_memory_access_phys + BLOCK_SERVER_DATA_OFFSET_BYTES,
         data_len as u32,
         data_flags,
         2,
     );
     write_desc(
         2,
-        direct_memory_access_phys + OFF_STATUS,
+        direct_memory_access_phys + STATUS_OFFSET_BYTES,
         1,
         VIRTQ_DESC_F_WRITE,
         0,
     );
 
-    let used_before: u16 = direct_memory_access_read::<u16>(OFF_USED + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(OFF_AVAIL + 2);
-    direct_memory_access_write::<u16>(OFF_AVAIL + 4 + (idx as u64 % QSIZE as u64) * 2, 0);
+    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
+    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
+    direct_memory_access_write::<u16>(
+        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    );
     virtio_ring_barrier();
-    direct_memory_access_write::<u16>(OFF_AVAIL + 2, idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
     virtio_ring_barrier();
 
     // The kernel validates every descriptor against the 2-page region before ringing; a refusal

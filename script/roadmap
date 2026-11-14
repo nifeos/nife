@@ -64,8 +64,8 @@
 #     forced edit milestone 591 (a ruling should make the gate it answers fail until someone updates
 #     it) added for decisions). `decision_dependencies: unwritten` is a fork nobody has written up;
 #   - **a block or proposal raised on or after 2026-10-05 carries a `Reuse:` record** naming what it
-#     considered taking, or `none exists` and what was searched (§46's 2026-10-04 amendment: taking
-#     is the default outside the kernel and the crates Kani proves). Older blocks are exempt; the
+#     considered taking, or `none exists` and what was searched (§46: taking a crate that meets its
+#     bar is the default in every layer). Older blocks are exempt; the
 #     comment at `reuse_problems` says why and what that misses;
 #   - every `milestone N` citation TREE-WIDE resolves to a block (vendor/ and patches/ excluded:
 #     other people's text). The old gate checked only the roadmap's own prose, so ~1,988 citations in
@@ -307,8 +307,8 @@ def unheld_promotions(added, held):
 
 
 # ---- `Reuse:`: a new milestone names what it considered taking (§46, 2026-10-04) ------------------
-# calef ruled on 2026-10-04 (UTC) that outside the kernel and the crates Kani proves, the default is
-# to take or adapt existing code, and that writing our own needs a recorded reason. The record is a
+# §46 (thin primitives or whole subsystems), ruled 2026-11-14 (UTC), makes taking a crate that
+# meets its bar the default in every layer, and writing our own needs a stated reason. The record is a
 # `Reuse:` line in the block's prose, or a `## Reuse` section. It names at least one candidate
 # considered, or says `none exists` and what was searched. The line is written plain, as §46 spells
 # it. A bold `**Reuse:**` still reads, because blocks carried it until milestone 791 (bold that a
@@ -352,12 +352,12 @@ def reuse_problems(fname, status, raised, lines):
         if m:
             texts.append([m.group(1).strip()])
     fix = (f"  Fix: add a line 'Reuse: <what was considered and why it was or was not taken>', "
-           f"or 'Reuse: none exists; searched <where>' (§46's 2026-10-04 amendment; "
+           f"or 'Reuse: none exists; searched <where>' (§46's stated reason; "
            f"notes/roadmap.md, step 3 of adding a milestone)")
     if not texts:
         return [f"{fname}: raised {raised}, on or after {REUSE_FROM}, and there is no 'Reuse:' line "
-                f"or '## Reuse' section. Outside the kernel and the crates Kani proves, taking "
-                f"existing code is the default, so a new milestone names what it considered.\n" + fix]
+                f"or '## Reuse' section. Taking a crate that meets §46's bar is the default in "
+                f"every layer, so a new milestone names what it considered.\n" + fix]
     out = []
     for t in texts:
         body = " ".join(x for x in t if x).strip()

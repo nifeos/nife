@@ -2,7 +2,7 @@ Falsifies `system_tests::user::terminal_quiesce_tests::a_quiesce_from_anyone_but
 
 Architecture: aarch64
 
-The patch adds `OPERATION_QUIESCE` to the unbadged allowlist in `line_editor::proto::admits`, so
+The patch adds `OPERATION_QUIESCE` to the unbadged allowlist in `terminal_contract::admits`, so
 it is served again on the unbadged copy the shell, `login`, the input driver and the spawner hold.
 A supervised `line_editor` then honors a stranger's quiesce: it hands the parked reader back `FLAG_RETRY`,
 answers `QUIESCED` and stops on its control endpoint, where only the supervisor speaks.
@@ -10,13 +10,13 @@ answers `QUIESCED` and stops on its control endpoint, where only the supervisor 
 Expected to fail: `assert_eq!` "an unbadged holder quiesced a supervised terminal (reply
 0x51554954)", with `left: 1364543828` (`proto::QUIESCED`). Replayed red at exactly that
 assertion on aarch64 on 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only. The
-same patch turns the host test `line_editor::proto::tests::only_the_supervisor_badge_admits_a_quiesce`
+same patch turns the host test `terminal_contract::tests::only_the_supervisor_badge_admits_a_quiesce`
 red.
 
-diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
+diff --git a/crates/terminal_contract/src/lib.rs b/crates/terminal_contract/src/lib.rs
 index 44da33940..30cfa6407 100644
---- a/crates/line_editor/src/proto.rs
-+++ b/crates/line_editor/src/proto.rs
+--- a/crates/terminal_contract/src/lib.rs
++++ b/crates/terminal_contract/src/lib.rs
 @@ -200,6 +200,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
                  | OPERATION_PRINT
                  | OPERATION_RAWMODE

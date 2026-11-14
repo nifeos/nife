@@ -29,8 +29,8 @@ pub mod slot {
     /// `WRITE` on the service of the JH7110 true random number generator (TRNG) the kernel wired, on
     /// a JH7110 whose service answered.
     ///
-    /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR: u64 = 3;
+    /// Name: ratified 2026-11-14 (UTC), block 1078.
+    pub const TRUE_RANDOM_NUMBER_GENERATOR: u64 = 3;
     /// Disk 0's `Virtio` transport, when this machine has a virtio disk.
     ///
     /// Name: provisional.

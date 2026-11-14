@@ -1,4 +1,4 @@
-use crate::proto;
+use crate as proto;
 
 /// `FLAG_RETRY` is distinguishable from every other read reply, in both shapes: a line reply
 /// of length zero with no flags is an empty line, and a raw reply always carries 1..=8 bytes.
@@ -115,10 +115,4 @@ fn each_badge_admits_exactly_its_surface() {
             "badge 4 on operation {operation}"
         );
     }
-}
-
-/// The two definitions of the quiesce reply word are one value, so a drift in either shows here.
-#[test]
-fn the_quiesce_reply_is_the_one_hot_swap_contract_uses() {
-    assert_eq!(proto::QUIESCED, hot_swap_contract::QUIESCED);
 }

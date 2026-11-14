@@ -199,7 +199,7 @@ mutation runs in one transaction, so an attribute and its file reach the platter
 - An empty blob removes the file, so "no file" and "no attributes" stay one statement.
 - The store directory goes with its last blob. `remove_node` with `MODE_DIR` already refuses a
   non-empty directory, so the engine's check is the emptiness test and costs one lookup.
-  `redoxfs_host extract` copies the store out with the tree, and an empty `.nife-attrs` would
+  `redoxfs_host extract` copies the store out with the tree, and an empty `.extended-attributes` would
   otherwise land in a recovered folder with nothing to explain it.
 - The modes (0o700, 0o600) are decoration: the contract has no uid to check them against.
 

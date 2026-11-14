@@ -171,7 +171,7 @@ fn the_note_is_what_elf_finds() {
     assert_eq!(&n.0[0..4], &5u32.to_le_bytes());
     assert_eq!(&n.0[4..8], &(DESCRIPTOR_LEN as u32).to_le_bytes());
     assert_eq!(&n.0[8..12], &MANIFEST.to_le_bytes());
-    assert_eq!(&n.0[12..20], b"nife\0\0\0\0");
+    assert_eq!(&n.0[12..20], b"nife\0\0\0\0"); // wire literal
     assert_eq!(decode(&n.0[20..]), Ok(Program::Uptime.manifest()));
 }
 
@@ -315,7 +315,7 @@ fn both_notes_state_their_owner_length_descriptor_length_and_type() {
     assert_eq!(&n.0[0..4], &5u32.to_le_bytes());
     assert_eq!(&n.0[4..8], &(SUBTREE_GRANTS_LEN as u32).to_le_bytes());
     assert_eq!(&n.0[8..12], &SUBTREE_GRANTS.to_le_bytes());
-    assert_eq!(&n.0[12..20], b"nife\0\0\0\0");
+    assert_eq!(&n.0[12..20], b"nife\0\0\0\0"); // wire literal
     assert_eq!(&n.0[20..24], &SUBTREE_GRANTS_VERSION.to_le_bytes());
     assert_eq!(&n.0[24..28], &1u32.to_le_bytes());
 }
@@ -418,7 +418,7 @@ fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
     assert_eq!(
         u32::from_le_bytes([n[0], n[1], n[2], n[3]]),
         5,
-        "namesz: `nife` and its NUL"
+        "namesz: `nife` and its NUL" // wire literal
     );
     let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
     assert_eq!(descsz, 67);

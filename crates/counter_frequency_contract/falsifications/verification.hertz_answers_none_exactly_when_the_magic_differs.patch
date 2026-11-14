@@ -14,8 +14,8 @@ diff --git a/crates/counter_frequency_contract/src/lib.rs b/crates/counter_frequ
      /// Name: ratified 2026-11-06, renamed from `hz`. The unit is spelled out.
      pub fn hertz(&self) -> Option<u64> {
          let bytes = self.bytes();
--        if bytes[OFF_MAGIC..OFF_MAGIC + 8] != MAGIC {
-+        if bytes[OFF_MAGIC..OFF_MAGIC + 7] != MAGIC[..7] {
+-        if bytes[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8] != MAGIC {
++        if bytes[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 7] != MAGIC[..7] {
              return None;
          }
          let mut raw = [0u8; 8];

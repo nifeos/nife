@@ -103,9 +103,9 @@ crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant questi
 
 crates/jh7110_watchdog/src/lib.rs::max_reset_after_seconds spelled-out
 
-crates/line_editor/src/component.rs::ELF_VA spelled-out
+crates/line_editor_component/src/lib.rs::ELF_VA spelled-out
 
-crates/line_editor/src/component.rs::HANDOFF_VA spelled-out
+crates/line_editor_component/src/lib.rs::HANDOFF_VA spelled-out
 
 crates/login_contract/src/lib.rs::CARETAKER_ELF_VA spelled-out
 
