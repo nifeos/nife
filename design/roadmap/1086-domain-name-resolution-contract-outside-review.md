@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 248, 252
@@ -53,6 +53,8 @@ Effort: S is half a day for a lane, M a day or two, L longer. A door is one-way 
 outside this repository acts on it after the first tag (a public name, a wire word, a layout, a
 dependency). Everything else is two-way and the maintainer decides it. Every name proposed below is
 provisional; the architect names.
+
+The ledger of what landed and what is left is in [the appendix](1086-domain-name-resolution-contract-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -173,6 +175,12 @@ decision; the recommendation comes first.
 ## Done when
 
 The checks are in [the appendix](1086-domain-name-resolution-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 to 3, items 1 to 3 and 9 to 14, and the std-side half of item 7.
+  Checked against `crates/domain_name_resolution_contract/src`: the names of item 4 are
+  unchanged and the crate has no README.
 
 ## BUGS
 
