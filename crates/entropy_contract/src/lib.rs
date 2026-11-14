@@ -352,19 +352,11 @@ pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) 
 ///
 /// Name: provisional, minted for the service side of the contract; awaiting a naming pass.
 #[must_use]
-pub const fn reply(delivered: &[u8]) -> (u64, u64) {
-    let count = if delivered.len() > MAXIMUM_BYTES as usize {
-        MAXIMUM_BYTES as usize
-    } else {
-        delivered.len()
-    };
-    let mut word = 0u64;
-    let mut index = 0;
-    while index < count {
-        word |= (delivered[index] as u64) << (8 * index);
-        index += 1;
-    }
-    (count as u64, word)
+pub fn reply(delivered: &[u8]) -> (u64, u64) {
+    let count = delivered.len().min(MAXIMUM_BYTES as usize);
+    let mut bytes = [0u8; MAXIMUM_BYTES as usize];
+    bytes[..count].copy_from_slice(&delivered[..count]);
+    (count as u64, u64::from_le_bytes(bytes))
 }
 
 /// Why [`fill_with`] gave up. The two refusals call for different fixes, so they are told apart.
