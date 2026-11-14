@@ -8,7 +8,7 @@ An appendix to [the milestone](../1050-designware-mobile-storage-outside-review.
   the README of the crate.
 - `weekly` on `main` passes: the mutation shards complete, an exemption or a test covers each
   survivor, and the stranger run carries a date within the last 28 days.
-- The git tag `v0.1.0` exists on the first green commit after the P0 items, placed with the go of
+- The git tag `v0.1.0-pre.1` exists on the first green commit after the P0 items, placed with the go of
   the architect, and the semver rule holds a pull request that breaks the API. Nothing goes to
   crates.io.
 - The README states the trait contract and adds the dependency line; docs.rs and GitHub show the

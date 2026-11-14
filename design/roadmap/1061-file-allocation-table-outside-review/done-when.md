@@ -26,7 +26,8 @@ An appendix to [the milestone](../1061-file-allocation-table-outside-review.md).
 - nife's callers of the changed items (`xtask/src/cloud_image.rs`,
   `components/src/system_installer.rs` and the two fuzz targets under `fuzz/fuzz_targets/`) build
   against the release.
-- Each P1 item closed by a pull request in the crate's repository that cites this block by number.
+- Each P1 item closed by a pull request in the crate's repository, recorded in this block's
+  Follow-on.
   The release review has ratified or renamed every provisional name of P1-5 to P1-9.
 - The checks the review ran still pass at the release commit: `cargo test` with no failure,
   `cargo clippy --all-targets` and `cargo doc` clean, the three bare-metal builds, and
