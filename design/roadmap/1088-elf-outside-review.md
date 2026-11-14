@@ -234,9 +234,11 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 
 ## Index row
 
-An outside reading of `static_elf` (then named `elf`) before it leaves. No review package exists. The crate leaves on the
-shared ground (the kernel links it and must follow it out), not on publishability, which the crates.io name
-`elf` taken by another crate (the reason for the rename), a build-time machine constant and 29 citations of this tree rule out as it stands.
+An outside reading of `static_elf` (then named `elf`) before it leaves. No review package exists.
+The crate leaves on the shared ground: the kernel links it and must follow it out. It does not
+leave on publishability. Three things rule that out as it stands: the crates.io name `elf` taken by
+another crate (the reason for the rename), a build-time machine constant and 29 citations of this
+tree.
 Four items block the move (citations, the fuzz seeds and target, the manifest and files, a public
 name that says nife). Seven go before the first tag (a page-size hole in a public helper and in the
 overlap check, four truncating casts, `Display`, the naming sweep, a README with an example, one
