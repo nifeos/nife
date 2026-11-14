@@ -41,7 +41,7 @@
 /// foreign[18..20].copy_from_slice(&FOREIGN_MACHINES[0].to_le_bytes());
 /// assert!(matches!(Elf::parse(&foreign), Err(Error::WrongMachine)));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Error {
     /// Smaller than an ELF header. Not even worth looking at.
     TooSmall,
@@ -82,3 +82,31 @@ pub enum Error {
     /// More than `MAXIMUM_PHNUM` (64) program headers, the bound on the O(n^2) overlap check.
     TooManyProgramHeaders,
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            Error::TooSmall => "smaller than an ELF header",
+            Error::BadMagic => "not an ELF file",
+            Error::Not64Bit => "not a 64-bit ELF file",
+            Error::NotLittleEndian => "not a little-endian ELF file",
+            Error::BadVersion => "an ELF version other than 1",
+            Error::WrongMachine => "built for another machine",
+            Error::NeedsRelocation => {
+                "a position-independent or shared object, which needs relocation"
+            }
+            Error::NotExecutable => "not an executable",
+            Error::BadProgramHeaders => "the program header table runs off the end of the file",
+            Error::SegmentOutOfBounds => "a segment's file contents run off the end of the file",
+            Error::SegmentTruncated => "a segment claims less memory than it has bytes on disk",
+            Error::WritableAndExecutable => "a segment is both writable and executable",
+            Error::SegmentUnreachable => "a segment is neither readable nor executable",
+            Error::SegmentsOverlap => "two segments want the same page",
+            Error::EntryNotExecutable => "the entry point is not inside an executable segment",
+            Error::AddressOverflow => "a segment's address range overflows",
+            Error::TooManyProgramHeaders => "more program headers than the parser accepts",
+        })
+    }
+}
+
+impl core::error::Error for Error {}
