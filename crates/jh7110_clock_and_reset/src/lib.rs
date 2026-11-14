@@ -555,7 +555,9 @@ pub struct PowerManagementChipBus {
     pub controller_physical_window: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both
     /// trees. `None` when the tree names no known PMIC at all.
-    pub power_management_chip_address: Option<u32>,
+    ///
+    /// Name: ratified 2026-11-14 (UTC), saying the address is the chip's address on its bus.
+    pub power_management_chip_bus_address: Option<u32>,
 }
 
 impl PowerManagementChipBus {
@@ -576,7 +578,7 @@ impl PowerManagementChipBus {
             skipped,
             truncated: false,
             controller_physical_window: None,
-            power_management_chip_address: None,
+            power_management_chip_bus_address: None,
         };
         bus.steps[..POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len()]
             .copy_from_slice(POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
@@ -653,7 +655,7 @@ impl PowerManagementChipBus {
         if let Some(cells) = power_management_chip_register_property
             && cells.len() >= 4
         {
-            bus.power_management_chip_address =
+            bus.power_management_chip_bus_address =
                 Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
         }
         if let Some(cells) = bus_register_property {

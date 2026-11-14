@@ -62,7 +62,10 @@ fn radons_sys_window_is_the_vendor_nodes_first_entry_found_by_name() {
     let found = discover_sys(&tree).unwrap();
     assert_eq!(
         (found.base_physical_address, found.size_bytes),
-        (SYSTEM_WINDOW.base_physical_address, SYSTEM_WINDOW.size_bytes)
+        (
+            SYSTEM_WINDOW.base_physical_address,
+            SYSTEM_WINDOW.size_bytes
+        )
     );
     assert!(found.from_tree);
     assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR));
@@ -256,7 +259,7 @@ fn radons_pmic_bus_also_names_the_controller_window_and_the_pmic_address() {
         bus.controller_physical_window,
         Some((0x1205_0000, 0x1_0000))
     );
-    assert_eq!(bus.power_management_chip_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_bus_address, Some(0x36));
 }
 
 #[test]
@@ -267,7 +270,7 @@ fn the_mainline_tree_names_the_same_controller_and_address() {
         bus.controller_physical_window,
         Some((0x1205_0000, 0x1_0000))
     );
-    assert_eq!(bus.power_management_chip_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_bus_address, Some(0x36));
 }
 
 #[test]
@@ -275,5 +278,5 @@ fn the_foreign_tree_names_neither() {
     let tree = tree(PMIC_BUS_FOREIGN);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller_physical_window, None);
-    assert_eq!(bus.power_management_chip_address, None);
+    assert_eq!(bus.power_management_chip_bus_address, None);
 }

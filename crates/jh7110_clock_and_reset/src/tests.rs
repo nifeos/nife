@@ -733,7 +733,7 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
         bus.controller_physical_window,
         Some((0x1205_0000, 0x1_0000))
     );
-    assert_eq!(bus.power_management_chip_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_bus_address, Some(0x36));
 }
 
 #[test]
@@ -753,7 +753,7 @@ fn a_mainline_shaped_bus_gives_the_same_plan_through_the_system_clock_and_reset_
     assert_eq!(
         (
             bus.controller_physical_window,
-            bus.power_management_chip_address
+            bus.power_management_chip_bus_address
         ),
         (None, None)
     );
@@ -787,7 +787,7 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
     assert_eq!(
         (
             bus.controller_physical_window,
-            bus.power_management_chip_address
+            bus.power_management_chip_bus_address
         ),
         (None, None)
     );
@@ -857,7 +857,7 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
         bus.controller_physical_window,
         Some((0x1205_0000, 0x1_0000))
     );
-    assert_eq!(bus.power_management_chip_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_bus_address, Some(0x36));
     // A `reg` too short to hold its value is not stated.
     let short = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
@@ -871,7 +871,7 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
     assert_eq!(
         (
             short.controller_physical_window,
-            short.power_management_chip_address
+            short.power_management_chip_bus_address
         ),
         (None, None)
     );
