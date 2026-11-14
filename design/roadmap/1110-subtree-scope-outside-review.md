@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -49,7 +49,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
 
 ### P0: blocks the move
 
-1. The crate does not stand alone.
+1. The crate does not stand alone. LEFT: move work.
    Finding: no README, no `LICENSE-MIT`, no `LICENSE-APACHE`; `license.workspace = true`,
    `[lints] workspace = true`, no `rust-version`; `publish = false` with a comment that points at
    `crates/publish-allowlist.txt`, a file the crate repository will not have.
@@ -64,7 +64,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    5.9 GiB at one job).
    Door: two-way. Effort: S.
 
-2. The shipped text speaks to this tree, not to a stranger.
+2. The shipped text speaks to this tree, not to a stranger. LEFT: move work (the module doc rewrite).
    Finding: the module doc opens with a milestone number, the architect's name and a dated ruling,
    and goes on in nife's vocabulary: an eligible server, the progenitor, a window, a caretaker,
    `RECEIVE_CAPABILITY`, ruling D, a note under `notes/`. After the move strips the `Name:`
@@ -84,7 +84,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    bounds". `fs_subtree_caretaker` goes.
    Door: two-way. Effort: M.
 
-3. The dependency on `filesystem_contract` has nowhere to point yet.
+3. The dependency on `filesystem_contract` has nowhere to point yet. LEFT: the template's rule and `filesystem_contract`'s repository.
    Finding: the only dependency is `filesystem_contract` by path. The runbook's bottom-up rule
    (`notes/crate-move.md`, "A crate leaves only when nothing it depends on is still in this
    tree") holds the move until `filesystem_contract` has its own repository, which step 2 of
@@ -109,7 +109,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
 
 ### P1: before the first release
 
-4. `landing` answers `EINVAL` where the contract says `EISDIR`, and leaves the arm to the caller.
+4. `landing` answers `EINVAL` where the contract says `EISDIR`, and leaves the arm to the caller. DONE (`a_file_verb_on_a_directory_is_is_a_directory`; `Refusal::IsADirectory` is provisional; the server's special case is gone).
    Finding: `landing(Kind::Directory, false)` returns `Refusal::Malformed` (errno 22), with a
    comment that the server maps this one arm itself. The one caller does: `open_file_path` tests
    `kind == Kind::Directory` and answers `EISDIR` before it calls `landing`, so the arm is dead in
@@ -123,7 +123,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    tag.
    Door: two-way now, one-way after the tag. Effort: XS.
 
-5. `unbind` uses handle 0 to mean "nothing to close".
+5. `unbind` uses handle 0 to mean "nothing to close". DONE (`unbinding_a_badge_bound_to_handle_zero_is_not_unbinding_a_sync_only_one`; `unbind` returns `Option`).
    Finding: for a sync-only badge, `unbind` returns `Ok(ROOT)` as "no directory to hand back".
    `ROOT` is 0, and 0 is also a handle a binder may bind a badge to: `bind(caller, badge, 0)` succeeds, and in the server that is the image root with every right. The server tells the two
    apart with `root != ROOT`, which happens to be right for both (handle 0 is never closed), but
@@ -137,7 +137,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    `Some`. The census then has no survivor to explain.
    Door: two-way (one-way after the tag, as a public signature). Effort: XS.
 
-6. The badge-to-slot cast truncates on a 32-bit target.
+6. The badge-to-slot cast truncates on a 32-bit target. DONE (`a_badge_past_a_machine_word_binds_nothing_and_is_revoked`; `index` returns `Option`).
    Finding: `index` compares `(badge as usize) < B`. On a target whose `usize` is 32 bits, badge
    2^32 + 2 casts to 2 and folds onto slot 2, so `bind(caller, 2^32 + 2, root)` binds badge 2
    while `of(2^32 + 2)` answers `Revoked`. The `u64` compare on line 236 guards `of`;
@@ -151,7 +151,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    sentence in `Bindings`' doc. No behavior changes on any 64-bit target.
    Door: two-way. Effort: XS.
 
-7. Names the naming rules refuse, or that read wrong to a stranger.
+7. Names the naming rules refuse, or that read wrong to a stranger. LEFT: names, the architect's pass.
    Finding, each with the rule: `PROOF_PATH` is a length in bytes and carries no unit
    (`design/naming.md`, Units: a length carries its unit; `PROOF_BADGES` and `PROOF_OPERATIONS`
    are counts of things and stand). The binding `dirs` (line 115) and the parameter `want_dir`
@@ -168,7 +168,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    names provisional.
    Door: two-way before the tag; every public one is one-way after it. Effort: S.
 
-8. There is no example anywhere.
+8. There is no example anywhere. DONE (doctests on `walk` and `Bindings`; the README example is move work).
    Finding: 0 doctests, no `examples/`, no README. A stranger has the test module's `tree`
    function as the only picture of how to write `lookup`.
    Evidence: `cargo test` output ("Doc-tests subtree_scope: running 0 tests");
@@ -179,7 +179,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    carries the first.
    Door: two-way. Effort: S.
 
-9. What the walk proofs leave out, and what they cost.
+9. What the walk proofs leave out, and what they cost. LEFT: needs a Kani run at about 6 GiB; a lane of its own.
    Finding: the two walk harnesses state that every step is a name and that a successful walk went
    through directories only and never widened. Neither states that `walk` asks `lookup` for every
    component but the last, in order; a `walk` that skipped a component, or stopped early and
@@ -201,7 +201,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    figure in the README beside the install line.
    Door: two-way. Effort: S.
 
-10. Passive voice over the template's ceiling.
+10. Passive voice over the template's ceiling. LEFT: move work.
     Finding: `passive_voice.py` at the template's head counts 20 passive constructions in 3,366
     words against a ceiling of 6. The pinned release (v7) does not run it; the first pin bump past
     v7 will make `check` red for this reason alone.
@@ -275,6 +275,14 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
   in for it. The reach record predates `Binding::SyncOnly`.
 - No review package exists for this crate, so the baseline above is this review's reading of the
   `Name:` blocks and the roadmap, not an architect's clearance.
+
+## Follow-on
+
+- **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked move work.
+- **Outstanding.** Items 9, 11 and 12, and the names of item 7: checked against
+  `crates/subtree_scope/src/lib.rs`, none exists.
+- **Outstanding.** The maintainer has kept the name `subtree_scope`, provisionally, and ratifying it
+  stays the architect's.
 
 ## Index row
 

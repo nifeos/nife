@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 820, 1060
 decision_dependencies: 154
@@ -243,6 +243,25 @@ caller. The recommendation is the rule. `DeviceDescriptor::parse` (`descriptor.r
 `BootReport::parse` keeps `Option`. The four-way `Speed` replaces `superspeed: bool` (line 111), and
 the driver's call at `components/src/usb_keyboard_driver.rs` line 460 gains the four-way match.
 Item 11 is the work.
+
+## Follow-on
+
+- **Done.** Items 8, 9 and 12: a type-4 or type-5 descriptor shorter than its layout is
+  `Malformed { at }` (`a_short_interface_or_endpoint_is_malformed_and_two_bytes_is_enough`), a
+  usage duplicated in the earlier report releases once (`a_duplicated_usage_releases_once`), and
+  `endpoint` carries only its number and direction (`the_endpoint_carries_only_its_number_and_direction`).
+- **Done.** Item 7, the unit-test half: `a_boot_interface_without_an_endpoint_is_refused_by_number`
+  covers the `without_endpoint` path. The shaped two-interface harness, the event-order assertion
+  and the bounds paragraph stay outstanding, because the harness cost needs a measurement first.
+- **Done.** Item 13 (two sentences, on the walk's start and the report's tail; the `get_descriptor`
+  and README sentences remain) and the private locals of items 3 and 14 (`device`, `difference`,
+  `shift_a_b`, `a_b`, `QEMU_USB_KEYBOARD`). The three Kani harnesses pass and the
+  walk harness's falsification patch needed regenerating for the new line, and the lane did.
+- **Outstanding.** Items 1, 2, 4, 5 and 10 are the move lane's (manifest, name, scaffold files,
+  review package, fuzz crate). Item 6 adds usage rows that the lane must read from the Usage
+  Tables and re-run against the Linux cross-check, which a reviewer cannot do from memory.
+- **Outstanding.** Item 11 and the public renames of item 3 are the work of Decisions 3 and 1,
+  which the maintainer has decided, provisionally.
 
 ## Done when
 

@@ -36,6 +36,32 @@
 /// page" or "single-page DMA region"; none of them checked it).
 pub const PAGE: u64 = 4096;
 
+mod sealed {
+    /// The seal: only this crate names it, so only this crate implements `WindowInteger`.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+    pub trait Sealed {}
+    impl Sealed for u8 {}
+    impl Sealed for u16 {}
+    impl Sealed for u32 {}
+    impl Sealed for u64 {}
+    impl<T: Sealed, const N: usize> Sealed for [T; N] {}
+}
+
+/// **A plain integer a window can carry**: every bit pattern is a valid value, so a read of bytes a
+/// device or peer wrote cannot produce an invalid one. Sealed: only the unsigned integers up to
+/// 64 bits and arrays of them implement it, and nothing outside this crate can.
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes; `Word`
+/// and `Integer` were considered.
+pub trait WindowInteger: sealed::Sealed + Copy {}
+impl WindowInteger for u8 {}
+impl WindowInteger for u16 {}
+impl WindowInteger for u32 {}
+impl WindowInteger for u64 {}
+/// An array of integers is as plain as one integer, and a device command is 64 bytes of them.
+impl<T: WindowInteger, const N: usize> WindowInteger for [T; N] {}
+
 /// A caller-owned window onto one page this process was handed at a fixed virtual address: a DMA
 /// page a driver's wiring mapped before `_start` ran, or a shared IPC frame the program mapped
 /// itself with `PageFrame::MAP`. Every read and write is bounds-checked against `len`, so the only
@@ -80,9 +106,21 @@ impl MappedWindow {
         );
     }
 
+    /// Panics if the address `off` bytes into the window is not a multiple of `align`.
+    fn check_aligned(&self, off: u64, align: u64) {
+        assert!(
+            self.base.wrapping_add(off).is_multiple_of(align),
+            "MappedWindow: offset {off:#x} is not {align}-byte aligned"
+        );
+    }
+
     /// Read a plain integer `T` at byte offset `off`, bounds-checked against the window.
-    pub fn read<T: Copy>(&self, off: u64) -> T {
+    ///
+    /// # Panics
+    /// If the access runs past the window, or `off` is not a multiple of `T`'s alignment.
+    pub fn read<T: WindowInteger>(&self, off: u64) -> T {
         self.check(off, core::mem::size_of::<T>() as u64);
+        self.check_aligned(off, core::mem::align_of::<T>() as u64);
         // SAFETY: `self.base + off .. + size_of::<T>()` is inside the range `new`'s caller
         // promised was mapped, and the bounds check above keeps it inside `self.len`. Volatile:
         // a peer process or a device may write the same memory out from under an ordinary read.
@@ -90,8 +128,12 @@ impl MappedWindow {
     }
 
     /// Write a plain integer `T` at byte offset `off`, bounds-checked against the window.
-    pub fn write<T>(&self, off: u64, val: T) {
+    ///
+    /// # Panics
+    /// As [`read`](Self::read).
+    pub fn write<T: WindowInteger>(&self, off: u64, val: T) {
         self.check(off, core::mem::size_of::<T>() as u64);
+        self.check_aligned(off, core::mem::align_of::<T>() as u64);
         // SAFETY: as `read`'s.
         unsafe { core::ptr::write_volatile((self.base + off) as *mut T, val) }
     }
@@ -120,13 +162,11 @@ impl MappedWindow {
     pub fn w32(&self, off: u64, v: u32) {
         self.write(off, v);
     }
-    /// Read a `u64` at `off`. The caller keeps the offset 8-aligned: this is a volatile read of a
-    /// pointer whose alignment the type does not check, and the bulk-copy caller (the framebuffer's
-    /// flush) arranges alignment by construction instead.
+    /// Read a `u64` at `off`. Panics unless the address is 8-aligned.
     pub fn r64(&self, off: u64) -> u64 {
         self.read(off)
     }
-    /// Write a `u64` at `off`. See [`r64`](Self::r64) for the alignment the caller owes.
+    /// Write a `u64` at `off`. Panics unless the address is 8-aligned.
     pub fn w64(&self, off: u64, v: u64) {
         self.write(off, v);
     }

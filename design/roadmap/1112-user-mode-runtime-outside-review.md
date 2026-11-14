@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -171,6 +171,21 @@ which is a pre-release, and the architect may revisit it. The smaller surface, a
 above: a wrapper added back later is compatible, and one removed is not. The ten functions are at
 `src/inter_process_communication.rs` lines 101 to 498, and `receive_capability_bound` (line 224)
 has no caller outside the crate. Item 15 is the work.
+
+## Follow-on
+
+- **Done.** Item 1: `read` and `write` take the sealed `WindowInteger`, and a misaligned address
+  panics. No host test yet, since the crate has no test target (item 4).
+- **Done.** Item 2: no barrier arm carries `nomem` at this head, checked in `mapped_window.rs` and
+  `virtio.rs`.
+- **Done.** Items 6, 7, 10, 12, 14 and 16: the zero `CNTFRQ_EL0` refusal, the aarch64 stub
+  immediates from `abi`, `Frame::len` with the `DATA_MAXIMUM` clamp, the target-gated
+  dependency, `retype_sleeper` through `is_granted`, and the dependency-direction sentence. Builds
+  on three targets, no test target for them.
+- **Outstanding.** Items 3, 8, 9 and 11 belong to the move lane. Item 4 changes how `script/lint`
+  builds the crate for bare-metal targets. Checked by reading `script/lint`.
+- **Outstanding.** Items 5, 13 and 15 are the work of Decisions 2, 1 and 3, which the maintainer
+  has decided, provisionally. Item 17 adds a syscall wrapper, which is the architect's call.
 
 ## Done when
 
