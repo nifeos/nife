@@ -41,7 +41,9 @@ The `rg`-dependent rows move, and they do not disappear. basalt's gate grows by 
 
 ## What it does not do
 
-It does not re-mint the argv magic. `nifeargv` stays unnumbered until this lands. After it, the digits are a one-line change in `program_argument_contract` with no cross-repository dance and no red window. It also does not repair the second-address `backup` job in basalt, which fails until its deploy key exists; that is separate.
+It does not re-mint the argv magic. `nifeargv` stays unnumbered until this lands. After it, the digits are a one-line change in `program_argument_contract` with no cross-repository dance and no red window.
+
+In the change at this milestone, the argument page's magic is replaced by a numbered magic that does not spell nife, so one break and one basalt rebuild carry both. It also does not repair the second-address `backup` job in basalt, which fails until its deploy key exists; that is separate.
 
 When this lands, the `# BUGS` entry in `xtask/src/basalt.rs` that records the break cannot land in one pull request comes out.
 

@@ -116,7 +116,7 @@ otherwise.
    "Registers and constants" and "Crates"; `design/naming/crates.md`, "Page contract crates".
    Change: `ArgumentPage`, `push(argument)`, `from_virtual_address(virtual_address)`, and
    `argument` and `arguments` for the bindings. The public two are names, so the architect
-   ratifies them in the crate's name review before the move (decision 2 below); the lane renames
+   ratifies them in the crate's name review before the move (the rulings below); the lane renames
    the bindings and the test helper without a ruling. The `std` overlay's `sys/args/nife.rs` and
    its generator follow the rename, since the file arrives verbatim.
    Door: the two public names are one-way once released and two-way today; the bindings are
@@ -133,7 +133,7 @@ otherwise.
    `crates/grant_plan/src/refusal.rs` line 187.
    Change: `PAGE_CONTENT_BYTES`, with `CAPACITY` gone (no alias for a nife spelling before the
    first release). `grant_plan` follows in the same pull request.
-   Door: a public name, one-way once released; two-way today. Ratified in decision 2. Effort: XS.
+   Door: a public name, one-way once released; two-way today. Provisional, see the rulings. Effort: XS.
 
 6. The crate has no proof, and the template's front page promises one.
    Finding: no `#[kani::proof]` and no `falsifications/`. Three sibling contract crates
@@ -189,7 +189,7 @@ otherwise.
    Evidence: lines 22 to 27 and 182 to 186; the test at lines 324 to 345 changes one byte at a
    time.
    Change: say "no single-field damage yields a partial argv" and record the two-field case in
-   `BUGS`. A checksum would be a wire-format change; this block does not recommend one (decision 1
+   `BUGS`. A checksum would be a wire-format change; this block does not recommend one (the layout ruling
    says why).
    Door: two-way for the text; a checksum would be one-way and is not proposed. Effort: XS.
 
@@ -197,69 +197,37 @@ otherwise.
 
 The P2 items are in [the appendix](1106-program-argument-contract-outside-review/later-items.md).
 
-## Decisions for the architect
+## Rulings
 
-Only the one-way doors. Everything else above is the maintainer's.
+Only the one-way doors went to the architect. Everything else above is the maintainer's.
 
-### The layout leaves as built, with the magic still unnumbered
+### The layout leaves as built, with the magic unnumbered until 994
 
-Background. The page is eight bytes of magic, a `u32` count, a `u32` total, then records of a
-`u32` length and bytes, in one 4 KiB page at a fixed slot and address. Two programs agree on it:
-the shell writes it and `std` reads it, and `ripgrep` from basalt's published archive reads it
-today. Milestone 672 proposes ratifying six choices (where, header, record shape, `argv[0]`,
-bytes not UTF-8, one page) and is NOT-STARTED. Milestone 956 ruled that `nifeargv` stays
-unnumbered until milestone 994 moves the pair test to basalt, because minting digits once broke
-the prebuilt `rg`. Milestone 1017 has this crate leave after 994. Moving the crate publishes the
-layout to a second repository, which is the moment others start acting on it.
+Ruled by the architect, 2026-11-14 (UTC). The argument page leaves nife as built, with milestone
+672's layout, `VERSION` 1 and `INTERFACE_ID` 18. The magic `nifeargv` stays unnumbered until
+milestone 994 (the cross-repository pair is tested where the pin is) moves the pair test to basalt.
+In the change at 994, the magic is replaced by a numbered magic that does not spell nife, so one
+break and one basalt rebuild carry both. There is no checksum (item 9) and the length prefix stays
+four bytes.
 
-Recommendation: ratify the six rows of 672 as built, keep `nifeargv` unnumbered until 994 lands,
-and let the crate leave with `VERSION` 1 and `INTERFACE_ID` 18 as its identity. Do not add a
-checksum (item 9) and do not narrow the length prefix to two bytes. Both change the wire for a
-property the single writer and the read-only mapping already give, and the four-byte prefix keeps
-every field the same width.
+### Three public names
 
-Prior art: WASI's `args_sizes_get` hands a count and a total before the strings, the same two
-numbers this header carries; Fuchsia's `processargs` carries no version digits in its strings
-either and versions the message as a whole. Example: after this ruling the page for `rg pattern
-src` stays byte-for-byte what the shell writes today, and a reader that compares the first eight
-bytes with `nifeargv` keeps working across the move.
+Ruled by the maintainer, 2026-11-14 (UTC), as provisional. This is a two-way door, and the names stay
+provisional until an architect ratifies them.
 
-### Three public names to ratify in the name review before the move
+- `ArgumentPage` for `ArgPage`.
+- `from_virtual_address(virtual_address)` for `from_va(va)`.
+- `MAXIMUM_RECORDS_BYTES` for `CAPACITY`. The name `PAGE_CONTENT_BYTES` is not used: in the
+  contract family it is the number of bytes the page content occupies, header included (see
+  `crates/base_digest_contract/src/lib.rs`), and the capacity here is the space for records alone.
 
-Background. The template refuses `arg` and `va` in any name the crate defines, with no baseline,
-so the crate cannot pass `check / standalone` under its current names. The family rule for page
-contracts names the content length `PAGE_CONTENT_BYTES` and the address parameter
-`virtual_address`; `counter_frequency_contract` already follows it. The names are provisional and
-unreleased, so renaming costs one pull request here and one line in the `std` overlay.
-
-Recommendation, one per line, each a two-way change today that becomes one-way at the first
-release:
-
-- `ArgumentPage` for `ArgPage`. Refused: `Argv` (an abbreviation), `ArgumentsPage` (the family
-  names the page by what one record is).
-- `from_virtual_address(virtual_address: u64)` for `from_va(va: u64)`. Refused: `from_address`
-  (the rule wants the kind of address in the name); `new` (the sibling's spelling, but `parse`
-  already builds the value and `new` would read as a second constructor).
-- `PAGE_CONTENT_BYTES` for `CAPACITY`. Refused: `MAXIMUM_RECORD_BYTES` (true but outside the
-  family table); keeping `CAPACITY` with an alias (no alias for a nife spelling before the first
-  release).
-
-Prior art: Rust's standard library spells `std::env::args` and `Args`, which is why the template's
-word list tells an author to say whose arguments; `counter_frequency_contract::CounterFrequencyPage::new(virtual_address)`
-is the family's ratified form. Example: `let page = unsafe {
-ArgumentPage::from_virtual_address(ARGS_PAGE) };` in the `std` overlay replaces the one call that
-exists.
+The code keeps the old names until a lane renames them.
 
 ### The repository
 
-Background. Milestone 1017 ruled one repository per contract crate, created when the crate moves
-and only with the architect's approval of that exact repository, and no lane creates one. No
-`nifeos/program_argument_contract` repository exists today. The standing rule is that clearing a
-crate's review is the approval to create it.
-
-Recommendation: `nifeos/program_argument_contract`, created after decision 2's renames land and
-after milestone 994 lands, with `publish = false` kept until the crate's own release milestone. Tag
-`v0.1.0-pre.1` after the move check and a release dry run, as the other moved crates take.
+Ruled by the architect, 2026-11-14 (UTC). The review is cleared. The repository
+`nifeos/program_argument_contract` is created after the three renames above and milestone 994 land.
+It is tagged `v0.1.0-pre.1` after the move check and a release dry run, with `publish = false`.
 
 ## Done when
 
@@ -287,5 +255,5 @@ An outside review of `program_argument_contract` before it leaves. Four items bl
 manifest and a repository that do not stand alone, text that reaches back into nife, and seven names
 the template's gate refuses). Five land before the first tag (the content-length name, three Kani
 harnesses, a test for the one `unsafe` function, the mutation exemption, and an honest statement of
-what all-or-nothing covers), and six come later. Three decisions go to the architect:
-the layout leaves as built with the magic unnumbered, three public names, and the repository.
+what all-or-nothing covers), and six come later. Three rulings are recorded:
+the layout leaves as built with the magic unnumbered, three provisional public names, and the repository.
