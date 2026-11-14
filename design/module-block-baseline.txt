@@ -5047,7 +5047,6 @@ crates/machine_statistics_contract/src/lib.rs::ONLINE
 
 crates/machine_statistics_contract/src/lib.rs::PAGE_BYTES
 
-crates/machine_statistics_contract/src/lib.rs::PAGE_VA
 
 crates/machine_statistics_contract/src/lib.rs::RUNNABLE
 

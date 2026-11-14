@@ -1,7 +1,7 @@
 # Ledger
 
-An appendix to [the milestone](../1099-machine-statistics-contract-outside-review.md). Each item
-is DONE with the test or harness that holds it, or LEFT with the reason.
+An appendix to [the milestone](../1099-machine-statistics-contract-outside-review.md). A DONE row names the test or harness that holds the item, and a LEFT row
+names the reason it waits.
 
 | item | state | where |
 |---|---|---|
