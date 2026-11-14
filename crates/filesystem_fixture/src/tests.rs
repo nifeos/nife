@@ -203,20 +203,22 @@ fn the_navigation_bits_are_distinct() {
 // equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are recorded as
 // such rather than tested.
 
+/// Assert that each value is a single bit and that no two values share one.
+fn all_distinct_bits(bits: &[u64]) {
+    for (i, &a) in bits.iter().enumerate() {
+        assert!(a.is_power_of_two(), "bit {i} is {a:#x}, not a single bit");
+        for &b in &bits[i + 1..] {
+            assert_ne!(a, b, "two claims share bit {a:#x}");
+        }
+    }
+}
+
 /// Every witness verdict module is distinct single bits. Both ends of each QEMU test build
 /// their words from these same constants, so a shifted-to-zero bit is invisible at runtime:
 /// the claim it carried silently stops being checked. Distinct powers of two here is the
 /// whole defense.
 #[test]
 fn the_witness_bits_are_distinct_single_bits() {
-    fn all_distinct_bits(bits: &[u64]) {
-        for (i, &a) in bits.iter().enumerate() {
-            assert!(a.is_power_of_two(), "bit {i} is {a:#x}, not a single bit");
-            for &b in &bits[i + 1..] {
-                assert_ne!(a, b, "two claims share bit {a:#x}");
-            }
-        }
-    }
     all_distinct_bits(&[
         crate::escape::SECOND_FILE,
         crate::escape::WROTE,
@@ -286,6 +288,11 @@ fn the_witness_bits_are_distinct_single_bits() {
         crate::globscape::TEXT_UNTOUCHED,
         crate::globscape::GLOB_FAILED,
     ]);
+}
+
+/// The attribute claims are distinct single bits, and the eight required ones are bits 0 through 7.
+#[test]
+fn the_attribute_claim_bits_are_distinct_and_cover_the_required_eight() {
     all_distinct_bits(&[
         crate::attrs::SET_AND_READ_BACK,
         crate::attrs::LISTED,
