@@ -25,7 +25,7 @@ pub const OFF_ADDRESSES: usize = 0x100;
 
 // The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
 // addresses end inside the page.
-const _: () = assert!(OFF_NAME + NAME_TEXT_MAXIMUM + 1 <= OFF_ADDRESSES);
+const _: () = assert!(OFF_NAME + NAME_TEXT_MAXIMUM < OFF_ADDRESSES);
 const _: () = assert!(OFF_ADDRESSES + 4 * MAXIMUM_ADDRESSES <= 4096);
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
