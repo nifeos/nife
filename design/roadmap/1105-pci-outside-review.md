@@ -114,7 +114,7 @@ No one-way door is open. Everything else above the maintainer rules as provision
 In force since 2026-11-14 (UTC): the package name is `pci_configuration_space`, its directory is
 `crates/pci_configuration_space`, and the repository, when it exists, carries the same name. Another
 author owns `pci` on crates.io with a 0.0.1 release, nine years dormant. The short name `pci` stays
-ratified under §154 (the acronym test is whether the phrase is spoken), and the `Name:` note in
+ratified, and the `Name:` note in
 `crates/pci_configuration_space/src/lib.rs` states both. The noun names what the crate decodes, it
 passes every naming gate, and nobody else holds it.
 
