@@ -149,8 +149,8 @@ has the four steps, the transcripts under EDK2, and what the two descriptions di
 
 Each boot file is a loader carrying its kernel and the archive that kernel measures. The loader's
 build refuses a pair that does not match (`uefi_loader/build.rs`, `refuse_an_unsealed_pair`). It
-hashes the archive's `progenitor`, the six ELF child builders and
-`program_measurements` and requires each digest to occur in the kernel image. Proved both ways on
+hashes the two entries `sealed_pair::measured_entries` names, the archive's `progenitor` and
+`program_measurements`, and requires each digest to occur in the kernel image. Proved both ways on
 2026-09-19: the current pair builds, and this tree's kernel beside the main checkout's two-day-old
 archive fails with `NOT SEALED: the kernel ... does not vouch for the archive entry 'progenitor'`.
 `stick_maker` embeds only finished boot files, so nothing downstream can pair a kernel with the

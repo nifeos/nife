@@ -95,6 +95,7 @@ pub fn start_crash(
         0,
         0,
         driver_report,
+        None,
     );
     Some(CrashRun {
         blk_ready,
@@ -136,6 +137,6 @@ pub fn recover_crash(
         },
     );
     let report = crate::sched::create_rendezvous();
-    spawn_fs_client(client_image, file_ep, file_shared, 4, 0, 0, 0, report);
+    spawn_fs_client(client_image, file_ep, file_shared, 4, 0, 0, 0, report, None);
     (ready, report)
 }

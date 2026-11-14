@@ -7,7 +7,7 @@ use super::*;
 
 // --- The attribute store, from the recovery side (milestone 57) --------------------------------
 //
-// `.nife-attrs` in an image's root holds one file per node with extended attributes, named for
+// `.extended-attributes` in an image's root holds one file per node with extended attributes, named for
 // its `TreePtr` id in hex, in the records `filesystem_contract::xattr::store` defines (a crate, per
 // CLAUDE.md rule 7); only the FS server writes it. Nothing here may fail an extraction: a problem
 // is a skip the caller counts and walks past, so the files come out when the metadata does not.

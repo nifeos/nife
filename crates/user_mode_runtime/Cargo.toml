@@ -23,7 +23,6 @@ abi = { version = "0.1.0", path = "../abi" }
 # `cntfrq`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
 # environment_contract's kernel-side deps are, since it is tiny, no_std, and dependency-free.
 clock_contract = { version = "0.1.0", path = "../clock_contract" }
-counter_frequency_contract = { version = "0.1.0", path = "../counter_frequency_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
 # The entropy contract, for `entropy::fill` (lane/uuid-crate, 2026-10-06): the client loop four
 # programs had copied. Dependency-free and no_std, like the other two protocol crates above.
@@ -34,3 +33,8 @@ entropy_contract = { version = "0.1.0", path = "../entropy_contract" }
 # is built on mapped_window, which cannot compile for the host, and socket_contract's wire format
 # is host-tested; the module doc has the whole reason.
 socket_contract = { version = "0.1.0", path = "../socket_contract" }
+
+# Only riscv64 and x86_64 read the counter frequency from the kernel's timebase page; aarch64 reads
+# `CNTFRQ_EL0` and would warn about an unused dependency.
+[target.'cfg(not(target_arch = "aarch64"))'.dependencies]
+counter_frequency_contract = { version = "0.1.0", path = "../counter_frequency_contract" }
