@@ -23,9 +23,10 @@
 //! a compatibility check and not an authority check, so leaving it out costs a hostile package
 //! nothing it could have gained.
 //!
-//! Name: provisional. Moved here from `capability_manifest_note` on 2026-11-01 (UTC) so that
-//! `disk-tools` need not link `grant_plan`; the items keep the names they had there. The crate
-//! name is the architect's call under the two-way rule (reversing it costs one pull request).
+//! Name: ratified 2026-11-14 (UTC) for the crate and repository name `interfaces_note`. Moved here
+//! from `capability_manifest_note` on 2026-11-01 (UTC) so that `disk-tools` need not link
+//! `grant_plan`; the items keep the names they had there. The crates.io name is asked again with the
+//! naming-layers decision.
 
 #![no_std]
 

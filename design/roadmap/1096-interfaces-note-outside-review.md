@@ -178,9 +178,12 @@ three records; `interfaces_len(3)` reads as a count of three.
 
 ### The crate name
 
-Background. The module doc marks the crate name provisional and the architect's call. The
-repository `nifeos/interfaces_note` takes the name at creation, which is the one-way step; the
-crates.io name waits on the publishing hold.
+Ruled 2026-11-14 UTC (decision 3, option A): the crate and repository name `interfaces_note` is
+ratified, and the crate's `Name:` block says so. The crates.io name is asked again with the
+naming-layers decision.
+
+Background. The repository `nifeos/interfaces_note` takes the name at creation, which is the
+one-way step; the crates.io name waits on the publishing hold.
 
 Recommendation. Keep `interfaces_note`. It follows the sibling `capability_manifest_note` (what the
 note holds, then `_note`) and the ruled type name `INTERFACES`. The alternative, if the name should
