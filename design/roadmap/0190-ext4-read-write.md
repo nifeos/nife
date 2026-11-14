@@ -221,7 +221,7 @@ nife image until it is given.
   architect before anyone files it.
 - **Outstanding.** Our side: the oracle, the image corpus, the write-reordering and power-cut sweeps,
   hostile-image fuzzing, and `ext4_server` itself.
-- **Outstanding.** The adoption ruling under §46 (dependency rule), which no lane can give.
+- **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
 
 ## Index row
 
