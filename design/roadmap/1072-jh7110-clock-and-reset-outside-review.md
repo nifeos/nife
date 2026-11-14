@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1019, 1062
 decision_dependencies: 320
@@ -188,6 +188,22 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
 - The review built `main`. Pull request #3475 adds two lines to the crate and two callers; the
   review read the diff and did not compile or test it.
 - The review did not replay seven falsification patches and trusts the review package's run.
+
+## Follow-on
+
+- **Done.** The five decisions above, built in pull request #3572: the ratified
+  `POWER_MANAGEMENT_CHIP_BUS_BRING_UP`, `size_bytes`, `power_management_chip_bus_address`, `SD_IO`
+  with the always-on constants spelled out, and `gmac0_transmit_parent` with its host tests and a
+  Kani harness that carries a replayable falsification patch. The same pull request carries the
+  tree-wide rule that `io` stays whole inside an expansion: the crate-workflows pin moves to the
+  template that accepts `SD_IO`, `management_data_io` and `virtual_io`, and
+  `virtual_input_output` becomes `virtual_io`.
+- **Outstanding.** The other review items: item 1's `clippy.toml`, the rest of item 2 (the private
+  `len` fields, the two test names and the acronym expansions), items 3 and 5, and the P2 items in
+  the appendix.
+- **Outstanding.** The clock and reset server still applies the v1.3B transmit parent on every
+  board. `gmac0_transmit_parent` reads a tree's own assignment, and the server receives no answer
+  until the startup page or the server's wire carries it.
 
 ## Index row
 
