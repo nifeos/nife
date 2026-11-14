@@ -237,14 +237,13 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
   `crates/program_argument_contract` when it starts.
 - **Outstanding.** The three renames of the rulings, then milestone 994, then the repository and
   its `v0.1.0-pre.1` tag.
+- **Outstanding.** Items 6 and 12 (the round-trip harness and the builder shape), item 13
+  (`record_bytes`) and item 10 (the checked address conversion) have not started; the ledger names
+  the finished items.
 
 ## Ledger
 
 The ledger is in [the appendix](1106-program-argument-contract-outside-review/ledger.md).
-
-## Follow-on
-
-- **Outstanding.** The renames (items 4 and 5) wait on the architect, and the move preparation (items 1, 2, 3 and 8) waits on the move. The round-trip harness and the builder shape (items 6 and 12), `record_bytes` (item 13) and the checked address conversion (item 10) are unstarted. Checked against the ledger.
 
 ## Done when
 
