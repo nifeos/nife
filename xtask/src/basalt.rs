@@ -81,7 +81,8 @@
 //!   remove the inference.
 //! - **The build root is set by assigning `BUILD_ROOT`**, a module-level name in basalt's
 //!   `helpers/packages.py`, after importing it, because the script takes no option for it. A
-//!   basalt change that renames it fails the build at once and says so.
+//!   basalt change that renames it fails the build at once and says so. Its `fetch` is wrapped
+//!   the same way, to try a download again when the route to a source host drops for a moment.
 //! - **`xtask/basalt-pin` does not follow basalt.** It names basalt commit `155eba5`, whose own
 //!   pin is a nife commit of 2026-10-17. The merge-group rows run that commit's recipes and build
 //!   script, and every other gate fetches that commit's published programs. A recipe basalt adds
@@ -229,14 +230,32 @@ pub(crate) fn built_repository() -> PathBuf {
 /// The program `python3 -I -c` runs: basalt's `helpers/packages.py` imported from the directory
 /// its first argument names, its `BUILD_ROOT` set to the second, and its own `main` run on the
 /// rest. The module's `if __name__` guard keeps the import from running anything.
+///
+/// Its `fetch` is wrapped to try a download five times, waiting 2, 4, 8 and 16 seconds between
+/// tries, because hosted runners lose the route to a source host for a few seconds at a time: the
+/// first merge group to run this build failed two of four rows on `[Errno 101] Network is
+/// unreachable` from `git.kernel.org`, while the other two rows fetched the same file in the same
+/// minute. The recipe's digest, checked after every try, still decides whether the bytes are taken.
 const PACKAGES_WITH_BUILD_ROOT: &str = r#"
-import pathlib, sys
+import pathlib, sys, time
 helpers, root = sys.argv[1], sys.argv[2]
 sys.path.insert(0, helpers)
 import packages
 if not isinstance(getattr(packages, "BUILD_ROOT", None), pathlib.Path):
     sys.exit("basalt-build: helpers/packages.py has no BUILD_ROOT path to set")
+if not callable(getattr(packages, "fetch", None)):
+    sys.exit("basalt-build: helpers/packages.py has no fetch to wrap")
 packages.BUILD_ROOT = pathlib.Path(root)
+fetch_once = packages.fetch
+def fetch_with_retries(url, path, want):
+    for wait in (2, 4, 8, 16):
+        try:
+            return fetch_once(url, path, want)
+        except OSError as error:
+            print(f"basalt-build: {url}: {error}; trying again in {wait} seconds", flush=True)
+            time.sleep(wait)
+    return fetch_once(url, path, want)
+packages.fetch = fetch_with_retries
 sys.argv = ["packages.py", *sys.argv[3:]]
 packages.main()
 "#;
