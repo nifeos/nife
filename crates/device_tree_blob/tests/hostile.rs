@@ -1263,3 +1263,36 @@ fn a_reserved_memory_node_below_the_root_is_not_the_reservation_list() {
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x8000_0000, 0x4_0000));
 }
+
+/// A property whose length, a `u32` from the blob, runs far past the blob is refused as truncated by
+/// every lookup, not added to the cursor. On a target whose `usize` is 32 bits the sum would wrap;
+/// the cursor arithmetic is checked, and `src/lib.rs`'s own tests cover the wrap itself, which a
+/// 64-bit host cannot reach through a blob.
+#[test]
+fn a_property_length_past_the_blob_is_truncated_in_every_lookup() {
+    for len in [0x1000_0000u32, 0xffff_fffd, 0xffff_ffff] {
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        b.begin_node(b"memory@0");
+        let name_off = b.string(b"reg");
+        b.token(3);
+        b.structure.extend_from_slice(&len.to_be_bytes());
+        b.structure.extend_from_slice(&name_off.to_be_bytes());
+        b.end_node();
+        b.end_node();
+        let blob = b.finish();
+        let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+        let mut out = [Region { start: 0, size: 0 }; 2];
+        assert_eq!(
+            dt.memory_regions(&mut out),
+            Err(Error::Truncated),
+            "{len:#x}"
+        );
+        assert_eq!(dt.node_reg(b"memory", &mut out), Err(Error::Truncated));
+        assert_eq!(dt.node_prop(b"memory", b"reg"), Err(Error::Truncated));
+        assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
+        assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
+        assert_eq!(dt.reserved_memory_regions(&mut out), Err(Error::Truncated));
+    }
+}
