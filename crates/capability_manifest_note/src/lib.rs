@@ -102,7 +102,7 @@ use grant_contract::{
 /// `design/naming.md` rules it spelled everywhere.
 ///
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
-pub const OWNER: &[u8] = b"nife";
+pub const OWNER: &[u8] = b"nife"; // wire literal
 
 /// The note type that carries a manifest: `1`, "manifest".
 ///
@@ -991,24 +991,24 @@ const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
 macro_rules! carry {
     ($manifest:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::Note = $crate::Note::of(&$manifest);
     };
     ($manifest:expr, zones = $zones:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_len($zones) }> =
             $crate::ZonedNote::of::<{ $crate::zoned_len($zones) }>(&$manifest, $zones);
     };
     ($manifest:expr, service = true) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len(&[]) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_len(&[]) }>(&$manifest, &[], true);
     };
     ($manifest:expr, zones = $zones:expr, service = true) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len($zones) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_len($zones) }>(&$manifest, $zones, true);
     };
@@ -1117,7 +1117,7 @@ impl SubtreeGrantsNote {
 macro_rules! carry_subtree_grants {
     ($scope:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_SUBTREE_GRANTS_NOTE: $crate::SubtreeGrantsNote =
             $crate::SubtreeGrantsNote::of($scope);
     };

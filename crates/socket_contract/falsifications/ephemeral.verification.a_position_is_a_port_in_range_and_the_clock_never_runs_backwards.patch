@@ -1,0 +1,19 @@
+Falsifies `socket_contract::ephemeral::verification::a_position_is_a_port_in_range_and_the_clock_never_runs_backwards`.
+
+The defect: `port_at` takes the remainder modulo one more than the range, so the top position maps
+past `HI`.
+
+Expected to fail: the harness's range assertion on the port.
+
+diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
+--- a/crates/socket_contract/src/lib.rs
++++ b/crates/socket_contract/src/lib.rs
+@@ -432,7 +432,7 @@
+     }
+ 
+     fn port_at(position: u64) -> u16 {
+-        LO + (position % SPAN) as u16
++        LO + (position % (SPAN + 1)) as u16
+     }
+ 
+     /// Machine-checked proofs, run with `cargo kani`: the clock and the position-to-port map hold

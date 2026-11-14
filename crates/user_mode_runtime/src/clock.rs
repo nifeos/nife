@@ -38,24 +38,28 @@ pub fn now() -> u64 {
 /// The counter frequency in Hz, `CNTFRQ_EL0`: how many [`now`] ticks make a second. Constant for the
 /// life of the machine (QEMU reports 62.5 MHz under TCG, the host's counter frequency under HVF).
 ///
-/// This is the one architecture where the rate is always knowable, so [`cntfrq_checked`] here is
-/// always `Some` and this function cannot fail. The other two read a page the kernel fills, and both
-/// can report "unknown"; see [`cntfrq_checked`].
+/// # Panics
+/// If the register reads zero, as it does on firmware that never programmed it: see
+/// [`cntfrq_checked`], which is this without the panic. The other two architectures read a page the
+/// kernel fills and report "unknown" the same way.
 #[cfg(target_arch = "aarch64")]
 pub fn cntfrq() -> u64 {
+    cntfrq_checked().expect(
+        "the counter frequency is unknown: CNTFRQ_EL0 reads zero, which firmware left unprogrammed",
+    )
+}
+
+/// The counter frequency in Hz, or `None` if this process cannot know it (aarch64: `CNTFRQ_EL0`
+/// reads zero, which firmware that never programmed it leaves behind, and a rate of zero would
+/// divide by zero in [`monotonic_nanoseconds`]).
+#[cfg(target_arch = "aarch64")]
+pub fn cntfrq_checked() -> Option<u64> {
     let f: u64;
     // SAFETY: reading a system register; EL0-readable once EL0VCTEN is set.
     unsafe {
         core::arch::asm!("mrs {}, cntfrq_el0", out(reg) f, options(nomem, nostack));
     }
-    f
-}
-
-/// The counter frequency in Hz, or `None` if this process cannot know it (aarch64: never, the
-/// machine states it in `CNTFRQ_EL0`).
-#[cfg(target_arch = "aarch64")]
-pub fn cntfrq_checked() -> Option<u64> {
-    Some(cntfrq())
+    (f != 0).then_some(f)
 }
 
 /// The counter frequency in Hz (RISC-V), read from the **timebase page** the kernel maps read-only
