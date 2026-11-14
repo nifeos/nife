@@ -4,7 +4,7 @@
 //! The kernel is linked high with `AT()`, so `p_vaddr` and `p_paddr` are unrelated even within one
 //! file (`.text` at `p_vaddr` `0xffffffff8010a000` and `p_paddr` `0x10a000`, `.ap_trampoline` at
 //! `0x8000` and `0x166000`). The headers are read by `static_elf::Elf::parse`, with `static_elf::Segment::paddr`
-//! (milestone 196 (a physical address on `static_elf::Segment`)), which validates as it reads: bounds,
+//! (milestone 196 (a physical address on `elf::Segment`)), which validates as it reads: bounds,
 //! overlap, W^X, and the entry inside an executable segment. So a kernel that regressed to an `RWX`
 //! segment fails to boot on real firmware with a printed reason, a second mechanism behind
 //! `script/image-permissions`. See notes/x86-uefi-boot/loader-design.md.

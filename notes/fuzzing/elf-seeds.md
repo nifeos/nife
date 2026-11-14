@@ -4,7 +4,7 @@
 
 An appendix to [`notes/fuzzing.md`](../fuzzing.md), which states the conclusion.
 
-There are three of them, one per machine nife runs, and that is milestone 288's repair. `static_elf`
+There are three of them, one per machine nife runs, and that is the repair of milestone 288 (host tests that assume the host is aarch64). `static_elf`
 picks the `e_machine` it accepts at compile time, so a seed carries a machine or it carries nothing
 useful. There was one seed, `EM_AARCH64`, under a note saying a riscv64 build would reject it; an
 x86_64 build rejects it too, which nobody wrote down because `x86_64` became a target after that

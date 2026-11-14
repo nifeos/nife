@@ -9,9 +9,9 @@ needs_person: yes
 ---
 # 1088. `static_elf`: what an outside maintainer would fix before it leaves this repository
 
-Raised by a read-only review lane, when the crate was still named `elf`. A reviewer with no prior exposure to this crate read
-`crates/static_elf` at the head of `main` (`cf1328af6`) in a fresh clone, the way a stranger meeting it in
-its own repository would. The review changed nothing; every item below is work for a later lane.
+Raised by a read-only review lane, when the crate was still named `elf`. A reviewer with no prior
+exposure to this crate read `crates/static_elf` at the head of `main` (`cf1328af6`) in a fresh clone.
+The reviewer read it the way a stranger meeting it in its own repository would. The review changed nothing; every item below is work for a later lane.
 
 **The crate has no review package.** `notes/crate-reviews/` holds no `elf.md` and
 [the index](../../notes/crate-reviews.md) has no row for it, so there is no settled baseline of

@@ -259,7 +259,7 @@ The rule that falls out:
   program asked, so the file's physical address is not merely unused, it is a claim about a
   decision the loader is making itself.
 - A loader placing an image at fixed physical addresses wants `paddr`. That is firmware-shaped
-  work, and it is why the field is exposed at all (milestone 196 (a physical address on `static_elf::Segment`)). Without it, such a loader has to
+  work, and it is why the field is exposed at all (milestone 196 (a physical address on `elf::Segment`)). Without it, such a loader has to
   re-implement the ELF parse, and two readers of one format is what AGENTS.md rule 7 exists to
   prevent.
 
