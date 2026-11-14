@@ -20,7 +20,8 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    consumers change one `use`. The alternative, a cargo feature `fixture` defaulting off, keeps the
    code in the published crate and the nife file names in its documentation. The fixture crate stays
    in this tree: it is neither publishable nor used by a second repository.
-   Door: one-way at release (what the published surface holds), decision B. Effort: S.
+   Decision B decides the separate crate, provisionally.
+   Door: two-way before any publish, decision B. Effort: S.
 
 4. The `abi` dev-dependency binds the move order to another repository for one assertion.
    Finding: `GONE` restates `abi::Error::Gone`, and the only test that pins the two together links
@@ -93,9 +94,10 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    spelling (`ErrorKind::UnexpectedEof`).
    Evidence: `src/lib.rs` lines 62, 73, 174 to 197, 268; `design/naming.md`, "Units" and "Shapes";
    the `abbreviations` report in "What was checked".
-   Change: decision D lists each with a recommendation. One rename lane at the end, as the naming
-   authority skill requires; nothing renames before the ruling.
-   Door: one-way (published names), decision D. Effort: S after the ruling.
+   Change: as decision D decides, provisionally: `MAXIMUM_INLINE_BYTES`, `first_word`, `Message`,
+   `returned`, the rest kept. One rename lane applies it across every caller, with the std PAL
+   regenerated.
+   Door: two-way before the first tag, decision D. Effort: S.
 
 10. The documentation and the decoder disagree about a zero-length bytes message.
     Finding: `OPERATION_BYTES`'s documentation says the count is 1 to `INLINE_MAXIMUM` and the note

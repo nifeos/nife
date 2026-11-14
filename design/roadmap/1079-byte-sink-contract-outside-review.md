@@ -70,8 +70,8 @@ somebody outside the repository acts on it after the release (a published name, 
    Evidence: `src/lib.rs` lines 19 to 27 (the comment) and 46 (opcode 0 taken);
    `crates/interfaces_note/src/lib.rs` lines 4 to 7; `design/roadmap/1000-*.md` line 23.
    Change: the comment states what is true: a program's note declares the pair (`INTERFACE_ID`, `VERSION`). The contract has no wire operation for versions and, being one-way, cannot have one without a reply. A framing change bumps `VERSION`, and a sink that serves two versions does so by accepting both framings, which is what "serves N and N-1" means for a stream. Whether a
-   wire version operation is ever added is decision A.
-   Door: the comment is two-way; the wire question is one-way, decision A. Effort: S.
+   wire version operation is ever added is decision A, decided provisionally: none.
+   Door: two-way, decision A. Effort: S.
 
 ### P2: later
 
@@ -83,8 +83,8 @@ The P1 items are in [the appendix](1079-byte-sink-contract-outside-review/before
 
 ## Decisions for the architect
 
-Only one-way doors. Each gives the background, then the recommendation, then prior art and one
-concrete example. The maintainer brings them one at a time.
+Each gives the background, then the recommendation, then prior art and one concrete example.
+A, B and D are two-way before the first tag, and the maintainer has decided them, provisionally.
 
 ### A. Does the byte-sink contract ever get a wire version operation?
 
@@ -108,6 +108,12 @@ Example: a sink implementer who followed the current comment would answer opcode
 word. Every `println!` from a std program sends opcode 0 with a byte count, and that sink would
 treat each line as a version query.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. No such operation exists and nobody has built against one, and a later `VERSION`
+can add one. The contract has no wire version operation. The pair (`INTERFACE_ID`, `VERSION`)
+declared in the program's `INTERFACES` note is the check, made by the spawner, and the `VERSION`
+documentation says so. Item 2 is the work: the comment at `src/lib.rs` lines 19 to 27 still
+promises a `CALL` of `OPERATION_VERSION`, where opcode 0 is `OPERATION_BYTES` (line 46).
+
 ### B. Does `fixture` ship in the published crate?
 
 Background: item 3. The module is six items for four in-tree consumers, documented against nife
@@ -125,6 +131,11 @@ so behind a feature, which keeps the names in the documentation.
 
 Example: on docs.rs, `byte_sink_contract::fixture::SINK_NAME` would read `"sinkout"` with a sentence
 about a file created on a test image by a program the reader cannot find.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. No publish happens while the publishing hold stands, and keeping the fixtures out
+is the stricter choice. `fixture` (`src/lib.rs` lines 282 to 309) moves to an in-tree crate,
+`byte_sink_fixture` (name provisional), as `filesystem_fixture` is for `filesystem_contract`. Item 3
+is the work.
 
 ### C. What are the second and third words of an end-of-stream message?
 
@@ -166,6 +177,13 @@ that "the first word" in prose throughout.
 
 Example for `INLINE_MAXIMUM`: `MAXIMUM_NAME_BYTES` versus `MAXIMUM_NAME_LEN` in `design/naming.md`
 is this case; `INLINE_MAXIMUM` is a byte count and its documentation says so in its first words.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. The table above holds with one row changed: `INLINE_MAXIMUM` becomes
+`MAXIMUM_INLINE_BYTES`, not `INLINE_MAXIMUM_BYTES`, because a limit opens with `MAXIMUM_`, which is
+the table's own reason. `req` becomes `first_word`, `Msg` becomes `Message` and `ret` becomes
+`returned`. `w0`, `w1`, `w2`, `OPERATION_EOF`, `eof`, `Msg::Eof`, `pack`, `unpack`, `classify`,
+`severity`, `with_severity`, `kind`, `len`, `operation`, `Sent` and its variants keep their names.
+No old-name alias. Item 9 is the work.
 
 ## Done when
 
