@@ -362,9 +362,9 @@ fn every_public_number_is_pinned() {
         "usage",
         "virtio",
     ];
-    let source_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/src/");
+    let source_directory = concat!(env!("CARGO_MANIFEST_DIR"), "/src/");
     let read = |file: &str| {
-        std::fs::read_to_string(std::format!("{source_dir}{file}"))
+        std::fs::read_to_string(std::format!("{source_directory}{file}"))
             .unwrap_or_else(|e| panic!("cannot read {file}: {e}"))
     };
     let sources: Vec<(&str, String)> = MODULES
@@ -380,7 +380,7 @@ fn every_public_number_is_pinned() {
         .collect();
     let pinned_text = read("tests.rs");
     // A module file this list leaves out would hide its numbers from the count.
-    for entry in std::fs::read_dir(source_dir).unwrap() {
+    for entry in std::fs::read_dir(source_directory).unwrap() {
         let name = entry.unwrap().file_name().into_string().unwrap();
         if let Some(stem) = name.strip_suffix(".rs") {
             let known = matches!(stem, "lib" | "tests") || MODULES.contains(&stem);
