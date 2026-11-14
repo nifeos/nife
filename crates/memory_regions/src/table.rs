@@ -22,9 +22,9 @@ pub(crate) use verification::RegionSnapshot;
 /// A region's parent field naming no parent: this region came from the frame allocator rather than from
 /// a [`split`](RegionTable::split), so it is a **root** and its pages go back to the allocator.
 ///
-/// `u64::MAX` never resolves as a `generational_table` name (its slot bits exceed any table's capacity), so it is
-/// a safe sentinel rather than a value that could collide with a real region.
-pub const NO_PARENT: u64 = u64::MAX;
+/// This is `generational_table`'s `NEVER_MINTED` name, which the dependency documents as never
+/// minted for any entry of any table, so it cannot collide with a real region.
+pub const NO_PARENT: u64 = EntryName::<Region>::NEVER_MINTED.to_bits();
 
 /// One untyped region: a run of physical pages, and how far into it we have retyped.
 ///
@@ -45,7 +45,7 @@ struct Region {
     /// provisional.
     retyped_to: u64,
     /// **A kernel object lives in this region**: a page here was retyped into an endpoint, an
-    /// address space or a TCB, so a claim is refused until `sched::reclaim_region` has torn the
+    /// address space or a thread control block, so a claim is refused until `sched::reclaim_region` has torn the
     /// objects down and called [`unpin`](RegionTable::unpin).
     pinned: bool,
     /// The region this one was split out of, or [`NO_PARENT`].
@@ -90,7 +90,7 @@ struct Spent {
 /// Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ObjectKind {
-    /// An IPC rendezvous (`abi::object_type::RENDEZVOUS`).
+    /// An inter-process communication rendezvous (`abi::object_type::RENDEZVOUS`).
     Rendezvous,
     /// An address space's root table (`abi::object_type::ADDRESS_SPACE`).
     AddressSpace,
@@ -110,7 +110,20 @@ pub enum ObjectKind {
 }
 
 impl ObjectKind {
-    const COUNT: usize = 7;
+    /// Every kind, in [`Ceilings`] order. A new kind is one more entry here and its variant; the
+    /// counts and the proofs follow this list.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    pub const ALL: [ObjectKind; 7] = [
+        ObjectKind::Rendezvous,
+        ObjectKind::AddressSpace,
+        ObjectKind::Thread,
+        ObjectKind::KernelPool,
+        ObjectKind::Notification,
+        ObjectKind::Timer,
+        ObjectKind::Process,
+    ];
+    const COUNT: usize = Self::ALL.len();
 }
 
 /// **What a subtree ceiling counts**: the live kernel objects of one kind, or the live regions
@@ -187,7 +200,8 @@ impl Ceilings {
 
     /// **The ceilings a region split from `parent` lives under**: the lower of the parent's own
     /// and [`CHILD_SHARE_OF_ROOT`] of the root's, kind by kind. Every split region of one tree
-    /// therefore has the same ceilings, which is why a split reads only its parent's.
+    /// therefore has the same ceilings, which is why a split reads only its parent's. Integer
+    /// division: a root ceiling under the share (sixteen) gives every child zero of that kind.
     fn for_child_of(parent: &Region) -> Ceilings {
         if parent.parent != NO_PARENT {
             return parent.ceilings;
@@ -208,7 +222,7 @@ impl Ceilings {
 pub struct CeilingReached {
     /// The region at its ceiling: the refused one or an ancestor.
     pub region: u64,
-    /// How many splits above the refused region it sits; `0` for the region itself.
+    /// How many ancestors above the refused region it sits; `0` for the region itself.
     pub levels_up: u32,
     /// Its subtree's live count, equal to `ceiling`.
     pub live: u32,
@@ -233,6 +247,11 @@ pub enum PageUse {
 /// [`claim_for_destroy`](RegionTable::claim_for_destroy), which removes the region's table slot in
 /// the same borrow, so at most one can exist for a region. Not `Copy` and not `Clone`: duplicating
 /// a claim would duplicate the right to free the run.
+///
+/// A claim dropped without being spent leaks the region's pages quietly: `#[must_use]` catches an
+/// unused result and nothing else, and the crate cannot see a drop. The caller spends every claim
+/// it mints, by [`return_to_parent`](RegionTable::return_to_parent) for a child or by handing the
+/// run back to the allocator for a root.
 ///
 /// # The two doctests below are a gate
 ///
@@ -300,7 +319,7 @@ impl DestroyClaim {
 /// **The untyped regions**, a generational table (`nifeos/generational_table`) plus every decision
 /// taken over it. Removing a region bumps its slot's generation, so every capability minted for it
 /// stops resolving: that is what makes [`claim_for_destroy`](Self::claim_for_destroy) single-winner.
-/// `N` bounds the regions live at once (the kernel picks 256, the loom harnesses 2 or 4).
+/// `N` bounds the regions live at once (the kernel picks 1,024, the loom harnesses 2 or 4).
 ///
 /// # Examples
 ///
@@ -391,6 +410,8 @@ impl<const N: usize> RegionTable<N> {
     /// [`insert_root`](Self::insert_root) for a root whose subtree lives under `ceilings`: no more
     /// than that many objects of each [`Counted`] kind live in it at once, and each region split
     /// below it gets a sixteenth of them.
+    /// The share is integer division, so a root ceiling under sixteen gives every child zero of
+    /// that kind: a root with a thread ceiling of 15 cannot delegate one thread to any child.
     ///
     /// Name: provisional.
     pub fn insert_root_with_ceilings(
@@ -661,7 +682,7 @@ impl<const N: usize> RegionTable<N> {
     /// **Clear a region's object pin**, after its objects have been torn down. A no-op on a dead
     /// name.
     ///
-    /// Deliberately separate from the claim, and the split is not cosmetic: tearing down a TCB needs
+    /// Deliberately separate from the claim, and the split is not cosmetic: tearing down a thread control block needs
     /// the scheduler lock, and the claim must never take it, because reclamation is reachable from
     /// an address space's `Drop`.
     pub fn unpin(&mut self, name: u64) {
@@ -670,7 +691,8 @@ impl<const N: usize> RegionTable<N> {
         }
     }
 
-    /// How many pages the region has retyped, and how many it holds. `None` for a dead name.
+    /// `(watermark, pages)`: the watermark counts the pages spent on retypes and on live children, and
+    /// `pages` is the region's size. `None` for a dead name.
     #[must_use]
     pub fn usage(&self, name: u64) -> Option<(u64, u64)> {
         self.table.get(entry(name)).map(|r| (r.watermark, r.pages))
@@ -683,6 +705,9 @@ impl<const N: usize> RegionTable<N> {
     /// region's alone. After an out-of-order return the counts do not sum to the watermark: the
     /// child's pages leave `Children` and stay spent, the hole
     /// [`return_to_parent`](Self::return_to_parent) describes.
+    ///
+    /// Cost: for `Frames` and each `Object` kind the walk visits every slot and, for each, its
+    /// ancestor chain, so it is O(N times depth); call it for a report, not on a hot path.
     #[must_use]
     pub fn spent(&self, name: u64, on: PageUse) -> Option<u64> {
         let own = self.table.get(entry(name))?;
@@ -748,7 +773,7 @@ impl<const N: usize> RegionTable<N> {
     pub fn claim_for_destroy(&mut self, name: u64) -> Option<DestroyClaim> {
         let r = self.table.get(entry(name))?;
         let is_root = r.parent == NO_PARENT;
-        // The refuse/root/child decision is the Kani-proved arithmetic in the crate root. The LIFO
+        // The refuse/root/child decision is the Kani-proved arithmetic in the crate root. The last-in-first-out
         // input is irrelevant to a refusal and to the root case, so a placeholder is honest here;
         // `return_to_parent` computes the real one against the parent's current watermark.
         if destroy_outcome(r.pinned, r.children, is_root, false, r.pages) == DestroyOutcome::Refused
@@ -782,11 +807,13 @@ impl<const N: usize> RegionTable<N> {
     }
 
     /// Give a claimed child's pages back to its parent's budget, after the caller has revoked every
-    /// mapping in the run; a no-op for a root claim or a parent whose name has died. The LIFO test
+    /// mapping in the run; a no-op for a root claim or a parent whose name has died. The last-in-first-out test
     /// and the un-bump share one borrow. The watermark then falls to the highest page still held
     /// ([`crate::coalesced_watermark`]) unless a claimed sibling is in flight, and the child count
     /// drops here rather than at the claim, so the parent cannot be reclaimed under this child's
     /// pages. See notes/memory-regions.md, "The `memory_regions` crate".
+    ///
+    /// Cost: one scan of the table per return.
     ///
     /// # BUGS
     /// - A hole under a live child is not reused while that child lives.
@@ -1030,7 +1057,7 @@ mod tests {
     }
 
     /// A sibling claimed and not yet returned is invisible to the scan, so it must hold the
-    /// watermark where the LIFO rule leaves it: its pages may still be mapped until the caller's
+    /// watermark where the last-in-first-out rule leaves it: its pages may still be mapped until the caller's
     /// revoke finishes, and a split that handed them out now would be the use-after-free.
     #[test]
     fn an_in_flight_sibling_holds_the_watermark_until_it_returns() {
@@ -1486,6 +1513,17 @@ mod tests {
         let job = t.split(root, 500).unwrap();
         let inner = t.split(job, 100).unwrap();
         assert_eq!(t.ceiling_reached(inner, THREAD), None);
+        let dead = {
+            let spare = t.split(root, 10).unwrap();
+            let claim = t.claim_for_destroy(spare).unwrap();
+            t.return_to_parent(&claim);
+            spare
+        };
+        assert_eq!(
+            t.ceiling_reached(dead, THREAD),
+            None,
+            "a dead name reaches nothing"
+        );
         t.retype_object_page(inner, ObjectKind::Thread).unwrap();
         t.retype_object_page(job, ObjectKind::Thread).unwrap();
         assert_eq!(
@@ -1499,6 +1537,16 @@ mod tests {
             "the inner region holds one of its two; the job, both of its"
         );
         assert_eq!(t.retype_object_page(inner, ObjectKind::Thread), None);
+        assert_eq!(
+            t.ceiling_reached(job, THREAD),
+            Some(CeilingReached {
+                region: job,
+                levels_up: 0,
+                live: 2,
+                ceiling: 2
+            }),
+            "the region itself at its ceiling is zero levels up"
+        );
     }
 }
 

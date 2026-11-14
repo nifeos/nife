@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
+description = "Untyped memory regions for a kernel: page budgets, a bump watermark, subtree ceilings and a single-winner reclaim claim."
+keywords = ["no-std", "allocator", "capability", "kernel", "memory"]
+categories = ["no-std", "no-std::no-alloc", "os", "memory-management"]
 
 [lints]
 workspace = true

@@ -11,7 +11,7 @@ pub enum DestroyOutcome {
     FreeToGlobal,
     /// A **child** region: return its pages to the parent, never to the allocator. `unbump` is how
     /// many pages to give back to the parent's watermark: the child's page count when it sits at the
-    /// top (LIFO, the run is re-splittable), or `0` when it does not (a hole, until
+    /// top (last-in-first-out, the run is re-splittable), or `0` when it does not (a hole, until
     /// [`coalesced_watermark`](crate::coalesced_watermark) reclaims it once nothing above it is held).
     ReturnToParent {
         /// How many pages to give back to the parent's watermark.
@@ -21,7 +21,7 @@ pub enum DestroyOutcome {
 
 /// Decide what destroying a region does. `pinned` and `children` gate it; `is_root` distinguishes a
 /// created region from a split child; `is_lifo_top` says whether a child sits at the top of the
-/// parent's watermark; `child_pages` is the child's size (used only for the LIFO un-bump).
+/// parent's watermark; `child_pages` is the child's size (used only for the last-in-first-out un-bump).
 pub fn destroy_outcome(
     pinned: bool,
     children: u32,
