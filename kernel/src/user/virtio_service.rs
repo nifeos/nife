@@ -641,7 +641,7 @@ fn wire_mediated_pci(
 fn wire_direct(
     image: &'static [u8],
     d: &crate::pci::PciVirtioDevice,
-    window: &driver_process_contract::virtual_input_output::RegisterWindow,
+    window: &driver_process_contract::virtual_io::RegisterWindow,
     role: u64,
 ) -> Option<RendezvousId> {
     let direct = super::virtio_grant::carve(d, window, role as u16, 1)?;

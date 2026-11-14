@@ -1,0 +1,21 @@
+Falsifies `jh7110_clock_and_reset::verification::a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs`.
+
+The defect: a parent that is neither of gmac0_tx's two inputs is taken as the mux field value
+itself instead of being refused. A tree naming any other clock as the parent would then switch the
+mux to an input that does not exist, or one the tree never named.
+
+Expected to fail: the harness's check that an assigned step selects mux input 0 or 1.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 6cefb3133..c4946f87f 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -429,7 +429,7 @@ pub fn gmac0_transmit_parent<'t, E>(
+             (AssignedClockProvider::System, SYSCLK_GMAC0_GTXCLK) => {
+                 ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT
+             }
+-            _ => return Ok(TransmitParent::Refused),
++            (_, id) => id,
+         };
+         if found.is_some() {
+             return Ok(TransmitParent::Refused);

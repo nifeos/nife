@@ -1364,7 +1364,7 @@ pub mod direct {
 
     use core::sync::atomic::{AtomicU64, Ordering};
 
-    use driver_process_contract::virtual_input_output::{DATA_PLANE_KIND, HandOff, REGISTER_KIND};
+    use driver_process_contract::virtual_io::{DATA_PLANE_KIND, HandOff, REGISTER_KIND};
 
     // The mmio offsets the rest of the crate reads and writes (virtio 1.2 section 4.2.2).
     const MAGIC: u64 = 0x000;

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1019, 1062
 decision_dependencies: 320
@@ -69,12 +69,10 @@ line 413.
      `SYSRST_SDIO0_AHB`, `SYSRST_SDIO1_AHB` (`:422`, `:427`, `:438`, `:443`, `:448`, `:452`, `sdio`).
      The review package recorded 0 findings for these after they gained a `(NAME, source)` opening
      and a `doc(alias)`; the template's checker now holds that an integer constant never keeps its
-     source spelling, so a later rule reached them. The word list's `sdio` entry asks for a name for
-     what the controller is. Provisional names, for the maintainer: `ALWAYS_ON_CLOCK_GMAC0_TRANSMIT`,
-     and `SYSTEM_CLOCK_MOBILE_STORAGE_0_BUS`, `SYSTEM_CLOCK_MOBILE_STORAGE_0_CARD`,
-     `SYSTEM_RESET_MOBILE_STORAGE_0` with their `_1` twins, after `designware_mobile_storage`, the
-     tree's own name for the controller; each keeps the binding's identifier in `doc(alias)`.
-     Decision 4 asks the same word of the two public names.
+     source spelling, so a later rule reached them. Their names follow decision 4:
+     `ALWAYS_ON_CLOCK_GMAC0_TRANSMIT`, and `SYSTEM_CLOCK_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS`,
+     `SYSTEM_CLOCK_SD_IO_0_SD_CARD` and `SYSTEM_RESET_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS` with
+     their `_1` twins, each keeping the binding's identifier in `doc(alias)`.
    - `register_names.py` refuses eight names. Three are private `len` fields (`:534`, `:681`,
      `:739`; a length carries its unit, and the standard-library exemption is for the method). Two
      are public `size` fields (`:1371`, `:1466`; decision 2). One is the public
@@ -116,7 +114,7 @@ line 413.
    request #3475 hard-codes the plan for the device at `0x1603_0000` in
    `jh7110_clock_and_reset_devices::DEVICES`, so the choice reaches every client of the server. Fix
    now: name the transmit parent in the README's BUGS and in the constant's first sentence. S.
-   Two-way. Whether the plan keeps the step is decision 5.
+   Two-way. Decision 5 takes the step out of the plan.
 
 5. The mutation record describes code that no longer exists. The crate's rows in
    `notes/project-metrics/mutation-triage.csv` (287-289, 822-835, 1103-1105) name
@@ -134,61 +132,44 @@ line 413.
 
 The P2 items are in [the appendix](1072-jh7110-clock-and-reset-outside-review/later-items.md).
 
-## Decisions for the architect
+## Decisions
 
-Only one-way doors: public names and the meaning of a public constant, permanent at the crate's
-first publication. Recommendation first, then background, prior art and an example.
+Ruled 2026-11-14 (UTC). Each is a public name or the meaning of a public constant, permanent at the
+crate's first publication.
 
-1. Ratify `POWER_MANAGEMENT_CHIP_BUS_BRING_UP` as the name of the plan pull request #3475 makes
-   public. Recommendation: ratify as spelled. Background: the constant was `pub(crate)`; the new
-   `jh7110_clock_and_reset_devices` table needs it for the device at `0x1205_0000`, so #3475 opens
-   it with a provisional `Name:` block, and `script/crate-standalone` refuses a crate with any
-   unratified public name. It follows its siblings `ENTROPY_BRING_UP`, `GMAC0_SYSTEM_BRING_UP` and
-   `GMAC0_ALWAYS_ON_BRING_UP`, and the type it names is already public (`PowerManagementChipBus`).
-   Prior art: Linux exposes the same two steps as the `i2c5` node's `clocks` and `resets`. Example:
+1. `POWER_MANAGEMENT_CHIP_BUS_BRING_UP` is ratified as spelled: the plan for the device at
+   `0x1205_0000` in `jh7110_clock_and_reset_devices::DEVICES`, beside its siblings
+   `ENTROPY_BRING_UP`, `GMAC0_SYSTEM_BRING_UP` and `GMAC0_ALWAYS_ON_BRING_UP`. Prior art: Linux
+   exposes the same two steps as the `i2c5` node's `clocks` and `resets`. Example:
    `DEVICES[4].parts[0].plan == POWER_MANAGEMENT_CHIP_BUS_BRING_UP`.
 
-2. Rename `WindowLocation::size` and `RegisterWindow::size` to `size_bytes`. Recommendation:
-   rename before the first tag. Background: the review package ratified both fields, and each holds a byte count. The
-   units rule says a length carries its unit, and the template's `register_names` gate refuses
-   `size` at ceiling 0 (item 2). The review package renamed the sibling fields to
-   `base_physical_address` under the address rule, and the pass did not reach `size`. Prior art: the tree's page contracts
-   spell `PAGE_BYTES`; the crate's own private constants are `*_SIZE_BYTES`. Example:
+2. `WindowLocation::size` and `RegisterWindow::size` are `size_bytes`: each holds a byte count, and
+   a length carries its unit. Prior art: the tree's page contracts spell `PAGE_BYTES`. Example:
    `SYSTEM_TOP_GROUP_WINDOW.fallback().size_bytes == 0x1_0000`.
 
-3. Rename `PowerManagementChipBus::power_management_chip_address` to say which address space it
-   is. Recommendation: `power_management_chip_bus_address`. Background: it is the PMIC's 7-bit
-   address on its I2C bus, the node's `reg`. The register-names rule says an address is virtual or
-   physical in every location, a rule for memory, and the gate refuses the field at ceiling 0. The alternative the gate offers, keeping the name with a `(reg, device tree)` opening
-   and a `doc(alias)`, keeps a name that a reader of `controller_physical_window` beside it will
-   misread as memory. Prior art: Linux's `i2c_client.addr`, the device tree's `reg` under an I2C
-   controller. Example: `bus.power_management_chip_bus_address == Some(0x36)`.
+3. `PowerManagementChipBus::power_management_chip_address` is `power_management_chip_bus_address`:
+   the PMIC's 7-bit address on its I2C bus, the node's `reg`, and no memory address. Prior art:
+   Linux's `i2c_client.addr`. Example: `bus.power_management_chip_bus_address == Some(0x36)`.
 
-4. Whether `SD_INPUT_OUTPUT_BRING_UP` and `SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD` keep the
-   vendor's instance label, spelled out. Recommendation: rename to `MOBILE_STORAGE_BRING_UP` and
-   `SYSTEM_CLOCK_MOBILE_STORAGE_CARD`, and give the private constants of item 2 the same word.
-   Background: the review package ratified both names as the spelled-out form of `SDIO`. The
-   template's word list now says of `sdio` that the vendor's instance label is not a name and asks
-   for what the controller is; the rule that a release review rechecks names ratified before a later
-   rule applies. The controller is Synopsys's DesignWare Mobile Storage Host, which this tree already
-   calls `designware_mobile_storage`; "SD input output" expands an acronym that elsewhere means an
-   SD card carrying a peripheral, which these controllers do not serve. Prior art: Linux keeps the
-   vendor label in `sdio0_ahb` and `sdio0_sdcard`; OpenBSD and FreeBSD attach the block as `dwmmc`
-   (unverified). Example: `SYSTEM.clock_offset(SYSTEM_CLOCK_MOBILE_STORAGE_CARD[1]) == Some(0x178)`.
+4. `SDIO` is written `SD_IO`: `SD_IO_BRING_UP` and `SYSTEM_CLOCK_SD_IO_SD_CARD`, and the private
+   constants of item 2 take the same word (`SYSTEM_CLOCK_SD_IO_0_SD_CARD` and its twins). `SD` and
+   `io` are both short forms that stay, and `io` stays whole inside an expansion
+   ([the naming rule](../naming.md)). The always-on constants are spelled out
+   (`ALWAYS_ON_CLOCK_GMAC0_TRANSMIT`). Each keeps the binding's identifier in `doc(alias)`, and none
+   carries an alias of this tree's earlier spelling. Prior art: Linux keeps the vendor label in
+   `sdio0_ahb` and `sdio0_sdcard`. Example:
+   `SYSTEM.clock_offset(SYSTEM_CLOCK_SD_IO_SD_CARD[1]) == Some(0x178)`.
 
-5. Whether `GMAC0_ALWAYS_ON_BRING_UP` keeps the v1.3B transmit parent. Recommendation: keep the
-   step and document it as a board fact (item 4) while one board exists; this recommendation is
-   about effort. At equal effort the shape to choose is Linux's. The chip plan holds the clocks and
-   resets. The parent comes from the tree's `assigned-clocks` and `assigned-clock-parents`, the
-   way `DevicePlan::from_specifiers` already reads `clocks` and `resets`, with the constant as the
-   documented fallback. Background: the constant's meaning is public; dropping the step later
-   changes what every caller's walk does. Options: (a) keep and document, S; (b) drop
-   `SelectParent` from the constant, make `AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX` public, and let the
-   two callers (the kernel's `designware_ethernet.rs`, #3475's `DEVICES`) add the step, M; (c) read
-   the parent from the tree, L. Prior art: Linux's SoC clock driver knows no parent choice and the
-   board file assigns it; the vendor U-Boot's board file hard-codes it in
-   `jh7110_gmac_sel_tx_to_rgmii`; crates.io carries one PAC per board revision. Example: a v1.2A
-   walking the current plan sets bit 24 of AON word `0x14`, which its own tree never asks for.
+5. The transmit clock's parent comes from the tree. `GMAC0_ALWAYS_ON_BRING_UP` holds the chip's
+   clocks and resets and no parent step. `gmac0_transmit_parent` reads a `gmac0` node's
+   `assigned-clocks` and `assigned-clock-parents`, the way `DevicePlan::from_specifiers` reads
+   `clocks` and `resets`, and answers a parent step, none, or a refusal. The v1.3B value is the
+   documented constant `GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT`.
+   Prior art: Linux's SoC clock driver knows no parent choice, and the board file assigns it
+   (`jh7110-starfive-visionfive-2-v1.3b.dts`: `assigned-clocks = <&aoncrg
+   JH7110_AONCLK_GMAC0_TX>; assigned-clock-parents = <&aoncrg JH7110_AONCLK_GMAC0_RMII_RTX>;`);
+   the v1.2A board file has no `&gmac0`. Example: a v1.2A tree gives no parent step, so its mux
+   stays where reset put it.
 
 ## Done when
 
@@ -208,10 +189,26 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
   review read the diff and did not compile or test it.
 - The review did not replay seven falsification patches and trusts the review package's run.
 
+## Follow-on
+
+- **Done.** The five decisions above, built in pull request #3572: the ratified
+  `POWER_MANAGEMENT_CHIP_BUS_BRING_UP`, `size_bytes`, `power_management_chip_bus_address`, `SD_IO`
+  with the always-on constants spelled out, and `gmac0_transmit_parent` with its host tests and a
+  Kani harness that carries a replayable falsification patch. The same pull request carries the
+  tree-wide rule that `io` stays whole inside an expansion: the crate-workflows pin moves to the
+  template that accepts `SD_IO`, `management_data_io` and `virtual_io`, and
+  `virtual_input_output` becomes `virtual_io`.
+- **Outstanding.** The other review items: item 1's `clippy.toml`, the rest of item 2 (the private
+  `len` fields, the two test names and the acronym expansions), items 3 and 5, and the P2 items in
+  the appendix.
+- **Outstanding.** The clock and reset server still applies the v1.3B transmit parent on every
+  board. `gmac0_transmit_parent` reads a tree's own assignment, and the server receives no answer
+  until the startup page or the server's wire carries it.
+
 ## Index row
 
 An outside review of `jh7110_clock_and_reset` before its move. Two P0 items keep the template's
 checks red: 17 `doc_markdown` errors and 43 ceiling-0 name and acronym refusals. Three P1 items
 follow: a `reg` decoder that misreads a 12-byte property, a chip plan carrying one board's transmit
 parent, and a mutation record that describes code that no longer exists. Nine P2 items and five
-one-way decisions on public names and the plan's meaning complete it.
+ruled decisions on public names and the plan's meaning complete it.

@@ -17,7 +17,7 @@ the pins in this directory were taken deliberately. What to do about a gap is in
 
 ## crate-workflows
 
-Pinned at upstream git commit `89cc71f31c0a`; no registry carries it.
+Pinned at upstream git commit `5d028d54f2da`; no registry carries it.
 
 **Upstream git: current.** No commits on the tracked branch since the pinned sha.
 

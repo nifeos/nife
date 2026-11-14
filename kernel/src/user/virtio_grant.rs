@@ -19,7 +19,7 @@
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 
-use driver_process_contract::virtual_input_output::{
+use driver_process_contract::virtual_io::{
     self as contract, HandOff, RegisterWindow, WindowRefusal,
 };
 
