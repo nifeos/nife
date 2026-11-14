@@ -439,7 +439,7 @@ mod verification {
         );
         assert_eq!(block & 0b11, 0b01, "not a block descriptor");
         assert!(Aarch64::is_block(block));
-        assert_eq!(Aarch64::leaf_flags(block), flags);
+        assert_eq!(Aarch64::leaf_flags(block), flags.without_write_combining());
     }
 
     /// **No table descriptor ever reads as a block**, for every address.
@@ -483,6 +483,7 @@ mod verification {
         );
         assert_eq!(leaf & 0b11, 0b11, "a leaf must be a valid page descriptor");
         assert_eq!(Aarch64::entry_pa(leaf), pa);
-        assert_eq!(Aarch64::leaf_flags(leaf), flags);
+        // Write-combining is encoded as device memory here, so it decodes as device.
+        assert_eq!(Aarch64::leaf_flags(leaf), flags.without_write_combining());
     }
 }

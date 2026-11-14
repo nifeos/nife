@@ -504,7 +504,7 @@ mod verification {
             "R, W or X must be set, or this is a pointer"
         );
         assert!(Sv39::is_block(block));
-        assert_eq!(Sv39::leaf_flags(block), flags);
+        assert_eq!(Sv39::leaf_flags(block), flags.without_write_combining());
     }
 
     /// **No pointer PTE ever reads as a leaf**, for every address.
@@ -546,6 +546,7 @@ mod verification {
         );
         assert_eq!(leaf & 1, 1, "a leaf must have the valid bit set");
         assert_eq!(Sv39::entry_pa(leaf), pa);
-        assert_eq!(Sv39::leaf_flags(leaf), flags);
+        // Write-combining is encoded as plain device memory here, so it decodes as device.
+        assert_eq!(Sv39::leaf_flags(leaf), flags.without_write_combining());
     }
 }

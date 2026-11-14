@@ -238,6 +238,15 @@ impl Flags {
         self.0 & ACCESS_GLOBAL != 0
     }
 
+    /// The same flags with the write-combining request cleared: what a format that encodes
+    /// write-combining as plain device memory (aarch64) decodes a write-combining leaf back to.
+    ///
+    /// Name: provisional (lane milestone/1101-1113-outside-review-fixes, 2026-11-14 UTC).
+    #[cfg(kani)]
+    pub(crate) const fn without_write_combining(self) -> Self {
+        Flags(self.0 & !ACCESS_WRITE_COMBINE)
+    }
+
     /// Build `Flags` from a raw capability word. Crate-internal: the formats' `leaf_flags` decoders
     /// reassemble a `Flags` this way.
     pub(crate) const fn from_access(access: u64) -> Self {
