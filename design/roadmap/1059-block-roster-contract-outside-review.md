@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 1017, 1034
 decision_dependencies: 305
@@ -242,6 +242,25 @@ None needs hardware or QEMU.
 - P2-7 needs a template change first, so this block cannot close it alone.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
+
+## Follow-on
+
+Checked 2026-11-14 (UTC) against `nifeos/block_roster_contract`. Its tag `v0.1.0-pre.1` sits on
+`6263019`, the merge of #7; `main` is `9c2ca39`, 13 commits further on.
+
+- **Done.** P0-1 landed in `nifeos/block_roster_contract` #3 and #5, P0-2 in #6, and P1-1's mutation
+  caller in #4 and #7, before the tag.
+- **Done.** P1-2 to P1-6 and P1-8 landed in `nifeos/block_roster_contract` #9 after the tag, with
+  `Roster::read` returning `Result<Roster, ReadError>`; P1-7 in #5, #8, #9 and #10; P2-1, P2-3, P2-6
+  and P2-8 in #10; P2-5 in #11; P2-4 in #12.
+- **Outstanding.** P1-1's pin: every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no
+  template release. Read from the workflow files on `main`.
+- **Outstanding.** nife's two call sites on the new API: nife pins `6263019`, before #9, so
+  `components/src/disk_surveyor.rs` still matches the old `Option`; the pin bump moves it. Read from
+  this tree.
+- **Outstanding.** P2-2 and P2-7: `rust-version` stays 1.88, declined in #10 because `as_chunks`
+  needs it and stated in the README's "Minimum Rust version", and the repository description is
+  still the scaffold sentence. Neither is a BUGS entry or an issue. Read from the repository.
 
 ## Index row
 

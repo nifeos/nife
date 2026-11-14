@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 1033
 decision_dependencies: none
@@ -112,9 +112,8 @@ license and the crate name. This block does not reopen them.
 
 ## BUGS
 
-- Item 5 is the template's to fix. Until it lands, this repository's weekly `mutation` verdict stays
-  red for a reason no change here removes, and after the pin bump the release gate reads that
-  verdict.
+- Item 5 was the template's to fix, and `nifeos/crate-workflows#50` fixed it; the release gate
+  reads the mutation verdict, which is green on `main`.
 - Item 2 came from reading, not from a build for a 16-bit target. The fix is cheap enough to
   land without one. A `#[cfg(target_pointer_width = "16")]` test would need a toolchain this
   repository does not carry.
@@ -122,6 +121,31 @@ license and the crate name. This block does not reopen them.
   the same names, and the five new names of item 6 will meet them in their own pull request.
 - The fuzz runs here took 25 seconds per target on one machine. The weekly job gives five minutes.
   Neither is a long campaign. The repository commits no seed corpus, so each run starts cold.
+
+## Follow-on
+
+Checked 2026-11-14 (UTC) against `nifeos/generational_table`, whose tag `v0.1.0-pre.1` sits on the
+head of `main` (`4fb6bb7`, the merge of #16), so every pull request below is in the tagged commit.
+
+- **Done.** Items 2, 5 to 12, 14 and 15 landed in `nifeos/generational_table` #9 to #16: the slot
+  check on narrow targets (#9, #14), the five methods and `Ord` (#10), the docs.rs front page,
+  `deny.toml` and `rust-version` 1.85 (#11), the benchmark, the cursor scan and the layout record
+  (#12), and the mutation caller with the template fix of `nifeos/crate-workflows#50` (#15, #16).
+  Ten harnesses carry ten falsification patches, and proofs run 43001273410 passed at `4fb6bb7`.
+- **Done.** Item 3's pre-release part landed in `nifeos/generational_table` #11: the README's
+  build-and-prove section, the one-line Kani install and a stranger run dated 2026-11-09 that found
+  no gap.
+- **Outstanding.** Item 1's second half and item 3's release half: `publish = false` stays and the
+  README has no `cargo add` line or badges until the release that publishes. Read from `Cargo.toml`
+  and the README at `4fb6bb7`.
+- **Outstanding.** Item 4's pin: every caller pins `nifeos/crate-workflows` at `2e651d8`, which is
+  no template release (the newest is `v7`), and `.github/ci-job-budgets` lacks the scaffold's
+  `mutation-diff 30` line. Read from the workflow files at `4fb6bb7`.
+- **Outstanding.** Item 13's changelog collapse: the `0.1.0-pre.1` section of `CHANGELOG.md` still
+  holds six lines. Read at `4fb6bb7`.
+- **Outstanding.** The last done-when bullet's fuzz half: the newest fuzz run, 42842415159, ran at
+  `c8db9bd`, before #13 and #14 changed `src/lib.rs`, so no fuzz run covers the tagged commit.
+  Read from the repository's run list.
 
 ## Index row
 

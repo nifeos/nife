@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 814
 decision_dependencies: none
@@ -315,6 +315,28 @@ claims none of the QEMU or hardware steps.
   long campaign, and the repository commits no seed corpus, so each run starts cold.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
+
+## Follow-on
+
+Checked 2026-11-14 (UTC) against `nifeos/non_volatile_memory_express`. Its tag `v0.1.0-pre.1` sits
+on `27aa19c`, the merge of #14; `main` is `5cdfeae`, 60 commits further on. Every item but P1-13
+landed after the tag.
+
+- **Done.** P0-1 landed in `nifeos/non_volatile_memory_express` #15; P1-4 in #17; P1-1 to P1-3,
+  P1-5 and P1-14 in #19; P1-6 to P1-8, P1-11, P1-12, P2-8 to P2-10 in #16, with P1-6's phase helper,
+  `Completion::is_phase_tag_set`, in #23; P1-9 in #20; P1-10 in #22; P2-7 in #18. P0-2's four
+  register names were already on `main`.
+- **Done.** P2-1 landed in `nifeos/non_volatile_memory_express` #26, P2-2 in #23, P2-3 in #21, P2-4
+  in #24 (`MDTS` and `NN` only), P2-5 in #25 and P2-6 in #27. The repository's `falsifications/`
+  holds 18 patches.
+- **Outstanding.** P1-13's pin: the mutation caller landed in #13 and `check / mutation-diff` is
+  required, but every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no template
+  release, and no full mutation run covers `5cdfeae`. Read from the workflow files and the run list.
+- **Outstanding.** The names minted after the tag, which #16 to #27 list as provisional for the
+  release review, and the new stranger run: `docs/stranger-test.md` still reads `Last run:
+  2026-11-07`. Read from the pull requests and the file on `main`.
+- **Outstanding.** The QEMU, hardware and aarch64 steps: no run or record of them is in the
+  repository.
 
 ## Index row
 
