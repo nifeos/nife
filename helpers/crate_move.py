@@ -27,6 +27,15 @@ BARE_METAL = ('aarch64-unknown-none-softfloat', 'riscv64imac-unknown-none-elf', 
 DEP_TABLES = ('dependencies', 'dev-dependencies', 'build-dependencies')
 # The word, not a longer one: `nifeos` in a repository URL is allowed.
 NIFE_WORD = re.compile(r'(?<![A-Za-z0-9_])nife(?![A-Za-z0-9_])', re.I)
+# A wire literal keeps its spelling (ruled 2026-11-14 UTC): a line ending in this marker is exempt.
+# The same marker as helpers/lint_externalized_crates.py.
+WIRE_LITERAL = re.compile(r'(?://|#|/\*)\s*wire literal(?:\s*\*/)?\s*$')
+
+
+def nife_mentions(text):
+    """The 1-based numbers of the lines that name nife without the wire literal marker."""
+    return [n for n, line in enumerate(text.split('\n'), 1)
+            if NIFE_WORD.search(line) and not WIRE_LITERAL.search(line)]
 HUNK = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$')
 # The scaffold's own description of itself, and the crate README's starting shape, which is used
 # only when the crate brings no README.
@@ -780,8 +789,7 @@ def checks(into, tree, rev, report):
              for f in staged.files if f.endswith(crate_release.TEXT) or f.startswith('.githooks/')}
     for step, why in crate_release.citation_findings(texts):
         report('FAIL', 'citations', why)
-    hits = [f'{f}:{n}' for f, t in sorted(texts.items())
-            for n, line in enumerate(t.split('\n'), 1) if NIFE_WORD.search(line)]
+    hits = [f'{f}:{n}' for f, t in sorted(texts.items()) for n in nife_mentions(t)]
     if hits:
         report('FAIL', 'mentions nife', f'{len(hits)} line(s), first {", ".join(hits[:4])}')
     else:
@@ -967,6 +975,9 @@ def selftest():
     assert 'caught 54, missed 3, timeout 1, unviable 4' in note and '3 missed' in note, note
     assert all(l.startswith('#') for l in note.splitlines()) and not NIFE_WORD.search(note), note
     assert 'no line is expected' in exempts_note((9, 0, 0, 0))
+    assert nife_mentions('a nife line\nb"nife"; // wire literal\nx\n') == [1]
+    assert nife_mentions('KEEP(*(.note.nife.*)) /* wire literal */') == []
+    assert nife_mentions('// wire literal nife') == [1]
     print('crate_move selftest: ok')
 
 

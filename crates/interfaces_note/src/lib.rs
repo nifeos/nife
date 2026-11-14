@@ -31,7 +31,7 @@
 
 /// The note's owner string, without its NUL: the same `nife` that `capability_manifest_note::OWNER`
 /// holds. Duplicated so that this crate depends on nothing; a test in that crate holds the two equal.
-const OWNER: &[u8] = b"nife";
+const OWNER: &[u8] = b"nife"; // wire literal
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
 const NAME_FIELD: usize = 8;
@@ -323,7 +323,7 @@ impl<const N: usize> InterfacesNote<N> {
 macro_rules! carry_interfaces {
     ($list:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_INTERFACES_NOTE: $crate::InterfacesNote<
             { $crate::interfaces_note_len($list.len()) },
         > = $crate::InterfacesNote::of::<{ $crate::interfaces_len($list.len()) }>($list);
@@ -489,7 +489,7 @@ mod interface_tests {
         assert_eq!(&b[..4], &5u32.to_le_bytes());
         assert_eq!(&b[4..8], &(interfaces_len(3) as u32).to_le_bytes());
         assert_eq!(&b[8..12], &INTERFACES.to_le_bytes());
-        assert_eq!(&b[12..16], b"nife");
+        assert_eq!(&b[12..16], b"nife"); // wire literal
         assert_eq!(&b[16..20], &[0, 0, 0, 0]);
         assert_eq!(b.len(), 20 + interfaces_len(3));
         assert_eq!(decode_interfaces(&b[20..]).unwrap().version_of(4), Some(7));

@@ -20,7 +20,12 @@ The rules every step keeps:
 - No record of names travels. The move commit deletes every `Name:` block. Git history in this
   tree, with the ratifying pull requests, is the only provenance record; the crate repository
   carries no table and no provenance file.
-- The crate never mentions nife, in its source, README, docs, manifest or commit messages.
+- The crate never mentions nife, in its source, README, docs, manifest or commit messages. One
+  exception, ruled 2026-11-14 UTC: a wire literal, bytes that already sit on a wire or in built
+  programs (an ELF note owner string, a section name, a magic value, a console line head, and a test
+  that asserts those bytes), keeps its spelling. The line ends with the comment `// wire literal`
+  (provisional spelling); `helpers/lint_externalized_crates.py` and the move check accept it, and refuse an unmarked mention. The lint prints every marked line. Prose never names nife; it says "the owner
+  string" or similar.
 - The naming gates run in the crate repository, through the shared template
   `nifeos/crate-workflows` pinned at a release commit.
 - The owned runners never run fork code. A crate repository runs on GitHub-hosted runners only,

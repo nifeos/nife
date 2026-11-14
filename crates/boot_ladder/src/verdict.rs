@@ -329,7 +329,7 @@ mod tests {
         assert_eq!(
             format!("{}", t.verdict()),
             format!(
-                "nife self-test: {} of {CHECKS} passed, 1 absent: blockdev, 1 FAILED: userspace",
+                "nife self-test: {} of {CHECKS} passed, 1 absent: blockdev, 1 FAILED: userspace", // wire literal
                 CHECKS - 2
             )
         );
@@ -393,11 +393,11 @@ mod tests {
         );
         assert_eq!(
             line,
-            "nife self-test subject: thread 8589934611, which the supervised check kills on purpose"
+            "nife self-test subject: thread 8589934611, which the supervised check kills on purpose" // wire literal
         );
         assert_eq!(subject_thread(&line), Some(8_589_934_611));
         assert_eq!(subject_thread("  user thread 19 killed: Data abort"), None);
-        assert_eq!(subject_thread("nife self-test subject: thread x"), None);
+        assert_eq!(subject_thread("nife self-test subject: thread x"), None); // wire literal
         assert!(
             !line.contains(SELF_TEST),
             "a subject line is not a verdict line"
@@ -421,7 +421,7 @@ mod tests {
         assert_eq!(
             format!("{}", t.verdict()),
             format!(
-                "nife self-test: 1 of {CHECKS} passed, 2 absent: blockdev trng, 1 FAILED: clock"
+                "nife self-test: 1 of {CHECKS} passed, 2 absent: blockdev trng, 1 FAILED: clock" // wire literal
             )
         );
     }
@@ -436,7 +436,7 @@ mod tests {
         assert_eq!(t.fail_unrecorded().count(), 0);
         assert_eq!(
             format!("{}", t.verdict()),
-            format!("nife self-test: {CHECKS} of {CHECKS} passed")
+            format!("nife self-test: {CHECKS} of {CHECKS} passed") // wire literal
         );
     }
 

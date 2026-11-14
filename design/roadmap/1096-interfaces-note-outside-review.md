@@ -134,9 +134,13 @@ Five of this crate's nine hits are the owner constant, the section name and a te
 bytes. `capability_manifest_note`, on the same list with 37 hits, has the same constant. Changing
 the owner changes the bytes of every built program and every reader; it is the one-way side.
 
-Recommendation. Keep the owner and the section name, and rule once for both note crates that a wire constant may spell the word. The lint and the move check accept it on a line that ends with a marked comment (`// the note's owner, a wire constant`), and in a test that asserts the bytes.
-Prose around them says "the owner string" and does not repeat it. Reversing the exemption costs one
-pull request; reversing a renamed owner costs a format version.
+Ruled 2026-11-14 UTC (decision D1): the owner and the section name keep their bytes, for both note
+crates. Bytes that already sit on a wire or in built programs may spell the word after the crate
+leaves; the exception covers wire literals only (owner strings, section names, magic values and the
+tests that assert those bytes). The lint and the move check accept a line that ends with the
+comment `// wire literal` (provisional spelling), refuse an unmarked mention, and the lint prints
+every marked line. Prose around them says "the owner string" and does not repeat it. Reversing the
+exemption costs one pull request; reversing a renamed owner costs a format version.
 
 Prior art. The owner of an ELF note is the vendor's name and nothing else: `GNU` for
 `.note.gnu.build-id` and `.note.ABI-tag`, `FreeBSD` for `.note.tag`, `NetBSD` for
@@ -145,8 +149,7 @@ Prior art. The owner of an ELF note is the vendor's name and nothing else: `GNU`
 its own name in its own format's crate; the rule exists so the crate stands alone, and a wire
 constant does not stop it standing alone.
 
-Example. After the ruling, `src/lib.rs` keeps `const OWNER: &[u8] = b"nife"; // the note's owner, a
-wire constant` and the module doc reads "the owner string names the operating system that reads
+Example. After the ruling, `src/lib.rs` keeps `const OWNER: &[u8] = b"nife"; // wire literal` and the module doc reads "the owner string names the operating system that reads
 the note".
 
 ### The public names, ratified before the move
