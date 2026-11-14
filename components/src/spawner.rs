@@ -32,7 +32,7 @@ const REPORT: u64 = 3; // WRITE|GRANT: so each instance can report for itself
 const CHILDFAULT: u64 = 4; // READ|GRANT: so each instance is born supervised
 
 /// Where `root_supervisor` copied the one program image we may build. Must match `root_supervisor.rs`.
-const IMAGE_VA: u64 = address_space_map::runtime_window(0x3000_0000);
+const IMAGE_VA: u64 = address_space_layout::runtime_window(0x3000_0000);
 
 /// Pages per instance region: enough for the sub-server's segments, its stack, its address-space
 /// tables, and its TCB. A debug build of a tiny program is a handful of pages.

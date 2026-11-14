@@ -55,7 +55,7 @@ region, so neither verdict is known.
 | component_plan | 7 | 0 | 1 | 0 | 0 |
 | measured_boot | 7 | 0 | 4 | 1 | 0 |
 | environment_contract | 3 | 0 | 2 | 0 | 0 |
-| address_space_map | 2 | 0 | 0 | 0 | 0 |
+| address_space_layout | 2 | 0 | 0 | 0 | 0 |
 | memory_regions | 2 | 0 | 14 | 1 | 0 |
 | schedule_store | 2 | 0 | 3 | 0 | 0 |
 | abi | 1 | 0 | 3 | 0 | 0 |

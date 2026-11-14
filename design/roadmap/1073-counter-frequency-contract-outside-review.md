@@ -176,7 +176,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    rate" and `new`'s safety section says "every `x86_64` process" and opens a sentence in
    lowercase; the package's proposed items 1 and 2 cover these and they belong in the same lane.
    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 102, 104 to 105, 119 to 120,
-   124, 134, 170 to 171 and 190; `crates/address_space_map/src/lib.rs` lines 4 to 5.
+   124, 134, 170 to 171 and 190; `crates/address_space_layout/src/lib.rs` lines 4 to 5.
    Change: delete the stale sentence and the alias sentences, say "byte-aligned" in the example,
    and apply the package's items 1 and 2 in the same pull request.
    Door: two-way. Effort: S.

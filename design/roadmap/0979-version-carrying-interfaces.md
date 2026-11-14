@@ -71,7 +71,7 @@ carries a version constant per wire format; a pure library is named by its crate
 
 - `abi` is the syscall surface. One constant at the crate root, provisionally `ABI_VERSION`; its
   scope is the syscall, method and error numbers a program matches.
-- `address_space_map` is layout constants the loader and the kernel compile in. One constant,
+- `address_space_layout` is layout constants the loader and the kernel compile in. One constant,
   provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
 - `glob` is a library with no peer and no wire, so it carries no constant. Its version is its
   crate version, the semantic version in its `Cargo.toml`, which question 3's declaration reads.

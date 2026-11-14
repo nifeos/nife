@@ -33,7 +33,7 @@ const REPORT: u64 = 1;
 const UART_DEVICE: u64 = 2;
 const CHILD: &str = "device_child";
 /// Must match `device_child`'s `UART_VA`, where it reads the registers.
-const CHILD_UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const CHILD_UART_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 
 user_mode_runtime::program_entry!(start);
 

@@ -29,7 +29,7 @@ use crate::syscall::invoke;
 const SPACE_PAGES: u64 = 24;
 
 /// Two neighbouring pages in the low half, aligned and far from anything else a test maps.
-const VA: u64 = address_space_map::pair_page(0x0060_0000);
+const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 const NEXT: u64 = VA + paging::PAGE_SIZE;
 
 /// A fresh space backed by its own region. Returns its name, its root, and the region.

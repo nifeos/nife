@@ -121,30 +121,30 @@ pub const PAGE_BYTES: usize = TICK_HERTZ_OFFSET_BYTES + 8;
 pub const CPU_WORD_OFFSET: u64 = CPU_OFFSET_BYTES as u64;
 
 /// How many threads of one process can each have a page: the slots below [`PAGE_VA`] in
-/// `address_space_map::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
+/// `address_space_layout::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
 /// address space), §269 (how threads share a process) fork 6). Slot `k` is at [`thread_page_va`]`(k)`;
 /// slot 0 is [`PAGE_VA`] itself, so a process's first thread reads where every thread read before.
 pub const THREAD_PAGE_SLOTS: usize =
-    (address_space_map::PROCESS_PAGES.bytes() / address_space_map::PAGE) as usize;
+    (address_space_layout::PROCESS_PAGES.bytes() / address_space_layout::PAGE) as usize;
 
 /// Where thread page slot `k` is mapped: [`PAGE_VA`] for slot 0, and one page lower for each
 /// slot after it, inside `PROCESS_PAGES` and so inside the stack's last-level table. `None` past
 /// [`THREAD_PAGE_SLOTS`].
 pub const fn thread_page_va(k: usize) -> Option<u64> {
     if k < THREAD_PAGE_SLOTS {
-        Some(PAGE_VA - k as u64 * address_space_map::PAGE)
+        Some(PAGE_VA - k as u64 * address_space_layout::PAGE)
     } else {
         None
     }
 }
 
 /// The fixed virtual address the kernel maps this page at in every process, the same on all three
-/// architectures: `address_space_map::CURRENT_CPU_PAGE`, the last page of `PROCESS_PAGES`. One page
+/// architectures: `address_space_layout::CURRENT_CPU_PAGE`, the last page of `PROCESS_PAGES`. One page
 /// above the stack's top page, it shares the stack's L1, L2 and L3 tables, so the mapping buys only
 /// its leaf; a page alone in its tables cost 1,245 ticks per spawn (notes/benchmarks/spawn-el0.md).
 /// The map is milestone 206 (a program image has under 896 KiB) and DECISIONS §171 (where a
 /// program image starts) option D. See notes/current-cpu-page.md.
-pub const PAGE_VA: u64 = address_space_map::CURRENT_CPU_PAGE;
+pub const PAGE_VA: u64 = address_space_layout::CURRENT_CPU_PAGE;
 
 /// Build a fresh page's bytes: the magic, and [`UNSCHEDULED`] for a thread that has not run yet.
 /// The kernel writes this into a zeroed frame before mapping it read-only into the process, and
@@ -455,12 +455,12 @@ mod tests {
         assert_eq!(thread_page_va(0), Some(PAGE_VA));
         for k in 0..THREAD_PAGE_SLOTS {
             let va = thread_page_va(k).unwrap();
-            assert!(address_space_map::PROCESS_PAGES.contains(va));
+            assert!(address_space_layout::PROCESS_PAGES.contains(va));
         }
         assert_eq!(thread_page_va(THREAD_PAGE_SLOTS), None);
         assert_eq!(THREAD_PAGE_SLOTS, 16);
         // One page apart, so no two threads share a slot's page.
-        assert_eq!(thread_page_va(1), Some(PAGE_VA - address_space_map::PAGE));
+        assert_eq!(thread_page_va(1), Some(PAGE_VA - address_space_layout::PAGE));
     }
 
     /// The magic is the one every `std` already published in basalt compares: no nife-built
@@ -493,10 +493,10 @@ mod tests {
     #[allow(clippy::assertions_on_constants)]
     fn the_page_shares_the_stacks_last_level_table() {
         assert_eq!(PAGE_VA % 4096, 0);
-        assert!(address_space_map::PROCESS_PAGES.contains(PAGE_VA));
+        assert!(address_space_layout::PROCESS_PAGES.contains(PAGE_VA));
         assert_eq!(
             PAGE_VA >> 21,
-            address_space_map::STACK_TOP_PAGE >> 21,
+            address_space_layout::STACK_TOP_PAGE >> 21,
             "not in the stack's 2 MiB, so the mapping buys an L3 of its own"
         );
     }

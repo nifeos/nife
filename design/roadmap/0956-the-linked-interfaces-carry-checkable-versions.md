@@ -35,7 +35,7 @@ dependency. The weekly series refused `cargo-semver-checks` and `cargo-public-ap
 Each step lands a provable piece. Every new name is provisional.
 
 1. The version constants land beside the wire formats the first cut links. `abi` carries
-   `ABI_VERSION` at the crate root; `address_space_map` carries `VERSION`;
+   `ABI_VERSION` at the crate root; `address_space_layout` carries `VERSION`;
    `machine_statistics_contract` carries a version word beside its `MACHSTA1` magic, an index in the
    crate's `word` module; `block_roster_contract` carries `VERSION` in the digits of its magic. One constant
    per wire format, as ruled (question 1). `program_argument_contract`'s `nifeargv` stays
@@ -101,7 +101,7 @@ table. No registry outside it exists.
 | id | interface |
 |---|---|
 | 1 | `abi` |
-| 2 | `address_space_map` |
+| 2 | `address_space_layout` |
 | 3 | retired, `glob` |
 | 4 | `machine_statistics_contract` |
 | 5 | `block_roster_contract` |

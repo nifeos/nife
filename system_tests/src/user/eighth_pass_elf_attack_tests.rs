@@ -54,12 +54,12 @@ fn forged_two_segment(second_vaddr: u64) -> [u8; 192] {
     out[6] = 1;
     out[16..18].copy_from_slice(&2u16.to_le_bytes());
     out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
-    out[24..32].copy_from_slice(&address_space_map::IMAGE_BASE.to_le_bytes());
+    out[24..32].copy_from_slice(&address_space_layout::IMAGE_BASE.to_le_bytes());
     out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes());
     out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes());
     out[56..58].copy_from_slice(&2u16.to_le_bytes());
 
-    for (i, &vaddr) in [address_space_map::IMAGE_BASE, second_vaddr]
+    for (i, &vaddr) in [address_space_layout::IMAGE_BASE, second_vaddr]
         .iter()
         .enumerate()
     {
@@ -102,8 +102,8 @@ fn an_elf_whose_segment_arithmetic_overflows_is_refused_as_an_overflow() {
 #[test_case]
 fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
     let reach =
-        mmu::KERNEL_VA_BASE.wrapping_sub(address_space_map::IMAGE_BASE) + page_frames::FRAME_SIZE;
-    let image = forged(address_space_map::IMAGE_BASE, elf::PF_R | elf::PF_X, reach);
+        mmu::KERNEL_VA_BASE.wrapping_sub(address_space_layout::IMAGE_BASE) + page_frames::FRAME_SIZE;
+    let image = forged(address_space_layout::IMAGE_BASE, elf::PF_R | elf::PF_X, reach);
 
     let refused = load(&image, 0, &[]).err();
     assert!(
@@ -132,9 +132,9 @@ fn an_elf_whose_second_segment_names_the_kernel_is_refused() {
     assert_eq!(
         load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
-            address_space_map::ImagePlacement::TooLarge {
+            address_space_layout::ImagePlacement::TooLarge {
                 image_end: mmu::KERNEL_VA_BASE + page_frames::FRAME_SIZE,
-                stack_base: address_space_map::STACK.start,
+                stack_base: address_space_layout::STACK.start,
             }
         )),
         "the loader accepted (or silently ignored) a second segment aimed at the kernel's half: \
@@ -153,7 +153,7 @@ fn an_elf_whose_second_segment_names_the_kernel_is_refused() {
 #[test_case]
 fn an_elf_dressing_writable_executable_in_vendor_bits_is_refused() {
     let image = forged(
-        address_space_map::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE,
         elf::PF_R | elf::PF_W | elf::PF_X | 0x00ff_0000,
         16,
     );

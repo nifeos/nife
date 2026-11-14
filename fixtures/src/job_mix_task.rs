@@ -96,16 +96,16 @@ fn touch(seed: u64) -> u64 {
 /// Where the [`job_mix::MAP`] job maps its frame in the space it builds for itself. Any page-aligned
 /// user address works, since nothing else is ever mapped in that space; this one is the address
 /// `os_primitives_benchmarker`'s timed maps use.
-const MAP_TARGET_VA: u64 = address_space_map::pair_page(0x40_0000);
+const MAP_TARGET_VA: u64 = address_space_layout::pair_page(0x40_0000);
 /// Every architecture this tree targets maps 4 KiB pages at the leaf.
 const PAGE: u64 = 4096;
 /// Where a child's code and stack go in the address space the [`job_mix::SPAWN`] job builds for it:
 /// the address-space map's image base and top stack page, where a loaded program's would be.
-const CHILD_CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const CHILD_STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+const CHILD_CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// Where this task maps, writable, the one frame it fills with the child's code. Far from anything
 /// the loader maps, which is the choice `os_primitives_benchmarker` made for the same frame.
-const STUB_SCRATCH_VA: u64 = address_space_map::pair_page(0x0100_0000);
+const STUB_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0100_0000);
 
 /// A job's syscall was refused: the refusal, as the negative `abi::Error` the kernel returned.
 type Refused = i64;

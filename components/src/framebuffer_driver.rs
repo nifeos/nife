@@ -50,7 +50,7 @@ const SURFACE_FRAME: u64 = 3;
 
 /// Where this driver maps the surface. Its choice: it holds the frames. 2 MiB-aligned for the
 /// reason `gpu_driver`'s `DMA_VA` gives, so the run spans as few page-table windows as it can.
-const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
+const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0100_0000);
 
 /// Where the kernel maps the covered part of the aperture before `_start`. **Must match
 /// `kernel/src/user/display_service.rs`'s `SCREEN_APERTURE_VA`.** A service window on the
@@ -61,7 +61,7 @@ const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
 /// capability, so this driver cannot map the screen again, delegate it, or hand it on. The
 /// geometry arrives in the three argument registers (`screen_console::Aperture::to_words`, then
 /// the aperture's offset into its first page).
-const APERTURE_VA: u64 = address_space_map::service_window(0x5800_0000);
+const APERTURE_VA: u64 = address_space_layout::service_window(0x5800_0000);
 
 /// Failure codes, sent on the report endpoint in a `0xDEAD_...` word so a failure names its step.
 const E_GEOMETRY: u64 = 0x01;

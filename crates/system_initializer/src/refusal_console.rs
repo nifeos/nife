@@ -22,7 +22,7 @@ const POLLS_PER_BYTE: u32 = 1 << 20;
 ///
 /// Name: ratified 2026-11-03 (UTC), #3102.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f70_0000);
+const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0f70_0000);
 
 /// **Write `parts`, in order, to the UART.** `uart_shape` is the register shape the kernel passed
 /// at start (`abi::uart`), which riscv64's NS16550 needs. Returns once every byte is written or

@@ -58,7 +58,7 @@ copy from the crate. Only the non-required `rg-threads` job runs a published one
 
 ## The address
 
-The page is `address_space_map::CURRENT_CPU_PAGE`, `0x7FFF_F000`, the last of the `PROCESS_PAGES`
+The page is `address_space_layout::CURRENT_CPU_PAGE`, `0x7FFF_F000`, the last of the `PROCESS_PAGES`
 band that the kernel maps into every process unasked
 ([notes/address-space-map.md](address-space-map.md)). It sits one page above the stack's top page,
 in the same 2 MiB, so it shares the stack's L1, L2 and L3 tables. The mapping buys no table, only

@@ -66,9 +66,9 @@ points from nife to the crate, which the direction permits. Beyond those, six re
 
 | crate | reference back | resolution |
 |---|---|---|
-| `address_space_map` | a test reads `../../user_mode_runtime/link.ld` | the test moves to `user_mode_runtime` |
+| `address_space_layout` | a test reads `../../user_mode_runtime/link.ld` | the test moves to `user_mode_runtime` |
 | `byte_sink_contract` | dev-dependency on `abi` | leaves after `abi` |
-| `counter_frequency_contract` | dev-dependency on `address_space_map` | leaves after it |
+| `counter_frequency_contract` | dev-dependency on `address_space_layout` | leaves after it |
 | `filesystem_contract` | dev-dependency on `filesystem_fixture`, which links it | the two leave together |
 | `grant_plan` | dev-dependency on `primitive_benchmark_contract`, which stays | that test moves, or the crate leaves too |
 | `capability_manifest_note` | a test reads `../../fuzz/seeds/`, and nife's fuzz workspace builds it | its seeds and fuzz target leave with it |
@@ -100,7 +100,7 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 0, the review pilot | `jh7110_entropy` | tag it, then the architect reads it; the others follow only as each review clears |
 | 1, the contract pilot | `block_roster_contract` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
-| 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime`, then `interfaces_note` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2. `interfaces_note`, the `INTERFACES` leaf crate (provisional), already holds the note type inside nife and leaves like any leaf (below) |
+| 3 | `address_space_layout`, then `current_cpu_contract`, then `user_mode_runtime`, then `interfaces_note` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2. `interfaces_note`, the `INTERFACES` leaf crate (provisional), already holds the note type inside nife and leaves like any leaf (below) |
 | 4, first package | `disk-tools` | leaves as soon as its 12 crates and `interfaces_note` have left; milestone 756's condition 4 has it carry the `INTERFACES` macro, and it never waits for `grant_plan` |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |

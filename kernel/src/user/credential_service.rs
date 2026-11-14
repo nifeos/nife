@@ -3,9 +3,9 @@ use crate::capability_object::{Rights, memory_region_capability, rendezvous_capa
 use crate::sched::RendezvousId;
 
 /// Where the service maps the provisioner's page. Must match components/src/credentialer.rs.
-const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+const PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 /// Where the service and a client map the verify page. Must match both programs.
-const VERIFY_VA: u64 = address_space_map::pair_page(0x0000_0000_00e1_0000);
+const VERIFY_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e1_0000);
 
 /// The service's untyped budget, in pages: 6 MiB, for the Argon2id scratch
 /// (`credentialer::Cost::DEFAULT.blocks()` KiB, 4 MiB), its page tables and the allocator's slack.

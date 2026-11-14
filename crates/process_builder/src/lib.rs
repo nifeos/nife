@@ -48,9 +48,9 @@ pub const PAGE: u64 = 4096;
 /// checks its size against its own budgets at compile time. See notes/progenitor-and-loading.md.
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
-pub const SCRATCH_WINDOW: address_space_map::Band = address_space_map::Band {
-    start: address_space_map::runtime_window(0x1000_0000),
-    end: address_space_map::runtime_window(0x1400_0000),
+pub const SCRATCH_WINDOW: address_space_layout::Band = address_space_layout::Band {
+    start: address_space_layout::runtime_window(0x1000_0000),
+    end: address_space_layout::runtime_window(0x1400_0000),
 };
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
@@ -244,8 +244,8 @@ pub fn build_child_space(
         lo = lo.min(start);
         hi = hi.max(end);
     }
-    if address_space_map::check_image(lo, hi).is_err()
-        || endow.stack_pages > address_space_map::MAXIMUM_STACK_PAGES
+    if address_space_layout::check_image(lo, hi).is_err()
+        || endow.stack_pages > address_space_layout::MAXIMUM_STACK_PAGES
     {
         return Err(());
     }

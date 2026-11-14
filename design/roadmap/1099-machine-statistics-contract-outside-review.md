@@ -70,7 +70,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    `rust-version`, `description`, `readme`, `keywords` or `categories`; no README, `LICENSE-MIT`
    or `LICENSE-APACHE`; and the `publish = false` comment cites `crates/publish-allowlist.txt`, a
    file the new repository will not hold. The dry run's build fails at `cargo generate-lockfile`
-   on the inherited `license`. The two dependencies are path dependencies on `current_cpu_contract` and `address_space_map`, which leave at step 3 of milestone 1017 (the contract crates leave in this order). This crate is at step 6, so the order already holds. The move manifest pins both by `rev` on their `nifeos` repositories, which the standing approval for own-crate dependencies covers.
+   on the inherited `license`. The two dependencies are path dependencies on `current_cpu_contract` and `address_space_layout`, which leave at step 3 of milestone 1017 (the contract crates leave in this order). This crate is at step 6, so the order already holds. The move manifest pins both by `rev` on their `nifeos` repositories, which the standing approval for own-crate dependencies covers.
    Evidence: `crates/machine_statistics_contract/Cargo.toml` lines 5, 6, 13 to 18;
    `script/crate-standalone` output, nine manifest and file failures; the dry run's `build` line.
    Change: write the manifest in `block_roster_contract`'s shape (`rust-version = "1.88"`, the literal license, the literal lint tables, a one-sentence `description`, `readme`, `keywords` and `categories`). Add the two license texts. Write the README from the scaffold's `README-crate.md`
@@ -169,10 +169,10 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
   did not do what a package does: enumerate every public item with its signature for the
   architect's reading, or run `script/crate-review-packet`. A package lane can still write one
   before the architect reads the crate.
-- `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_map` (an unused
+- `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_layout` (an unused
   `LOW_HALF_SPLIT_SHIFTS`), which this crate links. In the crate's own repository a git dependency
-  is not linted, so this does not block here; it is `address_space_map`'s finding, for that
-  crate's review. The same build prints a future-incompatibility notice for `address_space_map`,
+  is not linted, so this does not block here; it is `address_space_layout`'s finding, for that
+  crate's review. The same build prints a future-incompatibility notice for `address_space_layout`,
   which the review did not chase.
 - The dry run never reported the two path dependencies because its build stopped earlier (item
   12). The move lane reads `script/crate-standalone` as well as the dry run.

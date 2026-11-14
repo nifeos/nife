@@ -66,7 +66,7 @@ dependency). Everything else is two-way and the maintainer decides it.
    only in the root workspace, so a repository of the crate's own, and every workspace that consumes
    it without the patch, silently builds the unpatched package. The pull request has been open for
    seven weeks at the time of the review with no maintainer comment, which is a reliability signal
-   for the upstream. `abi`, `address_space_map` and `user_mode_runtime` are path dependencies. The
+   for the upstream. `abi`, `address_space_layout` and `user_mode_runtime` are path dependencies. The
    order of milestone 1017 moves them at steps 2 and 3, before this crate at step 9, so their
    repositories will exist, and the lines become `git` and `rev` pins with `version` beside them.
    Evidence: `crates/memory_region_heap/Cargo.toml` lines 19 to 28. `vendor/talc.pin`.
@@ -140,7 +140,7 @@ ride in the same table.
 Prior art. `Vec::try_reserve` returns `Result<(), TryReserveError>` for exactly this shape: act, and
 say how it failed. `std_runtime_contract::HEAP_BASE` is the same value as `DEFAULT_BASE` under
 another spelling. The move is the moment to make the two agree or to make one defer to the other.
-`address_space_map::HEAP.start` is where both come from.
+`address_space_layout::HEAP.start` is where both come from.
 
 Concrete example. After the ruling, swish's `initialize_heap` reads
 `HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,

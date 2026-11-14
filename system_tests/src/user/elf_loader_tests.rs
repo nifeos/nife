@@ -79,7 +79,7 @@ fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
 #[test_case]
 fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
     let image = forged_elf(
-        address_space_map::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE,
         elf::PF_R | elf::PF_W | elf::PF_X,
     );
 
@@ -99,7 +99,7 @@ fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
 /// half a gigabyte, so reaching `AddressSpace::new` would have reported running out of memory.
 #[test_case]
 fn an_image_too_large_for_its_band_is_refused_as_too_large() {
-    use address_space_map::{IMAGE, IMAGE_BASE, ImagePlacement, PAGE, STACK};
+    use address_space_layout::{IMAGE, IMAGE_BASE, ImagePlacement, PAGE, STACK};
 
     let image = forged_elf_sized(IMAGE_BASE, elf::PF_R | elf::PF_X, IMAGE.bytes() + PAGE);
 
@@ -121,7 +121,7 @@ fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
     assert_eq!(
         load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
-            address_space_map::ImagePlacement::OutsideBand {
+            address_space_layout::ImagePlacement::OutsideBand {
                 image_start: 0x40_0000,
                 image_end: 0x40_1000,
             }
@@ -133,7 +133,7 @@ fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
 /// into the stack, loads, and its last page is mapped where the image band says.
 #[test_case]
 fn an_image_past_the_old_ceiling_loads() {
-    use address_space_map::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE;
     const BYTES: u64 = 2 << 20;
 
     let image = forged_elf_sized(IMAGE_BASE, elf::PF_R | elf::PF_X, BYTES);
@@ -169,7 +169,7 @@ fn the_initial_ramdisk_holds_a_native_executable() {
 
     assert_eq!(
         e.entry(),
-        address_space_map::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE,
         "linked somewhere unexpected"
     );
 
@@ -229,7 +229,7 @@ fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
 /// test fail.
 #[test_case]
 fn the_loader_writes_the_startup_page_read_only() {
-    use address_space_map::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE;
     use startup_page_contract::{PAGE_VIRTUAL_ADDRESS, StartupPage, Window, WindowKind};
 
     let doorbell = Window {

@@ -53,7 +53,7 @@ const INPUT: u64 = 9;
 
 /// Where the witness maps a frame of its own into the child's space for milestone 19b's probe: in
 /// the pair band, so nothing the loader lays down can be there already.
-const VA: u64 = address_space_map::pair_page(0x0040_0000);
+const VA: u64 = address_space_layout::pair_page(0x0040_0000);
 
 user_mode_runtime::program_entry!(start);
 

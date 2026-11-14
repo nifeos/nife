@@ -401,7 +401,7 @@ const GRAPHICAL_MAP_BUDGET_PAGES: u64 = 24;
 
 /// Where `keyboard_driver` finds its DMA page. Must match `components/src/keyboard_driver.rs`'s
 /// `DMA_VA`, the same kernel-and-spawner convention [`RNG_DMA_VA`] is.
-const KBD_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const KBD_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `keyboard_driver.rs`'s own `MODE_DIRECT`: a fixed `CALL` to the terminal endpoint instead of a
 /// compositor's ring and doorbell (milestone 177). [`RNG_MODE_VIRTIO`]'s reasoning.
@@ -410,8 +410,8 @@ const KBD_MODE_DIRECT: u64 = 1;
 /// Where a `graphical_terminal` session's program writes its screen text and reads its lines.
 /// `components/src/graphical_terminal.rs`'s own constants; the same band the boot's shell writes into, so a
 /// reader of the wiring meets one convention per role rather than one per program.
-const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
-const SCREEN_IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
+const SCREEN_OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a0_0000);
+const SCREEN_IN_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a1_0000);
 
 /// **One `graphical_terminal` session's region, in pages**: everything the session is made of, so
 /// the session job's one reap ends the drivers with it. Measured on aarch64 and riscv64 under

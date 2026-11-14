@@ -124,7 +124,7 @@ fn build() -> bool {
 
 /// Build the userspace ELF that the kernel will load at milestone 7.
 ///
-/// It is a **separate crate with its own linker script** (linked at `address_space_map::IMAGE_BASE`, in the low half,
+/// It is a **separate crate with its own linker script** (linked at `address_space_layout::IMAGE_BASE`, in the low half,
 /// where `TTBR0` lives), so it cannot accidentally share anything with the kernel. And it stays
 /// an **ELF**: the kernel's loader wants program headers, unlike the kernel itself, which QEMU
 /// wants as a flat image. See notes/elf.md.

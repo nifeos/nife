@@ -142,7 +142,7 @@ stays possible. The architect refused the engine alone in its own repository, an
 in nife until the end. Step 9 of the order places it.
 
 Linked set, read from `cargo metadata` on 2026-11-01 (UTC): the server and the host tool reach 10 of
-the 22 through normal dependencies (`address_space_map`, `capability_manifest_note`,
+the 22 through normal dependencies (`address_space_layout`, `capability_manifest_note`,
 `domain_name_resolution_contract`, `domain_name_system`, `filesystem_contract`, `filesystem_fixture`,
 `glob`, `globally_unique_identifier_partition_table`, `grant_plan`, `program_argument_contract`).
 They also reach two crates outside the 22, `subtree_scope` and `memory_region_heap`, which leave

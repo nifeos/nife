@@ -50,7 +50,7 @@ fn band_index(va: u64) -> usize {
 /// for a band at least a page wide, and its top bits are clear on all three architectures:
 /// aarch64 splits the halves at bit 48, `x86_64` at bit 47, `riscv64` (Sv39) at bit 38, as
 /// `LOW_HALF_SPLIT_SHIFTS` restates from `crates/paging`.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.every_address_below_the_ceiling_lies_in_exactly_one_band.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.every_address_below_the_ceiling_lies_in_exactly_one_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
@@ -71,7 +71,7 @@ fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
 /// **[`BANDS`] is in address order**: of two addresses in the map, the lower one is never in a
 /// later band. The names a message prints come from this order, and a reader takes the table as a
 /// picture of the address space.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.the_bands_are_listed_in_address_order.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.the_bands_are_listed_in_address_order.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn the_bands_are_listed_in_address_order() {
@@ -96,7 +96,7 @@ fn assert_placed(band: Band, va: u64, returned: u64) {
 
 /// **[`pair_page`] accepts every page of [`PAIR_PAGES`]**, returns it unchanged, and the page lies in
 /// no other band. Neither of its asserts is reachable from an address its doc allows.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.pair_page_accepts_every_page_of_its_band.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.pair_page_accepts_every_page_of_its_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn pair_page_accepts_every_page_of_its_band() {
@@ -107,7 +107,7 @@ fn pair_page_accepts_every_page_of_its_band() {
 
 /// **[`pair_page`] refuses every address its doc forbids**: unaligned, or outside [`PAIR_PAGES`].
 /// The build stops (a panic in a `const`) for each one, and for at least one.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.pair_page_refuses_every_address_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.pair_page_refuses_every_address_its_doc_forbids.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
@@ -120,7 +120,7 @@ fn pair_page_refuses_every_address_its_doc_forbids() {
 
 /// **[`runtime_window`] accepts every page of [`RUNTIME_WINDOWS`]**, returns it unchanged, and the
 /// page lies in no other band.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.runtime_window_accepts_every_page_of_its_band.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.runtime_window_accepts_every_page_of_its_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn runtime_window_accepts_every_page_of_its_band() {
@@ -130,7 +130,7 @@ fn runtime_window_accepts_every_page_of_its_band() {
 }
 
 /// **[`runtime_window`] refuses every address its doc forbids**, and at least one.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.runtime_window_refuses_every_address_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.runtime_window_refuses_every_address_its_doc_forbids.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
@@ -143,7 +143,7 @@ fn runtime_window_refuses_every_address_its_doc_forbids() {
 
 /// **[`service_window`] accepts every page of [`SERVICE_WINDOWS`]**, returns it unchanged, and the
 /// page lies in no other band.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.service_window_accepts_every_page_of_its_band.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.service_window_accepts_every_page_of_its_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn service_window_accepts_every_page_of_its_band() {
@@ -153,7 +153,7 @@ fn service_window_accepts_every_page_of_its_band() {
 }
 
 /// **[`service_window`] refuses every address its doc forbids**, and at least one.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.service_window_refuses_every_address_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.service_window_refuses_every_address_its_doc_forbids.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
@@ -168,7 +168,7 @@ fn service_window_refuses_every_address_its_doc_forbids() {
 /// non-empty `[start, end)` inside [`IMAGE`] is placed. One that starts inside and runs past the end
 /// is too large, naming its own end and the stack's base, which is the image band's end. Anything
 /// else is outside the band and names its own bounds. It never panics.
-/// Falsification: replayable `crates/address_space_map/falsifications/verification.check_image_places_exactly_what_the_image_band_holds.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.check_image_places_exactly_what_the_image_band_holds.patch`
 #[kani::proof]
 fn check_image_places_exactly_what_the_image_band_holds() {
     let start: u64 = kani::any();

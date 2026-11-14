@@ -34,7 +34,7 @@
 //! **Generated verbatim into the PAL** by `cargo xtask std-src` (as `sys/pal/nife/runtimeproto.rs`),
 //! like `abi` and every contract the PAL reads, so this file stays a valid non-root module: no
 //! crate attributes survive the copy, nor does the test module. Every address below is a row of
-//! `crates/address_space_map` (milestone 206 (a program image has under 896 KiB),
+//! `crates/address_space_layout` (milestone 206 (a program image has under 896 KiB),
 //! DECISIONS §171 (where a program image starts) option D), restated as a number because the PAL
 //! has no crate to name; the test module pins each to its band, the shape `byte_sink_contract`
 //! uses for `abi`. A std program is linked at the map's `IMAGE_BASE` and its stack grows down from
@@ -189,7 +189,7 @@ pub const HEAP_MAXIMUM: u64 = 256 * 1024 * 1024;
 /// Name: provisional.
 pub const STACK_PAGES: u64 = 32;
 
-// The stack band holds 4,080 pages less a guard (`address_space_map::MAXIMUM_STACK_PAGES`); the
+// The stack band holds 4,080 pages less a guard (`address_space_layout::MAXIMUM_STACK_PAGES`); the
 // test below pins the exact figure. This line keeps a nonsense value out of the PAL, which cannot
 // see the map.
 const _: () = assert!(STACK_PAGES > 0 && STACK_PAGES <= 4079);
@@ -269,7 +269,7 @@ mod tests {
         for (i, a) in pages.iter().enumerate() {
             assert_eq!(a % PAGE, 0, "{a:#x} is not page aligned");
             assert!(
-                address_space_map::RUNTIME_WINDOWS.holds(*a, *a + PAGE),
+                address_space_layout::RUNTIME_WINDOWS.holds(*a, *a + PAGE),
                 "{a:#x} is not in the address-space map's runtime windows"
             );
             for b in &pages[i + 1..] {
@@ -285,9 +285,9 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_heap_and_the_stack_are_the_address_space_maps() {
-        assert_eq!(HEAP_BASE, address_space_map::HEAP.start);
-        assert_eq!(HEAP_MAXIMUM, address_space_map::HEAP.bytes());
-        assert!(STACK_PAGES <= address_space_map::MAXIMUM_STACK_PAGES);
-        assert_eq!(address_space_map::MAXIMUM_STACK_PAGES, 4079);
+        assert_eq!(HEAP_BASE, address_space_layout::HEAP.start);
+        assert_eq!(HEAP_MAXIMUM, address_space_layout::HEAP.bytes());
+        assert!(STACK_PAGES <= address_space_layout::MAXIMUM_STACK_PAGES);
+        assert_eq!(address_space_layout::MAXIMUM_STACK_PAGES, 4079);
     }
 }

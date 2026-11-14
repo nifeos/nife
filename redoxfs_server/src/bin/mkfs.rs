@@ -65,7 +65,7 @@ const BLK_PAGE_FRAME: u64 = 4;
 /// Where this program puts the page it shares with the block server. **Its choice**: it holds the
 /// frame and maps it (milestone 108). Clear of the heap, which runs from
 /// `memory_region_heap::DEFAULT_BASE` (1 GiB) for [`HEAP_MAXIMUM`].
-const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
+const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// One filesystem block / one shared page, in bytes. RedoxFS's `BLOCK_SIZE` and the blk wire's
 /// transfer unit are the same number, which is what lets a `Disk` block be a blk block.

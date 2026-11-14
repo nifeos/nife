@@ -6,8 +6,8 @@ use crate::sched::RendezvousId;
 ///
 /// `CLOCK_VA` is public because the set authority lives there, and the NTP tests aim a write at it
 /// from a process that holds no such mapping.
-pub const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
-const RTC_VA: u64 = address_space_map::pair_page(0x00d0_0000);
+pub const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
+const RTC_VA: u64 = address_space_layout::pair_page(0x00d0_0000);
 
 /// What the clock service was wired with, so a test (or a real progenitor) can play its clients.
 pub struct Wiring {

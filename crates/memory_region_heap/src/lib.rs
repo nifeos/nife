@@ -23,10 +23,10 @@ use talc::source::Manual;
 
 /// The suggested heap base: 1 GiB, the start of the address-space map's heap band (milestone 206 (a program image has under 896 KiB)).
 /// A convention, not a law; a program with its own layout passes its own base to [`initialize`],
-/// and one that does should still keep it inside `address_space_map::HEAP`.
+/// and one that does should still keep it inside `address_space_layout::HEAP`.
 ///
 /// [`initialize`]: MemoryRegionHeap::initialize
-pub const DEFAULT_BASE: u64 = address_space_map::HEAP.start;
+pub const DEFAULT_BASE: u64 = address_space_layout::HEAP.start;
 
 const PAGE: u64 = 4096;
 

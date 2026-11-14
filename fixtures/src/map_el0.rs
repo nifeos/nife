@@ -53,8 +53,8 @@ const OUTPUT: u64 = 0;
 const BUDGET: u64 = 1;
 
 const PAGE: u64 = 4096;
-const WARM_BASE: u64 = address_space_map::pair_page(0x20_0000);
-const TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
+const WARM_BASE: u64 = address_space_layout::pair_page(0x20_0000);
+const TIMED_BASE: u64 = address_space_layout::pair_page(0x40_0000);
 
 user_mode_runtime::program_entry!(start);
 
