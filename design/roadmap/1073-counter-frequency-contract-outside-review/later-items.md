@@ -3,11 +3,11 @@
 An appendix to [the milestone](../1073-counter-frequency-contract-outside-review.md).
 
 10. The page crates spell their offset constants `<FIELD>_OFFSET_BYTES`.
-    Rule in force (ruled 2026-11-14 UTC, for the whole family): the position of a page field or
-    region-layout field is named `<FIELD>_OFFSET_BYTES`, with the field name spelled out under
-    `design/naming.md` (`MAGIC_OFFSET_BYTES`, `HERTZ_OFFSET_BYTES`,
-    `TIME_ZONE_LENGTH_OFFSET_BYTES`). The suffix names the unit, so a constant that counts words
-    says `_OFFSET_WORDS`. No old spelling is kept as an alias.
+    Rule in force, for the whole family since 2026-11-14 UTC: a page field or region-layout field
+    takes the name `<FIELD>_OFFSET_BYTES`, with the field spelled out under `design/naming.md`
+    (`MAGIC_OFFSET_BYTES`, `HERTZ_OFFSET_BYTES`, `TIME_ZONE_LENGTH_OFFSET_BYTES`). The suffix
+    states the unit, so a constant that counts words ends `_OFFSET_WORDS`. No alias keeps an old
+    spelling.
     Evidence: `crates/counter_frequency_contract/src/lib.rs`.
     Door: two-way (private).
 
