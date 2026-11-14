@@ -133,7 +133,10 @@ that holds one ends with the comment `// wire literal` (provisional spelling). T
 lint and `script/crate-move` accept a marked line and refuse an unmarked mention, and the lint
 prints every marked line. The lane removes every prose mention, and prose says "the owner string"
 and does not repeat the word. The README says, once, that the owner string is the name of the
-operating system that defines the note, as `FreeBSD`, `GNU` and `FDO` are.
+operating system that defines the note, as `FreeBSD`, `GNU` and `FDO` are. The marker is already on
+the lines of `boot_ladder`, `system_log_contract` and `user_mode_runtime/link.ld`; the lint lists
+them once those crates join the externalization list (it scans only listed crates, and only their
+`Cargo.toml`, README and `src/`).
 
 Prior art: the owner string namespaces ELF notes, and the owner is the project that defines
 the descriptor: `FreeBSD` for `NT_FREEBSD_*`, `GNU` for `NT_GNU_PROPERTY_TYPE_0`, `FDO` for the
@@ -207,6 +210,10 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## BUGS
 
+- Identifiers that spell the word are not wire literals, so the marker does not cover them: the
+  `NIFE_MANIFEST_NOTE` and `NIFE_SUBTREE_GRANTS_NOTE` statics that the `carry!` macros emit, and the
+  `NIFE_DATA` and `NIFE_BOOT` constants of `globally_unique_identifier_partition_table`. Each needs a
+  rename lane before its crate leaves; the lint counts them until then.
 - The review inferred item 8's failure of `tests/fuzz_seed.rs` in the staged repository. The dry run's build step stopped at the manifest before any test ran. The fix is right whether or not the
   inference is.
 - Item 9's recommendation leaves the version 2 and 3 zone walk fuzzed only on nife's private

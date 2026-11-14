@@ -203,6 +203,9 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
 
 ## BUGS
 
+- The `NIFE_INTERFACES_NOTE` static that the macro emits is an identifier and not a wire literal, so
+  the marker does not cover it. It needs a rename lane before the crate leaves; the lint counts it
+  until then.
 - The template's `v7` scaffold itself names nife and the architect in `deny.toml`, `rustfmt.toml`,
   `.githooks/commit-msg`, `docs/stranger-test.md` and `.github/pull_request_template.md`, which
   the dry run counts among its findings. The template's `main` has removed them; the move waits for
