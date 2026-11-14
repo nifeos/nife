@@ -337,7 +337,7 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 /// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more. The NVMe admin
 /// process stays for the boot too (notes/frames/page-frame-budget.md), as do four tests' block
 /// servers, so each page `block_driver`'s image grows keeps four frames (notes/frame-budget.md).
-const SUITE_PAGE_FRAME_BUDGET: usize = 24_806;
+const SUITE_PAGE_FRAME_BUDGET: usize = 24_850;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
 ///
