@@ -229,7 +229,7 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
 ## Follow-on
 
-- A lane takes items 1 to 13 except 7b, the rest of this block. Decision A waits for the architect.
+- **Outstanding.** Items 1 to 13 except 7b are not done; a lane takes them. Decision A waits for the architect.
 
 ## BUGS
 
