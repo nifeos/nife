@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 232, 295
@@ -68,15 +68,13 @@ or identity, a dependency); everything else is two-way and the maintainer decide
    protocol for one nife program, and pulls `capability_plan` (which pulls `abi`) into a crate
    whose engine needs neither. `proto` is the IPC framing of the terminal contract: opcodes,
    badges, a quiesce handshake and a swap protocol that only nife programs speak. 32 of the 38
-   caller files reach only these two modules; the kernel links the crate for `proto` alone. A stranger who takes the crate for its editor pays for a dependency chain and a module tree that mean nothing outside this system. The "nothing that leaves references back" rule of milestone 1017 (the contract crates leave in this order) cannot hold while `component` names `terminal_supervisor`, `system_initializer`
+   caller files reach only these two modules; the kernel links the crate for `proto` alone. The "nothing that leaves references back" rule of milestone 1017 (the contract crates leave in this order) cannot hold while `component` names `terminal_supervisor`, `system_initializer`
    and `display_terminal`.
    Evidence: `Cargo.toml` line 14; `src/lib.rs` lines 38 to 68; `src/component.rs` whole;
    `src/proto.rs` lines 63 to 215; `crates/hot_swap_contract/src/lib.rs` line 49 (the duplicate
    `QUIESCED`).
-   Change: as decision 1 below rules. `proto` becomes the wire-contract crate `terminal_contract`, `component` becomes the nife-only `line_editor_component`, the callers depend on those, and `capability_plan` leaves this manifest.
-   `handoff` stays: its `Writer` and `Reader` are plain cursors, `save` and `restore` read the
-   engine's private fields, and the crate documents the layout as its own. `notes/
-   terminal-contract.md` then names the new crate as the home of the framing.
+   Change: as decision 1 below rules. `handoff` stays: `save` and `restore` read the engine's
+   private fields, and the crate documents the layout as its own.
    Door: one-way for the new crate's name and for the shape of the published `line_editor` (no
    `proto` module); decision 1 below. Effort: M.
 
@@ -253,8 +251,16 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
   re-verify it against its source.
 - Whether `abbreviations.py` is a gate or a report in the template's `check` job stays
   unverified; item 4 lists its 40 findings either way.
-- The QEMU system tests that drive the running `line_editor` were not run; items 2 and 8 change
-  what they link, so the cut lane runs them.
+
+## Follow-on
+
+- **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
+  the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
+  program holds the two `QUIESCED` values equal.
+- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decisions 2 and 3; none was started, which a
+  read of the items against the crate confirms.
+- **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
+  as open.
 
 ## Index row
 
