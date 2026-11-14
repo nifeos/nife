@@ -111,15 +111,15 @@ No one-way door is open. Everything else above the maintainer rules as provision
 
 ### The package name, because `pci` is taken on crates.io
 
-In force since 2026-11-14 (UTC): the package is named `pci_configuration_space`, its directory is
-`crates/pci_configuration_space`, and the repository, when it exists, carries the same name. A crate
-on crates.io has one name, and `pci` belongs to a 0.0.1 release from another author, nine years
-dormant. The short name `pci` stays ratified under §154 (the acronym test is whether the phrase is
-spoken), and the `Name:` note in `crates/pci_configuration_space/src/lib.rs` states both. The noun
-names what the crate decodes, it passes every naming gate, and it is free.
+In force since 2026-11-14 (UTC): the package name is `pci_configuration_space`, its directory is
+`crates/pci_configuration_space`, and the repository, when it exists, carries the same name. Another
+author owns `pci` on crates.io with a 0.0.1 release, nine years dormant. The short name `pci` stays
+ratified under §154 (the acronym test is whether the phrase is spoken), and the `Name:` note in
+`crates/pci_configuration_space/src/lib.rs` states both. The noun names what the crate decodes, it
+passes every naming gate, and nobody else holds it.
 
-Consumers import the crate under its package name, as the tree did for `glob` becoming `byte_glob`:
-every manifest names `pci_configuration_space` with no `package =` rename, and every path reads
+Consumers import the crate under its package name, as the tree did for `glob` becoming `byte_glob`.
+Every manifest names `pci_configuration_space` with no `package =` rename, and every path reads
 `pci_configuration_space::`. The short name `pci` is no longer an import.
 
 ### Not a decision here, but held for the architect's awareness
