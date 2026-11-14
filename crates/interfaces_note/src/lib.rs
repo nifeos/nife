@@ -2,7 +2,7 @@
 //!
 //! A package declares what it links by carrying one note in `.note.nife.manifest`, the section and
 //! `PT_NOTE` that `capability_manifest_note` uses for its own types. The progenitor reads it at
-//! spawn and refuses a program whose note does not decode, or declares a syscall ABI version
+//! spawn and refuses a program whose note does not decode, or declares a syscall application binary interface (ABI) version
 //! (`abi::INTERFACE_ID`) it does not serve (milestone 956 (the linked interfaces carry checkable
 //! versions) step 3). The other interfaces a note lists are carried and not compared at spawn. The
 //! note has a type of its own, `4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`, and not a
@@ -14,6 +14,20 @@
 //!
 //! The note's header (owner `nife`, then the type and the descriptor) is the one every nife
 //! manifest note has; `capability_manifest_note`'s tests hold the two crates to the same header.
+//!
+//! # What a stranger needs to place and read the note
+//!
+//! - Every word is little-endian, whatever the target's byte order: the encoder writes each one
+//!   with `to_le_bytes`, and an ELF note's own header is in the file's byte order, so a big-endian
+//!   file would carry a header this crate does not write.
+//! - The linker must keep the section: the link script has to `KEEP` the input section
+//!   `.note.nife.manifest` into an output section inside a `PT_NOTE` segment, and that segment
+//!   has to lie in a readable `PT_LOAD`. A program whose link script drops it carries no note,
+//!   which the next rule reads as declaring nothing.
+//! - An absent note, and an absent entry for an interface, pass [`Interfaces::check_served`]: only
+//!   a different version refuses.
+//! - Each interface crate owns its id for good; the registry of ids lives with the system that
+//!   reads the note, and this crate reserves `21` for itself.
 //!
 //! BUGS: a program names its interfaces by hand in [`carry_interfaces!`], although each version
 //! comes from the crate's constant. Deriving the list from the dependency graph at package build
@@ -29,15 +43,15 @@
 
 #![no_std]
 
-/// The note's owner string, without its NUL: the same `nife` that `capability_manifest_note::OWNER`
+/// The note's owner string, without its NUL terminator: the same `nife` that `capability_manifest_note::OWNER`
 /// holds. Duplicated so that this crate depends on nothing; a test in that crate holds the two equal.
 const OWNER: &[u8] = b"nife";
 
-/// `OWNER` with its NUL, padded to the note's 4-byte alignment.
-const NAME_FIELD: usize = 8;
+/// `OWNER` with its NUL terminator, padded to the note's 4-byte alignment.
+const NAME_FIELD_BYTES: usize = 8;
 
 /// The note's three header words.
-const HEADER_LEN: usize = 12;
+const HEADER_BYTES: usize = 12;
 
 /// Why a descriptor was refused.
 ///
@@ -118,6 +132,17 @@ pub const fn interfaces_len(count: usize) -> usize {
 /// `LEN` that is not that length, more than [`MAXIMUM_INTERFACES`] entries, or ids that do not
 /// strictly ascend.
 ///
+/// # Examples
+///
+/// ```
+/// use interfaces_note::{Declared, decode_interfaces, encode_interfaces, interfaces_len};
+/// let bytes: [u8; interfaces_len(2)] = encode_interfaces(&[
+///     Declared { id: 1, version: 3 },
+///     Declared { id: 9, version: 1 },
+/// ]);
+/// assert_eq!(decode_interfaces(&bytes).unwrap().len(), 2);
+/// ```
+///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const fn encode_interfaces<const LEN: usize>(list: &[Declared]) -> [u8; LEN] {
     assert!(
@@ -172,7 +197,9 @@ impl<'a> Interfaces<'a> {
         self.records.is_empty()
     }
 
-    /// The declared interfaces in ascending id order.
+    /// The declared interfaces in ascending id order. They come by value, not by reference: the
+    /// iterator decodes each record from the descriptor's bytes as it goes, so none is stored to
+    /// borrow.
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
     pub fn iter(&self) -> impl Iterator<Item = Declared> + use<'a> {
@@ -183,6 +210,14 @@ impl<'a> Interfaces<'a> {
 
     /// The version declared for `id`, or `None` when the program declares nothing about it. A
     /// linear walk: a list holds at most 64 records.
+    ///
+    /// ```
+    /// use interfaces_note::{Declared, decode_interfaces, encode_interfaces, interfaces_len};
+    /// let bytes: [u8; interfaces_len(1)] = encode_interfaces(&[Declared { id: 4, version: 7 }]);
+    /// let list = decode_interfaces(&bytes).unwrap();
+    /// assert_eq!(list.version_of(4), Some(7));
+    /// assert_eq!(list.version_of(5), None);
+    /// ```
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
     pub fn version_of(&self, id: u64) -> Option<u32> {
@@ -200,6 +235,15 @@ fn record(r: &[u8]) -> Declared {
 /// **An [`INTERFACES`] descriptor, decoded**, or why not. An unknown version, a count past
 /// [`MAXIMUM_INTERFACES`] or one that disagrees with the length, and ids that do not strictly
 /// ascend all refuse, so no second spelling of a list decodes.
+///
+/// # Examples
+///
+/// ```
+/// use interfaces_note::{Error, decode_interfaces};
+/// assert_eq!(decode_interfaces(&[1, 0]), Err(Error::NoVersion));
+/// assert_eq!(decode_interfaces(&[7, 0, 0, 0, 0, 0, 0, 0]), Err(Error::UnknownVersion));
+/// assert!(decode_interfaces(&[1, 0, 0, 0, 0, 0, 0, 0]).unwrap().is_empty());
+/// ```
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
@@ -249,6 +293,15 @@ impl Interfaces<'_> {
     /// waits on packages carrying the stamp. A different version is a [`Refusal`] naming both. This
     /// is equality, not set membership: the syscall ABI never dual-serves.
     ///
+    /// ```
+    /// use interfaces_note::{Declared, decode_interfaces, encode_interfaces, interfaces_len};
+    /// let bytes: [u8; interfaces_len(1)] = encode_interfaces(&[Declared { id: 4, version: 7 }]);
+    /// let list = decode_interfaces(&bytes).unwrap();
+    /// assert!(list.check_served(4, 7).is_ok());
+    /// assert!(list.check_served(4, 8).is_err());
+    /// assert!(list.check_served(5, 1).is_ok(), "no entry, nothing to refuse");
+    /// ```
+    ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
     pub fn check_served(&self, interface: u64, served: u32) -> Result<(), Refusal> {
         match self.version_of(interface) {
@@ -267,7 +320,7 @@ impl Interfaces<'_> {
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const fn interfaces_note_len(count: usize) -> usize {
-    HEADER_LEN + NAME_FIELD + interfaces_len(count)
+    HEADER_BYTES + NAME_FIELD_BYTES + interfaces_len(count)
 }
 
 /// **A whole [`INTERFACES`] note**, what [`carry_interfaces!`] places. `N` is
@@ -292,13 +345,13 @@ impl<const N: usize> InterfacesNote<N> {
         put4(&mut out, 8, INTERFACES.to_le_bytes());
         put4(
             &mut out,
-            HEADER_LEN,
+            HEADER_BYTES,
             [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
         );
         let d: [u8; LEN] = encode_interfaces(list);
         let mut i = 0;
         while i < LEN {
-            out[HEADER_LEN + NAME_FIELD + i] = d[i];
+            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
             i += 1;
         }
         Self(out)
@@ -310,9 +363,9 @@ impl<const N: usize> InterfacesNote<N> {
 /// interface crate's constant, and places one [`InterfacesNote`] in `.note.nife.manifest`, the
 /// section and `PT_NOTE` a manifest uses:
 ///
-/// ```ignore
+/// ```
 /// interfaces_note::carry_interfaces!(&[
-///     interfaces_note::Declared { id: abi::INTERFACE_ID, version: abi::ABI_VERSION },
+///     interfaces_note::Declared { id: 1, version: 1 },
 /// ]);
 /// ```
 ///
@@ -353,6 +406,38 @@ mod interface_verification {
             assert!(n == 2);
             assert!(encode_interfaces::<{ interfaces_len(2) }>(&declared) == d);
         }
+    }
+
+    /// **Whatever `encode_interfaces` writes, `decode_interfaces` reads back**, for a list of two
+    /// with symbolic versions and symbolic ascending ids: the other direction of the one-encoding
+    /// claim.
+    ///
+    /// Falsification: replayable `crates/interfaces_note/falsifications/interface_verification.an_encoded_interface_list_decodes_back_to_itself.patch`
+    #[kani::proof]
+    #[kani::unwind(33)]
+    fn an_encoded_interface_list_decodes_back_to_itself() {
+        let (first_id, second_id): (u64, u64) = (kani::any(), kani::any());
+        kani::assume(first_id < second_id);
+        let list = [
+            Declared {
+                id: first_id,
+                version: kani::any(),
+            },
+            Declared {
+                id: second_id,
+                version: kani::any(),
+            },
+        ];
+        let bytes: [u8; interfaces_len(2)] = encode_interfaces(&list);
+        let Ok(decoded) = decode_interfaces(&bytes) else {
+            panic!("an encoded list was refused");
+        };
+        let mut n = 0;
+        for entry in decoded.iter() {
+            assert!(n < 2 && entry == list[n]);
+            n += 1;
+        }
+        assert!(n == 2);
     }
 
     /// **`decode_interfaces` never panics, at any length up to one past a list of two.**
@@ -472,7 +557,7 @@ mod interface_tests {
     /// **The encoder refuses an unsorted or repeated list**, which in a constant is a compile error.
     #[test]
     #[should_panic(expected = "ascend")]
-    fn an_unsorted_list_is_not_encoded() {
+    fn a_list_out_of_order_is_not_encoded() {
         let _: [u8; interfaces_len(2)] = encode_interfaces(&[
             Declared { id: 2, version: 1 },
             Declared { id: 1, version: 1 },

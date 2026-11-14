@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 956, 1017
 decision_dependencies: none
@@ -193,6 +193,10 @@ a program was built against, and a decoder that refuses every other spelling of 
 ## Prior art
 
 The comparison with nearby work is in [the appendix](1096-interfaces-note-outside-review/prior-art.md).
+
+## Ledger
+
+What is done and what is left, item by item, is in [the appendix](1096-interfaces-note-outside-review/ledger.md).
 
 ## Done when
 
