@@ -178,22 +178,22 @@ one concrete example.
 Ruled 2026-11-14 (UTC): option A, which widens the terminal type field from 24 to 32 bytes and
 then freezes the identity.
 
-In force. `INTERFACE_ID` is 13, `VERSION` is 1 and `MAGIC` is `ENVCONF1`. The layout is 8 bytes of
-magic, then for each of `TZ`, `LANG` and `TERM` one length byte and a field of 40, 24 and 32 bytes:
-8 + 1 + 40 + 1 + 24 + 1 + 32 = 107 bytes in all, inside one frame. The version stays 1 because
-nothing outside nife has read the page. A fourth key is a new version by the contract's own rule,
-so nothing is reserved. A host test pins the identity and the widths as literals.
+In force. `INTERFACE_ID` is 13, `VERSION` is 1 and `MAGIC` is `ENVCONF1`. The layout starts with 8
+bytes of magic. Then `TZ`, `LANG` and `TERM` each take one length byte and a field of 40, 24 and 32
+bytes. The sum is 8 + 1 + 40 + 1 + 24 + 1 + 32 = 107 bytes, inside one frame. The version stays 1
+because nothing outside nife has read the page. A fourth key is a new version by the contract's own
+rule, so nothing is reserved. A host test pins the identity and the widths as literals.
 
 Background. A program's `INTERFACES` note declares the pair of this id and version, and the
 progenitor refuses a mismatch at spawn. A shared page is single-version: a reader built for one
 magic reads another's page as no configuration at all. Once a program outside nife builds against
 these values, changing any of them is a coordinated release across repositories, which is why
 milestone 1017 asks for ratified values before a contract crate leaves. The review measured the
-caps against the real databases: 40 bytes for a zone against 32 for the longest IANA name; 24 for
-a locale against 20 for the longest glibc name with a modifier (`ca_ES.UTF-8@valencia`, recalled,
-unverified); 24 for a terminal type against 15 in the list and 21 for the longest common terminfo
-names (`screen.xterm-256color`, recalled, unverified), which left little headroom for terminal
-type, hence the widening to 32.
+caps against the real databases. A zone takes 40 bytes against 32 for the longest IANA name. A
+locale takes 24 against 20 for the longest glibc name with a modifier (`ca_ES.UTF-8@valencia`,
+recalled, unverified). A terminal type took 24 against 15 in the list and 21 for the longest
+common terminfo names (`screen.xterm-256color`, recalled, unverified), which left little
+headroom, hence the widening to 32.
 
 Prior art. `block_roster_contract`, `entropy_contract` and `counter_frequency_contract` each froze
 their identity before leaving. Linux never renumbers an `AT_*` auxiliary-vector key and never
