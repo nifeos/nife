@@ -214,7 +214,7 @@ fn date_says_the_clock_is_not_on_the_line() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(s.contains("cap 1  frame     clock"), "{s}");
     assert!(s.contains("read the time and not set it"), "{s}");
@@ -241,7 +241,7 @@ fn printenv_says_the_config_page_is_not_on_the_line() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(s.contains("cap 1  frame     config"), "{s}");
     assert!(s.contains("read-only"), "{s}");
@@ -301,7 +301,7 @@ fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
             &Holdings::default(),
             Some(page),
             o,
-        )
+        );
     });
     assert!(!wc.contains("config") && !wc.contains("TZ="), "{wc}");
 
@@ -314,7 +314,7 @@ fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(blind.contains("cannot show their values"), "{blind}");
     assert!(!blind.contains("TZ="), "{blind}");
@@ -374,7 +374,7 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(s.contains("cap 9  endpoint  entropy"), "{s}");
     // `WRITE`: the right to `CALL`, and no wider right.
@@ -416,7 +416,7 @@ fn the_reboot_preview_names_the_reboot_object_and_nothing_else_has_it() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(
         s.contains("cap 13 reboot    WRITE. restart the machine"),
@@ -490,7 +490,7 @@ fn a_std_program_previews_its_fixed_slots() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(
         u.contains("cap 0  endpoint  result   report its answer back"),
@@ -778,7 +778,7 @@ fn a_declarer_shows_where_its_second_stream_goes() {
             &Holdings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(!s.contains("diags"), "{s}");
 }

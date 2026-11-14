@@ -8,7 +8,7 @@
 //! command line against one, and a program reads its slots from the same numbers, so none of the
 //! three keeps a copy. A program declares the pair [`INTERFACE_ID`] and [`VERSION`].
 //!
-//! `no_std`, no allocation, no IO.
+//! `no_std`, no allocation, no input or output.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane `milestone/1094-grant-plan-split`. The name
 //! it is published under waits on the decision about naming layers.

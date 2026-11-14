@@ -87,7 +87,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -259,10 +259,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -270,10 +266,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "grant_plan"
+name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "glob",
  "program_argument_contract",
 ]
 

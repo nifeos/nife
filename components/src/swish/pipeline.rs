@@ -888,6 +888,7 @@ fn drain_into(f: &mut FileOut) {
 /// is why `>` and `|` are one mechanism. The wiring rules are in notes/pipes/the-shell-side.md.
 ///
 /// Returns whether the stage started; a failure has already been printed.
+#[allow(clippy::too_many_arguments)] // the row and its endowment, four operator ends, argv and words
 fn spawn_stage(
     program: Program,
     e: Endowment,

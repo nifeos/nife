@@ -100,8 +100,9 @@ pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 /// rather than what a program may accept.
 ///
 /// A bound at all because a manifest is now also bytes a program carries (milestone 597,
-/// provisional: a program carries its manifest in an ELF note), and a decoded manifest has to hold
-/// its letters by value rather than point at a `'static` string the program's bytes are not.
+/// provisional: a program carries its manifest in an Executable and Linkable Format (ELF) note),
+/// and a decoded manifest has to hold its letters by value rather than point at a `'static` string
+/// the program's bytes are not.
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
 pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;

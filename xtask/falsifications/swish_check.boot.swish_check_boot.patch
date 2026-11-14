@@ -64,7 +64,7 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
  
      /// Build and start an interruptible job from the shell's own job untyped, and answer it.
      fn spawn_interruptible(&self, req: &Request, elf: Option<&elf::Elf>, failure: u64) {
-@@ -875,7 +877,7 @@
+@@ -875,8 +877,8 @@
      ) {
          let own_ut = self.c.own_ut;
          let manifest = job.manifest;
@@ -72,4 +72,5 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
 +        let wants = Wants::of(manifest, job.unvouched);
          // The region comes before any grant: a directory grant's caretaker is built from the same
          // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
-         let std_layout = manifest.is_some_and(|m| m.startup == grant_contract::StartupContract::Std);
+         let std_layout =
+             manifest.is_some_and(|m| m.startup == grant_contract::StartupContract::Std);

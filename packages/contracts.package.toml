@@ -50,7 +50,7 @@ interfaces = [
     # `file_allocation_table` lives in the repository `nifeos/file_allocation_table` and is not
     # listed here; the system installer and xtask link it by revision.
     "grant_plan",
-    # The vocabulary a program and its spawner share, and nife's catalogue with the spawn protocol
+    # The vocabulary a program and its spawner share, and nife's catalog with the spawn protocol
     # the shell and the progenitor speak (milestone 1094 (an outside review of `grant_plan`)).
     "grant_contract",
     "program_table",

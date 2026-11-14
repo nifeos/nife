@@ -358,7 +358,7 @@ opt-level = 2
 # notes/glob-grant/xargs.md ("The bytes a set carries").
 [profile.dev.package.grant_plan]
 opt-level = 2
-# The catalogue, for the planner's reason: `program_table::plan_stage` returns the planner's
+# The catalog, for the planner's reason: `program_table::plan_stage` returns the planner's
 # `Endowment` by value beside its row, so its debug frame holds the same file grants.
 [profile.dev.package.program_table]
 opt-level = 2

@@ -1524,7 +1524,7 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
         // A supervised job runs under the two-tier ^C path (DECISIONS §24); a fast job is simply
         // spawned and waited on.
         Ok((program, endow)) if endow.interruptible => {
-            spawn_interruptible(&mut nav.jobs, program, endow)
+            spawn_interruptible(&mut nav.jobs, program, endow);
         }
         // `wc report.txt` is `wc < report.txt`: the planner put the name in the source, so this is
         // a one-stage pipeline down the same path a `<` takes, and the child cannot tell the two apart.

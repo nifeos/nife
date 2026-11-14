@@ -1,11 +1,11 @@
-//! **Planning a typed line against the catalogue**: resolve the first word to its row, then hand the
+//! **Planning a typed line against the catalog**: resolve the first word to its row, then hand the
 //! row's manifest to the planner in `grant_plan`.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
 
 use crate::{Endowment, Holdings, ParsedInvocation, Program, Refusal, Streams, expand};
 
-/// Plan a line against the catalogue: resolve its first word to a [`Program`] and plan it against
+/// Plan a line against the catalog: resolve its first word to a [`Program`] and plan it against
 /// that row's manifest, with no operators on the line. [`plan_stage`] says what is checked.
 ///
 /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.

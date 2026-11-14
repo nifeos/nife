@@ -265,7 +265,7 @@ programs! {
         /// exists so a boot with no entropy service leaves `uuid > id.txt` empty and says why on the
         /// terminal, since a predictable identifier is worse than none. See notes/entropy.md.
         ///
-        /// Name: provisional. RFC 9562's own term for the object, which
+        /// Name: provisional. Request for Comments (RFC) 9562's own term for the object, which
         /// `uuid` crate also uses; the partition table says
         /// GUID only for the UEFI fields that carry one.
         Uuid { id: 12, name: "uuid" },

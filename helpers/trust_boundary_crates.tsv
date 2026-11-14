@@ -87,11 +87,12 @@ free	userspace	components
 fs_proto	shared	retired
 generational_table	kernel	retired
 gfx_proto	shared	retired
-glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+glob	shared	components,fixtures,jig,kernel,std_exerciser
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
-grant_plan	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+grant_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+grant_plan	shared	components,fixtures,jig,kernel,std_exerciser
 graphics_contract	shared	components,fixtures,kernel
 graphics_proto	shared	retired
 graphics_protocol	shared	retired
@@ -154,6 +155,7 @@ primitive_benchmark_contract	shared	fixtures,kernel
 process_builder	userspace	components,fixtures
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 program_asks	userspace	components,fixtures
+program_table	shared	components,fixtures,jig,kernel,std_exerciser
 ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader

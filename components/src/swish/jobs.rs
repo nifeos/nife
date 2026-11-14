@@ -633,7 +633,7 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
     match program_table::plan(&spec, holdings(nav), expanded) {
         Err(r) => refuse(spec, r),
         Ok((program, endow)) if endow.interruptible => {
-            spawn_background(&mut nav.jobs, program, endow)
+            spawn_background(&mut nav.jobs, program, endow);
         }
         Ok((program, endow)) => spawn_background_held(&mut nav.jobs, program, endow, &spec),
     }

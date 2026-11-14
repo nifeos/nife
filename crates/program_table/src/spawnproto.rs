@@ -384,7 +384,7 @@ pub fn activation(w1: u64, w2: u64) -> Option<Option<Activation>> {
 pub enum ActivationStatus {
     /// Done: word 1 is the generation now live.
     Done = 0,
-    /// The image's catalogue does not vouch for these bytes (DECISIONS §195 (a reviewed recipe
+    /// The image's catalog does not vouch for these bytes (DECISIONS §195 (a reviewed recipe
     /// vouches for a package)), or they are not a package at all. Nothing was written.
     NotCataloged = 1,
     /// A vouched package with no program the installer can find. Nothing was written.

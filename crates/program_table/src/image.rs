@@ -1,7 +1,7 @@
 //! **What a file's bytes are bound and endowed with** (milestone 597 (a program carries its
-//! manifest in an ELF note) and DECISIONS §219 (how the shell names an installed program to the
-//! spawner) option D): the manifest a note declares, the vouch applied to it, and what an image
-//! request can carry. The shell calls these to preview and the progenitor to decide, so the two
+//! manifest in an Executable and Linkable Format (ELF) note) and DECISIONS §219 (how the shell
+//! names an installed program to the spawner) option D): the manifest a note declares, the vouch
+//! applied to it, and what an image request can carry. The shell calls these to preview and the progenitor to decide, so the two
 //! cannot differ. The crate root re-exports every item.
 
 use crate::{
