@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -281,6 +281,17 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 - `notes/project-metrics/mutation-rowless-survivors.csv` still names the crate's functions by their
   earlier spellings (`fifo_bytes`, `mac_conf`, `rx_verdict`); a nife housekeeping item, not the
   crate's.
+
+## Follow-on
+
+- **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above: the `link`
+  module, the sixteen `pub(crate)` gates and the five renamed constants, together with the
+  `management_data_io` rename that followed the same day.
+- **Outstanding.** The other review items stay open: the manifest and README work (items 2 and 7
+  onward), the bounds on `receive` and `reclaim` (item 3), the visibility rule for register
+  constants (item 6), the template's address rule and acronym findings (items 1 and 11), and the
+  stranger run. The architect still has to rule the two Motorcomm alias sets and the remaining
+  renames the register gate names, and a lane builds each ruling when it arrives.
 
 ## Index row
 
