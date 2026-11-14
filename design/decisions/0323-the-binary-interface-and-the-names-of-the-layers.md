@@ -10,11 +10,11 @@ raised: 2026-11-12
 The maintainer raised this on 2026-11-12 (UTC), on the intent that the crates are the product: a
 library of components from which the project builds several operating systems. Counts come from
 `nifeos/nife@a3c7d4647` and `nifeos/basalt@ecdfee7`, and each gives its command so a reviewer can
-take it again at merge. Question 1, what the layer above a kernel is, was ruled on 2026-11-14
-(UTC), and this file states that rule. Rulings 2 to 6, each layer's name, are still open, and this
-file lays out the options for each. The appendix,
-[the five layers](0323-the-binary-interface-and-the-names-of-the-layers/the-five-layers.md),
-holds the inventory, the reversibility of each layer and every candidate name with its checks.
+take it again at merge. The architect ruled question 1, what the layer above a kernel is, on
+2026-11-14 (UTC), and this file states that rule. Rulings 2 to 6, each layer's name, are still open,
+and this file lays out the options for each. The appendix, [the five
+layers](0323-the-binary-interface-and-the-names-of-the-layers/the-five-layers.md), holds the
+inventory, the reversibility of each layer and every candidate name with its checks.
 
 ## What this decides
 
@@ -36,7 +36,7 @@ microkernel and an ambient-authority monokernel. Names then sit at five layers:
    workflow that builds and tests the image).
 
 One question came before any name, because it decides which names exist and what each touches:
-what the layer above a kernel is. It is ruled, below.
+what the layer above a kernel is. The rule follows.
 
 ## Is the premise true
 
@@ -62,7 +62,7 @@ Mostly. One part of it meets an existing decision.
 Ruled 2026-11-14 (UTC).
 
 - The layer above a kernel is its **binary interface**: the system calls, object methods, error
-  codes, right bits and version gate a program is built against. A binary interface is one the
+  codes, right bits and version gate a program builds against. A binary interface is one the
   project defines, or one it adopts, such as Linux's.
 - Every kernel that serves a binary interface serves all of it, so a program built for that binary
   interface runs on any of those kernels without a rebuild.
@@ -125,11 +125,11 @@ kernel's binary interface. It is a component of the library, and takes a compone
 Licensing, stated as a fact and not as legal advice: implementing Linux's binary interface does not
 bring in the GPL, and taking Linux code would. gVisor (Apache-2.0), Asterinas (MPL-2.0) and Starry
 OS (Apache-2.0) each implement it under a license other than the GPL. FreeBSD's Linux layer,
-`sys/compat/linux`, carries BSD-2-Clause and BSD-3-Clause headers, so its code can come in under
-its own license, as a dependency ruling under §46 (thin primitives or whole subsystems). The
-appendix
-[compatibility kernels](0323-the-binary-interface-and-the-names-of-the-layers/compatibility-kernels.md)
-holds the prior art for both consequences.
+`sys/compat/linux`, carries BSD-2-Clause and BSD-3-Clause headers, so its code can come in under its
+own license, as a dependency ruling under §46 (thin primitives or whole subsystems). The appendix
+[compatibility
+kernels](0323-the-binary-interface-and-the-names-of-the-layers/compatibility-kernels.md) holds the
+prior art for both consequences.
 
 ### The alternative not taken
 
@@ -162,11 +162,11 @@ its own platform.
 
 ### Why
 
-The binary interface is the stricter promise, and the asymmetry decides it. The promise can be
-dropped later: if the capability monokernel needs calls the microkernel will never serve, it takes
-a binary interface of its own and its own `target_os`, and nothing built for the first one breaks.
-The promise cannot be added later: once two kernels each ship numbers the other lacks, programs
-exist that run on one and not the other, and no ruling makes them compatible again.
+The binary interface is the stricter promise, and the asymmetry decides it. The project can drop the
+promise later: if the capability monokernel needs calls the microkernel will never serve, it takes a
+binary interface of its own and its own `target_os`, and nothing built for the first one breaks. It
+cannot add the promise later: once two kernels each ship numbers the other lacks, programs exist
+that run on one and not the other, and no ruling makes them compatible again.
 
 The rule also puts the expensive names in the fewest places. The in-binary names, the `target_os`
 and the published ABI crate exist once per binary interface rather than once per kernel. It costs
@@ -185,7 +185,7 @@ Hardest to change first. The maintainer brings each as its own ruling, one at a 
    stays.
 4. The library, if its name differs from the organization's, and with it the published names of
    the shared page-contract crates.
-5. Distributions, starting with whether `basalt` stays and which binary interface it is built for.
+5. Distributions, starting with whether `basalt` stays and which binary interface it targets.
 6. Individual kernels: repositories, images and boot logs only, the cheapest names here.
 
 ## What waits on these rulings
