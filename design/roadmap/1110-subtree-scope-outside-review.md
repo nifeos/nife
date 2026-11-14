@@ -216,7 +216,8 @@ The P2 items are in [the appendix](1110-subtree-scope-outside-review/later-items
 
 ## Decisions for the architect
 
-One one-way door is open. Everything else above is the maintainer's.
+One decision, the crate's name, decided provisionally below. Everything else above is the
+maintainer's.
 
 ### The crate's name becomes a repository name at the move
 
@@ -245,6 +246,16 @@ so none offers a name to copy.
 Concrete example: a server's manifest line `subtree_scope = { version = "0.1.0", git = ..., rev =
 ... }` beside `filesystem_contract`, and the README's first sentence, "What a grant rooted at one
 directory can reach, decided in one place a server links."
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The door is not one-way, as the background above reads it. A crate leaves into its own
+repository only when it is publishable or used by more than one repository. This one has one
+consumer, `redoxfs_server`, and milestone 1017 step 9 places it with `memory_region_heap` and
+`redoxfs` in one repository. There its name is a workspace crate's name, not a repository's, and no
+crates.io name is taken while the publishing hold stands. The crate keeps `subtree_scope`, the
+spelled-out noun phrase; `beneath` is a preposition. If the crate is ever published on its merits,
+its crates.io name comes to the architect then. The crate's `Name:` block (`src/lib.rs` line 20)
+stays provisional, and ratifying the name stays the architect's.
 
 ## Done when
 
