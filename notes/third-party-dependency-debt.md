@@ -31,7 +31,7 @@ Measured 2026-11-14 (UTC) at the tip of the pull request that wrote this note.
   every crate those graphs link builds on all three. The `jig`, `c_library` and `uefi_loader` graphs
   need the std overlay or the loader's artifacts and this pass did not rebuild them, so their crates carry
   no entry for this part on that basis alone.
-- Proofs (part 2) and maintained upstream (part 4) are judgements, not scans. The census's
+- Proofs (part 2) and maintained upstream (part 4) are judgments, not scans. The census's
   `registry.tsv` and `upstream-practices.tsv` hold the older evidence, and the pull request that
   contributes to a crate shows both parts for it.
 
