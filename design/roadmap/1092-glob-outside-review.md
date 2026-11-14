@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -280,6 +280,16 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 - Whether any enumeration in nife yields `.` or `..` stays unverified (P2-2).
 - The P2 order is the reviewer's judgment of what a first user asks about; nobody outside has asked
   yet.
+
+## Follow-on
+
+What is left of this review: Decision 1 is built, so the crate is `byte_glob` in the directory, the
+package, the library and every caller. Decision 2 (the seven public names), the integration test that
+moves to a crate that stays, the falsification patches and records written for the tree's paths, and
+every other item above are open.
+
+- **Milestone 1017.** The contract crates leave in its order. This crate moves at step 5, after the
+  open items here land, so the standalone gate can pass.
 
 ## Index row
 
