@@ -52,7 +52,7 @@ maintainer decides it.
 
 #### P0-1. The crate name is taken on crates.io
 
-LEFT. The registry name is Decision 1, an architect ruling; nothing is renamed until it is made.
+LEFT. Decision 1.
 
 `glob` is rust-lang/glob, version 0.3.4, over 700 million downloads, the most widely used glob
 crate in the ecosystem. The ratification of the crate name as a standard term, which it is, did not weigh the registry. The tree already knows the other crate: the survey behind
@@ -73,7 +73,7 @@ S for the rename, since the crate is small and has three dependents.
 
 #### P0-2. Seven public names carry no provenance and are not ratified
 
-LEFT. The seven names are Decision 2, an architect ruling.
+LEFT. Decision 2.
 
 `Dot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
 `literal`, `match_steps` and `cost_bound` have no `Name:` block; `helpers/name_release.py --draft
@@ -85,7 +85,7 @@ lines 33, 76, 91, 102, 118, 140 and 236. One-way (public API). S, once ruled.
 
 #### P0-3. The integration test links two crates that do not leave with it
 
-DONE (`the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for` now lives in `crates/grant_plan/tests/fixture_agreement.rs`, which dev-depends on `filesystem_fixture`; `glob` has no dev-dependency).
+DONE (`the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for`, now in `crates/grant_plan/tests/`).
 
 `tests/fixture_agreement.rs` dev-depends on `filesystem_contract` and `filesystem_fixture`
 (`Cargo.toml` lines 22 to 24), both sibling crates by path. The rule in milestone 1017 is that a crate leaves
@@ -100,7 +100,7 @@ Two-way. S.
 
 #### P0-4. The shipped text cites the tree it is leaving
 
-LEFT. The README now carries the surface, scope decisions, algorithm and corners. The nife citations in the source and manifest comments are stripped by `script/crate-move` at the move, since in the tree they keep their links.
+LEFT. The README carries the content; `script/crate-move` strips the citations at the move.
 
 `standalone.py` counts 18 lines with a path into the nife tree, 3 section citations, 2 milestone
 citations, 1 provenance block and 1 architect's name. They sit in `Cargo.toml` (lines 7 to 13) and
@@ -117,7 +117,7 @@ is about the layer above. Two-way. M.
 
 #### P0-5. The manifest is not a standalone manifest
 
-DONE (the manifest carries `rust-version`, a literal `license`, the inlined `[lints]` tables, `description`, `readme`, `keywords`, `categories` and `include`).
+DONE (every manifest row).
 
 `Cargo.toml` inherits `license` and `lints` from the workspace, has no `rust-version`, no
 `description`, `repository`, `readme`, `keywords`, `categories` or `include`, and the comment on
@@ -134,7 +134,7 @@ hold). Two-way; a ruling covers the publish flag itself and it stays. S.
 
 #### P0-6. There is no README
 
-DONE (`README.md` in the scaffold order, `LICENSE-MIT`, `LICENSE-APACHE`). The changelog comes from the scaffold.
+DONE (`README.md` and both license texts).
 
 The crate has no README, no `LICENSE-*` files and no changelog. The scaffold supplies the license
 files and the changelog; the README is the review's concern. `readme_sections.py` requires `# glob`,
@@ -157,7 +157,7 @@ repository is red. Change: `naive_matches` or `exhaustive_matches`. Two-way. S.
 
 #### P1-2. The falsification patches and their records are written for the tree's paths
 
-LEFT. The patches are replayed in the tree by their tree paths, so rewriting them breaks the in-tree sweep; the move lane rewrites and replays them.
+LEFT. The in-tree sweep needs the tree paths; the move lane rewrites them.
 
 All six patches diff `a/crates/glob/src/lib.rs`, and the six `Falsification: replayable` records
 name `crates/glob/falsifications/<name>.patch`. The template's `falsify.py` accepts only
@@ -170,7 +170,7 @@ hunks, and replay each once. Two-way. S.
 
 #### P1-3. The inline proof module will be mutated in the new repository
 
-DONE (`src/tests.rs`, `src/verification.rs`; the tree already excludes `src/**/verification.rs` from mutation, and the repository's `.cargo/mutants.toml` is the move lane's).
+DONE (`src/tests.rs`, `src/verification.rs`).
 
 `#[cfg(kani)] mod verification` is inline in `src/lib.rs` (line 881). In nife, `.cargo/mutants.toml`
 excludes `verification::` by regex; that file does not travel. cargo-mutants in the repository will
@@ -191,7 +191,7 @@ compiler keeps, and it is the shortcut the template's fuzz opt-in scan accepts. 
 
 #### P1-5. The one caveat the record says is in the crate docs is not there
 
-DONE (the module doc, `matches` and its doctest `*.txt` against `dir/notes.txt`, and the README).
+DONE (the module doc, `matches` and its doctest).
 
 `notes/glob.md` and `notes/glob-scope.md` both say that the matcher's blindness to `/` is "written
 down instead, in the crate docs where a reader meets the function". `src/lib.rs` never mentions a
@@ -201,7 +201,7 @@ line in P0-6. Two-way. S.
 
 #### P1-6. The module doc opens for nife's reader, not the crate's
 
-DONE (the module doc opens with what the crate is; the grant argument stays in `notes/glob.md`).
+DONE (the module doc).
 
 The first paragraph of `src/lib.rs` explains that one matcher "serves both the shell's expansion and
 its grant" and that the authors wrote it "because it is on the verification path (§46 (thin primitives or whole subsystems; we write everything in between) ...)". A stranger
@@ -298,21 +298,16 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 - The review ran two of the six harnesses and replayed one of the six patches. The rest rests on
   the crate's record and the tree's own gates.
-- The reviewer did not measure whether the move lane's tooling rewrites patch paths (P1-2); if it
-  does, that item is a check rather than work.
 - Whether any enumeration in nife yields `.` or `..` stays unverified (P2-2).
 - The P2 order is the reviewer's judgment of what a first user asks about; nobody outside has asked
   yet.
 
 ## Follow-on
 
-- **Outstanding.** P0-1 and P0-2 wait on Decisions 1 and 2, the registry name and the seven public
-  names; `crates/glob/Cargo.toml` still reads `name = "glob"` and `helpers/name_release.py --draft glob`
-  still reports no block.
-- **Outstanding.** P0-4 and P1-2: the move lane strips the nife citations and rewrites the
-  falsification patch paths; `crates/glob/falsifications/` still names the tree's paths.
-- **Outstanding.** P2-2's `grant_plan` note, P2-3's named return, P2-4's fuzz target and P2-8's
-  benchmark; none exists in `crates/glob` or `crates/grant_plan`.
+- **Outstanding.** P0-1 and P0-2 wait on Decisions 1 and 2; `crates/glob/Cargo.toml` still reads
+  `name = "glob"`.
+- **Outstanding.** P0-4 and P1-2 belong to the move; `crates/glob/falsifications/` still names tree paths.
+- **Outstanding.** P2-2's `grant_plan` note, P2-3's named return, P2-4's fuzz target and P2-8's benchmark.
 
 ## Index row
 

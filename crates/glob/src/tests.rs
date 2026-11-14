@@ -1,5 +1,7 @@
 //! Host tests: the matcher against a naive reference, exhaustively on short inputs, and the
 //! blowup shapes at length.
+//!
+//! Name: provisional, minted 2026-11-14 (UTC) by lane/outside-review-1089-1100.
 
 use super::*;
 

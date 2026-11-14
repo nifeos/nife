@@ -4,6 +4,8 @@
 //! pairs, every arm of the decoder) but not over length. The length-independent claims are the
 //! host tests': the exhaustive cross-check and the 100,000-byte blowup tests. See notes/glob.md
 //! ("What is proved") and notes/glob/proofs.md.
+//!
+//! Name: provisional, minted 2026-11-14 (UTC) by lane/outside-review-1089-1100.
 
 use super::*;
 
