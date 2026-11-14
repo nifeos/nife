@@ -84,7 +84,7 @@ The P1 items are in [the appendix](1079-byte-sink-contract-outside-review/before
 ## Decisions for the architect
 
 Only one-way doors. Each gives the background, then the recommendation, then prior art and one
-concrete example. The maintainer brings them one at a time.
+concrete example. The maintainer brings them one at a time. C is ruled.
 
 ### A. Does the byte-sink contract ever get a wire version operation?
 
@@ -126,25 +126,27 @@ so behind a feature, which keeps the names in the documentation.
 Example: on docs.rs, `byte_sink_contract::fixture::SINK_NAME` would read `"sinkout"` with a sentence
 about a file created on a test image by a program the reader cannot find.
 
-### C. What are the second and third words of an end-of-stream message?
+### C. The second and third words of an end-of-stream message are reserved
 
-Background: item 8. The contract defines `w0` for `OPERATION_EOF` and is silent on `w1` and `w2`.
-`unpack` discards them. `rm` carries its exit status and a count there, read only by kernel-side
-fixture tests; the shell drops them past a `|`.
+Ruled 2026-11-14 (UTC), option A: a writer sends zero in both, and a sink refuses an end of stream
+with either word non-zero as `Msg::Malformed`. `unpack` decodes `Msg::Eof` only from the exact
+message `(eof(), 0, 0)`, so a first word with any bit set below the opcode is refused the same way,
+which is what its documentation says the low 32 bits are. A Kani harness proves that equivalence
+over every three words, with a falsification patch.
 
-Recommendation: reserved. A conforming writer sends zero in both and a conforming sink ignores them, which is what every decoder in the tree does. Either `rm` records its use as a private agreement outside this contract, or `rm` moves its verdict to a channel of its own. The stricter reading, `Malformed` on a non-zero word, breaks `rm` today for no reader's benefit. The looser one, a defined
-status trailer, puts a supervision fact on a stream, which the `OPERATION_EOF` documentation argues
-against in its own words. Reserving them keeps a trailer possible under a later `VERSION`.
+`rm` reports its exit status and its count on a verdict endpoint of its own, slot 2
+(`filesystem_contract::rm::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
+its message is received, so the verdict cannot overtake the text, and a reader drains the report
+before receiving it. The spawn service leaves that slot empty, so at the prompt the send is refused
+and `rm` exits; the kernel's granted-directory and granted-set wirings grant it when a test asks.
 
 Prior art: Unix delivers a producer's exit status through `wait(2)` to its parent, never through the
 pipe; `set -o pipefail` reads statuses from the supervisor, not the stream. HTTP chunked transfer
-defines an explicit trailer after the last chunk, which is what a defined status word would be, and
-it is a defined part of that framing, not an unused field.
+defines an explicit trailer after the last chunk; a defined trailer would need a new `VERSION` here.
 
-Example: `rm -rv logs | wc` today: `rm` sends `eof()` with status and count, the shell's pipeline
-reader matches `Msg::Eof` and returns, and `wc` sees an end of stream and no status. The same words
-reach the fixture test that spawns `rm` directly. One message, two meanings, decided by who
-receives.
+Example: `rm -rv logs | wc`: `rm` sends its lines and `(eof(), 0, 0)`, `wc` counts them and sees a
+well-formed end, and the verdict goes to slot 2, which nothing at the prompt holds. A guest test
+that spawns `rm` directly reads the same report and then the verdict.
 
 ### D. The names
 
@@ -178,8 +180,6 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 - Item 11 came from reading, not from a build for a 16-bit target; the fix is cheap enough to land
   without one.
 - This review did not check the prior-art figures marked unverified. Confirm or drop them before the README cites any of them.
-- This review checked by search only whether `rm`'s verdict words have a reader outside the kernel-side fixture tests. A reader that obtains them another way would change item 8's weight, not its
-  finding.
 - The review did not run the QEMU-side `sink_tests`; the indifference proof they carry stands on the
   tree's own gates.
 
