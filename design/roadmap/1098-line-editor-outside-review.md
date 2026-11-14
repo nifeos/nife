@@ -73,7 +73,7 @@ or identity, a dependency); everything else is two-way and the maintainer decide
    Evidence: `Cargo.toml` line 14; `src/lib.rs` lines 38 to 68; `src/component.rs` whole;
    `src/proto.rs` lines 63 to 215; `crates/hot_swap_contract/src/lib.rs` line 49 (the duplicate
    `QUIESCED`).
-   Change: move `proto` and `component` to a nife wire-contract crate (provisional name `terminal_contract`, the `_contract` suffix design/naming.md gives a nife wire contract; the name is free in `crates/`). Repoint the 32 callers and drop `capability_plan` from this manifest. The new crate re-exports `hot_swap_contract::QUIESCED` instead of redefining it.
+   Change: as decision 1 below rules. `proto` becomes the wire-contract crate `terminal_contract`, `component` becomes the nife-only `line_editor_component`, the callers depend on those, and `capability_plan` leaves this manifest.
    `handoff` stays: its `Writer` and `Reader` are plain cursors, `save` and `restore` read the
    engine's private fields, and the crate documents the layout as its own. `notes/
    terminal-contract.md` then names the new crate as the home of the framing.
@@ -190,6 +190,19 @@ sans-IO core apart from its sync and async fronts. In this tree, `supervision_co
 Concrete example. `kernel/Cargo.toml` links `line_editor` to read `proto::req` and
 `proto::OPERATION_WRITE` in `kernel/src/user/terminal_print.rs`; after the cut it links
 `terminal_contract` and the kernel no longer depends on an editor.
+
+Ruled 2026-11-14 (UTC): the cut falls in three places. `proto`, the terminal protocol's opcodes and
+badges, is the wire-only leaf crate `terminal_contract` (`crates/terminal_contract`), with no
+dependencies; its name is provisional, and its published name waits on the naming-layers decision.
+The kernel, `std_runtime_contract`, `fixtures`, `system_initializer`, `system_tests` and every
+program that speaks the protocol depend on it, not on `line_editor`. `component`, built on
+`capability_plan`, stays in this repository beside the terminal programs as the nife-only crate
+`line_editor_component` (`crates/line_editor_component`, name provisional), and `capability_plan`
+does not leave. `handoff` stays in the engine. `line_editor` depends on nothing and is listed in
+`crates/externalization-list.txt`. Because the leaf depends on nothing, it states `QUIESCED` and
+the `line_editor` program holds it equal to `hot_swap_contract::QUIESCED` at compile time (item 8).
+Open: `terminal_contract` carries no interface identity (an interface number, a version), and
+whether it takes one under milestone 1017's family rule is not decided; none is minted.
 
 ### The engine's public type and constant names at release: `LineEditor` and `HISTORY_LINES`
 
