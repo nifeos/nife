@@ -138,7 +138,9 @@ pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
+#[allow(dead_code)]
+pub(crate) const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () =
+    assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
 #[doc(alias = "YT8521_EXT_SYNCE_CFG")]
@@ -242,7 +244,8 @@ pub(crate) const fn link_from_registers(
 /// `link_from_registers` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () = assert!(
     management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
         & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
         == 0
@@ -628,7 +631,8 @@ pub fn configure(
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (0xf << RECEIVE_DELAY_SELECT_SHIFT) & (0xf << TRANSMIT_DELAY_SELECT_SHIFT) == 0
         && (0x7 << REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT)
             & REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK

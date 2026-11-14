@@ -217,7 +217,8 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &BusConfiguration, queue_byt
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::eq_op)]
-pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::RECEIVE_QUEUE_0_OPERATION_MODE_STORE_AND_FORWARD
         & registers::RECEIVE_QUEUE_0_OPERATION_MODE_THRESHOLD_CONTROL_MASK
         == 0
@@ -248,7 +249,8 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &BusConfiguration, queue_by
 /// constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::TRANSMIT_QUEUE_0_OPERATION_MODE_STORE_AND_FORWARD
         & registers::TRANSMIT_QUEUE_0_OPERATION_MODE_THRESHOLD_CONTROL_MASK
         == 0
@@ -465,7 +467,8 @@ pub fn configure(
 /// a value only inside that field; where neither holds, the configure tests kill the swap.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_READ_OUTSTANDING_REQUEST_LIMIT_MASK
         & registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_MASK
         == 0
@@ -538,7 +541,8 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 /// `the_mac_word_from_zero_and_from_all_ones` kills it.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::MAC_CONFIGURATION_PORT_SELECT
         | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
         | registers::MAC_CONFIGURATION_FULL_DUPLEX

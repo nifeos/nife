@@ -59,7 +59,8 @@ pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);
+#[allow(dead_code)]
+pub(crate) const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);
 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive

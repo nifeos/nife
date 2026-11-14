@@ -74,7 +74,8 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
 /// mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
         | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
         | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
@@ -133,7 +134,8 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// exclusion of those mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
     REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT & SYSTEM_CONTROLLER_FIELD
         == REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT
 );

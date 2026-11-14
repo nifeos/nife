@@ -172,7 +172,7 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
-pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
+pub(crate) const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
     RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
         | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
         | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID
@@ -209,7 +209,7 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
-pub const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
+pub(crate) const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION
         & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
         == 0
@@ -295,7 +295,7 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
-pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () = assert!(
+pub(crate) const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () = assert!(
     RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
         == RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR ^ RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
 );
