@@ -11,7 +11,8 @@ pub use ::designware_ethernet as device;
 use address_space_map::{PAGE, pair_page};
 use designware_ethernet::bring_up::{Account, AddressSource, Error, Inputs};
 use designware_ethernet::cache_coherence::{Observation, Payload, Verdict};
-use designware_ethernet::motorcomm_physical_layer_device::{Link, Settings, SettingsSource, Speed};
+use designware_ethernet::link::{Link, Speed};
+use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
 use designware_ethernet::{
     management_data_input_output as mdio, network_interface_controller as controller,
 };

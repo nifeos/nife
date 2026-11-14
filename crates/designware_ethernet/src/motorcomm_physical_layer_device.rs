@@ -23,6 +23,7 @@
 //!
 //! Name: ratified 2026-11-03 (UTC), #3122.
 
+use crate::link::{Link, Speed};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 
 /// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`,
@@ -148,43 +149,6 @@ pub(crate) const EXTENDED_SYNCHRONOUS_ETHERNET_CONFIGURATION_REGISTER: u16 = 0xa
 #[doc(alias = "synchronous ethernet clock output enable")]
 #[doc(alias = "YT8531_EN_SYNC_E")]
 pub(crate) const SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE: u16 = 1 << 6;
-
-/// A link speed.
-///
-/// Name: ratified 2026-11-03 (UTC), #3132.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Speed {
-    /// 10 Mbit/s.
-    Ten,
-    /// 100 Mbit/s.
-    Hundred,
-    /// 1000 Mbit/s.
-    Thousand,
-}
-
-impl Speed {
-    /// Megabits per second.
-    ///
-    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `mbps`, which abbreviated a unit.
-    pub const fn megabits_per_second(self) -> u32 {
-        match self {
-            Speed::Ten => 10,
-            Speed::Hundred => 100,
-            Speed::Thousand => 1000,
-        }
-    }
-}
-
-/// A resolved link.
-///
-/// Name: ratified 2026-11-03 (UTC), #3132.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Link {
-    /// The speed negotiated.
-    pub speed: Speed,
-    /// Full duplex when true.
-    pub full_duplex: bool,
-}
 
 /// **Decode the standard clause 22 registers into a link**, as OpenBSD's `ukphy_status`
 /// (`sys/dev/mii/ukphy_subr.c`) does. `None` when the link is down, the PHY is isolated, or

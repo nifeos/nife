@@ -81,15 +81,15 @@ fn a_link_is_decoded_only_from_what_the_registers_say() {
             let gigabit_half =
                 control_1000base_t & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX != 0 && status_1000base_t & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE != 0;
             match link.speed {
-                motorcomm_physical_layer_device::Speed::Thousand => {
+                link::Speed::Thousand => {
                     assert!(gigabit_full || gigabit_half);
                     assert!(link.full_duplex == gigabit_full);
                 }
-                motorcomm_physical_layer_device::Speed::Hundred => {
+                link::Speed::Hundred => {
                     assert!(!gigabit_full && !gigabit_half);
                     assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) != 0);
                 }
-                motorcomm_physical_layer_device::Speed::Ten => {
+                link::Speed::Ten => {
                     assert!(!gigabit_full && !gigabit_half);
                     assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) == 0);
                     assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T) != 0);

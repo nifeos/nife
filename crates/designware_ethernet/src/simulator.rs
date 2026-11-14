@@ -14,15 +14,15 @@ use std::collections::BTreeMap;
 use std::vec;
 use std::vec::Vec;
 
+use crate::link::{Link, Speed};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
-use crate::motorcomm_physical_layer_device::{self, Link, Speed};
 use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
     RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
     RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
-    Tails, layout, registers,
+    Tails, layout, motorcomm_physical_layer_device, registers,
 };
 
 const LINE: u64 = 64;

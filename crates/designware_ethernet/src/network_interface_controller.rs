@@ -9,7 +9,7 @@
 //!
 //! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::motorcomm_physical_layer_device::{Link, Speed};
+use crate::link::{Link, Speed};
 use crate::{BUFFER_BYTES, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.

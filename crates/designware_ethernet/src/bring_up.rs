@@ -10,7 +10,8 @@
 //! Name: provisional.
 
 use crate::cache_coherence::{self, Observation, Verdict};
-use crate::motorcomm_physical_layer_device::{self, Link, Settings, SettingsSource, Speed};
+use crate::link::{Link, Speed};
+use crate::motorcomm_physical_layer_device::{self, Settings, SettingsSource};
 use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DataPlane, DirectMemoryAccessRegion, Hardware, Tails, jh7110, layout,

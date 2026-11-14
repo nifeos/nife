@@ -85,6 +85,7 @@ extern crate std;
 pub mod bring_up;
 pub mod cache_coherence;
 pub mod jh7110;
+pub mod link;
 #[doc(alias = "mdio")]
 pub mod management_data_input_output;
 pub mod motorcomm_physical_layer_device;

@@ -33,7 +33,7 @@ use ::driver_process_contract::designware_ethernet::{
     DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
 use contract::device::bring_up::{self as port_bring_up, Inputs};
-use contract::device::motorcomm_physical_layer_device::Link;
+use contract::device::link::Link;
 use contract::device::{layout, registers};
 
 use super::*;
