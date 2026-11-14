@@ -126,13 +126,13 @@ name `NIFE_MANIFEST_NOTE`. The prose mentions can all go (item 4). The literals 
 without a new owner string, which is a wire break. A progenitor reading the new string would find no note in any program built so far. A program carrying the new string would be a native program with no authority to an old progenitor.
 
 Ruled 2026-11-14 UTC (decision O): the owner string and the section name keep their bytes. Bytes
-that already sit on a wire or in built programs may spell `nife` after the crate leaves; this is the
+that already sit on a wire or in built programs may spell `nife` after the crate leaves. This is the
 one exception to the rule that a leaving crate never mentions nife, and it covers wire literals
-only: the owner string, the section name, magic values and the tests that assert those bytes. A line
-that holds one ends with the comment `// wire literal` (provisional spelling). The externalization
-lint and `script/crate-move` accept a marked line and refuse an unmarked mention, and the lint
-prints every marked line. The lane removes every prose mention, and prose says "the owner string"
-and does not repeat the word. The README says, once, that the owner string is the name of the
+only: owner strings, section names, magic values and the tests that assert those bytes. A line that
+holds one ends with the comment `// wire literal` (provisional spelling). The externalization lint
+and `script/crate-move` accept a marked line and refuse an unmarked mention. The lint prints every
+marked line. The lane removes every prose mention, and prose says "the owner string" without
+repeating the word. The README says, once, that the owner string is the name of the
 operating system that defines the note, as `FreeBSD`, `GNU` and `FDO` are. The marker is already on
 the lines of `boot_ladder`, `system_log_contract` and `user_mode_runtime/link.ld`; the lint lists
 them once those crates join the externalization list (it scans only listed crates, and only their
