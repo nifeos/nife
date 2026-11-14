@@ -181,7 +181,7 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 
 ## Follow-on
 
-The architect's ruling on decision A is applied: the names, the rename, the `Result` return, the two
+The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on decision A: the names, the rename, the `Result` return, the two
 accessors and the local binding. What remains is open. Decision B (which `talc`) is unruled. Items 2
 and 3 (the dependency and the manifest), item 4's test half, the P1 items before the tag and the P2
 items are not started. The `script/crate-standalone` step 0 still needs the move lane to strip the
