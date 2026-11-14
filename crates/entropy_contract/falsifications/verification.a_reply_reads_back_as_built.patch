@@ -1,0 +1,22 @@
+Falsifies `entropy_contract::verification::a_reply_reads_back_as_built`.
+
+The defect: `reply` forgets the clamp and counts every byte it was given. Past eight bytes the
+count is no count at all, and a client reading it takes the reply for a kernel error.
+
+Expected to fail: the harness's `assert_eq!` on the count, and the shift past the word's width.
+
+--- a/crates/entropy_contract/src/lib.rs
++++ b/crates/entropy_contract/src/lib.rs
+@@ -353,11 +353,7 @@
+ /// Name: provisional, minted for the service side of the contract; awaiting a naming pass.
+ #[must_use]
+ pub const fn reply(delivered: &[u8]) -> (u64, u64) {
+-    let count = if delivered.len() > MAXIMUM_BYTES as usize {
+-        MAXIMUM_BYTES as usize
+-    } else {
+-        delivered.len()
+-    };
++    let count = delivered.len();
+     let mut word = 0u64;
+     let mut index = 0;
+     while index < count {

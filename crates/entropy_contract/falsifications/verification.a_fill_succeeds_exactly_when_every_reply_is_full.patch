@@ -4,18 +4,16 @@ The defect: `fill_with` refuses only a reply that delivers more than it asked fo
 short one. The standard library's caller accepts partial counts on purpose; this function promises
 the opposite, and the defect quietly leaves bytes in the slice that the service never sent.
 
-Expected to fail: the harness's `assert_eq!` on `result.is_some()` against every reply being
-full, with one reply short.
+Expected to fail: the harness's match on the result, which meets `Ok` where one reply was short.
 
-diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -284,7 +284,7 @@ pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Opt
-     while filled < out.len() {
-         let byte_count = (out.len() - filled).min(MAXIMUM_BYTES as usize);
-         let (first_reply_word, reply_word) = call(request(GET, byte_count as u64));
--        if delivered_bytes(first_reply_word)? != byte_count {
-+        if delivered_bytes(first_reply_word)? > byte_count {
-             return None;
+@@ -407,7 +407,7 @@
+         let asked = (out.len() - filled).min(MAXIMUM_BYTES as usize);
+         let (first_reply_word, reply_word) = call(request(GET, asked as u64));
+         let delivered = delivered_bytes(first_reply_word).ok_or(Refusal::NoService)?;
+-        if delivered != asked {
++        if delivered > asked {
+             return Err(Refusal::ShortReply { asked, delivered });
          }
-         filled += copy_delivered_bytes(byte_count, reply_word, &mut out[filled..]);
+         filled += copy_delivered_bytes(asked, reply_word, &mut out[filled..]);

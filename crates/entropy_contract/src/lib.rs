@@ -1,16 +1,19 @@
-//! **The entropy contract** (entropy is a capability): the request and reply that carry random
-//! bytes out of the entropy service, defined once for the service, its clients and their tests. One
-//! process holds the entropy device; a client holds an endpoint that names no device, `CALL`s with
-//! a byte count and gets the bytes in the reply words, at most [`MAXIMUM_BYTES`] per round trip. No
-//! shared page, against the usual bulk rule, because random bytes are worth exactly that nobody
-//! else has seen them, and no byte is transformed, so the claim stays "these are the device's
-//! bytes".
+//! The entropy contract (entropy is a capability): the request and reply that carry random bytes
+//! out of the entropy service, defined once for the service, its clients and their tests.
+//!
+//! One process holds the entropy device. A client holds an endpoint that names no device, `CALL`s
+//! with a byte count and gets the bytes in the reply words, at most [`MAXIMUM_BYTES`] per round
+//! trip. There is no shared page, against the usual bulk rule, because random bytes are worth
+//! exactly that nobody else has seen them. No byte is transformed, so the claim stays "these are
+//! the device's bytes".
 
 //! # BUGS
 //!
-//! - **An all-zero first draw is read as a dead device** ([`readiness`]): wrong with probability
-//!   2^-64 to 2^-2048 by source, and the safe way round.
-//! - The check is bring-up only; continuous health testing is a decision still to be made.
+//! - An all-zero first draw is read as a dead device ([`readiness`]): wrong with probability
+//!   2^-64 to 2^-2048 by source, and the safe way round. A first draw of eight or more equal
+//!   nonzero bytes is read the same way: wrong with probability at most 255 in 2^64 from a uniform
+//!   source.
+//! - The check is bring-up only. Continuous health testing is a decision still to be made.
 //! - No request carries [`VERSION`], and the service answers no query for the versions it serves,
 //!   so a client built against another version is not refused at bind.
 //!
@@ -27,48 +30,57 @@ struct ReadmeExample;
 /// The most bytes one request can carry: the reply's second word.
 ///
 /// A `CALL` replies with two words. The first is the count, so the bytes get exactly one word.
-/// Asking for more than this is not an error, it is answered with this many, and the caller loops;
-/// see [`requested_bytes`].
+/// Asking for more is not an error. The service answers with this many and the caller loops; see
+/// [`requested_bytes`].
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_BYTES: u64 = 8;
 
-/// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position its
-/// sibling message contracts use, so the contracts read alike.
+/// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the position its sibling
+/// message contracts use, so the contracts read alike.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written; six sibling contract crates
 /// share the name and value.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The protocol's version, one for the operation set and the reply shape together: one constant
-/// per wire format. A break bumps this; an addition (a new opcode, an optional field) owes no
-/// bump. A program declares it beside [`INTERFACE_ID`]; no peer checks it
-/// at bind yet (see this crate's `BUGS`).
+/// per wire format. A break bumps it. An addition (a new opcode, an optional field) owes no bump.
+/// A program declares it beside [`INTERFACE_ID`]. No peer checks it at bind yet (see this crate's
+/// `BUGS`).
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its version.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 12, naming the entropy service
-/// request and reply. The number is this interface's for good: no other interface takes it, and a
-/// format change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
-/// program declares the pair of this id and [`VERSION`].
+/// request and reply.
+///
+/// The number is this interface's for good. No other interface takes it, and a format change is a
+/// new version, never a new number. The project that links these crates keeps the table of numbers
+/// and holds it to that rule. A program declares the pair of this id and [`VERSION`].
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 12;
 
-/// **Give me this many random bytes.** The only operation. The byte count is clamped to
-/// [`MAXIMUM_BYTES`] by [`requested_bytes`], so a client that asks for more is answered rather than
+/// Give me this many random bytes. The only operation. [`request`] and [`requested_bytes`] clamp
+/// the byte count to [`MAXIMUM_BYTES`], so a client that asks for more is answered rather than
 /// refused.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const GET: u64 = 1;
 
-/// Build a request word: the opcode and the byte count the client wants. A count above
-/// [`MAXIMUM_BYTES`] encodes as [`MAXIMUM_BYTES`], so the wire never carries more than a reply can
-/// hold and a client that asks for 256 bytes is not mistaken for one that asks for none.
+/// Build a request word: the opcode and the byte count the client wants.
+///
+/// A count above [`MAXIMUM_BYTES`] encodes as [`MAXIMUM_BYTES`]. The wire never carries more than
+/// a reply can hold, and a client that asks for 256 bytes is not mistaken for one that asks for
+/// none. The opcode must fit the top byte, which a debug build checks.
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `req`, which abbreviates it.
+#[must_use]
 pub const fn request(operation: u64, byte_count: u64) -> u64 {
+    debug_assert!(
+        operation <= 0xff,
+        "an opcode fits the top byte of a request"
+    );
     let clamped = if byte_count > MAXIMUM_BYTES {
         MAXIMUM_BYTES
     } else {
@@ -81,15 +93,19 @@ pub const fn request(operation: u64, byte_count: u64) -> u64 {
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written, its parameter renamed from
 /// `w0`.
+#[must_use]
 pub const fn operation(request_word: u64) -> u64 {
     request_word >> OPERATION_SHIFT
 }
 
-/// How many bytes a request asks for, clamped to what one reply can carry. Clamping here rather
-/// than refusing keeps the server's loop free of an error path that only a buggy client reaches:
-/// a request for 500 bytes is a request for eight, answered, and the client asks again.
+/// How many bytes a request asks for, clamped to what one reply can carry.
+///
+/// Clamping here rather than refusing keeps the server's loop free of an error path that only a
+/// buggy client reaches. A request for 500 bytes is a request for eight, answered, and the client
+/// asks again.
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `want`: a quantity takes its unit.
+#[must_use]
 pub const fn requested_bytes(request_word: u64) -> u64 {
     let byte_count = request_word & 0xff;
     if byte_count > MAXIMUM_BYTES {
@@ -100,70 +116,72 @@ pub const fn requested_bytes(request_word: u64) -> u64 {
 }
 
 /// The word the entropy service SENDs on its readiness endpoint once the device is up and its
-/// first bytes are in hand. ASCII `RNGUP`, so a hex dump of a report reads. A bring-up failure
-/// reports [`BRING_UP_FAILED`]` | step` instead, a shape any driver can share for its own bring-up
-/// report.
+/// first bytes are in hand. ASCII `RNGUP`, so a hex dump of a report reads.
 ///
-/// **"Its first bytes are in hand" is a claim about the bytes, not about the handshake**: a service
-/// holding nothing, or a bufferful of zeros, must not send it, and [`readiness`] is what makes the
-/// claim.
+/// A bring-up failure reports [`BRING_UP_FAILED`]` | step` instead, a shape any driver can share
+/// for its own bring-up report. "Its first bytes are in hand" is a claim about the bytes, not
+/// about the handshake. A service holding nothing, or a bufferful of zeros, must not send it, and
+/// [`readiness`] makes the claim.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const READY: u64 = 0x_52_4E_47_55_50;
 
-/// **The word a bring-up failure reports instead of [`READY`]**, with the step that failed in its
-/// low bits: `0xDEAD_0000_0000_0000 | step`. Named here rather than spelled in each driver because
-/// it is the other half of the readiness contract, and because a reader decoding a report word
-/// should not have to find the literal in each driver to know what it means.
+/// The word a bring-up failure reports instead of [`READY`], with the step that failed in its low
+/// byte: `0xDEAD_0000_0000_0000 | step`.
+///
+/// It lives here rather than in each driver because it is the other half of the readiness
+/// contract. A reader decoding a report word should not have to find the literal in each driver.
 ///
 /// Name: ratified 2026-11-11 (#3480), renamed from `DEAD`; `DEAD` refused.
 pub const BRING_UP_FAILED: u64 = 0xDEAD_0000_0000_0000;
 
-/// **The service asked and got nothing at all**: the device never answered inside the driver's own
+/// The service asked and got nothing at all: the device never answered inside the driver's own
 /// bound. A dry source, an absent one, or a register window that reads as nothing.
 ///
-/// Steps `0x01..=0x0f` are each backend's own, so the three steps every backend shares start at
-/// `0x10` and cannot collide with them.
+/// Steps `0x01..=0x0f` are each backend's own, so the shared steps start at `0x10` and cannot
+/// collide with them.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const STEP_NO_FIRST_BYTES: u64 = 0x10;
 
-/// **The service asked, was answered, and every byte of the answer was zero.** See [`readiness`]
-/// for why that is treated as a dead device rather than as randomness.
+/// The service asked, was answered, and every byte of the answer was zero. See [`readiness`] for
+/// why that is treated as a dead device rather than as randomness.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const STEP_FIRST_ALL_ZERO: u64 = 0x11;
 
-/// **The service asked, was answered, and the answer was one nonzero value repeated**: at least
-/// [`MAXIMUM_BYTES`] bytes, every one equal to the first. A source stuck on a latched value is the
-/// other way a generator fails at start, and it passes a check that only looks for a nonzero byte.
-/// See [`readiness`].
+/// The service asked, was answered, and the answer was one nonzero value repeated: at least
+/// [`MAXIMUM_BYTES`] bytes, every one equal to the first.
+///
+/// A source stuck on a latched value is the other way a generator fails at start, and it passes a
+/// check that only looks for a nonzero byte. See [`readiness`].
 ///
 /// Name: provisional, minted for the readiness ruling of 2026-11-11; awaiting a naming pass.
 pub const STEP_FIRST_ALL_SAME: u64 = 0x12;
 
-/// Build a bring-up failure's report word from the step that failed.
+/// Build a bring-up failure's report word from the step that failed. A step fits the low byte.
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `bringup_failure`; `bringup` is not
 /// a word.
 #[must_use]
 pub const fn bring_up_failure(step: u64) -> u64 {
+    debug_assert!(step <= 0xff, "a step fits the low byte of a report word");
     BRING_UP_FAILED | step
 }
 
-/// **Decide what a service may say about itself, given the first bytes it drew.** [`READY`] only
-/// when the draw holds a nonzero byte and is not one value repeated; otherwise a
-/// [`bring_up_failure`] naming which of the three shared steps failed. Every backend calls this
-/// rather than composing the word itself.
+/// Decide what a service may say about itself, given the first bytes it drew.
+///
+/// The answer is [`READY`] only when the draw holds a nonzero byte and is not one value repeated.
+/// Otherwise it is a [`bring_up_failure`] naming which of the three shared steps failed. Every
+/// backend calls this rather than composing the word itself.
 ///
 /// `first_bytes` is an iterator because backends hold their first draw in different places. An
-/// empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of zeros, and a
-/// draw of zeros is [`STEP_FIRST_ALL_ZERO`]. A draw of at least [`MAXIMUM_BYTES`] bytes that
-/// repeats one nonzero value is [`STEP_FIRST_ALL_SAME`]. A shorter draw is not judged for repeats,
-/// since two equal bytes out of two are common for a working source. This is a start-up check, not
-/// a continuous health test.
-/// **Refusing these draws is a deliberate correctness claim about a random variable**; see this
-/// crate's `BUGS`.
+/// empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of zeros, which
+/// is [`STEP_FIRST_ALL_ZERO`]. A draw of at least [`MAXIMUM_BYTES`] bytes that repeats one nonzero
+/// value is [`STEP_FIRST_ALL_SAME`]. A shorter draw is not judged for repeats, since two equal
+/// bytes out of two are common for a working source. This is a start-up check, not a continuous
+/// health test. Refusing these draws is a deliberate correctness claim about a random variable;
+/// see this crate's `BUGS`.
 ///
 /// # Examples
 ///
@@ -213,23 +231,26 @@ pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
     }
 }
 
-/// **The reply's first word when the service has no entropy to give.** Zero bytes delivered, and
-/// the second word is meaningless. The service sends this rather than padding, repeating an
-/// earlier answer, or substituting a pseudo-random stand-in: a caller that cannot be given
-/// randomness must find out, because the alternative is the exact silent-degradation failure
-/// that no caller should have to guess at.
+/// The reply's first word when the service has no entropy to give. Zero bytes delivered, and the
+/// second word is meaningless.
+///
+/// The service sends this rather than padding, repeating an earlier answer, or substituting a
+/// pseudo-random stand-in. A caller that cannot be given randomness must find out, because the
+/// alternative is a silent degradation that no caller should have to guess at.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const NO_ENTROPY: u64 = 0;
 
-/// **Read a reply's first word.** `Some(count)` when the entropy service answered, with `count` the
-/// number of valid low bytes in the second word (0 means [`NO_ENTROPY`]). `None` for every word
-/// above [`MAXIMUM_BYTES`]: no reply carries such a count, so the word did not come from the service.
+/// Read a reply's first word.
 ///
-/// The rule this rests on is the caller's: the kernel it runs on must report every failure of a
+/// `Some(count)` when the entropy service answered, with `count` the number of valid low bytes in
+/// the second word (0 means [`NO_ENTROPY`]). `None` for every word above [`MAXIMUM_BYTES`]: no
+/// reply carries such a count, so the word did not come from the service.
+///
+/// The rule this rests on is the caller's. The kernel it runs on must report every failure of a
 /// `CALL` as a word above [`MAXIMUM_BYTES`]. A kernel that returns a small negative error number
-/// meets it, since each reads as an enormous `u64`, and then a caller holding no entropy capability
-/// finds out without a probe.
+/// meets it, since each reads as an enormous `u64`, and then a caller holding no entropy
+/// capability finds out without a probe.
 ///
 /// # Examples
 ///
@@ -251,6 +272,7 @@ pub const NO_ENTROPY: u64 = 0;
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `delivered`: it returns a byte
 /// count.
+#[must_use]
 pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
     if first_reply_word <= MAXIMUM_BYTES {
         Some(first_reply_word as usize)
@@ -262,9 +284,10 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
 /// Copy `byte_count` delivered bytes out of a reply's second word into `out`, returning how many
 /// landed: the least of `byte_count`, [`MAXIMUM_BYTES`] and the length of `out`.
 ///
-/// Little-endian, and only the low `byte_count` bytes are meaningful: the rest of the word is whatever the
-/// service had left in the register and carries no entropy, so a caller that read them would be
-/// mixing zeros into a key and believing otherwise.
+/// Little-endian, and only the low `byte_count` bytes are meaningful. The rest of the word is
+/// whatever the service had left in the register and carries no entropy, so a caller that read
+/// them would be mixing zeros into a key and believing otherwise. The returned count is the
+/// result: a caller that ignores it has filled less than it thinks.
 ///
 /// # Examples
 ///
@@ -299,33 +322,97 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `take`, since std's `take` moves a
 /// value out and this copies bytes.
+#[must_use]
 pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) -> usize {
     let copied = byte_count.min(MAXIMUM_BYTES as usize).min(out.len());
     out[..copied].copy_from_slice(&reply_word.to_le_bytes()[..copied]);
     copied
 }
 
-/// **Fill `out` with random bytes, one request at a time, refusing a short answer.** `call` is the
+/// Build a reply from the bytes a service delivers: the count and the word that carries them.
+///
+/// At most [`MAXIMUM_BYTES`] bytes are delivered, and any beyond that are left out. The word holds
+/// them little-endian in its low bytes and zeros above. Reading the pair back with
+/// [`delivered_bytes`] and [`copy_delivered_bytes`] yields the delivered bytes, so a service and
+/// its tests make the reply with the same function the client reads it with.
+///
+/// # Examples
+///
+/// ```
+/// use entropy_contract::{copy_delivered_bytes, delivered_bytes, reply};
+///
+/// let (first_reply_word, reply_word) = reply(&[1, 2, 3]);
+/// assert_eq!((first_reply_word, reply_word), (3, 0x0003_0201));
+///
+/// let mut out = [0u8; 8];
+/// let byte_count = delivered_bytes(first_reply_word).expect("a count");
+/// assert_eq!(copy_delivered_bytes(byte_count, reply_word, &mut out), 3);
+/// assert_eq!(out[..3], [1, 2, 3]);
+/// ```
+///
+/// Name: provisional, minted for the service side of the contract; awaiting a naming pass.
+#[must_use]
+pub const fn reply(delivered: &[u8]) -> (u64, u64) {
+    let count = if delivered.len() > MAXIMUM_BYTES as usize {
+        MAXIMUM_BYTES as usize
+    } else {
+        delivered.len()
+    };
+    let mut word = 0u64;
+    let mut index = 0;
+    while index < count {
+        word |= (delivered[index] as u64) << (8 * index);
+        index += 1;
+    }
+    (count as u64, word)
+}
+
+/// Why [`fill_with`] gave up. The two refusals call for different fixes, so they are told apart.
+///
+/// Name: provisional, minted for the error of `fill_with`; awaiting a naming pass.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Refusal {
+    /// A reply's first word was not a count (see [`delivered_bytes`]). No service answered: the
+    /// caller holds no entropy capability, or the endpoint is gone.
+    ///
+    /// Name: provisional, minted with [`Refusal`]; awaiting a naming pass.
+    NoService,
+    /// A reply carried a count other than the one asked for. A count below it, zero included
+    /// ([`NO_ENTROPY`]), means the service is dry.
+    ///
+    /// Name: provisional, minted with [`Refusal`]; awaiting a naming pass.
+    ShortReply {
+        /// The byte count the request asked for.
+        asked: usize,
+        /// The byte count the reply delivered.
+        delivered: usize,
+    },
+}
+
+/// Fill `out` with random bytes, one request at a time, refusing a short answer. `call` is the
 /// `CALL` on the entropy endpoint: it takes a request word and returns the two reply words.
 ///
-/// `None` if any reply is not a count (no entropy capability; see [`delivered_bytes`]) or delivers fewer
-/// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
-/// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate
-/// makes no syscall; the caller passes a real one. The standard library's platform abstraction
-/// layer accepts partial counts instead, deliberately.
+/// Refuses with [`Refusal::NoService`] if any reply is not a count, and with
+/// [`Refusal::ShortReply`] if one delivers other than the bytes asked for. After a refusal `out`
+/// is unspecified and must not be used. The function asks for [`MAXIMUM_BYTES`] at a time and the
+/// remainder last. The `CALL` is a parameter so this crate makes no syscall, and the caller
+/// passes a real one. The standard library's platform abstraction layer accepts partial counts
+/// instead, deliberately.
 ///
 /// Name: ratified 2026-10-07 (#1795). std's `_with` suffix, for a function that takes a closure.
-pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Option<()> {
+pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Result<(), Refusal> {
     let mut filled = 0;
     while filled < out.len() {
-        let byte_count = (out.len() - filled).min(MAXIMUM_BYTES as usize);
-        let (first_reply_word, reply_word) = call(request(GET, byte_count as u64));
-        if delivered_bytes(first_reply_word)? != byte_count {
-            return None;
+        let asked = (out.len() - filled).min(MAXIMUM_BYTES as usize);
+        let (first_reply_word, reply_word) = call(request(GET, asked as u64));
+        let delivered = delivered_bytes(first_reply_word).ok_or(Refusal::NoService)?;
+        if delivered != asked {
+            return Err(Refusal::ShortReply { asked, delivered });
         }
-        filled += copy_delivered_bytes(byte_count, reply_word, &mut out[filled..]);
+        filled += copy_delivered_bytes(asked, reply_word, &mut out[filled..]);
     }
-    Some(())
+    Ok(())
 }
 
 #[cfg(test)]
@@ -343,13 +430,14 @@ mod tests {
             assert_eq!(operation(request_word), GET);
             (requested_bytes(request_word), 0x0807_0605_0403_0201 * calls)
         });
-        assert_eq!(got, Some(()));
+        assert_eq!(got, Ok(()));
         assert_eq!(calls, 2);
         assert_eq!(out[..8], [1, 2, 3, 4, 5, 6, 7, 8]);
         assert_eq!(out[8..], [2, 4, 6, 8, 10, 12, 14, 16]);
     }
 
-    /// A short answer on the second trip refuses the whole fill.
+    /// A short answer on the second trip refuses the whole fill, and the refusal says what was
+    /// asked and what came.
     #[test]
     fn a_short_answer_is_a_refusal() {
         let mut trip = 0;
@@ -357,7 +445,13 @@ mod tests {
             trip += 1;
             (if trip == 2 { 7 } else { 8 }, 0)
         });
-        assert_eq!(got, None);
+        assert_eq!(
+            got,
+            Err(Refusal::ShortReply {
+                asked: 8,
+                delivered: 7
+            })
+        );
     }
 
     /// No capability: an empty slot's error in the count register, and no second call.
@@ -368,14 +462,21 @@ mod tests {
             calls += 1;
             (-4i64 as u64, 0)
         });
-        assert_eq!(got, None);
+        assert_eq!(got, Err(Refusal::NoService));
         assert_eq!(calls, 1);
     }
 
-    /// A dry service (zero bytes, `NO_ENTROPY`) is a refusal too, not a loop that never ends.
+    /// A dry service (zero bytes, `NO_ENTROPY`) is a refusal too, not a loop that never ends, and
+    /// it is a different refusal from a missing service.
     #[test]
     fn a_dry_service_is_a_refusal() {
-        assert_eq!(fill_with(&mut [0u8; 8], |_| (NO_ENTROPY, 0)), None);
+        assert_eq!(
+            fill_with(&mut [0u8; 8], |_| (NO_ENTROPY, 0)),
+            Err(Refusal::ShortReply {
+                asked: 8,
+                delivered: 0
+            })
+        );
     }
 
     /// A length that is not a multiple of eight asks for the remainder last, not eight.
@@ -388,7 +489,7 @@ mod tests {
             index += 1;
             (requested_bytes(request_word), u64::MAX)
         });
-        assert_eq!(got, Some(()));
+        assert_eq!(got, Ok(()));
         assert_eq!(asked, [8, 8, 4]);
     }
 
@@ -449,6 +550,18 @@ mod tests {
             );
         }
         assert_eq!(delivered_bytes(MAXIMUM_BYTES + 1), None);
+    }
+
+    /// A reply holds the delivered bytes low and zeros above, and leaves out any past eight.
+    #[test]
+    fn a_reply_packs_its_bytes_little_endian_and_clamps() {
+        assert_eq!(reply(&[]), (0, 0));
+        assert_eq!(reply(&[1, 2, 3]), (3, 0x0003_0201));
+        assert_eq!(reply(&[0xff; 8]), (8, u64::MAX));
+        assert_eq!(
+            reply(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+            (8, 0x0807_0605_0403_0201)
+        );
     }
 
     /// The high bytes of the reply word are not entropy and must not reach the caller's buffer.
@@ -608,10 +721,13 @@ mod verification {
         }
     }
 
-    /// **A fill succeeds exactly when every reply is full**: for any slice of up to seventeen bytes
-    /// and any replies, [`fill_with`] asks for the remainder clamped to [`MAXIMUM_BYTES`] each
-    /// time, answers `Some` exactly when every reply it received delivered what it asked for, and
-    /// then holds the delivered bytes in order after one request per eight bytes, rounded up.
+    /// **A fill succeeds exactly when every reply is full, and a refusal says which kind**: for any
+    /// slice of up to seventeen bytes and any replies, [`fill_with`] asks for the remainder clamped
+    /// to [`MAXIMUM_BYTES`] each time and answers `Ok` exactly when every reply it received
+    /// delivered what it asked for, then holds the delivered bytes in order after one request per
+    /// eight bytes, rounded up. Otherwise it stops at the first reply that was not full:
+    /// [`Refusal::NoService`] exactly when that reply's first word was not a count, and
+    /// [`Refusal::ShortReply`], naming what was asked and what came, exactly when it was.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_fill_succeeds_exactly_when_every_reply_is_full.patch`
     #[kani::proof]
     #[kani::unwind(19)]
@@ -620,7 +736,7 @@ mod verification {
         kani::assume(length <= 17);
         let mut out = [0u8; 17];
         let mut expected = [0u8; 17];
-        let mut every_reply_full = true;
+        let mut first_refusal: Option<(u64, usize)> = None;
         let mut position = 0;
         let mut calls = 0;
         let result = fill_with(&mut out[..length], |request_word| {
@@ -634,16 +750,55 @@ mod verification {
                     .copy_from_slice(&reply_word.to_le_bytes()[..asked]);
                 position += asked;
             } else {
-                every_reply_full = false;
+                first_refusal = Some((first_reply_word, asked));
             }
             calls += 1;
             (first_reply_word, reply_word)
         });
-        assert_eq!(result.is_some(), every_reply_full);
-        if result.is_some() {
-            assert_eq!(position, length);
-            assert_eq!(out[..length], expected[..length]);
-            assert_eq!(calls, length.div_ceil(MAXIMUM_BYTES as usize));
+        match (result, first_refusal) {
+            (Ok(()), None) => {
+                assert_eq!(position, length);
+                assert_eq!(out[..length], expected[..length]);
+                assert_eq!(calls, length.div_ceil(MAXIMUM_BYTES as usize));
+            }
+            (Err(Refusal::NoService), Some((first_reply_word, _))) => {
+                assert!(first_reply_word > MAXIMUM_BYTES);
+            }
+            (Err(Refusal::ShortReply { asked, delivered }), Some((first_reply_word, wanted))) => {
+                assert!(first_reply_word <= MAXIMUM_BYTES);
+                assert_eq!(delivered as u64, first_reply_word);
+                assert_eq!(asked, wanted);
+                assert_ne!(delivered, asked);
+            }
+            _ => panic!("a fill succeeds exactly when no reply was refused"),
+        }
+    }
+
+    /// **A reply reads back as built**: for any bytes up to twelve, [`reply`] answers a count of the
+    /// least of their number and [`MAXIMUM_BYTES`], [`delivered_bytes`] accepts that count,
+    /// [`copy_delivered_bytes`] returns exactly those bytes in order, and every byte of the word
+    /// above the count is zero.
+    /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_reply_reads_back_as_built.patch`
+    #[kani::proof]
+    #[kani::unwind(13)]
+    fn a_reply_reads_back_as_built() {
+        let bytes: [u8; 12] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= bytes.len());
+        let (first_reply_word, reply_word) = reply(&bytes[..length]);
+        let expected = length.min(MAXIMUM_BYTES as usize);
+        assert_eq!(first_reply_word, expected as u64);
+        let byte_count = delivered_bytes(first_reply_word).unwrap();
+        assert_eq!(byte_count, expected);
+        let mut out = [0u8; 12];
+        assert_eq!(
+            copy_delivered_bytes(byte_count, reply_word, &mut out),
+            expected
+        );
+        assert_eq!(out[..expected], bytes[..expected]);
+        let word_bytes = reply_word.to_le_bytes();
+        for index in expected..word_bytes.len() {
+            assert_eq!(word_bytes[index], 0);
         }
     }
 

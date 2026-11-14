@@ -17,8 +17,9 @@
 /// Fill `out` with random bytes from the entropy service whose endpoint is in `slot`, or `None` if
 /// that cannot be done in full.
 ///
-/// `None` covers both failures, which every caller so far treats alike: this process holds no
-/// entropy endpoint in `slot`, or the service answered with fewer bytes than asked. On `None` the
+/// `None` covers both refusals of `entropy_contract::fill_with`, which every caller so far treats
+/// alike: this process holds no entropy endpoint in `slot`, or the service answered with fewer
+/// bytes than asked. A caller that must tell them apart calls `fill_with` itself. On `None` the
 /// contents of `out` are unspecified and must not be used. See `entropy_contract::fill_with` for
 /// the loop and its tests.
 ///
@@ -26,5 +27,5 @@
 /// says entropy.
 #[must_use]
 pub fn fill(slot: u64, out: &mut [u8]) -> Option<()> {
-    entropy_contract::fill_with(out, |w0| super::call(slot, w0, 0))
+    entropy_contract::fill_with(out, |w0| super::call(slot, w0, 0)).ok()
 }
