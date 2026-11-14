@@ -11,10 +11,9 @@ pub use ::designware_ethernet as device;
 use address_space_map::{PAGE, pair_page};
 use designware_ethernet::bring_up::{Account, AddressSource, Error, Inputs};
 use designware_ethernet::cache_coherence::{Observation, Payload, Verdict};
-use designware_ethernet::motorcomm_physical_layer_device::{Link, Settings, SettingsSource, Speed};
-use designware_ethernet::{
-    management_data_input_output as mdio, network_interface_controller as controller,
-};
+use designware_ethernet::link::{Link, Speed};
+use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
+use designware_ethernet::{management_data_io as mdio, network_interface_controller as controller};
 use startup_page_contract::WindowKind;
 
 /// The DMA region, `designware_ethernet::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The same address as
@@ -25,11 +24,12 @@ use startup_page_contract::WindowKind;
 /// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as design/naming.md asks.
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 /// The controller's DMA (direct memory access) register page
-/// (`designware_ethernet::registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE`), device memory.
+/// (`designware_ethernet::registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`),
+/// device memory.
 /// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`; this
-/// lane added `REGISTER` to match the crate's `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, replacing
+/// lane added `REGISTER` to match the crate's `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`, replacing
 /// `DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS`.
 #[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS: u64 =
@@ -272,7 +272,7 @@ fn outcome_code(outcome: Result<bool, Error>) -> (u64, u64) {
         Ok(linked) => (0, u64::from(linked)),
         Err(Error::Silent { version }) => (1, u64::from(version)),
         Err(Error::NoStationAddress) => (2, 0),
-        Err(Error::ManagementDataInputOutput(mdio::Error::Timeout {
+        Err(Error::ManagementDataIo(mdio::Error::Timeout {
             physical_layer_device_address,
             register,
         })) => (
@@ -301,7 +301,7 @@ fn outcome_from_code(code: u64, detail: u64) -> Option<Result<bool, Error>> {
         2 => narrow(0).map(|_| Err(Error::NoStationAddress))?,
         3 => {
             let d = narrow(16)?;
-            Err(Error::ManagementDataInputOutput(mdio::Error::Timeout {
+            Err(Error::ManagementDataIo(mdio::Error::Timeout {
                 physical_layer_device_address: d as u8,
                 register: (d >> 8) as u8,
             }))
@@ -549,7 +549,7 @@ mod tests {
                 version: 0xffff_ffff,
             },
             Error::NoStationAddress,
-            Error::ManagementDataInputOutput(mdio::Error::Timeout {
+            Error::ManagementDataIo(mdio::Error::Timeout {
                 physical_layer_device_address: 3,
                 register: 0x1e,
             }),

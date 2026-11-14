@@ -65,7 +65,7 @@ current_cpu_contract prose_acronyms 1
 current_cpu_contract readme_acronyms 1
 designware_ethernet abbreviations 27
 designware_ethernet prose_acronyms 26
-designware_ethernet register_names 89
+designware_ethernet register_names 84
 designware_inter_integrated_circuit abbreviations 2
 device_tree_blob abbreviations 37
 device_tree_blob prose_acronyms 12
