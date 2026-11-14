@@ -76,8 +76,8 @@ S for the rename, since the crate is small and has three dependents.
 glob` reports "no block" for each, and `design/module-block-baseline.txt` lines 3146 to 3158 hold
 them as baseline violators. The move strips `Name:` blocks, so whatever is not ratified in a review
 package before the move leaves the tree as an unratified public API. The names themselves are mostly
-right; Decision 2 below lists them with one recommended change. Evidence: `crates/glob/src/lib.rs`
-lines 33, 76, 91, 102, 118, 140 and 236. One-way (public API). S, once ruled.
+right; Decision 2 below decides them, provisionally, with one change. Evidence:
+`crates/glob/src/lib.rs` lines 33, 76, 91, 102, 118, 140 and 236. Two-way before the first tag. S.
 
 #### P0-3. The integration test links two crates that do not leave with it
 
@@ -201,7 +201,7 @@ The P2 items are in [the appendix](1092-glob-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Only one-way doors. The scope decisions, the default dot rule and the algorithm are the baseline and
+Decision 1 is a one-way door; Decision 2 is decided, provisionally. The scope decisions, the default dot rule and the algorithm are the baseline and
 are not reopened.
 
 ### Decision 1. The registry name of the crate (P0-1)
@@ -259,6 +259,12 @@ names, with the reviewer's reading against `design/naming.md`:
 `GLOB_PERIOD` (glibc's `glob(3)`); every one of them names the position. The variants stay: they are
 the two answers and nothing shorter says them. The three call sites in the tree change with it
 (`pgrep/src/lib.rs` lines 94 to 102, two mentions, and the doc tests).
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. `matches`, `matches_with`, `has_magic`, `literal`, `match_steps`
+and `cost_bound` keep their spelling, and `Dot` becomes `LeadingDot` with its variants unchanged
+and no alias. The review package lists the seven as provisional; ratifying them stays the
+architect's. P0-2 is the work.
 
 ## Prior art
 
