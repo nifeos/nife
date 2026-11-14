@@ -156,7 +156,7 @@ bootloader.
 
 ## The parser is a HOST crate, and that is the whole trick
 
-`crates/elf` is pure logic and compiles for the laptop, so its tests run in **milliseconds with
+`crates/static_elf` is pure logic and compiles for the laptop, so its tests run in **milliseconds with
 no emulator** ([DECISIONS §7](../design/decisions/0007-testing-harness.md)).
 
 Which means forging a malicious binary is eleven lines:
@@ -221,12 +221,12 @@ leak from a dead process.
 
 Our loader zeroes every page before copying, so the tail is free. But only because we thought
 about it, and the test binary deliberately has a `.bss` variable it checks is zero, and a
-`crates/elf` test asserts the test binary *has* a `.bss` at all, so the check cannot go vacuous.
+`crates/static_elf` test asserts the test binary *has* a `.bss` at all, so the check cannot go vacuous.
 
 ## `p_paddr` is not `p_vaddr`, and the trap is that it usually is
 
 A `PT_LOAD` header carries two addresses. `p_vaddr` is where the program wants the segment in its
-own address space; `p_paddr` is where it wants the segment in *physical* memory. `crates/elf`
+own address space; `p_paddr` is where it wants the segment in *physical* memory. `crates/static_elf`
 exposes both, but they answer different questions, and almost nothing here should ask the second
 one.
 
@@ -259,7 +259,7 @@ The rule that falls out:
   program asked, so the file's physical address is not merely unused, it is a claim about a
   decision the loader is making itself.
 - A loader placing an image at fixed physical addresses wants `paddr`. That is firmware-shaped
-  work, and it is why the field is exposed at all (milestone 196 (a physical address on `elf::Segment`)). Without it, such a loader has to
+  work, and it is why the field is exposed at all (milestone 196 (a physical address on `static_elf::Segment`)). Without it, such a loader has to
   re-implement the ELF parse, and two readers of one format is what AGENTS.md rule 7 exists to
   prevent.
 
@@ -275,11 +275,11 @@ error, and the loader placing images physically owns that judgment.
   milestone 200 gives virtual and physical addresses different types across the whole tree, and
   typing these two fields alone would claim a distinction the rest of the tree does not make.
   Until 200 lands, this note and that comment are the whole mechanism.
-- Every test but one has them equal, which is the hazard restated. `crates/elf`'s
+- Every test but one has them equal, which is the hazard restated. `crates/static_elf`'s
   `a_physical_address_may_differ_from_the_virtual_one` is the single case that would catch a
   consumer conflating them, and it only covers the parse, not any consumer.
 - The field did not, on its own, retire the second reader, which was milestone 196's other half.
-  The blocker was not `p_paddr`: **`crates/elf` refused the kernel image** with
+  The blocker was not `p_paddr`: **`crates/static_elf` refused the kernel image** with
   `Error::WritableAndExecutable`, because the `x86_64` linker script folded `.text.boot` and
   `.data.boot` into one output section and the 32-bit trampoline shipped as a single `RWX` `PT_LOAD`
   at `0x101000`. Measured rather than argued, twice. 196's lane patched that one segment's `p_flags`
@@ -289,10 +289,10 @@ error, and the loader placing images physically owns that judgment.
   trampoline's split addresses included. Nothing else in the validating parser objected, so the
   blocker really was one linker-script line.
 - The second reader is gone (milestone 208). `uefi_loader/src/image.rs` is now a physical-span
-  helper and a refusal-wording table over `elf::Elf`, and the loader validates the kernel it places
+  helper and a refusal-wording table over `static_elf::Elf`, and the loader validates the kernel it places
   instead of trusting it. What made the deletion possible was a security fix rather than an API
   change, which is the part worth remembering. The kernel's own image was the one thing in the tree
-  breaking the W^X rule `crates/elf` and `paging::Flags` enforce everywhere else, and the parser
+  breaking the W^X rule `crates/static_elf` and `paging::Flags` enforce everywhere else, and the parser
   refusing it is that rule catching the tree. `script/image-permissions` is what keeps it caught.
 
 ## The loader honors permissions and does not widen them

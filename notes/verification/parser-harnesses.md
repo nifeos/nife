@@ -6,9 +6,9 @@ An appendix to [notes/verification.md](../verification.md). These three crates p
 kernel did not write: a binary, a boot archive, and a PCI function's answers. Why whole-parse
 totality was out of reach is in [elf-parser-wall.md](elf-parser-wall.md).
 
-## `crates/elf`
+## `crates/static_elf`
 
-Four in `crates/elf/src/lib.rs`:
+Four in `crates/static_elf/src/lib.rs`:
 
 | Harness | Property |
 |---|---|

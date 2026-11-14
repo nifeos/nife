@@ -1,4 +1,4 @@
-Falsifies `elf::verification::page_range_is_panic_free_and_ordered`.
+Falsifies `static_elf::verification::page_range_is_panic_free_and_ordered`.
 
 The defect: the round back up to a page boundary multiplies without saturating. After a
 `div_ceil` the multiply looks like it is putting back exactly what was taken out, which is what
@@ -9,10 +9,10 @@ Expected to fail: the panic-free half of the claim, as an arithmetic overflow, a
 `u64::MAX`, where the saturated sum divides to a quotient whose product with the page size does
 not fit. `Segment` is `pub`, so it must hold without `parse`'s guarantees.
 
-diff --git a/crates/elf/src/segment.rs b/crates/elf/src/segment.rs
+diff --git a/crates/static_elf/src/segment.rs b/crates/static_elf/src/segment.rs
 index 7fa9ab50c..230140613 100644
---- a/crates/elf/src/segment.rs
-+++ b/crates/elf/src/segment.rs
+--- a/crates/static_elf/src/segment.rs
++++ b/crates/static_elf/src/segment.rs
 @@ -92,7 +92,7 @@ impl Segment<'_> {
              .vaddr
              .saturating_add(self.memsz)

@@ -70,7 +70,7 @@ exists for the second one.
 
 ### The unviable mutant, and the case for leaving it unviable
 
-`uefi_loader::image::parse`'s only mutant is `Ok(Default::default())`. `elf::Elf` has no `Default`,
+`uefi_loader::image::parse`'s only mutant is `Ok(Default::default())`. `static_elf::Elf` has no `Default`,
 so cargo-mutants has said nothing at all about that function since it was written. This is exactly
 the shape of milestone 250 (an unviable mutant is a hole in the measurement that reads as a pass).
 It came with the classic symptom: nothing in the tree called `parse` either, so there was no test

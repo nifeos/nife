@@ -118,7 +118,7 @@ table and the reasoning.
 | `generational_table` | 3 | a removed name never resolves again | [core](verification/core-harnesses.md) |
 | `intrusive_queue` | 1 | any push/pop interleaving is FIFO and lossless | [core](verification/core-harnesses.md) |
 | `address_space_identifier` | 3 | ASID 0 is never allocated; live ASIDs are distinct | [core](verification/core-harnesses.md) |
-| `elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
+| `static_elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
 | `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
 | `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
@@ -187,7 +187,7 @@ crate is picked up with no change.
 
 - Proofs live behind `#[cfg(kani)]`. An ordinary `cargo build`/`cargo test` never compiles them,
   and the crate needs no dependency on `kani` (its intrinsics are injected only under `cargo kani`).
-- Verify pure logic first. The §7 (testing) host crates (`capability`, `paging`, `elf`,
+- Verify pure logic first. The §7 (testing) host crates (`capability`, `paging`, `static_elf`,
   `page_frames`, the ASID allocator) are the frontier: small, allocation-light, already
   host-compiled. Bounded model checking is happiest there.
 - Spread inward from the capability core, the order §14 sets: `capability`, then IPC (rendezvous,

@@ -29,7 +29,7 @@ of the copy would then fault, with boot services still live and nothing watching
 
 ## Why the ELF reading is physical
 
-`crates/elf` is also the kernel's *user-program* loader, and a program is placed at its `p_vaddr`. A
+`crates/static_elf` is also the kernel's *user-program* loader, and a program is placed at its `p_vaddr`. A
 boot loader places an image at its `p_paddr`. On this kernel the two are not related by any offset a
 caller could apply:
 
@@ -38,8 +38,8 @@ caller could apply:
 .ap_trampoline   p_vaddr 0x0000000000008000   p_paddr 0x165000
 ```
 
-So `elf::Segment` carries `p_paddr` beside `p_vaddr` (milestone 196 (a physical address on
-`elf::Segment`)), and `uefi_loader/src/image.rs` places each segment by it. The loader reads the
+So `static_elf::Segment` carries `p_paddr` beside `p_vaddr` (milestone 196 (a physical address on
+`static_elf::Segment`)), and `uefi_loader/src/image.rs` places each segment by it. The loader reads the
 kernel with `Elf::parse` and its whole validation battery, which the x86_64 image passes because its
 trampoline's code and data ship as separate segments (milestone 208 (the x86_64 kernel image ships
 an RWX segment)).

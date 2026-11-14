@@ -85,7 +85,7 @@ const _: () = assert!(BUILDS * IMAGE_PAGES > 24_048);
 const _: () = assert!(BUILDS * IMAGE_PAGES > SCRATCH_WINDOW_PAGES * 3 / 2);
 
 /// An ELF header and two `PT_LOAD` headers, no file bytes: a one-page code segment holding the entry
-/// point, and `IMAGE_PAGES - 1` pages of writable memory after it. Just enough for `elf::Elf::parse`,
+/// point, and `IMAGE_PAGES - 1` pages of writable memory after it. Just enough for `static_elf::Elf::parse`,
 /// which is all the loader needs.
 fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
     let base = address_space_map::IMAGE_BASE;
@@ -94,7 +94,7 @@ fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
     out[5] = 1; // little-endian
     out[6] = 1; // version
     out[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
-    out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+    out[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
     out[20..24].copy_from_slice(&1u32.to_le_bytes());
     out[24..32].copy_from_slice(&base.to_le_bytes()); // entry
     out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // phoff
@@ -102,8 +102,8 @@ fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
     out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes());
     out[56..58].copy_from_slice(&2u16.to_le_bytes()); // phnum
     let segments = [
-        (elf::PF_R | elf::PF_X, base, PAGE),
-        (elf::PF_R | elf::PF_W, base + PAGE, (IMAGE_PAGES - 1) * PAGE),
+        (static_elf::PF_R | static_elf::PF_X, base, PAGE),
+        (static_elf::PF_R | static_elf::PF_W, base + PAGE, (IMAGE_PAGES - 1) * PAGE),
     ];
     for (i, (flags, vaddr, memsz)) in segments.into_iter().enumerate() {
         let ph = &mut out[EHDR + i * PHDR..EHDR + (i + 1) * PHDR];
@@ -148,7 +148,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 fn build_until_done() -> ! {
     let mut bytes = [0u8; EHDR + 2 * PHDR];
     forge(&mut bytes);
-    let Ok(image) = elf::Elf::parse(&bytes) else {
+    let Ok(image) = static_elf::Elf::parse(&bytes) else {
         user_mode_runtime::trap()
     };
 

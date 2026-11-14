@@ -38,11 +38,11 @@ use object::write::pe::{NtHeaders, Writer};
 use object::{LittleEndian as LE, pe, pod};
 
 /// `IMAGE_FILE_MACHINE_*` and the `R_*_RELATIVE` type, for each machine this converts.
-fn machine(elf_machine: elf::Machine) -> Option<(pe::Machine, elf::RelocationType)> {
+fn machine(elf_machine: static_elf::Machine) -> Option<(pe::Machine, static_elf::RelocationType)> {
     match elf_machine {
-        elf::EM_X86_64 => Some((pe::IMAGE_FILE_MACHINE_AMD64, elf::R_X86_64_RELATIVE)),
-        elf::EM_AARCH64 => Some((pe::IMAGE_FILE_MACHINE_ARM64, elf::R_AARCH64_RELATIVE)),
-        elf::EM_RISCV => Some((pe::IMAGE_FILE_MACHINE_RISCV64, elf::R_RISCV_RELATIVE)),
+        static_elf::EM_X86_64 => Some((pe::IMAGE_FILE_MACHINE_AMD64, static_elf::R_X86_64_RELATIVE)),
+        static_elf::EM_AARCH64 => Some((pe::IMAGE_FILE_MACHINE_ARM64, static_elf::R_AARCH64_RELATIVE)),
+        static_elf::EM_RISCV => Some((pe::IMAGE_FILE_MACHINE_RISCV64, static_elf::R_RISCV_RELATIVE)),
         _ => None,
     }
 }
@@ -94,18 +94,18 @@ struct Load<'a> {
     vaddr: u64,
     memsz: u64,
     bytes: &'a [u8],
-    flags: elf::ProgramFlags,
+    flags: static_elf::ProgramFlags,
 }
 
 /// What [`from_elf`] reads from the ELF.
 struct Header<'a> {
     pe_machine: pe::Machine,
-    relative: elf::RelocationType,
+    relative: static_elf::RelocationType,
     entry: u64,
     /// The `PT_LOAD`s, sorted by address.
     loads: Vec<Load<'a>>,
     /// `PT_DYNAMIC`'s entries, if there is one.
-    dynamic: &'a [elf::Dyn64<LE>],
+    dynamic: &'a [static_elf::Dyn64<LE>],
 }
 
 /// **Convert** (see the module documentation).
@@ -123,23 +123,23 @@ pub(crate) fn from_elf(elf: &[u8]) -> Result<Vec<u8>, Error> {
 fn read_header(elf: &[u8]) -> Result<Header<'_>, Error> {
     let file = FileHeader64::<LE>::parse(elf)?;
     let endian = file.endian()?;
-    if file.e_type(endian) != elf::ET_DYN {
+    if file.e_type(endian) != static_elf::ET_DYN {
         return Err(Error::NotPositionIndependent);
     }
     let e_machine = file.e_machine(endian);
     let (pe_machine, relative) = machine(e_machine).ok_or(Error::UnknownMachine(e_machine.0))?;
     let mut loads = Vec::new();
-    let mut dynamic: &[elf::Dyn64<LE>] = &[];
+    let mut dynamic: &[static_elf::Dyn64<LE>] = &[];
     for segment in file.program_headers(endian, elf)? {
         let segment: &ProgramHeader64<LE> = segment;
         match segment.p_type(endian) {
-            elf::PT_LOAD => loads.push(Load {
+            static_elf::PT_LOAD => loads.push(Load {
                 vaddr: segment.p_vaddr(endian),
                 memsz: segment.p_memsz(endian),
                 bytes: segment.data(endian, elf).map_err(|()| Error::Truncated)?,
                 flags: segment.p_flags(endian),
             }),
-            elf::PT_DYNAMIC => dynamic = segment.dynamic(endian, elf)?.unwrap_or(&[]),
+            static_elf::PT_DYNAMIC => dynamic = segment.dynamic(endian, elf)?.unwrap_or(&[]),
             _ => {}
         }
     }
@@ -192,12 +192,12 @@ fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Erro
     for entry in header.dynamic {
         let value = entry.d_val(LE);
         match entry.d_tag(LE) {
-            elf::DT_NULL => break,
-            elf::DT_RELA => rela = Some(value),
-            elf::DT_RELASZ => relasz = value,
-            elf::DT_RELAENT => relaent = value,
-            elf::DT_REL | elf::DT_RELR => return Err(Error::UnsupportedRelocationTable),
-            elf::DT_PLTRELSZ | elf::DT_JMPREL if value != 0 => {
+            static_elf::DT_NULL => break,
+            static_elf::DT_RELA => rela = Some(value),
+            static_elf::DT_RELASZ => relasz = value,
+            static_elf::DT_RELAENT => relaent = value,
+            static_elf::DT_REL | static_elf::DT_RELR => return Err(Error::UnsupportedRelocationTable),
+            static_elf::DT_PLTRELSZ | static_elf::DT_JMPREL if value != 0 => {
                 return Err(Error::UnsupportedRelocationTable);
             }
             _ => {}
@@ -215,10 +215,10 @@ fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Erro
             .and_then(|at| usize::try_from(at).ok())
             .and_then(|at| image.get(at..))
             .ok_or(Error::Truncated)?;
-        let (entry, _) = pod::from_bytes::<elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
+        let (entry, _) = pod::from_bytes::<static_elf::Rela64<LE>>(at).map_err(|()| Error::Truncated)?;
         let (r_offset, r_addend) = (entry.r_offset(LE), entry.r_addend(LE) as u64);
         let kind = entry.r_type(LE, false);
-        if kind == elf::R_RISCV_NONE {
+        if kind == static_elf::R_RISCV_NONE {
             continue; // R_*_NONE is 0 on every machine
         }
         if kind != header.relative || entry.r_sym(LE, false) != 0 {
@@ -242,11 +242,11 @@ fn apply_relocations(image: &mut [u8], header: &Header) -> Result<Vec<u64>, Erro
 }
 
 /// A section's name and flags, from its segment's permissions.
-fn section_kind(flags: elf::ProgramFlags) -> ([u8; 8], pe::SectionFlags) {
-    if flags.contains(elf::PF_X) {
+fn section_kind(flags: static_elf::ProgramFlags) -> ([u8; 8], pe::SectionFlags) {
+    if flags.contains(static_elf::PF_X) {
         let code = pe::IMAGE_SCN_CNT_CODE | pe::IMAGE_SCN_MEM_EXECUTE | pe::IMAGE_SCN_MEM_READ;
         (*b".text\0\0\0", code)
-    } else if flags.contains(elf::PF_W) {
+    } else if flags.contains(static_elf::PF_W) {
         let data =
             pe::IMAGE_SCN_CNT_INITIALIZED_DATA | pe::IMAGE_SCN_MEM_READ | pe::IMAGE_SCN_MEM_WRITE;
         (*b".data\0\0\0", data)

@@ -48,12 +48,12 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     let Ok(fs) = nifefs::Fs::parse(archive) else {
         bail(1)
     };
-    let Some(spawner) = fs.read("spawner").and_then(|b| elf::Elf::parse(b).ok()) else {
+    let Some(spawner) = fs.read("spawner").and_then(|b| static_elf::Elf::parse(b).ok()) else {
         bail(2)
     };
     let Some(sub_server_supervisor) = fs
         .read("sub_server_supervisor")
-        .and_then(|b| elf::Elf::parse(b).ok())
+        .and_then(|b| static_elf::Elf::parse(b).ok())
     else {
         bail(3)
     };
