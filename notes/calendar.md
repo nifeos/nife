@@ -43,9 +43,11 @@ write. `jiff::civil` reaches from -9999 to 9999, so each caller states the bound
 timetable and the C library refuse a year outside it (`EOVERFLOW` from `gmtime`), and `date` refuses
 an instant whose local year is negative.
 
-The callers do civil arithmetic from the epoch with a `SignedDuration` rather than going through
-`jiff::Timestamp`. A `Timestamp` ends at 9999-12-30T22:00:00Z, so that the civil time at any
-offset stays in range, and going through it would refuse the last day of year 9999.
+`date` goes through `jiff::Timestamp` and a fixed `Offset`, because jiff's span arithmetic links in its
+error formatting, and a debug build of `date` with it no longer fits the region a job is built in
+(`grant_plan::JOB_REGION_PAGES`). A `Timestamp` ends at 9999-12-30T22:00:00Z, so `date` refuses the
+last day of year 9999, past the clock's 2100 ceiling. The timetable and the C library do civil
+arithmetic from the epoch with a `SignedDuration` and keep the whole range.
 
 The calendar is proleptic Gregorian, as in every library that speaks Unix time: the Gregorian rules
 run back past the 1582 reform, and year 0 exists and is a leap year. Negative timestamps are

@@ -27,8 +27,9 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use clock_contract::{ClockPage, state};
-use jiff::SignedDuration;
-use jiff::civil::{DateTime, Weekday, date};
+use jiff::Timestamp;
+use jiff::civil::{DateTime, Weekday};
+use jiff::tz::Offset;
 use user_mode_runtime::{exit, is_granted, monotonic_nanoseconds, send};
 
 /// Slot 0: where the output goes. An endpoint with `WRITE`, and the same 16-bytes-per-message
@@ -181,12 +182,14 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
 /// The civil reading at `offset_minutes` east of UTC when the Unix time is `unix_seconds`, or
 /// `None` outside years 0000 to 9999, the years RFC 3339's four-digit `date-fullyear` can write.
 ///
-/// Civil arithmetic from the epoch rather than a `jiff::Timestamp`, whose range stops 26 hours short
-/// of 9999's end so that any offset can still be applied to it; this keeps the whole printable range.
+/// Through a `jiff::Timestamp` and a fixed `Offset`, which is a few pages of code. Span arithmetic
+/// (`checked_add` with a duration) links in jiff's error formatting and makes this program too big
+/// for the region a job is built in. A `Timestamp` ends at 9999-12-30T22:00:00Z, so the last day of
+/// year 9999 is refused, which no clock this program is given can reach.
 fn local_reading(unix_seconds: i64, offset_minutes: i32) -> Option<DateTime> {
-    let local = unix_seconds.checked_add(i64::from(offset_minutes) * 60)?;
-    let epoch = date(1970, 1, 1).at(0, 0, 0, 0);
-    let reading = epoch.checked_add(SignedDuration::from_secs(local)).ok()?;
+    let instant = Timestamp::from_second(unix_seconds).ok()?;
+    let offset = Offset::from_seconds(offset_minutes * 60).ok()?;
+    let reading = offset.to_datetime(instant);
     (reading.year() >= 0).then_some(reading)
 }
 
