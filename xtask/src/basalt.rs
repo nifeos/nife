@@ -36,27 +36,59 @@
 //! ([`HOST_RIPGREP`]). `script/swish-check` compares the guest's walk against what it prints, and
 //! `walk_pricing` holds it to the fixture's lines.
 
+//! # Built from the candidate tree, in the merge queue
+//!
+//! `cargo xtask basalt-build <architecture>...` builds the same packages from this checkout's
+//! committed tree instead of fetching them (milestone 1115 (the gate builds basalt's delivered
+//! programs from the candidate tree)). It checks out basalt at the commit [`PIN`] names into a
+//! scratch directory and runs that commit's `helpers/packages.py build` against this checkout, for
+//! the architectures named and the packages of [`PACKAGES`], into [`built_repository`]. Every
+//! program links nife's standard library and the C programs nife's C library, so a program built
+//! this way reads the candidate's wire formats. The four merge-group rows that run basalt's
+//! programs (`swish-check`, `swish-check-x86_64`, `rg-threads`, `rg-threads-x86_64`) each build the
+//! architectures they run and hand the result to `basalt-fetch` with
+//! [`crate::disk::BASALT_REPOSITORY`]. A change that breaks a wire format a delivered program reads
+//! lands in one pull request, with the rebuilt program tested in its merge group.
+//!
+//! The build root is a directory of its own for each run, under the system's temporary directory,
+//! so two runs on one host do not share basalt's fixed `/tmp/basalt-build`. The scratch checkout and
+//! the build root are removed when the run ends. The packages differ from the published ones: they
+//! are built from another tree, at another path. basalt's `packages` workflow tests the published
+//! bytes, and runs nife's `swish-check` rows on them, at every pin bump.
+
 //! # Environment
 //!
 //! When [`crate::disk::BASALT_REPOSITORY`] names a repository, as basalt's own `packages` workflow
-//! does with the one it just built, nothing is fetched: that repository's packages are accepted
-//! under its own index and their programs taken from it. Without a network a local run says what
-//! it could not fetch, succeeds, and skips every line and test of basalt's programs. In CI (`CI`
-//! set) a failed fetch fails the row.
+//! does with the one it just built and nife's merge-group rows do with [`built_repository`],
+//! nothing is fetched: that repository's packages are accepted under its own index and their
+//! programs taken from it. Without a network a local run says what it could not fetch, succeeds,
+//! and skips every line and test of basalt's programs. In CI (`CI` set) a failed fetch fails the
+//! row.
 
 //! # BUGS
 //!
-//! - **A wire-format break in a program basalt delivers cannot land in one nife pull request.**
-//!   nife's gate consumes basalt's prebuilt archive, and basalt pins a merged nife commit and
-//!   refuses a branch, so a nife change that rebuilds the program's peer has nowhere to publish the
-//!   rebuilt program first. `program_argument_contract`'s argv magic is the worked example: minting
-//!   its version digits in-tree made the rebuilt shell write an argv page the pinned `rg` refuses,
-//!   and the `rg-threads` and `swish-check` rows failed until the digits went back out. Nothing
-//!   breaks today because basalt has no consumers yet, so nife may still break and re-pin in one
-//!   move. A fix needs one of two things: a gate that builds the program from the candidate tree
-//!   instead of fetching it, or a written break-and-repin procedure that moves the basalt pin and
-//!   the contract together. Until then, a change here that breaks a delivered program's wire format
-//!   waits for basalt's archive rebuild.
+//! - **Only the merge queue and a push to `main` build from the tree.** A pull request's `full-ci`
+//!   run and a local `script/ci-build` fetch the published programs, so a change that breaks a
+//!   delivered program's wire format is red there and green in its merge group. To see what the
+//!   queue sees, run `cargo xtask basalt-build aarch64 riscv64 x86_64` and set
+//!   `NIFE_BASALT_REPOSITORY` to the directory it prints.
+//! - **The digest check's refusal is read as success.** basalt's build fails (exit status 1) when a
+//!   package differs from the digest its recipe records, which a package built from any tree but
+//!   the one basalt pins always does. At the pinned basalt commit `--update-digests` refuses a build
+//!   of fewer than every architecture, so it cannot set the check aside. The build writes its index
+//!   only after every package is built and packed, so [`build`] takes a failed run whose fresh index
+//!   lists every package it asked for as a built one. A basalt flag that skips the check would
+//!   remove the inference.
+//! - **The build root is set by assigning `BUILD_ROOT`**, a module-level name in basalt's
+//!   `helpers/packages.py`, after importing it, because the script takes no option for it. A
+//!   basalt change that renames it fails the build at once and says so.
+//! - **`xtask/basalt-pin` does not follow basalt.** It names basalt commit `155eba5`, whose own
+//!   pin is a nife commit of 2026-10-17. The merge-group rows run that commit's recipes and build
+//!   script, and every other gate fetches that commit's published programs. A recipe basalt adds
+//!   or changes reaches nife only when someone moves the pin by hand.
+//! - Each build stages a nife tree at a new path, and `cargo xtask std-src` links a toolchain for
+//!   it (`rustup toolchain link`). The link dangles once the build root is removed, and the next
+//!   `std-src` on the host sweeps it.
 
 use std::path::{Path, PathBuf};
 
@@ -186,6 +218,177 @@ pub(crate) fn fetch() -> bool {
         }
     }
     ok
+}
+
+/// **Where `cargo xtask basalt-build` writes the repository it built**, in basalt's layout, which
+/// the merge-group rows name in [`crate::disk::BASALT_REPOSITORY`].
+pub(crate) fn built_repository() -> PathBuf {
+    workspace_root().join("target/basalt-built")
+}
+
+/// The program `python3 -I -c` runs: basalt's `helpers/packages.py` imported from the directory
+/// its first argument names, its `BUILD_ROOT` set to the second, and its own `main` run on the
+/// rest. The module's `if __name__` guard keeps the import from running anything.
+const PACKAGES_WITH_BUILD_ROOT: &str = r#"
+import pathlib, sys
+helpers, root = sys.argv[1], sys.argv[2]
+sys.path.insert(0, helpers)
+import packages
+if not isinstance(getattr(packages, "BUILD_ROOT", None), pathlib.Path):
+    sys.exit("basalt-build: helpers/packages.py has no BUILD_ROOT path to set")
+packages.BUILD_ROOT = pathlib.Path(root)
+sys.argv = ["packages.py", *sys.argv[3:]]
+packages.main()
+"#;
+
+/// `cargo xtask basalt-build <architecture>...`: build [`PACKAGES`] for those architectures from
+/// this checkout's committed tree with basalt's build at [`PIN`], into [`built_repository`]. Returns
+/// whether every package was built.
+pub(crate) fn build() -> bool {
+    let named: Vec<String> = std::env::args().skip(2).collect();
+    let architectures = match parse_architectures(&named) {
+        Ok(a) => a,
+        Err(why) => {
+            eprintln!("basalt-build: {why}");
+            eprintln!("usage: cargo xtask basalt-build <aarch64|riscv64|x86_64>...");
+            return false;
+        }
+    };
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
+    let scratch =
+        std::env::temp_dir().join(format!("nife-basalt-build-{}-{nanos}", std::process::id()));
+    let result = build_in(&scratch, &architectures);
+    if let Err(e) = std::fs::remove_dir_all(&scratch) {
+        eprintln!("basalt-build: could not remove {}: {e}", scratch.display());
+    }
+    match result {
+        Ok(said) => {
+            println!("basalt-build: {said}");
+            true
+        }
+        Err(why) => {
+            eprintln!("basalt-build: {why}");
+            false
+        }
+    }
+}
+
+/// The architectures `named` lists, in [`ARCHITECTURES`] order, refused when empty or when one is
+/// not an architecture basalt builds.
+fn parse_architectures(named: &[String]) -> Result<Vec<&'static str>, String> {
+    if named.is_empty() {
+        return Err("no architecture named".to_owned());
+    }
+    if let Some(bad) = named.iter().find(|n| !ARCHITECTURES.contains(&n.as_str())) {
+        return Err(format!(
+            "`{bad}` is not one of {}",
+            ARCHITECTURES.join(", ")
+        ));
+    }
+    Ok(ARCHITECTURES
+        .into_iter()
+        .filter(|a| named.iter().any(|n| n == a))
+        .collect())
+}
+
+/// [`build`]'s work, with `scratch` holding basalt's checkout and its build root.
+fn build_in(scratch: &Path, architectures: &[&str]) -> Result<String, String> {
+    let (commit, _) = parse_pin(PIN)?;
+    let basalt = scratch.join("basalt");
+    std::fs::create_dir_all(&basalt).map_err(|e| format!("{}: {e}", basalt.display()))?;
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .arg("-C")
+            .arg(&basalt)
+            .args(args)
+            .status()
+            .map_err(|e| format!("git: {e}"))?
+            .success()
+            .then_some(())
+            .ok_or_else(|| format!("`git {}` failed in {}", args.join(" "), basalt.display()))
+    };
+    git(&["init", "-q"])?;
+    git(&[
+        "fetch",
+        "-q",
+        "--depth",
+        "1",
+        "https://github.com/nifeos/basalt",
+        commit,
+    ])?;
+    git(&["checkout", "-q", "--detach", "FETCH_HEAD"])?;
+    let repository = built_repository();
+    if repository.exists() {
+        std::fs::remove_dir_all(&repository)
+            .map_err(|e| format!("{}: {e}", repository.display()))?;
+    }
+    let triples: Vec<String> = architectures
+        .iter()
+        .map(|a| format!("{a}-unknown-nife"))
+        .collect();
+    let status = std::process::Command::new("python3")
+        .args(["-I", "-c", PACKAGES_WITH_BUILD_ROOT])
+        .arg(basalt.join("helpers"))
+        .arg(scratch.join("root"))
+        .arg("build")
+        .arg(workspace_root())
+        .arg(&repository)
+        .arg("--triples")
+        .args(&triples)
+        .arg("--only")
+        .args(PACKAGES)
+        .status()
+        .map_err(|e| format!("python3: {e}"))?;
+    let index_path = repository.join(CHANNEL).join("metadata/stand-in-index");
+    let index = std::fs::read_to_string(&index_path).map_err(|e| {
+        format!(
+            "basalt's build at {commit} exited {status} and wrote no index ({}: {e})",
+            index_path.display()
+        )
+    })?;
+    let missing = missing_stems(&index, architectures);
+    if !missing.is_empty() {
+        return Err(format!(
+            "{} lists no package for {}",
+            index_path.display(),
+            missing.join(", ")
+        ));
+    }
+    let checked = if status.success() {
+        "every package matched its recipe's digest"
+    } else {
+        "the digest check refused the packages, as it refuses any tree but the nife commit basalt pins"
+    };
+    Ok(format!(
+        "{} packages built from this tree with basalt {}; {checked}; repository {}",
+        PACKAGES.len() * architectures.len(),
+        &commit[..7],
+        repository.display()
+    ))
+}
+
+/// Each `<package>-*-<architecture>` that `index` has no line for, for [`PACKAGES`] and
+/// `architectures`. A stem is `<recipe name>-<version>-<architecture>`, and every recipe's name is
+/// its file's stem.
+fn missing_stems(index: &str, architectures: &[&str]) -> Vec<String> {
+    let stems: Vec<&str> = index.lines().filter_map(|l| l.split(' ').next()).collect();
+    let mut missing = Vec::new();
+    for package in PACKAGES {
+        for architecture in architectures {
+            let found = stems.iter().any(|stem| {
+                stem.strip_prefix(package)
+                    .and_then(|rest| rest.strip_prefix('-'))
+                    .and_then(|rest| rest.strip_suffix(architecture))
+                    .is_some_and(|version| version.ends_with('-') && version.len() > 1)
+            });
+            if !found {
+                missing.push(format!("{package} on {architecture}"));
+            }
+        }
+    }
+    missing
 }
 
 /// The index lines for [`PACKAGES`] at [`PIN`]: each recipe is read from basalt at the pinned
@@ -485,6 +688,35 @@ x86_64 = "sha256:000000000000000000000000000000000000000000000000000000000000000
         assert_eq!(
             digests,
             [("aarch64", "1"), ("riscv64", "2"), ("x86_64", "3")]
+        );
+    }
+
+    #[test]
+    fn architectures_are_named_from_the_three_basalt_builds() {
+        let names = |n: &[&str]| n.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>();
+        assert_eq!(
+            parse_architectures(&names(&["riscv64", "aarch64"])),
+            Ok(vec!["aarch64", "riscv64"])
+        );
+        assert!(parse_architectures(&[]).is_err());
+        assert!(parse_architectures(&names(&["arm64"])).is_err());
+    }
+
+    #[test]
+    fn an_index_missing_a_package_or_an_architecture_is_named() {
+        let full: String = PACKAGES
+            .iter()
+            .map(|p| format!("{p}-1.0-x86_64 sha256:00\n"))
+            .collect();
+        assert!(missing_stems(&full, &["x86_64"]).is_empty());
+        assert_eq!(
+            missing_stems(&full, &["aarch64", "x86_64"]).len(),
+            PACKAGES.len()
+        );
+        let without_sqlite = full.replace("sqlite-1.0-x86_64", "rmle-1.0-x86_64");
+        assert_eq!(
+            missing_stems(&without_sqlite, &["x86_64"]),
+            ["sqlite on x86_64"]
         );
     }
 
