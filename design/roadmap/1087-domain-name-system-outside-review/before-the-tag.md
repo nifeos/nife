@@ -57,7 +57,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
    abbreviations report names them. Door: one-way for parts a and b; two-way for c and d. Effort: S
    for the rename pull request across the four nife callers.
 
-8. The crate believes a TTL with its high bit set as written.
+8. The crate believes a TTL with its high bit set as written. DONE (`a_ttl_with_the_high_bit_set_is_zero`).
    Finding: RFC 2181 section 8 says a receiver treats a TTL with the most significant bit set as zero. `accept` takes `record.ttl` into `min` at lines 750 and 770 unchanged, so a
    reply carrying `0xffff_ffff` yields `Answer::ttl()` of 4,294,967,295 (probed), and
    `components/src/domain_name_resolver.rs` line 283 hands that to its clients as how long to

@@ -201,6 +201,32 @@ fn direct_memory_access_read<T: Copy>(off: u64) -> T {
     unsafe { core::ptr::read_volatile((region() + off) as *const T) }
 }
 
+/// How many times the driver reads `Status` after a reset before it gives up. The specification
+/// has the driver wait for the device to answer 0, with no bound of its own; a device that never
+/// does is not one this driver can initialize, and a bounded wait turns that into a stop.
+const RESET_POLLS: u32 = 1_000_000;
+
+/// Write 0 to the device's status, which resets it, and read `Status` back until it is 0, giving up
+/// after `RESET_POLLS` reads. Returns whether the device reported the reset complete. `write` and
+/// `read` are the status register's two accesses, so the loop can be tested without a device.
+///
+/// The specification has the driver read `Status` back as 0 before it reinitializes (virtio 1.2,
+/// device initialization, reset step): a device may take time to reset, and a driver that writes
+/// `ACKNOWLEDGE` first races the reset, which can then clear it.
+fn reset_until_zero(mut write: impl FnMut(u32), mut read: impl FnMut() -> u32) -> bool {
+    write(0);
+    (0..RESET_POLLS).any(|_| read() == 0)
+}
+
+/// Reset the device and wait for it to say so. Stops the driver when it never does, as the other
+/// handshake checks do.
+fn reset_device() {
+    assert!(
+        reset_until_zero(|value| mw(STATUS, value), || mr(STATUS)),
+        "the device never read back Status 0 after a reset"
+    );
+}
+
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
 /// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
@@ -217,7 +243,7 @@ fn initialize() {
 fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
-    mw(STATUS, 0);
+    reset_device();
     mw(STATUS, S_ACKNOWLEDGE);
     mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
 
@@ -696,7 +722,7 @@ fn ip_checksum(off: u64, len: u64) -> u16 {
 fn initialize_net() {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt"
 
-    mw(STATUS, 0);
+    reset_device();
     mw(STATUS, S_ACKNOWLEDGE);
     mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
 
