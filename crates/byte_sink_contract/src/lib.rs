@@ -45,7 +45,11 @@ pub const INTERFACE_ID: u64 = 6;
 /// what a message means; the cheapest claim to make is the one the wire was already making.
 pub const OPERATION_BYTES: u64 = 0;
 
-/// **End of stream.** The writer is finished; no more bytes will come. The low 32 bits are zero.
+/// **End of stream.** The writer is finished; no more bytes will come. The message is exactly
+/// `(`[`eof`]`(), 0, 0)`: every bit of the first word below the opcode is zero, and the second and
+/// third words are reserved. A writer sends zero in them, and [`unpack`] refuses anything else as
+/// [`Msg::Malformed`], so no writer can make them carry a meaning a sink would then have to know.
+/// A program with a result to report after its stream sends it on a channel of its own.
 ///
 /// A sink acts on this rather than merely noticing it: a file sink closes its handle, a terminal
 /// sink may draw a prompt, and the reader of a pipe stops reading instead of blocking forever on a
@@ -198,9 +202,12 @@ pub enum Msg {
     /// [`OPERATION_BYTES`]: this many bytes were written into the caller's buffer, 0 to
     /// [`INLINE_MAXIMUM`].
     Bytes(usize),
-    /// [`OPERATION_EOF`]: the writer is finished.
+    /// [`OPERATION_EOF`]: the writer is finished. Only the exact message `(eof(), 0, 0)` decodes
+    /// as this.
     Eof,
-    /// An opcode this contract does not define, or a byte count past [`INLINE_MAXIMUM`].
+    /// An opcode this contract does not define, a byte count past [`INLINE_MAXIMUM`], or an
+    /// end-of-stream message with a non-zero bit outside its opcode (in the first word's low bits,
+    /// or in the two reserved words).
     ///
     /// A sink refuses it rather than guessing, and refusing loudly is the point: a length larger
     /// than the message can hold is the shape of a confused or hostile writer, and the read it
@@ -229,6 +236,18 @@ pub enum Msg {
 /// let lying = req(OPERATION_BYTES, INLINE_MAXIMUM as u64 + 1);
 /// assert_eq!(unpack(lying, 0, 0, &mut [0u8; INLINE_MAXIMUM]), Msg::Malformed);
 /// ```
+///
+/// An end of stream is the one exact message `(eof(), 0, 0)`. Its two reserved words carry
+/// nothing, and a writer that puts something in them is refused:
+///
+/// ```
+/// use byte_sink_contract::{INLINE_MAXIMUM, Msg, eof, unpack};
+///
+/// let mut buf = [0u8; INLINE_MAXIMUM];
+/// assert_eq!(unpack(eof(), 0, 0, &mut buf), Msg::Eof);
+/// assert_eq!(unpack(eof(), 0, 2, &mut buf), Msg::Malformed); // a status in a reserved word
+/// assert_eq!(unpack(eof() | 1, 0, 0, &mut buf), Msg::Malformed); // a length on an end of stream
+/// ```
 pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg {
     match operation(w0) {
         OPERATION_BYTES => {
@@ -240,7 +259,7 @@ pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg 
             out[8..].copy_from_slice(&w2.to_le_bytes());
             Msg::Bytes(n)
         }
-        OPERATION_EOF => Msg::Eof,
+        OPERATION_EOF if w0 == eof() && w1 == 0 && w2 == 0 => Msg::Eof,
         _ => Msg::Malformed,
     }
 }
@@ -410,6 +429,34 @@ mod tests {
         assert_eq!(unpack(req(9, 4), 0, 0, &mut out), Msg::Malformed);
     }
 
+    /// An end-of-stream message with a bit set in either reserved word, or anywhere in the first
+    /// word below the opcode, is refused rather than read as an end: a sink that took it as one
+    /// would accept a meaning in words the contract reserves.
+    #[test]
+    fn an_end_of_stream_with_a_non_zero_reserved_bit_is_malformed() {
+        let mut out = [0u8; INLINE_MAXIMUM];
+        for bit in 0..64 {
+            assert_eq!(
+                unpack(eof(), 1 << bit, 0, &mut out),
+                Msg::Malformed,
+                "second word, bit {bit}",
+            );
+            assert_eq!(
+                unpack(eof(), 0, 1 << bit, &mut out),
+                Msg::Malformed,
+                "third word, bit {bit}",
+            );
+        }
+        for bit in 0..OPERATION_SHIFT {
+            assert_eq!(
+                unpack(eof() | (1 << bit), 0, 0, &mut out),
+                Msg::Malformed,
+                "first word, bit {bit}",
+            );
+        }
+        assert_eq!(unpack(eof(), 0, 0, &mut out), Msg::Eof);
+    }
+
     /// The three report codes are distinct, which is the only property of them that matters: a test
     /// that could not tell `Gone` from `NoSink` in a report would not be testing anything.
     #[test]
@@ -463,5 +510,23 @@ mod tests {
             0,
             "bits above the kind byte are not it"
         );
+    }
+}
+
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.an_end_of_stream_decodes_exactly_from_its_one_message.patch`
+    /// **An end of stream decodes from exactly one message**: over every three words, [`unpack`]
+    /// answers [`Msg::Eof`] if and only if they are `(eof(), 0, 0)`.
+    #[kani::proof]
+    fn an_end_of_stream_decodes_exactly_from_its_one_message() {
+        let w0: u64 = kani::any();
+        let w1: u64 = kani::any();
+        let w2: u64 = kani::any();
+        let mut out = [0u8; INLINE_MAXIMUM];
+        let decoded = unpack(w0, w1, w2, &mut out);
+        assert_eq!(decoded == Msg::Eof, (w0, w1, w2) == (eof(), 0, 0));
     }
 }
