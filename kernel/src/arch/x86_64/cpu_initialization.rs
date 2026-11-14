@@ -62,8 +62,8 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
             write_msr(
                 page_tables::x86_64::pat::MSR,
                 page_tables::x86_64::pat::VALUE,
-            )
-        };
+            );
+        }
     }
     crate::println!(
         "  pat         : {:#018x} on core {} (was {found:#018x}); entry 1 is write-combining",
