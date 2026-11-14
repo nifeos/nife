@@ -743,8 +743,15 @@ mod tests {
             let second = page.publish(state::SYNCED, 9);
             let before = page.read();
             assert_eq!(before.generation, second);
+            let sequence = frame[W_SEQ].load(Ordering::Relaxed);
 
             page.initialize();
+            // The raw word first: a sequence turned odd here would make the read below spin.
+            assert_eq!(
+                frame[W_SEQ].load(Ordering::Relaxed),
+                sequence,
+                "a restart leaves a released sequence where it was"
+            );
             assert_eq!(page.read(), before, "a restart leaves the page as it was");
             assert_eq!(
                 page.publish(state::RTC, 11),
