@@ -556,7 +556,8 @@ mod tests {
             (word::RUNNABLE, 3),
         ] {
             // SAFETY: as above; `line + offset < WORDS`.
-            unsafe { counter(frame_virtual_address, line + offset) }.store(value, Ordering::Relaxed);
+            unsafe { counter(frame_virtual_address, line + offset) }
+                .store(value, Ordering::Relaxed);
         }
         // SAFETY: the same buffer, still live.
         let s = unsafe { Snapshot::read(frame_virtual_address) }.expect("a prepared frame");

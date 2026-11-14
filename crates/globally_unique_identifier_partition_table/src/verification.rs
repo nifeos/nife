@@ -207,7 +207,12 @@ fn create_never_lays_out_a_table_parse_would_reject() {
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.an_entries_block_count_never_panics_and_is_exact.patch`
 #[kani::proof]
 fn an_entries_block_count_never_panics_and_is_exact() {
-    let entry = Entry::new(types::LINUX_FILESYSTEM, Uuid::nil(), kani::any(), kani::any());
+    let entry = Entry::new(
+        types::LINUX_FILESYSTEM,
+        Uuid::nil(),
+        kani::any(),
+        kani::any(),
+    );
     let wide = u128::from(entry.last_lba)
         .checked_sub(u128::from(entry.first_lba))
         .map(|span| span + 1)
