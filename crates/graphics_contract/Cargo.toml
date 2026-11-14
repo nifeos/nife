@@ -9,7 +9,7 @@ license.workspace = true
 # format of a shared frame, the small control protocol a client speaks to the GPU driver, and
 # the test pattern plus its checksum. Pure logic, host-tested, no_std, so the driver, the client,
 # and the kernel-side test share ONE definition and cannot drift. The same split `filesystem_contract` makes
-# for the filesystem contract and `line_editor::proto` for the terminal's.
+# for the filesystem contract and `terminal_contract` for the terminal's.
 
 [lints]
 workspace = true

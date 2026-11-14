@@ -17,7 +17,7 @@
 //!
 //! Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 
-use line_editor::component::supervisor as s;
+use line_editor_component::supervisor as s;
 use video_terminal::component as display;
 use video_terminal::handoff::HANDOFF_BYTES;
 use video_terminal::script::{COLS, ROWS};
@@ -383,7 +383,7 @@ fn a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_superviso
     let w = wiring(sink, sink_page, surface);
     both(&w, expect, b"before ");
 
-    use line_editor::proto::{self, BAD_REQUEST};
+    use terminal_contract::{self as proto, BAD_REQUEST};
     let quiesce = [proto::req(proto::OPERATION_QUIESCE, 0), 0];
     // Each answer is checked before the next call: a terminal that honored one would never
     // answer the next, and the run would end at the watchdog rather than at the assertion.

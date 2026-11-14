@@ -31,7 +31,7 @@ wire format ten programs speak (`swish`, `mdr`, `window`, `input`, `keyboard_dri
 so its two changes were calef's. He ruled them on 2026-09-26, and on 2026-09-27 option A of
 milestone 661 (a terminal supervisor holds the line editor):
 
-- **A quiesce request is an additive `OPERATION_QUIESCE`** in `line_editor::proto`, which changes no
+- **A quiesce request is an additive `OPERATION_QUIESCE`** in `terminal_contract`, which changes no
   existing opcode and which only a supervisor sends. The swap's drain step rides the served
   endpoint so its FIFO does the waiting, per §41 (the endpoint is the broker, and a device is
   revoked by taking it back), as `hot_swap_contract` does. Not a second, supervisor-only control
@@ -47,7 +47,7 @@ milestone 661 (a terminal supervisor holds the line editor):
 
 What is built:
 
-- `line_editor::component` declares what a supervisor routes to it, with one declaration per
+- `line_editor_component` declares what a supervisor routes to it, with one declaration per
   output-sink shape. `line_editor::handoff` is its blob: the edit line and cursor, the kill buffer,
   the history ring, the prompt, the queued lines, raw mode and its queue, and the `^C` count. A
   supervisor mints the run with `MemoryRegion::RETYPE`'s page count, and `line_editor` declares one

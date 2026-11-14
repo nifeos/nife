@@ -23,7 +23,7 @@ passes the check the moment before the paint loop writes `2^32` pixels past a tw
 check is written to catch exactly this ("a control page claiming more than that describes memory we
 were not granted") and the arithmetic is what lets it through.
 
-The second is in the same file's input loop: `let n = line_editor::proto::len(w0);` and then
+The second is in the same file's input loop: `let n = terminal_contract::len(w0);` and then
 `(bytes >> (8 * k))` for `k` in `0..n`, with no clamp. `proto::len` is a full 32-bit field, so
 `8 * k` passes 63 at `k == 8`. Every other consumer of `OPERATION_BYTES` clamps to 8
 (`display_terminal.rs`, `line_editor.rs`); this is the one that does not.
