@@ -74,24 +74,22 @@ state and the offset. Readers are many and writers are few. There is no lock a p
 across an address-space boundary, and a reader must never wait on a writer, because a writer that
 stops mid-update would otherwise stop `SystemTime::now` in every process on the machine.
 
-- A writer takes the claim with a compare-exchange from free to held (writers are multiple by the
-  capability layout, even if two racing is not a design anyone wants), fills the copy the count's
-  low bit does not name, advances the count, and gives the claim back.
+- A writer takes the claim with a compare-exchange from free to held, since the capability layout
+  allows several writers. It fills the copy the count's low bit does not name, advances the count,
+  and gives the claim back.
 - A reader loads the count, reads the copy its low bit names, fences, and loads the count again.
   Equal means the reading is whole. Unequal means a publish finished during the read, so it reads
   again. A writer that has stopped finishes nothing, so it never makes a reader retry.
 
 This is the project's rule 4 in a place where it matters. On a strongly ordered machine a sloppy
-version passes every test forever, and on ARM and RISC-V it does not. Each ordering is stated at its
-load or store in `clock_contract` with what it pairs with. Two of them carry the case two copies
-alone cannot. A reader holding count *g* reads copy *g* mod 2. Two publishes later, the writer of
+version passes every test forever, and on ARM and RISC-V it does not. `clock_contract` argues each
+ordering at its load or store. Two of them carry the case two copies alone cannot. A reader holding count *g* reads copy *g* mod 2. Two publishes later, the writer of
 *g*+2 rewrites that copy while the reader is still in it. The reader must then see a count above
-*g* on its second load. The writer's release fence before its data stores, paired with the reader's
-acquire fence before that load, guarantees it: a reader that saw any word the writer stored after its
-fence also sees the count the writer read before it, which is *g*+1. Linux's latch has the same
-barrier, the `smp_wmb()` at the head of `raw_write_seqcount_latch`. The comparison is equality,
-not "within one", for the same reason: a count one higher can belong to a writer already refilling
-the reader's copy.
+*g* on its second load. The writer's release fence before its data stores pairs with the reader's
+acquire fence before that load. So a reader that saw any word stored after the writer's fence also
+sees the count *g*+1 that the writer read before it. Linux's latch has the same barrier, the
+`smp_wmb()` at the head of `raw_write_seqcount_latch`. The comparison is equality, not "within one",
+because a count one higher can belong to a writer already refilling the reader's copy.
 
 | | writers serialized by | copies | a reader retries when |
 |---|---|---|---|
@@ -100,20 +98,16 @@ the reader's copy.
 | FreeBSD `timehands`, `sys/kern/kern_tc.c` | a spin mutex | a ring, two by default and up to sixteen | its record's generation is zero or changed |
 | this page | the claim word, on the page | two, one written per publish | the count changed |
 
-The Linux and FreeBSD rows were read in those files, except where the vDSO row says otherwise. Linux's latch writes both copies per
-modification because it keeps an older value readable for a reader that interrupts its own writer
-(NMI context); a clock page reader never runs inside its writer, so one copy per publish is enough.
-FreeBSD keeps a generation in each record and zeroes it while the record is rewritten; here the one
-count does both jobs, which is what makes the page seven words and not more. Windows publishes its
-time in `KUSER_SHARED_DATA` with a pair of high-part words checked against each other; that is from
-memory, not read for this page.
+Linux's latch writes both copies so that a reader interrupting its own writer (NMI context) still
+has an older value; a clock page reader never runs inside its writer, so one copy per publish is
+enough. FreeBSD keeps a generation in each record and zeroes it during a rewrite; here the one count
+does both jobs, which keeps the page at seven words.
 
-Two limits stand. The orderings are checked against C11, not ARM's or RISC-V's model: loom searches
-the C11 model, so a tear it finds is real and a clean run proves nothing about either ISA.
+Two limits stand. Loom checks the orderings against the C11 model, not ARM's or RISC-V's, so a
+tear it finds is real and a clean run proves nothing about either ISA.
 Litmus-level confidence would need herd7-style tooling, and nothing yet reads this page from two
 physical cores under load. And a writer stopped while it holds the claim blocks every later writer,
-because nothing can tell a writer that stopped from one that is slow; readers keep reading the last
-publish.
+since a stopped writer looks like a slow one; readers keep reading the last publish.
 
 A torn read here would be a wrong time rather than a crash, which is the worst kind of bug to leave
 possible, so the invariant has its own test in `clock_contract`.

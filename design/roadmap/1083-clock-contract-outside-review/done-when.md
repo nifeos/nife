@@ -4,7 +4,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
 
 - Decisions 1 and 2 have recorded rulings. `VERSION`, `INTERFACE_ID` and the magic read ratified, and
   `the_identity_is_the_one_readers_were_built_against` pins the values that ship.
-- The loom models pass on the two-copy layout, each asserts that it reached every branch it expects, and weakening any ordering on the page fails one of them or is named in the crate as argued only. `read` has no spin on another process's progress. The overlay's generated copy, `components/src/clock.rs` and `components/src/date.rs` build, and the clock and date system tests pass.
+- The loom models pass on the two-copy layout, each asserts that it reached every branch it expects, and weakening any ordering on the page fails one of them or the crate names it as argued only. `read` has no spin on another process's progress. The overlay's generated copy, `components/src/clock.rs` and `components/src/date.rs` build, and the clock and date system tests pass.
 - The lane applies every name in Decision 3's table, no `#[doc(alias)]` carries an old spelling, and the
   template's `spelled_out`, `unit_symbols`, `register_names` and `british_spelling` helpers refuse
   nothing in the crate.

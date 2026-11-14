@@ -32,9 +32,9 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    Door: two-way. Effort: S.
 
 5. A reader of the page never waits on a writer.
-   Done, per Decision 1: the page keeps two copies and a publish count, `read` retries only when a
-   publish finished during it, and the crate's `BUGS` records the one hazard left, a writer stopped
-   holding the claim, which blocks later writers and no reader.
+   Done, per Decision 1: the page keeps two copies and a publish count, and `read` retries only when
+   a publish finished during it. The crate's `BUGS` records the one hazard left: a writer stopped
+   holding the claim blocks later writers and no reader.
    Door: one-way, taken before the identity froze.
 
 6. The docs call `initialize` a once-only step, and its only caller runs it on every start.

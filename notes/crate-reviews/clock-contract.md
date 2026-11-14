@@ -115,12 +115,12 @@ What a stranger may find surprising:
 
 ## Proofs
 
-No Kani harness, and so no falsification patch; the README says so. The loom models check six
-claims about the page: a reader never sees half a publish, a reader across two publishes never
-returns a torn pair, a reading's generation matches its pair, two writers serialize, a stopped
-writer never makes a reader wait, and a reader racing `initialize` sees an unrecognized page or a
-whole one. Each model asserts that some execution reached each branch it expects. Loom judges against C11, not the
-Arm or RISC-V model, and the crate's `BUGS` says that too.
+No Kani harness, and so no falsification patch; the README says so. Six loom models
+check the page. A reader never sees half a publish, nor a torn pair across two publishes, and a
+reading's generation matches its pair. Two writers serialize, a stopped writer never makes a reader
+wait, and a reader racing `initialize` sees an unrecognized page or a whole one. Each model asserts
+that some execution reached each branch it expects. Loom judges against C11, not the Arm or RISC-V
+model, and the crate's `BUGS` says that too.
 
 ## Names
 

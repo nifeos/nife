@@ -93,7 +93,7 @@ The P1 items are in [the appendix](1083-clock-contract-outside-review/before-the
 
 ## Decisions
 
-Only one-way doors. Decisions 1 and 2 are ruled; Decision 3 waits for the architect.
+Only one-way doors. Decisions 1 and 2 have their rulings; Decision 3 waits for the architect.
 
 ### Decision 1. A reader of the page never waits on a writer
 
@@ -123,7 +123,7 @@ place that has to deal with a claim its own earlier run left held.
 
 ### Decision 2. The identity: `INTERFACE_ID` 8, `VERSION` 1, magic `CLOCKv01`
 
-Ruled 2026-11-14 (UTC), option A: the identity is frozen as interface 8, version 1, magic
+Ruled 2026-11-14 (UTC), option A: the identity freezes as interface 8, version 1, magic
 `CLOCKv01`, taking effect with Decision 1's layout, so version 1 is the seven-word page.
 
 Milestone 1017 asks for ratified identity values before a contract crate leaves, because they are
@@ -163,8 +163,8 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 
 ## BUGS
 
-- The Windows row of the prior-art appendix comes from memory, not a re-read; the Linux and FreeBSD
-  rows were checked against their sources.
+- The Windows row of the prior-art appendix comes from memory, not a re-read; this lane checked the Linux
+  and FreeBSD rows against their sources.
 - Item 3's line numbers wait on the first full mutation run in the new repository; the reasons are
   the regression note's and stand.
 - Item 6 assumes a restart of the `clock` program on the same frame is possible or will be; the review found no supervisor entry and looked for none beyond `crates/system_initializer`.
