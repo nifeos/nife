@@ -90,9 +90,9 @@ Six Kani harnesses in `src/lib.rs` prove these properties, each within the state
 - A reply reads back as built: for any bytes up to 12, `reply` answers the count of the least of
   their number and `MAXIMUM_BYTES`. `delivered_bytes` accepts that count, `copy_delivered_bytes`
   returns the bytes in order, and every byte of the word above them is zero.
-- A repeated first draw is refused: for any first draw of up to 9 bytes, `readiness` names
-  `STEP_FIRST_ALL_SAME` for a draw of at least `MAXIMUM_BYTES` bytes that repeats one nonzero value,
-  and answers `READY` for every draw that is neither empty, zero nor such a repeat.
+- Readiness refuses a repeated first draw: for any first draw of up to 9 bytes, `readiness` names
+  `STEP_FIRST_ALL_SAME` when the draw holds at least `MAXIMUM_BYTES` bytes of one nonzero value.
+  It answers `READY` for every draw that is neither empty, zero nor such a repeat.
 - Readiness is `READY` exactly when a first byte is nonzero: for any first draw of up to 4 bytes,
   `readiness` answers `READY` when one byte is nonzero. Otherwise it names `STEP_NO_FIRST_BYTES`
   for an empty draw or `STEP_FIRST_ALL_ZERO` for a draw of zeros.
