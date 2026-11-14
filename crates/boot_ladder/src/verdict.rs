@@ -9,7 +9,7 @@
 
 use core::fmt;
 
-use crate::{SELF_TEST, SELF_TEST_ABSENT, SELF_TEST_CHECKS, SELF_TEST_FAILED, SELF_TEST_SUBJECT};
+use crate::{Heads, SELF_TEST_ABSENT, SELF_TEST_CHECKS, SELF_TEST_FAILED};
 
 /// How many checks there are: the length of [`SELF_TEST_CHECKS`].
 ///
@@ -182,11 +182,12 @@ impl Tally {
         ])
     }
 
-    /// The verdict line, without its newline: [`Verdict`]'s `Display`.
+    /// The verdict line, without its newline, under `heads`'s [`self_test`](Heads::self_test)
+    /// head: [`Verdict`]'s `Display`.
     ///
     /// Name: provisional.
-    pub fn verdict(&self) -> Verdict<'_> {
-        Verdict(self)
+    pub fn verdict<'a>(&'a self, heads: Heads<'a>) -> Verdict<'a> {
+        Verdict { tally: self, heads }
     }
 }
 
@@ -208,8 +209,8 @@ fn names(mask: u64) -> impl Iterator<Item = &'static str> {
         .map(|(_, &name)| name)
 }
 
-/// **The verdict line**: `nife self-test: 9 of 15 passed, 4 absent: blockdev device_interrupt clock
-/// trng, 2 FAILED: exceptions userspace`.
+/// **The verdict line**: `<system> self-test: 9 of 15 passed, 4 absent: block_device
+/// device_interrupt clock true_random_number_generator, 2 FAILED: exceptions userspace`.
 ///
 /// The counts are there on success as well as on failure, so "ran nothing and passed" reads
 /// differently from "ran the set and passed". Absences come before failures, so a matcher reading
@@ -217,12 +218,16 @@ fn names(mask: u64) -> impl Iterator<Item = &'static str> {
 /// order. Built by `Display` rather than by joining, so nothing allocates.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).
-pub struct Verdict<'a>(&'a Tally);
+pub struct Verdict<'a> {
+    tally: &'a Tally,
+    heads: Heads<'a>,
+}
 
 impl fmt::Display for Verdict<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let t = self.0;
-        write!(f, "{SELF_TEST}{} of {CHECKS} passed", t.passed.count_ones())?;
+        let t = self.tally;
+        let head = self.heads.self_test();
+        write!(f, "{head}{} of {CHECKS} passed", t.passed.count_ones())?;
         if t.absent != 0 {
             write!(f, ", {} {SELF_TEST_ABSENT}", t.absent.count_ones())?;
             write_names(f, t.absent)?;
@@ -272,7 +277,7 @@ impl fmt::Display for CheckLine<'_> {
 }
 
 /// **A thread the self-test kills on purpose, named before its death is taken**:
-/// `nife self-test subject: thread 19, which the userspace check kills on purpose`.
+/// `<system> self-test subject: thread 19, which the userspace check kills on purpose`.
 ///
 /// The thread id is decimal, as the kernel prints it in its own report of the kill (`user thread
 /// 19 killed: ...`), so a gate can match the two by number. `swish-check` excludes from its
@@ -281,6 +286,8 @@ impl fmt::Display for CheckLine<'_> {
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
 pub struct SubjectLine<'a> {
+    /// The system's heads, whose [`self_test_subject`](Heads::self_test_subject) begins the line.
+    pub heads: Heads<'a>,
     /// The thread's id, as the kernel reports it.
     pub thread: u64,
     /// The check that kills it, from [`SELF_TEST_CHECKS`].
@@ -291,18 +298,20 @@ impl fmt::Display for SubjectLine<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{SELF_TEST_SUBJECT}{}, which the {} check kills on purpose",
-            self.thread, self.check
+            "{}{}, which the {} check kills on purpose",
+            self.heads.self_test_subject(),
+            self.thread,
+            self.check
         )
     }
 }
 
-/// **The thread a [`SubjectLine`] names**, from anywhere in `line`, or `None` when `line` carries
-/// no subject line.
+/// **The thread a [`SubjectLine`] under `heads` names**, from anywhere in `line`, or `None` when
+/// `line` carries no such subject line.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
-pub fn subject_thread(line: &str) -> Option<u64> {
-    let at = line.find(SELF_TEST_SUBJECT)? + SELF_TEST_SUBJECT.len();
+pub fn subject_thread(heads: Heads<'_>, line: &str) -> Option<u64> {
+    let at = heads.self_test_subject().find_in(line)?.end;
     let digits = line[at..]
         .find(|c: char| !c.is_ascii_digit())
         .map_or(&line[at..], |end| &line[at..at + end]);
@@ -317,6 +326,8 @@ mod tests {
 
     use super::*;
 
+    const HEADS: Heads<'static> = Heads::new("example");
+
     /// The line a green tally prints is the shape `serial_console` reads.
     #[test]
     fn a_tally_prints_the_verdict_the_console_reads() {
@@ -324,12 +335,12 @@ mod tests {
         for i in 0..CHECKS {
             t.record(i, Outcome::Passed);
         }
-        t.record(check("blockdev"), Outcome::Absent);
+        t.record(check("block_device"), Outcome::Absent);
         t.record(check("userspace"), Outcome::Failed);
         assert_eq!(
-            format!("{}", t.verdict()),
+            format!("{}", t.verdict(HEADS)),
             format!(
-                "nife self-test: {} of {CHECKS} passed, 1 absent: blockdev, 1 FAILED: userspace", // wire literal
+                "example self-test: {} of {CHECKS} passed, 1 absent: block_device, 1 FAILED: userspace",
                 CHECKS - 2
             )
         );
@@ -346,7 +357,7 @@ mod tests {
         }
         let missing: Vec<_> = t.fail_unrecorded().collect();
         assert_eq!(missing, ["teardown"]);
-        assert!(format!("{}", t.verdict()).ends_with("1 FAILED: teardown"));
+        assert!(format!("{}", t.verdict(HEADS)).ends_with("1 FAILED: teardown"));
     }
 
     /// The three words survive the hand-over, and a bit claimed twice keeps the worst outcome.
@@ -369,7 +380,7 @@ mod tests {
         for i in 0..CHECKS {
             t.record(i, Outcome::Passed);
         }
-        t.record(check("trng"), Outcome::Absent);
+        t.record(check("true_random_number_generator"), Outcome::Absent);
         t.record(check("frames"), Outcome::Failed);
         assert_eq!(Tally::from_packed(t.to_packed()), t);
         let both = 1 << check("mapping");
@@ -387,19 +398,26 @@ mod tests {
         let line = format!(
             "{}",
             SubjectLine {
+                heads: HEADS,
                 thread: 8_589_934_611,
                 check: "supervised",
             }
         );
         assert_eq!(
             line,
-            "nife self-test subject: thread 8589934611, which the supervised check kills on purpose" // wire literal
+            "example self-test subject: thread 8589934611, which the supervised check kills on purpose"
         );
-        assert_eq!(subject_thread(&line), Some(8_589_934_611));
-        assert_eq!(subject_thread("  user thread 19 killed: Data abort"), None);
-        assert_eq!(subject_thread("nife self-test subject: thread x"), None); // wire literal
+        assert_eq!(subject_thread(HEADS, &line), Some(8_589_934_611));
+        assert_eq!(
+            subject_thread(HEADS, "  user thread 19 killed: Data abort"),
+            None
+        );
+        assert_eq!(
+            subject_thread(HEADS, "example self-test subject: thread x"),
+            None
+        );
         assert!(
-            !line.contains(SELF_TEST),
+            !HEADS.self_test().is_in(&line),
             "a subject line is not a verdict line"
         );
     }
@@ -412,16 +430,21 @@ mod tests {
         assert!(!t.is_recorded(check("timer")));
         t.record(check("timer"), Outcome::Passed);
         t.record(check("clock"), Outcome::Failed);
-        t.record(check("blockdev"), Outcome::Absent);
-        t.record(check("trng"), Outcome::Absent);
-        for name in ["timer", "clock", "blockdev", "trng"] {
+        t.record(check("block_device"), Outcome::Absent);
+        t.record(check("true_random_number_generator"), Outcome::Absent);
+        for name in [
+            "timer",
+            "clock",
+            "block_device",
+            "true_random_number_generator",
+        ] {
             assert!(t.is_recorded(check(name)), "{name}");
         }
         assert!(!t.is_recorded(check("mapping")));
         assert_eq!(
-            format!("{}", t.verdict()),
+            format!("{}", t.verdict(HEADS)),
             format!(
-                "nife self-test: 1 of {CHECKS} passed, 2 absent: blockdev trng, 1 FAILED: clock" // wire literal
+                "example self-test: 1 of {CHECKS} passed, 2 absent: block_device true_random_number_generator, 1 FAILED: clock"
             )
         );
     }
@@ -435,8 +458,8 @@ mod tests {
         }
         assert_eq!(t.fail_unrecorded().count(), 0);
         assert_eq!(
-            format!("{}", t.verdict()),
-            format!("nife self-test: {CHECKS} of {CHECKS} passed") // wire literal
+            format!("{}", t.verdict(HEADS)),
+            format!("example self-test: {CHECKS} of {CHECKS} passed")
         );
     }
 
@@ -449,7 +472,7 @@ mod tests {
             t.record(i, Outcome::Passed);
         }
         t.record(check("clock"), Outcome::Failed);
-        t.record(check("trng"), Outcome::Absent);
+        t.record(check("true_random_number_generator"), Outcome::Absent);
         assert_eq!(t.fail_unrecorded().count(), 0);
     }
 

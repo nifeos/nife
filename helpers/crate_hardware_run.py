@@ -5,9 +5,9 @@
     crate_hardware_run.py --selftest
 
 `judge` reads one or more console logs of nife booting on a VisionFive 2, splits them into boots at
-the kernel's `nife on ` banner, and reads each boot's `self-test : trng` line. It prints one row per
-condition of the definition in milestone 1035 (a crate names the version that ran on
-hardware) and ends `PASS` or `FAIL, N problem(s)`, exiting 0 or 1:
+the kernel's `nife on ` banner, and reads each boot's `self-test : true_random_number_generator`
+line. It prints one row per condition of the definition in milestone 1035 (a crate names the
+version that ran on hardware) and ends `PASS` or `FAIL, N problem(s)`, exiting 0 or 1:
 
 1. Every boot names the same crate version V and commit C, and C is the commit of the tag `vV` on
    nifeos/jh7110_entropy. The version string alone does not settle it: the crate's `Cargo.toml`
@@ -35,7 +35,7 @@ import os
 CRATE = "jh7110_entropy"
 CRATE_REPOSITORY = "https://github.com/nifeos/jh7110_entropy"
 BANNER = re.compile(r"^nife on ")
-TRNG = re.compile(r"self-test\s+: trng\s+(ok|FAILED|absent)\s+(.*)$")
+TRNG = re.compile(r"self-test\s+: true_random_number_generator\s+(ok|FAILED|absent)\s+(.*)$")
 STAT = re.compile(r"STAT 0x[0-9a-f]{8} \(([^)]*)\)")
 DRAWS = re.compile(r"draws (\d+)/(\d+) bytes")
 FIRST = re.compile(r"first ([0-9a-f]{8})\.\.")
@@ -45,7 +45,7 @@ COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
 def boots(texts):
-    """Each boot's trng line, in order, across the logs given as text."""
+    """Each boot's true_random_number_generator line, in order, across the logs given as text."""
     found = []
     for text in texts:
         current = None
@@ -62,7 +62,7 @@ def boots(texts):
 
 
 def read_line(verdict, detail):
-    """The fields of one trng line, None where the line does not carry one."""
+    """The fields of one true_random_number_generator line, None where the line carries none."""
 
     def get(pattern, group=1):
         m = pattern.search(detail)
@@ -146,19 +146,25 @@ def judge(texts, tag=None, resolve_tag=tag_commit, nife=None):
             (lock_version, lock_commit) == (version, commit),
             f"1. the nife commit's Cargo.lock resolves {CRATE} {lock_version} at {lock_commit}",
         )
-    row(len(lines) >= 2, f"2. {len(lines)} boot(s) carry a trng line, and the run needs two")
+    row(
+        len(lines) >= 2,
+        f"2. {len(lines)} boot(s) carry a true_random_number_generator line, and the run needs two",
+    )
     row(
         bool(lines) and all(
             line["verdict"] == "ok" and line["draws"] == ("32", "32") and line["differ"] == "true"
             for line in lines
         ),
-        "3. every trng line is ok, with two full 32-byte draws that differ",
+        "3. every true_random_number_generator line is ok, with two full 32-byte draws that differ",
     )
     row(
         bool(lines) and all((line["mode"] or "").startswith("256-bit") for line in lines),
         "4. every mode note says 256-bit",
     )
-    row(all(line["verdict"] != "FAILED" for line in lines), "5. no trng line is FAILED")
+    row(
+        all(line["verdict"] != "FAILED" for line in lines),
+        "5. no true_random_number_generator line is FAILED",
+    )
     firsts = [line["first"] for line in lines]
     row(
         len(firsts) >= 2 and None not in firsts and len(set(firsts)) == len(firsts),
@@ -174,7 +180,8 @@ def selftest():
 
     def trng(first, verdict="ok", mode="256-bit: all eight RAND words are the answer", c=commit, v="0.2.0"):
         return (
-            f"  self-test       : trng       {verdict:<6}  JH7110 TRNG at 0x1600c000 (tree says disabled): "
+            f"  self-test       : true_random_number_generator {verdict:<6}  "
+            "JH7110 TRNG at 0x1600c000 (tree says disabled): "
             f"report 0x524e475550, STAT 0x00040308 ({mode}), draws 32/32 bytes, first {first}.., "
             f"differ true; bring-up 551 us, 64 bytes in 68 us (937728 bytes/s); crate {CRATE} {v} at {c}\r"
         )

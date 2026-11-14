@@ -90,7 +90,7 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
         println!();
         println!(
             "{}aarch64 (EL{}, MMU off: physical addresses until mmu::initialize)",
-            boot_ladder::BANNER,
+            crate::console::HEADS.banner(),
             arch::current_el(),
         );
         screen::print_summary(&screen);
@@ -124,9 +124,9 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
         // runs the rest and prints the verdict. See notes/boot-ladder.md.
         self_test::run();
 
-        // `boot_ladder::TOUR` (`Stage::Tour`): only the hand-over may lie between this line and the
+        // The tour line (`Stage::Tour`): only the hand-over may lie between this line and the
         // prompt, because `serial_console` stops treating silence as a hang here.
-        println!("{}{}.", boot_ladder::TOUR, arch::NAME);
+        println!("{}{}.", crate::console::HEADS.tour(), arch::NAME);
         sched::note_boot_stage(self_test::TOUR_STAGE);
 
         // A measurement boot takes the place of the hand-over, so that what a soak stresses is
@@ -215,7 +215,10 @@ fn riscv64_banner(
     // through the identity map (the boot table maps both).
     let pc = kernel_main as *const () as usize;
     println!();
-    println!("{}RISC-V (rv64, S-mode, Sv39)", boot_ladder::BANNER);
+    println!(
+        "{}RISC-V (rv64, S-mode, Sv39)",
+        crate::console::HEADS.banner()
+    );
     println!("  hart 0 booted: high-half kernel, .bss, and the NS16550 console are up.");
     println!("  running at  : {pc:#018x}  (high half: Sv39 paging is on)");
     println!("  device tree : {boot_info_pointer:#018x}");
@@ -239,7 +242,7 @@ fn x86_64_banner(boot_info_pointer: usize) {
     println!();
     println!(
         "{}x86_64 (long mode, ring 0, 4-level paging)",
-        boot_ladder::BANNER,
+        crate::console::HEADS.banner(),
     );
     println!("  cpu 0 booted: high-half kernel, .bss, and the 16550 console are up.");
     println!("  running at  : {pc:#018x}  (high half: the long-mode jump landed)");

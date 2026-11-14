@@ -24,7 +24,7 @@ use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
 ///
 /// - `quiet_after` is off from `Stage::Tour` up, below the prompt on riscv64, so a wedge there
 ///   waits for the 180-second cap.
-/// - The prompt rung is the shell's banner, not `$ ` (`boot_ladder::PROMPT`'s `BUGS`): it proves
+/// - The prompt rung is the shell's banner, not `$ ` (`boot_ladder`'s `BUGS`): it proves
 ///   `swish` started, not that it takes input; `swish-check` types.
 /// - An emulator was once found orphaned after many `x86_64` boots, cause unknown; after a session,
 ///   `pgrep -l qemu` and walk `ps -o pid,ppid` before killing anything.

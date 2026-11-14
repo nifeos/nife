@@ -190,7 +190,7 @@ x86_64)](../../design/roadmap/0215-x86-64-pci-interrupt-routing.md) says why x86
 No device here interrupts at bring-up without input or a disk, so the self-test's `device_interrupt`
 check
 reports itself absent. A device line is proved where one exists: the user-level input driver at the
-hand-over, and the `blockdev` check's driver when a disk is attached.
+hand-over, and the `block_device` check's driver when a disk is attached.
 
 ## BUGS
 
