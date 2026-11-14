@@ -360,8 +360,8 @@ fn a_wide_name_past_the_last_file_is_refused() {
 #[test]
 #[should_panic]
 fn a_match_path_past_the_last_match_is_refused() {
-    let mut buf = [0u8; crate::walk::RG_PATH_BYTES];
-    let _ = crate::walk::rg_match_path(crate::walk::RG_MATCHES, &mut buf);
+    let mut buffer = [0u8; crate::walk::MATCH_PATH_BYTES];
+    let _ = crate::walk::rg_match_path(crate::walk::RG_MATCHES, &mut buffer);
 }
 
 /// **The match list's three regions meet where the shape says**, spelled out by hand: the chain's
@@ -372,9 +372,9 @@ fn a_match_path_past_the_last_match_is_refused() {
 fn the_rg_match_paths_meet_at_the_region_boundaries() {
     use crate::walk::*;
     let path = |i| {
-        let mut buf = [0u8; 32];
-        let len = rg_match_path(i, &mut buf);
-        std::string::String::from_utf8(buf[..len].to_vec()).unwrap()
+        let mut buffer = [0u8; 32];
+        let len = rg_match_path(i, &mut buffer);
+        std::string::String::from_utf8(buffer[..len].to_vec()).unwrap()
     };
     assert_eq!(path(0), "chain/f");
     assert_eq!(path(1), "chain/c/f");

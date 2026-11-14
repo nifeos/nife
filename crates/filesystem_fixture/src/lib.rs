@@ -640,7 +640,7 @@ pub mod walk {
     /// longest is 23 bytes).
     ///
     /// Name: provisional.
-    pub const RG_PATH_BYTES: usize = 32;
+    pub const MATCH_PATH_BYTES: usize = 32;
 
     /// **The path of the `i`th file [`RG_SEARCH`] matches**, `i` below [`RG_MATCHES`], written
     /// into `buf` as `ripgrep` prints it relative to the tree: the chain's files from the top
@@ -651,7 +651,7 @@ pub mod walk {
     ///
     /// Name: provisional, lane milestone/121-rg-threads (#2016), 2026-10-12 (UTC).
     /// The pull request records no other name considered.
-    pub fn rg_match_path(i: usize, buf: &mut [u8; RG_PATH_BYTES]) -> usize {
+    pub fn rg_match_path(i: usize, buf: &mut [u8; MATCH_PATH_BYTES]) -> usize {
         debug_assert!(i < RG_MATCHES);
         let mut len = 0;
         let mut put = |bytes: &[u8], len: &mut usize| {

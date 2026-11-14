@@ -159,7 +159,7 @@ The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before
 | 10 equivalent mutants | DONE | the first bits are written as `1` and `attrs::EXPECTED` as `0xFF`; `the_witness_bits_are_distinct_single_bits` holds it equal to the union of the eight |
 | 11 manifest and workflows | LEFT | the move commit |
 | 12 README claims | DONE | the README names the programs that compile the crate in; the heading reads "What it holds" |
-| 13 `rg_match_path` bound | DONE | `a_match_path_past_the_last_match_is_refused`; the buffer size is `walk::RG_PATH_BYTES` (provisional) |
+| 13 `rg_match_path` bound | DONE | `a_match_path_past_the_last_match_is_refused`; the buffer size is `walk::MATCH_PATH_BYTES` (provisional) |
 | 14 `wide_name` wrap | DONE | `a_wide_name_past_the_last_file_is_refused`, and the edge at 127 in `the_wide_directory_names_are_n_and_three_digits` |
 | 15 throughput widths | LEFT | one width changes the casts in the kernel bench and the client |
 | 16 `ALL` arrays | LEFT | new public names |
