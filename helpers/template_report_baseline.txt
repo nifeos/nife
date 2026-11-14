@@ -171,10 +171,13 @@ job_mix abbreviations 3
 job_mix prose_acronyms 9
 job_mix readme_acronyms 4
 job_mix register_names 1
-line_editor abbreviations 74
-line_editor prose_acronyms 17
+line_editor abbreviations 54
+line_editor prose_acronyms 14
 line_editor readme_acronyms 6
-line_editor register_names 7
+line_editor register_names 5
+line_editor_component abbreviations 5
+line_editor_component prose_acronyms 1
+line_editor_component register_names 2
 loaded_image_check abbreviations 2
 loaded_image_check prose_acronyms 2
 login_contract abbreviations 20
@@ -289,6 +292,8 @@ system_log_contract readme_acronyms 2
 system_log_contract register_names 2
 system_manifest abbreviations 1
 system_manifest prose_acronyms 1
+terminal_contract abbreviations 14
+terminal_contract prose_acronyms 3
 test_times prose_acronyms 3
 test_times readme_acronyms 1
 thread_wake_handshake abbreviations 13
