@@ -1,6 +1,7 @@
-//! The IPC framing of the terminal contract (notes/terminal-contract.md): opcodes, flags, badges
-//! and limits shared by the terminal, its clients, its supervisor and the kernel-side tests. This
-//! is a **userspace protocol**, not kernel ABI: the kernel routes these words without reading them.
+//! The inter-process communication (IPC) framing of the terminal contract
+//! (notes/terminal-contract.md): opcodes, flags, badges and limits shared by the terminal, its
+//! clients, its supervisor and the kernel-side tests. This is a **userspace protocol**, not the
+//! kernel's application binary interface (ABI): the kernel routes these words without reading them.
 //!
 //! A wire-only leaf: it depends on nothing, so the kernel and every client link the words without
 //! linking the editor that serves them. The editing engine is the `line_editor` crate, and what a

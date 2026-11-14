@@ -2,11 +2,11 @@
 //! capability-routed component OS with live replacement)): the capability half of the terminal
 //! contract, beside the wire half in `terminal_contract`.
 //!
-//! It holds two declarations, one per output sink: the console's two-endpoint protocol, older than
-//! §12 (call/reply IPC: a one-shot reply capability), which needs a reply endpoint, and
-//! `display_terminal`'s one `CALL`, which does not. Both keep the slot order `line_editor` reads,
-//! which the `const` assertions hold them to; notes/line-discipline.md ("The component's slots")
-//! gives the order.
+//! It holds two declarations, one per output sink: the console's two-endpoint inter-process
+//! communication (IPC) protocol, older than §12 (call/reply IPC: a one-shot reply capability),
+//! which needs a reply endpoint, and `display_terminal`'s one `CALL`, which does not. Both keep the
+//! slot order `line_editor` reads, which the `const` assertions hold them to;
+//! notes/line-discipline.md ("The component's slots") gives the order.
 //!
 //! It stays in this tree beside the terminal programs and `capability_plan`, while the editing
 //! engine, the `line_editor` crate, depends on neither.
