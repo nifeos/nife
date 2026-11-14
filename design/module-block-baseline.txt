@@ -1876,10 +1876,6 @@ crates/domain_name_resolution_contract/src/wire.rs::NO_SOCKET_PAGE
 
 crates/domain_name_resolution_contract/src/wire.rs::NO_SUCH_NAME
 
-crates/domain_name_resolution_contract/src/wire.rs::OFF_ADDRESSES
-
-crates/domain_name_resolution_contract/src/wire.rs::OFF_NAME
-
 crates/domain_name_resolution_contract/src/wire.rs::OK
 
 crates/domain_name_resolution_contract/src/wire.rs::OPEN
@@ -6217,14 +6213,6 @@ crates/socket_contract/src/lib.rs::MINT
 crates/socket_contract/src/lib.rs::NO_LISTEN_GRANT
 
 crates/socket_contract/src/lib.rs::NO_NAMESERVER
-
-crates/socket_contract/src/lib.rs::OFF_DST_IP
-
-crates/socket_contract/src/lib.rs::OFF_DST_PORT
-
-crates/socket_contract/src/lib.rs::OFF_LEN
-
-crates/socket_contract/src/lib.rs::OFF_PAYLOAD
 
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 

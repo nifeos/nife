@@ -20,8 +20,18 @@ fn window_access_fits_holds_the_access_inside_the_window_and_aligned() {
     assert!(window_access_fits(window - 1, 1, 1, window));
     assert!(!window_access_fits(window - 7, 8, 1, window));
     assert!(!window_access_fits(window, 1, 1, window));
-    assert!(!window_access_fits(OFF_HEADER + 2, 4, 4, window));
-    assert!(!window_access_fits(OFF_USED + 1, 2, 2, window));
+    assert!(!window_access_fits(
+        REQUEST_HEADER_OFFSET_BYTES + 2,
+        4,
+        4,
+        window
+    ));
+    assert!(!window_access_fits(
+        USED_RING_OFFSET_BYTES + 1,
+        2,
+        2,
+        window
+    ));
     assert!(!window_access_fits(u64::MAX, 1, 1, window));
     assert!(!window_access_fits(u64::MAX - 3, 8, 1, window));
 }
