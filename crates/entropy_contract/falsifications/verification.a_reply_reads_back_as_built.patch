@@ -5,10 +5,10 @@ count is no count at all, and a client reading it takes the reply for a kernel e
 
 Expected to fail: the harness's `assert_eq!` on the count, and the shift past the word's width.
 
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -353,11 +353,7 @@
- /// Name: provisional, minted for the service side of the contract; awaiting a naming pass.
+@@ -354,9 +354,5 @@
  #[must_use]
  pub const fn reply(delivered: &[u8]) -> (u64, u64) {
 -    let count = if delivered.len() > MAXIMUM_BYTES as usize {
@@ -19,4 +19,3 @@ Expected to fail: the harness's `assert_eq!` on the count, and the shift past th
 +    let count = delivered.len();
      let mut word = 0u64;
      let mut index = 0;
-     while index < count {

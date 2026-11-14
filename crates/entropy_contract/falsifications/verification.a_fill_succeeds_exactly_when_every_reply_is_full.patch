@@ -6,14 +6,13 @@ the opposite, and the defect quietly leaves bytes in the slice that the service 
 
 Expected to fail: the harness's match on the result, which meets `Ok` where one reply was short.
 
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -407,7 +407,7 @@
-         let asked = (out.len() - filled).min(MAXIMUM_BYTES as usize);
+@@ -408,5 +408,5 @@
          let (first_reply_word, reply_word) = call(request(GET, asked as u64));
          let delivered = delivered_bytes(first_reply_word).ok_or(Refusal::NoService)?;
 -        if delivered != asked {
 +        if delivered > asked {
              return Err(Refusal::ShortReply { asked, delivered });
          }
-         filled += copy_delivered_bytes(asked, reply_word, &mut out[filled..]);
