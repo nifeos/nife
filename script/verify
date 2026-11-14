@@ -479,6 +479,7 @@ inter_process_communication	12	the rendezvous state machine
 intrusive_queue	8	the scheduler's queue structure
 address_space_identifier	2	the TLB tag allocator
 line_editor	2	the line editor's escape parser and range delete keep the cursor inside the line
+machine_statistics_contract	3	the statistics page reader admits exactly the pages it names, every accessor is total over an admitted page, and a built header reads back empty
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
 capability_manifest_note	107	a manifest note has one encoding, and decoding hostile bytes never panics
 interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile bytes never panics

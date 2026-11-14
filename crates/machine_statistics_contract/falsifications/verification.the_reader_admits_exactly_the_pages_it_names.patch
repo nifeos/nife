@@ -1,0 +1,16 @@
+Falsifies `machine_statistics_contract::verification::the_reader_admits_exactly_the_pages_it_names`.
+
+The defect: the magic compare looks at the low 32 bits of the word only, so a page whose magic
+differs in its upper half is admitted. Every host test flips the lowest bit of the magic, which
+the shortened compare still catches, so the defect is invisible to them.
+
+Expected to fail: the harness's `assert!(admitted)` in the arm that returned a page, on a page whose upper magic bytes differ.
+
+diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+--- a/crates/machine_statistics_contract/src/lib.rs
++++ b/crates/machine_statistics_contract/src/lib.rs
+@@ -238,3 +238,3 @@
+     pub fn from_words(words: &[u64; WORDS]) -> Option<Snapshot> {
+-        if words[word::MAGIC] != u64::from_le_bytes(MAGIC) {
++        if words[word::MAGIC] as u32 != u64::from_le_bytes(MAGIC) as u32 {
+             return None;

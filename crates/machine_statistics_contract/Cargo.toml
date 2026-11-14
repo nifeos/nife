@@ -5,10 +5,8 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# The machine statistics page (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and your share) part 2): one definition of the
-# read-only page the kernel keeps its machine-wide counters in, so the kernel (the one writer) and
-# `free`, `vmstat` and `top` (the readers) cannot drift on the layout or the virtual address
-# (AGENTS.md rule 7). Name ratified 2026-09-27 (calef, #1360).
+# The machine statistics page: one definition of the read-only page a kernel keeps its machine-wide
+# counters in, so the one writer and its readers cannot drift on the layout or the virtual address.
 
 [lints]
 workspace = true

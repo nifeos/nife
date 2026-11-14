@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -161,7 +161,7 @@ might misread, it says so here; the lane carries these beside the rows.
 
 ## Done when
 
-The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md).
+The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). What is done and what is left, item by item, is in [the ledger](1099-machine-statistics-contract-outside-review/ledger.md).
 
 ## BUGS
 
