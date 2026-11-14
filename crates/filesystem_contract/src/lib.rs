@@ -5,7 +5,9 @@
 //!
 //! Each request is an endpoint `CALL` of two words, answered through the one-shot Reply
 //! capability; bytes travel only in the region the two parties share. A reply's first word is an
-//! [`i64`], a result or the negated errno ([`reply_err`]).
+//! [`i64`], a result or the negated errno ([`reply_err`]): `-MAXIMUM_ERRNO..=-1` is an error, a
+//! negative word outside it is a protocol violation read as `EPROTO`, and anything else is a
+//! result ([`MAXIMUM_ERRNO`] has the rule whole).
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review), renamed from
 //! `fs_proto`; `_contract` per calef's 2026-10-18 ruling.
@@ -40,34 +42,12 @@ pub const fn operation(w0: u64) -> u64 {
     w0 >> OPERATION_SHIFT
 }
 
-/// Turn a redox/POSIX errno into a reply's first word: the negated number, so the client can invert
-/// it. This is the ONE place the error convention is defined; the FS server calls it at its boundary.
-pub const fn reply_err(errno: i32) -> i64 {
-    -(errno as i64)
-}
-
-/// The errno behind an error reply, or `None` if the reply is a (non-negative) success. The inverse
-/// of [`reply_err`], for a client turning a wire error back into an `ErrorKind`.
+/// **The reply word's error range**: [`MAXIMUM_ERRNO`], [`EPROTO`], [`reply_err`] and
+/// [`reply_errno`], the one place the error convention is defined.
 ///
-/// # Examples
-///
-/// One word, no flag bit: a length and an errno come out of the same register.
-///
-/// ```
-/// use filesystem_contract::{reply_err, reply_errno};
-///
-/// // A READ that moved 4096 bytes, and a READ at end of file. Both are results.
-/// assert_eq!(reply_errno(4096), None);
-/// assert_eq!(reply_errno(0), None);
-///
-/// // ENOENT, mapped once at the server's serve loop and nowhere else.
-/// let wire = reply_err(2);
-/// assert_eq!(wire, -2);
-/// assert_eq!(reply_errno(wire), Some(2));
-/// ```
-pub const fn reply_errno(r0: i64) -> Option<i32> {
-    if r0 < 0 { Some((-r0) as i32) } else { None }
-}
+/// Name: provisional, minted 2026-11-14 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub mod reply;
+pub use reply::{EPROTO, MAXIMUM_ERRNO, reply_err, reply_errno};
 
 /// **The block-IPC protocol** (FS server to block server): read blocks, write blocks, ask the
 /// size, flush, shaped like the RedoxFS `Disk` trait the FS server implements over it. The unit is

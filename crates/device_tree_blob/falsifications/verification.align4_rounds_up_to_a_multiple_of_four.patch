@@ -1,7 +1,7 @@
 Falsifies `device_tree_blob::verification::align4_rounds_up_to_a_multiple_of_four`.
 
-The defect: `align4` rounds down instead of up, `n / 4 * 4` in place of `n.div_ceil(4) * 4`. Both
-spellings type-check and both read as "the multiple of four near `n`"; only one of them is at
+The defect: `align4` rounds down instead of up, `n / 4 * 4` in place of `n.checked_add(3)` and a mask.
+Both spellings type-check and both read as "the multiple of four near `n`"; only one of them is at
 least `n`. Every caller uses this to skip a property's or a node's padding in the structure
 block, so a floored `align4` would make the parser stop four bytes short of the next token for
 any length that is not already a multiple of four, reading the tail of the current field as the
@@ -9,14 +9,14 @@ start of the next.
 
 Expected to fail: the harness's own `assert!(a >= n)`, for any `n` not already a multiple of 4.
 `a.is_multiple_of(4)` stays true under this defect (floor division still lands on a multiple of
-four), which is why the harness needs all three assertions rather than the first one alone.
+four), which is why the harness needs all the assertions rather than the first one alone.
 
 diff --git a/crates/device_tree_blob/src/lib.rs b/crates/device_tree_blob/src/lib.rs
-index d94af06b1..fc6ee2253 100644
+index ed17aa9f6..2ee454348 100644
 --- a/crates/device_tree_blob/src/lib.rs
 +++ b/crates/device_tree_blob/src/lib.rs
-@@ -1158,3 +1158,3 @@ impl<'a> DeviceTreeBlob<'a> {
- fn align4(n: usize) -> usize {
--    n.div_ceil(4) * 4
-+    n / 4 * 4
+@@ -1263,3 +1263,3 @@ struct Prop {
+ fn align4(n: usize) -> Option<usize> {
+-    n.checked_add(3).map(|up| up & !3)
++    Some(n / 4 * 4)
  }

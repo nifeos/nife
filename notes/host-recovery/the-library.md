@@ -74,7 +74,7 @@ The import is incomplete, and the tool says so and exits non-zero.
 
 ## Attributes, read and put back
 
-`.nife-attrs` holds one file per node with extended attributes, named for the node's `TreePtr` id
+`.extended-attributes` holds one file per node with extended attributes, named for the node's `TreePtr` id
 in hex, in the records `filesystem_contract::xattr::store` defines. The FS server writes it and
 nothing else does. The tool reads the layout through `filesystem_contract`, a dependency rather
 than a comment describing it (CLAUDE.md rule 7). Nothing in the read path may fail an extraction.

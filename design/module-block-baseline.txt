@@ -1876,10 +1876,6 @@ crates/domain_name_resolution_contract/src/wire.rs::NO_SOCKET_PAGE
 
 crates/domain_name_resolution_contract/src/wire.rs::NO_SUCH_NAME
 
-crates/domain_name_resolution_contract/src/wire.rs::OFF_ADDRESSES
-
-crates/domain_name_resolution_contract/src/wire.rs::OFF_NAME
-
 crates/domain_name_resolution_contract/src/wire.rs::OK
 
 crates/domain_name_resolution_contract/src/wire.rs::OPEN
@@ -2439,9 +2435,7 @@ crates/filesystem_contract/src/lib.rs::READY
 
 crates/filesystem_contract/src/lib.rs::operation
 
-crates/filesystem_contract/src/lib.rs::reply_err
 
-crates/filesystem_contract/src/lib.rs::reply_errno
 
 crates/filesystem_contract/src/lib.rs::req
 
@@ -2462,6 +2456,10 @@ crates/filesystem_contract/src/nameset.rs::encode
 crates/filesystem_contract/src/nameset.rs::iter
 
 crates/filesystem_contract/src/nameset/tests.rs
+
+crates/filesystem_contract/src/reply.rs::reply_err
+
+crates/filesystem_contract/src/reply.rs::reply_errno
 
 crates/filesystem_contract/src/rm.rs
 
@@ -6215,14 +6213,6 @@ crates/socket_contract/src/lib.rs::MINT
 crates/socket_contract/src/lib.rs::NO_LISTEN_GRANT
 
 crates/socket_contract/src/lib.rs::NO_NAMESERVER
-
-crates/socket_contract/src/lib.rs::OFF_DST_IP
-
-crates/socket_contract/src/lib.rs::OFF_DST_PORT
-
-crates/socket_contract/src/lib.rs::OFF_LEN
-
-crates/socket_contract/src/lib.rs::OFF_PAYLOAD
 
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 
