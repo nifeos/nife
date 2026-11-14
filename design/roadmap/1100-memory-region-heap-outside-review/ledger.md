@@ -1,10 +1,10 @@
 # Ledger
 
-An appendix to [the milestone](../1100-memory-region-heap-outside-review.md). Each item is DONE
-with the test or harness that holds it, or LEFT with the reason. Pull request 3559 changes
+An appendix to [the milestone](../1100-memory-region-heap-outside-review.md). A DONE row names the test or harness that holds the
+item, and a LEFT row names the reason it waits. Pull request 3559 changes
 `crates/memory_region_heap/src/lib.rs`, its manifest and this block's `before-the-tag.md`, so every
-item that needs an edit there waits for it to merge, and the rows for items 5 and 6 are written
-from that pull request's own text once it lands.
+item that needs an edit there waits for it to merge. The rows for items 5 and 6 take their text
+from that pull request once it lands.
 
 | item | state | where |
 |---|---|---|
