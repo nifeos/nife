@@ -395,7 +395,7 @@ mod verification {
         let base = (&raw mut nodes).cast::<N>();
         let mut q: Queue<N> = Queue::new();
         let count: usize = kani::any();
-        kani::assume(count >= 1 && count <= 3);
+        kani::assume((1..=3).contains(&count));
         for i in 0..count {
             // SAFETY: a distinct live element of a local declared before `q`, on no queue, minted
             // once from the array's own pointer, and the harness is the only accessor.

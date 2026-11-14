@@ -49,7 +49,7 @@ fn a_block_request_round_trips() {
     let opcode: u64 = kani::any();
     let blocks: usize = kani::any();
     kani::assume(opcode <= 0xff);
-    kani::assume(blocks >= 1 && blocks <= blk::TRANSFER_BLOCKS);
+    kani::assume((1..=blk::TRANSFER_BLOCKS).contains(&blocks));
     let w0 = blk::req(opcode, blocks);
     assert!(operation(w0) == opcode);
     assert!(blk::req_blocks(w0) == blocks);
@@ -63,7 +63,7 @@ fn a_block_request_round_trips() {
 fn a_packed_name_comes_back_whole() {
     let bytes: [u8; grant::WORDS_NAME] = kani::any();
     let length: usize = kani::any();
-    kani::assume(length >= 1 && length <= grant::WORDS_NAME);
+    kani::assume((1..=grant::WORDS_NAME).contains(&length));
     let name = &bytes[..length];
     let (lo, hi) = grant::pack_name(name).unwrap();
     let mut out = [0u8; grant::WORDS_NAME];
@@ -80,10 +80,10 @@ fn the_verb_table_is_total() {
     let opcode: u64 = kani::any();
     match verb::of(opcode) {
         Some(row) => {
-            assert!(opcode >= verb::FIRST && opcode <= verb::LAST);
+            assert!((verb::FIRST..=verb::LAST).contains(&opcode));
             assert!(row.operation == opcode);
         }
-        None => assert!(opcode < verb::FIRST || opcode > verb::LAST),
+        None => assert!(!(verb::FIRST..=verb::LAST).contains(&opcode)),
     }
 }
 
