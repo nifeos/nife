@@ -9,9 +9,9 @@ Expected to fail: the harness's `assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000
 above 127, where a config read leaves the 256-bus window the kernel mapped and the volatile
 accessor touches whatever is next in the address space.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -102,3 +102,3 @@ impl Bdf {
      pub fn ecam_offset(self) -> u64 {
 -        ((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
