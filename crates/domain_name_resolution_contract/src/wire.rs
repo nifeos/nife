@@ -23,6 +23,11 @@ pub const OFF_NAME: usize = 0x000;
 /// name server gave them.
 pub const OFF_ADDRESSES: usize = 0x100;
 
+// The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
+// addresses end inside the page.
+const _: () = assert!(OFF_NAME + NAME_TEXT_MAXIMUM + 1 <= OFF_ADDRESSES);
+const _: () = assert!(OFF_ADDRESSES + 4 * MAXIMUM_ADDRESSES <= 4096);
+
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
 ///
 /// Name: ratified 2026-10-27 (#2797).
@@ -197,15 +202,22 @@ impl Outcome {
 
     /// A reply word back to its fields. The resolver never sets the high 40 bits, so a word with any
     /// of them set is not its reply: it is the kernel's error from a `CALL` that failed (a negative
-    /// number, read as an enormous one), and decodes to `None`.
+    /// number, read as an enormous one), and decodes to `None`. So does a word the resolver cannot
+    /// send: a status the [`status`] module does not define, or a count above
+    /// [`MAXIMUM_ADDRESSES`]. The bound belongs here, where every client gets it.
     pub const fn from_word(word: u64) -> Option<Outcome> {
         if word >> 24 != 0 {
             return None;
         }
+        let status = word as u8;
+        let count = (word >> 16) as u8;
+        if status > status::BAD_REQUEST || count as usize > MAXIMUM_ADDRESSES {
+            return None;
+        }
         Some(Outcome {
-            status: word as u8,
+            status,
             detail: (word >> 8) as u8,
-            count: (word >> 16) as u8,
+            count,
         })
     }
 }
@@ -244,5 +256,18 @@ mod tests {
         assert_eq!(Outcome::of(status::DENIED).word(), status::DENIED as u64);
         // A failed CALL returns a negative number, which no reply word looks like.
         assert_eq!(Outcome::from_word(-1i64 as u64), None);
+    }
+
+    /// A word the resolver cannot send is refused by the contract, so no client has to clamp it.
+    #[test]
+    fn an_outcome_word_the_resolver_cannot_send_is_refused() {
+        let count_too_large = status::OK as u64 | (MAXIMUM_ADDRESSES as u64 + 1) << 16;
+        assert_eq!(Outcome::from_word(count_too_large), None);
+        assert_eq!(Outcome::from_word(255 << 16), None);
+        let at_the_limit = status::OK as u64 | (MAXIMUM_ADDRESSES as u64) << 16;
+        assert!(Outcome::from_word(at_the_limit).is_some());
+        assert!(Outcome::from_word(status::BAD_REQUEST as u64).is_some());
+        assert_eq!(Outcome::from_word(status::BAD_REQUEST as u64 + 1), None);
+        assert_eq!(Outcome::from_word(200), None);
     }
 }

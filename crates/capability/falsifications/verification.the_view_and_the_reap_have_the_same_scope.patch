@@ -3,45 +3,44 @@ Falsifies `capability::the_view_and_the_reap_have_the_same_scope`.
 The defect: a live child of this very rendezvous is answered `NotSupervised`
 instead of `StillAlive`, by folding the liveness test into the match guard. It
 reads as a simplification (one arm instead of two, and `StillAlive` becomes dead
-code) and it is the drift milestone 126 built one predicate to prevent: `ps` still
+code) and it is the drift one shared predicate exists to prevent: a process view still
 lists a running child, and a `REAP` of that same child now answers as though it
 belonged to somebody else.
 
 Expected to fail: the harness's only assertion,
-`assert_eq!(survey_includes(fault_ep, invoked), reap_decision(fault_ep, invoked,
-dead) != Reap::NotSupervised)`, on any `fault_ep == Some(invoked)` with `dead`
+`assert_eq!(survey_includes(supervising_rendezvous, invoked), reap_decision(supervising_rendezvous, invoked,
+dead) != Reap::NotSupervised)`, on any `supervising_rendezvous == Some(invoked)` with `dead`
 false. Confirmed: the harness goes red under this patch and green without it.
 
 **What was predicted here and measured false, because that is the whole point of
 running it.** The first draft of this note claimed the defect was caught by this
 harness alone. Measured against all four supervision harnesses, it also turns
 `reap_is_permitted_only_to_the_supervising_rendezvous` red, through that harness's
-`NotSupervised => assert_ne!(fault_ep, Some(invoked))` arm: the live own-child now
+`NotSupervised => assert_ne!(supervising_rendezvous, Some(invoked))` arm: the live own-child now
 lands in `NotSupervised` while naming the invoked rendezvous. The two harnesses it
 does leave green are `a_stranger_reveals_nothing_about_its_liveness` (a stranger
 still answers identically at both liveness values) and
 `a_survey_shows_exactly_the_endpoints_own_children` (`survey_includes` is
 untouched). So this patch is evidence that the assertion is wired to the
-predicate, and it is not evidence that the harness discriminates: the honest
-statement of that is in notes/falsification.md's own BUGS, that a recorded
+predicate, and it is not evidence that the harness discriminates: a recorded
 falsification proves the harness catches THAT defect and not the class.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index d65bed7d..ff2098c8 100644
+index a5b8f24b3..00c665b60 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -168,13 +168,7 @@ pub enum Reap {
- /// liveness is disclosed only inside the relationship.
- pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -> Reap {
-     match fault_ep {
--        Some(ep) if ep == invoked_ep => {
+@@ -171,13 +171,7 @@ pub const fn reap_decision(
+     dead: bool,
+ ) -> Reap {
+     match supervising_rendezvous {
+-        Some(rendezvous) if rendezvous == invoked_rendezvous => {
 -            if dead {
 -                Reap::Permitted
 -            } else {
 -                Reap::StillAlive
 -            }
 -        }
-+        Some(ep) if ep == invoked_ep && dead => Reap::Permitted,
++        Some(rendezvous) if rendezvous == invoked_rendezvous && dead => Reap::Permitted,
          _ => Reap::NotSupervised,
      }
  }

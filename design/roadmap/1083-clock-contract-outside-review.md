@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -42,6 +42,8 @@ The comparison with nearby work is in [the appendix](1083-clock-contract-outside
 Effort: S is half a day for a lane, M a day or two, L more. A door is one-way when somebody outside
 the repository acts on it after the move (a public name, a page layout, an identity value, a
 dependency); everything else is two-way and the maintainer decides it.
+
+The ledger of what landed and what is left is in [the appendix](1083-clock-contract-outside-review/ledger.md).
 
 ### P0: the template's required checks are red on the first commit
 
@@ -184,6 +186,12 @@ rule says.
 ## Done when
 
 The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 to 3, the move's items 1 and 3, and the source items 2, 5 and 7 to 14,
+  which wait for #3559 to merge or for an architect. Checked against
+  `crates/clock_contract/src/lib.rs` on `main`: it still takes `va` and spells `NS_PER_SECOND`.
 
 ## BUGS
 

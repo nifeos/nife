@@ -5,8 +5,8 @@
 ///
 /// - **The capability is consumed; the space's name is not**. A space that already has a holder is refused with `WrongObject`.
 /// - **A process capability with [`rights::BIND`](super::rights::BIND)** instead joins that process,
-///   unconsumed; `OutOfMemory` when it already has `current_cpu_contract::THREAD_PAGE_SLOTS` threads.
-/// - Argument register 6 is the first thread pointer: zero or a user address, else `BadPointer`.
+///   unconsumed; `OutOfMemory` when it already has as many threads as a current-CPU page admits.
+/// - Word 5 (the sixth) is the first thread pointer: zero or a user address, else `BadPointer`.
 pub const CONFIGURE: u64 = 0;
 
 /// `invoke(capability, CAPABILITY_INSERT, capability_slot, rights, target)` -> `child_slot`. Copy the capability in
@@ -40,7 +40,7 @@ pub const START: u64 = 2;
 /// - `value` is zero or a user address, else `BadPointer` and nothing changes. The kernel keeps it
 ///   per thread; a program writing its own register is outside this contract.
 ///
-/// *(Name and number provisional, 2026-10-10 UTC.)*
+/// *(Name and number provisional.)*
 pub const SET_THREAD_POINTER: u64 = 3;
 
 /// `invoke(capability, SUSPEND, _, _, _)` -> 0 (seL4's `TCB_Suspend`). **Stop the thread this TCB names until a [`RESUME`]**, keeping its
@@ -52,7 +52,7 @@ pub const SET_THREAD_POINTER: u64 = 3;
 /// - A thread may suspend itself; the call returns 0 once somebody resumes it. Suspending a
 ///   suspended thread is 0; an embryo is `WrongObject`, an exited or dead thread `Gone`.
 ///
-/// Name: ratified 2026-10-18 (calef: "Yes"), as §300 rules.
+/// Name: ratified 2026-10-18 (calef), as §300 (`ThreadControlBlock::SUSPEND` and `RESUME`: the paused state, a TCB verb, silent) rules.
 pub const SUSPEND: u64 = 4;
 
 /// `invoke(capability, RESUME, _, _, _)` -> 0 (seL4's `TCB_Resume`). **Let a suspended
@@ -62,5 +62,5 @@ pub const SUSPEND: u64 = 4;
 /// Resuming a thread that is not suspended is 0 and changes nothing. An embryo is `WrongObject`; a thread that
 /// has exited or died is `Gone`.
 ///
-/// Name: ratified 2026-10-18 (calef: "Yes"), as §300 rules.
+/// Name: ratified 2026-10-18 (calef), as §300 (`ThreadControlBlock::SUSPEND` and `RESUME`: the paused state, a TCB verb, silent) rules.
 pub const RESUME: u64 = 5;

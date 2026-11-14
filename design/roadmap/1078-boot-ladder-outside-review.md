@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 972, 1017
 decision_dependencies: 305
@@ -47,6 +47,8 @@ printer and the readers, and that is where the items below sit.
 
 Effort: S is half a day for a lane, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after a release (a public name, a printed wording that logs and profiles already hold, a layout, a license). Everything else is two-way, and the maintainer decides it.
+
+The ledger of what landed and what is left is in [the appendix](1078-boot-ladder-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -178,6 +180,12 @@ Decisions 1 to 3 above. Nothing else here is one-way: the manifest, the README, 
 ## Done when
 
 The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 to 3, the move's items 1, 2 and 11, item 4's `parse` with its harness,
+  the lint grep of item 7 and item 12. Checked against `crates/boot_ladder/src`: the readers in
+  `crates/serial_console/src/progress.rs` still parse the verdict by hand and no `parse` exists.
 
 ## BUGS
 

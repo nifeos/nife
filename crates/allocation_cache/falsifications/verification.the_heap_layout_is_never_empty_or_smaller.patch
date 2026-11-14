@@ -1,0 +1,21 @@
+Falsifies `allocation_cache::verification::the_heap_layout_is_never_empty_or_smaller`.
+
+The defect: `heap_layout` stops making an empty request one byte long, so a request with no class
+and no size reaches the heap as an empty layout, which a heap may refuse.
+
+Expected to fail: the harness's claim that `heap.size() >= 1`; Kani reports the assertion
+reachable for an empty request aligned past the grid.
+
+diff --git a/crates/allocation_cache/src/lib.rs b/crates/allocation_cache/src/lib.rs
+index d42a4df59..1a669afca 100644
+--- a/crates/allocation_cache/src/lib.rs
++++ b/crates/allocation_cache/src/lib.rs
+@@ -130,7 +130,7 @@ pub const fn heap_layout(layout: Layout) -> Layout {
+         // it (`layout.size()` was valid and one is the least valid size).
+         None => unsafe {
+             Layout::from_size_align_unchecked(
+-                if layout.size() == 0 { 1 } else { layout.size() },
++                layout.size(),
+                 layout.align(),
+             )
+         },

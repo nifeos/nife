@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: none
@@ -38,6 +38,8 @@ The comparison with nearby work is in [the appendix](1075-abi-outside-review/pri
 Effort: S is under half a day for a lane, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after the release (a published name, a wire number, a layout, a
 dependency); everything else is two-way and the maintainer decides it.
+
+The ledger of what landed and what is left is in [the appendix](1075-abi-outside-review/ledger.md).
 
 ### P0: red on arrival
 
@@ -234,6 +236,13 @@ could, and `Error::BadMethod` is what any object would have answered before and 
 ## Done when
 
 The checks are in [the appendix](1075-abi-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions A and B, the two renames of item 12, the package of item 13 and items 15
+  to 17, which an architect rules. Checked against `crates/abi/src`: `futex::admitted`,
+  `Error::from_ret`, `CapabilitySlot` and `console::WRITE` all still exist.
+- **Outstanding.** Items 20 and 21 and the badge row, which need the new repository's first runs.
 
 ## BUGS
 

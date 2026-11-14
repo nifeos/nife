@@ -1,8 +1,7 @@
 //! **The self-test's tally and the lines it prints**, shared by its two halves: the kernel, which
 //! runs the checks of its own internals, and `boot_self_test`, the userspace program the progenitor
-//! runs for the checks that need a user program (milestone 1063 (the boot self-test's spawning
-//! checks run from userspace)). Both print through this code, so a check line and the verdict read
-//! the same whichever half printed them. See notes/self-test-checks.md, "The verdict's mechanics".
+//! runs for the checks that need a user program. Both print through this code, so a check line and the verdict read
+//! the same whichever half printed them.
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for what the module renders.

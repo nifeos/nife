@@ -477,7 +477,7 @@ fn drive_the_prompt(
     // The banner is the first claim: the progenitor built the console, the line editor, the input driver and
     // the shell, and gave the shell every capability it needs to say hello. A boot that dies in any
     // of that prints nothing, which is the symptom all three of this milestone's bugs shared.
-    if !console.wait_after(0, "nife capability shell", SWISH_CHECK_BOOT_SECONDS) {
+    if !console.wait_after(0, boot_ladder::PROMPT, SWISH_CHECK_BOOT_SECONDS) {
         failed.push(format!(
             "no prompt banner within {SWISH_CHECK_BOOT_SECONDS}s: the boot never reached a \
              shell"

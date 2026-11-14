@@ -3,8 +3,23 @@
 //!
 //! The surface is five calls <!--count:syscalls-->. `exit`, `exit_thread`, `yield` and
 //! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything
-//! else. `x8` holds the number, `x0` the slot, `x1` the
-//! method and `x2` to `x4` the arguments; `x0` returns a result, or a negative [`Error`].
+//! else. The trap moves six words in each direction, and the table below names the register that
+//! holds each one. On `invoke`, word 0 is the slot, word 1 the method and words 2 to 4 the
+//! arguments (word 5 only where a method says so); on return word 0 is the result, or a negative
+//! [`Error`], and a method that answers more says which of words 1 to 5 it fills.
+//!
+//! | word | aarch64 | riscv64 | `x86_64` |
+//! |------|---------|---------|----------|
+//! | syscall number | `x8` | `a7` | `rax` |
+//! | 0 | `x0` | `a0` | `rdi` |
+//! | 1 | `x1` | `a1` | `rsi` |
+//! | 2 | `x2` | `a2` | `rdx` |
+//! | 3 | `x3` | `a3` | `r10` |
+//! | 4 | `x4` | `a4` | `r8` |
+//! | 5 | `x5` | `a5` | `r9` |
+//!
+//! A module that writes `x3` or `x4` means word 3 or word 4 of this table on the architecture the
+//! reader is on.
 //!
 //! Name: ratified 2026-08-23 (calef). Declined `application_binary_interface`: "ABI" passes the
 //! test of whether an architect has to ask what it means, and this is the most-imported crate.
@@ -63,7 +78,7 @@ pub const SYSCALL_YIELD: u64 = 1;
 /// `SYS_INVOKE`.
 pub const SYSCALL_INVOKE: u64 = 2;
 
-/// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot
+/// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot.
 /// Deleting an empty slot is a harmless no-op. A loader that
 /// retypes many frames through a finite table recycles slots with it, and it needs no capability
 /// because the table is the caller's own.
@@ -92,20 +107,19 @@ pub const SYSCALL_EXIT_THREAD: u64 = 4;
 pub type CapabilitySlot = u64;
 
 /// The number of slots in a thread's capability table, mirroring the kernel's
-/// `cap::CAPABILITY_TABLE_SLOTS` so userspace can name [`fault::FAULT_RENDEZVOUS_SLOT`] without reaching
-/// into the kernel. The two must agree, or the fault slot sits in different places on the two
-/// sides of the boundary.
+/// the size of the kernel's own table, so userspace can name [`fault::FAULT_RENDEZVOUS_SLOT`] without
+/// reaching into the kernel. The kernel asserts its table size equal to this at compile time, so
+/// the fault slot cannot sit in different places on the two sides of the boundary.
 ///
 /// **Changing it is an ABI change**: [`fault::FAULT_RENDEZVOUS_SLOT`] is derived from it, so a supervisor
 /// built against another size writes the fault rendezvous to a slot the kernel does not read. Every
-/// program that names it is built against one copy of this crate. The size was set on 2026-10-04 (UTC).
+/// program that names it is built against one copy of this crate.
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
 /// Methods on a `Console` capability. **Historical: no longer wired up.**
 ///
-/// The kernel-served `Console` object was removed (the console became a userspace server
-/// reached by a `Rendezvous`). This constant is kept so the ABI's history is legible, but nothing
-/// in the kernel dispatches it any more.
+/// No kernel serves a `Console` object any more (the console is a userspace server reached by a
+/// `Rendezvous`), and nothing in the kernel dispatches this constant.
 pub mod console;
 
 /// Methods on a `Rendezvous` capability. **This is IPC.**
@@ -157,8 +171,7 @@ pub mod reboot;
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
 ///
 /// Rights: `WRITE` to [`SIGNAL`](notification::SIGNAL) and `BIND`, `READ` to
-/// [`WAIT`](notification::WAIT) and [`POLL`](notification::POLL). `BOUND`'s place in `w4` was
-/// ruled on 2026-09-26.
+/// [`WAIT`](notification::WAIT) and [`POLL`](notification::POLL). `BOUND` is delivered in `w4`.
 pub mod notification;
 
 /// Methods on a `Timer` capability: **the kernel's comparator, lent one deadline at a time.** Created by
@@ -168,7 +181,7 @@ pub mod notification;
 /// Deadlines are absolute, in the counter ticks a program reads without a syscall, and fire at the
 /// first scheduler tick (10 ms) at or after them, never before. Rights: `WRITE` on the timer to
 /// [`ARM`](timer::ARM) or [`CANCEL`](timer::CANCEL), and `WRITE` on the notification `ARM` names.
-/// The surface was confirmed on 2026-09-27 (UTC), with no slack argument.
+/// The surface has no slack argument.
 pub mod timer;
 
 /// Methods on a `ThreadControlBlock` capability: **another thread, under
@@ -181,10 +194,9 @@ pub mod thread_control_block;
 
 /// Methods on an `AddressSpace` capability: **another process's memory, under
 /// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`object_type::ADDRESS_SPACE`];
-/// nothing can run in it until TCBs arrive (19c), so today it is a structure you build, revocation
-/// can reach, and `ENUMERATE` can look at without touching. The
-/// capability keeps naming the space after a thread is
-/// bound to it, until that thread is reaped or the space's region is destroyed.
+/// a thread joins it through [`thread_control_block::CONFIGURE`], and `ENUMERATE` can look at it
+/// without touching. The capability keeps naming the space after a thread is bound to it, until
+/// that thread is reaped or the space's region is destroyed.
 pub mod address_space;
 
 /// **The `flags` word of [`address_space::WAIT`] and [`address_space::WAKE`]**. The bit layout is Linux futex2's (`FUTEX2_SIZE_*` in bits 0 and 1,
@@ -200,16 +212,16 @@ pub mod futex;
 /// A process is the capability table its threads share, their space, its supervision and its end.
 /// A thread joins one through [`thread_control_block::CONFIGURE`] given this capability with
 /// [`rights::BIND`]; a thread configured with an address space gets a process of its own, with no
-/// capability. *(Module, method and number provisional, 2026-10-10 UTC.)*
+/// capability. *(Module, method and number provisional.)*
 pub mod process;
 
-/// The rights bits, matching `capability::Rights`, so userspace can name the rights to narrow a
-/// delegated capability to (the `rights` argument to [`rendezvous::SEND_CAPABILITY`]) without depending on
-/// the kernel's `capability` crate.
+/// The rights bits, so userspace can name the rights to narrow a delegated capability to (the
+/// `rights` argument to [`rendezvous::SEND_CAPABILITY`]) without depending on the kernel's own
+/// rights type.
 ///
-/// **Five bits <!--count:rights-bits-->, and rights only ever narrow.** `capability::Rights::ALL`
-/// is the mask `from_bits` filters against, so a bit defined here and missing there is silently
-/// dropped at every delegation; the comment on that constant carries the warning.
+/// **Five bits <!--count:rights-bits-->, and rights only ever narrow.** The kernel
+/// filters every delegation against its own mask of all rights, so a bit defined here and missing
+/// there is silently dropped at every delegation; the kernel asserts the two masks equal.
 pub mod rights;
 
 /// **The fault rendezvous: thread death becomes a message a supervisor holds**. When a thread faults or exits, the kernel delivers one message to the
@@ -223,8 +235,8 @@ pub mod fault;
 ///
 /// The kernel chooses what `PMCCFILTR_EL0` filters and which counter a grant opens, so this is a
 /// promise at the boundary rather than a property of the instruction; no syscall carries it.
-/// `user_mode_runtime::cycle_reading` returns one beside the count and the kernel's test checks the
-/// variant per architecture (AGENTS.md rule 7). The three are **not the same quantity**: compare
+/// A runtime wrapper returns one beside the count and the kernel's test checks the variant per
+/// architecture. The three are **not the same quantity**: compare
 /// [`cycle_counter::CycleMeaning`]s before comparing cycle figures across architectures.
 pub mod cycle_counter;
 
@@ -239,8 +251,7 @@ pub mod virtio;
 /// Methods on a `MemoryRegion` capability. **How a process spends its own memory.**
 pub mod memory_region;
 
-/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers were
-/// ratified on 2026-09-27). [`SIZE`](usage::SIZE), [`COMMITTED`](usage::COMMITTED) and
+/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers are fixed). [`SIZE`](usage::SIZE), [`COMMITTED`](usage::COMMITTED) and
 /// [`CHILDREN`](usage::CHILDREN) are this region's; [`FRAMES`](usage::FRAMES) and the object kinds
 /// count **the whole subtree**, bump-only like a watermark: where the budget went, not what lives.
 ///
@@ -267,7 +278,7 @@ pub mod port_range;
 pub mod uart;
 
 // Index exception (2026-10-12): the error every child module returns stays at the root, because
-// the generator of nife's standard library inlines only `pub mod` children, and a public `error` module would be a
+// the generator of the standard library's copy inlines only `pub mod` children, and a public `error` module would be a
 // new path.
 /// What went wrong, returned as a **negative** `x0`; each variant says when it is answered.
 ///
@@ -289,7 +300,7 @@ pub mod uart;
 /// // already in the caller's own capability table, so its death reveals nothing new.
 /// assert_eq!(Error::NotSupervised as i64, -10);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i64)]
 pub enum Error {
     /// **The slot is empty.** Not "permission denied": there is nothing there, and there is no
@@ -304,7 +315,7 @@ pub enum Error {
     ///
     /// **Or the object refuses the operation whatever the rights.** Two cases. A
     /// [`rendezvous::SEND`], [`rendezvous::SEND_CAPABILITY`] or [`rendezvous::CALL`] naming an endpoint
-    /// that carries a hardware interrupt, which takes no message from any program (ruled on 2026-09-26). Nothing is delivered, queued or delegated,
+    /// that carries a hardware interrupt, which takes no message from any program. Nothing is delivered, queued or delegated,
     /// and the caller does not block. And a mapping ([`address_space::MAP_INTO`],
     /// [`page_frame::MAP`]) that would leave one page writable through one mapping and executable
     /// through another in the same address space. Nothing is mapped.
@@ -353,8 +364,8 @@ pub enum Error {
     Gone = -11,
 
     /// **`Reboot::REBOOT`: no route exists to ask for a reset**, such as an aarch64 device tree with no usable `/psci`. The four `Reset…` values
-    /// are the reboot object's only answers, because a reset that works never returns. The four
-    /// names were ratified on 2026-10-06, one name per concept.
+    /// are the reboot object's only answers, because a reset that works never returns. One name
+    /// per concept.
     NoResetMechanism = -12,
     /// **`Reboot::REBOOT`: the firmware does not offer a reset** (PSCI or SBI `NOT_SUPPORTED`).
     ResetNotSupported = -13,
@@ -381,7 +392,7 @@ impl Error {
     /// assert_eq!(Error::from_ret(-4), Some(Error::BadPointer));
     ///
     /// // A number that is not one of the kernel's errors is not decoded as one. That is what lets a
-    /// // wire contract layered on top (`entropy_contract`, `credential_contract`) tell "no capability" from "no".
+    /// // wire contract layered on top tell "no capability" from "no".
     /// assert_eq!(Error::from_ret(-99), None);
     /// ```
     pub fn from_ret(v: i64) -> Option<Error> {
@@ -405,6 +416,35 @@ impl Error {
         })
     }
 }
+
+// Index exception (2026-11-14): the trait impls of the error above stay beside it, because the
+// generator of the standard library's copy inlines only `pub mod` children.
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            Error::NoSuchSlot => "the capability slot is empty",
+            Error::WrongObject => "the capability is not that kind of object",
+            Error::NotPermitted => {
+                "the capability lacks the rights, or the object refuses the operation"
+            }
+            Error::BadPointer => "the pointer is not memory the caller could touch itself",
+            Error::BadMethod => "no such method on that object",
+            Error::BadSyscall => "no such syscall",
+            Error::OutOfMemory => "the untyped region is exhausted",
+            Error::DeviceRefused => "a device operation was refused",
+            Error::StillAlive => "the thread is still running",
+            Error::NotSupervised => "this rendezvous does not supervise a thread by that id",
+            Error::Gone => "the capability names an object that no longer exists",
+            Error::NoResetMechanism => "no route exists to ask for a reset",
+            Error::ResetNotSupported => "the firmware does not offer a reset",
+            Error::ResetDenied => "the firmware refused this caller a reset",
+            Error::ResetDidNotHappen => "the reset was asked for and the machine is still running",
+        })
+    }
+}
+
+// Index exception (2026-11-14): the marker impl of the error above, kept beside its `Display`.
+impl core::error::Error for Error {}
 
 #[cfg(test)]
 mod tests;

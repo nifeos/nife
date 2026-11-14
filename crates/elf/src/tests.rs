@@ -468,3 +468,20 @@ fn page_range_covers_the_whole_segment() {
     // 0x400800..0x401100 spans two pages: 0x400000 and 0x401000.
     assert_eq!(seg.page_range(4096), (0x40_0000, 0x40_2000));
 }
+
+/// A 64-bit offset or size the target cannot hold is refused as out of bounds, never truncated
+/// onto other bytes, and the error types print, box and hash.
+#[test]
+fn errors_print_and_a_64_bit_field_is_never_truncated() {
+    extern crate std;
+    use std::string::ToString;
+    let error: &dyn core::error::Error = &Error::SegmentOutOfBounds;
+    assert!(error.to_string().contains("off the end"));
+    let note: &dyn core::error::Error = &NoteError::Duplicate;
+    assert!(note.to_string().contains("more than once"));
+    // `memsz` too large for `usize` is not "less than" any `filesz` that fits.
+    assert_ne!(
+        check_segment_bounds(1 << 20, 0, 16, 0x40_0000, u64::MAX),
+        Err(Error::SegmentTruncated)
+    );
+}

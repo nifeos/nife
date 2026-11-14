@@ -1,42 +1,67 @@
 //! **The byte-sink contract**: one framing for *write these bytes there*, so a writer cannot tell
-//! what is underneath its output. A sink is a `Rendezvous` capability with `WRITE` and nothing
-//! else: up to [`INLINE_MAXIMUM`] bytes ride in registers with the opcode and length in the first
-//! word (the three-word fastpath, notes/abi.md), sent with `SEND`, whose rendezvous is the flow
-//! control. [`Sent::NoSink`] means the slot is empty and writing into the void is correct;
-//! [`Sent::Gone`] means the sink was destroyed (§16 (object revocation)) and **the writer must
-//! end**, `SIGPIPE` as a return code. No per-write error, no types, no seeking. See
-//! notes/sink-protocol.md.
+//! what is underneath its output. A terminal, a file and a pipe become substitutable in one
+//! capability slot.
+//!
+//! A sink is a `Rendezvous` capability with `WRITE` and nothing else. A writer sends with `SEND`,
+//! whose rendezvous is the flow control, and gets no reply. Up to [`INLINE_MAXIMUM`] bytes ride in
+//! the three message registers with the opcode and the length in the first word, so a write costs
+//! one message and touches no memory.
+//!
+//! | word | holds |
+//! |---|---|
+//! | first | opcode in bits 63:56 ([`OPERATION_SHIFT`]), body kind in bits 47:40 ([`KIND_SHIFT`]), severity in bits 39:32 ([`SEVERITY_SHIFT`]), byte count in bits 31:0 |
+//! | second | bytes 0 to 7, little-endian |
+//! | third | bytes 8 to 15, little-endian |
+//!
+//! # Why this shape
+//!
+//! - **Registers, not a shared page.** A shared page would give every sink a mapping and a lifetime
+//!   rule; sixteen bytes ride free in the registers a `SEND` already has, and a caller chunks longer
+//!   writes ([`pack`] says how many it took).
+//! - **`SEND`, not `CALL`.** A writer has no reply to wait for, so a slow sink slows the writer by
+//!   the rendezvous alone, and a sink needs no reply capability.
+//! - **No per-write error.** A write either reaches the sink or it does not, and the one failure a
+//!   writer must tell apart is returned by `SEND` itself: [`Sent::NoSink`] means the slot is empty
+//!   and writing into the void is correct; [`Sent::Gone`] means the sink was destroyed and **the
+//!   writer must end**, `SIGPIPE` as a return code. A standard library maps them to
+//!   `ErrorKind::Unsupported` and `ErrorKind::BrokenPipe`.
+//!
+//! # What it does not carry
+//!
+//! No types, no seeking, no reply, no flow-control credit beyond the rendezvous, no version
+//! operation (a program declares the pair [`INTERFACE_ID`] and [`VERSION`] where it is spawned), and
+//! no meaning for the second and third words of an end-of-stream message: a writer sends zero in
+//! both and a sink ignores them.
 //!
 //! Name: ratified 2026-08-23 (calef) as `byte_sink_proto`, renamed from `sink_proto` to match "the
 //! byte-sink contract"; `_contract` per calef's 2026-10-18 ruling.
 
 #![no_std]
 
-/// The opcode's position in the first word: bits 63:56, the same place `filesystem_contract` and
-/// `line_editor::proto` put theirs. One spelling for "the wire contract" across the tree.
+/// The opcode's position in the first word: bits 63:56, where the other message contracts of the
+/// same family put theirs, so one reading of a first word serves all of them.
 pub const OPERATION_SHIFT: u32 = 56;
 
-/// The framing's version, one for the message set and the inline packing together (calef's ruling
-/// of 2026-10-29 UTC, PR #2852, question 1: one constant per wire format). A break bumps this and
-/// owes the dated ledger entry the interface-stability discipline records; an addition owes no
-/// bump. A reader of a sink checks the version at bind (milestone 956 (the linked interfaces
-/// carry checkable versions)): a writer `CALL`s `OPERATION_VERSION` and binds only when its own
-/// version is in the served set.
+/// The framing's version, one for the message set and the inline packing together. A break bumps
+/// this; an addition owes no bump. A program's note declares the pair ([`INTERFACE_ID`], this
+/// number), and whoever spawns and wires it compares them. The contract has no wire operation for
+/// versions: a sink is one-way, so there is nothing a writer could `CALL`, and opcode 0 is
+/// [`OPERATION_BYTES`]. A sink that serves two versions does so by accepting both framings.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 6, naming the byte-sink write
 /// framing. The number is this interface's for good: no other interface takes it, and a format
-/// change is a new version, never a new number. Milestone 956 (the linked interfaces carry
-/// checkable versions) holds the table of numbers, and `script/lint` holds the tree to it. A
-/// program declares the pair of this id and [`VERSION`].
+/// change is a new version, never a new number. A program declares the pair of this id and
+/// [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 6;
 
-/// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAXIMUM`]); the bytes themselves are in
-/// the second and third words, little-endian, low word first.
+/// **Bytes.** The low 32 bits are the count (0 to [`INLINE_MAXIMUM`]); the bytes themselves are in
+/// the second and third words, little-endian, low word first. A zero count is legal and a sink
+/// treats it as nothing, as `write(2)` treats a zero-byte write.
 ///
 /// It is **zero on purpose.** With the opcode at zero the first word is exactly the byte count,
 /// which is bit-for-bit the framing std's stdout already sent before this crate existed. So
@@ -45,7 +70,9 @@ pub const INTERFACE_ID: u64 = 6;
 /// what a message means; the cheapest claim to make is the one the wire was already making.
 pub const OPERATION_BYTES: u64 = 0;
 
-/// **End of stream.** The writer is finished; no more bytes will come. The low 32 bits are zero.
+/// **End of stream.** The writer is finished; no more bytes will come. The low 32 bits are zero,
+/// and the second and third words are reserved: a writer sends zero in both and a sink ignores
+/// them.
 ///
 /// A sink acts on this rather than merely noticing it: a file sink closes its handle, a terminal
 /// sink may draw a prompt, and the reader of a pipe stops reading instead of blocking forever on a
@@ -56,17 +83,14 @@ pub const OPERATION_EOF: u64 = 1;
 
 /// The most bytes one message carries: two 64-bit words. Not a tuning parameter. It is what fits in
 /// the registers a `SEND` already has, and enlarging it means giving a sink a shared page, which is
-/// the thing the module note explains this contract exists to avoid.
+/// the thing this contract exists to avoid.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const INLINE_MAXIMUM: usize = 16;
 
-/// The kernel's `abi::Error::Gone`, restated so this crate stays dependency-free.
-///
-/// It has to be restated because `cargo xtask std-src` copies this file verbatim into the patched
-/// std sysroot, where there is no `abi` crate to link against. The test module below pins the two
-/// numbers together and is truncated out of that copy, so the drift this duplication invites is
-/// caught in the workspace where it can be.
+/// The kernel's return for "the object no longer exists", restated here so a writer needs no second
+/// crate. Anyone who links the kernel's error type as well pins the two numbers together with a
+/// compile-time assertion.
 pub const GONE: i64 = -11;
 
 /// Pack an opcode and a length into a message's first word.
@@ -150,18 +174,17 @@ pub fn pack(bytes: &[u8]) -> (u64, u64, u64, usize) {
 }
 
 /// **Where a bytes message's severity rides**: bits 39:32 of the first word, which the framing left
-/// unused (the count is bits 31:0 and the opcode bits 63:56). §242 (a system log) amended this
-/// contract rather than giving a log writer its own framing: a terminal, a pipe and a file read the
-/// count through [`len`] and never see these bits. The field holds the syslog level plus one (RFC
-/// 5424's 0 emergency to 7 debug), so 0 still means not set, and a sink that cares then infers a
-/// level from the stream (diagnostics warns, ordinary output informs, §242). The width and the
-/// plus-one encoding are milestone 613 (a system log service)'s, and provisional: §242 ruled the
-/// bits, not their layout.
+/// unused (the count is bits 31:0 and the opcode bits 63:56). A log writer shares this framing
+/// rather than having its own: a terminal, a pipe and a file read the count through [`len`] and
+/// never see these bits. The field holds the syslog level plus one (RFC 5424's 0 emergency to 7
+/// debug), so 0 still means not set, and a sink that cares then infers a level from the stream.
+/// The width and the plus-one encoding are provisional. A consumer reads these bits only on a bytes
+/// message.
 pub const SEVERITY_SHIFT: u32 = 32;
 
-/// **Where a bytes message's body kind rides**: bits 47:40 of the first word. §242's F3 record
-/// carries a body-kind byte so a later structured body (F2's key/value arguments) arrives as a new
-/// kind rather than a new framing; [`KIND_TEXT`] is the only kind today. Bits 55:48 stay zero.
+/// **Where a bytes message's body kind rides**: bits 47:40 of the first word. A later structured
+/// body arrives as a new kind rather than a new framing; [`KIND_TEXT`] is the only kind today, and
+/// [`unpack`] refuses a bytes message of any other kind. Bits 55:48 stay zero.
 pub const KIND_SHIFT: u32 = 40;
 
 /// The one body kind that exists: UTF-8 text, which is what every writer already sends, and 0 for
@@ -181,7 +204,8 @@ pub const fn severity(w0: u64) -> Option<u8> {
 }
 
 /// `w0` with its severity set to syslog `level` (0 to 7; a larger value is clamped to 7, debug, the
-/// least alarming reading of a level nobody defined).
+/// least alarming reading of a level nobody defined). It acts on any first word, but only a bytes
+/// message's bits are read.
 pub const fn with_severity(w0: u64, level: u8) -> u64 {
     let level = if level > 7 { 7 } else { level };
     (w0 & !(0xff << SEVERITY_SHIFT)) | (((level as u64) + 1) << SEVERITY_SHIFT)
@@ -200,11 +224,13 @@ pub enum Msg {
     Bytes(usize),
     /// [`OPERATION_EOF`]: the writer is finished.
     Eof,
-    /// An opcode this contract does not define, or a byte count past [`INLINE_MAXIMUM`].
+    /// An opcode this contract does not define, a bytes message whose body kind is not
+    /// [`KIND_TEXT`], or a byte count past [`INLINE_MAXIMUM`].
     ///
     /// A sink refuses it rather than guessing, and refusing loudly is the point: a length larger
     /// than the message can hold is the shape of a confused or hostile writer, and the read it
-    /// would authorise is a read past the end of a buffer.
+    /// would authorize is a read past the end of a buffer. A kind this decoder does not know would
+    /// print as text if it were not refused.
     Malformed,
 }
 
@@ -232,10 +258,11 @@ pub enum Msg {
 pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg {
     match operation(w0) {
         OPERATION_BYTES => {
-            let n = len(w0);
-            if n > INLINE_MAXIMUM {
+            // Compared as `u64`, so a target whose `usize` is narrower cannot truncate the count.
+            if w0 & 0xffff_ffff > INLINE_MAXIMUM as u64 || kind(w0) != KIND_TEXT {
                 return Msg::Malformed;
             }
+            let n = len(w0);
             out[..8].copy_from_slice(&w1.to_le_bytes());
             out[8..].copy_from_slice(&w2.to_le_bytes());
             Msg::Bytes(n)
@@ -257,7 +284,7 @@ pub enum Sent {
     NoSink,
 }
 
-/// Classify a `SEND`'s return value.
+/// Classify a `SEND`'s return value (`returned`).
 ///
 /// Every refusal other than [`GONE`] is [`Sent::NoSink`], and that is deliberate rather than lazy.
 /// An empty slot, a slot holding a `PageFrame` instead of an `Rendezvous`, and an endpoint held without
@@ -318,15 +345,6 @@ pub mod fixture {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// The number this crate restates and the kernel's enum are one fact in two files, and this is
-    /// the only place that can notice them parting. `abi` is a dev-dependency precisely so this
-    /// check exists in the workspace and never travels into the std sysroot copy, which cannot
-    /// link it.
-    #[test]
-    fn the_restated_gone_code_is_the_kernels() {
-        assert_eq!(GONE, abi::Error::Gone as i64);
-    }
 
     /// A round trip through the wire words, at the boundaries that matter: a message that fills
     /// both words, one that fills neither, and one that straddles them.
@@ -439,7 +457,7 @@ mod tests {
     /// Setting a level replaces the one already there rather than merging with it, leaves the count
     /// and the kind alone, and clamps a level nobody defined to debug.
     #[test]
-    fn a_severity_set_twice_is_the_second_and_the_neighbours_are_untouched() {
+    fn a_severity_set_twice_is_the_second_and_the_neighbors_are_untouched() {
         let w0 = with_severity((0x2a << KIND_SHIFT) | 9, 5);
         assert_eq!(severity(w0), Some(5));
         let again = with_severity(w0, 2);
@@ -451,7 +469,7 @@ mod tests {
     }
 
     /// The body kind is its own byte, between the severity above it and nothing below it but the
-    /// count: neither neighbour leaks in, and it reads back whole.
+    /// count: neither neighbor leaks in, and it reads back whole.
     #[test]
     fn the_kind_is_read_from_its_own_byte() {
         assert_eq!(kind(0), 0);
@@ -464,4 +482,30 @@ mod tests {
             "bits above the kind byte are not it"
         );
     }
+
+    /// A bytes message of a body kind this contract does not define is refused, so a future
+    /// structured body never prints as text through a decoder that predates it.
+    #[test]
+    fn a_bytes_message_of_another_kind_is_refused() {
+        let mut out = [0u8; INLINE_MAXIMUM];
+        let (w0, w1, w2, _) = pack(b"text");
+        assert_eq!(unpack(w0, w1, w2, &mut out), Msg::Bytes(4));
+        let other = w0 | (1 << KIND_SHIFT);
+        assert_eq!(unpack(other, w1, w2, &mut out), Msg::Malformed);
+        // The severity beside the kind does not move the line between the two.
+        assert_eq!(
+            unpack(with_severity(w0, 2), w1, w2, &mut out),
+            Msg::Bytes(4)
+        );
+    }
+
+    /// The second and third words of an end-of-stream message are reserved and ignored.
+    #[test]
+    fn an_end_of_stream_ignores_its_other_words() {
+        let mut out = [0u8; INLINE_MAXIMUM];
+        assert_eq!(unpack(eof(), 7, 9, &mut out), Msg::Eof);
+    }
 }
+
+#[cfg(kani)]
+mod verification;

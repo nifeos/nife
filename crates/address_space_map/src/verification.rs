@@ -2,7 +2,7 @@
 //! code-model ceiling lies in exactly one band, whole pages and in address order; each band
 //! function accepts exactly the pages its doc allows; and [`check_image`] places exactly the images
 //! the image band holds. Behind `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them.
-//! See notes/address-space-map.md and notes/verification.md.
+//! The crate root carries the table of bands these harnesses prove.
 //!
 //! The constant facts (the bands tile `[0, CODE_MODEL_CEILING)`, each page aligned, the ceiling a
 //! low-half address on every architecture) are also `const` asserts in `lib.rs`, where every
@@ -25,21 +25,21 @@ fn refused_inputs_never_reach_here() -> ! {
     loop {}
 }
 
-/// How many bands contain `va`.
-fn bands_containing(va: u64) -> usize {
+/// How many bands contain `virtual_address`.
+fn bands_containing(virtual_address: u64) -> usize {
     let mut n = 0;
     for (_, band) in BANDS {
-        if band.contains(va) {
+        if band.contains(virtual_address) {
             n += 1;
         }
     }
     n
 }
 
-/// The index in [`BANDS`] of the band containing `va`, or [`BANDS`]'s length when none does.
-fn band_index(va: u64) -> usize {
+/// The index in [`BANDS`] of the band containing `virtual_address`, or [`BANDS`]'s length when none does.
+fn band_index(virtual_address: u64) -> usize {
     let mut i = 0;
-    while i < BANDS.len() && !BANDS[i].1.contains(va) {
+    while i < BANDS.len() && !BANDS[i].1.contains(virtual_address) {
         i += 1;
     }
     i
@@ -49,22 +49,22 @@ fn band_index(va: u64) -> usize {
 /// The page around it lies wholly in the same band, which is what page aligned at both ends means
 /// for a band at least a page wide, and its top bits are clear on all three architectures:
 /// aarch64 splits the halves at bit 48, `x86_64` at bit 47, `riscv64` (Sv39) at bit 38, as
-/// `LOW_HALF_SPLIT_SHIFTS` restates from `crates/paging`.
+/// `LOW_HALF_SPLIT_SHIFTS` restates from the paging code.
 /// Falsification: replayable `crates/address_space_map/falsifications/verification.every_address_below_the_ceiling_lies_in_exactly_one_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
-    let va: u64 = kani::any();
-    if va >= CODE_MODEL_CEILING {
-        assert_eq!(bands_containing(va), 0);
+    let virtual_address: u64 = kani::any();
+    if virtual_address >= CODE_MODEL_CEILING {
+        assert_eq!(bands_containing(virtual_address), 0);
         return;
     }
-    assert_eq!(bands_containing(va), 1);
-    let band = BANDS[band_index(va)].1;
-    let page = va - va % PAGE;
+    assert_eq!(bands_containing(virtual_address), 1);
+    let band = BANDS[band_index(virtual_address)].1;
+    let page = virtual_address - virtual_address % PAGE;
     assert!(band.contains(page) && band.contains(page + PAGE - 1));
     for (_, shift) in LOW_HALF_SPLIT_SHIFTS {
-        assert_eq!(va >> shift, 0);
+        assert_eq!(virtual_address >> shift, 0);
     }
 }
 
@@ -82,14 +82,16 @@ fn the_bands_are_listed_in_address_order() {
 }
 
 /// The band function's contract, stated without the function: page aligned and inside `band`.
-fn allowed(band: Band, va: u64) -> bool {
-    va.is_multiple_of(PAGE) && va >= band.start && va < band.end
+fn is_allowed(band: Band, virtual_address: u64) -> bool {
+    virtual_address.is_multiple_of(PAGE)
+        && virtual_address >= band.start
+        && virtual_address < band.end
 }
 
 /// What every accepted address must satisfy: returned unchanged, its whole page inside its own
 /// band, and in no other band.
-fn assert_placed(band: Band, va: u64, returned: u64) {
-    assert_eq!(returned, va);
+fn assert_placed(band: Band, virtual_address: u64, returned: u64) {
+    assert_eq!(returned, virtual_address);
     assert!(band.start <= returned && returned + PAGE <= band.end);
     assert_eq!(bands_containing(returned), 1);
 }
@@ -100,9 +102,9 @@ fn assert_placed(band: Band, va: u64, returned: u64) {
 #[kani::proof]
 #[kani::unwind(9)]
 fn pair_page_accepts_every_page_of_its_band() {
-    let va: u64 = kani::any();
-    kani::assume(allowed(PAIR_PAGES, va));
-    assert_placed(PAIR_PAGES, va, pair_page(va));
+    let virtual_address: u64 = kani::any();
+    kani::assume(is_allowed(PAIR_PAGES, virtual_address));
+    assert_placed(PAIR_PAGES, virtual_address, pair_page(virtual_address));
 }
 
 /// **[`pair_page`] refuses every address its doc forbids**: unaligned, or outside [`PAIR_PAGES`].
@@ -112,9 +114,9 @@ fn pair_page_accepts_every_page_of_its_band() {
 #[kani::should_panic]
 #[kani::unwind(1)]
 fn pair_page_refuses_every_address_its_doc_forbids() {
-    let va: u64 = kani::any();
-    kani::assume(!allowed(PAIR_PAGES, va));
-    pair_page(va);
+    let virtual_address: u64 = kani::any();
+    kani::assume(!is_allowed(PAIR_PAGES, virtual_address));
+    pair_page(virtual_address);
     refused_inputs_never_reach_here();
 }
 
@@ -124,9 +126,13 @@ fn pair_page_refuses_every_address_its_doc_forbids() {
 #[kani::proof]
 #[kani::unwind(9)]
 fn runtime_window_accepts_every_page_of_its_band() {
-    let va: u64 = kani::any();
-    kani::assume(allowed(RUNTIME_WINDOWS, va));
-    assert_placed(RUNTIME_WINDOWS, va, runtime_window(va));
+    let virtual_address: u64 = kani::any();
+    kani::assume(is_allowed(RUNTIME_WINDOWS, virtual_address));
+    assert_placed(
+        RUNTIME_WINDOWS,
+        virtual_address,
+        runtime_window(virtual_address),
+    );
 }
 
 /// **[`runtime_window`] refuses every address its doc forbids**, and at least one.
@@ -135,9 +141,9 @@ fn runtime_window_accepts_every_page_of_its_band() {
 #[kani::should_panic]
 #[kani::unwind(1)]
 fn runtime_window_refuses_every_address_its_doc_forbids() {
-    let va: u64 = kani::any();
-    kani::assume(!allowed(RUNTIME_WINDOWS, va));
-    runtime_window(va);
+    let virtual_address: u64 = kani::any();
+    kani::assume(!is_allowed(RUNTIME_WINDOWS, virtual_address));
+    runtime_window(virtual_address);
     refused_inputs_never_reach_here();
 }
 
@@ -147,9 +153,13 @@ fn runtime_window_refuses_every_address_its_doc_forbids() {
 #[kani::proof]
 #[kani::unwind(9)]
 fn service_window_accepts_every_page_of_its_band() {
-    let va: u64 = kani::any();
-    kani::assume(allowed(SERVICE_WINDOWS, va));
-    assert_placed(SERVICE_WINDOWS, va, service_window(va));
+    let virtual_address: u64 = kani::any();
+    kani::assume(is_allowed(SERVICE_WINDOWS, virtual_address));
+    assert_placed(
+        SERVICE_WINDOWS,
+        virtual_address,
+        service_window(virtual_address),
+    );
 }
 
 /// **[`service_window`] refuses every address its doc forbids**, and at least one.
@@ -158,9 +168,9 @@ fn service_window_accepts_every_page_of_its_band() {
 #[kani::should_panic]
 #[kani::unwind(1)]
 fn service_window_refuses_every_address_its_doc_forbids() {
-    let va: u64 = kani::any();
-    kani::assume(!allowed(SERVICE_WINDOWS, va));
-    service_window(va);
+    let virtual_address: u64 = kani::any();
+    kani::assume(!is_allowed(SERVICE_WINDOWS, virtual_address));
+    service_window(virtual_address);
     refused_inputs_never_reach_here();
 }
 

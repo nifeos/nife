@@ -4,7 +4,8 @@ The wall clock as a contract between a clock service and everything that reads o
 the layout of a shared clock page, the small protocol for proposing a new time, and the policy a
 proposal must meet. `no_std`, no dependencies outside an optional model-checking build. A clock
 service, its readers and a standard library's time support share this one definition, so they
-cannot drift.
+cannot drift. On its own the crate maps nothing and sets nothing; it is useful with a clock service
+that maps the page and a loader that grants it.
 
 Reading the clock is a read-only mapping of the page. Setting it is a read/write mapping of the same
 page. Proposing a time is a message to an endpoint, which the service answers by applying the policy
@@ -33,14 +34,14 @@ epoch in a `u64`, which runs out in 2554.
   word, or `req(STATE)` to ask what the clock knows. The opcode sits in bits 63:56. The reply's first
   word is a `status` (`ACCEPTED`, `REFUSED_IMPLAUSIBLE`, `REFUSED_TOO_FAR_FORWARD`,
   `REFUSED_TOO_FAR_BACKWARD`, `BAD_REQUEST`) and its second the wall-clock nanoseconds in force.
-- The policy (`policy::decide`): a proposal outside the window from 2026-01-01 (`NOT_BEFORE_NANOSECONDS`) to
-  2100-01-01 (`NOT_AFTER_NANOSECONDS`) is refused as implausible, and the window also judges what a hardware
+- The policy (`policy::decide`) refuses as implausible a proposal outside the window from 2026-01-01 (`NOT_BEFORE_NANOSECONDS`) to
+  2100-01-01 (`NOT_AFTER_NANOSECONDS`), and the window also judges what a hardware
   clock reports. Once the clock knows the time, one accepted proposal may move it forward by at most
   an hour (`MAXIMUM_STEP_FORWARD_NANOSECONDS`) and backward by at most a second (`MAXIMUM_STEP_BACKWARD_NANOSECONDS`).
   Moving backward makes instants happen twice, which breaks log ordering and expiry. A clock that
   is `UNKNOWN` accepts any plausible proposal. The window is a floor on plausibility, not a claim of
   accuracy.
-- `rtc` names the kinds of hardware clock the service can be told about: `NONE`, `PL031`, `GOLDFISH`
+- `rtc` names the kinds of hardware clock a service may read: `NONE`, `PL031`, `GOLDFISH`
   and `CMOS`. `PL031` and `GOLDFISH` name a register layout the service reads through a mapped
   page; `CMOS` names the two I/O ports, `INDEX_PORT` and `DATA_PORT`, it reads through a
   port capability.

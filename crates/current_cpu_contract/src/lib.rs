@@ -11,16 +11,18 @@
 
 //! # BUGS
 //!
-//! - Nothing outside tests reads the word yet; the write costs under 1.5 ns on an M3 (#1904).
-//! - The reader forms an `&AtomicU64` over read-only memory, which Miri rejects; see the note.
-//! - At most [`THREAD_PAGE_SLOTS`] threads a process (§269 fork 6); see notes/current-cpu-page.md.
-//! - An address space never bound to a TCB has no page, so `current_cpu` there faults.
-//! - [`CPU_ID_BOUND`] is the compile-time `MAXIMUM_CPUS`: right for sizing, useless for iterating.
+//! - The reader forms an `&AtomicU64` over a read-only mapping, a shape the Rust memory model has
+//!   not settled; the fallback is a raw atomic load that forms no reference.
+//! - A process has at most [`THREAD_PAGE_SLOTS`] threads, one page each.
+//! - An address space never bound to a thread has no page, so a reader there faults.
+//! - [`CPU_ID_BOUND`] sizes per-CPU arrays and does not enumerate the cores that exist.
+//! - A consumer may copy this crate's single source file into a standard library: keep the crate to
+//!   one file with fully qualified paths.
 //!
 //! Name: ratified 2026-10-18 (calef): "Yes". `current_cpu` is the field's own word for this
 //! quantity (`cpu` is ruled in design/naming.md, 2026-10-03); the suffix follows its sibling.
 
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -183,6 +185,7 @@ pub fn build_page_allowing(allowance: u64, tick_hertz: u64) -> [u8; PAGE_BYTES] 
 /// direct-map view of a frame the address space owns and nothing else can reach.
 #[inline]
 pub unsafe fn publish(page_va: u64, cpu: u64) {
+    debug_assert!(page_va.is_multiple_of(8), "the page is 8-aligned");
     // SAFETY: the caller's contract gives us a live, aligned, exclusively written buffer of at
     // least `PAGE_BYTES`, and `OFF_CPU + 8` is inside it.
     // `wrapping_add` because the wrap cannot happen and this runs on every context switch (release
@@ -232,6 +235,7 @@ impl CurrentCpuPage {
     /// for as long as this value is used. The kernel maps exactly such a page, read-only, at
     /// [`PAGE_VA`]; see the crate's `BUGS` section for the shape that does not get one.
     pub const unsafe fn new(va: u64) -> Self {
+        debug_assert!(va.is_multiple_of(8), "the page is 8-aligned");
         CurrentCpuPage {
             base: va as *const u8,
         }
@@ -248,10 +252,10 @@ impl CurrentCpuPage {
             return None;
         }
         // SAFETY: `new`'s contract again, plus its alignment clause: every word is 8-aligned
-        // because `base` is and every offset is a multiple of 8. Reached through an integer rather
-        // than by offsetting the `*const u8` so the cast is not one clippy has to take on trust,
-        // which is the same shape `publish` uses on the writing side.
-        let word = unsafe { &*((self.base as u64 + off as u64) as *const AtomicU64) };
+        // because `base` is and every offset is a multiple of 8. The offset keeps the pointer's
+        // provenance, so a checker can tie the load to the buffer it came from.
+        #[allow(clippy::cast_ptr_alignment)]
+        let word = unsafe { &*self.base.add(off).cast::<AtomicU64>() };
         Some(word.load(Ordering::Relaxed))
     }
 
@@ -259,7 +263,10 @@ impl CurrentCpuPage {
     /// answer (milestone 812, §269 fork 7), or `None` for an unrecognized page or one built without
     /// an allowance. One load, never written after the page is built, so it needs no ordering.
     pub fn allowance(&self) -> Option<core::num::NonZeroUsize> {
-        core::num::NonZeroUsize::new(self.word(OFF_ALLOWANCE)? as usize)
+        // An allowance the target cannot hold reads as unknown, never as a truncated count.
+        usize::try_from(self.word(OFF_ALLOWANCE)?)
+            .ok()
+            .and_then(core::num::NonZeroUsize::new)
     }
 
     /// The scheduler tick's rate in hertz, and so the resolution of every timed wait, or

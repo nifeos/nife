@@ -217,7 +217,7 @@ impl RebootPhase<'_> {
             return Err(Self::failure("the firmware refused every reset route"));
         }
         if self
-            .wait_after(resumed, "nife capability shell", Self::BOOT_SECONDS)
+            .wait_after(resumed, boot_ladder::PROMPT, Self::BOOT_SECONDS)
             .is_none()
         {
             return Err(Self::failure(&format!(

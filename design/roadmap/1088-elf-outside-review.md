@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 857, 1039
 decision_dependencies: 46, 151, 154
@@ -71,6 +71,8 @@ The tools run, the sources read and what was not run are in [the appendix](1088-
 The comparison with nearby work is in [the appendix](1088-elf-outside-review/prior-art.md).
 
 ## Findings
+
+The ledger of what landed and what is left is in [the appendix](1088-elf-outside-review/ledger.md).
 
 ### P0: before the move
 
@@ -213,6 +215,12 @@ of file the crate accepts, in two words a reader says. That is for then.
 ## Done when
 
 The checks are in [the appendix](1088-elf-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions D1 to D3, the move's items, the page-size type, the entry-point
+  refusal, the README and the vocabulary sweep. Checked against `crates/elf/src`: `vaddr`, `paddr`
+  and `memsz` keep their names and `Segment::page_range` still takes a bare `u64`.
 
 ## BUGS
 

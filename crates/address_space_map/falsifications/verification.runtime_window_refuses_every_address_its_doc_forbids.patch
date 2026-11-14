@@ -10,12 +10,12 @@ diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/
 index 0eba0def7..e1d60e4f6 100644
 --- a/crates/address_space_map/src/lib.rs
 +++ b/crates/address_space_map/src/lib.rs
-@@ -167,7 +167,7 @@ pub const fn runtime_window(va: u64) -> u64 {
+@@ -167,7 +167,7 @@ pub const fn runtime_window(virtual_address: u64) -> u64 {
          "a runtime window must be page aligned"
      );
      assert!(
--        RUNTIME_WINDOWS.contains(va),
-+        va >= RUNTIME_WINDOWS.start,
+-        RUNTIME_WINDOWS.contains(virtual_address),
++        virtual_address >= RUNTIME_WINDOWS.start,
          "a runtime window must lie in RUNTIME_WINDOWS (address_space_map)"
      );
-     va
+     virtual_address

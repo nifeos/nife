@@ -128,7 +128,7 @@ pub(super) fn find_marker<'a>(haystack: &str, needle: &'a str) -> Marker<'a> {
 /// true would make [`BootClaim::Unreadable`] a way to pass without evidence.
 fn kernel_wrote_during_boot(transcript: &str) -> bool {
     let boot = transcript
-        .find("nife capability shell")
+        .find(boot_ladder::PROMPT)
         .map_or(transcript, |at| &transcript[..at]);
     KERNEL_FAULT_TOKENS.iter().any(|t| boot.contains(t))
 }

@@ -1,0 +1,21 @@
+Falsifies `byte_sink_contract::verification::end_of_stream_ignores_its_other_words`.
+
+The defect: `unpack` refuses an end-of-stream message whose second word is not zero, which the
+contract reserves and a sink must ignore.
+
+Expected to fail: the harness's claim that the message unpacks as `Eof` for any second word; Kani
+reports it failing at a second word of 1.
+
+diff --git a/crates/byte_sink_contract/src/lib.rs b/crates/byte_sink_contract/src/lib.rs
+index 7bf381b61..bf9c6d01a 100644
+--- a/crates/byte_sink_contract/src/lib.rs
++++ b/crates/byte_sink_contract/src/lib.rs
+@@ -267,7 +267,7 @@ pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg
+             out[8..].copy_from_slice(&w2.to_le_bytes());
+             Msg::Bytes(n)
+         }
+-        OPERATION_EOF => Msg::Eof,
++        OPERATION_EOF if w1 == 0 => Msg::Eof,
+         _ => Msg::Malformed,
+     }
+ }

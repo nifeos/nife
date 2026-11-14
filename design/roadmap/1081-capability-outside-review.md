@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: 151, 305
@@ -52,6 +52,8 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the move or the release (a repository name, a
 published name, a published behavior, a layout, a license); everything else is two-way and the
 maintainer decides it. Every name proposed below is provisional.
+
+The ledger of what landed and what is left is in [the appendix](1081-capability-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -219,6 +221,13 @@ Door: one-way (a repository name and a published crate name). This review rechec
 ## Done when
 
 The checks are in [the appendix](1081-capability-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decision D1, the move's items 1 and 13, items 3 and 5, the `Error` variants of item
+  10, the `peak` feature of item 11, an `iter` for item 12 and item 16. Checked against
+  `crates/capability/src/lib.rs`: `delegate`, `capacity` and `iter` do not exist, and `len` still
+  returns the capacity.
 
 ## BUGS
 

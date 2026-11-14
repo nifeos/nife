@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -45,6 +45,8 @@ Effort: S is under half a day for a lane, M a day or two, L longer. A door is on
 outside the repository acts on it after the first tag (a public name, a published behavior, a layout, a dependency). Everything else is two-way, and the maintainer decides it. The crate has no
 release, so a public rename is one-way only from the tag on; the items say "one-way at the tag"
 for those.
+
+The ledger of what landed and what is left is in [the appendix](1077-allocation-cache-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -161,6 +163,13 @@ consumer.
 ## Done when
 
 The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 to 3, the move's items 1, 3, 10 and 11, the bounded model of item 8
+  and the `Drop` assertion of item 12. Checked against `crates/allocation_cache/src`: `Class`,
+  `MAXIMUM_CLASS_BYTES` and `push` do not exist, and no model of `put` and `take` is in
+  `verification.rs`.
 
 ## BUGS
 

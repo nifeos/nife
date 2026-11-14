@@ -1,8 +1,7 @@
-//! **How the progenitor endows `boot_self_test`, and what the program says back** (milestone 1063
-//! (the boot self-test's spawning checks run from userspace)): the capability slots, the pair-page
+//! **How the progenitor endows `boot_self_test`, and what the program says back** the capability slots, the pair-page
 //! addresses, the image table and the two messages the progenitor and the program agree on. A user
 //! of an address wraps it in `address_space_map::pair_page`, so an address off the map stops that
-//! build. See notes/self-test-checks.md, "The two halves".
+//! build.
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for the program it describes.

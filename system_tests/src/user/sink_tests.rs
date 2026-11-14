@@ -510,3 +510,7 @@ fn give_back(
     crate::sched::reclaim_region(*heap).expect("the std heap did not come back");
     wiring.0.release_or_fail(what);
 }
+
+// The contract restates the kernel's "object no longer exists" return so a writer needs no second
+// crate; this crate links both, so the two numbers are pinned here, at compile time.
+const _: () = assert!(byte_sink_contract::GONE == abi::Error::Gone as i64);

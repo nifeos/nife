@@ -28,7 +28,7 @@ pub enum CycleMeaning {
     /// authority). It ticks at a fixed rate whatever the
     /// core's frequency, so a difference of two reads is time in reference cycles, and a
     /// figure in core cycles from either other architecture is a different unit. Reading core
-    /// cycles from ring 3 would need `rdpmc` and `CR4.PCE`, which was declined on 2026-10-07.
+    /// cycles from ring 3 would need `rdpmc` and `CR4.PCE`, which is declined.
     ConstantRateReferenceCycles = 3,
 }
 
