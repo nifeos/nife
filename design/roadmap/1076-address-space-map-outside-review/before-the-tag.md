@@ -68,8 +68,8 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
    word in both senses in one paragraph: "the map" (the table of bands) and "pages the kernel maps
    into every process" (the verb). The crate root marks the name provisional and records that the minting set `user_layout` and `address_space` aside. The block does not give the reasons (unverified).
    Evidence: `src/lib.rs` lines 1, 18 and 124; `design/naming/vocabulary.md`.
-   Change: see decision 1 below. A crate name becomes the repository name and the crates.io name
-   at the first tag, so the move is the last cheap moment.
+   Change: done. The crate is `address_space_layout` (decision N1, ruled 2026-11-14 UTC), in code
+   and as the package name.
    Door: one-way. Effort: M across nife (26 manifests, 281 sites), S in the crate.
 
 9. The band functions check a window's first page only.

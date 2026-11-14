@@ -101,9 +101,13 @@ fn an_elf_whose_segment_arithmetic_overflows_is_refused_as_an_overflow() {
 /// green but did not break the code it guards to watch it go red.
 #[test_case]
 fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
-    let reach =
-        mmu::KERNEL_VA_BASE.wrapping_sub(address_space_layout::IMAGE_BASE) + page_frames::FRAME_SIZE;
-    let image = forged(address_space_layout::IMAGE_BASE, elf::PF_R | elf::PF_X, reach);
+    let reach = mmu::KERNEL_VA_BASE.wrapping_sub(address_space_layout::IMAGE_BASE)
+        + page_frames::FRAME_SIZE;
+    let image = forged(
+        address_space_layout::IMAGE_BASE,
+        elf::PF_R | elf::PF_X,
+        reach,
+    );
 
     let refused = load(&image, 0, &[]).err();
     assert!(

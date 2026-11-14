@@ -460,7 +460,10 @@ mod tests {
         assert_eq!(thread_page_va(THREAD_PAGE_SLOTS), None);
         assert_eq!(THREAD_PAGE_SLOTS, 16);
         // One page apart, so no two threads share a slot's page.
-        assert_eq!(thread_page_va(1), Some(PAGE_VA - address_space_layout::PAGE));
+        assert_eq!(
+            thread_page_va(1),
+            Some(PAGE_VA - address_space_layout::PAGE)
+        );
     }
 
     /// The magic is the one every `std` already published in basalt compares: no nife-built
