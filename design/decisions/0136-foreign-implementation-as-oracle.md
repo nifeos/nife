@@ -15,10 +15,17 @@ number provisional until the merge queue lands it.)*
 ## What is being decided
 
 When a mature implementation of a format or protocol exists in a language or under a license this
-project would not ship, what role it may take.
+project would not ship, or falls short of the bar in §46 (thin primitives or whole subsystems; we
+write everything in between), what role it may take.
 
 The rule: it runs on the host, outside the shipping graph, as the reference our implementation is
 differentially tested against. It is a tool, not a dependency.
+
+An oracle stays an oracle. Meeting §46's bar is what turns a foreign implementation into a
+dependency: a Rust crate that meets it is a candidate under §46 like any other, and an architect
+rules on it there. One that cannot meet it, because it is C, needs a libc, or carries a license
+nife does not link, serves only as an oracle. One that falls short only for now serves as an
+oracle while we contribute upstream to bring it to the bar.
 
 ## The axis §46 and §83 leave open
 
@@ -68,7 +75,8 @@ it. If it is in the shipping graph it is a dependency and §46, §83 and `deny.t
 unchanged.
 
 It is not a reason to write our own where §46 says take. An oracle makes writing *safer*; it does
-not make writing *right*. §46's calculus is unchanged and this section is downstream of it.
+not make writing *right*. Writing still needs §46's stated reason, and this section is downstream
+of it.
 
 **It does not apply where no mature implementation exists**, which is most of this tree.
 

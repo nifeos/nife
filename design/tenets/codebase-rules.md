@@ -36,11 +36,16 @@ requirements are known.
 
 6. Taking a dependency is a decision, not a convenience: DECISIONS §46 (thin primitives or whole
    subsystems). A dependency on one of our own `nifeos` crates needs no ruling when its git
-   `rev` is a full commit on that repository's main (2026-11-09). The tree's shape is thin primitives (`uuid`, `tock-registers`) or whole
-   subsystems we would never write (`smoltcp`, vendored RedoxFS), with nothing in between: most
-   crates here have no external dependencies at all. Write it if it is on the verification path, because you cannot restructure someone else's crate to make a model
-   checker tractable. Vendor it if correctness is won by *exposure* rather than by reading the spec,
-   which is why §46 says write the calendar and vendor the crypto.
+   `rev` is a full commit on that repository's main (2026-11-09). What the rule buys is a
+   standard that does not depend on who wrote the code. Writing is cheap for agents, and code
+   written here has had no exposure outside this tree, so a crate that many systems run and that
+   meets our bar carries evidence we cannot produce for ourselves. The bar keeps that from costing
+   us anything we hold our own code to: a safety argument at every `unsafe` use, proofs matching
+   ours where a claim rests on the code, all three architectures, and an upstream that maintains
+   it. Contributing upstream to bring a crate to the bar spends the effort writing would have
+   spent, and leaves the exposure intact. Where correctness is won by exposure rather than by
+   reading the specification, take it: that is why §46 says take the cryptography and never write
+   it. Vendor only what must be patched.
 
 7. **Anything two binaries must agree on is a crate, never a `#[path]` module** (calef, 2026-08-01).
    If a constant, an opcode, a layout, or an error code is shared by more than one program, it goes
