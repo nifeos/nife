@@ -25,6 +25,13 @@
 #      VERIFY_JOBS=2 on a four-unit pool admits two runs and the third waits for two units. The
 #      row's path is .kani-version, a file no lane edits in passing. Fails if the measurement does
 #      not reach the run.
+#   9. a run waiting for the pool holds no heavy slot: with two slots and a pool that fits one run, a
+#      holder and two waiting runs leave a slot free, and a job that needs only a slot starts while
+#      they wait. Fails if a waiting run holds a slot it does nothing with, which on 2026-11-14 held
+#      13 of a host's 15 slots while lint and test jobs queued behind them.
+#  10. a run waiting for a slot holds no Kani units: with the one slot taken, a run that could have
+#      its units waits for the slot with none held. Fails if a run holds units while it waits for a
+#      slot, which would deadlock against a job that holds a slot and waits for units.
 #
 # No stage times a race. The stub `cargo` holds each "proof" until the selftest creates a release
 # file, and the selftest creates it only after the observation it is about to assert has happened:
@@ -232,4 +239,53 @@ NIFE_KANI_PEAKS="$tmp/peaks.tsv" NIFE_VERIFY_MEMORY_BYTES=$POOL4 VERIFY_JOBS=2 t
 grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" ||
 	fail "stage 8: the third run did not wait for its measured two units: $(cat "$tmp/run3.out")"
 
-echo "kani-pool selftest: the third run waits, a run weighs its harnesses, the width is clamped, CI is untouched, the holder is named, a measured row weighs its peak while its code is unchanged"
+# 9.
+rm -f "$tmp/go"
+: >"$tmp/events"
+small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only glob; }
+small 2 >"$tmp/s9-holder.out" 2>&1 &
+pids="$!"
+until_true "the stage 9 holder to start its proof" starts 1
+for i in 1 2; do
+	small 2 >"$tmp/s9-wait$i.out" 2>&1 &
+	pids="$pids $!"
+	until_true "stage 9 waiter $i to wait" grep -q "waiting for" "$tmp/s9-wait$i.out"
+done
+NIFE_HEAVY_SLOTS=2 python3 "$root/helpers/heavy_slot.py" lint -- sh -c ": >'$tmp/s9-lint'" >"$tmp/s9-lint.out" 2>&1 &
+pids="$pids $!"
+# Bounded so a failure still releases the runs below; a free slot is taken within one 2 s poll.
+n=0
+while [ ! -e "$tmp/s9-lint" ] && [ "$n" -lt 300 ]; do sleep 0.1; n=$((n + 1)); done
+st9="$(NIFE_HEAVY_SLOTS=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
+ended9="$(grep -c '^end' "$tmp/events" || true)"
+lint9=no
+if [ -e "$tmp/s9-lint" ]; then lint9=yes; fi
+: >"$tmp/go"
+for p in $pids; do wait "$p" || fail "stage 9: a job failed: $(cat "$tmp"/s9-*.out)"; done
+[ "$lint9" = yes ] || fail "stage 9: a job needing only a heavy slot waited behind runs waiting for the Kani pool: $st9"
+[ "$ended9" -eq 0 ] || fail "stage 9: the holder finished before the lint started, so the stage proved nothing"
+grep -q "waiting for 2 of 2 Kani units" "$tmp/s9-wait1.out" "$tmp/s9-wait2.out" ||
+	fail "stage 9: the waiting runs did not wait for the pool"
+printf '%s\n' "$st9" | grep -q "^2 heavy-job slots in .*, 1 held$" ||
+	fail "stage 9: runs waiting for the pool hold heavy slots: $st9"
+[ "$(grep -c '^start' "$tmp/events")" -eq 3 ] || fail "stage 9: not all three runs proved"
+
+# 10.
+rm -f "$tmp/go"
+: >"$tmp/events"
+NIFE_HEAVY_SLOTS=1 python3 "$root/helpers/heavy_slot.py" lint -- sh -c \
+	": >'$tmp/s10-lint'; n=0; while [ ! -e '$tmp/go' ] && [ \$n -lt 1200 ]; do sleep 0.1; n=\$((n + 1)); done" \
+	>"$tmp/s10-lint.out" 2>&1 &
+pids="$!"
+until_true "the stage 10 slot holder to start" test -e "$tmp/s10-lint"
+small 1 >"$tmp/s10-run.out" 2>&1 &
+pids="$pids $!"
+until_true "the stage 10 run to wait for a slot" grep -q "waiting for one of 1 heavy-job slots" "$tmp/s10-run.out"
+st10="$(NIFE_HEAVY_SLOTS=1 NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
+: >"$tmp/go"
+for p in $pids; do wait "$p" || fail "stage 10: a job failed: $(cat "$tmp"/s10-*.out)"; done
+printf '%s\n' "$st10" | grep -q "^2 Kani units of 2 GiB in .*, 0 held;" ||
+	fail "stage 10: a run waiting for a heavy slot holds Kani units: $st10"
+[ "$(grep -c '^start' "$tmp/events")" -eq 1 ] || fail "stage 10: the run did not prove once the slot was free"
+
+echo "kani-pool selftest: the third run waits, a run weighs its harnesses, the width is clamped, CI is untouched, the holder is named, a measured row weighs its peak while its code is unchanged, and no run holds a slot or units it waits beside"

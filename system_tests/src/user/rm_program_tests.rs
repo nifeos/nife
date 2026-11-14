@@ -5,8 +5,8 @@ use grant_plan::rmopt;
 use super::*;
 use crate::sched;
 
-/// The most messages one run may send before the harness stops reading. A `rm` that never sent
-/// its verdict would otherwise hang the boot; this turns it into a failed assertion.
+/// The most messages one run may send before the harness stops reading. A `rm` that never ended
+/// its report would otherwise hang the boot; this turns it into a failed assertion.
 const MAXIMUM_MESSAGES: usize = 64;
 
 /// What one run of the program reported.
@@ -15,7 +15,7 @@ struct Outcome {
     status: u64,
     /// How many names it removed.
     removed: u64,
-    /// **How many lines of text it printed before the verdict.** Zero is the interesting value:
+    /// **How many lines of text it printed before its report ended.** Zero is the interesting value:
     /// `rm(1)` is silent on success, and a `SEND` blocks until somebody receives it, so a line
     /// that was emitted cannot be missed by looking after the fact.
     printed: usize,
@@ -28,7 +28,7 @@ struct Outcome {
 fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
     let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
         .expect("the operand rides in two argument words");
-    let (report, held) = fs_service::start_granted_dir(
+    let (report, verdict, held) = fs_service::start_granted_dir(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("fs_subtree_caretaker")
@@ -46,32 +46,40 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
             // Measured the way `spawn_fs_client` asks for: the recursion is real stack, each
             // level holding a listing buffer by value, and this program has no allocator.
             stack_pages: 6,
+            verdict: true,
         },
     )?;
+    let verdict = verdict.expect("a grant asked for a verdict endpoint hands one back");
 
     // `printed` is the enumeration index rather than a counter, and the two coincide exactly:
-    // the verdict arm returns *before* the increment, so on the iteration that sees it, the
+    // the end-of-stream arm returns *before* the increment, so on the iteration that sees it, the
     // index is the number of text frames that arrived first. That is the quantity being
     // reported, so this is not merely appeasing the lint.
     for (printed, _) in (0..MAXIMUM_MESSAGES).enumerate() {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
-        // The stream's end carries the verdict: `rm` speaks the sink contract it declares, so the
-        // last message is `byte_sink_contract::eof()` with the status and the count in the two
-        // words that contract leaves free. It cannot collide with a text frame,
-        // whose first word is a byte count of at most sixteen.
-        if w0 == byte_sink_contract::eof() {
-            held.release_or_fail("rm's directory grant");
-            return Some(Outcome {
-                status: w1,
-                removed: w2,
-                printed,
-            });
+        // `rm` speaks the sink contract it declares, so the report is decoded the way any sink
+        // decodes it: an end of stream with a non-zero reserved word is malformed, not an end.
+        match byte_sink_contract::unpack(w0, w1, w2, &mut [0u8; byte_sink_contract::INLINE_MAXIMUM])
+        {
+            byte_sink_contract::Msg::Bytes(_) => {}
+            byte_sink_contract::Msg::Eof => {
+                // The verdict comes after the end, on its own endpoint (`filesystem_contract::rm`).
+                // Receiving it only now is what keeps it from overtaking the text.
+                let [status, removed, zero, _, _] = sched::ipc_receive(verdict);
+                assert_eq!(zero, 0, "rm's verdict has a third word, and it is zero");
+                held.release_or_fail("rm's directory grant");
+                return Some(Outcome {
+                    status,
+                    removed,
+                    printed,
+                });
+            }
+            byte_sink_contract::Msg::Malformed => {
+                panic!("rm sent a message the sink contract refuses: {w0:#x} {w1:#x} {w2:#x}")
+            }
         }
-        // A text frame: its first word is a byte count, which cannot collide with the end of the
-        // stream. That is what makes "it printed nothing" an assertion rather than a hope.
-        assert!(w0 <= 16, "neither a verdict nor a text frame: {w0:#x}");
     }
-    panic!("rm sent {MAXIMUM_MESSAGES} messages and never a verdict");
+    panic!("rm sent {MAXIMUM_MESSAGES} messages and never ended its report");
 }
 
 /// `rm -r` removes the subtree it was granted, and a narrower capability cannot begin.

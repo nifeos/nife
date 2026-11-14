@@ -59,7 +59,7 @@ pub(super) const ALWAYS: u64 = nb::PWD_IS_ROOT
 ///
 /// `None` when no RedoxFS disk is attached.
 pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
-    let (report, held) = fs_service::start_granted_dir(
+    let (report, _, held) = fs_service::start_granted_dir(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("fs_subtree_caretaker")
@@ -74,6 +74,7 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
             // Measured, not guessed: see `spawn_fs_client`. A shell carries a path stack, a
             // parsed path and a listing buffer by value, and one page is 192 bytes short.
             stack_pages: 2,
+            verdict: false,
         },
     )?;
     let [tag, verdict, ..] = sched::ipc_receive(report);
