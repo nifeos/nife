@@ -124,6 +124,9 @@ fn be64(bytes: &[u8], at: usize) -> Result<u64, Error> {
 #[derive(Debug)]
 pub struct DeviceTreeBlob<'a> {
     bytes: &'a [u8],
+    /// The structure block alone, as the prefix of the blob that ends where the block does, so an
+    /// offset into it is an offset into the blob and a read past the block is a read past the end.
+    structure: &'a [u8],
     off_struct: usize,
     off_strings: usize,
     off_rsvmap: usize,
@@ -178,11 +181,30 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::UnsupportedVersion(last_comp_version));
         }
 
+        let off_struct = be32(bytes, 8)? as usize;
+        let off_strings = be32(bytes, 12)? as usize;
+
+        // Where the structure block ends. From version 17 the header says how long it is; before
+        // that the block runs up to the strings block, which is how libfdt reads such a blob. A
+        // walk that reaches this end without `FDT_END` is truncated; without the bound it would
+        // read the strings block as tokens.
+        let structure_end = if be32(bytes, 20)? >= 17 {
+            off_struct
+                .checked_add(be32(bytes, 36)? as usize)
+                .ok_or(Error::Truncated)?
+        } else {
+            off_strings
+        };
+        if structure_end > total || structure_end < off_struct {
+            return Err(Error::Truncated);
+        }
+
         let dtb = DeviceTreeBlob {
-            off_struct: be32(bytes, 8)? as usize,
-            off_strings: be32(bytes, 12)? as usize,
+            off_struct,
+            off_strings,
             off_rsvmap: be32(bytes, 16)? as usize,
             bytes: &bytes[..total],
+            structure: &bytes[..structure_end],
         };
 
         if dtb.off_struct >= total || dtb.off_strings >= total || dtb.off_rsvmap >= total {
@@ -253,12 +275,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
+                    let name = self.node_name(at)?;
                     at = skip_name(at, name)?;
                     depth += 1;
 
@@ -341,12 +363,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
+                    let name = self.node_name(at)?;
                     at = skip_name(at, name)?;
                     depth += 1;
                     // Inherit the parent's cell counts as this node's defaults, until/unless this
@@ -452,12 +474,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
+                    let name = self.node_name(at)?;
                     at = skip_name(at, name)?;
                     depth += 1;
                     if depth < MAXIMUM_DEPTH {
@@ -578,12 +600,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
+                    let nm = self.node_name(at)?;
                     at = skip_name(at, nm)?;
                     depth += 1;
                     if depth < MAXIMUM_DEPTH {
@@ -658,12 +680,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
+                    let nm = self.node_name(at)?;
                     at = skip_name(at, nm)?;
                     depth += 1;
                     if depth >= 2 && nm.starts_with(prefix) && target_at.is_none() {
@@ -728,12 +750,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
+                    let nm = self.node_name(at)?;
                     at = skip_name(at, nm)?;
                     depth += 1;
                     if depth < MAXIMUM_DEPTH {
@@ -806,12 +828,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
+                    let nm = self.node_name(at)?;
                     at = skip_name(at, nm)?;
                     depth += 1;
                     if depth < MAXIMUM_DEPTH {
@@ -903,12 +925,12 @@ impl<'a> DeviceTreeBlob<'a> {
         }
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
+                    let nm = self.node_name(at)?;
                     at = skip_name(at, nm)?;
                     depth += 1;
                     if depth >= 2 && nm.starts_with(prefix) && target_at.is_none() {
@@ -969,12 +991,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
+                    let name = self.node_name(at)?;
                     at = skip_name(at, name)?;
                     depth += 1;
 
@@ -1064,12 +1086,12 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
+                    let name = self.node_name(at)?;
                     at = skip_name(at, name)?;
                     depth += 1;
                     if depth == 2 && name == b"chosen" {
@@ -1138,12 +1160,12 @@ impl<'a> DeviceTreeBlob<'a> {
 
         loop {
             let before = at;
-            let token = be32(self.bytes, at)?;
+            let token = be32(self.structure, at)?;
             at += 4;
 
             match token {
                 FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
+                    let name = self.node_name(at)?;
                     at = skip_name(at, name)?;
                     depth += 1;
                     if depth == 2 && name == b"chosen" {
@@ -1275,13 +1297,13 @@ impl<'a> DeviceTreeBlob<'a> {
     ///
     /// Every sum is checked, because `len` and the name offset are `u32`s from the blob and a target
     /// whose `usize` is 32 bits wide can overflow them. The value's whole extent must lie inside
-    /// the blob, so a caller can slice `value_at..value_at + len` without a further check.
+    /// the structure block, so a caller can slice `value_at..value_at + len` without a further check.
     fn prop_header(&self, at: usize) -> Result<Prop, Error> {
-        let len = be32(self.bytes, at)? as usize;
-        let name_off = be32(self.bytes, at.checked_add(4).ok_or(Error::Truncated)?)? as usize;
+        let len = be32(self.structure, at)? as usize;
+        let name_off = be32(self.structure, at.checked_add(4).ok_or(Error::Truncated)?)? as usize;
         let value_at = at.checked_add(8).ok_or(Error::Truncated)?;
         let value_end = value_at.checked_add(len).ok_or(Error::Truncated)?;
-        if value_end > self.bytes.len() {
+        if value_end > self.structure.len() {
             return Err(Error::Truncated);
         }
         Ok(Prop {
@@ -1299,6 +1321,13 @@ impl<'a> DeviceTreeBlob<'a> {
                 .checked_add(name_off)
                 .ok_or(Error::Truncated)?,
         )
+    }
+
+    /// A node's name: the string at `at` in the structure block, which must end inside it.
+    fn node_name(&self, at: usize) -> Result<&'a [u8], Error> {
+        let rest = self.structure.get(at..).ok_or(Error::Truncated)?;
+        let end = rest.iter().position(|&b| b == 0).ok_or(Error::Truncated)?;
+        Ok(&rest[..end])
     }
 
     /// A null-terminated string in the blob, returned without its terminator.
