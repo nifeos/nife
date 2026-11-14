@@ -181,7 +181,7 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::UnsupportedVersion(last_comp_version));
         }
 
-        let off_struct = be32(bytes, 8)? as usize;
+        let structure_start = be32(bytes, 8)? as usize;
         let off_strings = be32(bytes, 12)? as usize;
 
         // Where the structure block ends. From version 17 the header says how long it is; before
@@ -189,18 +189,18 @@ impl<'a> DeviceTreeBlob<'a> {
         // walk that reaches this end without `FDT_END` is truncated; without the bound it would
         // read the strings block as tokens.
         let structure_end = if be32(bytes, 20)? >= 17 {
-            off_struct
+            structure_start
                 .checked_add(be32(bytes, 36)? as usize)
                 .ok_or(Error::Truncated)?
         } else {
             off_strings
         };
-        if structure_end > total || structure_end < off_struct {
+        if structure_end > total || structure_end < structure_start {
             return Err(Error::Truncated);
         }
 
         let dtb = DeviceTreeBlob {
-            off_struct,
+            off_struct: structure_start,
             off_strings,
             off_rsvmap: be32(bytes, 16)? as usize,
             bytes: &bytes[..total],
@@ -301,12 +301,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     let name = self.string(name_off)?;
@@ -405,12 +405,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     let name = self.string(name_off)?;
@@ -507,12 +507,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     let name = self.string(name_off)?;
@@ -633,12 +633,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     let pname = self.string(name_off)?;
@@ -702,12 +702,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     if target_at == Some(depth) && self.string(name_off)? == name {
@@ -791,12 +791,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     if depth < MAXIMUM_DEPTH && self.string(name_off)? == name {
@@ -859,12 +859,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     let pname = self.string(name_off)?;
@@ -947,12 +947,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     if target_at == Some(depth)
@@ -1017,12 +1017,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     let name = self.string(name_off)?;
@@ -1107,12 +1107,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     if chosen_at == Some(depth) {
@@ -1181,12 +1181,12 @@ impl<'a> DeviceTreeBlob<'a> {
                 }
 
                 FDT_PROP => {
-                    let Prop {
+                    let PropertyHeader {
                         length_bytes: len,
                         name_offset: name_off,
                         value_at,
                         next,
-                    } = self.prop_header(at)?;
+                    } = self.property_header(at)?;
                     at = next;
 
                     if in_chosen && depth == 2 && self.string(name_off)? == b"bootargs" {
@@ -1298,7 +1298,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// Every sum is checked, because `len` and the name offset are `u32`s from the blob and a target
     /// whose `usize` is 32 bits wide can overflow them. The value's whole extent must lie inside
     /// the structure block, so a caller can slice `value_at..value_at + len` without a further check.
-    fn prop_header(&self, at: usize) -> Result<Prop, Error> {
+    fn property_header(&self, at: usize) -> Result<PropertyHeader, Error> {
         let len = be32(self.structure, at)? as usize;
         let name_off = be32(self.structure, at.checked_add(4).ok_or(Error::Truncated)?)? as usize;
         let value_at = at.checked_add(8).ok_or(Error::Truncated)?;
@@ -1306,7 +1306,7 @@ impl<'a> DeviceTreeBlob<'a> {
         if value_end > self.structure.len() {
             return Err(Error::Truncated);
         }
-        Ok(Prop {
+        Ok(PropertyHeader {
             length_bytes: len,
             name_offset: name_off,
             value_at,
@@ -1338,8 +1338,8 @@ impl<'a> DeviceTreeBlob<'a> {
     }
 }
 
-/// A property header, as [`DeviceTreeBlob::prop_header`] reads it.
-struct Prop {
+/// A property header, as [`DeviceTreeBlob::property_header`] reads it.
+struct PropertyHeader {
     length_bytes: usize,
     name_offset: usize,
     value_at: usize,
