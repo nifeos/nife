@@ -233,8 +233,8 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 - **Done.** The three rulings above, recorded in this block, and the matching step in milestone
   994's block.
-- **Outstanding.** Items 1 to 15 above, each to be checked against `crates/program_argument_contract`
-  when its lane starts.
+- **Outstanding.** Items 1 to 15 above. Each lane checks its item against
+  `crates/program_argument_contract` when it starts.
 - **Outstanding.** The three renames of the rulings, then milestone 994, then the repository and
   its `v0.1.0-pre.1` tag.
 
