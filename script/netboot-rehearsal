@@ -108,9 +108,9 @@ NETMASK = "255.255.255.0"
 HARNESS_MAC = bytes.fromhex("525400beef01")
 # The boot self-test verdict, `boot_ladder::Heads::self_test` (milestone 268 (every architecture
 # boots the same way)), the one rung every architecture prints whatever it does next. This was
-# `nife x86_64: boot complete`, the halt line, until milestone 182 made x86_64 hand the machine to
-# the progenitor instead of halting. A copy rather than an import because this harness is Python;
-# `crates/boot_ladder` is the authority.
+# `nife x86_64: boot complete`, the halt line, until milestone 182 (x86_64's own interactive-boot
+# entry point) made x86_64 hand the machine to the progenitor instead of halting. A copy rather
+# than an import because this harness is Python; `crates/boot_ladder` is the authority.
 BOOT_MARKER = "nife self-test: "
 
 
