@@ -11,6 +11,23 @@
 //! can lose every round, as with any test-and-set lock. See notes/interleaving/what-was-modeled.md,
 //! "`crates/spin_lock`, the kernel's lock".
 //!
+//! # What it is, and what it is not
+//!
+//! It is a test-and-set spinlock: `lock` spins until it holds the flag, and the guard's drop
+//! releases it. It is not fair, so a waiter can lose every round. It is not reentrant: a second
+//! `lock` on the thread that holds the lock spins forever, where `std::sync::Mutex` may panic or
+//! deadlock. It does not poison: a panic while holding drops the guard, which releases the lock and
+//! leaves the data as the panic left it. Its guard is `Send` when `T` is, which `std`'s is not.
+//! It does not mask interrupts, which is the caller's business and the reason the kernel wraps it.
+//!
+//! # What loom checks
+//!
+//! Under `--cfg loom` the flag and the cell are loom's. The models check that every access to the
+//! data is ordered by a happens-before edge against every other, which is mutual exclusion plus
+//! publication. They do not check that two accesses never overlap in time: the pointer leaves
+//! loom's closure (`with`, `with_mut`), the pattern loom's documentation says it cannot track for
+//! duration. Loom runs one thread at a time, so the ordering check is the whole of the claim here.
+//!
 //! # BUGS
 //!
 //! - Loom models C11, not aarch64 or riscv64; a clean run is not a proof about the silicon
@@ -43,8 +60,9 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 /// A spinlock holding a `T`. [`lock`](Self::lock) spins until it holds the flag;
 /// [`try_lock`](Self::try_lock) tries once.
 ///
-/// `repr(C)` keeps the flag at offset 0 and the data after it. Left to itself the compiler puts the
-/// flag after a large `T`, and every inlined `lock` then builds the offset in instructions.
+/// `repr(C)` keeps the flag at offset 0 and the data after it. That layout is an implementation
+/// choice, made so an inlined `lock` need not build an offset past a large `T`; it is not part of
+/// the API, and the fields are private. Nobody has measured the saving.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760.
 #[repr(C)]
@@ -176,6 +194,26 @@ impl<T> SpinLock<T> {
         self.unlock(Ordering::Release);
     }
 
+    /// The data, through exclusive access to the lock. No flag is read, because `&mut self` already
+    /// means nobody else holds the lock. Not available under `--cfg loom`, whose cell has no such
+    /// accessor.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
+    /// in the standard library's spelling and meaning (`Mutex::get_mut`).
+    #[cfg(not(loom))]
+    pub fn get_mut(&mut self) -> &mut T {
+        self.data.get_mut()
+    }
+
+    /// The data, consuming the lock. Not available under `--cfg loom`.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
+    /// in the standard library's spelling and meaning (`Mutex::into_inner`).
+    #[cfg(not(loom))]
+    pub fn into_inner(self) -> T {
+        self.data.into_inner()
+    }
+
     #[inline(always)]
     fn guard(&self) -> SpinLockGuard<'_, T> {
         SpinLockGuard {
@@ -189,6 +227,40 @@ impl<T> SpinLock<T> {
     #[inline(always)]
     fn unlock(&self, ordering: Ordering) {
         self.locked.store(false, ordering);
+    }
+}
+
+impl<T: Default> Default for SpinLock<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
+impl<T> From<T> for SpinLock<T> {
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
+/// Prints through `try_lock`, so a debug print never spins: a held lock prints `<locked>`.
+impl<T: core::fmt::Debug> core::fmt::Debug for SpinLock<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self.try_lock() {
+            Some(guard) => f.debug_struct("SpinLock").field("data", &&*guard).finish(),
+            None => f.write_str("SpinLock { data: <locked> }"),
+        }
+    }
+}
+
+impl<T: core::fmt::Debug> core::fmt::Debug for SpinLockGuard<'_, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(&**self, f)
+    }
+}
+
+impl<T: core::fmt::Display> core::fmt::Display for SpinLockGuard<'_, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Display::fmt(&**self, f)
     }
 }
 
@@ -224,7 +296,8 @@ impl<T> DerefMut for SpinLockGuard<'_, T> {
 // --- The ordinary host tests -----------------------------------------------------------------
 //
 // Single-threaded: what each call means. The interleavings are the loom module below.
-#[cfg(all(test, not(loom)))]
+#[cfg(test)]
+#[cfg(not(loom))]
 mod tests {
     use std::sync::mpsc::{self, RecvTimeoutError};
     use std::thread;
@@ -247,6 +320,24 @@ mod tests {
             }
             Err(RecvTimeoutError::Timeout) => panic!("{what}: the lock was never released"),
         }
+    }
+
+    #[test]
+    fn the_standard_accessors_read_and_move_the_data() {
+        let mut lock = SpinLock::from(3u32);
+        *lock.get_mut() += 1;
+        assert_eq!(*lock.lock(), 4);
+        assert_eq!(lock.into_inner(), 4);
+        assert_eq!(*SpinLock::<u32>::default().lock(), 0);
+    }
+
+    #[test]
+    fn debug_prints_the_data_when_free_and_does_not_spin_when_held() {
+        let lock = SpinLock::new(7u32);
+        assert_eq!(format!("{lock:?}"), "SpinLock { data: 7 }");
+        let guard = lock.lock();
+        assert_eq!(format!("{lock:?}"), "SpinLock { data: <locked> }");
+        assert_eq!(format!("{guard:?} {guard}"), "7 7");
     }
 
     #[test]
@@ -304,7 +395,8 @@ mod tests {
 }
 
 // --- The loom models -------------------------------------------------------------------------
-#[cfg(all(test, loom))]
+#[cfg(test)]
+#[cfg(loom)]
 mod interleavings {
     //! Every interleaving of two and three threads taking the lock, and every reordering C11
     //! permits within them. Run with `script/interleaving-check`.
