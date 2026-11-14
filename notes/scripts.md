@@ -107,6 +107,7 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/fuzz-status [--host]` | Is the continuous fuzz working? |
 | `script/undefined-behavior-check` | The host-logic tests under Miri. |
 | `script/stack-frame-check` | One kernel function's frame, gated at the 4096-byte guard page. |
+| `script/region-check` | Every spawnable program's loaded pages, plus its stack and tables, against the job region it is spawned into. |
 | `script/stack-depth-check` | How deep a kernel thread stack can get, by walking the call graph. |
 | `script/build-is-reproducible` | The same commit builds the same bytes, from any path. |
 | `script/fastpath-footprint` | An upper bound on the IPC fastpath's instruction footprint. |

@@ -106,3 +106,28 @@ out. `login` splits the durable budget at start-up whenever it is handed the tim
 before it serves anyone, so it is derived from `login_contract::durable::BUDGET_PAGES`.
 `CRED_BUDGET_PAGES` and `CRED_STACK_PAGES` match `kernel::user::credential_service`, where they were
 sized from `credentialer`'s Argon2id cost.
+
+## The region check
+
+`script/region-check` (`cargo xtask region-check`, in `xtask/src/region_check.rs`; both names
+provisional) fails when a program the shell can spawn no longer fits the region it is spawned into,
+before a QEMU suite finds it as "could not spawn". It builds every program of `grant_plan::Program`
+in debug for one architecture, reads each ELF's loaded pages (the union of the `PT_LOAD` segments'
+memory sizes, so `.bss` counts), adds the fixed costs, and compares the sum with
+`grant_plan::job_region_pages` (`JOB_REGION_PAGES`, or `DIRECTORY_JOB_REGION_PAGES` behind a
+directory grant), less a margin of four pages. A failure names the program, its image pages, its
+total need and the region. A `std` program has its own region and is skipped.
+
+The fixed costs reuse the budgets above: `CHILD_STACK_PAGES` and `CARETAKER_STACK_PAGES` are read
+from `crates/system_initializer/src/layout.rs`, and the regions from `grant_plan`. Two numbers are
+the check's own and are provisional: eight pages for one address space's tables, thread control
+block, root and mapping records, and the four-page margin. The eight is a lower reading of the
+`top` measurement above (31 image pages passes at sixty and cannot be built at forty-eight, so an
+address space beyond its image costs between 18 and 29 pages including twelve of stack). A
+directory-granted job counts its caretaker the same way, as a second address space with its own
+stack and image.
+
+The check is the first step of the aarch64 and riscv64 and of the `x86_64` `swish-check` rows
+(`script/ci-build`), which build the same programs. It runs in about as long as the build. Where it
+passes and the QEMU suite still cannot spawn, the fixed costs are too low: raise
+`TABLES_AND_RECORDS` with the measurement beside it.
