@@ -21,7 +21,7 @@
 #      git repository: a row never measured, a crate edited and not committed, a crate committed
 #      since, an untracked file in it and a new Kani version each weigh the default instead. Fails if
 #      a weight outlives the code it measured.
-#   8. script/verify --only weighs its own row: a fixture table gives `glob` one unit, so
+#   8. script/verify --only weighs its own row: a fixture table gives `byte_glob` one unit, so
 #      VERIFY_JOBS=2 on a four-unit pool admits two runs and the third waits for two units. The
 #      row's path is .kani-version, a file no lane edits in passing. Fails if the measurement does
 #      not reach the run.
@@ -108,7 +108,7 @@ starts() { [ "$(grep -c '^start' "$tmp/events")" -ge "$1" ]; }
 # run3_decided: the third run either printed that it waits, or got its units and started a proof.
 run3_decided() { grep -q "waiting for" "$tmp/run3.out" || starts 3; }
 
-# three: start three `script/verify --only glob` runs one at a time, each only once the one before
+# three: start three `script/verify --only byte_glob` runs one at a time, each only once the one before
 # it holds a proof, hold all of them until the third has either said it waits or started, then
 # release them and join. A third run that starts without waiting still ends the stage, and the
 # stage's own assertion then fails on what it saw.
@@ -242,7 +242,7 @@ grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" ||
 # 9.
 rm -f "$tmp/go"
 : >"$tmp/events"
-small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only glob; }
+small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only byte_glob; }
 small 2 >"$tmp/s9-holder.out" 2>&1 &
 pids="$!"
 until_true "the stage 9 holder to start its proof" starts 1

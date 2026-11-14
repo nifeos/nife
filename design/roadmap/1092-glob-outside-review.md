@@ -283,8 +283,10 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 ## Follow-on
 
-Decision 1 is built. Decision 2 (the seven public names), the integration test, the falsification
-patches and every other item above are open. Milestone 1017 moves the crate at step 5, after they land.
+Decision 1 is built. The rest of the review is open.
+
+- **Outstanding.** Decision 2 (the seven public names), the integration test and the
+  falsification patches are unbuilt. Milestone 1017 moves the crate at step 5, after they land.
 
 ## Index row
 
