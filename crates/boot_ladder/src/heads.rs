@@ -148,17 +148,13 @@ impl<'a> Head<'a> {
     ///
     /// Name: provisional.
     pub fn find_in(&self, text: &str) -> Option<Range<usize>> {
-        let mut from = 0;
-        while let Some(found) = text.get(from..)?.find(self.system) {
-            let start = from + found;
+        // Every character boundary is a candidate start, so overlapping names are all tried.
+        text.char_indices().find_map(|(start, _)| {
             let after = start + self.system.len();
-            if text[after..].starts_with(self.shape) {
-                return Some(start..after + self.shape.len());
-            }
-            // The next candidate starts one character on, so overlapping names are all tried.
-            from = start + text[start..].chars().next()?.len_utf8();
-        }
-        None
+            let rest = text[start..].strip_prefix(self.system)?;
+            rest.starts_with(self.shape)
+                .then(|| start..after + self.shape.len())
+        })
     }
 
     /// Whether `text` holds this head anywhere.
