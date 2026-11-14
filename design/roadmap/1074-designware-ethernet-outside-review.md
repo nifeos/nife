@@ -117,21 +117,21 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
    link the MAC runs at; nothing in them is Motorcomm's. A second PHY module would import its link
    type from Motorcomm's, and a user who reads the controller module finds the type under a vendor's
    name.
-   Change: a neutral home (`link`, or the controller module) with the PHY module re-exporting both,
-   before the tag. The architect names the module (below).
+   Change: the crate-level `link` module holds both, and the PHY module re-exports neither
+   (Decision 1).
    Door: one-way at the tag (a public path). Effort: S.
 
-5. Twelve compile-time gates are public API.
+5. Sixteen compile-time gates were public API.
    Finding: `pub const …_DO_NOT_OVERLAP: ()` items sit in every public module:
    `network_interface_controller` (lines 220, 251, 468, 541), `management_data_input_output`
    (234, 351, 394), `motorcomm_physical_layer_device` (140, 281, 586), `jh7110` (77, 136) and
    `cache_coherence` (62). They exist so a mutation exclusion can cite them, and docs.rs will list
-   twelve unit-typed constants beside the API. The three in `descriptor.rs` sit in a private module
+   unit-typed constants beside the API. The three in `descriptor.rs` sit in a private module
    and no caller reaches them, which shows the shape wanted.
-   Change: make each `pub(crate)` with `#[allow(dead_code)]`, as `descriptor.rs` does; the
-   exclusion still names them. Or name them with a leading underscore and drop the attribute.
+   Change: each is `pub(crate)` with `#[allow(dead_code)]`, as `descriptor.rs` does; the
+   exclusion still names them (Decision 2).
    Door: one-way at the tag if they stay public (removing a public item later is a breaking
-   change). Effort: XS. The architect confirms (below).
+   change). Effort: XS.
 
 6. The visibility of register and clause 22 constants follows no rule.
    Finding: `MAC_CONFIGURATION_REGISTER` is `pub(crate)` (`src/registers.rs:22`) while seven of its <!-- line-citation: exception. Reason: pinned -->
@@ -140,7 +140,7 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
    while the registers they live in and `BASIC_MODE_STATUS_LINK_STATUS` are `pub(crate)`. The
    `ManagementDataInputOutput` trait takes `register: u8`, yet a caller or an implementer must
    restate `0x00` and `0x01`. No caller outside the crate uses any of the stray public bits; the
-   callers reach `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, `REGISTER_WINDOW_BYTES`, the two tail
+   callers reach `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES`, `REGISTER_WINDOW_BYTES`, the two tail
    pointer registers, `MAC_ADDRESS_0_HIGH_REGISTER`, `MAC_ADDRESS_0_LOW_REGISTER` and
    `CHANNEL_STATUS_REGISTER`.
    Change: one rule, written at the top of `registers` and `management_data_input_output`. The
@@ -219,55 +219,40 @@ The P2 items are in [the appendix](1074-designware-ethernet-outside-review/later
 
 ## Decisions for the architect
 
-Only one-way doors. Each is a public name or path that the first tag fixes.
+Only one-way doors. Each was a public name or path that the first tag fixes. All three are ruled
+and built.
 
 ### Decision 1: Where the link type lives
 
-Background: a resolved link is a speed and a duplex. The controller's `mac_configuration` and
-`start` take it, and the PHY module produces it from clause 22 registers. Today the type is
-`motorcomm_physical_layer_device::Link`, so the controller module imports its own input from a
-vendor's module. Linux keeps the equivalent in `phylink` and `linux/phy.h`, shared by every MAC and
-every PHY; OpenBSD keeps it in `mii` (`ifmedia` words), shared the same way.
-
-Recommendation: a crate-level `link` module holding `Link` and `Speed`, with
-`motorcomm_physical_layer_device` re-exporting both, so `read_link` still returns a type found next
-to it. The alternative, `network_interface_controller::Link`, also works and saves a module; it
-puts the PHY's output under the MAC's name, which reads backwards when a second PHY arrives.
+Ruled 2026-11-14 (UTC). A crate-level `link` module holds `Link` and `Speed`. The
+`motorcomm_physical_layer_device` module does not re-export either, so every caller imports
+`designware_ethernet::link::{Link, Speed}`. A restrictive start leaves room to add a re-export
+later; removing one would break callers.
 
 Example: `use designware_ethernet::link::{Link, Speed}; controller::start(&mut hardware, Link {
 speed: Speed::Thousand, full_duplex: true }, false);`
 
 ### Decision 2: Whether the compile-time gates are API
 
-Background: item 5. Twelve `pub const …_DO_NOT_OVERLAP: ()` items in public modules exist so the
-mutation exclusions can name them. Rust has no way to publish a name for tooling without publishing
-it to users. A `pub(crate)` constant is still a name the exclusion file can cite, and the three in
-`descriptor.rs` already work that way. No other crate in the organization publishes such items, as
-far as this review read (not verified across every repository).
+Ruled 2026-11-14 (UTC). The sixteen `…_DO_NOT_OVERLAP: ()` constants are `pub(crate)`, each with
+`#[allow(dead_code)]`, so they are not API. A `pub(crate)` constant is still a name the mutation
+exclusions in `.cargo/mutants.toml` can cite, and those comments keep naming them unchanged.
 
-Recommendation: `pub(crate)` with `#[allow(dead_code)]`, before the tag. Keeping them public costs
-nothing today and a breaking change on the day anyone wants them gone.
+Example: `pub(crate) const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(…);`
 
-Example: `pub(crate) const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(…);` and the exclusion
-line in `.github/mutants-exempts` cites it unchanged.
+### Decision 3: The five public names the register gate refused
 
-### Decision 3: The five public names the register gate refuses
+Ruled 2026-11-14 (UTC). The five names carry the spellings below, each `Name:` line says ratified
+2026-11-14, and the three length masks keep their specification aliases (`RDES3_LENGTH`,
+`TDES2_BUF1_LEN`, `TDES3_FRAME_LEN`). No alias records an earlier nife spelling.
 
-Background: item 1. The template's `register_names` gate refuses, among its 91 findings, five names
-that are public and ratified: `TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK`,
-`TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK` and `RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK`
-(a length carries its unit), `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` (an offset ends `_REGISTER` or
-another suffix the rule lists), and `GMAC0_SYSTEM_CONTROLLER_OFFSET` (the same). The rule that a
-release review rechecks a name ratified before a later rule applies; this is that review. The
-three masks mirror OpenBSD's `TDES2_BUF1_LEN`, `TDES3_FRAME_LEN` and `RDES3_LENGTH`, which measure
-bytes. The page constant names the one page of the window the kernel hands a process; the syscon
-word is the register at byte `0xc` of the AON syscon.
-
-Recommendation: `…_BUFFER_1_LENGTH_BYTES_MASK`, `…_FRAME_LENGTH_BYTES_MASK`,
-`…_PACKET_LENGTH_BYTES_MASK`, `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES` and
-`GMAC0_INTERFACE_SELECT_REGISTER` (it is the syscon register holding `gmac0`'s interface select;
-`SYSTEM_CONTROLLER` then moves into the doc comment). Each keeps its alias. The alternative is a
-template allowance for these five, which keeps names the rule would refuse in any new crate.
+| name | what it is |
+|---|---|
+| `TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK` | buffer 1's length field, in bytes |
+| `TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK` | the whole frame's length field, in bytes |
+| `RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK` | the received frame's length field, in bytes |
+| `DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES` | the page of the window holding channel 0's registers |
+| `GMAC0_INTERFACE_SELECT_REGISTER` | the always-on system controller register holding `gmac0`'s interface select, alias `AON_SYSCFG_12` |
 
 Example: `let length = (word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK) as usize;`
 
