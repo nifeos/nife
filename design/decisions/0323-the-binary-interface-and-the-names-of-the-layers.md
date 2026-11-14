@@ -1,11 +1,11 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-11-12
+decided: 2026-11-14
+ratified_by: calef
 ---
 
 # 323. The binary interface, and the names of the project's layers
-
-*The section number, the file name and this title are provisional until the merge lands them.*
 
 The maintainer raised this on 2026-11-12 (UTC), on the intent that the crates are the product: a
 library of components from which the project builds several operating systems. Counts come from

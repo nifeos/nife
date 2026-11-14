@@ -80,6 +80,6 @@ and `virtualization`, with one `xtask` and a `release-plz.toml`. Crates publishe
 tgoskits). `starry-kernel` (0.12.1) and `starryos` (0.5.39) publish from it too. This file found no
 stated reason for the prefix.
 
-Two facts for the later rulings, recorded and not recommended. ArceOS named its systems separately,
-over a component library that first carried no brand and later took a common prefix. And it moved
-from one repository per crate to one repository after about three years.
+Two facts the later rulings weighed. ArceOS named its systems separately, over a component library
+that first carried no brand and later took a common prefix. And it moved from one repository per
+crate to one repository after about three years.
