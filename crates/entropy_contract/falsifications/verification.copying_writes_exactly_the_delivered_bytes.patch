@@ -10,12 +10,10 @@ whose word reads differently from each end.
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -265,7 +265,7 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
- /// value out and this copies bytes.
+@@ -326,5 +326,5 @@
  pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) -> usize {
      let copied = byte_count.min(MAXIMUM_BYTES as usize).min(out.len());
 -    out[..copied].copy_from_slice(&reply_word.to_le_bytes()[..copied]);
 +    out[..copied].copy_from_slice(&reply_word.to_be_bytes()[..copied]);
      copied
  }
- 

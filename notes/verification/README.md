@@ -11,7 +11,6 @@ and the reasoning behind it, at a length the main page's prose budget cannot hol
   `kani::cover!`.
 - [`iommu-domain.md`](iommu-domain.md): the IOMMU domain, and what the DMA proof does not establish.
 - [`paging-blocks.md`](paging-blocks.md): 2 MiB and 1 GiB leaves.
-- [`calendar-proofs.md`](calendar-proofs.md): the calendar, and where BMC's cost actually is.
 - [`elf-parser-wall.md`](elf-parser-wall.md): where BMC hit a wall.
 - [`glob-proofs.md`](glob-proofs.md): the glob matcher.
 - [`ci-timings.md`](ci-timings.md): suite timings, sharding and `--affected-since`.

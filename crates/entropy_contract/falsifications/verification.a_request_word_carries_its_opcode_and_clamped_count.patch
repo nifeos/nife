@@ -9,9 +9,9 @@ Expected to fail: the harness's `assert_eq!` on `operation` or on `requested_byt
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -70,10 +70,5 @@ pub const GET: u64 = 1;
- /// Name: ratified 2026-11-11 (#3480): renamed from `req`, which abbreviates it.
- pub const fn request(operation: u64, byte_count: u64) -> u64 {
+@@ -82,10 +82,5 @@
+         "an opcode fits the top byte of a request"
+     );
 -    let clamped = if byte_count > MAXIMUM_BYTES {
 -        MAXIMUM_BYTES
 -    } else {

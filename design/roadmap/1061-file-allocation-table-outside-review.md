@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 813, 1034, 1043
 decision_dependencies: none
@@ -249,6 +249,24 @@ The checks are in [the done-when appendix](1061-file-allocation-table-outside-re
   from `cargo mutants --list`.
 - The P2 order is the reviewer's judgment of what a user asks for first. Nobody outside has asked
   for anything yet.
+
+## Follow-on
+
+Checked 2026-11-14 (UTC) against `nifeos/file_allocation_table`. Its tag `v0.1.0-pre.1` sits on
+`9b3eac1`, the merge of #23; `main` is `2215cbc`, 42 commits further on.
+
+- **Done.** P0-1 landed in `nifeos/file_allocation_table` #21 and #22, with mutation run 43006997718
+  green at `9b3eac1`; P0-2 in #17, #21 and #23; P1-5 in #19; P1-6 to P1-9 in #18; all before the
+  tag. P1-3 is a repository setting: the `main` ruleset requires `check / mutation-diff`.
+- **Done.** P1-1 and P1-2 landed in `nifeos/file_allocation_table` #24 and P1-4 in #25, after the
+  tag. P2-1 to P2-3 and P2-5 to P2-13 landed in #26 to #32 and #46, each closing its issue among #33
+  to #45.
+- **Outstanding.** P0-3, the first-publish token: the repository lists no secret, and the secrets of
+  the `crates-io` environment are unreadable from outside. Read through the GitHub API.
+- **Outstanding.** P2-4: the seeds sit in `fuzz/seeds/`, which the weekly fuzz job does not read;
+  issue `nifeos/file_allocation_table#36` is open.
+- **Outstanding.** The second stranger run: `docs/stranger-test.md` still reads `Last run:
+  2026-11-06`. The release review's ratification of the P1-5 to P1-9 names is not on record.
 
 ## Index row
 

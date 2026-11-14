@@ -4,11 +4,11 @@ An appendix to [the milestone](../1057-e1000e-outside-review.md).
 
 - P0-1 to P0-4 have closed. The `Hardware` trait carries `read`, `write` and `read_flash_status`,
   and `read16` appears nowhere. The weekly `mutation` and `stranger cadence` jobs pass on `main`.
-  The git tag `v0.1.0` sits on the first commit on `main` at which the weekly gates pass after P0-2
+  The git tag `v0.1.0-pre.1` sits on the first commit on `main` at which the weekly gates pass after P0-2
   and P0-3, placed with the go of the architect, and the semver gate holds a pull request that
   breaks the API. Nothing goes to crates.io, and no release run happens.
-- P1-1 to P1-6 and P1-8 have closed in the repository, each by a pull request that cites this
-  block by number.
+- P1-1 to P1-6 and P1-8 have closed in the repository, each by a pull request in the crate's
+  repository, recorded in this block's Follow-on.
 - P1-7 has a result, whichever way it went: a bring-up on a Sunrise Point I219 with a cable, with
   the bring-up notes, the link state and the frame counts in both directions written into the
   README's BUGS.

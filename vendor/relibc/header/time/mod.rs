@@ -494,20 +494,25 @@ pub unsafe extern "C" fn tzset() {
     }
 }
 
-/// nife: a `tm` in UTC, from the in-tree `calendar` crate, in place of relibc's `chrono` and
+/// nife: a `tm` in UTC, from `jiff`'s civil arithmetic, in place of relibc's `chrono` and
 /// `chrono-tz`. nife has no time-zone database (`/usr/share/zoneinfo`), so local time is UTC and
-/// `TZ` is not read (c_library/README.md, BUGS). `calendar` covers years 0 to 9999, and a time
-/// outside them is `EOVERFLOW`.
+/// `TZ` is not read (c_library/README.md, BUGS). Years 0 to 9999 are covered, and a time outside
+/// them is `EOVERFLOW`.
 fn utc_tm(timer: time_t) -> Option<tm> {
-    let c = calendar::Civil::from_unix(timer).ok()?;
+    let c = UNIX_EPOCH
+        .checked_add(jiff::SignedDuration::from_secs(timer))
+        .ok()?;
+    if !C_YEARS.contains(&c.year()) {
+        return None;
+    }
     let mut t = blank_tm();
     t.tm_sec = c_int::from(c.second());
     t.tm_min = c_int::from(c.minute());
     t.tm_hour = c_int::from(c.hour());
     t.tm_mday = c_int::from(c.day());
     t.tm_mon = c_int::from(c.month()) - 1;
-    t.tm_year = c.year() - 1900;
-    t.tm_wday = c_int::from(c.weekday().iso_number() % 7);
+    t.tm_year = c_int::from(c.year()) - 1900;
+    t.tm_wday = c_int::from(c.weekday().to_sunday_zero_offset());
     t.tm_yday = c_int::from(c.day_of_year()) - 1;
     t.tm_isdst = 0;
     t.tm_gmtoff = 0;
@@ -515,13 +520,24 @@ fn utc_tm(timer: time_t) -> Option<tm> {
     Some(t)
 }
 
+/// nife: the instant `time_t` 0 names, as a civil time in UTC.
+const UNIX_EPOCH: jiff::civil::DateTime = jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0);
+
+/// nife: the years a `tm` may carry here, which keep a year to four digits.
+const C_YEARS: core::ops::RangeInclusive<i16> = 0..=9999;
+
 /// The UTC time a `tm` names, with every field allowed out of range the way `mktime` allows it.
 fn utc_from_tm(t: &tm) -> Option<time_t> {
     let months = i64::from(t.tm_year) * 12 + i64::from(t.tm_mon);
-    let year = i32::try_from(1900 + months.div_euclid(12)).ok()?;
-    let month = u8::try_from(months.rem_euclid(12) + 1).ok()?;
-    let first = calendar::Civil::new(year, month, 1, 0, 0, 0).ok()?;
-    let days = first.days_since_epoch() + i64::from(t.tm_mday) - 1;
+    let year = i16::try_from(1900 + months.div_euclid(12)).ok()?;
+    let month = i8::try_from(months.rem_euclid(12) + 1).ok()?;
+    if !C_YEARS.contains(&year) {
+        return None;
+    }
+    let first = jiff::civil::Date::new(year, month, 1).ok()?;
+    let days = first.duration_since(UNIX_EPOCH.date()).as_secs() / SECS_PER_DAY
+        + i64::from(t.tm_mday)
+        - 1;
     days.checked_mul(SECS_PER_DAY)?
         .checked_add(i64::from(t.tm_hour) * 3600)?
         .checked_add(i64::from(t.tm_min) * 60)?

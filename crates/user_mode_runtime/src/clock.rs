@@ -75,7 +75,8 @@ pub fn cntfrq() -> u64 {
     )
 }
 
-/// The counter frequency in Hz (RISC-V), or `None` if this process cannot know it. See [`cntfrq`]
+/// The counter frequency in Hz (RISC-V), or `None` if this process cannot know it, which includes a
+/// page carrying a rate outside the plausible band. See [`cntfrq`]
 /// for where the number comes from and [`cntfrq_checked`]'s `x86_64` twin for why "unknown" is a
 /// state worth representing rather than papering over.
 #[cfg(target_arch = "riscv64")]
@@ -91,6 +92,7 @@ pub fn cntfrq_checked() -> Option<u64> {
         )
     };
     page.hertz()
+        .filter(|&hertz| counter_frequency_contract::is_plausible(hertz))
 }
 
 /// The monotonic tick count (`x86_64`): `rdtsc`, readable from ring 3 because `CR4.TSD` is clear
@@ -130,8 +132,9 @@ pub fn cntfrq() -> u64 {
 }
 
 /// The counter frequency in Hz (`x86_64`), or `None` if this process cannot know it: a zeroed page
-/// (the rate was never measured, or the parent that built this process did not know it) or one
-/// whose magic does not match. See [`cntfrq`] for where the number comes from and why the
+/// (the rate was never measured, or the parent that built this process did not know it), one whose
+/// magic does not match, or one carrying a rate outside
+/// [`counter_frequency_contract::is_plausible`]'s band. See [`cntfrq`] for where the number comes from and why the
 /// unchecked twin refuses rather than substituting a constant.
 #[cfg(target_arch = "x86_64")]
 pub fn cntfrq_checked() -> Option<u64> {
@@ -144,6 +147,7 @@ pub fn cntfrq_checked() -> Option<u64> {
         )
     };
     page.hertz()
+        .filter(|&hertz| counter_frequency_contract::is_plausible(hertz))
 }
 
 /// **A cycle-counter read and what it counts**, returned together by [`cycle_reading`].

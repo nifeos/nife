@@ -10,7 +10,7 @@
 #
 #   script/mutation                        full run over the host crates (hours; see the note)
 #   script/mutation --shard 1/4            one quarter of the mutants, for splitting across jobs
-#   script/mutation -p calendar -p network_time_protocol    just those packages
+#   script/mutation -p glob -p network_time_protocol        just those packages
 #   script/mutation --list                 enumerate the mutants without running anything
 #   script/mutation --report [DIR...]      per-crate table from finished run output, vs the baseline
 #
@@ -53,7 +53,7 @@ usage() {
 usage: script/mutation [--report [DIR...]] [cargo-mutants args...]
 
   --report         summarize finished run output (default mutants.out) against the baseline
-  anything else    forwarded to `cargo mutants --workspace` (e.g. --shard 2/4, -p calendar, --list)
+  anything else    forwarded to `cargo mutants --workspace` (e.g. --shard 2/4, -p glob, --list)
 EOF
 }
 

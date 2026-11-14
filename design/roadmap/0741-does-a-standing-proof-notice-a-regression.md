@@ -51,7 +51,7 @@ risk 2's amber.
 
 ## Follow-on
 
-- **Milestone 782.** Milestone 782 (measure the reach of the glob and calendar proofs). `design/roadmap/0782-measure-the-reach-of-the-glob-and-calendar-proofs.md`.
+- **Milestone 782.** Milestone 782 (measure the reach of the glob proofs). `design/roadmap/0782-measure-the-reach-of-the-glob-and-calendar-proofs.md`.
 - **Milestone 780.** Milestone 780 (give the zero-kill harnesses a property a wrong value breaks). `design/roadmap/0780-give-the-zero-kill-harnesses-a-property-a-wrong-value-breaks.md`.
 - **Milestone 776.** Milestone 776 (a weekly check that every proof can still fail). `design/roadmap/0776-a-weekly-check-that-every-proof-can-still-fail.md`.
 - **Recorded.** The `unsafe fn` blind spot, the reach approximation and the unpinned Kani, in

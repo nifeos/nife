@@ -7,7 +7,6 @@
 abi
 address_space_map
 byte_sink_contract
-calendar
 capability_manifest_note
 clock_contract
 counter_frequency_contract

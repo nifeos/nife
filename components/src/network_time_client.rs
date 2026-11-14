@@ -224,7 +224,7 @@ fn nonce_bits() -> Result<u64, u64> {
         return Err(r0);
     }
     let mut bytes = [0u8; 8];
-    entropy_contract::copy_delivered_bytes(n, r1, &mut bytes);
+    let _ = entropy_contract::copy_delivered_bytes(n, r1, &mut bytes);
     Ok(u64::from_le_bytes(bytes))
 }
 

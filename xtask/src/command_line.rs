@@ -138,6 +138,9 @@ pub(crate) fn main() -> ExitCode {
         // and no installed program; `--record <name>` captures a new session and so needs the
         // census's programs. Name provisional. See xtask/src/vt_replay.rs.
         "vt-replay" => vt_replay::vt_replay(),
+        // A spawned program must fit its job region: the host-side check that stands before the
+        // QEMU suites find a "could not spawn". Name provisional. See script/region-check.
+        "region-check" => region_check::region_check(),
         "undefined-behavior-check" => undefined_behavior_check(),
         "bench" => bench(),
         // The instruction-count instrument (milestone 78): the two timing claims a wall clock

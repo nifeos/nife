@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 817
 decision_dependencies: none
@@ -94,9 +94,9 @@ ruled. Verified in the files. Two-way change to a one-way license statement. S.
 `git tag` is empty and the repository has no release (verified). The `weekly / semver` job of the
 template and the per-pull-request semver rule of the labeler compare against the newest `v*` tag.
 With none, they judge nothing (the template README, the note on `semver_baseline.py`), so a
-breaking change merges without a hold today. Ruled: a baseline git tag `v0.1.0`, placed on the
+breaking change merges without a hold. Ruled: a baseline git tag `v0.1.0-pre.1`, placed on the
 first commit on `main` whose gates pass after the P0 items of this block merge. It is a git tag
-only: no publish and no release run. Placing it still needs the go of the architect at that time.
+only, with no publish; plain `v0.1.0` waits for the crates.io release. The tag sits on `473b19c`.
 One-way door (a tag is permanent). S.
 
 ### P1: before the first release
@@ -260,12 +260,35 @@ claims none of the hardware steps.
 - Hardware figures are absent until the bench runs; the deadline recommendation in P1-2 rests on
   the specification, not on this board.
 
+## Follow-on
+
+Checked 2026-11-14 (UTC) against `nifeos/designware_mobile_storage`. Its tag `v0.1.0-pre.1` sits on
+`473b19c`, the merge of #17; `main` is `63e1328`, seven commits further on.
+
+- **Done.** P0-1 to P0-3, P1-3, P1-5 to P1-9 and P2-6 and P2-7 landed in
+  `nifeos/designware_mobile_storage` #2, #3, #4, #9, #14 and #15, before the tag. P1-9 took a
+  different fix: `block_address_argument` returns `Option<u32>` from a checked multiply.
+- **Done.** P0-4 landed as the tag `v0.1.0-pre.1` on `473b19c`, placed by the `release` workflow
+  with the publish input off (`nifeos/designware_mobile_storage` #13); the weekly semver job
+  compares against it.
+- **Done.** P1-1, P1-2, P1-7, P2-3 and P2-5's 32-bit half landed in
+  `nifeos/designware_mobile_storage` #5; P2-2 in #12; P2-4 in #11; P2-1 in #10 and #19; P1-4 in #16
+  and #18; P2-5's 64-bit offset in #19. Issues #6, #7 and #8 closed with them.
+- **Outstanding.** The board run of P1-1, P1-2, P2-3 and P2-4: the README's BUGS says the `CMD12`
+  sequence, the deadlines, hot removal and the eMMC bus modes have run only against the simulator,
+  and it holds no busy measurements. Read from the README on `main`.
+- **Outstanding.** A green `weekly` and a green full mutation run on `main`: the mutation run of
+  2026-11-12 at `63e1328` failed when shard 5 of 8 received a runner shutdown, and the last green
+  one ran at `473b19c`. Read from the repository's run list.
+- **Outstanding.** The semver rule holding a breaking pull request: no such pull request has opened
+  since the tag, so the hold is untested. Read from the pull request list.
+
 ## Index row
 
 An outside review of `designware_mobile_storage` found no defect in its logic and thirteen things
 to settle before a first release. Four are one-way shapes and packaging facts that a tag or a
 publish would freeze. They are the shape and field names of `Identity` and the visibility rule, all ruled; the
-license notice; and a baseline tag `v0.1.0`, ruled, whose placing waits for a go. Nine land before
+license notice; and a baseline tag `v0.1.0-pre.1`, ruled and placed. Nine land before
 the first release. They are a missing `CMD12` recovery, fixed deadlines, undocumented trait
 contracts and untriaged mutation survivors. They also cover a stranger run never made, a README
 docs.rs never sees, two misleading error attributions, a weekly caller that builds the host only,

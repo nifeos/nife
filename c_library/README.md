@@ -184,9 +184,9 @@ $ helpers/c-library-headers.sh stdio
   match the commonest platform.
 - **Dependencies**: relibc's own (about thirty crates) are replaced except `libm`, which `math.h`
   needs (calef, #1896); that is relibc's opt-in Rust `math` module rather than its default,
-  openlibm. The rest were small enough to write: musl's `rand` for the `rand` crates, the in-tree
-  `crates/calendar` for `chrono`, four-word bit sets for `cbitset`, a `Vec` for `arrayvec`, a
-  marker trait for `plain`, and no logging.
+  openlibm, and `jiff` (ruled 2026-11-12, UTC), which takes the place of `chrono`. The rest were
+  small enough to write: musl's `rand` for the `rand` crates, four-word bit sets for `cbitset`, a
+  `Vec` for `arrayvec`, a marker trait for `plain`, and no logging.
 
 Stage 2 (milestone 836) added these, also reversible:
 
@@ -260,7 +260,7 @@ checks each, built by `helpers/build-c-library-contract.sh` and run by `c_thread
   The C answer would be an error, and that needs `std` to say whether it holds a clock without
   panicking, which it cannot yet.
 - **Local time is UTC.** nife has no time-zone database, so `localtime` is `gmtime`, `TZ` is not
-  read, and `calendar` limits years to 0 to 9999 (`EOVERFLOW` outside).
+  read, and years are limited to 0 to 9999 (`EOVERFLOW` outside).
 - **No file locks.** `fcntl`'s record locks answer `ENOLCK`, because the file contract has none.
   SQLite runs with `--vfs unix-none`, its VFS for a platform without locks, which is safe only with
   one process on the file.

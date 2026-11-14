@@ -16,7 +16,6 @@ members = [
     "crates/boot_ladder",
     "crates/boot_slot",
     "crates/test_times",
-    "crates/calendar",
     "crates/memory_corruption_canary_gate",
     "crates/capability",
     "crates/capability_plan",

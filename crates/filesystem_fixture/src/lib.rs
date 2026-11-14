@@ -362,8 +362,7 @@ pub mod tree {
     /// [`NAV_TOUCH_AT_RFC3339`] as the Unix-seconds value the wire and a read-back both use, so
     /// a round-trip check compares against the same number the text names rather than a second
     /// copy that could drift from it. Verified independently rather than derived at either end:
-    /// `date -u -d 2030-01-01T00:00:00Z +%s` and `crates/calendar`'s own `DateTime::to_unix`
-    /// both agree it is this.
+    /// `date -u -d 2030-01-01T00:00:00Z +%s` and Python's `datetime` both agree it is this.
     pub const NAV_TOUCH_AT_UNIX: u64 = 1_893_456_000;
     /// The fresh directory the navigating witness mints with `MKDIR`, attenuated to `WRITE` and
     /// not `SETTIME`, to prove `touch -t` needs the right through the real wire and not only in

@@ -28,10 +28,6 @@ c_program_fixture readme_acronyms 1
 c_seam abbreviations 16
 c_seam prose_acronyms 3
 c_seam register_names 1
-calendar abbreviations 53
-calendar prose_acronyms 7
-calendar readme_acronyms 2
-calendar register_names 3
 capability abbreviations 11
 capability prose_acronyms 4
 capability_manifest_note abbreviations 45
@@ -54,7 +50,6 @@ coremark abbreviations 13
 coremark prose_acronyms 4
 coremark readme_acronyms 1
 coremark register_names 2
-counter_frequency_contract prose_acronyms 4
 cpu_set abbreviations 2
 cpu_set prose_acronyms 3
 cpu_set readme_acronyms 3

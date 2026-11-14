@@ -16,9 +16,9 @@ byte_sink_contract,with_severity,replace > with >=,1,comparison,equivalent,uncla
 byte_sink_contract,with_severity,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 c_library_errno,errno_for,delete match arm ErrorKind::WriteZero,1,other,equivalent,unclassified,algebraic,
 c_seam,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
-calendar,DateTime::parse_rfc3339_bytes,replace + with -,1,arithmetic,equivalent,unclassified,algebraic,
-calendar,UtcOffset::from_hm,replace < with <=,2,comparison,equivalent,unclassified,algebraic,
-calendar,Writer::offset,replace < with <=,1,comparison,equivalent,unclassified,caller,
+calendar,DateTime::parse_rfc3339_bytes,replace + with -,1,arithmetic,none,,unrowed,
+calendar,UtcOffset::from_hm,replace < with <=,2,comparison,none,,unrowed,
+calendar,Writer::offset,replace < with <=,1,comparison,none,,unrowed,
 capability,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
 capability,note_peak,replace | with ^,1,or_xor,equivalent,unclassified,noise_unargued,
 capability,"storage::CapabilityTable<O, N>::fill",replace > with >=,1,comparison,equivalent,unclassified,algebraic,

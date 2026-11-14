@@ -31,6 +31,10 @@ pub struct DirGrant {
     /// Stack pages beyond the one `run` maps, for a confined program that needs them. The
     /// hand-written attacker needs none; a shell does (see [`spawn_fs_client`]).
     pub stack_pages: usize,
+    /// Whether the program gets a verdict endpoint at slot 2, which `rm` sends its exit status and
+    /// count on after its report ends (`filesystem_contract::rm`). Only `rm` asks; every other
+    /// client leaves slot 2 empty.
+    pub verdict: bool,
 }
 
 /// Wire the filesystem and hand back the root directory capability: the entry point the
@@ -92,6 +96,27 @@ pub fn narrow_dir_held(
     name: &'static str,
     rights: u64,
 ) -> Option<(RendezvousId, u64, RendezvousId, super::holding::Holding)> {
+    let (narrow_ep, file_shared, report, _, held) =
+        narrow_dir_in_region(blk_image, fs_server_image, caretaker_image, name, rights)?;
+    Some((narrow_ep, file_shared, report, held))
+}
+
+/// [`narrow_dir_held`], also returning the endpoint region, which has a page left for
+/// [`start_granted_dir`]'s verdict endpoint.
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
+fn narrow_dir_in_region(
+    blk_image: &'static [u8],
+    fs_server_image: &'static [u8],
+    caretaker_image: &'static [u8],
+    name: &'static str,
+    rights: u64,
+) -> Option<(
+    RendezvousId,
+    u64,
+    RendezvousId,
+    u64,
+    super::holding::Holding,
+)> {
     // The caretaker's two endpoints and the program's stdout, so one reclaim returns them all: the
     // kernel's rendezvous registry is a fixed 512 and the suite runs close to it.
     let ep_region = crate::memory_region::create(GRANT_ENDPOINT_PAGES)
@@ -113,7 +138,7 @@ pub fn narrow_dir_held(
     let mut held = super::holding::Holding::new();
     held.add_thread(caretaker);
     held.add_region(ep_region);
-    Some((narrow_ep, file_shared, report, held))
+    Some((narrow_ep, file_shared, report, ep_region, held))
 }
 
 /// The caretaker both of the above start, serving `narrow_ep` and reporting once on
@@ -166,8 +191,9 @@ fn spawn_caretaker(
 /// Wire `grant`: a subtree caretaker and the program confined to it, whose slot 0 is a directory
 /// capability for one subtree.
 ///
-/// Returns the confined program's report endpoint and the [`super::holding::Holding`] that hands
-/// back the caretaker, the program and every endpoint the grant made. Release it once the last
+/// Returns the confined program's report endpoint, its verdict endpoint when [`DirGrant::verdict`]
+/// asked for one, and the [`super::holding::Holding`] that hands back the caretaker, the program
+/// and every endpoint the grant made. Release it once the last
 /// report is read: the caretaker serves until it is killed, so a grant nobody releases is a
 /// thread and three endpoints for the rest of the boot.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
@@ -177,7 +203,7 @@ pub fn start_granted_dir(
     caretaker_image: &'static [u8],
     client_image: &'static [u8],
     grant: DirGrant,
-) -> Option<(RendezvousId, super::holding::Holding)> {
+) -> Option<(RendezvousId, Option<RendezvousId>, super::holding::Holding)> {
     let DirGrant {
         name,
         rights,
@@ -185,9 +211,13 @@ pub fn start_granted_dir(
         arg: client_arg,
         arg2: client_arg2,
         stack_pages,
+        verdict,
     } = grant;
-    let (narrow_ep, file_shared, report, mut held) =
-        narrow_dir_held(blk_image, fs_server_image, caretaker_image, name, rights)?;
+    let (narrow_ep, file_shared, report, ep_region, mut held) =
+        narrow_dir_in_region(blk_image, fs_server_image, caretaker_image, name, rights)?;
+    let verdict = verdict.then(|| {
+        crate::sched::create_rendezvous_from(ep_region).expect("no endpoint for a verdict")
+    });
 
     held.add_thread(spawn_fs_client(
         client_image,
@@ -198,6 +228,7 @@ pub fn start_granted_dir(
         client_arg2,
         stack_pages,
         report,
+        verdict,
     ));
-    Some((report, held))
+    Some((report, verdict, held))
 }

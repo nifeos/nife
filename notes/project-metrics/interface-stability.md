@@ -8,10 +8,11 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
+| `calendar` | 118 | 6 | 118 | 6 | 11 | 11 (100%) |
 | `installed_programs` | 69 | 103 | 78 | 175 | 45 | 34 (76%) |
 | `capability_manifest_note` | 48 | 74 | 51 | 132 | 51 | 35 (69%) |
 | `block_roster_contract` | 48 | 11 | 48 | 11 | 18 | 12 (67%) |
-| `grant_plan` | 44 | 105 | 315 | 1187 | 269 | 209 (78%) |
+| `grant_plan` | 44 | 105 | 315 | 1187 | 270 | 210 (78%) |
 | `abi` | 22 | 38 | 63 | 208 | 160 | 144 (90%) |
 | `supervision_contract` | 22 | 2 | 22 | 2 | 12 | 12 (100%) |
 | `filesystem_contract` | 21 | 21 | 305 | 480 | 149 | 132 (89%) |
@@ -20,12 +21,11 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 | `globally_unique_identifier_partition_table` | 12 | 5 | 103 | 286 | 64 | 50 (78%) |
 | `clock_contract` | 10 | 15 | 16 | 69 | 56 | 50 (89%) |
 | `line_editor` | 8 | 27 | 23 | 146 | 69 | 56 (81%) |
+| `entropy_contract` | 8 | 19 | 12 | 37 | 57 | 39 (68%) |
 | `compositor` | 7 | 2 | 21 | 101 | 50 | 42 (84%) |
 | `graphics_contract` | 7 | 0 | 19 | 33 | 38 | 37 (97%) |
-| `entropy_contract` | 7 | 9 | 11 | 27 | 49 | 38 (78%) |
-| `counter_frequency_contract` | 7 | 8 | 9 | 23 | 34 | 27 (79%) |
+| `counter_frequency_contract` | 7 | 8 | 9 | 23 | 36 | 29 (81%) |
 | `environment_contract` | 6 | 7 | 8 | 51 | 29 | 22 (76%) |
-| `calendar` | 5 | 6 | 5 | 6 | 10 | 10 (100%) |
 | `current_cpu_contract` | 4 | 4 | 7 | 21 | 28 | 15 (54%) |
 | `credential_contract` | 3 | 3 | 39 | 73 | 50 | 42 (84%) |
 | `boot_slot` | 3 | 3 | 3 | 55 | 26 | 20 (77%) |
@@ -49,7 +49,7 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 
 ## What broke in 2026W46
 
-Read at `b81853a72fe6` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `a60748a4263b` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_CAPABILITY_DELETE` `SYS_CAPABILITY_DELETE`
 > - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_EXIT` `SYS_EXIT`
@@ -104,9 +104,123 @@ Read at `b81853a72fe6` against the week before. Each line is one removed or chan
 > - `block_roster_contract`: removed `VERSION`
 > - `block_roster_contract`: removed `capacity_of`
 > - `block_roster_contract`: removed `write`
+> - `calendar`: removed `Civil`
+> - `calendar`: removed `Civil: impl Clone`
+> - `calendar`: removed `Civil: impl Copy`
+> - `calendar`: removed `Civil: impl Debug`
+> - `calendar`: removed `Civil: impl Eq`
+> - `calendar`: removed `Civil: impl Ord`
+> - `calendar`: removed `Civil: impl PartialEq`
+> - `calendar`: removed `Civil: impl PartialOrd`
+> - `calendar`: removed `Civil: impl StructuralPartialEq`
+> - `calendar`: removed `Civil::day`
+> - `calendar`: removed `Civil::day_of_year`
+> - `calendar`: removed `Civil::days_since_epoch`
+> - `calendar`: removed `Civil::format`
+> - `calendar`: removed `Civil::from_unix`
+> - `calendar`: removed `Civil::hour`
+> - `calendar`: removed `Civil::minute`
+> - `calendar`: removed `Civil::month`
+> - `calendar`: removed `Civil::new`
+> - `calendar`: removed `Civil::second`
+> - `calendar`: removed `Civil::to_unix`
+> - `calendar`: removed `Civil::weekday`
+> - `calendar`: removed `Civil::year`
+> - `calendar`: removed `DateTime`
+> - `calendar`: removed `DateTime: impl Clone`
+> - `calendar`: removed `DateTime: impl Copy`
+> - `calendar`: removed `DateTime: impl Debug`
+> - `calendar`: removed `DateTime: impl Eq`
+> - `calendar`: removed `DateTime: impl PartialEq`
+> - `calendar`: removed `DateTime: impl StructuralPartialEq`
+> - `calendar`: removed `DateTime::civil`
+> - `calendar`: removed `DateTime::format`
+> - `calendar`: removed `DateTime::from_unix`
+> - `calendar`: removed `DateTime::new`
+> - `calendar`: removed `DateTime::offset`
+> - `calendar`: removed `DateTime::parse_rfc3339`
+> - `calendar`: removed `DateTime::parse_rfc3339_bytes`
+> - `calendar`: removed `DateTime::to_unix`
+> - `calendar`: removed `Error`
+> - `calendar`: removed `Error: impl Clone`
+> - `calendar`: removed `Error: impl Copy`
+> - `calendar`: removed `Error: impl Debug`
+> - `calendar`: removed `Error: impl Eq`
+> - `calendar`: removed `Error: impl PartialEq`
+> - `calendar`: removed `Error: impl StructuralPartialEq`
+> - `calendar`: removed `Error::BadDay`
+> - `calendar`: removed `Error::BadHour`
+> - `calendar`: removed `Error::BadMinute`
+> - `calendar`: removed `Error::BadMonth`
+> - `calendar`: removed `Error::BadOffset`
+> - `calendar`: removed `Error::BadSecond`
+> - `calendar`: removed `Error::LeapSecond`
+> - `calendar`: removed `Error::OutOfRange`
+> - `calendar`: removed `Error::Syntax`
+> - `calendar`: removed `Error::as_str`
+> - `calendar`: removed `Format`
+> - `calendar`: removed `Format: impl Clone`
+> - `calendar`: removed `Format: impl Copy`
+> - `calendar`: removed `Format: impl Debug`
+> - `calendar`: removed `Format: impl Eq`
+> - `calendar`: removed `Format: impl PartialEq`
+> - `calendar`: removed `Format: impl StructuralPartialEq`
+> - `calendar`: removed `Format::Date`
+> - `calendar`: removed `Format::Human`
+> - `calendar`: removed `Format::Rfc3339`
+> - `calendar`: removed `Format::Time`
+> - `calendar`: removed `Format::Unix`
+> - `calendar`: removed `Formatted`
+> - `calendar`: removed `Formatted: impl AsRef{"angle_bracketed":{"args":[{"type":{"primitive":"str"}}],"constraints":[]}}`
+> - `calendar`: removed `Formatted: impl Clone`
+> - `calendar`: removed `Formatted: impl Copy`
+> - `calendar`: removed `Formatted: impl Debug`
+> - `calendar`: removed `Formatted: impl Display`
+> - `calendar`: removed `Formatted::as_bytes`
+> - `calendar`: removed `Formatted::as_str`
+> - `calendar`: removed `MAXIMUM_TIMESTAMP`
+> - `calendar`: removed `MAXIMUM_YEAR`
+> - `calendar`: removed `MINIMUM_TIMESTAMP`
+> - `calendar`: removed `MINIMUM_YEAR`
+> - `calendar`: removed `SECONDS_PER_DAY`
+> - `calendar`: removed `UtcOffset`
+> - `calendar`: removed `UtcOffset: impl Clone`
+> - `calendar`: removed `UtcOffset: impl Copy`
+> - `calendar`: removed `UtcOffset: impl Debug`
+> - `calendar`: removed `UtcOffset: impl Eq`
+> - `calendar`: removed `UtcOffset: impl Ord`
+> - `calendar`: removed `UtcOffset: impl PartialEq`
+> - `calendar`: removed `UtcOffset: impl PartialOrd`
+> - `calendar`: removed `UtcOffset: impl StructuralPartialEq`
+> - `calendar`: removed `UtcOffset::UTC`
+> - `calendar`: removed `UtcOffset::from_hm`
+> - `calendar`: removed `UtcOffset::from_minutes`
+> - `calendar`: removed `UtcOffset::minutes`
+> - `calendar`: removed `UtcOffset::seconds`
+> - `calendar`: removed `VERSION`
+> - `calendar`: removed `Weekday`
+> - `calendar`: removed `Weekday: impl Clone`
+> - `calendar`: removed `Weekday: impl Copy`
+> - `calendar`: removed `Weekday: impl Debug`
+> - `calendar`: removed `Weekday: impl Eq`
+> - `calendar`: removed `Weekday: impl PartialEq`
+> - `calendar`: removed `Weekday: impl StructuralPartialEq`
+> - `calendar`: removed `Weekday::Friday`
+> - `calendar`: removed `Weekday::Monday`
+> - `calendar`: removed `Weekday::Saturday`
+> - `calendar`: removed `Weekday::Sunday`
+> - `calendar`: removed `Weekday::Thursday`
+> - `calendar`: removed `Weekday::Tuesday`
+> - `calendar`: removed `Weekday::Wednesday`
+> - `calendar`: removed `Weekday::abbrev`
+> - `calendar`: removed `Weekday::iso_number`
+> - `calendar`: removed `Weekday::name`
+> - `calendar`: removed `days_in_month`
+> - `calendar`: removed `is_leap_year`
 > - `entropy_contract`: removed `DEAD`
 > - `entropy_contract`: removed `bringup_failure`
 > - `entropy_contract`: removed `delivered`
+> - `entropy_contract`: changed `fill_with`
 > - `entropy_contract`: removed `req`
 > - `entropy_contract`: removed `take`
 > - `entropy_contract`: removed `want`
@@ -121,30 +235,30 @@ Every package in `packages/`, 2026W29 to 2026W46, by the method of the contracts
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 2330 | 1265 (54%) | 1006 (43%) | 50% | `contracts` (383) |
-| `contracts` | 1385 | 943 (68%) | 860 (62%) | 62% | `kernel` (383) |
-| `host-tools` | 959 | 670 (70%) | 555 (58%) | 65% | `kernel` (255) |
-| `system-tests` | 603 | 370 (61%) | 356 (59%) | 54% | `kernel` (157) |
-| `init` | 571 | 492 (86%) | 480 (84%) | 82% | `contracts` (178) |
-| `fixtures` | 456 | 365 (80%) | 344 (75%) | 71% | `contracts` (94) |
-| `runtime` | 334 | 279 (84%) | 254 (76%) | 76% | `kernel` (70) |
-| `drivers` | 261 | 209 (80%) | 192 (74%) | 74% | `kernel` (78) |
+| `kernel` | 2331 | 1265 (54%) | 1005 (43%) | 50% | `contracts` (383) |
+| `contracts` | 1393 | 946 (68%) | 860 (62%) | 62% | `kernel` (383) |
+| `host-tools` | 963 | 671 (70%) | 555 (58%) | 64% | `kernel` (255) |
+| `system-tests` | 604 | 371 (61%) | 357 (59%) | 54% | `kernel` (157) |
+| `init` | 575 | 495 (86%) | 482 (84%) | 82% | `contracts` (178) |
+| `fixtures` | 457 | 366 (80%) | 345 (75%) | 71% | `contracts` (94) |
+| `runtime` | 312 | 258 (83%) | 237 (76%) | 75% | `kernel` (67) |
+| `drivers` | 261 | 209 (80%) | 191 (73%) | 74% | `kernel` (78) |
 | `boot` | 259 | 178 (69%) | 161 (62%) | 58% | `host-tools` (55) |
 | `display` | 239 | 169 (71%) | 157 (66%) | 60% | `kernel` (47) |
 | `swish` | 174 | 156 (90%) | 150 (86%) | 85% | `contracts` (66) |
 | `redoxfs` | 140 | 103 (74%) | 97 (69%) | 55% | `contracts` (20) |
 | `terminal` | 135 | 115 (85%) | 113 (84%) | 75% | `init` (34) |
-| `network` | 130 | 109 (84%) | 106 (82%) | 76% | `init` (29) |
+| `network` | 131 | 110 (84%) | 107 (82%) | 76% | `init` (29) |
 | `login` | 125 | 104 (83%) | 102 (82%) | 64% | `contracts` (17) |
-| `timetable` | 116 | 86 (74%) | 82 (71%) | 55% | `contracts` (15) |
+| `timetable` | 117 | 87 (74%) | 83 (71%) | 55% | `init` (16) |
 | `process-tools` | 113 | 91 (81%) | 87 (77%) | 65% | `init` (13) |
-| `time` | 83 | 79 (95%) | 77 (93%) | 89% | `init` (10) |
-| `core-tools` | 60 | 56 (93%) | 56 (93%) | 83% | `process-tools` (11) |
+| `time` | 85 | 81 (95%) | 79 (93%) | 90% | `init` (11) |
+| `core-tools` | 64 | 58 (91%) | 58 (91%) | 79% | `process-tools` (11) |
 | `filesystem` | 53 | 48 (91%) | 47 (89%) | 80% | `contracts` (11) |
 | `jig` | 40 | 35 (88%) | 35 (88%) | 74% | `contracts` (9) |
 | `entropy` | 37 | 36 (97%) | 36 (97%) | 92% | `display` (7) |
+| `nife-libc` | 35 | 23 (66%) | 19 (54%) | 55% | `system-tests` (5) |
 | `disk-tools` | 34 | 34 (100%) | 34 (100%) | 100% | `core-tools` (8) |
-| `nife-libc` | 34 | 22 (65%) | 18 (53%) | 52% | `system-tests` (4) |
 | `cryptography` | 28 | 26 (93%) | 24 (86%) | 87% | `fixtures` (8) |
 | `system_installer` | 25 | 25 (100%) | 25 (100%) | 100% | `host-tools` (4) |
 | `demos` | 14 | 13 (93%) | 13 (93%) | 67% | `fixtures` (2) |

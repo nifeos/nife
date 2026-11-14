@@ -124,8 +124,7 @@ Neither "adapt" (track upstream with a platform layer added) nor a clean-room re
 
 That is calef's expectation made concrete: relibc's approach, nife's library. Would this still win
 if a clean rewrite cost the same? Yes. The seeded code carries years of conformance fixes a rewrite
-would have to rediscover, and CLAUDE.md rule 6 asks for adapted code first outside the crates Kani
-proves. Would vendoring still lose if it cost the same? Also yes, because the divergence would be
+would have to rediscover, and AGENTS.md rule 6 asks for adapted code first. Would vendoring still lose if it cost the same? Also yes, because the divergence would be
 the larger part of the code, and a pin whose patch is bigger than its source is a fork that says it
 is not one.
 
@@ -181,7 +180,7 @@ Three findings against this note's predictions:
   crates, it is 1,311 lines (`c_library/src/platform/nife.rs`), because `std` already holds every
   client nife needs: files, clock, heap and standard streams.
 - Of relibc's thirty-odd crates, one survived. `libm`, for `math.h`. The rest were replaced by
-  a few lines each or by what the tree already had (`crates/calendar` for `chrono`).
+  a few lines each or by what the tree already had (`jiff` for `chrono`).
 - The soft-float ABI is where C and Rust disagree. C on a soft-float target passes a `double`
   vararg in a general register, and Rust's `va_arg::<f64>` on aarch64 and x86_64 reads the
   floating-point save area. relibc's `printf` printed every `double` as 0 until it read the bits as
