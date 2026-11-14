@@ -116,8 +116,7 @@ The P1 items are in [the appendix](1100-memory-region-heap-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's. Decision A is ruled and in force.
-Decision B is open.
+Two one-way doors. Everything else above is the maintainer's. Decisions A and B are ruled and in force.
 
 ### A. The seven public names, and the shape of `commit_all` (ruled 2026-11-14 UTC)
 
@@ -139,9 +138,22 @@ and say how it failed. `std_runtime_contract::HEAP_BASE` is the same value as th
 base under another spelling; the move is the moment to make the two agree or to make one defer to
 the other. `address_space_map::HEAP.start` is where both come from.
 
-### B. Which `talc` the crate builds against outside nife (open)
+### B. Which `talc` the crate builds against outside nife (ruled 2026-11-14 UTC)
 
-Not ruled. Nothing in this block decides it.
+The rule in force, option A (block 1100 decision B):
+
+- Outside nife the crate depends on crates.io `talc = "5.1.1"`, unpatched.
+- The crate's README, written by the move lane, states what the unpatched package lacks (upstream
+  pull request 57's two fit-check overflow fixes) and why a 64-bit process does not reach it.
+- nife's root `[patch.crates-io]` keeps applying to nife's whole graph, this crate included.
+- `redoxfs` carries its own patch file, as the step 9 appendix of milestone 1017 rules.
+- When a `talc` release carries the fix, the crate bumps and the README sentence goes.
+- If upstream stays silent past the next monthly `script/vendor-watch` report, the question
+  returns as a request to fork. A fork under `nifeos` needs its own approval.
+
+Evidence the architect saw: `talc` 5.1.1 was released 2026-09-09 and has 2.6 million downloads. One
+maintainer wrote most of its commits. Pull request 57 has been open since 2026-09-24 with no
+comments.
 
 Background. nife builds `talc` from `vendor/talc`, the crates.io 5.1.1 package plus upstream pull
 request 57, through `[patch.crates-io]` in each workspace root. A `[patch]` table does not travel
@@ -181,11 +193,15 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 
 ## Follow-on
 
-The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on decision A: the names, the rename, the `Result` return, the two
-accessors and the local binding. What remains is open. Decision B (which `talc`) is unruled. Items 2
-and 3 (the dependency and the manifest), item 4's test half, the P1 items before the tag and the P2
-items are not started. The `script/crate-standalone` step 0 still needs the move lane to strip the
-blocks, and `Short`, `maximum_bytes` and `base_virtual_address` are provisional until a name review.
+Done. The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on decision
+A: the names, the rename, the `Result` return, the two accessors and the local binding. Decision B
+is recorded as the rule in force.
+
+Outstanding. The manifest keeps its path dependencies and its `talc` line as they stand, and the
+README and license files are not written: the move lane does them (items 2 and 3, to the rule of
+decision B). Item 4's test half, the P1 items before the tag and the P2 items are not started.
+`script/crate-standalone` step 0 still needs the move lane to strip the blocks. `Short`,
+`maximum_bytes` and `base_virtual_address` are provisional until a name review.
 
 ## Done when
 
