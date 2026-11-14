@@ -18,7 +18,7 @@ moves `Instant`. The page keeps two copies of the time and a publish count, so a
 on a writer, and its reader and writers sit in different address spaces. Six loom models check its
 orderings against the C11 memory model. The crate is `no_std`, has
 no run-time dependency, and has `unsafe` in one place: `ClockPage::new` takes a raw address. It has
-no Kani harness. Nothing in it points back into nife. Four names carry ratified blocks, six
+no Kani harness. Nothing in it points back into nife. Seven names carry ratified blocks, four
 provisional ones and the rest none.
 
 ## Identity
@@ -26,7 +26,7 @@ provisional ones and the rest none.
 | item | value |
 |---|---|
 | crate | `clock_contract`, ratified ("the service's own word, `clock`, with the contract suffix") |
-| identity values | `INTERFACE_ID` 8, `VERSION` 1, `MAGIC` `0x434c_4f43_4b76_3031` (ASCII `CLOCKv01`). Each matches row 8 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table and its rule that an id starts at version 1. The `Name:` blocks of `INTERFACE_ID` and `VERSION` read provisional, and no ruling has frozen the three. A host test pins all three as literals |
+| identity values | frozen: `INTERFACE_ID` 8, `VERSION` 1, `MAGIC` `0x434c_4f43_4b76_3031` (ASCII `CLOCKv01`), and the seven-word layout (the magic, the publish count, the writers' claim, then the state and the offset of copy 0 and of copy 1). A layout break ships as a new magic and version together. The crate header and README state them, and host tests pin them as literals. Frozen 2026-11-14 (UTC) on #3576 |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest |
@@ -124,8 +124,9 @@ Arm or RISC-V model, and the crate's `BUGS` says that too.
 
 ## Names
 
-The crate name, `NS_PER_SECOND` and the two `MAXIMUM_STEP_` constants read ratified. `INTERFACE_ID`,
-`VERSION`, `initialize`, `wall_nanoseconds`, `NANOS_PER_SEC` and `wall_nanos` read provisional.
+The crate name, `NS_PER_SECOND`, the two `MAXIMUM_STEP_` constants, `MAGIC`, `VERSION` and
+`INTERFACE_ID` read ratified. `initialize`, `wall_nanoseconds`, `NANOS_PER_SEC` and `wall_nanos`
+read provisional.
 Every other public item, the five modules and the three fields of `Reading` have no block. This lane
 renames none of them. Each proposal is provisional; nothing outside nife has acted on the crate.
 
@@ -144,7 +145,7 @@ renames none of them. Each proposal is provisional; nothing outside nife has act
 | `rtc::CMOS` | constant | nobody expands CMOS when naming the PC clock | keep; add `#[doc(alias = "mc146818")]`, the part name OpenBSD's driver carries (recalled, not read) |
 | `rtc::PL031`, `rtc::GOLDFISH` | constants | part and device names from the device tree's `compatible` | keep; each doc comment already opens with the `compatible` string it matches |
 | `WORDS` | constant | a count of the page's words | keep |
-| the other 30 items of the draft table, the modules `state`, `propose`, `status` and `policy`, and the fields `state` and `generation` | | pass every rule | ratify as written; `INTERFACE_ID` and `VERSION` with the identity values |
+| the other 30 items of the draft table, the modules `state`, `propose`, `status` and `policy`, and the fields `state` and `generation` | | pass every rule | ratify as written |
 
 Private names, for the move lane: the word indices are `MAGIC_WORD_INDEX`, `PUBLISH_WORD_INDEX`,
 `CLAIM_WORD_INDEX`, `STATE_WORD_INDEX` and `OFFSET_WORD_INDEX`. The locals `st` and `off`, and two
@@ -164,7 +165,6 @@ Linux text.
 
 | item | owner |
 |---|---|
-| Freeze the identity values, as for `block_roster_contract`. Milestone 1017 asks for ratified `INTERFACE_ID` values before a contract crate leaves. | architect |
 | The names above. The two overlay spellings and `offset_nanos` must go before the move, or the crate leaves carrying this tree's old spellings. | architect, then a lane |
 | `cargo xtask std-src` copies the crate's source by path; after the move it must read the pinned checkout, as must `helpers/interface_stability.py`, `helpers/interface_declarations_check.py`, `script/interleaving-check` and the farm stamp. | move lane |
 | Convert the eight path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |
@@ -183,6 +183,5 @@ Linux text.
 
 ## Recommendation
 
-Not ready for review until the architect freezes the identity values and rules on the overlay
-spellings.
+Not ready for review until the architect rules on the overlay spellings.
 The crate itself is a leaf with nothing pointing back into nife.

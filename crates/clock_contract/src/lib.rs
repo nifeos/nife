@@ -9,6 +9,14 @@
 //! written, so a clock step cannot perturb `Instant`. Every time is nanoseconds since the Unix
 //! epoch in a `u64`, which runs out in 2554.
 //!
+//! # Identity
+//!
+//! The page's identity is frozen: [`MAGIC`] is the ASCII `CLOCKv01`, [`VERSION`] is 1 and
+//! [`INTERFACE_ID`] is 8. So is its layout: [`WORDS`] is seven 64-bit words, the magic, the
+//! publish count, the writers' claim, then the state and the offset of copy 0 and of copy 1, in
+//! that order. The id stays 8 for good. A layout break ships as a new magic and a new version
+//! together, never a new id, and a retired value is never reused.
+//!
 //! # BUGS
 //!
 //! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`, kept for
@@ -155,6 +163,9 @@ pub mod state {
 
 /// The page's first word, so a reader can tell a published clock page from a zeroed frame or from
 /// somebody else's page. ASCII `CLOCKv01`, big-endian in the source so it reads in a hex dump.
+///
+/// Name: ratified 2026-11-14 (UTC, #3576), with its value `CLOCKv01`: the identity freeze of that
+/// date. The name every contract crate uses for its page's first word.
 pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 
 /// The clock page layout's version, the digits [`MAGIC`] carries. A reader's check is the magic
@@ -162,7 +173,8 @@ pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 /// and a break bumps this and re-mints the magic's digits in one change, which the changelog
 /// records.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-14 (UTC, #3576), with its value 1: the identity freeze of that date. The
+/// name every contract crate uses for its layout version.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 8, naming the clock page and its
@@ -170,7 +182,8 @@ pub const VERSION: u32 = 1;
 /// change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-14 (UTC, #3576), with its value 8: the identity freeze of that date. The
+/// name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 8;
 
 /// The words the clock page uses: seven, in the order the word indices below list them. The rest of
@@ -896,9 +909,10 @@ mod tests {
         assert_eq!(propose::operation(0), 0);
     }
 
-    /// The page's identity, written out as literals. A reader built against another value reads
+    /// The frozen identity, written out as literals. A reader built against another value reads
     /// the page as no clock page at all, so a change here is a new version of the interface, never
-    /// an edit: bump [`VERSION`] and the magic's digits together, and this test with them.
+    /// an edit: a layout break bumps [`VERSION`] and the magic's digits together, and this test
+    /// with them, and the id never changes.
     #[test]
     fn the_identity_is_the_one_readers_were_built_against() {
         assert_eq!(MAGIC.to_be_bytes(), *b"CLOCKv01");

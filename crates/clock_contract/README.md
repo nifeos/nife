@@ -17,7 +17,9 @@ epoch in a `u64`, which runs out in 2554.
 - The page: seven 64-bit words (`WORDS`), the rest of the frame reserved and zero. Word 0 is
   `MAGIC` (ASCII `CLOCKv01`), word 1 the publish count, word 2 the writers' claim, words 3 and 4 the
   state and the offset in nanoseconds of copy 0, and words 5 and 6 the same for copy 1. The publish
-  count's low bit names the copy readers use. A frame without the magic reads as the unknown state. `VERSION` (1) is the digits of the magic: a
+  count's low bit names the copy readers use. A frame without the magic reads as the unknown state.
+- The identity does not change: the magic `CLOCKv01`, `VERSION` 1, `INTERFACE_ID` 8 and the
+  seven-word layout above. A layout break ships as a new magic and version together, never a new id. `VERSION` (1) is the digits of the magic: a
   reader built for one version reads another's page as no clock at all. A layout break bumps both.
 - States (`state`): `UNKNOWN`, `RTC`, `SET`, `SYNCED`. `UNKNOWN` is a real answer. A machine with no
   usable clock must say so; reporting 1970 plus uptime is the failure this contract exists to
