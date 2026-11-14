@@ -200,7 +200,7 @@ if !self.half.contains(va) {
 }
 ```
 
-That guard has been in `page_tables` since milestone 4, and it was put there because a *host test*
+That guard has been in `page_tables` since milestone 4 (MMU on: page tables, the kernel heap, the high half), and it was put there because a *host test*
 discovered that bits 63:48 are not translated ([higher-half.md](higher-half.md)) and we needed a
 way to say which table a mapping belongs to. It has been sitting there for three milestones,
 waiting for this file.

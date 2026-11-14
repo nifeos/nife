@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 77. `crates/page_tables`: a module per ISA, a type per page-table configuration
+# 77. `crates/paging`: a module per ISA, a type per page-table configuration
 
 Not started, and deliberately waiting for a trigger. Split out of milestone 73 on
 2026-08-03 once it stopped being a rename.

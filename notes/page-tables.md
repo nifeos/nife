@@ -188,7 +188,7 @@ path. The constant is defined and the reason is written down, which is the hones
 ## Why this is a host-testable crate
 
 The page table format is pure logic: addresses in, descriptors out. So it lives in
-`crates/page_tables` and its tests run on the host in milliseconds (DECISIONS §7).
+`crates/page_tables` and its tests run on the host in milliseconds (DECISIONS §7, testing with host-testable crates).
 
 **The trick that makes it work:** a `Box<PageTable>` is 4 KiB-aligned (the type declares it)
 and has a real address. So the tests hand those addresses to the mapper as pretend "physical"

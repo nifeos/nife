@@ -17,7 +17,7 @@ Inside the TCB, always build. Two reasons, both structural rather than cautious:
    is partly someone else's demonstrates less, whatever its quality.
 
 Pure-logic crates: prefer a maintained no_std crate, unless building it is the point.
-The §7 crates we wrote by hand (`device_tree_blob`, `elf`, `page_tables`, `heap`, `capability`, ...) were the point;
+The §7 (testing: host-testable crates) crates we wrote by hand (`device_tree_blob`, `elf`, `page_tables`, `heap`, `capability`, ...) were the point;
 they are also now proved or provable, so they stay. For peripheral plumbing not yet built
 (a PCI capability walker, a GPT parser, a font rasterizer), the calculus flips: a
 well-maintained kernel-agnostic crate beats a bespoke one we then have to trust anyway.

@@ -179,7 +179,7 @@ stem, not just the path.
 
 ## Follow-on
 
-- **Milestone 77.** `crates/page_tables/src/aarch64.rs`, which left this milestone the day it was raised.
+- **Milestone 77.** `crates/page_tables/src/aarch64.rs` (milestone 77, a module per ISA and a type per page-table configuration), which left this milestone the day it was raised.
   It is not a rename: calef expects a second aarch64 configuration, so the fix is a module per ISA
   and a type per page-table configuration, with 174 call sites behind it. The finding worth carrying
   is here too, that ARM has no short format name the way `Sv39` is one.

@@ -23,7 +23,7 @@ survivor, and nothing would have found this one.
 
 ## The finding: a second proof that could not fail
 
-`page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` is the whole of row 12's evidence for §20's
+`page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` is the whole of row 12's evidence for §20 (IOMMU-backed DMA isolation)'s
 claim that an IOMMU entry sets no bit the hardware treats as reserved. It stated all three of its
 assertions, and its `kani::assume`, through `VTD_ADDR_MASK`, `VTD_R` and `VTD_W`. Those are the
 three constants `Vtd::leaf_entry` builds its result out of, so the assertion read

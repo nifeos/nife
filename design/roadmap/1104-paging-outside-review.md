@@ -186,8 +186,7 @@ Only one-way doors. Each is one decision, with the background first and a recomm
 Ruled 2026-11-14 (UTC), option A: the crate is named `page_tables`, in code and package alike.
 `crates/paging` is `crates/page_tables`, the package and the library are `page_tables`, and every
 caller says `page_tables::`. The old name carries no `doc(alias)`. The crate root's `Name:` block is
-ratified for `page_tables`. The crate leaves nife on its merits later, and no repository exists
-before the review clears. The reasoning that led here follows.
+ratified for `page_tables`. No repository exists before the review clears. The reasoning follows.
 
 Background. A crate on crates.io has one name forever: the registry never reassigns a name, and a
 transfer needs the current owner's cooperation. This crate's root records `paging` as a ratified
@@ -263,15 +262,15 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Decision 1 is built.** The rename landed with the pull request that ruled it. The lanes below
-  still carry the other items.
-- **Outstanding.** Every P0 item except the crate name, the P1 items and the P2 items above. Decision
-  2 (the spelling of the leaf sizes) waits for the architect.
-- **Repository.** The architect creates `nifeos/page_tables` only when the review clears.
+- **Done.** Decision 1, the crate name, is carried by the rename in `crates/page_tables`.
+- **Outstanding.** Every P0 item but the crate name, every P1 item and every P2 item above. The
+  crate's tree holds none of their fixes yet, as a read of `crates/page_tables` shows.
+- **Outstanding.** Decision 2, the spelling of the leaf sizes, waits for the architect. The enum in
+  `crates/page_tables/src/lib.rs` still holds `Size4KiB`, `Size2MiB` and `Size1GiB`.
 
 ## Index row
 
-An outside review of `page_tables` (formerly `paging`) before it leaves for its own repository. It finds three P0 items: a
+An outside review of `page_tables` before it leaves for its own repository. It finds three P0 items: a
 manifest that cannot stand alone, a crate name that another crate already holds on crates.io, and
 falsification records that point into nife. It finds eight P1 items: documentation written for an
 insider, 84 spelled-out-rule findings, kept names with no alias, and an incomplete `unsafe` contract
