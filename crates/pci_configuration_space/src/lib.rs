@@ -1009,7 +1009,7 @@ mod verification {
     /// like the virtio capability walk and the MSI-X walk. It reads the
     /// status and the list pointer once and one head per hop, at most 64 hops, so 66 reads; and a
     /// capability it finds sits at a nonzero offset that is a multiple of four.
-    /// Falsification: replayable `crates/pci/falsifications/verification.the_message_signaled_interrupt_walk_terminates_on_any_device.patch`
+    /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.the_message_signaled_interrupt_walk_terminates_on_any_device.patch`
     #[kani::proof]
     #[kani::unwind(66)]
     fn the_message_signaled_interrupt_walk_terminates_on_any_device() {

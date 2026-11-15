@@ -134,10 +134,6 @@ rules it; this review recommends moving first, after items 1 through 8.
 
 The ledger is in [the appendix](1105-pci-outside-review/ledger.md).
 
-## Follow-on
-
-- **Outstanding.** The renames (items 5 and 6) and the package name wait on the architect, and the move preparation (items 1, 2, 7 and the P2 patch, table and exemption items) waits on the move. Item 8 lacks the one-walk factoring and the ceiling proof, and `intx_pin_through_bridge` and the fuzz targets are unstarted. Checked against the ledger.
-
 ## Done when
 
 The checks are in [the appendix](1105-pci-outside-review/done-when.md).
@@ -147,7 +143,10 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 - **Done.** The package name and the import rule: the package is `pci_configuration_space`, in
   `crates/pci_configuration_space`, and every consumer imports it under that name.
 - **Outstanding.** The other review items, which the maintainer rules as provisional and later
-  lanes build.
+  lanes build: the renames (items 5 and 6) and the move preparation (items 1, 2, 7 and the P2
+  patch, table and exemption items). Item 8 still lacks the one-walk factoring and the ceiling
+  proof, and `intx_pin_through_bridge` and the fuzz targets have not started. The ledger lists the
+  finished items.
 - **Outstanding.** Creating the repository under the new name, after the architect clears the
   review.
 
