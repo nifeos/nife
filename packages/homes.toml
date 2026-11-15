@@ -154,7 +154,7 @@ paths = ["notes/file-allocation-table.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/glob alone; it leaves with that crate (§315)"
+reason = "about crates/byte_glob alone; it leaves with that crate (§315)"
 paths = ["notes/glob.md", "notes/glob/"]
 
 [[home]]

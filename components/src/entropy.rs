@@ -392,11 +392,14 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this service condemned at bring-up for answering with zeros. It
             // is answered the way a dry device is: `NO_ENTROPY` already means the one thing a
             // client has to know, which is that it is not getting randomness here.
-            proto::GET if !refuse => pool.take(proto::requested_bytes(w0)),
+            proto::GET if !refuse && proto::request_is_well_formed(w0) => {
+                pool.take(proto::requested_bytes(w0))
+            }
             // There is exactly one operation, and the reply's first word is a byte count with no
             // room in it for an error code. So an unknown opcode is answered "you got nothing",
             // which is true. A second operation would be the moment to widen the reply, and that
-            // is a contract change rather than a branch added here.
+            // is a contract change rather than a branch added here. A request with a reserved bit
+            // set is answered the same way, because the contract says so.
             _ => (proto::NO_ENTROPY, 0),
         };
         reply(capability, count, word);
@@ -522,8 +525,13 @@ fn serve_instruction() -> ! {
             continue;
         };
         let (count, word) = match proto::operation(w0) {
-            proto::GET if !refuse => match instr::draw() {
-                Some(bytes) => (proto::requested_bytes(w0), u64::from_le_bytes(bytes)),
+            proto::GET if !refuse && proto::request_is_well_formed(w0) => match instr::draw() {
+                // The draw is eight bytes; the reply carries only the count asked for, and zeros
+                // above it.
+                Some(bytes) => {
+                    let count = proto::requested_bytes(w0) as usize;
+                    proto::reply(&bytes[..count])
+                }
                 None => (proto::NO_ENTROPY, 0),
             },
             _ => (proto::NO_ENTROPY, 0),

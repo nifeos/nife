@@ -28,7 +28,7 @@
 
 #![no_main]
 
-use std::cell::RefCell;
+use std::sync::Mutex;
 
 use libfuzzer_sys::fuzz_target;
 use video_terminal::Vt;
@@ -49,12 +49,10 @@ const SIZES: [(u32, u32); 12] = [
     (u32::MAX, u32::MAX),
 ];
 
-thread_local! {
-    /// A `Vt` is several hundred KiB, so two live on the heap for the life of the process and are
-    /// retargeted with `reset_to` on every input.
-    static TERMINALS: RefCell<(Box<Vt>, Box<Vt>)> =
-        RefCell::new((Box::new(Vt::new(1, 1)), Box::new(Vt::new(1, 1))));
-}
+/// A `Vt` is several hundred KiB, so the two live in a `static` built at compile time, as the
+/// struct's doc asks, and are retargeted with `reset_to` on every input. Boxing them at runtime
+/// would put each on the initializer's stack before it reached the heap.
+static TERMINALS: Mutex<(Vt, Vt)> = Mutex::new((Vt::new(1, 1), Vt::new(1, 1)));
 
 /// The grid, the cursor, damage: the invariants every feed must leave.
 fn check_inside(vt: &mut Vt) {
@@ -86,8 +84,9 @@ fuzz_target!(|data: &[u8]| {
     let (a, b) = (cut(*first), cut(*second));
     let (a, b) = (a.min(b), a.max(b));
 
-    TERMINALS.with(|cell| {
-        let (whole, pieces) = &mut *cell.borrow_mut();
+    {
+        let mut terminals = TERMINALS.lock().expect("a failed input aborts the process");
+        let (whole, pieces) = &mut *terminals;
         whole.reset_to(cols, rows);
         pieces.reset_to(cols, rows);
 
@@ -127,5 +126,5 @@ fuzz_target!(|data: &[u8]| {
                 assert_eq!(whole.cell(col, row), pieces.cell(col, row));
             }
         }
-    });
+    }
 });

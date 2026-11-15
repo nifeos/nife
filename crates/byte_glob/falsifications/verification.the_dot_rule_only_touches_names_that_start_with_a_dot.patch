@@ -1,14 +1,14 @@
-Falsifies `glob::verification::the_dot_rule_only_touches_names_that_start_with_a_dot`.
+Falsifies `byte_glob::verification::the_dot_rule_only_touches_names_that_start_with_a_dot`.
 
 The defect: the leading-dot rule loses its test on the name, so under `Dot::Special` every name is refused
 unless the pattern opens with a literal dot, not only the dotfiles.
 
 Expected to fail: the harness's `assert_eq!(special, ordinary)` for a name that does not start with `.`.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
 index 661ecd445..e3935d791 100644
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -276,3 +276,3 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize) {
      // bytes, so putting it in the loop would only mean asking it repeatedly.
 -    if dot == Dot::Special && name.first() == Some(&b'.') && !opens_with_a_literal_dot(pattern) {
