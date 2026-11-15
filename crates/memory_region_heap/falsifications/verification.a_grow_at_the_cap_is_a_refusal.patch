@@ -1,0 +1,23 @@
+Falsifies `memory_region_heap::verification::a_grow_at_the_cap_is_a_refusal`.
+
+The defect: a run is a success when it maps at least what the request needed, with no requirement
+that it mapped anything. At the cap a request of no bytes needs no page, the run maps none, and
+`grow` answers true, so `alloc` retries a question whose answer cannot change. This is the form
+the function had before milestone 1100 item 6.
+
+Expected to fail: `assert!(!run_succeeded(got, need_pages))` for a run of no pages against a
+request of none. Red in under a second on 2026-11-15.
+
+diff --git a/crates/memory_region_heap/src/lib.rs b/crates/memory_region_heap/src/lib.rs
+index b961c1948..09fc25ba4 100644
+--- a/crates/memory_region_heap/src/lib.rs
++++ b/crates/memory_region_heap/src/lib.rs
+@@ -486,7 +486,7 @@ fn growth_pages(committed: u64, maximum: u64, need: u64) -> Option<(u64, u64)> {
+ /// needed none: the caller retries after a `true`, and a retry after nothing changed would ask the
+ /// same question forever.
+ fn run_succeeded(got_pages: u64, need_pages: u64) -> bool {
+-    got_pages > 0 && got_pages >= need_pages
++    got_pages >= need_pages
+ }
+ 
+ /// The bytes a fresh run at the top must add for `layout` to fit: its chunk (the size and talc's
