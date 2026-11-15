@@ -24,17 +24,14 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
     Door: two-way before the first release; the name is Decision 3's. Effort: S.
 
 12. A test whose name claims more than it checks.
-    Finding: `a_reader_never_returns_data_from_a_half_written_page` (`src/lib.rs` line 745) stores an odd
-    sequence and asserts that the word it stored is odd; it never calls `read` on the half-written
-    page, as its own comment says. The loom model `a_reader_never_sees_half_a_publish` carries the
-    claim.
-    Change: rename it to what it checks (a completed publish after a torn interval reads whole). Or make it the claim by running `read` on a second thread while the test thread finishes the publish after a short sleep. The second is a real test of the spin path, which is the uncovered
-    branch in item 1's coverage figure.
-    Door: two-way. Effort: S.
+    Done, with Decision 1: the reader has no spin path, and the host test
+    `a_writer_stopped_inside_a_publish_leaves_the_last_publish_readable` reads the page with a
+    publish filled and not flipped, and checks that the reading is the last publish.
+    Door: two-way.
 
 13. `initialize` relies on a zeroed frame for the reserved words.
     Finding: `WORDS` (`src/lib.rs` line 178) says the rest of the frame "is reserved and must read as
-    zero"; `initialize` writes four words and nothing else; `read` checks nothing past word three.
+    zero"; `initialize` writes the seven words and nothing else; `read` checks nothing past word six.
     Change: say in `initialize`'s doc that the caller hands it a zeroed frame and the reserved words
     are whatever the frame held, or zero them there. The sentence is enough.
     Door: two-way. Effort: S.
