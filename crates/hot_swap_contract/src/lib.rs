@@ -153,7 +153,7 @@ pub const RPT_UNCOLLECTABLE: u64 = 13;
 
 /// **The incumbent did not answer `OPERATION_QUIESCE` within the operator's bound, so the operator
 /// treats it as hung.** `w1` = the bound, `w2` = how long the operator actually waited, both in the
-/// counter's ticks (`user_mode_runtime::now`, at `user_mode_runtime::cntfrq` ticks a second).
+/// counter's ticks (`user_mode_runtime::now`, at `user_mode_runtime::counter_hertz` ticks a second).
 ///
 /// The operator's own verdict, reached by milestone 106 (a wait that ends on either the interrupt
 /// or the deadline)'s timed wait and by nothing the incumbent said: a hung instance announces

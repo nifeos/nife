@@ -376,7 +376,7 @@ fn watch_pause() {
         yield_now();
         return;
     }
-    let deadline = now() + cntfrq() / 100;
+    let deadline = now() + counter_hertz() / 100;
     if sleep_until(t, WATCH_NOTIFICATION.load(Relaxed), deadline) < 0 {
         yield_now();
     }

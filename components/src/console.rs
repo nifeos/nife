@@ -50,7 +50,7 @@
 
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Received, call, cntfrq, now, receive, receive_bound, send, timer_arm, timer_cancel,
+    Message, Received, call, counter_hertz, now, receive_message, send, timer_arm, timer_cancel,
 };
 
 /// The PL011's register block, declared with `tock_registers::register_map!`: every offset is
@@ -165,16 +165,17 @@ fn start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
         // until the window's deadline ends the wait instead (milestone 151 (notification objects)'s
         // bound receive; on a thread with nothing bound it is an ordinary receive, which is the fallback's path).
         let (len, w1, w2) = match if screen {
-            receive_bound(REQUEST)
+            receive_message(REQUEST)
         } else {
-            let (len, w1, w2) = receive(REQUEST);
-            Received::Message(len, w1, w2)
+            Received::Message(receive_message(REQUEST).into_message())
         } {
             Received::Notification(_) => {
                 paint_screen(&mut batch);
                 continue;
             }
-            Received::Message(len, w1, w2) => (len, w1, w2),
+            Received::Message(Message {
+                w0: len, w1, w2, ..
+            }) => (len, w1, w2),
         };
 
         // **A kernel line from the log service** (milestone 342 (the kernel and the `console`
@@ -313,7 +314,7 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         let deadline = now().saturating_add(abi::timer::counter_ticks_for(
             0,
             SCREEN_BATCH_NANOSECONDS,
-            cntfrq(),
+            counter_hertz(),
         ));
         if timer_arm(TIMER, deadline, NOTIFIED, 1) >= 0 {
             b.armed = true;
@@ -409,7 +410,7 @@ fn uart_put(byte: u8) {
         if polls >= POLLS_BEFORE_CLOCK {
             let t = now();
             match deadline {
-                None => deadline = Some(t.saturating_add(cntfrq())),
+                None => deadline = Some(t.saturating_add(counter_hertz())),
                 Some(d) if t > d => transmit_never_emptied(shape.offset(LSR)),
                 Some(_) => {}
             }

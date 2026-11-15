@@ -44,7 +44,7 @@ item is only the record that the kernel is not the blocker.
 
 ### The timetable, and the per-user session's cost
 
-`components/src/timetable.rs` yields between fires, and it blocks in `receive_fault` on its supervision
+`components/src/timetable.rs` yields between fires, and it blocks in `receive_message` on its supervision
 endpoint when its budget is spent. The decision on who holds a user's schedule, still on an open
 branch as this is written, names the yield loop as its recommended option's cost, "paid once per scheduling user", and says it ends when milestone 106 lands.
 
@@ -53,10 +53,10 @@ What adopting takes:
 1. A timer and a notification, retyped from its own budget with `user_mode_runtime::retype_sleeper`.
 2. Between fires, `sleep_until(Registry::next_deadline)`. That alone ends the spin.
 3. To also collect corpses while asleep, the notification must be bound to its own thread, so
-   `receive_fault` ends on a death message or the next deadline. A running thread cannot bind itself
+   `receive_message` ends on a death message or the next deadline. A running thread cannot bind itself
    (`notes/timer.md`, "Binding a notification to yourself: PROPOSED"). Its spawner, the per-user
    session of milestone 152 (durable delegation: authority that outlives the session that requested it), can: make the pair, `BIND` it to the timetable's TCB, grant both.
-4. A bound-aware `receive_fault`, testing `w4` for `BOUND` as `receive_bound` does.
+4. A bound-aware `receive_message`, testing `w4` for `BOUND` as `receive_bound` does.
 
 Steps 1 and 2 need nothing new. Steps 3 and 4 wait on the session's spawner being willing to bind,
 or on calef's answer to the self-binding proposal. This belongs to milestone 129 (scheduled

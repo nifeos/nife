@@ -19,7 +19,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use user_mode_runtime::{cntfrq, exit, now, send};
+use user_mode_runtime::{counter_hertz, exit, now, send};
 
 /// The endpoint init grants us (slot 0): we SEND `[crc, ticks, freq]` here, then exit.
 const RESULT: u64 = 0;
@@ -30,7 +30,7 @@ fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     let start = now();
     let crc = coremark::run(coremark::PINNED_ITERS);
     let ticks = now().wrapping_sub(start);
-    send(RESULT, crc as u64, ticks, cntfrq());
+    send(RESULT, crc as u64, ticks, counter_hertz());
     exit();
 }
 

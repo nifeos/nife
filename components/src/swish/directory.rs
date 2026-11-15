@@ -50,13 +50,13 @@ pub(super) fn echo(nav: &mut Nav, text: &[u8], out: &mut dyn FnMut(&[u8])) -> Sa
 /// Copy a name into the page shared with the FS server.
 pub(super) fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(filesystem_contract::PAGE).enumerate() {
-        FS_WINDOW.w8(i as u64, b);
+        FS_WINDOW.write_u8(i as u64, b);
     }
 }
 
 /// Copy `n` bytes out of that page (a listing landed there).
 pub(super) fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = FS_WINDOW.r8(i as u64);
+        *b = FS_WINDOW.read_u8(i as u64);
     }
 }

@@ -58,8 +58,7 @@ the builder set, with the death message. No `RESOLVE` method, so there is nothin
   `fault_msg` stay five words, so ordinary IPC stores nothing new.
 - **Userspace declares the register.** `user_mode_runtime`'s syscall primitive is now `invoke6`,
   with register 5 an output that goes in as zero, so a `RECEIVE` cannot clobber a value LLVM thought
-  preserved and an unstamped message reads label `0`. `receive_fault` returns the label as its sixth
-  word.
+  preserved and an unstamped message reads label `0`. `receive_message` returns the label in its `label` field.
 - **A supervisor with two children.** `spawner` stamps each child's supervision capability with a
   label the supervisor names in its build request (`rendezvous::BADGE` on its own copy, inserted,
   then deleted). `sub_server_supervisor` supervises two children on one endpoint
