@@ -5,7 +5,8 @@
 //! to every dependent that links. The same mechanism delivers `link.x` in `cortex-m-rt` and
 //! `riscv-rt`.
 
-use std::{env, fs, path::PathBuf};
+use std::path::PathBuf;
+use std::{env, fs};
 
 fn main() {
     let out = PathBuf::from(env::var("OUT_DIR").expect("cargo sets OUT_DIR for a build script"));

@@ -129,3 +129,41 @@ impl Frame {
         n
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use socket_contract::DATA_MAXIMUM;
+
+    use super::Frame;
+
+    #[repr(align(4096))]
+    struct Page([u8; 4096]);
+
+    fn frame(page: &mut Page) -> Frame {
+        // SAFETY: `page` is live for the test and is one page of writable memory.
+        unsafe { Frame::new(page.0.as_mut_ptr() as u64) }
+    }
+
+    #[test]
+    fn the_destination_and_length_round_trip() {
+        let mut page = Page([0; 4096]);
+        let f = frame(&mut page);
+        f.set_dst([10, 0, 2, 2], 69);
+        f.set_len(512);
+        assert_eq!(f.dst_ip(), [10, 0, 2, 2]);
+        assert_eq!(f.dst_port(), 69);
+        assert_eq!(f.len(), 512);
+    }
+
+    #[test]
+    fn a_payload_read_is_clamped_to_the_buffer_and_the_frame() {
+        let mut page = Page([0; 4096]);
+        let f = frame(&mut page);
+        f.payload_write(&[9, 8, 7]);
+        let mut small = [0u8; 2];
+        assert_eq!(f.payload_read(100, &mut small), 2);
+        assert_eq!(small, [9, 8]);
+        let mut big = [0u8; 8192];
+        assert_eq!(f.payload_read(usize::MAX, &mut big), DATA_MAXIMUM);
+    }
+}

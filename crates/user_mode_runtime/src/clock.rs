@@ -310,10 +310,40 @@ pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
 /// counter is ambient, so any process can measure a duration. The wall clock is what needs one
 /// (notes/clock.md).
 pub fn monotonic_nanoseconds() -> u64 {
+    ticks_to_nanoseconds(now(), cntfrq())
+}
+
+/// `ticks` at `hertz` ticks per second, in nanoseconds, split into whole seconds and a remainder
+/// so the product never overflows. `hertz` is non-zero: [`cntfrq`] refuses zero.
+fn ticks_to_nanoseconds(ticks: u64, hertz: u64) -> u64 {
     use clock_contract::NS_PER_SECOND;
-    let freq = cntfrq();
-    let ticks = now();
-    let seconds = ticks / freq;
-    let rem = ticks % freq;
-    seconds * NS_PER_SECOND + rem * NS_PER_SECOND / freq
+    let seconds = ticks / hertz;
+    let remainder = ticks % hertz;
+    seconds * NS_PER_SECOND + remainder * NS_PER_SECOND / hertz
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ticks_to_nanoseconds;
+
+    #[test]
+    fn one_second_of_ticks_is_one_billion_nanoseconds() {
+        assert_eq!(ticks_to_nanoseconds(62_500_000, 62_500_000), 1_000_000_000);
+    }
+
+    #[test]
+    fn a_long_uptime_does_not_overflow() {
+        // A day at 62.5 MHz: `ticks * 1_000_000_000` alone would pass `u64::MAX`.
+        let day = 86_400u64;
+        assert_eq!(
+            ticks_to_nanoseconds(day * 62_500_000, 62_500_000),
+            day * 1_000_000_000
+        );
+    }
+
+    #[test]
+    fn the_remainder_is_scaled_not_dropped() {
+        assert_eq!(ticks_to_nanoseconds(1, 4_000_000), 250);
+        assert_eq!(ticks_to_nanoseconds(0, 4_000_000), 0);
+    }
 }

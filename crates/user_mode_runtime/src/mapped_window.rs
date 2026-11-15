@@ -320,3 +320,73 @@ pub fn doorbell_barrier() {
          visible before the doorbell that announces it; name the instruction that does that."
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use super::MappedWindow;
+
+    /// Eight aligned words of ordinary memory, and a window over them.
+    fn window(storage: &mut [u64; 8]) -> MappedWindow {
+        // SAFETY: `storage` is live for the test and is 64 bytes of writable memory.
+        unsafe { MappedWindow::new(storage.as_mut_ptr() as u64, 64) }
+    }
+
+    #[test]
+    fn integers_round_trip_at_every_width() {
+        let mut storage = [0u64; 8];
+        let w = window(&mut storage);
+        w.w8(1, 0xAB);
+        w.w16(2, 0xBEEF);
+        w.w32(4, 0xDEAD_BEEF);
+        w.w64(8, 0x0123_4567_89AB_CDEF);
+        assert_eq!(w.r8(1), 0xAB);
+        assert_eq!(w.r16(2), 0xBEEF);
+        assert_eq!(w.r32(4), 0xDEAD_BEEF);
+        assert_eq!(w.r64(8), 0x0123_4567_89AB_CDEF);
+        w.write(16, [1u32, 2, 3, 4]);
+        assert_eq!(w.read::<[u32; 4]>(16), [1, 2, 3, 4]);
+    }
+
+    #[test]
+    #[should_panic(expected = "outside the 64-byte window")]
+    fn an_access_past_the_end_panics() {
+        let mut storage = [0u64; 8];
+        window(&mut storage).r64(60);
+    }
+
+    #[test]
+    #[should_panic(expected = "outside the 64-byte window")]
+    fn an_offset_that_wraps_panics() {
+        let mut storage = [0u64; 8];
+        window(&mut storage).r8(u64::MAX);
+    }
+
+    #[test]
+    #[should_panic(expected = "not 4-byte aligned")]
+    fn a_misaligned_access_panics() {
+        let mut storage = [0u64; 8];
+        window(&mut storage).r32(2);
+    }
+
+    #[test]
+    fn a_sub_window_is_checked_against_its_own_length() {
+        let mut storage = [0u64; 8];
+        let w = window(&mut storage);
+        let inner = w.sub(16, 8);
+        inner.w64(0, 7);
+        assert_eq!(w.r64(16), 7);
+        let caught = std::panic::catch_unwind(|| inner.r8(8));
+        assert!(caught.is_err());
+    }
+
+    #[test]
+    fn copies_move_bytes_and_allow_overlap() {
+        let mut storage = [0u64; 8];
+        let w = window(&mut storage);
+        w.copy_from_slice(0, &[1, 2, 3, 4, 5, 6, 7, 8]);
+        w.copy_within(0, 2, 6);
+        let mut out = [0u8; 8];
+        w.copy_to_slice(0, &mut out);
+        assert_eq!(out, [1, 2, 1, 2, 3, 4, 5, 6]);
+    }
+}
