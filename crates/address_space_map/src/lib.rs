@@ -108,7 +108,7 @@ pub const SERVICE_WINDOWS: Band = Band {
     end: 0x6000_0000,
 };
 
-/// **The program's own ELF segments.** `crates/user_mode_runtime/link.ld` links at [`IMAGE_BASE`],
+/// **The program's own ELF segments.** `crates/user_mode_runtime/link.ld` (its test checks it) links at [`IMAGE_BASE`],
 /// and a host test here holds the two to the same number.
 pub const IMAGE: Band = Band {
     start: SERVICE_WINDOWS.end,
@@ -190,6 +190,14 @@ pub const fn runtime_window(va: u64) -> u64 {
     );
     va
 }
+
+/// **Where the initial ramdisk archive is mapped**, read-only, before a program's `_start` runs: a
+/// window of [`RUNTIME_WINDOWS`], checked against it at compile time. The kernel maps the archive
+/// here and `user_mode_runtime::initial_ramdisk` reads it here, both through this one constant.
+///
+/// Name: provisional, moved here from the kernel's and the runtime's two copies of it (milestone
+/// 1112 item 11); the spelling is the ratified one both copies carried.
+pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
 
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`SERVICE_WINDOWS`].
@@ -349,35 +357,6 @@ mod verification;
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// **The linker script and the map agree**, which is the one thing a reader of either most
-    /// needs to be true. The script is parsed, not grepped for a spelling, so a reformatted line
-    /// still counts and a moved base fails here with both numbers.
-    #[test]
-    fn the_user_linker_script_links_at_the_image_base() {
-        let script = include_str!("../../user_mode_runtime/link.ld");
-        let bases: Vec<u64> = script
-            .lines()
-            .map(str::trim)
-            // The base is the one `. =` that sets a number; `. = ALIGN(..)` lines only round up.
-            .filter(|l| l.starts_with(". =") && !l.contains("ALIGN"))
-            .map(|l| {
-                let hex = l
-                    .trim_start_matches(". =")
-                    .trim()
-                    .trim_end_matches(';')
-                    .trim()
-                    .trim_start_matches("0x")
-                    .replace('_', "");
-                u64::from_str_radix(&hex, 16).expect("the linker script's `. =` is not hex")
-            })
-            .collect();
-        assert_eq!(
-            bases,
-            vec![IMAGE_BASE],
-            "crates/user_mode_runtime/link.ld does not link at IMAGE_BASE"
-        );
-    }
 
     #[test]
     #[allow(clippy::assertions_on_constants)]

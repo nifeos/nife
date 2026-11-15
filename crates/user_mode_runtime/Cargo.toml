@@ -5,19 +5,19 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
-# aarch64-only inline asm, so no host test/bench/doctest targets: `--all-targets` on the bare-metal
-# target must not pull in libtest, which does not exist for aarch64-unknown-none. Same reasoning as
-# the user bins (user/Cargo.toml).
+# Host tests exercise the pure logic (bounds and alignment checks, the frame's accessors, the stubs'
+# encodings) on any architecture this crate has arms for. `script/lint` clippies the bare-metal
+# targets with `--lib`, because `--all-targets` there would pull in libtest, which does not exist
+# for the `*-unknown-none` targets. There are no benches.
 [lib]
-test = false
 bench = false
-doctest = false
 
 [lints]
 workspace = true
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
+address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # The x86_64 timebase page (milestone 161's `cntfrq` follow-up): the kernel's calibrated TSC rate,
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
 # `cntfrq`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and

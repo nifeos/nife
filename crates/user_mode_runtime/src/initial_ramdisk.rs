@@ -13,25 +13,21 @@
 //! Bare-metal only, like the rest of this crate (see the crate-level doc for why this is `no_run`).
 //!
 //! ```no_run
-//! user_mode_runtime::program_entry!(start);
-//!
-//! fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
+//! fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) {
 //!     // SAFETY: the kernel maps `initial_ramdisk_len` bytes of the archive, read-only, at
 //!     // INITIAL_RAMDISK_VIRTUAL_ADDRESS, before this process's `_start` runs (`bytes`'s own contract).
 //!     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };
 //!     let _ = archive;
-//!     loop {}
 //! }
+//! # start(0, 0, 0);
 //! ```
 
-/// Where the kernel maps the initial ramdisk archive before any program's `_start` runs. Must match
-/// `kernel::user::INITIAL_RAMDISK_VIRTUAL_ADDRESS`, the kernel-side constant this value mirrors, which every
-/// kernel-side spawn path (`kernel::user::boot_progenitor` at boot, `spawn_elf_child_builder` in
-/// the tests) maps this many bytes at, read-only, before starting the process.
+/// Where the kernel maps the initial ramdisk archive before any program's `_start` runs: the
+/// address-space map's constant, which the kernel's own mapping uses too, so the two cannot differ.
 ///
 /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
 /// `INITIAL_RAMDISK_VA`: `va` is ruled to expand.
-pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = 0x2000_0000;
+pub use address_space_map::INITIAL_RAMDISK_VIRTUAL_ADDRESS;
 
 /// The initial ramdisk archive bytes this process was handed at spawn. `len` is the value `_start`
 /// received in its second argument register (`x1`/`a1`/`rsi`), which the kernel set to the
