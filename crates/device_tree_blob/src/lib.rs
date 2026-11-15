@@ -15,7 +15,7 @@
 //! abbreviation goes. Known cost: datasheets, error messages and boot logs say `dtb`, so a reader
 //! grepping the word the machine printed will not find this identifier.
 
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 
 /// A contiguous span of physical memory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
