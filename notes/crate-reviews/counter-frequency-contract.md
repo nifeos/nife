@@ -97,10 +97,10 @@ bare-metal targets pass.
 
 ## Recommendation
 
-Ready for the architect's review. The move lane's three edits are in the tree and were checked
-against the crate as it now stands. The template's prose helpers at its head (`prose_acronyms`,
+Ready for the architect's review. The move lane's three edits sit in the tree, and a lane checked
+them against the crate as it stands now. The template head's prose helpers (`prose_acronyms`,
 `passive_voice`, `history_phrases`, `spelled_out`, `unit_symbols` and the rest) report nothing over
 the staged copy, and the dry run of the move is clean. Both Kani harnesses verify, and each
 falsification patch turns its harness red. The harnesses assume nothing. The README says where the
-end-to-end test lives. The identity is unchanged. Nothing moves, and no repository is created,
-until the architect clears this review.
+end-to-end test lives. The identity does not change. The crate stays in this tree, and no
+repository appears, until the architect clears this review.
