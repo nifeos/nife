@@ -283,7 +283,7 @@ fn placements(
     }
     if grants.random_number_generator {
         place(
-            slot::RANDOM_NUMBER_GENERATOR,
+            slot::TRUE_RANDOM_NUMBER_GENERATOR,
             g.self_test_random_number_generator,
             abi::rights::WRITE,
         );

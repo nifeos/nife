@@ -20,7 +20,7 @@ facts are compiled in:
 | The core list is `0..MAX_CPUS`, and `MAX_CPUS` is 4 | `MAXIMUM_CPUS` in `kernel/src/cpu.rs`, iterated in `bring_up_secondaries` | `/cpus` |
 
 Everywhere else the machine describes itself. `crates/device_tree_blob` already parses the tree, and
-milestone 60 (ISA discovery) reads the ISA out of it on both architectures. `crates/pci` holds its
+milestone 60 (ISA discovery) reads the ISA out of it on both architectures. `crates/pci_configuration_space` holds its
 own hardcodes against the tree in a host test, and the console's hardcoded UART base is checked against
 `dtb`'s answer in `crates/device_tree_blob/tests/qemu_aarch64_virt.rs`. **The parser is not what is missing.**
 `Fdt::node_prop` and `Fdt::node_reg` already answer both questions; what is missing is the call.

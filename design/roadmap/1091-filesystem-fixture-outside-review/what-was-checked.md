@@ -13,7 +13,7 @@ Verified firsthand on the clone (the review's report holds `hostname`, not this 
 - `script/crate-standalone filesystem_fixture`: five failures (the crate name is provisional; 244 names lack ratification; the path dependency on `filesystem_contract` leaves the copy; it skipped the build and the proofs).
 - `script/crate-review-packet filesystem_fixture`: 1,178 lines of library and 561 of tests, 14
   modules and 4 functions. It finds no `unsafe`, no Kani harness and no falsification patch. It
-  finds nine dependents in nife (`glob` and `system_tests` as dev-dependencies, the rest normal).
+  finds nine dependents in nife (`byte_glob` and `system_tests` as dev-dependencies, the rest normal).
 - `helpers/lint_externalized_crates.py --count`: 18 hits, exactly at the crate's ceiling. By hand:
   ten are the word `nife` (seven in prose, three in data literals). Eight are program names (`fs_subtree_caretaker` four times, `redoxfs_server` twice, `fs_nameset_caretaker` and `swish`
   once each).

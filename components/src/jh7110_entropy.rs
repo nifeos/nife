@@ -274,7 +274,9 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this driver condemned at bring-up (see `_start`). It is
             // answered exactly the way a dry device is, because `NO_ENTROPY` already means the one
             // thing a client has to know: it is not getting randomness here.
-            proto::GET if !refuse => pool.take(proto::requested_bytes(w0), &mut generate),
+            proto::GET if !refuse && proto::request_is_well_formed(w0) => {
+                pool.take(proto::requested_bytes(w0), &mut generate)
+            }
             _ => (proto::NO_ENTROPY, 0),
         };
         reply(capability, count, word);

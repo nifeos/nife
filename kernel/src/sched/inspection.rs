@@ -697,7 +697,7 @@ pub fn wake_without_delivery(tid: ThreadId) {
 pub(super) static BOOT_STAGE: AtomicU32 = AtomicU32::new(0);
 
 /// Record that the boot reached `stage`: 3 to 10 as `self_test::run`'s checks start, 11 once its
-/// verdict and `boot_ladder::TOUR` have printed. Monotonic by convention, not enforced.
+/// verdict and the tour line (`boot_ladder::Heads::tour`) have printed. Monotonic by convention, not enforced.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)

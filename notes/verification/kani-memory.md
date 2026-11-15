@@ -22,7 +22,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 
 | row | peak GiB | units |
 |---|---:|---:|
-| `glob` | 8.37 | 5 |
+| `byte_glob` | 8.37 | 5 |
 | `subtree_scope` | 5.80 | 3 |
 | `machine_discovery` | 5.23 | 3 |
 | `file_allocation_table` | 5.02 | 3 |
@@ -73,7 +73,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 A row weighs its peak rounded up to whole units, at least one. There is no further margin: the peak
 already holds the compile and the page cache, and CBMC uses the same memory for the same program
 and version. Thirty-seven of the 44 measured rows weigh one unit, so a single-row run at
-`VERIFY_JOBS=4` takes 8 GiB where it took 40. `glob` is the largest row and weighs 10 GiB, the same
+`VERIFY_JOBS=4` takes 8 GiB where it took 40. `byte_glob` is the largest row and weighs 10 GiB, the same
 as the default, so a run over the whole table (`--shard`, `--parallel`, no flag) weighs what it did.
 
 A row counts only for the code it measured. When the crate's directory differs from the recorded

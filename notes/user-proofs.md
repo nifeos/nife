@@ -26,7 +26,7 @@ crate) and the host-testability discipline have already lifted it out. The initr
 `nifefs`, the ELF front half is `elf`, the partition table is
 `globally_unique_identifier_partition_table`, the directory entries are
 `filesystem_contract`, the terminal escapes are
-`video_terminal`, the shell's routing is `swish`, the pattern matcher is `glob`. Every one of those
+`video_terminal`, the shell's routing is `swish`, the pattern matcher is `byte_glob`. Every one of those
 is in `script/verify`'s table already. What is left in `components/src/*.rs` and `fixtures/src/*.rs`
 is overwhelmingly IO glue:
 programs that call a crate to decode, call `user_mode_runtime` to move the result, and render. That is the

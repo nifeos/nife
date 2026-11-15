@@ -13,7 +13,7 @@
 //! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-contract, after the
 //! device family it serves, as this crate's other modules are named after their device crates.
 
-use pci::{
+use pci_configuration_space::{
     Bdf, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE, VIRTIO_CAPABILITY_ISR,
     VIRTIO_CAPABILITY_NOTIFY,
 };
@@ -95,7 +95,7 @@ pub struct Structures {
 /// `None` for a function that lacks a common configuration, a notify structure or an ISR byte. The
 /// first capability of each type wins, as virtio 1.2 section 4.1.4 tells a driver to prefer it.
 ///
-/// `read32` reads the function's configuration space, as [`pci::virtio_capabilities`] takes it.
+/// `read32` reads the function's configuration space, as [`pci_configuration_space::virtio_capabilities`] takes it.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-contract.
 pub fn structures(
@@ -104,7 +104,7 @@ pub fn structures(
 ) -> Option<(Structures, u32)> {
     let (mut common, mut notify, mut interrupt_status, mut device) = (None, None, None, None);
     let mut multiplier = 0;
-    pci::virtio_capabilities(function, read32, &mut |c| {
+    pci_configuration_space::virtio_capabilities(function, read32, &mut |c| {
         let s = Structure {
             bar: c.bar,
             offset: u64::from(c.offset),
@@ -143,7 +143,7 @@ pub fn withheld(function: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> [With
         start: 0,
         end: 0,
     };
-    let Some(c) = pci::msix_capability(function, read32) else {
+    let Some(c) = pci_configuration_space::msix_capability(function, read32) else {
         return [none; 2];
     };
     let (table, pending) = (u64::from(c.table_offset), u64::from(c.pba_offset));
@@ -151,7 +151,7 @@ pub fn withheld(function: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> [With
         Withheld {
             bar: c.table_bar,
             start: table,
-            end: table + u64::from(c.table_size) * pci::MSIX_ENTRY_BYTES,
+            end: table + u64::from(c.table_size) * pci_configuration_space::MSIX_ENTRY_BYTES,
         },
         // One bit per entry, in whole quadwords.
         Withheld {
@@ -687,7 +687,7 @@ mod tests {
     }
 
     /// QEMU's capability list for a modern `virtio-blk-pci`, in the fake configuration space
-    /// `crates/pci/src/tests.rs` builds: the four vendor capabilities, then MSI-X with its table at
+    /// `crates/pci_configuration_space/src/tests.rs` builds: the four vendor capabilities, then MSI-X with its table at
     /// `table_offset` in `table_bar` and its pending bits at 0x800 of BAR 1.
     fn configuration_space(table_bar: u32, table_offset: u32) -> impl FnMut(Bdf, u64) -> u32 {
         let vendor =

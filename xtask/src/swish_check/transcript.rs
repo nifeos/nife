@@ -276,7 +276,7 @@ pub(super) fn killed_thread(line: &str) -> Option<u64> {
 /// 1063 (the boot self-test's spawning checks run from userspace)), the kills the architect ruled
 /// on 2026-11-11 (UTC) the gate excludes by thread id.
 ///
-/// `boot_self_test` names each thread it kills on purpose in a `boot_ladder::SELF_TEST_SUBJECT`
+/// `boot_self_test` names each thread it kills on purpose in a `boot_ladder::Heads::self_test_subject`
 /// line, and runs after the hand-over, so its kills are in what every check here reads. A report
 /// whose first line names one of those threads goes, through its `the kernel is fine.` line when
 /// that is within [`KILL_REPORT_LINES`], else its first line alone. Every other report stays, so a
@@ -286,7 +286,7 @@ pub(super) fn killed_thread(line: &str) -> Option<u64> {
 pub(super) fn without_deliberate_kills(transcript: &str) -> String {
     let named: std::collections::BTreeSet<u64> = transcript
         .lines()
-        .filter_map(boot_ladder::verdict::subject_thread)
+        .filter_map(|line| boot_ladder::verdict::subject_thread(serial_console::HEADS, line))
         .collect();
     let lines: Vec<&str> = transcript.split_inclusive('\n').collect();
     let mut kept = String::with_capacity(transcript.len());

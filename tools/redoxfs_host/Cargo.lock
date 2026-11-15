@@ -73,6 +73,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -202,10 +206,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -216,7 +216,7 @@ dependencies = [
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
- "glob",
+ "byte_glob",
  "program_argument_contract",
 ]
 

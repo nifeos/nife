@@ -1,0 +1,20 @@
+Falsifies `pci::verification::the_ranges_parse_is_total`.
+
+The defect: the size cells are read one cell too far, `cell(6)`/`cell(7)` in place of
+`cell(5)`/`cell(6)`. Seven cells per entry with the last two holding the size is the kind of
+layout a reader counts from one rather than from zero, and every other cell index in the
+function would still look consistent with a 1-based reading.
+
+Expected to fail: the totality claim, as an out-of-bounds slice index inside `cell`, which
+reaches bytes 28..32 of a 28-byte entry. The input is firmware's device tree, the same
+hostile-input class as a device's config space, so a panic here is a kernel that a malformed
+`ranges` property takes down during boot.
+
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
+@@ -686,3 +686,3 @@ pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
+         let cpu_addr = (cell(3) << 32) | cell(4);
+-        let size = (cell(5) << 32) | cell(6);
++        let size = (cell(6) << 32) | cell(7);
+         if pci_addr != cpu_addr || size == 0 {

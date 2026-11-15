@@ -1,6 +1,6 @@
 # The glob matcher: the appendix to notes/glob.md
 
-[`notes/glob.md`](../glob.md) carries what `crates/glob` does, its surface, the four scope
+[`notes/glob.md`](../glob.md) carries what `crates/byte_glob` does, its surface, the four scope
 decisions, the algorithm and why it cannot hang, the proof harnesses and their summary, and the
 corners. This directory carries the record of how the proofs were made tractable, which its prose
 budget has no room for.
