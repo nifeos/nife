@@ -135,150 +135,151 @@ impl BootReport {
 ///   is held in the report while the lock is on, so a press and a release would toggle a keymap
 ///   twice for one change. Keyboards are expected to send the non-locking keys (0x39, 0x53, 0x47).
 pub fn evdev_code(usage: u8) -> Option<u16> {
-    /// Indexed by usage id from 0x04. `None` is a usage in the range with no code.
-    const TABLE: [Option<u16>; 0x88] = [
-        Some(30),  // 0x04 a and A: KEY_A
-        Some(48),  // 0x05 b and B: KEY_B
-        Some(46),  // 0x06 c and C: KEY_C
-        Some(32),  // 0x07 d and D: KEY_D
-        Some(18),  // 0x08 e and E: KEY_E
-        Some(33),  // 0x09 f and F: KEY_F
-        Some(34),  // 0x0a g and G: KEY_G
-        Some(35),  // 0x0b h and H: KEY_H
-        Some(23),  // 0x0c i and I: KEY_I
-        Some(36),  // 0x0d j and J: KEY_J
-        Some(37),  // 0x0e k and K: KEY_K
-        Some(38),  // 0x0f l and L: KEY_L
-        Some(50),  // 0x10 m and M: KEY_M
-        Some(49),  // 0x11 n and N: KEY_N
-        Some(24),  // 0x12 o and O: KEY_O
-        Some(25),  // 0x13 p and P: KEY_P
-        Some(16),  // 0x14 q and Q: KEY_Q
-        Some(19),  // 0x15 r and R: KEY_R
-        Some(31),  // 0x16 s and S: KEY_S
-        Some(20),  // 0x17 t and T: KEY_T
-        Some(22),  // 0x18 u and U: KEY_U
-        Some(47),  // 0x19 v and V: KEY_V
-        Some(17),  // 0x1a w and W: KEY_W
-        Some(45),  // 0x1b x and X: KEY_X
-        Some(21),  // 0x1c y and Y: KEY_Y
-        Some(44),  // 0x1d z and Z: KEY_Z
-        Some(2),   // 0x1e 1 and !: KEY_1
-        Some(3),   // 0x1f 2 and @: KEY_2
-        Some(4),   // 0x20 3 and #: KEY_3
-        Some(5),   // 0x21 4 and $: KEY_4
-        Some(6),   // 0x22 5 and %: KEY_5
-        Some(7),   // 0x23 6 and ^: KEY_6
-        Some(8),   // 0x24 7 and &: KEY_7
-        Some(9),   // 0x25 8 and *: KEY_8
-        Some(10),  // 0x26 9 and (: KEY_9
-        Some(11),  // 0x27 0 and ): KEY_0
-        Some(28),  // 0x28 Return (ENTER): KEY_ENTER
-        Some(1),   // 0x29 ESCAPE: KEY_ESC
-        Some(14),  // 0x2a DELETE (Backspace): KEY_BACKSPACE
-        Some(15),  // 0x2b Tab: KEY_TAB
-        Some(57),  // 0x2c Spacebar: KEY_SPACE
-        Some(12),  // 0x2d - and _: KEY_MINUS
-        Some(13),  // 0x2e = and +: KEY_EQUAL
-        Some(26),  // 0x2f [ and {: KEY_LEFTBRACE
-        Some(27),  // 0x30 ] and }: KEY_RIGHTBRACE
-        Some(43),  // 0x31 \ and |: KEY_BACKSLASH
-        Some(43),  // 0x32 Non-US # and ~: KEY_BACKSLASH, this crate's choice
-        Some(39),  // 0x33 ; and :: KEY_SEMICOLON
-        Some(40),  // 0x34 ' and ": KEY_APOSTROPHE
-        Some(41),  // 0x35 Grave Accent and Tilde: KEY_GRAVE
-        Some(51),  // 0x36 , and <: KEY_COMMA
-        Some(52),  // 0x37 . and >: KEY_DOT
-        Some(53),  // 0x38 / and ?: KEY_SLASH
-        Some(58),  // 0x39 Caps Lock: KEY_CAPSLOCK
-        Some(59),  // 0x3a F1: KEY_F1
-        Some(60),  // 0x3b F2: KEY_F2
-        Some(61),  // 0x3c F3: KEY_F3
-        Some(62),  // 0x3d F4: KEY_F4
-        Some(63),  // 0x3e F5: KEY_F5
-        Some(64),  // 0x3f F6: KEY_F6
-        Some(65),  // 0x40 F7: KEY_F7
-        Some(66),  // 0x41 F8: KEY_F8
-        Some(67),  // 0x42 F9: KEY_F9
-        Some(68),  // 0x43 F10: KEY_F10
-        Some(87),  // 0x44 F11: KEY_F11
-        Some(88),  // 0x45 F12: KEY_F12
-        Some(99),  // 0x46 PrintScreen: KEY_SYSRQ, this crate's choice
-        Some(70),  // 0x47 Scroll Lock: KEY_SCROLLLOCK
-        Some(119), // 0x48 Pause: KEY_PAUSE
-        Some(110), // 0x49 Insert: KEY_INSERT
-        Some(102), // 0x4a Home: KEY_HOME
-        Some(104), // 0x4b PageUp: KEY_PAGEUP
-        Some(111), // 0x4c Delete Forward: KEY_DELETE
-        Some(107), // 0x4d End: KEY_END
-        Some(109), // 0x4e PageDown: KEY_PAGEDOWN
-        Some(106), // 0x4f RightArrow: KEY_RIGHT
-        Some(105), // 0x50 LeftArrow: KEY_LEFT
-        Some(108), // 0x51 DownArrow: KEY_DOWN
-        Some(103), // 0x52 UpArrow: KEY_UP
-        Some(69),  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK, this crate's choice
-        Some(98),  // 0x54 Keypad /: KEY_KPSLASH
-        Some(55),  // 0x55 Keypad *: KEY_KPASTERISK
-        Some(74),  // 0x56 Keypad -: KEY_KPMINUS
-        Some(78),  // 0x57 Keypad +: KEY_KPPLUS
-        Some(96),  // 0x58 Keypad ENTER: KEY_KPENTER
-        Some(79),  // 0x59 Keypad 1 and End: KEY_KP1
-        Some(80),  // 0x5a Keypad 2 and Down Arrow: KEY_KP2
-        Some(81),  // 0x5b Keypad 3 and PageDn: KEY_KP3
-        Some(75),  // 0x5c Keypad 4 and Left Arrow: KEY_KP4
-        Some(76),  // 0x5d Keypad 5: KEY_KP5
-        Some(77),  // 0x5e Keypad 6 and Right Arrow: KEY_KP6
-        Some(71),  // 0x5f Keypad 7 and Home: KEY_KP7
-        Some(72),  // 0x60 Keypad 8 and Up Arrow: KEY_KP8
-        Some(73),  // 0x61 Keypad 9 and PageUp: KEY_KP9
-        Some(82),  // 0x62 Keypad 0 and Insert: KEY_KP0
-        Some(83),  // 0x63 Keypad . and Delete: KEY_KPDOT
-        Some(86),  // 0x64 Non-US \ and |: KEY_102ND
-        Some(127), // 0x65 Application: KEY_COMPOSE
-        Some(116), // 0x66 Power: KEY_POWER
-        Some(117), // 0x67 Keypad =: KEY_KPEQUAL
-        Some(183), // 0x68 F13: KEY_F13
-        Some(184), // 0x69 F14: KEY_F14
-        Some(185), // 0x6a F15: KEY_F15
-        Some(186), // 0x6b F16: KEY_F16
-        Some(187), // 0x6c F17: KEY_F17
-        Some(188), // 0x6d F18: KEY_F18
-        Some(189), // 0x6e F19: KEY_F19
-        Some(190), // 0x6f F20: KEY_F20
-        Some(191), // 0x70 F21: KEY_F21
-        Some(192), // 0x71 F22: KEY_F22
-        Some(193), // 0x72 F23: KEY_F23
-        Some(194), // 0x73 F24: KEY_F24
-        None,      // 0x74 Execute: no key, the header has no execute key
-        Some(138), // 0x75 Help: KEY_HELP
-        Some(139), // 0x76 Menu: KEY_MENU
-        Some(353), // 0x77 Select: KEY_SELECT
-        Some(128), // 0x78 Stop: KEY_STOP
-        Some(129), // 0x79 Again: KEY_AGAIN
-        Some(131), // 0x7a Undo: KEY_UNDO
-        Some(137), // 0x7b Cut: KEY_CUT
-        Some(133), // 0x7c Copy: KEY_COPY
-        Some(135), // 0x7d Paste: KEY_PASTE
-        Some(136), // 0x7e Find: KEY_FIND
-        Some(113), // 0x7f Mute: KEY_MUTE
-        Some(115), // 0x80 Volume Up: KEY_VOLUMEUP
-        Some(114), // 0x81 Volume Down: KEY_VOLUMEDOWN
-        None,      // 0x82 Locking Caps Lock: no key, a locking key
-        None,      // 0x83 Locking Num Lock: no key, a locking key
-        None,      // 0x84 Locking Scroll Lock: no key, a locking key
-        Some(121), // 0x85 Keypad Comma: KEY_KPCOMMA
-        Some(117), // 0x86 Keypad Equal Sign: KEY_KPEQUAL, the same key as 0x67
-        Some(89),  // 0x87 International1: KEY_RO
-        Some(93),  // 0x88 International2: KEY_KATAKANAHIRAGANA
-        Some(124), // 0x89 International3: KEY_YEN
-        Some(92),  // 0x8a International4: KEY_HENKAN
-        Some(94),  // 0x8b International5: KEY_MUHENKAN
-    ];
-    TABLE
+    EVDEV_CODES
         .get(usize::from(usage).checked_sub(4)?)
         .copied()
         .flatten()
 }
+
+/// Indexed by usage id from 0x04. `None` is a usage in the range with no code.
+const EVDEV_CODES: [Option<u16>; 0x88] = [
+    Some(30),  // 0x04 a and A: KEY_A
+    Some(48),  // 0x05 b and B: KEY_B
+    Some(46),  // 0x06 c and C: KEY_C
+    Some(32),  // 0x07 d and D: KEY_D
+    Some(18),  // 0x08 e and E: KEY_E
+    Some(33),  // 0x09 f and F: KEY_F
+    Some(34),  // 0x0a g and G: KEY_G
+    Some(35),  // 0x0b h and H: KEY_H
+    Some(23),  // 0x0c i and I: KEY_I
+    Some(36),  // 0x0d j and J: KEY_J
+    Some(37),  // 0x0e k and K: KEY_K
+    Some(38),  // 0x0f l and L: KEY_L
+    Some(50),  // 0x10 m and M: KEY_M
+    Some(49),  // 0x11 n and N: KEY_N
+    Some(24),  // 0x12 o and O: KEY_O
+    Some(25),  // 0x13 p and P: KEY_P
+    Some(16),  // 0x14 q and Q: KEY_Q
+    Some(19),  // 0x15 r and R: KEY_R
+    Some(31),  // 0x16 s and S: KEY_S
+    Some(20),  // 0x17 t and T: KEY_T
+    Some(22),  // 0x18 u and U: KEY_U
+    Some(47),  // 0x19 v and V: KEY_V
+    Some(17),  // 0x1a w and W: KEY_W
+    Some(45),  // 0x1b x and X: KEY_X
+    Some(21),  // 0x1c y and Y: KEY_Y
+    Some(44),  // 0x1d z and Z: KEY_Z
+    Some(2),   // 0x1e 1 and !: KEY_1
+    Some(3),   // 0x1f 2 and @: KEY_2
+    Some(4),   // 0x20 3 and #: KEY_3
+    Some(5),   // 0x21 4 and $: KEY_4
+    Some(6),   // 0x22 5 and %: KEY_5
+    Some(7),   // 0x23 6 and ^: KEY_6
+    Some(8),   // 0x24 7 and &: KEY_7
+    Some(9),   // 0x25 8 and *: KEY_8
+    Some(10),  // 0x26 9 and (: KEY_9
+    Some(11),  // 0x27 0 and ): KEY_0
+    Some(28),  // 0x28 Return (ENTER): KEY_ENTER
+    Some(1),   // 0x29 ESCAPE: KEY_ESC
+    Some(14),  // 0x2a DELETE (Backspace): KEY_BACKSPACE
+    Some(15),  // 0x2b Tab: KEY_TAB
+    Some(57),  // 0x2c Spacebar: KEY_SPACE
+    Some(12),  // 0x2d - and _: KEY_MINUS
+    Some(13),  // 0x2e = and +: KEY_EQUAL
+    Some(26),  // 0x2f [ and {: KEY_LEFTBRACE
+    Some(27),  // 0x30 ] and }: KEY_RIGHTBRACE
+    Some(43),  // 0x31 \ and |: KEY_BACKSLASH
+    Some(43),  // 0x32 Non-US # and ~: KEY_BACKSLASH, this crate's choice
+    Some(39),  // 0x33 ; and :: KEY_SEMICOLON
+    Some(40),  // 0x34 ' and ": KEY_APOSTROPHE
+    Some(41),  // 0x35 Grave Accent and Tilde: KEY_GRAVE
+    Some(51),  // 0x36 , and <: KEY_COMMA
+    Some(52),  // 0x37 . and >: KEY_DOT
+    Some(53),  // 0x38 / and ?: KEY_SLASH
+    Some(58),  // 0x39 Caps Lock: KEY_CAPSLOCK
+    Some(59),  // 0x3a F1: KEY_F1
+    Some(60),  // 0x3b F2: KEY_F2
+    Some(61),  // 0x3c F3: KEY_F3
+    Some(62),  // 0x3d F4: KEY_F4
+    Some(63),  // 0x3e F5: KEY_F5
+    Some(64),  // 0x3f F6: KEY_F6
+    Some(65),  // 0x40 F7: KEY_F7
+    Some(66),  // 0x41 F8: KEY_F8
+    Some(67),  // 0x42 F9: KEY_F9
+    Some(68),  // 0x43 F10: KEY_F10
+    Some(87),  // 0x44 F11: KEY_F11
+    Some(88),  // 0x45 F12: KEY_F12
+    Some(99),  // 0x46 PrintScreen: KEY_SYSRQ, this crate's choice
+    Some(70),  // 0x47 Scroll Lock: KEY_SCROLLLOCK
+    Some(119), // 0x48 Pause: KEY_PAUSE
+    Some(110), // 0x49 Insert: KEY_INSERT
+    Some(102), // 0x4a Home: KEY_HOME
+    Some(104), // 0x4b PageUp: KEY_PAGEUP
+    Some(111), // 0x4c Delete Forward: KEY_DELETE
+    Some(107), // 0x4d End: KEY_END
+    Some(109), // 0x4e PageDown: KEY_PAGEDOWN
+    Some(106), // 0x4f RightArrow: KEY_RIGHT
+    Some(105), // 0x50 LeftArrow: KEY_LEFT
+    Some(108), // 0x51 DownArrow: KEY_DOWN
+    Some(103), // 0x52 UpArrow: KEY_UP
+    Some(69),  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK, this crate's choice
+    Some(98),  // 0x54 Keypad /: KEY_KPSLASH
+    Some(55),  // 0x55 Keypad *: KEY_KPASTERISK
+    Some(74),  // 0x56 Keypad -: KEY_KPMINUS
+    Some(78),  // 0x57 Keypad +: KEY_KPPLUS
+    Some(96),  // 0x58 Keypad ENTER: KEY_KPENTER
+    Some(79),  // 0x59 Keypad 1 and End: KEY_KP1
+    Some(80),  // 0x5a Keypad 2 and Down Arrow: KEY_KP2
+    Some(81),  // 0x5b Keypad 3 and PageDn: KEY_KP3
+    Some(75),  // 0x5c Keypad 4 and Left Arrow: KEY_KP4
+    Some(76),  // 0x5d Keypad 5: KEY_KP5
+    Some(77),  // 0x5e Keypad 6 and Right Arrow: KEY_KP6
+    Some(71),  // 0x5f Keypad 7 and Home: KEY_KP7
+    Some(72),  // 0x60 Keypad 8 and Up Arrow: KEY_KP8
+    Some(73),  // 0x61 Keypad 9 and PageUp: KEY_KP9
+    Some(82),  // 0x62 Keypad 0 and Insert: KEY_KP0
+    Some(83),  // 0x63 Keypad . and Delete: KEY_KPDOT
+    Some(86),  // 0x64 Non-US \ and |: KEY_102ND
+    Some(127), // 0x65 Application: KEY_COMPOSE
+    Some(116), // 0x66 Power: KEY_POWER
+    Some(117), // 0x67 Keypad =: KEY_KPEQUAL
+    Some(183), // 0x68 F13: KEY_F13
+    Some(184), // 0x69 F14: KEY_F14
+    Some(185), // 0x6a F15: KEY_F15
+    Some(186), // 0x6b F16: KEY_F16
+    Some(187), // 0x6c F17: KEY_F17
+    Some(188), // 0x6d F18: KEY_F18
+    Some(189), // 0x6e F19: KEY_F19
+    Some(190), // 0x6f F20: KEY_F20
+    Some(191), // 0x70 F21: KEY_F21
+    Some(192), // 0x71 F22: KEY_F22
+    Some(193), // 0x72 F23: KEY_F23
+    Some(194), // 0x73 F24: KEY_F24
+    None,      // 0x74 Execute: no key, the header has no execute key
+    Some(138), // 0x75 Help: KEY_HELP
+    Some(139), // 0x76 Menu: KEY_MENU
+    Some(353), // 0x77 Select: KEY_SELECT
+    Some(128), // 0x78 Stop: KEY_STOP
+    Some(129), // 0x79 Again: KEY_AGAIN
+    Some(131), // 0x7a Undo: KEY_UNDO
+    Some(137), // 0x7b Cut: KEY_CUT
+    Some(133), // 0x7c Copy: KEY_COPY
+    Some(135), // 0x7d Paste: KEY_PASTE
+    Some(136), // 0x7e Find: KEY_FIND
+    Some(113), // 0x7f Mute: KEY_MUTE
+    Some(115), // 0x80 Volume Up: KEY_VOLUMEUP
+    Some(114), // 0x81 Volume Down: KEY_VOLUMEDOWN
+    None,      // 0x82 Locking Caps Lock: no key, a locking key
+    None,      // 0x83 Locking Num Lock: no key, a locking key
+    None,      // 0x84 Locking Scroll Lock: no key, a locking key
+    Some(121), // 0x85 Keypad Comma: KEY_KPCOMMA
+    Some(117), // 0x86 Keypad Equal Sign: KEY_KPEQUAL, the same key as 0x67
+    Some(89),  // 0x87 International1: KEY_RO
+    Some(93),  // 0x88 International2: KEY_KATAKANAHIRAGANA
+    Some(124), // 0x89 International3: KEY_YEN
+    Some(92),  // 0x8a International4: KEY_HENKAN
+    Some(94),  // 0x8b International5: KEY_MUHENKAN
+];
 
 /// **What changed from `before` to `after`**, as `(evdev code, pressed)` calls to `event`, in the
 /// order that types correctly: every modifier change first, then the keys released, then the keys
