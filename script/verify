@@ -448,7 +448,7 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # line above is written by a machine and three things keep it honest without anyone remembering:
 # each crate prints `==> kani-seconds:` below, each CI shard compares itself against its plan and
 # warns past 30% (`helpers/verify_times.py shard-check`), and
-# `.github/workflows/verify-shard-refresh.yml` rewrites these seconds weekly from the last 20 runs
+# `.github/workflows/verify-shard-refresh.yml` rewrites these seconds daily from the last 20 runs
 # when a shard is off its plan by more than 15%. Do not hand-edit a number; run
 # `python3 helpers/verify_times.py refresh`. A new crate's row is the one exception: give it a
 # dev-machine guess, and the first refresh after it lands replaces it.
@@ -671,7 +671,7 @@ fi
 # no more runner-minutes than three. notes/verification.md has the earlier numbers.
 #
 # The packer, and the assertion that its shards partition this table, live in
-# helpers/verify_times.py so that this run, the weekly refresh and the drift warning all plan with
+# helpers/verify_times.py so that this run, the daily refresh and the drift warning all plan with
 # one function.
 if [ -n "$shard" ]; then
     crates="$(printf '%s\n' "$CRATES" | python3 helpers/verify_times.py shard "$shard")"
