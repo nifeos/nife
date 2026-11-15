@@ -5,7 +5,8 @@ VisionFive 2. It holds the register offsets and bit fields of the STG (System-To
 (always-on) and SYS (system) domains, and what each of the chip's two device trees calls the
 controllers. It holds the bring-up plans that the TRNG (true random number generator), the Ethernet
 controller, both SD/MMC (MultiMediaCard) controllers and the I2C bus of the PMIC (power management
-integrated circuit) need, and the I2C input-clock arithmetic. It never touches a register: you map
+integrated circuit) need, the Ethernet transmit clock's parent as a tree assigns it, and the I2C
+input-clock arithmetic. It never touches a register: you map
 the window and do the volatile stores, and this crate says which word, which bit and in what order.
 It is `no_std`, depends on nothing, and its tests run on the host.
 
@@ -39,7 +40,7 @@ it".
 
 ## What is proven
 
-Nine Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification patch under
+Ten Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification patch under
 `falsifications/` that makes it fail at its own assertion:
 
 - `with_parent` changes only the clock parent field: every other bit of the word keeps its value,
@@ -50,6 +51,9 @@ Nine Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification 
 - Every fixed plan (the TRNG, both halves of the Ethernet controller, the PMIC bus, both SD/MMC
   slots) holds only ids in its domain, enables every clock before it releases any reset, and picks a
   clock's parent before enabling that clock.
+- A transmit parent read from a tree's `assigned-clocks` and `assigned-clock-parents` selects one of
+  the Ethernet transmit clock's two inputs and no other clock, and walked before the controller's
+  AON plan it is chosen while that clock is gated.
 - A `DevicePlan` or `PowerManagementChipBus` built from device-tree bytes holds only in-bounds ids,
   never more steps than its bound, and every clock step ahead of every reset release. The bus plan
   is never empty.

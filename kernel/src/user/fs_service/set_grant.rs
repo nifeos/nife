@@ -41,10 +41,13 @@ pub struct SetGrant<'a> {
     pub arg2: u64,
     /// Stack pages beyond the one `run` maps.
     pub stack_pages: usize,
+    /// Whether the program gets a verdict endpoint at slot 2; see [`DirGrant::verdict`].
+    pub verdict: bool,
 }
 
-/// Wire `grant` and the program confined to it. Returns the program's report endpoint and what
-/// ends the grant, or `None` when no RedoxFS disk is attached.
+/// Wire `grant` and the program confined to it. Returns the program's report endpoint, its verdict
+/// endpoint when [`SetGrant::verdict`] asked for one, and what ends the grant, or `None` when no
+/// RedoxFS disk is attached.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_granted_set(
     blk_image: &'static [u8],
@@ -52,7 +55,7 @@ pub fn start_granted_set(
     caretaker_image: &'static [u8],
     client_image: &'static [u8],
     grant: SetGrant<'_>,
-) -> Option<(RendezvousId, super::holding::Holding)> {
+) -> Option<(RendezvousId, Option<RendezvousId>, super::holding::Holding)> {
     let SetGrant {
         dir,
         names,
@@ -61,6 +64,7 @@ pub fn start_granted_set(
         arg: client_arg,
         arg2: client_arg2,
         stack_pages,
+        verdict,
     } = grant;
     let (file_ep, file_shared, readiness) = ensure(blk_image, fs_server_image)?;
     // From one region the returned holding reclaims, as [`start_granted`]'s are. The set's own
@@ -73,6 +77,7 @@ pub fn start_granted_set(
     let narrow_ep = endpoint();
     let caretaker_ready = endpoint();
     let report = endpoint();
+    let verdict = verdict.then(endpoint);
 
     // The set, encoded into its own frame before anything can see it. `encode` refuses rather
     // than truncating, and a truncated set would be a capability nobody planned.
@@ -144,6 +149,7 @@ pub fn start_granted_set(
         client_arg2,
         stack_pages,
         report,
+        verdict,
     ));
-    Some((report, held))
+    Some((report, verdict, held))
 }

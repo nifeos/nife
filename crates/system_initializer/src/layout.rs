@@ -233,7 +233,7 @@ pub(super) const LOG_CURSOR_VA: u64 = address_space_map::pair_page(0x0080_0000);
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
 pub(super) const CON_UART_VA: u64 = address_space_map::pair_page(0x0070_0000); // console's UART mapping
 // line_editor's own pages (the shell's text in, completed lines out) are declared with it now, in
-// `line_editor::component`, and `terminal_supervisor` maps them.
+// `line_editor_component`, and `terminal_supervisor` maps them.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
 pub(super) const IN_UART_VA: u64 = address_space_map::pair_page(0x00a0_0000); // input driver's UART mapping
 pub(super) const SH_OUT_VA: u64 = address_space_map::pair_page(0x00c0_0000); // the shell's view of the TERM_OUT frame (swish.rs OUT_VA)

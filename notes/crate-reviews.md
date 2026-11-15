@@ -54,7 +54,7 @@ against itself.
 - README readiness. Every README has the sections a stranger looks for: what the crate does, the
   proofs with their harness names, usage, limitations and license. Every other README that names harnesses tells a newcomer how to install Kani. Three
   crates record a stranger test in their repository, and no other has run one.
-- References to nife in shipped text. Crate repositories stand alone and do not mention nife.
+- References to nife in shipped text. Crate repositories stand alone and do not mention nife, except on a line marked `// wire literal` (a wire literal keeps its bytes; ruled 2026-11-14 UTC).
   Each package lists the mentions that remain, each a small edit for the move lane.
 - Harnesses and patches. In every crate, each Kani harness has exactly one falsification patch
   (the packet pairs them), and `script/crate-standalone` ran each patch and saw its harness fail.
@@ -79,6 +79,6 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by three text edits |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
-| [`clock_contract`](crate-reviews/clock-contract.md) | contract | identity and overlay names for the architect |
+| [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |

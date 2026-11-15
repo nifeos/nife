@@ -70,7 +70,7 @@ startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_cont
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
 confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_syscall_fuzzer_contract" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 environment_contract = { version = "0.1.0", path = "../crates/environment_contract" }
 # The C programs' directory in the test image and their command lines (milestone 835 (a C library,
@@ -93,7 +93,8 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The `date` tests parse what `date` printed back with the crate that printed it (ruled
 # 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
 jiff = { version = "0.2.43", default-features = false }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }

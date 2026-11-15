@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1105-pci-outside-review.md).
 
-- `crates/pci/Cargo.toml` has no `path` dependency, and no `include_bytes!` reaches outside the
+- `crates/pci_configuration_space/Cargo.toml` has no `path` dependency, and no `include_bytes!` reaches outside the
   crate. The five witness tests run in nife against the constants they pin.
 - `script/crate-move --dry-run pci` against the newest template release stages a tree on which
   `standalone`, `falsification records`, `citations`, `readme` and the naming checks all print `ok`.

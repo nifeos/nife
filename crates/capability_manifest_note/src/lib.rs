@@ -1,7 +1,7 @@
 //! A program's manifest, as the bytes of an ELF note it carries: inside the executable behind a
 //! `PT_NOTE`, so it is in the bytes the progenitor hashes (§197 (a package is one archive file),
 //! calef's option M2, 2026-09-26 UTC). The wire format between [`carry!`] and the shell and
-//! progenitor that read it (AGENTS.md rule 7); `crates/elf` finds the note, and this crate starts
+//! progenitor that read it (AGENTS.md rule 7); `crates/static_elf` finds the note, and this crate starts
 //! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_LEN`] bytes) or
 //! [`ZONED_VERSION`] 2. One manifest has exactly one encoding: [`decode`] refuses anything
 //! [`encode`] would not write. The layouts are below; notes/capability-manifest-note.md has the
@@ -102,7 +102,7 @@ use grant_plan::{
 /// `design/naming.md` rules it spelled everywhere.
 ///
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
-pub const OWNER: &[u8] = b"nife";
+pub const OWNER: &[u8] = b"nife"; // wire literal
 
 /// The note type that carries a manifest: `1`, "manifest".
 ///
@@ -980,7 +980,7 @@ const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
 /// Carry this manifest in the program's own bytes: one line at module scope, any constant
 /// `grant_plan::Manifest`, and optionally its resolver zones, sorted, `""` for the root
 /// ([`ZonedNote`]). It places one [`Note`] in `.note.nife.manifest`; used twice it is a duplicate
-/// symbol, and readers refuse a file with two notes (`elf::NoteError::Duplicate`).
+/// symbol, and readers refuse a file with two notes (`static_elf::NoteError::Duplicate`).
 ///
 /// ```ignore
 /// capability_manifest_note::carry!(MANIFEST, zones = &["basalt.nifeos.org"]);
@@ -991,24 +991,24 @@ const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
 macro_rules! carry {
     ($manifest:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::Note = $crate::Note::of(&$manifest);
     };
     ($manifest:expr, zones = $zones:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_len($zones) }> =
             $crate::ZonedNote::of::<{ $crate::zoned_len($zones) }>(&$manifest, $zones);
     };
     ($manifest:expr, service = true) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len(&[]) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_len(&[]) }>(&$manifest, &[], true);
     };
     ($manifest:expr, zones = $zones:expr, service = true) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len($zones) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_len($zones) }>(&$manifest, $zones, true);
     };
@@ -1117,7 +1117,7 @@ impl SubtreeGrantsNote {
 macro_rules! carry_subtree_grants {
     ($scope:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_SUBTREE_GRANTS_NOTE: $crate::SubtreeGrantsNote =
             $crate::SubtreeGrantsNote::of($scope);
     };

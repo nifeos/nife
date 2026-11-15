@@ -59,7 +59,7 @@ SECTIONS
      * 2026-09-26). `capability_manifest_note::carry!` puts one note in `.note.nife.manifest`, and this keeps
      * it twice over: in the `rodata` PT_LOAD, so its bytes are in the file and covered by the
      * digest the progenitor vouches on, and in a PT_NOTE of its own, which is how the shell and the
-     * progenitor find it (`crates/elf`'s `Elf::note`) without section headers, which `strip` may
+     * progenitor find it (`crates/static_elf`'s `Elf::note`) without section headers, which `strip` may
      * delete from a program that still runs.
      *
      * KEEP, because nothing references the note and the linker would otherwise collect it. It is
@@ -67,8 +67,8 @@ SECTIONS
      * that places it, so every other `.note*` a toolchain adds is still thrown away. A program that
      * carries no note gets an empty section here and a PT_NOTE with no notes in it, which reads as
      * "no manifest". */
-    .note.nife : ALIGN(4) {
-        KEEP(*(.note.nife.*))
+    .note.nife : ALIGN(4) { /* wire literal */
+        KEEP(*(.note.nife.*)) /* wire literal */
     } :rodata :note
 
     .data : ALIGN(4096) {
@@ -94,7 +94,7 @@ SECTIONS
     } :data
 
     /* .bss is in the `data` segment but occupies NO space in the file. That is what makes
-     * p_memsz > p_filesz, and the loader has to zero the difference. See crates/elf.
+     * p_memsz > p_filesz, and the loader has to zero the difference. See crates/static_elf.
      *
      * ALIGN(4096) here is not tidiness, it is the same rule the sections above follow, and it was
      * missing. A program with .bss and an EMPTY .data (nothing initialized and non-zero) gets its

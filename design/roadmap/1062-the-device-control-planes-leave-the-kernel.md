@@ -232,7 +232,7 @@ the mediated grant refuses it at `NOTIFY` with `DmaEscape`.
   that frame, the shape of `the_iommu_faults_a_dma_that_escapes_the_domain`. One that declines
   `ACCESS_PLATFORM` either never reaches `FEATURES_OK` or faults the same way.
 - New: a function whose structures share a page with its MSI-X table or pending-bit array gets the
-  mediated grant, over a fake capability list as `crates/pci/src/tests.rs` builds one.
+  mediated grant, over a fake capability list as `crates/pci_configuration_space/src/tests.rs` builds one.
 - `xtask/src/network_bench.rs` drives e1000e and `xtask/src/disk_throughput.rs` drives NVMe, so
   neither changes.
 

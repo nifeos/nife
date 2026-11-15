@@ -565,6 +565,16 @@ pub enum Reject {
     NoAddress,
 }
 
+/// A TTL as a receiver believes it: RFC 2181 section 8 says one with its most significant bit set
+/// is treated as zero.
+fn believable_time_to_live(time_to_live: u32) -> u32 {
+    if time_to_live & 0x8000_0000 != 0 {
+        0
+    } else {
+        time_to_live
+    }
+}
+
 /// The addresses a reply gave for our name, after every check passed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Answer {
@@ -580,7 +590,9 @@ impl Answer {
         &self.addresses[..self.count as usize]
     }
 
-    /// The smallest TTL along the chain: how long the whole answer may be believed.
+    /// The smallest TTL along the chain: how long the whole answer may be believed, in seconds.
+    /// A record whose TTL has its most significant bit set counts as zero, as RFC 2181 section 8
+    /// directs, so an answer carrying one is good for no time.
     pub fn ttl(&self) -> u32 {
         self.ttl
     }
@@ -734,8 +746,10 @@ impl Query {
         // Follow the chain from our name. Every record was read above, so these rescans cannot fail.
         let mut owner = self.name;
         let mut ttl = u32::MAX;
-        let mut links = 0usize;
-        'chain: loop {
+        // A bounded loop rather than a counter beside an endless one: `links` is how many links
+        // were followed before this pass, and no pass after the last can start, so a reply that
+        // chains in a circle ends here however the count is kept.
+        'chain: for links in 0..=MAXIMUM_CHAIN {
             let mut scan = answers.clone();
             for _ in 0..h.ancount {
                 let Ok(record) = scan.record() else { break };
@@ -746,8 +760,7 @@ impl Query {
                     if links == MAXIMUM_CHAIN {
                         return Err(Reject::ChainTooLong);
                     }
-                    links += 1;
-                    ttl = ttl.min(record.ttl);
+                    ttl = ttl.min(believable_time_to_live(record.ttl));
                     owner = cname_target(reply, &record).map_err(Reject::Malformed)?;
                     continue 'chain;
                 }
@@ -767,7 +780,7 @@ impl Query {
             if record.class != CLASS_IN || record.rtype != record_type::A || record.name != owner {
                 continue;
             }
-            answer.ttl = answer.ttl.min(record.ttl);
+            answer.ttl = answer.ttl.min(believable_time_to_live(record.ttl));
             if let (Some(slot), Ok(address)) = (
                 answer.addresses.get_mut(answer.count as usize),
                 <[u8; 4]>::try_from(record.rdata),

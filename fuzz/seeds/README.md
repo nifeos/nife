@@ -30,7 +30,7 @@ would make a second copy of bytes that already have one, and a second copy drift
 ## `elf_parse/minimal_rx_<machine>.elf`
 
 120 bytes each: a 64-byte ELF64 header and one 56-byte `PT_LOAD` program header, read-execute, with
-the entry point inside the segment. It is the smallest thing `elf::Elf::parse` accepts, which is
+the entry point inside the segment. It is the smallest thing `static_elf::Elf::parse` accepts, which is
 exactly what a seed should be: past every constant check and every validation refusal, so the
 fuzzer's mutations land on the arithmetic instead of on the magic number.
 
@@ -44,14 +44,14 @@ byte, which `cmp` will confirm:
 | `minimal_rx_riscv64.elf` | `EM_RISCV` (243) |
 | `minimal_rx_x86_64.elf` | `EM_X86_64` (62) |
 
-**Why three and not one.** `crates/elf` picks the machine it accepts at compile time, so any single
+**Why three and not one.** `crates/static_elf` picks the machine it accepts at compile time, so any single
 seed is right for one host and refused by the other two. There was one seed, the aarch64 one, under
 a note saying a riscv64 build would reject it; the note predated `x86_64` becoming a target and
 never grew the third case, so on an x86_64 host the `elf_parse` corpus was silently empty and
-`crates/elf/tests/fuzz_seed.rs` went red with no available fix (milestone 288).
+`crates/static_elf/tests/fuzz_seed.rs` went red with no available fix (milestone 288).
 
-`crates/elf/tests/fuzz_seed.rs` now asserts that the seed for *this* build parses, and that this
-directory holds a seed for every machine in `elf::KNOWN_MACHINES`, so adding a fourth architecture
+`crates/static_elf/tests/fuzz_seed.rs` now asserts that the seed for *this* build parses, and that this
+directory holds a seed for every machine in `static_elf::KNOWN_MACHINES`, so adding a fourth architecture
 fails on whatever host adds it.
 
 ## BUGS
@@ -65,7 +65,7 @@ mean a corpus count of three overstates what any one run starts from by two.
 **Nothing checks that the committed bytes match the generator below.** The script is a record a
 reader can re-run, not a gate: an edit to the seeds that the script would not produce passes every
 check in this repository, so long as the result still parses and carries a machine
-`elf::KNOWN_MACHINES` names. Re-running it was verified byte-identical for the aarch64 seed when the
+`static_elf::KNOWN_MACHINES` names. Re-running it was verified byte-identical for the aarch64 seed when the
 other two were written (milestone 288), which is evidence about one day rather than a mechanism.
 
 Regenerate all three with:
@@ -77,8 +77,8 @@ EHDR, PHDR = 64, 56
 total = EHDR + PHDR
 vaddr, memsz, entry = 0x4000_0000, 0x1000, 0x4000_0000
 
-# Every machine `elf::KNOWN_MACHINES` names. A fourth architecture adds a row here and a row in the
-# table above, and `crates/elf/tests/fuzz_seed.rs` fails until it does.
+# Every machine `static_elf::KNOWN_MACHINES` names. A fourth architecture adds a row here and a row in the
+# table above, and `crates/static_elf/tests/fuzz_seed.rs` fails until it does.
 for arch, machine in [('aarch64', 183), ('riscv64', 243), ('x86_64', 62)]:
     e = bytearray(EHDR)
     e[0:4] = b'\x7fELF'

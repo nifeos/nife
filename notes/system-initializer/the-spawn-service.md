@@ -177,7 +177,7 @@ in the table's order. The badges are granted before the child exists, since the 
 page attached to a badge it does not know yet.
 
 Console input, for a `std` job that declares it, is the boot terminal badged with
-`line_editor::proto::STDIN_BADGE`. The terminal serves that badge the typed line and nothing else. A
+`terminal_contract::STDIN_BADGE`. The terminal serves that badge the typed line and nothing else. A
 screen-narrowed job gets neither a resolver nor console input, because its keystrokes are its
 session's. A job that should hold any of these and cannot is refused.
 

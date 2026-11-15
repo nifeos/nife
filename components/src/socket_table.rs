@@ -240,8 +240,10 @@ pub(crate) fn open_udp(
     ports: &mut ephemeral::Ports,
 ) -> Result<(usize, u64), u64> {
     let entry = table.free().ok_or(REP_ERR)?;
+    let local_port = ports
+        .next(instant().total_millis() as u64, |p| table.port_held(p))
+        .ok_or(REP_ERR)?;
     let handle = sockets.add(udp_socket());
-    let local_port = ports.next(instant().total_millis() as u64, |p| table.port_held(p));
     let _ = sockets.get_mut::<udp::Socket>(handle).bind(local_port);
     table.install(entry, handle, Kind::Udp, local_port);
     Ok((entry, REP_OK))
@@ -254,11 +256,13 @@ pub(crate) fn open_tcp(
     ports: &mut ephemeral::Ports,
 ) -> Result<(usize, u64), u64> {
     let entry = table.free().ok_or(REP_ERR)?;
+    let local_port = ports
+        .next(instant().total_millis() as u64, |p| table.port_held(p))
+        .ok_or(REP_ERR)?;
     let handle = sockets.add(tcp::Socket::new(
         tcp::SocketBuffer::new(vec![0u8; TCP_RECEIVE_BUF]),
         tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
     ));
-    let local_port = ports.next(instant().total_millis() as u64, |p| table.port_held(p));
     table.install(entry, handle, Kind::Tcp, local_port);
     Ok((entry, REP_OK))
 }
@@ -273,11 +277,11 @@ pub(crate) fn udp_socket() -> udp::Socket<'static> {
 /// Read the destination (octets + little-endian port) from a shared frame's header.
 pub(crate) fn read_dst(window: MappedWindow) -> IpEndpoint {
     let ip = Ipv4Address::new(
-        window.r8(OFF_DST_IP),
-        window.r8(OFF_DST_IP + 1),
-        window.r8(OFF_DST_IP + 2),
-        window.r8(OFF_DST_IP + 3),
+        window.r8(DESTINATION_ADDRESS_OFFSET_BYTES),
+        window.r8(DESTINATION_ADDRESS_OFFSET_BYTES + 1),
+        window.r8(DESTINATION_ADDRESS_OFFSET_BYTES + 2),
+        window.r8(DESTINATION_ADDRESS_OFFSET_BYTES + 3),
     );
-    let port = window.r16(OFF_DST_PORT);
+    let port = window.r16(DESTINATION_PORT_OFFSET_BYTES);
     IpEndpoint::new(IpAddress::Ipv4(ip), port)
 }

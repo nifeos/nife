@@ -151,7 +151,7 @@ below has the table of all seven and their dispositions.
 `GETXATTR`, `credential_contract::read`, the display driver's `FLUSH`, the keyboard ring, the
 compositor's damage handling, `line_editor`, the C seam, the clock page, the nameset grant frame and
 the socket contract's decode were each cleared. Each is a place a future change could break
-something. One warning is worth carrying here: the socket page's `OFF_LEN` is a length field that
+something. One warning is worth carrying here: the socket page's `LENGTH_OFFSET_BYTES` is a length field that
 nothing reads, and the first change that honors it adds a double fetch that will look like a
 tidy-up. Why each is safe is in
 [shared-page-audit/candidates-cleared.md](shared-page-audit/candidates-cleared.md).

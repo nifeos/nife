@@ -59,7 +59,7 @@ the tree fixture goes in through upstream's archiver.
 The store directory now goes with the last attribute on the filesystem. That closes a limitation
 recorded for a reason that was wrong: `remove_node` on a directory refuses with `ENOTEMPTY`, so the
 emptiness check is the engine's and costs no walk. It matters because `extract` copies the store
-out, and a leftover empty `.nife-attrs` would land in a recovered Documents folder. And crash
+out, and a leftover empty `.extended-attributes` would land in a recovered Documents folder. And crash
 atomicity is measured rather than inherited. The sweep of milestone 37 (prove RedoxFS's crash
 consistency) now carries each name's attributes in its state, and four attribute operations in its
 workload, interleaved with a write to the same file. So "the file and its metadata land together" is

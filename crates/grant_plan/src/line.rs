@@ -472,7 +472,7 @@ fn check_redirect_patterns(n: usize, r: &Redirects<'_>) -> Result<(), Refusal> {
     ] {
         if let Some(t) = t
             && !quoted
-            && glob::has_magic(t)
+            && byte_glob::has_magic(t)
         {
             return Err(Refusal::PatternInRedirect);
         }

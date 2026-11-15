@@ -148,6 +148,18 @@ pub(super) struct SpawnEndpoint {
 /// How many first messages [`SpawnEndpoint`] keeps from senders it is not serving.
 const STASHED: usize = 4;
 
+/// **Why [`SpawnEndpoint::grant_resolver`] returned no badge**, which decides whether waiting for
+/// a reap can help.
+///
+/// Name: provisional.
+enum NoGrant {
+    /// No badge or capability slot is free now, and a due reap may free one.
+    Wait,
+    /// There is no resolver, or it refused the grant, or its answer was no answer: no reap changes
+    /// that.
+    Refused,
+}
+
 /// **How many installer holders may be alive at once** (milestone 809): one reply endpoint each.
 /// A spawn that would be one more is refused. `jig` is a foreground job, so one is the usual
 /// number and four is a pipeline of them.
@@ -173,25 +185,50 @@ impl SpawnEndpoint {
     }
 
     /// **Grant job `label` a resolver badge for `zone`** (milestone 892), and return a fresh badged
-    /// copy of the resolver's endpoint for the caller to place and delete. `None` with no resolver,
-    /// with every badge held by a live job, or if the kernel refused the copy (and then the grant is
-    /// forgotten at once).
+    /// copy of the resolver's endpoint for the caller to place and delete. [`NoGrant::Wait`] with
+    /// every badge held by a live job, or if the kernel refused the copy (and then the grant is
+    /// forgotten at once): a due reap may change either. [`NoGrant::Refused`] with no resolver, or
+    /// when the resolver refused the grant, which no reap changes.
+    ///
+    /// Every piece but the last is a `SEND`. The last is a `CALL`, and the resolver's answer
+    /// (`domain_name_resolution_contract::control_answer`) says whether the grant is in force. A
+    /// refusal, or a word that is no answer, is no grant: the badge is forgotten in the resolver
+    /// too, so its window is free, and the entry here stays free. The reason has nowhere to be
+    /// written yet (the crate's BUGS).
     ///
     /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
     /// The pull request records no other name considered.
-    pub(super) fn grant_resolver(&mut self, label: u64, zone: &str) -> Option<u64> {
-        let ep = self.resolver?;
-        let entry = self.resolving.iter().position(Option::is_none)?;
+    fn grant_resolver(&mut self, label: u64, zone: &str) -> Result<u64, NoGrant> {
+        let ep = self.resolver.ok_or(NoGrant::Refused)?;
+        let entry = self
+            .resolving
+            .iter()
+            .position(Option::is_none)
+            .ok_or(NoGrant::Wait)?;
         let badge = entry as u32 + 1;
-        for (w0, w1) in domain_name_resolution_contract::grant_messages(badge, zone.as_bytes())? {
-            send(ep, w0, w1, 0);
+        let mut pieces = domain_name_resolution_contract::grant_messages(badge, zone.as_bytes())
+            .ok_or(NoGrant::Refused)?
+            .peekable();
+        let mut answer = Err(None);
+        while let Some((w0, w1)) = pieces.next() {
+            if pieces.peek().is_some() {
+                send(ep, w0, w1, 0);
+            } else {
+                answer = domain_name_resolution_contract::control_answer(call(ep, w0, w1).0);
+            }
+        }
+        if answer.is_err() {
+            if let Some((w0, w1)) = domain_name_resolution_contract::forget_message(badge) {
+                send(ep, w0, w1, 0);
+            }
+            return Err(NoGrant::Refused);
         }
         self.resolving[entry] = Some(label);
         match badged(ep, badge as u64) {
-            Ok(copy) => Some(copy),
+            Ok(copy) => Ok(copy),
             Err(()) => {
                 self.forget_resolver(label);
-                None
+                Err(NoGrant::Wait)
             }
         }
     }
@@ -199,13 +236,20 @@ impl SpawnEndpoint {
     /// **A resolver badge for `zone`, when the job may hold one** (milestone 892): the badged copy,
     /// and whether a job that should hold one is going without, which refuses its spawn. A badge
     /// every live job holds may be one a finished job's due reap frees, as a window may, so this
-    /// waits for the reaps that are due before it gives up. `zone` is `None` for a job the table
-    /// names no zone for or that is not eligible; on a boot with no resolver nothing is owed.
+    /// waits for the reaps that are due before it gives up. A grant the resolver refused is given
+    /// up at once, since no reap changes it. `zone` is `None` for a job the table names no zone for
+    /// or that is not eligible; on a boot with no resolver nothing is owed.
     pub(super) fn resolver_for(&mut self, label: u64, zone: Option<&str>) -> (Option<u64>, bool) {
         let Some(zone) = zone.filter(|_| self.resolver.is_some()) else {
             return (None, false);
         };
-        let copy = self.until_reaped(|s| s.grant_resolver(label, zone));
+        let copy = self
+            .until_reaped(|s| match s.grant_resolver(label, zone) {
+                Ok(copy) => Some(Some(copy)),
+                Err(NoGrant::Refused) => Some(None),
+                Err(NoGrant::Wait) => None,
+            })
+            .flatten();
         (copy, copy.is_none())
     }
 
@@ -685,7 +729,7 @@ fn with_live_table<R>(
 /// manifest is. The ABI never dual-serves, so the comparison is equality. Bytes with no note
 /// declare nothing and pass. The refusal's two numbers (`Refusal`) stop here: the spawn reply
 /// carries a status and no text, so the person sees the refusal and not the versions.
-fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
+fn serves_declared_abi(elf: &static_elf::Elf<'_>) -> bool {
     match elf.note(capability_manifest_note::OWNER, interfaces_note::INTERFACES) {
         Ok(None) => true,
         Ok(Some(d)) => interfaces_note::decode_interfaces(d).is_ok_and(|list| {
@@ -697,13 +741,13 @@ fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
 }
 
 /// **The manifest a file's bytes are endowed with, or `None` to refuse them.** Their note is read
-/// with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
+/// with `static_elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
 /// endow a program with a manifest it did not declare. `grant_plan::image_manifest` then applies
 /// the vouch (the shell's `caps` calls the same function to preview it), and the request's own
 /// words must fit what results.
 pub(super) fn endowed_image(
-    elf: &elf::Elf<'_>,
+    elf: &static_elf::Elf<'_>,
     vouch: grant_plan::Vouch,
     arg: u64,
     mem_pages: u64,
@@ -753,14 +797,14 @@ mod tests {
         v[5] = 1;
         v[6] = 1;
         v[16..18].copy_from_slice(&2u16.to_le_bytes());
-        v[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+        v[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
         v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
         v[32..40].copy_from_slice(&64u64.to_le_bytes());
         v[54..56].copy_from_slice(&56u16.to_le_bytes());
         v[56..58].copy_from_slice(&2u16.to_le_bytes());
         let mut load = vec![0u8; 56];
         load[0..4].copy_from_slice(&1u32.to_le_bytes());
-        load[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+        load[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
         load[8..16].copy_from_slice(&(body as u64).to_le_bytes());
         load[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
         load[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -769,7 +813,7 @@ mod tests {
         v.extend_from_slice(&load);
         let mut ph = vec![0u8; 56];
         ph[0..4].copy_from_slice(&4u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&elf::PF_R.to_le_bytes());
+        ph[4..8].copy_from_slice(&static_elf::PF_R.to_le_bytes());
         ph[8..16].copy_from_slice(&((body + 16) as u64).to_le_bytes());
         ph[32..40].copy_from_slice(&(note.len() as u64).to_le_bytes());
         ph[40..48].copy_from_slice(&(note.len() as u64).to_le_bytes());
@@ -792,7 +836,7 @@ mod tests {
     }
 
     fn judged(bytes: &[u8]) -> bool {
-        serves_declared_abi(&elf::Elf::parse(bytes).expect("the fixture parses"))
+        serves_declared_abi(&static_elf::Elf::parse(bytes).expect("the fixture parses"))
     }
 
     #[test]

@@ -17,7 +17,7 @@ pub(super) fn blk_server_image() -> &'static [u8] {
 ///
 /// `None` when no RedoxFS disk is attached (nothing to test; do not fail).
 pub(super) fn attack_a_subtree(rights: u64, run: u64) -> Option<u64> {
-    let Some((report, held)) = fs_service::start_granted_dir(
+    let Some((report, _, held)) = fs_service::start_granted_dir(
         blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("fs_subtree_caretaker")
@@ -30,6 +30,7 @@ pub(super) fn attack_a_subtree(rights: u64, run: u64) -> Option<u64> {
             arg: run,
             arg2: 0,
             stack_pages: 0,
+            verdict: false,
         },
     ) else {
         // No print, no skip!() here: this is a helper, and `skip!()` returns from the function it
@@ -203,7 +204,7 @@ fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some((report, held)) = fs_service::start_granted_set(
+    let Some((report, _, held)) = fs_service::start_granted_set(
         blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("fs_nameset_caretaker")
@@ -218,6 +219,7 @@ fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
             arg: 0,
             arg2: 0,
             stack_pages: 0,
+            verdict: false,
         },
     ) else {
         crate::testing::skip!("no RedoxFS disk attached");

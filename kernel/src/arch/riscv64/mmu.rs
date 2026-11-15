@@ -216,7 +216,7 @@ pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 pub(crate) const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// The PLIC input for INTx line A on `virt`'s root complex; B, C and D follow, by the standard
-/// swizzle in `pci::intx_interrupt_number`.
+/// swizzle in `pci_configuration_space::intx_interrupt_number`.
 #[doc(alias = "irq")]
 pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 32;
 
@@ -452,12 +452,12 @@ where
 
     // 6b. The JH7110's STG clock and reset generator, which ungates the TRNG.
     if let Some(crg) = memory::jh7110_clock_and_reset() {
-        direct_map_device_window(m, crg.base_physical_address, crg.size)?;
+        direct_map_device_window(m, crg.base_physical_address, crg.size_bytes)?;
     }
 
     // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, and gmac0's clocks.
     if let Some(sys) = memory::jh7110_sys_window() {
-        direct_map_device_window(m, sys.base_physical_address, sys.size)?;
+        direct_map_device_window(m, sys.base_physical_address, sys.size_bytes)?;
     }
 
     // 6c'. The SYS syscon, the PLL words the PMIC route's starter derives the I2C clock from. The
@@ -481,7 +481,7 @@ where
             e.port.registers_physical_address + e.port.registers_size_bytes,
             Flags::device(),
         )?;
-        direct_map_device_window(m, e.aon.base_physical_address, e.aon.size)?;
+        direct_map_device_window(m, e.aon.base_physical_address, e.aon.size_bytes)?;
         direct_map(
             m,
             e.syscon.base_physical_address,

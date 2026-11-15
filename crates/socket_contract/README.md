@@ -33,9 +33,9 @@ never assumed.
   word and `udp_bind_grant(lo, hi)` a UDP range into the high half, and the two compose with `|`.
   `grant_allows` and `udp_grant_allows` are the whole check, and the halves are independent
   authorities. A low bound of 0 or an inverted range grants nothing (`NO_LISTEN_GRANT`).
-- The shared frame: a 4 KiB frame with the destination address at `OFF_DST_IP`, the port at
-  `OFF_DST_PORT`, the length of a received payload at `OFF_LEN` (only `RECEIVE` writes it; a send carries its
-  length in the argument word) and up to `DATA_MAXIMUM` payload bytes at `OFF_PAYLOAD`.
+- The shared frame: a 4 KiB frame with the destination address at `DESTINATION_ADDRESS_OFFSET_BYTES`, the port at
+  `DESTINATION_PORT_OFFSET_BYTES`, the length of a received payload at `LENGTH_OFFSET_BYTES` (only `RECEIVE` writes it; a send carries its
+  length in the argument word) and up to `DATA_MAXIMUM` payload bytes at `PAYLOAD_OFFSET_BYTES`.
 - `stack_slots` names where a network stack finds the two capabilities it is spawned with.
 - `lease` encodes the report a stack sends its spawner when it has an address: the Internet Protocol version 4
   (IPv4) address (`ipv4_word`, `word_ipv4`) and the first nameserver or `NO_NAMESERVER`.
@@ -62,10 +62,12 @@ assert!(!names_a_socket(0)); // an unbadged front door
 
 ## What is proven
 
-Three Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
+Five Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
 A listen grant admits exactly its range and no UDP port, a UDP bind grant admits exactly its range
-and no listen port, and each half of a composed grant answers exactly as it does alone. Run them
-with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
+and no listen port, and each half of a composed grant answers exactly as it does alone. Two more
+prove that a peer word reads back as the address and port it was made from, for every address and
+port, and that the ephemeral clock never runs backwards and every position maps to a port in the
+range. Run them with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
 frame layout.
 
 Each patch under `falsifications/` names the harness or test it breaks, and applying it with

@@ -22,5 +22,5 @@ follows the boot clock, so a restarted stack starts past its predecessor's ports
 also costs a send length that travels in the argument word while the layout note says the frame
 (item 2). The concrete example is the std platform layer at
 `patches/std-nife/overlay/std/src/sys/net/connection/nife.rs` line 496. It calls `CALL(socket,
-OPERATION_SEND, chunk)` and never writes `OFF_LEN`. That is what every system in the table does, and
+OPERATION_SEND, chunk)` and never writes `LENGTH_OFFSET_BYTES`. That is what every system in the table does, and
 the contract's layout note says it does not.

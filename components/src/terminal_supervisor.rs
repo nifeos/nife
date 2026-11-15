@@ -25,9 +25,9 @@
 #![no_main]
 
 use capability_plan::Provisions;
-use line_editor::component::{self, supervisor as s};
-use line_editor::proto;
+use line_editor_component::{self as component, supervisor as s};
 use supervision_contract::{Child as Built, ChildEndowment, Retention};
+use terminal_contract as proto;
 use user_mode_runtime::{
     Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
     notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
@@ -84,12 +84,12 @@ fn stand_in() -> ! {
 }
 
 /// An image the spawner copied into this address space at `va`, `len` bytes long.
-fn image_at(va: u64, len: u64) -> Option<elf::Elf<'static>> {
+fn image_at(va: u64, len: u64) -> Option<static_elf::Elf<'static>> {
     // SAFETY: the builder copied the image to `va`, at the length it packed, before starting us,
     // and nothing writes it afterwards. Each image has its own window below the scratch window
     // (`supervisor::ELF_VA` and its neighbors).
     let bytes = unsafe { core::slice::from_raw_parts(va as *const u8, len as usize) };
-    elf::Elf::parse(bytes).ok()
+    static_elf::Elf::parse(bytes).ok()
 }
 
 #[inline(never)]
@@ -218,7 +218,7 @@ enum Kind {
 /// **One supervised component**: its image, the objects this supervisor made for it, and which
 /// place holds the live instance.
 struct Child<'a> {
-    image: elf::Elf<'a>,
+    image: static_elf::Elf<'a>,
     kind: Kind,
     /// The endpoint it serves, which a quiesce is sent on.
     served: u64,
@@ -266,7 +266,7 @@ struct Laid {
 }
 
 impl<'a> Child<'a> {
-    fn new(image: elf::Elf<'a>, kind: Kind, served: u64, bay_pages: u64) -> Self {
+    fn new(image: static_elf::Elf<'a>, kind: Kind, served: u64, bay_pages: u64) -> Self {
         let second_bay = match kind {
             Kind::LineEditor { .. } => bay(bay_pages),
             Kind::DisplayTerminal => 0,
@@ -709,7 +709,7 @@ impl Supervisor<'_> {
 /// from, and the notification and timer the wait ends on. Retyped from the budget, so a spawner
 /// grants nothing for them.
 struct Deadline<'a> {
-    own: elf::Elf<'a>,
+    own: static_elf::Elf<'a>,
     wake: u64,
     timer: u64,
     /// **Every stand-in is built in this one bay**, for the reason the children's bays exist: one

@@ -84,8 +84,8 @@ The P1 items are in [the appendix](1113-virtio-outside-review/before-the-tag.md)
 
 ## Decisions for the architect
 
-Only one-way doors. Each with the background first, then the recommendation, prior art and a
-concrete example.
+Three decisions, each with the background first, then the recommendation, prior art and a
+concrete example. The maintainer decides Decision 2, provisionally, below.
 
 ### Decision 1. Whether `crates/virtio` leaves this tree, and as what
 
@@ -154,6 +154,42 @@ Concrete example. `kernel/src/virtio.rs` lines 426 to 442 aliases the validator;
 and `:99-101` and `components/src/virtio_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
 `0x100`, `0x200`. After the move, each of those is `abi::virtio::RING_...` and a change to the
 proved layout is a compile error in every driver.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The layout values are already the agreement between kernel and driver and do not change;
+only the home of their names moves, inside unreleased crates. They stay relevant after the virtio
+default ruling of 2026-11-11, because every mediated grant still uses `SETUP_QUEUE` at the
+validator's layout. The five constants (`crates/direct_memory_access_validator/src/lib.rs` lines
+294 to 304) move to `abi::virtio`, beside the DMA-layout fact already there
+(`crates/abi/src/virtio.rs` line 38), with `RING_END`, which the validator derives from them and
+the kernel also aliases. The validator and the kernel alias them from there. The present names fail
+the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
+names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
+maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
+
+### Decision 3. Whether the driver refuses a device whose `Version` is not 2
+
+Background. A virtio-mmio device reports a version in the register at `0x004`: 1 for the legacy
+layout, 2 for the layout the specification now describes. The driver checks the magic value and
+nothing else, so it would drive a legacy device with the modern handshake and find out by its
+queues failing. The direct transport (the virtio-pci path of 1062 step 7) has no such register. Its
+`read` answers a made-up magic and zero for any offset it does not name. A check written against
+the mmio register would therefore refuse every direct grant, unless that transport also answers it. QEMU's
+`virt` machine offers legacy mmio devices unless told otherwise, so which version the test suites
+meet today is a measurement this review did not make.
+
+Recommendation. Check `Version == 2` beside the magic, and have the direct transport answer 2 for
+that offset, after one run of each QEMU suite on each architecture shows which version the devices
+report. Refusing a legacy device is the stricter choice and loosening it later is compatible;
+accepting one now and tightening later is not. This changes what the driver accepts, which is why
+it is brought and not made.
+
+Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 and version 2 with
+a layout each and refuses any other. Redox's `virtio-core` is PCI-only and has no such register.
+
+Concrete example. A board whose firmware offers a version 1 block device today boots to a driver
+that hangs after the handshake. With the check it stops at once, and the sentence names the
+register it read.
 
 ## Done when
 

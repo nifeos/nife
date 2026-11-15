@@ -5,7 +5,7 @@ An appendix to [the milestone](../1105-pci-outside-review.md).
 ## P2
 
 #### `virtio_capabilities` ignores `cap_len`
-Where: `crates/pci/src/lib.rs` lines 485 to 499.
+Where: `crates/pci_configuration_space/src/lib.rs` lines 485 to 499.
 Why: a notify capability whose `cap_len` is 16 has no multiplier, and the walk reads one from the
 next entry's header. The virtio specification fixes 16 and 20 as the minimum lengths. A function
 that states less is bad data: skip it, do not decode it.
@@ -14,7 +14,7 @@ the case to the fake configuration space.
 Effort: S. Door: two-way.
 
 #### `intx_interrupt_number` is the root-bus swizzle, and nothing says so
-Where: `crates/pci/src/lib.rs` lines 709 to 739; the caller at `kernel/src/pci.rs` line 702 passes `bdf.dev`
+Where: `crates/pci_configuration_space/src/lib.rs` lines 709 to 739; the caller at `kernel/src/pci.rs` line 702 passes `bdf.dev`
 whatever the bus.
 Why: since the walk follows bridges, the walk finds a function behind a root port on a device-tree
 board. It computes the function's line from its own device number alone, but the PCI-to-PCI bridge
@@ -26,7 +26,7 @@ BUGS entry for `kernel/src/pci.rs`.
 Effort: S. Door: two-way.
 
 #### `Bdf` admits a device above 31 or a function above 7, and the ECAM proof assumes it does not
-Where: `crates/pci/src/lib.rs` lines 22 to 41, `:806` (`kani::assume`).
+Where: `crates/pci_configuration_space/src/lib.rs` lines 22 to 41, `:806` (`kani::assume`).
 Why: `ecam_offset` for `dev: 32` lands on the next bus's first device, and the mutation triage
 records two equivalent mutants there because no test can pin behavior nobody wants. The fields are
 public and the kernel builds `Bdf` values by hand.
@@ -35,7 +35,7 @@ assumption, or a checked constructor that returns `None`; both let the two mutan
 Effort: S. Door: two-way.
 
 #### The crate has no `unsafe` and does not say so, and fuzzes nothing
-Where: `crates/pci/src/lib.rs` lines 15 to 18.
+Where: `crates/pci_configuration_space/src/lib.rs` lines 15 to 18.
 Why: `#![forbid(unsafe_code)]` is the one-line claim the template's `unsafe_scan` reads, and it is
 what makes the weekly fuzz opt-in allowed. The two parsers of firmware and device input
 (`mem32_window` over a byte string; `walk` and the capability walks over a byte-array configuration
@@ -45,7 +45,7 @@ space. Opt in with `public-crash-inputs: true` once the repository exists.
 Effort: S. Door: two-way.
 
 #### The falsification patches carry stale hunk headers and pre-rename names
-Where: `crates/pci/falsifications/*.patch` (`virtio_caps`, `msix_cap` in two hunk headers; every
+Where: `crates/pci_configuration_space/falsifications/*.patch` (`virtio_caps`, `msix_cap` in two hunk headers; every
 line number).
 Why: `patch` finds the hunks by context, so they apply today, and `script/crate-move` regenerates
 them for the move. A reader of the patch file meets names the crate no longer has.

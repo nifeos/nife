@@ -663,7 +663,7 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 # The fixtures that carry a manifest note (milestone 597 (a program carries its manifest in an ELF
 # note), provisional): `greeting`, and the unvouched witness whose note asks for what it will not be
 # given.
@@ -671,7 +671,7 @@ capability_manifest_note = { version = "0.1.0", path = "../crates/capability_man
 filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
 filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule

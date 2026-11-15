@@ -281,7 +281,7 @@ fn announce_login_credentials(term_ep: u64, login_password: &[u8; PASSWORD_HEX_L
 
 /// Step 6: build and start `job_undertaker` out of the progenitor's own budget.
 #[inline(never)]
-fn start_undertaker(own_ut: u64, reaper_elf: &elf::Elf<'static>, chan: SpawnChannel) {
+fn start_undertaker(own_ut: u64, reaper_elf: &static_elf::Elf<'static>, chan: SpawnChannel) {
     // 6. The undertaker, out of what is left of our own budget: `READ` on the supervision endpoint,
     // `WRITE` on the result endpoint, and `WRITE` on a copy of the spawn endpoint badged
     // `spawnproto::UNDERTAKER_BADGE` (see the module's note). Slot order is the contract with the

@@ -19,6 +19,7 @@ bitmap_font	shared	components,kernel,uefi_loader
 block_roster_contract	shared	retired
 boot_ladder	shared	components,fixtures,kernel
 boot_slot	shared	components,kernel,uefi_loader
+byte_glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 byte_sink_contract	shared	components,fixtures,kernel,std
 byte_sink_proto	shared	retired
 byte_sink_protocol	shared	retired
@@ -29,7 +30,7 @@ calendar	userspace	retired
 canary_gate	kernel	retired
 capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
-capability_plan	shared	components,fixtures,kernel
+capability_plan	userspace	components,fixtures
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
@@ -67,7 +68,6 @@ domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exer
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	retired
-elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 entropy_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
 entropy_proto	shared	retired
 entropy_protocol	shared	retired
@@ -87,7 +87,7 @@ free	userspace	components
 fs_proto	shared	retired
 generational_table	kernel	retired
 gfx_proto	shared	retired
-glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+glob	shared	retired
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
@@ -116,7 +116,8 @@ jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
 job_mix	shared	fixtures,kernel
-line_editor	shared	components,fixtures,kernel
+line_editor	userspace	components
+line_editor_component	userspace	components,fixtures
 loaded_image_check	userspace	fixtures
 login_contract	shared	components,fixtures,kernel
 login_proto	shared	retired
@@ -145,7 +146,7 @@ package_archive	userspace	components,fixtures,jig,pinned_tls_client,pinned_tls_e
 package_index	userspace	components,fixtures,jig,pinned_tls_client,pinned_tls_exerciser
 page_frames	kernel	kernel
 paging	kernel	kernel
-pci	shared	components,kernel
+pci_configuration_space	shared	components,kernel
 periodic_deadline	shared	components,fixtures,kernel
 pgrep	userspace	components
 pmap	userspace	components
@@ -170,6 +171,7 @@ socket_proto	shared	retired
 socket_protocol	shared	retired
 spin_lock	kernel	kernel
 startup_page_contract	shared	components,fixtures,kernel
+static_elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 std_runtime_contract	shared	components,fixtures,jig,kernel,std
 std_runtime_protocol	shared	retired
 steal_request	kernel	retired
@@ -186,6 +188,7 @@ system_log	userspace	components
 system_log_contract	shared	components,kernel
 system_log_protocol	shared	retired
 system_manifest	host	-
+terminal_contract	shared	components,fixtures,kernel
 test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel
 timebase_proto	shared	retired
