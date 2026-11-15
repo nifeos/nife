@@ -1,7 +1,7 @@
 //! Host tests of the checks the driver makes before it touches the DMA page or the device, and of
 //! the logic it runs on the page's bytes: the accessors' window check, the block server's range
-//! check, the directory lookup, the write test's pattern, the DHCP DISCOVER and its checksum, and
-//! the DHCP OFFER parse.
+//! check, the descriptor chain's links, the completion wait's bound, the directory lookup, the
+//! write test's pattern, the DHCP DISCOVER and its checksum, and the DHCP OFFER parse.
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by maintainer/virtio-block-server-robustness.
 
@@ -364,4 +364,54 @@ fn the_dhcp_discover_is_a_well_formed_broadcast_request() {
     assert!(dhcp[34..236].iter().all(|&b| b == 0));
     assert_eq!(&dhcp[236..240], &[0x63, 0x82, 0x53, 0x63]);
     assert_eq!(&dhcp[240..], &[53, 1, 1, 55, 3, 1, 3, 6, 255]);
+}
+
+/// Every descriptor of a chain but the last carries NEXT and links to the one after it; the last
+/// keeps only its own flags and links nowhere, and a one-descriptor chain is its own last.
+#[test]
+fn a_chain_links_each_descriptor_to_the_next_and_ends_at_the_last() {
+    assert_eq!(chained(0, 3, 0), (VIRTQ_DESC_F_NEXT, 1));
+    assert_eq!(
+        chained(1, 3, VIRTQ_DESC_F_WRITE),
+        (VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE, 2)
+    );
+    assert_eq!(chained(2, 3, VIRTQ_DESC_F_WRITE), (VIRTQ_DESC_F_WRITE, 0));
+    assert_eq!(
+        chained(0, 1, VIRTQ_DESC_F_INDIRECT),
+        (VIRTQ_DESC_F_INDIRECT, 0)
+    );
+    assert_eq!(chained(0, 2, 0), (VIRTQ_DESC_F_NEXT, 1));
+    assert_eq!(chained(1, 2, VIRTQ_DESC_F_WRITE), (VIRTQ_DESC_F_WRITE, 0));
+}
+
+/// The completion wait skips wakeups that leave the used index where it was, returns on the first
+/// that moves it, and with a bound gives up after exactly that many wakeups.
+#[test]
+fn the_completion_wait_counts_wakeups_and_stops_at_the_bound() {
+    // Moves on the third wakeup: found within a bound of three, and the wait stops there.
+    let mut wakeups = 0;
+    let moved = used_ring_moved(Some(COMPLETION_WAKEUPS), 7, || {
+        wakeups += 1;
+        if wakeups >= 3 { 8 } else { 7 }
+    });
+    assert!(moved);
+    assert_eq!(wakeups, 3);
+
+    // Never moves: gives up after exactly the bound.
+    let mut wakeups = 0;
+    let moved = used_ring_moved(Some(COMPLETION_WAKEUPS), 7, || {
+        wakeups += 1;
+        7
+    });
+    assert!(!moved);
+    assert_eq!(wakeups, COMPLETION_WAKEUPS);
+
+    // Unbounded: waits past any bound, and a wrap from u16::MAX to 0 is a move.
+    let mut wakeups = 0u32;
+    let moved = used_ring_moved(None, u16::MAX, || {
+        wakeups += 1;
+        if wakeups > 1000 { 0 } else { u16::MAX }
+    });
+    assert!(moved);
+    assert_eq!(wakeups, 1001);
 }

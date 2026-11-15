@@ -410,30 +410,26 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
 /// the device to write there. The kernel validates the descriptor on submit and refuses, so the
 /// device is never told to go and never touches the address. Reports 1 if the kernel refused
 /// (correct), 0 if the notify went through (a hole). Used by the security test.
-pub fn run_attack(direct_memory_access_phys: u64) -> ! {
+pub fn run_attack(_direct_memory_access_phys: u64) -> ! {
     initialize();
 
     // The forbidden target: the kernel's own image, which the device would happily DMA over if it
     // were ever handed this address.
     const KERNEL_ADDR: u64 = 0xffff_0000_4008_0000;
 
-    // A single descriptor pointing OUTSIDE our DMA region, marked device-writable.
-    write_desc(0, KERNEL_ADDR, 512, VIRTQ_DESC_F_WRITE, 0);
+    // A single descriptor pointing OUTSIDE our DMA region, marked device-writable. The kernel walks
+    // it on submit, sees KERNEL_ADDR is outside our region, and refuses.
+    let refused = submit(
+        &BLOCK_QUEUE,
+        &[Descriptor {
+            address: KERNEL_ADDR,
+            length_bytes: 512,
+            flags: VIRTQ_DESC_F_WRITE,
+        }],
+    )
+    .is_none();
+    send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
-    // Submit. The kernel walks the descriptor, sees KERNEL_ADDR is outside our region, and refuses.
-    let r = notify(VIRTIO, 0);
-    send(REPORT, if r < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (good), 0 = it went through (bad)
-
-    let _ = direct_memory_access_phys;
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
     // (notes/virtio.md).
     exit();
@@ -459,29 +455,19 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     direct_memory_access_write::<u16>(REQUEST_HEADER_OFFSET_BYTES + 14, 0); // inner desc next
 
     // desc[0]: flagged INDIRECT, pointing at the in-region table above. Wholly in-region, so only
-    // the INDIRECT handling stands between this and a kernel-memory DMA.
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_INDIRECT,
-        0,
-    );
+    // the INDIRECT handling stands between this and a kernel-memory DMA. The kernel refuses the
+    // indirect descriptor and never rings the device.
+    let refused = submit(
+        &BLOCK_QUEUE,
+        &[Descriptor {
+            address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
+            length_bytes: 16,
+            flags: VIRTQ_DESC_F_INDIRECT,
+        }],
+    )
+    .is_none();
+    send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
-    // The kernel refuses the indirect descriptor and never rings the device.
-    let r = notify(VIRTIO, 0);
-    send(REPORT, if r < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (good), 0 = it went through (bad)
-
-    let _ = direct_memory_access_phys;
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
     // (notes/virtio.md).
     exit();
@@ -523,93 +509,187 @@ fn find_file(directory: &[u8], name: &[u8]) -> Option<u32> {
     })
 }
 
-/// Build and publish the three-descriptor chain for one block transfer, and ring the device
-/// through the kernel. Returns the used-ring index from before the submit, which
-/// [`complete_block`] compares against. A read (`T_IN`) marks the data descriptor device-writable
+/// One queue's rings in the DMA page, by offset, and its number for `notify`.
+struct Queue {
+    number: u64,
+    descriptor_table: u64,
+    available_ring: u64,
+    used_ring: u64,
+}
+
+/// The disk's one queue.
+const BLOCK_QUEUE: Queue = Queue {
+    number: 0,
+    descriptor_table: DESCRIPTOR_TABLE_OFFSET_BYTES,
+    available_ring: AVAILABLE_RING_OFFSET_BYTES,
+    used_ring: USED_RING_OFFSET_BYTES,
+};
+
+/// One buffer of a descriptor chain. [`submit`] adds `VIRTQ_DESC_F_NEXT` and the link itself, so
+/// `flags` carries only the direction (`VIRTQ_DESC_F_WRITE`) or `VIRTQ_DESC_F_INDIRECT`.
+#[derive(Clone, Copy)]
+struct Descriptor {
+    address: u64,
+    length_bytes: u32,
+    flags: u16,
+}
+
+/// The flags and `next` field of descriptor `i` in a chain of `chain_length` laid out from head 0:
+/// every descriptor but the last carries `VIRTQ_DESC_F_NEXT` and links to `i + 1`, and the last
+/// links nowhere.
+fn chained(i: usize, chain_length: usize, flags: u16) -> (u16, u16) {
+    if i + 1 < chain_length {
+        (flags | VIRTQ_DESC_F_NEXT, i as u16 + 1)
+    } else {
+        (flags, 0)
+    }
+}
+
+/// **Submit one request**: write `chain` into `queue`'s descriptor table from head 0, publish head
+/// 0 in the available ring, and ring the device. Returns the used ring's index from before the
+/// submit, which [`complete`] waits to see move, or `None` when the transport refused the notify:
+/// on a mediated grant the kernel checks every descriptor and refuses one that leaves the region.
+///
+/// Every request reuses head 0, so one request is in flight at a time; notes/virtio.md ("One
+/// request in flight") has why and what it costs.
+fn submit(queue: &Queue, chain: &[Descriptor]) -> Option<u16> {
+    for (i, descriptor) in chain.iter().enumerate() {
+        let (flags, next) = chained(i, chain.len(), descriptor.flags);
+        write_desc_at(
+            queue.descriptor_table,
+            i as u64,
+            descriptor.address,
+            descriptor.length_bytes,
+            flags,
+            next,
+        );
+    }
+    // avail: { u16 flags; u16 idx; u16 ring[QSIZE]; }, and used: { u16 flags; u16 idx; ... }.
+    let used_before: u16 = direct_memory_access_read::<u16>(queue.used_ring + 2);
+    let idx: u16 = direct_memory_access_read::<u16>(queue.available_ring + 2);
+    direct_memory_access_write::<u16>(
+        queue.available_ring + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    ); // ring[idx] = head 0
+    virtio_ring_barrier(); // the descriptors and ring entry must be visible before we bump idx
+    direct_memory_access_write::<u16>(queue.available_ring + 2, idx.wrapping_add(1));
+    virtio_ring_barrier(); // idx must be visible before we notify
+    (notify(VIRTIO, queue.number) >= 0).then_some(used_before)
+}
+
+/// **Submit one block request**: the 16-byte header the device reads (type, reserved, sector), the
+/// data buffer at `data` (an offset in the DMA region and a length) if the request moves any, and
+/// the status byte the device writes. A read (`T_IN`) marks the data descriptor device-writable
 /// and a write (`T_OUT`) does not; the kernel checks every address on NOTIFY, whatever the flag.
-fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u16 {
-    // The request header the device reads: type, reserved, sector.
+fn submit_block_request(
+    direct_memory_access_phys: u64,
+    req_type: u32,
+    sector: u64,
+    data: Option<(u64, u32)>,
+) -> Option<u16> {
     direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, req_type);
     direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
     direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, sector);
     direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff); // the device overwrites this with 0 on success
 
-    let data_flags = if req_type == VIRTIO_BLK_T_IN {
-        VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE // read: the device fills our buffer
-    } else {
-        VIRTQ_DESC_F_NEXT // write: the device consumes our buffer
+    let header = Descriptor {
+        address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
+        length_bytes: 16,
+        flags: 0,
     };
-
-    // desc[0]: header, device reads it.          NEXT -> 1
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_NEXT,
-        1,
-    );
-    // desc[1]: data buffer, direction above.     NEXT -> 2
-    write_desc(
-        1,
-        direct_memory_access_phys + DATA_OFFSET_BYTES,
-        BLOCK as u32,
-        data_flags,
-        2,
-    );
-    // desc[2]: status byte, device WRITES it.  (end of chain)
-    write_desc(
-        2,
-        direct_memory_access_phys + STATUS_OFFSET_BYTES,
-        1,
-        VIRTQ_DESC_F_WRITE,
-        0,
-    );
-
-    // Publish the head descriptor (index 0) in the available ring.
-    // avail: { u16 flags; u16 idx; u16 ring[QSIZE]; }
-    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    ); // ring[idx] = head 0
-    virtio_ring_barrier(); // the descriptor and ring entry must be visible before we bump idx
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier(); // idx must be visible before we notify
-
-    // The kernel rings the device only if every published descriptor stays inside our DMA region.
-    if notify(VIRTIO, 0) < 0 {
-        report_code(0xE5); // the kernel refused our request (a descriptor escaped our region)
+    let status = Descriptor {
+        address: direct_memory_access_phys + STATUS_OFFSET_BYTES,
+        length_bytes: 1,
+        flags: VIRTQ_DESC_F_WRITE,
+    };
+    match data {
+        Some((offset, length_bytes)) => {
+            let data = Descriptor {
+                address: direct_memory_access_phys + offset,
+                length_bytes,
+                // read: the device fills the buffer; write: the device consumes it
+                flags: if req_type == VIRTIO_BLK_T_IN {
+                    VIRTQ_DESC_F_WRITE
+                } else {
+                    0
+                },
+            };
+            submit(&BLOCK_QUEUE, &[header, data, status])
+        }
+        None => submit(&BLOCK_QUEUE, &[header, status]),
     }
-
-    used_before
 }
 
-/// Wait for the completion of a submitted transfer and confirm the device reported success.
+/// Submit one 512-byte block transfer from the DMA data buffer for a test role. Reports `0xE5`
+/// when the kernel refuses it.
+fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u16 {
+    submit_block_request(
+        direct_memory_access_phys,
+        req_type,
+        sector,
+        Some((DATA_OFFSET_BYTES, BLOCK as u32)),
+    )
+    // The kernel refused our request: a descriptor escaped our region.
+    .unwrap_or_else(|| report_code(0xE5))
+}
+
+/// How many wakeups a one-shot test role waits for its request's completion before it reports that
+/// none came. QEMU completes a request inside `NOTIFY`, so the first wakeup is nearly always the
+/// completion; the rest absorb stale and shared-line wakeups.
+const COMPLETION_WAKEUPS: u32 = 64;
+
+/// Whether the used ring's index moved off `used_before` within `bound` wakeups, or ever when
+/// `bound` is `None`. `wake_and_read` waits for one wakeup and returns the used index after it, so
+/// the loop can be tested without a device.
 ///
 /// The completion is the used ring advancing, not the wakeup: the line is shared, and a wakeup can
-/// be spurious, coalesced, or a dead driver's pending completion. So loop until `used.idx` moves.
-/// See notes/virtio.md ("A completion is the used ring advancing") and notes/dma.md.
-fn complete_block(used_before: u16) {
-    loop {
+/// be spurious, coalesced, or a dead driver's pending completion. See notes/virtio.md ("A
+/// completion is the used ring advancing") and notes/dma.md.
+fn used_ring_moved(
+    bound: Option<u32>,
+    used_before: u16,
+    mut wake_and_read: impl FnMut() -> u16,
+) -> bool {
+    match bound {
+        Some(wakeups) => (0..wakeups).any(|_| wake_and_read() != used_before),
+        None => loop {
+            if wake_and_read() != used_before {
+                return true;
+            }
+        },
+    }
+}
+
+/// **Wait for `queue`'s used ring to move off `used_before`**, waking on the device interrupt, for
+/// at most `bound` wakeups (`None`: for as long as it takes). Returns whether it moved.
+fn complete(queue: &Queue, used_before: u16, bound: Option<u32>) -> bool {
+    used_ring_moved(bound, used_before, || {
         // The kernel masks the line and delivers the interrupt as a notification; its pending count
         // returns WAIT at once if the interrupt fired before this call.
         interrupt_wait(INTERRUPT);
-
         // Quiet the device (read its interrupt-status, acknowledge it), then re-enable the line at
         // the controller, which the kernel masked when it fired.
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT);
-
         virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
-            break; // our request is on the used ring; this wakeup was really ours
-        }
-        // The used ring has not moved, so that wakeup belonged to someone else (a stale completion
-        // from a dead driver, most likely). Wait again for our own.
+        direct_memory_access_read::<u16>(queue.used_ring + 2)
+    })
+}
+
+/// The status byte the device wrote for the last block request: 0 is `VIRTIO_BLK_S_OK`.
+fn block_status() -> u8 {
+    direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES)
+}
+
+/// Wait for a test role's block transfer to complete, and confirm the device reported success.
+/// Reports `0xEB` when no completion arrives within [`COMPLETION_WAKEUPS`], and `0xE200 | status`
+/// on a non-OK status.
+fn complete_block(used_before: u16) {
+    if !complete(&BLOCK_QUEUE, used_before, Some(COMPLETION_WAKEUPS)) {
+        report_code(0xEB);
     }
-    let st = direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES);
+    let st = block_status();
     if st != 0 {
         report_code(0xE200 | st as u64); // device reported a non-OK status
     }
@@ -635,15 +715,6 @@ fn report_code(code: u64) -> ! {
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
     // (notes/virtio.md).
     exit();
-}
-
-/// Write one 16-byte descriptor: { u64 addr; u32 len; u16 flags; u16 next; }.
-fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
-    let base = DESCRIPTOR_TABLE_OFFSET_BYTES + i * 16;
-    direct_memory_access_write::<u64>(base, addr);
-    direct_memory_access_write::<u32>(base + 8, len);
-    direct_memory_access_write::<u16>(base + 12, flags);
-    direct_memory_access_write::<u16>(base + 14, next);
 }
 
 // =================================================================================================
@@ -672,8 +743,9 @@ const NET_RECEIVE_AVAIL: u64 = 0x080;
 const NET_RECEIVE_USED: u64 = 0x100;
 const NET_TRANSMIT_DESC: u64 = 0x200;
 const NET_TRANSMIT_AVAIL: u64 = 0x280;
-// The transmit used ring lives at 0x300 (queue 1's block + USED_OFF), but the driver never reads it:
-// it does not wait on transmit completions, only on the receive side, so there is no constant for it.
+// The driver never waits on transmit completions, only on the receive side; [`submit`] reads the
+// transmit used ring's index and nothing reads its elements.
+const NET_TRANSMIT_USED: u64 = 0x300;
 /// One receive buffer: the 12-byte virtio header plus room for a full 1514-byte Ethernet frame.
 const NET_RECEIVE_BUF: u64 = 0x400;
 const NET_RECEIVE_BUF_LEN: u64 = 0x600;
@@ -740,8 +812,24 @@ fn initialize_net() {
     );
 }
 
-/// Write one descriptor into an explicit descriptor table (the disk's `write_desc` is hardwired to
-/// queue 0's; the NIC has two tables).
+/// The receive queue's rings.
+const NET_RECEIVE_QUEUE: Queue = Queue {
+    number: NET_RECEIVE_Q,
+    descriptor_table: NET_RECEIVE_DESC,
+    available_ring: NET_RECEIVE_AVAIL,
+    used_ring: NET_RECEIVE_USED,
+};
+
+/// The transmit queue's rings.
+const NET_TRANSMIT_QUEUE: Queue = Queue {
+    number: NET_TRANSMIT_Q,
+    descriptor_table: NET_TRANSMIT_DESC,
+    available_ring: NET_TRANSMIT_AVAIL,
+    used_ring: NET_TRANSMIT_USED,
+};
+
+/// Write one 16-byte descriptor, { u64 addr; u32 len; u16 flags; u16 next; }, into the descriptor
+/// table at `desc_base`.
 fn write_desc_at(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16) {
     let b = desc_base + i * 16;
     direct_memory_access_write::<u64>(b, addr);
@@ -752,54 +840,37 @@ fn write_desc_at(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: 
 
 /// Post the single receive buffer as a device-writable descriptor and ring queue 0. Re-callable: it
 /// re-uses descriptor head 0 with a fresh available-ring slot each time, so the device fills the
-/// same buffer again. `direct_memory_access_phys` is the DMA page's physical base (descriptors
-/// speak physical).
-fn post_receive(direct_memory_access_phys: u64, avail_idx: u16) {
-    write_desc_at(
-        NET_RECEIVE_DESC,
-        0,
-        direct_memory_access_phys + NET_RECEIVE_BUF,
-        NET_RECEIVE_BUF_LEN as u32,
-        VIRTQ_DESC_F_WRITE, // the device WRITES the received frame here
-        0,
-    );
-    direct_memory_access_write::<u16>(
-        NET_RECEIVE_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(NET_RECEIVE_AVAIL + 2, avail_idx.wrapping_add(1));
-    virtio_ring_barrier();
+/// same buffer again. Reports `0xE7` when the kernel refuses it. `direct_memory_access_phys` is
+/// the DMA page's physical base (descriptors speak physical).
+fn post_receive(direct_memory_access_phys: u64) {
     // The kernel validates the receive descriptor (device-writable, in our region).
-    if notify(VIRTIO, NET_RECEIVE_Q) < 0 {
-        report_code(0xE7);
-    }
+    submit(
+        &NET_RECEIVE_QUEUE,
+        &[Descriptor {
+            address: direct_memory_access_phys + NET_RECEIVE_BUF,
+            length_bytes: NET_RECEIVE_BUF_LEN as u32,
+            flags: VIRTQ_DESC_F_WRITE, // the device WRITES the received frame here
+        }],
+    )
+    .unwrap_or_else(|| report_code(0xE7));
 }
 
 /// Transmit the frame already built at `NET_TRANSMIT_BUF + NET_HDR_LEN`, of `frame_len` bytes: zero
 /// the virtio header in front of it, post one device-readable descriptor, and ring queue 1.
-fn send_frame(direct_memory_access_phys: u64, frame_len: u64, avail_idx: u16) {
+/// Reports `0xE8` when the kernel refuses it.
+fn send_frame(direct_memory_access_phys: u64, frame_len: u64) {
     for i in 0..NET_HDR_LEN {
         direct_memory_access_write::<u8>(NET_TRANSMIT_BUF + i, 0);
     }
-    write_desc_at(
-        NET_TRANSMIT_DESC,
-        0,
-        direct_memory_access_phys + NET_TRANSMIT_BUF,
-        (NET_HDR_LEN + frame_len) as u32,
-        0, // device READS the buffer (transmit)
-        0,
-    );
-    direct_memory_access_write::<u16>(
-        NET_TRANSMIT_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(NET_TRANSMIT_AVAIL + 2, avail_idx.wrapping_add(1));
-    virtio_ring_barrier();
-    if notify(VIRTIO, NET_TRANSMIT_Q) < 0 {
-        report_code(0xE8);
-    }
+    submit(
+        &NET_TRANSMIT_QUEUE,
+        &[Descriptor {
+            address: direct_memory_access_phys + NET_TRANSMIT_BUF,
+            length_bytes: (NET_HDR_LEN + frame_len) as u32,
+            flags: 0, // device READS the buffer (transmit)
+        }],
+    )
+    .unwrap_or_else(|| report_code(0xE8));
 }
 
 /// The length of the Ethernet frame [`dhcp_discover`] builds: Ethernet 14, IPv4 20, UDP 8, the
@@ -873,22 +944,13 @@ fn build_dhcp_discover() -> u64 {
 
 /// Wait for the receive queue's used ring to advance, discarding wakeups that were really the
 /// transmit completion (the device's interrupt line is shared across both queues). Returns false if
-/// no receive completion arrives within a bounded number of wakeups. Mirrors the disk's
-/// `complete_block`: the used ring, not the wakeup, is the completion.
+/// no receive completion arrives within [`COMPLETION_WAKEUPS`].
 fn wait_receive(receive_used_before: u16) -> bool {
-    for _ in 0..64 {
-        // Blocks until the device raises its line.
-        interrupt_wait(INTERRUPT);
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
-        // Re-enable the line the kernel masked when it fired.
-        interrupt_acknowledge(INTERRUPT);
-        virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(NET_RECEIVE_USED + 2) != receive_used_before {
-            return true;
-        }
-    }
-    false
+    complete(
+        &NET_RECEIVE_QUEUE,
+        receive_used_before,
+        Some(COMPLETION_WAKEUPS),
+    )
 }
 
 /// Parse the frame in the receive buffer as a DHCP OFFER for our transaction. `used_slot` is the
@@ -1002,12 +1064,10 @@ fn parse_offer_in_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
 pub fn run_net(direct_memory_access_phys: u64) -> ! {
     initialize_net();
 
-    let mut receive_avail: u16 = 0;
-    post_receive(direct_memory_access_phys, receive_avail);
-    receive_avail = receive_avail.wrapping_add(1);
+    post_receive(direct_memory_access_phys);
 
     let frame_len = build_dhcp_discover();
-    send_frame(direct_memory_access_phys, frame_len, 0);
+    send_frame(direct_memory_access_phys, frame_len);
 
     let mut receive_used: u16 = 0;
     for _ in 0..8 {
@@ -1023,8 +1083,7 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
         }
 
         // Not our OFFER (some other broadcast): re-post the buffer and wait for the next frame.
-        post_receive(direct_memory_access_phys, receive_avail);
-        receive_avail = receive_avail.wrapping_add(1);
+        post_receive(direct_memory_access_phys);
     }
     report_code(0xEA); // frames arrived, but none was our DHCP OFFER
 }
@@ -1137,26 +1196,21 @@ fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Optio
 }
 
 /// Complete a block-server request by waiting on the completion interrupt, not by polling the used
-/// ring, with the same loop as [`complete_block`]. `true` if the device completed with
-/// `VIRTIO_BLK_S_OK`. It does not panic on another status: the long-lived block server's death
-/// would block every filesystem client, so the verdict goes back to the one that asked. A WAIT per
-/// read fits the test watchdog, since whole-block requests keep the mount's read count in the low
-/// hundreds. See notes/virtio.md ("A completion is the used ring advancing").
+/// ring, with [`complete`]. `true` if the device completed with `VIRTIO_BLK_S_OK`. It does not
+/// panic on another status: the long-lived block server's death would block every filesystem
+/// client, so the verdict goes back to the one that asked. A WAIT per read fits the test watchdog,
+/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtio.md
+/// ("A completion is the used ring advancing").
+///
+/// The wait has no bound, unlike a test role's. Giving up would leave the request on the ring with
+/// its descriptors at head 0, and the next request would rewrite them while the device may still
+/// read them; a server that stops answering is the safer failure.
 fn complete_blk(used_before: u16) -> bool {
     // QEMU completes inside `NOTIFY`, so the interrupt is usually already pending and the kernel's
     // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
     // message)) returns this WAIT at once.
-    loop {
-        interrupt_wait(INTERRUPT);
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(INTERRUPT);
-        virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
-            break; // our request is on the used ring; this wakeup was really ours
-        }
-    }
-    direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES) == 0
+    complete(&BLOCK_QUEUE, used_before, None);
+    block_status() == 0
 }
 
 /// Read `count` contiguous filesystem blocks starting at `sector` in a single virtio request,
@@ -1190,102 +1244,30 @@ fn blk_flush(direct_memory_access_phys: u64) -> bool {
 
 /// A flush's **two**-descriptor chain: the 16-byte request header the device reads, and the status
 /// byte it writes. No data descriptor, because a flush moves no data (virtio 1.2 §5.2.6.1); a chain
-/// with one would be describing a transfer the device was never asked to make.
+/// with one would be describing a transfer the device was never asked to make. The sector field is
+/// unused for a flush and the specification says to set it to 0, so no stale sector from the
+/// previous request is left in the header.
 fn submit_flush(direct_memory_access_phys: u64) -> u16 {
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, VIRTIO_BLK_T_FLUSH);
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
-    // The sector field is unused for a flush and the spec says to set it to 0; written so no stale
-    // sector from the previous request is left in the header.
-    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, 0);
-    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff);
-
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_NEXT,
-        1,
-    );
-    write_desc(
-        1,
-        direct_memory_access_phys + STATUS_OFFSET_BYTES,
-        1,
-        VIRTQ_DESC_F_WRITE,
-        0,
-    );
-
-    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
     // As `submit_blk`: the kernel validates every descriptor against the region.
-    if notify(VIRTIO, 0) < 0 {
-        panic!();
-    }
-    used_before
+    submit_block_request(direct_memory_access_phys, VIRTIO_BLK_T_FLUSH, 0, None)
+        .expect("the kernel refused the block server's flush, a server bug")
 }
 
-/// Build and publish the three-descriptor chain for a `count`-block transfer and ring the device
-/// through the kernel. Mirrors [`submit_block`] but with one data descriptor spanning `count`
-/// contiguous blocks at [`BLOCK_SERVER_DATA_OFFSET_BYTES`] (milestone 138 step 4): virtio-blk asks only that its
-/// length be whole sectors. Returns the used-ring index from before the submit, which
-/// [`complete_block`] compares against.
+/// Submit a `count`-block transfer: as [`submit_block`], but with one data descriptor spanning
+/// `count` contiguous blocks at [`BLOCK_SERVER_DATA_OFFSET_BYTES`] (milestone 138 step 4):
+/// virtio-blk asks only that its length be whole sectors. Returns the used-ring index from before
+/// the submit, which [`complete_blk`] compares against.
 fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count: u64) -> u16 {
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, req_type);
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
-    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, sector);
-    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff);
-
-    let data_flags = if req_type == VIRTIO_BLK_T_IN {
-        VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE // read: the device fills the data pages
-    } else {
-        VIRTQ_DESC_F_NEXT // write: the device consumes the data pages
-    };
     let data_len = count * blk::BLOCK_SIZE as u64;
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_NEXT,
-        1,
-    );
-    write_desc(
-        1,
-        direct_memory_access_phys + BLOCK_SERVER_DATA_OFFSET_BYTES,
-        data_len as u32,
-        data_flags,
-        2,
-    );
-    write_desc(
-        2,
-        direct_memory_access_phys + STATUS_OFFSET_BYTES,
-        1,
-        VIRTQ_DESC_F_WRITE,
-        0,
-    );
-
-    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
-    // The kernel validates every descriptor against the 2-page region before ringing; a refusal
-    // here is a block-server bug, so fault rather than limp on.
-    if notify(VIRTIO, 0) < 0 {
-        panic!();
-    }
-    used_before
+    submit_block_request(
+        direct_memory_access_phys,
+        req_type,
+        sector,
+        Some((BLOCK_SERVER_DATA_OFFSET_BYTES, data_len as u32)),
+    )
+    // The kernel validates every descriptor against the region before ringing; a refusal here is a
+    // block-server bug, so fault rather than limp on.
+    .expect("the kernel refused a block-server transfer, a server bug")
 }
 
 /// The disk's capacity in 512-byte sectors, from virtio-blk's capacity register.
