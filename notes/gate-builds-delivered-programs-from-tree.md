@@ -26,8 +26,8 @@ Two facts make this worse than the BUGS entry says:
 
 - `xtask/basalt-pin` names one basalt commit, whose `pins.toml` names the nife commit its programs
   were built against. basalt's own nife pin moves daily. Milestone 1116 (nife's basalt pin follows
-  basalt's newest Release) moves nife's pin by a daily pull request, so every program the gate runs
-  is as old as the pin, and older than the kernel it runs on by every nife change since basalt's
+  basalt's newest Release) moves nife's pin by a daily pull request. Every program the gate runs
+  is as old as the pin. It is older than the kernel it runs on by every nife change since basalt's
   pin moved.
 - A break does not always fail loudly. Merge-group run 43634364501 (PR #3576, the clock page's
   two-copy layout) failed all four rows. `unmodified_ioping_times_reads_in_a_granted_directory` hit
