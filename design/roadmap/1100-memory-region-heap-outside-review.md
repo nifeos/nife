@@ -196,11 +196,22 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 - **Done.** The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on
   decision A: the names, the rename, the `Result` return, the two accessors and the local binding.
   Decision B is recorded as the rule in force.
-- **Outstanding.** The manifest keeps its path dependencies and its `talc` line as they stand, and the
-  README and license files are not written: the move lane does them (items 2 and 3, to the rule of
-  decision B). Item 4's test half, the P1 items before the tag and the P2 items are not started.
-  `script/crate-standalone` step 0 still needs the move lane to strip the blocks. `Short`,
-  `maximum_bytes` and `base_virtual_address` are provisional until a name review.
+- **Done.** The branch `lane/1100-outside-review-fixes` built the code items: the `PageSource` seam
+  with host tests (item 8), three Kani harnesses with falsification patches (item 9 of the
+  verification table), a second `initialize` refused (item 5), a zero grow refused (item 6), a
+  non-`OutOfMemory` refusal that stops growth and is readable (item 7), the documentation and the
+  pinned minimum first heap (item 9), `PAGE_BYTES` (item 10), the reading of the panic handler
+  (item 11), the never-shrinks paragraph and the concurrency paragraph (items 12 and 14), and the
+  two accessors (item 13).
+- **Outstanding.** The move lane does the items that need the new repository: the manifest keeps its
+  path dependencies and its `talc` line as they stand, and the README and license files are not
+  written (items 2, 3 and the README sentence of item 12, to the rule of decision B). Item 4's
+  coverage-exemption half belongs to the move lane, now that a host test exists. Two code items
+  wait for a host-buildable path: generating the policy into std through `cargo xtask std-src`, and
+  `second_mount` consuming the crate with a host page source in place of its drifted copy. The fuzz
+  crate's copy of the policy may later take the seam. `script/crate-standalone` step 0 still needs
+  the move lane to strip the blocks. `Short`, `maximum_bytes` and `base_virtual_address` are
+  provisional until a name review.
 
 ## Done when
 
@@ -225,9 +236,10 @@ The checks are in [the appendix](1100-memory-region-heap-outside-review/done-whe
 
 ## Index row
 
-An outside review of `memory_region_heap` before it leaves. Four items block the move: seven
-unratified names, a `talc` dependency that loses its patch at the boundary, a manifest without a
-README or licenses, and two template name checks that go red. Five items come before the first tag.
+An outside review of `memory_region_heap` before it leaves. The code items are built: a page-source seam, host tests,
+three Kani harnesses, a refused second wiring and a readable refusal. What remains blocks on the
+move: path dependencies that become pins, a README and licenses, and the policy copies in std and
+`second_mount`.
 They are a re-callable `initialize` that can make talc span unmapped memory, a zero-byte grow that
 reports success, and every kernel refusal read as "budget spent". The other two are a growth policy
 with no host test and three copies, and documentation that assumes nife. Five items are for later.
