@@ -41,7 +41,8 @@ use capability_witness_contract::process_composition::{
 use process_builder::{build_child_space, configure_child, start_child};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    address_space_layout_into, exit, receive, retype_into_kernel_object, retype_into_page_frame, send,
+    address_space_layout_into, exit, receive, retype_into_kernel_object, retype_into_page_frame,
+    send,
 };
 
 const MEMORY_REGION: u64 = 0;

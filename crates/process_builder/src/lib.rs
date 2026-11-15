@@ -307,7 +307,8 @@ fn lay_out_child(
     for k in 0..endow.stack_pages {
         let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_layout_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
+        if address_space_layout_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE)
+            != 0
         {
             capability_delete(stack_frame);
             return Err(());
