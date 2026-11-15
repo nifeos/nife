@@ -749,6 +749,45 @@ mod tests {
         }
     }
 
+    /// `every_member_fits` is only evaluated at compile time on the real lists, where it passes, so
+    /// a mutant that always passes survives unless a test hands it a list that must fail.
+    #[test]
+    fn every_member_fits_accepts_a_member_at_the_maximum_and_refuses_one_past_it() {
+        assert!(every_member_fits(&[], 3));
+        assert!(every_member_fits(&["abc", "a"], 3));
+        assert!(!every_member_fits(&["abcd"], 3));
+        assert!(!every_member_fits(&["a", "abcd"], 3));
+        assert!(!every_member_fits(&["abcd", "a"], 3));
+    }
+
+    /// `field_bytes` answers `None` for a zero length and for one past the maximum, each on its
+    /// own, and `Some` for every length between. The readers above also check membership in the
+    /// domain, which would hide a wrong answer here.
+    #[test]
+    fn field_bytes_refuses_a_zero_length_and_a_length_past_its_maximum_each_alone() {
+        let mut page = [b'a'; PAGE_BYTES];
+        let (length_offset, value_offset, maximum_bytes) = (
+            TIME_ZONE_LENGTH_OFFSET_BYTES,
+            TIME_ZONE_OFFSET_BYTES,
+            MAXIMUM_TIME_ZONE_BYTES,
+        );
+        page[length_offset] = 0;
+        assert_eq!(
+            field_bytes(&page, length_offset, value_offset, maximum_bytes),
+            None
+        );
+        page[length_offset] = (maximum_bytes + 1) as u8;
+        assert_eq!(
+            field_bytes(&page, length_offset, value_offset, maximum_bytes),
+            None
+        );
+        page[length_offset] = 1;
+        assert_eq!(
+            field_bytes(&page, length_offset, value_offset, maximum_bytes),
+            Some(&b"a"[..])
+        );
+    }
+
     /// A zero length byte after the magic reads as absent: an assembler that wrote the magic but
     /// never declared the time zone.
     #[test]

@@ -840,3 +840,42 @@ fn parse_backup_returns_the_table_write_backup_header_described() {
         }
     }
 }
+
+/// **The backup array may sit anywhere after the last usable block and must end by the backup
+/// header.** One block early is accepted; one block late runs into the header; an array that starts
+/// inside the usable range is refused although it ends in time. Each refusal is a different half of
+/// the check, so a test of one half alone would let the other be loosened.
+#[test]
+fn parse_backup_bounds_the_backup_array_on_both_sides() {
+    let blocks = 4096u64;
+    let disk = build_on(BLOCK, blocks, &[]).unwrap();
+    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let canonical = Header::decode(disk.backup()).unwrap();
+    assert_eq!(canonical.entry_array_lba, table.backup_entry_lba());
+
+    let with_array_at = |lba: u64, last_usable_lba: u64| {
+        let mut block = [0u8; BLOCK];
+        Header {
+            entry_array_lba: lba,
+            last_usable_lba,
+            ..canonical
+        }
+        .encode_into(&mut block)
+        .unwrap();
+        block
+    };
+    let parse = |lba: u64, last_usable_lba: u64| {
+        let block = with_array_at(lba, last_usable_lba);
+        GloballyUniqueIdentifierPartitionTable::parse_backup(&block, &disk.array, blocks)
+            .map(|_| ())
+    };
+
+    let (array, usable) = (canonical.entry_array_lba, canonical.last_usable_lba);
+    assert_eq!(parse(array, usable), Ok(()));
+    // One block of slack between the last usable block and the array, and the array ends a block
+    // before the backup header.
+    assert_eq!(parse(array - 1, usable - 1), Ok(()));
+    assert_eq!(parse(array + 1, usable), Err(Error::TableOverlapsUsable));
+    // Ends in time, but starts inside the usable range.
+    assert_eq!(parse(usable, usable), Err(Error::TableOverlapsUsable));
+}
