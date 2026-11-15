@@ -23,3 +23,16 @@ An appendix to [the milestone](../1085-device-tree-blob-outside-review.md).
 - A `fuzz/` directory in the new repository builds the walk target on nightly, and the README says
   how to run it.
 - The rulings on D1 to D6 sit in the record, and every public name carries the spelling ruled.
+
+## The ledger
+
+This lane did the following with the items. The ledger sits here because an open pull request
+(#3559) changes the block itself and every source file the items touch, which are
+`crates/device_tree_blob/src/lib.rs` and its hostile-input tests, so a second edit would collide.
+
+| item | state |
+|---|---|
+| P0-1, P0-2, P0-3, P1-5 | left: the move's, or edits to the source file above |
+| P1-1 to P1-4 | done in #3559 |
+| P2-1 to P2-6 and the rest of P2 | left: each edits the source file above; P2-1 (the error's shape) is also a published name |
+| decisions | left: the architect's, as the block states them |

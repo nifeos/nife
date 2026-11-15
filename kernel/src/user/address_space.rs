@@ -200,7 +200,7 @@ impl AddressSpace {
     pub fn publish_current_cpu(&self, cpu: u64) {
         if let Some((_, kernel_va)) = self.current_cpu_page {
             // SAFETY: the frame is this space's own, allocated by `attach_current_cpu_page` and
-            // freed only by `Drop`, so the direct-map view is live and 16 bytes wide here. The
+            // freed only by `Drop`, so the direct-map view is live and wide enough here (the store stays inside its first 16 bytes). The
             // caller is the one core switching this thread in, and a thread is on one core, so
             // this is the only writer for as long as the store takes.
             unsafe { current_cpu_contract::publish(kernel_va, cpu) };

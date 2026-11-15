@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: none
@@ -38,6 +38,8 @@ The comparison with nearby work is in [the appendix](1075-abi-outside-review/pri
 Effort: S is under half a day for a lane, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after the release (a published name, a wire number, a layout, a
 dependency); everything else is two-way and the maintainer decides it.
+
+The ledger of what landed and what is left is in [the appendix](1075-abi-outside-review/ledger.md).
 
 ### P0: red on arrival
 
@@ -115,8 +117,7 @@ dependency); everything else is two-way and the maintainer decides it.
    `# BUGS` sections (`src/rendezvous.rs` line 20, 46, 71; `src/memory_region.rs` line 56;
    `src/lib.rs` line 247). Two of them are real wire warts (a message word that reads as an error; a death
    read through `RECEIVE_CAPABILITY` loses its `pc`).
-   Fix: (a) delete the sentence; (b) delete the `console` module and its pinned line, under
-   decision B; (c) the README's BUGS section lists the five in one line each.
+   Fix: (a) delete the sentence; (b) keep the `console` module as reserved (ruled, decision B; done); (c) the README's BUGS section lists the five in one line each.
    Effort: S. Door: (b) is decision B; the rest two-way.
 
 8. Dates and rulings stand in doc comments as history.
@@ -181,7 +182,7 @@ The P2 items are in [the appendix](1075-abi-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's.
+One one-way door (A) is the architect's. Decision B was ruled as a two-way door. Everything else above is the maintainer's.
 
 ### A. The published name
 
@@ -210,30 +211,30 @@ Concrete example. `Cargo.toml` reads `name = "capability_kernel_abi"` under `[pa
 `abi = { package = "capability_kernel_abi", version = "0.1.0", git = "https://github.com/nifeos/abi", rev = "<commit>" }`
 and `kernel/src/syscall.rs` still reads `abi::SYSCALL_INVOKE`.
 
-### B. Removing `console::WRITE` without bumping `ABI_VERSION`
+### B. `console::WRITE` stays reserved (ruled)
 
-Background. `console::WRITE` is a method number of a kernel object that no kernel serves and no
-program invokes (item 7b). `ABI_VERSION` is the number a program declares and a kernel compares at
-spawn; a mismatch refuses the program. nife's version gate refuses any pull request that removes a
-public number of this crate without bumping `ABI_VERSION`, and a bump to 2 would refuse every
-program basalt has built against 1. The deletion changes nothing a program can observe.
+Rule in force, ruled 2026-11-14 (UTC) by the maintainer as a provisional two-way door; the architect
+may revisit it before the first publish. Nobody outside the project uses nife, so the door stays
+two-way until the crate publishes (as `moho_abi`) and has outside users.
 
-Recommendation. Delete the module and its pinned line without a bump. Record in the gate (and later in the crate's own rule, item 11) that the version follows the numbers a kernel dispatches, so a removal of a number no kernel serves is not a renumber. The stricter alternative, bumping on every
-removal, would make the first deliberate cleanup of the surface a flag day for basalt with no
-behavior behind it.
-
-Prior art. seL4 and Zircon remove nothing from a released ABI; Linux reserves a retired syscall's
-number forever (`sys_ni_syscall`). None of them has a version a program declares at spawn, which is
-what makes this crate's case different: here the version is what the kernel compares, so it should
-mean what the kernel serves.
-
-Concrete example. After the deletion, a program built against `ABI_VERSION` 1 spawns on a kernel
-built against the trimmed crate, invokes nothing numbered `console::WRITE` because nothing ever
-could, and `Error::BadMethod` is what any object would have answered before and after.
+`console::WRITE` is a method number of a kernel object that no kernel serves and no program invokes.
+The number stays in the crate as reserved: the module and its pinned line stay, `ABI_VERSION` does
+not change, and the number is never reused for another method. Removing a number that no kernel
+serves is not done, and changing the meaning of a number a kernel serves owes the bump. The gate
+(`helpers/format_values_check.py`) refuses a changed or removed public number of the crate without a
+changed `ABI_VERSION`; it is unchanged. A test (`reserved_numbers_are_never_reused`) holds the
+reservation, and the crate's docs state the rule beside `ABI_VERSION` and in the README.
 
 ## Done when
 
 The checks are in [the appendix](1075-abi-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions A and B, the two renames of item 12, the package of item 13 and items 15
+  to 17, which an architect rules. Checked against `crates/abi/src`: `futex::admitted`,
+  `Error::from_ret`, `CapabilitySlot` and `console::WRITE` all still exist.
+- **Outstanding.** Items 20 and 21 and the badge row, which need the new repository's first runs.
 
 ## BUGS
 
@@ -247,5 +248,4 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
 ## Index row
 
-An outside review of `abi` before its move found these problems. One lint is red on arrival. Another crate holds the crates.io name. Six nife references and twenty-eight internal citations need a rewrite. The docs name an error the kernel never answers. The root states the register convention too narrowly. A version gate stays behind in nife. Two function names break the rules. 130 names lack a ratified block, and no review package exists. It leaves two one-way doors for the architect, the published name and whether a
-dead method's removal bumps the version.
+An outside review of `abi` before its move found these problems. One lint is red on arrival. Another crate holds the crates.io name. Six nife references and twenty-eight internal citations need a rewrite. The docs name an error the kernel never answers. The root states the register convention too narrowly. A version gate stays behind in nife. Two function names break the rules. 130 names lack a ratified block, and no review package exists. It leaves one one-way door for the architect, the published name. A dead method's number stays reserved.

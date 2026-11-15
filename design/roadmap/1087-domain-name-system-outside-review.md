@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -49,6 +49,8 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the release (a public name, a published behavior, a
 wire layout, a dependency). Everything else is two-way and the maintainer decides it. Line numbers
 are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
+
+The ledger of what landed and what is left is in [the appendix](1087-domain-name-system-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -118,8 +120,8 @@ The P1 items are in [the appendix](1087-domain-name-system-outside-review/before
 
 ## Decisions for the architect
 
-Only one-way doors. Each is one decision, with the background first and the recommendation before
-the alternatives. The review recommends ratifying the remaining 40-odd names as they stand, and they need only the pull request of item 1.
+Each is one decision, with the background first and the recommendation before the alternatives.
+All three are decided, provisionally. The review recommends ratifying the remaining 40-odd names as they stand, and they need only the pull request of item 1.
 
 ### Decision 1. `MAXIMUM_LABEL_LEN` and `HEADER_LEN`
 
@@ -141,6 +143,10 @@ constant for it. The nife rule is stricter than both, deliberately.
 
 Concrete example: a caller sizing a label buffer writes `[0u8; MAXIMUM_LABEL_BYTES]` and knows the
 unit from the name, as it already does with `[0u8; MAXIMUM_UDP_MESSAGE_BYTES]`.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation holds: `MAXIMUM_LABEL_BYTES` and
+`HEADER_BYTES`, with no alias of the old spellings. Item 6 is the work.
 
 ### Decision 2. The specification's abbreviations in public field and constant names
 
@@ -184,8 +190,14 @@ picked for `network_time_protocol` and `non_volatile_memory_express`.
 
 Concrete example: a log line in the resolver today reads `h.qdcount != 1`. After the ruling it reads
 `header.question_count != 1`, and a reader who has never opened RFC 1035 knows what refused the
-reply. this decision leaves `domain_name_resolution_contract::reject_code` alone; Decision 3
+reply. This decision leaves `domain_name_resolution_contract::reject_code` alone; Decision 3
 touches it.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation's list holds as written, with the
+specification's spelling as `#[doc(alias)]` on each expanded name. `ttl`, `record_type::A`,
+`record_type::CNAME`, `CLASS_IN` and `cname_target` keep their spelling as terms of art, each with
+its expansion in the doc opening and an alias. Item 7 part a is the work.
 
 ### Decision 3. `MAXIMUM_ADDRESSES`, `Answer::addresses` and `Reject::NoAddress`
 
@@ -221,9 +233,22 @@ Concrete example: today `answer.addresses()` returns `&[[u8; 4]]`, and the type 
 the reader learns these are IPv4. After the ruling `answer.ipv4_addresses()` says it, and the
 template's gate reports zero findings on the crate.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation holds: `MAXIMUM_IPV4_ADDRESSES`,
+`Answer::ipv4_addresses()` and its field, `Reject::NoIpv4Address` and the test names to match,
+with no template exemption. The contract crate's assertion and `reject_code` arm follow, and the
+code number 9 does not change. Item 7 part b is the work, and milestone 1086 (`domain_name_resolution_contract`) decision 1 takes
+`MAXIMUM_IPV4_ADDRESSES` to match.
+
 ## Done when
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 and 2 and every item the ledger leaves, which wait for #3559 to merge
+  or for an architect. Checked against `crates/domain_name_system/src/lib.rs` on `main`: the label
+  and header lengths keep their names and the crate has no README.
 
 ## BUGS
 

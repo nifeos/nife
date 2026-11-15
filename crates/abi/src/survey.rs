@@ -10,13 +10,13 @@ pub const RUNNING: u64 = 2;
 /// Blocked in an IPC rendezvous that has not happened.
 pub const BLOCKED: u64 = 3;
 /// A corpse: it faulted or exited, its supervisor was told, and it persists
-/// until [`rendezvous::REAP`](super::rendezvous::REAP) collects it. **This is the state `ps` exists to
+/// until [`rendezvous::REAP`](super::rendezvous::REAP) collects it. **This is the state a process lister exists to
 /// make visible**, and
 /// it is the one Unix cannot show you without a parent that happens to have called `wait`.
 pub const DEAD: u64 = 4;
 
 /// **Which per-thread record a [`SURVEY`](super::rendezvous::SURVEY) asks for.** The selector
-/// ruled on 2026-09-21: a new per-thread fact is a new value here, never a new return
+/// is chosen by value: a new per-thread fact is a new value here, never a new return
 /// register.
 ///
 /// The value rides in x1, the argument `SURVEY` never used, and lands in x2 of the answer. x0
@@ -36,7 +36,7 @@ pub mod record {
     /// **Placement, not where it runs now**: written once, at start, so it costs the IPC path
     /// nothing, and a thread stolen onto another core or woken onto its waker's still reports where
     /// it was placed. **The id is a name, not an index**: the online set need not be `0..n` (the
-    /// VisionFive 2's is `{1, 2, 3}`), so key a per-core tally by the ids this returns and never
+    /// `VisionFive 2`'s is `{1, 2, 3}`), so key a per-core tally by the ids this returns and never
     /// iterate a range. The machine's online set is not available here.
     pub const PLACEMENT: u64 = 1;
 
@@ -47,8 +47,8 @@ pub mod record {
     /// Every thread a survey can report has started, so this should not be reachable: a
     /// supervision rendezvous is recorded at `START`, so an embryo is not in its
     /// domain yet, and a corpse keeps the placement it was started with. It is defined anyway
-    /// rather than left to a guess, which is the same posture `sched::last_cpus` takes with its
-    /// own `u8::MAX`.
+    /// rather than left to a guess, which is the same posture a scheduler takes with a
+    /// `u8::MAX` core id.
     pub const NO_CPU: u64 = u64::MAX;
 
     /// **How long the thread has been scheduled on a CPU, in milliseconds**, as Linux's `utime`/
@@ -61,7 +61,7 @@ pub mod record {
     /// - A holder of [`rights::ENUMERATE`](crate::rights::ENUMERATE) learns a continuous signal of
     ///   another thread's workload inside its domain, which was accepted.
     ///
-    /// Name: provisional. an architect names public items.
+    /// Name: provisional. An architect names public items.
     pub const CPU_TIME: u64 = 2;
 
     /// **Which process of the domain the thread belongs to**, as a label for this walk.
@@ -77,7 +77,7 @@ pub mod record {
     /// - A thread that is a process of its own (no shared table) gets a label to itself.
     /// - 0 is never answered for a thread, so a reader may use it for "no label".
     ///
-    /// Name: provisional. an architect names public items.
+    /// Name: provisional. An architect names public items.
     pub const PROCESS: u64 = 3;
 
     /// **Whether this kernel answers a record.** The one enumeration of the selector space, so

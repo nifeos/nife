@@ -2,9 +2,9 @@
 /// for a cold reset (PSCI `SYSTEM_RESET` on aarch64, SBI SRST type 1 on riscv64, and on `x86_64`
 /// the FADT reset register, then port `0xCF9`, then the 8042). When every route was refused it
 /// returns the reason, one of the four `Reset…` values of [`crate::Error`], and the firmware's raw
-/// code is on the kernel console just before (ruled on 2026-10-06 UTC).
+/// code is on the kernel console just before.
 ///
-/// **It syncs nothing**: a caller with a writable filesystem sends `filesystem_contract::fs::SYNC`
+/// **It syncs nothing**: a caller with a writable filesystem asks it to sync
 /// and waits for the reply first. A firmware that accepts the call and hangs looks the same as a
 /// slow reset from inside the machine.
 pub const REBOOT: u64 = 0;
