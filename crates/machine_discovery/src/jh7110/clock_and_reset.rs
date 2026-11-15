@@ -139,15 +139,15 @@ pub fn first_ethernet_port_transmit_parent(
 ) -> Result<TransmitParent, Error> {
     for compatible in designware_ethernet::jh7110::COMPATIBLES {
         if tree
-            .node_prop_compatible(compatible, b"compatible")?
+            .node_property_compatible(compatible, b"compatible")?
             .is_none()
         {
             continue;
         }
         return jh7110_clock_and_reset::gmac0_transmit_parent(
-            tree.node_prop_compatible(compatible, b"assigned-clocks")?,
-            tree.node_prop_compatible(compatible, b"assigned-clock-parents")?,
-            |phandle, name| tree.phandle_prop(phandle, name),
+            tree.node_property_compatible(compatible, b"assigned-clocks")?,
+            tree.node_property_compatible(compatible, b"assigned-clock-parents")?,
+            |phandle, name| tree.phandle_property(phandle, name),
         );
     }
     Ok(TransmitParent::Unassigned)
