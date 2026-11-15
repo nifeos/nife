@@ -34,7 +34,9 @@ pub struct SetupPacket {
     pub value: u16,
     /// `wIndex`.
     pub index: u16,
-    /// `wLength`: how many bytes the data stage carries, zero for none.
+    /// (`length`, `wLength` in USB 2.0 Table 9-2): how many bytes the data stage carries, zero for
+    /// none.
+    #[doc(alias = "wLength")]
     pub length: u16,
 }
 
@@ -123,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn the_class_requests_address_the_interface() {
+    fn the_class_requests_are_sent_to_the_interface() {
         assert_eq!(
             SetupPacket::set_boot_protocol(2).to_u64().to_le_bytes(),
             [0x21, 0x0b, 0, 0, 2, 0, 0, 0]

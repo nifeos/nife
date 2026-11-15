@@ -7,10 +7,9 @@ flip of every modifier bit now costs sixteen events.
 Expected to fail: the harness's `assert!(n <= 20)`.
 
 diff --git a/crates/usb/src/boot_keyboard.rs b/crates/usb/src/boot_keyboard.rs
-index d18aee536..c7cfeabd9 100644
 --- a/crates/usb/src/boot_keyboard.rs
 +++ b/crates/usb/src/boot_keyboard.rs
-@@ -96,2 +96,3 @@ pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u1
+@@ -250,2 +250,3 @@
          if flipped & (1 << bit) != 0 {
 +            event(code, false);
              event(code, after.modifiers & (1 << bit) != 0);

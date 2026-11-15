@@ -20,7 +20,10 @@ fn the_configuration_walk_is_total_and_accepts_only_an_interrupt_in() {
     if let Ok(k) = find_boot_keyboard(&bytes[..len]) {
         assert!(k.endpoint & 0x80 != 0, "an IN endpoint");
         assert!(k.endpoint & 0x0f != 0, "never endpoint zero");
-        assert!(k.max_packet >= 8, "a whole boot report fits one packet");
+        assert!(
+            k.maximum_packet_bytes >= 8,
+            "a whole boot report fits one packet"
+        );
     }
     // Not vacuous: some 25-byte configuration is accepted, so the assertions above are
     // evaluated on a real keyboard and not only on the refusals.

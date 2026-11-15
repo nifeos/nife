@@ -30,11 +30,14 @@
 //! `hid_keyboard[]` and fails when the table changes, so a changed row reruns it. The test's
 //! comment gives the revision and the result. The crate copies no Linux driver text.
 
-/// How long a boot report is.
-pub const REPORT_LEN: usize = 8;
+/// How many bytes a boot report holds.
+///
+/// Name: provisional.
+pub const REPORT_BYTES: usize = 8;
 
 /// The usage id a keyboard puts in every key slot when more keys are held than it can report
 /// (`ErrorRollOver`, Usage Tables section 10). A report carrying it describes no real state.
+#[doc(alias = "ErrorRollOver")]
 pub const ERROR_ROLL_OVER: u8 = 0x01;
 
 /// The evdev codes of the eight modifier keys, usages 0xe0 to 0xe7, in the bit order of byte 0:
@@ -67,20 +70,21 @@ impl BootReport {
         keys: [0; 6],
     };
 
-    /// Parse a report. A buffer longer than eight bytes is accepted and its tail ignored. `None` for fewer than [`REPORT_LEN`] bytes, and for a **phantom** report
+    /// Parse a report. `None` for fewer than [`REPORT_BYTES`] bytes, and for a **phantom** report
     /// (any slot holding [`ERROR_ROLL_OVER`] or the two other error usages, 2 and 3), which a
-    /// driver must ignore rather than read as every key released.
-    pub fn parse(b: &[u8]) -> Option<BootReport> {
-        if b.len() < REPORT_LEN {
+    /// driver must ignore rather than read as every key released. A buffer longer than eight bytes
+    /// is accepted and its tail ignored.
+    pub fn parse(bytes: &[u8]) -> Option<BootReport> {
+        if bytes.len() < REPORT_BYTES {
             return None;
         }
         let mut keys = [0u8; 6];
-        keys.copy_from_slice(&b[2..8]);
+        keys.copy_from_slice(&bytes[2..8]);
         if keys.iter().any(|&k| (1..=3).contains(&k)) {
             return None;
         }
         Some(BootReport {
-            modifiers: b[0],
+            modifiers: bytes[0],
             keys,
         })
     }
