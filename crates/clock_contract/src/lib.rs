@@ -463,9 +463,9 @@ impl ClockPage {
     fn release(&self) {
         // Release: pairs with the next writer's acquire in `try_claim`, carrying this publish's
         // count and copy to it. Without it the next writer may read a count older than this
-        // publish's and fill the copy readers are using. Made relaxed, it fails the loom model
-        // `two_writers_serialise_rather_than_corrupt_the_page`: the second writer reads the count
-        // as it was before the first publish, and both are handed the same generation.
+        // publish's and fill the copy readers are using. Made relaxed, it fails the loom model of
+        // two writers: the second reads the count as it was before the first publish, and both
+        // are handed the same generation.
         self.word(CLAIM_WORD_INDEX)
             .store(CLAIM_FREE, Ordering::Release);
     }
