@@ -521,7 +521,7 @@ pub mod ephemeral {
             let last: u64 = kani::any();
             let gap: u64 = kani::any();
             kani::assume(last < 1 << 50);
-            kani::assume(gap >= 4 && gap < 1 << 50);
+            kani::assume((4..1 << 50).contains(&gap));
             // A stack that opened at `last - gap` and at `last`, 4 ms or more apart, took the
             // clock's position both times: the step that keeps it at or below `clock(last)`.
             kani::assume(last >= gap);

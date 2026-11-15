@@ -1,3 +1,10 @@
+Falsifies `socket_contract::ephemeral::verification::an_allocation_never_moves_the_cursor_back_or_returns_a_held_port`.
+
+The defect: the cursor takes the clock's position outright instead of the larger of the two,
+so a clock behind the cursor moves it backwards and a port handed out before can come again.
+
+Expected to fail: `assert!(ports.next >= start)`.
+
 diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
 index d19a2bbbc..bad214e4d 100644
 --- a/crates/socket_contract/src/lib.rs
