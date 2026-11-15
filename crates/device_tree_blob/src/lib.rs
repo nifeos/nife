@@ -1418,9 +1418,11 @@ mod verification {
     }
 
     /// **One step of the token walk is total, moves forward, and keeps the depth in bounds.** Over
-    /// any 56-byte blob `from_bytes` accepts, three steps each return a token, the end or an error
-    /// without panicking; each token moves the cursor forward, so no walk can stall, and the depth
-    /// never passes `MAXIMUM_DEPTH`.
+    /// any 56-byte blob `from_bytes` accepts whose structure and strings blocks start after the
+    /// header, three steps each return a token, the end or an error without panicking; each token
+    /// moves the cursor forward, so no walk can stall, and the depth never passes `MAXIMUM_DEPTH`.
+    /// Starting both blocks after the header bounds every name scan at 16 bytes, which is what
+    /// keeps the unwinding small; the bytes of the blocks themselves are unconstrained.
     /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.a_token_step_is_total_and_moves_forward.patch`
     #[kani::proof]
     #[kani::unwind(17)]
@@ -1429,6 +1431,7 @@ mod verification {
         let Ok(tree) = DeviceTreeBlob::from_bytes(&bytes) else {
             return;
         };
+        kani::assume(tree.structure_offset == HEADER_BYTES && tree.strings_offset >= HEADER_BYTES);
         let mut tokens = tree.tokens();
         for _ in 0..3 {
             let before = tokens.at;
