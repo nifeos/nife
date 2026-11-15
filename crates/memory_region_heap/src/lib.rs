@@ -33,10 +33,10 @@
 //! has no call that returns one page, so a heap that peaked holds its peak until the region's owner
 //! destroys the region.
 //!
-//! **Which `talc`.** The manifest asks crates.io for `talc` 5.1.1. Inside nife's workspace the
-//! root `[patch.crates-io]` builds it from `vendor/talc`, which carries upstream pull request 57
-//! (two fit checks that compared addresses where they meant sizes); outside nife the package is
-//! unpatched and lacks that fix. The wrapped-address case it repairs needs a free gap within one
+//! **Which `talc`.** The manifest asks crates.io for `talc` 5.1.1. A consuming
+//! workspace's `[patch.crates-io]` may build it from a vendored copy that carries upstream pull
+//! request 57 (two fit checks that compared addresses where they meant sizes); without such a patch
+//! the package lacks that fix. The wrapped-address case it repairs needs a free gap within one
 //! chunk of the top of the address space, which a 64-bit user process never maps.
 //!
 //! The page source is a seam: [`MemoryRegionHeap`] takes any [`PageSource`], with the syscall
@@ -175,7 +175,7 @@ pub enum WiringRefusal {
     /// The base is not a multiple of the page size, so the kernel would refuse every page.
     MisalignedBase,
     /// The cap, rounded down to a page, is zero: the heap could never map a page.
-    CapUnderOnePage,
+    MaximumUnderOnePage,
     /// The base plus the cap runs past the end of the address space.
     RangeOverflows,
 }
@@ -308,7 +308,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
         }
         let maximum = maximum_bytes & !(PAGE_BYTES - 1);
         if maximum == 0 {
-            return Err(WiringRefusal::CapUnderOnePage);
+            return Err(WiringRefusal::MaximumUnderOnePage);
         }
         if base.checked_add(maximum).is_none() {
             return Err(WiringRefusal::RangeOverflows);
@@ -592,13 +592,13 @@ mod verification {
     ///
     /// The two `assume`s about `committed` and `maximum` are the type's invariant, held by
     /// `wire` and by `grow`'s own addition; the host test
-    /// `committed_stays_inside_the_cap_whatever_the_source_refuses` drives sequences of grows
+    /// `committed_stays_inside_the_maximum_whatever_the_source_refuses` drives sequences of grows
     /// against refusing sources and asserts them after each step. The bound on `got` is the loop
     /// in `grow`, which maps at most `want_pages`; `a_grow_maps_no_more_pages_than_it_planned`
     /// counts the calls.
-    /// Falsification: replayable `crates/memory_region_heap/falsifications/verification.a_grow_never_commits_past_the_cap.patch`
+    /// Falsification: replayable `crates/memory_region_heap/falsifications/verification.a_grow_never_commits_past_the_maximum.patch`
     #[kani::proof]
-    fn a_grow_never_commits_past_the_cap() {
+    fn a_grow_never_commits_past_the_maximum() {
         let committed: u64 = kani::any();
         let maximum: u64 = kani::any();
         let need: u64 = kani::any();
@@ -625,9 +625,9 @@ mod verification {
     /// **A grow at the cap is a refusal, whatever the request.** With the cap reached, the plan
     /// either refuses or plans no page, and a run of no page never succeeds, so `alloc` cannot
     /// retry forever.
-    /// Falsification: replayable `crates/memory_region_heap/falsifications/verification.a_grow_at_the_cap_is_a_refusal.patch`
+    /// Falsification: replayable `crates/memory_region_heap/falsifications/verification.a_grow_at_the_maximum_is_a_refusal.patch`
     #[kani::proof]
-    fn a_grow_at_the_cap_is_a_refusal() {
+    fn a_grow_at_the_maximum_is_a_refusal() {
         let maximum: u64 = kani::any();
         let need: u64 = kani::any();
         let got: u64 = kani::any();
@@ -743,11 +743,11 @@ mod tests {
         }
     }
 
-    /// A heap over `arena`, capped at `cap_pages`, whose region pays for `budget_pages` pages and
+    /// A heap over `arena`, capped at `maximum_pages`, whose region pays for `budget_pages` pages and
     /// then refuses with `refusal_code`.
     fn heap_over(
         arena: &Arena,
-        cap_pages: u64,
+        maximum_pages: u64,
         budget_pages: u64,
         refusal_code: i64,
     ) -> (MemoryRegionHeap<FakePages>, Rc<RefCell<Region>>) {
@@ -758,14 +758,14 @@ mod tests {
             mapped: 0,
         }));
         let heap = MemoryRegionHeap::with_source(FakePages(region.clone()));
-        heap.initialize_source(arena.base_virtual_address(), cap_pages * PAGE_BYTES)
+        heap.initialize_source(arena.base_virtual_address(), maximum_pages * PAGE_BYTES)
             .unwrap();
         (heap, region)
     }
 
     /// A heap with a region that never runs out inside the cap.
-    fn heap_with_plenty(arena: &Arena, cap_pages: u64) -> MemoryRegionHeap<FakePages> {
-        heap_over(arena, cap_pages, u64::MAX, OUT_OF_MEMORY).0
+    fn heap_with_plenty(arena: &Arena, maximum_pages: u64) -> MemoryRegionHeap<FakePages> {
+        heap_over(arena, maximum_pages, u64::MAX, OUT_OF_MEMORY).0
     }
 
     fn layout(size: usize, align: usize) -> Layout {
@@ -832,12 +832,12 @@ mod tests {
         );
         assert_eq!(
             refused(DEFAULT_BASE_VIRTUAL_ADDRESS, PAGE_BYTES - 1),
-            Err(WiringRefusal::CapUnderOnePage),
+            Err(WiringRefusal::MaximumUnderOnePage),
             "a cap of 4,095 bytes rounds to zero"
         );
         assert_eq!(
             refused(DEFAULT_BASE_VIRTUAL_ADDRESS, 0),
-            Err(WiringRefusal::CapUnderOnePage)
+            Err(WiringRefusal::MaximumUnderOnePage)
         );
         assert_eq!(
             refused(u64::MAX - (PAGE_BYTES - 1), 2 * PAGE_BYTES),
@@ -866,7 +866,7 @@ mod tests {
     /// An allocation at a reached cap returns null instead of retrying: the loop in `alloc`
     /// ends, with the cap and not the source as the reason.
     #[test]
-    fn an_allocation_past_the_cap_is_null_not_a_hang() {
+    fn an_allocation_past_the_maximum_is_null_not_a_hang() {
         let arena = Arena::new(16);
         let (heap, region) = heap_over(&arena, 16, u64::MAX, OUT_OF_MEMORY);
         let mut held = Vec::new();
@@ -922,18 +922,18 @@ mod tests {
     /// A cap that is a power of two still holds the largest allocation that fits beside talc's
     /// bookkeeping, and the next chunk size up is refused: the grow is exact, not generous.
     #[test]
-    fn a_power_of_two_cap_holds_the_largest_allocation_that_fits() {
-        let cap = 16 * PAGE_BYTES as usize;
+    fn a_power_of_two_maximum_holds_the_largest_allocation_that_fits() {
+        let maximum = 16 * PAGE_BYTES as usize;
         let first = talc::min_first_heap_size::<DefaultBinning>();
         let unit = talc::base::CHUNK_UNIT;
-        let largest = (cap - first) / unit * unit - core::mem::size_of::<usize>();
+        let largest = (maximum - first) / unit * unit - core::mem::size_of::<usize>();
 
         let arena = Arena::new(16);
         let heap = heap_with_plenty(&arena, 16);
         // SAFETY: a nonzero size.
         let p = unsafe { heap.alloc(layout(largest, 8)) };
-        assert!(!p.is_null(), "{largest} bytes fit in {cap}");
-        assert_eq!(heap.committed_bytes(), cap as u64);
+        assert!(!p.is_null(), "{largest} bytes fit in {maximum}");
+        assert_eq!(heap.committed_bytes(), maximum as u64);
 
         let arena = Arena::new(16);
         let heap = heap_with_plenty(&arena, 16);
@@ -1041,7 +1041,7 @@ mod tests {
     /// `commit_all` maps the whole cap; with a short budget it reports the bytes left unmapped and
     /// leaves what mapped usable.
     #[test]
-    fn commit_all_maps_the_cap_or_reports_the_shortfall() {
+    fn commit_all_maps_the_maximum_or_reports_the_shortfall() {
         let arena = Arena::new(16);
         let heap = heap_with_plenty(&arena, 16);
         assert_eq!(heap.commit_all(), Ok(()));
@@ -1115,9 +1115,9 @@ mod tests {
 
     /// For any sequence of grows against a source that refuses after some page, the committed
     /// range stays whole pages inside the cap, and a grow asks its source for no more pages than
-    /// it planned. These are the facts `a_grow_never_commits_past_the_cap` takes as given.
+    /// it planned. These are the facts `a_grow_never_commits_past_the_maximum` takes as given.
     #[test]
-    fn committed_stays_inside_the_cap_whatever_the_source_refuses() {
+    fn committed_stays_inside_the_maximum_whatever_the_source_refuses() {
         let mut seed: u64 = 0x9E37_79B9_7F4A_7C15;
         let mut next = || {
             seed ^= seed << 13;
@@ -1126,17 +1126,17 @@ mod tests {
             seed
         };
         for round in 0..200 {
-            let cap_pages = 1 + next() % 40;
+            let maximum_pages = 1 + next() % 40;
             let budget = next() % 60;
             let code = if round % 2 == 0 {
                 OUT_OF_MEMORY
             } else {
                 BAD_POINTER
             };
-            let arena = Arena::new(cap_pages);
-            let (heap, region) = heap_over(&arena, cap_pages, budget, code);
+            let arena = Arena::new(maximum_pages);
+            let (heap, region) = heap_over(&arena, maximum_pages, budget, code);
             for _ in 0..12 {
-                let need = next() % (cap_pages * PAGE_BYTES + 3 * PAGE_BYTES);
+                let need = next() % (maximum_pages * PAGE_BYTES + 3 * PAGE_BYTES);
                 let mut g = heap.lock();
                 let inner = g.inner();
                 let planned = growth_pages(inner.committed, inner.maximum, need)

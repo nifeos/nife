@@ -1,4 +1,4 @@
-Falsifies `memory_region_heap::verification::a_grow_never_commits_past_the_cap`.
+Falsifies `memory_region_heap::verification::a_grow_never_commits_past_the_maximum`.
 
 The defect: the plan caps the growth at the whole cap instead of at the room left under it, so a
 heap that already holds pages is allowed to map as many again as the cap holds. The doubling term

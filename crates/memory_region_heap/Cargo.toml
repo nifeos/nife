@@ -19,8 +19,8 @@ workspace = true
 abi = { version = "0.1.0", path = "../abi" }
 # The heap's default base is the address-space map's heap band.
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
-# The heap algorithm, with no features: `counters` and the rest stay off. Every nife workspace's
-# `[patch.crates-io]` builds it from vendor/talc, which carries upstream's fix SFBdragon/talc#57
-# until a release does (vendor/README.md). Outside nife the crate builds crates.io's 5.1.1 unpatched.
+# The heap algorithm, with no features: `counters` and the rest stay off. A consuming workspace's
+# `[patch.crates-io]` may build it from a vendored copy that carries upstream's fix SFBdragon/talc#57
+# until a release does. Without such a patch the crate builds crates.io's 5.1.1 unpatched.
 talc = { version = "5.1.1", default-features = false }
 user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }

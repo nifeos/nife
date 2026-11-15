@@ -22,7 +22,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    Door: two-way until the tag (a signature change on a public method is one-way after it). Effort:
    XS.
 
-6. `grow` reports success for a request of zero bytes after mapping nothing, so `alloc` can spin. DONE (the success test is the pure `run_succeeded`, `got > 0 && got >= need_pages`; the Kani harness `a_grow_at_the_cap_is_a_refusal` and the host test `a_grow_of_nothing_at_the_maximum_is_a_refusal` cover it, and an allocation at the cap returns null).
+6. `grow` reports success for a request of zero bytes after mapping nothing, so `alloc` can spin. DONE (the success test is the pure `run_succeeded`, `got > 0 && got >= need_pages`; the Kani harness `a_grow_at_the_maximum_is_a_refusal` and the host test `a_grow_of_nothing_at_the_maximum_is_a_refusal` cover it, and an allocation at the cap returns null).
    Finding: when `shortfall` returns 0 and the heap has hit the cap, `grow` computes `need_pages =
    0`, `want_pages = 0`, maps nothing and returns `got >= need_pages`, which is `0 >= 0`. `alloc`'s
    loop then calls `try_allocate` again with the same heap and the same answer, forever. Today the

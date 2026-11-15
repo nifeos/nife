@@ -1,4 +1,4 @@
-Falsifies `memory_region_heap::verification::a_grow_at_the_cap_is_a_refusal`.
+Falsifies `memory_region_heap::verification::a_grow_at_the_maximum_is_a_refusal`.
 
 The defect: a run is a success when it maps at least what the request needed, with no requirement
 that it mapped anything. At the cap a request of no bytes needs no page, the run maps none, and

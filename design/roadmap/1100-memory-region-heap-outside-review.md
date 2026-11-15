@@ -196,21 +196,22 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 - **Done.** The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on
   decision A: the names, the rename, the `Result` return, the two accessors and the local binding.
   Decision B is recorded as the rule in force.
-- **Done.** The branch `lane/1100-outside-review-fixes` built the code items: the `PageSource` seam
-  with host tests (item 8), three Kani harnesses with falsification patches (item 9 of the
-  verification table), a second `initialize` refused (item 5), a zero grow refused (item 6), a
-  non-`OutOfMemory` refusal that stops growth and is readable (item 7), the documentation and the
-  pinned minimum first heap (item 9), `PAGE_BYTES` (item 10), the reading of the panic handler
-  (item 11), the never-shrinks paragraph and the concurrency paragraph (items 12 and 14), and the
-  two accessors (item 13).
-- **Outstanding.** The move lane does the items that need the new repository: the manifest keeps its
-  path dependencies and its `talc` line as they stand, and the README and license files are not
+- **Done.** The branch `lane/1100-outside-review-fixes` built the code items.
+  - A `PageSource` seam, 16 host tests and three Kani harnesses with falsification patches (item 8).
+  - A second `initialize` refused (item 5) and a zero grow refused (item 6).
+  - A refusal other than `OutOfMemory` stops growth and `last_refusal` reports it (item 7).
+  - Crate docs that gloss "untyped", state the minimum first heap (pinned at 1,575 bytes) and name
+    the spinlock (items 9 and 14).
+  - `PAGE_BYTES` (item 10), the reading of the panic handler (item 11), the never-shrinks paragraph
+    (item 12) and the two accessors (item 13).
+- **Outstanding.** The move lane does the items that need the new repository. The manifest keeps its
+  path dependencies and its `talc` line as they stand. The README and license files are not
   written (items 2, 3 and the README sentence of item 12, to the rule of decision B). Item 4's
   coverage-exemption half belongs to the move lane, now that a host test exists. Two code items
   wait for a host-buildable path: generating the policy into std through `cargo xtask std-src`, and
   `second_mount` consuming the crate with a host page source in place of its drifted copy. The fuzz
   crate's copy of the policy may later take the seam. `script/crate-standalone` step 0 still needs
-  the move lane to strip the blocks. `Short`, `maximum_bytes` and `base_virtual_address` are
+  the move lane to strip the blocks. `Short`, `maximum_bytes` and `base_virtual_address` stay
   provisional until a name review.
 
 ## Done when
