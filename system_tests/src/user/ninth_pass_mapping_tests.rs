@@ -1,7 +1,7 @@
 //! **The map gate admits only the aligned low half, and no mapping path yields a writable
 //! executable page** (a ninth outsider pass at the confinement claim, claims 10 and 11).
 //!
-//! `crates/paging` proves both claims per page-table format
+//! `crates/page_tables` proves both claims per page-table format
 //! (`the_user_va_gate_admits_only_the_aligned_low_half`,
 //! `no_encoded_leaf_is_both_writable_and_executable`). These attack them one layer up, through the
 //! live dispatcher, from a confined caller holding an ordinary memory budget. Nothing blocks or
@@ -50,15 +50,15 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
     // demonstrably the gate and not some unrelated error, and so the test is not vacuous: the gate
     // admits the valid address.
     assert!(
-        !paging::is_user_page_va::<Format>(KERNEL_HALF_PAGE),
+        !page_tables::is_user_page_va::<Format>(KERNEL_HALF_PAGE),
         "the VA gate admitted a kernel-half address",
     );
     assert!(
-        !paging::is_user_page_va::<Format>(UNALIGNED_LOW),
+        !page_tables::is_user_page_va::<Format>(UNALIGNED_LOW),
         "the VA gate admitted an unaligned address",
     );
     assert!(
-        paging::is_user_page_va::<Format>(VALID_LOW_PAGE),
+        page_tables::is_user_page_va::<Format>(VALID_LOW_PAGE),
         "the VA gate rejected a valid low-half aligned address, so a refusal below proves nothing",
     );
 
@@ -88,7 +88,7 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
 /// **No mapping flag is both writable and user-executable** (claim 11, W^X).
 ///
 /// The four flag sets a mapping path can install, asserted where a leaf is encoded from: the
-/// kernel-visible twin of `paging`'s per-format `no_encoded_leaf_is_both_writable_and_executable`,
+/// kernel-visible twin of `page_tables`'s per-format `no_encoded_leaf_is_both_writable_and_executable`,
 /// covering every `Flags` that `MemoryRegion::MAP`, `PageFrame::MAP` and `AddressSpace::MAP_INTO`
 /// reach. `MAP` installs `user_data` (W, not X); `MAP_INTO`'s `MAP_CODE` installs `user_code` (X,
 /// not W, gated on READ, not WRITE).
@@ -98,10 +98,10 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
 #[test_case]
 fn no_mapping_flag_is_both_writable_and_user_executable() {
     for (flags, name) in [
-        (paging::Flags::user_data(), "user_data"),
-        (paging::Flags::user_rodata(), "user_rodata"),
-        (paging::Flags::user_code(), "user_code"),
-        (paging::Flags::user_device(), "user_device"),
+        (page_tables::Flags::user_data(), "user_data"),
+        (page_tables::Flags::user_rodata(), "user_rodata"),
+        (page_tables::Flags::user_code(), "user_code"),
+        (page_tables::Flags::user_device(), "user_device"),
     ] {
         assert!(
             !(flags.is_writable() && flags.is_user_executable()),

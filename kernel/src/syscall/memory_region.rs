@@ -71,7 +71,7 @@ pub(super) fn memory_region_invoke(
 pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
     // Before the retype, or each refused address spends a page of the caller's region. An
     // already-mapped `va` still costs one page.
-    if !paging::is_user_page_va::<crate::arch::mmu::Format>(va) {
+    if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va) {
         return Err(Error::BadPointer);
     }
     #[cfg(feature = "system_tests")]
@@ -87,7 +87,7 @@ pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
     // Recorded before the leaf, as every mapping is: no record, no mapping (§13 (capability
     // revocation and untyped reclamation)). No capability names the page, and it is fresh, so the
     // record's writable-and-executable check finds nothing to refuse.
-    let flags = paging::Flags::user_data();
+    let flags = page_tables::Flags::user_data();
     let recorded = hold
         .record_mapping(
             phys,
@@ -103,7 +103,7 @@ pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
         Err(e) => {
             hold.forget_recorded(root, recorded);
             Err(match e {
-                paging::MapError::OutOfPageFrames => Error::OutOfMemory,
+                page_tables::MapError::OutOfPageFrames => Error::OutOfMemory,
                 _ => Error::BadPointer, // misaligned, already mapped, or wrong half
             })
         }

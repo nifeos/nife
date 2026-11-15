@@ -133,13 +133,13 @@ fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
 
         // And it says yes to the process's own text, or the check is a rubber stamp.
         assert!(
-            mmu::user_can_read(address_space_map::IMAGE_BASE),
+            mmu::user_can_read(address_space_layout::IMAGE_BASE),
             "U-mode cannot read its own .text, so the check refuses everything and proves nothing",
         );
 
         // Not an unmapped address in its own half: the stack band's guard page, which the
         // address-space map promises no loader ever maps.
-        assert!(!mmu::user_can_read(address_space_map::STACK.start));
+        assert!(!mmu::user_can_read(address_space_layout::STACK.start));
     });
     drop(space);
 }

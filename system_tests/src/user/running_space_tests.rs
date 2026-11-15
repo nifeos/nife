@@ -31,10 +31,10 @@ use crate::syscall::invoke;
 
 /// Where a hand-built program's code and stack go: the map's image base and top stack page, as
 /// `supervision_tests` gives for its own.
-const CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// The page the reader spins on, aligned and clear of everything else a test maps.
-const VA: u64 = address_space_map::pair_page(0x0060_0000);
+const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// **A thread that reads a page in a loop**, and counts in it so the kernel can see it running:
 /// load the word at `VA` (its first argument), add one, store it back, branch to the load. It never

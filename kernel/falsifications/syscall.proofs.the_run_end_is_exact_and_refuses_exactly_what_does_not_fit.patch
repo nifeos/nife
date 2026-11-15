@@ -28,8 +28,8 @@ diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_sp
  ///
  /// Name: ratified 2026-11-11 (UTC). Refused `run_end_va` (`va` abbreviates "virtual address").
  pub(super) fn run_end_virtual_address(va: u64, count: u64) -> Option<u64> {
--    va.checked_add(count.checked_sub(1)?.checked_mul(paging::PAGE_SIZE)?)
-+    va.checked_add(count.wrapping_sub(1).wrapping_mul(paging::PAGE_SIZE))
+-    va.checked_add(count.checked_sub(1)?.checked_mul(page_tables::PAGE_SIZE)?)
++    va.checked_add(count.wrapping_sub(1).wrapping_mul(page_tables::PAGE_SIZE))
  }
  
  /// The error a mapping method answers for a page it could not map: `NotPermitted` when the space

@@ -52,8 +52,8 @@ The request's other two counts did not survive measurement:
   milestone", from milestone 94 (the untracked-work sweep). It finds no marker in Rust. The word
   appears on 107 tracked lines at the base, 97 of them prose in `design/`, `notes/` and `script/`.
   The 7 in Rust are prose too. At the census, four of them pointed at a TODO that no longer
-  existed: `kernel/src/sched.rs`, `kernel/src/thread.rs` and `crates/paging/tests/mapping.rs` cited
-  "the TODO on `paging::unmap`", and `crates/elf/src/lib.rs` cited "the TODO in the kernel's
+  existed: `kernel/src/sched.rs`, `kernel/src/thread.rs` and `crates/page_tables/tests/mapping.rs` cited
+  "the TODO on `page_tables::unmap`", and `crates/elf/src/lib.rs` cited "the TODO in the kernel's
   loader". 1c7849691 fixed all four (done criterion 5).
 - `#[ignore]`. There are 3 attributes, not 6, and all 3 carry a reason.
 
@@ -83,8 +83,8 @@ written.
 4. `allow_attributes_without_reason` and `allow_attributes` are in `[workspace.lints.clippy]`,
    and the ratchet's rows for them are gone.
 5. The four comments that cite a missing TODO are corrected to say where the work went, or
-   deleted. **Done 2026-10-09 (UTC).** The `paging::unmap` TODO was resolved as a design in
-   d06791f73 (2026-07-22), so the three that cited it now cite `paging::Mapper::unmap` and
+   deleted. **Done 2026-10-09 (UTC).** The `page_tables::unmap` TODO was resolved as a design in
+   d06791f73 (2026-07-22), so the three that cited it now cite `page_tables::Mapper::unmap` and
    notes/teardown.md. The loader TODO `crates/elf` cited was never written: the reference dangled
    from 0c7793dd7, in milestone 7c (user mode: EL0, capabilities, the ELF loader, and IPC). It now
    cites the linker script that keeps segments apart.

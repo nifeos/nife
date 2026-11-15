@@ -207,7 +207,7 @@ fn the_failure_names_both_ranges() {
         what: "local apic",
         lo: 0xfee0_0000,
         hi: 0xfee0_1000,
-        err: paging::MapError::AlreadyMapped,
+        err: page_tables::MapError::AlreadyMapped,
         conflict: Some((
             0xfee0_0000,
             "firmware reservation",

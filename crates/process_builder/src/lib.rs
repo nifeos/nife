@@ -23,7 +23,7 @@ use supervision_contract::{
     Retention,
 };
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, destroy_memory_region, invoke,
+    address_space_layout_into, capability_delete, destroy_memory_region, invoke,
     retype_into_kernel_object, retype_into_page_frame, send_capability, split_memory_region,
     thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start,
@@ -48,9 +48,9 @@ pub const PAGE: u64 = 4096;
 /// checks its size against its own budgets at compile time. See notes/progenitor-and-loading.md.
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
-pub const SCRATCH_WINDOW: address_space_map::Band = address_space_map::Band {
-    start: address_space_map::runtime_window(0x1000_0000),
-    end: address_space_map::runtime_window(0x1400_0000),
+pub const SCRATCH_WINDOW: address_space_layout::Band = address_space_layout::Band {
+    start: address_space_layout::runtime_window(0x1000_0000),
+    end: address_space_layout::runtime_window(0x1400_0000),
 };
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
@@ -244,8 +244,8 @@ pub fn build_child_space(
         lo = lo.min(start);
         hi = hi.max(end);
     }
-    if address_space_map::check_image(lo, hi).is_err()
-        || endow.stack_pages > address_space_map::MAXIMUM_STACK_PAGES
+    if address_space_layout::check_image(lo, hi).is_err()
+        || endow.stack_pages > address_space_layout::MAXIMUM_STACK_PAGES
     {
         return Err(());
     }
@@ -307,7 +307,8 @@ fn lay_out_child(
     for k in 0..endow.stack_pages {
         let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
+        if address_space_layout_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE)
+            != 0
         {
             capability_delete(stack_frame);
             return Err(());
@@ -364,7 +365,7 @@ fn lay_out_child(
     }
 
     for &(va, our_slot, mode) in endow.maps {
-        if address_space_map_into(aspace, va, our_slot, mode) != 0 {
+        if address_space_layout_into(aspace, va, our_slot, mode) != 0 {
             return Err(());
         }
     }
@@ -494,7 +495,7 @@ fn fill_and_map(
     let dst = unsafe { core::slice::from_raw_parts_mut(scratch as *mut u8, PAGE as usize) };
     dst.fill(0);
     let filled = fill(dst);
-    let mapped = filled.is_ok() && address_space_map_into(aspace, va, frame, mode) == 0;
+    let mapped = filled.is_ok() && address_space_layout_into(aspace, va, frame, mode) == 0;
     capability_delete(frame);
     // The page is written and in the child (or the build failed): either way this builder is done
     // with its own window onto it. Given up here, one page at a time, rather than after the child

@@ -5,7 +5,7 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 
 /// Where the service maps its DMA page. Must match components/src/entropy.rs.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// One page, and no more: the rings take 0x16e of it and the buffer 0x100, and a device gets the
 /// grant it needs and no more.
@@ -255,7 +255,7 @@ fn start_instruction(image: &'static [u8]) -> Option<Wiring> {
 
 /// Where the service maps the TRNG's register page. Must match `components/src/jh7110_entropy.rs`'s
 /// `TRNG_VA`; distinct from [`DMA_VA`] so neither constant means two things.
-const TRNG_VA: u64 = address_space_map::pair_page(0x0000_0000_0094_0000);
+const TRNG_VA: u64 = address_space_layout::pair_page(0x0000_0000_0094_0000);
 
 /// Does this machine have a JH7110 TRNG? The device tree's answer, decoded by
 /// `machine_discovery::jh7110::entropy::discover`, which reads the node `jh7110_entropy` names.

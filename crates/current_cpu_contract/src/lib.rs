@@ -11,16 +11,18 @@
 
 //! # BUGS
 //!
-//! - Nothing outside tests reads the word yet; the write costs under 1.5 ns on an M3 (#1904).
-//! - The reader forms an `&AtomicU64` over read-only memory, which Miri rejects; see the note.
-//! - At most [`THREAD_PAGE_SLOTS`] threads a process (§269 fork 6); see notes/current-cpu-page.md.
-//! - An address space never bound to a TCB has no page, so `current_cpu` there faults.
-//! - [`CPU_ID_BOUND`] is the compile-time `MAXIMUM_CPUS`: right for sizing, useless for iterating.
+//! - The reader forms an `&AtomicU64` over a read-only mapping, a shape the Rust memory model has
+//!   not settled; the fallback is a raw atomic load that forms no reference.
+//! - A process has at most [`THREAD_PAGE_SLOTS`] threads, one page each.
+//! - An address space never bound to a thread has no page, so a reader there faults.
+//! - [`CPU_ID_BOUND`] sizes per-CPU arrays and does not enumerate the cores that exist.
+//! - A consumer may copy this crate's single source file into a standard library: keep the crate to
+//!   one file with fully qualified paths.
 //!
 //! Name: ratified 2026-10-18 (calef): "Yes". `current_cpu` is the field's own word for this
 //! quantity (`cpu` is ruled in design/naming.md, 2026-10-03); the suffix follows its sibling.
 
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -121,30 +123,30 @@ pub const PAGE_BYTES: usize = TICK_HERTZ_OFFSET_BYTES + 8;
 pub const CPU_WORD_OFFSET: u64 = CPU_OFFSET_BYTES as u64;
 
 /// How many threads of one process can each have a page: the slots below [`PAGE_VA`] in
-/// `address_space_map::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
+/// `address_space_layout::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
 /// address space), §269 (how threads share a process) fork 6). Slot `k` is at [`thread_page_va`]`(k)`;
 /// slot 0 is [`PAGE_VA`] itself, so a process's first thread reads where every thread read before.
 pub const THREAD_PAGE_SLOTS: usize =
-    (address_space_map::PROCESS_PAGES.bytes() / address_space_map::PAGE) as usize;
+    (address_space_layout::PROCESS_PAGES.bytes() / address_space_layout::PAGE) as usize;
 
 /// Where thread page slot `k` is mapped: [`PAGE_VA`] for slot 0, and one page lower for each
 /// slot after it, inside `PROCESS_PAGES` and so inside the stack's last-level table. `None` past
 /// [`THREAD_PAGE_SLOTS`].
 pub const fn thread_page_va(k: usize) -> Option<u64> {
     if k < THREAD_PAGE_SLOTS {
-        Some(PAGE_VA - k as u64 * address_space_map::PAGE)
+        Some(PAGE_VA - k as u64 * address_space_layout::PAGE)
     } else {
         None
     }
 }
 
 /// The fixed virtual address the kernel maps this page at in every process, the same on all three
-/// architectures: `address_space_map::CURRENT_CPU_PAGE`, the last page of `PROCESS_PAGES`. One page
+/// architectures: `address_space_layout::CURRENT_CPU_PAGE`, the last page of `PROCESS_PAGES`. One page
 /// above the stack's top page, it shares the stack's L1, L2 and L3 tables, so the mapping buys only
 /// its leaf; a page alone in its tables cost 1,245 ticks per spawn (notes/benchmarks/spawn-el0.md).
 /// The map is milestone 206 (a program image has under 896 KiB) and DECISIONS §171 (where a
 /// program image starts) option D. See notes/current-cpu-page.md.
-pub const PAGE_VA: u64 = address_space_map::CURRENT_CPU_PAGE;
+pub const PAGE_VA: u64 = address_space_layout::CURRENT_CPU_PAGE;
 
 /// Build a fresh page's bytes: the magic, and [`UNSCHEDULED`] for a thread that has not run yet.
 /// The kernel writes this into a zeroed frame before mapping it read-only into the process, and
@@ -185,6 +187,7 @@ pub fn build_page_allowing(allowance: u64, tick_hertz: u64) -> [u8; PAGE_BYTES] 
 /// direct-map view of a frame the address space owns and nothing else can reach.
 #[inline]
 pub unsafe fn publish(page_va: u64, cpu: u64) {
+    debug_assert!(page_va.is_multiple_of(8), "the page is 8-aligned");
     // SAFETY: the caller's contract gives us a live, aligned, exclusively written buffer of at
     // least `PAGE_BYTES`, and `CPU_OFFSET_BYTES + 8` is inside it.
     // `wrapping_add` because the wrap cannot happen and this runs on every context switch (release
@@ -234,6 +237,7 @@ impl CurrentCpuPage {
     /// for as long as this value is used. The kernel maps exactly such a page, read-only, at
     /// [`PAGE_VA`]; see the crate's `BUGS` section for the shape that does not get one.
     pub const unsafe fn new(va: u64) -> Self {
+        debug_assert!(va.is_multiple_of(8), "the page is 8-aligned");
         CurrentCpuPage {
             base: va as *const u8,
         }
@@ -250,10 +254,10 @@ impl CurrentCpuPage {
             return None;
         }
         // SAFETY: `new`'s contract again, plus its alignment clause: every word is 8-aligned
-        // because `base` is and every offset is a multiple of 8. Reached through an integer rather
-        // than by offsetting the `*const u8` so the cast is not one clippy has to take on trust,
-        // which is the same shape `publish` uses on the writing side.
-        let word = unsafe { &*((self.base as u64 + off as u64) as *const AtomicU64) };
+        // because `base` is and every offset is a multiple of 8. The offset keeps the pointer's
+        // provenance, so a checker can tie the load to the buffer it came from.
+        #[allow(clippy::cast_ptr_alignment)]
+        let word = unsafe { &*self.base.add(off).cast::<AtomicU64>() };
         Some(word.load(Ordering::Relaxed))
     }
 
@@ -261,7 +265,10 @@ impl CurrentCpuPage {
     /// answer (milestone 812, §269 fork 7), or `None` for an unrecognized page or one built without
     /// an allowance. One load, never written after the page is built, so it needs no ordering.
     pub fn allowance(&self) -> Option<core::num::NonZeroUsize> {
-        core::num::NonZeroUsize::new(self.word(ALLOWANCE_OFFSET_BYTES)? as usize)
+        // An allowance the target cannot hold reads as unknown, never as a truncated count.
+        usize::try_from(self.word(ALLOWANCE_OFFSET_BYTES)?)
+            .ok()
+            .and_then(core::num::NonZeroUsize::new)
     }
 
     /// The scheduler tick's rate in hertz, and so the resolution of every timed wait, or
@@ -455,12 +462,15 @@ mod tests {
         assert_eq!(thread_page_va(0), Some(PAGE_VA));
         for k in 0..THREAD_PAGE_SLOTS {
             let va = thread_page_va(k).unwrap();
-            assert!(address_space_map::PROCESS_PAGES.contains(va));
+            assert!(address_space_layout::PROCESS_PAGES.contains(va));
         }
         assert_eq!(thread_page_va(THREAD_PAGE_SLOTS), None);
         assert_eq!(THREAD_PAGE_SLOTS, 16);
         // One page apart, so no two threads share a slot's page.
-        assert_eq!(thread_page_va(1), Some(PAGE_VA - address_space_map::PAGE));
+        assert_eq!(
+            thread_page_va(1),
+            Some(PAGE_VA - address_space_layout::PAGE)
+        );
     }
 
     /// The magic is the one every `std` already published in basalt compares: no nife-built
@@ -493,10 +503,10 @@ mod tests {
     #[allow(clippy::assertions_on_constants)]
     fn the_page_shares_the_stacks_last_level_table() {
         assert_eq!(PAGE_VA % 4096, 0);
-        assert!(address_space_map::PROCESS_PAGES.contains(PAGE_VA));
+        assert!(address_space_layout::PROCESS_PAGES.contains(PAGE_VA));
         assert_eq!(
             PAGE_VA >> 21,
-            address_space_map::STACK_TOP_PAGE >> 21,
+            address_space_layout::STACK_TOP_PAGE >> 21,
             "not in the stack's 2 MiB, so the mapping buys an L3 of its own"
         );
     }

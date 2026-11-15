@@ -61,7 +61,7 @@ pub struct Isa {
 /// What a machine is missing that this kernel needs.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct Missing {
-    /// No 4 KiB granule at stage 1. Every page table in `crates/paging` is 4 KiB.
+    /// No 4 KiB granule at stage 1. Every page table in `crates/page_tables` is 4 KiB.
     pub granule_4k: bool,
     /// Fewer than 8 ASID bits. Unreachable on a conforming part (ARM's only two encodings are 8 and
     /// 16), which is exactly why it is worth checking: a reserved encoding decodes here as 0 and

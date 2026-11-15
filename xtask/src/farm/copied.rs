@@ -134,7 +134,7 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
     // kernel builds it with. It names one constant of the address-space map, so the map comes too,
     // and [`std_generate_modules`] points the name at it.
     CopiedFile {
-        package: "address_space_map",
+        package: "address_space_layout",
         file: "src/lib.rs",
         destination: "sys/pal/nife/addressmap.rs",
     },

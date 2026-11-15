@@ -48,7 +48,7 @@ that a decoded list encodes back to its bytes and that decoding never panics.
 ## The id table
 
 Every interface owns a number for good. The one table is the "Interface ids" section of the
-milestone's block: `abi` is 1, `address_space_map` 2, `machine_statistics_contract` 4,
+milestone's block: `abi` is 1, `address_space_layout` 2, `machine_statistics_contract` 4,
 `byte_sink_contract` 6, `capability_manifest_note` 7, `clock_contract` 8, and so on to
 `user_mode_runtime` at 20 and `interfaces_note` at 21; 3 stays retired (it named `byte_glob`). An interface is the module that holds
 `INTERFACE_ID`, so `filesystem_contract` holds two, `blk` at 14 and `fs` at 15. A new interface
@@ -121,7 +121,7 @@ which names exactly the `programs` of `packages/process-tools.package.toml`,
 ## A worked example: `uptime`
 
 `components/src/uptime.rs` declares ten interfaces, each at version 1: `abi` (1),
-`address_space_map` (2), `byte_sink_contract` (6), `clock_contract` (8),
+`address_space_layout` (2), `byte_sink_contract` (6), `clock_contract` (8),
 `counter_frequency_contract` (9), `current_cpu_contract` (10), `entropy_contract` (12),
 `socket_contract` (19), `user_mode_runtime` (20) and `interfaces_note` (21). It carries no manifest note of its own, so this
 is the only note in its `.note.nife` section: 148 bytes, the 20-byte header and owner, then a
@@ -132,7 +132,7 @@ descriptor of `8 + 10 * 12` = 128 bytes. Built for `aarch64-unknown-none-softflo
 05000000 80000000 04000000 6e696665 00000000   name size 5, descriptor 0x80, type 4, "nife"
 01000000 0a000000                              version 1, count 10
 01000000 00000000 01000000                     id 1 (abi), version 1
-02000000 00000000 01000000                     id 2 (address_space_map), version 1
+02000000 00000000 01000000                     id 2 (address_space_layout), version 1
 ```
 
 and the eight records after run 6, 8, 9, 10, 12, 19 (`0x13`), 20 (`0x14`) and 21 (`0x15`), each at

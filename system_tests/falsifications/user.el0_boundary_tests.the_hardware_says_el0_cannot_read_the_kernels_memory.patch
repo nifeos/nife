@@ -25,16 +25,16 @@ bookkeeping, and this is the CPU.
 requires `mmu::translate(KERNEL_TEXT).is_some()`, and it still is: the page is mapped, it is
 readable, and only the privilege level changed.
 
-**Two host tests in `crates/paging` break under this patch and neither runs here.**
+**Two host tests in `crates/page_tables` break under this patch and neither runs here.**
 `Flags::kernel_code().bits()` is asserted against a literal in that crate's own unit tests,
-and `paging`'s Kani harnesses reason about the encoder rather than the constructor. A full
+and `page_tables`'s Kani harnesses reason about the encoder rather than the constructor. A full
 `script/test` would catch the first. This sweep boots one kernel test and does not, which is
 the honest scope of a kernel-test falsification and is stated in script/falsifications' BUGS.
 
-diff --git a/crates/paging/src/flags.rs b/crates/paging/src/flags.rs
+diff --git a/crates/page_tables/src/flags.rs b/crates/page_tables/src/flags.rs
 index 03860e171..fa453076e 100644
---- a/crates/paging/src/flags.rs
-+++ b/crates/paging/src/flags.rs
+--- a/crates/page_tables/src/flags.rs
++++ b/crates/page_tables/src/flags.rs
 @@ -37,7 +37,7 @@ pub struct Flags(u64);
  impl Flags {
      /// Kernel code: readable and executable by the kernel, never writable, never user.

@@ -36,13 +36,13 @@ in before the leaf (ruled 2026-10-31 UTC).
 The refusal is narrow (ruled 2026-10-31 UTC). A new writable mapping fails when the space maps the
 frame executable anywhere, and a new executable mapping fails when it maps the frame writable
 anywhere. Read-only beside read-write passes, and so do read-only beside code and two mappings with
-the same flags. The pure predicate is `paging::Flags::makes_writable_executable_pair`. The log
+the same flags. The pure predicate is `page_tables::Flags::makes_writable_executable_pair`. The log
 stores no permissions, so the check walks the leaf of each record that names the same frame. A
 read-only mapping cannot complete the pair, so it skips the scan, which leaves `map_el0`'s
 read-only loop out of the cost. A caller sees `NotPermitted`, the error's second case, "the object
 refuses the operation whatever the rights", with no new error code and no wire-format change
 (ruled 2026-10-31 UTC, #2965). Inside the kernel the refusal is
-`paging::MapError::WritableAndExecutable`.
+`page_tables::MapError::WritableAndExecutable`.
 
 The check sees one address space at a time (ruled 2026-10-31 UTC). The same frame writable in one
 space and code in another maps, and loading relies on that: `process_builder::fill_and_map` writes a
@@ -67,7 +67,7 @@ every architecture:
 
 Each test carries a replayable falsification under `system_tests/falsifications/`; the witness's
 patch and the reverse-order test's remove the check from `record_mapping`. The Kani harness
-`paging::verification::no_admitted_pair_is_writable_here_and_executable_there` proves the predicate
+`page_tables::verification::no_admitted_pair_is_writable_here_and_executable_there` proves the predicate
 over every access word, with its own patch.
 
 ## BUGS

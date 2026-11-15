@@ -115,7 +115,7 @@ pub(super) const PAGE: u64 = 4096;
 /// Where the wiring maps this shell's clock page read-only: `crates/system_initializer`'s
 /// `SH_CLOCK_VA`, which must match. Nothing here reads through it by address; it is named so that
 /// [`JOBFRAME_WINDOWS`] can be proven clear of it.
-pub(super) const SH_CLOCK_VA: u64 = address_space_map::pair_page(0x0000_0000_00d0_0000);
+pub(super) const SH_CLOCK_VA: u64 = address_space_layout::pair_page(0x0000_0000_00d0_0000);
 
 // Every fixed window this shell maps, and the job frames' range, are disjoint. A window added to
 // the shell belongs in this list.
@@ -138,8 +138,8 @@ const _: () = {
         );
         i += 1;
     }
-    assert!(address_space_map::PAIR_PAGES.holds(JOBFRAME_WINDOWS.start, JOBFRAME_WINDOWS.end));
-    assert!(address_space_map::PAIR_PAGES.holds(IMAGE_WINDOW, IMAGE_WINDOW_END));
+    assert!(address_space_layout::PAIR_PAGES.holds(JOBFRAME_WINDOWS.start, JOBFRAME_WINDOWS.end));
+    assert!(address_space_layout::PAIR_PAGES.holds(IMAGE_WINDOW, IMAGE_WINDOW_END));
 };
 
 /// Delegate the capability in `slot` to the progenitor over the spawn rendezvous, narrowed to WRITE|GRANT (the progenitor

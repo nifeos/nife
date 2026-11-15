@@ -192,9 +192,9 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 /// notes/user-mode-runtime.md.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
-/// question 2). His words: "Ratify `retype_kernel_object` `address_space_map_into`." Refused
+/// question 2). His words: "Ratify `retype_kernel_object` `address_space_layout_into`." Refused
 /// `map_into` (round 7's provisional name; the method is `address_space::MAP_INTO`).
-pub fn address_space_map_into(aspace: u64, va: u64, frame_slot: u64, mode: u64) -> i64 {
+pub fn address_space_layout_into(aspace: u64, va: u64, frame_slot: u64, mode: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the address-space capability, the frame's rights
     // against `mode`, and the address before it touches a page table.
     unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, frame_slot, mode) }

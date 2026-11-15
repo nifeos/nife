@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 956, 1017
 decision_dependencies: 171, 305
@@ -7,9 +7,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1076. `address_space_map`: what an outside maintainer would fix before it leaves
+# 1076. `address_space_layout`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of `crates/address_space_map` at nife commit `137639a3`, as a
+Raised by a read-only review of `crates/address_space_layout` at nife commit `137639a3`, as a
 stranger meeting the crate in a repository of its own would. It changes nothing; it lists what the
 move lane and the lanes after it change.
 
@@ -38,8 +38,10 @@ The tools run, the sources read and what was not run are in [the appendix](1076-
 
 Effort: S is half a day for a lane or less, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after the first tag (a public name, a published behavior, a layout, an identity, a dependency). Everything else is two-way, and the maintainer decides it.
-Line numbers are from `crates/address_space_map/src/lib.rs` at `137639a3` unless a path says
+Line numbers are from `crates/address_space_layout/src/lib.rs` at `137639a3` unless a path says
 otherwise.
+
+The ledger of what landed and what is left is in [the appendix](1076-address-space-map-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -50,20 +52,20 @@ otherwise.
    Evidence: `src/lib.rs` line 358; the standalone build above. Milestone 1017's blocker table names this
    row with the same resolution.
    Change: invert the test. `user_mode_runtime` stays in nife and already depends on the crate, so
-   the test moves there and parses its own `link.ld` against `address_space_map::IMAGE_BASE`. The
+   the test moves there and parses its own `link.ld` against `address_space_layout::IMAGE_BASE`. The
    `IMAGE` band's doc comment (line 111) stops promising "a host test here holds the two to the
    same number" and says where the test lives.
    Door: two-way. Effort: S.
 
 2. The falsification records and patches carry nife's tree paths.
    Finding: every harness record reads
-   `` `crates/address_space_map/falsifications/<harness>.patch` `` where the template requires
+   `` `crates/address_space_layout/falsifications/<harness>.patch` `` where the template requires
    `` `falsifications/<module>.<harness>.patch` ``, and every patch's diff header names
-   `a/crates/address_space_map/src/lib.rs`, which `git apply -p1` cannot resolve in the crate's own
+   `a/crates/address_space_layout/src/lib.rs`, which `git apply -p1` cannot resolve in the crate's own
    repository. The template's `falsify.py --check` reports "replayable with no patch path" for all
    nine, and the replay would fail every patch as stale.
    Evidence: `src/verification.rs` lines 53, 74, 99, 110, 123, 133, 146, 156 and 171; the nine files under
-   `crates/address_space_map/falsifications/`; the `--check` run above.
+   `crates/address_space_layout/falsifications/`; the `--check` run above.
    Change: in the move commit, rewrite the nine record lines and the eighteen path lines (two per
    patch header) to crate-relative form, and run the template's `falsify.py` once without `--check`, so each patch visibly turns exactly its own harness red. The patch headers' "Expected to fail"
    paragraphs need no change.
@@ -75,7 +77,7 @@ otherwise.
    `repository`, `readme`, `keywords` or `categories`. The template's `standalone.py` refuses
    workspace inheritance, a missing `rust-version` and `publish = false` on a crate that means to
    release. The crate's `Cargo.toml` comment cites milestone 206 (A program image has under 896 KiB, and the failure names an overlap rather than a size) and §171 as nife paths.
-   Evidence: `crates/address_space_map/Cargo.toml` lines 5 to 6, 8 to 13 and 15 to 16.
+   Evidence: `crates/address_space_layout/Cargo.toml` lines 5 to 6, 8 to 13 and 15 to 16.
    Change: `license = "MIT OR Apache-2.0"`, `rust-version = "1.87"` (the lowest the 1.85 failure allows; the template's weekly `msrv` job will confirm the exact floor), and the three template lints inline (`unsafe_op_in_unsafe_fn`, `missing_docs`, `unexpected_cfgs` naming `cfg(kani)`), a one-line
    `description`, `repository` and `readme`. Keep `publish = false` with a one-sentence comment a
    stranger can act on ("stays until the release that publishes"), since a separate ruling holds publication and this block does not reopen it.
@@ -94,7 +96,7 @@ The P1 items are in [the appendix](1076-address-space-map-outside-review/before-
 Twenty-six manifests depend on the crate by `path` with `version = "0.1.0"`; `jig/Cargo.toml` and
 `xtask/Cargo.toml` by path alone. Under §305 (git dependencies on `nifeos/*` only, pinned to a
 landed commit) each becomes
-`address_space_map = { version = "0.1.0", git = "https://github.com/nifeos/address_space_map", rev = "<landed commit>" }`,
+`address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "<landed commit>" }`,
 the form `components/Cargo.toml` already uses for `jh7110_entropy` and `e1000e`. Milestone 1017 rules
 one revision per contract per image, so all twenty-six move in one pull request, and recommends a
 root `[workspace.dependencies]` entry so the next bump touches one line. For `memory_region_heap`
@@ -114,24 +116,11 @@ door before the first tag, and the maintainer has decided it, provisionally.
 
 ### The crate's name
 
-Background. The crate is a fixed partition of a process's low half into eight bands, with the
-functions that check a page against them. Its name uses `map`, which nife's vocabulary rule sets
-aside because the kernel's `map` is a verb (to map a page), and the crate's own first paragraph uses
-both senses. The name is provisional by its own block, which says the minting set `user_layout` and `address_space` aside. The block does not record why (unverified). The name becomes the repository name, the crates.io name once a ruling allows publication, and the identifier at 281 sites in nife and in every
-third-party implementation of the contract.
-
-Recommendation: `address_space_layout`. "Layout" is the word the crate already uses for itself
-(`VERSION`'s doc: "the layout's version"), it is a noun, it has no kernel verb sense, and it reads without Unix exposure. `user_address_space_layout` says more and costs a word that every other band constant already implies. `address_space_bands` names the table and not the functions. Keeping
-`address_space_map` is defensible (Linux's own documentation calls its table "the memory map"), but
-the rule exists for exactly this double sense and the move is the last cheap moment.
-
-Prior art: FreeBSD's header is `vmparam.h`, "virtual memory parameters"; Linux's documentation says
-"memory map"; the Rust crates above say `VirtAddr` and `GuestMemoryRegion` and have no word for a
-fixed layout because none has one.
-
-Concrete example: `crates/current_cpu_contract/src/lib.rs` line 141 would read
-`pub const PAGE_VA: u64 = address_space_layout::CURRENT_CPU_PAGE;` (and, with decision 2,
-`address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`).
+Decision N1, option A, 2026-11-14 (UTC): the crate is `address_space_layout`, in code and as the
+package name, with no `package =` rename and no `doc(alias)` of the earlier spelling. The rule in
+force: nife's vocabulary rule sets `map` aside where the kernel uses it as a verb, and "layout" is
+the word the crate already uses for itself. This tree carries the rename, and the crate's `Name:`
+block says ratified.
 
 ### The address and length constants
 
@@ -152,7 +141,7 @@ the fields, splits one rule across one enum and is not recommended.
 Prior art: FreeBSD's `USRSTACK` and `SHAREDPAGE` carry no unit or kind, and a reader needs the header's comments. `vm-memory` types the kind instead (`GuestAddress`). This crate's bare `u64` constants cannot do that without a wrapper type, a larger change than a name.
 
 Concrete example: `kernel/src/user.rs` line 21, `pub const USER_STACK_TOP: u64 =
-address_space_map::STACK_TOP;`, becomes `... = address_space_layout::STACK_TOP_VIRTUAL_ADDRESS;`,
+address_space_layout::STACK_TOP;`, becomes `... = address_space_layout::STACK_TOP_VIRTUAL_ADDRESS;`,
 and a reader of the kernel knows it is an address without opening the crate.
 
 ### A whole-window check, and its name
@@ -186,6 +175,13 @@ change. The name `window` ships provisional. Item 9 is the work.
 
 The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
 
+## Follow-on
+
+- **Done.** The crate's own name, `address_space_layout`.
+- **Outstanding.** The three decisions, items 15 and 17, and the move's items 2, 3, 5, 11 and 13,
+  which an architect rules or the move lane does. Checked against `crates/address_space_layout`: the
+  crate has no README, `Band::new` or `window`, and still inherits its manifest from the workspace.
+
 ## BUGS
 
 - Item 13 is the template's to fix, and until it lands the crate's `check / standalone` is red on
@@ -195,8 +191,7 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 - The review did not run the template's prose, README or history gates, because there is no README
   yet; the scaffolded README meets them in its own pull request.
 - This review did not verify whether `cargo xtask std-src` resolves a git dependency. The move lane runs it before the pull request.
-- The crate's `Name:` block does not give the reasons for setting `user_layout` and `address_space` aside. A lane that brings decision 1 reads the minting pull request first, so the recommendation does not propose a refused name.
 
 ## Index row
 
-An outside review of `address_space_map` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. It leaves three names for the architect: the crate's own, the address and length constants, and a whole-window check.
+An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. It leaves two names for the architect: the address and length constants, and a whole-window check. The crate's own name has its ruling and its rename.
