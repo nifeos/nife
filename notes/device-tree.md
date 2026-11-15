@@ -156,8 +156,10 @@ into an `Error`.
   argument `static_elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
   own, whatever the parser that usually builds it checked. The fuzz target
   `fuzz/fuzz_targets/device_tree_blob_walk` found the panic it closes.
-- The walkers that keep per-depth state stop at a depth of 16. Past it they refuse to match
-  rather than return an `Error`, so they never index past their stacks (BUGS below).
+- Every lookup reads the structure block through one token walk, which refuses a node nested
+  deeper than `MAXIMUM_DEPTH` (64, libfdt's `FDT_MAX_DEPTH`) as `Error::TooDeep` and a block whose
+  `FDT_BEGIN_NODE` and `FDT_END_NODE` tokens do not balance as `Error::BadStructure`. Every walker
+  answers a given blob the same way, and none indexes past its per-depth state.
 
 ## Finding a node
 
@@ -190,13 +192,6 @@ The blob is the first thing this kernel reads and the last thing it can check ag
 else. The pointer comes from firmware, before there is a frame allocator or any way to report a
 failure, so every limitation here is a limitation on the boot path specifically.
 
-- **A node nested deeper than 16 is invisible to `node_reg` and `node_reg_compatible`.** Both carry
-  `#address-cells`/`#size-cells` down a fixed 16-entry per-depth stack, and past it they stop
-  tracking, so they refuse to match rather than decode a region with cell widths they no longer
-  know. Nothing in the trees we boot nests past 4. `node_property` keeps no per-depth state and so has
-  no such limit, which means the two lookups disagree about how deep a tree can be. Until
-  2026-08-02 `node_reg` did not refuse: it matched at any depth and then indexed past the stack,
-  which was an out-of-bounds panic on a 17-deep tree (milestone 42, notes/fuzzing.md).
 - A `reg` pair whose `start + size` wraps 64 bits is `Error::RegionOverflow`, not a clamped
   region. `kernel/src/memory.rs` decides where RAM is from these, and "the firmware's memory map
   is impossible" is something a boot path should be told. `Region::end()` saturates as a backstop,
@@ -208,11 +203,6 @@ failure, so every limitation here is a limitation on the boot path specifically.
   only** (zero regions when it has no `reg`, as `node_property` answers `None`). That is a deliberate
   simplification for two boards, documented at the function. `node_reg_compatible` is the correct
   one and is what milestone 51's RTC lookup uses.
-- Nothing validates the structure block's nesting balance. A blob with more `FDT_END_NODE`
-  tokens than `FDT_BEGIN_NODE` is walked rather than refused: the three `usize` walkers saturate
-  their depth at zero and the three `i32` ones let it go negative. Neither can index anything (every
-  array access is guarded and the negative depths simply match nothing), so it is a wart rather than
-  a hole, but an unbalanced tree is not told apart from a well-formed one.
 - **Cell widths come from the nearest ancestor that declares them, not from the spec's default.**
   The Devicetree Specification says a node without `#address-cells` gives its children 2 and 1.
   The walkers carry the parent's widths down instead, as Linux's `of_n_addr_cells` does, so a bus

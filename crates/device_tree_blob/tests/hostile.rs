@@ -7,7 +7,7 @@
 //! testing. They run on the host in milliseconds, so inputs that cost real time to find cost
 //! nothing to keep.
 
-use device_tree_blob::{DeviceTreeBlob, Error, Region};
+use device_tree_blob::{DeviceTreeBlob, Error, MAXIMUM_DEPTH, Region};
 
 /// Enough of a device tree to reach the structure block, built from parts.
 ///
@@ -138,44 +138,64 @@ fn nested(depth: usize) -> Vec<u8> {
     b.finish()
 }
 
-/// **A node nested past the cell stack must not be indexed for.**
+/// **A node at the deepest depth is found, and a tree one deeper is refused by every lookup.**
 ///
-/// `node_reg` carries `#address-cells`/`#size-cells` down a 16-entry per-depth array, and used to
-/// match a node at *any* depth >= 2. At depth 17 the `reg` arm read `acells[depth - 1]`, which is
-/// `acells[16]` on a 16-element array: an out-of-bounds index, i.e. a panic, in the parser the
-/// kernel runs against a blob it did not write, before there is any way to report a failure.
-///
-/// The fix refuses to match past the stack rather than clamping the index, so the answer is "no such
-/// node" (`Ok(0)`) instead of a region decoded with cell widths this walk stopped tracking.
+/// `node_reg` once carried `#address-cells`/`#size-cells` down a 16-entry per-depth array and
+/// matched a node at *any* depth >= 2. At depth 17 the `reg` arm read one past the array: an
+/// out-of-bounds index, a panic in the parser the kernel runs against a blob it did not write.
+/// The guard that fixed it left a node at depth 17 present for two lookups and absent for five.
+/// The walk now refuses a tree nested past [`MAXIMUM_DEPTH`] with `TooDeep` for every lookup, so
+/// every depth a lookup sees has a slot, and a node at the deepest depth decodes with its parent's
+/// cell widths.
 #[test]
-fn a_node_deeper_than_the_cell_stack_is_not_found_rather_than_indexed() {
+fn a_node_at_the_deepest_depth_is_found_and_one_deeper_is_refused() {
     let mut out = [Region { start: 0, size: 0 }; 4];
+    let intc = Region {
+        start: 0x800_0000,
+        size: 0x1_0000,
+    };
 
-    // Inside the stack: found, and decoded with the root's 2/2 cells.
-    let shallow = nested(3);
-    let tree = DeviceTreeBlob::from_bytes(&shallow).unwrap();
-    assert_eq!(tree.node_reg(b"intc", &mut out).unwrap(), 1);
-    assert_eq!(
-        out[0],
-        Region {
-            start: 0x800_0000,
-            size: 0x1_0000
-        }
-    );
-
-    // Past it: not found. The assertion that matters is that this returns at all.
-    for depth in [16, 17, 24, 40] {
-        let deep = nested(depth);
-        let tree = DeviceTreeBlob::from_bytes(&deep).unwrap();
+    for depth in [3, 16, 17, 40, MAXIMUM_DEPTH] {
+        let blob = nested(depth);
+        let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
         assert_eq!(
-            tree.node_reg(b"intc", &mut out).unwrap(),
-            0,
-            "a node at depth {depth} should be reported as absent, not indexed for"
+            tree.node_reg(b"intc", &mut out),
+            Ok(1),
+            "a node at depth {depth} is found"
         );
-        // The sibling lookups walk the same tree with the same per-depth arrays.
-        assert!(tree.node_reg_compatible(b"arm,pl031", &mut out).is_ok());
-        assert!(tree.node_property(b"intc", b"reg").is_ok());
+        assert_eq!(out[0], intc, "and decoded with the root's 2/2 cells");
+        assert_eq!(
+            tree.node_property(b"intc", b"reg"),
+            Ok(Some(&reg64(0x800_0000, 0x1_0000)[..]))
+        );
     }
+
+    let blob = nested(MAXIMUM_DEPTH + 1);
+    let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let mut values = [None; 1];
+    assert_eq!(tree.node_reg(b"intc", &mut out), Err(Error::TooDeep));
+    assert_eq!(
+        tree.node_reg_compatible(b"arm,pl031", &mut out),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(tree.node_property(b"intc", b"reg"), Err(Error::TooDeep));
+    assert_eq!(
+        tree.node_properties(b"intc", b"reg", &mut values),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(
+        tree.node_property_inherited(b"intc", b"reg"),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(
+        tree.node_property_compatible(b"arm,pl031", b"reg"),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(tree.phandle_property(1, b"reg"), Err(Error::TooDeep));
+    assert_eq!(tree.memory_regions(&mut out), Err(Error::TooDeep));
+    assert_eq!(tree.reserved_memory_regions(&mut out), Err(Error::TooDeep));
+    assert_eq!(tree.initial_ramdisk(), Err(Error::TooDeep));
+    assert_eq!(tree.boot_arguments(), Err(Error::TooDeep));
 }
 
 /// **A `reg` pair whose `start + size` wraps is refused, not passed out.**
@@ -445,25 +465,33 @@ fn a_matched_node_survives_its_children_closing() {
     assert_eq!((out[0].start, out[0].size), (0xAB00, 0x40));
 }
 
-/// The cell stack is 16 deep and the guard is `depth < 16`: at depth exactly 16 a declared
-/// `#address-cells` must be ignored, not recorded, because recording it indexes one past the
-/// stack. `<=` here is an out-of-bounds panic in the parser the kernel runs on firmware bytes.
+/// The deepest depth has a slot of its own: a bus at `MAXIMUM_DEPTH - 1` declares one-cell
+/// widths, and its child at `MAXIMUM_DEPTH` decodes with them, so the parent's slot is read and not
+/// the root's. The child declares widths of its own too, which go into the last slot and must
+/// change nothing about its own `reg`.
 #[test]
-fn a_declaration_at_the_stacks_edge_is_ignored_not_indexed() {
+fn a_declaration_at_the_deepest_depth_has_its_own_slot() {
     let mut b = Blob::new();
     b.begin_node(b"");
-    for _ in 0..15 {
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    for _ in 2..MAXIMUM_DEPTH {
         b.begin_node(b"bus");
     }
     b.prop(b"#address-cells", &1u32.to_be_bytes());
-    for _ in 0..16 {
+    b.prop(b"#size-cells", &1u32.to_be_bytes());
+    b.begin_node(b"m@ab00");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"reg", &[cell32(0xAB00), cell32(0x40)].concat());
+    for _ in 0..MAXIMUM_DEPTH {
         b.end_node();
     }
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 1];
-    assert_eq!(dt.node_reg(b"absent@", &mut out), Ok(0));
+    assert_eq!(dt.node_reg(b"m@", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0xAB00, 0x40));
 }
 
 /// The compatible walker's own copies of the same rules: the root cannot be a device (its match
@@ -876,43 +904,121 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
     assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
 }
 
-/// **Each walker's own per-depth arrays have their own edge.** The four walkers beside `node_reg`
-/// keep 16-entry arrays behind the same `depth < MAXIMUM_DEPTH` guard, and a mutation run found
-/// `<=` alive in every one; at depth
-/// exactly 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
-///
-/// The tree is nested to exactly the edge and carries the property, the `compatible` and the
-/// `phandle` there, so each arm of each walker is asked to record something where recording it
-/// would index past the array.
+/// **Each walker's per-depth stack reaches the deepest depth.** The walkers beside `node_reg`
+/// keep a slot per depth, and a mutation run once found the edge guard of each alive under `<=`:
+/// an out-of-bounds index on firmware bytes. The guard is now the walk's own refusal past
+/// [`MAXIMUM_DEPTH`], so a tree nested to exactly that depth answers from its deepest node in every
+/// walker, and one level more is refused in every walker.
 #[test]
-fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
-    let mut b = Blob::new();
-    b.begin_node(b"");
-    for _ in 0..15 {
-        b.begin_node(b"bus");
+fn every_walker_answers_at_the_deepest_depth_and_refuses_one_deeper() {
+    fn tree(depth: usize) -> Vec<u8> {
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        for _ in 1..depth {
+            b.begin_node(b"bus");
+        }
+        b.prop(b"clock-frequency", &cell32(0x02FA_F080));
+        b.prop(b"compatible", b"deep,thing\0");
+        b.prop(b"phandle", &cell32(7));
+        for _ in 0..depth {
+            b.end_node();
+        }
+        b.finish()
     }
-    // Depth 16: the first depth no walker may record for.
-    b.prop(b"clock-frequency", &cell32(0x02FA_F080));
-    b.prop(b"compatible", b"deep,thing\0");
-    b.prop(b"phandle", &cell32(7));
-    for _ in 0..16 {
-        b.end_node();
-    }
-    let blob = b.finish();
-    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let frequency = &cell32(0x02FA_F080)[..];
 
-    // Each returns rather than panicking, and each says "not found" rather than answering from a
-    // depth it stopped tracking.
+    let blob = tree(MAXIMUM_DEPTH);
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(
         dt.node_property_compatible(b"deep,thing", b"clock-frequency"),
+        Ok(Some(frequency))
+    );
+    assert_eq!(
+        dt.parent_property_compatible(b"deep,thing", b"clock-frequency"),
         Ok(None)
     );
     assert_eq!(
         dt.node_property_inherited(b"bus", b"clock-frequency"),
-        Ok(None)
+        Ok(None),
+        "the first bus is the target, and neither it nor the root has the property"
     );
-    assert_eq!(dt.phandle_property(7, b"clock-frequency"), Ok(None));
-    assert_eq!(dt.node_property(b"bus", b"clock-frequency"), Ok(None));
+    assert_eq!(
+        dt.phandle_property(7, b"clock-frequency"),
+        Ok(Some(frequency))
+    );
+
+    let blob = tree(MAXIMUM_DEPTH + 1);
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(
+        dt.node_property_compatible(b"deep,thing", b"clock-frequency"),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(
+        dt.node_property_inherited(b"bus", b"clock-frequency"),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(
+        dt.phandle_property(7, b"clock-frequency"),
+        Err(Error::TooDeep)
+    );
+}
+
+/// **A tree whose nesting does not balance is refused.** A node that closes when none is open, and
+/// an end token while a node is still open, are `BadStructure`, as libfdt's `fdt_check_full`
+/// refuses them. Three closes before the root once left every walker answering `Ok(0)` or
+/// `Ok(None)`, as though the tree were empty, and four of them counted depth as a signed number
+/// that went negative.
+#[test]
+fn a_tree_whose_nesting_does_not_balance_is_refused() {
+    let mut out = [Region { start: 0, size: 0 }; 1];
+
+    let mut b = Blob::new();
+    b.end_node().end_node().end_node();
+    b.begin_node(b"");
+    b.prop(b"model", b"closes first\0");
+    b.end_node();
+    let closes_first = b.finish();
+
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"model", b"left open\0");
+    b.begin_node(b"memory@0");
+    b.end_node();
+    let left_open = b.finish();
+
+    for blob in [closes_first, left_open] {
+        let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+        let mut values = [None; 1];
+        assert_eq!(dt.memory_regions(&mut out), Err(Error::BadStructure));
+        assert_eq!(dt.node_reg(b"absent", &mut out), Err(Error::BadStructure));
+        assert_eq!(
+            dt.node_reg_compatible(b"absent", &mut out),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(
+            dt.node_property(b"absent", b"reg"),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(
+            dt.node_properties(b"absent", b"reg", &mut values),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(
+            dt.node_property_inherited(b"absent", b"reg"),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(
+            dt.node_property_compatible(b"absent", b"reg"),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(dt.phandle_property(1, b"reg"), Err(Error::BadStructure));
+        assert_eq!(
+            dt.reserved_memory_regions(&mut out),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(dt.initial_ramdisk(), Err(Error::BadStructure));
+        assert_eq!(dt.boot_arguments(), Err(Error::BadStructure));
+    }
 }
 
 /// **A node's slot is cleared when the node opens, and a sibling must not inherit what the last
@@ -1522,6 +1628,8 @@ fn every_error_displays_as_its_own_sentence() {
         Error::Truncated,
         Error::BadValue,
         Error::BadToken(7),
+        Error::BadStructure,
+        Error::TooDeep,
         Error::TooManyRegions,
         Error::TooLarge(3 << 20),
         Error::RegionOverflow,
