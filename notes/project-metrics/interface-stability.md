@@ -35,7 +35,7 @@
 | `nifefs` | 1 | 1 | 10 | 42 | 58 | 45 (78%) |
 | `byte_sink_contract` | 1 | 2 | 8 | 50 | 43 | 42 (98%) |
 | `measured_boot` | 1 | 35 | 3 | 100 | 36 | 27 (75%) |
-| `address_space_map` | 1 | 3 | 1 | 45 | 0 | 0 |
+| `address_space_layout` | 1 | 3 | 1 | 45 | 0 | 0 |
 | `byte_glob` | 1 | 0 | 1 | 0 | 1 | 1 (100%) |
 | `static_elf` | 1 | 0 | 1 | 0 | 1 | 1 (100%) |
 | `supervision_protocol` | 0 | 0 | 22 | 70 | 65 | 56 (86%) |

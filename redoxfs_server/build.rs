@@ -1,6 +1,6 @@
 //! The FS-server EL0 bins are ordinary nife ELFs, so they link against the SAME linker script
 //! `components`, `fixtures` and `std_exerciser` use, `crates/user_mode_runtime/link.ld` (linked at
-//! `address_space_map::IMAGE_BASE`, explicit W^X PHDRS). The link args are scoped to the EL0 bins
+//! `address_space_layout::IMAGE_BASE`, explicit W^X PHDRS). The link args are scoped to the EL0 bins
 //! (`rustc-link-arg-bin`), never the lib or the host test binary, which link the host way.
 //!
 //! Every EL0 bin this package builds is listed below: the loader refuses an image outside the

@@ -8,7 +8,7 @@ crate	bucket	linked_by
 abi	shared	components,fixtures,jig,kernel,redoxfs_server,std
 activation_set	shared	retired
 address_space_identifier	kernel	kernel
-address_space_map	shared	components,fixtures,jig,kernel,redoxfs_server,std
+address_space_layout	shared	components,fixtures,jig,kernel,redoxfs_server,std
 allocation_cache	userspace	std
 approval_file	userspace	jig
 argument_protocol	shared	retired

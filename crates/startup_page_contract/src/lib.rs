@@ -60,12 +60,12 @@ pub const INTERFACE_ID: u64 = 23;
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners, after
 /// `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`.
-pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_map::runtime_window(0x1800_0000);
+pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_layout::runtime_window(0x1800_0000);
 
 /// The page's size in bytes: one frame.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-pub const PAGE_BYTES: usize = address_space_map::PAGE as usize;
+pub const PAGE_BYTES: usize = address_space_layout::PAGE as usize;
 
 const MAGIC_OFFSET_BYTES: usize = 0;
 const COUNT_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
@@ -137,9 +137,9 @@ pub fn write(page: &mut [u8], windows: &[Window]) -> Result<(), Refusal> {
         return Err(Refusal::TooManyWindows);
     }
     for (n, w) in windows.iter().enumerate() {
-        let fits = w.virtual_address.is_multiple_of(address_space_map::PAGE)
+        let fits = w.virtual_address.is_multiple_of(address_space_layout::PAGE)
             && w.virtual_address
-                .checked_add(w.pages as u64 * address_space_map::PAGE)
+                .checked_add(w.pages as u64 * address_space_layout::PAGE)
                 .is_some();
         if w.kind.0 == 0 || w.pages == 0 || !fits {
             return Err(Refusal::MalformedWindow(w.kind));
@@ -306,7 +306,7 @@ impl StartupWindow {
             .window(self.kind)
             .unwrap_or_else(|| panic!("the startup page lists no window of kind {:?}", self.kind));
         assert!(
-            window.pages as u64 * address_space_map::PAGE >= self.length_bytes,
+            window.pages as u64 * address_space_layout::PAGE >= self.length_bytes,
             "the startup page lists {window:?}, shorter than the {} bytes this program uses",
             self.length_bytes,
         );

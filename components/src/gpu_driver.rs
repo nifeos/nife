@@ -72,7 +72,7 @@ const DMA_PAGE_FRAMES: u64 = 1 + gfx::SURFACE_PAGE_FRAMES as u64;
 /// GUI), DECISIONS §102 (a Frame names a run of pages)): at the 1120x624 scanout
 /// [`DMA_PAGE_FRAMES`] is 684 and the region 2.7 MiB, which an aligned base keeps to two 2 MiB
 /// page-table windows and an unaligned one could spread over three.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0100_0000);
 
 // --- virtio-mmio v2 register offsets. The PCI transport answers this same vocabulary
 // (kernel/src/virtio.rs, the transport seam), so this driver reads like every other one here even

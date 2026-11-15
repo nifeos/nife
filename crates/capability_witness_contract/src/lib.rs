@@ -74,7 +74,7 @@ pub const REPORT_CHILD_WORD: u64 = 0xC0FFEE;
 /// mints (0x7e57 reads "test").
 pub const REPORT_CHILD_WINDOW: startup_page_contract::Window = startup_page_contract::Window {
     kind: startup_page_contract::WindowKind(0x7e57),
-    virtual_address: address_space_map::pair_page(0x00b0_0000),
+    virtual_address: address_space_layout::pair_page(0x00b0_0000),
     pages: 1,
 };
 

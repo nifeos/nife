@@ -53,12 +53,12 @@ const BLK_PAGE_FRAME: u64 = 4;
 /// Where this program puts the page it shares with the block server. Its own choice
 /// (milestone 108 (the drivers move onto frame capabilities)), so nothing on the kernel side
 /// names this address.
-const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
+const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// **Where the kernel maps the boot file, read-only.** This one *is* named on the kernel side
 /// (`kernel/src/user/install_service.rs`'s `BOOT_FILE_VA`) and the two must agree; the bytes are a
 /// run of physical frames the kernel owns, so this program cannot map them itself.
-const BOOT_FILE_VA: u64 = address_space_map::runtime_window(0x1000_0000);
+const BOOT_FILE_VA: u64 = address_space_layout::runtime_window(0x1000_0000);
 
 // The roles, in `a0`. Must match kernel/src/user/install_service.rs.
 /// Draw the ids, write the table, lay out the EFI system partition and copy the boot file.

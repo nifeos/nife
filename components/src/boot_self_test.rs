@@ -52,14 +52,15 @@ user_mode_runtime::program_entry!(start);
 /// Name: provisional.
 const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 
-const KERNEL_HALF_VA: u64 = address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
-const TRANSCRIPT_VA: u64 = address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
-const IMAGES_VA: u64 = address_space_map::pair_page(contract::IMAGES_VIRTUAL_ADDRESS);
+const KERNEL_HALF_VA: u64 = address_space_layout::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
+const TRANSCRIPT_VA: u64 = address_space_layout::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
+const IMAGES_VA: u64 = address_space_layout::pair_page(contract::IMAGES_VIRTUAL_ADDRESS);
 const DISK_DMA_PEEK_VA: u64 =
-    address_space_map::pair_page(contract::DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS);
+    address_space_layout::pair_page(contract::DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS);
 const BLOCK_DRIVER_DMA_VA: u64 =
-    address_space_map::pair_page(contract::BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS);
-const UNMAPPED_ADDRESS: u64 = address_space_map::pair_page(contract::ABSENT_PAGE_VIRTUAL_ADDRESS);
+    address_space_layout::pair_page(contract::BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS);
+const UNMAPPED_ADDRESS: u64 =
+    address_space_layout::pair_page(contract::ABSENT_PAGE_VIRTUAL_ADDRESS);
 
 /// `kernel_test_subject`'s role that reads its second argument and dies:
 /// `fixtures/src/kernel_test_subject.rs`'s `READ_KERNEL`.

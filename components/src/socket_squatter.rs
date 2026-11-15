@@ -50,7 +50,7 @@ pub(crate) const RPT_QUIET: u64 = 0;
 // minting a socket with `BADGE` on the front door; re-badging its own socket; its own socket after
 // `CLOSE` (`RECEIVE`); and the closed socket asked to open another.
 
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 /// slirp's gateway hosts the built-in TFTP server; the literals `socket_test_client` dials, so the
 /// bytes armed here are the request the victim itself would send.

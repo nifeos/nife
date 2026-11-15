@@ -77,7 +77,7 @@ use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};
 use supervision_contract::{ChildEndowment, Retention};
 use terminal_contract as proto;
 use user_mode_runtime::{
-    address_space_map_into, call, capability_delete, is_granted, map_page_frame, receive,
+    address_space_layout_into, call, capability_delete, is_granted, map_page_frame, receive,
     receive_badged, receive_capability_badged, retype_into_kernel_object, retype_into_page_frame,
     send, send_capability, slice_page_frame,
 };
