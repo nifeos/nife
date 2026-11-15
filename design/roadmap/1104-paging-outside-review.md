@@ -9,15 +9,14 @@ needs_person: yes
 ---
 # 1104. `paging`: what an outside maintainer would fix before the move
 
-Raised by a read-only outside review of `crates/paging`, as a stranger meeting it for the first
+Raised by a read-only outside review of `crates/page_tables`, as a stranger meeting it for the first
 time would. It changes nothing; it lists what the next lanes change, graded P0 to P2, and the two
 one-way doors that need the architect. A recording lane assigns the number.
 
 No review package exists for this crate in `notes/crate-reviews/`, so there is no settled baseline
 to inherit. The one ruling the crate itself records is its name: the crate root's `Name:` block
-states that `paging` is ratified as a standard term that is already right. This block reopens that
-name for one reason only, an external fact and not a later rule: the name is taken on crates.io
-(Decision 1). Every other name below is provisional, and the rulings this tree has since made
+states the name as ratified. The architect reopened that name for one reason only, an external fact
+and not a later rule: `paging` is taken on crates.io (Decision 1, ruled). Every other name below is provisional, and the rulings this tree has since made
 (`design/naming.md`: spelled-out words, units spelled out, standard-library spellings, kept foreign
 names carry an alias) are applied as written.
 
@@ -49,7 +48,7 @@ two-way: everything else).
 
 ### P0
 
-1. The manifest cannot stand alone. `crates/paging/Cargo.toml` lines 1 to 9 carries `publish = false`,
+1. The manifest cannot stand alone. `crates/page_tables/Cargo.toml` lines 1 to 9 carries `publish = false`,
 `license.workspace = true` and `lints.workspace = true`, and no `rust-version`, `description`,
 `repository`, `readme`, `keywords` or `categories`. There is no README and no license file in the
 crate directory. The template's `standalone.py` lists each of these as a finding and `check /
@@ -67,14 +66,14 @@ from this reading.
    would carry a name its crate cannot have. One-way. Decision 1 below.
 
 3. Every falsification record points into nife. All 38 harness records read `` Falsification:
-   replayable `crates/paging/falsifications/<module>.<harness>.patch` `` (for example
+   replayable `crates/page_tables/falsifications/<module>.<harness>.patch` `` (for example
    `src/page_size.rs` via `src/verification.rs` line 24, `src/domain.rs` line 121, `src/aarch64.rs` line 328), and
-   every patch diffs `a/crates/paging/src/...`. The template's `falsify.py --check` requires
+   every patch diffs `a/crates/page_tables/src/...`. The template's `falsify.py --check` requires
    `falsifications/<module>.<harness>.patch` and applies with `git apply -p1` from the crate root,
    so every record fails the form check and no patch would apply in the replay. The proofs are green
    and the patches are real, but the gate that proves the patches still bite is red. The four
    `nth_allocation.*.patch` files falsify host tests, which the template does not replay at all.
-   nife's own lint may (unverified). Fix: rewrite the 38 record lines, strip `crates/paging/` from
+   nife's own lint may (unverified). Fix: rewrite the 38 record lines, strip `crates/page_tables/` from
    the 42 patch paths, and run `falsify.py` without `--check` once. Then either add a `cargo test`
    replay step for the four host-test patches or record in BUGS that a person replays them by hand.
    Effort S. Two-way.
@@ -137,7 +136,7 @@ ten, with one test that its length equals the number of public constructors, use
 and test. The harness docs then say "every constructor" truthfully. Effort S. Two-way.
 
 9. The mutation exemptions and their reasons live in nife's `.cargo/mutants.toml`. Lines 328-388
-   there hold 33 regexes of the form `^crates/paging/src/<file>\.rs:...`, each justified by a
+   there hold 33 regexes of the form `^crates/page_tables/src/<file>\.rs:...`, each justified by a
    `THE_*_SHARE_NO_BIT` compile-time assertion (`src/share_no_bit.rs`). In the new repository the
    paths become `src/...`, and the template reads `.github/mutants-exempts`, not `mutants.toml`.
    Without the port, the first full run reports those 33 as survivors. The ledgers record this
@@ -184,6 +183,11 @@ Only one-way doors. Each is one decision, with the background first and a recomm
 
 ### Decision 1. The crate's published name
 
+Ruled 2026-11-14 (UTC), option A: the crate is named `page_tables`, in code and package alike.
+`crates/paging` is `crates/page_tables`, the package and the library are `page_tables`, and every
+caller says `page_tables::`. The old name carries no `doc(alias)`. The crate root's `Name:` block is
+ratified for `page_tables`. No repository exists before the review clears. The reasoning follows.
+
 Background. A crate on crates.io has one name forever: the registry never reassigns a name, and a
 transfer needs the current owner's cooperation. This crate's root records `paging` as a ratified
 name, chosen as a standard term a reader already knows. The crates.io API shows that an unrelated
@@ -207,7 +211,7 @@ activity with the architecture; neither uses the bare word. Linux calls the per-
 layer `pgtable`, the BSDs `pmap`.
 
 Concrete example. The kernel's `use paging::{Flags, Half, MapError, Mapper};`
-(`kernel/src/user.rs`) becomes `use page_tables::{Flags, Half, MapError, Mapper};`, and the
+(`kernel/src/user.rs`) became `use page_tables::{Flags, Half, MapError, Mapper};`, and the
 repository is `nifeos/page_tables`.
 
 ### Decision 2. The spelling of the leaf sizes
@@ -264,12 +268,21 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
   docs.rs landing pages only. Their error variants and TLB handling carry an unverified mark.
 - Nobody ran a mutation census; the figures quoted are the ledgers'.
 
+## Follow-on
+
+- **Done.** Decision 1, the crate name, is carried by the rename in `crates/page_tables`.
+- **Outstanding.** Every P0 item but the crate name, every P1 item and every P2 item above. The
+  crate's tree holds none of their fixes yet, as a read of `crates/page_tables` shows.
+- **Outstanding.** Decision 2, the spelling of the leaf sizes, waits for the architect. The enum in
+  `crates/page_tables/src/page_size.rs` still holds `Size4KiB`, `Size2MiB` and `Size1GiB`.
+
 ## Index row
 
-An outside review of `paging` before it leaves for its own repository. It finds three P0 items: a
+An outside review of `page_tables` before it leaves for its own repository. It finds three P0 items: a
 manifest that cannot stand alone, a crate name that another crate already holds on crates.io, and
 falsification records that point into nife. It finds eight P1 items: documentation written for an
 insider, 84 spelled-out-rule findings, kept names with no alias, and an incomplete `unsafe` contract
 on `Mapper::new`. The rest are proofs that cover eight of ten constructors, mutation exemptions in
-the wrong file, overflowing range arithmetic, and no README. It finds eight P2 items. Two one-way
-doors go to the architect: the crate's published name and the spelling of the leaf sizes.
+the wrong file, overflowing range arithmetic, and no README. It finds eight P2 items. The architect
+ruled the crate's published name on 2026-11-14 (`page_tables`); the spelling of the leaf sizes stays
+open.

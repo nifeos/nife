@@ -2,7 +2,7 @@ Falsifies `system_tests::user::tests::an_elf_that_asks_to_be_loaded_over_the_ker
 
 Architecture: aarch64, riscv64, x86_64
 
-The defect is the removal of the half check in `paging::Mapper::map`, which is the guard the
+The defect is the removal of the half check in `page_tables::Mapper::map`, which is the guard the
 test's own doc comment says it is testing: the refusal is "by construction, not by a check we
 remembered to write", because the user `Mapper` is built with `Half::Low` and a high address
 is not a thing it can express. This patch makes it expressible.
@@ -25,10 +25,10 @@ claim is stated in, with nothing upstream. A load that succeeds returns `Ok`, `e
 
 Replayed on all three ISAs. The hunk is portable code, so one patch serves every leg. On 2026-10-03 (UTC), `cargo xtask test --arch riscv64 --test an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused` and the same with `--arch x86_64` both came back red at `system_tests/src/user/tests.rs:415`, the assertion this record predicts, which is where aarch64 was already red.
 
-diff --git a/crates/paging/src/mapper.rs b/crates/paging/src/mapper.rs
+diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
 index 57461d545..2996e48db 100644
---- a/crates/paging/src/mapper.rs
-+++ b/crates/paging/src/mapper.rs
+--- a/crates/page_tables/src/mapper.rs
++++ b/crates/page_tables/src/mapper.rs
 @@ -99,10 +99,6 @@ where
      pub fn map(&mut self, va: u64, pa: u64, flags: Flags) -> Result<(), MapError> {
          // The hardware selects the table set from the top bits before it touches an index, so

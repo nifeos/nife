@@ -2,13 +2,13 @@
 
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
-An appendix to [notes/verification.md](../verification.md). It holds the proofs `crates/paging`
+An appendix to [notes/verification.md](../verification.md). It holds the proofs `crates/page_tables`
 gained on 2026-09-19 for milestone 161 (the x86_64 kernel port), when the direct map moved to
 block leaves.
 
 ## What changed, and the shape of the proof
 
-`crates/paging` gained a second and third leaf size, so the direct map stops costing 0.2% of RAM in
+`crates/page_tables` gained a second and third leaf size, so the direct map stops costing 0.2% of RAM in
 page tables. On QEMU's 256 MiB x86 machine that went from 560 KiB to 60 KiB; at 4 GiB, from 8,252 KiB
 to 64 KiB. The proofs follow the domain builder's shape ([iommu-domain.md](iommu-domain.md)). The
 decision that makes a block safe is pulled out as loopless arithmetic and proved for every input,
@@ -36,4 +36,4 @@ prove in well under a second, which points at the loop.
 
 The residual is the usual one. The proofs cover the leaf choice and the encodings, not `Mapper`
 writing the block into a built table. That is tested on all three formats
-(`crates/paging/tests/blocks.rs`) and booted.
+(`crates/page_tables/tests/blocks.rs`) and booted.

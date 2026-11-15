@@ -487,11 +487,13 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # is why a future editor should not just delete that check to add one back.
 CRATES="$(cat <<'TABLE'
 capability	9	the capability model
-paging	4	the address arithmetic, and the page set for an IOMMU domain
-memory_regions	623	the untyped-region accounting, no double-free
+page_tables	4	the address arithmetic, and the page set for an IOMMU domain
+memory_regions	570	the untyped-region accounting, no double-free
 static_elf	59	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	3	the physical frame allocator
 address_space_map	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
+allocation_cache	4	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
+byte_sink_contract	6	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	0	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
 program_argument_contract	60	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
 device_tree_blob	3	the device-tree parser's leaf readers
@@ -518,7 +520,6 @@ byte_glob	543	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	3	a directory capability's child never exceeds its parent, at any depth
 subtree_scope	227	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 counter_frequency_contract	2	the counter frequency page: a frame reads as unknown exactly when its magic differs, and a built page reads back its rate
-byte_sink_contract	1	the byte-sink framing: an end of stream decodes from exactly one message, its reserved words zero
 credential_contract	2	no request word reads outside the page; nothing but MATCH authenticates
 capability_plan	12	no wiring grants a right its declaration did not ask for
 periodic_deadline	5	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire

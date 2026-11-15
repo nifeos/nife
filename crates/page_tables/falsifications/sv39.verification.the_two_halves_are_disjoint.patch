@@ -1,0 +1,28 @@
+Falsifies `page_tables::sv39::the_two_halves_are_disjoint`.
+
+The defect: the high half is decided by the sign bit, taken one position too low. Sv39 sign-
+extends from bit 38, and "the high half is where the sign bit is set" is a correct reading of
+the specification; getting the bit's number wrong by one is the mistake that reading invites,
+because a 39-bit address has bits 38:0 and the count of bits and the index of the top bit differ
+by one. With bit 37 standing in for it, every address with bit 37 set is in the kernel half,
+including addresses that are squarely in the user half by the low test.
+
+Expected to fail: `assert!(!(Sv39::is_in_half(Half::Low, va) && Sv39::is_in_half(Half::High, va)))`,
+for any `va` with bit 37 set and bits 63:38 clear, `0x20_0000_0000` being the smallest.
+
+**The half test is shared and the proof is not.** The `aarch64` record makes the low half an
+inclusive range and the `x86_64` one turns the high test into a fits-in-the-mask test.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+index 476dfcac4..b7877d4f1 100644
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -117,7 +117,7 @@ pub trait PageFormat {
+         let top = va >> Self::SPLIT_SHIFT;
+         match half {
+             Half::Low => top == 0,
+-            Half::High => top == (u64::MAX >> Self::SPLIT_SHIFT),
++            Half::High => (va >> (Self::SPLIT_SHIFT - 1)) & 1 == 1,
+         }
+     }
+ 

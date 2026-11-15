@@ -558,7 +558,7 @@ pub fn start_screen_terminal(
         phys: screen.base - offset,
         pages,
         // A framebuffer, written and never read (`Aperture::copy_wide` reads the surface, in
-        // RAM): the mapping `paging::Flags::user_write_combining` exists for.
+        // RAM): the mapping `page_tables::Flags::user_write_combining` exists for.
         write_combining: true,
     };
     let driver_tid = crate::sched::spawn(move || {
