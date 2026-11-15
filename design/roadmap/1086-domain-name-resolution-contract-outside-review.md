@@ -171,12 +171,6 @@ decision; the recommendation comes first.
 
 The checks are in [the appendix](1086-domain-name-resolution-contract-outside-review/done-when.md).
 
-## Follow-on
-
-- **Outstanding.** Decisions 1 to 3, items 1 to 3 and 9 to 14, and the std-side half of item 7.
-  Checked against `crates/domain_name_resolution_contract/src`: the names of item 4 are
-  unchanged and the crate has no README.
-
 ## BUGS
 
 - This block has no review package to defer to. If a package follows it, that package's rulings win where they differ, and this block then changes to say so.
