@@ -167,29 +167,37 @@ the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them propo
 names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
 maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
 
-### Decision 3. Whether the driver refuses a device whose `Version` is not 2
+### Decision 3. The driver does not check `Version`; the kernel does
 
-Background. A virtio-mmio device reports a version in the register at `0x004`: 1 for the legacy
-layout, 2 for the layout the specification now describes. The driver checks the magic value and
-nothing else, so it would drive a legacy device with the modern handshake and find out by its
-queues failing. The direct transport (the virtio-pci path of 1062 step 7) has no such register. Its
-`read` answers a made-up magic and zero for any offset it does not name. A check written against
-the mmio register would therefore refuse every direct grant, unless that transport also answers it. QEMU's
-`virt` machine offers legacy mmio devices unless told otherwise, so which version the test suites
-meet today is a measurement this review did not make.
+Ruled by the maintainer on 2026-11-15 (UTC), provisional: a two-way door, which the architect may
+revisit.
 
-Recommendation. Check `Version == 2` beside the magic, and have the direct transport answer 2 for
-that offset, after one run of each QEMU suite on each architecture shows which version the devices
-report. Refusing a legacy device is the stricter choice and loosening it later is compatible;
-accepting one now and tightening later is not. This changes what the driver accepts, which is why
-it is brought and not made.
+The rule in force. The driver reads the magic value and never the `Version` register. The kernel
+is the one layer that reads a real `Version`, and it offers only modern devices on either bus: it
+refuses any value but 2 in every build, on the mmio scan, and its PCI transport answers 2 for the
+same offset. A driver therefore never sees a device whose `Version` is not 2, and a driver-side
+check would test a value the kernel has already tested. The direct transport (the virtio-pci path
+of 1062 step 7) has no such register and answers 0 for any offset it does not name, so a
+driver-side check would also need that transport to invent an answer. Item 6's driver half is
+closed as not done, on purpose.
+
+Background. A virtio-mmio device reports a version in the register at `0x004`. Version 1 is the
+legacy layout and version 2 is the modern layout the kernel drives. The virtio specification
+commit `oasis-tcs/virtio-spec@bb1dd2e1` (2026-06-01) adds mmio version 3: the version 2 register
+layout, with an asynchronous reset in which the driver polls `Status` until it reads back as 0.
+So a legacy device and a device newer than the kernel both exist or will exist, and neither is
+version 2. The kernel's `SUPPORTED_VERSION` is 2, so it refuses version 3 too, which is the strict
+choice. Accepting 3 later needs the kernel's `reset_to_features_ok` to poll `Status` the way
+`unregister` does after its reset (`kernel/src/virtio.rs`).
 
 Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 and version 2 with
-a layout each and refuses any other. Redox's `virtio-core` is PCI-only and has no such register.
+a layout each and refuses any other; it is one layer that both reads and drives. Redox's
+`virtio-core` is PCI-only and has no such register. Here the kernel owns the register and the
+driver sits behind it, so the check lives where the register is read.
 
-Concrete example. A board whose firmware offers a version 1 block device today boots to a driver
-that hangs after the handshake. With the check it stops at once, and the sentence names the
-register it read.
+Concrete example. A board whose firmware offers a version 1 block device never reaches the driver:
+the kernel's scan does not offer the slot, so the driver is never started for it, and nothing
+drives the device with the modern handshake and finds out by its queues failing.
 
 ## Done when
 
