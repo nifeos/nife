@@ -164,3 +164,28 @@ fn all_lists_every_public_constructor() {
         }
     }
 }
+
+/// **`without_write_combining` clears the write-combining request and nothing else.** A format that
+/// encodes write-combining as device memory decodes a write-combining leaf as this.
+#[test]
+fn without_write_combining_clears_only_the_write_combining_request() {
+    assert_eq!(
+        Flags::write_combining().without_write_combining(),
+        Flags::device()
+    );
+    assert_eq!(
+        Flags::user_write_combining().without_write_combining(),
+        Flags::user_device()
+    );
+    for flags in Flags::ALL {
+        let cleared = flags.without_write_combining();
+        assert!(!cleared.is_write_combining());
+        assert_eq!(cleared.is_device(), flags.is_device());
+        assert_eq!(cleared.is_writable(), flags.is_writable());
+        assert_eq!(cleared.is_user_accessible(), flags.is_user_accessible());
+        assert_eq!(cleared.is_global(), flags.is_global());
+        if !flags.is_write_combining() {
+            assert_eq!(cleared, flags);
+        }
+    }
+}

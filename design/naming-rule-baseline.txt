@@ -141,9 +141,9 @@ crates/paging/src/page_format.rs::is_user_page_va spelled-out
 
 crates/paging/src/x86_64.rs::MSR spelled-out
 
-crates/pci/src/lib.rs::CLASS_NVME spelled-out
+crates/pci_configuration_space/src/lib.rs::CLASS_NVME spelled-out
 
-crates/pci/src/lib.rs::mem32_window spelled-out
+crates/pci_configuration_space/src/lib.rs::mem32_window spelled-out
 
 crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 

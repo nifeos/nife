@@ -442,7 +442,14 @@ fn grade_session(
         ));
     }
 
-    let mut vt = Vt::new(script::COLS, script::ROWS);
+    // A `Vt` is hundreds of KiB, so it lives in a `static` built at compile time and is retargeted
+    // with `reset_to`, as `Vt`'s doc asks. A poisoned lock is taken anyway, since `reset_to` clears
+    // whatever a panicked caller left.
+    static TERMINAL: Mutex<Vt> = Mutex::new(Vt::new(script::COLS, script::ROWS));
+    let mut vt = TERMINAL
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    vt.reset_to(script::COLS, script::ROWS);
     let mut fed = 0usize;
     let mut block = 0usize;
     let mut matched = 0usize;

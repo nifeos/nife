@@ -131,7 +131,7 @@ fn boot_until_the_shell(esp: &std::path::Path, mode: &Mode) -> Option<String> {
         let text = so_far.lock().map(|t| t.clone()).unwrap_or_default();
         // The gate's loader holds the screen for the tour's dump until a byte arrives on COM1;
         // nothing reads the screen here, so release it at once.
-        if !released && text.contains(boot_ladder::SCREEN_HELD) {
+        if !released && serial_console::HEADS.screen_held().is_in(&text) {
             released = serial
                 .write_all(b"\n")
                 .and_then(|()| serial.flush())

@@ -242,7 +242,7 @@ impl Flags {
     /// write-combining as plain device memory (aarch64) decodes a write-combining leaf back to.
     ///
     /// Name: provisional (lane milestone/1101-1113-outside-review-fixes, 2026-11-14 UTC).
-    #[cfg(kani)]
+    #[cfg(any(test, kani))]
     pub(crate) const fn without_write_combining(self) -> Self {
         Flags(self.0 & !ACCESS_WRITE_COMBINE)
     }
