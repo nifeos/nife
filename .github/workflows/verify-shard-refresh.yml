@@ -12,7 +12,7 @@ name: verify shard refresh
 # approved by calef 2026-10-07 UTC). The `prove` shards are balanced by a seconds-per-crate table in
 # script/verify. It was read once on 2026-08-14 and drifted until one shard took 27 minutes against
 # a plan of 19.8, and a stale row costs balance rather than correctness, so nothing went red. This
-# is the rung above a comment saying "re-measure sometimes": every Monday it reads the last 20 green
+# is the rung above a comment saying "re-measure sometimes": every day it reads the last 20 green
 # runs' per-crate seconds out of their logs, and rewrites the table when a planned shard is more
 # than 15% off its median or when repacking would save a minute. helpers/verify_times.py holds the
 # rule and its reasons; each shard also warns on its own run when it lands more than 30% off.
@@ -24,9 +24,11 @@ name: verify shard refresh
 
 on:
   schedule:
-    # 05:00 UTC Mondays, an hour before the metrics run, so the two pull requests do not race for
-    # the same reviewer's attention.
-    - cron: "0 5 * * 1"
+    # 05:00 UTC daily, an hour before the metrics run, so the two pull requests do not race for
+    # the same reviewer's attention. Daily and not weekly because a harness lands on any day: one
+    # landed on a Saturday took a 3-second row to 90 seconds, and a weekly run would have left the
+    # shards planned on the 3 until the Monday. A day with no drift opens no pull request.
+    - cron: "0 5 * * *"
   workflow_dispatch:
 
 concurrency:
