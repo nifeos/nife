@@ -63,7 +63,7 @@ crate would be a repository nobody outside could use and that pins the SDK back 
 fix: see Decision 1. Effort: S to fold the roles into the program, L to re-cut a library. One-way:
 a repository and a published name.
 
-**2. No test can run anywhere but under QEMU, and no proof exists.** The crate has zero unit
+**2. No test can run anywhere but under QEMU, and no proof exists.** DONE (the pure logic takes slices or closures, with host tests in `tests.rs` and Kani harnesses in `verification`). The crate has zero unit
 tests, no Kani harness, and one `no_run` doctest (`:192-197`). Its pure logic is `find_file`
 (`:399-421`), `pattern_byte` (`:232-239`), `ip_checksum` (`:606-617`), `build_dhcp_discover`
 (`:723-796`) and `parse_dhcp_offer` (`:821-865`). Each reads or writes the fixed `DMA_VA` through
@@ -201,8 +201,8 @@ The checks are in [the appendix](1113-virtio-outside-review/done-when.md).
   entry points and from `notes/virtio.md`, and did not observe it.
 - Items 6 and 13 cite specification requirements from memory; nobody has verified the section
   numbers,   and the recording lane should confirm them against virtio 1.2 before the text lands.
-- Item 14 states a performance shape and no figure. A figure needs `script/bench` on a machine
-  with the storage rows, which the review did not run.
+- Item 14's figure is the storage benchmark already recorded in `notes/benchmarks.md`; nobody ran
+  `script/bench` for this milestone.
 - The crates.io figures are one API call each at the time of the review; the `virtio` name's
   availability on crates.io rests on a single not-found response.
 - The six-copy count of the handshake constants comes from a `grep` for the magic value and
