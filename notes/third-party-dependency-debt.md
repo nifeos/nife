@@ -85,7 +85,7 @@ Sorted by crate name, then version. Each entry names the part it fails. The safe
 - subtle 2.6.1: safety argument, lacking a comment on every unsafe block
 - talc (vendored): safety argument, lacking a comment on every unsafe block and a Safety section on every unsafe fn
 - tock-registers 0.12.0: safety argument, lacking a comment on every unsafe block
-- uuid 1.29.0: safety argument, lacking a comment on every unsafe block and a Safety section on every unsafe fn
+- uuid 1.29.2: safety argument, lacking a comment on every unsafe block and a Safety section on every unsafe fn
 - zerocopy 0.8.63: safety argument, lacking a comment on every unsafe block, a Safety section on every unsafe fn and a Safety section on every unsafe trait
 - zeroize 1.9.0: safety argument, lacking a comment on every unsafe block
 - zeroize 1.9.1: safety argument, lacking a comment on every unsafe block
