@@ -7,14 +7,17 @@ Expected to fail: the harness reaches `refused_inputs_never_reach_here` (an unwi
 panic), so Kani reports "encountered failures other than panics".
 
 diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
-index 0eba0def7..d00d4161b 100644
+index cf32cd949..7258b14d1 100644
 --- a/crates/address_space_map/src/lib.rs
 +++ b/crates/address_space_map/src/lib.rs
-@@ -151,7 +151,6 @@ pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
+@@ -208,10 +208,6 @@ pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
  /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
  /// aligned, stops the build instead of colliding with a runtime page at run time.
- pub const fn pair_page(va: u64) -> u64 {
--    assert!(va.is_multiple_of(PAGE), "a pair page must be page aligned");
+ pub const fn pair_page(virtual_address: u64) -> u64 {
+-    assert!(
+-        virtual_address.is_multiple_of(PAGE),
+-        "a pair page must be page aligned"
+-    );
      assert!(
-         PAIR_PAGES.contains(va),
+         PAIR_PAGES.contains(virtual_address),
          "a pair page must lie in PAIR_PAGES (address_space_map)"

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 956, 1017
 decision_dependencies: 171, 305
@@ -40,6 +40,8 @@ Effort: S is half a day for a lane or less, M a day or two, L more. A door is on
 outside the repository acts on it after the first tag (a public name, a published behavior, a layout, an identity, a dependency). Everything else is two-way, and the maintainer decides it.
 Line numbers are from `crates/address_space_map/src/lib.rs` at `137639a3` unless a path says
 otherwise.
+
+The ledger of what landed and what is left is in [the appendix](1076-address-space-map-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -108,8 +110,9 @@ The comparison with nearby work is in [the appendix](1076-address-space-map-outs
 
 ## Decisions for the architect
 
-Three one-way doors. Each is a public name that becomes the repository's, crates.io's or every
-caller's at the first tag.
+The crate's name and the address and length constants are public names that become the
+repository's, crates.io's or every caller's at the first tag. The whole-window check is a two-way
+door before the first tag, and the maintainer has decided it, provisionally.
 
 ### The crate's name
 
@@ -174,9 +177,22 @@ Prior art: `vm-memory` checks a region's range against its neighbors once, as da
 
 Concrete example: `crates/process_builder/src/lib.rs` lines 51 to 54 builds `SCRATCH_WINDOW` from two `runtime_window` calls, one for the start and one for the end. With `window` it is one call that also proves the 64 MiB between them lies in the band.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The crate gains one function,
+`pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64`, which asserts
+both arguments page aligned and `band.holds(start, start + bytes)` and returns the start. The three
+one-page functions become one-line wrappers over it with `PAGE_BYTES`, and their callers do not
+change. The name `window` ships provisional. Item 9 is the work.
+
 ## Done when
 
 The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** The three decisions, items 15 and 17, and the move's items 2, 3, 5, 11 and 13,
+  which an architect rules or the move lane does. Checked against `crates/address_space_map`: the
+  crate has no README, `Band::new` or `window`, and still inherits its manifest from the workspace.
 
 ## BUGS
 

@@ -8,7 +8,7 @@ pub const MAP: u64 = 0;
 /// into one **`PageFrame` capability** naming the run,
 /// and return the slot it landed in.
 /// `pages == 0` means one page, which is what every caller passed before the count existed
-/// (ruled on 2026-09-26). Nothing is mapped: the caller decides where to map it, and
+/// Nothing is mapped: the caller decides where to map it, and
 /// may delegate it first. This is the split that makes a page a first-class, delegatable object
 /// rather than something mapped in one shot. `OutOfMemory` when the run does not fit, and then
 /// the region's budget is untouched; also when the caller's capability table is full, and then
@@ -23,7 +23,7 @@ pub const RETYPE: u64 = 1;
 /// produced a kernel object is **pinned**: [`DESTROY`] reclaims it once the objects are torn down.
 /// `space` is read only for [`object_type::PROCESS`](super::object_type::PROCESS), the slot of the
 /// space it will hold. `floor` is the lowest slot the new capability may land in, `0` for the first
-/// free one; a `std` program passes `std_runtime_contract::SLOTS`. `BadMethod` for an unknown
+/// free one; a `std` program passes the first slot past those the runtime reserves. `BadMethod` for an unknown
 /// `object_type`; `OutOfMemory` when the untyped, the object registry or the capability table is
 /// exhausted.
 ///
@@ -49,9 +49,8 @@ pub const SPLIT: u64 = 3;
 pub const DESTROY: u64 = 4;
 
 /// `invoke(capability, USAGE, record, _, _)` -> pages: **how much of this region has been spent, and on
-/// what**, for a `record` from [`usage`](super::usage) . Needs `ENUMERATE` alone, the rule set for `pmap`. `BadMethod` for an unknown
-/// record, checked first; [`crate::Error::Gone`] for a region already reclaimed. Name and number
-/// ratified 2026-09-27.
+/// what**, for a `record` from [`usage`](super::usage) . Needs `ENUMERATE` alone, the right a lister of mappings needs. `BadMethod` for an unknown
+/// record, checked first; [`crate::Error::Gone`] for a region already reclaimed.
 ///
 /// # BUGS
 /// - **A subtree record walks the whole region table under the region lock, interrupts masked**:

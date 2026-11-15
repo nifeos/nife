@@ -1,7 +1,7 @@
 //! A program's manifest, as the bytes of an ELF note it carries: inside the executable behind a
 //! `PT_NOTE`, so it is in the bytes the progenitor hashes (§197 (a package is one archive file),
 //! calef's option M2, 2026-09-26 UTC). The wire format between [`carry!`] and the shell and
-//! progenitor that read it (AGENTS.md rule 7); `crates/elf` finds the note, and this crate starts
+//! progenitor that read it (AGENTS.md rule 7); `crates/static_elf` finds the note, and this crate starts
 //! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_LEN`] bytes) or
 //! [`ZONED_VERSION`] 2. One manifest has exactly one encoding: [`decode`] refuses anything
 //! [`encode`] would not write. The layouts are below; notes/capability-manifest-note.md has the
@@ -111,9 +111,9 @@ pub const OWNER: &[u8] = b"nife"; // wire literal
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
 pub const MANIFEST: u32 = 1;
 
-/// The descriptor version this crate writes and the only one it reads. The encoding it numbers (a
-/// version word, then little-endian fields in a fixed order) is calef's ruling of 2026-09-26; the
-/// field order of version 1 is milestone 597's lane's design, in the module documentation.
+/// The first descriptor version: a version word, then little-endian fields in a fixed order, with
+/// no zones and no service byte. [`decode`] reads this version and [`ZONED_VERSION`] and
+/// [`SERVICED_VERSION`], and refuses any later one.
 pub const VERSION: u32 = 1;
 
 /// The version of the set of manifest note types and their descriptors: 1. A break bumps it, with
@@ -176,19 +176,34 @@ const HEADER_LEN: usize = 12;
 pub const NOTE_LEN: usize = HEADER_LEN + NAME_FIELD + DESCRIPTOR_LEN;
 
 /// Why a descriptor was refused. Provisional names.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Error {
     /// Fewer than four bytes, so not even a version.
     NoVersion,
     /// A version this reader does not know. A later layout is refused rather than guessed at.
     UnknownVersion,
-    /// A version 1 descriptor that is not exactly [`DESCRIPTOR_LEN`] bytes: cut short, or with
-    /// bytes after the last field.
+    /// A descriptor cut short, or with bytes after its last field: version 1 is exactly
+    /// [`DESCRIPTOR_LEN`] bytes, and the later versions add their zone and service bytes.
     WrongLength,
     /// A field holds a value outside its range, or a byte the layout says is zero is not. The
     /// offset is the first such byte.
     BadField(usize),
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::NoVersion => f.write_str("fewer than four bytes, so no version word"),
+            Error::UnknownVersion => f.write_str("a descriptor version this reader does not know"),
+            Error::WrongLength => f.write_str("a descriptor cut short or with bytes after its end"),
+            Error::BadField(at) => {
+                write!(f, "a field at offset {at} holds a value outside its range")
+            }
+        }
+    }
+}
+
+impl core::error::Error for Error {}
 
 // Offsets, named once so `encode` and `decode` cannot disagree about where a field is.
 const ARG: usize = 4;
@@ -288,14 +303,16 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     out[ARG] = match m.program_argument {
         ProgramArgumentDeclaration::Forbidden => 0,
         ProgramArgumentDeclaration::Required => 1,
-        // A program whose line is its argv (milestone 205 (how a foreign program is told what to
-        // do), §170 (how a foreign program is told what to do)). Added to version 1 in place on 2026-09-27; see the module's "one encoding"
-        // paragraph for calef's ruling.
+        // A program whose line is its argv; see the module's "one encoding" paragraph.
         ProgramArgumentDeclaration::Words(WordGrant::ReadOnly) => 2,
         ProgramArgumentDeclaration::Words(WordGrant::ReadWrite) => 3,
         ProgramArgumentDeclaration::Words(WordGrant::Create) => 4,
     };
     if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
+        assert!(
+            minimum <= maximum,
+            "a required memory grant has a minimum no greater than its maximum"
+        );
         out[MEM] = 1;
         put8(&mut out, MEM_MINIMUM, minimum);
         put8(&mut out, MEM_MAXIMUM, maximum);
@@ -641,6 +658,15 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
         i += 1;
     }
     put4(&mut out, 0, ZONED_VERSION.to_le_bytes());
+    write_zones(&mut out, zones);
+    out
+}
+
+/// **Write a zone count and its length-prefixed zones after the fixed fields**, checking each zone
+/// as [`decode`] will: canonical, at most 253 bytes (so its length fits the prefix byte), and
+/// sorted strictly after the one before. Returns the offset after the last zone. One body for
+/// [`encode_zoned`] and [`encode_serviced`], so the two cannot disagree about what they accept.
+const fn write_zones(out: &mut [u8], zones: &[&str]) -> usize {
     out[DESCRIPTOR_LEN] = zones.len() as u8;
     let mut at = DESCRIPTOR_LEN + 1;
     let mut z = 0;
@@ -665,7 +691,7 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
         at += 1 + zone.len();
         z += 1;
     }
-    out
+    at
 }
 
 /// Every zone of a version 2 descriptor, checked: a count of one to [`MAXIMUM_ZONES`], each zone
@@ -924,24 +950,7 @@ pub const fn encode_serviced<const LEN: usize>(
     out[1] = v[1];
     out[2] = v[2];
     out[3] = v[3];
-    out[DESCRIPTOR_LEN] = zones.len() as u8;
-    let mut at = DESCRIPTOR_LEN + 1;
-    let mut z = 0;
-    while z < zones.len() {
-        let zone = zones[z].as_bytes();
-        out[at] = zone.len() as u8;
-        let mut b = 0;
-        while b < zone.len() {
-            out[at + 1 + b] = zone[b];
-            b += 1;
-        }
-        assert!(
-            z == 0 || before(zones[z - 1].as_bytes(), zone),
-            "zones are sorted ascending, each once"
-        );
-        at += 1 + zone.len();
-        z += 1;
-    }
+    let at = write_zones(&mut out, zones);
     out[at] = service as u8;
     out
 }
@@ -980,7 +989,7 @@ const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
 /// Carry this manifest in the program's own bytes: one line at module scope, any constant
 /// `grant_plan::Manifest`, and optionally its resolver zones, sorted, `""` for the root
 /// ([`ZonedNote`]). It places one [`Note`] in `.note.nife.manifest`; used twice it is a duplicate
-/// symbol, and readers refuse a file with two notes (`elf::NoteError::Duplicate`).
+/// symbol, and readers refuse a file with two notes (`static_elf::NoteError::Duplicate`).
 ///
 /// ```ignore
 /// capability_manifest_note::carry!(MANIFEST, zones = &["basalt.nifeos.org"]);

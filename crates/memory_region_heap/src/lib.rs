@@ -5,11 +5,10 @@
 //! #[global_allocator]
 //! static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 //! // first thing in _start:
-//! HEAP.initialize(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
+//! HEAP.initialize(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS, 4 * 1024 * 1024);
 //! ```
 //!
-//! Name: provisional (lane/784-talc, 2026-10-21 UTC), for the type it holds; calef has not ruled
-//! on it.
+//! Name: ratified 2026-11-14 (UTC) (block 1100 decision A), for the type it holds.
 
 #![no_std]
 
@@ -26,7 +25,10 @@ use talc::source::Manual;
 /// and one that does should still keep it inside `address_space_map::HEAP`.
 ///
 /// [`initialize`]: MemoryRegionHeap::initialize
-pub const DEFAULT_BASE: u64 = address_space_map::HEAP.start;
+///
+/// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). An address is `_VIRTUAL_ADDRESS` in
+/// every location.
+pub const DEFAULT_BASE_VIRTUAL_ADDRESS: u64 = address_space_map::HEAP.start;
 
 const PAGE: u64 = 4096;
 
@@ -49,8 +51,20 @@ struct Inner {
     maximum: u64,
 }
 
+/// What [`MemoryRegionHeap::commit_all`] could not do: the bytes of the capped range that stayed
+/// unmapped because the budget ran out.
+///
+/// Name: provisional (block 1100 decision A, 2026-11-14 UTC).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Short {
+    /// Bytes of the cap, a whole number of pages, that the heap could not commit.
+    pub uncommitted_bytes: u64,
+}
+
 /// The untyped-backed global allocator. One static per program, named in its
 /// `#[global_allocator]` attribute; see the module docs for the contract.
+///
+/// Name: ratified 2026-11-14 (UTC) (block 1100 decision A).
 pub struct MemoryRegionHeap {
     locked: AtomicBool,
     inner: core::cell::UnsafeCell<Inner>,
@@ -77,6 +91,8 @@ impl Guard<'_> {
 
 impl MemoryRegionHeap {
     /// An empty, un-wired heap, `const` so it can be the `#[global_allocator]` static.
+    ///
+    /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A).
     pub const fn new() -> Self {
         MemoryRegionHeap {
             locked: AtomicBool::new(false),
@@ -100,8 +116,8 @@ impl MemoryRegionHeap {
     /// mapped, and a later allocation could be handed memory in that hole. A caller that wants to
     /// know asks [`is_initialized`](Self::is_initialized) first.
     ///
-    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md.
+    /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). Spelled out under the `init` ruling
+    /// of 2026-10-26 (UTC), in design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();
@@ -129,7 +145,8 @@ impl MemoryRegionHeap {
     }
 
     /// **Map the whole capped range now**, rather than on the first allocations that need it.
-    /// `false` when the budget could not cover it, in which case whatever was mapped stays usable.
+    /// `Err(`[`Short`]`)` when the budget could not cover it, naming the bytes left unmapped; whatever
+    /// was mapped stays usable.
     ///
     /// For a program that carves its budget last-in first-out (the shell's `--mem` grants, pipes and
     /// staging regions come back only while they are the budget's newest carve): committing at
@@ -138,18 +155,48 @@ impl MemoryRegionHeap {
     /// worse: a region that has been split cannot be destroyed until its child is, so the whole
     /// budget would stay held after the program exits. Milestone 47 (navigation and naming) met
     /// that first: its shell's kernel tests kept a budget's worth of frames each.
-    pub fn commit_all(&self) -> bool {
+    ///
+    /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). The return changed from `bool` to
+    /// `Result<(), Short>` under the same ruling.
+    pub fn commit_all(&self) -> Result<(), Short> {
         let mut g = self.lock();
         let inner = g.inner();
         let rest = inner.maximum.saturating_sub(inner.committed);
-        rest == 0 || Self::grow(inner, rest)
+        if rest == 0 || Self::grow(inner, rest) {
+            return Ok(());
+        }
+        Err(Short {
+            uncommitted_bytes: inner.maximum.saturating_sub(inner.committed),
+        })
     }
 
     /// Bytes of untyped currently mapped for the heap. The demo workload reports this so the
     /// test can assert growth actually happened (and stayed bounded).
+    ///
+    /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A).
     pub fn committed_bytes(&self) -> u64 {
         let mut g = self.lock();
         g.inner().committed
+    }
+
+    /// The cap in force, in bytes: the `maximum_bytes` given to [`initialize`](Self::initialize),
+    /// rounded down to a whole page. Zero until the heap is wired. A later `initialize` does not
+    /// change it.
+    ///
+    /// Name: provisional (block 1100 item 13, decision A, 2026-11-14 UTC).
+    pub fn maximum_bytes(&self) -> u64 {
+        let mut g = self.lock();
+        g.inner().maximum
+    }
+
+    /// The virtual address where the heap starts: the `base` given to
+    /// [`initialize`](Self::initialize). Zero until the heap is wired. A later `initialize` does
+    /// not change it.
+    ///
+    /// Name: provisional (block 1100 item 13, decision A, 2026-11-14 UTC).
+    pub fn base_virtual_address(&self) -> u64 {
+        let mut g = self.lock();
+        g.inner().base
     }
 
     fn lock(&self) -> Guard<'_> {
@@ -184,13 +231,13 @@ impl MemoryRegionHeap {
         let start = inner.base + inner.committed;
         let mut got: u64 = 0;
         while got < want_pages {
-            let va = start + got * PAGE;
-            // SAFETY: plain syscall; the kernel validates the slot, the va, and the budget.
+            let virtual_address = start + got * PAGE;
+            // SAFETY: plain syscall; the kernel validates the slot, the virtual address, and the budget.
             if unsafe {
                 user_mode_runtime::invoke(
                     inner.memory_region_slot,
                     abi::memory_region::MAP,
-                    va,
+                    virtual_address,
                     0,
                     0,
                 )
@@ -322,7 +369,7 @@ mod tests {
     /// the next `grow` is at the cap and issues no syscall.
     fn heap_at_its_maximum() -> MemoryRegionHeap {
         let heap = MemoryRegionHeap::new();
-        heap.initialize(3, DEFAULT_BASE, 16 * PAGE);
+        heap.initialize(3, DEFAULT_BASE_VIRTUAL_ADDRESS, 16 * PAGE);
         let mut g = heap.lock();
         g.inner().committed = 16 * PAGE;
         drop(g);
@@ -335,20 +382,20 @@ mod tests {
     fn a_second_initialize_changes_nothing() {
         let heap = MemoryRegionHeap::new();
         assert!(!heap.is_initialized());
-        heap.initialize(3, DEFAULT_BASE, 16 * PAGE);
+        heap.initialize(3, DEFAULT_BASE_VIRTUAL_ADDRESS, 16 * PAGE);
         assert!(heap.is_initialized());
-        heap.initialize(4, DEFAULT_BASE + 64 * PAGE, 8 * PAGE);
+        heap.initialize(4, DEFAULT_BASE_VIRTUAL_ADDRESS + 64 * PAGE, 8 * PAGE);
 
         let mut g = heap.lock();
         let inner = g.inner();
         assert_eq!(
             (inner.memory_region_slot, inner.base, inner.maximum),
-            (3, DEFAULT_BASE, 16 * PAGE)
+            (3, DEFAULT_BASE_VIRTUAL_ADDRESS, 16 * PAGE)
         );
         inner.committed = 4 * PAGE; // as after a grow
         drop(g);
 
-        heap.initialize(3, DEFAULT_BASE + 64 * PAGE, 16 * PAGE);
+        heap.initialize(3, DEFAULT_BASE_VIRTUAL_ADDRESS + 64 * PAGE, 16 * PAGE);
         assert_eq!(
             heap.committed_bytes(),
             4 * PAGE,
@@ -367,5 +414,30 @@ mod tests {
         assert!(!MemoryRegionHeap::grow(inner, 0));
         // The control: a real request past the cap is refused too, as before.
         assert!(!MemoryRegionHeap::grow(inner, PAGE));
+    }
+
+    /// The accessors report what `initialize` was given, the cap rounded down to a page.
+    #[test]
+    fn the_accessors_report_the_maximum_and_the_base() {
+        let heap = MemoryRegionHeap::new();
+        assert_eq!((heap.maximum_bytes(), heap.base_virtual_address()), (0, 0));
+        heap.initialize(3, DEFAULT_BASE_VIRTUAL_ADDRESS, 16 * PAGE + 7);
+        assert_eq!(heap.maximum_bytes(), 16 * PAGE);
+        assert_eq!(heap.base_virtual_address(), DEFAULT_BASE_VIRTUAL_ADDRESS);
+        heap.initialize(4, DEFAULT_BASE_VIRTUAL_ADDRESS + PAGE, 8 * PAGE);
+        assert_eq!(heap.maximum_bytes(), 16 * PAGE);
+    }
+
+    /// A heap already at its cap, or with a cap of zero, has nothing left to commit, so
+    /// `commit_all` makes no syscall and succeeds.
+    #[test]
+    fn commit_all_with_nothing_left_succeeds() {
+        assert_eq!(heap_at_its_maximum().commit_all(), Ok(()));
+        let heap = MemoryRegionHeap::new();
+        assert_eq!(
+            heap.commit_all(),
+            Ok(()),
+            "an unwired heap has a cap of zero"
+        );
     }
 }

@@ -10,9 +10,9 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
 - The crate root's documentation opens with `(network_time_protocol, RFC 5905)` and expands every
   acronym at its first use; `contract_names`, `british_spelling`, `register_names` and
   `prose_acronyms` report zero findings.
-- Decision 2 rules the names and the pull request applies them, with the three callers in nife
+- The pull request applies the names Decision 2 decides, with the three callers in nife
   bumped in the same pull request that moves them, and no `#[doc(alias)]` of the earlier spelling.
-- The crate has no dependency, or the architect has ruled that it keeps `clock_contract`.
+- The crate has no dependency.
 - No shipped text names a nife note, script, milestone, pull request, service or person.
 - `#![forbid(unsafe_code)]` is present; the fuzz caller opts in with one target over `Query::accept`.
 - Eight Kani harnesses pass. Each has a falsification patch that `proofs / falsify` replays red. The

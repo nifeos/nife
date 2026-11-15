@@ -7,7 +7,7 @@
 /// Two refusals a sender must tell apart, and the ABI does:
 /// [`crate::Error::NoSuchSlot`] means the slot is empty, and [`crate::Error::Gone`] means the
 /// endpoint this capability names has been destroyed, including while this thread was blocked
-/// inside the send. See `crates/byte_sink_contract`.
+/// inside the send. A byte-sink contract can build on the difference.
 pub const SEND: u64 = 0;
 
 /// `invoke(capability, RECEIVE, _, _, _)` -> w0, with w1 in x1 and w2 in x2. **Blocks until a message
@@ -27,7 +27,7 @@ pub const RECEIVE: u64 = 1;
 /// data word, over this endpoint; blocks until a receiver takes it. The endpoint capability needs
 /// `WRITE` (you may send here), and the *delegated* capability needs `GRANT` (you were trusted to
 /// pass it on). `rights` may only narrow what the sender holds, never widen it. This is the
-/// operation that makes nife a capability system a process can actually compose in: authority moves
+/// operation that makes a capability system one a process can actually compose in: authority moves
 /// between processes at runtime instead of being wired by the kernel at spawn. Only a
 /// [`RECEIVE_CAPABILITY`] takes the capability: a plain [`RECEIVE`] gets the data word and the copy is
 /// dropped, on either arrival order.
@@ -78,7 +78,7 @@ pub const REAP: u64 = 5;
 /// unknown one is [`crate::Error::BadMethod`], refused before the walk.
 ///
 /// Needs [`rights::ENUMERATE`](super::rights::ENUMERATE), not `READ`: a domain names its members and
-/// does not act on them (ruled on 2026-08-17). Without it: `NotPermitted`, never an empty domain.
+/// does not act on them. Without it: `NotPermitted`, never an empty domain.
 /// Start at cursor 0 and feed each `next_cursor` back until [`survey::DONE`](super::survey::DONE).
 /// Each call is its own snapshot, never a lock held across the walk.
 pub const SURVEY: u64 = 6;
@@ -104,11 +104,10 @@ pub const NO_CAPABILITY: u64 = u64::MAX;
 /// [`crate::reply`] it minted for a [`CALL`], with `x1` its slot. Only the kernel writes `x4`: a
 /// delegation, a plain [`SEND`], an interrupt signal and a death leave it `0`. A `CALL` whose
 /// Reply did not fit the table arrives with `x1 ==` [`NO_CAPABILITY`] and `x4 == 0`. **Test this, never
-/// `x1 != NO_CAPABILITY`**: `user_mode_runtime::receive_request` does, and returns the typed Reply
-/// `user_mode_runtime::reply` accepts. Ruled on 2026-10-03 (UTC): a typed runtime helper.
+/// `x1 != NO_CAPABILITY`**: a runtime wrapper tests `x4`, never `x1`, and returns a typed Reply.
 ///
 /// Name: ratified 2026-10-03 (calef, reviewing milestone 706 (a `CALL` server can tell a Reply from
-/// a delegation): "Ratify `REPLY_DELIVERED`.").
+/// a delegation), which ratified `REPLY_DELIVERED`).
 pub const REPLY_DELIVERED: u64 = 1;
 
 // `x4` carries both tags, so they must differ from each other and from the untagged `0`.
