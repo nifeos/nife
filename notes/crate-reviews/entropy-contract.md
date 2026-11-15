@@ -75,8 +75,38 @@ This lane ran each check in its own worktree, on this branch.
 | `helpers/lint_externalized_crates.py` | 0 hits; this branch removes the crate's waiver |
 | `script/lint`, `script/test` | in the pull request's checks |
 
-Not run, and so not claimed: the stranger test, mutation, `cargo-semver-checks` (a first release
-has no baseline) and the template's workflows, which run in the repository.
+Not run, and so not claimed: mutation, `cargo-semver-checks` (a first release has no baseline)
+and the template's workflows, which run in the repository.
+
+## The stranger's run of the README
+
+A fresh-context agent took the tree `script/crate-move --dry-run` stages, as a one-commit clone in
+a directory outside every repository, and followed the README alone. Every command it gives
+worked. `cargo test` passed 20 unit tests and 6 doctests, and the three bare-metal builds passed.
+`cargo kani` verified 6 of 6 in 1 minute 18 seconds to 2 minutes 5 seconds on a loaded host, at
+2.2 gigabytes peak. One harness ran by its full path, two falsification patches applied, failed
+and came undone, and the 1.88 check passed. The
+Kani install was already present, so its two commands were read and not run.
+
+It found 20 gaps in what the README says, none in its commands. The README now:
+
+- says what a `CALL`, an endpoint, a backend, the readiness endpoint and the `INTERFACES` note are;
+- states the kernel's error range as the caller's condition, as `delivered_bytes` does;
+- says a repeated first draw is refused only from `MAXIMUM_BYTES` bytes up, as `readiness` does;
+- calls `fill_with` a stricter loop than the example, says a longer reply is a `ShortReply` too,
+  and says `Refusal` is `#[non_exhaustive]`;
+- writes out all three target builds, and adds the 1.88 targets to the minimum-version check;
+- states the measured proof time and the harness that takes it, and what Kani's setup downloads;
+- quotes the failing run's lines as Kani prints them, with each exit status;
+- undoes a patch with `patch -R` instead of `git checkout -- src`, which would discard a reader's
+  own edits;
+- carries the fourth `BUGS` item the crate documentation has.
+
+One falsification patch's opening lines now name both checks it turns red.
+
+The run was against the staged tree before the repository existed. The repository's own record,
+`Last run:` in `docs/stranger-test.md`, is the runbook's step 12, a run the maintainer launches
+from a clone of the repository.
 
 ## Public API
 
@@ -166,7 +196,8 @@ The crate itself does not. What blocks the move is in nife, and in the decisions
 | Convert the six path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |
 | Repoint `helpers/interface_declarations_check.py`, `helpers/interface_stability.py`, `helpers/trust_boundary_crates.tsv`, `packages/contracts.package.toml`, the `script/verify` row, the mutation baseline row and `helpers/template_report_baseline.txt`. | move lane |
 | The manifest's `publish = false` comment names this tree's allowlist path; the reason in the new repository is the publishing hold. | move lane |
-| Run the stranger test and the template's workflows in the new repository, with the patches rewritten to its paths. | move lane |
+| Run the template's workflows in the new repository, with the patches rewritten to its paths. | move lane |
+| Run the stranger test from a clone of the repository and record it in `docs/stranger-test.md`. | maintainer, runbook step 12 |
 
 ## Decided by the maintainer, provisional
 
