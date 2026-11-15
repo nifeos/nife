@@ -32,6 +32,10 @@ boundary.
   this interface in a program's declaration of what it links. A program built against one version
   is refused by a kernel that serves another at spawn; the ABI never dual-serves. A renumber of any
   public number bumps `ABI_VERSION`.
+  A retired number stays in the crate as reserved and is never reused for another method; the
+  console's `WRITE` is one, and a test holds it. Removing a number that no kernel serves is not
+  done. The version gate (`helpers/format_values_check.py`) refuses a change or removal of a public
+  number without a changed `ABI_VERSION`, and a new number owes nothing.
 - The numbers are pinned as literals in the crate's tests, so changing one is a deliberate act that
   fails the build until the test and the version change with it.
 
