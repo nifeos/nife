@@ -99,8 +99,10 @@ Ruled by the architect, 2026-11-14 (UTC). The contract states what a service doe
 
 The crate's `request_is_well_formed` says whether a request word is well formed, so the three
 service loops share one check; the name is provisional. Prior art: Linux `getrandom(2)` rejects
-unknown flags with `EINVAL`, and virtio requires zero in the fields it does not define (both
-unverified wording). This crate has no error channel, so the nearest honest answer is
+an unknown flag with `EINVAL` (`drivers/char/random.c`), the restrictive form. Virtio takes the
+other form: a driver ignores and never accepts a reserved feature bit, and a device ignores the
+reserved flags and fields of an indirect descriptor (the virtio specification's feature-bit and
+packed-virtqueue sections). This crate has no error channel, so the nearest honest answer is
 `NO_ENTROPY`. Example: a client sends `request(1, 8) | (1 << 20)` and reads `NO_ENTROPY`.
 
 ### Decision 3: What to call the refusal type and the reply builder
@@ -126,8 +128,6 @@ The checks are in [the done-when appendix](1071-entropy-contract-outside-review/
 - The dry run was made against the template's `main`, which is newer than its newest release. At
   the release the move pins, the passive-voice and prose gates may not run, and a lane repeats the
   run there.
-- The prior-art rows for Linux, virtio and `x86_init_rdrand` are from memory and marked unverified
-  where the wording matters; a lane confirms the sources before a decision cites them.
 - Item 8's false-refusal probability assumes a uniform source. A source with its output biased
   toward one byte value is exactly the source the rule means to refuse, so the figure bounds from below how often
   the rule wrongly refuses a good source. It says nothing about a poor one.
