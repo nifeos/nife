@@ -1080,7 +1080,6 @@ crates/clock_contract/src/lib.rs::ClockPage
 
 crates/clock_contract/src/lib.rs::GOLDFISH
 
-crates/clock_contract/src/lib.rs::MAGIC
 
 crates/clock_contract/src/lib.rs::NONE
 
@@ -5882,8 +5881,6 @@ crates/sealed_pair/src/lib.rs::BOOT_PROGRAMS
 crates/sealed_pair/src/lib.rs::EntrySeal
 
 crates/sealed_pair/src/lib.rs::Seal
-
-crates/sealed_pair/src/lib.rs::THE_BOARD_IS_THE_AUTHORITY
 
 crates/sealed_pair/src/lib.rs::TableDisagreement
 
