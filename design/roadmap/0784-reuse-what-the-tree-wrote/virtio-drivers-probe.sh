@@ -79,7 +79,7 @@ index 000000000..4f9800781
 +use core::ptr::NonNull;
 +use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 +
-+use paging::domain::DmaRegion;
++use page_tables::domain::DmaRegion;
 +use virtio_drivers::transport::pci::PciTransport;
 +use virtio_drivers::transport::pci::bus::{ConfigurationAccess, DeviceFunction, PciRoot};
 +use virtio_drivers::{BufferDirection, Hal, PhysAddr};

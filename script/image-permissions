@@ -6,7 +6,7 @@
 #   script/image-permissions --no-build   check whatever is already built
 #
 # WHY THIS EXISTS, and it is a real finding rather than a hypothetical. `crates/static_elf` refuses a
-# writable-executable segment (`Error::WritableAndExecutable`) and `paging::Flags` has no
+# writable-executable segment (`Error::WritableAndExecutable`) and `page_tables::Flags` has no
 # constructor that can build such a page, so W^X is enforced on every ELF this system LOADS. Nothing
 # parsed the ELF this system IS. On 2026-08-31 milestone 196's lane ran the x86_64 kernel through
 # the tree's own parser, for no reason but to delete a duplicate, and the parser refused it:

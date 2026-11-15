@@ -1,0 +1,30 @@
+Falsifies `page_tables::x86_64::the_two_halves_are_disjoint`.
+
+The defect: a mask-and-compare where an equality belongs. `x & M == x` asks whether `x` FITS in
+`M`, not whether it equals it, and the two read almost identically at a glance; the first is
+what you write to test a set of flags and the second is what this line means. `top` is `va >>
+47`, which is at most seventeen bits, and `u64::MAX >> 47` is seventeen ones, so the test is
+true for every address ever passed to it. The high half swallows the whole address space, and
+with it every check that says "refuse this, it is a kernel address".
+
+Expected to fail: `assert!(!(Ia32e::is_in_half(Half::Low, va) && Ia32e::is_in_half(Half::High, va)))`,
+for any low-half address at all, `va == 0` included. That it fails so widely is the point: this
+defect makes the high-half test say nothing, and only a proof that quantifies over both tests at
+once notices, since each one alone still answers questions.
+
+**The half test is shared and the proof is not.** The `aarch64` record makes the low half an
+inclusive range and the `sv39` one moves the sign bit.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+index 476dfcac4..7505d5481 100644
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -117,7 +117,7 @@ pub trait PageFormat {
+         let top = va >> Self::SPLIT_SHIFT;
+         match half {
+             Half::Low => top == 0,
+-            Half::High => top == (u64::MAX >> Self::SPLIT_SHIFT),
++            Half::High => top & (u64::MAX >> Self::SPLIT_SHIFT) == top,
+         }
+     }
+ 

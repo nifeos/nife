@@ -14,7 +14,7 @@
 //! - **A full-screen flush is the whole screen.** A scroll (whole-surface damage) rewrites every
 //!   visible pixel, 8 MB on a 1080p monitor. Unmeasured on the swish leg; CI's timing is the record.
 //! - **Every pixel crosses a device mapping**, write-combining on `x86_64` (the kernel's PAT entry,
-//!   `paging::Flags::user_write_combining`), as qword stores: a `u64` is the widest store the
+//!   `page_tables::Flags::user_write_combining`), as qword stores: a `u64` is the widest store the
 //!   `x86_64` target can legalize (`-mmx,-sse,+soft-float`). A scroll-aware flush contract is the
 //!   remaining lever, outside this driver. Not measured on silicon.
 //! - **One client, no arbitration**: whoever holds the display endpoint draws; the compositor muxes.

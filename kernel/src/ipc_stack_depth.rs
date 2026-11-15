@@ -551,7 +551,7 @@ fn call_reply_el0() -> Option<()> {
                     maps: &[Mapping {
                         va: soak_page::VA,
                         phys,
-                        flags: paging::Flags::user_data(),
+                        flags: page_tables::Flags::user_data(),
                     }],
                     windows: &[],
                 },

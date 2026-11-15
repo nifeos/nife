@@ -70,6 +70,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// // `paddr` equals `vaddr` here; a loader wants `vaddr` (see `Segment::paddr`).
 /// assert_eq!(seg.paddr, seg.vaddr);
 /// ```
+#[derive(Debug, Clone, Copy)]
 pub struct Elf<'a> {
     pub(crate) bytes: &'a [u8],
     entry: u64,
@@ -113,7 +114,9 @@ impl<'a> Elf<'a> {
         }
 
         let entry = u64le(bytes, 24);
-        let phoff = u64le(bytes, 32) as usize;
+        // A 64-bit offset the target cannot hold names nothing, rather than truncating onto
+        // other bytes on a target whose `usize` is narrower.
+        let phoff = usize::try_from(u64le(bytes, 32)).map_err(|_| Error::BadProgramHeaders)?;
         let phentsize = u16le(bytes, 54) as usize;
         let phnum = u16le(bytes, 56) as usize;
 
@@ -199,10 +202,10 @@ impl<'a> Elf<'a> {
         }
 
         let flags = u32le(ph, 4);
-        let p_offset = u64le(ph, 8) as usize;
+        let p_offset = usize::try_from(u64le(ph, 8)).map_err(|_| Error::SegmentOutOfBounds)?;
         let vaddr = u64le(ph, 16);
         let paddr = u64le(ph, 24);
-        let filesz = u64le(ph, 32) as usize;
+        let filesz = usize::try_from(u64le(ph, 32)).map_err(|_| Error::SegmentOutOfBounds)?;
         let memsz = u64le(ph, 40);
 
         // Every check on the hostile fields; the slice below relies on its `end`.
@@ -224,6 +227,9 @@ impl<'a> Elf<'a> {
 
     /// The segments to map, in file order.
     pub fn segments(&self) -> impl Iterator<Item = Segment<'a>> + '_ {
+        // `parse` validated every header, so `segment_at` has no error to discard here; a check
+        // dropped from `validate` would make a segment vanish from this iterator, which the tests
+        // that count segments catch.
         (0..self.phnum).filter_map(|i| self.segment_at(i).ok().flatten())
     }
 }
@@ -243,7 +249,8 @@ pub(crate) fn check_segment_bounds(
     memsz: u64,
 ) -> Result<usize, Error> {
     // The segment cannot claim less memory than it has bytes on disk.
-    if (memsz as usize) < filesz {
+    // A `memsz` too large for the target is larger than any `filesz` that fits it.
+    if usize::try_from(memsz).is_ok_and(|memsz| memsz < filesz) {
         return Err(Error::SegmentTruncated);
     }
 

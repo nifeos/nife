@@ -52,7 +52,7 @@ These renamed once the four collisions above were excluded.
     `page_frame_map`/`page_frame_revoke`;
   - `is_frame_used`/`bring_up_frames`/`free_frames` -> their `page_frame` equivalents;
   - `map_current_user_frame` (all three architectures) -> `map_current_user_page_frame`;
-  - `OutOfFrames` -> `OutOfPageFrames` (`crates/paging`);
+  - `OutOfFrames` -> `OutOfPageFrames` (`crates/page_tables`);
   - `zeroed_frame` -> `zeroed_page_frame`, in three IOMMU files plus `compositor_service.rs`'s own,
     unrelated to that file's screen-frame prose;
   - the `FRAME_REPORT_MIN`/`SUITE_FRAME_BUDGET`/`rank::FRAMES` test-ledger and lock-rank constants;

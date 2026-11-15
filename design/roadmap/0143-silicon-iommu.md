@@ -30,7 +30,7 @@ not been made and cannot be scheduled.
 
 16b built IOMMU-backed DMA isolation in QEMU emulation on both ISAs: SMMUv3 on aarch64 and the
 ratified RISC-V IOMMU (v1.0.1) on riscv. The portable DMA-domain seam (`crate::iommu` over
-`paging::domain`), both arch drivers, boot bring-up, the `iommu_platform=on` enablement with the
+`page_tables::domain`), both arch drivers, boot bring-up, the `iommu_platform=on` enablement with the
 confinement test, and the disk and attacker suites all pass behind the IOMMU on QEMU.
 
 This milestone is the carry-over: when a board ships the ratified RISC-V IOMMU spec, 16b's riscv

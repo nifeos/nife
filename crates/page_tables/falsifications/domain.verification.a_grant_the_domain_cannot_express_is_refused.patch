@@ -1,0 +1,30 @@
+Falsifies `page_tables::domain::a_grant_the_domain_cannot_express_is_refused`.
+
+The defect: a region whose `base + size` wraps `u64` is accepted. The check is the newer of the
+two guards and the one whose absence is hardest to notice, because a wrapping region is not a
+region: it has no end, so "inside the grant" is not a statement that can be made about it, and
+the code that would notice is the code that computes the limit. `grant_pages`'s doc is careful
+that this is a proof obligation closed rather than a reachable bug fixed, and that is exactly
+why it needs a proof: no caller can construct such a region today, so nothing but this harness
+stands between the check and somebody deleting it as dead weight.
+
+Expected to fail: `assert!(grant_pages(r).is_err(), "a grant no page-granular domain can express
+exactly was accepted")`, for any page-aligned `base` with a `size` large enough to wrap, the
+smallest being `base = 2^64 - 4096` with `size = 4096`.
+
+The alignment guard above it is broken by the `an_enumerated_page_lies_inside_the_grant` record
+instead.
+
+diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
+--- a/crates/page_tables/src/domain.rs
++++ b/crates/page_tables/src/domain.rs
+@@ -71,9 +71,6 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
+     if !r.base.is_multiple_of(PAGE_SIZE) {
+         return Err(MapError::Misaligned);
+     }
+-    if r.base.checked_add(r.size).is_none() {
+-        return Err(MapError::BadRegion);
+-    }
+     Ok(r.size / PAGE_SIZE)
+ }
+ 
