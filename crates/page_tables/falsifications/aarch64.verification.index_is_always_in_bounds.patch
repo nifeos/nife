@@ -1,0 +1,30 @@
+Falsifies `page_tables::aarch64::index_is_always_in_bounds`.
+
+The defect: the index field is taken as ten bits rather than nine. That is the width a 32-bit
+x86 or an Sv32 table uses (1024 entries of four bytes to the page), and it is the wrong width
+for every format in this tree, all three of which put 512 eight-byte entries in a 4 KiB frame.
+An index of 512 or more is read and written past the end of `PageTable::entries`, which is the
+out-of-bounds write the walk must never be able to perform.
+
+Expected to fail: `assert!(Aarch64::index(va, level) < crate::ENTRIES)`, for any `va` whose
+selected field has bit 9 set. The `aarch64` record is the one that widens the mask; `sv39`'s
+drops it and `x86_64`'s moves the table size out from under it, so the three are not copies.
+
+**The index math is shared and the proof is not.** `PageFormat::index` is one default method in
+`lib.rs` and DECISIONS §19 (architectural parity) has each ISA state the property itself, so
+one defect here is caught
+three times over.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+index 476dfcac4..dabceb4bf 100644
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -107,7 +107,7 @@ pub trait PageFormat {
+     /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
+     fn index(va: u64, level: usize) -> usize {
+         let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
+-        ((va >> shift) & 0x1ff) as usize
++        ((va >> shift) & 0x3ff) as usize
+     }
+ 
+     /// Does `va` lie in `half` for this format? The top bits (above [`SPLIT_SHIFT`](Self::SPLIT_SHIFT))

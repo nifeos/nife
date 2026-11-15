@@ -34,7 +34,7 @@ ones found *before* the machine that punishes them.
 2. A bridge memory window nothing programs. QEMU's PVH boot leaves a root port's window
    unprogrammed, which one environment variable reproduces. Found by milestone 320's lane.
 3. The BAR window is sized by a constant rather than by the bus. The sizing pass already exists
-   in `pci::read_bars` and needs moving earlier; the leaf size is a value in `crates/paging`'s format
+   in `pci::read_bars` and needs moving earlier; the leaf size is a value in `crates/page_tables`'s format
    trait. Found by milestone 256's lane.
 4. Only the first IO APIC the MADT lists is kept, so half a multi-socket machine's interrupts have
    nowhere to go. Found by milestone 308's lane while writing the `BUGS` entry recording that 308's

@@ -17,7 +17,7 @@ own stretch items.
 
 The measurement corrected the block's own floor, in a useful direction. The block predicted 11
 TODO-class markers. There were 11 hits and only two markers: seven were comments *about* a
-`TODO` ("see the `TODO` on `paging::unmap`", "Not a TODO."), and two were literal text, the GUID
+`TODO` ("see the `TODO` on `page_tables::unmap`", "Not a TODO."), and two were literal text, the GUID
 formatter's `XXXXXXXX-XXXX` and `gl-one.txtXXX` in a glob test. `git grep -w TODO` is 82% false
 positives on this tree.
 

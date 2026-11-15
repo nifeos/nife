@@ -4,16 +4,16 @@ The defect is the widening the harness's doc names as the thing that would break
 low half stops being a contiguous prefix of the address space. `Half::Low` here also admits the
 band at `top == 2`, as a second user island. Both ends of a run can then sit in user bands while
 the pages between them (band 1) are not user pages, and the map loop, which checks only the two
-ends, walks straight through them. The patch is in `crates/paging`, the code the harness's guard
+ends, walks straight through them. The patch is in `crates/page_tables`, the code the harness's guard
 model calls, so the harness is untouched.
 
 Expected to fail: the harness's last assertion, `is_user_page_va(page_va)` ("every page the map loop touches is an
 aligned user-half page"), at the middle page `k` the solver picks.
 
-diff --git a/crates/paging/src/page_format.rs b/crates/paging/src/page_format.rs
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
 index 476dfcac4..d5c3d2ee6 100644
---- a/crates/paging/src/page_format.rs
-+++ b/crates/paging/src/page_format.rs
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
 @@ -116,7 +116,7 @@ pub trait PageFormat {
      fn is_in_half(half: Half, va: u64) -> bool {
          let top = va >> Self::SPLIT_SHIFT;

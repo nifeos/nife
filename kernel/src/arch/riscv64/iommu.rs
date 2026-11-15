@@ -336,8 +336,8 @@ pub(crate) fn print_summary() {
 
 /// Build a DMA domain over exactly `regions` in Sv39, the format `iosatp` walks, and return its
 /// root.
-pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
-    crate::iommu::build_identity::<paging::Sv39>(regions)
+pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+    crate::iommu::build_identity::<page_tables::Sv39>(regions)
 }
 
 /// Whether the IOMMU is up, so the portable seam can attach.
@@ -361,7 +361,7 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
 /// none.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
-    _each: &mut dyn FnMut(paging::domain::DmaRegion),
+    _each: &mut dyn FnMut(page_tables::domain::DmaRegion),
 ) {
 }
 
@@ -523,7 +523,7 @@ mod proofs {
             "iosatp.MODE is Sv39 for every root: no address bit can turn translation off"
         );
 
-        // From `paging::domain`: a page frame in RAM.
+        // From `page_tables::domain`: a page frame in RAM.
         kani::assume(root % page_frames::FRAME_SIZE == 0);
         kani::assume(root < 1 << PA_BITS);
 

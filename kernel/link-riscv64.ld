@@ -2,7 +2,7 @@
  *
  * THE KERNEL IS LINKED HIGH AND LOADED LOW, exactly like the aarch64 script, and for the same
  * reason: the kernel lives in the high (kernel) half of the address space, so the portable
- * "kernel = high half, user = low half" model (paging::Half, the user-VA gate) holds identically on
+ * "kernel = high half, user = low half" model (page_tables::Half, the user-VA gate) holds identically on
  * both architectures (DECISIONS §17). Every symbol below is a VIRTUAL address in the Sv39 high half;
  * AT() tells the loader to place the bytes at the PHYSICAL address, which is where OpenSBI loads us.
  *
