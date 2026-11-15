@@ -30,7 +30,7 @@ and `design/naming.md`. Nothing below reopens:
 - the two renames the page-contract family rule already settles (`design/naming/crates.md`), which
   `helpers/name_release.py --draft current_cpu_contract` prints as pre-ruled: `PAGE_BYTES` to
   `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`;
-- the dependency on `address_space_map`, which milestone 1017 step 3 orders ahead of this crate.
+- the dependency on `address_space_layout`, which milestone 1017 step 3 orders ahead of this crate.
 
 Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_externalized_crates.py`,
 `helpers/template_report_gates.py`, Miri, the template's `scaffold/` and `sample/`. No new tool.
@@ -62,11 +62,11 @@ layout, an identity, a dependency); everything else is two-way and the maintaine
 1. The manifest is nife's, not a crate's.
    Finding: `license.workspace = true` and `[lints] workspace = true` inherit from a workspace the
    copy does not have. There is no `rust-version`, no `description`, no `repository`, no `[package.metadata.docs.rs] targets`. The `publish = false` comment sends a reader to `crates/publish-allowlist.txt`, a nife path. The package comment names the architect and a
-   ruling by date. The dependency on `address_space_map` is by path.
+   ruling by date. The dependency on `address_space_layout` is by path.
    Evidence: `crates/current_cpu_contract/Cargo.toml` lines 1 to 21.
    Change: inline `license = "MIT OR Apache-2.0"`; `[lints.rust]` carrying
    `unsafe_op_in_unsafe_fn` and `missing_docs`; `rust-version = "1.88"` as the family states, after one build proves it. Add a one-sentence `description`, `repository`, and the three bare-metal targets under `[package.metadata.docs.rs]`. Write a `publish = false` comment a stranger can act on ("set to
-   `true` only in the release that publishes"). Depend on `address_space_map` by version once it has left.
+   `true` only in the release that publishes"). Depend on `address_space_layout` by version once it has left.
    Door: two-way (the license is the family's, already ruled). Effort: S.
 
 2. The files a stranger needs are missing.
@@ -233,6 +233,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 What is left of this review: the rename pass of Decision B (decided provisionally), and every other before-the-tag
 item except item 5, plus the P0 and P2 items, is open.
+The ledger of what landed is in
+[the appendix](1084-current-cpu-contract-outside-review/ledger.md).
 
 - **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
   rename pass of Decision B and the P0 items above land, so the standalone gate can pass.

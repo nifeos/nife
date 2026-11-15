@@ -12,7 +12,7 @@ already been done by another milestone: SMP failure (3), by
 [milestone 316 (which core booted)](../0316-x86-smp-two-cores.md). The other three were open as
 written.
 
-## 1. Blocks in `crates/paging`
+## 1. Blocks in `crates/page_tables`
 
 `PageFormat` grew two required methods, `block_entry` and `is_block`. They have no defaults, so a
 fourth format has to say what it does. `Mapper` gained `map_block` and `map_span`; the latter maps

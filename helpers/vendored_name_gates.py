@@ -227,7 +227,7 @@ _SECURITY = 'a security-domain clock or reset a vendor named'
 _BUS = 'the secondary bus of a PCI bridge'
 _OVERLAY = 'the field of clock_contract::Reading the std overlay reads under this name'
 UNIT_KEPT = {
-    'crates/paging/src/x86_64.rs': ({'US'}, 'the x86 paging User/Supervisor bit'),
+    'crates/page_tables/src/x86_64.rs': ({'US'}, 'the x86 paging User/Supervisor bit'),
     'kernel/src/pci.rs': ({'sec', 'sec_sts'}, _BUS),
     'c_library/src/lib.rs': ({'tv_sec', 'tv_nsec', 'tv_usec'}, _POSIX),
     'notes/filesystem-crates-2026-10-07/probes/btrfs-transaction.rs':
@@ -574,7 +574,7 @@ def unit_selftest():
     if names('let sec = 1; let sec_sts = 2;', 'kernel/src/pci.rs'):
         failed += 1
         print('unit selftest: UNIT_KEPT in kernel/src/pci.rs counted', file=sys.stderr)
-    if names('const US: u64 = 1;', 'crates/paging/src/x86_64.rs'):
+    if names('const US: u64 = 1;', 'crates/page_tables/src/x86_64.rs'):
         failed += 1
         print('unit selftest: UNIT_KEPT US counted', file=sys.stderr)
     if [w for _, w, _ in unclear_hits('let ppm = 1; let kb = 2; let NS_PER_SECOND = 3; let nanos = 4;')] != [

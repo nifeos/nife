@@ -70,3 +70,34 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
 /// Name: provisional (milestone 890 (riscv64 and `x86_64` join the shared boot path)'s lane,
 /// 2026-10-20 UTC).
 pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **The check list's invariants.** The kernel finds a check's index with `position`, so a
+    /// duplicate would leave its second entry unrecorded on every boot, and a reader splits the list
+    /// on whitespace and commas, so a name outside `[a-z0-9_]` would split in two. The earlier
+    /// lengths ascend and lie below the current one.
+    #[test]
+    fn the_check_names_are_plain_and_distinct() {
+        for (i, name) in SELF_TEST_CHECKS.iter().enumerate() {
+            assert!(
+                !name.is_empty()
+                    && name
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+            );
+            assert!(
+                !SELF_TEST_CHECKS[..i].contains(name),
+                "{name} is listed twice"
+            );
+        }
+        assert!(SELF_TEST_CHECKS_EARLIER.windows(2).all(|w| w[0] < w[1]));
+        assert!(
+            SELF_TEST_CHECKS_EARLIER
+                .iter()
+                .all(|&n| n < SELF_TEST_CHECKS.len())
+        );
+    }
+}

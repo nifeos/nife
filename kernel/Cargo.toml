@@ -1,5 +1,5 @@
 # Name: ratified 2026-10-22 (calef, #2562). AGENTS.md's naming section keeps "standard terms a
-# reader already knows from outside", which is why `elf`, `pci`, `paging` and `glob` were left alone
+# reader already knows from outside", which is why `elf`, `pci` and `glob` were left alone
 # by the same rule. `kernel` is the standard term for the thing this is.
 
 [package]
@@ -113,7 +113,7 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # The user address-space map (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): where the loader puts a
 # program's image and stack, and the check that refuses an image that does not fit, shared with the
 # userspace loader so the two cannot disagree about either.
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
 # Where each device-driver process finds its windows, and the spawn words each one receives: the
 # process layout around the device crates (`e1000e`, `designware_ethernet`,
 # `designware_mobile_storage`, `extensible_host_controller_interface`,
@@ -212,7 +212,7 @@ installed_programs = { version = "0.1.0", path = "../crates/installed_programs",
 # looking at a monitor, which is the one thing nobody in this project can do from a lane. The kernel
 # half is `console::attach_screen`: an address, a geometry and a lock it already holds.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
-paging = { version = "0.1.0", path = "../crates/paging" }
+page_tables = { version = "0.1.0", path = "../crates/page_tables" }
 memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # The socket contract (milestone 30, and 107's inbound half). The kernel's spawn service is what
 # *grants* a net server its listen ports, so it packs the grant with the same `listen_grant` the
@@ -282,7 +282,7 @@ board = []
 # The T-Head TH1520 (milestone 89 (Scaleway EM-RV1)): the board build, for Scaleway's Elastic Metal
 # RV1 rather than radon. It moves the early console to UART0 at 0xff_e701_4000 (arch/riscv64/
 # machine.rs) and selects the page-table format with T-Head's memory-type bits (XTheadMae,
-# paging::Sv39Mae), which firmware turns on. A kernel built with it refuses to run on a hart
+# page_tables::Sv39Mae), which firmware turns on. A kernel built with it refuses to run on a hart
 # without MAEE, and one built without it refuses a hart with it. riscv64 only. Name provisional.
 board_th1520 = ["board"]
 # The benchmark boot (milestone 21): run the microbenchmarks and halt. See script/bench.

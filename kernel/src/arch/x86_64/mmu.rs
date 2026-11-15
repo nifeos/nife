@@ -1,4 +1,4 @@
-//! **The MMU, `x86_64`.** `crates/paging` owns the level walk and `paging::x86_64::Ia32e` the
+//! **The MMU, `x86_64`.** `crates/page_tables` owns the level walk and `page_tables::x86_64::Ia32e` the
 //! entry format; this module names `CR3`, the direct map, and where this machine's devices are.
 //!
 //! Two kernel bases, unlike aarch64 and RISC-V: `code-model: kernel` pins the image at
@@ -19,8 +19,8 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 
-use paging::x86_64::Ia32e;
-use paging::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
+use page_tables::x86_64::Ia32e;
+use page_tables::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 
 // The `x86_64` modules the children name as `super::isa` and the like. Imported here so that a
 // path written when this code lived in `mmu.rs` still means what it meant: the children's `super`

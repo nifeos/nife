@@ -479,7 +479,7 @@ def resolve_in(port, path, segs, depth):
             return True  # re-exported from outside this port's module tree; trust the compiler
         sub = module_file(child_dir(path), local[0])
         if sub is None:
-            return True  # a re-export from an external crate (`pub use paging::Format`)
+            return True  # a re-export from an external crate (`pub use page_tables::Format`)
         return resolve_in(port, sub, local[1:] + segs[1:], depth + 1) if len(local) > 1 else True
     for g in globs:
         local = g[1:] if g and g[0] == "self" else g

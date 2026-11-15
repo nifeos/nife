@@ -30,7 +30,7 @@ const PATIENCE: core::time::Duration = core::time::Duration::from_secs(30);
 /// Where the kernel maps the boot file, read-only, into the installer. Must match
 /// `components/src/system_installer.rs`'s `BOOT_FILE_VA`; the bytes are a run of physical frames
 /// the kernel owns, so the program cannot map them itself.
-const BOOT_FILE_VA: u64 = address_space_map::runtime_window(0x1000_0000);
+const BOOT_FILE_VA: u64 = address_space_layout::runtime_window(0x1000_0000);
 
 /// The installer's capability table. Must match `components/src/system_installer.rs`.
 const SLOT_REPORT: u64 = 0;

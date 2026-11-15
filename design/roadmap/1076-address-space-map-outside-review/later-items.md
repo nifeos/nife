@@ -46,17 +46,17 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
 17. nife's checks that walk `crates/` lose this crate.
     Finding: `helpers/interface_declarations_check.py` finds `pub const INTERFACE_ID` by reading
     `crates/*/src/lib.rs` against the table in the block of milestone 956 (the linked interfaces carry checkable versions). After the move the crate's `lib.rs` is not in the tree and the row for id 2 has no source to check. `LOW_HALF_SPLIT_SHIFTS`
-    restates `crates/paging`'s `SPLIT_SHIFT` with no test tying the two. After the move the restatement lives in another repository. Milestone 1017 (the contract crates leave in this order) names the class ("nife's tools that walk
+    restates `crates/page_tables`'s `SPLIT_SHIFT` with no test tying the two. After the move the restatement lives in another repository. Milestone 1017 (the contract crates leave in this order) names the class ("nife's tools that walk
     `crates/` also lose each crate").
     Evidence: `helpers/interface_declarations_check.py` lines 58 and 74; `src/lib.rs` lines 289 to 292.
     Change: in nife, the declarations check reads the pinned checkout through `cargo metadata`, and
-    `crates/paging` gains one test asserting its three `SPLIT_SHIFT`s against the crate's constants
+    `crates/page_tables` gains one test asserting its three `SPLIT_SHIFT`s against the crate's constants
     (which means `LOW_HALF_SPLIT_SHIFTS` becomes `pub`, a small addition).
     Door: two-way. Effort: S.
 
 18. Milestone 1017's blocker table has a stale row.
     Finding: the table says `counter_frequency_contract` has a dev-dependency on
-    `address_space_map` and must leave after it. No manifest or source in
+    `address_space_layout` and must leave after it. No manifest or source in
     `crates/counter_frequency_contract/` names the crate now; the relation it guarded (the timebase
     page lies above the ceiling) holds as an assertion in `kernel/src/user/loader.rs` line 14 instead.
     Evidence: `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`; a grep of

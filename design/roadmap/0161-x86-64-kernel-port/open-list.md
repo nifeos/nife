@@ -47,7 +47,7 @@ The decision this item existed to record (two bases, Linux's) was taken as recor
 flagged was removed rather than sequenced around: `boot.s` installs the direct map's PML4 entry
 itself, so `phys_to_virt` never changes meaning. `mmu::device_va` is gone.
 
-What was still open was not the map but its leaves. `crates/paging` mapped 4 KiB pages and nothing
+What was still open was not the map but its leaves. `crates/page_tables` mapped 4 KiB pages and nothing
 else, so the direct map cost 0.2% of RAM in page tables. 2 MiB and 1 GiB leaves were a change to the
 shared format trait that all three architectures would want. They wanted their own milestone rather
 than an x86 patch. In the end the 2026-09-19 lane built them here; see [closing.md](closing.md).

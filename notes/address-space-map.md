@@ -5,7 +5,7 @@ the linker script, two loaders, std's runtime, the kernel's test harnesses and e
 shares a page. This page is the map they agree on, so a new page is placed by the map rather than
 by looking for a gap. Milestone 206 (a program image has under 896 KiB) drew it, under DECISIONS
 §171 (where a program image starts), option D, ruled by calef on 2026-09-26.
-The map is a crate, [`crates/address_space_map`](../crates/address_space_map/src/lib.rs), because
+The map is a crate, [`crates/address_space_layout`](../crates/address_space_layout/src/lib.rs), because
 it is a list of numbers several binaries agree on (AGENTS.md rule 7). This page explains it; the
 crate is the rule.
 
@@ -46,7 +46,7 @@ Ask in order, and stop at the first yes.
 Then write it with the band's function, so the compiler checks it:
 
 ```rust
-const CTL_VA: u64 = address_space_map::pair_page(0x60_0000);
+const CTL_VA: u64 = address_space_layout::pair_page(0x60_0000);
 ```
 
 `pair_page`, `runtime_window` and `service_window` return their argument unchanged and stop the build
@@ -59,7 +59,7 @@ them.
 Two mechanisms, each where it is strongest. `const` asserts in the crate check the constant facts
 in every consumer's build. The bands tile the first 2 GiB in `BANDS` order, and each starts and ends
 on a page. The top of the map is a user address under aarch64's 48-bit split, `x86_64`'s 47-bit
-split and Sv39's 38-bit one. Kani (`crates/address_space_map/src/verification.rs`, run by
+split and Sv39's 38-bit one. Kani (`crates/address_space_layout/src/verification.rs`, run by
 `script/verify`) proves what quantifies over an address. Every address below 2 GiB lies in exactly
 one band and its whole page lies in that band. A lower address never sits in a later band. Each
 band function accepts every page of its band, returns it unchanged, and refuses every address its
@@ -95,7 +95,7 @@ gigabytes. A std program pays one fewer, because its heap was already in the sec
 ## A too-large image says so
 
 `kernel::user::load` checks the image against the band before it maps anything, with
-`address_space_map::check_image`, and refuses with `LoadError::Misplaced`. The boot prints it as a
+`address_space_layout::check_image`, and refuses with `LoadError::Misplaced`. The boot prints it as a
 sentence:
 
 ```
@@ -125,9 +125,9 @@ as `Err(())`, so there the check only makes the failure early and clean.
 
 `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` is `0x0000_7000_0000_0000` on `x86_64`, seven-eighths of the
 low half's ceiling (`SPLIT_SHIFT` is 47, so the low half is every address under
-`0x0000_8000_0000_0000`; see `crates/paging/src/x86_64.rs`). That leaves roughly 26 TiB of headroom
+`0x0000_8000_0000_0000`; see `crates/page_tables/src/x86_64.rs`). That leaves roughly 26 TiB of headroom
 below the boundary, with none of this tree's other conventions near it. RISC-V under Sv39 splits at
-bit 38 (`crates/paging/src/sv39.rs`), so an address at or above `0x40_0000_0000` is not a user
+bit 38 (`crates/page_tables/src/sv39.rs`), so an address at or above `0x40_0000_0000` is not a user
 address at all, and `riscv64` takes `0x38_0000_0000` by the same seven-eighths rule.
 
 The page is far above every other low-half address because it is mapped into every `x86_64` and

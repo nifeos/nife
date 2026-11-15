@@ -23,13 +23,13 @@ use crate::capability_object::{Object, Rights};
 use crate::sched;
 use crate::syscall::invoke;
 
-const CODE_VA: u64 = address_space_map::IMAGE_BASE;
-pub(super) const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+pub(super) const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// A second stack, two pages below the first so a guard page sits between them.
 const STACK_B_VA: u64 = STACK_VA - 2 * page_frames::FRAME_SIZE;
 /// The shared page: the futex word at `+0`, the waiter's return count at `+8` and results at
 /// `+16` (as `futex_tests` lays them out), the waker's `WAKE` result at `+24`.
-const VA: u64 = address_space_map::pair_page(0x0060_0000);
+const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// **The waker.** Entry registers: a capability slot, `VA`, the futex flags. Stores `1` in the
 /// word, `WAKE`s one waiter on it through the slot, stores the result at `+24`, then

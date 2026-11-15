@@ -55,9 +55,9 @@ const MODE_RING: u64 = 0;
 const MODE_DIRECT: u64 = 1;
 
 /// Where the kernel maps this driver's DMA page and the compositor's input ring.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 /// The input ring, mapped in [`MODE_RING`] only and shared with the compositor and nobody else.
-const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0082_0000);
+const RING_VA: u64 = address_space_layout::pair_page(0x0000_0000_0082_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139).
 const DMA: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
