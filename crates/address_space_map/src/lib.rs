@@ -53,9 +53,9 @@ impl Band {
         self.end - self.start
     }
 
-    /// Is `va` inside the band?
-    pub const fn contains(&self, va: u64) -> bool {
-        va >= self.start && va < self.end
+    /// Is `virtual_address` inside the band?
+    pub const fn contains(&self, virtual_address: u64) -> bool {
+        virtual_address >= self.start && virtual_address < self.end
     }
 
     /// Does the whole of `[start, end)` lie inside the band? An empty or inverted range does not.
@@ -168,49 +168,53 @@ pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
 /// `const CTL_VA: u64 = pair_page(0x60_0000);`. The value is unchanged, so the address still reads
 /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
 /// aligned, stops the build instead of colliding with a runtime page at run time.
-pub const fn pair_page(va: u64) -> u64 {
-    assert!(va.is_multiple_of(PAGE), "a pair page must be page aligned");
+pub const fn pair_page(virtual_address: u64) -> u64 {
     assert!(
-        PAIR_PAGES.contains(va),
+        virtual_address.is_multiple_of(PAGE),
+        "a pair page must be page aligned"
+    );
+    assert!(
+        PAIR_PAGES.contains(virtual_address),
         "a pair page must lie in PAIR_PAGES (address_space_map)"
     );
-    va
+    virtual_address
 }
 
 /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`RUNTIME_WINDOWS`].
-pub const fn runtime_window(va: u64) -> u64 {
+pub const fn runtime_window(virtual_address: u64) -> u64 {
     assert!(
-        va.is_multiple_of(PAGE),
+        virtual_address.is_multiple_of(PAGE),
         "a runtime window must be page aligned"
     );
     assert!(
-        RUNTIME_WINDOWS.contains(va),
+        RUNTIME_WINDOWS.contains(virtual_address),
         "a runtime window must lie in RUNTIME_WINDOWS (address_space_map)"
     );
-    va
+    virtual_address
 }
 
 /// **Where the initial ramdisk archive is mapped**, read-only, before a program's `_start` runs: a
 /// window of [`RUNTIME_WINDOWS`], checked against it at compile time. The kernel maps the archive
 /// here and `user_mode_runtime::initial_ramdisk` reads it here, both through this one constant.
 ///
-/// Name: provisional, moved here from the kernel's and the runtime's two copies of it (milestone
-/// 1112 item 11); the spelling is the ratified one both copies carried.
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+/// `INITIAL_RAMDISK_VA`: `va` is ruled to expand. Moved here from the kernel's and the runtime's
+/// two copies of it (milestone 1112 item 11).
 pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
 
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`SERVICE_WINDOWS`].
-pub const fn service_window(va: u64) -> u64 {
+pub const fn service_window(virtual_address: u64) -> u64 {
     assert!(
-        va.is_multiple_of(PAGE),
+        virtual_address.is_multiple_of(PAGE),
         "a service window must be page aligned"
     );
     assert!(
-        SERVICE_WINDOWS.contains(va),
+        SERVICE_WINDOWS.contains(virtual_address),
         "a service window must lie in SERVICE_WINDOWS (address_space_map)"
     );
-    va
+    virtual_address
 }
 
 /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
@@ -435,8 +439,9 @@ mod tests {
     #[test]
     fn the_band_checks_accept_their_own_band_and_nothing_else() {
         for (name, band) in BANDS {
-            let va = band.start;
-            let std_panics = |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(va)).is_err();
+            let virtual_address = band.start;
+            let std_panics =
+                |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(virtual_address)).is_err();
             assert_eq!(
                 !std_panics(pair_page),
                 band == PAIR_PAGES,

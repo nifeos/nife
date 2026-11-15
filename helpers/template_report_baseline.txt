@@ -4,7 +4,7 @@ abi register_names 9
 address_space_identifier abbreviations 10
 address_space_identifier prose_acronyms 4
 address_space_identifier readme_acronyms 4
-address_space_map abbreviations 16
+address_space_map abbreviations 12
 address_space_map prose_acronyms 2
 address_space_map register_names 5
 allocation_cache abbreviations 1
@@ -311,7 +311,7 @@ usb abbreviations 27
 usb prose_acronyms 11
 usb readme_acronyms 4
 usb register_names 10
-user_mode_runtime abbreviations 53
+user_mode_runtime abbreviations 52
 user_mode_runtime prose_acronyms 24
 user_mode_runtime readme_acronyms 1
 user_mode_runtime register_names 2

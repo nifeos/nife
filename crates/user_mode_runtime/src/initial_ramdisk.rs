@@ -24,9 +24,6 @@
 
 /// Where the kernel maps the initial ramdisk archive before any program's `_start` runs: the
 /// address-space map's constant, which the kernel's own mapping uses too, so the two cannot differ.
-///
-/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
-/// `INITIAL_RAMDISK_VA`: `va` is ruled to expand.
 pub use address_space_map::INITIAL_RAMDISK_VIRTUAL_ADDRESS;
 
 /// The initial ramdisk archive bytes this process was handed at spawn. `len` is the value `_start`
