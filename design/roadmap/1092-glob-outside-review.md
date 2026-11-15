@@ -201,15 +201,15 @@ The P2 items are in [the appendix](1092-glob-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Decision 1 is a one-way door; Decision 2 is decided, provisionally. The scope decisions, the default dot rule and the algorithm are the baseline and
-are not reopened.
+Decision 1 is a one-way door; Decision 2 is decided, provisionally. The baseline (scope, the
+default dot rule, the algorithm) stays closed.
 
 ### Decision 1. The registry name of the crate (P0-1)
 
 Ruled 2026-11-14 (UTC): the crate is named `byte_glob`, in code and package alike. `crates/glob` is
 `crates/byte_glob`, the package and the library are `byte_glob`, and every caller says
 `byte_glob::matches`. The old name carries no `doc(alias)`. The `Name:` block is ratified for
-`byte_glob`. The reasoning that led here follows.
+`byte_glob`.
 
 Background. The crate is a glob matcher, and `glob` is the right word for it. On crates.io that word
 belongs to rust-lang's crate, which matches `str` patterns against paths, supports `**`, and has
@@ -241,10 +241,8 @@ print the trusted-publishing door for a crate owned by rust-lang, and the regist
 
 ### Decision 2. The seven public names (P0-2)
 
-Recommendation: ratify six as they are, and rename `Dot` to `LeadingDot`.
-
 Background. The move strips provenance, so these gain ratification in the review package or never. The
-names, with the reviewer's reading against `design/naming.md`:
+reviewer's reading of each against `design/naming.md`:
 
 | name | kind | reading | recommendation |
 |---|---|---|---|
@@ -260,14 +258,12 @@ names, with the reviewer's reading against `design/naming.md`:
 `matches_with(pattern, name, LeadingDot::Ordinary)`. Prior art spells the same policy
 `FNM_PERIOD` (fnmatch), `require_literal_leading_dot` (rust-lang/glob), `dotglob` (bash) and
 `GLOB_PERIOD` (glibc's `glob(3)`); every one of them names the position. The variants stay: they are
-the two answers and nothing shorter says them. The three call sites in the tree change with it
+the two answers. The three call sites in the tree change with it
 (`pgrep/src/lib.rs` lines 94 to 102, two mentions, and the doc tests).
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. `matches`, `matches_with`, `has_magic`, `literal`, `match_steps`
-and `cost_bound` keep their spelling, and `Dot` becomes `LeadingDot` with its variants unchanged
-and no alias. The review package lists the seven as provisional; ratifying them stays the
-architect's. P0-2 is the work.
+which the architect may revisit. The six keep their spelling, and `Dot` becomes `LeadingDot` with
+its variants unchanged and no alias. Ratifying them stays the architect's. P0-2 is the work.
 
 ## Prior art
 
@@ -289,10 +285,10 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 ## Follow-on
 
-Decision 1 is built. The rest of the review is open.
+Decision 1 is built; the rest is open.
 
-- **Outstanding.** The renames of Decision 2 (the seven public names, which the maintainer has
-  decided, provisionally), the integration test and the falsification patches are unbuilt. Milestone 1017 moves the crate at step 5, after they land.
+- **Outstanding.** The one rename of Decision 2, the integration test and the falsification
+  patches are unbuilt. Milestone 1017 moves the crate at step 5, after they land.
 
 ## Index row
 
