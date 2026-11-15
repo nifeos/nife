@@ -4178,6 +4178,9 @@ python3 helpers/packages.py --selftest
 # its partition assertion, the per-run drift warning's threshold, the log reader, the weekly
 # refresh's drift rule and table rewrite, against fixtures and the live table, with no network.
 python3 helpers/verify_times.py --selftest >/dev/null
+# Milestone 1116 (nife's basalt pin follows basalt's newest Release): which Release the pin names, with
+# no network: the newest qualifying one, each way a Release is skipped, and never backward.
+python3 helpers/basalt_pin.py --selftest >/dev/null
 # Milestone 808 (every gate accounts for its time): the CI job record's display-name mapping and
 # daily rows against a recorded run, and the near-budget issue's three transitions (open, update,
 # close after three runs under), with no network. The fetch and the sync run only in metrics.yml.

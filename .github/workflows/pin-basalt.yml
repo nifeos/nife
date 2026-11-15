@@ -1,0 +1,133 @@
+name: pin basalt
+
+# Observed failing: never run. A scheduled workflow cannot run before it is on main, because the
+#   App's secrets are scoped to main. Its decision (helpers/basalt_pin.py) was run by hand against
+#   basalt's live Releases on 2026-11-15 and chose rolling-2026-11-15-7a72aae. See
+#   notes/observed-failing.md.
+
+# **Keep `xtask/basalt-pin` at basalt's newest Release** (milestone 1116 (nife's basalt pin follows
+# basalt's newest Release), provisional). The pin names the basalt commit whose recipes and build
+# script the gate's four basalt rows run, and the Release whose programs every other gate fetches.
+# It sat a month behind because nothing moved it (milestone 1115 (the gate builds basalt's delivered
+# programs from the candidate tree)). This is the same bump basalt's own `pin-bump.yml` makes in the
+# other direction, with the same shape: one pull request on a fixed branch, force-pushed on each run
+# so there is only ever one open, and the gate runs on it like on any other pull request.
+#
+# helpers/basalt_pin.py holds the rule: the newest published Release whose packages are all
+# uploaded and whose commit is on basalt's main. Both lines of the file move together. Daily, and
+# silent when the pin already names that Release. The job is light (two API calls and a push), so
+# the hour matters to nothing.
+#
+# **It does not arm auto-merge.** Arming stays with a maintainer (helpers/arm.sh) until an
+# architect rules on auto-merge for this pin; basalt's own pin bump was approved separately. The
+# pull request is opened ready, runs the normal gates, and waits.
+#
+# **The App is optional**, as in vendor-watch.yml, which has the full argument. Without the App's
+# secrets the run pushes the branch and leaves the pull request to a person
+# (helpers/pull-request-by-hand.sh).
+#
+# Names provisional: the file, the workflow, the job and the branch `pin/basalt`.
+
+on:
+  schedule:
+    - cron: "23 7 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: pin-basalt
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pin:
+    name: move the basalt pin
+    # The App's secrets live in the `automation` environment, whose deployment branches are `main`
+    # only (see trunk-health.yml's comment for why).
+    environment: automation
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    env:
+      AUTOMATION_APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
+    steps:
+      - name: Mint an installation token for the automation App, when it is installed
+        id: app-token
+        if: env.AUTOMATION_APP_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      # basalt is public, so the job's own token reads its Releases. The helper prints the new file
+      # and nothing else when the pin should move; its reasons go to the log.
+      - name: Ask which Release the pin should name
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          python3 helpers/basalt_pin.py resolve > "$RUNNER_TEMP/basalt-pin"
+          if [ -s "$RUNNER_TEMP/basalt-pin" ]; then
+            cp "$RUNNER_TEMP/basalt-pin" xtask/basalt-pin
+            echo "move=true" >> "$GITHUB_OUTPUT"
+            cat xtask/basalt-pin
+          else
+            echo "move=false" >> "$GITHUB_OUTPUT"
+            echo "The pin already names basalt's newest qualifying Release; nothing to propose."
+          fi
+
+      - name: Push the branch, open or update the pull request
+        if: steps.resolve.outputs.move == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+          PR_AUTHOR: ${{ steps.app-token.outputs.token && 'nife-smelter[bot]' || 'github-actions[bot]' }}
+          USING_APP: ${{ steps.app-token.outputs.token && 'yes' || '' }}
+        run: |
+          set -e
+          branch="pin/basalt"
+          commit="$(sed -n 's/^commit //p' xtask/basalt-pin)"
+          release="$(sed -n 's/^release //p' xtask/basalt-pin)"
+          short="$(printf %.7s "$commit")"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add xtask/basalt-pin
+          git commit -m "Bump basalt pin to nifeos/basalt@$short ($release)
+
+          Moves xtask/basalt-pin to basalt's newest Release whose packages are all
+          uploaded and whose commit is on basalt's main (helpers/basalt_pin.py),
+          proposed by the scheduled pin-basalt workflow."
+          git push --force origin "$branch"
+          title="Bump basalt pin to nifeos/basalt@$short ($release)"
+          body="**Lane:** $branch, opened by a scheduled workflow; $PR_AUTHOR is the author GitHub shows.
+
+          Moves \`xtask/basalt-pin\` to \`$release\` (basalt commit \`$commit\`), the newest published
+          Release whose packages are all uploaded and whose commit is on basalt's main
+          (\`helpers/basalt_pin.py\`). The gate's basalt rows run that commit's recipes and build
+          script, so the normal gates on this pull request are the check.
+
+          This branch is force-pushed on every scheduled run, so it always proposes the newest
+          qualifying Release. The run does not arm auto-merge; a maintainer arms it.
+
+          ## What I need from you
+
+          Nothing."
+          if [ -z "$USING_APP" ]; then
+            helpers/pull-request-by-hand.sh "$branch" "$title" "$body"
+            exit 0
+          fi
+          existing="$(gh pr list --head "$branch" --state open --json number --jq '.[].number')"
+          if [ -z "$existing" ]; then
+            gh pr create --head "$branch" --base main --title "$title" --body "$body"
+          else
+            gh pr edit "$existing" --title "$title" --body "$body"
+            echo "Updated PR #$existing in place."
+          fi
