@@ -344,9 +344,9 @@ impl Psci {
     pub fn from_device_tree(
         dt: &device_tree_blob::DeviceTreeBlob<'_>,
     ) -> Result<Option<Psci>, device_tree_blob::Error> {
-        let method = dt.node_prop(b"psci", b"method")?;
-        let cpu_on = dt.node_prop(b"psci", b"cpu_on")?;
-        let compatible = dt.node_prop(b"psci", b"compatible")?;
+        let method = dt.node_property(b"psci", b"method")?;
+        let cpu_on = dt.node_property(b"psci", b"cpu_on")?;
+        let compatible = dt.node_property(b"psci", b"compatible")?;
 
         // None of the three: either there is no `/psci` node, or there is one holding nothing. The
         // two are indistinguishable through this API and mean the same thing to every caller, so

@@ -247,17 +247,29 @@ returns `Result<DeviceDescriptor, Refusal>`, and `BootReport::parse` keeps `Opti
   `Malformed { at }` (`a_short_interface_or_endpoint_is_malformed_and_two_bytes_is_enough`), a
   usage duplicated in the earlier report releases once (`a_duplicated_usage_releases_once`), and
   `endpoint` carries only its number and direction (`the_endpoint_carries_only_its_number_and_direction`).
-- **Done.** Item 7, the unit-test half: `a_boot_interface_without_an_endpoint_is_refused_by_number`
-  covers the `without_endpoint` path. The shaped two-interface harness, the event-order assertion
-  and the bounds paragraph stay outstanding, because the harness cost needs a measurement first.
-- **Done.** Item 13 (two sentences, on the walk's start and the report's tail; the `get_descriptor`
-  and README sentences remain) and the private locals of items 3 and 14 (`device`, `difference`,
-  `shift_a_b`, `a_b`, `QEMU_USB_KEYBOARD`). The three Kani harnesses pass and the
-  walk harness's falsification patch needed regenerating for the new line, and the lane did.
-- **Outstanding.** Items 1, 2, 4, 5 and 10 are the move lane's (manifest, name, scaffold files,
-  review package, fuzz crate). Item 6 adds usage rows that the lane must read from the Usage
-  Tables and re-run against the Linux cross-check, which a reviewer cannot do from memory.
-- **Outstanding.** Item 11 and the public renames of item 3, the work of Decisions 3 and 1.
+- **Done.** Item 7: `a_boot_interface_without_an_endpoint_is_refused_by_number` covers the
+  `without_endpoint` path. `two_interfaces_are_walked_as_two` fixes a 41-byte shape of two
+  interfaces and reaches all three paths that need a second one (14 s under Kani), and
+  `two_reports_produce_their_events_in_order` proves the event order and that each event names a
+  key that changed (238 s). Each has a falsification patch, and `lib.rs` names the bounds and the
+  two things outside them.
+- **Done.** Item 13 in the crate: the walk's start, the report's tail and `get_descriptor`'s
+  `index`. The README sentences are item 4's.
+- **Done.** Item 3, by Decision 1's table: every public and private name the gates refused, and
+  the caller, with item 14's private locals. The template's naming helpers refuse 0 of 239 names.
+- **Done.** Item 11: `control_maximum_packet_bytes` takes a `Speed` and accepts 8 at low speed, 64
+  at high speed, 8, 16, 32 or 64 at full speed and the exponent 9 at SuperSpeed, and its
+  documentation states what Linux's hub driver does instead. The driver maps the xHCI port speed
+  to it.
+- **Done.** Item 6: the table runs through 0x8b, each row from the Usage Tables and
+  `input-event-codes.h`; the Linux cross-check agrees on 140 of 144 rows and names the four
+  choices.
+- **Done.** Item 5: [the review package](../../notes/crate-reviews/universal-serial-bus.md) and
+  its index row.
+- **Outstanding.** Items 1, 2, 4 and 10 are the move lane's (manifest, name, scaffold files, fuzz
+  crate), as are the 13 prose acronym findings the package lists.
+- **Outstanding.** The work of Decision 2 (`changes` emits HID usages) and of Decision 3's other
+  half (`DeviceDescriptor::parse` answers `Result`).
 
 ## Done when
 
@@ -265,17 +277,8 @@ The checks are in [the appendix](1111-usb-outside-review/done-when.md).
 
 ## BUGS
 
-- The three falsification patches apply but were not replayed under Kani here; the walk harness
-  alone takes three minutes, and the template's `proofs / falsify` job will replay them.
-- The usage names and `KEY_*` matches in item 6 are from memory. The lane that builds it reads them
-  from the HID Usage Tables 1.5 and `input-event-codes.h`, as the earlier rows came from them. This
-  block's list is a worklist, not a source.
 - Nobody has verified the claim that let chains set the minimum Rust version at 1.88. The `msrv`
   job decides the value.
-- Linux's treatment of an out-of-range `bMaxPacketSize0` at low and high speed (item 11) was not
-  checked.
-- The cost of a shaped two-interface harness (item 7) is a guess; the existing walk harness takes
-  177 seconds at 25 bytes, and the lane measures before it commits a bound.
 - No mutation census ran; the record cited is the repository's own, from before this review.
 
 ## Index row

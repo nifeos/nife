@@ -138,7 +138,7 @@ fn now_microseconds() -> u64 {
 /// Select RGMII for `gmac0`: a read-modify-write of its three bits, the word's other bits kept.
 fn select_interface() -> (u32, u32) {
     let syscon = mapped(&SYSTEM_CONTROLLER);
-    let offset = jh7110::GMAC0_SYSTEM_CONTROLLER_OFFSET;
+    let offset = jh7110::GMAC0_INTERFACE_SELECT_REGISTER;
     let before = syscon.r32(offset);
     syscon.w32(
         offset,

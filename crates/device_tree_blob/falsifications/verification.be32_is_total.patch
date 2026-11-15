@@ -3,8 +3,7 @@ Falsifies `device_tree_blob::verification::be32_is_total`.
 The defect: the checked add the function's own comment names goes back to a bare one. `be32`
 is a leaf reader over an untrusted blob, so `at` is attacker-controlled; near `usize::MAX` the
 bare `at + 4` overflows and panics before `bytes.get` ever runs, which is exactly the crash the
-`checked_add` was written to close. Milestone 18 (verify the capability core, then spread inward)
-is where the hardening landed.
+`checked_add` was written to close.
 
 Expected to fail: `attempt to add with overflow`, at the `let end = at + 4;` line, for any `at`
 Kani picks near `usize::MAX`. The harness's own body is nothing but the call, so there is

@@ -58,7 +58,7 @@ pub const CASES: [Case; 10] = [
     case(
         "poisoned.nife.test",
         status::REFUSED,
-        reject_code(Reject::NoAddress),
+        reject_code(Reject::NoIpv4Address),
     ),
     // An owner that is a compression pointer to itself.
     case(
