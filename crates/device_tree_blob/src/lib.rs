@@ -226,6 +226,22 @@ impl<'a> DeviceTreeBlob<'a> {
     /// `version` decides where the structure block ends (`size_dt_struct` from version 17, the
     /// strings block before it), and a `last_comp_version` above 17 is refused. `size_dt_strings`
     /// and `boot_cpuid_phys` are not read; a name in the strings block is bounded by the blob's end.
+    ///
+    /// # Examples
+    ///
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it:
+    ///
+    /// ```
+    /// use device_tree_blob::{DeviceTreeBlob, Region};
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// assert_eq!(tree.total_size(), blob.len());
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Error> {
         let magic = be32(bytes, 0)?;
         if magic != MAGIC {
@@ -330,6 +346,24 @@ impl<'a> DeviceTreeBlob<'a> {
     ///
     /// Returns how many regions it wrote; refuses a full `out` with [`Error::TooManyRegions`] and a
     /// wrapping pair with [`Error::RegionOverflow`].
+    ///
+    /// # Examples
+    ///
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it:
+    ///
+    /// ```
+    /// use device_tree_blob::{DeviceTreeBlob, Region};
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// let mut ram = [Region { start: 0, size: 0 }; 4];
+    /// let banks = tree.memory_regions(&mut ram)?;
+    /// assert_eq!(&ram[..banks], [Region { start: 0x8000_0000, size: 0x800_0000 }]);
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
     pub fn memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
         // `reg` is a list of (address, size) pairs, but how many 32-bit cells each of those takes
         // is not fixed. It is declared by #address-cells and #size-cells on the PARENT node, which
@@ -458,6 +492,24 @@ impl<'a> DeviceTreeBlob<'a> {
     /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
     /// decoded when the matched node closes; a matched parent is still answered after its
     /// children close. Returns zero regions for a match with no `reg`.
+    ///
+    /// # Examples
+    ///
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it:
+    ///
+    /// ```
+    /// use device_tree_blob::{DeviceTreeBlob, Region};
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// let mut rtc = [Region { start: 0, size: 0 }; 1];
+    /// let found = tree.node_reg_compatible(b"google,goldfish-rtc", &mut rtc)?;
+    /// assert_eq!(&rtc[..found], [Region { start: 0x10_1000, size: 0x1000 }]);
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
     #[doc(alias = "register regions")]
     pub fn node_reg_compatible(
         &self,
@@ -747,13 +799,21 @@ impl<'a> DeviceTreeBlob<'a> {
     ///
     /// # Examples
     ///
-    /// ```no_run
-    /// # fn f(dt: &device_tree_blob::DeviceTreeBlob<'_>) -> Result<(), device_tree_blob::Error> {
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it, has one hart:
+    ///
+    /// ```
+    /// use device_tree_blob::DeviceTreeBlob;
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
     /// let mut isa = [None; 8];
-    /// let harts = dt.node_properties(b"cpu@", b"riscv,isa", &mut isa)?;
+    /// let harts = tree.node_properties(b"cpu@", b"riscv,isa-base", &mut isa)?;
     /// assert!(harts <= isa.len(), "more harts than slots: widen the array");
-    /// # Ok(())
-    /// # }
+    /// assert_eq!(isa[..harts], [Some(&b"rv64i\0"[..])]);
+    /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
     pub fn node_properties(
         &self,
