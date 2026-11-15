@@ -132,9 +132,9 @@ two-way and the maintainer decides it.
    spelled-out name a reader searches for by its abbreviation.
    Why it matters: `check / standalone` runs these at a ceiling of 0; a ratified name failing a
    check needs an exemption outside the `Name:` block, and an unratified one needs a ruling.
-   Change: Decision B rules the names; one rename lane applies them at the end, then adds the
-   exemption for `blk::SIZE` with its reason and the aliases.
-   Door: one-way at release; the architect's before it. Effort: S for the lane, after the ruling.
+   Change: the names Decision B decides, provisionally; one rename lane applies them at the end,
+   then adds the exemption for `blk::SIZE` with its reason and the aliases.
+   Door: two-way before the first tag. Effort: S for the lane, after the ruling.
 
 ### P2: later
 
@@ -223,6 +223,11 @@ Concrete example. A caretaker that reads `verb::of(operation).takes_name()` toda
 `grant::specification_rights(w)`; a client that sends `fs::req(fs::GETMTIME, ..)` sends
 `fs::req(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The table holds as written, applied by one lane, and
+`STORE_DIRECTORY` holds `.extended-attributes`, the value Decision A rules. The POSIX verb and
+errno names keep their spelling, each with `#[doc(alias)]` and a line naming the source. No alias of the old spellings.
+
 ### C. The error range of a reply word: ruled 2026-11-14 (UTC)
 
 In force: a reply's first word is an `i64`. A word in `-4095..=-1` is the error code `1..=4095`
@@ -247,7 +252,8 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
 
 ## Follow-on
 
-- **Outstanding.** Every item in this block and its appendices, and decision B. Checked by reading
+- **Outstanding.** Every item in this block and its appendices, and the renames of decision B, which
+  the maintainer has decided, provisionally. Checked by reading
   each item and decision against the tree at this branch's head. Decisions A and C are the only
   parts built. The store directory is `.extended-attributes` in the crate, the server, the host
   tool and the notes. The reply word's error range is bounded, with its proofs. The items still
