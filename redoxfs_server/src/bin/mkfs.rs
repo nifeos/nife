@@ -119,10 +119,14 @@ pub const R_NO_FILE: u64 = 0x_4E_4F_46_4C_45;
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-        HEAP_MAXIMUM,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            MEMORY_REGION,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
     );
 
     // The shared page, mapped out of the same budget the heap draws on (milestone 108). It is

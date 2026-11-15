@@ -92,10 +92,14 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(
-        BUDGET,
-        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-        HEAP_MAXIMUM,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            BUDGET,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
     );
 
     let cost = Cost::DEFAULT;
