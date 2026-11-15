@@ -1,4 +1,4 @@
-Falsifies `elf::verification::a_passing_check_yields_an_in_bounds_range`.
+Falsifies `static_elf::verification::a_passing_check_yields_an_in_bounds_range`.
 
 The defect: the in-file test checks where the segment starts rather than where it ends,
 `p_offset > file_len` in place of `end > file_len`. "The segment must be inside the file" is
@@ -9,10 +9,10 @@ Expected to fail: the harness's `assert!(end <= file_len)`, on a segment startin
 file and running past its end, where `segment_at` then slices `bytes[p_offset..end]` beyond the
 buffer the kernel read.
 
-diff --git a/crates/elf/src/parse.rs b/crates/elf/src/parse.rs
+diff --git a/crates/static_elf/src/parse.rs b/crates/static_elf/src/parse.rs
 index 51de81b47..bed69d945 100644
---- a/crates/elf/src/parse.rs
-+++ b/crates/elf/src/parse.rs
+--- a/crates/static_elf/src/parse.rs
++++ b/crates/static_elf/src/parse.rs
 @@ -222,7 +222,7 @@ pub(crate) fn check_segment_bounds(
      let end = p_offset
          .checked_add(filesz)

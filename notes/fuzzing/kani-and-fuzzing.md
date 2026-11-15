@@ -7,7 +7,7 @@ An appendix to [`notes/fuzzing.md`](../fuzzing.md), which states the conclusion.
 The place where they meet is the bound, and this tree has three worked examples of the bound
 being the whole story:
 
-1. `crates/elf`. The crate's own doc comment says the whole-parse totality proof *did not
+1. `crates/static_elf`. The crate's own doc comment says the whole-parse totality proof *did not
    return*: an O(n^2) overlap loop over up to 64 program headers, unrolled 64 deep against symbolic
    slice offsets, is past what the solver can do. What is proved is `check_segment_bounds`, the leaf
    arithmetic, factored out so bounded model checking can reach it. The proved leaf and the unproved

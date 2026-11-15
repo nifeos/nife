@@ -79,6 +79,6 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by three text edits |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
-| [`clock_contract`](crate-reviews/clock-contract.md) | contract | identity and overlay names for the architect |
+| [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |

@@ -51,7 +51,7 @@ user_mode_runtime::program_entry!(start);
 fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     HEAP.initialize(
         MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
         HEAP_MAXIMUM,
     );
 

@@ -36,7 +36,7 @@ http_response = { path = "../crates/http_response" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 # Finding each program's manifest note in a package, to list what it asks the owner for at install
 # (milestone 892 (a std program at the prompt holds the network and a resolver)).
-elf = { path = "../crates/elf" }
+static_elf = { path = "../crates/static_elf" }
 package_archive = { path = "../crates/package_archive" }
 # What is installed, for `list -u`: the installed-programs table's reader and where it lives.
 installed_programs = { path = "../crates/installed_programs" }

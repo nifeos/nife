@@ -869,6 +869,17 @@ jobs:
       # basalt's recipe records at the commit `xtask/basalt-pin` names, and ripgrep's own host build for the reference answer. The
       # legs then type `jig install ripgrep` against those bytes, so this job tests `jig` and
       # basalt's delivery too, and run the package's `rg` by path over the walk. About 9 MB.
+      # **In the queue the row runs basalt's programs built from this tree** (milestone 1115 (the
+      # gate builds basalt's delivered programs from the candidate tree)). In a merge group and on
+      # a push to main, `cargo xtask basalt-build` builds them for this row's architectures with
+      # basalt's own build at the commit `xtask/basalt-pin` names, and the row's `basalt-fetch`
+      # takes them from that repository (`NIFE_BASALT_REPOSITORY`) instead of basalt's Release. So
+      # a change that breaks a wire format the programs read is tested against rebuilt programs in
+      # its own merge group. A pull request's run fetches, to stay cheap. xtask/src/basalt.rs has
+      # the rest.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build aarch64 riscv64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
       - if: steps.merge-group-gate.outputs.skip != 'true'
@@ -987,7 +998,11 @@ jobs:
         name: Open /dev/kvm to the runner user
         run: helpers/open-kvm.sh
 
-      # The row fetches `rg` from basalt first; the `swish-check` job above says why.
+      # The row fetches `rg` from basalt first (in the queue, builds it from this tree); the
+      # `swish-check` job above says why.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build x86_64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
       - if: steps.merge-group-gate.outputs.skip != 'true'
@@ -1069,6 +1084,11 @@ jobs:
         run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
+      # In the queue the row runs basalt's programs built from this tree; the `swish-check` job
+      # above says why.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build aarch64 riscv64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: helpers/hang_evidence.py run -- script/ci-build rg-threads-aarch64-riscv64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
@@ -1120,6 +1140,11 @@ jobs:
         run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
+      # In the queue the row runs basalt's programs built from this tree; the `swish-check` job
+      # above says why.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build x86_64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: helpers/hang_evidence.py run -- script/ci-build rg-threads-x86_64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
