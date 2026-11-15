@@ -506,7 +506,7 @@ measured_boot	51	a digest text form reads back as itself, and nothing but a labe
 sealed_pair	60	a digest is found in a kernel image exactly when it is there, at any offset
 pci_configuration_space	23	config-space decode on hostile-device input
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
-socket_contract	730	the listen and UDP bind grants admit exactly their ranges, the two halves of a composed grant are independent, a peer word round-trips for every address and port, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
+socket_contract	730	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
 entropy_contract	150	a request word reads back as built, a copy writes only the delivered bytes, a fill succeeds only on full replies, and readiness needs one nonzero byte
 jh7110_clock_and_reset	61	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	122	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
