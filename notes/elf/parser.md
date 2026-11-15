@@ -50,7 +50,7 @@ note reader walks the same bound.
 ## What it refuses that a general loader would not
 
 - **Writable and executable together.** A page that is both is how a buffer overflow becomes code
-  execution, and an ELF can simply ask for one. `paging::Flags` has no
+  execution, and an ELF can simply ask for one. `page_tables::Flags` has no
   `writable_and_executable()` constructor for the same reason; this check stops a file talking the
   loader into building one.
 - **Two segments on one page.** A general loader handles this. It is legal, and common when

@@ -52,7 +52,7 @@ Measured over non-test code, the note's scope:
 - `kernel/src/syscall.rs` has 7 truncation, 21 wrap, 2 sign-loss and 8 arithmetic hits.
 - The memory and page-table code has 36 truncation, 4 wrap and 167 arithmetic hits. That is
   `memory.rs`, `memory_region.rs`, `kmem.rs`, `revoke.rs`, `user.rs`, the three `arch/*/mmu.rs`,
-  and the crates `paging`, `page_frames`, `memory_regions` and `address_space_map`.
+  and the crates `paging`, `page_frames`, `memory_regions` and `address_space_layout`.
 
 ## What this tree already decided, and why this proposal reopens it
 

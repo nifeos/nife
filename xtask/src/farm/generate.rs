@@ -107,7 +107,7 @@ pub(super) fn std_generate_modules() -> bool {
         }
         // The one generated file that names another workspace crate: inside std the map is a
         // sibling module, not a crate.
-        let body = body.replace("address_space_map::", "super::addressmap::");
+        let body = body.replace("address_space_layout::", "super::addressmap::");
         if let Err(e) = std::fs::write(&dst, body) {
             eprintln!("std-src: cannot write {}: {e}", dst.display());
             return false;

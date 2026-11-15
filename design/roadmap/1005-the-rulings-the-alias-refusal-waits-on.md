@@ -120,7 +120,7 @@ at `0xffffffffd000` succeeds under (a) and fails under (b) and (c).
 - Shipped programs: under (a), no program in the tree depends on a writable-and-executable pair in one space,
   as far as a read finds. Under (b) and (c), the lane runs the suite to find any same-space double
   map; the lane knows of none, and it has not searched exhaustively.
-- Proof harnesses: one pure predicate in `crates/paging`, which takes the existing leaves' flags
+- Proof harnesses: one pure predicate in `crates/page_tables`, which takes the existing leaves' flags
   and the new flags and returns whether to admit, with a Kani proof that no admitted set holds both
   W and X. Under (c) the predicate is "no existing leaf", which is trivial.
 
@@ -152,7 +152,7 @@ the leaf is live.
 forgets the record if the map fails. A path cannot install a recorded leaf without passing the check.
 
 - (b) The hold. Ruled, because the dispatcher alone leaves a reachable hole (the example below).
-- (a) The dispatcher, in `address_space_map_into`. One call site. It sees every mapping already in
+- (a) The dispatcher, in `address_space_layout_into`. One call site. It sees every mapping already in
   the log, however made, so it catches writable-then-code. It misses code-then-writable when the
   writable half comes through `PageFrame::MAP`.
 - (c) Both. More code for the same guarantee as (b).

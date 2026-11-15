@@ -75,13 +75,13 @@ const WINDOWS: u64 = read::WINDOWS as u64;
 /// (0-based) is the page at `read::WINDOW_VA + n * 4096`, mapped read-write here and by the same
 /// spawner into reader *n*. A window past the count is never written, and a missing notification
 /// slot is a reader nobody can wake: its window still holds the answer.
-const WINDOW_VA: u64 = address_space_map::pair_page(read::WINDOW_VA);
+const WINDOW_VA: u64 = address_space_layout::pair_page(read::WINDOW_VA);
 /// Where the spawner maps the kernel's ring (read-only, `kernel_ring::PAGES` pages) in
 /// [`MODE_KERNEL`]. Must match `crates/system_initializer`'s `LOG_RING_VA`.
-const RING_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const RING_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 /// Where the spawner maps the kernel ring's cursor page (read-write). Must match
 /// `crates/system_initializer`'s `LOG_CURSOR_VA`.
-const CURSOR_VA: u64 = address_space_map::pair_page(0x0080_0000);
+const CURSOR_VA: u64 = address_space_layout::pair_page(0x0080_0000);
 
 /// The whole service's state, in `.bss` rather than on the one-page stack: the 64 KiB ring is
 /// sixteen times the stack.

@@ -5,8 +5,8 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 
 /// Where the driver maps its DMA page and the input ring. Must match `components/src/keyboard_driver.rs`.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
-const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0082_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
+const RING_VA: u64 = address_space_layout::pair_page(0x0000_0000_0082_0000);
 
 /// One page: a keyboard's event queue is eight eight-byte records, and a device gets the grant it
 /// needs and no more.

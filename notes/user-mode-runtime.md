@@ -228,7 +228,7 @@ capability behind it, so nobody can narrow it, hand it on or take it back. A fra
 mapped itself is in the revocation database, and `PageFrame::REVOKE` can pull it out from under the
 process (notes/frames.md).
 
-`address_space_map_into` carries the same obligation one address space over. It can change an
+`address_space_layout_into` carries the same obligation one address space over. It can change an
 address space under code that assumed a mapping was fixed, but `map_page_frame` already accepts
 that risk for the caller's own space. The kernel makes the same checks: the address-space
 capability's `WRITE`, the frame's rights against the mode, and the address. A caller racing what

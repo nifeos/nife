@@ -47,6 +47,8 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the release (a public name, a wire byte, a
 dependency, a license); everything else is two-way and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1082-capability-manifest-note-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The manifest cannot stand alone.
@@ -217,9 +219,11 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Follow-on
 
-- **Outstanding.** The P0, P1 and P2 items of this review, and the decisions for the architect other
-  than the wire literal. This pull request lands the wire literal marker (the lint and the move
-  check accept `// wire literal`) and nothing else of the block.
+- **Outstanding.** The four decisions, the move's items, the encoding-direction harness of item 3,
+  the citation rewrite of item 4 and items 5 to 7 and 11 to 15. Checked against
+  `crates/capability_manifest_note/src/lib.rs`: `DESCRIPTOR_LEN`, `service` and `VERSION` keep their
+  names, and `decode_never_panics` still stops at one byte past version 1.
+- **Done.** The wire literal marker: the lint and the move check accept `// wire literal`.
 
 ## BUGS
 

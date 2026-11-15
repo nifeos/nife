@@ -247,7 +247,7 @@ pub(crate) struct DeviceRun {
     /// How many pages. The intermediate page tables come out of the address space's own
     /// `AS_OVERHEAD`, so a caller bounds this (`display_service`'s `MAXIMUM_APERTURE_PAGES`).
     pub pages: u64,
-    /// **Map it write-combining** (`paging::Flags::user_write_combining`) rather than as
+    /// **Map it write-combining** (`page_tables::Flags::user_write_combining`) rather than as
     /// registers. True only for memory the process writes and never reads, which on this tree is
     /// one framebuffer aperture: a register window combined would lose the order of its stores.
     /// A required field with no default, so a second caller has to say which it is. Name:

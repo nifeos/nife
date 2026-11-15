@@ -96,7 +96,7 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
 
 12. The standard library copies this file by name, and a stranger cannot see that.
     Finding: `xtask/src/farm/copied.rs` copies `crates/current_cpu_contract/src/lib.rs` into the
-    standard library's platform layer and rewrites `address_space_map::` to a sibling module. A
+    standard library's platform layer and rewrites `address_space_layout::` to a sibling module. A
     second source file, a `mod`, or an `include!` in this crate would break that copy with no
     signal inside the crate's own repository. After the move the farm takes the copy from the pinned package's directory (`cargo metadata`), so the constraint survives the move.
     Evidence: `xtask/src/farm/copied.rs` lines 125 to 145; `xtask/src/farm/generate.rs` lines 61

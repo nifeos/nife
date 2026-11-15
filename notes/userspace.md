@@ -183,7 +183,7 @@ address ([higher-half.md](higher-half.md)). So:
 - The kernel is mapped in every address space, for free. Nobody copies anything.
 - A syscall does not switch page tables. Nothing to flush, nothing to remap.
 - Installing a process is one `msr ttbr0_el1`.
-- `Flags::user_code()` and `Flags::user_data()` had been sitting in the `paging` crate, unused,
+- `Flags::user_code()` and `Flags::user_data()` had been sitting in the `page_tables` crate, unused,
   since milestone 4.
 
 ## And there is deliberately NO syscall

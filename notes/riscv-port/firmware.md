@@ -50,7 +50,7 @@ fail, so `pmu.rs` keeps the error ([notes/riscv-cycle-counters.md](../riscv-cycl
 
 ## T-Head harts
 
-The TH1520 build chooses `paging::Sv39Mae` at compile time ([memory.md](memory.md)), so
+The TH1520 build chooses `page_tables::Sv39Mae` at compile time ([memory.md](memory.md)), so
 `probe_thead` checks the build and the hart agree. `mvendorid` comes from SBI (base function 4),
 because S-mode cannot read it. On a T-Head hart, `th.sxstatus.MAEE` says whether firmware turned
 `XTheadMae` on. A disagreement is fatal either way. With MAEE on and plain Sv39, every leaf names

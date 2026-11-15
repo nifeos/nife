@@ -59,7 +59,7 @@ const I_REQ: u64 = 0;
 const I_READY: u64 = 1;
 
 /// Where the kernel maps this service's DMA page. Must match `kernel/src/user/entropy_service.rs`.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139;
 // see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled r8/w8/r16/w16/r32 below).
