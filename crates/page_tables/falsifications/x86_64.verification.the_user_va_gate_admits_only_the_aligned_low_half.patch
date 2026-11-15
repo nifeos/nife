@@ -1,0 +1,31 @@
+Falsifies `page_tables::x86_64::the_user_va_gate_admits_only_the_aligned_low_half`.
+
+The defect: the gate names the wrong half. This is the confinement break stated in
+its shortest possible form, and it is here rather than in a subtler place because
+one of the three ISA records should be the blunt one: with it, a user program may
+ask the kernel to map a page at a kernel virtual address, and every downstream
+check that trusts `is_user_page_va` to have already decided that question is now
+deciding nothing.
+
+Expected to fail: `assert_eq!(is_user_page_va::<Ia32e>(va), va & 0xfff == 0 && va
+>> 47 == 0)`, on any aligned address in either half, and
+`assert!(Ia32e::is_in_half(Half::Low, va) && !Ia32e::is_in_half(Half::High, va))` on any
+aligned high-half address.
+
+**The gate is shared and the proof is not.** `is_user_page_va` is one generic
+function in `lib.rs`, and DECISIONS §19 has each ISA state the property itself. The
+`aarch64` and `sv39` records break the same function in two other ways; the three
+patches are not copies.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -40,7 +40,7 @@
+ /// assert_eq!(PAGE_SIZE, 4096);
+ /// ```
+ pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
+-    F::is_in_half(Half::Low, va) && va.is_multiple_of(PAGE_SIZE)
++    F::is_in_half(Half::High, va) && va.is_multiple_of(PAGE_SIZE)
+ }
+ 
+ /// **The seam between the shared walk and a hardware page-table format.**

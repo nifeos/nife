@@ -38,12 +38,12 @@ const REPORT: u64 = 2;
 
 /// The one page, shared with the FS server above and the client below, for `fs_file_caretaker`'s
 /// reason: every request on both hops is a blocking `CALL`.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// The read-only page the encoded name set arrives in. A second frame, and the only place in the
 /// grant machinery that needs one: a set is the first thing a grant carries that registers cannot.
 /// It is copied into a local at startup and never read again, so nothing that happens to this page
 /// afterwards can widen the namespace.
-const SET_VA: u64 = address_space_map::pair_page(0x0000_0000_0070_0000);
+const SET_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
 /// The shared page's size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 

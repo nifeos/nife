@@ -76,9 +76,9 @@ fn forged_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; EHDR + PHDR + 16] {
 #[test_case]
 fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
     let image = forged_two_segments(
-        address_space_map::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE,
         static_elf::PF_R | static_elf::PF_X,
-        address_space_map::IMAGE_BASE + 0x2000,
+        address_space_layout::IMAGE_BASE + 0x2000,
         static_elf::PF_R | static_elf::PF_W | static_elf::PF_X,
     );
 
@@ -105,7 +105,7 @@ fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
 #[test_case]
 fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
     let image = forged_two_segments(
-        address_space_map::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE,
         static_elf::PF_R | static_elf::PF_X,
         mmu::KERNEL_VA_BASE,
         static_elf::PF_R | static_elf::PF_X,
@@ -117,7 +117,7 @@ fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
             outcome,
             Err(LoadError::Unmappable(MapError::WrongHalf))
                 | Err(LoadError::Misplaced(
-                    address_space_map::ImagePlacement::TooLarge { .. }
+                    address_space_layout::ImagePlacement::TooLarge { .. }
                 ))
         ),
         "a second segment named the kernel's half and the loader did not refuse it on either the \

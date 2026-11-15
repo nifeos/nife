@@ -6,7 +6,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 
 10. `PAGE` carries no unit. DONE (`PAGE_BYTES`).
     Finding: `const PAGE: u64 = 4096` is a length; the units rule says a length carries its unit
-    (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). `address_space_map` and `c_seam` spell it the
+    (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). `address_space_layout` and `c_seam` spell it the
     same way, so this is a tree habit, not one crate's slip. `MINIMUM_GROW_PAGES` counts things and
     is right.
     Evidence: `src/lib.rs` line 31.

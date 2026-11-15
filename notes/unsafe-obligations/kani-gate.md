@@ -82,7 +82,7 @@ gates in one line.
 The other thirteen are ordinary clippy, in crates nobody suspected: `doc_markdown` (4),
 `manual_range_contains` (4), `manual_let_else` (2), `len_zero` (2), `needless_range_loop` (1),
 `assertions_on_constants` (1), across `asid`, `calendar`, `credential_contract`, `nifefs`, `dma_validator`,
-`paging`, `pci` and `generational_table`. That half is the answer to "does this find anything besides unsafe",
+`page_tables`, `pci` and `generational_table`. That half is the answer to "does this find anything besides unsafe",
 and it is yes: half of what the pass finds has nothing to do with unsafe at all. One of them,
 `dma_validator`'s `assert!(RING_END <= RING_BLOCK)` over two constants, became a `const {}` assertion
 and so moved from a proof-time check to a compile-time one.

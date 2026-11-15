@@ -67,7 +67,7 @@ green this pass. `read` means source review only.
 | 9 | What a supervisor may see and reap are one domain | held | host, booted aarch64/riscv64/x86_64 | `capability::the_view_and_the_reap_have_the_same_scope`; suites ran green |
 | 10 | A user VA is low-half and page-aligned, every ISA | held | host | `paging` user-VA gate suite (ran green) |
 | 11 | No page is both writable and executable | held | host | `paging` W^X suite (ran green) |
-| 12 | An IOMMU entry sets no reserved bit | held | host | `paging::x86_64` vtd suite (ran green) |
+| 12 | An IOMMU entry sets no reserved bit | held | host | `page_tables::x86_64` vtd suite (ran green) |
 | 13 | A device cannot touch memory outside its region | held | host | `direct_memory_access_validator` suite (ran green) |
 | 14 | A driver cannot send its device to unvalidated descriptors | held | host | `direct_memory_access_validator::an_accepted_descriptor_is_confined` |
 | 15 | A driver cannot make the validator walk out or forever | held | host | `direct_memory_access_validator` walk/batch suite |

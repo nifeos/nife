@@ -64,12 +64,12 @@ const SERVICE: u64 = 0;
 const REPORT: u64 = 1;
 
 /// A client's shared page. Must match components/src/credentialer.rs `VERIFY_VA`.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_00e1_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e1_0000);
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 6).
 const PAGE_WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, proto::PAGE as u64) };
 /// The provisioner's shared page. Must match components/src/credentialer.rs `PROV_VA`.
-const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+const PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 // SAFETY: as PAGE_WINDOW's.
 const PROV_WINDOW: MappedWindow = unsafe { MappedWindow::new(PROV_VA, proto::PAGE as u64) };
 

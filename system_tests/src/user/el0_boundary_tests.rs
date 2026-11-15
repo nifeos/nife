@@ -152,7 +152,7 @@ fn a_user_program_that_never_yields_is_preempted_anyway() {
 #[test_case]
 fn a_user_threads_trap_frame_sits_where_the_trap_path_rebuilds_it() {
     const USER_TEXT: core::ops::Range<u64> =
-        address_space_map::IMAGE.start..address_space_map::IMAGE.end;
+        address_space_layout::IMAGE.start..address_space_layout::IMAGE.end;
 
     let interrupt_ignorer = spawn_bare(interrupt_ignorer_image(), 0, 0).expect("spawn failed");
 
@@ -201,12 +201,12 @@ fn the_hardware_says_el0_cannot_read_the_kernels_memory() {
 
         // Its own code is readable, or the check refuses everything.
         assert!(
-            mmu::user_can_read(address_space_map::IMAGE_BASE),
+            mmu::user_can_read(address_space_layout::IMAGE_BASE),
             "EL0 cannot read its own .text, so the check refuses everything and proves nothing",
         );
 
         // The stack band's guard page, which the address-space map promises no loader maps.
-        assert!(!mmu::user_can_read(address_space_map::STACK.start));
+        assert!(!mmu::user_can_read(address_space_layout::STACK.start));
     });
     drop(space);
 }

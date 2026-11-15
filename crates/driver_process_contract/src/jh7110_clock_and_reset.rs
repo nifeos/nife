@@ -8,7 +8,7 @@
 //!
 //! Name: provisional.
 
-use address_space_map::pair_page;
+use address_space_layout::pair_page;
 use startup_page_contract::WindowKind;
 
 /// Where the spawner maps the system top group (STG) clock and reset window's first page,

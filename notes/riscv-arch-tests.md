@@ -84,7 +84,7 @@ Three differences change what a test can honestly claim, and each test's doc com
 
 - **`the_uart_is_mapped_as_device_memory`** is a weaker claim here. On aarch64 the device type is an
   architectural PTE field, and getting it wrong lets the CPU speculatively read MMIO, which for a
-  UART FIFO register *consumes the byte*. Base Sv39 has no such field, so `paging::Sv39` carries the
+  UART FIFO register *consumes the byte*. Base Sv39 has no such field, so `page_tables::Sv39` carries the
   flag in an RSW software bit and QEMU's `virt` derives the real memory type from the physical
   address. The test asserts the kernel's bookkeeping is right, not that the hardware was told. It
   still catches the mistake worth catching (mapping the UART with `Flags::kernel_data()`), which is

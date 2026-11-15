@@ -12,7 +12,7 @@ needs_person: no
 
 *Title and slug are drafts.*
 Raised by the lane for milestone 206 (a program image has under 896 KiB)
-while drawing the user address-space map, `crates/address_space_map`.
+while drawing the user address-space map, `crates/address_space_layout`.
 
 One constant in a protocol crate both sides already share, a std farm rebuild, and a
 benchmark re-baseline. No syscall surface, wire format or dependency.

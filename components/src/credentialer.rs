@@ -50,12 +50,12 @@ const READY: u64 = 4;
 
 /// The provisioner's page. Plaintext secrets cross it; nothing but the provisioner maps it, and it
 /// is a frame of its own, never the verify page's.
-const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+const PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 // SAFETY: the wiring maps one page read/write at PROV_VA before this program runs (milestone 139
 // round 6).
 const PROV_WINDOW: MappedWindow = unsafe { MappedWindow::new(PROV_VA, proto::PAGE as u64) };
 /// A client's page. Must match `fixtures/src/credentialer_test_client.rs`.
-const VERIFY_VA: u64 = address_space_map::pair_page(0x0000_0000_00e1_0000);
+const VERIFY_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e1_0000);
 // SAFETY: as PROV_WINDOW's.
 const VERIFY_WINDOW: MappedWindow = unsafe { MappedWindow::new(VERIFY_VA, proto::PAGE as u64) };
 

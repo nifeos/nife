@@ -18,7 +18,7 @@ workspace = true
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
 # The heap's default base is the address-space map's heap band.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The heap algorithm, with no features: `counters` and the rest stay off. A consuming workspace's
 # `[patch.crates-io]` may build it from a vendored copy that carries upstream's fix SFBdragon/talc#57
 # until a release does. Without such a patch the crate builds crates.io's 5.1.1 unpatched.

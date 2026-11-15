@@ -50,10 +50,10 @@ const KEYS: u64 = 2;
 /// The page the write endpoint's server reads. Which frame backs it is the progenitor's business;
 /// on arm 0 it is the page the discipline reads (`line_editor`'s `APP_OUT`), on arm 1 the page
 /// `display_terminal` reads (its `OUT_VA`). Must match the spawn wiring; the address is ours.
-const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
+const OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a0_0000);
 /// The page the discipline delivers completed lines into, read-only. Arm 0 only; arm 1's reads
 /// are register-only and no second page is mapped.
-const IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
+const IN_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a1_0000);
 
 // SAFETY: the wiring maps OUT_VA read/write before this program runs, on either arm; nothing
 // below writes it before a flush-sized batch is composed and never past one page.

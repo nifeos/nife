@@ -35,7 +35,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   page and register. The harness that the handoff round-trips and accepts only what `pack` can make
   lives with `Handoff` in `driver_process_contract`.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**: inline
-  `address_space_map::pair_page`, its one use (`src/lib.rs`, in the handoff). That function places
+  `address_space_layout::pair_page`, its one use (`src/lib.rs`, in the handoff). That function places
   nife's virtual addresses, so the handoff it serves is nife's spawn ABI; whether the handoff stays
   in the published crate or moves to the driver is the lane's call, recorded in its pull request.
 - Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
@@ -122,14 +122,14 @@ the pinned nightly for `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-no
 `script/crate-standalone e1000e` fails today, at base `ae6b91e79`. The manifest inherits `license`
 and `lints` from nife's workspace and states no `rust-version`, and there is no README,
 `LICENSE-MIT` or `LICENSE-APACHE`. Those hold for all nine crates. It does not build alone:
-`address_space_map` is a path dependency outside the copy, so neither the build nor Kani ran.
+`address_space_layout` is a path dependency outside the copy, so neither the build nor Kani ran.
 Release step 2's cut is what fixes that. Beyond manifest and files, 23 lines cite this tree: 12
 `milestone N`, 5 tree paths, 2 `§N`, 2 naming calef and 2 provenance blocks.
 
 `script/names` reports the name `e1000e` ratified (checked 2026-10-25).
 
 Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, and the only
-citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_map` is
+citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_layout` is
 still a path dependency, so the copy does not build; the second half of the cut removes it.
 
 Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
@@ -141,7 +141,7 @@ blocks, which the ratification pass settles.
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `Handoff`, nife's spawn ABI, no longer sits in the crate. The addresses taken from `address_space_map` left with the cut.
+  `Handoff`, nife's spawn ABI, no longer sits in the crate. The addresses taken from `address_space_layout` left with the cut.
 
 ## Names a stranger may misread, open before release
 
