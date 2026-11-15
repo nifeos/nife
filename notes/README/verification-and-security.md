@@ -13,6 +13,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Falsification records](../falsification.md): recording that each proof harness can fail.
 - [Falsification coverage](../falsification-coverage.md): which kinds of test carry a replayed falsification, and what gates on it.
 - [Fuzzing the parse surface](../fuzzing.md): coverage-guided fuzzing of the parsers that read outside bytes.
+- [Fuzzing talc](../talc-fuzzing.md): the heap algorithm under every program, its upstream targets, Miri, and a target that drives it as nife's heap does. Name provisional.
 - [Fuzzing the services' request handlers](../fuzzing-the-services.md): session targets over the file server, the system log and the compositor, each checking a confinement rule.
 - [Taking a dependency update](../dependency-updates.md): what notices a new release, who merges which bump, and what a bump that cannot land leaves behind. Name provisional.
 - [Overflow checks](../overflow-checks.md): which builds panic on integer overflow and which wrap, what checking the shipped build found and costs, and the options (provisional name).
