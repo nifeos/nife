@@ -32,7 +32,7 @@ pub const PAGE: u64 = 4096;
 /// Where the shared grant is mapped, in **both** address spaces at the same virtual address. Same
 /// number on both sides on purpose, so `c_seam_wild`'s target address is one the checker can name
 /// without translating anything.
-pub const GRANT_VA: u64 = address_space_map::service_window(0x5000_0000);
+pub const GRANT_VA: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// The read-only witness: the page immediately after the grant. Mapped read-only into the C
 /// component (which is what makes an off-by-one a permission fault) and read/write into the checker.

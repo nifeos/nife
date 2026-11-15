@@ -63,13 +63,13 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
    Door: one-way (public names). Effort: M across nife, S in the crate.
 
 8. The crate's name uses a word the vocabulary rule sets aside.
-   Finding: `address_space_map` carries `map`, which `design/naming/vocabulary.md` lists among the
+   Finding: `address_space_layout` carries `map`, which `design/naming/vocabulary.md` lists among the
    words to avoid where the kernel meaning differs from yours. The crate's own root doc uses the
    word in both senses in one paragraph: "the map" (the table of bands) and "pages the kernel maps
    into every process" (the verb). The crate root marks the name provisional and records that the minting set `user_layout` and `address_space` aside. The block does not give the reasons (unverified).
    Evidence: `src/lib.rs` lines 1, 18 and 124; `design/naming/vocabulary.md`.
-   Change: see decision 1 below. A crate name becomes the repository name and the crates.io name
-   at the first tag, so the move is the last cheap moment.
+   Change: done. The crate is `address_space_layout` (decision N1, ruled 2026-11-14 UTC), in code
+   and as the package name.
    Door: one-way. Effort: M across nife (26 manifests, 281 sites), S in the crate.
 
 9. The band functions check a window's first page only.
@@ -105,7 +105,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
     with a reason, and the exemption lives in nife's `notes/project-metrics/mutation-triage.csv`,
     which does not move.
     Evidence: `src/lib.rs` lines 273 to 287; `notes/project-metrics/mutation-triage.csv`, the
-    `address_space_map` rows.
+    `address_space_layout` rows.
     Change: one line in `.github/mutants-exempts` with the reason above. The alternative, rewriting
     `check_image` so the mutant is not equivalent, changes nothing a caller sees and trades a clear
     three-way `if` for a less legible one; not recommended.

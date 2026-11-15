@@ -56,7 +56,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
 
 18. Milestone 1017's blocker table has a stale row.
     Finding: the table says `counter_frequency_contract` has a dev-dependency on
-    `address_space_map` and must leave after it. No manifest or source in
+    `address_space_layout` and must leave after it. No manifest or source in
     `crates/counter_frequency_contract/` names the crate now; the relation it guarded (the timebase
     page lies above the ceiling) holds as an assertion in `kernel/src/user/loader.rs` line 14 instead.
     Evidence: `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`; a grep of

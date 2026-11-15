@@ -3,13 +3,13 @@
 //! with both numbers.
 //!
 //! The check lives here because `user_mode_runtime`, which owns the script, has no host test
-//! target, and `address_space_map` must name no file outside its own repository.
+//! target, and `address_space_layout` must name no file outside its own repository.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane maintainer/outside-review-fixes-1075-1088.
 
 #[cfg(test)]
 mod tests {
-    use address_space_map::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE;
 
     #[test]
     fn the_user_linker_script_links_at_the_image_base() {

@@ -2,7 +2,7 @@
 
 The page that tells a process where its memory windows were mapped. A spawner writes it before the
 process runs and maps it read-only at one fixed address; the process reads each window's address
-from it instead of compiling the address in. `no_std`; one dependency, `address_space_map`, for the
+from it instead of compiling the address in. `no_std`; one dependency, `address_space_layout`, for the
 page size and the band the page sits in.
 
 ## The contract

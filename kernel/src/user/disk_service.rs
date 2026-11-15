@@ -28,7 +28,7 @@ const BLANK_DISK: usize = 4;
 
 /// Where the surveyor maps the roster in its own address space. The program chooses it; the
 /// kernel names it only so the probe's test can assert its fault landed exactly here.
-pub const ROSTER_VA: u64 = address_space_map::service_window(0x5001_0000);
+pub const ROSTER_VA: u64 = address_space_layout::service_window(0x5001_0000);
 
 /// The budget, in pages, every program on this path draws its page tables from.
 ///

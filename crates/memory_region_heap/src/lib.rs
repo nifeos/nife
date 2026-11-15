@@ -22,13 +22,13 @@ use talc::source::Manual;
 
 /// The suggested heap base: 1 GiB, the start of the address-space map's heap band (milestone 206 (a program image has under 896 KiB)).
 /// A convention, not a law; a program with its own layout passes its own base to [`initialize`],
-/// and one that does should still keep it inside `address_space_map::HEAP`.
+/// and one that does should still keep it inside `address_space_layout::HEAP`.
 ///
 /// [`initialize`]: MemoryRegionHeap::initialize
 ///
 /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). An address is `_VIRTUAL_ADDRESS` in
 /// every location.
-pub const DEFAULT_BASE_VIRTUAL_ADDRESS: u64 = address_space_map::HEAP.start;
+pub const DEFAULT_BASE_VIRTUAL_ADDRESS: u64 = address_space_layout::HEAP.start;
 
 const PAGE: u64 = 4096;
 

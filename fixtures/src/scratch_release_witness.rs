@@ -61,7 +61,7 @@ const EXTRA_STACK_PAGES: u64 = 7;
 /// An ELF header and one `PT_LOAD`: a single executable page at the image base, holding the entry
 /// point. Enough for `static_elf::Elf::parse`, which is all the loader needs; the child is never started.
 fn forge(out: &mut [u8; EHDR + PHDR]) {
-    let base = address_space_map::IMAGE_BASE;
+    let base = address_space_layout::IMAGE_BASE;
     out[0..4].copy_from_slice(b"\x7fELF");
     out[4] = 2; // 64-bit
     out[5] = 1; // little-endian
@@ -93,7 +93,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         if frame < 0
             || !user_mode_runtime::map_page_frame(
                 frame as u64,
-                address_space_map::STACK_TOP_PAGE - k * PAGE,
+                address_space_layout::STACK_TOP_PAGE - k * PAGE,
                 true,
                 MEMORY_REGION,
             )

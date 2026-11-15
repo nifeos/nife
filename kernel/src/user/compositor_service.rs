@@ -12,16 +12,16 @@ const MAP_BUDGET_PAGES: u64 = 24;
 
 // The compositor's address space. Must match components/src/compositor.rs. The compositor maps the
 // screen capability where it chooses, up to 4 MiB from its `SCREEN_VA`, and these sit clear of it.
-const WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
-const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0c01_0000);
-const CLIENT_BASE: u64 = address_space_map::pair_page(0x0000_0000_0e00_0000);
+const WLIST_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c00_0000);
+const RING_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c01_0000);
+const CLIENT_BASE: u64 = address_space_layout::pair_page(0x0000_0000_0e00_0000);
 const CLIENT_STRIDE: u64 = 0x0000_0000_0010_0000;
 
 // A client's address space, the same in every client. Must match fixtures/src/window.rs, which
 // maps the screen itself and keeps `C_WLIST_VA` clear of it.
-const CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
-const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0061_0000);
-const C_WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
+const CTL_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
+const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0061_0000);
+const C_WLIST_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c00_0000);
 
 // Client roles. Must match fixtures/src/window.rs.
 pub const ROLE_INPUT: u64 = 1 << 0;
@@ -489,9 +489,9 @@ impl Wiring {
 
 // A display terminal's address space. Must match components/src/display_terminal.rs, which uses
 // these addresses in both `MODE_DISPLAY` and `MODE_WINDOW`, so they sit clear of the full scanout.
-const T_SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
-const T_OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_0a00_0000);
-const T_CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0a01_0000);
+const T_SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
+const T_OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0a00_0000);
+const T_CTL_VA: u64 = address_space_layout::pair_page(0x0000_0000_0a01_0000);
 
 /// A display terminal running as a compositor client, from the spawner's side: the page it reads
 /// an application's bytes out of, and the endpoint it serves.
