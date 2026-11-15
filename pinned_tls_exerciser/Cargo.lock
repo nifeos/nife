@@ -300,10 +300,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "elf"
-version = "0.1.0"
-
-[[package]]
 name = "elliptic-curve"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -458,7 +454,7 @@ checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
- "elf",
+ "static_elf",
 ]
 
 [[package]]
@@ -823,6 +819,10 @@ dependencies = [
  "base64ct",
  "der",
 ]
+
+[[package]]
+name = "static_elf"
+version = "0.1.0"
 
 [[package]]
 name = "subtle"

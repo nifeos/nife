@@ -79,7 +79,7 @@ CONTRACTS = (
     'login_contract', 'machine_statistics_contract', 'socket_contract', 'std_runtime_contract',
     'supervision_contract',
     'hot_swap_contract',
-    'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'byte_glob',
+    'static_elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'byte_glob',
     'globally_unique_identifier_partition_table', 'grant_plan', 'capability_plan', 'compositor',
     'line_editor', 'capability_manifest_note',
     # Two more of the formats the first cut links, added 2026-10-29 (UTC) by

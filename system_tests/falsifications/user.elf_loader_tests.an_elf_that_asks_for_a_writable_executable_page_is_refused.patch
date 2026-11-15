@@ -2,31 +2,31 @@ Falsifies `system_tests::user::tests::an_elf_that_asks_for_a_writable_executable
 
 Architecture: aarch64, riscv64, x86_64
 
-The defect is the removal of the W^X refusal in `crates/elf`, which is a three-line deletion
+The defect is the removal of the W^X refusal in `crates/static_elf`, which is a three-line deletion
 in the segment loop and is the whole of the check: a segment that is both writable and
 executable is accepted and mapped.
 
-The test is deliberately redundant with a host test in `crates/elf` itself, and its own
+The test is deliberately redundant with a host test in `crates/static_elf` itself, and its own
 comment says why ("the value of the host test is that it is fast, not that it is the only
 line of defence"). This patch is what makes that sentence checkable: it turns both red, and
 only this sweep watches the end-to-end one.
 
 Expected to fail: `assert_eq!(load(&image).err(),
-Some(LoadError::NotLoadable(elf::Error::WritableAndExecutable)))`.
+Some(LoadError::NotLoadable(static_elf::Error::WritableAndExecutable)))`.
 
 **Nothing downstream catches it either, and that is worth stating because it is the more
 alarming direction.** `Flags` has no constructor that is both writable and executable, so a
-`PF_R|PF_W|PF_X` segment that gets past `crates/elf` is mapped by whichever arm the loader's
-`match` on the segment flags reaches. The refusal in `crates/elf` is the whole defence at the
+`PF_R|PF_W|PF_X` segment that gets past `crates/static_elf` is mapped by whichever arm the loader's
+`match` on the segment flags reaches. The refusal in `crates/static_elf` is the whole defence at the
 point the file is read; what the mapper then does with a segment it should never have seen is
 a separate question this record does not answer.
 
 Replayed on all three ISAs. The hunk is portable code, so one patch serves every leg. On 2026-10-03 (UTC), `cargo xtask test --arch riscv64 --test an_elf_that_asks_for_a_writable_executable_page_is_refused` and the same with `--arch x86_64` both came back red at `system_tests/src/user/tests.rs:435`, the assertion this record predicts, which is where aarch64 was already red.
 
-diff --git a/crates/elf/src/parse.rs b/crates/elf/src/parse.rs
+diff --git a/crates/static_elf/src/parse.rs b/crates/static_elf/src/parse.rs
 index 51de81b47..aece4ff1b 100644
---- a/crates/elf/src/parse.rs
-+++ b/crates/elf/src/parse.rs
+--- a/crates/static_elf/src/parse.rs
++++ b/crates/static_elf/src/parse.rs
 @@ -122,9 +122,6 @@ impl<'a> Elf<'a> {
                  continue;
              };

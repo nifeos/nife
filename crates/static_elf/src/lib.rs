@@ -6,10 +6,10 @@
 //!
 //! See notes/elf.md and notes/elf/parser.md.
 //!
-//! Name: ratified 2026-09-18 (calef, `design/decisions/` §154 (the acronym test is whether the
-//! phrase is spoken)): "executable and linkable format" is not a phrase people say, and an expert
-//! meeting it translates it back to `elf`, so the name stays. Refused
-//! `executable_and_linkable_format` (§154).
+//! Name: ratified 2026-11-14 (UTC) (block 1088, option A): `static_elf`, the one kind of file the
+//! crate accepts. The crates.io name `elf` belongs to a different, widely used parser, so the
+//! package takes the same name as the code, with no `package =` rename and no `doc(alias)` of the
+//! old spelling. Refused `executable_and_linkable_format` (the acronym test, decision 154).
 
 #![no_std]
 

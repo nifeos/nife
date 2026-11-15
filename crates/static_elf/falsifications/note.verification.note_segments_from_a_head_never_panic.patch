@@ -1,4 +1,4 @@
-Falsifies `elf::note::verification::note_segments_from_a_head_never_panic`.
+Falsifies `static_elf::note::verification::note_segments_from_a_head_never_panic`.
 
 The defect: the program header table's end is computed but never compared with the bytes the reader
 holds. The shell hands this function one page of a file anyone may have written, and a `phoff` or
@@ -6,10 +6,10 @@ holds. The shell hands this function one page of a file anyone may have written,
 
 Expected to fail: a slice index out of range in `NoteSegments::from_head`.
 
-diff --git a/crates/elf/src/note.rs b/crates/elf/src/note.rs
+diff --git a/crates/static_elf/src/note.rs b/crates/static_elf/src/note.rs
 index 89c4cb5d7..7cfa31d67 100644
---- a/crates/elf/src/note.rs
-+++ b/crates/elf/src/note.rs
+--- a/crates/static_elf/src/note.rs
++++ b/crates/static_elf/src/note.rs
 @@ -145,9 +145,6 @@ impl<'a> NoteSegments<'a> {
          let end = phoff
              .checked_add(phnum * phentsize)

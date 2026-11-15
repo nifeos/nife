@@ -292,7 +292,7 @@ mod verification {
     /// **The extent arithmetic never panics**, for any segment length, cursor, sizes and either
     /// padding. The fields come straight from the file.
     ///
-    /// Falsification: replayable `crates/elf/falsifications/note.verification.note_extent_never_panics.patch`
+    /// Falsification: replayable `crates/static_elf/falsifications/note.verification.note_extent_never_panics.patch`
     #[kani::proof]
     fn note_extent_never_panics() {
         let align: usize = if kani::any() { 4 } else { 8 };
@@ -303,7 +303,7 @@ mod verification {
     /// ordering is what makes the two slices in `find_in_segment` in bounds; `at < next` is what
     /// makes the walk end.
     ///
-    /// Falsification: replayable `crates/elf/falsifications/note.verification.a_passing_extent_is_inside_and_advances.patch`
+    /// Falsification: replayable `crates/static_elf/falsifications/note.verification.a_passing_extent_is_inside_and_advances.patch`
     #[kani::proof]
     fn a_passing_extent_is_inside_and_advances() {
         let len: usize = kani::any();
@@ -326,7 +326,7 @@ mod verification {
     /// the header plus two program headers, so at most three entries of the smallest size fit; the
     /// unwind bound covers that and the four-byte magic comparison.
     ///
-    /// Falsification: replayable `crates/elf/falsifications/note.verification.note_segments_from_a_head_never_panic.patch`
+    /// Falsification: replayable `crates/static_elf/falsifications/note.verification.note_segments_from_a_head_never_panic.patch`
     #[kani::proof]
     #[kani::unwind(5)]
     fn note_segments_from_a_head_never_panic() {
@@ -345,7 +345,7 @@ mod verification {
     /// the real loop. 40 bytes holds at most three notes, so the loop runs at most three times and
     /// the owner comparison at most five bytes; the unwind bound covers both.
     ///
-    /// Falsification: replayable `crates/elf/falsifications/note.verification.a_note_segment_is_read_inside_itself.patch`
+    /// Falsification: replayable `crates/static_elf/falsifications/note.verification.a_note_segment_is_read_inside_itself.patch`
     #[kani::proof]
     #[kani::unwind(7)]
     fn a_note_segment_is_read_inside_itself() {

@@ -56,7 +56,7 @@ use installed_programs::{Grant, Granted};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnreadableNote {
     /// The bytes are not a little-endian ELF64 file, or a `PT_NOTE` in them is malformed.
-    Elf(elf::NoteError),
+    Elf(static_elf::NoteError),
     /// The program's manifest note is there, and its descriptor does not decode.
     Manifest(capability_manifest_note::Error),
     /// A zone the manifest asks for is not text.
@@ -68,10 +68,10 @@ pub enum UnreadableNote {
 /// nothing, which is the rule the spawn path applies; a program whose bytes or note are malformed
 /// is an `Err`, so a caller that must not guess (the image composer) refuses and names it.
 ///
-/// The note is found through the program headers alone ([`elf::NoteSegments`] and
-/// [`elf::NoteSearch`]), which check no machine: a program built for another machine than the
+/// The note is found through the program headers alone ([`static_elf::NoteSegments`] and
+/// [`static_elf::NoteSearch`]), which check no machine: a program built for another machine than the
 /// reader's has the same note to read. Nothing here runs the program, which is why
-/// [`elf::Elf::parse`]'s machine check does not belong to it.
+/// [`static_elf::Elf::parse`]'s machine check does not belong to it.
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane
 /// milestone/909-composer-reads-any-machines-note. calef names public items.
@@ -79,12 +79,12 @@ pub fn checked_asked_grants_of<'b>(
     p: &package_archive::Program<'b>,
 ) -> Result<impl Iterator<Item = Granted<'b>> + use<'b>, UnreadableNote> {
     let bytes: &'b [u8] = p.bytes;
-    let mut search = elf::NoteSearch::new(
+    let mut search = static_elf::NoteSearch::new(
         capability_manifest_note::OWNER,
         capability_manifest_note::MANIFEST,
     );
     let mut note = None;
-    for seg in elf::NoteSegments::from_head(bytes).map_err(UnreadableNote::Elf)? {
+    for seg in static_elf::NoteSegments::from_head(bytes).map_err(UnreadableNote::Elf)? {
         let range = seg.range(bytes.len()).map_err(UnreadableNote::Elf)?;
         if let Some(d) = search
             .segment(&bytes[range], seg.p_align)
@@ -143,7 +143,7 @@ fn grants_of_decoded<'b>(
 pub fn asked_grants_of<'b>(
     p: &package_archive::Program<'b>,
 ) -> impl Iterator<Item = Granted<'b>> + use<'b> {
-    let note = elf::Elf::parse(p.bytes).ok().and_then(|elf| {
+    let note = static_elf::Elf::parse(p.bytes).ok().and_then(|elf| {
         elf.note(
             capability_manifest_note::OWNER,
             capability_manifest_note::MANIFEST,
