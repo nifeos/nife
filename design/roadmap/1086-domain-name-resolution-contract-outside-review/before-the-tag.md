@@ -6,9 +6,9 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
 
 4. The limits and offsets carry no unit and abbreviate, against the rules now in force. Finding:
    `NAME_TEXT_MAXIMUM` (`src/wire.rs` line 13) is a limit in bytes with no unit and the limit word
-   last. `GRANTS_MAXIMUM` (line 29) is a count with the limit word last. `OFF_NAME` and
-   `OFF_ADDRESSES` (lines 21, 24) abbreviate `offset`. `MAXIMUM_ADDRESSES` (line 18) and
-   `OFF_ADDRESSES` trip the template's address rule, which wants a qualifier that says the address
+   last. `GRANTS_MAXIMUM` (line 29) is a count with the limit word last. `NAME_OFFSET_BYTES` and
+   `ADDRESSES_OFFSET_BYTES` (lines 21, 24) abbreviate `offset`. `MAXIMUM_ADDRESSES` (line 18) and
+   `ADDRESSES_OFFSET_BYTES` trip the template's address rule, which wants a qualifier that says the address
    is not a memory location (`IP_ADDRESS`, as `GATEWAY_IP_ADDRESS` passes in that helper's own
    test). The field `text_len` (`src/grants.rs` line 64) is a length with no unit, and the template
    counts fields. Two local bindings `op` (`src/grants.rs` line 124, `src/wire.rs` line 207 as
@@ -24,29 +24,15 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
    `nife.rs` lines 1138 to 1215 follows. Door: two-way before the first tag. Effort: S for
    the rename, plus the std farm.
 
-5. Ratify the interface identity before the crate leaves.
-   Finding: `INTERFACE_ID` 11 and `VERSION` 1 (`src/lib.rs` lines 28 to 42) are provisional.
-   The ruling of milestone 1017 (the contract crates leave in this order), at its lines 154 to 158
-   and 228, holds that ratifying the `INTERFACE_ID` values comes before the first contract leaves.
-   It also makes the `needs-architect` hold on a contract crate turn on exactly these values.
-   Change: a ruling, recorded in the pull request that applies it; no code changes if the values
-   stand.
-   Door: one-way (a peer compares it). Effort: S.
+5. The interface identity is frozen at `INTERFACE_ID` 11 and `VERSION` 1 (decision 3, ruled
+   2026-11-14 (UTC)). Milestone 1017 (the contract crates leave in this order) makes a change to
+   these values the `needs-architect` hold on a contract crate. Door: one-way (a peer compares it).
 
-6. The control reply word is not in the contract. Finding: a spawner may `CALL` a grant or forget
-   message (`src/wire.rs` lines 83 to 85 say so for `OPERATION_FORGET`), and the resolver answers
-   with `refused as u64`, 0 or 1 (`components/src/domain_name_resolver.rs` lines 152 to 155). That
-   word has no definition in the crate. The spawner in the tree uses `SEND` for every piece
-   (`crates/system_initializer/src/image_request.rs` lines 186 to 188), so nobody sees a refused
-   grant (`Refusal::BadZone`, `TooLong`, `OutOfOrder`, `Full`). The client holds a badge that the
-   resolver denies every name, and the spawner reports a successful grant. The outcome is
-   fail-closed, so this is a diagnosability gap, not an authority gap. Change: define the reply to a
-   control `CALL` in `src/wire.rs`, in the same packing as `Outcome`, and a `const fn` pair to pack
-   and read it. The packing is a status byte and a detail byte that carries a stable code per
-   `Refusal`, as `reject_code` does for `domain_name_system::Reject`. The spawner then `CALL`s the
-   last piece of a grant and reads the word; the resolver's `refused as u64` becomes the packer.
-   Record the current 0 and 1 as the compatible values of the new status byte. Door: one-way at the
-   tag (a wire word). Effort: S in the crate, S in the resolver and spawner.
+6. The reply to a control `CALL` is in the contract (decision 2, ruled 2026-11-14 (UTC)):
+   `wire::refusal` numbers each `Refusal`, `Control::reply` packs the answer and `control_answer`
+   reads it. The resolver sends it, and the spawner `CALL`s the last piece of each grant. A system
+   test grants a bad zone and reads `BadZone`
+   (`system_tests/src/user/name_resolver_tests.rs`). Door: one-way at the tag (a wire word).
 
 7. One field, three bounds. Finding: the crate root says the client writes at most
    `NAME_TEXT_MAXIMUM` bytes (`src/lib.rs` line 9). `grant_messages` accepts a zone of
@@ -54,7 +40,7 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
    does the same (`src/grants.rs` line 134). The resolver accepts a resolve of `NAME_TEXT_MAXIMUM +
    1` bytes (`components/src/domain_name_resolver.rs` line 246). The std client refuses anything
    over `NAME_TEXT_MAXIMUM` (`nife.rs` line 1144). Nothing asserts that the name field ends before
-   `OFF_ADDRESSES` (0x100, 256 bytes, against a 254-byte name: true today, by three bytes,
+   `ADDRESSES_OFFSET_BYTES` (0x100, 256 bytes, against a 254-byte name: true today, by three bytes,
    unchecked) or that the addresses end inside a page. Change: state the trailing-dot allowance
    once, at the limit's definition, and have the resolver and the std client read the same
    expression. Add the layout assertions a page contract carries (`const _: () = assert!(NAME_OFFSET

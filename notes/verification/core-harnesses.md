@@ -115,14 +115,15 @@ state by hand. The scan loops are bounded by pinning `total = 8`, so
 
 ## `crates/device_tree_blob`
 
-Four in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's leaf readers. The whole-parse
+Five in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's leaf readers. The whole-parse
 token loop is the same BMC wall as ELF, so the leaves are what get proved.
 
 | Harness | Property |
 |---|---|
 | `be32_is_total` / `be64_is_total` | the big-endian readers never panic for any offset, even `usize::MAX` |
 | `be32_reads_big_endian_when_in_bounds` | an in-bounds read is exactly `bytes[at..at+4]`, MSB first |
-| `align4_rounds_up_to_a_multiple_of_four` | the padding helper rounds up correctly for any realistic length |
+| `align4_rounds_up_to_a_multiple_of_four` | the padding helper rounds up for every length, or answers `None` when rounding would wrap |
+| `skip_padded_never_wraps` | stepping a cursor over padded data never wraps or moves backward |
 
 `be32`/`be64` were *hardened* to reach totality. Their `at + 4` / `at + 8` is now a checked add, so
 a near-`usize::MAX` offset from a corrupt blob returns `Truncated` instead of panicking. The 12

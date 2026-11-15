@@ -46,7 +46,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
    layout change (the algorithms, the four loom models, the host tests, the overlay's generated copy,
    the clock program and `date`); S for the documentation-only outcome.
 
-6. The docs call `initialize` a once-only step, and its only caller runs it on every start.
+6. The docs call `initialize` a once-only step, and its only caller runs it on every start. DONE (first option: a page that carries the magic is left as it is, and an abandoned odd sequence is released forward; `initializing_a_page_again_keeps_what_was_published`, `initializing_a_page_with_an_abandoned_claim_releases_it_forward`, and the loom model `a_restarted_initialize_never_shows_a_reader_a_reset_page`).
    Finding: `initialize` (`src/lib.rs` line 254) says the writer does it "once, before anyone else has a
    mapping, so it needs no sequence claim". `components/src/clock.rs` line 63 calls it unconditionally at
    program start. The review did not establish whether this tree ever restarts the `clock` program on the same frame (it found no supervisor entry for it). If it does, readers already hold

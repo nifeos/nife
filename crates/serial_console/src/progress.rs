@@ -16,7 +16,7 @@
 
 use core::fmt;
 
-use crate::board;
+use crate::{HEADS, board};
 
 /// How far the boot got, as an ordered ladder.
 ///
@@ -36,13 +36,13 @@ pub enum Stage {
     /// with no prologue this tool recognises (xenon) goes from [`Stage::Cold`] straight to
     /// [`Stage::Banner`].
     Firmware(&'static board::Rung),
-    /// Our own banner (`boot_ladder::BANNER`). The kernel's console works, which on this board is
+    /// Our own banner (`boot_ladder::Heads::banner`). The kernel's console works, which on this board is
     /// not a given: the runbook is explicit that this line is the *second* target, after the
     /// DW-8250 driver work.
     ///
     /// **Reachable on all three architectures**, as every rung of the kernel's ladder is.
     Banner,
-    /// The machine described itself and finished (`boot_ladder::MACHINE`), so the boot has read the
+    /// The machine described itself and finished (`boot_ladder::Heads::machine`), so the boot has read the
     /// device tree or the ACPI tables, counted the processors, found the console's interrupt line,
     /// the PCIe window and the IOMMU, and printed all of it.
     ///
@@ -51,7 +51,7 @@ pub enum Stage {
     /// verdict below says the kernel works. A board that reaches the banner and stops here has a
     /// console and a machine it cannot read.
     Machine,
-    /// The boot self-test printed its verdict (`boot_ladder::SELF_TEST`).
+    /// The boot self-test printed its verdict (`boot_ladder::Heads::self_test`).
     ///
     /// The verdict arrives after [`Stage::Tour`]'s line, from the hand-over, and the ratchet keeps
     /// the order below; [`BootProgress::has_reached`] is what waits for the line itself.
@@ -69,7 +69,7 @@ pub enum Stage {
     /// that stops here has not handed over. Whether the checks passed is
     /// [`Failure::SelfTestFailed`]'s to say, not this rung's.
     Tour,
-    /// Userspace is up and the shell is offering a prompt (`boot_ladder::PROMPT`).
+    /// Userspace is up and the shell is offering a prompt (`boot_ladder::Heads::prompt`).
     ///
     /// The terminal state of a default boot on every architecture: nothing halts, so the prompt is
     /// the signal that the boot finished. Above [`Stage::Tour`] because a boot that reaches a
@@ -498,14 +498,14 @@ impl BootProgress {
             }
         }
         // The banner is kept from a complete line only, or it is kept truncated.
-        if let Some(at) = line.find(boot_ladder::BANNER) {
+        if let Some(at) = HEADS.banner().find_in(line).map(|r| r.start) {
             self.reach(Stage::Banner);
             if complete && self.banner_line.is_none() {
                 self.banner_line = Some(line[at..].to_string());
             }
         }
         // The machine description's last line, so reaching this rung means the whole block printed.
-        if let Some(at) = line.find(boot_ladder::MACHINE) {
+        if let Some(at) = HEADS.machine().find_in(line).map(|r| r.start) {
             self.reach(Stage::Machine);
             if complete && self.machine_line.is_none() {
                 self.machine_line = Some(line[at..].to_string());
@@ -513,15 +513,15 @@ impl BootProgress {
         }
         // The stage may ratchet on a partial line; the text, and the failure in `failure_in`, wait
         // for a complete one, or a count is captured before it has finished arriving.
-        if let Some(at) = line.find(boot_ladder::SELF_TEST) {
+        if let Some(at) = HEADS.self_test().find_in(line).map(|r| r.start) {
             self.reach(Stage::SelfTest);
             if complete && self.self_test_line.is_none() {
                 self.self_test_line = Some(line[at..].to_string());
             }
         }
-        // The shell's banner is the top rung; `boot_ladder::PROMPT`'s BUGS says why the banner
+        // The shell's banner is the top rung; `boot_ladder`'s BUGS says why the banner
         // rather than the `$ ` itself.
-        if line.contains(boot_ladder::PROMPT) {
+        if HEADS.prompt().is_in(line) {
             self.reach(Stage::Prompt);
         }
 
@@ -537,7 +537,7 @@ impl BootProgress {
         if line.contains("init/build") {
             self.userspace_ran = true;
         }
-        if let Some(at) = line.find(boot_ladder::TOUR) {
+        if let Some(at) = HEADS.tour().find_in(line).map(|r| r.start) {
             self.reach(Stage::Tour);
             if complete && self.banner_line.is_none() {
                 self.banner_line = Some(line[at..].to_string());
@@ -600,7 +600,7 @@ impl BootProgress {
                 line[at + "[PANIC] ".len()..].to_string(),
             ))
         } else if complete
-            && let Some(at) = line.find(boot_ladder::SELF_TEST)
+            && let Some(at) = HEADS.self_test().find_in(line).map(|r| r.start)
             && let Some(failed) = line[at..].find(boot_ladder::SELF_TEST_FAILED)
         {
             // Both markers on one complete line: the tour's preemption check also prints
@@ -608,7 +608,7 @@ impl BootProgress {
             let names = line[at + failed + boot_ladder::SELF_TEST_FAILED.len()..].trim();
             Some(Failure::SelfTestFailed(names.to_string()))
         } else if complete
-            && let Some(at) = line.find(boot_ladder::SELF_TEST)
+            && let Some(at) = HEADS.self_test().find_in(line).map(|r| r.start)
             && let Some(name) = Self::verdict_absences(&line[at..])
                 .find(|name| self.board.must_not_be_absent.contains(name))
         {
@@ -619,8 +619,8 @@ impl BootProgress {
                 self.board.name
             )))
         } else if complete
-            && let Some(at) = line.find(boot_ladder::SELF_TEST)
-            && let Some(total) = Self::verdict_total(&line[at + boot_ladder::SELF_TEST.len()..])
+            && let Some(tail) = HEADS.self_test().find_in(line).map(|r| &line[r.end..])
+            && let Some(total) = Self::verdict_total(tail)
             && total != boot_ladder::SELF_TEST_CHECKS.len()
             && !boot_ladder::SELF_TEST_CHECKS_EARLIER.contains(&total)
         {
@@ -637,7 +637,7 @@ impl BootProgress {
     }
 
     /// The names a verdict lists after `boot_ladder::SELF_TEST_ABSENT`, given the verdict line
-    /// from its `boot_ladder::SELF_TEST`. The list ends at the comma before a `FAILED:` count, or
+    /// from its `boot_ladder::Heads::self_test` head. The list ends at the comma before a `FAILED:` count, or
     /// at the end of the line.
     fn verdict_absences(verdict: &str) -> impl Iterator<Item = &str> {
         let names = verdict
@@ -649,7 +649,7 @@ impl BootProgress {
         names.split_whitespace()
     }
 
-    /// The `Y` in a verdict's `X of Y passed`, given the text after `boot_ladder::SELF_TEST`.
+    /// The `Y` in a verdict's `X of Y passed`, given the text after the verdict's head.
     ///
     /// `None` for anything that is not that shape, so an unfamiliar verdict is left alone rather
     /// than reported as a count it never printed.

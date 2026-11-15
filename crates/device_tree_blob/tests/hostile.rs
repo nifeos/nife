@@ -694,6 +694,8 @@ fn totalsize_meets_the_header_length_exactly() {
     for off in [8, 12, 16] {
         bare = patched(&bare, off, 8);
     }
+    // No structure block either, so the size the header declares for it agrees with the total.
+    let bare = patched(&bare, 36, 0);
     assert!(DeviceTreeBlob::from_bytes(&bare).is_ok());
 }
 
@@ -1194,4 +1196,263 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
             assert_eq!((out[0].start, out[0].size), (0x2000, 0x20), "{case:?}");
         }
     }
+}
+
+/// `node_reg` answers for the first node whose name matches, and stops there, as `node_prop` does.
+/// A first match with no `reg` is zero regions; a later match's `reg` is never used in its place.
+#[test]
+fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"uart@1");
+    b.end_node();
+    b.begin_node(b"uart@2");
+    b.prop(b"reg", &reg64(0x2000, 0x100));
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.node_prop(b"uart@", b"reg"), Ok(None));
+    assert_eq!(dt.node_reg(b"uart@", &mut out), Ok(0));
+
+    // The control: asked for the second node by its own name, it answers.
+    assert_eq!(dt.node_reg(b"uart@2", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x2000, 0x100));
+}
+
+/// Only the root's `reserved-memory` child is the reservation list. One nested deeper (here under
+/// `/soc`, whose own widths differ from the root's) names no memory the machine has to keep, and
+/// its children must not be decoded with the root's cell counts.
+#[test]
+fn a_reserved_memory_node_below_the_root_is_not_the_reservation_list() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &1u32.to_be_bytes());
+    b.prop(b"#size-cells", &1u32.to_be_bytes());
+    b.begin_node(b"soc");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"reserved-memory");
+    b.begin_node(b"fw@80000000");
+    b.prop(b"reg", &reg64(0x8000_0000, 0x4_0000));
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 4];
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(0));
+
+    // The control: the same node at the root is read, with the root's widths.
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"reserved-memory");
+    b.begin_node(b"fw@80000000");
+    b.prop(b"reg", &reg64(0x8000_0000, 0x4_0000));
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x8000_0000, 0x4_0000));
+}
+
+/// A property whose length, a `u32` from the blob, runs far past the blob is refused as truncated by
+/// every lookup, not added to the cursor. On a target whose `usize` is 32 bits the sum would wrap;
+/// the cursor arithmetic is checked, and `src/lib.rs`'s own tests cover the wrap itself, which a
+/// 64-bit host cannot reach through a blob.
+#[test]
+fn a_property_length_past_the_blob_is_truncated_in_every_lookup() {
+    for len in [0x1000_0000u32, 0xffff_fffd, 0xffff_ffff] {
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        b.begin_node(b"memory@0");
+        let name_off = b.string(b"reg");
+        b.token(3);
+        b.structure.extend_from_slice(&len.to_be_bytes());
+        b.structure.extend_from_slice(&name_off.to_be_bytes());
+        b.end_node();
+        b.end_node();
+        let blob = b.finish();
+        let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+        let mut out = [Region { start: 0, size: 0 }; 2];
+        assert_eq!(
+            dt.memory_regions(&mut out),
+            Err(Error::Truncated),
+            "{len:#x}"
+        );
+        assert_eq!(dt.node_reg(b"memory", &mut out), Err(Error::Truncated));
+        assert_eq!(dt.node_prop(b"memory", b"reg"), Err(Error::Truncated));
+        assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
+        assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
+        assert_eq!(dt.reserved_memory_regions(&mut out), Err(Error::Truncated));
+    }
+}
+
+/// Header offsets of the fields the structure-block bound reads.
+const VERSION_AT: usize = 20;
+const SIZE_DT_STRUCT_AT: usize = 36;
+
+/// A structure block with no `FDT_END` is not walked on into the strings block. The last token is
+/// overwritten with `FDT_NOP`, so the walk runs out of structure and must say so. It used to read
+/// the strings block's bytes as tokens and answer with a `BadToken` naming a name that is no token.
+#[test]
+fn a_structure_block_without_its_end_token_is_truncated_not_read_into_the_strings() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"memory@0");
+    b.prop(b"reg", &reg64(0, 0x1000));
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.memory_regions(&mut out), Ok(1), "the control");
+
+    // The structure block ends where the strings block starts, four bytes after the last token.
+    let off_strings = u32::from_be_bytes(blob[12..16].try_into().unwrap()) as usize;
+    let no_end = patched(&blob, off_strings - 4, 4); // FDT_NOP in place of FDT_END
+    let dt = DeviceTreeBlob::from_bytes(&no_end).unwrap();
+    assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
+    assert_eq!(dt.node_reg(b"nothing", &mut out), Err(Error::Truncated));
+    assert_eq!(dt.node_prop(b"nothing", b"reg"), Err(Error::Truncated));
+    assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
+    assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
+}
+
+/// The structure block's declared size is honored: a size that runs past the blob is refused when
+/// the blob is opened, and a size that stops short of the tokens ends the walk there, not at the
+/// end of the blob.
+#[test]
+fn the_declared_structure_size_bounds_the_walk() {
+    let blob = minimal_tree();
+    let total = blob.len() as u32;
+    assert_eq!(
+        DeviceTreeBlob::from_bytes(&patched(&blob, SIZE_DT_STRUCT_AT, total)).err(),
+        Some(Error::Truncated),
+        "a structure block longer than the blob"
+    );
+    assert_eq!(
+        DeviceTreeBlob::from_bytes(&patched(&blob, SIZE_DT_STRUCT_AT, u32::MAX)).err(),
+        Some(Error::Truncated),
+        "a structure size that wraps the offset"
+    );
+
+    // Two bytes short of the first token: no walker may read it.
+    let short = patched(&blob, SIZE_DT_STRUCT_AT, 2);
+    let dt = DeviceTreeBlob::from_bytes(&short).unwrap();
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
+}
+
+/// Before version 17 the header has no structure size, and the structure block runs to the strings
+/// block, as libfdt reads it. The blob's own size field is not consulted, so a stale one is no bar.
+#[test]
+fn a_blob_older_than_version_17_ends_its_structure_at_the_strings() {
+    let blob = minimal_tree();
+    let old = patched(&patched(&blob, VERSION_AT, 16), SIZE_DT_STRUCT_AT, 0);
+    let dt = DeviceTreeBlob::from_bytes(&old).unwrap();
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.memory_regions(&mut out), Ok(0));
+}
+
+/// The order of the blocks is the writer's: a structure block placed last, ending at exactly
+/// `totalsize`, lies inside the blob, and the tree in it reads as it would in the usual order.
+#[test]
+fn a_structure_block_that_ends_the_blob_is_inside_it() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.begin_node(b"memory@0");
+    b.prop(b"reg", &reg64(0x4000_0000, 0x1000));
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let word = |at: usize| u32::from_be_bytes(blob[at..at + 4].try_into().unwrap()) as usize;
+    let (total, off_struct, off_strings) = (word(4), word(8), word(12));
+    assert_eq!(total, blob.len());
+
+    // The strings block moves ahead of the structure block, which then ends the blob.
+    let mut reordered = blob[..off_struct].to_vec();
+    reordered.extend_from_slice(&blob[off_strings..]);
+    reordered.extend_from_slice(&blob[off_struct..off_strings]);
+    let strings_bytes = total - off_strings;
+    let reordered = patched(
+        &patched(&reordered, 12, off_struct as u32),
+        8,
+        (off_struct + strings_bytes) as u32,
+    );
+
+    let dt = DeviceTreeBlob::from_bytes(&reordered).unwrap();
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.memory_regions(&mut out), Ok(1));
+    assert_eq!(
+        out[0],
+        Region {
+            start: 0x4000_0000,
+            size: 0x1000
+        }
+    );
+}
+
+/// A property's value is bounded by the structure block, exactly. A value that runs into the
+/// strings block is truncated even though those bytes are inside the blob, and a lookup must not
+/// hand them back as the value. A value whose last byte is the structure block's last byte lies
+/// inside it, so a lookup that stops at that property answers; a walk that goes on still finds
+/// no `FDT_END` and says so.
+#[test]
+fn a_property_value_is_bounded_by_the_structure_block_exactly() {
+    // FDT_END_NODE, FDT_END_NODE and FDT_END follow the property: twelve bytes of structure.
+    const AFTER_THE_VALUE: u32 = 12;
+    const VALUE_BYTES: u32 = 16;
+
+    // Past the end: the declared length runs four bytes beyond the structure block, into the
+    // strings block that follows it.
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.begin_node(b"memory@0");
+    let name_off = b.string(b"reg");
+    b.token(3);
+    b.structure
+        .extend_from_slice(&(AFTER_THE_VALUE + 4).to_be_bytes());
+    b.structure.extend_from_slice(&name_off.to_be_bytes());
+    b.end_node();
+    b.end_node();
+    let past = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&past).unwrap();
+    assert_eq!(dt.node_prop(b"memory", b"reg"), Err(Error::Truncated));
+
+    // At the end: the declared structure size stops at the value's last byte.
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.begin_node(b"memory@0");
+    b.prop(b"reg", &reg64(0x4000_0000, 0x1000));
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let size_dt_struct = u32::from_be_bytes(
+        blob[SIZE_DT_STRUCT_AT..SIZE_DT_STRUCT_AT + 4]
+            .try_into()
+            .unwrap(),
+    );
+    let at_the_end = patched(&blob, SIZE_DT_STRUCT_AT, size_dt_struct - AFTER_THE_VALUE);
+    let dt = DeviceTreeBlob::from_bytes(&at_the_end).unwrap();
+    let value = reg64(0x4000_0000, 0x1000);
+    assert_eq!(value.len(), VALUE_BYTES as usize);
+    assert_eq!(dt.node_prop(b"memory", b"reg"), Ok(Some(&value[..])));
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
 }

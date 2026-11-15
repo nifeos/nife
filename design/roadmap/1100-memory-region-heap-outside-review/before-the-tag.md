@@ -5,7 +5,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 ## P1: before the first tag
 
 5. `initialize` is safe, takes no state into account, and a caller can call it again after
-   allocations.
+   allocations. DONE (a later call changes nothing, and `is_initialized` answers whether one would; the signature stays `()` because a `bool` or `Result` return breaks the question-shape naming rule or leaves every caller ignoring a `Result`; `a_second_initialize_changes_nothing`).
    Finding: a second call resets `committed` to zero and sets a new `base`, but leaves talc's
    `heap_end` as it was. The next `grow` maps pages at the new base and calls `talc::extend(end, run
    + bytes)`, which registers one free gap from the old heap's top to the new run's end, across the
@@ -22,7 +22,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    Door: two-way until the tag (a signature change on a public method is one-way after it). Effort:
    XS.
 
-6. `grow` reports success for a request of zero bytes after mapping nothing, so `alloc` can spin.
+6. `grow` reports success for a request of zero bytes after mapping nothing, so `alloc` can spin. DONE (the last line became `got > 0 && got >= need_pages`; `a_grow_of_nothing_at_the_maximum_is_a_refusal`, the crate's first host test).
    Finding: when `shortfall` returns 0 and the heap has hit the cap, `grow` computes `need_pages =
    0`, `want_pages = 0`, maps nothing and returns `got >= need_pages`, which is `0 >= 0`. `alloc`'s
    loop then calls `try_allocate` again with the same heap and the same answer, forever. Today the

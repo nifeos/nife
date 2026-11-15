@@ -84,7 +84,7 @@ The P1 items are in [the appendix](1113-virtio-outside-review/before-the-tag.md)
 
 ## Decisions for the architect
 
-Two decisions, each with the background first, then the recommendation, prior art and a
+Three decisions, each with the background first, then the recommendation, prior art and a
 concrete example. The maintainer decides Decision 2, provisionally, below.
 
 ### Decision 1. Whether `crates/virtio` leaves this tree, and as what
@@ -166,6 +166,30 @@ the kernel also aliases. The validator and the kernel alias them from there. The
 the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
 names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
 maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
+
+### Decision 3. Whether the driver refuses a device whose `Version` is not 2
+
+Background. A virtio-mmio device reports a version in the register at `0x004`: 1 for the legacy
+layout, 2 for the layout the specification now describes. The driver checks the magic value and
+nothing else, so it would drive a legacy device with the modern handshake and find out by its
+queues failing. The direct transport (the virtio-pci path of 1062 step 7) has no such register. Its
+`read` answers a made-up magic and zero for any offset it does not name. A check written against
+the mmio register would therefore refuse every direct grant, unless that transport also answers it. QEMU's
+`virt` machine offers legacy mmio devices unless told otherwise, so which version the test suites
+meet today is a measurement this review did not make.
+
+Recommendation. Check `Version == 2` beside the magic, and have the direct transport answer 2 for
+that offset, after one run of each QEMU suite on each architecture shows which version the devices
+report. Refusing a legacy device is the stricter choice and loosening it later is compatible;
+accepting one now and tightening later is not. This changes what the driver accepts, which is why
+it is brought and not made.
+
+Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 and version 2 with
+a layout each and refuses any other. Redox's `virtio-core` is PCI-only and has no such register.
+
+Concrete example. A board whose firmware offers a version 1 block device today boots to a driver
+that hangs after the handshake. With the check it stops at once, and the sentence names the
+register it read.
 
 ## Done when
 

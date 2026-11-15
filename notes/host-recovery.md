@@ -146,7 +146,7 @@ below writes with upstream's archiver rather than with our own `put`.
 
 ## Extended attributes come back on the files (milestone 57)
 
-An image written by nife carries a directory in its root called `.nife-attrs`, holding one small
+An image written by nife carries a directory in its root called `.extended-attributes`, holding one small
 file per node that has extended attributes. `ls` shows it and `extract` copies it out. That the
 store is visible here is a decision and not a leak: no client of the FS server can reach it, and a
 recovery host is not a client of the contract; it holds the image file. The record format is

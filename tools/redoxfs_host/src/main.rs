@@ -267,7 +267,7 @@ fn list(volume: Volume, path: &str) -> Result<(), String> {
             // `@` for "this one carries extended attributes", which is what macOS `ls -l` puts in
             // the same position. Borrowed on purpose: a reader who has seen it once elsewhere does
             // not have to learn a second convention here, and it says the metadata is there without
-            // making anybody find out that `.nife-attrs` exists.
+            // making anybody find out that `.extended-attributes` exists.
             let marker = if e.attrs > 0 { '@' } else { ' ' };
             println!("{}{marker} {:>10}  {}", e.kind.label(), e.size, e.name);
         }
