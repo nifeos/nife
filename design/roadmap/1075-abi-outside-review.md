@@ -39,6 +39,8 @@ Effort: S is under half a day for a lane, M a day or two, L more. A door is one-
 outside the repository acts on it after the release (a published name, a wire number, a layout, a
 dependency); everything else is two-way and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1075-abi-outside-review/ledger.md).
+
 ### P0: red on arrival
 
 1. `cargo clippy -- -D warnings` fails in the staged repository.
@@ -229,7 +231,10 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Items 1 to 13 except 7b are not done; a lane takes them. Decision A waits for the architect.
+- **Outstanding.** Decisions A and B, the two renames of item 12, the package of item 13 and items 15
+  to 17, which an architect rules. Checked against `crates/abi/src`: `futex::admitted`,
+  `Error::from_ret`, `CapabilitySlot` and `console::WRITE` all still exist.
+- **Outstanding.** Items 20 and 21 and the badge row, which need the new repository's first runs.
 
 ## BUGS
 

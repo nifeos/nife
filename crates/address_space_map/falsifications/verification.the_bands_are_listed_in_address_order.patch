@@ -7,11 +7,11 @@ assert in `lib.rs` would stop the build first, so the patch deletes it as well.
 Expected to fail: the harness's `assert!(band_index(low) <= band_index(high))`.
 
 diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
-index 0eba0def7..2a1284ac0 100644
+index cf32cd949..3c83b0eba 100644
 --- a/crates/address_space_map/src/lib.rs
 +++ b/crates/address_space_map/src/lib.rs
-@@ -116,8 +116,8 @@ pub const PROCESS_PAGES: Band = Band {
- pub const BANDS: [(&str, Band); 8] = [
+@@ -173,8 +173,8 @@ pub const PROCESS_PAGES: Band = Band {
+ pub const BANDS: &[(&str, Band)] = &[
      ("NULL_GUARD", NULL_GUARD),
      ("PAIR_PAGES", PAIR_PAGES),
 -    ("RUNTIME_WINDOWS", RUNTIME_WINDOWS),
@@ -20,7 +20,7 @@ index 0eba0def7..2a1284ac0 100644
      ("SERVICE_WINDOWS", SERVICE_WINDOWS),
      ("IMAGE", IMAGE),
      ("STACK", STACK),
-@@ -282,10 +282,6 @@ const _: () = {
+@@ -342,10 +342,6 @@ const _: () = {
      let mut i = 0;
      while i < BANDS.len() {
          let band = BANDS[i].1;
