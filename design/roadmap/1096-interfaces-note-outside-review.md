@@ -92,10 +92,11 @@ Each item: what, where, why, the fix, effort (S/M/L), door.
    `interfaces_len` (`:112`) and `interfaces_note_len` (`:269`) return byte counts and read as
    counts of interfaces; `interfaces_len(3)` is 44. The rule is design/naming.md's "a length or a
    limit carries its unit". Fix: the private two now (`NAME_FIELD_BYTES`, `HEADER_BYTES`); the
-   public three in decision 2. S. The public ones are one-way at the tag.
+   public three as decision 2 decides, provisionally. S. Two-way before the first tag.
 10. `Declared` names a state, not a thing. `src/lib.rs` line 102. A stranger reads
     `interfaces_note::Declared { id, version }` and asks "declared what?". Design/naming.md asks
-    for a noun. Fix: decision 2 (`DeclaredInterface` recommended). S. One-way at the tag.
+    for a noun. Fix: `DeclaredInterface`, as decision 2 decides, provisionally. S. Two-way before
+    the first tag.
 
 ### P2: for later
 
@@ -123,7 +124,8 @@ Each item: what, where, why, the fix, effort (S/M/L), door.
 
 ## Decisions for the architect
 
-Only one-way doors. Each: background, the recommendation first, prior art, an example.
+Each: background, the recommendation first, prior art, an example. The public names are decided,
+provisionally; the other two are one-way doors.
 
 ### The owner string `nife` in a crate that may not say `nife`
 
@@ -175,6 +177,12 @@ name, not in a doc comment.
 
 Example. `let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&list);` reads as 44 bytes for
 three records; `interfaces_len(3)` reads as a count of three.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation holds: sixteen keep their spelling, and
+`INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface` replace the
+four, with no alias of the old spellings. The review package lists the twenty as provisional;
+ratifying them stays the architect's. Items 9 and 10 are the work.
 
 ### The crate name
 
