@@ -234,8 +234,11 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 
 ## Follow-on
 
+- **Done.** The rename to `static_elf`: the directory, the package, every dependent, the lock
+  files, the tables and baselines, and the notes that name the crate. It changes no behavior and no
+  public item.
 - **Outstanding.** Decisions D1 to D3, the move's items, the page-size type, the entry-point
-  refusal, the README and the vocabulary sweep. Checked against `crates/elf/src`: `vaddr`, `paddr`
+  refusal, the README and the vocabulary sweep. Checked against `crates/static_elf/src`: `vaddr`, `paddr`
   and `memsz` keep their names and `Segment::page_range` still takes a bare `u64`.
 
 ## BUGS
@@ -250,14 +253,6 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
   leaves first). If that order changes, the shared ground changes with it, and the publishable
   ground alone does not carry the move until D1, item 1 and the name all have rulings.
 - The P2 order is the reviewer's guess at what a user asks for first; nobody outside has asked.
-
-## Follow-on
-
-- **Done.** The rename to `static_elf`. It covers the directory, the package and every dependent.
-  It covers the lock files, the package tables, the gate tables and baselines. It covers the notes
-  that name the crate.
-- **Outstanding.** Every finding above, the three decisions D1 to D3, and the move to its own
-  repository. None of them was started; the rename changes no behavior and no public item.
 
 ## Index row
 

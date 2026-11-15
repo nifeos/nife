@@ -446,3 +446,34 @@ fn error_displays_and_is_an_error_and_hashes() {
     let set: HashSet<Error> = [Error::Gone, Error::Gone, Error::NoSuchSlot].into();
     assert_eq!(set.len(), 2);
 }
+
+/// Every error prints its own sentence, so a message never stands for two causes.
+#[test]
+fn every_error_prints_a_distinct_sentence() {
+    extern crate std;
+    use std::collections::HashSet;
+    use std::string::ToString;
+    let errors = [
+        Error::NoSuchSlot,
+        Error::WrongObject,
+        Error::NotPermitted,
+        Error::BadPointer,
+        Error::BadMethod,
+        Error::BadSyscall,
+        Error::OutOfMemory,
+        Error::DeviceRefused,
+        Error::StillAlive,
+        Error::NotSupervised,
+        Error::Gone,
+        Error::NoResetMechanism,
+        Error::ResetNotSupported,
+        Error::ResetDenied,
+        Error::ResetDidNotHappen,
+    ];
+    let mut seen = HashSet::new();
+    for error in errors {
+        let text = error.to_string();
+        assert!(!text.is_empty());
+        assert!(seen.insert(text));
+    }
+}

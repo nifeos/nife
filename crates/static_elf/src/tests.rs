@@ -485,3 +485,46 @@ fn errors_print_and_a_64_bit_field_is_never_truncated() {
         Err(Error::SegmentTruncated)
     );
 }
+
+/// Every refusal prints its own sentence, so a message never stands for two causes.
+#[test]
+fn every_refusal_prints_a_distinct_sentence() {
+    extern crate std;
+    use std::collections::HashSet;
+    use std::string::ToString;
+    let errors = [
+        Error::TooSmall,
+        Error::BadMagic,
+        Error::Not64Bit,
+        Error::NotLittleEndian,
+        Error::BadVersion,
+        Error::WrongMachine,
+        Error::NeedsRelocation,
+        Error::NotExecutable,
+        Error::BadProgramHeaders,
+        Error::SegmentOutOfBounds,
+        Error::SegmentTruncated,
+        Error::WritableAndExecutable,
+        Error::SegmentUnreachable,
+        Error::SegmentsOverlap,
+        Error::EntryNotExecutable,
+        Error::AddressOverflow,
+        Error::TooManyProgramHeaders,
+    ];
+    let notes = [
+        NoteError::NotReadable,
+        NoteError::SegmentOutOfBounds,
+        NoteError::BadAlignment,
+        NoteError::Truncated,
+        NoteError::Duplicate,
+    ];
+    let mut seen = HashSet::new();
+    for text in errors
+        .iter()
+        .map(ToString::to_string)
+        .chain(notes.iter().map(ToString::to_string))
+    {
+        assert!(!text.is_empty());
+        assert!(seen.insert(text));
+    }
+}
