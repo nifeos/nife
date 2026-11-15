@@ -43,7 +43,7 @@ zeros, which is the only thing that marks it, and not (this is the trap) its LBA
 ## The crate does no I/O, and that is the whole design
 
 Nothing in `crates/globally_unique_identifier_partition_table` reads or writes a block device. Every function takes bytes the caller
-already has and returns bytes the caller is about to place. Same discipline as `device_tree_blob` and `elf`, and
+already has and returns bytes the caller is about to place. Same discipline as `device_tree_blob` and `static_elf`, and
 the reason is not tidiness: it is that the crate then compiles for the host, so its tests run in
 milliseconds against disks that real tools made, instead of inside a QEMU boot. `#![no_std]`, no
 allocation, no `unsafe`, and the entry array is a caller-supplied buffer so a kernel can hand it a

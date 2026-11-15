@@ -144,7 +144,7 @@ paths = ["notes/designware-ethernet/the-hardware.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/elf alone; it leaves with that crate (§315)"
+reason = "about crates/static_elf alone; it leaves with that crate (§315)"
 paths = ["notes/elf/parser.md"]
 
 [[home]]

@@ -47,7 +47,7 @@ members = [
     "crates/device_tree_blob",
     "crates/device_tree_patch",
     "crates/initial_ramdisk_writer",
-    "crates/elf",
+    "crates/static_elf",
     "crates/entropy_contract",
     "crates/page_frames",
     "crates/filesystem_contract",
@@ -149,6 +149,7 @@ exclude = [
     "vendor/talc",
     "tools/redoxfs_host",
     "fuzz",
+    "crates/memory_region_heap/fuzz",
 ]
 
 # Shared package metadata. Each member opts in with `license.workspace = true`, so the

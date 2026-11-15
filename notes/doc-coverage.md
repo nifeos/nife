@@ -41,7 +41,7 @@ Every crate under `crates/` has at least one worked example, in one of two treat
 
 1. An executing doctest (28 crates). Preferred always: a doctest that runs is a test, and this
    project's whole method is pure logic in host-testable crates. Each example was written to carry
-   the crate's own argument rather than to restate a signature. `elf` forges a
+   the crate's own argument rather than to restate a signature. `static_elf` forges a
    writable-and-executable segment and watches it be refused. `page_tables` builds real page tables on
    the host and demonstrates that break-before-make is forced. `smb_proto` performed a whole SMB2
    mount, and `network_time_protocol` shows an
@@ -102,7 +102,7 @@ a hard gate, so those crates cannot regress:
 
 `abi`, `address_space_identifier`, `bitmap_font`, `block_roster_contract`, `c_seam`, `calendar`, `memory_corruption_canary_gate`, `capability`,
 `clock_contract`, `capability_plan`, `coremark`, `cpu_set`, `cred`, `credential_contract`,
-`dma_validator`, `device_tree_blob`. `elf`, `entropy_contract`, `page_frames`,
+`dma_validator`, `device_tree_blob`. `static_elf`, `entropy_contract`, `page_frames`,
 `filesystem_contract`, `graphics_contract`, `byte_glob`, `inter_process_communication`,
 `intrusive_queue`, `line_editor`,
 `manual`, `measured_boot`, `nifefs`, `network_time_protocol`, `non_volatile_memory_express`,

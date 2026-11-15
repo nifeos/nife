@@ -9,8 +9,8 @@ An appendix to [the milestone](../1089-environment-contract-outside-review.md).
   README says callers check the domain.
 - `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address` are the names in the crate, the
   overlay and the callers, and both naming baselines lose their rows.
-- The crate records the architect's two rulings: the identity values pinned by a host test
-  and a `const` assertion, and the accessor names applied with their aliases.
+- The crate records the identity values the architect rules, pinned by a host test and a `const`
+  assertion, and the accessor names the milestone decides applied with their aliases.
 - A `verification` module with three harnesses and three falsification patches passes `cargo kani`
   and `proofs / falsify` in the new repository.
 - `script/crate-standalone environment_contract` passes every row, and `cargo package --list`

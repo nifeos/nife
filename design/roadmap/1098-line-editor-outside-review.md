@@ -89,7 +89,8 @@ or identity, a dependency); everything else is two-way and the maintainer decide
    Evidence: `src/line_disc.rs` lines 15, 17, 21 and 128; `src/raw_queue.rs` lines 16 and 60.
    Change: `LineDisc` becomes `LineEditor` (a crate that holds a component's logic takes the component's name; `rustyline` and `noline` both call theirs `Editor`). `HIST` becomes `HISTORY_LINES` (a count of things names the things). `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM` become `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES`. `pop8` becomes `pop_up_to_eight` or takes a `[u8; 8]` return that
    says it. No `doc(alias)` for the old spellings before the first release, per the rule in force.
-   Door: one-way once tagged; decisions 2 and 3 below. Effort: S.
+   Door: two-way before the first tag; decision 2 below decides `LineEditor` and `HISTORY_LINES`,
+   provisionally, and decision 3 the limits. Effort: S.
 
 4. Names the template's day-one gates refuse, in `proto` and `component`, and in parameters.
    Finding: `spelled_out.py` fails at a ceiling of 0 on `HANDOFF_VA`, `ELF_VA` (`va` abbreviates
@@ -161,7 +162,7 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
 
 ## Decisions for the architect
 
-Only one-way doors. Each gives the background first, then the recommendation.
+Each gives the background first, then the recommendation.
 
 ### Where the cut falls: `proto` and `component` leave the crate, `handoff` stays
 
@@ -204,8 +205,7 @@ whether it takes one under milestone 1017's family rule is not decided; none is 
 ### The engine's public type and constant names at release: `LineEditor` and `HISTORY_LINES`
 
 Background. `LineDisc` is an abbreviation of "line discipline", a word the crate name ruling
-refused as an overclaim; `HIST` is not a word and carries no `Name:` block. Both are the first
-names a user types. After the tag a rename is a breaking change to every user.
+refused as an overclaim; `HIST` is not a word and carries no `Name:` block. After the tag a rename is a breaking change to every user.
 
 Recommendation. `LineEditor` for the type, matching the crate (a crate that holds a component's
 logic takes the component's name) and the family (`rustyline::Editor`, `noline::Editor`);
@@ -216,8 +216,10 @@ Prior art. `rustyline` and `noline` call the type `Editor`; linenoise calls its 
 `linenoiseState` and its history size `history_max_len`; `reedline` uses the crate name.
 
 Concrete example. `components/src/swish/prompt.rs` holds `static mut EDITOR: line_editor::LineDisc`;
-after the rename the declaration reads `line_editor::LineEditor`, which is what the variable
-already calls it.
+after the rename the declaration reads `line_editor::LineEditor`.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation is the rule. Item 3 is the work.
 
 ### The three ratified limits, reopened under the unit rule
 
@@ -227,7 +229,7 @@ down as a rule. The rule in force now reads: a limit opens `MAXIMUM_` and ends w
 unit, and the release review rechecks a ratified name. These three are byte lengths.
 
 Recommendation. Rename before the tag to `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and
-`MAXIMUM_RAW_QUEUE_BYTES`, with no alias. Renaming later is the expensive direction.
+`MAXIMUM_RAW_QUEUE_BYTES`, with no alias.
 
 Prior art. POSIX `MAX_CANON` and `MAX_INPUT` are the same two limits with the unit implied;
 linenoise's `LINENOISE_MAX_LINE`; the tree's own `MAXIMUM_SURFACE_BYTES` and
@@ -257,8 +259,8 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 - **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
   program holds the two `QUIESCED` values equal.
-- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decisions 2 and 3; none was started, which a
-  read of the items against the crate confirms.
+- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decision 3; a read of the items against the
+  crate shows none started.
 - **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
   as open.
 

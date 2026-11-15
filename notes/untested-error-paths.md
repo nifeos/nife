@@ -68,7 +68,7 @@ check below, two of sixteen Option paths were a lookup finding nothing.
 | `machine_discovery` | 53 | 31 |
 | `timetable` | 67 | 30 |
 | `walk_pricing` | 27 | 23 |
-| `elf` | 50 | 20 |
+| `static_elf` | 50 | 20 |
 | `grant_plan` | 93 | 17 |
 | `swish` | 35 | 17 |
 | `board_console` | 31 | 16 |

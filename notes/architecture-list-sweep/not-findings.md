@@ -41,7 +41,7 @@ These are worth more than the findings, because each one is a shape that did not
   the file to edit.
 - `kernel/src/arch/mod.rs`: three `#[cfg]` module arms and three flat re-exports, and the
   module's own comment says a new ISA is a new directory rather than a diff.
-- `crates/elf`'s `EXPECTED_MACHINE`: three explicit arms because it was two and the default
+- `crates/static_elf`'s `EXPECTED_MACHINE`: three explicit arms because it was two and the default
   arm was a bug. It read `#[cfg(not(target_arch = "riscv64"))] EM_AARCH64`, so the x86_64 kernel
   was compiled to accept aarch64 binaries and refuse its own. Its comment states the general lesson
   in one sentence: "A default arm that names one architecture is a trap the moment a third exists."
