@@ -5,42 +5,37 @@
 //! heap lives at one virtual range the program picks, and nothing else supplies memory.
 //!
 //! A program declares it (see notes/heap.md):
-//!
 //! ```ignore
 //! #[global_allocator]
 //! static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
-//! // first thing in _start:
-//! HEAP.initialize(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS, 4 * 1024 * 1024)
-//!     .expect("a page-aligned base and a cap of at least one page");
+//! // first thing in _start, with a page-aligned base and a cap of at least one page:
+//! HEAP.initialize(SLOT, memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS, 4 << 20).unwrap();
 //! ```
+//! **How it grows.** The heap maps nothing until the first allocation. A grow maps as many pages
+//! again as the heap holds, at least 8 (32 KiB) and never past the cap, so a burst of small
+//! allocations costs a logarithmic number of syscall batches. [`MemoryRegionHeap::commit_all`] maps
+//! the whole cap at once.
 //!
-//! **How it grows.** The heap starts empty and maps nothing until the first allocation. A grow maps
-//! as many pages again as the heap already holds, never fewer than 8 pages (32 KiB) and never past
-//! the cap, so a burst of small allocations costs a logarithmic number of syscall batches.
-//! [`MemoryRegionHeap::commit_all`] maps the whole cap at once instead.
-//!
-//! **When it refuses.** An allocation returns null when the cap is reached, when the region has no
-//! page left to pay with ([`abi::Error::OutOfMemory`]), or after the region refused for any other
-//! reason. The first two leave the heap able to serve what it already holds. The third stops growth
-//! for good, because a retry would meet the same refusal and might spend a page each time.
-//! [`MemoryRegionHeap::last_refusal`] says what the region last answered.
+//! **When it refuses.** An allocation returns null at the cap, when the region has no page left
+//! ([`abi::Error::OutOfMemory`]), or after the region refused for any other reason. The first two
+//! leave the heap serving what it holds. The third stops growth for good, because a retry would meet
+//! the same refusal and might spend a page each time. [`MemoryRegionHeap::last_refusal`] reports it.
 //!
 //! **The smallest useful cap is one page** (4,096 bytes), which [`MemoryRegionHeap::initialize`]
-//! enforces. `talc`'s first heap needs 1,575 bytes of bookkeeping on a 64-bit target, so a one-page
-//! heap serves about 2,500 bytes of allocations; a test pins the figure.
+//! enforces. `talc`'s first heap takes 1,575 bytes of bookkeeping on a 64-bit target (a test pins
+//! it), so one page serves about 2,500 bytes of allocations.
 //!
 //! **The heap never shrinks.** `talc`'s `truncate` is never called and the memory-region interface
-//! has no call that returns one page, so a heap that peaked holds its peak until the region's owner
-//! destroys the region.
+//! has no call that returns one page, so a heap holds its peak until the region's owner destroys it.
 //!
-//! **Which `talc`.** The manifest asks crates.io for `talc` 5.1.1. A consuming
-//! workspace's `[patch.crates-io]` may build it from a vendored copy that carries upstream pull
-//! request 57 (two fit checks that compared addresses where they meant sizes); without such a patch
-//! the package lacks that fix. The wrapped-address case it repairs needs a free gap within one
-//! chunk of the top of the address space, which a 64-bit user process never maps.
+//! **Which `talc`.** The manifest asks crates.io for `talc` 5.1.1. A consuming workspace's
+//! `[patch.crates-io]` may build a vendored copy that carries upstream pull request 57 (two fit
+//! checks that compared addresses where they meant sizes). Without that patch the package lacks the
+//! fix, which matters only for a free gap within one chunk of the top of the address space, and a
+//! 64-bit user process never maps one.
 //!
-//! The page source is a seam: [`MemoryRegionHeap`] takes any [`PageSource`], with the syscall
-//! ([`MemoryRegionPages`]) as the default, so the growth policy runs and is tested on a host.
+//! [`MemoryRegionHeap`] takes any [`PageSource`], and the syscall ([`MemoryRegionPages`]) is the
+//! default, so the growth policy runs on a host.
 //!
 //! Name: ratified 2026-11-14 (UTC) (block 1100 decision A), for the type it holds.
 
@@ -115,7 +110,7 @@ pub struct MemoryRegionPages {
 }
 
 impl MemoryRegionPages {
-    const fn unwired() -> Self {
+    const fn not_yet_wired() -> Self {
         MemoryRegionPages { slot: u64::MAX }
     }
 }
@@ -173,7 +168,7 @@ pub enum WiringRefusal {
     /// An earlier call already wired the heap; this one changed nothing.
     AlreadyWired,
     /// The base is not a multiple of the page size, so the kernel would refuse every page.
-    MisalignedBase,
+    BaseNotPageAligned,
     /// The cap, rounded down to a page, is zero: the heap could never map a page.
     MaximumUnderOnePage,
     /// The base plus the cap runs past the end of the address space.
@@ -228,7 +223,7 @@ impl MemoryRegionHeap<MemoryRegionPages> {
     ///
     /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A).
     pub const fn new() -> Self {
-        Self::with_source(MemoryRegionPages::unwired())
+        Self::with_source(MemoryRegionPages::not_yet_wired())
     }
 
     /// Wire the heap to its budget: pages come from the memory region in `memory_region_slot`,
@@ -304,7 +299,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
             return Err(WiringRefusal::AlreadyWired);
         }
         if !base.is_multiple_of(PAGE_BYTES) {
-            return Err(WiringRefusal::MisalignedBase);
+            return Err(WiringRefusal::BaseNotPageAligned);
         }
         let maximum = maximum_bytes & !(PAGE_BYTES - 1);
         if maximum == 0 {
@@ -568,12 +563,12 @@ unsafe impl<S: PageSource> GlobalAlloc for MemoryRegionHeap<S> {
         let new_layout = unsafe { Layout::from_size_align_unchecked(new_size, layout.align()) };
         // SAFETY: as `GlobalAlloc::realloc`'s default body: allocate, copy, free.
         unsafe {
-            let new_ptr = self.alloc(new_layout);
-            if !new_ptr.is_null() {
-                core::ptr::copy_nonoverlapping(ptr, new_ptr, layout.size().min(new_size));
+            let new_pointer = self.alloc(new_layout);
+            if !new_pointer.is_null() {
+                core::ptr::copy_nonoverlapping(ptr, new_pointer, layout.size().min(new_size));
                 self.dealloc(ptr, layout);
             }
-            new_ptr
+            new_pointer
         }
     }
 }
@@ -823,12 +818,12 @@ mod tests {
 
     /// A refused wiring leaves the heap unwired, so a corrected call can still wire it.
     #[test]
-    fn a_refused_initialize_leaves_the_heap_unwired() {
+    fn a_refused_initialize_leaves_the_heap_without_a_wiring() {
         let heap = MemoryRegionHeap::new();
         let refused = |base, bytes| heap.initialize(3, base, bytes);
         assert_eq!(
             refused(DEFAULT_BASE_VIRTUAL_ADDRESS + 8, 16 * PAGE_BYTES),
-            Err(WiringRefusal::MisalignedBase)
+            Err(WiringRefusal::BaseNotPageAligned)
         );
         assert_eq!(
             refused(DEFAULT_BASE_VIRTUAL_ADDRESS, PAGE_BYTES - 1),
@@ -889,10 +884,8 @@ mod tests {
         // SAFETY: each pointer came from `alloc` with this layout.
         unsafe { heap.dealloc(held.pop().unwrap(), layout(3000, 8)) };
         // SAFETY: a nonzero size.
-        assert!(
-            !unsafe { heap.alloc(layout(3000, 8)) }.is_null(),
-            "freed space is reusable"
-        );
+        let reused = unsafe { heap.alloc(layout(3000, 8)) };
+        assert!(!reused.is_null(), "freed space is reusable");
     }
 
     /// Growth doubles from the eight-page floor, and the pages are asked for one at a time, in
@@ -943,7 +936,7 @@ mod tests {
 
     /// `realloc` in place keeps the pointer; by copy it moves the bytes and frees the old block.
     #[test]
-    fn realloc_in_place_and_by_copy() {
+    fn resizing_in_place_and_by_copy() {
         let arena = Arena::new(16);
         let heap = heap_with_plenty(&arena, 16);
         let small = layout(64, 8);
@@ -998,7 +991,7 @@ mod tests {
     /// never asks again, so a base that collides with another mapping loses one page, not one per
     /// allocation.
     #[test]
-    fn a_refused_address_stops_growth_for_good() {
+    fn a_refused_page_stops_growth_for_good() {
         let arena = Arena::new(16);
         let (heap, region) = heap_over(&arena, 16, 0, BAD_POINTER);
         for _ in 0..3 {
@@ -1081,7 +1074,7 @@ mod tests {
 
     /// The accessors report what `initialize` was given, the cap rounded down to a page.
     #[test]
-    fn the_accessors_report_the_maximum_and_the_base() {
+    fn the_readers_report_the_maximum_and_the_base() {
         let heap = MemoryRegionHeap::new();
         assert_eq!((heap.maximum_bytes(), heap.base_virtual_address()), (0, 0));
         assert_eq!(
