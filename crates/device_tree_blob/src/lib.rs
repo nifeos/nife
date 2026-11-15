@@ -211,6 +211,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// kernel can honor it without having to parse anything. QEMU's `virt` leaves it
     /// empty, but a real board's firmware often does not, and a kernel that skips it
     /// will happily allocate over the firmware's own tables.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1085-outside-review-fixes. Refused
+    /// `reserved_regions`, with no alias for it (milestone 1085 (device_tree_blob outside review),
+    /// D5).
     pub fn memory_reservations(&self, out: &mut [Region]) -> Result<usize, Error> {
         let mut at = self.off_rsvmap;
         let mut n = 0;
@@ -546,6 +550,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// The property twin of [`node_reg_compatible`](Self::node_reg_compatible), deciding when the
     /// matched node closes for the same reason. It exists because labels differ between machines:
     /// the PLIC is `plic@c000000` on QEMU `virt` and `interrupt-controller@c000000` on the JH7110.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1085-outside-review-fixes. Refused
+    /// `node_prop_compatible`, with no alias for it (milestone 1085 (device_tree_blob outside
+    /// review) D1).
     pub fn node_property_compatible(
         &self,
         compatible: &[u8],
@@ -664,6 +672,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// its entry width depends on three different nodes' cell counts). The caller gets the bytes
     /// (big-endian cells, per the DTB spec) and owns the interpretation; the pci crate's fixture
     /// tests use this to hold the INTx swizzle against the machine's own routing table.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1085-outside-review-fixes. Refused
+    /// `node_prop`, with no alias for it (milestone 1085 (device_tree_blob outside review) D1).
     pub fn node_property(&self, prefix: &[u8], name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
         let mut depth = 0usize;
         let mut target_at: Option<usize> = None;
@@ -724,6 +735,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// two `virt` boards and the JH7110 dtsi each write at a different level. The nearest enclosing
     /// value wins, per the spec. A node's properties precede its children, so one walk suffices:
     /// the answer is taken at the target's `END_NODE`.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1085-outside-review-fixes. Refused
+    /// `node_prop_inherited`, with no alias for it (milestone 1085 (device_tree_blob outside
+    /// review) D1).
     pub fn node_property_inherited(
         &self,
         prefix: &[u8],
@@ -809,6 +824,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// controller's `#interrupt-cells`. Both `phandle` and the legacy `linux,phandle` are honored,
     /// because old dtc wrote the latter. As in [`node_property_compatible`](Self::node_property_compatible),
     /// the answer is taken when the matching node closes.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1085-outside-review-fixes. Refused
+    /// `phandle_prop`, with no alias for it (milestone 1085 (device_tree_blob outside review) D1).
     pub fn phandle_property(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
         const MAXIMUM_DEPTH: usize = 16;
         // Per open node: where `name`'s value sits, and whether its phandle matched.
@@ -886,6 +904,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// such property, which differs from there being no *i*th match. Returns the number of matching
     /// **nodes**, which may exceed `out.len()`; the excess is counted and not written, so a caller
     /// can tell it under-provisioned.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1085-outside-review-fixes. Refused
+    /// `node_props`, with no alias for it (milestone 1085 (device_tree_blob outside review) D1).
     ///
     /// # Examples
     ///
