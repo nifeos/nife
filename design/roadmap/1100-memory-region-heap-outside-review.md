@@ -205,8 +205,8 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
   - `PAGE_BYTES` (item 10), the reading of the panic handler (item 11), the never-shrinks paragraph
     (item 12) and the two accessors (item 13).
 - **Outstanding.** The move lane does the items that need the new repository. The manifest keeps its
-  path dependencies and its `talc` line as they stand. The README and license files are not
-  written (items 2, 3 and the README sentence of item 12, to the rule of decision B). Item 4's
+  path dependencies and its `talc` line as they stand. The move lane also writes the README
+  and license files (items 2, 3 and the README sentence of item 12, to the rule of decision B). Item 4's
   coverage-exemption half belongs to the move lane, now that a host test exists. Two code items
   wait for a host-buildable path: generating the policy into std through `cargo xtask std-src`, and
   `second_mount` consuming the crate with a host page source in place of its drifted copy. The fuzz
