@@ -49,7 +49,7 @@ requirements of the PCI and MMIO transports; section numbers unverified). It che
 value (`:141`, `:622`) and never `DeviceID`. Today the
 kernel enumerates the device and QEMU resets synchronously, so the gap cannot bite. Under the
 ruled direct grant (milestone 1062 (the device control planes leave the kernel) step 7) a driver will own its own bring-up against a real
-device, and the bounded wait for `Status == 0` is the check that catches a half-reset device. Effort: S. Two-way.
+device. The bounded wait for `Status == 0` is the check that catches a half-reset device. Effort: S. Two-way.
 Inferred from reading.
 
 7. Four copies of one completion loop and three copies of one submit. `complete_block`

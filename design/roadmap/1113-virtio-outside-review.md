@@ -169,7 +169,7 @@ maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
 
 ### Decision 3. The driver does not check `Version`; the kernel does
 
-Ruled by the maintainer on 2026-11-15 (UTC), provisional: a two-way door, which the architect may
+The maintainer ruled this on 2026-11-15 (UTC), provisional: a two-way door, which the architect may
 revisit.
 
 The rule in force. The driver reads the magic value and never the `Version` register. The kernel
@@ -178,7 +178,7 @@ refuses any value but 2 in every build, on the mmio scan, and its PCI transport 
 same offset. A driver never sees a device whose `Version` is not 2, so a driver-side check would
 test what the kernel already tested. The direct transport (the virtio-pci path of 1062 step 7) has
 no such register and answers 0 for any offset it does not name. A driver-side check would need that
-transport to invent an answer. Item 6's driver half is closed as not done, on purpose.
+transport to invent an answer. The maintainer closes item 6's driver half as not done, on purpose.
 
 Background. A virtio-mmio device reports a version in the register at `0x004`. Version 1 is the
 legacy layout and version 2 is the modern layout the kernel drives. The virtio specification
