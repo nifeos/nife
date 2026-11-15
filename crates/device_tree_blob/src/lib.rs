@@ -300,8 +300,8 @@ impl<'a> DeviceTreeBlob<'a> {
         // is not fixed. It is declared by #address-cells and #size-cells on the PARENT node, which
         // for a /memory node is the root. The specification's defaults are 2 and 1. Nearly every
         // 64-bit machine says 2 and 2, but they are read rather than assumed.
-        let mut address_cells = 2u32;
-        let mut size_cells = 1u32;
+        let mut bus_address_cells = 2u32;
+        let mut bus_size_cells = 1u32;
 
         let mut found = 0;
         // Whether the depth-2 node now open is a memory node. A flag keyed on depth 2 rather than
@@ -327,11 +327,11 @@ impl<'a> DeviceTreeBlob<'a> {
                     // The root's cell counts. A node's properties precede its children, so by the
                     // time a /memory node is reached these are the root's.
                     if depth == 1 {
-                        declare_cells(name, value, &mut address_cells, &mut size_cells);
+                        declare_cells(name, value, &mut bus_address_cells, &mut bus_size_cells);
                     }
                     if depth == 2 && in_memory && name == b"reg" {
                         let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
-                        found += decode_reg(value, address_cells, size_cells, remaining)?;
+                        found += decode_reg(value, bus_address_cells, bus_size_cells, remaining)?;
                     }
                 }
             }
@@ -353,8 +353,8 @@ impl<'a> DeviceTreeBlob<'a> {
         // The cell counts declared by the node open at each depth, applying to its children. Depth
         // 0 is the slot above the root; the root is depth 1. The specification's defaults are 2
         // and 1.
-        let mut address_cells = [2u32; DEPTH_SLOTS];
-        let mut size_cells = [1u32; DEPTH_SLOTS];
+        let mut bus_address_cells = [2u32; DEPTH_SLOTS];
+        let mut bus_size_cells = [1u32; DEPTH_SLOTS];
         let mut target_at: Option<usize> = None;
         let mut tokens = self.tokens();
 
@@ -363,8 +363,8 @@ impl<'a> DeviceTreeBlob<'a> {
                 Token::BeginNode { name } => {
                     // A node inherits its parent's cell counts until it declares its own (its
                     // properties come before its children).
-                    address_cells[depth] = address_cells[depth - 1];
-                    size_cells[depth] = size_cells[depth - 1];
+                    bus_address_cells[depth] = bus_address_cells[depth - 1];
+                    bus_size_cells[depth] = bus_size_cells[depth - 1];
                     if depth >= 2 && target_at.is_none() && name.starts_with(prefix) {
                         target_at = Some(depth);
                     }
@@ -382,15 +382,15 @@ impl<'a> DeviceTreeBlob<'a> {
                     declare_cells(
                         name,
                         value,
-                        &mut address_cells[depth],
-                        &mut size_cells[depth],
+                        &mut bus_address_cells[depth],
+                        &mut bus_size_cells[depth],
                     );
                     if target_at == Some(depth) && name == b"reg" {
                         // A node's own `reg` uses its parent's cells, one level up.
                         return decode_reg(
                             value,
-                            address_cells[depth - 1],
-                            size_cells[depth - 1],
+                            bus_address_cells[depth - 1],
+                            bus_size_cells[depth - 1],
                             out,
                         );
                     }
@@ -415,8 +415,8 @@ impl<'a> DeviceTreeBlob<'a> {
         compatible: &[u8],
         out: &mut [Region],
     ) -> Result<usize, Error> {
-        let mut address_cells = [2u32; DEPTH_SLOTS];
-        let mut size_cells = [1u32; DEPTH_SLOTS];
+        let mut bus_address_cells = [2u32; DEPTH_SLOTS];
+        let mut bus_size_cells = [1u32; DEPTH_SLOTS];
         // Per open node: its `reg` value with the parent's cell counts it decodes with, and whether
         // its `compatible` named the device being looked for.
         let mut reg = [None::<(&'a [u8], u32, u32)>; DEPTH_SLOTS];
@@ -426,8 +426,8 @@ impl<'a> DeviceTreeBlob<'a> {
         while let Some((depth, token)) = tokens.step()? {
             match token {
                 Token::BeginNode { .. } => {
-                    address_cells[depth] = address_cells[depth - 1];
-                    size_cells[depth] = size_cells[depth - 1];
+                    bus_address_cells[depth] = bus_address_cells[depth - 1];
+                    bus_size_cells[depth] = bus_size_cells[depth - 1];
                     reg[depth] = None;
                     matched[depth] = false;
                 }
@@ -447,11 +447,15 @@ impl<'a> DeviceTreeBlob<'a> {
                     declare_cells(
                         name,
                         value,
-                        &mut address_cells[depth],
-                        &mut size_cells[depth],
+                        &mut bus_address_cells[depth],
+                        &mut bus_size_cells[depth],
                     );
                     if depth >= 2 && name == b"reg" {
-                        reg[depth] = Some((value, address_cells[depth - 1], size_cells[depth - 1]));
+                        reg[depth] = Some((
+                            value,
+                            bus_address_cells[depth - 1],
+                            bus_size_cells[depth - 1],
+                        ));
                     }
                     if name == b"compatible" {
                         matched[depth] = lists_entry(value, compatible);
@@ -756,8 +760,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// region here, and missing it faults the first write into it. Each depth-3 child's `reg` is
     /// decoded with `/reserved-memory`'s own cell counts, which default to the root's.
     pub fn reserved_memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
-        let mut address_cells = 2u32;
-        let mut size_cells = 2u32;
+        let mut bus_address_cells = 2u32;
+        let mut bus_size_cells = 2u32;
         // Whether the depth-2 node now open is `/reserved-memory`. A child of the root only, as
         // `memory_regions` reads `/memory`: one nested under another node is not the reservation
         // list, and its children would be decoded with the root's cell counts rather than their
@@ -783,11 +787,11 @@ impl<'a> DeviceTreeBlob<'a> {
                     // The root's cell counts are the defaults for the reserved-memory children,
                     // and the node may declare its own.
                     if depth == 1 || (depth == 2 && in_reserved_memory) {
-                        declare_cells(name, value, &mut address_cells, &mut size_cells);
+                        declare_cells(name, value, &mut bus_address_cells, &mut bus_size_cells);
                     }
                     if depth == 3 && in_reserved_memory && name == b"reg" {
                         let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
-                        found += decode_reg(value, address_cells, size_cells, remaining)?;
+                        found += decode_reg(value, bus_address_cells, bus_size_cells, remaining)?;
                     }
                 }
             }
@@ -1012,13 +1016,13 @@ impl<'a> Tokens<'_, 'a> {
 /// Record a `#address-cells` or `#size-cells` declaration into the counts the node declares for
 /// its children. A declaration that is not exactly one cell is ignored, so the inherited width
 /// stands: a shorter value read as a cell would take the padding and the next token as the count.
-fn declare_cells(name: &[u8], value: &[u8], address_cells: &mut u32, size_cells: &mut u32) {
+fn declare_cells(name: &[u8], value: &[u8], bus_address_cells: &mut u32, bus_size_cells: &mut u32) {
     let Ok(cell) = <[u8; 4]>::try_from(value) else {
         return;
     };
     match name {
-        b"#address-cells" => *address_cells = u32::from_be_bytes(cell),
-        b"#size-cells" => *size_cells = u32::from_be_bytes(cell),
+        b"#address-cells" => *bus_address_cells = u32::from_be_bytes(cell),
+        b"#size-cells" => *bus_size_cells = u32::from_be_bytes(cell),
         _ => {}
     }
 }
@@ -1048,16 +1052,16 @@ fn integer(value: &[u8]) -> Result<u64, Error> {
 /// 32-bit big-endian words concatenated.
 fn decode_reg(
     value: &[u8],
-    address_cells: u32,
-    size_cells: u32,
+    bus_address_cells: u32,
+    bus_size_cells: u32,
     out: &mut [Region],
 ) -> Result<usize, Error> {
     // Every product below is checked, because the cell counts come from the blob and a target
     // whose `usize` is 32 bits wide can overflow them. An overflow is a refusal.
     let cell_bytes = |cells: u32| (cells as usize).checked_mul(4).ok_or(Error::Truncated);
-    let start_bytes = cell_bytes(address_cells)?;
+    let start_bytes = cell_bytes(bus_address_cells)?;
     let pair_bytes = start_bytes
-        .checked_add(cell_bytes(size_cells)?)
+        .checked_add(cell_bytes(bus_size_cells)?)
         .ok_or(Error::Truncated)?;
     if pair_bytes == 0 {
         return Ok(0);
