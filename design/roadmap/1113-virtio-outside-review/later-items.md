@@ -9,7 +9,7 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 bytes. Both callers pass four- and seven-byte literals. The fix: `debug_assert!(name.len() <=
 nifefs::NAME_LEN)`, or a `&[u8; N]` parameter. Effort: S. Two-way.
 
-13. `disk_size_bytes` multiplies without a bound and ignores the configuration generation. DONE (the size saturates, and the capacity is read inside one generation; the kernel's mediated PCI transport answers 0 for the generation, a BUGS entry at `CONFIGURATION_GENERATION`).
+13. `disk_size_bytes` multiplies without a bound and ignores the configuration generation. DONE (the size saturates, and the driver reads the capacity inside one generation; the kernel's mediated PCI transport answers 0 for the generation, a BUGS entry at `CONFIGURATION_GENERATION`).
 `(sectors * 512) as i64` (`:1165`) overflows past 2^55 sectors and goes negative past 2^54, which
 the FS server would read as an error code. The code reads the two 32-bit halves of the 64-bit
 capacity without the `ConfigGeneration` register (virtio-mmio `0x0fc`; unverified offset), and that register
@@ -17,7 +17,7 @@ makes a multi-word configuration read consistent. No QEMU disk reaches either. T
 with a saturating fallback, and a generation-bracketed read when the direct grant lands. Effort:
 S. Two-way.
 
-14. One request in flight, one interrupt per request, on the production path. DONE (`notes/virtio.md`, "One request in flight", records the shape and the block figure). Every submit
+14. One request in flight, one interrupt per request, on the production path. DONE (the doc of `submit` in `crates/virtio` records the shape and the block figure). Every submit
 reuses descriptor head 0 (`:441`, `:1122`) and the block server waits on the interrupt for each
 request (`:986-1008`). `notes/virtio.md` records that the mount's read count stays in the low
 hundreds, so this fits the watchdog. It is still the slowest shape a virtio-blk driver can take,

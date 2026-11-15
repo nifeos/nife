@@ -125,7 +125,8 @@ const F_FLUSH_LO: u32 = 1 << 9;
 // `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
 // change to the proved layout would leave this driver on the wrong offsets until a QEMU test
 // failed. The fix is to move the constants to `abi::virtio`, where this crate, the kernel and the
-// validator all name them, as Decision 2 of milestone 1113 (the virtio outside review) decides.
+// validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
+// before it leaves this tree) decides.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QSIZE = 128 bytes
 const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QSIZE
 const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QSIZE
@@ -581,8 +582,17 @@ fn chained(i: usize, chain_length: usize, flags: u16) -> (u16, u16) {
 /// submit, which [`complete`] waits to see move, or `None` when the transport refused the notify:
 /// on a mediated grant the kernel checks every descriptor and refuses one that leaves the region.
 ///
-/// Every request reuses head 0, so one request is in flight at a time; notes/virtio.md ("One
-/// request in flight") has why and what it costs.
+/// Every request reuses head 0 and is waited for before the next is written, so one request is
+/// in flight per queue and each costs one interrupt. It is the simplest shape a virtio driver can
+/// take, and the slowest. It stays because it is fast enough for the one production path, the
+/// block server. Measured through the confined block server, a block costs 39.0 microseconds at
+/// the margin, against 38.7 to 53.3 microseconds for a raw virtio read on Linux at the same tier.
+/// A 64 kibibyte sequential read runs at 189.9 mebibytes a second (Hypervisor.framework, `--smp`;
+/// notes/benchmarks.md, "Filesystem throughput"). A request already moves up to
+/// `blk::TRANSFER_BLOCKS` blocks as one descriptor, so the driver pays the interrupt per request
+/// and not per block. Several requests in flight would need a free list of descriptor heads and a
+/// completion that matches used-ring elements to their requests, and nothing measured yet asks
+/// for either.
 fn submit(queue: &Queue, chain: &[Descriptor]) -> Option<u16> {
     for (i, descriptor) in chain.iter().enumerate() {
         let (flags, next) = chained(i, chain.len(), descriptor.flags);
@@ -693,6 +703,13 @@ fn used_ring_moved(
 
 /// **Wait for `queue`'s used ring to move off `used_before`**, waking on the device interrupt, for
 /// at most `bound` wakeups (`None`: for as long as it takes). Returns whether it moved.
+///
+/// A one-shot test role passes [`COMPLETION_WAKEUPS`] and reports when it runs out (`0xE9` for the
+/// net receive, `0xEB` for a block request), so a device that never completes fails the test
+/// instead of hanging the suite. The block server passes `None`: giving up would leave its request
+/// on the ring at descriptor head 0, and the next request would rewrite descriptors the device may
+/// still be reading. Neither helps against a device that raises no interrupt at all, since each
+/// wakeup is a WAIT that blocks until the line fires.
 fn complete(queue: &Queue, used_before: u16, bound: Option<u32>) -> bool {
     used_ring_moved(bound, used_before, || {
         // The kernel masks the line and delivers the interrupt as a notification; its pending count

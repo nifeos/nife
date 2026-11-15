@@ -252,35 +252,14 @@ that ever held the device, and a wakeup can be spurious, coalesced, or left pend
 operator. A driver that died mid-write leaves its completion interrupt pending, and the next
 driver's first WAIT would consume it before its own request is on the used ring. So every wait
 loops: WAIT, quiet the device, re-enable the line, and let `used.idx` decide. Every real
-completion raises the line, so the loop cannot outlast the device. The net driver does the same
-across its two queues, whose completions share one line. One function, `complete`, is that loop
-for every queue.
-
-A one-shot test role gives up after 64 wakeups and reports it (`0xE9` for the net receive, `0xEB`
-for a block request), so a device that never completes fails the test instead of hanging the suite.
-The block server waits without a bound: giving up would leave its request on the ring at
-descriptor head 0, and the next request would rewrite descriptors the device may still be reading.
-Neither bound helps against a device that raises no interrupt at all, since each wakeup is a WAIT
-that blocks until the line fires.
+completion raises the line, so the loop cannot outlast the device. `complete` runs that loop for
+every queue, and the net driver's two share one line.
 
 The block server waits on the interrupt too rather than polling the used ring. A WAIT per read fits
 inside the test watchdog on both ISAs at the 4-core boot, because each request moves whole
 filesystem blocks and the mount's read count stays in the low hundreds. QEMU completes inside
 `NOTIFY`, so the interrupt is already pending and the kernel's pending-signal count (milestone 9 (a
 virtio-blk driver at EL0, and an interrupt becomes a message)) returns the WAIT at once.
-
-### One request in flight
-
-Every request, on every queue, is written at descriptor head 0 and waited for before the next is
-written, so one request is in flight per queue and each costs one interrupt. It is the simplest
-shape a virtio driver can take, and the slowest. It is kept because it is fast enough for the one
-production path, the block server: measured through the confined block server, a block costs 39.0 us
-at the margin, against 38.7 to 53.3 us for a raw virtio read on Linux at the same tier, and a 64 KiB
-sequential read runs at 189.9 MiB/s (HVF, `--smp`; [benchmarks.md](benchmarks.md), "Filesystem
-throughput"). A request already moves up to `blk::TRANSFER_BLOCKS` blocks as one descriptor, so the
-interrupt is paid per request and not per block. Several requests in flight would need a free list
-of descriptor heads and a completion that matches used-ring elements to their requests, and nothing
-measured yet asks for either.
 
 ### The block server
 

@@ -194,9 +194,8 @@ This is the note's `BUGS` section.
 
 - **Scope is the main workspace's host crates**, minus the exclusions above. The bare-metal crates
   cannot compile for the host. `hot_swap_contract` and `hot_swap_server` compile but cannot run a
-  line without a kernel, and `virtio` runs only its pure logic (the checks, the descriptor chain,
-  the waits' bounds, the directory lookup and the DHCP frames) on the host, so a mutant in a
-  function that touches the device or the DMA page survives every test. `xtask` is the build system,
+  line without a kernel. `virtio` runs only its pure logic on the host, so a mutant that touches
+  the device or the DMA page survives. `xtask` is the build system,
   whose tests are the gates it runs.
 - `redoxfs_server` and `tools/redoxfs_host` are not mutated. Each is its own workspace, kept apart
   so upstream RedoxFS never meets our clippy and fmt gates, and cargo-mutants works one workspace
