@@ -1,0 +1,13 @@
+diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
+index d19a2bbbc..bad214e4d 100644
+--- a/crates/socket_contract/src/lib.rs
++++ b/crates/socket_contract/src/lib.rs
+@@ -419,7 +419,7 @@ pub mod ephemeral {
+             held: impl Fn(u16) -> bool,
+             tries: u64,
+         ) -> Option<u16> {
+-            self.next = self.next.max(clock(milliseconds));
++            self.next = clock(milliseconds);
+             for _ in 0..tries {
+                 let port = port_at(self.next);
+                 self.next += 1;
