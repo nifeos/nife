@@ -169,7 +169,8 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 - **Done.** Item 6 before the tag: pull request #3559, carried onto the two-copy layout by #3576.
 - **Outstanding.** Items 1 to 4 and 7 to 9 before the tag, and items 10, 11 and 13 to 15 for later,
   each checked against `crates/clock_contract` at #3576's head and still true there.
-- **Outstanding.** Decision 3, the public names, still waits for the architect.
+- **Outstanding.** Decision 3, the public names: decided by the maintainer, provisionally, in
+  #3589; item 1 is the work.
 
 ## BUGS
 
