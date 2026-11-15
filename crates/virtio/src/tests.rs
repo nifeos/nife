@@ -249,7 +249,7 @@ fn start_block_of(image: &[u8], name: &str) -> u32 {
 /// name that is only a prefix of an entry, or that an entry is a prefix of, finds nothing.
 #[test]
 fn find_file_returns_the_start_block_nifefs_recorded() {
-    let longest = "a-name-of-exactly-thirty-two-byt";
+    let longest = "the-thirty-two-byte-name-is-full";
     assert_eq!(longest.len(), nifefs::NAME_LEN);
     let disk = image(&[
         ("motd", b"hello"),
@@ -273,7 +273,7 @@ fn find_file_returns_the_start_block_nifefs_recorded() {
 /// entry's whole name: the lookup answers `None` rather than reading past the field.
 #[test]
 fn find_file_refuses_a_name_longer_than_the_field() {
-    let longest = "a-name-of-exactly-thirty-two-byt";
+    let longest = "the-thirty-two-byte-name-is-full";
     let disk = image(&[(longest, b"x")]);
     let longer = [longest.as_bytes(), b"!"].concat();
     assert_eq!(find_file(&disk[..BLOCK], &longer), None);
@@ -307,7 +307,7 @@ fn the_write_pattern_opens_with_the_literal_and_moves_with_position() {
     assert!((8..BLOCK - 1).all(|i| pattern[i] != pattern[i + 1]));
 }
 
-/// The checksum of RFC 1071's own example words, and of a header with its checksum written in,
+/// The checksum of `RFC 1071`'s own example words, and of a header with its checksum written in,
 /// which sums to zero; an odd trailing byte is summed as the high byte of a padded word.
 #[test]
 fn ip_checksum_matches_rfc_1071() {
@@ -328,7 +328,7 @@ fn ip_checksum_matches_rfc_1071() {
     assert_eq!(ip_checksum(&[]), 0xffff);
 }
 
-/// The DISCOVER is a broadcast BOOTREQUEST for our transaction from our MAC, with a valid IPv4
+/// The DISCOVER is a broadcast `BOOTREQUEST` for our transaction from our MAC, with a valid IPv4
 /// checksum and lengths that agree with the frame, and asks for DISCOVER in option 53.
 #[test]
 fn the_dhcp_discover_is_a_well_formed_broadcast_request() {
@@ -366,7 +366,7 @@ fn the_dhcp_discover_is_a_well_formed_broadcast_request() {
     assert_eq!(&dhcp[240..], &[53, 1, 1, 55, 3, 1, 3, 6, 255]);
 }
 
-/// Every descriptor of a chain but the last carries NEXT and links to the one after it; the last
+/// Every descriptor of a chain but the last carries `VIRTQ_DESC_F_NEXT` and links to the one after it; the last
 /// keeps only its own flags and links nowhere, and a one-descriptor chain is its own last.
 #[test]
 fn a_chain_links_each_descriptor_to_the_next_and_ends_at_the_last() {

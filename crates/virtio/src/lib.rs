@@ -422,7 +422,7 @@ pub fn run_attack(_direct_memory_access_phys: u64) -> ! {
     let refused = submit(
         &BLOCK_QUEUE,
         &[Descriptor {
-            address: KERNEL_ADDR,
+            physical_address: KERNEL_ADDR,
             length_bytes: 512,
             flags: VIRTQ_DESC_F_WRITE,
         }],
@@ -460,7 +460,7 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     let refused = submit(
         &BLOCK_QUEUE,
         &[Descriptor {
-            address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
+            physical_address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
             length_bytes: 16,
             flags: VIRTQ_DESC_F_INDIRECT,
         }],
@@ -529,7 +529,7 @@ const BLOCK_QUEUE: Queue = Queue {
 /// `flags` carries only the direction (`VIRTQ_DESC_F_WRITE`) or `VIRTQ_DESC_F_INDIRECT`.
 #[derive(Clone, Copy)]
 struct Descriptor {
-    address: u64,
+    physical_address: u64,
     length_bytes: u32,
     flags: u16,
 }
@@ -558,7 +558,7 @@ fn submit(queue: &Queue, chain: &[Descriptor]) -> Option<u16> {
         write_desc_at(
             queue.descriptor_table,
             i as u64,
-            descriptor.address,
+            descriptor.physical_address,
             descriptor.length_bytes,
             flags,
             next,
@@ -593,19 +593,19 @@ fn submit_block_request(
     direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff); // the device overwrites this with 0 on success
 
     let header = Descriptor {
-        address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
+        physical_address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
         length_bytes: 16,
         flags: 0,
     };
     let status = Descriptor {
-        address: direct_memory_access_phys + STATUS_OFFSET_BYTES,
+        physical_address: direct_memory_access_phys + STATUS_OFFSET_BYTES,
         length_bytes: 1,
         flags: VIRTQ_DESC_F_WRITE,
     };
     match data {
         Some((offset, length_bytes)) => {
             let data = Descriptor {
-                address: direct_memory_access_phys + offset,
+                physical_address: direct_memory_access_phys + offset,
                 length_bytes,
                 // read: the device fills the buffer; write: the device consumes it
                 flags: if req_type == VIRTIO_BLK_T_IN {
@@ -684,7 +684,7 @@ fn block_status() -> u8 {
 
 /// Wait for a test role's block transfer to complete, and confirm the device reported success.
 /// Reports `0xEB` when no completion arrives within [`COMPLETION_WAKEUPS`], and `0xE200 | status`
-/// on a non-OK status.
+/// on any other status.
 fn complete_block(used_before: u16) {
     if !complete(&BLOCK_QUEUE, used_before, Some(COMPLETION_WAKEUPS)) {
         report_code(0xEB);
@@ -760,7 +760,7 @@ const NET_XID: u32 = 0x3903_F326;
 
 /// The IPv4 header checksum over `header`: sum the 16-bit big-endian words, fold the carries, and
 /// complement. The checksum field itself must be zero when this runs, and a header with the result
-/// written into that field sums to zero (RFC 1071).
+/// written into that field sums to zero (`RFC 1071`).
 fn ip_checksum(header: &[u8]) -> u16 {
     let mut sum: u32 = header
         .chunks(2)
@@ -847,7 +847,7 @@ fn post_receive(direct_memory_access_phys: u64) {
     submit(
         &NET_RECEIVE_QUEUE,
         &[Descriptor {
-            address: direct_memory_access_phys + NET_RECEIVE_BUF,
+            physical_address: direct_memory_access_phys + NET_RECEIVE_BUF,
             length_bytes: NET_RECEIVE_BUF_LEN as u32,
             flags: VIRTQ_DESC_F_WRITE, // the device WRITES the received frame here
         }],
@@ -865,7 +865,7 @@ fn send_frame(direct_memory_access_phys: u64, frame_len: u64) {
     submit(
         &NET_TRANSMIT_QUEUE,
         &[Descriptor {
-            address: direct_memory_access_phys + NET_TRANSMIT_BUF,
+            physical_address: direct_memory_access_phys + NET_TRANSMIT_BUF,
             length_bytes: (NET_HDR_LEN + frame_len) as u32,
             flags: 0, // device READS the buffer (transmit)
         }],
