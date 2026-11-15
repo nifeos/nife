@@ -22,8 +22,8 @@ use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    Message, address_space_map_into, capability_delete, cntfrq, map_page_frame, now, receive,
-    receive_message, revoke_page_frame, send, timer_arm, trap,
+    Message, address_space_map_into, capability_delete, counter_hertz, map_page_frame, now,
+    receive, receive_message, revoke_page_frame, send, timer_arm, trap,
 };
 
 /// What the kernel grants us, and nothing else.
@@ -320,7 +320,7 @@ fn attack_the_service(
     // so the run fails at the test's assertion rather than a watchdog. The bound can also fire
     // before the plant has sent (spawn order is not run order), and then the plant never exits and
     // the reap would hang, so with a refusal reported that case bails on its own stage.
-    if timer_arm(TIMER, now() + cntfrq() / 2, WAKE, 1) < 0 {
+    if timer_arm(TIMER, now() + counter_hertz() / 2, WAKE, 1) < 0 {
         bail(35);
     }
     match receive_message(w.svc) {
@@ -1029,7 +1029,7 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     // asked as on the direct channel with a deadline (milestone 106 (a wait that ends on either the
     // interrupt or the deadline)). No answer within the bound means hung.
 
-    let bound = cntfrq() * QUIESCE_BOUND_MILLISECONDS / 1000;
+    let bound = counter_hertz() * QUIESCE_BOUND_MILLISECONDS / 1000;
     let (waited, stand_in) = match quiesce_within(w, stand_in, &client_img, bound, 112) {
         Quiesce::Unanswered { waited, stand_in } => (waited, stand_in),
         // This role exists to run against a hung incumbent, so an answer means the fixture did not

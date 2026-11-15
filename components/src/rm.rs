@@ -94,14 +94,14 @@ const MAXIMUM_ROUNDS: usize = 64;
 /// Copy `bytes` into the shared page.
 fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(filesystem_contract::PAGE).enumerate() {
-        WINDOW.w8(i as u64, b);
+        WINDOW.write_u8(i as u64, b);
     }
 }
 
 /// Copy `n` bytes out of it (a listing landed there).
 fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = WINDOW.r8(i as u64);
+        *b = WINDOW.read_u8(i as u64);
     }
 }
 

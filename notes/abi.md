@@ -201,7 +201,7 @@ later without a format change: the corpse it would resume is still there.
 §10 says no ambient authority, and the object surface honors it: everything a program can *do* goes
 through a capability. There is exactly one deliberate exception, and it is a read, not a do: EL0
 can read the virtual counter (`CNTVCT_EL0`) and its frequency (`CNTFRQ_EL0`), via `user_mode_runtime::now`
-and `user_mode_runtime::cntfrq`, no syscall. The kernel opens this in `timer::initialize`
+and `user_mode_runtime::counter_hertz`, no syscall. The kernel opens this in `timer::initialize`
 (`CNTKCTL_EL1.EL0VCTEN`); without it the read traps.
 
 It is an exception made with eyes open. A monotonic counter grants no authority to *affect*

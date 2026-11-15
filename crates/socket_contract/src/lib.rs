@@ -553,8 +553,8 @@ pub mod stack_slots {
 /// one region reused per synchronous `CALL`, not a ring.
 ///
 /// ```text
-///   +0x000  u8[4]  dst_ip    destination (SENDTO / CONNECT); source on a UDP RECEIVE reply
-///   +0x004  u16    dst_port  little-endian, the same two roles
+///   +0x000  u8[4]  destination_address    destination (SENDTO / CONNECT); source on a UDP RECEIVE reply
+///   +0x004  u16    destination_port  little-endian, the same two roles
 ///   +0x006  u16    len       payload length, written by RECEIVE only
 ///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
 /// ```

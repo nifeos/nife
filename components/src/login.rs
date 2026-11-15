@@ -925,7 +925,7 @@ impl Durable {
             // (`timetable::registration`'s layout).
             unsafe { &*((self.va + off as u64) as *const AtomicU64) }
         };
-        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECONDS);
+        let ceiling = user_mode_runtime::counter_hertz().saturating_mul(END_WAIT_SECONDS);
         let started = user_mode_runtime::now();
         let mut asked = 0u64;
         while !self.exited() {
@@ -973,7 +973,7 @@ impl Durable {
             registration::request(registration::REPLACE, 1),
             Ordering::Release,
         );
-        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECONDS);
+        let ceiling = user_mode_runtime::counter_hertz().saturating_mul(END_WAIT_SECONDS);
         let started = user_mode_runtime::now();
         while word(registration::REPLY).load(Ordering::Acquire) != 1 {
             if user_mode_runtime::now().wrapping_sub(started) >= ceiling {

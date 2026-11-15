@@ -89,7 +89,7 @@ impl Windows for Held {
     }
 
     fn read(&mut self, window: WindowName, offset: u64) -> u32 {
-        self.window(window).r32(offset)
+        self.window(window).read_u32(offset)
     }
 
     fn write(&mut self, window: WindowName, offset: u64, value: u32) {
@@ -98,7 +98,7 @@ impl Windows for Held {
             WindowName::SystemController,
             "the syscon is read-only"
         );
-        self.window(window).w32(offset, value);
+        self.window(window).write_u32(offset, value);
     }
 }
 

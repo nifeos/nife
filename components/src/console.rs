@@ -50,7 +50,7 @@
 
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Message, Received, call, cntfrq, now, receive_message, send, timer_arm, timer_cancel,
+    Message, Received, call, counter_hertz, now, receive_message, send, timer_arm, timer_cancel,
 };
 
 /// The PL011's register block, declared with `tock_registers::register_map!`: every offset is
@@ -314,7 +314,7 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         let deadline = now().saturating_add(abi::timer::counter_ticks_for(
             0,
             SCREEN_BATCH_NANOSECONDS,
-            cntfrq(),
+            counter_hertz(),
         ));
         if timer_arm(TIMER, deadline, NOTIFIED, 1) >= 0 {
             b.armed = true;
@@ -410,7 +410,7 @@ fn uart_put(byte: u8) {
         if polls >= POLLS_BEFORE_CLOCK {
             let t = now();
             match deadline {
-                None => deadline = Some(t.saturating_add(cntfrq())),
+                None => deadline = Some(t.saturating_add(counter_hertz())),
                 Some(d) if t > d => transmit_never_emptied(shape.offset(LSR)),
                 Some(_) => {}
             }

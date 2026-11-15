@@ -26,7 +26,7 @@ use designware_ethernet::{
 };
 use driver_process_contract::designware_ethernet::Handoff;
 use startup_page_contract::StartupWindow;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES, doorbell_barrier};
 
 // SAFETY: the spawner (`designware_ethernet_service`) lists both windows on the startup page and
 // maps them before `_start` runs: `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages of the DMA
@@ -34,14 +34,14 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 static PLANE: StartupWindow = unsafe {
     StartupWindow::new(
         ::driver_process_contract::designware_ethernet::DATA_PLANE_KIND,
-        layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE,
+        layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE_BYTES,
     )
 };
 // SAFETY: as above.
 static DMA: StartupWindow = unsafe {
     StartupWindow::new(
         ::driver_process_contract::designware_ethernet::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_KIND,
-        PAGE,
+        PAGE_BYTES,
     )
 };
 
@@ -58,10 +58,10 @@ struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        mapped(&PLANE).r64(off)
+        mapped(&PLANE).read_u64(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        mapped(&PLANE).w64(off, v);
+        mapped(&PLANE).write_u64(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
         mapped(&PLANE).copy_to_slice(off, out);
@@ -76,7 +76,7 @@ struct Channel;
 
 impl Tails for Channel {
     fn set_receive_tail(&mut self, tail_pointer_low_bits: u32) {
-        mapped(&DMA).w32(
+        mapped(&DMA).write_u32(
             u64::from(
                 registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER
                     - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
@@ -85,7 +85,7 @@ impl Tails for Channel {
         );
     }
     fn set_transmit_tail(&mut self, tail_pointer_low_bits: u32) {
-        mapped(&DMA).w32(
+        mapped(&DMA).write_u32(
             u64::from(
                 registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER
                     - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
@@ -142,7 +142,8 @@ impl DesignWareNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let des3 = (mapped(&PLANE).r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8)
+        let des3 = (mapped(&PLANE)
+            .read_u64(layout::receive_descriptor(self.plane.receive_cursor()) + 8)
             >> 32) as u32;
         designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME_BYTES)
             != designware_ethernet::ReceiveVerdict::NotYet

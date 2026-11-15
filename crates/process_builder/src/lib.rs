@@ -333,7 +333,8 @@ fn lay_out_child(
     // numbers). See notes/progenitor-and-loading.md.
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
     {
-        let page = user_mode_runtime::cntfrq_checked().map(counter_frequency_contract::build_page);
+        let page =
+            user_mode_runtime::counter_hertz_checked().map(counter_frequency_contract::build_page);
         fill_and_map(
             own_ut,
             build_ut,

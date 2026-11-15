@@ -38,7 +38,7 @@ const JOB_PAGE_FRAME_VA: usize = 0x0030_0000;
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile pair below).
 const WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(JOB_PAGE_FRAME_VA as u64, mapped_window::PAGE) };
+    unsafe { MappedWindow::new(JOB_PAGE_FRAME_VA as u64, mapped_window::PAGE_BYTES) };
 
 fn load(off: usize) -> u64 {
     WINDOW.read(off as u64)

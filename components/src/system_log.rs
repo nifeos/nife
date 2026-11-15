@@ -37,7 +37,7 @@ use system_log_contract::kernel_ring::{self, Cursor, DETACHED, Read, Ring};
 use system_log_contract::record::{self, flags};
 use system_log_contract::{console, read};
 use user_mode_runtime::{
-    Message, Received, cntfrq, exit, monotonic_nanoseconds, notification_signal, now,
+    Message, Received, counter_hertz, exit, monotonic_nanoseconds, notification_signal, now,
     receive_message, send, timer_arm,
 };
 
@@ -194,7 +194,7 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
                         let deadline = now().saturating_add(abi::timer::counter_ticks_for(
                             0,
                             FLUSH_NANOSECONDS,
-                            cntfrq(),
+                            counter_hertz(),
                         ));
                         *flush_armed = timer_arm(TIMER, deadline, KERNEL_NOTIFIED, FLUSH_BIT) >= 0;
                     }

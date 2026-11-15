@@ -707,7 +707,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
                 read_ok = false;
             } else {
                 for at in 0..n as u64 {
-                    window.w8(at, FS_WINDOW.r8(at));
+                    window.write_u8(at, FS_WINDOW.read_u8(at));
                 }
             }
         } else {

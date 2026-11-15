@@ -17,7 +17,7 @@
 //! static FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 //!
 //! // Nothing below is unsafe: the bounds check is the window's.
-//! FRAME.set_dst([10, 0, 2, 2], 69);
+//! FRAME.set_destination([10, 0, 2, 2], 69);
 //! FRAME.payload_write(b"nife");
 //! // The length of a send rides in the CALL's argument word, never in the frame.
 //! ```
@@ -35,13 +35,13 @@ use socket_contract::{
     LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES,
 };
 
-use crate::mapped_window::{MappedWindow, PAGE};
+use crate::mapped_window::{MappedWindow, PAGE_BYTES};
 
 /// **The shared frame as a value**: one mapped page carrying `socket_contract`'s layout.
 ///
 /// # Safety of `Frame::new`
 ///
-/// `MappedWindow::new`'s contract, forwarded once: `base .. base + PAGE` must be a range the
+/// `MappedWindow::new`'s contract, forwarded once: `base .. base + PAGE_BYTES` must be a range the
 /// kernel has mapped read/write-accessible into this process for as long as the `Frame` is used.
 /// One page, which is what [`socket_contract::DATA_MAXIMUM`] already assumes.
 #[derive(Clone, Copy)]
@@ -53,7 +53,7 @@ impl Frame {
     /// The frame mapped at `base` in this program's address space.
     ///
     /// # Safety
-    /// `base .. base + PAGE` must be a range the kernel has mapped read/write-accessible into
+    /// `base .. base + PAGE_BYTES` must be a range the kernel has mapped read/write-accessible into
     /// this process for as long as the returned `Frame` is used: the program's own
     /// `PageFrame::MAP` succeeded first (the mint-and-map behind
     /// `socket_contract::OPERATION_ATTACH_PAGE_FRAME`), or the wiring mapped it before `_start`
@@ -61,36 +61,44 @@ impl Frame {
     pub const unsafe fn new(base: u64) -> Self {
         Self {
             // SAFETY: forwarded from this function's own contract, verbatim: `base .. base +
-            // PAGE` is mapped for as long as the `Frame` is used, and one page is what
+            // PAGE_BYTES` is mapped for as long as the `Frame` is used, and one page is what
             // `socket_contract::DATA_MAXIMUM` assumes.
-            window: unsafe { MappedWindow::new(base, PAGE) },
+            window: unsafe { MappedWindow::new(base, PAGE_BYTES) },
         }
     }
 
     /// Write the destination header: the address and port the next `SENDTO` or `CONNECT` uses,
     /// and the fields a UDP `RECEIVE` reply carries the sender's endpoint back in.
-    pub fn set_dst(&self, ip: [u8; 4], port: u16) {
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn set_destination(&self, ip: [u8; 4], port: u16) {
         for (i, &b) in ip.iter().enumerate() {
             self.window
-                .w8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+                .write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
         }
-        self.window.w16(DESTINATION_PORT_OFFSET_BYTES, port);
+        self.window.write_u16(DESTINATION_PORT_OFFSET_BYTES, port);
     }
 
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
     /// `DESTINATION_ADDRESS_OFFSET_BYTES` in `socket_contract`).
-    pub fn dst_ip(&self) -> [u8; 4] {
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn destination_address(&self) -> [u8; 4] {
         let mut ip = [0u8; 4];
         for (i, b) in ip.iter_mut().enumerate() {
-            *b = self.window.r8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
+            *b = self
+                .window
+                .read_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
         }
         ip
     }
 
     /// The destination port, or the sender's after a UDP `RECEIVE` (the layout note on
     /// `DESTINATION_PORT_OFFSET_BYTES` in `socket_contract`).
-    pub fn dst_port(&self) -> u16 {
-        self.window.r16(DESTINATION_PORT_OFFSET_BYTES)
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn destination_port(&self) -> u16 {
+        self.window.read_u16(DESTINATION_PORT_OFFSET_BYTES)
     }
 
     /// Read the length field at `LENGTH_OFFSET_BYTES`: what the last `RECEIVE` wrote, or what [`set_len`](Self::set_len)
@@ -103,14 +111,14 @@ impl Frame {
         reason = "a header field, not a collection"
     )]
     pub fn len(&self) -> u16 {
-        self.window.r16(LENGTH_OFFSET_BYTES)
+        self.window.read_u16(LENGTH_OFFSET_BYTES)
     }
 
     /// Write the length field at `LENGTH_OFFSET_BYTES`. The stack never reads it: a `SEND*` takes its length
     /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
     /// that clears it before a `RECEIVE` to watch for the reply.
     pub fn set_len(&self, len: u16) {
-        self.window.w16(LENGTH_OFFSET_BYTES, len);
+        self.window.write_u16(LENGTH_OFFSET_BYTES, len);
     }
 
     /// Write `bytes` at the start of the payload. An overlong slice panics at the window's
@@ -148,10 +156,10 @@ mod tests {
     fn the_destination_and_length_round_trip() {
         let mut page = Page([0; 4096]);
         let f = frame(&mut page);
-        f.set_dst([10, 0, 2, 2], 69);
+        f.set_destination([10, 0, 2, 2], 69);
         f.set_len(512);
-        assert_eq!(f.dst_ip(), [10, 0, 2, 2]);
-        assert_eq!(f.dst_port(), 69);
+        assert_eq!(f.destination_address(), [10, 0, 2, 2]);
+        assert_eq!(f.destination_port(), 69);
         assert_eq!(f.len(), 512);
     }
 

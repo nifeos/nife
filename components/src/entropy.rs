@@ -28,7 +28,7 @@
 #![no_main]
 
 use entropy_contract as proto;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
@@ -63,7 +63,7 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139;
 // see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled r8/w8/r16/w16/r32 below).
-const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
+const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 
 // virtio-mmio register offsets. The §18 transport seam speaks this vocabulary on both buses, so
 // this driver runs over PCIe and over mmio without knowing which one it got.
@@ -139,23 +139,23 @@ fn refuses_service(report: u64) -> bool {
 }
 
 fn r8(off: u64) -> u8 {
-    WINDOW.r8(off)
+    WINDOW.read_u8(off)
 }
 
 fn w8(off: u64, v: u8) {
-    WINDOW.w8(off, v);
+    WINDOW.write_u8(off, v);
 }
 
 fn r16(off: u64) -> u16 {
-    WINDOW.r16(off)
+    WINDOW.read_u16(off)
 }
 
 fn w16(off: u64, v: u16) {
-    WINDOW.w16(off, v);
+    WINDOW.write_u16(off, v);
 }
 
 fn r32(off: u64) -> u32 {
-    WINDOW.r32(off)
+    WINDOW.read_u32(off)
 }
 
 fn mr(off: u64) -> u32 {

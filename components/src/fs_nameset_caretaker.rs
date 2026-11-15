@@ -76,14 +76,14 @@ fn put_at(off: usize, bytes: &[u8]) {
         if off + i >= PAGE {
             return;
         }
-        WINDOW.w8((off + i) as u64, b);
+        WINDOW.write_u8((off + i) as u64, b);
     }
 }
 
 /// Read `out.len()` bytes out of the shared page starting at `off`.
 fn get_at(off: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = WINDOW.r8((off + i) as u64);
+        *b = WINDOW.read_u8((off + i) as u64);
     }
 }
 
@@ -302,7 +302,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // stack of `CARETAKER_STACK_PAGES`.
     let mut set = [0u8; nameset::BYTES];
     for (i, b) in set.iter_mut().enumerate() {
-        *b = SET_WINDOW.r8(i as u64);
+        *b = SET_WINDOW.read_u8(i as u64);
     }
 
     let mut buf = [0u8; grant::WORDS_NAME];

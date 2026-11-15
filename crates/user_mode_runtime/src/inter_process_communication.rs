@@ -59,14 +59,16 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 }
 
 /// **Read one entry of what this address space has mapped** (milestone 126, `pmap`,
-/// `address_space::LIST`, DECISIONS §114). Returns `(next_cursor, va, kind)`: start at `cursor = 0`, feed
+/// `address_space::LIST`, DECISIONS §114). Returns `(next_cursor, virtual_address, kind)`: start at `cursor = 0`, feed
 /// each `next_cursor` back, and stop when [`abi::survey::DONE`] comes back. [`survey`]'s twin,
 /// same three-word-out-of-one-`invoke` shape, one object type over.
 ///
 /// A negative first word is an [`abi::Error`], and the one that matters is `NotPermitted`: this
 /// capability does not carry `ENUMERATE`, so the holder may map into the space but not list it.
 /// **That is a refusal and not an empty listing**, and a caller must print it as one.
-pub fn list(slot: u64, cursor: u64) -> (i64, u64, u64) {
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+pub fn address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; LIST reads no more than the three words used.
     let (r0, w1, w2, ..) = unsafe { invoke5(slot, abi::address_space::LIST, cursor, 0, 0) };
     (r0 as i64, w1, w2)
@@ -149,6 +151,8 @@ pub fn badge(slot: u64, badge: u64) -> i64 {
 ///
 /// A death message from a supervision endpoint (`abi::fault`) is the same words read another way:
 /// `w0` is the event, `w1` the thread id, `w2` the program counter and `badge` the faulting address.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Message {
     /// `x0`: the sender's first word, or a death message's event.
@@ -184,6 +188,8 @@ impl Received {
     ///
     /// # Panics
     /// If the receive was ended by a notification: the caller bound one and should match instead.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn into_message(self) -> Message {
         match self {
             Received::Message(message) => message,
@@ -204,6 +210,8 @@ impl Received {
 /// [`abi::notification::BOUND`] there, while `x4` is written only by the kernel. See
 /// `abi::notification::BOUND` and notes/notification-objects.md. A caller with no bound notification
 /// takes the message with [`Received::into_message`]. *(Name provisional.)*
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_message(slot: u64) -> Received {
     // SAFETY: forwarded from `invoke6`'s contract; RECEIVE returns up to six words.
     let (w0, w1, w2, badge, w4, label) =
@@ -226,6 +234,8 @@ pub fn receive_message(slot: u64) -> Received {
 /// [`receive_message`] for a message that may carry a capability. `w1` is where the capability
 /// landed (or [`abi::rendezvous::NO_CAPABILITY`]), and `delivered` types it by the kernel's `x4`,
 /// as [`receive_request`] does for a `CALL` server. *(Name provisional.)*
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_capability_message(slot: u64) -> Received {
     // SAFETY: forwarded from `invoke6`'s contract; RECEIVE_CAPABILITY returns up to six words.
     let (w0, w1, w2, badge, w4, label) =

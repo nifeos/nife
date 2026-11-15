@@ -134,9 +134,9 @@ fn start(size: u64, layout: u64, offset: u64) -> ! {
                     w,
                     h,
                     (offset % 8) as u32,
-                    |px, py| surface.r32((py as u64 * width as u64 + px as u64) * 4),
-                    |at, pair| screen.w64(at as u64, pair),
-                    |at, word| screen.w32(at as u64, word),
+                    |px, py| surface.read_u32((py as u64 * width as u64 + px as u64) * 4),
+                    |at, pair| screen.write_u64(at as u64, pair),
+                    |at, word| screen.write_u32(at as u64, word),
                 );
                 // The aperture is write-combining on `x86_64`, so the last stores of this flush
                 // may sit in a combining buffer. A sequentially consistent fence is `mfence`

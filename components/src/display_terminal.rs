@@ -152,7 +152,7 @@ fn paint(
             // The rectangle is either the engine's damage or the whole surface this process asked
             // the geometry of, and `Vt::pixel` is defined outside its own grid (it is the default
             // background), which is what makes the second case safe as well as correct.
-            surface.w32(off, t.pixel(x, y));
+            surface.write_u32(off, t.pixel(x, y));
         }
     }
     (x0, y0, w, h)

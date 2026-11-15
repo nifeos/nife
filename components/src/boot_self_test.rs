@@ -281,7 +281,7 @@ fn deadline() -> Option<Deadline> {
 /// The counter's rate, or a gigahertz when this process cannot know it, which only makes a wait
 /// longer.
 fn frequency() -> u64 {
-    user_mode_runtime::cntfrq_checked()
+    user_mode_runtime::counter_hertz_checked()
         .filter(|&f| f != 0)
         .unwrap_or(1_000_000_000)
 }

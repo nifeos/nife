@@ -7356,17 +7356,11 @@ crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
 crates/user_mode_runtime/src/clock.rs::current_cpu
 
@@ -7403,7 +7397,6 @@ crates/user_mode_runtime/src/inter_process_communication.rs::decode
 
 crates/user_mode_runtime/src/inter_process_communication.rs::into_reply
 
-crates/user_mode_runtime/src/inter_process_communication.rs::list
 
 crates/user_mode_runtime/src/inter_process_communication.rs::notification_bind
 
@@ -7441,27 +7434,18 @@ crates/user_mode_runtime/src/mapped_window.rs
 
 crates/user_mode_runtime/src/mapped_window.rs::MappedWindow
 
-crates/user_mode_runtime/src/mapped_window.rs::PAGE
 
 crates/user_mode_runtime/src/mapped_window.rs::new
 
-crates/user_mode_runtime/src/mapped_window.rs::r16
 
-crates/user_mode_runtime/src/mapped_window.rs::r32
 
-crates/user_mode_runtime/src/mapped_window.rs::r64
 
-crates/user_mode_runtime/src/mapped_window.rs::r8
 
 crates/user_mode_runtime/src/mapped_window.rs::read
 
-crates/user_mode_runtime/src/mapped_window.rs::w16
 
-crates/user_mode_runtime/src/mapped_window.rs::w32
 
-crates/user_mode_runtime/src/mapped_window.rs::w64
 
-crates/user_mode_runtime/src/mapped_window.rs::w8
 
 crates/user_mode_runtime/src/mapped_window.rs::write
 
@@ -7477,9 +7461,7 @@ crates/user_mode_runtime/src/process.rs::yield_now
 
 crates/user_mode_runtime/src/socket_frame.rs::Frame
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_ip
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_port
 
 crates/user_mode_runtime/src/socket_frame.rs::new
 
@@ -7487,7 +7469,6 @@ crates/user_mode_runtime/src/socket_frame.rs::payload_read
 
 crates/user_mode_runtime/src/socket_frame.rs::payload_write
 
-crates/user_mode_runtime/src/socket_frame.rs::set_dst
 
 crates/user_mode_runtime/src/socket_frame.rs::set_len
 
