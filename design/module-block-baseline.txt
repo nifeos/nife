@@ -5889,8 +5889,6 @@ crates/sealed_pair/src/lib.rs::EntrySeal
 
 crates/sealed_pair/src/lib.rs::Seal
 
-crates/sealed_pair/src/lib.rs::THE_BOARD_IS_THE_AUTHORITY
-
 crates/sealed_pair/src/lib.rs::TableDisagreement
 
 crates/sealed_pair/src/lib.rs::TableSeal
