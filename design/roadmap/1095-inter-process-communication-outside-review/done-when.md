@@ -2,8 +2,8 @@
 
 An appendix to [the milestone](../1095-inter-process-communication-outside-review.md).
 
-- A review package for the crate is in `notes/crate-reviews/` with a row in the index. The
-  architect has ruled D1, D2 and D3 and every name item 5 and item 12 list.
+- A review package for the crate is in `notes/crate-reviews/` with a row in the index. The maintainer
+  has decided D1 and D2, and the architect has ruled D3 and every name item 5 and item 12 list.
 - `intrusive_queue` has its own repository. This crate's manifest pins it by a full revision
   on that repository's `main`.
 - `standalone.py --manifest-dir .` passes in the new repository with no `--allow-unpublished`.
