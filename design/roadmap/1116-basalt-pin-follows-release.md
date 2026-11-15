@@ -11,7 +11,7 @@ The rule in force since 2026-11-15 (UTC): a workflow opens a daily pull request 
 is `milestone/1116-basalt-pin-follows-release`.
 
 What drives it: the four merge-group rows run the recipes and build script at the pinned basalt
-commit. Only a person moved the pin, so it fell a month behind, and a recipe basalt changed did not
+commit. Only a person moved the pin. It fell a month behind, and a recipe basalt changed did not
 reach the gate.
 
 Reuse: basalt's own `pin-bump.yml` has the shape (one branch, force-pushed on each run, one open
@@ -38,7 +38,7 @@ pull request, the automation App's token), in the other direction. `vendor-watch
 ## Follow-on
 
 - **Recorded.** The workflow cannot run before it lands on `main`, because the automation App's
-  secrets belong to `main` alone, so its first scheduled or dispatched run is its first test of the
+  secrets belong to `main` alone. Its first scheduled or dispatched run is its first test of the
   push and pull-request steps: `.github/workflows/pin-basalt.yml`, header.
 - **Recorded.** `REQUIRED_PACKAGES` in `helpers/basalt_pin.py` repeats the package list
   `xtask/src/basalt.rs` builds: `helpers/basalt_pin.py`, `BUGS`.
