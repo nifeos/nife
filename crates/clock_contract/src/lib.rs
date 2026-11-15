@@ -859,7 +859,10 @@ mod tests {
             page.initialize();
             // The raw words first: the count, the claim and both copies, every one where it was.
             let after: [u64; WORDS] = core::array::from_fn(|i| frame[i].load(Ordering::Relaxed));
-            assert_eq!(after, words, "a restart leaves every word of the page where it was");
+            assert_eq!(
+                after, words,
+                "a restart leaves every word of the page where it was"
+            );
             assert_eq!(page.read(), before, "a restart leaves the page as it was");
             assert_eq!(
                 page.publish(state::RTC, 11),
@@ -887,7 +890,11 @@ mod tests {
             page.initialize();
             assert_eq!(frame[CLAIM_WORD_INDEX].load(Ordering::Relaxed), CLAIM_FREE);
             assert_eq!(frame[PUBLISH_WORD_INDEX].load(Ordering::Relaxed), first);
-            assert_eq!(page.read(), before, "the restart showed a reader the half-filled copy");
+            assert_eq!(
+                page.read(),
+                before,
+                "the restart showed a reader the half-filled copy"
+            );
             assert_eq!(page.publish(state::SYNCED, 11), first + 1);
             assert_eq!(
                 page.read(),
@@ -1250,7 +1257,10 @@ mod interleavings {
 
             let stopped = restarted.join().unwrap();
             let later = other.join().unwrap();
-            assert_ne!(stopped, later, "two publishes were handed the same generation");
+            assert_ne!(
+                stopped, later,
+                "two publishes were handed the same generation"
+            );
             if later > stopped {
                 RESTART_FIRST.mark();
             }
