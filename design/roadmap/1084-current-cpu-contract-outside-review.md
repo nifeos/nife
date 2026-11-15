@@ -233,6 +233,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 What is left of this review: the rename pass of Decision B (decided provisionally), and every other before-the-tag
 item except item 5, plus the P0 and P2 items, is open.
+The ledger of what landed is in
+[the appendix](1084-current-cpu-contract-outside-review/ledger.md).
 
 - **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
   rename pass of Decision B and the P0 items above land, so the standalone gate can pass.

@@ -48,6 +48,8 @@ printer and the readers, and that is where the items below sit.
 Effort: S is half a day for a lane, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after a release (a public name, a printed wording that logs and profiles already hold, a layout, a license). Everything else is two-way, and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1078-boot-ladder-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The manifest is not standalone.

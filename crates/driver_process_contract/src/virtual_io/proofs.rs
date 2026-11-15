@@ -23,7 +23,7 @@ fn any_structure() -> Structure {
 /// structure passes through the same per-page loop, so one symbolic structure and one optional
 /// one exercise it whole; four symbolic structures ran the C Bounded Model Checker (CBMC) out of
 /// memory.
-/// Falsification: replayable `crates/driver_process_contract/falsifications/virtual_input_output.proofs.the_window_never_maps_a_withheld_page.patch`
+/// Falsification: replayable `crates/driver_process_contract/falsifications/virtual_io.proofs.the_window_never_maps_a_withheld_page.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn the_window_never_maps_a_withheld_page() {
@@ -72,7 +72,7 @@ fn the_window_never_maps_a_withheld_page() {
 
 /// **The handoff round-trips, and anything `unpack` accepts is a layout a driver can use**: a
 /// page-aligned nonzero base and offsets inside the register window.
-/// Falsification: replayable `crates/driver_process_contract/falsifications/virtual_input_output.proofs.the_hand_off_round_trips.patch`
+/// Falsification: replayable `crates/driver_process_contract/falsifications/virtual_io.proofs.the_hand_off_round_trips.patch`
 #[kani::proof]
 fn the_hand_off_round_trips() {
     let w: [u64; 3] = kani::any();

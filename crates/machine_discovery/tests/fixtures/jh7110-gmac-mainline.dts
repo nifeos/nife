@@ -4,7 +4,8 @@
  * radon's ports as MAINLINE Linux describes a VisionFive 2 v1.3B. MODELED from source, not
  * captured: torvalds/linux master, `arch/riscv/boot/dts/starfive/jh7110.dtsi` (gmac0, gmac1,
  * aoncrg, aon_syscon), `jh7110-common.dtsi` (gmac0's phy-mode and mdio/phy0) and
- * `jh7110-starfive-visionfive-2-v1.3b.dts` (phy0's delays, drive strengths and clock inversion),
+ * `jh7110-starfive-visionfive-2-v1.3b.dts` (gmac0's transmit clock parent, phy0's delays, drive
+ * strengths and clock inversion),
  * read 2026-10-06 (UTC). radon's EEPROM says PCB revision 0xb2, a v1.3B.
  *
  * The tree radon serves is the vendor's (jh7110-gmac-vendor.dts); this one exists so the
@@ -37,6 +38,9 @@
 			snps,rxpbl = <16>;
 			starfive,syscon = <&aon_syscon 0xc 0x12>;
 			starfive,tx-use-rgmii-clk;
+			/* JH7110_AONCLK_GMAC0_TX fed from JH7110_AONCLK_GMAC0_RMII_RTX */
+			assigned-clocks = <&aoncrg 5>;
+			assigned-clock-parents = <&aoncrg 4>;
 			phy-handle = <&phy0>;
 			phy-mode = "rgmii-id";
 			status = "okay";

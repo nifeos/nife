@@ -158,6 +158,29 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
     assert!(!RegisterShape::new(0, 4).is_word_access());
 }
 
+/// A retired number stays reserved and is never reused. Each row is a module, a method name and
+/// the number that was served; the live numbers of that module must not include the number under
+/// another name. Removing a number that no kernel serves is not done, so a row also stays
+/// pinned in the list below.
+#[test]
+fn reserved_numbers_are_never_reused() {
+    // (module, retired name, retired number, the live numbers of the same module)
+    let reserved: &[(&str, &str, u64, &[u64])] = &[
+        // No live method of a console exists; the module holds only the reserved number.
+        ("console", "WRITE", crate::console::WRITE, &[]),
+    ];
+    for (module, name, number, live) in reserved {
+        assert_eq!(
+            *number, 0,
+            "{module}::{name} keeps the number it was served under"
+        );
+        assert!(
+            !live.contains(number),
+            "{module}::{name} is reserved, so no live method takes {number}"
+        );
+    }
+}
+
 macro_rules! pinned {
     ($($path:path => $expected:expr,)*) => {
         $(assert_eq!($path, $expected, stringify!($path));)*
@@ -320,5 +343,160 @@ fn every_error_is_pinned_to_its_number() {
     for (error, number) in all {
         assert_eq!(error as i64, number, "{error:?}");
         assert_eq!(Error::from_ret(number), Some(error), "{error:?}");
+    }
+}
+
+/// **A public number nobody pinned fails here.** The lists above claim to be exhaustive; this
+/// counts. It reads every source file of the crate, finds each `pub const NAME: u64` and
+/// `pub const NAME: u32` (the types a number on the wire takes), and fails unless the name
+/// appears in a pinned list or an `assert_eq!` of this file under its module's path. So a number
+/// added without a pinned line, or a line deleted with its number left behind, cannot pass.
+#[test]
+fn every_public_number_is_pinned() {
+    extern crate std;
+    use std::format;
+    use std::string::String;
+    use std::vec::Vec;
+
+    // Read at run time, not with `include_str!`, which the orphan-source lint reads as a module
+    // declaration of the same file.
+    const MODULES: &[&str] = &[
+        "",
+        "address_space",
+        "console",
+        "cycle_counter",
+        "fault",
+        "futex",
+        "interrupt",
+        "memory_region",
+        "notification",
+        "object_type",
+        "page_frame",
+        "port_range",
+        "process",
+        "reboot",
+        "rendezvous",
+        "reply",
+        "rights",
+        "survey",
+        "thread_control_block",
+        "timer",
+        "uart",
+        "usage",
+        "virtio",
+    ];
+    let source_directory = concat!(env!("CARGO_MANIFEST_DIR"), "/src/");
+    let read = |file: &str| {
+        std::fs::read_to_string(std::format!("{source_directory}{file}"))
+            .unwrap_or_else(|e| panic!("cannot read {file}: {e}"))
+    };
+    let sources: Vec<(&str, String)> = MODULES
+        .iter()
+        .map(|&m| {
+            let file = if m.is_empty() {
+                String::from("lib.rs")
+            } else {
+                format!("{m}.rs")
+            };
+            (m, read(&file))
+        })
+        .collect();
+    let pinned_text = read("tests.rs");
+    // A module file this list leaves out would hide its numbers from the count.
+    for entry in std::fs::read_dir(source_directory).unwrap() {
+        let name = entry.unwrap().file_name().into_string().unwrap();
+        if let Some(stem) = name.strip_suffix(".rs") {
+            let known = matches!(stem, "lib" | "tests") || MODULES.contains(&stem);
+            assert!(
+                known,
+                "{name} is not in MODULES, so its numbers are not counted"
+            );
+        }
+    }
+
+    let mut unpinned: Vec<String> = Vec::new();
+    let mut counted = 0;
+    for (module, source) in &sources {
+        for line in source.lines() {
+            let line = line.trim_start();
+            let Some(rest) = line.strip_prefix("pub const ") else {
+                continue;
+            };
+            let Some((name, kind)) = rest.split_once(": ") else {
+                continue;
+            };
+            if name.starts_with("fn ") {
+                continue;
+            }
+            if !(kind.starts_with("u64") || kind.starts_with("u32")) {
+                continue;
+            }
+            counted += 1;
+            let direct = if module.is_empty() {
+                format!("crate::{name} =>")
+            } else {
+                format!("crate::{module}::{name} =>")
+            };
+            let nested = format!("crate::{module}::record::{name} =>");
+            let version = format!("crate::{name}, ");
+            if !(pinned_text.contains(&direct)
+                || pinned_text.contains(&nested)
+                || pinned_text.contains(&version))
+            {
+                unpinned.push(format!("{module}::{name}"));
+            }
+        }
+    }
+    assert!(counted >= 99, "the scan found only {counted} numbers");
+    assert!(
+        unpinned.is_empty(),
+        "public numbers with no pinned line: {unpinned:?}"
+    );
+}
+
+/// **`Error` works behind `?` and in a hash map.** It is `Display`, `core::error::Error` and
+/// `Hash`, which a host-side harness reaches for first.
+#[test]
+fn error_displays_and_is_an_error_and_hashes() {
+    extern crate std;
+    use std::collections::HashSet;
+    use std::string::ToString;
+    let error: &dyn core::error::Error = &Error::Gone;
+    assert_eq!(
+        error.to_string(),
+        "the capability names an object that no longer exists"
+    );
+    let set: HashSet<Error> = [Error::Gone, Error::Gone, Error::NoSuchSlot].into();
+    assert_eq!(set.len(), 2);
+}
+
+/// Every error prints its own sentence, so a message never stands for two causes.
+#[test]
+fn every_error_prints_a_distinct_sentence() {
+    extern crate std;
+    use std::collections::HashSet;
+    use std::string::ToString;
+    let errors = [
+        Error::NoSuchSlot,
+        Error::WrongObject,
+        Error::NotPermitted,
+        Error::BadPointer,
+        Error::BadMethod,
+        Error::BadSyscall,
+        Error::OutOfMemory,
+        Error::DeviceRefused,
+        Error::StillAlive,
+        Error::NotSupervised,
+        Error::Gone,
+        Error::NoResetMechanism,
+        Error::ResetNotSupported,
+        Error::ResetDenied,
+        Error::ResetDidNotHappen,
+    ];
+    let mut seen = HashSet::new();
+    for error in errors {
+        let text = error.to_string();
+        assert!(!text.is_empty());
+        assert!(seen.insert(text));
     }
 }
