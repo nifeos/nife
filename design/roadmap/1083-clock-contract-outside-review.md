@@ -67,8 +67,7 @@ dependency); everything else is two-way and the maintainer decides it.
    scaffold's badge row. The `abbreviations` step is report only but lists 16 components
    (`cmos`, `pl`, `unix`, `rtc`, `seq`, `st`, `req` among them); `cmos`, `pl031` and `unix` belong
    in `.github/accepted-words` with their reasons, and the rest go with the renames.
-   Door: the public renames are one-way (Decision 3); everything else is two-way. Effort: S after
-   the rulings.
+   Door: two-way before the first tag; Decision 3 decides the renames, provisionally. Effort: S.
 
 2. `check / clippy` refuses the crate outside nife.
    Finding: `cargo clippy --all-targets -- -D warnings` fails on `doc_markdown` at `src/lib.rs` line 537
@@ -93,7 +92,8 @@ The P1 items are in [the appendix](1083-clock-contract-outside-review/before-the
 
 ## Decisions
 
-Only one-way doors. Decisions 1 and 2 have their rulings; Decision 3 waits for the architect.
+Decisions 1 and 2 are one-way doors and have their rulings; Decision 3 is two-way before the first
+tag, and the maintainer has decided it, provisionally.
 
 ### Decision 1. A reader of the page never waits on a writer
 
@@ -153,9 +153,18 @@ Prior art: the rule itself (a quantity's name ends with its unit spelled out), a
 contract-crate name tables ratified before this one, which took the same spelled-out forms.
 
 Concrete example. After the rename, the overlay's `monotonic_nanos` reads
-`d.as_secs() * clockproto::NANOSECONDS_PER_SECOND + d.subsec_nanos() as u64`, which is the one line
-in the tree that reads the old spelling by name, and the std method keeps its own spelling as the
-rule says.
+`d.as_secs() * clockproto::NANOSECONDS_PER_SECOND + d.subsec_nanos() as u64`, and the std method
+keeps its own spelling as the rule says.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The package's table holds as written: `NS_PER_SECOND` becomes
+`NANOSECONDS_PER_SECOND`, and `NANOS_PER_SEC` and `wall_nanos` go. `Reading::offset_nanos`
+becomes `offset_nanoseconds`; `va` becomes `virtual_address`; `propose::req` becomes `request`. `w0`
+becomes `word`; `state::SYNCED` becomes `SYNCHRONIZED`; `RTC` and `rtc` become `REAL_TIME_CLOCK` and
+`real_time_clock`, each with `#[doc(alias = "RTC")]`; `CMOS`, `PL031`, `GOLDFISH` and `WORDS` keep
+their names. No alias carries an old spelling. The std overlay reads the old names on more than one
+line: `NANOS_PER_SEC` three times, `wall_nanos` once and `offset_nanos` once
+(`patches/std-nife/overlay/std/src/sys/time/nife.rs` lines 48, 138, 140 and 141), and all of them
+move in the same change. Item 1 is the work.
 
 ## Done when
 
