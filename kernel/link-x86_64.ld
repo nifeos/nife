@@ -90,7 +90,7 @@ SECTIONS
      * program header's permissions are the union of what its output section holds, so one section
      * carrying both produced ONE `PT_LOAD` marked `RWX` at 0x101000: writable and executable
      * memory, in the boot path of a kernel whose whole claim is about what a confined component can
-     * reach. `crates/elf::Elf::parse` refuses such an image outright
+     * reach. `crates/static_elf::Elf::parse` refuses such an image outright
      * (`Error::WritableAndExecutable`) and `paging::Flags` has no constructor that can build such a
      * page, so the kernel's own image was the one thing in the tree breaking the rule the tree
      * enforces everywhere else. Nobody noticed because nothing parses the kernel's own image; that

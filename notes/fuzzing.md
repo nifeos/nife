@@ -39,7 +39,7 @@ So the two tools divide on one line:
 | Verdict on success | a proof | "not yet" |
 
 The place where they meet is the bound. In this tree the proved leaf and the unproved shell of
-`crates/elf`, the proved leaf readers and unproved walkers of `crates/device_tree_blob`, and
+`crates/static_elf`, the proved leaf readers and unproved walkers of `crates/device_tree_blob`, and
 `crates/nifefs`'s writer and reader agreeing (a property nobody had written down) are the three
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
@@ -155,9 +155,9 @@ The ELF seeds, `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, are 120 bytes ea
 else in the tree is a small ELF (our real binaries are over a megabyte). They are hand-assembled,
 and [fuzz/seeds/README.md](../fuzz/seeds/README.md) carries the generator that produces them.
 
-There is one per machine nife runs, because `elf` picks the `e_machine` it accepts at compile time;
-`crates/elf/tests/fuzz_seed.rs` holds each build's seed to actually parsing and the directory to
-carrying one for every machine in `elf::KNOWN_MACHINES`. A seed that stops parsing is not a seed,
+There is one per machine nife runs, because `static_elf` picks the `e_machine` it accepts at compile time;
+`crates/static_elf/tests/fuzz_seed.rs` holds each build's seed to actually parsing and the directory to
+carrying one for every machine in `static_elf::KNOWN_MACHINES`. A seed that stops parsing is not a seed,
 and a fuzz run would not say so. Why, and the seed's measured effect, are in
 [fuzzing/elf-seeds.md](fuzzing/elf-seeds.md).
 
@@ -246,7 +246,7 @@ Add a target. Four steps, and the first decides whether the other three are wort
    target adds over the proofs. That paragraph is what a reader needs to decide whether to trust it.
 3. Give it seeds. Prefer a fixture that already exists, wired into `script/fuzz`'s per-target
    `case`; commit a new one only if nothing in the tree fits, and give it a test that it is still
-   valid (`crates/elf/tests/fuzz_seed.rs`). A dictionary if the format has fixed tokens.
+   valid (`crates/static_elf/tests/fuzz_seed.rs`). A dictionary if the format has fixed tokens.
 4. Add the name to `targets` and to `--list` in `script/fuzz`. The CI job needs no change: it runs
    every target, and its budget is per target, so a fifth one costs a minute.
 

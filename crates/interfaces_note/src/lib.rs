@@ -565,7 +565,7 @@ mod interface_tests {
         ]);
     }
 
-    /// **A whole note has the header, the owner, the type and the descriptor** that `crates/elf`
+    /// **A whole note has the header, the owner, the type and the descriptor** that `crates/static_elf`
     /// finds, and nothing after.
     #[test]
     fn a_whole_note_carries_its_header_and_descriptor() {

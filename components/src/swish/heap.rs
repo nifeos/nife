@@ -48,8 +48,8 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 pub(super) fn initialize_heap() {
     HEAP.initialize(
         BUDGET,
-        memory_region_heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
         swish::HEAP_MAXIMUM_BYTES,
     );
-    HEAP.commit_all();
+    let _ = HEAP.commit_all();
 }

@@ -39,7 +39,7 @@ The core boundaries are sound, and the review confirmed each with reasoning rath
 
 ## What was wrong, and is now fixed
 
-1. A crafted ELF could panic the kernel (`crates/elf`). The parser checked `p_offset +
+1. A crafted ELF could panic the kernel (`crates/static_elf`). The parser checked `p_offset +
 p_filesz` and `memsz >= filesz` but never `p_vaddr + p_memsz`. A segment with `memsz` near
 `u64::MAX` passed validation, then overflowed the entry-in-segment check and `page_range`. With
 overflow-checks on (the shipping dev profile) that is a panic, i.e. a hostile initrd halting

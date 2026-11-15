@@ -112,7 +112,7 @@ pub(super) fn mounted_job_channel(tree: Fs, w: u64, own_ut: u64, mapped: &mut bo
 /// **Whether a file server's image says it enforces subtree grants itself** (milestone 606, ruling
 /// T1): it carries a `capability_manifest_note::SUBTREE_GRANTS` note naming the one scope crate there is. No
 /// image, no note, or a note that does not decode all answer `false`.
-pub(super) fn subtree_grants(server: Option<&elf::Elf<'_>>) -> bool {
+pub(super) fn subtree_grants(server: Option<&static_elf::Elf<'_>>) -> bool {
     let Some(server) = server else {
         return false;
     };

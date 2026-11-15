@@ -182,7 +182,7 @@ everything, host-tested, with one definition of the format shared by the disk-bu
 reader. Block 0 is a superblock (magic, a small directory of name → start-block/length); files
 follow, block-aligned. The driver reads block 0, walks the directory to find `motd`, and reads its
 data block. It is deliberately the least thing that is still a real filesystem, in the same spirit
-as `crates/elf`: milestone 9 is about drivers and block I/O, not filesystem design.
+as `crates/static_elf`: milestone 9 is about drivers and block I/O, not filesystem design.
 
 The driver is the format's third reader (the kernel and `xtask` are the others), and the only one
 that walks the directory without holding the whole image. It has one block buffered, so it can see
