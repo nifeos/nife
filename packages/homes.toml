@@ -204,7 +204,7 @@ paths = ["notes/packages/package-archive.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/paging alone; it leaves with that crate (§315)"
+reason = "about crates/page_tables alone; it leaves with that crate (§315)"
 paths = ["notes/paging.md", "notes/verification/paging-blocks.md"]
 
 [[home]]

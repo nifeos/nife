@@ -73,7 +73,7 @@ never has to, because it does not use hardware address spaces for isolation at a
 legitimate move and it has a visible price, stated by RedLeaf itself: *"We do not support the full
 semantics of the fork() system call as we do not rely on address spaces and hence cannot virtualize
 and clone the address space of the domain."* The question Levy posed is untouched, and it is a
-question this tree answers head-on. `crates/paging` is where the page-table math lives precisely so
+question this tree answers head-on. `crates/page_tables` is where the page-table math lives precisely so
 a model checker can reach it. Milestone 193 (put `kernel/src` within reach of the prover) is about
 getting the prover to the rest.
 

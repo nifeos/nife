@@ -8,8 +8,8 @@
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use paging::aarch64::mair;
-use paging::{Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
+use page_tables::aarch64::mair;
+use page_tables::{Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 
 use super::instructions;
 use crate::{memory, println};
@@ -143,7 +143,7 @@ pub fn initialize() {
     // SAFETY: a fresh frame. Zero it before the hardware can ever walk it: a page table
     // full of whatever was in RAM is a set of pointers to nowhere, followed at speed.
     unsafe {
-        (*phys_to_ptr(root)).entries = [0; paging::ENTRIES];
+        (*phys_to_ptr(root)).entries = [0; page_tables::ENTRIES];
     }
 
     // SAFETY: `root` is zeroed and page-aligned. `phys_to_ptr` is the identity, which is
@@ -489,7 +489,7 @@ fn install_reserved_ttbr0() {
 
     // SAFETY: a fresh frame, and nothing walks it until the `msr` below.
     unsafe {
-        (*phys_to_ptr(root)).entries = [0; paging::ENTRIES];
+        (*phys_to_ptr(root)).entries = [0; page_tables::ENTRIES];
     }
 
     RESERVED_TTBR0.store(root, Ordering::Relaxed);
@@ -697,7 +697,7 @@ pub(crate) fn unmap_user_pages(root: u64, asid: u16, each: impl FnOnce(&mut dyn 
 /// provisional (the page-tables-outlive-destroy lane, 2026-10-05 UTC).
 ///
 /// `revoke::revoke_region` calls this for each table a region paid for before the region's pages
-/// go back: see `paging::Mapper::unlink_table` for why the cut is one entry. The flush is by ASID
+/// go back: see `page_tables::Mapper::unlink_table` for why the cut is one entry. The flush is by ASID
 /// rather than by page because the span is up to a whole table's reach and the walk caches above
 /// the leaves have to go too, and a by-tag flush reaches both on every core.
 pub(crate) fn cut_user_table(root: u64, va: u64, table: u64, asid: u16) -> Option<(u64, u64)> {
@@ -880,7 +880,7 @@ pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
 
 /// Invalidate the TLB entry for one virtual address.
 ///
-/// Discharges a `paging::TlbFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
+/// Discharges a `page_tables::TlbFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
 /// the page number. TLB maintenance is not synchronous, hence the `dsb ish` and `isb` after.
 pub(crate) fn flush_tlb(va: u64) {
     // SAFETY: TLB maintenance is always sound. Getting it wrong means a stale translation, not
@@ -1151,7 +1151,7 @@ mod tests {
         let (_, flags) =
             mmu::translate(mmu::phys_to_virt(0x0900_0000)).expect("the UART is not mapped");
 
-        // The MAIR-slot encoding is checked in paging::aarch64; this is the portable property.
+        // The MAIR-slot encoding is checked in page_tables::aarch64; this is the portable property.
         assert!(flags.is_device(), "the UART is not device memory");
 
         assert!(flags.is_writable(), "we do need to write to it");
@@ -1182,7 +1182,7 @@ mod tests {
     /// reads again. A stale TLB returns A's data while the tables in memory are correct.
     #[test_case]
     fn unmap_invalidates_the_tlb() {
-        use paging::Flags;
+        use page_tables::Flags;
 
         use crate::arch::mmu::{self, phys_to_virt};
 
@@ -1237,7 +1237,7 @@ mod tests {
     /// Changing a mapping is forced through break-before-make.
     #[test_case]
     fn the_kernel_mapper_refuses_to_overwrite() {
-        use paging::{Flags, MapError};
+        use page_tables::{Flags, MapError};
 
         use crate::arch::mmu;
 

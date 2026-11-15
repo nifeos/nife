@@ -209,7 +209,7 @@ historical defect and check that both harnesses go red:
 
 ```console
 $ # in run_end_virtual_address, replace the checked arithmetic with milestone 142's bug:
-$ #   va.checked_add((count - 1).wrapping_mul(paging::PAGE_SIZE))
+$ #   va.checked_add((count - 1).wrapping_mul(page_tables::PAGE_SIZE))
 $ cargo kani -p kernel -Z unstable-options --ignore-global-asm --output-format=terse
 Verification failed for - syscall::proofs::every_page_between_the_checked_ends_is_itself_a_user_page
 Verification failed for - syscall::proofs::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit

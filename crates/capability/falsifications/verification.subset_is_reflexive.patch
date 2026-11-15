@@ -6,8 +6,8 @@ since both spellings are `u32 & u32 == 0`.
 
 Expected to fail: `assert!(a.is_subset_of(a))`, for any `a` with a bit set.
 
-**This record is honest about being weak, and that is why it is worth having.** DECISIONS
-§134 names this harness as the tree's clearest tautology: it proves `a & !a == 0`. The
+**This record is honest about being weak, and that is why it is worth having.** It is
+the tree's clearest tautology: it proves `a & !a == 0`. The
 patch above does turn it red, so it is not decorative, but every mutation of
 `is_subset_of` that reaches this harness also reaches `subset_matches_allows` and
 `derive_never_widens_rights`, while the reverse is false (see

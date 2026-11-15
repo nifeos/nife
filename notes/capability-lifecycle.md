@@ -6,12 +6,12 @@ authority is copied, how it narrows, and, at the end, how it is revoked.
 
 ## Authority moves by copy-with-narrowing, never by widening
 
-A `Cap<O>` is `Copy` (`crates/capability`). Authority spreads by deriving a copy, and the one rule
+A `Capability<O>` is `Copy` (`crates/capability`). Authority spreads by deriving a copy, and the one rule
 is that a derivative's rights are a subset of the source's:
 
 ```rust
 // CapabilityTable::derive: "copy a capability into another slot, with rights that are no greater."
-if !rights.is_subset_of(src.rights) { return Err(NoRights); }
+if !rights.is_subset_of(src.rights) { return Err(CannotWiden); }
 ```
 
 `Rights` are five bits <!--count:rights-bits-->: `READ`, `WRITE`, `GRANT`, `ENUMERATE` and `BIND`.
@@ -37,7 +37,7 @@ sender's cap and delivers a *new* one to the receiver:
 let src = table.get(self.slot)?;            // read; the sender's slot is NOT emptied
 if !src.rights.allows(GRANT) { return NotPermitted; }   // may I pass it on at all?
 if !self.rights.is_subset_of(src.rights) { return NotPermitted; }  // only narrow
-Ok(Cap { object: src.object, rights: self.rights })
+Ok(Capability { object: src.object, rights: self.rights })
 ```
 
 **The read and the filing are one critical section, and that is a revocation property, not a

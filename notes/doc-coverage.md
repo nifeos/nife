@@ -42,7 +42,7 @@ Every crate under `crates/` has at least one worked example, in one of two treat
 1. An executing doctest (28 crates). Preferred always: a doctest that runs is a test, and this
    project's whole method is pure logic in host-testable crates. Each example was written to carry
    the crate's own argument rather than to restate a signature. `static_elf` forges a
-   writable-and-executable segment and watches it be refused. `paging` builds real page tables on
+   writable-and-executable segment and watches it be refused. `page_tables` builds real page tables on
    the host and demonstrates that break-before-make is forced. `smb_proto` performed a whole SMB2
    mount, and `network_time_protocol` shows an
    off-path spoof failing the origin check before any of the packet is believed.
@@ -106,7 +106,7 @@ a hard gate, so those crates cannot regress:
 `filesystem_contract`, `graphics_contract`, `byte_glob`, `inter_process_communication`,
 `intrusive_queue`, `line_editor`,
 `manual`, `measured_boot`, `nifefs`, `network_time_protocol`, `non_volatile_memory_express`,
-`paging`, `pgrep`. `ps`, `memory_regions`, `byte_sink_contract`, `generational_table`,
+`page_tables`, `pgrep`. `ps`, `memory_regions`, `byte_sink_contract`, `generational_table`,
 `socket_contract`, `work_steal_slot`, `supervision_contract`,
 `hot_swap_contract`, `swish`, `system_initializer`, `timetable`, `user_mode_runtime`, `video_terminal`,
 `virtio`, `thread_wake_handshake`.

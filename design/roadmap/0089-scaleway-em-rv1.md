@@ -46,7 +46,7 @@ The TH1520 is not.
 | PLIC states `thead,c900-plic`, two-cell interrupts | the region lookup and the context map both missed it | built: one shared list, `machine_discovery::plic::COMPATIBLES` |
 | DRAM from physical 0 | the Image header's `text_offset` of `0x4020_0000` lands the kernel at the wrong address under `booti` | none if the FIT's own load address is used, which the first hour confirms |
 | QEMU-only mappings (virtio window at `0x1000_1000`) are mapped unconditionally | that range is DRAM on the TH1520, and radon's first boot died of exactly this collision | `arch/riscv64/mmu.rs`, from the tree |
-| XTheadMae: PTE bits 63:59 carry the memory type, and firmware turns it on | nife writes zero there; the behavior of zero is undefined in T-Head's spec | `crates/paging`'s Sv39 leaf encoding plus a probe in `arch/riscv64/` |
+| XTheadMae: PTE bits 63:59 carry the memory type, and firmware turns it on | nife writes zero there; the behavior of zero is undefined in T-Head's spec | `crates/page_tables`'s Sv39 leaf encoding plus a probe in `arch/riscv64/` |
 | XTheadVector's `sstatus.VS` sits at bits 24:23, not 10:9 | `fp.rs` clears the standard field only, which is the 2026-09-24 audit's fix missing this core | `arch/riscv64/fp.rs`, keyed on the vendor id |
 | No Sstc, timebase 3 MHz | nothing: the timer is SBI TIME and the rate comes from the tree | none |
 | DMA is not coherent (`dma-noncoherent`), no Zicbom | nothing for first light, which polls the UART. Every DMA driver later | follow-on |
@@ -68,7 +68,7 @@ The TH1520 is not.
 4. Built: the virtio-mmio window is mapped only when the tree names a `virtio,mmio` node, and the
    probe asks `arch::mmu::virtio_slots()`. On the TH1520 that address is DRAM; on radon it is
    UART0, which the probe had been reading as virtio slots.
-5. Built: XTheadMae. `paging::Sv39Mae` (name provisional) is Sv39 plus Linux's memory types and is
+5. Built: XTheadMae. `page_tables::Sv39Mae` (name provisional) is Sv39 plus Linux's memory types and is
    `arch::mmu::Format` under `board_th1520`; the boot table carries the same bits.
    `arch::isa::init` reads `th.sxstatus.MAEE` on a T-Head hart and panics if build and hart
    disagree. QEMU's `thead-c906` reports MAEE clear, so `script/cpu-matrix` runs the probe and the

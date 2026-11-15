@@ -2,7 +2,7 @@
 //!
 //! The SMMU translates every address a PCIe device emits through per-stream tables the kernel
 //! programs (§20 (IOMMU-backed DMA isolation)). The page tables are VMSAv8-64, built by the
-//! portable seam (`paging::domain` via `crate::iommu`); this module owns the register file, the stream table,
+//! portable seam (`page_tables::domain` via `crate::iommu`); this module owns the register file, the stream table,
 //! the context descriptors, and the command and event queues the SMMU is driven by.
 //!
 //! Default deny: `initialize` sets `GBPA.ABORT`, installs an all-invalid stream table and only then
@@ -323,8 +323,8 @@ pub(crate) fn print_summary() {
 /// root. The SMMUv3's stage 1 translates with VMSAv8-64, the CPU's own format. One function per
 /// architecture rather than a type alias since lane `amd-vi`, because `x86_64` has two IOMMUs that
 /// walk two formats and only a running machine says which.
-pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
-    crate::iommu::build_identity::<paging::Aarch64>(regions)
+pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+    crate::iommu::build_identity::<page_tables::Aarch64>(regions)
 }
 
 /// Is the SMMU up? The portable seam asks this to decide whether attaching is possible.
@@ -349,7 +349,7 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
 /// [`crate::iommu::confine`] can map them into every domain. The SMMUv3 counterpart is an IORT RMR node or a device tree `reserved-memory` region with `iommu-addresses`; this tree reads neither, and no machine it boots publishes one.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
-    _each: &mut dyn FnMut(paging::domain::DmaRegion),
+    _each: &mut dyn FnMut(page_tables::domain::DmaRegion),
 ) {
 }
 
@@ -455,8 +455,8 @@ const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
         0,
         // MAIR0/MAIR1: the same palette mmu::initialize programs into MAIR_EL1 (slot 0 device, slot
         // 1 normal write-back). QEMU does not model attributes; real silicon reads these.
-        paging::aarch64::mair::VALUE as u32,
-        (paging::aarch64::mair::VALUE >> 32) as u32,
+        page_tables::aarch64::mair::VALUE as u32,
+        (page_tables::aarch64::mair::VALUE >> 32) as u32,
     ]
 }
 
@@ -626,7 +626,7 @@ mod proofs {
         let ctxptr: u64 = kani::any();
         let asid: u16 = kani::any();
 
-        // `ttb` is the root of a domain built by `paging::domain`, so a page frame.
+        // `ttb` is the root of a domain built by `page_tables::domain`, so a page frame.
         kani::assume(ttb % page_frames::FRAME_SIZE == 0);
         kani::assume(ttb < 1 << PA_BITS);
         // `ctxptr` is a leaf's CD frame plus `stream_position`'s offset: a page frame plus a 64-byte

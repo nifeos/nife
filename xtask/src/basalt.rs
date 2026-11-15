@@ -83,10 +83,10 @@
 //!   `helpers/packages.py`, after importing it, because the script takes no option for it. A
 //!   basalt change that renames it fails the build at once and says so. Its `fetch` is wrapped
 //!   the same way, to try a download again when the route to a source host drops for a moment.
-//! - **`xtask/basalt-pin` does not follow basalt.** It names basalt commit `155eba5`, whose own
-//!   pin is a nife commit of 2026-10-17. The merge-group rows run that commit's recipes and build
-//!   script, and every other gate fetches that commit's published programs. A recipe basalt adds
-//!   or changes reaches nife only when someone moves the pin by hand.
+//! - **`xtask/basalt-pin` does not follow basalt.** It names one basalt commit and its Release, and
+//!   nothing moves it. The merge-group rows run that commit's recipes and build script, and every
+//!   other gate fetches that commit's published programs. A recipe basalt adds or changes reaches
+//!   nife only when someone moves the pin by hand.
 //! - Each build stages a nife tree at a new path, and `cargo xtask std-src` links a toolchain for
 //!   it (`rustup toolchain link`). The link dangles once the build root is removed, and the next
 //!   `std-src` on the host sweeps it.

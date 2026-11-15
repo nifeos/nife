@@ -25,7 +25,7 @@ and provisional.
 
 | division | packages | what is in it |
 |---|---|---|
-| kernel | 19 | `kernel` and the crates only it uses: `capability`, `paging`, `page_frames`, `pci`, `device_tree_blob`, `machine_discovery` and 13 more |
+| kernel | 19 | `kernel` and the crates only it uses: `capability`, `page_tables`, `page_frames`, `pci`, `device_tree_blob`, `machine_discovery` and 13 more |
 | contracts | 27 | `abi`, every `*_protocol`, and the formats two programs agree on: `static_elf`, `measured_boot`, `package_archive`, `installed_programs`, `boot_slot`, `nifefs`, the partition table, `grant_plan`, `component_plan`, `compositor`, `line_editor` |
 | runtime | 2 | `user_mode_runtime`, `allocation_cache`; with them the `std` overlay (`patches/std-nife`, 4,486 lines) and `targets/` |
 | boot | 6 | `uefi_loader`, `boot_ladder`, the two consoles, `bitmap_font`, `sealed_pair` |
