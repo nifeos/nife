@@ -268,8 +268,7 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 ## Follow-on
 
 - **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked move work.
-- **Outstanding.** Items 9, 11 and 12, and the names of item 7: checked against
-  `crates/subtree_scope/src/lib.rs`, none exists.
+- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB, and the names of item 7.
 - **Outstanding.** The crate's name is the architect's; the decision section puts it with a
   recommendation, and no ruling exists in the tree.
 
