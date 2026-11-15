@@ -12,8 +12,8 @@ library of components from which the project builds several operating systems. C
 `nifeos/nife@a3c7d4647` and `nifeos/basalt@ecdfee7`, and each gives its command so a reviewer can
 take it again at merge. On 2026-11-14 (UTC) the architect ruled question 1, what the layer above a
 kernel is, and rulings 2 to 6: the capability binary interface's name, the organization, the
-library, the distribution and the kernels. This file states those rules and the names still to
-choose. The appendix, [the five
+library, the distribution and the kernels. On 2026-11-15 (UTC) the architect named the
+organization and the library. This file states those rules and the names still to choose. The appendix, [the five
 layers](0323-the-binary-interface-and-the-names-of-the-layers/the-five-layers.md), holds the
 inventory, the reversibility of each layer and every candidate name with its checks.
 
@@ -199,25 +199,30 @@ of `crates/abi` to `moho_abi`. The names inside binaries stay as they are: the E
 They fall under the wire-literal exemption, ruled 2026-11-14 (UTC): a marked owner string, section
 name or magic may spell nife.
 
-## The organization stays nifeos for now
+## The organization and the library are partsfoundry
 
-Ruled 2026-11-14 (UTC).
+Ruled 2026-11-14 (UTC) that the organization and the library share one name, and ruled 2026-11-15
+(UTC) that the name is `partsfoundry` (Parts Foundry).
 
-- The GitHub organization stays `nifeos` for now.
-- The organization's name and the library's name are one decision, ruling 4, taken before the
-  first crates.io publish.
-
-## The organization and the library share one name
-
-Ruled 2026-11-14 (UTC).
-
-- The organization and the library share one name. The organization expects to take the
-  library's name, and the domain is that name plus `.org`.
-- The architect chooses the name before the first crates.io publish. Availability checks come
-  first, and they come back to the architect before any rename. OSOS (open source operating
-  systems) is a candidate, to use if it is available.
+- The organization and the library are named `partsfoundry`, written Parts Foundry in prose. The
+  domain is `partsfoundry.org`.
+- The GitHub organization is still `nifeos` today. It takes the new name in a later step.
 - Crate names stay descriptive, and the page-contract crates take no common prefix. The project
   can add a prefix later, but it cannot take one away.
+- `nife`, `basalt` and Moho keep their names. `basalt.nifeos.org` stays valid for installed
+  images, as §250 (an image names its distribution's package index) requires.
+
+What the ruling does not do. It creates no GitHub organization, moves no repository from
+`nifeos`, registers no domain and builds no website. Each of those four steps waits for a separate
+go from the architect, and all four come before the first crates.io publish. No repository, organization or
+domain is created yet, and nothing else is renamed.
+
+The checks, run 2026-11-15 (UTC). `partsfoundry` and its variants (`parts_foundry`,
+`parts-foundry`, `partfoundry`) are free on crates.io and on GitHub, and free as `.org`, `.io` and
+`.net` domains. `.dev` is free by RDAP. `partsfoundry.com` is registered (2022) and parked. No
+company, product or mark named exactly Parts Foundry turned up, though no trademark register was
+searched. Web results are crowded with metal-casting suppliers, and a search for "parts foundry
+rust" lands on the Ethereum Foundry toolkit. The appendix lists the candidates that lost and why.
 
 ## basalt stays the distribution for Moho
 
@@ -247,12 +252,15 @@ All six are ruled, hardest to change first.
 2. The capability binary interface's name. Ruled 2026-11-14 (UTC): Moho, with the ABI crate
    `moho_abi`, and `nife` stays the capability microkernel's name. The ambient-authority binary
    interface's name is still to choose.
-3. The organization. Ruled 2026-11-14 (UTC): it stays `nifeos` for now.
+3. The organization. Ruled 2026-11-14 (UTC): it stays `nifeos` until the library is named. Ruled
+   2026-11-15 (UTC): it takes the library's name, `partsfoundry`, with the domain
+   `partsfoundry.org`. Creating the organization and moving repositories each wait for a separate
+   go. GitHub redirects most of an organization rename, every image names the domain, and anyone
+   may claim an organization's old name.
 4. The library. Ruled 2026-11-14 (UTC): the organization and the library share one name, the domain
-   is that name plus `.org`, and the page-contract crates take no common prefix. The architect
-   chooses the name before the first crates.io publish, after its checks. GitHub redirects most of
-   an organization rename, every image names the domain, and anyone may claim an organization's old
-   name.
+   is that name plus `.org`, and the page-contract crates take no common prefix. Ruled 2026-11-15
+   (UTC): the name is `partsfoundry` (Parts Foundry). The checks and the candidates that lost are
+   in the appendix.
 5. Distributions. Ruled 2026-11-14 (UTC): `basalt` stays, for the Moho binary interface, and picks
    the kernel per image. An ambient-authority distribution takes its name later.
 6. Individual kernels. Ruled 2026-11-14 (UTC): each kernel has a name of its own, `nife` stays the
@@ -260,10 +268,9 @@ All six are ruled, hardest to change first.
 
 ## The names still to choose
 
-Each of these is chosen before it is first published, with its availability checked first.
+Each of these is chosen before it is first published, with its availability checked first. Three
+names stay open.
 
-- The shared name of the organization and the library, which sets the domain (ruling 4). OSOS is a
-  candidate.
 - The ambient-authority binary interface's name (ruling 2).
 - The name of each further kernel, starting with the capability monokernel (ruling 6).
 - The name of a distribution for the ambient-authority binary interface, once one exists (ruling
@@ -276,6 +283,9 @@ Each of these is chosen before it is first published, with its availability chec
   settles the name, and the rename in code (1,784 uses in 238 files, none in basalt) waits on the
   plan lane above. The crate has to publish, because a crates.io crate cannot depend on a git crate,
   so a `getrandom` backend needs it. Both capability kernels share it.
-- The website's domain, from milestone 1018 (the design record moves to `nifeos/record` and is
-  published as a website), and the rule that a leaving crate never mentions nife (now the name of
-  one kernel). Both wait on the choice of the shared name.
+- Four steps, each waiting for a separate go from the architect and all before the first crates.io
+  publish: creating the `partsfoundry` GitHub organization, moving repositories from `nifeos`,
+  registering `partsfoundry.org` and building the website. The website's domain comes from
+  milestone 1018 (the design record moves to `nifeos/record` and is published as a website), which
+  now has its name. The rule that a leaving crate never mentions nife (now the name of one
+  kernel) is unchanged.
