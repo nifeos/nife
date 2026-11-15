@@ -32,7 +32,7 @@ const REPORT: u64 = 2;
 
 /// The NVMe window, the block channel's address on every program that speaks `blk`. Read-only
 /// here; the controller writes it by DMA.
-const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
+const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 /// The client windows, directly above the block channel, as `redoxfs_server` lays them out:
 /// `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes in one run, window `badge` per
 /// request (milestone 599 (a frame per filesystem client channel)'s pattern).

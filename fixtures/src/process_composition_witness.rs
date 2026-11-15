@@ -41,7 +41,8 @@ use capability_witness_contract::process_composition::{
 use process_builder::{build_child_space, configure_child, start_child};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    address_space_map_into, exit, receive, retype_into_kernel_object, retype_into_page_frame, send,
+    address_space_layout_into, exit, receive, retype_into_kernel_object, retype_into_page_frame,
+    send,
 };
 
 const MEMORY_REGION: u64 = 0;
@@ -53,7 +54,7 @@ const INPUT: u64 = 9;
 
 /// Where the witness maps a frame of its own into the child's space for milestone 19b's probe: in
 /// the pair band, so nothing the loader lays down can be there already.
-const VA: u64 = address_space_map::pair_page(0x0040_0000);
+const VA: u64 = address_space_layout::pair_page(0x0040_0000);
 
 user_mode_runtime::program_entry!(start);
 
@@ -97,10 +98,10 @@ fn compose(initial_ramdisk_len: u64) -> u64 {
     let frame = retype_into_page_frame(MEMORY_REGION);
     if frame >= 0 {
         let frame = frame as u64;
-        if address_space_map_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) == 0 {
+        if address_space_layout_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) == 0 {
             verdict |= FRAME_MAPPED;
         }
-        if address_space_map_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) < 0 {
+        if address_space_layout_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) < 0 {
             verdict |= DOUBLE_MAP_REFUSED;
         }
     }

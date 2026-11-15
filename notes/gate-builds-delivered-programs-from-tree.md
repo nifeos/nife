@@ -94,7 +94,7 @@ What a gate build needs:
 - A C compiler with the AArch64, RISC-V and x86 backends. `script/bootstrap` installs one when
   none is present (`have_cross_clang`). basalt pins clang 19 (`NIFE_CC=clang-19`) so its digests
   reproduce; a gate build does not need basalt's digests (below), so the bootstrap's clang serves.
-- Network for the pinned sources: ioping's and hackbench's C files, SQLite's amalgamation zip,
+- Network for the pinned sources: ioping's C file, SQLite's amalgamation zip,
   ripgrep and its crates from crates.io. The recipe checks each by SHA-256, and cargo by `Cargo.lock`.
 - basalt's build script and recipes, at the basalt commit `xtask/basalt-pin` names. The gate
   already reads that commit's recipes over the network (`pinned_index`); reading

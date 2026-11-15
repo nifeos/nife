@@ -6,7 +6,7 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at `137639a3` and 
 crate standing alone with a literal manifest (`rust-version = "1.87"`, `license = "MIT OR
 Apache-2.0"`, the three template lints inline):
 
-- In the tree, with the pinned nightly: `cargo test -p address_space_map`, 6 unit tests and 1
+- In the tree, with the pinned nightly: `cargo test -p address_space_layout`, 6 unit tests and 1
   documentation test, all green.
 - Standing alone, the test target does not compile: `include_str!("../../user_mode_runtime/link.ld")`
   has nothing to read. With that one test removed, on stable 1.99.1: 5 unit tests and 1

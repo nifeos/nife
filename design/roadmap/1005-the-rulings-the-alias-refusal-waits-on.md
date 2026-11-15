@@ -152,7 +152,7 @@ the leaf is live.
 forgets the record if the map fails. A path cannot install a recorded leaf without passing the check.
 
 - (b) The hold. Ruled, because the dispatcher alone leaves a reachable hole (the example below).
-- (a) The dispatcher, in `address_space_map_into`. One call site. It sees every mapping already in
+- (a) The dispatcher, in `address_space_layout_into`. One call site. It sees every mapping already in
   the log, however made, so it catches writable-then-code. It misses code-then-writable when the
   writable half comes through `PageFrame::MAP`.
 - (c) Both. More code for the same guarantee as (b).

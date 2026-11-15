@@ -57,7 +57,7 @@ What fails today, read from the code: `MAP` refuses, the allocator returns null,
 ## What the tree has, read on 2026-10-06 (UTC)
 
 The allocator already grows lazily. `user_mode_runtime::heap` and `std`'s restatement map pages one
-`MAP` at a time, geometrically, into `address_space_map::HEAP`, a 256 MiB band at `0x4000_0000`.
+`MAP` at a time, geometrically, into `address_space_layout::HEAP`, a 256 MiB band at `0x4000_0000`.
 Missing is a second source of pages once the first region is spent.
 
 `memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY` and `USAGE`. Nothing grows or

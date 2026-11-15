@@ -26,9 +26,9 @@ use crate::revoke::PageMapSource;
 
 /// Where the recorded mapping lands. Two distinct low addresses, so a walk of one space's tables
 /// can never be mistaken for a walk of the other's.
-const RECORDED_VA: u64 = address_space_map::pair_page(0x0050_0000);
+const RECORDED_VA: u64 = address_space_layout::pair_page(0x0050_0000);
 /// Where the kernel-wired mapping lands.
-const WIRED_VA: u64 = address_space_map::pair_page(0x0060_0000);
+const WIRED_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// A page wired into an address space by the kernel must be unmapped when its frame is revoked.
 ///
