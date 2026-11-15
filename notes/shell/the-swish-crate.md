@@ -124,7 +124,7 @@ arrives it is another row, not another command.
 ## What a word designates
 
 `swish::words` decides whether a word is a designation to resolve or text to print. It asks
-`glob::has_magic` first, because an `echo` word is arbitrary text: `a:b` is not a path and must not
+`byte_glob::has_magic` first, because an `echo` word is arbitrary text: `a:b` is not a path and must not
 be refused as one. A pattern anywhere but the last component is refused, since selecting
 directories to walk is an authority question (notes/glob.md).
 

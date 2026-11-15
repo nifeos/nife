@@ -10,14 +10,14 @@ workspace = true
 
 [dependencies]
 
-# The matcher, and only the matcher. `glob` is a total function on two byte strings with no
+# The matcher, and only the matcher. `byte_glob` is a total function on two byte strings with no
 # filesystem in it; deciding what a match *grants* is command-line logic, which is this crate's job.
 # Depending on it here is what makes "one matcher, driven by both `echo` and the grant planner" true
 # in the code rather than a convention two callers are trusted to keep.
 # The `version` is required, not decoration: cargo-deny treats a path dep with no version as a
 # wildcard, and `allow-wildcard-paths` deliberately does not exempt a crate that other crates depend
 # on. `grant_plan` is depended on by `user` and `kernel`, so it is exactly that case.
-glob = { version = "0.1.0", path = "../glob" }
+byte_glob = { version = "0.1.0", path = "../byte_glob" }
 
 # The declarations a line is planned against: the manifest types, the slot numbers and the narrowing
 # by verb. A program reads them without linking this parser.

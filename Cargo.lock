@@ -117,6 +117,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "filesystem_fixture",
+]
+
+[[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
 dependencies = [
@@ -476,7 +484,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
- "pci",
+ "pci_configuration_space",
  "startup_page_contract",
 ]
 
@@ -620,14 +628,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-dependencies = [
- "filesystem_contract",
- "filesystem_fixture",
-]
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -650,8 +650,8 @@ dependencies = [
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "filesystem_contract",
- "glob",
  "grant_contract",
  "program_argument_contract",
  "program_table",
@@ -891,7 +891,7 @@ dependencies = [
  "nifefs",
  "page_frames",
  "paging",
- "pci",
+ "pci_configuration_space",
  "periodic_deadline",
  "primitive_benchmark_contract",
  "program_table",
@@ -1125,7 +1125,7 @@ name = "paging"
 version = "0.1.0"
 
 [[package]]
-name = "pci"
+name = "pci_configuration_space"
 version = "0.1.0"
 dependencies = [
  "device_tree_blob",
@@ -1140,7 +1140,7 @@ name = "pgrep"
 version = "0.1.0"
 dependencies = [
  "abi",
- "glob",
+ "byte_glob",
  "ps",
 ]
 
@@ -1478,10 +1478,10 @@ dependencies = [
 name = "swish"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "documentation",
  "environment_contract",
  "filesystem_contract",
- "glob",
  "grant_contract",
  "grant_plan",
  "installed_programs",

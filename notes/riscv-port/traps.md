@@ -180,7 +180,7 @@ only a context that enables a source may complete it. An ACKNOWLEDGE with no cla
 source at its target instead.
 
 PCI functions on QEMU `virt` raise INTx through the standard swizzle onto PLIC inputs 32 to 35,
-which the machine's device tree states and `crates/pci`'s fixture test holds the formula against. So
+which the machine's device tree states and `crates/pci_configuration_space`'s fixture test holds the formula against. So
 `alloc_msi_vector` answers `None` and `kernel/src/pci.rs` falls back to INTx. That is not "MSI is
 unsupported on RISC-V": the AIA's IMSIC is the same mechanism, and a board with one would implement
 it there. Nothing here needs it, and a routing path with no consumer cannot be known to work
@@ -190,7 +190,7 @@ x86_64)](../../design/roadmap/0215-x86-64-pci-interrupt-routing.md) says why x86
 No device here interrupts at bring-up without input or a disk, so the self-test's `device_interrupt`
 check
 reports itself absent. A device line is proved where one exists: the user-level input driver at the
-hand-over, and the `blockdev` check's driver when a disk is attached.
+hand-over, and the `block_device` check's driver when a disk is attached.
 
 ## BUGS
 

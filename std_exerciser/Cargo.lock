@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+
+[[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
@@ -64,10 +68,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "grant_contract"
 version = "0.1.0"
 dependencies = [
@@ -78,7 +78,7 @@ dependencies = [
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
- "glob",
+ "byte_glob",
  "grant_contract",
  "program_argument_contract",
 ]

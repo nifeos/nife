@@ -92,7 +92,7 @@ package leaves as soon as the shared crates it links have left, in the order `di
 consumer outside nife reads. Ruled the same day: one repository per contract crate, created when
 the crate moves and only with the architect's approval of that exact repository. No lane creates
 one. A repository per package or per layer is refused. The four crates whose disposition is contribute
-(`globally_unique_identifier_partition_table`, `glob`, `domain_name_system`, `calendar`) move in this
+(`globally_unique_identifier_partition_table`, `byte_glob`, `domain_name_system`, `calendar`) move in this
 order too (ruled 2026-11-01 UTC); only the offer waits.
 
 | step | crates | why here |
@@ -102,7 +102,7 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
 | 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime`, then `interfaces_note` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2. `interfaces_note`, the `INTERFACES` leaf crate (provisional), already holds the note type inside nife and leaves like any leaf (below) |
 | 4, first package | `disk-tools` | leaves as soon as its 12 crates and `interfaces_note` have left; milestone 756's condition 4 has it carry the `INTERFACES` macro, and it never waits for `grant_plan` |
-| 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
+| 5, leaves for `process-tools` | `byte_sink_contract`, `byte_glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
 | 7, second package | `process-tools` | leaves once its shared crates have, taking `number_writer` |
 | 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates `core-tools` reaches; the kernel links both; the third package leaves as soon as they have |

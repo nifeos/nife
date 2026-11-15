@@ -1,9 +1,9 @@
 //! **What the kernel hands the progenitor for the boot self-test's userspace half** (milestone
 //! 1063): the page that carries the kernel's half (`boot_ladder::kernel_half`), the JH7110 TRNG
-//! service the `clock` and `trng` checks read, and disk 0's virtio trio for `blockdev`. The
-//! progenitor passes all of it to `boot_self_test` and keeps none of it. On a machine with a screen
-//! it also grants the endpoint the verdict comes back on, for the kernel to paint
-//! ([`paint_the_verdict`]). See notes/self-test-checks.md, "The two halves".
+//! service the `clock` and `true_random_number_generator` checks read, and disk 0's virtio trio for
+//! `block_device`. The progenitor passes all of it to `boot_self_test` and keeps none of it. On a
+//! machine with a screen it also grants the endpoint the verdict comes back on, for the kernel to
+//! paint ([`paint_the_verdict`]). See notes/self-test-checks.md, "The two halves".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`.
@@ -13,7 +13,7 @@
 //! - The JH7110 TRNG service and disk 0's grant are started here, in the hand-over, by the kernel:
 //!   milestone 811 (the boot services leave the kernel) moves every such starter to userspace.
 //! - A TRNG service that never sends its readiness report leaves a kernel thread parked on the
-//!   receive; the boot carries on after five seconds and `trng` says why.
+//!   receive; the boot carries on after five seconds and `true_random_number_generator` says why.
 //! - A progenitor that never sends on the screen endpoint, because the program died before its
 //!   verdict or was never built, leaves [`paint_the_verdict`]'s kernel thread parked on its
 //!   receive for the life of the boot.
@@ -132,7 +132,7 @@ fn paint_the_verdict() -> Option<crate::sched::RendezvousId> {
     crate::sched::spawn(move || {
         let [packed, ..] = crate::sched::ipc_receive(verdict);
         let tally = boot_ladder::verdict::Tally::from_packed(packed);
-        crate::console::paint_on_screen(format_args!("{}\n", tally.verdict()));
+        crate::console::paint_on_screen(format_args!("{}\n", tally.verdict(crate::console::HEADS)));
     })?;
     Some(verdict)
 }
@@ -149,7 +149,7 @@ fn insert(
     assert_eq!(at, slot);
 }
 
-/// **Disk 0 for `blockdev`**: virtio-mmio first, else the PCIe virtio-blk, registered with the
+/// **Disk 0 for `block_device`**: virtio-mmio first, else the PCIe virtio-blk, registered with the
 /// kernel's virtio confinement, its interrupt routed and enabled, and a zeroed DMA page that
 /// records its own physical base (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`).
 /// The hand-over's file service, installer and surveyor use disks of their own. `None` with no
@@ -269,7 +269,7 @@ fn start_jh7110_trng(half: &mut KernelHalf) -> Option<crate::sched::RendezvousId
     if !DONE.load(Ordering::SeqCst) {
         return None;
     }
-    half.flags |= flag::RANDOM_NUMBER_GENERATOR_ANSWERED;
+    half.flags |= flag::TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED;
     half.words[word::RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS] =
         crate::arch::timer::now().wrapping_sub(start);
     for (i, slot) in REPORT.iter().enumerate() {
