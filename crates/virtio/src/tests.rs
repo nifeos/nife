@@ -226,7 +226,7 @@ fn a_reset_waits_for_status_to_read_back_as_zero() {
 }
 
 #[test]
-fn a_device_without_version_1_is_refused_and_the_acknowledgement_stays_a_subset_of_the_offer() {
+fn a_device_without_version_1_is_refused_and_only_offered_features_are_accepted() {
     // No VERSION_1 offered: refused, whatever else is offered.
     assert_eq!(acknowledged_high_features(0), None);
     assert_eq!(acknowledged_high_features(F_ACCESS_PLATFORM_HI), None);
