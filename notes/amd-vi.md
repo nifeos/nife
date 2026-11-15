@@ -29,7 +29,7 @@ Two seam changes were forced by the hardware, and both reach the other architect
   names its format, and x86's asks which unit is up.
 - **`PageFormat::table_entry` takes the level.** An AMD-Vi directory entry carries `NextLevel`
   (bits 11:9), the level of the table it points at. There is no level-free encoding of it, and a
-  wrong value is a skipped level rather than a typo. `paging::x86_64::AmdVi` is the format.
+  wrong value is a skipped level rather than a typo. `page_tables::x86_64::AmdVi` is the format.
 
 ## The device table, and the one entry that denies everything
 

@@ -51,7 +51,7 @@ const SURFACE_FRAME: u64 = 3;
 
 /// Where this program puts the surface. **Its choice, not the kernel's**: it holds the frames and
 /// maps them (milestone 108).
-const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 /// Failure codes, reported in a `0xDEAD_...` word so a failure names its step.
 const E_INFO: u64 = 0x01;

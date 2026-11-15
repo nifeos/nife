@@ -4,9 +4,9 @@ abi register_names 9
 address_space_identifier abbreviations 10
 address_space_identifier prose_acronyms 4
 address_space_identifier readme_acronyms 4
-address_space_map abbreviations 16
-address_space_map prose_acronyms 2
-address_space_map register_names 5
+address_space_layout abbreviations 16
+address_space_layout prose_acronyms 2
+address_space_layout register_names 5
 allocation_cache abbreviations 1
 approval_file abbreviations 13
 approval_file prose_acronyms 3
@@ -218,9 +218,9 @@ page_frames abbreviations 8
 page_frames prose_acronyms 3
 page_frames readme_acronyms 1
 page_frames register_names 6
-paging abbreviations 172
-paging prose_acronyms 57
-paging register_names 22
+page_tables abbreviations 172
+page_tables prose_acronyms 57
+page_tables register_names 22
 pci_configuration_space abbreviations 134
 pci_configuration_space prose_acronyms 27
 pci_configuration_space readme_acronyms 3

@@ -4,7 +4,7 @@
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
 //! serves.
 
-use address_space_map::{PAGE, pair_page};
+use address_space_layout::{PAGE, pair_page};
 use startup_page_contract::WindowKind;
 
 /// The DMA region, `e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The virtio server's one DMA

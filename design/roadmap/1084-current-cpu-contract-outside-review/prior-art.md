@@ -16,7 +16,7 @@ Where this crate differs: the address stays fixed and the same on three architec
 registration syscall exists and the first instruction of a thread can already read it. The word is
 a `u64` and the sentinel is `u64::MAX`, so zero is a real answer. The magic, not the value, refuses a zeroed frame. The bound a consumer sizes arrays by is a compile-time constant
 (`CPU_ID_BOUND`, 8). Two binaries must agree on it, where Linux leaves it to a run-time query. The
-page also carries the process's core allowance and the scheduler tick, which `rseq` does not. `rseq` carries `node_id` and `mm_cid`, which this page does not. The sibling hard-codes its address and depends on nothing. This crate takes its address from `address_space_map`.
+page also carries the process's core allowance and the scheduler tick, which `rseq` does not. `rseq` carries `node_id` and `mm_cid`, which this page does not. The sibling hard-codes its address and depends on nothing. This crate takes its address from `address_space_layout`.
 
 A concrete example of the difference that matters (item 5): an `rseq` reader that gets `cpu_id` 9
 on a machine it sized for 8 has made its own mistake, because it chose the size at run time. A

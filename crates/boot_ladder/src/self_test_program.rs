@@ -1,6 +1,6 @@
 //! **How the progenitor endows `boot_self_test`, and what the program says back** the capability slots, the pair-page
 //! addresses, the image table and the two messages the progenitor and the program agree on. A user
-//! of an address wraps it in `address_space_map::pair_page`, so an address off the map stops that
+//! of an address wraps it in `address_space_layout::pair_page`, so an address off the map stops that
 //! build.
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane

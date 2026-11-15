@@ -104,7 +104,7 @@ That is a result worth stating plainly rather than leaving as a gap: the answer 
 nowhere else the host pass can reach. The other three host facts a test could accidentally
 assume were swept for too, and the answer is better than expected rather than merely empty.
 `target_pointer_width` and `target_endian` appear nowhere in this tree's Rust at all. The one
-`PAGE_SIZE` in a host-tested crate (`crates/paging`) is a plain `4096` with no `cfg(target_arch)`
+`PAGE_SIZE` in a host-tested crate (`crates/page_tables`) is a plain `4096` with no `cfg(target_arch)`
 near it. Page size here is a *parameter* threaded through the API (`Segment::page_range`
 takes it, and `elf`'s fuzz target deliberately drives both 4 KiB and 16 KiB) rather than a fact read
 off the host. The machine number was the only host fact any of this code had baked in.

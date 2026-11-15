@@ -5,9 +5,9 @@ use crate::user::holding::Holding;
 
 /// The VAs `components/src/line_editor.rs` hardcodes for its console and application pages. Must match
 /// that file's `CONOUT_VA`, `APP_OUT_VA`, `APP_IN_VA`.
-const CONOUT_VA: u64 = address_space_map::pair_page(0x0060_0000);
-const APP_OUT_VA: u64 = address_space_map::pair_page(0x0080_0000);
-const APP_IN_VA: u64 = address_space_map::pair_page(0x0090_0000);
+const CONOUT_VA: u64 = address_space_layout::pair_page(0x0060_0000);
+const APP_OUT_VA: u64 = address_space_layout::pair_page(0x0080_0000);
+const APP_IN_VA: u64 = address_space_layout::pair_page(0x0090_0000);
 
 /// A running `line_editor` and the raw physical pages a test needs to drive it directly, playing
 /// both the input driver and the application on the one terminal endpoint, which the contract

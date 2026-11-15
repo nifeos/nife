@@ -35,7 +35,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   the room, every ring offset is inside the region, and the PHY link decode returns a link only
   the registers justify.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**, which is codebase
-  rule 2 (a driver gets what it needs passed in): inline `address_space_map::pair_page`
+  rule 2 (a driver gets what it needs passed in): inline `address_space_layout::pair_page`
   (`src/lib.rs`), and have the caller pass the register region instead of `jh7110::discover` and
   `discover_aon_syscon` reading a `DeviceTreeBlob`. The device-tree queries move to the kernel side,
   which already depends on `device_tree_blob`. The tests also `include_bytes!` a fixture from

@@ -30,7 +30,7 @@ true first, and only one of them was.
 ### 1. User mappings must be ASID-tagged
 
 They already were, and by omission rather than by design. Sv39's `G` bit marks a mapping global,
-matching under any ASID; `paging::Sv39` sets it from `Flags::is_global()`, which the kernel
+matching under any ASID; `page_tables::Sv39` sets it from `Flags::is_global()`, which the kernel
 constructors set and the user constructors do not. So a user PTE was already non-global and its TLB
 entries already carried whatever `satp.ASID` was live during the walk. Nothing depended on that
 before, which is exactly why it was worth checking rather than assuming.

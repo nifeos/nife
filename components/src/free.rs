@@ -45,8 +45,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: machine_statistics_contract::INTERFACE_ID,

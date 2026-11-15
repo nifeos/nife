@@ -10,7 +10,7 @@ use super::*;
 /// Where the kernel maps the initial ramdisk archive, read-only. Must match
 /// `kernel::user::INITIAL_RAMDISK_VIRTUAL_ADDRESS`.
 pub(super) const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 =
-    address_space_map::runtime_window(0x2000_0000);
+    address_space_layout::runtime_window(0x2000_0000);
 
 /// Stack pages every child the progenitor builds gets, mapped down from
 /// `supervision_contract::CHILD_STACK_VA`; measured, with four pages of headroom.
@@ -34,12 +34,12 @@ pub const SHELL_STACK_PAGES: u64 = 21;
 
 /// Where a child that declares a clock maps it, read-only. Must match `components/src/date.rs`'s
 /// `CLOCK_VA` and `kernel/src/user/clock_service.rs`.
-pub(super) const CHILD_CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
+pub(super) const CHILD_CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
 
 /// Where a child that declares the inert-configuration page maps it, read-only (DECISIONS §111
 /// (inert configuration is a validated page)). Must match `components/src/printenv.rs`'s
 /// `CONFIG_VA`. `std_service.rs`'s `CONFIG_PAGE_STD` is another wiring's, and need not agree.
-pub(super) const CHILD_CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
+pub(super) const CHILD_CONFIG_VA: u64 = address_space_layout::pair_page(0x00e0_0000);
 
 /// **Whether the boot prompt's session is handed the machine statistics page**: the owner's
 /// switch for DECISIONS §225 (`free` sees the machine and your share) part 2, which grants the page
@@ -56,7 +56,7 @@ pub const GRANT_MACHINE_PAGE: bool = true;
 /// Where a supervised (interruptible) child maps its shared job frame (DECISIONS §24
 /// (interrupting the foreground process)). Must match `interrupt_heeder.rs` and
 /// `interrupt_ignorer.rs`'s `JOB_PAGE_FRAME_VA`.
-pub(super) const CHILD_JOB_PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0030_0000);
+pub(super) const CHILD_JOB_PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0030_0000);
 
 /// Pages of untyped split off our own budget and handed the shell, which endows the programs it
 /// spawns (`run --mem N`) from it. A session budget, not a renewable one. The number is
@@ -98,11 +98,11 @@ pub(super) const CARETAKER_STACK_PAGES: u64 = 4;
 ///
 /// One address for both, because a request travels caretaker-to-server and program-to-caretaker
 /// through the same frame.
-pub(super) const FS_CLIENT_PAGE_VA: u64 = address_space_map::pair_page(0x0060_0000);
+pub(super) const FS_CLIENT_PAGE_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// Where `fs_nameset_caretaker` reads its name set, read-only (milestone 205). Must match that
 /// program's `SET_VA`, as [`FS_CLIENT_PAGE_VA`] matches its `PAGE_VA`.
-pub(super) const NAMESET_PAGE_VA: u64 = address_space_map::pair_page(0x0070_0000);
+pub(super) const NAMESET_PAGE_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 
 /// **The job pool**: six live native jobs and one `std` program's region
 /// ([`grant_plan::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
@@ -138,13 +138,13 @@ const _: () = assert!(
 ///
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_OUT_VA`.
 pub(super) const PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS: u64 =
-    address_space_map::pair_page(0x0f00_0000);
+    address_space_layout::pair_page(0x0f00_0000);
 
 /// Where the progenitor briefly maps the virtio-rng DMA page, in **its own** address space, to read
 /// [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`] back out before handing the
 /// same frame on to entropy. Given up with `UNMAP` the moment the offset is read (§249 (a running
 /// address space stays nameable)).
-pub(super) const RNG_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f10_0000);
+pub(super) const RNG_DMA_PEEK_VA: u64 = address_space_layout::pair_page(0x0f10_0000);
 
 /// The DMA region's own physical base, written inside the page itself at its last eight bytes
 /// (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which carries the
@@ -153,7 +153,7 @@ pub(super) const DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET: 
     abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
 
 /// Where entropy maps its own DMA page. Must match `components/src/entropy.rs`'s `DMA_VA`.
-pub(super) const RNG_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+pub(super) const RNG_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `components/src/entropy.rs`'s `MODE_VIRTIO`: a spawner's understanding with the one program it
 /// spawns, not a contract between two user programs, so rule 7 does not make it a crate.
@@ -166,11 +166,11 @@ pub(super) const RNG_MODE_VIRTIO: u64 = 0;
 /// Where this process briefly maps the network card's DMA page to read
 /// [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`] back out,
 /// [`RNG_DMA_PEEK_VA`]'s twin: given up with `UNMAP` once the offset is read.
-pub(super) const NET_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f30_0000);
+pub(super) const NET_DMA_PEEK_VA: u64 = address_space_layout::pair_page(0x0f30_0000);
 
 /// Where `net_stack` maps its DMA page. Must match `components/src/virtio_net_transport.rs`'s `DMA_VA`, the
 /// same kernel-and-spawner convention [`RNG_DMA_VA`] is.
-pub(super) const NET_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+pub(super) const NET_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `net_stack`'s heap budget, in pages: matches
 /// `kernel::user::virtio_service::NET_SERVER_BUDGET_PAGES`, which carries the measurement. A
@@ -212,10 +212,10 @@ pub(super) const LINE_EDITOR_MODE_CONSOLE: u64 = 0;
 pub(super) const LINE_EDITOR_MODE_DISPLAY: u64 = 1;
 
 // The VAs each program hardcodes; they must match console.rs / input.rs / line_editor.rs / swish.rs.
-pub(super) const CON_SHARED_VA: u64 = address_space_map::pair_page(0x0060_0000); // console reads text here; line_editor writes it
+pub(super) const CON_SHARED_VA: u64 = address_space_layout::pair_page(0x0060_0000); // console reads text here; line_editor writes it
 /// Where the console maps the page `display_terminal` reads an `OPERATION_WRITE`'s bytes from, when a
 /// screen was wired beside the UART. Must match `components/src/console.rs`'s `SCREEN_OUT_VA`.
-pub(super) const CON_SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
+pub(super) const CON_SCREEN_OUT_VA: u64 = address_space_layout::pair_page(0x0068_0000);
 /// `console.rs`'s own `MODE_SCREEN`: [`LINE_EDITOR_MODE_CONSOLE`]'s reasoning, one program over.
 /// `0`, what every other boot passes, is the UART alone.
 pub(super) const CONSOLE_MODE_SCREEN: u64 = 1;
@@ -223,28 +223,28 @@ pub(super) const CONSOLE_MODE_SCREEN: u64 = 1;
 /// `components/src/system_log.rs`'s `MODE_KERNEL`.
 pub(super) const LOG_MODE_KERNEL: u64 = 1;
 /// Where `system_log` finds the kernel's ring, read-only. Must match its `RING_VA`.
-pub(super) const LOG_RING_VA: u64 = address_space_map::pair_page(0x0070_0000);
+pub(super) const LOG_RING_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 /// Where `system_log` finds the kernel ring's cursor page. Must match its `CURSOR_VA`.
-pub(super) const LOG_CURSOR_VA: u64 = address_space_map::pair_page(0x0080_0000);
+pub(super) const LOG_CURSOR_VA: u64 = address_space_layout::pair_page(0x0080_0000);
 
 // The two UART mappings are aarch64/riscv64 only: x86 holds COM1 as a port range, which has no page
 // to map (milestone 299), so on that architecture these VAs name nothing and the console/input
 // drivers hold the port capability instead.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
-pub(super) const CON_UART_VA: u64 = address_space_map::pair_page(0x0070_0000); // console's UART mapping
+pub(super) const CON_UART_VA: u64 = address_space_layout::pair_page(0x0070_0000); // console's UART mapping
 // line_editor's own pages (the shell's text in, completed lines out) are declared with it now, in
 // `line_editor_component`, and `terminal_supervisor` maps them.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
-pub(super) const IN_UART_VA: u64 = address_space_map::pair_page(0x00a0_0000); // input driver's UART mapping
-pub(super) const SH_OUT_VA: u64 = address_space_map::pair_page(0x00c0_0000); // the shell's view of the TERM_OUT frame (swish.rs OUT_VA)
-pub(super) const LINE_VA: u64 = address_space_map::pair_page(0x00b0_0000); // the shell's view of the TERM_IN frame
-pub(super) const SH_FS_VA: u64 = address_space_map::pair_page(0x0060_0000); // the shell's half of the FS contract (swish.rs FS_VA)
+pub(super) const IN_UART_VA: u64 = address_space_layout::pair_page(0x00a0_0000); // input driver's UART mapping
+pub(super) const SH_OUT_VA: u64 = address_space_layout::pair_page(0x00c0_0000); // the shell's view of the TERM_OUT frame (swish.rs OUT_VA)
+pub(super) const LINE_VA: u64 = address_space_layout::pair_page(0x00b0_0000); // the shell's view of the TERM_IN frame
+pub(super) const SH_FS_VA: u64 = address_space_layout::pair_page(0x0060_0000); // the shell's half of the FS contract (swish.rs FS_VA)
 
 /// Where the **shell** maps its own read-only clock (milestone 86). Must match swish.rs's
 /// `SH_CLOCK_VA`. A different address from [`CHILD_CLOCK_VA`], because that is where a *child* maps
 /// its clock and the shell already maps the terminal's output frame there; two address spaces may
 /// agree on an address, one may not.
-pub(super) const SH_CLOCK_VA: u64 = address_space_map::pair_page(0x00d0_0000);
+pub(super) const SH_CLOCK_VA: u64 = address_space_layout::pair_page(0x00d0_0000);
 
 // -------------------------------------------------------------------------------------------
 // The login stack of milestone 49 (users and attribution): credentialer, identity_provisioner,
@@ -253,27 +253,27 @@ pub(super) const SH_CLOCK_VA: u64 = address_space_map::pair_page(0x00d0_0000);
 
 /// Where `credentialer` maps its own provision page. Must match `components/src/credentialer.rs`'s own
 /// `PROV_VA`.
-pub(super) const CRED_SVC_PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+pub(super) const CRED_SVC_PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 /// Where `credentialer` maps its own verify page. Must match the same file's `VERIFY_VA`.
-pub(super) const CRED_SVC_VERIFY_VA: u64 = address_space_map::pair_page(0x0000_0000_00e1_0000);
+pub(super) const CRED_SVC_VERIFY_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e1_0000);
 /// Where `login` maps its relay of the verify page (the same physical frame as
 /// [`CRED_SVC_VERIFY_VA`], mapped into a different address space). Must match `components/src/login.rs`'s
 /// own `CRED_VA`.
-pub(super) const LOGIN_CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
+pub(super) const LOGIN_CRED_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e3_0000);
 /// Where `identity_provisioner` maps the identity/secret this boot stages for it. Must match
 /// `components/src/identity_provisioner.rs`'s own `REQ_VA`.
-pub(super) const IDP_REQ_VA: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
+pub(super) const IDP_REQ_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e4_0000);
 /// Where `identity_provisioner` maps `credentialer`'s provision page (the same physical frame as
 /// [`CRED_SVC_PROV_VA`]). Must match the same file's own `PROV_VA`.
-pub(super) const IDP_PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+pub(super) const IDP_PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 /// Where `identity_provisioner` maps the file service's shared page. Must match the same file's own
 /// `FS_VA`.
-pub(super) const IDP_FS_VA: u64 = address_space_map::pair_page(0x0000_0000_00e5_0000);
+pub(super) const IDP_FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e5_0000);
 /// Where this process briefly maps the page it stages `identity_provisioner`'s request into, in its
 /// own address space, before delegating the same physical frame on. Distinct from every VA above
 /// (those are addresses inside a *child's* address space); in the same scratch family as
 /// [`RNG_DMA_PEEK_VA`] and [`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`].
-pub(super) const PROVISION_SCRATCH_VA: u64 = address_space_map::pair_page(0x0f20_0000);
+pub(super) const PROVISION_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0f20_0000);
 
 /// `credentialer`'s own construction budget, in pages: matches
 /// `kernel::user::credential_service::CRED_BUDGET_PAGES` (6 MiB, sized from `credentialer::Cost::DEFAULT`'s

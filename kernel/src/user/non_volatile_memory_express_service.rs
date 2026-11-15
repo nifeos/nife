@@ -38,16 +38,16 @@ use crate::non_volatile_memory_express::{Absent, Found};
 use crate::sched::RendezvousId;
 
 /// Where the admin process's BAR0 pages are mapped, device-typed and listed on its startup page.
-const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
+const REGISTERS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0098_0000);
 
 /// Where the admin process's admin pages of the DMA run are mapped, listed on its startup page.
-const ADMIN_QUEUES_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+const ADMIN_QUEUES_VA: u64 = address_space_layout::pair_page(0x0000_0000_009c_0000);
 
 /// Where the data plane maps the data-plane run it is granted; its spawn's second argument.
-const DATA_PLANE_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
+const DATA_PLANE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0098_0000);
 
 /// Where the data plane maps the doorbell page it is granted; its spawn's third argument.
-const DOORBELL_PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+const DOORBELL_PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_009c_0000);
 
 const _: () =
     assert!(DATA_PLANE_VA + DATA_PLANE_PAGES * page_frames::FRAME_SIZE <= DOORBELL_PAGE_VA);
