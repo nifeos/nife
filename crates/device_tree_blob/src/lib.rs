@@ -1,14 +1,14 @@
 //! A minimal flattened device tree (FDT) parser: bytes in, regions and property values out.
 //!
-//! The blob is the machine describing itself (where RAM, the UART and the interrupt controller
-//! are, how many CPUs exist), handed over by firmware: a bootloader, a UEFI stub or QEMU. Every
-//! integer in it is big-endian, so every read goes through `be32` or `be64`. The blob is untrusted
-//! input: every offset is checked, every walk is bounded, and a malformed blob is an [`Error`]
-//! rather than a panic. The crate is pure logic with no target code, so its tests run on the host
-//! against trees dumped from QEMU's `virt` machines and against hand-built hostile blobs.
+//! The blob is the machine describing itself (where RAM, the serial port and the interrupt
+//! controller are, how many CPUs exist), handed over by firmware: a bootloader, a UEFI loader or
+//! QEMU. Every integer in it is big-endian, so every read goes through `be32` or `be64`. The blob
+//! is untrusted input: every offset is checked, every walk is bounded, and a malformed blob is an
+//! [`Error`] rather than a panic. The crate is pure logic with no target code, so its tests run on
+//! the host against trees dumped from QEMU's `virt` machines and against hand-built hostile blobs.
 //!
-//! The format is the one the Devicetree Specification (release 0.4) defines in its chapter 5,
-//! "Flattened Devicetree (DTB) Format", and the one libfdt reads.
+//! The format is the flattened one that chapter 5 of the Devicetree Specification (release 0.4)
+//! defines, and the one libfdt reads.
 //!
 //! Name: ratified 2026-09-18 (§154 (the acronym test is whether the phrase is spoken)) and
 //! performed 2026-09-19. Refused `dtb`: "device tree blob" is a phrase people say, so the
