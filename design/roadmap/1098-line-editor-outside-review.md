@@ -162,8 +162,7 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
 
 ## Decisions for the architect
 
-Each gives the background first, then the recommendation. The engine's type and constant names are
-decided, provisionally.
+Each gives the background first, then the recommendation.
 
 ### Where the cut falls: `proto` and `component` leave the crate, `handoff` stays
 
@@ -206,8 +205,7 @@ whether it takes one under milestone 1017's family rule is not decided; none is 
 ### The engine's public type and constant names at release: `LineEditor` and `HISTORY_LINES`
 
 Background. `LineDisc` is an abbreviation of "line discipline", a word the crate name ruling
-refused as an overclaim; `HIST` is not a word and carries no `Name:` block. Both are the first
-names a user types. After the tag a rename is a breaking change to every user.
+refused as an overclaim; `HIST` is not a word and carries no `Name:` block. After the tag a rename is a breaking change to every user.
 
 Recommendation. `LineEditor` for the type, matching the crate (a crate that holds a component's
 logic takes the component's name) and the family (`rustyline::Editor`, `noline::Editor`);
@@ -218,13 +216,10 @@ Prior art. `rustyline` and `noline` call the type `Editor`; linenoise calls its 
 `linenoiseState` and its history size `history_max_len`; `reedline` uses the crate name.
 
 Concrete example. `components/src/swish/prompt.rs` holds `static mut EDITOR: line_editor::LineDisc`;
-after the rename the declaration reads `line_editor::LineEditor`, which is what the variable
-already calls it.
+after the rename the declaration reads `line_editor::LineEditor`.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. `LineDisc` becomes `LineEditor` and `HIST` becomes
-`HISTORY_LINES`, with no alias; `Event::Eof` keeps the standard library's spelling. Item 3 is the
-work.
+which the architect may revisit. The recommendation is the rule. Item 3 is the work.
 
 ### The three ratified limits, reopened under the unit rule
 
@@ -234,7 +229,7 @@ down as a rule. The rule in force now reads: a limit opens `MAXIMUM_` and ends w
 unit, and the release review rechecks a ratified name. These three are byte lengths.
 
 Recommendation. Rename before the tag to `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and
-`MAXIMUM_RAW_QUEUE_BYTES`, with no alias. Renaming later is the expensive direction.
+`MAXIMUM_RAW_QUEUE_BYTES`, with no alias.
 
 Prior art. POSIX `MAX_CANON` and `MAX_INPUT` are the same two limits with the unit implied;
 linenoise's `LINENOISE_MAX_LINE`; the tree's own `MAXIMUM_SURFACE_BYTES` and
@@ -264,8 +259,8 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 - **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
   program holds the two `QUIESCED` values equal.
-- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decisions 2 and 3; none was started, which a
-  read of the items against the crate confirms.
+- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decision 3; a read of the items against the
+  crate shows none started.
 - **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
   as open.
 
