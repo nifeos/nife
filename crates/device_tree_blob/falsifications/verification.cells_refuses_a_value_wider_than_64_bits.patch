@@ -10,7 +10,7 @@ Expected to fail: the harness's `assert!(value[..low].iter().all(|&byte| byte ==
 arm, for any value of three or more cells with a nonzero cell above the low two.
 
 diff --git a/crates/device_tree_blob/src/lib.rs b/crates/device_tree_blob/src/lib.rs
-index e2cc7dc99..2379ac49e 100644
+index 79c98ee22..f324b9eff 100644
 --- a/crates/device_tree_blob/src/lib.rs
 +++ b/crates/device_tree_blob/src/lib.rs
 @@ -1224,5 +1224,2 @@ fn cells(value: &[u8]) -> Result<u64, Error> {
@@ -18,4 +18,4 @@ index e2cc7dc99..2379ac49e 100644
 -        if number >> 32 != 0 {
 -            return Err(Error::BadValue);
 -        }
-         number = (number << 32) | u32::from_be_bytes(*cell) as u64;
+         // An add, not an or: the shift leaves the low 32 bits zero, so the two agree, and an add
