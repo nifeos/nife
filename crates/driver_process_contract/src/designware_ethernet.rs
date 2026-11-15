@@ -93,13 +93,13 @@ const TREE_NAMES_STATION: u64 = 1 << 48;
 ///
 /// Name: provisional.
 pub fn control_spawn_words(inputs: &Inputs) -> Option<[u64; 3]> {
-    let station = match inputs.station_address {
+    let station = match inputs.station_mac_address {
         Some(a) => station_word(a) | TREE_NAMES_STATION,
         None => 0,
     };
     Some([
         inputs.physical_layer_device.to_word()?,
-        inputs.region_physical_address | u64::from(inputs.physical_layer_device_address & 0x1f),
+        inputs.region_physical_address | u64::from(inputs.physical_layer_device_bus_address & 0x1f),
         station,
     ])
 }
@@ -124,8 +124,8 @@ pub fn control_inputs(words: [u64; 3]) -> Option<Inputs> {
     };
     Some(Inputs {
         region_physical_address,
-        station_address: tree_station,
-        physical_layer_device_address: (base & 0x1f) as u8,
+        station_mac_address: tree_station,
+        physical_layer_device_bus_address: (base & 0x1f) as u8,
         physical_layer_device,
     })
 }
@@ -273,17 +273,17 @@ fn outcome_code(outcome: Result<bool, Error>) -> (u64, u64) {
         Err(Error::Silent { version }) => (1, u64::from(version)),
         Err(Error::NoStationAddress) => (2, 0),
         Err(Error::ManagementDataIo(mdio::Error::Timeout {
-            physical_layer_device_address,
+            physical_layer_device_bus_address,
             register,
         })) => (
             3,
-            u64::from(physical_layer_device_address) | u64::from(register) << 8,
+            u64::from(physical_layer_device_bus_address) | u64::from(register) << 8,
         ),
         Err(Error::UnknownPhysicalLayerDevice { id }) => (4, u64::from(id)),
         Err(Error::Controller(controller::Error::ResetTimeout)) => (5, 0),
         Err(Error::Controller(controller::Error::RegionOutOfReach {
-            direct_memory_access_address_bits,
-        })) => (6, u64::from(direct_memory_access_address_bits)),
+            direct_memory_access_physical_address_bits,
+        })) => (6, u64::from(direct_memory_access_physical_address_bits)),
         Err(Error::Controller(controller::Error::FlushTimeout)) => (7, 0),
         Err(Error::NotCoherent(v)) => (8, verdict_code(v)),
     }
@@ -302,7 +302,7 @@ fn outcome_from_code(code: u64, detail: u64) -> Option<Result<bool, Error>> {
         3 => {
             let d = narrow(16)?;
             Err(Error::ManagementDataIo(mdio::Error::Timeout {
-                physical_layer_device_address: d as u8,
+                physical_layer_device_bus_address: d as u8,
                 register: (d >> 8) as u8,
             }))
         }
@@ -311,7 +311,7 @@ fn outcome_from_code(code: u64, detail: u64) -> Option<Result<bool, Error>> {
         }),
         5 => narrow(0).map(|_| Err(Error::Controller(controller::Error::ResetTimeout)))?,
         6 => Err(Error::Controller(controller::Error::RegionOutOfReach {
-            direct_memory_access_address_bits: narrow(8)? as u8,
+            direct_memory_access_physical_address_bits: narrow(8)? as u8,
         })),
         7 => narrow(0).map(|_| Err(Error::Controller(controller::Error::FlushTimeout)))?,
         8 => Err(Error::NotCoherent(verdict_from_code(detail)?)),
@@ -334,13 +334,13 @@ impl ControlReport {
     pub fn to_words(&self) -> [u64; ACCOUNT_WORDS] {
         let a = &self.account;
         let mut w = [0u64; ACCOUNT_WORDS];
-        w[0] = u64::from(a.version) | u64::from(a.direct_memory_access_address_bits) << 32;
+        w[0] = u64::from(a.version) | u64::from(a.direct_memory_access_physical_address_bits) << 32;
         w[1] = u64::from(a.physical_layer_device_id);
         if let Some((millivolts, source)) = a.physical_layer_device {
             w[0] |= HAS_PHYSICAL_LAYER_DEVICE;
             w[1] |= u64::from(millivolts & 0xff_ffff) << 32 | source_code(source) << 56;
         }
-        if let Some((station, source)) = a.station_address {
+        if let Some((station, source)) = a.station_mac_address {
             w[0] |= HAS_STATION;
             w[2] = station_word(station) | u64::from(source == AddressSource::Registers) << 48;
         }
@@ -377,7 +377,7 @@ impl ControlReport {
     pub fn from_words(w: &[u64; ACCOUNT_WORDS]) -> Option<ControlReport> {
         let mut a = Account {
             version: w[0] as u32,
-            direct_memory_access_address_bits: (w[0] >> 32) as u8,
+            direct_memory_access_physical_address_bits: (w[0] >> 32) as u8,
             physical_layer_device_id: w[1] as u32,
             resets_microseconds: [w[3], w[4]],
             link_wait_milliseconds: w[8],
@@ -395,7 +395,7 @@ impl ControlReport {
                 1 => AddressSource::Registers,
                 _ => return None,
             };
-            a.station_address = Some((station_from_word(w[2]), source));
+            a.station_mac_address = Some((station_from_word(w[2]), source));
         }
         if w[0] & HAS_COHERENCE != 0 {
             let payload = match (w[5] >> 8) & 0xff {
@@ -511,8 +511,8 @@ mod tests {
     fn inputs(station: Option<[u8; 6]>) -> Inputs {
         Inputs {
             region_physical_address: 0x4012_3000,
-            station_address: station,
-            physical_layer_device_address: 0,
+            station_mac_address: station,
+            physical_layer_device_bus_address: 0,
             physical_layer_device: Settings::FALLBACK_GMAC0,
         }
     }
@@ -523,7 +523,7 @@ mod tests {
     fn the_control_spawn_words_round_trip_and_refuse_stray_bits() {
         for station in [None, Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])] {
             let i = Inputs {
-                physical_layer_device_address: 7,
+                physical_layer_device_bus_address: 7,
                 ..inputs(station)
             };
             let [a0, a1, a2] =
@@ -550,13 +550,13 @@ mod tests {
             },
             Error::NoStationAddress,
             Error::ManagementDataIo(mdio::Error::Timeout {
-                physical_layer_device_address: 3,
+                physical_layer_device_bus_address: 3,
                 register: 0x1e,
             }),
             Error::UnknownPhysicalLayerDevice { id: 0x0102_0304 },
             Error::Controller(controller::Error::ResetTimeout),
             Error::Controller(controller::Error::RegionOutOfReach {
-                direct_memory_access_address_bits: 32,
+                direct_memory_access_physical_address_bits: 32,
             }),
             Error::Controller(controller::Error::FlushTimeout),
             Error::NotCoherent(Verdict::DeviceCannotSeeCpuWrites),
@@ -611,10 +611,10 @@ mod tests {
             let r = ControlReport {
                 account: Account {
                     version: 0x5251,
-                    direct_memory_access_address_bits: 40,
+                    direct_memory_access_physical_address_bits: 40,
                     physical_layer_device_id: 0x4f51_e91b,
                     physical_layer_device: Some((1800, SettingsSource::MainlineTree)),
-                    station_address: Some((
+                    station_mac_address: Some((
                         [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
                         AddressSource::Registers,
                     )),
@@ -658,10 +658,10 @@ mod tests {
                             let r = ControlReport {
                                 account: Account {
                                     version: 0x5251,
-                                    direct_memory_access_address_bits: 40,
+                                    direct_memory_access_physical_address_bits: 40,
                                     physical_layer_device_id: 0x4f51_e91b,
                                     physical_layer_device: Some((0xff_ffff, source)),
-                                    station_address: Some((
+                                    station_mac_address: Some((
                                         [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
                                         station_origin,
                                     )),
@@ -697,7 +697,7 @@ mod tests {
         let full = ControlReport {
             account: Account {
                 physical_layer_device: Some((1800, SettingsSource::Fallback)),
-                station_address: Some(([2, 0, 0, 0, 0, 1], AddressSource::Tree)),
+                station_mac_address: Some(([2, 0, 0, 0, 0, 1], AddressSource::Tree)),
                 coherence: Some((
                     Verdict::BusError,
                     Observation {
@@ -721,7 +721,7 @@ mod tests {
                 r.account.physical_layer_device = None;
             }
             if keep != 1 {
-                r.account.station_address = None;
+                r.account.station_mac_address = None;
             }
             if keep != 2 {
                 r.account.coherence = None;
@@ -744,7 +744,7 @@ mod tests {
     #[test]
     fn the_control_spawn_words_carry_the_largest_five_bit_device_number() {
         let i = Inputs {
-            physical_layer_device_address: 0x1f,
+            physical_layer_device_bus_address: 0x1f,
             ..inputs(None)
         };
         let words = control_spawn_words(&i).expect("fits");

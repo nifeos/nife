@@ -268,9 +268,11 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 
 ## BUGS
 
-- Items 1 (the address rule) and 11 are the template's to fix. Until they land, the crate cannot
-  reach zero findings without renames this block recommends against, and the move waits on them or
-  on an allowance file the template does not yet read.
+- Items 1 and 11 are built in the crate and not in the template: the address names say which
+  address they hold (`station_mac_address`, `physical_layer_device_bus_address`), and the two
+  `100BASE-TX` constants spell the physical layer out as `100BASE_TWISTED_PAIR`. Both are the
+  maintainer's provisional calls, which depart from this review's recommendation of a template
+  allowance, so the move does not wait on a template change.
 - The review did not verify item 16's question, which tree inverts the 10 Mbit/s transmit clock,
   against either device tree.
 - Items 15 and 17 cite Linux's `motorcomm.c` and the controller databook from memory, marked so in
@@ -288,11 +290,14 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
   `management_data_io` rename ruled the same day is built too.
 
-- **Outstanding.** The other review items stay open. Those are the manifest and README work (items
-  2 and 7 onward), the bounds on `receive` and `reclaim` (item 3) and the visibility rule for
-  register constants (item 6). They also include the template's address rule and acronym findings
-  (items 1 and 11) and the stranger run. The architect still has to rule the two Motorcomm alias
-  sets and the remaining renames the register gate names. A lane builds each ruling when it arrives.
+- **Done.** Items 1, 2, 3, 6, 7, 8, 10 and 11 are built. The crate passes the template's naming
+  and prose gates, bounds `receive` and `reclaim`, keeps `pub` only on the constants a caller
+  uses, names the board and its two device trees, and has the README's build, proof and
+  falsification sections with its example compiled by `cargo test`.
+
+- **Outstanding.** Item 9 is the move's own regeneration of the patches. The P2 items stay open. The
+  architect still has to rule the two Motorcomm alias sets and the remaining renames the register
+  gate names. A lane builds each ruling when it arrives.
 
 ## Index row
 

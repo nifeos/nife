@@ -1,11 +1,12 @@
 # designware_ethernet
 
 The logic of a driver for the Synopsys DesignWare Ethernet QoS controller (dwmac 4.x and 5.x
-descriptor format), with the glue for the StarFive JH7110 and its Motorcomm YT8531 PHY (physical
-layer device). It holds the register map, the descriptor formats, the direct memory access (DMA)
-region's layout, the receive and transmit rings, and the controller and PHY bring-up sequences. It
+descriptor format), with the glue for the StarFive JH7110 and its Motorcomm `YT8531` physical
+layer device. It holds the register map, the descriptor formats, the direct memory access (DMA)
+region's layout, the receive and transmit rings, and the controller and physical layer device bring-up sequences. It
 also holds MDIO (management data input/output) and a probe that measures whether device DMA is
-coherent with the CPU's caches. It is `no_std` and needs no allocator.
+coherent with the CPU's caches. The board is the StarFive VisionFive 2, which has two device trees,
+mainline Linux's and the vendor's own; the crate reads both. It is `no_std` and needs no allocator.
 
 It dereferences no pointer and touches no hardware. You supply register access through the
 `Hardware` trait, the DMA region through `DirectMemoryAccessRegion`, and the tail-pointer writes and
@@ -22,19 +23,19 @@ use designware_ethernet::{DataPlane, DirectMemoryAccessRegion, Tails, layout};
 
 struct Memory(Vec<u8>);
 impl DirectMemoryAccessRegion for Memory {
-    fn read_u64(&self, off: u64) -> u64 {
-        let mut b = [0; 8];
-        self.read_bytes(off, &mut b);
-        u64::from_le_bytes(b)
+    fn read_u64(&self, offset: u64) -> u64 {
+        let mut bytes = [0; 8];
+        self.read_bytes(offset, &mut bytes);
+        u64::from_le_bytes(bytes)
     }
-    fn write_u64(&mut self, off: u64, v: u64) {
-        self.write_bytes(off, &v.to_le_bytes());
+    fn write_u64(&mut self, offset: u64, value: u64) {
+        self.write_bytes(offset, &value.to_le_bytes());
     }
-    fn read_bytes(&self, off: u64, out: &mut [u8]) {
-        out.copy_from_slice(&self.0[off as usize..][..out.len()]);
+    fn read_bytes(&self, offset: u64, out: &mut [u8]) {
+        out.copy_from_slice(&self.0[offset as usize..][..out.len()]);
     }
-    fn write_bytes(&mut self, off: u64, src: &[u8]) {
-        self.0[off as usize..][..src.len()].copy_from_slice(src);
+    fn write_bytes(&mut self, offset: u64, source: &[u8]) {
+        self.0[offset as usize..][..source.len()].copy_from_slice(source);
     }
 }
 
@@ -47,12 +48,20 @@ impl Tails for NoDevice {
 
 let mut region = Memory(vec![0; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize]);
 let mut tails = NoDevice;
-let mut plane = DataPlane::new(0x4000_0000); // the region's physical address
-plane.start(&mut region, &mut tails); // posts the receive buffers
-plane.transmit(&mut region, &mut tails, &[0xff; 60]).unwrap();
-let mut buf = [0u8; 1514];
-assert_eq!(plane.receive(&mut region, &mut tails, &mut buf), None);
+let mut data_plane = DataPlane::new(0x4000_0000); // the region's physical address
+data_plane.start(&mut region, &mut tails); // posts the receive buffers
+data_plane.transmit(&mut region, &mut tails, &[0xff; 60]).unwrap();
+let mut frame_buffer = [0u8; 1514];
+assert_eq!(data_plane.receive(&mut region, &mut tails, &mut frame_buffer), None);
 ```
+
+## Building and testing
+
+`cargo build` and `cargo test` need no setup beyond a Rust toolchain at the minimum version below.
+`cargo test` runs the unit tests against the simulated controller and the example above as a
+documentation test. The crate is `no_std`, so `cargo build --target riscv64imac-unknown-none-elf`
+builds it for the bare-metal board target once `rustup target add riscv64imac-unknown-none-elf` has
+installed it. The Kani proofs under "What is proven" are the only part that needs extra tools.
 
 ## What is proven
 
@@ -65,29 +74,36 @@ Six Kani harnesses, in `src/proofs.rs`:
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
   lies inside its own part of the DMA region.
 - `a_link_is_decoded_only_from_what_the_registers_say`: for every value of the six clause 22
-  registers the decode reads, it returns a link only when the status bit is up and the PHY is not
+  registers the decode reads, it returns a link only when the status bit is up and the physical layer device is not
   isolated. With autonegotiation on, it returns one only when autonegotiation is complete, at a
   speed and duplex both ends advertise; with it off, at the forced duplex.
 - `a_transmit_descriptor_keeps_its_length_inside_its_fields`: for every buffer address and length,
   the transmit descriptor carries the address untouched, the device owns it, it is the first and
   last segment, and the length fits its two fields without reaching a flag bit.
-- `a_management_data_io_command_word_keeps_each_address_in_its_own_field`: for every PHY and register address,
+- `a_management_data_io_command_word_keeps_each_bus_address_in_its_own_field`: for every physical layer device and register address,
   the command word holds each in its own five-bit field, says read or write as asked and sets the
   busy bit.
 - `a_coherent_verdict_needs_every_account_to_agree`: for every observation, a fatal bus error gives
   the bus error verdict, and the coherent verdict needs the receive descriptor handed back, the
   payload to match the probe frame and the delivered length to be the probe's.
 
+### Running the proofs
+
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
 checker, so it needs network access. CI uses version 0.68.0, and another version may verify
 differently.
 
-Rerun them with `cargo kani`. Each harness has a falsification record at
-`falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
-makes that harness fail at its own assertion, which shows the proof checks something.
+Rerun them all with `cargo kani`, or one of them with `cargo kani --harness <name>`.
 
-MDIO sequencing, the PHY configuration writes and controller bring-up have unit tests against the simulator but no proof.
+### Running one falsification patch
+
+Each harness has a falsification record at `falsifications/<module.path>.<harness>.patch`. Applying
+it with `patch -p1 < <file>` from the crate root makes that harness fail at its own assertion, which
+shows the proof checks something; the patch header names the assertion. `patch -R -p1 < <file>`
+takes it out again.
+
+MDIO sequencing, the physical layer device configuration writes and controller bring-up have unit tests against the simulator but no proof.
 
 ## BUGS
 
@@ -107,6 +123,6 @@ Rust 1.88.
 
 You may use this crate under the MIT license (LICENSE-MIT) or the Apache License, version 2.0
 (LICENSE-APACHE), at your option. Parts adapt OpenBSD's `dwqe` and `ytphy` drivers under the
-Internet Systems Consortium (ISC) license, and the PHY's link decoding
+Internet Systems Consortium (ISC) license, and the physical layer device's link decoding
 (`motorcomm_physical_layer_device`) adapts `ukphy_status` (OpenBSD's `sys/dev/mii/ukphy_subr.c`)
 under the NetBSD Foundation's BSD-2-Clause license. Both notices are in `src/lib.rs`.

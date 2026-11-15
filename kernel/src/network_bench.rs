@@ -318,7 +318,7 @@ mod radon {
         );
         println!(
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",
-            a.version, a.direct_memory_access_address_bits
+            a.version, a.direct_memory_access_physical_address_bits
         );
         match a.physical_layer_device {
             Some((mv, source)) => println!(
@@ -330,7 +330,7 @@ mod radon {
                 a.physical_layer_device_id
             ),
         }
-        if let Some((m, source)) = a.station_address {
+        if let Some((m, source)) = a.station_mac_address {
             println!(
                 "network-bench: address   : {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x} from {source:?}",
                 m[0], m[1], m[2], m[3], m[4], m[5]

@@ -1,8 +1,8 @@
 //! **A resolved link, the speed and duplex a controller runs at.**
 //!
-//! The controller's `mac_configuration` and `start` take it, and a physical layer device (PHY)
+//! The controller's `mac_configuration` and `start` take it, and a physical layer device
 //! module produces it from the standard clause 22 registers. Nothing in it belongs to one vendor's
-//! PHY, so it lives beside neither.
+//! physical layer device, so it lives beside neither.
 //!
 //! Name: ratified 2026-11-14 (UTC), #3569.
 
