@@ -71,57 +71,14 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
 /// 2026-10-20 UTC).
 pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
 
-// The check list's invariants. The kernel finds a check's index with `position`, so a duplicate would
-// leave its second entry unrecorded on every boot, and a reader splits the list on whitespace and
-// commas, so a name outside `[a-z0-9_]` would split in two.
-const _: () = {
-    let mut i = 0;
-    while i < SELF_TEST_CHECKS.len() {
-        let name = SELF_TEST_CHECKS[i].as_bytes();
-        assert!(!name.is_empty(), "a check name is empty");
-        let mut k = 0;
-        while k < name.len() {
-            let b = name[k];
-            assert!(
-                b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_',
-                "a check name has a byte outside [a-z0-9_]"
-            );
-            k += 1;
-        }
-        let mut j = i + 1;
-        while j < SELF_TEST_CHECKS.len() {
-            let other = SELF_TEST_CHECKS[j].as_bytes();
-            let mut same = other.len() == name.len();
-            let mut k = 0;
-            while same && k < name.len() {
-                same = name[k] == other[k];
-                k += 1;
-            }
-            assert!(!same, "two checks share a name");
-            j += 1;
-        }
-        i += 1;
-    }
-    // Every earlier length is below the current one, and they ascend.
-    let mut e = 0;
-    while e < SELF_TEST_CHECKS_EARLIER.len() {
-        assert!(
-            SELF_TEST_CHECKS_EARLIER[e] < SELF_TEST_CHECKS.len(),
-            "an earlier length is not below the current one"
-        );
-        assert!(
-            e == 0 || SELF_TEST_CHECKS_EARLIER[e - 1] < SELF_TEST_CHECKS_EARLIER[e],
-            "the earlier lengths do not ascend"
-        );
-        e += 1;
-    }
-};
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// The check list's invariants hold at run time too, so a failing assertion names the check.
+    /// **The check list's invariants.** The kernel finds a check's index with `position`, so a
+    /// duplicate would leave its second entry unrecorded on every boot, and a reader splits the list
+    /// on whitespace and commas, so a name outside `[a-z0-9_]` would split in two. The earlier
+    /// lengths ascend and lie below the current one.
     #[test]
     fn the_check_names_are_plain_and_distinct() {
         for (i, name) in SELF_TEST_CHECKS.iter().enumerate() {
