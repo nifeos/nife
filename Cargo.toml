@@ -48,7 +48,6 @@ members = [
     "crates/device_tree_patch",
     "crates/initial_ramdisk_writer",
     "crates/static_elf",
-    "crates/entropy_contract",
     "crates/page_frames",
     "crates/filesystem_contract",
     "crates/filesystem_fixture",

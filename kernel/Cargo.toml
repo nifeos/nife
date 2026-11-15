@@ -151,7 +151,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The entropy contract (milestone 56, DECISIONS §44). The kernel wires the entropy service and its
 # tests are its clients, speaking the same request/reply the std PAL does, so no party has its own
 # copy of the wire format.
-entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
 # The JH7110 TRNG's register logic and DTB discovery (milestone 159), the same
 # pure-logic/volatile-shell split `pci` below already uses. The kernel takes it for one
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,

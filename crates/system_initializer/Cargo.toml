@@ -92,7 +92,7 @@ login_contract = { version = "0.1.0", path = "../login_contract" }
 # The entropy contract (DECISIONS §120's 2026-08-26 amendment), for the one message this crate
 # reads: the readiness sentinel an entropy service answers once it has drawn its first bufferful
 # from a real device. Pure logic, no non-dev dependencies of its own.
-entropy_contract = { version = "0.1.0", path = "../entropy_contract" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
 # The socket contract (milestone 590 (the booted system starts its network stack)), for exactly one
 # word: the inbound authority this
 # crate hands the `net_stack` it builds (`NO_LISTEN_GRANT`). Pure logic, no dependencies of its own.

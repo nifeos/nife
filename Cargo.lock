@@ -490,6 +490,7 @@ source = "git+https://github.com/nifeos/e1000e?rev=ef01cefa9a186db7f1c9802e78d8c
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "environment_contract"

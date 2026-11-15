@@ -508,7 +508,6 @@ sealed_pair	60	a digest is found in a kernel image exactly when it is there, at 
 pci_configuration_space	37	config-space decode on hostile-device input
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 socket_contract	410	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
-entropy_contract	32	a request word reads back as built, a copy writes only the delivered bytes, a fill succeeds only on full replies, and readiness needs one nonzero byte
 jh7110_clock_and_reset	58	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	110	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 direct_memory_access_validator	126	the DMA-confinement validator, no descriptor escapes the grant
