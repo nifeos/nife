@@ -62,7 +62,7 @@ mod panic;
 #[cfg(test)]
 mod preemption_window_tests;
 // PCIe enumeration + virtio-pci bring-up (the PCIe transport, DECISIONS §18). Portable: the
-// decode logic is crates/pci, and each arch supplies its window/interrupt constants. See
+// decode logic is crates/pci_configuration_space, and each arch supplies its window/interrupt constants. See
 // kernel/src/pci.rs.
 mod pci;
 // The kernel's part of the NVMe disk (§86 (whether an NVMe driver can leave the kernel)): find the controller over the PCIe transport above and

@@ -118,11 +118,11 @@ table and the reasoning.
 | `generational_table` | 3 | a removed name never resolves again | [core](verification/core-harnesses.md) |
 | `intrusive_queue` | 1 | any push/pop interleaving is FIFO and lossless | [core](verification/core-harnesses.md) |
 | `address_space_identifier` | 3 | ASID 0 is never allocated; live ASIDs are distinct | [core](verification/core-harnesses.md) |
-| `elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
+| `static_elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
 | `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
 | `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
-| `glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
+| `byte_glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
 
 Three things the table cannot say:
 
@@ -152,7 +152,7 @@ The cost of a proof is the shape of the code, not the size of the claim:
   meets one of them.
 - A loop Kani bounds too loosely, plus symbolic slice offsets, put whole-parse ELF totality out of
   reach. Proving the loopless leaf arithmetic recovered the panic surface in under a second.
-- Two loops became one in `glob`, and an unwind bound derived from a measurement replaced one from
+- Two loops became one in `byte_glob`, and an unwind bound derived from a measurement replaced one from
   algebra ([`verification/glob-proofs.md`](verification/glob-proofs.md)).
 - A loop over leaf sizes ran past ten minutes; two `if`s and a mask prove in 0.05 s
   ([`verification/paging-blocks.md`](verification/paging-blocks.md)).
@@ -167,7 +167,7 @@ script/verify
 
 It self-installs Kani on first run (its own nightly toolchain and a CBMC backend), then runs
 `cargo kani` over every package carrying harnesses. The harness count is generated weekly into
-`notes/project-metrics.md`; the harnesses sit across 39 packages <!--count:harness-crates-->. Not
+`notes/project-metrics.md`; the harnesses sit across 40 packages <!--count:harness-crates-->. Not
 every host compiles all of them: two in `kernel/src/arch/x86_64/interrupt_controller.rs` run only on
 an x86_64 host.
 
@@ -187,7 +187,7 @@ crate is picked up with no change.
 
 - Proofs live behind `#[cfg(kani)]`. An ordinary `cargo build`/`cargo test` never compiles them,
   and the crate needs no dependency on `kani` (its intrinsics are injected only under `cargo kani`).
-- Verify pure logic first. The §7 (testing) host crates (`capability`, `paging`, `elf`,
+- Verify pure logic first. The §7 (testing) host crates (`capability`, `paging`, `static_elf`,
   `page_frames`, the ASID allocator) are the frontier: small, allocation-light, already
   host-compiled. Bounded model checking is happiest there.
 - Spread inward from the capability core, the order §14 sets: `capability`, then IPC (rendezvous,

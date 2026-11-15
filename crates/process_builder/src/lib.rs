@@ -180,7 +180,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// ```no_run
 /// # use supervision_contract::{ChildEndowment, Retention};
 /// # use process_builder::{build_child, start_child};
-/// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
+/// # fn demo(own: u64, per_child: u64, elf: &static_elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 ///
 /// // `own` pays for OUR scratch mappings; `per_child` is what the child is made of. Passing a
@@ -194,7 +194,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 pub fn build_child(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
 ) -> Result<Child, ()> {
     let (child, aspace) = build_child_space(own_ut, build_ut, elf, endow)?;
@@ -231,7 +231,7 @@ pub fn build_child(
 pub fn build_child_space(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
 ) -> Result<(Child, u64), ()> {
     // The map's image band, checked before anything is retyped, the same check `kernel::user::load`
@@ -272,7 +272,7 @@ pub fn build_child_space(
 fn lay_out_child(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
     aspace: u64,
 ) -> Result<u64, ()> {
@@ -567,7 +567,7 @@ pub fn memory_region_destroy(ut: u64) -> bool {
 /// ```no_run
 /// # use supervision_contract::{ChildEndowment, Retention};
 /// # use process_builder::{build_child, start_child};
-/// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
+/// # fn demo(own: u64, per_child: u64, elf: &static_elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 /// let child = build_child(own, per_child, elf, &endow)?;
 /// // The capability is gone after this line, because the endowment said so.

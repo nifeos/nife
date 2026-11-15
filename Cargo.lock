@@ -117,6 +117,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "filesystem_fixture",
+]
+
+[[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
 dependencies = [
@@ -228,7 +236,6 @@ dependencies = [
  "domain_name_system",
  "driver_process_contract",
  "e1000e",
- "elf",
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
@@ -265,6 +272,7 @@ dependencies = [
  "smoltcp",
  "socket_contract",
  "startup_page_contract",
+ "static_elf",
  "supervision_contract",
  "swish",
  "system_initializer",
@@ -473,7 +481,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
- "pci",
+ "pci_configuration_space",
  "startup_page_contract",
 ]
 
@@ -481,10 +489,6 @@ dependencies = [
 name = "e1000e"
 version = "0.1.0-pre.1"
 source = "git+https://github.com/nifeos/e1000e?rev=ef01cefa9a186db7f1c9802e78d8c6c1215db7ec#ef01cefa9a186db7f1c9802e78d8c6c1215db7ec"
-
-[[package]]
-name = "elf"
-version = "0.1.0"
 
 [[package]]
 name = "entropy_contract"
@@ -552,7 +556,6 @@ dependencies = [
  "credential_contract",
  "current_cpu_contract",
  "domain_name_resolution_contract",
- "elf",
  "entropy_contract",
  "filesystem_contract",
  "filesystem_fixture",
@@ -571,6 +574,7 @@ dependencies = [
  "soak_page",
  "socket_contract",
  "startup_page_contract",
+ "static_elf",
  "supervision_contract",
  "system_initializer",
  "terminal_contract",
@@ -615,14 +619,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-dependencies = [
- "filesystem_contract",
- "filesystem_fixture",
-]
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -637,8 +633,8 @@ version = "0.1.0"
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "filesystem_contract",
- "glob",
  "primitive_benchmark_contract",
  "program_argument_contract",
 ]
@@ -849,7 +845,6 @@ dependencies = [
  "direct_memory_access_validator",
  "driver_process_contract",
  "e1000e",
- "elf",
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
@@ -877,7 +872,7 @@ dependencies = [
  "nifefs",
  "page_frames",
  "paging",
- "pci",
+ "pci_configuration_space",
  "periodic_deadline",
  "primitive_benchmark_contract",
  "screen_console",
@@ -885,6 +880,7 @@ dependencies = [
  "socket_contract",
  "spin_lock",
  "startup_page_contract",
+ "static_elf",
  "std_runtime_contract",
  "system_log_contract",
  "terminal_contract",
@@ -995,7 +991,7 @@ dependencies = [
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
- "elf",
+ "static_elf",
 ]
 
 [[package]]
@@ -1110,7 +1106,7 @@ name = "paging"
 version = "0.1.0"
 
 [[package]]
-name = "pci"
+name = "pci_configuration_space"
 version = "0.1.0"
 dependencies = [
  "device_tree_blob",
@@ -1125,7 +1121,7 @@ name = "pgrep"
 version = "0.1.0"
 dependencies = [
  "abi",
- "glob",
+ "byte_glob",
  "ps",
 ]
 
@@ -1180,8 +1176,8 @@ dependencies = [
  "abi",
  "address_space_map",
  "counter_frequency_contract",
- "elf",
  "startup_page_contract",
+ "static_elf",
  "supervision_contract",
  "user_mode_runtime",
 ]
@@ -1195,10 +1191,10 @@ name = "program_asks"
 version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
- "elf",
  "grant_plan",
  "installed_programs",
  "package_archive",
+ "static_elf",
 ]
 
 [[package]]
@@ -1412,6 +1408,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "static_elf"
+version = "0.1.0"
+
+[[package]]
 name = "std_runtime_contract"
 version = "0.1.0"
 dependencies = [
@@ -1451,10 +1451,10 @@ dependencies = [
 name = "swish"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "documentation",
  "environment_contract",
  "filesystem_contract",
- "glob",
  "grant_plan",
  "installed_programs",
  "std_runtime_contract",
@@ -1494,7 +1494,6 @@ dependencies = [
  "capability_manifest_note",
  "credential_contract",
  "domain_name_resolution_contract",
- "elf",
  "entropy_contract",
  "filesystem_contract",
  "grant_plan",
@@ -1511,6 +1510,7 @@ dependencies = [
  "process_builder",
  "program_asks",
  "socket_contract",
+ "static_elf",
  "std_runtime_contract",
  "supervision_contract",
  "terminal_contract",
@@ -1558,7 +1558,6 @@ dependencies = [
  "domain_name_resolution_contract",
  "domain_name_system",
  "e1000e",
- "elf",
  "entropy_contract",
  "environment_contract",
  "filesystem_contract",
@@ -1584,6 +1583,7 @@ dependencies = [
  "socket_contract",
  "spin_lock",
  "startup_page_contract",
+ "static_elf",
  "std_runtime_contract",
  "system_log_contract",
  "terminal_contract",
@@ -1798,7 +1798,6 @@ dependencies = [
  "boot_slot",
  "device_tree_blob",
  "device_tree_patch",
- "elf",
  "globally_unique_identifier_partition_table",
  "machine_discovery",
  "measured_boot",
@@ -1806,6 +1805,7 @@ dependencies = [
  "r-efi",
  "screen_console",
  "sealed_pair",
+ "static_elf",
  "uefi_loader",
  "uuid",
 ]

@@ -81,7 +81,7 @@ three lines and `read` sliced with a copy of the same three lines, and `read`'s 
 `Fs::entry_bounds` does not exist for the prover. It has two ordinary callers, it turns an
 invariant that lived in a reader's head into one expression, and `read`'s `expect` now names why
 the failure cannot fire. The prover benefit is a consequence, which is exactly the standing
-`elf::check_segment_bounds` has one crate over.
+`static_elf::check_segment_bounds` has one crate over.
 
 The test the next lane should apply: would this function be worth extracting if there were no
 harness? If the answer is no, §46's refusal stands and the honest outcome is a recorded

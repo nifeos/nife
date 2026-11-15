@@ -135,8 +135,8 @@ separation is a declaration in the manifest rather than a convention about slot 
 
 Named here rather than in a tracker, next to the feature.
 
-- One-second resolution, and the page read is not atomic with the counter sample. The seqlock
-  makes the *page* read consistent; the counter is read just after it. A clock stepped between the
+- One-second resolution, and the page read is not atomic with the counter sample. The publish
+  count makes the *page* read consistent; the counter is read just after it. A clock stepped between the
   two is printed as the new time, which is right, but the two lines of an `a2` run can straddle a
   step and disagree. Nothing here needs better.
 - **The prompt spawns it with the defaults only.** Milestone 47 (navigation and naming) gave `date`

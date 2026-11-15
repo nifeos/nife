@@ -1,24 +1,24 @@
 //! Fuzz the ELF loader's front half with arbitrary bytes.
 //!
-//! `crates/elf` is the only parser that loads what it parses: its (vaddr, memsz, flags, data) tuples
+//! `crates/static_elf` is the only parser that loads what it parses: its (vaddr, memsz, flags, data) tuples
 //! become page-table entries. Kani proves the leaf, `check_segment_bounds`, and the whole-parse
 //! totality proof did not return (notes/verification.md). This reaches the unproved shell: the
 //! header-count and table-size arithmetic, the entry-point check, the overlap loop, and the
 //! `segments()` iterator. `EXPECTED_MACHINE` is a compile-time constant, so a host build accepts
 //! the host's machine only; `fuzz/seeds/elf_parse/` holds one seed per machine, and
-//! `crates/elf/tests/fuzz_seed.rs` fails if none matches (notes/fuzzing/elf-seeds.md).
+//! `crates/static_elf/tests/fuzz_seed.rs` fails if none matches (notes/fuzzing/elf-seeds.md).
 
 #![no_main]
 
-use elf::Elf;
 use libfuzzer_sys::fuzz_target;
+use static_elf::Elf;
 
 fuzz_target!(|data: &[u8]| {
     // The shell's streaming note reader runs on bytes nobody has parsed as a program yet, so it is
     // fuzzed before `parse` gets a chance to refuse them (milestone 597 (a program carries its
     // manifest in an ELF note), provisional).
-    if let Ok(segs) = elf::NoteSegments::from_head(data) {
-        let mut search = elf::NoteSearch::new(b"nife", 1);
+    if let Ok(segs) = static_elf::NoteSegments::from_head(data) {
+        let mut search = static_elf::NoteSearch::new(b"nife", 1);
         for seg in segs {
             let Ok(r) = seg.range(data.len()) else { break };
             if search.segment(&data[r], seg.p_align).is_err() {

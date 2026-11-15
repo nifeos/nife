@@ -62,7 +62,8 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
-# through the same seqlock the service publishes with, so no party has its own copy of the layout.
+# through the same publish protocol the service writes with, so no party has its own copy of the
+# layout.
 clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 # The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111). The
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
@@ -174,7 +175,7 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
 designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
-pci = { version = "0.1.0", path = "../crates/pci" }
+pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configuration_space" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
@@ -184,7 +185,7 @@ e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", re
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
 extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }

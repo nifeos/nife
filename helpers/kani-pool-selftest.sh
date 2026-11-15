@@ -21,7 +21,7 @@
 #      git repository: a row never measured, a crate edited and not committed, a crate committed
 #      since, an untracked file in it and a new Kani version each weigh the default instead. Fails if
 #      a weight outlives the code it measured.
-#   8. script/verify --only weighs its own row: a fixture table gives `glob` one unit, so
+#   8. script/verify --only weighs its own row: a fixture table gives `byte_glob` one unit, so
 #      VERIFY_JOBS=2 on a four-unit pool admits two runs and the third waits for two units. The
 #      row's path is .kani-version, a file no lane edits in passing. Fails if the measurement does
 #      not reach the run.
@@ -55,12 +55,12 @@ case "$1 $2" in
 esac
 printf '%s\n' "$*" >>"${NIFE_SELFTEST_ARGS:?}"
 printf 'start %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
-# Hold the proof, and so its units, until the selftest releases it. The bound keeps a selftest that
-# died from leaving the stub behind; it is a cleanup limit, never a pause the assertions rely on.
-waited=0
-while [ ! -e "${NIFE_SELFTEST_GO:?}" ] && [ "$waited" -lt 1200 ]; do
+# Hold the proof, and so its units, until the selftest releases it. The stub ends on the release file
+# or when the selftest process is gone, which keeps a selftest that died from leaving the stub
+# behind. It never ends on elapsed time: a count of sleeps ran out under load, freed the units
+# while the third run was still starting, and so the third run never had to wait.
+while [ ! -e "${NIFE_SELFTEST_GO:?}" ] && kill -0 "${NIFE_SELFTEST_PID:?}" 2>/dev/null; do
 	sleep 0.1
-	waited=$((waited + 1))
 done
 printf 'end %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
 exit 0
@@ -81,7 +81,7 @@ NIFE_HEAVY_SLOT_DIR="$tmp/slots"
 NIFE_HEAVY_SLOTS=16
 export NIFE_HEAVY_SLOT_DIR NIFE_HEAVY_SLOTS
 mkdir -p "$tmp/slots"
-export NIFE_SELFTEST_ARGS="$tmp/args" NIFE_SELFTEST_EVENTS="$tmp/events" NIFE_SELFTEST_GO="$tmp/go"
+export NIFE_SELFTEST_PID=$$ NIFE_SELFTEST_ARGS="$tmp/args" NIFE_SELFTEST_EVENTS="$tmp/events" NIFE_SELFTEST_GO="$tmp/go"
 GIB=$((1024 * 1024 * 1024))
 # The reserve is 12 GiB and a unit 2 GiB, so these sizes give pools of two and four units.
 POOL2=$((16 * GIB))
@@ -92,15 +92,16 @@ export NIFE_KANI_HARNESS_GIB=2
 # peak <events file>: the most proofs ever in flight at once.
 peak() { awk '/^start/ { n++; if (n > m) m = n } /^end/ { n-- } END { print m + 0 }' "$1"; }
 
-# until_true <what> <command...>: poll for up to 2 minutes until the command succeeds, and fail naming
-# <what> when it never does.
+# until_true <what> <command...>: poll until the command succeeds, and fail naming <what> when it
+# has not within DEADLINE_SECONDS of real time. The deadline counts the clock and not the polls, since
+# a poll takes far longer than its sleep on a loaded machine.
+DEADLINE_SECONDS=300
 until_true() {
 	what="$1"
 	shift
-	n=0
+	end=$(($(date +%s) + DEADLINE_SECONDS))
 	until "$@"; do
-		n=$((n + 1))
-		[ "$n" -lt 1200 ] || fail "timed out waiting for $what"
+		[ "$(date +%s)" -lt "$end" ] || fail "timed out after ${DEADLINE_SECONDS} s waiting for $what"
 		sleep 0.1
 	done
 }
@@ -108,7 +109,7 @@ starts() { [ "$(grep -c '^start' "$tmp/events")" -ge "$1" ]; }
 # run3_decided: the third run either printed that it waits, or got its units and started a proof.
 run3_decided() { grep -q "waiting for" "$tmp/run3.out" || starts 3; }
 
-# three: start three `script/verify --only glob` runs one at a time, each only once the one before
+# three: start three `script/verify --only byte_glob` runs one at a time, each only once the one before
 # it holds a proof, hold all of them until the third has either said it waits or started, then
 # release them and join. A third run that starts without waiting still ends the stage, and the
 # stage's own assertion then fails on what it saw.
@@ -116,7 +117,7 @@ three() {
 	rm -f "$tmp/go"
 	: >"$tmp/events"
 	for i in 1 2 3; do
-		"$root/script/verify" --only glob >"$tmp/run$i.out" 2>&1 &
+		"$root/script/verify" --only byte_glob >"$tmp/run$i.out" 2>&1 &
 		pids="$pids $!"
 		if [ "$i" -lt 3 ]; then until_true "run $i to start its proof" starts "$i"; fi
 	done
@@ -145,7 +146,7 @@ grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" || fail "stage 2: the th
 # 3.
 : >"$tmp/args"
 : >"$tmp/go"
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=8 "$root/script/verify" --only glob >"$tmp/clamp.out" 2>&1 ||
+NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=8 "$root/script/verify" --only byte_glob >"$tmp/clamp.out" 2>&1 ||
 	fail "stage 3: the clamped run failed"
 grep -q "VERIFY_JOBS=8 lowered to 2" "$tmp/clamp.out" || fail "stage 3: the lowering was silent"
 grep -q -- "-j 2 " "$tmp/args" || fail "stage 3: cargo kani was not run at -j 2: $(cat "$tmp/args")"
@@ -165,7 +166,7 @@ grep -q "waiting for 5 of 11 Kani units" "$tmp/run3.out" || fail "stage 5: the t
 # 6. A holder in flight is named by lane, worktree and command.
 rm -f "$tmp/go"
 : >"$tmp/events"
-NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 "$root/script/verify" --only glob >/dev/null 2>&1 &
+NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=1 "$root/script/verify" --only byte_glob >/dev/null 2>&1 &
 holder=$!
 until_true "the holder to start its proof" starts 1
 st="$(NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
@@ -230,7 +231,7 @@ PY
 # 8.
 [ -z "$(git -C "$root" status --porcelain -- .kani-version)" ] ||
 	fail "stage 8: .kani-version has local changes, so the fixture row cannot be fresh; commit it first"
-printf 'row\tpath\ttree\tkani\tpeak_mib\nglob\t.kani-version\t%s\t%s\t1500\n' \
+printf 'row\tpath\ttree\tkani\tpeak_mib\nbyte_glob\t.kani-version\t%s\t%s\t1500\n' \
 	"$(git -C "$root" rev-parse HEAD:.kani-version)" "$(tr -d '[:space:]' <"$root/.kani-version")" >"$tmp/peaks.tsv"
 pids=""
 unset NIFE_KANI_HARNESS_GIB
@@ -242,7 +243,7 @@ grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" ||
 # 9.
 rm -f "$tmp/go"
 : >"$tmp/events"
-small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only glob; }
+small() { NIFE_HEAVY_SLOTS="$1" NIFE_KANI_HARNESS_GIB=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 VERIFY_JOBS=2 "$root/script/verify" --only byte_glob; }
 small 2 >"$tmp/s9-holder.out" 2>&1 &
 pids="$!"
 until_true "the stage 9 holder to start its proof" starts 1
@@ -253,9 +254,9 @@ for i in 1 2; do
 done
 NIFE_HEAVY_SLOTS=2 python3 "$root/helpers/heavy_slot.py" lint -- sh -c ": >'$tmp/s9-lint'" >"$tmp/s9-lint.out" 2>&1 &
 pids="$pids $!"
-# Bounded so a failure still releases the runs below; a free slot is taken within one 2 s poll.
-n=0
-while [ ! -e "$tmp/s9-lint" ] && [ "$n" -lt 300 ]; do sleep 0.1; n=$((n + 1)); done
+# Bounded so a failure still releases the runs below; the assertions after it name the missing event.
+end=$(($(date +%s) + DEADLINE_SECONDS))
+while [ ! -e "$tmp/s9-lint" ] && [ "$(date +%s)" -lt "$end" ]; do sleep 0.1; done
 st9="$(NIFE_HEAVY_SLOTS=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
 ended9="$(grep -c '^end' "$tmp/events" || true)"
 lint9=no
@@ -274,7 +275,7 @@ printf '%s\n' "$st9" | grep -q "^2 heavy-job slots in .*, 1 held$" ||
 rm -f "$tmp/go"
 : >"$tmp/events"
 NIFE_HEAVY_SLOTS=1 python3 "$root/helpers/heavy_slot.py" lint -- sh -c \
-	": >'$tmp/s10-lint'; n=0; while [ ! -e '$tmp/go' ] && [ \$n -lt 1200 ]; do sleep 0.1; n=\$((n + 1)); done" \
+	": >'$tmp/s10-lint'; while [ ! -e '$tmp/go' ] && kill -0 $$ 2>/dev/null; do sleep 0.1; done" \
 	>"$tmp/s10-lint.out" 2>&1 &
 pids="$!"
 until_true "the stage 10 slot holder to start" test -e "$tmp/s10-lint"

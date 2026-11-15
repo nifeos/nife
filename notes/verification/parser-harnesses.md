@@ -6,9 +6,9 @@ An appendix to [notes/verification.md](../verification.md). These three crates p
 kernel did not write: a binary, a boot archive, and a PCI function's answers. Why whole-parse
 totality was out of reach is in [elf-parser-wall.md](elf-parser-wall.md).
 
-## `crates/elf`
+## `crates/static_elf`
 
-Four in `crates/elf/src/lib.rs`:
+Four in `crates/static_elf/src/lib.rs`:
 
 | Harness | Property |
 |---|---|
@@ -32,9 +32,9 @@ Whole-parse totality hit the same wall as ELF and `device_tree_blob`: a one-bloc
 CBMC past 20 CPU-minutes. It was decomposed the same way. The module comment records what is
 deliberately unproved, and why it is sound anyway.
 
-## `crates/pci`
+## `crates/pci_configuration_space`
 
-Four in `crates/pci/src/lib.rs`, the config-space decode the kernel runs on device input. A hostile
+Four in `crates/pci_configuration_space/src/lib.rs`, the config-space decode the kernel runs on device input. A hostile
 or broken PCI function can answer the closures with anything.
 
 | Harness | Property |

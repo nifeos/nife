@@ -489,7 +489,7 @@ CRATES="$(cat <<'TABLE'
 capability	8	the capability model
 paging	4	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	623	the untyped-region accounting, no double-free
-elf	67	the loader's front half, and the note walk, panic-free on hostile input
+static_elf	67	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	2	the physical frame allocator
 address_space_map	4	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 environment_contract	2	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
@@ -502,9 +502,10 @@ capability_manifest_note	107	a manifest note has one encoding, and decoding host
 interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile bytes never panics
 package_archive	4	a package file is refused or read entirely inside itself, on bytes the solver chose
 measured_boot	51	a digest text form reads back as itself, and nothing but a labeled sha256 parses
-pci	23	config-space decode on hostile-device input
+sealed_pair	60	a digest is found in a kernel image exactly when it is there, at any offset
+pci_configuration_space	23	config-space decode on hostile-device input
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
-socket_contract	3	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent
+socket_contract	730	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
 entropy_contract	150	a request word reads back as built, a copy writes only the delivered bytes, a fill succeeds only on full replies, and readiness needs one nonzero byte
 jh7110_clock_and_reset	61	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	122	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
@@ -512,7 +513,7 @@ direct_memory_access_validator	127	the DMA-confinement validator, no descriptor 
 network_time_protocol	20	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	34	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	56	the partition table's CRC-32, its round trips, and partitions that overlap
-glob	545	matching is total, and a hostile pattern cannot be made to blow up
+byte_glob	545	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth
 subtree_scope	216	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 counter_frequency_contract	4	the counter frequency page: a frame reads as unknown exactly when its magic differs, and a built page reads back its rate
@@ -525,7 +526,7 @@ driver_process_contract::designware_mobile_storage	0	no block the SD card server
 driver_process_contract::e1000e	1	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
 driver_process_contract::extensible_host_controller_interface	17	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
-driver_process_contract::virtual_input_output	525	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
+driver_process_contract::virtual_io	525	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
 kernel	8	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
 components	8	the EL0 components: a bounded append that a configuration page this system did not write feeds
 machine_discovery	356	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
