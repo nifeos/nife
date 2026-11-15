@@ -53,9 +53,9 @@ impl Band {
         self.end - self.start
     }
 
-    /// Is `virtual_address` inside the band?
-    pub const fn contains(&self, virtual_address: u64) -> bool {
-        virtual_address >= self.start && virtual_address < self.end
+    /// Is `va` inside the band?
+    pub const fn contains(&self, va: u64) -> bool {
+        va >= self.start && va < self.end
     }
 
     /// Does the whole of `[start, end)` lie inside the band? An empty or inverted range does not.
@@ -168,30 +168,27 @@ pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
 /// `const CTL_VA: u64 = pair_page(0x60_0000);`. The value is unchanged, so the address still reads
 /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
 /// aligned, stops the build instead of colliding with a runtime page at run time.
-pub const fn pair_page(virtual_address: u64) -> u64 {
+pub const fn pair_page(va: u64) -> u64 {
+    assert!(va.is_multiple_of(PAGE), "a pair page must be page aligned");
     assert!(
-        virtual_address.is_multiple_of(PAGE),
-        "a pair page must be page aligned"
-    );
-    assert!(
-        PAIR_PAGES.contains(virtual_address),
+        PAIR_PAGES.contains(va),
         "a pair page must lie in PAIR_PAGES (address_space_map)"
     );
-    virtual_address
+    va
 }
 
 /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`RUNTIME_WINDOWS`].
-pub const fn runtime_window(virtual_address: u64) -> u64 {
+pub const fn runtime_window(va: u64) -> u64 {
     assert!(
-        virtual_address.is_multiple_of(PAGE),
+        va.is_multiple_of(PAGE),
         "a runtime window must be page aligned"
     );
     assert!(
-        RUNTIME_WINDOWS.contains(virtual_address),
+        RUNTIME_WINDOWS.contains(va),
         "a runtime window must lie in RUNTIME_WINDOWS (address_space_map)"
     );
-    virtual_address
+    va
 }
 
 /// **Where the initial ramdisk archive is mapped**, read-only, before a program's `_start` runs: a
@@ -205,16 +202,16 @@ pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
 
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`SERVICE_WINDOWS`].
-pub const fn service_window(virtual_address: u64) -> u64 {
+pub const fn service_window(va: u64) -> u64 {
     assert!(
-        virtual_address.is_multiple_of(PAGE),
+        va.is_multiple_of(PAGE),
         "a service window must be page aligned"
     );
     assert!(
-        SERVICE_WINDOWS.contains(virtual_address),
+        SERVICE_WINDOWS.contains(va),
         "a service window must lie in SERVICE_WINDOWS (address_space_map)"
     );
-    virtual_address
+    va
 }
 
 /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
@@ -364,12 +361,12 @@ mod tests {
 
     #[test]
     #[allow(clippy::assertions_on_constants)]
-    fn an_image_the_size_of_ripgrep_fits_and_the_old_ceiling_is_gone() {
+    fn an_image_the_size_of_a_large_program_fits_and_the_old_ceiling_is_gone() {
         // Milestone 121 measured ripgrep's image at 0x40_0000..0x69c_000.
-        let ripgrep = 0x69c_000 - 0x40_0000;
-        assert!(check_image(IMAGE_BASE, IMAGE_BASE + ripgrep).is_ok());
+        let large_program = 0x69c_000 - 0x40_0000;
+        assert!(check_image(IMAGE_BASE, IMAGE_BASE + large_program).is_ok());
         assert!(
-            IMAGE.bytes() / ripgrep >= 100,
+            IMAGE.bytes() / large_program >= 100,
             "less than 100x headroom over ripgrep"
         );
         assert!(IMAGE.bytes() > 896 * 1024);
@@ -439,9 +436,8 @@ mod tests {
     #[test]
     fn the_band_checks_accept_their_own_band_and_nothing_else() {
         for (name, band) in BANDS {
-            let virtual_address = band.start;
-            let std_panics =
-                |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(virtual_address)).is_err();
+            let va = band.start;
+            let std_panics = |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(va)).is_err();
             assert_eq!(
                 !std_panics(pair_page),
                 band == PAIR_PAGES,
