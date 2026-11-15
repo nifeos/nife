@@ -1717,3 +1717,56 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
         }
     }
 }
+
+/// RAM is what the firmware says is RAM and has not disabled. A bank whose `status` is anything
+/// but `"okay"` or `"ok"` is left out wherever the `status` sits in the node; a root child that says
+/// `device_type = "memory"` counts whatever its name; and neither property counts below depth 2.
+#[test]
+fn memory_is_a_named_or_typed_root_child_the_firmware_has_not_disabled() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    // Disabled, with the status after the reg.
+    b.begin_node(b"memory@0");
+    b.prop(b"reg", &reg64(0x1000, 0x100));
+    b.prop(b"status", b"disabled\0");
+    b.end_node();
+    // Enabled with the older spelling.
+    b.begin_node(b"memory@2000");
+    b.prop(b"status", b"ok\0");
+    b.prop(b"reg", &reg64(0x2000, 0x200));
+    b.end_node();
+    // Named otherwise, typed as memory, with the type after the reg.
+    b.begin_node(b"ram@3000");
+    b.prop(b"reg", &reg64(0x3000, 0x300));
+    b.prop(b"device_type", b"memory\0");
+    b.end_node();
+    // Typed as memory but disabled.
+    b.begin_node(b"ram@4000");
+    b.prop(b"device_type", b"memory\0");
+    b.prop(b"status", b"fail\0");
+    b.prop(b"reg", &reg64(0x4000, 0x400));
+    b.end_node();
+    // A device_type of something else, and a typed node below the root.
+    b.begin_node(b"soc");
+    b.prop(b"device_type", b"cpu\0");
+    b.prop(b"reg", &reg64(0x5000, 0x500));
+    b.begin_node(b"ram@6000");
+    b.prop(b"device_type", b"memory\0");
+    b.prop(b"reg", &reg64(0x6000, 0x600));
+    b.end_node();
+    b.end_node();
+    // Plain and enabled.
+    b.begin_node(b"memory@7000");
+    b.prop(b"status", b"okay\0");
+    b.prop(b"reg", &reg64(0x7000, 0x700));
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let mut out = [Region { start: 0, size: 0 }; 8];
+    let n = dt.memory_regions(&mut out).unwrap();
+    let starts: Vec<u64> = out[..n].iter().map(|region| region.start).collect();
+    assert_eq!(starts, [0x2000, 0x3000, 0x7000]);
+}

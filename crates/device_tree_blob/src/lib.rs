@@ -301,47 +301,67 @@ impl<'a> DeviceTreeBlob<'a> {
         }
     }
 
-    /// Every `/memory` node's `reg` property: the actual RAM, written into `out`.
+    /// Every memory node's `reg` property: the actual RAM, written into `out`.
+    ///
+    /// A memory node is a child of the root that is named `memory` or `memory@<address>`, or that
+    /// says `device_type = "memory"`, and that the firmware has not disabled: a `status` other than
+    /// `"okay"` (or the older `"ok"`) leaves the node out, as Linux leaves it out. Its `reg` is
+    /// decoded with the root's cell widths. Linux's `linux,usable-memory`, which a kexec loader
+    /// writes to narrow a bank, is not read.
     ///
     /// Returns how many regions it wrote; refuses a full `out` with [`Error::TooManyRegions`] and a
     /// wrapping pair with [`Error::RegionOverflow`].
     pub fn memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
         // `reg` is a list of (address, size) pairs, but how many 32-bit cells each of those takes
         // is not fixed. It is declared by #address-cells and #size-cells on the PARENT node, which
-        // for a /memory node is the root. The specification's defaults are 2 and 1. Nearly every
+        // for a memory node is the root. The specification's defaults are 2 and 1. Nearly every
         // 64-bit machine says 2 and 2, but they are read rather than assumed.
         let mut bus_address_cells = 2u32;
         let mut bus_size_cells = 1u32;
 
         let mut found = 0;
-        // Whether the depth-2 node now open is a memory node. A flag keyed on depth 2 rather than
-        // a bare "inside one" flag: a child of a /memory node, which no real tree has, closes at
-        // depth 3 and leaves its parent's remaining properties still read.
-        let mut in_memory = false;
+        // What the depth-2 node now open has said so far. `device_type` and `status` may follow
+        // `reg`, so the node is judged when it closes. Keyed on depth 2: a child of a memory node,
+        // which no real tree has, neither adds to nor clears its parent's answer.
+        let mut named_memory = false;
+        let mut typed_memory = false;
+        let mut available = true;
+        let mut reg: Option<&[u8]> = None;
         let mut tokens = self.tokens();
 
         while let Some((depth, token)) = tokens.step()? {
             match token {
                 Token::BeginNode { name } => {
-                    // A memory node is a child of the root named `memory` or `memory@<address>`.
                     if depth == 2 {
-                        in_memory = name == b"memory" || name.starts_with(b"memory@");
+                        named_memory = name == b"memory" || name.starts_with(b"memory@");
+                        typed_memory = false;
+                        available = true;
+                        reg = None;
                     }
                 }
                 Token::EndNode => {
-                    if depth == 2 {
-                        in_memory = false;
+                    if depth == 2
+                        && (named_memory || typed_memory)
+                        && available
+                        && let Some(value) = reg
+                    {
+                        let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
+                        found += decode_reg(value, bus_address_cells, bus_size_cells, remaining)?;
                     }
                 }
                 Token::Property { name, value } => {
                     // The root's cell counts. A node's properties precede its children, so by the
-                    // time a /memory node is reached these are the root's.
+                    // time a memory node closes these are the root's.
                     if depth == 1 {
                         declare_cells(name, value, &mut bus_address_cells, &mut bus_size_cells);
                     }
-                    if depth == 2 && in_memory && name == b"reg" {
-                        let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
-                        found += decode_reg(value, bus_address_cells, bus_size_cells, remaining)?;
+                    if depth == 2 {
+                        match name {
+                            b"reg" => reg = Some(value),
+                            b"device_type" => typed_memory = value == b"memory\0",
+                            b"status" => available = value == b"okay\0" || value == b"ok\0",
+                            _ => {}
+                        }
                     }
                 }
             }

@@ -200,9 +200,6 @@ failure, so every limitation here is a limitation on the boot path specifically.
   region. `kernel/src/memory.rs` decides where RAM is from these, and "the firmware's memory map
   is impossible" is something a boot path should be told. `Region::end()` saturates as a backstop,
   because the type is `pub` with `pub` fields.
-- **`memory_regions` finds `/memory` nodes by NAME, not by `device_type`.** `device_type = "memory"`
-  is the more correct check and arrives after the node name; the name is unambiguous on every board
-  we have met. A board that spells it otherwise would have its RAM missed entirely.
 - **`node_reg` matches a node-name prefix rather than `compatible`, and answers for the first match
   only** (zero regions when it has no `reg`, as `node_property` answers `None`). That is a deliberate
   simplification for two boards, documented at the function. `node_reg_compatible` is the correct
