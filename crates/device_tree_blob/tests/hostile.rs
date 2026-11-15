@@ -1463,3 +1463,78 @@ fn a_property_value_is_bounded_by_the_structure_block_exactly() {
     let mut out = [Region { start: 0, size: 0 }; 2];
     assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
 }
+
+/// A value of the wrong shape is `BadValue`, not `Truncated`: the blob is long enough, and what it
+/// holds is wrong. An integer property of two bytes is neither width the specification allows, and
+/// a name whose block ends before its NUL has no end. Each fault names itself, so a boot log that
+/// prints the error says which one the firmware made.
+#[test]
+fn a_value_of_the_wrong_shape_is_a_bad_value() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.begin_node(b"chosen");
+    b.prop(b"linux,initrd-start", &[0x12, 0x34]);
+    b.prop(b"linux,initrd-end", &0x2000u32.to_be_bytes());
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.initial_ramdisk(), Err(Error::BadValue));
+
+    // A property name at the end of the strings block, with no NUL after it.
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    let name_off = b.strings.len() as u32;
+    b.strings.extend_from_slice(b"reg");
+    b.token(3);
+    b.structure.extend_from_slice(&0u32.to_be_bytes());
+    b.structure.extend_from_slice(&name_off.to_be_bytes());
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let mut out = [Region { start: 0, size: 0 }; 1];
+    assert_eq!(dt.memory_regions(&mut out), Err(Error::BadValue));
+
+    // A node name that runs to the end of the structure block. The strings block must not be
+    // empty, or its offset is the blob's end and the header is refused first.
+    let mut b = Blob::new();
+    b.string(b"unused");
+    b.token(1);
+    b.structure.extend_from_slice(b"abcd");
+    let blob = b.finish();
+    let name_ends = u32::from_be_bytes(
+        blob[SIZE_DT_STRUCT_AT..SIZE_DT_STRUCT_AT + 4]
+            .try_into()
+            .unwrap(),
+    ) - 4;
+    let blob = patched(&blob, SIZE_DT_STRUCT_AT, name_ends);
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Err(Error::BadValue));
+}
+
+/// `Error` is what a stranger expects of a public error type: it displays, each fault as its own
+/// sentence, and it is a `core::error::Error`, so `?` carries it into a boxed error.
+#[test]
+fn every_error_displays_as_its_own_sentence() {
+    let all = [
+        Error::BadMagic(0x1234_5678),
+        Error::UnsupportedVersion(18),
+        Error::Truncated,
+        Error::BadValue,
+        Error::BadToken(7),
+        Error::TooManyRegions,
+        Error::TooLarge(3 << 20),
+        Error::RegionOverflow,
+    ];
+    let shown: Vec<String> = all.iter().map(|error| error.to_string()).collect();
+    for (index, text) in shown.iter().enumerate() {
+        assert!(!text.is_empty());
+        assert!(
+            !shown[..index].contains(text),
+            "two errors display as {text:?}"
+        );
+    }
+    assert!(shown[0].contains("0x12345678"));
+    let boxed: Box<dyn std::error::Error> = Box::new(Error::Truncated);
+    assert_eq!(boxed.to_string(), "device tree truncated");
+}

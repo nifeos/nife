@@ -40,15 +40,25 @@ impl Region {
 }
 
 /// Why parsing the blob failed.
+///
+/// Each fault has its own variant, as libfdt separates `FDT_ERR_TRUNCATED`, `FDT_ERR_BADVALUE` and
+/// `FDT_ERR_BADSTRUCTURE`, so a caller printing the error at boot names the fault the firmware made.
+/// The enum is `#[non_exhaustive]`: a later fault gets its own variant without breaking a caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// The first four bytes were not `0xd00dfeed`. Either the pointer is wrong or the
     /// bootloader did not hand over a device tree at all.
     BadMagic(u32),
     /// The blob claims a version this parser does not read: its `last_comp_version` is above 17.
     UnsupportedVersion(u32),
-    /// An offset in the header points outside the blob. Truncated or corrupt.
+    /// The blob, or one of its blocks, ends before something it must hold: an offset in the header
+    /// points outside the blob, a property's value runs past the structure block, or the walk
+    /// reaches the end of the structure block without its end token.
     Truncated,
+    /// A value has the wrong shape for what it holds: an integer property that is neither 4 nor 8
+    /// bytes long, or a node or property name with no terminating NUL inside its block.
+    BadValue,
     /// A token this parser does not recognize. The structure block is malformed.
     BadToken(u32),
     /// The caller's output slice was too small to hold every region found.
@@ -65,6 +75,30 @@ pub enum Error {
     /// work around it.
     RegionOverflow,
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::BadMagic(magic) => write!(formatter, "bad device tree magic {magic:#010x}"),
+            Error::UnsupportedVersion(version) => {
+                write!(formatter, "unsupported device tree version {version}")
+            }
+            Error::Truncated => formatter.write_str("device tree truncated"),
+            Error::BadValue => formatter.write_str("malformed device tree property value or name"),
+            Error::BadToken(token) => write!(formatter, "unknown device tree token {token:#x}"),
+            Error::TooManyRegions => formatter.write_str("too many regions for the output slice"),
+            Error::TooLarge(size) => {
+                write!(
+                    formatter,
+                    "device tree claims {size} bytes, above the ceiling"
+                )
+            }
+            Error::RegionOverflow => formatter.write_str("region wraps the 64-bit address space"),
+        }
+    }
+}
+
+impl core::error::Error for Error {}
 
 // Structure-block tokens.
 const FDT_BEGIN_NODE: u32 = 0x1;
@@ -1223,7 +1257,7 @@ impl<'a> DeviceTreeBlob<'a> {
         match len {
             4 => Ok(be32(self.bytes, at)? as u64),
             8 => Ok(be64(self.bytes, at)?),
-            _ => Err(Error::Truncated),
+            _ => Err(Error::BadValue),
         }
     }
 
@@ -1331,14 +1365,14 @@ impl<'a> DeviceTreeBlob<'a> {
     /// A node's name: the string at `at` in the structure block, which must end inside it.
     fn node_name(&self, at: usize) -> Result<&'a [u8], Error> {
         let rest = self.structure.get(at..).ok_or(Error::Truncated)?;
-        let end = rest.iter().position(|&b| b == 0).ok_or(Error::Truncated)?;
+        let end = rest.iter().position(|&b| b == 0).ok_or(Error::BadValue)?;
         Ok(&rest[..end])
     }
 
     /// A null-terminated string in the blob, returned without its terminator.
     fn cstr(&self, at: usize) -> Result<&'a [u8], Error> {
         let rest = self.bytes.get(at..).ok_or(Error::Truncated)?;
-        let end = rest.iter().position(|&b| b == 0).ok_or(Error::Truncated)?;
+        let end = rest.iter().position(|&b| b == 0).ok_or(Error::BadValue)?;
         Ok(&rest[..end])
     }
 }
