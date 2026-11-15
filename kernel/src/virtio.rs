@@ -45,8 +45,9 @@ fn read_reg(slot: u64, offset: u64) -> u32 {
 }
 
 /// The only `Version` the kernel's scan accepts: modern virtio-mmio. Version 1 is the legacy
-/// layout, whose registers differ; version 3 is not defined for this window. The check is here and
-/// in no driver (1113 Decision 3).
+/// layout, whose queue registers differ from the ones [`Transport::setup_queue`] writes, so the
+/// kernel could not drive one; no other version is defined. The PCI transport answers 2 for the
+/// same offset. Whether a driver checks it too is milestone 1113's Decision 3, still open.
 const SUPPORTED_VERSION: u32 = 2;
 
 /// What the three identity registers of one slot say.
@@ -239,6 +240,12 @@ const REG_VERSION_RO: u64 = 0x004;
 const REG_DEVICE_ID_RO: u64 = 0x008;
 const REG_DEVICE_FEATURES: u64 = 0x010;
 const REG_INTERRUPT_STATUS: u64 = 0x060;
+/// (`ConfigGeneration`, virtio 1.2 section 4.2.2) The configuration generation, which the device
+/// changes whenever its device-specific configuration changes. A driver reads it before and after a
+/// multi-word configuration read (a blk capacity's two halves) and retries when the two differ. On
+/// PCI it is the common configuration's `config_generation` byte. Name: provisional.
+#[doc(alias = "ConfigGeneration")]
+const REG_CONFIGURATION_GENERATION: u64 = 0x0fc;
 /// The device-specific config area, in the mmio vocabulary (virtio spec 4.2.2: offset 0x100). A blk
 /// device's capacity is at its offset 0, read by `blk::SIZE` in two 32-bit halves. On PCI it is
 /// [`Transport::Pci::device_config`].
@@ -282,6 +289,10 @@ const PCI_DEVICE_FEATURE: u64 = 0x04;
 const PCI_DRIVER_FEATURE_SEL: u64 = 0x08;
 const PCI_DRIVER_FEATURE: u64 = 0x0c;
 const PCI_DEVICE_STATUS: u64 = 0x14;
+/// The common configuration's generation byte, answered at [`REG_CONFIGURATION_GENERATION`].
+/// Name: provisional.
+#[doc(alias = "config_generation")]
+const PCI_CONFIGURATION_GENERATION: u64 = 0x15;
 const PCI_QUEUE_SEL: u64 = 0x16;
 const PCI_QUEUE_SIZE: u64 = 0x18;
 const PCI_QUEUE_ENABLE: u64 = 0x1c;
@@ -350,6 +361,11 @@ impl Transport {
                 // Same bit 0 (queue interrupt) the mmio register reports.
                 REG_INTERRUPT_STATUS => pread::<u8>(*isr) as u32,
                 REG_STATUS => pread::<u8>(common + PCI_DEVICE_STATUS) as u32,
+                // The device's own generation, so a driver's bracketed configuration read checks
+                // the same thing on both buses. Read before the region it brackets.
+                REG_CONFIGURATION_GENERATION => {
+                    pread::<u8>(common + PCI_CONFIGURATION_GENERATION) as u32
+                }
                 REG_QUEUE_NUM_MAX => {
                     pwrite::<u16>(common + PCI_QUEUE_SEL, 0);
                     pread::<u16>(common + PCI_QUEUE_SIZE) as u32
