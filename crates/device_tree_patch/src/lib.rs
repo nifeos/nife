@@ -596,8 +596,8 @@ mod tests {
             "the /reserved-memory the kernel honours"
         );
         assert_eq!(
-            a.node_prop(b"chosen", b"stdout-path").unwrap(),
-            b.node_prop(b"chosen", b"stdout-path").unwrap()
+            a.node_property(b"chosen", b"stdout-path").unwrap(),
+            b.node_property(b"chosen", b"stdout-path").unwrap()
         );
     }
 
@@ -937,7 +937,7 @@ mod tests {
         let mut regions = [Region { start: 0, size: 0 }; 4];
         let n = DeviceTreeBlob::from_bytes(&out)
             .unwrap()
-            .reserved_regions(&mut regions)
+            .memory_reservations(&mut regions)
             .unwrap();
         assert_eq!(
             regions[..n],
@@ -1107,7 +1107,7 @@ mod tests {
         let out = rewrite(&tree(&[], &s, false, 0), 0x1000, 0x2000);
         let tree = DeviceTreeBlob::from_bytes(&out).unwrap();
         assert_eq!(
-            tree.node_prop(b"other", INITRD_START).unwrap(),
+            tree.node_property(b"other", INITRD_START).unwrap(),
             Some(&0x1234u64.to_be_bytes()[..])
         );
     }

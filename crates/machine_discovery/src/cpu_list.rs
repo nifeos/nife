@@ -166,10 +166,10 @@ impl CpuList {
         let mut status = [None; MAXIMUM_CPU_NODES];
         let mut methods = [None; MAXIMUM_CPU_NODES];
         let mut isa_strings = [None; MAXIMUM_CPU_NODES];
-        list.described = dt.node_props(b"cpu@", b"reg", &mut regs)?;
-        dt.node_props(b"cpu@", b"status", &mut status)?;
-        dt.node_props(b"cpu@", b"enable-method", &mut methods)?;
-        dt.node_props(b"cpu@", b"riscv,isa", &mut isa_strings)?;
+        list.described = dt.node_properties(b"cpu@", b"reg", &mut regs)?;
+        dt.node_properties(b"cpu@", b"status", &mut status)?;
+        dt.node_properties(b"cpu@", b"enable-method", &mut methods)?;
+        dt.node_properties(b"cpu@", b"riscv,isa", &mut isa_strings)?;
 
         list.len = list.described.min(MAXIMUM_CPU_NODES);
         for i in 0..list.len {
@@ -200,7 +200,7 @@ impl CpuList {
 /// bindings *require* `/cpus` to declare this, so an absent property is a malformed tree, and the
 /// overwhelmingly common shape (every tree QEMU emits, on both architectures) is one cell.
 fn cpus_address_cells(dt: &DeviceTreeBlob<'_>) -> Result<u32, Error> {
-    match dt.node_prop(b"cpus", b"#address-cells")? {
+    match dt.node_property(b"cpus", b"#address-cells")? {
         Some(bytes) if bytes.len() >= 4 => {
             Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
         }
@@ -244,11 +244,11 @@ pub(crate) fn is_okay(value: &[u8]) -> bool {
 /// correct general answer. The kernel treats the counter as machine-wide either way, so the honest
 /// place to record that limitation is here rather than at the call site.
 fn timebase_hertz(dt: &DeviceTreeBlob<'_>) -> Result<Option<u64>, Error> {
-    if let Some(bytes) = dt.node_prop(b"cpus", b"timebase-frequency")? {
+    if let Some(bytes) = dt.node_property(b"cpus", b"timebase-frequency")? {
         return Ok(cells_to_u64(bytes));
     }
     let mut per_hart = [None; 1];
-    dt.node_props(b"cpu@", b"timebase-frequency", &mut per_hart)?;
+    dt.node_properties(b"cpu@", b"timebase-frequency", &mut per_hart)?;
     Ok(per_hart[0].and_then(cells_to_u64))
 }
 

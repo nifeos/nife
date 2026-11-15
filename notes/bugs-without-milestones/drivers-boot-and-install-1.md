@@ -45,7 +45,6 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/bench-runbook.md (UTF-8 bullet) | `script/board-console` logs contain invalid UTF-8 under sustained output; `tr`/`awk` fail and `grep` silently sees nothing; cause undiagnosed | `board-console` writes logs ordinary tools can read | S  |
 |  notes/bench-runbook.md (two-process bullet) | two `board-console` processes on one serial port silently split the stream; no lock | `board-console` refuses a second opener on the same port | S  |
 |  notes/board-console.md (OpenSBI bullet) | does not recognize an OpenSBI trap dump | `board-console` recognizes an OpenSBI trap dump | S  |
-|  notes/device-tree.md | `memory_regions` matches `/memory` by name, not `device_type`; unbalanced `FDT_END_NODE` is walked, not refused | Make the device-tree walkers strict (device_type, nesting balance) | S  |
 |  notes/e1000e.md | Unexplained x86_64 AMD-Vi hang; the UDP round-trip test's wait is unbounded (bounding it turns hang into a failure) | Bound the e1000e UDP test's wait | S  |
 |  notes/framebuffer-contract.md | Every `gpu_driver` spawner must receive `FLUSHED` or the driver serves one flush; nothing enforces it | Make an unread `FLUSHED` unrepresentable | M  |
 |  notes/jh7110-clock-and-reset.md | vendor `rstgen` node path has never been exercised by a fixture | Fixture for the rstgen-only device tree | S  |

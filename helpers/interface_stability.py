@@ -1046,9 +1046,6 @@ def render_appendix(rows, crates, week, events, rev, package_lines=()):
            'each column counts, and what none of them can see, is '
            '[notes/interface-stability.md](../interface-stability.md).*', '',
            '## Every crate, since the first commit', '',
-           'Sorted by breaking changes in the last four weeks (%s to %s), then by all time. '
-           'Co-change counts a commit once per contract crate it touches, so a column does not '
-           'sum to the page\'s weekly share.' % (recent[0], recent[-1]), '',
            '| crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits '
            '| crossing another division |',
            '|---|---:|---:|---:|---:|---:|---:|']
@@ -1057,6 +1054,12 @@ def render_appendix(rows, crates, week, events, rev, package_lines=()):
         share = '' if not t[2] else ' (%d%%)' % round(100.0 * t[3] / t[2])
         out.append('| `%s` | %d | %d | %d | %d | %d | %d%s |'
                    % (crate, r[0], r[1], t[0], t[1], t[2], t[3], share))
+    # The note sits under the table, not above it: helpers/prose_ratchet.py counts through the table
+    # under this heading (GENERATED_TABLES), and only a table that follows its heading directly is
+    # skipped, so a sentence between them would put every row back in the word count.
+    out += ['', 'Sorted by breaking changes in the last four weeks (%s to %s), then by all time. '
+            'Co-change counts a commit once per contract crate it touches, so a column does not '
+            'sum to the page\'s weekly share.' % (recent[0], recent[-1])]
     out += ['', '## What broke in %s' % week, '',
             'Read at `%s` against the week before. Each line is one removed or changed public '
             'item, quoted as it stood that week; a crate rename is one line for the whole '
