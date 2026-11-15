@@ -102,10 +102,10 @@ one-way after. The items say which.
    (`TIME_ZONE`, `LOCALE`, `TERMINAL_TYPE`). `TZ`, `LANG` and `TERM` are POSIX's own variable names,
    which the naming rules let a name keep only with the expansion in the doc comment and a
    `#[doc(alias)]`. The accessors carry neither (the aliases sit on the constants). `abbreviations`
-   reports all 19 components. No `Name:` block covers any of them. Change: the decision below.
-   Whichever way it goes, each accessor gains `#[doc(alias = "TZ")]`, `"LANG"` or `"TERM"`, and the
-   overlay's `seed()` moves in the same change. Door: public function names, one-way after the move;
-   an architect names public functions. Effort: S after the ruling.
+   reports all 19 components. No `Name:` block covers any of them. Change: the names the decision
+   below decides, provisionally. Each accessor gains `#[doc(alias = "TZ")]`, `"LANG"` or `"TERM"`, and the
+   overlay's `seed()` moves in the same change. Door: two-way before the first tag; the
+   architect may revisit the names. Effort: S after the ruling.
 
 5. No proof, and the one that matters would have caught item 1. Finding: the crate has no
    `#[cfg(kani)]` module and no `falsifications/`; `crate-standalone` fails `proofs`, and the
@@ -170,8 +170,8 @@ The P2 items are in [the appendix](1089-environment-contract-outside-review/late
 
 ## Decisions for the architect
 
-Only the one-way doors. Each states the background, the recommendation first, the prior art and
-one concrete example.
+Each states the background, the recommendation first, the prior art and one concrete example. The
+accessor names are decided, provisionally.
 
 ### Freeze the identity: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, and the 99-byte layout
 
@@ -223,6 +223,14 @@ in this tree's own vocabulary uses it.
 Example. `PageBuilder::new().time_zone("UTC")?.locale("C")?.terminal_type("dumb")?.build()` against
 today's `.tz("UTC")?.lang("C")?.term("dumb")?`; a refusal reads `Refused::UnknownTimeZone` in a
 log a stranger has to understand.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation holds: `time_zone`, `locale` and
+`terminal_type` on both types, `is_known_time_zone` and its siblings, and
+`Refused::UnknownTimeZone` and its siblings. Each accessor carries `#[doc(alias = "TZ")]`, `"LANG"`
+or `"TERM"`, since POSIX's variable names are the source's terms, and no alias of the old
+spellings. The standard library overlay's call (`overlay/std/src/sys/env/nife.rs` line 146) moves
+in the same change. Item 4 is the work.
 
 ## Done when
 

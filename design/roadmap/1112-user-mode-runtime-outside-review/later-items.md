@@ -31,8 +31,8 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
     69 to 90, `src/clock.rs` lines 45, 57, 72, 82, 126, 137, and
     `src/inter_process_communication.rs`     line 69.
     Change: the names review the move requires (every one of the 114 unratified names), with
-    the recommendations in the decisions section. Door: names are the architect's; two-way until
-    the first tag. Effort: M for the rename lane, after the ruling.
+    the names Decision 1 decides, provisionally. Door: two-way until the first tag; ratifying the
+    names stays the architect's. Effort: M for the rename lane, after the ruling.
 
 14. Two spellings of the empty-slot probe.
     Finding: `is_granted` invokes method `0xffff` and `retype_sleeper` invokes method `u64::MAX`,
@@ -53,9 +53,9 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
     a different projection of the same five words. The prior art returns one message record from
     one call.
     Evidence: `src/inter_process_communication.rs` lines 101 to 233 and 480 to 511.
-    Change: see the decisions section; the stricter surface is the smaller one, and a wrapper
-    added later is compatible where one removed is not. Effort: M to L across callers.
-    Door: one-way after the first tag.
+    Change: the smaller surface, as Decision 3 decides, provisionally; a wrapper added later is
+    compatible where one removed is not. Effort: M to L across callers.
+    Door: two-way before the first tag.
 
 16. The reason `socket_frame` gives for living here is stale.
     Finding: the module doc says `MappedWindow` "cannot compile for the host"; it does (item 4).

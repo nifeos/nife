@@ -10,7 +10,7 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
   the lint exempts them and the ceiling entry is gone.
 - `spelled_out.py` reports 0 for the crate at the template's head, and no private name says `FLAG`
   for an option letter.
-- The public names the architect rules on in decisions 2 to 4 get applied in one lane with nife's callers, or the record shows them ratified under their current spelling.
+- The public names of decisions 2 to 4 get applied in one lane with nife's callers, `asks_service` and `BARE_VERSION` among them, or the record shows them ratified under their current spelling.
 - `Error` implements `Display` and `core::error::Error`. `Zones` has `len`. `cargo doc` with
   warnings denied, `cargo clippy --all-targets`, `cargo test` and `cargo kani` are green at the
   commit the tag names.
