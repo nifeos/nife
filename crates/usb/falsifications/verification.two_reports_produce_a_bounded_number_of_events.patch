@@ -9,7 +9,7 @@ Expected to fail: the harness's `assert!(n <= 20)`.
 diff --git a/crates/usb/src/boot_keyboard.rs b/crates/usb/src/boot_keyboard.rs
 --- a/crates/usb/src/boot_keyboard.rs
 +++ b/crates/usb/src/boot_keyboard.rs
-@@ -250,2 +250,3 @@
+@@ -312,2 +312,3 @@
          if flipped & (1 << bit) != 0 {
 +            event(code, false);
              event(code, after.modifiers & (1 << bit) != 0);
