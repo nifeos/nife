@@ -86,7 +86,7 @@ const RETRY_GAP_NANOSECONDS: u64 = 2 * 1_000_000;
 /// segments; the same address `socket_test_client` uses, and each address space is its own. The
 /// test server picks its own, and the two do not have to agree: what they share is the frame's
 /// *layout*, which is `socket_contract`'s.
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 /// The shared frame at that address, read and written through
 /// `user_mode_runtime::socket_frame::Frame`.

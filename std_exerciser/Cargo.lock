@@ -7,7 +7,7 @@ name = "abi"
 version = "0.1.0"
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -87,7 +87,7 @@ checksum = "a31eee39dddec8330830986fcd7625edb5a24ec90ea038215273bbc3adb08ac6"
 name = "current_cpu_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -408,7 +408,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",

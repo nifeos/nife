@@ -622,7 +622,7 @@ packaged_only = ["greeting", "noteless", "greeting_v2", "alto", "tenor", "dialer
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 # The words the milestone 7-19 capability demonstrations agree on, now that each is its own
 # binary (milestone 291). AGENTS.md rule 7: what two binaries must agree on is a crate.

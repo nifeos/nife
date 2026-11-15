@@ -205,9 +205,9 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 /// notes/user-mode-runtime.md.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
-/// question 2). His words: "Ratify `retype_kernel_object` `address_space_map_into`." Refused
+/// question 2). His words: "Ratify `retype_kernel_object` `address_space_layout_into`." Refused
 /// `map_into` (round 7's provisional name; the method is `address_space::MAP_INTO`).
-pub fn address_space_map_into(
+pub fn address_space_layout_into(
     virtual_address_space_slot: u64,
     virtual_address: u64,
     frame_slot: u64,

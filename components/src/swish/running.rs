@@ -213,7 +213,7 @@ fn release_region(region: u64) {
 
 /// **Where this shell writes what it sends the progenitor in frames**: the argv pages
 /// ([`ARGV_VA`]), the name-set pages ([`SET_VA`]), then an image's frames ([`IMAGE_VA`], DECISIONS §219 option D).
-pub(super) const IMAGE_WINDOW: u64 = address_space_map::pair_page(0x0000_0000_0400_0000);
+pub(super) const IMAGE_WINDOW: u64 = address_space_layout::pair_page(0x0000_0000_0400_0000);
 
 /// **The window this shell writes an image's frames through**, above the name-set pages. At most
 /// [`spawnproto::IMAGE_MAXIMUM_PAGES`] pages, which is 4 MiB and so crosses 2 MiB page-table spans.

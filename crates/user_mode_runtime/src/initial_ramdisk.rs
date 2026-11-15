@@ -24,7 +24,7 @@
 
 /// Where the kernel maps the initial ramdisk archive before any program's `_start` runs: the
 /// address-space map's constant, which the kernel's own mapping uses too, so the two cannot differ.
-pub use address_space_map::INITIAL_RAMDISK_VIRTUAL_ADDRESS;
+pub use address_space_layout::INITIAL_RAMDISK_VIRTUAL_ADDRESS;
 
 /// The initial ramdisk archive bytes this process was handed at spawn. `len` is the value `_start`
 /// received in its second argument register (`x1`/`a1`/`rsi`), which the kernel set to the

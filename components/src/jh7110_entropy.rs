@@ -101,7 +101,7 @@ const READY: u64 = 1;
 /// Provisional and distinct from the `0x0090_0000` DMA convention `entropy.rs` and
 /// `keyboard_driver.rs` share, so the two backends cannot collide if a wiring ever needs both
 /// mapped in different processes at once.
-const TRNG_VA: u64 = address_space_map::pair_page(0x0000_0000_0094_0000);
+const TRNG_VA: u64 = address_space_layout::pair_page(0x0000_0000_0094_0000);
 
 /// How many times to poll one generation attempt before giving up on it. **Not a measured bound**:
 /// see the module doc. Large enough that a real device answering in microseconds never hits it in

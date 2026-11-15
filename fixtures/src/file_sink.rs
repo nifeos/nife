@@ -63,7 +63,7 @@ const FS: u64 = 1;
 const REPORT: u64 = 2;
 
 /// The page shared with the FS server. Matches `fs_service`'s `FILE_VA_CLIENT`.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the FS contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 

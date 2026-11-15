@@ -22,7 +22,7 @@ CLASS = {
         jh7110_entropy line_editor video_terminal""".split(), "B"),
 }
 CUT = {
-    "e1000e": "inline `address_space_map::pair_page`, its one use",
+    "e1000e": "inline `address_space_layout::pair_page`, its one use",
     "designware_ethernet": "inline `pair_page`; take the register region from the caller, not the tree",
     "designware_mobile_storage": "inline `pair_page` and `BLOCK_SIZE`; take the region from the caller",
     "jh7110_entropy": "take the register region from the caller, not the tree",

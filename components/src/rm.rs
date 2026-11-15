@@ -50,7 +50,7 @@ const REPORT: u64 = 1;
 /// Where the verdict goes, after the report has ended.
 const VERDICT: u64 = rm::VERDICT_SLOT;
 /// The page shared with the FS server.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
@@ -352,8 +352,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: byte_sink_contract::INTERFACE_ID,

@@ -50,8 +50,8 @@ const RESOLVER: u64 = 1;
 const MEMORY_REGION: u64 = 2;
 const STACK: u64 = 3;
 
-const RESOLVER_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
-const SOCKET_VA: u64 = address_space_map::pair_page(0x0000_0000_00A1_0000);
+const RESOLVER_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
+const SOCKET_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A1_0000);
 
 // SAFETY: `attach` maps each page read/write at its address before the first access through it, and
 // the program stops before any access when a map fails.

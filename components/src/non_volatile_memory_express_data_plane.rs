@@ -42,7 +42,7 @@ use non_volatile_memory_express::{
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
-    address_space_map_into, exit, receive, receive_capability, receive_request, reply, send,
+    address_space_layout_into, exit, receive, receive_capability, receive_request, reply, send,
 };
 
 use crate::{IO_QID, NSID, SPIN_BOUND, barrier};
@@ -238,7 +238,7 @@ fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWin
             }
             _ => return None,
         };
-        if address_space_map_into(
+        if address_space_layout_into(
             data_plane_slots::OWN_SPACE,
             va,
             slot,

@@ -66,7 +66,7 @@ impl Held {
         let page = unsafe { StartupPage::mapped() }.expect("no startup page");
         let windows = KINDS.map(|(_, kind)| {
             page.window(kind).map(|w| {
-                assert!(u64::from(w.pages) * address_space_map::PAGE >= USED_WINDOW_BYTES);
+                assert!(u64::from(w.pages) * address_space_layout::PAGE >= USED_WINDOW_BYTES);
                 // SAFETY: the spawner maps every window it lists for the life of the process, the
                 // syscon read-only and the three domains read/write, and this server writes only
                 // what `Windows::write` is handed, which is never the syscon.

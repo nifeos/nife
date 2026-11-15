@@ -64,12 +64,12 @@ const SCRATCH: u64 = 3;
 /// runtime, once `CONNECT` hands back the capability naming it (milestone 49's channel-per-client
 /// update; see `_start`'s own `map_page_frame` call). Not a `MappedWindow` (round 6's usual
 /// collapse for a statically pre-mapped page): nothing is mapped here before this process runs.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_00e2_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e2_0000);
 /// Where this process maps the delegated file-service frame, once it has one. Distinct from
 /// [`PAGE_VA`]: they are two different pages (this process's login request, and the filesystem
 /// contract's shared page), and a client of both must not confuse them the way `credentialer.rs`'s
 /// own two-frame rule exists to prevent for its own pair.
-const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_00f0_0000);
+const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00f0_0000);
 
 // SAFETY: constructing the window touches no memory; only `put_page`/`get_page` do, and every
 // caller of those runs behind `if mapped { .. }` (this process's own `map_page_frame(fs_page_frame, FS_VA,

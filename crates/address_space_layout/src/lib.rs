@@ -59,7 +59,7 @@
 //!   buys a pair page checked at compile time and one linker script; it gives up the
 //!   unpredictability that a randomizing system offers an attacker's guess.
 //!
-//! Name: provisional: a map of one address space; `user_layout` and `address_space` were set aside.
+//! Name: ratified 2026-11-14 (UTC) (block 1076 decision N1): the layout of one address space; `user_layout` and `address_space` were set aside.
 
 #![cfg_attr(not(test), no_std)]
 #![forbid(unsafe_code)]
@@ -214,7 +214,7 @@ pub const fn pair_page(virtual_address: u64) -> u64 {
     );
     assert!(
         PAIR_PAGES.contains(virtual_address),
-        "a pair page must lie in PAIR_PAGES (address_space_map)"
+        "a pair page must lie in PAIR_PAGES (address_space_layout)"
     );
     virtual_address
 }
@@ -228,7 +228,7 @@ pub const fn runtime_window(virtual_address: u64) -> u64 {
     );
     assert!(
         RUNTIME_WINDOWS.contains(virtual_address),
-        "a runtime window must lie in RUNTIME_WINDOWS (address_space_map)"
+        "a runtime window must lie in RUNTIME_WINDOWS (address_space_layout)"
     );
     virtual_address
 }
@@ -251,7 +251,7 @@ pub const fn service_window(virtual_address: u64) -> u64 {
     );
     assert!(
         SERVICE_WINDOWS.contains(virtual_address),
-        "a service window must lie in SERVICE_WINDOWS (address_space_map)"
+        "a service window must lie in SERVICE_WINDOWS (address_space_layout)"
     );
     virtual_address
 }
@@ -310,7 +310,7 @@ impl core::fmt::Display for ImagePlacement {
 /// # Examples
 ///
 /// ```
-/// use address_space_map::{check_image, pair_page, ImagePlacement, IMAGE, STACK};
+/// use address_space_layout::{check_image, pair_page, ImagePlacement, IMAGE, STACK};
 ///
 /// // A fixture's shared page is a pair page, checked at compile time.
 /// const CTL_VA: u64 = pair_page(0x60_0000);

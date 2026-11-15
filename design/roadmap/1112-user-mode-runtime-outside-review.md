@@ -18,7 +18,7 @@ inherit. The review treats as settled only what a ruling elsewhere already fixes
 `VERSION` and `INTERFACE_ID` (the names every contract crate carries), `INTERFACE_ID = 20` for the
 entry registers and link layout, and the ratified function names the `Name:` blocks record. It is also the
 order of extraction in milestone 1017 (the contract crates leave in this order). That order places this
-crate in step 3, after `abi`, `address_space_map`, `current_cpu_contract` and the five contract
+crate in step 3, after `abi`, `address_space_layout`, `current_cpu_contract` and the five contract
 crates it links. Nothing here reopens those. Where a later rule contradicts a recorded ruling, the
 item says so.
 
@@ -88,7 +88,7 @@ Recommendation, one row per name, the stricter spelling first:
 | today | recommended | why |
 |---|---|---|
 | `va` (three parameters) | `virtual_address` | the `[spelled_out]` list says so; the sibling contract crates already renamed theirs |
-| `aspace`, `aspace_slot` | `address_space_slot` | abbreviation; `address_space_map_into` already spells it |
+| `aspace`, `aspace_slot` | `address_space_slot` | abbreviation; `address_space_layout_into` already spells it |
 | `tcb_slot` | `thread_control_block_slot` | the function names already spell it |
 | `user_sp` | `user_stack_pointer` | abbreviation |
 | `nr` | `number` | abbreviation |
@@ -132,7 +132,7 @@ published behavior from the first release on.
 Recommendation: the embedded Rust mechanism. This crate's `build.rs` copies `link.ld` into
 `OUT_DIR` and emits `cargo:rustc-link-search`; a program links with `-C link-arg=-Tlink.ld` and
 no path. The script's base stays `0x60000000`, and the test that checks it against
-`address_space_map::IMAGE_BASE` moves here. The alternative, each consumer vendoring a copy, is
+`address_space_layout::IMAGE_BASE` moves here. The alternative, each consumer vendoring a copy, is
 what milestone 73 (name the aarch64 files aarch64, before x86_64 makes it worse) refused ("two copies would be two places to be wrong about the base") and the
 move would make it nine copies.
 
@@ -191,7 +191,7 @@ has no caller outside the crate. Item 15 is the work.
 - **Done.** Item 5: a `build.rs` in the crate puts `link.ld` on the link search path, and every
   consumer emits `-Tlink.ld` with no path. The std programs depend on the crate for it, which grew
   their lockfiles. This lane does not build them.
-- **Done.** Item 11: `address_space_map` derives `INITIAL_RAMDISK_VIRTUAL_ADDRESS` from the
+- **Done.** Item 11: `address_space_layout` derives `INITIAL_RAMDISK_VIRTUAL_ADDRESS` from the
   runtime window base, and the kernel loader and this crate re-export it. The crate no longer sets
   `test = false`.
 - **Done.** Item 13, under the provisional Decision 1: the crate and every caller spell out the abbreviated

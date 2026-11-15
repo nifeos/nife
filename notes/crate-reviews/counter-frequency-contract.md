@@ -76,7 +76,7 @@ because uppercase erases the case that tells `MHz` from `mHz`.
 
 | item | owner |
 |---|---|
-| The crate's manifest has no dependency, so it leaves in step 2 of milestone 1017's order, ahead of `address_space_map`. The table there lists a development dependency that no longer exists. | maintainer |
+| The crate's manifest has no dependency, so it leaves in step 2 of milestone 1017's order, ahead of `address_space_layout`. The table there lists a development dependency that no longer exists. | maintainer |
 
 ## Proposed items
 

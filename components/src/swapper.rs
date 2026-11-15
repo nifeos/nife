@@ -22,7 +22,7 @@ use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    Message, address_space_map_into, capability_delete, counter_hertz, map_page_frame, now,
+    Message, address_space_layout_into, capability_delete, counter_hertz, map_page_frame, now,
     receive, receive_message, revoke_page_frame, send, timer_arm, trap,
 };
 
@@ -397,7 +397,7 @@ fn endow_devices_and_start(
     stage: u64,
 ) {
     for &(va, slot, mode) in component.devices() {
-        if address_space_map_into(u.aspace, va, slot, mode) != 0 {
+        if address_space_layout_into(u.aspace, va, slot, mode) != 0 {
             bail(stage)
         }
     }

@@ -37,7 +37,7 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 
 /// The DMA page's virtual address, matching the kernel's `net_server` mapping.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 // SAFETY: the spawn service maps one page read/write at DMA_VA before this program runs
 // (milestone 139; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled

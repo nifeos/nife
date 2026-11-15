@@ -48,7 +48,7 @@ const EBADF: i32 = filesystem_contract::verb::file_grant::EBADF;
 /// The one page, shared with the FS server above and the client below. One frame for three parties
 /// is sound because every request on both hops is a blocking `CALL`: the client is parked inside its
 /// call for the whole time this process uses the page, so the two uses cannot interleave.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 

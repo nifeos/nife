@@ -11,7 +11,7 @@ name = "address_space_identifier"
 version = "0.1.0"
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -146,7 +146,7 @@ version = "0.1.0"
 name = "c_seam"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -173,7 +173,7 @@ dependencies = [
 name = "capability_witness_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "startup_page_contract",
 ]
 
@@ -211,7 +211,7 @@ name = "components"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "block_roster_contract",
  "boot_ladder",
  "boot_slot",
@@ -301,7 +301,7 @@ name = "confined_syscall_fuzzer_contract"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -368,7 +368,7 @@ dependencies = [
 name = "current_cpu_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -471,7 +471,7 @@ version = "0.1.0"
 name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "designware_ethernet",
  "designware_inter_integrated_circuit",
  "driver_process_contract",
@@ -540,7 +540,7 @@ name = "fixtures"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "byte_sink_contract",
  "c_seam",
  "capability_manifest_note",
@@ -590,7 +590,7 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 name = "free"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "machine_statistics_contract",
  "number_writer",
 ]
@@ -672,7 +672,7 @@ dependencies = [
 name = "hot_swap_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "capability_plan",
 ]
 
@@ -720,7 +720,7 @@ dependencies = [
 name = "initial_ramdisk_writer"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "measured_boot",
  "nifefs",
  "package_archive",
@@ -822,7 +822,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_identifier",
- "address_space_map",
+ "address_space_layout",
  "base_digest_contract",
  "block_roster_contract",
  "boot_ladder",
@@ -965,7 +965,7 @@ dependencies = [
 name = "machine_statistics_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "current_cpu_contract",
 ]
 
@@ -1009,7 +1009,7 @@ name = "memory_region_heap"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "talc",
  "user_mode_runtime",
 ]
@@ -1171,7 +1171,7 @@ name = "process_builder"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "counter_frequency_contract",
  "startup_page_contract",
  "static_elf",
@@ -1349,7 +1349,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 name = "slabtop"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "number_writer",
 ]
 
@@ -1377,7 +1377,7 @@ dependencies = [
 name = "soak_page"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -1401,7 +1401,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 name = "startup_page_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -1412,7 +1412,7 @@ version = "0.1.0"
 name = "std_runtime_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "terminal_contract",
 ]
 
@@ -1440,7 +1440,7 @@ dependencies = [
 name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "startup_page_contract",
 ]
 
@@ -1484,7 +1484,7 @@ name = "system_initializer"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "base_digest_contract",
  "boot_ladder",
  "byte_sink_contract",
@@ -1540,7 +1540,7 @@ name = "system_tests"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "block_roster_contract",
  "byte_sink_contract",
  "c_program_fixture",
@@ -1835,7 +1835,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
@@ -1859,7 +1859,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 name = "video_terminal"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "glyph_atlas",
  "line_editor",
 ]
@@ -1868,7 +1868,7 @@ dependencies = [
 name = "virtio"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "driver_process_contract",
  "filesystem_contract",
  "nifefs",
@@ -1952,7 +1952,7 @@ dependencies = [
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "approval_file",
  "boot_ladder",
  "boot_slot",
