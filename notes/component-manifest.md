@@ -264,7 +264,7 @@ for a program run by its path: owner `nife`, type 1 and the encoding were ratifi
 component are still endowed from a manifest compiled into their supervisor, not read from their
 own bytes; see `design/roadmap/0597-a-program-carries-its-manifest-in-an-elf-note.md`.
 
-The note option does not teach `crates/elf` section headers. A `PT_NOTE` is a program header, in
+The note option does not teach `crates/static_elf` section headers. A `PT_NOTE` is a program header, in
 the table the crate already walks, so the crate stays program-headers-only; #1319 measured the
 reader at 113 lines, off the kernel's path.
 

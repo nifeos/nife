@@ -1,4 +1,4 @@
-Falsifies `elf::note::verification::note_extent_never_panics`.
+Falsifies `static_elf::note::verification::note_extent_never_panics`.
 
 The defect: the name's end is added rather than checked. `namesz` is a `u32` from the file and the
 cursor can sit anywhere in a segment, so on a 64-bit target this wraps only near `usize::MAX`; the
@@ -6,10 +6,10 @@ harness's cursor is unconstrained, which is the point.
 
 Expected to fail: the totality claim, as an arithmetic overflow on `name_start + namesz`.
 
-diff --git a/crates/elf/src/note.rs b/crates/elf/src/note.rs
+diff --git a/crates/static_elf/src/note.rs b/crates/static_elf/src/note.rs
 index 5e21b01e1..161855ab7 100644
---- a/crates/elf/src/note.rs
-+++ b/crates/elf/src/note.rs
+--- a/crates/static_elf/src/note.rs
++++ b/crates/static_elf/src/note.rs
 @@ -203,9 +203,7 @@ fn note_extent(
      if name_start > len {
          return Err(NoteError::Truncated);

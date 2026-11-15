@@ -43,7 +43,7 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, image_len: u64, _a2: u64) -> ! {
     // SAFETY: root_supervisor mapped `image_len` bytes of program image read-only at IMAGE_VA.
     let image = unsafe { core::slice::from_raw_parts(IMAGE_VA as *const u8, image_len as usize) };
-    let Ok(elf) = elf::Elf::parse(image) else {
+    let Ok(elf) = static_elf::Elf::parse(image) else {
         process_builder::fail()
     };
 
@@ -70,7 +70,7 @@ fn start(_a0: u64, image_len: u64, _a2: u64) -> ! {
 /// the kernel) as amended 2026-10-04). We keep nothing afterwards: the TCB capability is not the
 /// thread, and the region capability is not the reap (§32 (a supervisor may collect a corpse
 /// without being able to build one)). See notes/trusted-init/supervision-tree.md.
-fn build(elf: &elf::Elf, attempt: u64, label: u64) -> bool {
+fn build(elf: &static_elf::Elf, attempt: u64, label: u64) -> bool {
     let labelled = badge(CHILDFAULT, label);
     if labelled < 0 {
         return false; // a zero label, which BADGE refuses, or a full capability table
@@ -82,7 +82,7 @@ fn build(elf: &elf::Elf, attempt: u64, label: u64) -> bool {
 }
 
 /// [`build`] with the labelled supervision capability already minted in slot `fault`.
-fn build_labelled(elf: &elf::Elf, attempt: u64, fault: u64) -> bool {
+fn build_labelled(elf: &static_elf::Elf, attempt: u64, fault: u64) -> bool {
     let Ok(region) = process_builder::memory_region_split(BUDGET, INSTANCE_PAGES) else {
         return false;
     };

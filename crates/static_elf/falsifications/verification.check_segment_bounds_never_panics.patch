@@ -1,4 +1,4 @@
-Falsifies `elf::verification::check_segment_bounds_never_panics`.
+Falsifies `static_elf::verification::check_segment_bounds_never_panics`.
 
 The defect: the file-range addition is trusted rather than checked, `p_offset + filesz` in place
 of `checked_add`. The `end > file_len` test two lines down reads as though it covers this, which
@@ -8,10 +8,10 @@ Expected to fail: the totality claim, as an arithmetic overflow, on a program he
 huge offset and a huge size. Both numbers come from a file the kernel was handed, so this is a
 crafted binary halting the loader rather than being refused by it.
 
-diff --git a/crates/elf/src/parse.rs b/crates/elf/src/parse.rs
+diff --git a/crates/static_elf/src/parse.rs b/crates/static_elf/src/parse.rs
 index 51de81b47..f19f77190 100644
---- a/crates/elf/src/parse.rs
-+++ b/crates/elf/src/parse.rs
+--- a/crates/static_elf/src/parse.rs
++++ b/crates/static_elf/src/parse.rs
 @@ -219,9 +219,7 @@ pub(crate) fn check_segment_bounds(
  
      // The file range must lie within the file. `p_offset` and `filesz` are hostile, so the add is
