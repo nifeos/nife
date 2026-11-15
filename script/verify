@@ -752,11 +752,14 @@ for c in $crates; do
     secs=$(( $(date +%s) - started ))
     echo "==> kani-seconds: $c $secs"
     proved=$(( ${proved:-0} + secs ))
+    took="${took:-} $c=$secs"
 done
 
-# A shard that ran far from what the table planned says so on the run (a warning, never a
-# failure: helpers/verify_times.py's SHARD_WARN_PCT says why).
+# A shard that ran far from what the table planned says so on the run, and names each crate that
+# ran far past its own row (a warning, never a failure: helpers/verify_times.py's SHARD_WARN_PCT
+# says why).
 if [ -n "$shard" ]; then
-    printf '%s\n' "$CRATES" | python3 helpers/verify_times.py shard-check "$shard" "${proved:-0}" \
+    # shellcheck disable=SC2086
+    printf '%s\n' "$CRATES" | python3 helpers/verify_times.py shard-check "$shard" "${proved:-0}" ${took:-} \
         || echo "warning: helpers/verify_times.py shard-check did not run; the proofs above stand"
 fi
