@@ -47,7 +47,8 @@ fn read_reg(slot: u64, offset: u64) -> u32 {
 /// The only `Version` the kernel's scan accepts: modern virtio-mmio. Version 1 is the legacy
 /// layout, whose queue registers differ from the ones [`Transport::setup_queue`] writes, so the
 /// kernel could not drive one; no other version is defined. The PCI transport answers 2 for the
-/// same offset. Whether a driver checks it too is milestone 1113's Decision 3, still open.
+/// same offset. Whether a driver checks it too is Decision 3 of milestone 1113 (what an outside
+/// maintainer would fix in `virtio` before it leaves this tree), still open.
 const SUPPORTED_VERSION: u32 = 2;
 
 /// What the three identity registers of one slot say.
