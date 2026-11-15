@@ -62,7 +62,7 @@ sealed_pair = { version = "0.1.0", path = "../crates/sealed_pair" }
 # ruled by calef on 2026-10-21 (UTC): "B". MIT OR Apache-2.0. Default features off and only the
 # four the conversion reads and writes, which brings `crc32fast` and `foldhash` new to the tree;
 # `memchr`, `hashbrown` and `indexmap` were already here.
-object = { version = "0.40.0", default-features = false, features = ["read_core", "elf", "write_core", "pe"] }
+object = { version = "0.41.0", default-features = false, features = ["read_core", "elf", "write_core", "pe"] }
 # The framebuffer contract (milestone 29): the host-side scanout check compares QEMU's screendump
 # against the same pattern the guest painted, from the same definition, so the two cannot drift.
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
