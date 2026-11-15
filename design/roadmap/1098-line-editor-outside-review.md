@@ -267,6 +267,6 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). 
 
 ## Index row
 
-An outside review of `line_editor` before it leaves. Two items block the move (the crate does not stand alone, and the contract modules are not yet cut out of it). Six land before the first tag (names the rules refuse, a stranger's documentation, a fuzz target and two proofs, the handoff layout pinned, one duplicated constant). Six wait for later. Three one-way doors go to the
+An outside review of `line_editor` before it leaves. Two items block the move (the crate does not stand alone, and the contract modules are not yet cut out of it). Six land before the first tag. Six wait for later. Three one-way doors go to the
 architect: where the cut falls, the engine's type and history names, and the three limits reopened
 under the unit rule.

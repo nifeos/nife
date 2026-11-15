@@ -316,8 +316,5 @@ Decision 1 is built; the rest is open.
 
 An outside reading of `byte_glob` before it leaves. Six items block the move. Another crate holds the crate name on crates.io (Decision 1 rules it). Seven public names lack ratification (Decision 2). A test links two
 staying crates. Shipped text carries nife citations. The manifest inherits from the workspace. There
-is no README. Seven go before the first tag: a test name the question gate refuses, patch paths, the
-inline proof module, `forbid(unsafe_code)`, the missing `/` caveat, the module doc's opening, and
-two parameter names. Eight follow. The matcher itself checks out: tests, clippy, docs,
-three bare-metal builds and the two harnesses run are clean, every patch applies, and the recorded mutation score is complete.
+is no README. Seven go before the first tag. Eight follow. The matcher itself checks out.
 Publishing stays held.
