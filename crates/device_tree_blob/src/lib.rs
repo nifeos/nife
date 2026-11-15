@@ -1,35 +1,19 @@
 //! A minimal flattened device tree (FDT) parser: bytes in, regions and property values out.
 //!
 //! The blob is the machine describing itself (where RAM, the UART and the interrupt controller
-//! are, how many CPUs exist), handed over by firmware (notes/boot-protocol.md). Every integer in
-//! it is big-endian, so every read goes through `be32` or `be64`. The blob is untrusted input:
-//! every offset is checked, every walk is bounded, and a malformed blob is an [`Error`] rather
-//! than a panic. The crate is pure logic, so its tests run on the host against trees dumped from
-//! QEMU (§7 (testing: QEMU harness + host-testable crates)). See notes/device-tree.md.
+//! are, how many CPUs exist), handed over by firmware: a bootloader, a UEFI stub or QEMU. Every
+//! integer in it is big-endian, so every read goes through `be32` or `be64`. The blob is untrusted
+//! input: every offset is checked, every walk is bounded, and a malformed blob is an [`Error`]
+//! rather than a panic. The crate is pure logic with no target code, so its tests run on the host
+//! against trees dumped from QEMU's `virt` machines and against hand-built hostile blobs.
 //!
-
-//! Name: ratified 2026-09-18 (calef, `design/decisions/` §154), **deratifying the 2026-08-01
-//! ratification** to do it, and performed 2026-09-19. Refused `dtb`.
+//! The format is the one the Devicetree Specification (release 0.4) defines in its chapter 5,
+//! "Flattened Devicetree (DTB) Format", and the one libfdt reads.
 //!
-//! §154's test is whether the expansion is a phrase people actually say. "device tree blob" is,
-//! so it goes, where `pci` stays because "peripheral component interconnect" is not.
-//!
-//! The 2026-08-01 block called this one of the standard terms "already right and must not be
-//! touched". That was an exemption rather than a test, and §154 records the three-layer
-//! contradiction the exemptions left behind.
-//!
-//! **Known cost**: datasheets, error messages and this kernel's own output say `dtb`, so a reader
-//! grepping the word the machine printed will not find this identifier. Weighed and accepted.
-//!
-//! **Performed 2026-09-19**, with the type (`Dtb` to `DeviceTreeBlob`) and the fuzz target
-//! (`dtb_walk` to `device_tree_blob_walk`, dictionary included) under calef's rulings of that
-//! day. Census of `dtb` as a word, not counting the blob files' extension or `dtc -I dtb`: 327 before, 159
-//! after. Of the survivors, 64 name **the blob rather than the crate** and pass the ownership test
-//! the other way: `let dtb`, `kernel_main(dtb)`, `crate::DTB`, `dtb_ptr`, `configure_from_dtb`,
-//! and the test file `crates/pci_configuration_space/tests/qemu_virt_dtb.rs`. 15 are in `design/decisions/`, 2 are this
-//! block's refusal and known cost, and 78 are the old name in an account, a measurement or a
-//! ruling. **The blob files' extension did not move**: 86 occurrences and 20 files before and after,
-//! every filename unchanged, the five fixtures here included (their directory moved, they did not).
+//! Name: ratified 2026-09-18 (`design/decisions/` §154) and performed 2026-09-19. Refused `dtb`:
+//! "device tree blob" is a phrase people say, so the abbreviation goes. Known cost: datasheets,
+//! error messages and boot logs say `dtb`, so a reader grepping the word the machine printed will
+//! not find this identifier.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -45,12 +29,11 @@ pub struct Region {
 impl Region {
     /// One past the last byte, **saturating**.
     ///
-    /// Saturating because the type is `pub` with `pub` fields, so its values may come from a
-    /// hostile blob, and `kernel/src/memory.rs`'s `place_bitmap` calls this on every RAM region
-    /// before a boot can report a failure; a plain add would panic there under overflow checks
+    /// Saturating because the type is `pub` with `pub` fields, so anyone can build one whose
+    /// `start + size` wraps, and a caller placing an allocator over every RAM region may call this
+    /// before it can report a failure; a plain add would panic there under overflow checks
     /// (regression in `tests/hostile.rs`). A saturated end is still wrong, so the parser refuses a
-    /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check. See
-    /// notes/device-tree.md ("The parser's bounds").
+    /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check.
     pub fn end(&self) -> u64 {
         self.start.saturating_add(self.size)
     }
@@ -59,14 +42,14 @@ impl Region {
 /// Why parsing the blob failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// The first four bytes weren't `0xd00dfeed`. Either the pointer is wrong or the
-    /// bootloader didn't give us a device tree at all.
+    /// The first four bytes were not `0xd00dfeed`. Either the pointer is wrong or the
+    /// bootloader did not hand over a device tree at all.
     BadMagic(u32),
-    /// The blob claims a version we don't understand.
+    /// The blob claims a version this parser does not read: its `last_comp_version` is above 17.
     UnsupportedVersion(u32),
     /// An offset in the header points outside the blob. Truncated or corrupt.
     Truncated,
-    /// A token we don't recognize. The structure block is malformed.
+    /// A token this parser does not recognize. The structure block is malformed.
     BadToken(u32),
     /// The caller's output slice was too small to hold every region found.
     TooManyRegions,
@@ -77,9 +60,9 @@ pub enum Error {
     /// A `reg` pair whose `start + size` does not fit in 64 bits, so the region names memory that
     /// cannot exist.
     ///
-    /// Refused rather than clamped, and here rather than left to [`Region::end`]: the caller is
-    /// `kernel/src/memory.rs` deciding where RAM is, and a boot path should be told the firmware's
-    /// memory map is impossible rather than quietly work around it.
+    /// Refused rather than clamped, and here rather than left to [`Region::end`]: a caller deciding
+    /// where RAM is should be told the firmware's memory map is impossible rather than quietly
+    /// work around it.
     RegionOverflow,
 }
 
@@ -97,10 +80,9 @@ const HEADER_LEN: usize = 40;
 ///
 /// `from_ptr` trusts the header's length before anything is validated, and the magic says only
 /// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
-/// 4 GiB slice read past the end of RAM, a data abort in `memory::initialize` before any handler can say
-/// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
-/// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
-/// 64 KiB. See notes/device-tree.md ("The parser's bounds").
+/// 4 GiB slice read past the end of RAM, a fault on the boot path before any handler can say why.
+/// 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in `arch/arm64/include/asm/boot.h`); QEMU's `virt`
+/// blobs are under 64 KiB.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TOTALSIZE: usize = 2 * 1024 * 1024;
@@ -221,7 +203,7 @@ impl<'a> DeviceTreeBlob<'a> {
     }
 
     /// The memory reservation block: regions the bootloader is telling us **not to
-    /// touch**, before we've parsed a single node.
+    /// touch**, before a single node is parsed.
     ///
     /// This is a separate, deliberately dead-simple structure precisely so that a
     /// kernel can honour it without having to parse anything. QEMU's `virt` leaves it
@@ -268,7 +250,7 @@ impl<'a> DeviceTreeBlob<'a> {
         // Tracking the *depth* rather than a bare "am I inside one" flag matters: a
         // node's properties are the ones seen while `depth` equals the node's own depth.
         // If a /memory node ever had a child, a bare flag would be cleared by the
-        // child's END_NODE and we'd stop reading the parent's remaining properties. No
+        // child's END_NODE and the walk would stop reading the parent's remaining properties. No
         // real device tree does this today, which is exactly why it would be a lurking
         // bug rather than an obvious one.
         let mut memory_at: Option<i32> = None;
@@ -349,8 +331,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
     /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
     /// is the correct lookup. The first match is the answer: one with no `reg` yields zero regions, and
-    /// a later match's `reg` is never read in its place. A node deeper than the stack is not matched. See notes/device-tree.md
-    /// ("Finding a node").
+    /// a later match's `reg` is never read in its place. A node deeper than the stack is not matched.
     pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // #address-cells/#size-cells declared by the node at each depth, applying to its children.
         // Depth 0 is the pre-root sentinel; the root is depth 1. Spec defaults are 2 and 1.
@@ -459,8 +440,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// final NUL is not an entry, so an empty `compat` matches nothing. `compatible` may follow
     /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
     /// decoded when the matched node closes; a matched parent is still answered after its
-    /// children close. Returns zero regions for a match with no `reg`. See notes/device-tree.md
-    /// ("Finding a node").
+    /// children close. Returns zero regions for a match with no `reg`.
     pub fn node_reg_compatible(&self, compat: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         const MAXIMUM_DEPTH: usize = 16;
         let mut acells = [2u32; MAXIMUM_DEPTH];
@@ -570,11 +550,11 @@ impl<'a> DeviceTreeBlob<'a> {
     /// property.
     ///
     /// For a device described as a child of its bus, such as a PMIC under one of seven identical
-    /// `snps,designware-i2c` controllers, whose `clocks` and `resets` sit on the bus (milestone 592
-    /// (radon's cold reboot dies in OpenSBI's PMIC write), provisional). The parent's slot is filled
-    /// when the child closes, because a node's properties precede its first subnode.
+    /// `snps,designware-i2c` controllers on the StarFive JH7110, whose `clocks` and `resets` sit on
+    /// the bus. The parent's slot is filled when the child closes, because a node's properties
+    /// precede its first subnode.
     ///
-    /// Name: provisional (milestone 592), 2026-09-25. calef names public functions.
+    /// Name: provisional, 2026-09-25.
     pub fn parent_prop_compatible(
         &self,
         compat: &[u8],
@@ -733,7 +713,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// For the properties the spec defines as inheritable, such as `interrupt-parent`, which QEMU's
     /// two `virt` boards and the JH7110 dtsi each write at a different level. The nearest enclosing
     /// value wins, per the spec. A node's properties precede its children, so one walk suffices:
-    /// the answer is taken at the target's `END_NODE`. See notes/device-tree.md.
+    /// the answer is taken at the target's `END_NODE`.
     pub fn node_prop_inherited(
         &self,
         prefix: &[u8],
@@ -891,10 +871,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// Property `name` on **every** node whose name starts with `prefix`, in tree order.
     ///
     /// For a node that repeats, such as each hart's `cpu@` on a heterogeneous RISC-V machine like
-    /// the JH7110 (milestone 60 (ISA discovery)). `out[i]` is `None` when the *i*th match has no
+    /// the JH7110, whose harts differ in their `riscv,isa`. `out[i]` is `None` when the *i*th match has no
     /// such property, which differs from there being no *i*th match. Returns the number of matching
     /// **nodes**, which may exceed `out.len()`; the excess is counted and not written, so a caller
-    /// can tell it under-provisioned. See notes/device-tree.md.
+    /// can tell it under-provisioned.
     ///
     /// # Examples
     ///
@@ -1068,14 +1048,12 @@ impl<'a> DeviceTreeBlob<'a> {
     ///
     /// Declared in `/chosen` as `linux,initrd-start` and `linux,initrd-end`.
     ///
-    /// **This memory is ours to protect.** The bootloader loaded a file into RAM for us
-    /// and told us where it put it. If we don't reserve it, the frame allocator hands it
-    /// out to the first caller and the initial ramdisk is destroyed before we ever read a byte of
-    /// it. Milestone 10 (a shell at EL0) and milestone 32 (a real filesystem) both
-    /// want this, and by then the bug would be far away from its cause.
+    /// **This memory is the kernel's to protect.** The bootloader loaded a file into RAM for it
+    /// and said where it put it. A kernel that does not reserve it lets its frame allocator hand it
+    /// out to the first caller, and the initial ramdisk is destroyed before anything reads a byte of
+    /// it, a bug that shows up far from its cause.
     ///
-    /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round
-    /// 11). His words: "B for #1998." Refused `initrd` (the foreign spelling, which stops at the
+    /// Name: ratified 2026-10-12 (#1998). Refused `initrd` (the foreign spelling, which stops at the
     /// boundary where it arrives).
     pub fn initial_ramdisk(&self) -> Result<Option<Region>, Error> {
         let mut start: Option<u64> = None;
@@ -1144,15 +1122,13 @@ impl<'a> DeviceTreeBlob<'a> {
     /// **The kernel's command line**: `/chosen/bootargs`, without its terminating NUL, or
     /// `Ok(None)` when the tree has no `/chosen` or no such property.
     ///
-    /// QEMU writes it from `-append`, U-Boot from its `bootargs` variable, and `uefi_loader` from
-    /// its device-tree patch. It carries the loader's two digests
-    /// (`measured_boot::loader_digests`). Only the root's own `chosen` child counts, as for
+    /// QEMU writes it from `-append`, U-Boot from its `bootargs` variable, and a UEFI loader from
+    /// the device-tree patch it applies. Only the root's own `chosen` child counts, as for
     /// [`Self::initial_ramdisk`]. A value with no NUL is returned whole, since the property's
     /// length bounds it either way.
     ///
-    /// Name: provisional, minted 2026-11-01 (UTC) by
-    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader. Spelled out rather than
-    /// `bootargs`, the binding's spelling, for the reason the ramdisk's accessor refused `initrd`.
+    /// Name: provisional, minted 2026-11-01 (UTC). Spelled out rather than `bootargs`, the
+    /// binding's spelling, for the reason the ramdisk's accessor refused `initrd`.
     pub fn boot_arguments(&self) -> Result<Option<&'a [u8]>, Error> {
         let mut depth = 0i32;
         let mut in_chosen = false;
@@ -1383,11 +1359,11 @@ mod tests {
     }
 }
 
-/// Machine-checked proofs of the device-tree parser's leaf readers (DECISIONS §14, milestone 18).
+/// Machine-checked proofs, with Kani, of the device-tree parser's leaf readers.
 ///
 /// The device tree is untrusted boot input, and the whole-parse walk (a token loop over the
-/// structure block) is past what bounded model checking can do, the same wall the ELF parser hit
-/// (see notes/verification.md). So, as there, the leaves are proved: the big-endian readers every
+/// structure block) is past what bounded model checking can do over a blob of real size. So the
+/// leaves are proved: the big-endian readers every
 /// field goes through, and the padding helper. `be32`/`be64` were hardened with a checked add first,
 /// so they are now *total*; `align4` is proved correct for any realistic length (it can overflow
 /// only far above any device-tree size, and its callers pass node-name and property lengths).

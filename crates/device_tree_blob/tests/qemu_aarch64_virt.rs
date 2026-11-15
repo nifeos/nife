@@ -1,5 +1,4 @@
-//! Parse a real device tree, dumped from the machine we actually boot on, on the host (§7
-//! (testing: QEMU harness + host-testable crates)).
+//! Parse a real device tree, dumped from QEMU's aarch64 `virt` machine, on the host.
 //!
 //! Regenerate the fixture with the following; the `dtc` round-trip compacts QEMU's dump, which is
 //! padded to a full megabyte:
@@ -46,7 +45,7 @@ fn qemu_virt_reserves_nothing() {
 
 #[test]
 fn rejects_junk() {
-    // A pointer to something that isn't a device tree: the magic check is all that stops
+    // A pointer to something that is not a device tree: the magic check is all that stops
     // the parser walking into random memory.
     match DeviceTreeBlob::from_bytes(&[0xffu8; 64]) {
         Err(Error::BadMagic(m)) => assert_eq!(m, 0xffff_ffff),
@@ -60,7 +59,7 @@ fn rejects_junk() {
 
 #[test]
 fn rejects_a_truncated_blob() {
-    // Correct magic, but the blob is cut short. The header says it's 7566 bytes and
+    // Correct magic, but the blob is cut short. The header says it is 7566 bytes and
     // we only have 32. A parser that trusts the header here walks off the end of the
     // buffer, which in a kernel means reading whatever memory happens to follow.
     match DeviceTreeBlob::from_bytes(&QEMU_VIRT[..32]) {
@@ -199,7 +198,7 @@ fn no_reserved_memory_node_is_zero_regions() {
     assert_eq!(dtb.reserved_memory_regions(&mut regs).unwrap(), 0);
 }
 
-/// **The RTC, found by binding rather than by label** (milestone 51). The aarch64 `virt` board
+/// **The RTC, found by binding rather than by label**. The aarch64 `virt` board
 /// calls the node `pl031@9010000` and the RISC-V one calls its RTC `rtc@101000`, so no single name
 /// prefix finds both and a driver that matched on the name would silently find nothing on the other
 /// ISA. `compatible` is what the two boards agree to disagree about honestly.

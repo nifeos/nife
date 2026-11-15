@@ -1,11 +1,11 @@
 //! Device trees no firmware would write, and what the parser must do with them.
 //!
 //! Every test here is a regression for a bug that was real. The other two test files parse the
-//! trees QEMU hands us; this one holds the parser to blobs a hostile or broken firmware could
-//! write, because the blob is the first thing the kernel reads and nothing can check it. Two of
-//! the bugs came out of milestone 42 (supply chain and fuzzing in CI)'s fuzzing leg, one found by
-//! the fuzzer and one by reading the code; notes/fuzzing.md tells how. They run on the host in
-//! milliseconds, so inputs that cost real time to find cost nothing to keep.
+//! trees QEMU hands over; this one holds the parser to blobs a hostile or broken firmware could
+//! write, because the blob is the first thing a kernel reads and nothing can check it. Some of
+//! the bugs were found by a coverage-guided fuzzer, some by reading the code and some by mutation
+//! testing. They run on the host in milliseconds, so inputs that cost real time to find cost
+//! nothing to keep.
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -181,9 +181,8 @@ fn a_node_deeper_than_the_cell_stack_is_not_found_rather_than_indexed() {
 /// **A `reg` pair whose `start + size` wraps is refused, not passed out.**
 ///
 /// Found by the fuzzer. `Region::end()` was a plain `start + size` on two numbers straight out of the
-/// blob, and `kernel/src/memory.rs`'s `place_bitmap` calls it on every RAM region the device tree
-/// declares. Under the dev profile's overflow checks (which the kernel's own test builds use) that is
-/// a panic on the boot path.
+/// blob, and a kernel placing its allocator calls it on every RAM region the device tree declares.
+/// Under the dev profile's overflow checks that is a panic on the boot path.
 #[test]
 fn a_memory_region_that_wraps_the_address_space_is_refused() {
     let mut b = Blob::new();
@@ -239,9 +238,8 @@ fn region_end_saturates_rather_than_wrapping() {
 }
 
 // ================================================================================================
-// Milestone 85: what the mutation run proved this file was not yet checking. Every test below
-// kills named survivors from the baseline run; the clusters and the two mutants judged equivalent
-// are recorded in notes/mutation-testing.md. The recurring finding: the suite parsed only trees
+// What a mutation run (cargo-mutants) proved this file was not yet checking. Every test below
+// kills named survivors from a baseline run. The recurring finding: the suite parsed only trees
 // with the DEFAULT cell widths (2/2 declared explicitly), so every walker's #address-cells
 // handling, inheritance, and parent-vs-own-cells arithmetic was unexercised, and the header's
 // boundary comparisons had never been met exactly.
@@ -619,9 +617,9 @@ fn boot_arguments_are_the_root_chosen_bootargs_and_nothing_else() {
         b.finish()
     };
 
-    let blob = build(b"chosen", None, b"nife.base=sha256:00\0");
+    let blob = build(b"chosen", None, b"console=ttyS0 quiet\0");
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
-    assert_eq!(dt.boot_arguments(), Ok(Some(&b"nife.base=sha256:00"[..])));
+    assert_eq!(dt.boot_arguments(), Ok(Some(&b"console=ttyS0 quiet"[..])));
 
     let blob = build(b"chosen", None, b"no terminator");
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
@@ -659,12 +657,12 @@ fn boot_arguments_are_found_past_a_sibling_and_a_child_node() {
     b.begin_node(b"framebuffer@0");
     b.prop(b"status", b"okay\0");
     b.end_node();
-    b.prop(b"bootargs", b"nife.base=sha256:00\0");
+    b.prop(b"bootargs", b"console=ttyS0 quiet\0");
     b.end_node();
     b.end_node();
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
-    assert_eq!(dt.boot_arguments(), Ok(Some(&b"nife.base=sha256:00"[..])));
+    assert_eq!(dt.boot_arguments(), Ok(Some(&b"console=ttyS0 quiet"[..])));
 }
 
 // The tests above came from the baseline run's survivor list; the ones below close the gaps that
@@ -740,7 +738,7 @@ fn compatible_inherits_cell_widths_through_a_silent_bus() {
     reg.extend(cell32(0x1));
     reg.extend(cell32(0x2000));
     b.prop(b"reg", &reg);
-    b.prop(b"compatible", b"nife,testdev\0");
+    b.prop(b"compatible", b"example,testdev\0");
     b.end_node();
     b.end_node();
     b.end_node();
@@ -748,7 +746,7 @@ fn compatible_inherits_cell_widths_through_a_silent_bus() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg_compatible(b"nife,testdev", &mut out), Ok(1));
+    assert_eq!(dt.node_reg_compatible(b"example,testdev", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x1_0000_2000));
 }
 
@@ -873,8 +871,8 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
 }
 
 /// **Each walker's own per-depth arrays have their own edge.** The four walkers beside `node_reg`
-/// keep 16-entry arrays behind the same `depth < MAXIMUM_DEPTH` guard, and milestone 326 (nobody
-/// has been assigned to turn a mutation score upward) found `<=` alive in every one; at depth
+/// keep 16-entry arrays behind the same `depth < MAXIMUM_DEPTH` guard, and a mutation run found
+/// `<=` alive in every one; at depth
 /// exactly 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
 ///
 /// The tree is nested to exactly the edge and carries the property, the `compatible` and the
@@ -911,7 +909,7 @@ fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
 /// **A node's slot is cleared when the node opens, and a sibling must not inherit what the last
 /// one left there.** Three walkers remember a candidate value per open depth and decide at the
 /// closing token, so the reset in `FDT_BEGIN_NODE` is the only thing standing between a sibling's
-/// answer and this one's. Milestone 326's run found `depth < MAXIMUM_DEPTH` alive under `==` and
+/// answer and this one's. A mutation run found `depth < MAXIMUM_DEPTH` alive under `==` and
 /// under `>` in all three, both of which skip the reset for every depth a real tree reaches.
 ///
 /// The fixture is the same shape for each: the **first** sibling carries the property but does not
@@ -978,7 +976,7 @@ fn a_sibling_does_not_answer_with_its_predecessors_property() {
 }
 
 /// **The target is the node whose name matches, not the first node at a trackable depth.**
-/// `node_prop_inherited`'s guard is three conditions joined by `&&`, and milestone 326's run found
+/// `node_prop_inherited`'s guard is three conditions joined by `&&`, and a mutation run found
 /// the first `&&` alive under `||`: `depth in 2..16` alone would then select the first node the
 /// walk enters, and the answer would come from wherever that node inherits. Every existing fixture
 /// hid it by putting the wanted node first.
@@ -1053,11 +1051,11 @@ fn a_tree_of_one_and_a_half_mebibytes_is_not_too_large() {
 }
 
 /// A `#address-cells` that is not one cell long is ignored, and the width inherited from above
-/// stands. `machine_discovery`'s `many-harts` fixture writes its `/cpus` declaration as two bytes,
+/// stands. A hand-built tree with many harts once wrote its `/cpus` declaration as two bytes,
 /// and `be32` over those two bytes takes the padding after them as well: a count of 0x20000 cells,
 /// which turns every `reg` below into zero regions. Linux's `of_n_addr_cells` passes over a short
-/// value the same way and takes the parent's. Milestone 784 (reuse what the tree wrote) found it,
-/// measuring dtoolkit against this crate.
+/// value the same way and takes the parent's. Measuring the dtoolkit crate against this one found
+/// it.
 #[test]
 fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
     let mut b = Blob::new();
@@ -1067,7 +1065,7 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
     b.begin_node(b"bus");
     b.prop(b"#address-cells", &[0, 2]);
     b.begin_node(b"dev@1000");
-    b.prop(b"compatible", b"nife,dev\0");
+    b.prop(b"compatible", b"example,dev\0");
     let mut reg = cell32(0x1000);
     reg.extend(cell32(0x10));
     b.prop(b"reg", &reg);
@@ -1089,7 +1087,7 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
     let dev = (0x1000, 0x10);
     assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), dev);
-    assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1));
+    assert_eq!(dt.node_reg_compatible(b"example,dev", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), dev);
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x20));
@@ -1099,7 +1097,7 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
 /// leaves an empty last piece, and that piece is not an entry: counting it would answer
 /// `node_reg_compatible(b"")` with the first node that has any `compatible` at all. No caller
 /// passes an empty needle; the fuzz target does, and dtoolkit's `is_compatible("")` matches
-/// nothing, which is how milestone 784 (reuse what the tree wrote) found the difference.
+/// nothing, which is how measuring the two crates against each other found the difference.
 #[test]
 fn an_empty_compatible_needle_matches_nothing() {
     let mut b = Blob::new();
@@ -1107,7 +1105,7 @@ fn an_empty_compatible_needle_matches_nothing() {
     b.prop(b"#address-cells", &cell32(1));
     b.prop(b"#size-cells", &cell32(1));
     b.begin_node(b"dev@1000");
-    b.prop(b"compatible", b"nife,dev\0");
+    b.prop(b"compatible", b"example,dev\0");
     let mut reg = cell32(0x1000);
     reg.extend(cell32(0x10));
     b.prop(b"reg", &reg);
@@ -1120,15 +1118,15 @@ fn an_empty_compatible_needle_matches_nothing() {
     assert_eq!(dt.node_reg_compatible(b"", &mut out), Ok(0));
     assert_eq!(dt.node_prop_compatible(b"", b"reg"), Ok(None));
     assert_eq!(dt.parent_prop_compatible(b"", b"#size-cells"), Ok(None));
-    assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1));
+    assert_eq!(dt.node_reg_compatible(b"example,dev", &mut out), Ok(1));
 }
 
 /// Every walker that reads cell widths ignores a malformed declaration of either kind, at the root
 /// and on the node whose children it decodes. Each node declares 1 and 1 properly, then repeats one
 /// declaration as two bytes; were the repeat read, `be32` would take the padding too and make the
 /// width 0x20000, so no `reg` below would decode. One malformed declaration per tree, so a walker
-/// that guards one kind and not the other fails here. Milestone 784 (reuse what the tree wrote)
-/// found the unguarded reads, and its mutation gate asked for every arm.
+/// that guards one kind and not the other fails here. Measuring the dtoolkit crate against this
+/// one found the unguarded reads, and a mutation run asked for every arm.
 #[test]
 fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
     fn tree(bad: &[u8], at_root: bool) -> Vec<u8> {
@@ -1154,7 +1152,7 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
         b.begin_node(b"bus");
         declare(&mut b, !at_root);
         b.begin_node(b"dev@1000");
-        b.prop(b"compatible", b"nife,dev\0");
+        b.prop(b"compatible", b"example,dev\0");
         b.prop(b"reg", &pair(0x1000, 0x10));
         b.end_node();
         b.end_node();
@@ -1187,7 +1185,7 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
             assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1), "{case:?}");
             assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
             assert_eq!(
-                dt.node_reg_compatible(b"nife,dev", &mut out),
+                dt.node_reg_compatible(b"example,dev", &mut out),
                 Ok(1),
                 "{case:?}"
             );

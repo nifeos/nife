@@ -87,12 +87,11 @@ fn finds_the_plics_context_list_by_compatible() {
     );
 }
 
-/// **The parent's property, not the node's** (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
-/// provisional). The PLIC sits under
+/// **The parent's property, not the node's**. The PLIC sits under
 /// `/soc`, so asking its parent for `compatible` must answer `simple-bus` (the soc's) and asking
-/// for `interrupts-extended` must answer nothing, although the PLIC itself has one. Radon's use is
-/// a PMIC under the I2C bus whose clocks and resets the kernel needs; this is the same walk on the
-/// tree every CI run boots.
+/// for `interrupts-extended` must answer nothing, although the PLIC itself has one. The use on a
+/// board is a PMIC under the I2C bus whose clocks and resets a driver needs; this is the same walk
+/// on a tree QEMU writes.
 #[test]
 fn finds_the_parent_of_a_compatible_node() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
@@ -140,7 +139,7 @@ fn finds_opensbis_reserved_memory() {
     );
 }
 
-/// **The RTC, found by binding rather than by label** (milestone 51). The twin of the aarch64
+/// **The RTC, found by binding rather than by label**. The twin of the aarch64
 /// fixture's test: same call, different `compatible`, different address, and the node name here
 /// (`rtc@101000`) shares no prefix with aarch64's `pl031@9010000`.
 #[test]
@@ -171,7 +170,7 @@ fn the_pl031_is_absent_on_riscv() {
     assert_eq!(dtb.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 0);
 }
 
-/// **Every matching node, not just the first** (milestone 60). `node_prop` answers for one node and
+/// **Every matching node, not just the first**. `node_prop` answers for one node and
 /// stops, which is right for a device that appears once and wrong for `cpu@`: a heterogeneous
 /// machine describes each hart separately, and reading the first one silently answers for a core
 /// the scheduler may never place a thread on.
