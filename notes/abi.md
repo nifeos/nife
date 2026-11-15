@@ -186,8 +186,8 @@ the child's label, rides in argument register 5; notes/supervision.md has it (mi
 two forks)).
 
 The userspace side of that is two functions rather than one, and the split is not an ABI difference:
-`user_mode_runtime::receive` reads three words and `user_mode_runtime::receive_fault` reads all five, both from the same `RECEIVE`.
-`receive_fault` arrived with milestone 36 (notes/c-seam.md), the first program to want `w3`. A restart
+`user_mode_runtime::receive` reads three words and `user_mode_runtime::receive_message` reads all five, both from the same `RECEIVE`.
+The five-word read arrived with milestone 36 (notes/c-seam.md), the first program to want `w3`. A restart
 policy needs the event and the tid, but a *checker* needs the faulting address, because that is the
 only word that says where the dead thread actually pointed.
 

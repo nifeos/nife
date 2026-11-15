@@ -29,8 +29,8 @@ use line_editor_component::{self as component, supervisor as s};
 use supervision_contract::{Child as Built, ChildEndowment, Retention};
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
-    notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
+    Delivered, Message, capability_delete as delete_capability, cntfrq, notification_poll,
+    notification_signal, notification_wait, now, receive, receive_message, receive_request, reply,
     send, send_capability, timer_arm,
 };
 use video_terminal::component as display;
@@ -755,7 +755,7 @@ fn give_back(region: u64) {
 /// Wait for one death and collect it, so the child's region comes home to the budget, then drop
 /// the region capability that was kept for it.
 fn collect(faultep: u64, region: u64) {
-    let (_event, tid, _pc, _addr, _, _) = receive_fault(faultep);
+    let Message { w1: tid, .. } = receive_message(faultep).into_message();
     if user_mode_runtime::reap(faultep, tid) != 0 {
         fail()
     }

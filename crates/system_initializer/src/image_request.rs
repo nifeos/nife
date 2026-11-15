@@ -397,7 +397,9 @@ impl SpawnEndpoint {
                 m
             }
             None => loop {
-                let (w0, w1, w2, badge) = receive_badged(self.ep);
+                let Message {
+                    w0, w1, w2, badge, ..
+                } = receive_message(self.ep).into_message();
                 if badge == spawnproto::UNDERTAKER_BADGE {
                     self.reaped(w0);
                     continue;
@@ -421,7 +423,9 @@ impl SpawnEndpoint {
             if self.abandoned {
                 return (0, 0, 0);
             }
-            let (w0, w1, w2, badge) = receive_badged(self.ep);
+            let Message {
+                w0, w1, w2, badge, ..
+            } = receive_message(self.ep).into_message();
             if badge == spawnproto::UNDERTAKER_BADGE {
                 self.reaped(w0);
                 continue;
@@ -444,7 +448,13 @@ impl SpawnEndpoint {
             if self.abandoned {
                 return (0, abi::rendezvous::NO_CAPABILITY, 0);
             }
-            let (w0, slot, w1, badge) = receive_capability_badged(self.ep);
+            let Message {
+                w0,
+                w1: slot,
+                w2: w1,
+                badge,
+                ..
+            } = receive_capability_message(self.ep).into_message();
             if badge == spawnproto::UNDERTAKER_BADGE {
                 if slot != abi::rendezvous::NO_CAPABILITY {
                     capability_delete(slot);
@@ -478,7 +488,9 @@ impl SpawnEndpoint {
         if self.any_stashed() {
             return false;
         }
-        let (w0, w1, w2, badge) = receive_badged(self.ep);
+        let Message {
+            w0, w1, w2, badge, ..
+        } = receive_message(self.ep).into_message();
         if badge == spawnproto::UNDERTAKER_BADGE {
             self.reaped(w0);
             true

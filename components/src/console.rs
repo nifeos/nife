@@ -50,7 +50,7 @@
 
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Received, call, cntfrq, now, receive, receive_bound, send, timer_arm, timer_cancel,
+    Message, Received, call, cntfrq, now, receive_message, send, timer_arm, timer_cancel,
 };
 
 /// The PL011's register block, declared with `tock_registers::register_map!`: every offset is
@@ -165,16 +165,17 @@ fn start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
         // until the window's deadline ends the wait instead (milestone 151 (notification objects)'s
         // bound receive; on a thread with nothing bound it is an ordinary receive, which is the fallback's path).
         let (len, w1, w2) = match if screen {
-            receive_bound(REQUEST)
+            receive_message(REQUEST)
         } else {
-            let (len, w1, w2) = receive(REQUEST);
-            Received::Message(len, w1, w2)
+            Received::Message(receive_message(REQUEST).into_message())
         } {
             Received::Notification(_) => {
                 paint_screen(&mut batch);
                 continue;
             }
-            Received::Message(len, w1, w2) => (len, w1, w2),
+            Received::Message(Message {
+                w0: len, w1, w2, ..
+            }) => (len, w1, w2),
         };
 
         // **A kernel line from the log service** (milestone 342 (the kernel and the `console`

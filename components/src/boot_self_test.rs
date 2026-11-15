@@ -39,9 +39,9 @@ use boot_ladder::self_test_program::{
 use boot_ladder::verdict::{CheckLine, Outcome, SubjectLine, Tally, check};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,
-    notification_bind, notification_poll, reap, receive_bound, receive_fault,
-    retype_into_kernel_object, send, survey, timer_arm, timer_cancel, yield_now,
+    Message, Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,
+    notification_bind, notification_poll, reap, receive_message, retype_into_kernel_object, send,
+    survey, timer_arm, timer_cancel, yield_now,
 };
 
 user_mode_runtime::program_entry!(start);
@@ -316,8 +316,8 @@ fn receive_within(ep: u64, seconds: u64, d: Option<&Deadline>) -> Option<(u64, u
     let Some(d) = armed else {
         return Some(user_mode_runtime::receive(ep));
     };
-    let got = match receive_bound(ep) {
-        Received::Message(a, b, c) => Some((a, b, c)),
+    let got = match receive_message(ep) {
+        Received::Message(Message { w0, w1, w2, .. }) => Some((w0, w1, w2)),
         Received::Notification(_) => None,
     };
     let _ = timer_cancel(d.timer);
@@ -383,7 +383,13 @@ impl Child {
             return None;
         }
         // A corpse parked as the endpoint's sender makes this return at once.
-        let (event, tid, pc, address, ..) = receive_fault(self.supervisor);
+        let Message {
+            w0: event,
+            w1: tid,
+            w2: pc,
+            badge: address,
+            ..
+        } = receive_message(self.supervisor).into_message();
         Some((event, tid, pc, address))
     }
 

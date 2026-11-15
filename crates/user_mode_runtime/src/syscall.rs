@@ -10,7 +10,7 @@
 /// **The one trap in this crate**, one per architecture, used by every syscall: the number in
 /// `x8`/`a7`/`rax` and six words in both directions. No register survives: the kernel writes the
 /// first on every syscall and some methods write up to the sixth, which goes in as zero so
-/// [`receive_fault`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the
+/// [`receive_message`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the
 /// kernel)). `helpers/syscall_asm.py` gates every userspace trap. See notes/user-mode-runtime.md.
 ///
 /// # Safety
@@ -125,7 +125,7 @@ pub unsafe fn raw_syscall(number: u64, words: [u64; 6]) -> [u64; 6] {
 }
 
 /// The six-register round trip through `SYSCALL_INVOKE`: [`trap6`] with the number fixed and the sixth
-/// word in as zero, so [`receive_fault`](crate::receive_fault) reads `0` for anything the kernel
+/// word in as zero, so [`receive_message`](crate::receive_message) reads `0` for anything the kernel
 /// did not stamp.
 ///
 /// # Safety

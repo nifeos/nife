@@ -97,7 +97,9 @@ enum Heard {
 /// Receive once on `exit`, and say which of the two it was. A death carries the label in its sixth
 /// word, which the kernel writes on a death alone, so a label is never a job's forgery.
 fn hear(exit: u64) -> Heard {
-    let (w0, w1, w2, _, _, label) = receive_fault(exit);
+    let Message {
+        w0, w1, w2, label, ..
+    } = receive_message(exit).into_message();
     if label != 0 {
         Heard::Died(label, w0 == abi::fault::EVENT_FAULT)
     } else {

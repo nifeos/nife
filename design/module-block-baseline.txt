@@ -7417,17 +7417,7 @@ crates/user_mode_runtime/src/inter_process_communication.rs::reap
 
 crates/user_mode_runtime/src/inter_process_communication.rs::receive
 
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_fault
-
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_request
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_request_bound
 
 crates/user_mode_runtime/src/inter_process_communication.rs::reply
 

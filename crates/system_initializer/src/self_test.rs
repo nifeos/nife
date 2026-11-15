@@ -318,7 +318,12 @@ fn placements(
 fn wait_for_verdict(report: u64) -> (usize, Option<u64>) {
     let mut end = 0usize;
     let tally = loop {
-        let (code, at, packed, ..) = user_mode_runtime::receive_fault(report);
+        let user_mode_runtime::Message {
+            w0: code,
+            w1: at,
+            w2: packed,
+            ..
+        } = user_mode_runtime::receive_message(report).into_message();
         match code {
             message::LINE => end = (at as usize).min(contract::TRANSCRIPT_BYTES),
             message::DONE => {
