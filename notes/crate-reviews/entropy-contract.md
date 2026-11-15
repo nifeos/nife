@@ -82,9 +82,10 @@ and the template's workflows, which run in the repository.
 
 A fresh-context agent took the tree `script/crate-move --dry-run` stages, as a one-commit clone in
 a directory outside every repository, and followed the README alone. Every command it gives
-worked: `cargo test` (20 unit tests, 6 doctests), the three bare-metal builds, `cargo kani` (6 of
-6, 1 minute 18 seconds to 2 minutes 5 seconds on a loaded host, 2.2 gigabytes peak), one harness
-by its full path, two falsification patches applied, failed and undone, and the 1.88 check. The
+worked. `cargo test` passed 20 unit tests and 6 doctests, and the three bare-metal builds passed.
+`cargo kani` verified 6 of 6 in 1 minute 18 seconds to 2 minutes 5 seconds on a loaded host, at
+2.2 gigabytes peak. One harness ran by its full path, two falsification patches applied, failed
+and came undone, and the 1.88 check passed. The
 Kani install was already present, so its two commands were read and not run.
 
 It found 20 gaps in what the README says, none in its commands. The README now:
