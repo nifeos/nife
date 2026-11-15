@@ -72,7 +72,7 @@ nowhere to look, and the refusal is "you hold no such capability" rather than a 
 messages two programs exchange; this one describes bytes at an address, written once and thereafter
 only read. The distinction is the authority claim restated rather than a filing convention: a
 protocol has a server, and a server is something that can be asked, confused, or persuaded, whereas
-there is nothing here to ask. It is also why this page needs no seqlock where the clock page does.
+there is nothing here to ask. It is also why this page needs no publish count where the clock page does.
 
 The precedent it follows is the compositor's window enumeration (DECISIONS §33): a **read-only
 mapping, not a verb**. There is no request to forge, no server to confuse, and nothing to authorize
