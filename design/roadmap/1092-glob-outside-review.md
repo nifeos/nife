@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1092. `byte_glob`: what an outside maintainer would fix before the crate leaves
 
-Raised by a read-only outside review of the crate then at `crates/glob` (now `crates/byte_glob`) at `nifeos/nife@cf1328af6`, read the way a
+Raised by a read-only outside review of the crate then at `crates/glob` (now `crates/byte_glob`), read the way a
 maintainer meeting it for the first time would. The review changed nothing and opened nothing; every
 item below is work for a lane. No review package exists for this crate yet, so the baseline the review
 took as settled is the crate's own record: [notes/glob.md](../../notes/glob.md),
@@ -17,14 +17,12 @@ took as settled is the crate's own record: [notes/glob.md](../../notes/glob.md),
 and [notes/verification/glob-proofs.md](../../notes/verification/glob-proofs.md). The four scope
 decisions those record are `**` out, qualifiers out, POSIX classes out and a leading dot special by
 default. They stay closed here. So do the one-backtrack algorithm, the three-byte proof domain and
-the ratified crate name `byte_glob`. The exception is where a later rule or a fact outside the tree bears
-on them, and the text says so where it does. Milestone 1017 (the contract crates leave in this order) places the crate
+the ratified crate name `byte_glob`. A later rule or an outside fact reopens one only where the text says so. Milestone 1017 (the contract crates leave in this order) places the crate
 at step 5 and owns the move; this block owns the findings that land inside that path.
 
-Reuse: the crate's own tests and six harnesses, Kani 0.68.0 and the six falsification patches, the
-shared crate workflows and their helpers (`standalone.py`, `question_shape.py`,
-`readme_sections.py`, `falsify.py`), `script/crate-review-packet`, `helpers/name_release.py`,
-cargo-mutants, cargo-fuzz. No new tool.
+Reuse: the crate's own tests, harnesses and falsification patches, the shared crate workflows and
+their helpers, `script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants and cargo-fuzz.
+No new tool.
 
 ## Goal
 
@@ -34,19 +32,17 @@ its proofs from the README alone, and apply one falsification patch. The templat
 `proofs` workflows pass on the move commit for the crate's own reasons. The public names are final
 before the move strips their provenance, and the crate has a name it can one day publish under.
 
-Publishing stays held. Nothing here lifts the hold on crates.io publication, and a green gate is not
-permission to publish.
+Publishing stays held.
 
 ## What the review covered
 
-What the review covered is in [the appendix](1092-glob-outside-review/what-was-checked.md).
+See [the appendix](1092-glob-outside-review/what-was-checked.md).
 
 ## Findings, prioritized
 
-P0 blocks the move and the creation of the repository. P1 lands before the first tag in that
-repository. P2 follows it. A door is one-way where someone outside the tree acts on the outcome: a
-published name, the public API, a layout, a dependency. Everything else is two-way, and the
-maintainer decides it.
+P0 blocks the move and the creation of the repository. P1 lands before the first tag there. P2
+follows it. A door is one-way where someone outside the tree acts on the outcome (a published name,
+the public API, a layout, a dependency); the maintainer decides the rest.
 
 ### P0: the name, the names, and what does not stand alone
 
