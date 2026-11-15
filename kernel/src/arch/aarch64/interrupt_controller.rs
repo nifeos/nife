@@ -152,11 +152,13 @@ pub fn send_sgi(intid: u32, target_cpu: usize) {
 
 /// **Reserve a vector a PCI function may deliver an MSI-X message on**, the arch contract's
 /// milestone-215 name. `None`: a PCI function on QEMU's `virt` raises INTx through the swizzle
-/// (`pci::intx_interrupt_number`) onto `mmu::PCI_INTERRUPT_NUMBER_BASE`, and `kernel/src/pci.rs`
+/// (`pci_configuration_space::intx_interrupt_number`) onto `mmu::PCI_INTERRUPT_NUMBER_BASE`, and `kernel/src/pci.rs`
 /// falls back to that. A GICv3
 /// ITS would implement MSI here on a board that needs it. See
 /// design/roadmap/0215-x86-64-pci-interrupt-routing.md.
-pub(crate) fn alloc_msi_vector(_requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
+pub(crate) fn alloc_msi_vector(
+    _requester_id: u32,
+) -> Option<(u32, pci_configuration_space::MsiTarget)> {
     None
 }
 

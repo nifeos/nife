@@ -11,9 +11,9 @@ callbacks. The harness's `#[kani::unwind(66)]` still covers the loop, so this is
 failure and not an unwinding-assertion failure; that distinction is the thing to check if this
 patch ever reports something else.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -504,3 +504,3 @@ pub fn virtio_caps(
      let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
 -    for _ in 0..64 {

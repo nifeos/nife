@@ -180,7 +180,7 @@ only a context that enables a source may complete it. An ACKNOWLEDGE with no cla
 source at its target instead.
 
 PCI functions on QEMU `virt` raise INTx through the standard swizzle onto PLIC inputs 32 to 35,
-which the machine's device tree states and `crates/pci`'s fixture test holds the formula against. So
+which the machine's device tree states and `crates/pci_configuration_space`'s fixture test holds the formula against. So
 `alloc_msi_vector` answers `None` and `kernel/src/pci.rs` falls back to INTx. That is not "MSI is
 unsupported on RISC-V": the AIA's IMSIC is the same mechanism, and a board with one would implement
 it there. Nothing here needs it, and a routing path with no consumer cannot be known to work

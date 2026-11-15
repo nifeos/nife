@@ -10,9 +10,9 @@ Expected to fail: the harness's `assert!(q.tail == queued && q.tail == 1)`, wher
 zero and `tail` is one: the invariant the `enqueue` proof preserves is false in the initial
 state, so preserving it proves nothing.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -282,3 +282,2 @@ impl BusQueue {
          };
 -        q.seen[0] = 1;
