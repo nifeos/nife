@@ -37,7 +37,7 @@ use machine_discovery::acpi::{
 };
 use page_tables::PageFormat;
 use page_tables::x86_64::Vtd;
-use pci::MsiTarget;
+use pci_configuration_space::MsiTarget;
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{InterruptSafeMutex, rank};

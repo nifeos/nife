@@ -7,7 +7,7 @@
 use super::*;
 
 /// Print what this machine is: the exception level, the ISA, firmware, the eight questions, the
-/// paging geometry and the scheduler, ending with the `boot_ladder::MACHINE` line.
+/// paging geometry and the scheduler, ending with the machine line (`boot_ladder::Heads::machine`).
 ///
 /// `boot_info_pointer` is the firmware handoff (a device tree, or `x86_64`'s PVH
 /// `hvm_start_info`). On a board with no readable serial console these lines are the transcript,
@@ -126,7 +126,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     // Wording provisional (milestone 268 (every architecture boots the same way)).
     println!(
         "{}{}, {} processor(s), {} MiB, {} Hz",
-        boot_ladder::MACHINE,
+        crate::console::HEADS.machine(),
         arch::NAME,
         smp::online_count(),
         memory::stats().map_or(0, |s| (s.total as u64 * page_frames::FRAME_SIZE)

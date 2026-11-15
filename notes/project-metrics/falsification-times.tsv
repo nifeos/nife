@@ -18,6 +18,12 @@ address_space_map::the_bands_are_listed_in_address_order	0.5
 block_roster_contract::read_is_total_and_every_counted_entry_is_gettable	4.4
 block_roster_contract::write_is_total_on_any_page_length	17.6
 block_roster_contract::write_then_read_returns_the_same_devices_in_order	13.4
+byte_glob::a_negated_class_is_the_exact_complement_of_the_class	136.2
+byte_glob::matching_is_total	173.3
+byte_glob::no_magic_means_the_pattern_is_its_own_only_match	487.7
+byte_glob::star_matches_anything_and_question_matches_one_byte	2.9
+byte_glob::the_cost_never_exceeds_the_bound	118.5
+byte_glob::the_dot_rule_only_touches_names_that_start_with_a_dot	198.4
 calendar::a_day_number_always_decodes_to_a_real_date	3.6
 calendar::day_of_year_is_bounded_and_366_means_leap	21.2
 calendar::each_day_sorts_after_the_one_before_it	23.8
@@ -175,12 +181,6 @@ generational_table::a_bounded_walk_yields_every_live_entry	8.9
 generational_table::a_name_the_table_never_minted_resolves_to_nothing	0.8
 generational_table::a_removed_name_never_resolves_again	1.0
 generational_table::live_names_are_distinct_and_resolve_to_their_own_entry	1.1
-glob::a_negated_class_is_the_exact_complement_of_the_class	136.2
-glob::matching_is_total	173.3
-glob::no_magic_means_the_pattern_is_its_own_only_match	487.7
-glob::star_matches_anything_and_question_matches_one_byte	2.9
-glob::the_cost_never_exceeds_the_bound	118.5
-glob::the_dot_rule_only_touches_names_that_start_with_a_dot	198.4
 globally_unique_identifier_partition_table::a_guid_survives_printing_and_parsing	5.3
 globally_unique_identifier_partition_table::a_guid_survives_the_on_disk_layout	1.7
 globally_unique_identifier_partition_table::a_headers_fields_survive_the_round_trip	3.4

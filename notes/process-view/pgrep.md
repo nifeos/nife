@@ -72,7 +72,7 @@ matches the one other thing a domain honestly knows about a member, which is its
 spelled with the same four words `ps` prints in its `STATE` column. `pgrep dead` names the corpses,
 `pgrep 'r*'` the ready and the running, `pgrep '*'` everything.
 
-`crates/glob` does the matching, unchanged and unextended. It was the right tool rather than the
+`crates/byte_glob` does the matching, unchanged and unextended. It was the right tool rather than the
 nearest one. It is on the verification path already, it has a `cost_bound` nothing can blow past,
 and four short words is exactly the shape it is good at. There are two deliberate departures from
 its defaults, both recorded at the call site. The first is `Dot::Ordinary`, because a state name

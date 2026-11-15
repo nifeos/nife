@@ -136,7 +136,7 @@ pub fn read_for(log: &str, board: &'static board::Profile) -> Vec<Boot> {
     let mut boots: Vec<(Boot, BootProgress)> = Vec::new();
     for raw in log.lines() {
         let line = raw.trim_end_matches(['\r', '\n']);
-        if line.starts_with(boot_ladder::BANNER) {
+        if crate::HEADS.banner().strip_prefix_of(line).is_some() {
             // The recogniser starts at the banner, so a board's prologue rungs are never reached
             // here; what the profile decides is which self-test absences fail the boot.
             boots.push((Boot::default(), BootProgress::new(board)));
@@ -145,7 +145,7 @@ pub fn read_for(log: &str, board: &'static board::Profile) -> Vec<Boot> {
             continue;
         };
         progress.observe_line(line);
-        if let Some(rest) = line.trim_start().strip_prefix(boot_ladder::MACHINE) {
+        if let Some(rest) = crate::HEADS.machine().strip_prefix_of(line.trim_start()) {
             observe_machine(boot, rest);
         } else if let Some(at) = line.find("smp: ")
             && let Some(n) = online_cores(&line[at + "smp: ".len()..])
@@ -428,7 +428,7 @@ mod tests {
     #[test]
     fn an_absence_fails_the_boot_only_on_the_board_that_has_the_device() {
         let log = format!(
-            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: blockdev device_interrupt\n\
+            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: block_device device_interrupt\n\
              soak-test: started\n{}",
             beat(5, 400, 9, 2000, (0, 0, 0))
         );

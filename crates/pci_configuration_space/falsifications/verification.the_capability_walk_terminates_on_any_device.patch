@@ -1,0 +1,21 @@
+Falsifies `pci::verification::the_capability_walk_terminates_on_any_device`.
+
+The defect: the hop bound is one too many, `0..65` in place of `0..64`. The walk still
+terminates, so the property a reader checks first survives; what breaks is the exact bound the
+callback contract states, and a caller sizing a buffer by that bound overruns it by one entry.
+An off-by-one in a loop count is the error this shape invites, and no fixture device has a
+64-entry capability list.
+
+Expected to fail: the harness's `assert!(calls <= 64)`, on a cyclic capability list, at 65
+callbacks. The harness's `#[kani::unwind(66)]` still covers the loop, so this is a property
+failure and not an unwinding-assertion failure; that distinction is the thing to check if this
+patch ever reports something else.
+
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
+@@ -504,3 +504,3 @@ pub fn virtio_caps(
+     let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
+-    for _ in 0..64 {
++    for _ in 0..65 {
+         if at == 0 {

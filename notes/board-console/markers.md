@@ -20,11 +20,11 @@ The first four rows are radon's and live in a board profile (milestone 324 part 
 | `opensbi` | radon | `OpenSBI v` | runbook ("record the version line"), confirmed: `OpenSBI v1.2` |
 | `uboot` | radon | `U-Boot ` followed by a word that is not `SPL`/`TPL`, or `StarFive #` | runbook, confirmed both ways |
 | `handoff` | radon | `Starting kernel ...` | runbook, confirmed |
-| `banner` | every | `boot_ladder::BANNER` (`nife on `) | `kernel/src/main.rs`, confirmed |
-| `machine` | every | `boot_ladder::MACHINE` | milestone 268 |
-| `selftest` | every | `boot_ladder::SELF_TEST` | milestone 268 |
-| `tour` | riscv64 | `boot_ladder::TOUR` | `kernel/src/main.rs`, confirmed |
-| `prompt` | every | `boot_ladder::PROMPT` | milestone 268 |
+| `banner` | every | `boot_ladder::Heads::banner` (`nife on `) | `kernel/src/main.rs`, confirmed |
+| `machine` | every | `boot_ladder::Heads::machine` | milestone 268 (every architecture boots the same way) |
+| `selftest` | every | `boot_ladder::Heads::self_test` | milestone 268 (every architecture boots the same way) |
+| `tour` | riscv64 | `boot_ladder::Heads::tour` | `kernel/src/main.rs`, confirmed |
+| `prompt` | every | `boot_ladder::Heads::prompt` | milestone 268 |
 | `soak` | every | `soak-test: started` | milestone 219 |
 | `sweep` | every | `job_mix::STARTED` | milestone 324, confirmed under QEMU 2026-09-19 |
 | `sweep-done` | every | `job_mix::DONE` | milestone 324, confirmed under QEMU 2026-09-19 |

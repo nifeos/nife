@@ -6,7 +6,7 @@
 //! carrying on. The checks that need a user program run in `boot_self_test`, which the progenitor
 //! starts before the shell; the kernel hands it this half's tally in the page
 //! `boot_ladder::kernel_half` describes, and that program prints the one verdict
-//! (`boot_ladder::SELF_TEST`, matched by `crates/serial_console`). notes/boot-ladder.md has the
+//! (`boot_ladder::Heads::self_test`, matched by `crates/serial_console`). notes/boot-ladder.md has the
 //! verdict's contract, and notes/self-test-checks.md each check's design and the full account of
 //! the BUGS below.
 
@@ -164,7 +164,7 @@ pub fn verdict_without_userspace(why: &str) {
             }
         );
     }
-    println!("{}", tally.verdict());
+    println!("{}", tally.verdict(crate::console::HEADS));
 }
 
 /// The boot stage the first check notes. Stages below it are the bring-up's, which notes none
@@ -176,7 +176,7 @@ const FIRST_STAGE: u32 = 3;
 const RUNS: usize = 7;
 
 /// **The stage that means this half finished and the boot's middle stages ran to their end**,
-/// noted beside `boot_ladder::TOUR` in `kernel_main`: the stage after the last check's.
+/// noted beside the tour line in `kernel_main`: the stage after the last check's.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
 pub const TOUR_STAGE: u32 = FIRST_STAGE + RUNS as u32;
@@ -554,7 +554,7 @@ fn preemption(tally: &mut Checks) {
 /// the scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
 /// aarch64 and riscv64**, which have no device the kernel can make interrupt without input or a
 /// disk; there the line is proved by the input driver at the hand-over and by `boot_self_test`'s
-/// `blockdev`.
+/// `block_device`.
 #[doc(alias = "irq")]
 fn device_interrupt(tally: &mut Checks) {
     match arch::interrupt_controller::device_line_interrupts() {
@@ -570,7 +570,7 @@ fn device_interrupt(tally: &mut Checks) {
         None => tally.absent(
             check!("device_interrupt"),
             format_args!(
-                "no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists"
+                "no device on this port interrupts without input or a disk; the input driver and block_device prove a line where one exists"
             ),
         ),
     }
