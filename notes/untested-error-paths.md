@@ -74,7 +74,7 @@ check below, two of sixteen Option paths were a lookup finding nothing.
 | `board_console` | 31 | 16 |
 | `calendar` | 39 | 15 |
 | `globally_unique_identifier_partition_table` | 45 | 14 |
-| `paging` | 24 | 12 |
+| `page_tables` | 24 | 12 |
 
 Seventy of the 86 crates in the report have an error path, and 24 of those have none unreached.
 `stick_maker` includes its host files, which `script/coverage` runs but exempts from the floor.

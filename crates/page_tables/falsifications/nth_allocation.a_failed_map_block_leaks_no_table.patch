@@ -9,7 +9,7 @@ most likely shape of a future "make a failed map leave no trace" change.
 Expected to fail: assertion (1), "table frame(s) handed out and unreachable from the root", first at
 `map_block(Size2MiB)` with allocation 1 failed on aarch64 (the table at level 1 is orphaned).
 
-`script/falsifications --sweep paging` replays it, weekly and per pull request, since milestone
+`script/falsifications --sweep page_tables` replays it, weekly and per pull request, since milestone
 742 (every test is falsified as routine). By hand, the same thing is:
 
     git apply crates/page_tables/falsifications/nth_allocation.a_failed_map_block_leaks_no_table.patch
