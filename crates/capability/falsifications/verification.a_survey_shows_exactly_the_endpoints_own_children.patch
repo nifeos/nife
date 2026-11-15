@@ -2,13 +2,12 @@ Falsifies `capability::a_survey_shows_exactly_the_endpoints_own_children`.
 
 The defect: `survey_includes` reports every supervised thread rather than only the
 ones supervised *here*. This is what a `ps` written to be useful looks like before
-anybody asks who is allowed to see what, and it is the confinement half of milestone
-126's claim: with it, any process holding a rendezvous can enumerate every other
+anybody asks who is allowed to see what, and it is the confinement half of the claim: with it, any process holding a rendezvous can enumerate every other
 supervisor's children.
 
-Expected to fail: the single `assert_eq!(survey_includes(fault_ep, invoked),
-fault_ep == Some(invoked))`, which is the harness's only assertion, on any
-`fault_ep` naming a rendezvous other than the invoked one.
+Expected to fail: the single `assert_eq!(survey_includes(supervising_rendezvous, invoked),
+supervising_rendezvous == Some(invoked))`, which is the harness's only assertion, on any
+`supervising_rendezvous` naming a rendezvous other than the invoked one.
 
 The same defect also turns `the_view_and_the_reap_have_the_same_scope` red, and
 that overlap is the point of recording both: the view's scope is not stated once,
@@ -17,17 +16,17 @@ widening is caught twice. It is not caught by anything in the `reap_decision`
 harnesses, which this patch leaves untouched.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index d65bed7d..ffe0d92b 100644
+index a5b8f24b3..8d650d16b 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -186,8 +186,8 @@ pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -
- /// (`sched::survey_supervised`). It is the predicate [`reap_decision`] authorizes with, so the
- /// threads a supervisor sees are the ones whose deaths reach it. Liveness is not an input: an
- /// uncollected corpse is still in the domain. See notes/capabilities/table.md ("Reap and survey").
--pub const fn survey_includes(fault_ep: Option<u64>, invoked_ep: u64) -> bool {
--    matches!(fault_ep, Some(ep) if ep == invoked_ep)
-+pub const fn survey_includes(fault_ep: Option<u64>, _invoked_ep: u64) -> bool {
-+    fault_ep.is_some()
+@@ -187,8 +187,8 @@ pub const fn reap_decision(
+ /// The scoping decision of a process view, which an owner applies to each thread it reports. It is
+ /// the predicate [`reap_decision`] authorizes with, so the threads a supervisor sees are the ones
+ /// whose deaths reach it. Liveness is not an input: an uncollected corpse is still in the domain.
+-pub const fn survey_includes(supervising_rendezvous: Option<u64>, invoked_rendezvous: u64) -> bool {
+-    matches!(supervising_rendezvous, Some(rendezvous) if rendezvous == invoked_rendezvous)
++pub const fn survey_includes(supervising_rendezvous: Option<u64>, _invoked_rendezvous: u64) -> bool {
++    supervising_rendezvous.is_some()
  }
  
  /// Why a capability table operation was refused.

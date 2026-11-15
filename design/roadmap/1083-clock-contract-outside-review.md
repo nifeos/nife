@@ -43,6 +43,8 @@ Effort: S is half a day for a lane, M a day or two, L more. A door is one-way wh
 the repository acts on it after the move (a public name, a page layout, an identity value, a
 dependency); everything else is two-way and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1083-clock-contract-outside-review/ledger.md).
+
 ### P0: the template's required checks are red on the first commit
 
 1. The `check / standalone` job refuses this source as it stands.
