@@ -153,8 +153,8 @@ fn a_node_deeper_than_the_cell_stack_is_not_found_rather_than_indexed() {
 
     // Inside the stack: found, and decoded with the root's 2/2 cells.
     let shallow = nested(3);
-    let dtb = DeviceTreeBlob::from_bytes(&shallow).unwrap();
-    assert_eq!(dtb.node_reg(b"intc", &mut out).unwrap(), 1);
+    let tree = DeviceTreeBlob::from_bytes(&shallow).unwrap();
+    assert_eq!(tree.node_reg(b"intc", &mut out).unwrap(), 1);
     assert_eq!(
         out[0],
         Region {
@@ -166,15 +166,15 @@ fn a_node_deeper_than_the_cell_stack_is_not_found_rather_than_indexed() {
     // Past it: not found. The assertion that matters is that this returns at all.
     for depth in [16, 17, 24, 40] {
         let deep = nested(depth);
-        let dtb = DeviceTreeBlob::from_bytes(&deep).unwrap();
+        let tree = DeviceTreeBlob::from_bytes(&deep).unwrap();
         assert_eq!(
-            dtb.node_reg(b"intc", &mut out).unwrap(),
+            tree.node_reg(b"intc", &mut out).unwrap(),
             0,
             "a node at depth {depth} should be reported as absent, not indexed for"
         );
         // The sibling lookups walk the same tree with the same per-depth arrays.
-        assert!(dtb.node_reg_compatible(b"arm,pl031", &mut out).is_ok());
-        assert!(dtb.node_prop(b"intc", b"reg").is_ok());
+        assert!(tree.node_reg_compatible(b"arm,pl031", &mut out).is_ok());
+        assert!(tree.node_prop(b"intc", b"reg").is_ok());
     }
 }
 
@@ -195,10 +195,10 @@ fn a_memory_region_that_wraps_the_address_space_is_refused() {
     b.end_node();
     let blob = b.finish();
 
-    let dtb = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
     let mut out = [Region { start: 0, size: 0 }; 4];
     assert_eq!(
-        dtb.memory_regions(&mut out),
+        tree.memory_regions(&mut out),
         Err(Error::RegionOverflow),
         "a region past the top of the address space is not a region"
     );
@@ -822,7 +822,7 @@ fn reserved_memory_defaults_to_the_roots_cell_widths() {
 /// requires child depth AND the name `reg`: with `||` the compatible string's sixteen bytes
 /// decode as two plausible extra regions, and the count says so.
 #[test]
-fn reserved_memory_honours_its_own_declared_widths() {
+fn reserved_memory_honors_its_own_declared_widths() {
     let mut b = Blob::new();
     b.begin_node(b"");
     b.begin_node(b"reserved-memory");
@@ -1024,7 +1024,7 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
     buffer.resize(claimed + 64, 0);
 
     // SAFETY: `buffer` is longer than `claimed`, so every byte a slice of that length could
-    // cover is owned, initialised memory that outlives the call.
+    // cover is owned, initialized memory that outlives the call.
     let refused = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
     assert_eq!(refused.err(), Some(Error::TooLarge(claimed)));
 
@@ -1045,7 +1045,7 @@ fn a_tree_of_one_and_a_half_mebibytes_is_not_too_large() {
     buffer[4..8].copy_from_slice(&(claimed as u32).to_be_bytes());
     buffer.resize(claimed + 64, 0);
     // SAFETY: `buffer` is longer than `claimed`, so every byte a slice of that length could
-    // cover is owned, initialised memory that outlives the call.
+    // cover is owned, initialized memory that outlives the call.
     let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
     assert_ne!(looked.err(), Some(Error::TooLarge(claimed)));
 }

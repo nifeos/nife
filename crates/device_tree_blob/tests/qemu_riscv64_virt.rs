@@ -7,7 +7,7 @@
 //!     qemu-system-riscv64 -machine virt,dumpdtb=f.dtb -nographic
 //!     dtc -I dtb -O dts f.dtb -o crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dts
 //!     dtc -I dts -O dtb crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dts \
-//!         -o crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb
+//!         -o crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.tree
 
 use device_tree_blob::{DeviceTreeBlob, Region};
 
@@ -15,9 +15,9 @@ const QEMU_RISCV_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 
 #[test]
 fn finds_the_ram() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 8];
-    let n = dtb.memory_regions(&mut regions).unwrap();
+    let n = tree.memory_regions(&mut regions).unwrap();
 
     assert_eq!(n, 1, "riscv virt has one memory node");
     assert_eq!(
@@ -35,9 +35,9 @@ fn finds_the_ram() {
 /// prevent; get it wrong and the decoded address is garbage, silently.
 #[test]
 fn finds_the_plic_nested_under_soc() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 4];
-    let n = dtb.node_reg(b"plic@", &mut regions).unwrap();
+    let n = tree.node_reg(b"plic@", &mut regions).unwrap();
 
     assert_eq!(n, 1, "the PLIC has one register block (the GIC has two)");
     assert_eq!(
@@ -57,8 +57,8 @@ fn finds_the_plic_nested_under_soc() {
 /// used to assume; reading it from the machine is what lets the JH7110's different answer in.
 #[test]
 fn finds_the_plics_context_list_by_compatible() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
-    let prop = dtb
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let prop = tree
         .node_prop_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
         .unwrap()
         .expect("the PLIC states its context wiring");
@@ -76,12 +76,12 @@ fn finds_the_plics_context_list_by_compatible() {
     // A compatible nothing here carries, and a property the node does not have: both are `None`,
     // not errors.
     assert_eq!(
-        dtb.node_prop_compatible(b"acme,unobtainium", b"interrupts-extended")
+        tree.node_prop_compatible(b"acme,unobtainium", b"interrupts-extended")
             .unwrap(),
         None
     );
     assert_eq!(
-        dtb.node_prop_compatible(b"sifive,plic-1.0.0", b"no-such-property")
+        tree.node_prop_compatible(b"sifive,plic-1.0.0", b"no-such-property")
             .unwrap(),
         None
     );
@@ -94,20 +94,20 @@ fn finds_the_plics_context_list_by_compatible() {
 /// on a tree QEMU writes.
 #[test]
 fn finds_the_parent_of_a_compatible_node() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     assert_eq!(
-        dtb.parent_prop_compatible(b"sifive,plic-1.0.0", b"compatible")
+        tree.parent_prop_compatible(b"sifive,plic-1.0.0", b"compatible")
             .unwrap(),
         Some(&b"simple-bus\0"[..])
     );
     assert_eq!(
-        dtb.parent_prop_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
+        tree.parent_prop_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
             .unwrap(),
         None,
         "the soc node has no such property, even though the PLIC does"
     );
     assert_eq!(
-        dtb.parent_prop_compatible(b"acme,unobtainium", b"compatible")
+        tree.parent_prop_compatible(b"acme,unobtainium", b"compatible")
             .unwrap(),
         None
     );
@@ -118,9 +118,9 @@ fn finds_the_parent_of_a_compatible_node() {
 /// faults on a PMP violation, in code nowhere near the allocator.
 #[test]
 fn finds_opensbis_reserved_memory() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 8];
-    let n = dtb.reserved_memory_regions(&mut regions).unwrap();
+    let n = tree.reserved_memory_regions(&mut regions).unwrap();
 
     assert_eq!(n, 2, "OpenSBI reserves two regions on virt");
     assert_eq!(
@@ -144,11 +144,11 @@ fn finds_opensbis_reserved_memory() {
 /// (`rtc@101000`) shares no prefix with aarch64's `pl031@9010000`.
 #[test]
 fn finds_the_rtc_by_compatible() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
     assert_eq!(
-        dtb.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
+        tree.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
             .unwrap(),
         1
     );
@@ -165,9 +165,9 @@ fn finds_the_rtc_by_compatible() {
 /// answers the code takes every time it runs.
 #[test]
 fn the_pl031_is_absent_on_riscv() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dtb.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 0);
+    assert_eq!(tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 0);
 }
 
 /// **Every matching node, not just the first**. `node_prop` answers for one node and
@@ -179,11 +179,11 @@ fn the_pl031_is_absent_on_riscv() {
 /// property is a different answer from a node that does not exist.
 #[test]
 fn reads_a_property_from_every_matching_node() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
 
     let mut isa = [None; 4];
     assert_eq!(
-        dtb.node_props(b"cpu@", b"riscv,isa-base", &mut isa)
+        tree.node_props(b"cpu@", b"riscv,isa-base", &mut isa)
             .unwrap(),
         1
     );
@@ -193,7 +193,7 @@ fn reads_a_property_from_every_matching_node() {
     // A node that exists and has no such property: matched, and reported as `None`.
     let mut absent = [Some(&b"stale"[..]); 4];
     assert_eq!(
-        dtb.node_props(b"cpu@", b"mmu-flavour", &mut absent)
+        tree.node_props(b"cpu@", b"mmu-flavour", &mut absent)
             .unwrap(),
         1
     );
@@ -204,7 +204,7 @@ fn reads_a_property_from_every_matching_node() {
 
     // A prefix nothing matches.
     let mut nothing = [None; 4];
-    assert_eq!(dtb.node_props(b"gpu@", b"reg", &mut nothing).unwrap(), 0);
+    assert_eq!(tree.node_props(b"gpu@", b"reg", &mut nothing).unwrap(), 0);
 }
 
 /// **More matching nodes than slots is counted, not hidden.** A caller that under-provisions its
@@ -212,12 +212,12 @@ fn reads_a_property_from_every_matching_node() {
 /// machine has four harts and I read two" and "this machine has two harts".
 #[test]
 fn more_nodes_than_slots_reports_the_real_count() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
 
     // Every node under the root, matched by the empty prefix, into no space at all. The count is
     // the honest one; nothing was written, because there was nowhere to write it.
     let mut none: [Option<&[u8]>; 0] = [];
-    let all = dtb.node_props(b"", b"compatible", &mut none).unwrap();
+    let all = tree.node_props(b"", b"compatible", &mut none).unwrap();
     assert!(
         all > 1,
         "the tree has many nodes, and it said so with nowhere to put them"
@@ -231,15 +231,15 @@ fn more_nodes_than_slots_reports_the_real_count() {
 /// which is the case `node_prop_inherited` exists for.
 #[test]
 fn follows_the_serial_interrupt_parent_to_the_plic() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
 
-    let parent = dtb
+    let parent = tree
         .node_prop_inherited(b"serial@", b"interrupt-parent")
         .unwrap()
         .expect("the serial node names its interrupt parent");
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
-    let cells = dtb
+    let cells = tree
         .phandle_prop(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the PLIC declares its interrupt cells");
@@ -252,8 +252,8 @@ fn follows_the_serial_interrupt_parent_to_the_plic() {
     // A phandle no node carries, and a property the matched node does not have: both are `None`,
     // not errors, same posture as node_prop_compatible.
     assert_eq!(
-        dtb.phandle_prop(0xdead_beef, b"#interrupt-cells").unwrap(),
+        tree.phandle_prop(0xdead_beef, b"#interrupt-cells").unwrap(),
         None
     );
-    assert_eq!(dtb.phandle_prop(phandle, b"no-such-prop").unwrap(), None);
+    assert_eq!(tree.phandle_prop(phandle, b"no-such-prop").unwrap(), None);
 }

@@ -4,7 +4,7 @@
 //! padded to a full megabyte:
 //!
 //!     qemu-system-aarch64 -machine virt,dumpdtb=f.dtb -cpu cortex-a72 -nographic
-//!     dtc -I dtb -O dtb -o crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb f.dtb
+//!     dtc -I dtb -O dtb -o crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb f.tree
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -12,15 +12,15 @@ const QEMU_VIRT: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt.dtb");
 
 #[test]
 fn parses_the_header() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).expect("should parse");
-    assert_eq!(dtb.total_size(), QEMU_VIRT.len());
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).expect("should parse");
+    assert_eq!(tree.total_size(), QEMU_VIRT.len());
 }
 
 #[test]
 fn finds_the_ram() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 8];
-    let n = dtb.memory_regions(&mut regions).unwrap();
+    let n = tree.memory_regions(&mut regions).unwrap();
 
     assert_eq!(n, 1, "virt has one memory node");
 
@@ -36,11 +36,11 @@ fn finds_the_ram() {
 
 #[test]
 fn qemu_virt_reserves_nothing() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 8];
 
     // QEMU's virt leaves the reservation block empty; real firmware often does not.
-    assert_eq!(dtb.reserved_regions(&mut regions).unwrap(), 0);
+    assert_eq!(tree.reserved_regions(&mut regions).unwrap(), 0);
 }
 
 #[test]
@@ -70,9 +70,9 @@ fn rejects_a_truncated_blob() {
 
 #[test]
 fn refuses_to_overflow_the_callers_slice() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut too_small: [Region; 0] = [];
-    match dtb.memory_regions(&mut too_small) {
+    match tree.memory_regions(&mut too_small) {
         Err(Error::TooManyRegions) => {}
         other => panic!("expected TooManyRegions, got {other:?}"),
     }
@@ -85,8 +85,8 @@ const QEMU_VIRT_INITIAL_RAMDISK: &[u8] =
 
 #[test]
 fn finds_the_initial_ramdisk() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT_INITIAL_RAMDISK).unwrap();
-    let initial_ramdisk = dtb
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT_INITIAL_RAMDISK).unwrap();
+    let initial_ramdisk = tree
         .initial_ramdisk()
         .unwrap()
         .expect("this fixture has an initial ramdisk");
@@ -105,17 +105,17 @@ fn finds_the_initial_ramdisk() {
 fn no_initial_ramdisk_is_not_an_error() {
     // The common case: nobody passed -initrd. `None`, not an error, and definitely not a
     // zero-length region that the allocator then tries to reason about.
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    assert_eq!(dtb.initial_ramdisk().unwrap(), None);
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    assert_eq!(tree.initial_ramdisk().unwrap(), None);
 }
 
 #[test]
 fn an_initial_ramdisk_does_not_disturb_the_memory_map() {
     // Regression guard: the /chosen walk and the /memory walk are separate passes over
     // the same token stream. A bug in one must not corrupt the other.
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT_INITIAL_RAMDISK).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT_INITIAL_RAMDISK).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 8];
-    assert_eq!(dtb.memory_regions(&mut regions).unwrap(), 1);
+    assert_eq!(tree.memory_regions(&mut regions).unwrap(), 1);
     assert_eq!(regions[0].start, 0x4000_0000);
 }
 
@@ -123,10 +123,10 @@ fn an_initial_ramdisk_does_not_disturb_the_memory_map() {
 
 #[test]
 fn finds_the_interrupt_controller() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 4];
 
-    let n = dtb.node_reg(b"intc@", &mut regs).unwrap();
+    let n = tree.node_reg(b"intc@", &mut regs).unwrap();
 
     // The GIC has TWO register blocks, and the order is part of the binding.
     assert_eq!(
@@ -155,18 +155,18 @@ fn finds_the_uart_the_console_hardcodes() {
     // The console hardcodes 0x0900_0000 on purpose (it must come up before the DTB parser
     // exists to debug it). But now we can *check* the hardcode against what the machine says,
     // which is the cross-check that catches the day it changes.
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
-    assert_eq!(dtb.node_reg(b"pl011@", &mut regs).unwrap(), 1);
+    assert_eq!(tree.node_reg(b"pl011@", &mut regs).unwrap(), 1);
     assert_eq!(regs[0].start, 0x0900_0000);
 }
 
 #[test]
 fn a_missing_node_is_zero_regions_not_an_error() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dtb.node_reg(b"nonesuch@", &mut regs).unwrap(), 0);
+    assert_eq!(tree.node_reg(b"nonesuch@", &mut regs).unwrap(), 0);
 }
 
 #[test]
@@ -193,9 +193,9 @@ fn no_reserved_memory_node_is_zero_regions() {
     // aarch64 virt has no /reserved-memory node (that path matters on riscv, where OpenSBI
     // adds one; see qemu_riscv64_virt.rs). Walking the whole tree and finding none must be
     // zero regions, not an error: this is the answer the aarch64 boot gets every time.
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dtb.reserved_memory_regions(&mut regs).unwrap(), 0);
+    assert_eq!(tree.reserved_memory_regions(&mut regs).unwrap(), 0);
 }
 
 /// **The RTC, found by binding rather than by label**. The aarch64 `virt` board
@@ -209,10 +209,10 @@ fn no_reserved_memory_node_is_zero_regions() {
 /// is why the decode has to wait for the node to close instead of deciding at the `reg` property.
 #[test]
 fn finds_the_rtc_by_compatible() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
-    assert_eq!(dtb.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 1);
+    assert_eq!(tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 1);
     assert_eq!(
         regs[0],
         Region {
@@ -226,10 +226,10 @@ fn finds_the_rtc_by_compatible() {
 /// error or a stray match. This is the answer the aarch64 boot gets when it probes for both.
 #[test]
 fn the_goldfish_rtc_is_absent_on_aarch64() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        dtb.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
+        tree.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
             .unwrap(),
         0
     );
@@ -241,21 +241,21 @@ fn the_goldfish_rtc_is_absent_on_aarch64() {
 /// the GIC, whose `#interrupt-cells = <3>` is what makes the pl011's `<0 1 4>` mean SPI 1.
 #[test]
 fn inherits_the_interrupt_parent_from_the_root() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
+    let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
 
     assert_eq!(
-        dtb.node_prop(b"pl011@", b"interrupt-parent").unwrap(),
+        tree.node_prop(b"pl011@", b"interrupt-parent").unwrap(),
         None,
         "the node itself does not say; the root does"
     );
 
-    let parent = dtb
+    let parent = tree
         .node_prop_inherited(b"pl011@", b"interrupt-parent")
         .unwrap()
         .expect("inherited from the root");
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
-    let cells = dtb
+    let cells = tree
         .phandle_prop(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the GIC declares its interrupt cells");

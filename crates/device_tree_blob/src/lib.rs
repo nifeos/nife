@@ -181,7 +181,7 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::Truncated);
         }
 
-        let dtb = DeviceTreeBlob {
+        let tree = DeviceTreeBlob {
             off_struct: structure_start,
             off_strings,
             off_rsvmap: be32(bytes, 16)? as usize,
@@ -189,11 +189,11 @@ impl<'a> DeviceTreeBlob<'a> {
             structure: &bytes[..structure_end],
         };
 
-        if dtb.off_struct >= total || dtb.off_strings >= total || dtb.off_rsvmap >= total {
+        if tree.off_struct >= total || tree.off_strings >= total || tree.off_rsvmap >= total {
             return Err(Error::Truncated);
         }
 
-        Ok(dtb)
+        Ok(tree)
     }
 
     /// How many bytes the blob occupies. We need this to mark it as reserved: it is
@@ -206,7 +206,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// touch**, before a single node is parsed.
     ///
     /// This is a separate, deliberately dead-simple structure precisely so that a
-    /// kernel can honour it without having to parse anything. QEMU's `virt` leaves it
+    /// kernel can honor it without having to parse anything. QEMU's `virt` leaves it
     /// empty, but a real board's firmware often does not, and a kernel that skips it
     /// will happily allocate over the firmware's own tables.
     pub fn reserved_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
