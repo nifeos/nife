@@ -80,7 +80,7 @@ rules the handshake.
 
 When the boot command line carries `machine_discovery::framebuffer::SCREEN_HOLD`,
 `hold_screen_at_handover` sets a flag and `yield_screen` first calls `hold_screen_for_host`. That
-drains the receive buffer, announces `boot_ladder::SCREEN_HELD` on the serial line, waits for a
+drains the receive buffer, announces `boot_ladder::Heads::screen_held` on the serial line, waits for a
 byte, and discards the answer so the line editor does not echo it at the prompt. An ordinary boot
 pays one relaxed load, once.
 

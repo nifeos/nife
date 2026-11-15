@@ -37,6 +37,9 @@ pub mod screen;
 pub mod stop;
 pub mod watch;
 
+mod heads;
+pub use heads::HEADS;
+
 #[cfg(test)]
 mod fixtures;
 

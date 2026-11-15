@@ -10,9 +10,9 @@ enqueued was already seen. That is the invariant the 256 bound is derived from, 
 defect firmware that names one bus from several bridges walks `tail` past the end of a
 256-element array.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -290,5 +290,2 @@ impl BusQueue {
          let (word, bit) = (bus as usize >> 6, 1u64 << (bus & 63));
 -        if self.seen[word] & bit != 0 {

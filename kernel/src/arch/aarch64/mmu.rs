@@ -321,7 +321,7 @@ pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 pub(crate) const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// PCI INTx line A routes to GIC SPI 3 (INTID 32 + 3 = 35); B, C, D follow, by the standard
-/// swizzle (`pci::intx_interrupt_number`). The pci crate's fixture test walks the machine's own
+/// swizzle (`pci_configuration_space::intx_interrupt_number`). The pci crate's fixture test walks the machine's own
 /// `interrupt-map` and asserts the formula matches all sixteen entries.
 #[doc(alias = "irq")]
 pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 35;

@@ -127,8 +127,8 @@ pub(crate) fn rollback_boot() -> bool {
         &install::empty_esp_dir(),
         true,
         &[
-            install::LS_AT_THE_PROMPT[0],
-            install::LS_AT_THE_PROMPT[1],
+            install::ls_at_the_prompt()[0],
+            install::ls_at_the_prompt()[1],
             ("made-on-target", "wc made-on-target\r"),
         ],
         "1 10 57",

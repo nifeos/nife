@@ -213,7 +213,7 @@ pub(crate) enum Transport {
         notify_addr: [u64; MAXIMUM_QUEUES],
         isr: u64,
         /// Which MSI-X table entry this function's queues should raise, or
-        /// `pci::VIRTIO_MSIX_NO_VECTOR` when it delivers INTx. Written at
+        /// `pci_configuration_space::VIRTIO_MSIX_NO_VECTOR` when it delivers INTx. Written at
         /// [`Transport::setup_queue`], since the field is behind the queue selector and a device
         /// reset clears it.
         msix_vector: u16,
@@ -375,7 +375,7 @@ impl Transport {
                 pwrite::<u16>(*common + PCI_QUEUE_SIZE, num);
                 // Selected, and after the driver's reset cleared it. A device that refuses the
                 // vector reads back `NO_VECTOR`, and would otherwise hang its first completion.
-                if *msix_vector != pci::VIRTIO_MSIX_NO_VECTOR {
+                if *msix_vector != pci_configuration_space::VIRTIO_MSIX_NO_VECTOR {
                     pwrite::<u16>(*common + PCI_QUEUE_MSIX_VECTOR, *msix_vector);
                     let accepted = pread::<u16>(*common + PCI_QUEUE_MSIX_VECTOR);
                     if accepted != *msix_vector {

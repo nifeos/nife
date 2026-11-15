@@ -8,9 +8,9 @@ Expected to fail: the harness's `assert!(bar.base.checked_add(bar.size).is_some(
 BAR whose assigned base is within its size of `u64::MAX`, which is exactly the arbitrary-response
 regime this harness quantifies over and nothing a fixture supplies.
 
-diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
---- a/crates/pci/src/lib.rs
-+++ b/crates/pci/src/lib.rs
+diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
+--- a/crates/pci_configuration_space/src/lib.rs
++++ b/crates/pci_configuration_space/src/lib.rs
 @@ -478,11 +478,7 @@ pub fn read_bars(
          // An unimplemented BAR is hardwired to zero and reads back zero, type bits included.
          // That is an empty slot, not a malformed one.

@@ -1,56 +1,20 @@
-//! **Each rung's marker**, the stable head of the line that announces it, and the other lines two
-//! binaries agree on. The crate root re-exports every one, so a reader names them
-//! `boot_ladder::BANNER`.
+//! **The words inside the self-test verdict, and its list of checks.** The verdict's head is
+//! [`Heads::self_test`](crate::Heads::self_test); these follow it. The crate root re-exports every
+//! one, so a reader names them `boot_ladder::SELF_TEST_FAILED`. See notes/boot-ladder.md.
 //!
 //! Name: provisional. A child named for what it holds, so the crate root is an index (§282 (when a
 //! file is split, the parent becomes an index)).
 
-/// **The earliest line: `nife on <architecture> (...)`.**
-///
-/// Printed by the kernel as the first thing after the console starts, on every architecture. It
-/// says the console works and it says nothing else, which is exactly the claim wanted at first
-/// light on a board where the console is the thing in doubt. Its tail is free text: a reader takes
-/// the architecture from [`MACHINE`]'s tail.
-///
-/// Deliberately generic across architectures: a recogniser that knew only one board's wording would
-/// report a healthy board of another kind as never having booted.
-pub const BANNER: &str = "nife on "; // wire literal
-
-/// **The machine description finished: `nife machine: <arch>, <n> processor(s), ...`.**
-///
-/// Printed by the kernel as the **last** line of its machine description, and that position is the point: reaching it means the whole description printed, which is
-/// the claim a ladder rung should make. A header would only have meant the block started.
-pub const MACHINE: &str = "nife machine: "; // wire literal
-
-/// **The self-test verdict: `nife self-test: 13 of 13 passed`, `... , 2 absent: <names>`, or
-/// `... , 1 FAILED: <names>`.**
-///
-/// Printed by the userspace self-test program the first program runs before the shell, once it has
-/// run its checks on top of the kernel's; the kernel prints it itself only when it has no such
-/// program to hand the rest to. [`crate::verdict::Verdict`] renders it. The
-/// counts are there on success as well as on failure, so that "ran nothing and passed" is
-/// distinguishable from "ran the set and passed".
-pub const SELF_TEST: &str = "nife self-test: "; // wire literal
-
-/// **The head of the line naming a thread the self-test kills on purpose**, before its death is
-/// taken: `nife self-test subject: thread 19, which the userspace check kills on purpose`.
-///
-/// Deliberately not [`SELF_TEST`] with more after it: a matcher that finds the verdict by its head
-/// must not find this line. [`crate::verdict::SubjectLine`] renders it and
-/// [`crate::verdict::subject_thread`] reads it back.
-///
-/// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
-pub const SELF_TEST_SUBJECT: &str = "nife self-test subject: thread "; // wire literal
-
 /// **What a red verdict says before it names the checks that failed.**
 ///
 /// Uppercase, the tree's word for a failed check, which other boot lines also use. It appears
-/// *inside* a [`SELF_TEST`] line, after any [`SELF_TEST_ABSENT`] list; a matcher wanting a failed
-/// verdict must find both.
+/// *inside* a [`self_test`](crate::Heads::self_test) line, after any [`SELF_TEST_ABSENT`] list; a
+/// matcher wanting a failed verdict must find both.
 pub const SELF_TEST_FAILED: &str = "FAILED: ";
 
-/// **What a verdict says before it names the checks this machine had nothing for**:
-/// `nife self-test: 9 of 13 passed, 3 absent: blockdev clock trng`.
+/// **What a verdict says before it names the checks this machine had nothing for** (calef's ruling
+/// of 2026-10-20 (UTC) on #2447): `<system> self-test: 9 of 13 passed, 3 absent: block_device clock
+/// true_random_number_generator`.
 ///
 /// An absent check neither passed nor failed: the machine has no device for it to test, and the
 /// kernel's line for that check says which. The verdict stays green unless something says
@@ -61,19 +25,19 @@ pub const SELF_TEST_FAILED: &str = "FAILED: ";
 /// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
 pub const SELF_TEST_ABSENT: &str = "absent: ";
 
-/// **The boot self-test's checks, by name, in the order the verdict names them.**
+/// **The boot self-test's checks, by name, in the order the verdict names them** (milestone 268).
 ///
 /// One list for every architecture and both halves: the kernel runs the checks of its own
-/// internals, and the self-test program the ones that need a user program. Each takes its check's
-/// index from here at compile time (`verdict::check`), so an unlisted check does not build, and the
-/// verdict counts against this list rather than against what ran: a listed check that did not run
-/// fails by name, and a console reader fails a verdict whose total is not this list's length.
-/// Each name is unique and spelled in `[a-z0-9_]`, so a reader may split a list of them on
-/// whitespace or commas; a `const` assertion below holds that.
+/// internals, and `boot_self_test` the ones that need a user program (milestone 1063 (the boot
+/// self-test's spawning checks run from userspace)). Each takes its check's index from here at
+/// compile time (`verdict::check`), so an unlisted check does not build, and the verdict counts
+/// against this list rather than against what ran: a listed check that did not run fails by name,
+/// and `serial_console` fails a verdict whose total is not this list's length. See
+/// notes/boot-ladder.md, "One list of checks, for every architecture".
 ///
-/// Names provisional: they are printed, and matched, so they are a contract.
-/// `device_interrupt` (spelled `deviceirq` in older logs) awaits a ruling, and so does reading
-/// those logs.
+/// They are printed, and matched, so they are a contract.
+///
+/// Name: ratified 2026-11-14 (UTC), block 1078, each of the fifteen.
 pub const SELF_TEST_CHECKS: &[&str] = &[
     "exceptions",
     "mapping",
@@ -85,10 +49,10 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
     "budget",
     "supervised",
     "teardown",
-    "blockdev",
+    "block_device",
     "device_interrupt",
     "clock",
-    "trng",
+    "true_random_number_generator",
     "entropy",
 ];
 
@@ -98,41 +62,14 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
 /// these totals as well as the current one; the kernel itself always counts against the current
 /// list, so a kernel built from this tree cannot print one of them.
 ///
-/// | length | the list held |
+/// | length | in force |
 /// |---|---|
-/// | 5 | `exceptions` to `scheduler` |
-/// | 13 | the current list without `supervised` and `teardown` |
+/// | 5 | 2026-09-14 to 2026-10-20 (UTC): `exceptions` to `scheduler` (milestone 268 (every architecture boots the same way)) |
+/// | 13 | 2026-10-20 to 2026-10-24 (UTC): the list without `supervised` and `teardown` (milestone 890 (riscv64 and `x86_64` join the shared boot path)) |
 ///
 /// Name: provisional (milestone 890 (riscv64 and `x86_64` join the shared boot path)'s lane,
 /// 2026-10-20 UTC).
 pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
-
-/// **The boot's middle stages ran to their end**: `nife: the capability core runs on <arch>.`
-///
-/// Printed by the kernel on every architecture after its own self-test checks, just before the
-/// hand-over, so it says the machine was described and the kernel's half of [`SELF_TEST_CHECKS`]
-/// ran. The [`SELF_TEST`] verdict follows it, from the hand-over, and says
-/// whether they passed. The `<arch>` is the kernel's own `arch::NAME`.
-pub const TOUR: &str = "nife: the capability core runs on "; // wire literal
-
-/// **Userspace is up and the shell is offering a prompt.**
-///
-/// The shell prints this immediately before its first `$ `, and a period after it. It is the
-/// terminal state of a default boot: nothing halts, and the prompt rather than a halt is the signal
-/// that the boot finished. Match it whole, without the period.
-///
-/// See the crate's `BUGS` for why the banner and not the prompt itself.
-pub const PROMPT: &str = "nife capability shell"; // wire literal
-
-/// **The kernel is holding the screen open for a host that wants to photograph it**, and will clear
-/// it as soon as one byte comes back on the serial line. *Wording provisional, like every other
-/// constant here.*
-///
-/// Not a rung, but a line two binaries agree on: the kernel prints it when its boot command line
-/// asks it to hold, and a host that wants a screendump waits for it, takes the dump and answers.
-/// A boot that was not asked to hold never prints it. It asks rather than samples, so the host
-/// never photographs a half-drawn screen.
-pub const SCREEN_HELD: &str = "nife screen: held for the host; "; // wire literal
 
 // The check list's invariants. The kernel finds a check's index with `position`, so a duplicate would
 // leave its second entry unrecorded on every boot, and a reader splits the list on whitespace and
@@ -183,46 +120,6 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const HEADS: [&str; 8] = [
-        BANNER,
-        MACHINE,
-        SELF_TEST,
-        SELF_TEST_SUBJECT,
-        SELF_TEST_FAILED,
-        SELF_TEST_ABSENT,
-        TOUR,
-        SCREEN_HELD,
-    ];
-
-    /// Every head but the shell banner ends in a space or punctuation, the boundary a reader
-    /// matches on; the banner is matched whole.
-    #[test]
-    fn every_head_but_the_shell_banner_ends_on_a_boundary() {
-        for head in HEADS {
-            let last = head.chars().last().unwrap();
-            assert!(
-                !last.is_alphanumeric(),
-                "{head:?} ends in a letter or digit"
-            );
-        }
-        assert!(PROMPT.chars().last().unwrap().is_alphanumeric());
-    }
-
-    /// No head is a substring of another, so a reader that finds one never finds it in a line of a
-    /// different rung.
-    #[test]
-    fn no_head_is_inside_another() {
-        for (i, a) in HEADS.iter().enumerate() {
-            for (k, b) in HEADS.iter().enumerate() {
-                assert!(i == k || !b.contains(a), "{a:?} is inside {b:?}");
-            }
-            assert!(
-                !PROMPT.contains(a) && !a.contains(PROMPT),
-                "{a:?} and the banner overlap"
-            );
-        }
-    }
 
     /// The check list's invariants hold at run time too, so a failing assertion names the check.
     #[test]
