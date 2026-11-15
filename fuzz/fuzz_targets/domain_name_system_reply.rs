@@ -112,7 +112,7 @@ fuzz_target!(|reply: &[u8]| {
                                 record_type: record_type::CNAME,
                                 class: CLASS_IN,
                                 ttl: 0,
-                                data: data,
+                                data,
                                 data_offset: *at,
                             },
                         )

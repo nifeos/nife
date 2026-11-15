@@ -12,7 +12,7 @@
 
 //! # BUGS
 //!
-//! - IPv4 only: a query asks for A records alone, and there is no AAAA.
+//! - IPv4 only: a query asks for address records alone, so it reads no address longer than four bytes.
 //! - No EDNS(0), so UDP replies stop at [`MAXIMUM_UDP_MESSAGE_BYTES`] and a larger answer costs a TCP
 //!   retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
@@ -66,32 +66,31 @@ pub const MAXIMUM_LABEL_BYTES: usize = 63;
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 pub const HEADER_BYTES: usize = 12;
 
-/// The response bit (QR, "query or response"): set in a reply.
+/// The response bit: set in a reply.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "QR")]
 pub const FLAG_RESPONSE: u16 = 0x8000;
 /// The opcode field. A standard query is opcode 0.
 pub const OPCODE_MASK: u16 = 0x7800;
-/// Truncated (TC): the server had more to say than the transport carried.
+/// Truncated: the server had more to say than the transport carried.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "TC")]
 pub const FLAG_TRUNCATED: u16 = 0x0200;
-/// Recursion desired (RD). A stub resolver always sets it, because it asks a recursive server to do the
+/// Recursion desired. A stub resolver always sets it, because it asks a recursive server to do the
 /// walk from the root that a stub does not.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "RD")]
 pub const FLAG_RECURSION_DESIRED: u16 = 0x0100;
-/// The response code field (RCODE), the low four bits of the flags.
+/// The response code field, the low four bits of the flags.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "RCODE")]
 pub const RESPONSE_CODE_MASK: u16 = 0x000f;
 
-/// The response code a server sends for a name that does not exist (RFC 1035's "Name Error",
-/// called NXDOMAIN).
+/// The response code a server sends for a name that does not exist (RFC 1035's "Name Error").
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "RCODE")]
@@ -100,16 +99,16 @@ pub const RESPONSE_CODE_NAME_ERROR: u8 = 3;
 
 /// Record types this crate reads.
 pub mod record_type {
-    /// An address record (A), whose data is one IPv4 address.
+    /// An address record, whose data is one IPv4 address.
     #[doc(alias = "address record")]
     pub const A: u16 = 1;
-    /// A canonical name record (CNAME): the owner is an alias, and the record's data is the
+    /// A canonical name record: the owner is an alias, and the record's data is the
     /// canonical name.
     #[doc(alias = "canonical name record")]
     pub const CNAME: u16 = 5;
 }
 
-/// The Internet class (IN), the only one a host-name lookup uses.
+/// The Internet class, the only one a host-name lookup uses.
 #[doc(alias = "Internet class")]
 pub const CLASS_IN: u16 = 1;
 
@@ -132,7 +131,7 @@ pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 /// errors are a caller's mistake (a buffer too small, a name that cannot be one) and are reported
 /// rather than panicking, because a resolver must not be crashable by its own client's input.
 ///
-/// Non-exhaustive: EDNS(0) or AAAA support would add variants, so a caller matches with a
+/// Non-exhaustive: Longer addresses or EDNS(0) would add variants, so a caller matches with a
 /// wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -176,16 +175,16 @@ pub struct Header {
     pub id: u16,
     /// QR, the opcode, AA, TC, RD, RA and the response code, packed.
     pub flags: u16,
-    /// How many questions follow (QDCOUNT).
+    /// How many questions follow.
     #[doc(alias = "QDCOUNT")]
     pub question_count: u16,
-    /// How many answer records follow the questions (ANCOUNT).
+    /// How many answer records follow the questions.
     #[doc(alias = "ANCOUNT")]
     pub answer_count: u16,
-    /// How many authority records follow the answers (NSCOUNT).
+    /// How many authority records follow the answers.
     #[doc(alias = "NSCOUNT")]
     pub authority_count: u16,
-    /// How many additional records follow the authority records (ARCOUNT).
+    /// How many additional records follow the authority records.
     #[doc(alias = "ARCOUNT")]
     pub additional_count: u16,
 }
@@ -222,7 +221,7 @@ impl Header {
         Ok(())
     }
 
-    /// The response code (RCODE), the flags' low four bits.
+    /// The response code, the flags' low four bits.
     ///
     /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
     #[doc(alias = "RCODE")]
@@ -497,10 +496,10 @@ pub(crate) fn decode_name_into(msg: &[u8], off: usize, out: &mut [u8]) -> Result
 pub struct Question {
     /// The name asked about.
     pub name: Name,
-    /// The record type asked for (QTYPE).
+    /// The record type asked for.
     #[doc(alias = "QTYPE")]
     pub record_type: u16,
-    /// The class asked in (QCLASS).
+    /// The class asked in.
     #[doc(alias = "QCLASS")]
     pub class: u16,
 }
@@ -512,16 +511,16 @@ pub struct Question {
 pub struct Record<'a> {
     /// The record's owner.
     pub name: Name,
-    /// The record type (TYPE).
+    /// The record type.
     #[doc(alias = "TYPE")]
     pub record_type: u16,
-    /// The class (CLASS).
+    /// The class.
     #[doc(alias = "CLASS")]
     pub class: u16,
-    /// The time to live (TTL): seconds a cache may keep the record.
+    /// The time to live: seconds a cache may keep the record.
     #[doc(alias = "time to live")]
     pub ttl: u32,
-    /// The record data (RDATA), raw.
+    /// The record data, raw.
     #[doc(alias = "RDATA")]
     pub data: &'a [u8],
     /// Where `data` starts in the message.
@@ -592,7 +591,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-/// A canonical name record's (CNAME's) canonical name, decompressed against the whole message. The name must end
+/// A canonical name record's canonical name, decompressed against the whole message. The name must end
 /// inside the record's own data, though its pointers may reach back anywhere earlier.
 #[doc(alias = "canonical name")]
 pub fn cname_target(msg: &[u8], record: &Record<'_>) -> Result<Name> {
