@@ -15,7 +15,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  design/decisions/0084-how-we-port.md (patch burden, tiers) | No tool measures patch burden against upstream; no corpus has been put in tiers 1 to 4. | Measure patch burden and classify a program corpus by tier | M  |
 |  design/roadmap/0121-ripgrep-and-enumeration.md | `ignore` gitignore semantics untested; the fixture holds no ignore files | Walker fixture with ignore files | S  |
 |  design/roadmap/0184-std-x86-64.md | A zeroed timebase page reads as 1 GHz, so a std program built by `build_child_space` scales `Instant` wrongly | Real timebase page for userspace-built std children | S  |
-|  design/roadmap/0310-miri-leak-free.md | `crates/paging/tests/mapping.rs` still has opt-in `TableGuard` (21 call sites) nothing forces to be bound | `mapping.rs` tests bind their table guard by construction | S  |
+|  design/roadmap/0310-miri-leak-free.md | `crates/page_tables/tests/mapping.rs` still has opt-in `TableGuard` (21 call sites) nothing forces to be bound | `mapping.rs` tests bind their table guard by construction | S  |
 |  notes/crates-io-on-nife.md | No crates.io crate has ever been booted under a stated endowment; only compile and link evidence. Milestone 64 (BUILT) names this as its own acceptance criterion; needs a §46 (Thin primitives or whole subsystems; we write everything in between) ruling first | Boot one crates.io crate under a stated endowment | M  |
 |  notes/packages.md | a slow package source makes the prompt wait | Bound the prompt's wait on a slow source | S  |
 |  notes/packages.md | a manifest note may not declare files, directories, inputs, options or std runtime (see 0597's BUGS) | Image requests carry files and inputs | M  |

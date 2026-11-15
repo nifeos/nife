@@ -35,7 +35,7 @@ kernel-authored part of the trusted base, and the larger half is `libcore`. The 
 It left three things open, and RedLeaf closed none of them. Multiprocessor: RedLeaf implements it,
 but every published number is single-core and nothing says what concurrency did to its trusted base.
 Page tables: RedLeaf dissolves the question by not using address spaces, at the price of `fork()`;
-this tree answers it head-on in `crates/paging`. Size of the trusted base: RedLeaf regressed from a
+this tree answers it head-on in `crates/page_tables`. Size of the trusted base: RedLeaf regressed from a
 number to a list, one that adds an IDL compiler and a trusted build environment.
 
 This tree cannot say it in their terms, for an architectural reason. In Tock and RedLeaf the safe

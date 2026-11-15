@@ -32,7 +32,7 @@ this line a fault is a triple fault and a silent machine reset.
 
 ## 4. The page-table format
 
-Behind the existing seam of milestone 20 (a portable HAL, proven on a second architecture): `crates/paging/src/x86_64.rs`, sixty lines of entry codec plus
+Behind the existing seam of milestone 20 (a portable HAL, proven on a second architecture): `crates/page_tables/src/x86_64.rs`, sixty lines of entry codec plus
 seven host tests and six Kani harnesses, with no change to the generic walk. That is the
 milestone-20 claim tested and holding.
 
@@ -99,7 +99,7 @@ than the low gigabyte.
 
 The address-space decision item 1 recorded was taken as recorded: two bases, Linux's. The image sits
 at `KERNEL_VA_BASE`, where the code model pins it. The direct map sits at `0xffff888000000000`
-(PML4[273]). `virt_to_phys` inverts both, which is Linux's `__pa()` shape. `crates/paging` again
+(PML4[273]). `virt_to_phys` inverts both, which is Linux's `__pa()` shape. `crates/page_tables` again
 needed nothing.
 
 The sequencing hazard was removed rather than sequenced around, and that is the part worth carrying
@@ -154,4 +154,4 @@ relocation model, which this target does not default to), `rust-toolchain.toml`,
 
 The evidence that the `arch/` split is real: making the entire kernel compile for a third
 architecture took 42 compiler errors. Every one was a missing `arch::` name, plus four `cfg` arms in
-files that already had two. `crates/paging` needed nothing.
+files that already had two. `crates/page_tables` needed nothing.

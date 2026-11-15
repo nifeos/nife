@@ -7,7 +7,7 @@ DMA-confinement boundary), and the address path no descriptor proof can see.
 ## The IOMMU domain: proved where it can be, tested where it cannot
 
 Milestone 35's third item was to confirm the IOMMU domain builder has a *maps-exactly-the-grant*
-proof. The builder is `paging::domain::build_identity_domain`, from milestone 16b, part of milestone 16
+proof. The builder is `page_tables::domain::build_identity_domain`, from milestone 16b, part of milestone 16
 (real hardware + IOMMU-backed driver isolation). The property is
 the hardware sibling of the validator property: the device's DMA domain maps precisely the granted
 frames and nothing else. The first pass at the milestone declined it. The property is a `Mapper`
@@ -21,7 +21,7 @@ needs no tables at all. Factored out (`grant_pages`, `grant_page`), it proves in
 second. The builder now calls it instead of `map_range`'s unchecked `va + i * PAGE_SIZE`, so the
 proved page set is the page set that runs.
 
-Six in `crates/paging/src/domain.rs`:
+Six in `crates/page_tables/src/domain.rs`:
 
 | Harness | Property |
 |---|---|

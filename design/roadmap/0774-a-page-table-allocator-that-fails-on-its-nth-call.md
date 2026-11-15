@@ -16,7 +16,7 @@ provisional, as its recommended first fault-injection pilot. *(Title and slug ar
 ## Why here first
 
 Of the twenty unreached error paths milestone 745 ranked as releasing memory or authority, twelve
-are in `crates/paging` ([`notes/untested-error-paths.md`](../../notes/untested-error-paths.md)).
+are in `crates/page_tables` ([`notes/untested-error-paths.md`](../../notes/untested-error-paths.md)).
 Five fire midway through a mapping, after something was taken: `map_span` and `map_range` after
 earlier blocks are mapped, `map_block` after upper tables were allocated, and
 `build_identity_domain` after earlier pages or regions are in a device's domain. No test has
@@ -48,4 +48,4 @@ It does not reach the kernel's own rollbacks, which run under QEMU. It measures 
 call, so a leak found here is a leak there too, and a clean result says nothing about the caller.
 ## Index row
 
-Twelve of the unreached error paths that release memory or authority sit in `crates/paging`, five of them midway through a mapping. A test allocator that fails on its Nth call, swept over `map_span`, `map_range` and `build_identity_domain`, reaches them with no production code added.
+Twelve of the unreached error paths that release memory or authority sit in `crates/page_tables`, five of them midway through a mapping. A test allocator that fails on its Nth call, swept over `map_span`, `map_range` and `build_identity_domain`, reaches them with no production code added.

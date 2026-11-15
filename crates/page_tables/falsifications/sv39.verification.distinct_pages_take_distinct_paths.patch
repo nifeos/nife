@@ -1,0 +1,27 @@
+Falsifies `page_tables::sv39::distinct_pages_take_distinct_paths`.
+
+The defect: an eight-bit index field under a nine-bit stride, the mirror of the `aarch64`
+record's overlap. Each level now reads one bit fewer than its slot holds, so the top bit of
+every level's field selects no entry and three address bits become invisible to the walk. The
+top half of every table is unreachable and two pages 2 MiB apart share a leaf.
+
+Expected to fail: `assert_eq!(a, b)`, for any two page-aligned Sv39 addresses differing only in
+bit 20 (the top bit of the last level's field). The harness masks its inputs to
+`0x0000_007f_ffff_f000`, so such a pair is inside the range it quantifies over.
+
+**The index math is shared and the proof is not.** The `aarch64` record widens the stride's
+overlap and the `x86_64` one replaces the mask with a modulo.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+index 476dfcac4..81bb0344c 100644
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -107,7 +107,7 @@ pub trait PageFormat {
+     /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
+     fn index(va: u64, level: usize) -> usize {
+         let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
+-        ((va >> shift) & 0x1ff) as usize
++        ((va >> shift) & 0xff) as usize
+     }
+ 
+     /// Does `va` lie in `half` for this format? The top bits (above [`SPLIT_SHIFT`](Self::SPLIT_SHIFT))

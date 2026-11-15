@@ -61,7 +61,7 @@ Linux separates the two jobs this one constant was doing, and so does this port 
 `DIRECT_MAP_BASE = 0xffff888000000000`, which is Linux's `page_offset_base`, taken rather than
 invented so that a reader who has met one x86_64 kernel has met this number. They are PML4[511] and
 PML4[273], so nothing about them interferes, and both are canonically high, so the same bit-47
-`Ia32e::is_in_half` test admits both. `crates/paging` needed no change, which is the second time
+`Ia32e::is_in_half` test admits both. `crates/page_tables` needed no change, which is the second time
 this port has been able to say that.
 
 `virt_to_phys` therefore has two branches, and that is not a wart: the kernel hands it linker

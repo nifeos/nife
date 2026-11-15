@@ -12,7 +12,7 @@ needs_person: no
 
 Promoted from the proposal
 `did-the-mutation-census-already-know-about-row-12`, filed 2026-09-16 by milestone 307, which broke
-`paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` and found it could not fail. *(Number
+`page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` and found it could not fail. *(Number
 provisional until the merge queue lands it.)*
 
 This is a measurement a lane can take with tools that exist, and it wants a lane
@@ -22,14 +22,14 @@ Premise re-checked 2026-09-19, and the title's own question is answerable by rea
 changes the shape of the work rather than removing it. Three findings, none of which needed a
 sweep:
 
-- `VTD_ADDR_MASK` is a `const` initialized from a literal (in `crates/paging/src/x86_64.rs`),
+- `VTD_ADDR_MASK` is a `const` initialized from a literal (in `crates/page_tables/src/x86_64.rs`),
   so there is no function body to replace and no operator to flip. `cargo mutants` rewrites one
   function at a time, which `notes/mutation-testing.md` states in its own opening lines. So this
   block's central sentence, that a mutation of `VTD_ADDR_MASK` is precisely what `script/mutation`
   exists to try, **is false**. Neither branch of the dichotomy below is the answer: the two
   instruments do not overlap on this constant at all.
 - **The 2026-08-03 baseline could not have known either way.**
-  `crates/paging/src/x86_64.rs` was added on 2026-09-14 (merge of pull request #855), six weeks
+  `crates/page_tables/src/x86_64.rs` was added on 2026-09-14 (merge of pull request #855), six weeks
   after the baseline ran. The `paging` triage in `notes/mutation-testing.md` that classifies every
   `|` to `^` in `table_entry`/`leaf_entry` as equivalent says "on both formats", and both formats
   there are aarch64 and Sv39; the VT-d encoder is a third and was not in that run.
@@ -51,7 +51,7 @@ through `VTD_ADDR_MASK`. So widening that constant left the harness SUCCESSFUL, 
 while every VT-d leaf carried a hardware-reserved bit.
 
 A mutation of `VTD_ADDR_MASK` is precisely what `script/mutation` exists to try, and
-`crates/paging` is a host crate already inside risk 3's census. So there are exactly two possibilities
+`crates/page_tables` is a host crate already inside risk 3's census. So there are exactly two possibilities
 and they call for different work:
 
 - The census already surfaced this as a survivor and nobody acted on it. Then the finding is not
@@ -67,7 +67,7 @@ Either answer is worth more than the assumption, and the assumption a reader wou
 
 ## What it would take
 
-Run `script/mutation` against `crates/paging`, `crates/dma_validator`, `crates/capability_plan` and
+Run `script/mutation` against `crates/page_tables`, `crates/dma_validator`, `crates/capability_plan` and
 `crates/capability`, which between them carry rows 1 to 18, and compare its survivor list against the
 per-row verdicts milestone 307 recorded in `notes/confinement-claims.md`. The two instruments measure
 different things and the comparison is the deliverable: a census asks whether a change to the code is
@@ -84,7 +84,7 @@ having checked.
 
 ## Index row
 
-Milestone 307 found that `paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` stated all three of
+Milestone 307 found that `page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` stated all three of
 its assertions and its `kani::assume` through `VTD_ADDR_MASK`. So widening that constant left the
 harness successful with 0 of 45 failed while every VT-d leaf carried a hardware-reserved bit. This
 block asked whether the mutation census had already surfaced it, which would make the finding about
