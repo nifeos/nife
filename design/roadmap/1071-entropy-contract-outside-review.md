@@ -121,7 +121,7 @@ The checks are in [the done-when appendix](1071-entropy-contract-outside-review/
 - **Outstanding.** The `jh7110_entropy` crate's `Pool::take` still builds its word by hand; the
   JH7110 service loop passes it through `reply`. A change in that repository hands the bytes out
   instead.
-- **Landed.** The move: the repository `nifeos/entropy_contract` holds the crate with the
+- **Done.** The move: the repository `nifeos/entropy_contract` holds the crate with the
   `allow-unpublished: true` line in its `ci.yml`, and nife pins its `main`.
 - **Outstanding.** The pre-release tag, which waits for the architect, then the pin bump to the
   tagged commit.
