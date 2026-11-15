@@ -28,7 +28,8 @@
 //! | `\x` | the byte `x`, with no special meaning |
 //! | anything else | itself |
 //!
-//! Name: ratified 2026-08-01 (calef, the naming tenet): a standard term that is already right.
+//! Name: ratified 2026-11-14 (UTC) for `byte_glob`: the standard term glob, with the bytes it matches
+//! said in the name.
 
 #![no_std]
 #![forbid(unsafe_code)]
@@ -57,7 +58,7 @@ pub enum Dot {
 /// # Examples
 ///
 /// ```
-/// use glob::{matches, matches_with, has_magic, literal, Dot};
+/// use byte_glob::{matches, matches_with, has_magic, literal, Dot};
 ///
 /// assert!(matches(b"*.txt", b"notes.txt"));
 /// assert!(!matches(b"*.txt", b"notes.md"));
@@ -95,7 +96,7 @@ pub fn matches(pattern: &[u8], name: &[u8]) -> bool {
 /// # Examples
 ///
 /// ```
-/// use glob::{matches, matches_with, Dot};
+/// use byte_glob::{matches, matches_with, Dot};
 ///
 /// assert!(!matches(b"*", b".config"));                       // `*` does not list dotfiles
 /// assert!(matches(b".*", b".config"));                       // an explicit dot does

@@ -5,9 +5,9 @@ pattern that backtracks across a long name is charged as though it never did.
 
 Expected to fail: the harness's `assert!(steps <= cost_bound(plen, nlen))`.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -251,10 +251,8 @@ pub const fn cost_bound(pattern_bytes: usize, name_bytes: usize) -> usize {
      let iterations = name_bytes
          .saturating_add(2)

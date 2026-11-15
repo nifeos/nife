@@ -1,4 +1,4 @@
-# glob
+# byte_glob
 
 An `fnmatch(3)`-style matcher for one file name. A pattern and a name go in, a `bool` comes out. It
 is a total function on two byte strings: `no_std`, no allocation, no `unsafe`, no dependency, a cost
@@ -37,7 +37,7 @@ complement, `\x` the byte `x`, anything else itself.
 ## EXAMPLES
 
 ```rust
-use glob::{matches, matches_with, has_magic, literal, Dot};
+use byte_glob::{matches, matches_with, has_magic, literal, Dot};
 
 assert!(matches(b"*.txt", b"notes.txt"));
 assert!(!matches(b"*", b".hidden"));

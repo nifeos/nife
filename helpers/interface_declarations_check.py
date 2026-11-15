@@ -65,7 +65,7 @@ OWED = {}
 NOT_A_FORMAT = {
     'calendar': 'arithmetic on seconds and dates, with no peer',
     'domain_name_system': 'RFC 1035, a format nife does not own, exchanged with name servers',
-    'glob': 'a pattern matcher on two byte strings, with no peer',
+    'byte_glob': 'a pattern matcher on two byte strings, with no peer',
     'globally_unique_identifier_partition_table':
         'UEFI\'s on-disk table, whose revision the header carries; nife does not own the format',
 }

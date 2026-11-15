@@ -20,11 +20,14 @@ A `CALL` carries one request word and returns two reply words.
 
 - Request: the opcode in bits 63:56 (`OPERATION_SHIFT` is 56), the byte count in bits 7:0. There is
   one operation, `GET` (1). Build a request with `request`, read it with `operation` and `requested_bytes`.
+  A service answers any other opcode with `NO_ENTROPY`. Bits 55:8 are reserved: a client sends zero
+  there, and a service answers a request with any of them set with `NO_ENTROPY`
+  (`request_is_well_formed` says whether a word is well formed).
 - Reply word 1: the count of valid bytes in word 2, from 0 to `MAXIMUM_BYTES` (8). A count of 0 is
   `NO_ENTROPY`: the service has none to give, and it never pads, repeats an earlier answer or
   substitutes a pseudo-random stand-in. A caller that receives no randomness must find out.
-- Reply word 2: those bytes, little-endian, in the low bytes. A caller must not read the rest
-  of the word, which carries no entropy.
+- Reply word 2: those bytes, little-endian, in the low bytes, and zeros above them. A caller must not read
+  the rest of the word, which carries no entropy.
 - A request for more than `MAXIMUM_BYTES` gets `MAXIMUM_BYTES`, not a refusal: `request` clamps the
   count it encodes and `requested_bytes` clamps the count it reads, so the caller loops.
 - A reply word 1 above `MAXIMUM_BYTES` did not come from the service. The kernel reports a failed
@@ -41,7 +44,8 @@ A `CALL` carries one request word and returns two reply words.
 - `INTERFACE_ID` (12) is this interface's number in a program's `INTERFACES` note. No other
   interface takes it, and a format change is a new version, never a new number.
 - `VERSION` (1) is the protocol's version: one number for the operation set and the reply shape. A
-  break bumps it; an addition (a new opcode, an optional field) does not. A program declares the
+  break bumps it; a new opcode does not. A new field in the request word does, or is a new opcode, since a service refuses
+  every request with a reserved bit set. A program declares the
   pair of `INTERFACE_ID` and `VERSION`.
 - A service builds its reply with `reply`: the count, then the delivered bytes little-endian in the
   low bytes of the word, with zeros above them.
@@ -151,6 +155,8 @@ patched proof reports `Complete - 0 successfully verified harnesses, 1 failures,
 
 ## BUGS
 
+- A client cannot tell an unknown operation from a dry source: both are answered `NO_ENTROPY`, and
+  the reply has no room for a third answer.
 - `readiness` reads an all-zero first draw as a dead device: wrong with probability 2^-64 to
   2^-2048 by source, and the safe way round. It reads a first draw of eight or more equal bytes the
   same way: wrong with probability at most 255 in 2^64 for eight bytes from a uniform source. It
