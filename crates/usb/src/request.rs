@@ -40,7 +40,9 @@ pub struct SetupPacket {
 
 impl SetupPacket {
     /// `GET_DESCRIPTOR` of `kind` (a [`crate::descriptor`] type) number `index`, at most `length`
-    /// bytes. A device may answer fewer, and the host must accept a short answer.
+    /// bytes. A device may answer fewer, and the host must accept a short answer. The parameter
+    /// `index` is the descriptor index, which goes in the low byte of `wValue`; the packet's own
+    /// [`SetupPacket::index`] field is `wIndex`, which this request leaves zero.
     pub const fn get_descriptor(kind: u8, index: u8, length: u16) -> SetupPacket {
         SetupPacket {
             request_type: DEVICE_TO_HOST,
