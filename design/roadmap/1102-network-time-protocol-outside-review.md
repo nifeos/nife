@@ -188,9 +188,8 @@ constant. Without it, the tree shows one crate.
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
 publish, which the architect may revisit. Removing a dependency on an own crate needs no
 dependency ruling. The crate drops `clock_contract`, its only `[dependencies]` entry, and defines a
-private `NANOSECONDS_PER_SECOND` in `src/lib.rs`, as `core::time` defines its own privately. The
-constant has nine uses: `src/lib.rs` lines 181, 261, 272, 273, 274, 289 and 329, and
-`src/verification.rs` lines 56 and 70, after the import at `src/lib.rs` line 48. Item 7 is the work.
+private `NANOSECONDS_PER_SECOND` in `src/lib.rs`, as `core::time` defines its own privately.
+Item 7 is the work.
 
 ### Decision 2. The public names the template's gates refuse, and the ones a later rule reopens
 
@@ -231,9 +230,8 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 publish, which the architect may revisit. The table above is the rule, with two rows settled
 elsewhere. `MAXIMUM_UNIX_SECONDS` is inclusive. `abs_ticks` is dropped, since no caller outside the
 crate uses it. The low-bit randomizer is removed under Decision 3, so its row renames nothing; its
-test still takes the American spelling. No old spelling stays as an alias. `PACKET_LEN` has seven
-call sites outside the crate, in `components/src/network_time_client.rs` and
-`fixtures/src/network_time_test_server.rs`. Items 4, 5, 18 and 22 are the work.
+test still takes the American spelling. No old spelling stays as an alias. Items 4, 5, 18 and 22
+are the work.
 
 ### Decision 3. Do `Query::new` and the low-bit randomizer leave before the first publish?
 
@@ -260,8 +258,7 @@ a microsecond clock, as the low-bit randomizer documentation itself computes.
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
 publish, which the architect may revisit. Both leave: the stricter surface, since adding a
 constructor later is compatible and removing one is not. `Query::new` (`src/lib.rs` line 616) and
-the low-bit randomizer (line 226) have no caller outside the crate. The one NTP caller in nife is
-`Query::with_nonce` at `components/src/network_time_client.rs` line 153. Item 17 is the work.
+the low-bit randomizer (line 226) have no caller outside the crate. Item 17 is the work.
 
 ## Done when
 
