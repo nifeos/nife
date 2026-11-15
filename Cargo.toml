@@ -54,7 +54,7 @@ members = [
     "crates/filesystem_fixture",
     "crates/firmware_configuration",
     "crates/graphics_contract",
-    "crates/glob",
+    "crates/byte_glob",
     "crates/globally_unique_identifier_partition_table",
     "crates/designware_inter_integrated_circuit",
     "crates/inter_process_communication",

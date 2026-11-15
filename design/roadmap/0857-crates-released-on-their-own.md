@@ -155,7 +155,7 @@ reversible order, and each contribution waits on the ruling above.
 
 4. `paging`, `globally_unique_identifier_partition_table`, `elf`
    ([deferred](0857-crates-released-on-their-own/contribute-proofs-instead-of-releasing.md)),
-   `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
+   `network_time_protocol`, `device_tree_blob`, `byte_glob`, `domain_name_system`.
 5. `calendar`, revisited under fork 8, since `time` wants a person's words.
 6. `non_volatile_memory_express`, `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
 7. The internal set, closing as one sitting. Withdrawn 2026-11-01 (UTC).
