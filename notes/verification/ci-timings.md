@@ -48,8 +48,8 @@ considered and declined on these numbers.
 
 This is milestone 119 (the long pole is one prover). The packer balances crates by their measured
 seconds, so the slowest shard can never beat the slowest crate, and the slowest crate can never
-beat its slowest harness, one formula in one single-threaded solver. These are medians of the 29 merge-group runs 43642016303 to 43659021264 (2026-11-14 and
-2026-11-15 UTC) in which every shard passed, with the median largest harness of each crate over
+beat its slowest harness, one formula in one single-threaded solver. The table below holds medians of the 29 merge-group runs 43642016303 to 43659021264 (2026-11-14
+and 2026-11-15 UTC), each with every shard passing. The largest harness is each crate's median over
 the shard logs of the last 40 runs:
 
 | crate | median | largest harness |
@@ -64,8 +64,9 @@ the shard logs of the last 40 runs:
 
 A harness can outlast its crate's median because two run at once (`VERIFY_JOBS=2`), and the
 runner's speed varies by about 1.6 times from run to run (`byte_glob`: 399 to 658 seconds over
-those runs). Packed by these medians, with the 90th percentile and the maximum of each crate summed
-over the same shard, and about 0.7 minutes of setup on each job:
+those runs). The packer splits these medians into shards as below. The other two columns sum each
+crate's 90th percentile and maximum over the same shard, and each job adds about 0.7 minutes of
+setup:
 
 | prove shards | slowest shard, median | slowest shard, 90th percentile | slowest shard, maximum |
 |---|---|---|---|
@@ -80,17 +81,17 @@ buy nothing more. `helpers/verify_times.py` keeps the table current, and
 
 ### A shard that stalls
 
-A shard whose crates sum to about 12 minutes has been seen to run into the job's 25-minute limit,
-and the same pull request passed on its other runs, so the cause is the runner and not the code.
+Shards whose crates sum to about 12 minutes have run into the job's 25-minute limit. The same pull
+requests passed on their other runs, so the cause is the runner and not the code.
 The table cannot explain it: no passing shard ran longer than 15.6 minutes, and each stalled one
 ran the full 25. The leading suspect is memory. `byte_glob` runs
 `a_negated_class_is_the_exact_complement_of_the_class` beside
 `no_magic_means_the_pattern_is_its_own_only_match`. On an x86_64 Linux host the pair reached
 11.6 GiB resident between them within two and a half minutes, where a 12 GiB cap stopped both, and
 the runner has 16 GB. A slow runner lengthens the time the two overlap. A job that reaches its
-limit loses its log, so the `script/verify` step has its own limit below the job's, and a memory
-record runs beside it: a stalled shard keeps its log, names the harness it was in, and shows
-whether the runner was swapping.
+limit loses its log, so the `script/verify` step has its own limit below the job's. A memory record
+runs beside it. A stalled shard then keeps its log, names the harness it was in, and shows whether
+the runner was swapping.
 
 The dangerous failure mode is a crate that lands in no shard, because an unproved crate is
 invisible. The suite goes green *faster*, and nothing says a harness stopped running. So the packer
