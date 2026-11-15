@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
-//! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: the network ports of the StarFive VisionFive 2 board.
+//! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: the network ports of the StarFive `VisionFive` 2 board.
 //!
-//! The board is the StarFive VisionFive 2. It has two device trees, mainline Linux's and the
+//! The board is the StarFive `VisionFive` 2. It has two device trees, mainline Linux's and the
 //! vendor's own, which spell the controller differently; [`jh7110`] reads both.
 //!
 //! Everything the driver's two halves compute and nothing either touches. A kernel half brings the
