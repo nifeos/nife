@@ -1,7 +1,6 @@
 //! **Machine-checked proofs (Kani) of the manifest descriptor**: whatever `decode` accepts,
 //! `encode` spells back byte for byte, and `decode` never panics. Behind `#[cfg(kani)]`, so only
-//! `cargo kani` (script/verify) compiles them. The `INTERFACES` note's own harnesses stay in
-//! `lib.rs` beside its code. See notes/verification.md.
+//! `cargo kani` (script/verify) compiles them.
 //!
 //! Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats,
 //! after the `verification` module every other Kani crate here keeps out of line.

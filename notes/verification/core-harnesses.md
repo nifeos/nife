@@ -9,7 +9,7 @@ the generational table, the intrusive queue and the ASID allocator.
 
 ## `crates/capability`
 
-14 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
+15 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
 the table names the eight this appendix adjudicated:
 
 | Harness | Property |
