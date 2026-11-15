@@ -18,7 +18,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
   repository's `docs/`.
 - The template's acronym gate passes with a ceiling of zero.
 - `Frame` has `len`, and `payload_read` clamps to `DATA_MAXIMUM`.
-- The architect has ruled the three decisions above, the rename lane has landed, and `script/names
+- The rename lane has landed the names Decision 1 decides, and `script/names
   user_mode_runtime` prints `ratified` for every public name.
 - `cargo check`, `cargo clippy -- -D warnings` and `cargo doc` with warnings denied are clean on
   all three targets and on the host at the commit the move cites.
