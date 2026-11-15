@@ -50,9 +50,9 @@ What a stranger may find surprising:
 
 Two Kani harnesses, each with a falsification patch in `falsifications/`: `hertz` answers `None`
 exactly when the first eight bytes differ from the magic and otherwise the little-endian number
-that follows, and `build_page(x).hertz()` is `Some(x)` for every `u64`. Six host tests cover the
+that follows, and `build_page(x).hertz()` is `Some(x)` for every `u64`. Seven host tests cover the
 round trip, a zeroed frame, a wrong magic, the band's edges, a rate outside the band reading back
-as written, and the layout offsets. The `unsafe` surface is one `from_raw_parts` behind `new`'s
+as written, the layout offsets and the frozen identity values. The `unsafe` surface is one `from_raw_parts` behind `new`'s
 contract, and no proof covers it, since Kani cannot prove a caller's promise about a mapping.
 
 ## Names
@@ -76,7 +76,7 @@ because uppercase erases the case that tells `MHz` from `mHz`.
 
 | item | owner |
 |---|---|
-| The crate leaves after `address_space_map` in milestone 1017's order. The table there lists a development dependency on it; the manifest no longer has one, so the order may no longer bind. | maintainer |
+| The crate's manifest has no dependency, so it leaves in step 2 of milestone 1017's order, ahead of `address_space_map`. The table there lists a development dependency that no longer exists. | maintainer |
 
 ## Proposed items
 
@@ -97,4 +97,10 @@ bare-metal targets pass.
 
 ## Recommendation
 
-Ready for review.
+Ready for the architect's review. The move lane's three edits are in the tree and were checked
+against the crate as it now stands. The template's prose helpers at its head (`prose_acronyms`,
+`passive_voice`, `history_phrases`, `spelled_out`, `unit_symbols` and the rest) report nothing over
+the staged copy, and the dry run of the move is clean. Both Kani harnesses verify, and each
+falsification patch turns its harness red. The harnesses assume nothing. The README says where the
+end-to-end test lives. The identity is unchanged. Nothing moves, and no repository is created,
+until the architect clears this review.
