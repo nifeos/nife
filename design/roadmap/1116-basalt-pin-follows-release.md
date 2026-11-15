@@ -22,14 +22,14 @@ pull request, the automation App's token), in the other direction. `vendor-watch
 
 - `.github/workflows/pin-basalt.yml` runs daily and on dispatch. When `helpers/basalt_pin.py
   resolve` names a Release other than the one the pin holds, the workflow writes both lines of
-  `xtask/basalt-pin` (commit and release), force-pushes the branch `pin/basalt`, and opens the pull
+  `xtask/basalt-pin` (commit and release), pushes the branch `pin/basalt` with force, and opens the pull
   request as `nife-smelter[bot]` or updates the one that is open. When the pin already names that
   Release, the run says nothing.
-- The target is the newest Release of basalt, by publication time, that passes three tests. It is
-  published, neither a draft nor a pre-release. It is complete: every package nife builds has a
-  `.nifepkg` for each of the three architectures and a source archive, all uploaded. Its commit is
-  on basalt's `main`: a compare of `main...<commit>` says `identical` or `behind`. A newer Release
-  that fails a test is skipped, and the pin never moves backward.
+- The target is the newest Release of basalt, by publication time, that passes three tests. basalt
+  has published it, as neither a draft nor a pre-release. It holds, for every package nife builds,
+  a `.nifepkg` for each of the three architectures and a source archive, all fully uploaded. Its
+  commit sits on basalt's `main`: a compare of `main...<commit>` says `identical` or `behind`. The
+  workflow skips a newer Release that fails a test, and the pin never moves backward.
 - `helpers/basalt_pin.py` holds the rule. Its `--selftest` tests the rule with no network, and
   `script/lint` runs it. Only `resolve` reads GitHub.
 - The workflow does not arm auto-merge. A maintainer arms the pull request with `helpers/arm.sh`
@@ -37,8 +37,8 @@ pull request, the automation App's token), in the other direction. `vendor-watch
 
 ## Follow-on
 
-- **Recorded.** The workflow cannot run before it is on `main`, because the automation App's
-  secrets are scoped to `main`, so its first scheduled or dispatched run is its first test of the
+- **Recorded.** The workflow cannot run before it lands on `main`, because the automation App's
+  secrets belong to `main` alone, so its first scheduled or dispatched run is its first test of the
   push and pull-request steps: `.github/workflows/pin-basalt.yml`, header.
 - **Recorded.** `REQUIRED_PACKAGES` in `helpers/basalt_pin.py` repeats the package list
   `xtask/src/basalt.rs` builds: `helpers/basalt_pin.py`, `BUGS`.
