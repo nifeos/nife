@@ -22,7 +22,7 @@ A crate is the most reader-facing name in the tree. A newcomer greps `crates/` b
 
 ## Standard terms stay
 
-`elf`, `pci`, `paging`, `glob` and `socket_contract` are names a reader knows from outside this
+`elf`, `pci`, `paging`, `byte_glob` and `socket_contract` are names a reader knows from outside this
 project, so they cost nothing to learn. This rule is a naming authority, not a renaming mandate:
 renaming `elf` would destroy the recognition the rule exists to buy. Which acronyms count as
 standard terms is the acronym test's call:
@@ -90,7 +90,7 @@ gap, not a design.
 - Format and hardware parsers: `elf`, `device_tree_blob`, `pci`,
   `globally_unique_identifier_partition_table`, `nifefs`.
 - Userspace libraries: `user_mode_runtime`, `grant_plan`, `virtio`, `video_terminal`,
-  `line_editor`, `bitmap_font`, `glob`, `calendar`, `credentialer`, `compositor`, `coremark`,
+  `line_editor`, `bitmap_font`, `byte_glob`, `calendar`, `credentialer`, `compositor`, `coremark`,
   `c_seam`.
 
 What two binaries share is a crate, never a `#[path]` module (`AGENTS.md` rule 7), and

@@ -1,14 +1,14 @@
-Falsifies `glob::verification::a_negated_class_is_the_exact_complement_of_the_class`.
+Falsifies `byte_glob::verification::a_negated_class_is_the_exact_complement_of_the_class`.
 
 The defect: `class_at` consumes the `!` of `[!...]` but never applies the negation, so `[!ab]` matches exactly
 what `[ab]` matches.
 
 Expected to fail: the harness's `assert_eq!(matches_with(&plain, ..), !matches_with(&negated, ..))`.
 
-diff --git a/crates/glob/src/lib.rs b/crates/glob/src/lib.rs
+diff --git a/crates/byte_glob/src/lib.rs b/crates/byte_glob/src/lib.rs
 index 661ecd445..26af48ba9 100644
---- a/crates/glob/src/lib.rs
-+++ b/crates/glob/src/lib.rs
+--- a/crates/byte_glob/src/lib.rs
++++ b/crates/byte_glob/src/lib.rs
 @@ -490,3 +490,3 @@ fn class_at(pattern: &[u8], open: usize, c: u8) -> (Option<(bool, usize)>, usize
          if byte == b']' && !at_start {
 -            return (Some((hit ^ negated, k + 1)), scanned);
