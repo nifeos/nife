@@ -311,6 +311,8 @@ fn register_names_index_by_name_not_by_position() {
     // A trailing NUL must not invent an empty fourth entry.
     assert_eq!(name_index(b"sys\0stg\0aon\0", b"aon"), Some(2));
     assert_eq!(name_index(b"", b"stg"), None);
+    // An empty entry in the middle still holds its place in the list.
+    assert_eq!(name_index(b"sys\0\0stg\0", b"stg"), Some(2));
 }
 
 #[test]
@@ -454,8 +456,9 @@ fn the_oscillator_root_chain_divides_and_the_phase_locked_loop_2_chain_multiplie
         OSCILLATOR_HERTZ
     );
 
-    // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
-    // fields: 1_188_000_000 divided by the chain.
+    // Fractional mode (dacpd 0, dsmpd 0) adds the 24-bit fraction in bits 23:0 of the post-divider
+    // word. With a zero fraction it equals the integer rate; with half a unit (1 << 23) it adds half
+    // of the oscillator rate before the divider chain: (12_000_000 + 24_000_000 * 768) / 15.
     let fractional_words = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
         advanced_extensible_interface_configuration_0: 1,
@@ -467,7 +470,15 @@ fn the_oscillator_root_chain_divides_and_the_phase_locked_loop_2_chain_multiplie
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&fractional_words),
-        PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
+        1_228_800_000
+    );
+    let half_unit = InterIntegratedCircuitClockWords {
+        phase_locked_loop_2_post_divider_1_word: 1 << 23,
+        ..fractional_words
+    };
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&half_unit),
+        (12_000_000 + 24_000_000 * 768) / 15
     );
 }
 
@@ -560,6 +571,9 @@ fn register_property_cells_parse_in_both_spellings() {
     assert_eq!(parse_register_property(&two), Some((0x1205_0000, 0x1_0000)));
     // A truncated property is not a window.
     assert_eq!(parse_register_property(&[0, 0, 0]), None);
+    // Only exactly two or four cells are a window: twelve bytes and twenty bytes are refused.
+    assert_eq!(parse_register_property(&[0; 12]), None);
+    assert_eq!(parse_register_property(&[0; 20]), None);
     // Four cells carry a high word in both the address and the size, and it lands above bit 31
     // rather than being dropped: <0x1 0x12050000 0x2 0x10000>.
     let high = [1u32, 0x1205_0000, 2, 0x1_0000]
@@ -780,7 +794,7 @@ fn a_mainline_shaped_bus_gives_the_same_plan_through_the_system_clock_and_reset_
 }
 
 #[test]
-fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
+fn a_bus_naming_only_foreign_specifiers_falls_back_and_keeps_the_stated_locations() {
     // Another domain, an id past SYS's bounds, then a two-cell provider that makes the rest of
     // its list unreadable (the trailing `<&syscrg 143>` included). In `resets`, an id past the
     // bounds, a provider naming no `compatible`, and a clock provider asked for a reset.
@@ -809,7 +823,7 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
             bus.controller_physical_window,
             bus.power_management_chip_bus_address
         ),
-        (None, None)
+        (Some((0x1205_0000, 0x1_0000)), Some(0x36))
     );
 }
 
@@ -857,7 +871,7 @@ fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() 
 }
 
 #[test]
-fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() {
+fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_stated_locations() {
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0, 0x36]),
@@ -1108,7 +1122,7 @@ const ALWAYS_ON_PHANDLE: u32 = 4;
 const SYSTEM_PHANDLE: u32 = 1;
 
 #[test]
-fn a_v1_3b_tree_assigns_gmac0_tx_the_rmii_clock() {
+fn a_v1_3b_tree_assigns_gmac0_transmit_the_rmii_clock() {
     // `&gmac0 { assigned-clocks = <&aoncrg 5>; assigned-clock-parents = <&aoncrg 4>; }`
     let clocks = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
     let parents = specifiers(&[(ALWAYS_ON_PHANDLE, 4)]);
@@ -1121,7 +1135,7 @@ fn a_v1_3b_tree_assigns_gmac0_tx_the_rmii_clock() {
 }
 
 #[test]
-fn a_tree_may_feed_gmac0_tx_from_the_system_gigabit_clock_among_other_assignments() {
+fn a_tree_may_feed_gmac0_transmit_from_the_system_gigabit_clock_among_other_assignments() {
     // The receive clock's rate-only entry and an unrelated clock are passed over.
     let clocks = specifiers(&[
         (SYSTEM_PHANDLE, 60),
@@ -1129,7 +1143,7 @@ fn a_tree_may_feed_gmac0_tx_from_the_system_gigabit_clock_among_other_assignment
         (ALWAYS_ON_PHANDLE, 7),
     ]);
     let parents = specifiers(&[(SYSTEM_PHANDLE, 61), (SYSTEM_PHANDLE, 108)]);
-    // gmac0_tx's id under a provider that is not `aoncrg` is not gmac0_tx.
+    // gmac0_transmit's id under a provider that is not `aoncrg` is not gmac0_transmit.
     let other = specifiers(&[(6, 5)]);
     assert_eq!(
         gmac0_transmit_parent(Some(&other), Some(&specifiers(&[(6, 4)])), provider),
@@ -1155,8 +1169,8 @@ fn a_tree_without_assigned_clock_parents_gives_no_parent_step() {
         gmac0_transmit_parent(None, None, provider),
         Ok(TransmitParent::Unassigned)
     );
-    // Parents for other clocks only, and gmac0_tx's entry past the end of the parents list
-    // (a rate-only assignment), say nothing about gmac0_tx either.
+    // Parents for other clocks only, and gmac0_transmit's entry past the end of the parents list
+    // (a rate-only assignment), say nothing about gmac0_transmit either.
     let clocks = specifiers(&[(SYSTEM_PHANDLE, 60), (ALWAYS_ON_PHANDLE, 5)]);
     let parents = specifiers(&[(SYSTEM_PHANDLE, 61)]);
     assert_eq!(
@@ -1173,29 +1187,29 @@ fn a_malformed_assignment_is_refused() {
             Ok(TransmitParent::Refused)
         );
     };
-    let gmac0_tx = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
+    let gmac0_transmit = specifiers(&[(ALWAYS_ON_PHANDLE, 5)]);
     let rmii = specifiers(&[(ALWAYS_ON_PHANDLE, 4)]);
     // A length that is not whole specifiers.
-    refused(&gmac0_tx[..7], &rmii);
-    refused(&gmac0_tx, &rmii[..4]);
+    refused(&gmac0_transmit[..7], &rmii);
+    refused(&gmac0_transmit, &rmii[..4]);
     // More parents than clocks.
     refused(
-        &gmac0_tx,
+        &gmac0_transmit,
         &specifiers(&[(ALWAYS_ON_PHANDLE, 4), (ALWAYS_ON_PHANDLE, 4)]),
     );
     // A provider the lookup does not know, the binding's "leave this one" phandle 0, a two-cell
     // provider, and a one-cell provider that is neither generator.
-    refused(&gmac0_tx, &specifiers(&[(0x99, 4)]));
-    refused(&gmac0_tx, &specifiers(&[(0, 0)]));
-    refused(&gmac0_tx, &specifiers(&[(5, 4)]));
-    refused(&gmac0_tx, &specifiers(&[(6, 4)]));
+    refused(&gmac0_transmit, &specifiers(&[(0x99, 4)]));
+    refused(&gmac0_transmit, &specifiers(&[(0, 0)]));
+    refused(&gmac0_transmit, &specifiers(&[(5, 4)]));
+    refused(&gmac0_transmit, &specifiers(&[(6, 4)]));
     // A one-cell provider whose compatible names neither generator, giving the system
     // generator's gigabit clock id: the id is no parent unless syscrg answers it.
-    refused(&gmac0_tx, &specifiers(&[(2, SYSCLK_GMAC0_GTXCLK)]));
+    refused(&gmac0_transmit, &specifiers(&[(2, SYSCLK_GMAC0_GTXCLK)]));
     // A parent that is neither of the mux's inputs.
-    refused(&gmac0_tx, &specifiers(&[(ALWAYS_ON_PHANDLE, 3)]));
-    refused(&gmac0_tx, &specifiers(&[(SYSTEM_PHANDLE, 4)]));
-    // gmac0_tx assigned twice.
+    refused(&gmac0_transmit, &specifiers(&[(ALWAYS_ON_PHANDLE, 3)]));
+    refused(&gmac0_transmit, &specifiers(&[(SYSTEM_PHANDLE, 4)]));
+    // gmac0_transmit assigned twice.
     refused(
         &specifiers(&[(ALWAYS_ON_PHANDLE, 5), (ALWAYS_ON_PHANDLE, 5)]),
         &specifiers(&[(ALWAYS_ON_PHANDLE, 4), (ALWAYS_ON_PHANDLE, 4)]),
