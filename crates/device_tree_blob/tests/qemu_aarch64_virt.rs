@@ -212,7 +212,10 @@ fn finds_the_rtc_by_compatible() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
-    assert_eq!(tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 1);
+    assert_eq!(
+        tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(),
+        1
+    );
     assert_eq!(
         regs[0],
         Region {

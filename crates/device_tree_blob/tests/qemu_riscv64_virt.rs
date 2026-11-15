@@ -167,7 +167,10 @@ fn finds_the_rtc_by_compatible() {
 fn the_pl031_is_absent_on_riscv() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(), 0);
+    assert_eq!(
+        tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(),
+        0
+    );
 }
 
 /// **Every matching node, not just the first**. `node_prop` answers for one node and
