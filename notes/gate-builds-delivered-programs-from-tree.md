@@ -24,13 +24,11 @@ at an older nife commit reads the older wire format.
 
 Two facts make this worse than the BUGS entry says:
 
-- `xtask/basalt-pin` names basalt commit `155eba5`, whose `pins.toml` names nife commit `77d8888`
-  (2026-10-17). The file has changed twice, both on 2026-10-17, and when this was measured nothing
-  moved it by itself. basalt's own nife pin moves daily (basalt main pinned nife `a60748a`,
-  2026-11-14). Milestone 1116 (nife's basalt pin follows basalt's newest Release) moves nife's pin
-  by a daily pull request.
-  `git diff --stat 77d8888 origin/main` over the std farm's inputs and the C library shows 149 files
-  changed. Every program the gate runs is a month older than the kernel it runs on.
+- `xtask/basalt-pin` names one basalt commit, whose `pins.toml` names the nife commit its programs
+  were built against. basalt's own nife pin moves daily. Milestone 1116 (nife's basalt pin follows
+  basalt's newest Release) moves nife's pin by a daily pull request, so every program the gate runs
+  is as old as the pin, and older than the kernel it runs on by every nife change since basalt's
+  pin moved.
 - A break does not always fail loudly. Merge-group run 43634364501 (PR #3576, the clock page's
   two-copy layout) failed all four rows. `unmodified_ioping_times_reads_in_a_granted_directory` hit
   its 90 s watchdog "while making progress": ioping's one-copy clock reader spins on the two-copy
