@@ -174,7 +174,7 @@ fn a_node_deeper_than_the_cell_stack_is_not_found_rather_than_indexed() {
         );
         // The sibling lookups walk the same tree with the same per-depth arrays.
         assert!(tree.node_reg_compatible(b"arm,pl031", &mut out).is_ok());
-        assert!(tree.node_prop(b"intc", b"reg").is_ok());
+        assert!(tree.node_property(b"intc", b"reg").is_ok());
     }
 }
 
@@ -315,7 +315,7 @@ fn the_header_boundaries_are_exact() {
     );
 }
 
-/// The reservation block, with entries in it. The fixtures' is empty, so `reserved_regions` could
+/// The reservation block, with entries in it. The fixtures' is empty, so `memory_reservations` could
 /// return `Ok(0)` unconditionally, mis-stride the walk, or treat "starts at zero" as the
 /// terminator (the `&&` in the all-zero check becoming `||`), and a reservation AT address zero
 /// is exactly the entry firmware writes for its own vector table.
@@ -331,7 +331,7 @@ fn reservations_are_read_entry_by_entry() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 4];
-    assert_eq!(dt.reserved_regions(&mut out), Ok(2));
+    assert_eq!(dt.memory_reservations(&mut out), Ok(2));
     assert_eq!((out[0].start, out[0].size), (0, 0x1000));
     assert_eq!((out[1].start, out[1].size), (0x8000_0000, 0x2000));
 }
@@ -520,19 +520,22 @@ fn props_are_found_by_name_not_position() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     assert_eq!(
-        dt.node_prop(b"chosen", b"bootargs"),
+        dt.node_property(b"chosen", b"bootargs"),
         Ok(Some(&b"console=ttyAMA0\0"[..]))
     );
-    assert_eq!(dt.node_prop(b"chosen", b"alpha"), Ok(Some(&b"AAAAA"[..])));
     assert_eq!(
-        dt.node_prop(b"chosen", b"beta"),
+        dt.node_property(b"chosen", b"alpha"),
+        Ok(Some(&b"AAAAA"[..]))
+    );
+    assert_eq!(
+        dt.node_property(b"chosen", b"beta"),
         Ok(Some(&0xDDCC_BBAA_9988_7766u64.to_be_bytes()[..]))
     );
-    assert_eq!(dt.node_prop(b"chosen", b"gamma"), Ok(None));
-    assert_eq!(dt.node_prop(b"absent", b"alpha"), Ok(None));
+    assert_eq!(dt.node_property(b"chosen", b"gamma"), Ok(None));
+    assert_eq!(dt.node_property(b"absent", b"alpha"), Ok(None));
 }
 
-/// `node_props` answers for every matching node, and "has no such property" is a different
+/// `node_properties` answers for every matching node, and "has no such property" is a different
 /// answer from "is not there": two cpu@ nodes, one of which does not describe itself.
 #[test]
 fn node_props_tells_missing_prop_from_missing_node() {
@@ -548,7 +551,7 @@ fn node_props_tells_missing_prop_from_missing_node() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [None; 4];
-    assert_eq!(dt.node_props(b"cpu@", b"riscv,isa", &mut out), Ok(2));
+    assert_eq!(dt.node_properties(b"cpu@", b"riscv,isa", &mut out), Ok(2));
     assert_eq!(out[0], Some(&b"rv64gc\0"[..]));
     assert_eq!(out[1], None);
 }
@@ -787,7 +790,10 @@ fn node_prop_ignores_the_root_and_survives_a_closing_sibling() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    assert_eq!(dt.node_prop(b"uart@", b"status"), Ok(Some(&b"okay\0"[..])));
+    assert_eq!(
+        dt.node_property(b"uart@", b"status"),
+        Ok(Some(&b"okay\0"[..]))
+    );
 }
 
 /// `/reserved-memory` children default to the ROOT's cell widths, read at depth 1 and nowhere
@@ -898,12 +904,15 @@ fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
     // Each returns rather than panicking, and each says "not found" rather than answering from a
     // depth it stopped tracking.
     assert_eq!(
-        dt.node_prop_compatible(b"deep,thing", b"clock-frequency"),
+        dt.node_property_compatible(b"deep,thing", b"clock-frequency"),
         Ok(None)
     );
-    assert_eq!(dt.node_prop_inherited(b"bus", b"clock-frequency"), Ok(None));
-    assert_eq!(dt.phandle_prop(7, b"clock-frequency"), Ok(None));
-    assert_eq!(dt.node_prop(b"bus", b"clock-frequency"), Ok(None));
+    assert_eq!(
+        dt.node_property_inherited(b"bus", b"clock-frequency"),
+        Ok(None)
+    );
+    assert_eq!(dt.phandle_property(7, b"clock-frequency"), Ok(None));
+    assert_eq!(dt.node_property(b"bus", b"clock-frequency"), Ok(None));
 }
 
 /// **A node's slot is cleared when the node opens, and a sibling must not inherit what the last
@@ -918,7 +927,7 @@ fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
 /// which is a property read off the wrong device.
 #[test]
 fn a_sibling_does_not_answer_with_its_predecessors_property() {
-    // `node_prop_compatible`: matched by `compatible`.
+    // `node_property_compatible`: matched by `compatible`.
     let mut b = Blob::new();
     b.begin_node(b"");
     b.begin_node(b"first");
@@ -932,12 +941,12 @@ fn a_sibling_does_not_answer_with_its_predecessors_property() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(
-        dt.node_prop_compatible(b"wanted,thing", b"clock-frequency"),
+        dt.node_property_compatible(b"wanted,thing", b"clock-frequency"),
         Ok(None),
         "`second` has no clock-frequency; `first`'s is not an answer for it"
     );
 
-    // `phandle_prop`: matched by `phandle`.
+    // `phandle_property`: matched by `phandle`.
     let mut b = Blob::new();
     b.begin_node(b"");
     b.begin_node(b"first");
@@ -951,12 +960,12 @@ fn a_sibling_does_not_answer_with_its_predecessors_property() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(
-        dt.phandle_prop(2, b"clock-frequency"),
+        dt.phandle_property(2, b"clock-frequency"),
         Ok(None),
         "phandle 2 has no clock-frequency; phandle 1's is not an answer for it"
     );
 
-    // `node_prop_inherited`: matched by name prefix, and answering from the nearest open ancestor.
+    // `node_property_inherited`: matched by name prefix, and answering from the nearest open ancestor.
     // The root carries nothing, so a cleared slot means `Ok(None)` and a stale one means `first`'s.
     let mut b = Blob::new();
     b.begin_node(b"");
@@ -969,14 +978,14 @@ fn a_sibling_does_not_answer_with_its_predecessors_property() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(
-        dt.node_prop_inherited(b"second", b"clock-frequency"),
+        dt.node_property_inherited(b"second", b"clock-frequency"),
         Ok(None),
         "`second` inherits from the root, not from the sibling that closed before it"
     );
 }
 
 /// **The target is the node whose name matches, not the first node at a trackable depth.**
-/// `node_prop_inherited`'s guard is three conditions joined by `&&`, and a mutation run found
+/// `node_property_inherited`'s guard is three conditions joined by `&&`, and a mutation run found
 /// the first `&&` alive under `||`: `depth in 2..16` alone would then select the first node the
 /// walk enters, and the answer would come from wherever that node inherits. Every existing fixture
 /// hid it by putting the wanted node first.
@@ -995,7 +1004,7 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let v = dt
-        .node_prop_inherited(b"soc", b"clock-frequency")
+        .node_property_inherited(b"soc", b"clock-frequency")
         .unwrap()
         .expect("`soc` declares its own");
     assert_eq!(v, cell32(0x2222), "the decoy would have inherited 0x1111");
@@ -1004,7 +1013,7 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
     // guard survived under `||` until this line: `(A && B) || target_at.is_none()` selects the
     // ROOT, whose slot then answers for a node the tree does not contain.
     assert_eq!(
-        dt.node_prop_inherited(b"absent", b"clock-frequency"),
+        dt.node_property_inherited(b"absent", b"clock-frequency"),
         Ok(None),
         "no node is named `absent`, so nothing inherits anything"
     );
@@ -1017,8 +1026,8 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
 /// and the cap is what decides it.
 #[test]
 fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
-    use device_tree_blob::MAXIMUM_TOTALSIZE;
-    let claimed = MAXIMUM_TOTALSIZE + 1;
+    use device_tree_blob::MAXIMUM_TOTALSIZE_BYTES;
+    let claimed = MAXIMUM_TOTALSIZE_BYTES + 1;
     let mut buffer = minimal_tree();
     buffer[4..8].copy_from_slice(&(claimed as u32).to_be_bytes());
     buffer.resize(claimed + 64, 0);
@@ -1030,10 +1039,10 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
 
     // Exactly the ceiling is still believed: the header lies about the length, so the parse fails
     // on its offsets, but it fails as a parse and not as a refusal to look.
-    buffer[4..8].copy_from_slice(&(MAXIMUM_TOTALSIZE as u32).to_be_bytes());
-    // SAFETY: as above; `buffer` is longer than `MAXIMUM_TOTALSIZE`.
+    buffer[4..8].copy_from_slice(&(MAXIMUM_TOTALSIZE_BYTES as u32).to_be_bytes());
+    // SAFETY: as above; `buffer` is longer than `MAXIMUM_TOTALSIZE_BYTES`.
     let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
-    assert_ne!(looked.err(), Some(Error::TooLarge(MAXIMUM_TOTALSIZE)));
+    assert_ne!(looked.err(), Some(Error::TooLarge(MAXIMUM_TOTALSIZE_BYTES)));
 }
 
 /// The ceiling is 2 MiB, a figure borrowed from Linux, so a tree well under it (a board with a
@@ -1116,8 +1125,8 @@ fn an_empty_compatible_needle_matches_nothing() {
 
     let mut out = [Region { start: 0, size: 0 }; 2];
     assert_eq!(dt.node_reg_compatible(b"", &mut out), Ok(0));
-    assert_eq!(dt.node_prop_compatible(b"", b"reg"), Ok(None));
-    assert_eq!(dt.parent_prop_compatible(b"", b"#size-cells"), Ok(None));
+    assert_eq!(dt.node_property_compatible(b"", b"reg"), Ok(None));
+    assert_eq!(dt.parent_property_compatible(b"", b"#size-cells"), Ok(None));
     assert_eq!(dt.node_reg_compatible(b"example,dev", &mut out), Ok(1));
 }
 
@@ -1196,7 +1205,7 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
     }
 }
 
-/// `node_reg` answers for the first node whose name matches, and stops there, as `node_prop` does.
+/// `node_reg` answers for the first node whose name matches, and stops there, as `node_property` does.
 /// A first match with no `reg` is zero regions; a later match's `reg` is never used in its place.
 #[test]
 fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
@@ -1214,7 +1223,7 @@ fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_prop(b"uart@", b"reg"), Ok(None));
+    assert_eq!(dt.node_property(b"uart@", b"reg"), Ok(None));
     assert_eq!(dt.node_reg(b"uart@", &mut out), Ok(0));
 
     // The control: asked for the second node by its own name, it answers.
@@ -1290,7 +1299,7 @@ fn a_property_length_past_the_blob_is_truncated_in_every_lookup() {
             "{len:#x}"
         );
         assert_eq!(dt.node_reg(b"memory", &mut out), Err(Error::Truncated));
-        assert_eq!(dt.node_prop(b"memory", b"reg"), Err(Error::Truncated));
+        assert_eq!(dt.node_property(b"memory", b"reg"), Err(Error::Truncated));
         assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
         assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
         assert_eq!(dt.reserved_memory_regions(&mut out), Err(Error::Truncated));
@@ -1325,7 +1334,7 @@ fn a_structure_block_without_its_end_token_is_truncated_not_read_into_the_string
     let dt = DeviceTreeBlob::from_bytes(&no_end).unwrap();
     assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
     assert_eq!(dt.node_reg(b"nothing", &mut out), Err(Error::Truncated));
-    assert_eq!(dt.node_prop(b"nothing", b"reg"), Err(Error::Truncated));
+    assert_eq!(dt.node_property(b"nothing", b"reg"), Err(Error::Truncated));
     assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
     assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
 }
@@ -1431,7 +1440,7 @@ fn a_property_value_is_bounded_by_the_structure_block_exactly() {
     b.end_node();
     let past = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&past).unwrap();
-    assert_eq!(dt.node_prop(b"memory", b"reg"), Err(Error::Truncated));
+    assert_eq!(dt.node_property(b"memory", b"reg"), Err(Error::Truncated));
 
     // At the end: the declared structure size stops at the value's last byte.
     let mut b = Blob::new();
@@ -1450,7 +1459,7 @@ fn a_property_value_is_bounded_by_the_structure_block_exactly() {
     let dt = DeviceTreeBlob::from_bytes(&at_the_end).unwrap();
     let value = reg64(0x4000_0000, 0x1000);
     assert_eq!(value.len(), VALUE_BYTES as usize);
-    assert_eq!(dt.node_prop(b"memory", b"reg"), Ok(Some(&value[..])));
+    assert_eq!(dt.node_property(b"memory", b"reg"), Ok(Some(&value[..])));
     let mut out = [Region { start: 0, size: 0 }; 2];
     assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
 }

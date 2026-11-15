@@ -40,7 +40,7 @@ fn qemu_virt_reserves_nothing() {
     let mut regions = [Region { start: 0, size: 0 }; 8];
 
     // QEMU's virt leaves the reservation block empty; real firmware often does not.
-    assert_eq!(tree.reserved_regions(&mut regions).unwrap(), 0);
+    assert_eq!(tree.memory_reservations(&mut regions).unwrap(), 0);
 }
 
 #[test]
@@ -239,7 +239,7 @@ fn the_goldfish_rtc_is_absent_on_aarch64() {
 }
 
 /// **`interrupt-parent` lives on the ROOT of this tree**, one declaration for every device on the
-/// machine; the pl011 itself does not carry it. So `node_prop` honestly answers `None`, and only
+/// machine; the pl011 itself does not carry it. So `node_property` honestly answers `None`, and only
 /// the inherited read can decode any `interrupts` on this board at all. The parent it finds is
 /// the GIC, whose `#interrupt-cells = <3>` is what makes the pl011's `<0 1 4>` mean SPI 1.
 #[test]
@@ -247,19 +247,19 @@ fn inherits_the_interrupt_parent_from_the_root() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
 
     assert_eq!(
-        tree.node_prop(b"pl011@", b"interrupt-parent").unwrap(),
+        tree.node_property(b"pl011@", b"interrupt-parent").unwrap(),
         None,
         "the node itself does not say; the root does"
     );
 
     let parent = tree
-        .node_prop_inherited(b"pl011@", b"interrupt-parent")
+        .node_property_inherited(b"pl011@", b"interrupt-parent")
         .unwrap()
         .expect("inherited from the root");
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
     let cells = tree
-        .phandle_prop(phandle, b"#interrupt-cells")
+        .phandle_property(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the GIC declares its interrupt cells");
     assert_eq!(

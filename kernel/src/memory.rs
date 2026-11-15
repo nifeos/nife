@@ -69,7 +69,7 @@ fn initialize_from_device_tree() {
 
     let mut reserved = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let reserved_count = dtb
-        .reserved_regions(&mut reserved)
+        .memory_reservations(&mut reserved)
         .expect("cannot read the memory reservations");
     let reserved = &reserved[..reserved_count];
 
@@ -222,7 +222,8 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
         if let Ok(n) = dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut ecam)
             && n >= 1
-            && let Ok(Some(ranges)) = dtb.node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
+            && let Ok(Some(ranges)) =
+                dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
             && let Some(mem32) = ::pci_configuration_space::mem32_window(ranges)
         {
             *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size), mem32));

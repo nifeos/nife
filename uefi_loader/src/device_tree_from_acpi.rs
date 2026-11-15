@@ -592,7 +592,7 @@ mod tests {
         // `arch::aarch64::timer::check_frequency_against_device_tree` looks for this node, and
         // finds no `clock-frequency` on it, which is the path that returns without comparing.
         assert_eq!(
-            dt.node_prop_compatible(b"arm,armv8-timer", b"clock-frequency")
+            dt.node_property_compatible(b"arm,armv8-timer", b"clock-frequency")
                 .expect("the timer node parses"),
             None,
             "the GTDT states no rate, so neither does this node"
@@ -608,7 +608,7 @@ mod tests {
         let (len, out) = built(&qemu_virt());
         let dt = DeviceTreeBlob::from_bytes(&out[..len]).expect("a well-formed device tree");
         let interrupts = dt
-            .node_prop_compatible(b"arm,armv8-timer", b"interrupts")
+            .node_property_compatible(b"arm,armv8-timer", b"interrupts")
             .expect("the timer node parses")
             .expect("the node states its interrupts");
         assert_eq!(interrupts.len(), 12 * 4, "four timers, three cells each");

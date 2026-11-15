@@ -134,7 +134,7 @@ The blob comes from firmware, and firmware is the trust boundary here, so these 
 robustness rather than confinement. Each one costs a comparison and turns a crash on the boot path
 into an `Error`.
 
-- `MAXIMUM_TOTALSIZE` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
+- `MAXIMUM_TOTALSIZE_BYTES` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
   before anything else is checked, and the magic says only that the pointer is at a blob. A
   `totalsize` of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the
   end of RAM. The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has
@@ -172,15 +172,15 @@ a convention; a real driver matches `compatible`, such as `"arm,cortex-a15-gic"`
 The RTC is `pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one
 finds nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can
 drive. `compatible` lists the most specific entry first, and a match on any entry counts.
-`node_prop_compatible`, `parent_prop_compatible` and `phandle_prop` follow the same pattern: the
+`node_property_compatible`, `parent_property_compatible` and `phandle_property` follow the same pattern: the
 deciding property may come after the wanted one in a node, so each open node's candidate is
 remembered and the answer is taken when a matching node closes.
 
-`node_prop_inherited` exists because `interrupt-parent` sits in a different place on each machine.
+`node_property_inherited` exists because `interrupt-parent` sits in a different place on each machine.
 QEMU's riscv64 `virt` writes it on the serial node, QEMU's aarch64 `virt` once on the root, and the
 mainline JH7110 dtsi on `/soc`. A read of the device's own node alone works on one of the three.
 
-`node_props` reads every match, because a heterogeneous RISC-V machine describes each hart as its
+`node_properties` reads every match, because a heterogeneous RISC-V machine describes each hart as its
 own `cpu@` node with its own `riscv,isa`. A kernel that read the first one and then scheduled onto
 any hart would have read the wrong node, and the JH7110 is that machine.
 
@@ -193,7 +193,7 @@ failure, so every limitation here is a limitation on the boot path specifically.
 - **A node nested deeper than 16 is invisible to `node_reg` and `node_reg_compatible`.** Both carry
   `#address-cells`/`#size-cells` down a fixed 16-entry per-depth stack, and past it they stop
   tracking, so they refuse to match rather than decode a region with cell widths they no longer
-  know. Nothing in the trees we boot nests past 4. `node_prop` keeps no per-depth state and so has
+  know. Nothing in the trees we boot nests past 4. `node_property` keeps no per-depth state and so has
   no such limit, which means the two lookups disagree about how deep a tree can be. Until
   2026-08-02 `node_reg` did not refuse: it matched at any depth and then indexed past the stack,
   which was an out-of-bounds panic on a 17-deep tree (milestone 42, notes/fuzzing.md).
@@ -205,7 +205,7 @@ failure, so every limitation here is a limitation on the boot path specifically.
   is the more correct check and arrives after the node name; the name is unambiguous on every board
   we have met. A board that spells it otherwise would have its RAM missed entirely.
 - **`node_reg` matches a node-name prefix rather than `compatible`, and answers for the first match
-  only** (zero regions when it has no `reg`, as `node_prop` answers `None`). That is a deliberate
+  only** (zero regions when it has no `reg`, as `node_property` answers `None`). That is a deliberate
   simplification for two boards, documented at the function. `node_reg_compatible` is the correct
   one and is what milestone 51's RTC lookup uses.
 - Nothing validates the structure block's nesting balance. A blob with more `FDT_END_NODE`

@@ -49,7 +49,7 @@ fn finds_the_plic_nested_under_soc() {
     );
 }
 
-/// **A property, found by binding rather than by label.** `node_prop_compatible` exists because
+/// **A property, found by binding rather than by label.** `node_property_compatible` exists because
 /// the JH7110 names its PLIC node `interrupt-controller@c000000` where QEMU says `plic@c000000`,
 /// so a name-prefix read of `interrupts-extended` works on one machine and silently finds nothing
 /// on the other. On this (single-hart) dump the property is two entries of two cells: context 0 is
@@ -59,7 +59,7 @@ fn finds_the_plic_nested_under_soc() {
 fn finds_the_plics_context_list_by_compatible() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let prop = tree
-        .node_prop_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
+        .node_property_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
         .unwrap()
         .expect("the PLIC states its context wiring");
 
@@ -76,12 +76,12 @@ fn finds_the_plics_context_list_by_compatible() {
     // A compatible nothing here carries, and a property the node does not have: both are `None`,
     // not errors.
     assert_eq!(
-        tree.node_prop_compatible(b"acme,unobtainium", b"interrupts-extended")
+        tree.node_property_compatible(b"acme,unobtainium", b"interrupts-extended")
             .unwrap(),
         None
     );
     assert_eq!(
-        tree.node_prop_compatible(b"sifive,plic-1.0.0", b"no-such-property")
+        tree.node_property_compatible(b"sifive,plic-1.0.0", b"no-such-property")
             .unwrap(),
         None
     );
@@ -96,18 +96,18 @@ fn finds_the_plics_context_list_by_compatible() {
 fn finds_the_parent_of_a_compatible_node() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     assert_eq!(
-        tree.parent_prop_compatible(b"sifive,plic-1.0.0", b"compatible")
+        tree.parent_property_compatible(b"sifive,plic-1.0.0", b"compatible")
             .unwrap(),
         Some(&b"simple-bus\0"[..])
     );
     assert_eq!(
-        tree.parent_prop_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
+        tree.parent_property_compatible(b"sifive,plic-1.0.0", b"interrupts-extended")
             .unwrap(),
         None,
         "the soc node has no such property, even though the PLIC does"
     );
     assert_eq!(
-        tree.parent_prop_compatible(b"acme,unobtainium", b"compatible")
+        tree.parent_property_compatible(b"acme,unobtainium", b"compatible")
             .unwrap(),
         None
     );
@@ -173,7 +173,7 @@ fn the_pl031_is_absent_on_riscv() {
     );
 }
 
-/// **Every matching node, not just the first**. `node_prop` answers for one node and
+/// **Every matching node, not just the first**. `node_property` answers for one node and
 /// stops, which is right for a device that appears once and wrong for `cpu@`: a heterogeneous
 /// machine describes each hart separately, and reading the first one silently answers for a core
 /// the scheduler may never place a thread on.
@@ -186,7 +186,7 @@ fn reads_a_property_from_every_matching_node() {
 
     let mut isa = [None; 4];
     assert_eq!(
-        tree.node_props(b"cpu@", b"riscv,isa-base", &mut isa)
+        tree.node_properties(b"cpu@", b"riscv,isa-base", &mut isa)
             .unwrap(),
         1
     );
@@ -196,7 +196,7 @@ fn reads_a_property_from_every_matching_node() {
     // A node that exists and has no such property: matched, and reported as `None`.
     let mut absent = [Some(&b"stale"[..]); 4];
     assert_eq!(
-        tree.node_props(b"cpu@", b"mmu-flavour", &mut absent)
+        tree.node_properties(b"cpu@", b"mmu-flavour", &mut absent)
             .unwrap(),
         1
     );
@@ -207,7 +207,10 @@ fn reads_a_property_from_every_matching_node() {
 
     // A prefix nothing matches.
     let mut nothing = [None; 4];
-    assert_eq!(tree.node_props(b"gpu@", b"reg", &mut nothing).unwrap(), 0);
+    assert_eq!(
+        tree.node_properties(b"gpu@", b"reg", &mut nothing).unwrap(),
+        0
+    );
 }
 
 /// **More matching nodes than slots is counted, not hidden.** A caller that under-provisions its
@@ -220,7 +223,7 @@ fn more_nodes_than_slots_reports_the_real_count() {
     // Every node under the root, matched by the empty prefix, into no space at all. The count is
     // the honest one; nothing was written, because there was nowhere to write it.
     let mut none: [Option<&[u8]>; 0] = [];
-    let all = tree.node_props(b"", b"compatible", &mut none).unwrap();
+    let all = tree.node_properties(b"", b"compatible", &mut none).unwrap();
     assert!(
         all > 1,
         "the tree has many nodes, and it said so with nowhere to put them"
@@ -231,19 +234,19 @@ fn more_nodes_than_slots_reports_the_real_count() {
 /// answers from the node and never climbs; the phandle it carries is the PLIC's, whose
 /// `#interrupt-cells = <1>` is what makes the serial's `interrupts = <10>` a one-cell entry.
 /// The aarch64 twin of this test holds the other shape (the parent declared once on the root),
-/// which is the case `node_prop_inherited` exists for.
+/// which is the case `node_property_inherited` exists for.
 #[test]
 fn follows_the_serial_interrupt_parent_to_the_plic() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
 
     let parent = tree
-        .node_prop_inherited(b"serial@", b"interrupt-parent")
+        .node_property_inherited(b"serial@", b"interrupt-parent")
         .unwrap()
         .expect("the serial node names its interrupt parent");
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
     let cells = tree
-        .phandle_prop(phandle, b"#interrupt-cells")
+        .phandle_property(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the PLIC declares its interrupt cells");
     assert_eq!(
@@ -253,10 +256,14 @@ fn follows_the_serial_interrupt_parent_to_the_plic() {
     );
 
     // A phandle no node carries, and a property the matched node does not have: both are `None`,
-    // not errors, same posture as node_prop_compatible.
+    // not errors, same posture as node_property_compatible.
     assert_eq!(
-        tree.phandle_prop(0xdead_beef, b"#interrupt-cells").unwrap(),
+        tree.phandle_property(0xdead_beef, b"#interrupt-cells")
+            .unwrap(),
         None
     );
-    assert_eq!(tree.phandle_prop(phandle, b"no-such-prop").unwrap(), None);
+    assert_eq!(
+        tree.phandle_property(phandle, b"no-such-prop").unwrap(),
+        None
+    );
 }
