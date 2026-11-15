@@ -94,23 +94,19 @@ impl BootReport {
     }
 }
 
-/// **Usage id to evdev code**, for the keyboard page's usages 0x04 through 0x8b: the letters,
-/// digits, the main block, the function keys to F24, the navigation cluster, the arrows, the
-/// keypad, the ISO and Japanese keys, and the editing and volume keys. `None` for anything else,
-/// including 0 (no key), and for the four usages in that range with no key (below). The module
-/// documentation names the table's two sources.
+/// **Usage id to evdev code**, for the keyboard page's usages 0x04 through 0x8b: the main block,
+/// the function keys to F24, the navigation cluster, the keypad, the European and Japanese keys,
+/// and the editing and volume keys. `None` for anything else, including 0 (no key), and for the
+/// four usages in that range with no key (below). The module documentation names the sources.
 ///
-/// Most names match on their face (`F1` is `KEY_F1`, `Tab` is `KEY_TAB`). Where they do not, the
-/// Usage Tables settle the match:
+/// Most names match on their face (`F1` is `KEY_F1`); where they do not, the Usage Tables decide:
 ///
-/// - 0x2a `DELETE (Backspace)` is `KEY_BACKSPACE` and 0x4c `Delete Forward` is `KEY_DELETE`,
-///   because the Usage Tables' footnotes 4 and 8 say the first backs up the cursor and the second
-///   deletes in place.
+/// - 0x2a `DELETE (Backspace)` is `KEY_BACKSPACE` and 0x4c `Delete Forward` is `KEY_DELETE`, by
+///   footnotes 4 and 8: the first backs up the cursor, the second deletes in place.
 /// - 0xe3 and 0xe7, `Left GUI` and `Right GUI`, are `KEY_LEFTMETA` and `KEY_RIGHTMETA`, because
 ///   footnotes 33 and 34 list the Sun Meta key among the GUI keys.
-/// - 0x64 `Non-US \ and |` is `KEY_102ND`, because footnote 10 puts it beside the left Shift of an
-///   AT-102 keyboard, the 102nd key. 0x65 `Application` is `KEY_COMPOSE`, because footnote 11 names
-///   it the Windows key and Compose.
+/// - 0x64 `Non-US \ and |` is `KEY_102ND`, the 102nd key beside the left Shift by footnote 10, and
+///   0x65 `Application` is `KEY_COMPOSE`, named the Windows key and Compose by footnote 11.
 /// - 0x87 to 0x8b, `International1` to `International5`, are `KEY_RO`, `KEY_KATAKANAHIRAGANA`,
 ///   `KEY_YEN`, `KEY_HENKAN` and `KEY_MUHENKAN`, the legends the Usage Tables' Japanese table
 ///   gives them (ろ, ひらがな and カタカナ, ¥, 変換, 無変換).
@@ -131,14 +127,13 @@ impl BootReport {
 ///   mode, which the keymap decides, and the Usage Tables give Clear its own usages (0x9c, 0xd8).
 /// - **A usage whose only match is another page's key takes it.** `Power`, `Help`, `Stop`, `Undo`,
 ///   `Cut`, `Copy`, `Paste` and `Find` (0x66, 0x75, 0x78, 0x7a to 0x7e) match only header names
-///   whose comments give a System Control, Application Launch or Consumer usage. Unlike Print Screen, no keyboard key competes
-///   for them, so the name decides. `Keypad Equal Sign` (0x86, for AS/400 keyboards by footnote
-///   14) is `KEY_KPEQUAL`, the same key as `Keypad =` (0x67).
+///   whose comments give a System Control, Application Launch or Consumer usage, and no keyboard
+///   key competes for them. `Keypad Equal Sign` (0x86, footnote 14) is `KEY_KPEQUAL`, as is
+///   `Keypad =` (0x67).
 /// - **0x74 `Execute` has no code.** No header name matches it.
 /// - **0x82 to 0x84, the locking Caps, Num and Scroll Lock, have no code.** Footnote 12 says each
-///   is sent as a toggle: held in the report while the lock is on, so a press here and a release
-///   at the next press would toggle a keymap twice for one change. The non-locking keys (0x39,
-///   0x53, 0x47) are the ones a keyboard is expected to send.
+///   is held in the report while the lock is on, so a press and a release would toggle a keymap
+///   twice for one change. Keyboards are expected to send the non-locking keys (0x39, 0x53, 0x47).
 pub fn evdev_code(usage: u8) -> Option<u16> {
     /// Indexed by usage id from 0x04. `None` is a usage in the range with no code.
     const TABLE: [Option<u16>; 0x88] = [
