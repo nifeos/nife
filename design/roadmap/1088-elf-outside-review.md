@@ -184,6 +184,11 @@ constants 48, `page_range` 8). The crate name `elf` has its ratification and is 
 
 Recommendation: rule the table as one decision, A, and let the lane sweep.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: the table below, with the ELF
+specification's spelling as `#[doc(alias)]` and no alias of this tree's earlier spelling. The
+before-the-tag item on the public vocabulary is the work.
+
 | today | recommended | alias | why |
 |---|---|---|---|
 | `Segment::vaddr` | `virtual_address` | `p_vaddr` | the `va` rule, every location |
@@ -211,11 +216,6 @@ users come from the specification. This crate's users come from a loader, and th
 rule already decided which way that goes. Concrete example: `kernel/src/user/loader.rs` line 234
 reads `let file_hi = seg.vaddr + seg.data.len() as u64;`, which under A reads
 `seg.virtual_address + seg.data.len() as u64` and says what it adds.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. Option A: the table as written, with the ELF
-specification's spelling as `#[doc(alias)]` and no alias of this tree's earlier spelling. The
-before-the-tag item on the public vocabulary is the work.
 
 ### Held, not asked now: the crates.io name
 
