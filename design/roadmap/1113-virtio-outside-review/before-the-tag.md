@@ -42,7 +42,7 @@ owes it, and the next `direct_memory_access_write::<u32>(OFF_HEADER + 2, ...)` h
 behavior with no diagnostic. The fix: a `debug_assert!` on bounds and `off % size_of::<T>() == 0`,
 or `MappedWindow` (item 2), whose constructor asserts once. Effort: S. Two-way.
 
-6. The handshake skipped a step the specification requires of a driver. DONE (the status read-back, bounded, in both handshakes: `a_reset_waits_for_status_to_read_back_as_zero`). The driver's `Version` check is not done, on purpose: the kernel refuses a device whose `Version` is not 2, and the driver does not check it again (Decision 3, provisional, 2026-11-15 UTC). After writing 0 to
+6. The handshake skipped a step the specification requires of a driver. DONE (the status read-back, bounded, in both handshakes: `a_reset_waits_for_status_to_read_back_as_zero`). The driver's `Version` check is not done, on purpose. The kernel refuses a device whose `Version` is not 2, so the driver does not check it again (Decision 3, provisional, 2026-11-15 UTC). After writing 0 to
 `Status` (`:143`, `:624`) the driver proceeds without reading `Status` back as 0, which the
 specification requires before reinitialization (virtio 1.2, the device initialization
 requirements of the PCI and MMIO transports; section numbers unverified). It checks the magic

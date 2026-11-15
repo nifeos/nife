@@ -173,22 +173,20 @@ Ruled by the maintainer on 2026-11-15 (UTC), provisional: a two-way door, which 
 revisit.
 
 The rule in force. The driver reads the magic value and never the `Version` register. The kernel
-is the one layer that reads a real `Version`, and it offers only modern devices on either bus: it
+is the one layer that reads a real `Version`. It offers only modern devices on either bus: it
 refuses any value but 2 in every build, on the mmio scan, and its PCI transport answers 2 for the
-same offset. A driver therefore never sees a device whose `Version` is not 2, and a driver-side
-check would test a value the kernel has already tested. The direct transport (the virtio-pci path
-of 1062 step 7) has no such register and answers 0 for any offset it does not name, so a
-driver-side check would also need that transport to invent an answer. Item 6's driver half is
-closed as not done, on purpose.
+same offset. A driver never sees a device whose `Version` is not 2, so a driver-side check would
+test what the kernel already tested. The direct transport (the virtio-pci path of 1062 step 7) has
+no such register and answers 0 for any offset it does not name. A driver-side check would need that
+transport to invent an answer. Item 6's driver half is closed as not done, on purpose.
 
 Background. A virtio-mmio device reports a version in the register at `0x004`. Version 1 is the
 legacy layout and version 2 is the modern layout the kernel drives. The virtio specification
-commit `oasis-tcs/virtio-spec@bb1dd2e1` (2026-06-01) adds mmio version 3: the version 2 register
-layout, with an asynchronous reset in which the driver polls `Status` until it reads back as 0.
-So a legacy device and a device newer than the kernel both exist or will exist, and neither is
-version 2. The kernel's `SUPPORTED_VERSION` is 2, so it refuses version 3 too, which is the strict
-choice. Accepting 3 later needs the kernel's `reset_to_features_ok` to poll `Status` the way
-`unregister` does after its reset (`kernel/src/virtio.rs`).
+commit `oasis-tcs/virtio-spec@bb1dd2e1` (2026-06-01) adds mmio version 3. It keeps the version 2
+register layout and makes reset asynchronous: the driver polls `Status` until it reads 0. So
+versions other than 2 exist, and the kernel's `SUPPORTED_VERSION` of 2 refuses version 3 too,
+which is the strict choice. Accepting 3 later needs the kernel's `reset_to_features_ok` to poll
+`Status` the way `unregister` does after its reset (`kernel/src/virtio.rs`).
 
 Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 and version 2 with
 a layout each and refuses any other; it is one layer that both reads and drives. Redox's
