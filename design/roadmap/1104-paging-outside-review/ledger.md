@@ -5,7 +5,7 @@ An appendix to [the milestone](../1104-paging-outside-review.md).
 Names minted by this work are provisional: `Flags::ALL`.
 
 - 1 LEFT: manifest, README and licenses are the crate's move preparation, which waits on the move.
-- 2 DONE: Decision 1, the crate name, is carried by the rename to `page_tables`.
+- 2 DONE: the rename to `page_tables` settles Decision 1, the crate name.
 - 3 LEFT: the move rewrites the record lines and patch paths, not this work.
 - 4 LEFT: the documentation rewrite for a stranger belongs with the move, with item 1.
 - 5 LEFT: every rename is a public name, so each waits for the architect's ratification.
