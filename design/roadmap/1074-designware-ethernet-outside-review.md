@@ -290,10 +290,10 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
   `management_data_io` rename ruled the same day is built too.
 
-- **Done.** Items 1, 2, 3, 6, 7, 8, 10 and 11 are built. The crate passes the template's naming
-  and prose gates, bounds `receive` and `reclaim`, keeps `pub` only on the constants a caller
-  uses, names the board and its two device trees, and has the README's build, proof and
-  falsification sections with its example compiled by `cargo test`.
+- **Done.** Items 1, 2, 3, 6, 7, 8, 10 and 11 are built. The crate passes the template's naming and
+  prose gates and bounds `receive` and `reclaim`. Only the constants a caller uses stay `pub`. The
+  crate names the board and its two device trees. The README has its build, proof and falsification
+  sections, and `cargo test` compiles its example.
 
 - **Outstanding.** Item 9 is the move's own regeneration of the patches. The P2 items stay open. The
   architect still has to rule the two Motorcomm alias sets and the remaining renames the register
