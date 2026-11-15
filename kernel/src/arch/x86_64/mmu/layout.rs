@@ -125,6 +125,6 @@ pub(crate) const PCI_ECAM_PHYS: u64 = 0xb000_0000;
 pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 
 /// A page table at physical address `pa`, reached through the direct map.
-pub fn phys_to_ptr(pa: u64) -> *mut paging::PageTable {
-    phys_to_virt(pa) as *mut paging::PageTable
+pub fn phys_to_ptr(pa: u64) -> *mut page_tables::PageTable {
+    phys_to_virt(pa) as *mut page_tables::PageTable
 }

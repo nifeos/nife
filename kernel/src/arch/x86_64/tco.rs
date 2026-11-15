@@ -18,7 +18,7 @@
 
 use core::fmt;
 
-use paging::PAGE_SIZE;
+use page_tables::PAGE_SIZE;
 
 use super::mmu;
 use super::port::{in16, in32, out16, out32};
@@ -331,8 +331,8 @@ fn find_pch() -> Result<Tco, Absent> {
 /// `pci::adopt`'s reason: the same page, the same flags.
 fn map(phys: u64) -> Result<(), Absent> {
     let page = phys & !(PAGE_SIZE - 1);
-    match mmu::map_page(mmu::phys_to_virt(page), page, paging::Flags::device()) {
-        Ok(()) | Err(paging::MapError::AlreadyMapped) => Ok(()),
+    match mmu::map_page(mmu::phys_to_virt(page), page, page_tables::Flags::device()) {
+        Ok(()) | Err(page_tables::MapError::AlreadyMapped) => Ok(()),
         Err(_) => Err(Absent::Unmappable { phys }),
     }
 }

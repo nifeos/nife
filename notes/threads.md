@@ -186,7 +186,7 @@ freed.
 
 The two were page tables. The stack area is a fresh region of virtual address space, so the
 first `map_page` there had to build an L2 and an L3. And `unmap_page` frees the leaf mapping but
-leaves the intermediate tables standing (the TODO on `paging::unmap`).
+leaves the intermediate tables standing (the TODO on `page_tables::unmap`).
 
 Which exposed a real leak hiding behind it: stack virtual addresses were **bump-allocated and
 never reused**. Threads come and go, but every 2 MiB of address space ever consumed keeps its

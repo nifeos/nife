@@ -98,7 +98,7 @@ So the unit-test image reaches 44 of the kernel's 449 Result-family error paths 
 828 Option-family ones (33%). Four of its 70 cleanup paths run. The kernel's riscv64 and x86_64
 files, and the features this image does not build, stay in the unmeasured table.
 
-The crates the kernel links are in the same report (`device_tree_blob`, `paging`, `capability` and
+The crates the kernel links are in the same report (`device_tree_blob`, `page_tables`, `capability` and
 others), measured by this image alone. They have host tests that this image does not run, so read
 their rows as what the kernel image reaches, not as their coverage.
 

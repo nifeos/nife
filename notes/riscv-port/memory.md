@@ -5,7 +5,7 @@ Linux style across first-party Rust).*
 
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
 `kernel/src/arch/riscv64/mmu.rs` and its `tests.rs` and `proofs.rs`. The portable page-table
-format is `paging::Sv39` ([notes/page-tables.md](../page-tables.md)). The ASID and shootdown
+format is `page_tables::Sv39` ([notes/page-tables.md](../page-tables.md)). The ASID and shootdown
 design is [notes/riscv-tlb-shootdown.md](../riscv-tlb-shootdown.md).
 
 ## The layout
@@ -76,7 +76,7 @@ The TH1520 build maps all 16 GiB of its RAM, because its U-Boot places the devic
 archive wherever `bootm` decides and offers no prompt for `fdt move`. Its leaves carry T-Head memory
 types, since firmware turns `XTheadMae` on and plain Sv39's zeros there are undefined: memory is
 cacheable, bufferable and shareable, devices strongly ordered and shareable. These are Linux's
-`_PAGE_PMA_THEAD` and `_PAGE_IO_THEAD`, the same values `paging::Sv39Mae` writes. Every other
+`_PAGE_PMA_THEAD` and `_PAGE_IO_THEAD`, the same values `page_tables::Sv39Mae` writes. Every other
 build keeps those bits zero, because there they are reserved and a set one is a page fault. Entry
 511 maps the device window, high alias only, so a console there can print before `mmu::initialize`.
 
@@ -160,7 +160,7 @@ dereferences a user pointer, so a shipping kernel that strays into the low half 
 
 ## What the tests can and cannot see
 
-Base Sv39 has no memory-type field; that is the Svpbmt extension. `paging::Sv39` keeps the device
+Base Sv39 has no memory-type field; that is the Svpbmt extension. `page_tables::Sv39` keeps the device
 flag in an RSW software bit, and QEMU `virt` derives the real type from the physical address. So
 the UART test checks the kernel's bookkeeping, not what the hardware was told. It still catches the
 mistake worth catching, a UART mapped as kernel data. On aarch64 that mistake lets the CPU

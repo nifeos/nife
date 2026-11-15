@@ -105,7 +105,7 @@ this machine yet: SBI SRST may be absent from Scaleway's OpenSBI.
 The verdict is the per-file count below, completed with what hour one adds and copied into
 `design/fatal-risks/the-hal-and-the-next-machine.md` beside the x86_64 port's. Each file is (a)
 under `kernel/src/arch/riscv64/`, (b) portable code that reads a device tree, or (c) elsewhere,
-with `crates/paging` named separately as the appendix did.
+with `crates/page_tables` named separately as the appendix did.
 
 Before renting, measured on this branch against its base `e8834c988`:
 
@@ -117,7 +117,7 @@ Before renting, measured on this branch against its base `e8834c988`:
 | `kernel/src/arch/riscv64/instructions.rs` | a | the `th.sxstatus` read |
 | `kernel/src/arch/riscv64/fp.rs` | a | XTheadVector's `VS` |
 | `kernel/src/arch/riscv64/mod.rs` | a | one `mod` line |
-| `crates/paging/src/sv39.rs`, `lib.rs` | c, additive | a new `PageFormat` implementation; no trait or walk change |
+| `crates/page_tables/src/sv39.rs`, `lib.rs` | c, additive | a new `PageFormat` implementation; no trait or walk change |
 | `kernel/src/console.rs`, `kernel/src/user.rs` | c, seam repair | the riscv64 console constant now names `arch::machine`'s |
 | `kernel/src/virtio.rs`, `arch/aarch64/mmu.rs`, `arch/x86_64/mmu.rs` | c, seam repair | the probe asks the architecture how many slots exist |
 | `kernel/Cargo.toml` | build | the `board_th1520` feature |

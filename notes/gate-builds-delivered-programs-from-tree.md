@@ -24,11 +24,10 @@ at an older nife commit reads the older wire format.
 
 Two facts make this worse than the BUGS entry says:
 
-- `xtask/basalt-pin` names basalt commit `155eba5`, whose `pins.toml` names nife commit `77d8888`
-  (2026-10-17). The file has changed twice, both on 2026-10-17, and nothing moves it. basalt's own
-  nife pin moves daily (basalt main pins nife `a60748a`, 2026-11-14), but nife does not follow it.
-  `git diff --stat 77d8888 origin/main` over the std farm's inputs and the C library shows 149 files
-  changed. Every program the gate runs is a month older than the kernel it runs on.
+- `xtask/basalt-pin` names one basalt commit, whose `pins.toml` names the nife commit its programs
+  were built against, and nothing moves it. basalt's own nife pin moves daily, but nife does not
+  follow it. Every program the gate runs is as old as the pin, and older than the kernel it runs on
+  by every nife change since basalt's pin moved.
 - A break does not always fail loudly. Merge-group run 43634364501 (PR #3576, the clock page's
   two-copy layout) failed all four rows. `unmodified_ioping_times_reads_in_a_granted_directory` hit
   its 90 s watchdog "while making progress": ioping's one-copy clock reader spins on the two-copy
@@ -92,7 +91,7 @@ What a gate build needs:
 - A C compiler with the AArch64, RISC-V and x86 backends. `script/bootstrap` installs one when
   none is present (`have_cross_clang`). basalt pins clang 19 (`NIFE_CC=clang-19`) so its digests
   reproduce; a gate build does not need basalt's digests (below), so the bootstrap's clang serves.
-- Network for the pinned sources: ioping's and hackbench's C files, SQLite's amalgamation zip,
+- Network for the pinned sources: ioping's C file, SQLite's amalgamation zip,
   ripgrep and its crates from crates.io. The recipe checks each by SHA-256, and cargo by `Cargo.lock`.
 - basalt's build script and recipes, at the basalt commit `xtask/basalt-pin` names. The gate
   already reads that commit's recipes over the network (`pinned_index`); reading
