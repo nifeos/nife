@@ -55,12 +55,12 @@ their text.
 | item | state |
 |---|---|
 | 1, 2, 3 | landed (#3512): the README states the proofs, `request` clamps, the passive-voice gate passes |
-| 4 | landed: badge row, the install lines, the measured Kani time and memory, one harness, one falsification patch with its undo, the alarming output and the minimum-version check. No stranger has run it yet |
+| 4 | landed: badge row, the install lines, the measured Kani time and memory, one harness, one falsification patch with its undo, the alarming output and the minimum-version check. A stranger's run against the staged tree found 20 gaps in the text and none in the commands; the README carries the fixes, and the review package records the run |
 | 5 | landed: `fill_with` returns `Result<(), Refusal>`; `user_mode_runtime::fill` maps it with `.ok()` |
 | 6 | landed: decision 2 states the three rules in the crate documentation and README, and the three service loops keep them |
 | 7 | landed: the `publish` comment, the categories and `documentation`. The `allow-unpublished: true` line in `ci.yml` belongs to the move lane |
 | 8 | landed (#3531): `readiness` refuses a repeated first draw under `STEP_FIRST_ALL_SAME`; the name is decision 1 |
-| 9 | landed: `reply`, a harness and a falsification patch. The three backends adopt it in their own pull requests |
+| 9 | landed: `reply`, a harness and a falsification patch. The three service loops build their replies with it |
 | 10, 11 | landed: `#[must_use]` on the pure functions; `debug_assert!` on the opcode and step widths |
 | 12 | landed (#3531): the readiness harness covers nine-byte draws |
 | 13, 14 | confirmed: `script/crate-move --dry-run` against the template's `main` exits 0, so the falsification records and the architect's-name lines need no change |
@@ -116,10 +116,11 @@ The checks are in [the done-when appendix](1071-entropy-contract-outside-review/
 
 ## Follow-on
 
-- **Outstanding.** A stranger's run of the README, which the release gate requires. Checked
-  2026-11-14 against `notes/crate-reviews/entropy-contract.md`, which records none.
-- **Outstanding.** The three service loops adopt `reply`: the instruction backend does; the virtio
-  backend and the `jh7110_entropy` crate's `take` build the word by hand and already zero the tail.
+- **Outstanding.** The repository's own stranger test (runbook step 12), from a clone of
+  `nifeos/entropy_contract`. A run against the staged tree is in the review package.
+- **Outstanding.** The `jh7110_entropy` crate's `Pool::take` still builds its word by hand; the
+  JH7110 service loop passes it through `reply`. A change in that repository hands the bytes out
+  instead.
 - **Outstanding.** The move itself, with the `allow-unpublished: true` line in its `ci.yml`. The
   dry run exits 0 against the template's `main`.
 
@@ -137,4 +138,5 @@ The checks are in [the done-when appendix](1071-entropy-contract-outside-review/
 ## Index row
 
 An outside review of `entropy_contract` before its move. Every item and the three decisions have
-landed; two names stay provisional. No stranger has run the README yet.
+landed; two names stay provisional. A stranger's run against the staged tree is recorded; the
+repository's own run follows the move.
