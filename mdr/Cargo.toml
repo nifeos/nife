@@ -16,6 +16,10 @@ publish = false
 [workspace]
 
 [dependencies]
+# Delivers `link.ld` (the image layout every program links with), through its build script. Linked
+# for that and nothing else, so no source line names it.
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+
 # The renderer, with its parser (milestone 784 (reuse what the tree wrote), item (f2)).
 documentation = { path = "../crates/documentation", features = ["markdown"] }
 

@@ -6,7 +6,7 @@ use super::*;
 /// The comparison is against the kernel's own number, which comes from the machine (`CNTFRQ_EL0` on
 /// aarch64, `/cpus/timebase-frequency` on riscv64, `CPUID` leaf `0x15` or PIT calibration on
 /// `x86_64`), because a test that compares against a constant cannot catch a constant. `coremark`
-/// carries it because it reports its own `cntfrq` over IPC and is built by `coremark_builder`
+/// carries it because it reports its own `counter_hertz` over IPC and is built by `coremark_builder`
 /// through `process_builder::build_child_space`, so the number crosses the userspace ELF loader
 /// as well as the kernel's mapping. See notes/pmu.md, "What the userspace counter tests assert".
 #[test_case]

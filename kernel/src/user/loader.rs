@@ -290,8 +290,6 @@ pub fn program(name: &str) -> Option<&'static [u8]> {
 /// (milestone 19d): the progenitor reads the ELF to parse it here. A runtime window on the
 /// address-space map (milestone 206 (a program image has under 896 KiB)): the kernel places it for
 /// a program that did not choose the address.
-///
-/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
-/// `INITIAL_RAMDISK_VA`: `va` is ruled to expand.
-#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // becomes the boot path at 19d.2; test-driven until then
-pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = address_space_layout::runtime_window(0x2000_0000);
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(unused_imports))]
+// becomes the boot path at 19d.2; test-driven until then
+pub use address_space_layout::INITIAL_RAMDISK_VIRTUAL_ADDRESS;

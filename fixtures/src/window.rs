@@ -149,11 +149,11 @@ fn wr32(va: u64, v: u32) {
 /// that check passes, and threaded to every `px_write`/`px_read` call rather than declared as a
 /// file-level constant (milestone 139 round 4).
 fn px_write(surface: &MappedWindow, i: usize, v: u32) {
-    surface.w32((i * 4) as u64, v);
+    surface.write_u32((i * 4) as u64, v);
 }
 
 fn px_read(surface: &MappedWindow, i: usize) -> u32 {
-    surface.r32((i * 4) as u64)
+    surface.read_u32((i * 4) as u64)
 }
 
 fn die(code: u64) -> ! {

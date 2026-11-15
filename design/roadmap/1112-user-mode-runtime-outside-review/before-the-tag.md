@@ -38,7 +38,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    Evidence: every source file; `src/virtio.rs` line 72; `notes/user-mode-runtime.md` and
    `notes/user-mode-runtime/time.md`.
    Change: rewrite each doc comment to state the rule rather than cite the ruling: "the sixth word
-   goes in as zero so `receive_fault` reads 0 unless the kernel stamped a label" needs no section
+   goes in as zero so `receive_message` reads 0 unless the kernel stamped a label" needs no section
    number. Move the two notes into the repository's `docs/`, trimmed of tree paths, and point the
    crate root at them. Keep the kernel-side facts a reader needs (which register the kernel
    writes, what maps the timebase page) as statements, not as paths. Delete the one line naming
