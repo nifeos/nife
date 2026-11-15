@@ -25,9 +25,10 @@ at an older nife commit reads the older wire format.
 Two facts make this worse than the BUGS entry says:
 
 - `xtask/basalt-pin` names one basalt commit, whose `pins.toml` names the nife commit its programs
-  were built against, and nothing moves it. basalt's own nife pin moves daily, but nife does not
-  follow it. Every program the gate runs is as old as the pin, and older than the kernel it runs on
-  by every nife change since basalt's pin moved.
+  were built against. basalt's own nife pin moves daily. Milestone 1116 (nife's basalt pin follows
+  basalt's newest Release) moves nife's pin by a daily pull request. Every program the gate runs
+  is as old as the pin. It is older than the kernel it runs on by every nife change since basalt's
+  pin moved.
 - A break does not always fail loudly. Merge-group run 43634364501 (PR #3576, the clock page's
   two-copy layout) failed all four rows. `unmodified_ioping_times_reads_in_a_granted_directory` hit
   its 90 s watchdog "while making progress": ioping's one-copy clock reader spins on the two-copy
@@ -151,11 +152,12 @@ How often it would build, from `git log --first-parent origin/main` over those p
 | since 2026-11-07 | 224 | 28 (12.5 percent) | 30 (13.4 percent) |
 
 These counts are per change against its base. Against the pinned commit, the narrow test builds on
-every merge group today. The pin is a month old, and 149 input files have changed since. The
-narrow fix saves anything only when `xtask/basalt-pin` follows basalt's Release. basalt publishes a
-Release after each pin bump (`rolling-2026-11-14-cece88a` at 14:22 UTC, 21 minutes after its pin
-bump merged). A daily bot pull request that moves `xtask/basalt-pin` would keep the pinned commit
-within a day of main. basalt's own `pin-bump.yml` does the same in the other direction. Between a
+every merge group today. When measured, the pin was a month old, and 149 input files have changed since. The
+narrow fix saves anything only when `xtask/basalt-pin` follows basalt's Release, which
+`pin-basalt.yml` proposes daily. basalt publishes a Release after each pin bump
+(`rolling-2026-11-14-cece88a` at 14:22 UTC, 21 minutes after its pin bump merged), and the daily
+pull request keeps the pinned commit within a day of main once it merges. basalt's own
+`pin-bump.yml` does the same in the other direction. Between a
 stamp change and the next repin, every merge group builds, so the saving is the share of merge
 groups whose inputs match the pin, not the 87 to 91 percent above.
 
@@ -224,8 +226,7 @@ The reasons:
   but basalt's `packages` workflow builds them twice, compares them byte for byte, and runs nife's
   `swish-check` rows on them at every pin bump. Each repository tests what it owns.
 
-Two smaller pieces belong with it: `xtask/basalt-pin` should follow basalt's Release (a daily bot
-pull request), and the build should not run two at once on one owned host while `BUILD_ROOT` is a
+One smaller piece belongs with it: the build should not run two at once on one owned host while `BUILD_ROOT` is a
 fixed path.
 
 If all options cost the same, the choice would not change: building from the candidate tree is the
@@ -257,7 +258,5 @@ from the plan above, because of basalt's script at the pinned commit:
 - A `--no-digest-check` flag (provisional name) for basalt's `helpers/packages.py build`, so the
   gate does not infer success from a failed run: a basalt change. `xtask/src/basalt.rs`'s `BUGS`
   records the inference.
-- A daily bot pull request that moves `xtask/basalt-pin` to basalt's newest Release.
-  `xtask/src/basalt.rs`'s `BUGS` records that the pin does not follow.
 - `BUILD_ROOT` as a fixed path in basalt's `helpers/packages.py`, which the gate sets around: a
   `BUGS` entry there belongs to basalt.
