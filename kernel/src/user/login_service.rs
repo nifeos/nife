@@ -5,7 +5,7 @@ use crate::capability_object::{
 use crate::sched::{self, RendezvousId};
 
 /// Where the service maps its own request to the credential service. Must match `components/src/login.rs`.
-const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
+const CRED_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e3_0000);
 
 /// How many pages a `login_test_client` run's own `memory_region_capability` (slot 3) holds.
 ///

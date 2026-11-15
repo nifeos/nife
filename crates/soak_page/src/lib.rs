@@ -41,9 +41,9 @@
 
 /// Where the kernel maps the page in every worker's address space.
 ///
-/// A pair page on the address-space map (`crates/address_space_map`), the same neighbourhood
+/// A pair page on the address-space map (`crates/address_space_layout`), the same neighbourhood
 /// `grant_plan::job_page_frame`'s window uses.
-pub const VA: u64 = address_space_map::pair_page(0x0020_0000);
+pub const VA: u64 = address_space_layout::pair_page(0x0020_0000);
 
 /// The page's size, and the ceiling on everything below.
 pub const PAGE: u64 = 4096;

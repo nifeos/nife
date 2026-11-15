@@ -18,4 +18,4 @@ workspace = true
 
 [dependencies]
 # Where the page goes (milestone 206 (a program image has under 896 KiB)): `PAGE_VA` is the map's `CURRENT_CPU_PAGE`.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }

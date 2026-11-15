@@ -24,7 +24,7 @@ use super::*;
 use crate::boot_steps::Entropy;
 
 /// Where the progenitor maps the transcript frame, read-only, to print it.
-const TRANSCRIPT_VIEW_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f90_0000);
+const TRANSCRIPT_VIEW_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0f90_0000);
 
 /// The program's own stack, in pages: it parses ELF images and builds children, a deeper chain than
 /// an ordinary child's.
@@ -180,7 +180,7 @@ fn run_measured(
             placed: &placed[..n],
             maps: &[
                 (
-                    address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
+                    address_space_layout::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
                     g.self_test_page,
                     abi::address_space::MAP_READ_ONLY,
                 ),
@@ -190,7 +190,7 @@ fn run_measured(
                     abi::address_space::MAP_READ_ONLY,
                 ),
                 (
-                    address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
+                    address_space_layout::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
                     frame,
                     abi::address_space::MAP_READ_WRITE,
                 ),

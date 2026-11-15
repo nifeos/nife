@@ -81,7 +81,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    second nothing to measure, and the third a suite that kills no mutant. The mutation-testing
    notes already record that shape for a crate that reaches this one. Meanwhile the `should_panic`
    example in `mapped_window.rs` and the two `ignore` examples in `process.rs` are never compiled,
-   and milestone 1017 says the `link.ld` test now in `address_space_map` "moves to
+   and milestone 1017 says the `link.ld` test now in `address_space_layout` "moves to
    `user_mode_runtime`", which needs a test target to move into. Much of the crate is pure logic
    that runs anywhere: the window's bounds and alignment checks and its three copies, `Frame`'s
    accessors over a heap page, `Delivered::decode`'s four branches, the three hand-assembled
@@ -104,18 +104,18 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    Finding: `components`, `fixtures`, `jig`, `redoxfs_server`, `std_exerciser`,
    `cryptography_exerciser`, `pinned_tls_exerciser`, `mdr` and `c_library` each pass
    `-T<manifest dir>/../crates/user_mode_runtime/link.ld` to the linker, and
-   `address_space_map`'s test does `include_str!("../../user_mode_runtime/link.ld")`. After the
+   `address_space_layout`'s test does `include_str!("../../user_mode_runtime/link.ld")`. After the
    move the file is in a dependency's source directory, which a consumer's build script has no
    path to. The script is interface 20, "the entry registers and link layout a program starts
    with", so it belongs with the runtime; what is missing is a delivery mechanism.
    Evidence: `jig/build.rs` lines 9 and 10; `components/build.rs` line 21;
-   `crates/address_space_map/src/lib.rs` line 358; the dry run's nife-side list.
+   `crates/address_space_layout/src/lib.rs` line 358; the dry run's nife-side list.
    Change: a `build.rs` in this crate that copies `link.ld` into `OUT_DIR` and prints
    `cargo:rustc-link-search=<OUT_DIR>`, with `cargo:rerun-if-changed=link.ld`. A consumer then
    passes `-C link-arg=-Tlink.ld` with no path, from its build script or its `.cargo/config.toml`.
    Prior art: `cortex-m-rt` and `riscv-rt` ship `link.x` exactly this way, and every embedded Rust
    binary links with `-Tlink.x`. Concrete example: `jig/build.rs` loses its two path lines and
-   gains `println!("cargo::rustc-link-arg=-Tlink.ld")`. The `address_space_map` test moves here
+   gains `println!("cargo::rustc-link-arg=-Tlink.ld")`. The `address_space_layout` test moves here
    (item 4) and reads the file by `include_str!("../link.ld")`.
    Door: two-way until `disk-tools` leaves, as Decision 2 decides, provisionally. Effort: M,
    counting the nine consumers.

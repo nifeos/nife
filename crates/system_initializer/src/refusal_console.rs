@@ -22,7 +22,7 @@ const POLLS_PER_BYTE: u32 = 1 << 20;
 ///
 /// Name: ratified 2026-11-03 (UTC), #3102.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f70_0000);
+const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0f70_0000);
 
 /// **Write `parts`, in order, to the UART.** `uart_shape` is the register shape the kernel passed
 /// at start (`abi::uart`), which riscv64's NS16550 needs. Returns once every byte is written or
@@ -53,7 +53,7 @@ impl Uart {
 
     /// Map the PL011's register page into this process; `None` if the kernel refuses.
     fn open(g: &BootEndowment, _uart_shape: u64) -> Option<Self> {
-        (address_space_map_into(
+        (address_space_layout_into(
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
@@ -94,7 +94,7 @@ impl Uart {
 
     /// Map the NS16550's register page into this process; `None` if the kernel refuses.
     fn open(g: &BootEndowment, uart_shape: u64) -> Option<Self> {
-        (address_space_map_into(
+        (address_space_layout_into(
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,

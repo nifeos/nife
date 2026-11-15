@@ -19,7 +19,7 @@ use user_mode_runtime::{exit, send};
 
 const REPORT: u64 = 0;
 /// Must match `device_child_builder`'s `CHILD_UART_VA`, where it maps the registers.
-const UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const UART_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 
 user_mode_runtime::program_entry!(start);
 

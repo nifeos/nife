@@ -427,53 +427,53 @@ crates/address_space_identifier/src/lib.rs::free
 
 crates/address_space_identifier/src/lib.rs::new
 
-crates/address_space_map/src/lib.rs::BANDS
+crates/address_space_layout/src/lib.rs::BANDS
 
-crates/address_space_map/src/lib.rs::Band
+crates/address_space_layout/src/lib.rs::Band
 
-crates/address_space_map/src/lib.rs::CODE_MODEL_CEILING
+crates/address_space_layout/src/lib.rs::CODE_MODEL_CEILING
 
-crates/address_space_map/src/lib.rs::CURRENT_CPU_PAGE
+crates/address_space_layout/src/lib.rs::CURRENT_CPU_PAGE
 
-crates/address_space_map/src/lib.rs::HEAP
+crates/address_space_layout/src/lib.rs::HEAP
 
-crates/address_space_map/src/lib.rs::IMAGE
+crates/address_space_layout/src/lib.rs::IMAGE
 
-crates/address_space_map/src/lib.rs::IMAGE_BASE
+crates/address_space_layout/src/lib.rs::IMAGE_BASE
 
-crates/address_space_map/src/lib.rs::ImagePlacement
+crates/address_space_layout/src/lib.rs::ImagePlacement
 
-crates/address_space_map/src/lib.rs::NULL_GUARD
+crates/address_space_layout/src/lib.rs::NULL_GUARD
 
-crates/address_space_map/src/lib.rs::PAGE
+crates/address_space_layout/src/lib.rs::PAGE
 
-crates/address_space_map/src/lib.rs::PAIR_PAGES
+crates/address_space_layout/src/lib.rs::PAIR_PAGES
 
-crates/address_space_map/src/lib.rs::PROCESS_PAGES
+crates/address_space_layout/src/lib.rs::PROCESS_PAGES
 
-crates/address_space_map/src/lib.rs::RUNTIME_WINDOWS
+crates/address_space_layout/src/lib.rs::RUNTIME_WINDOWS
 
-crates/address_space_map/src/lib.rs::SERVICE_WINDOWS
+crates/address_space_layout/src/lib.rs::SERVICE_WINDOWS
 
-crates/address_space_map/src/lib.rs::STACK
+crates/address_space_layout/src/lib.rs::STACK
 
-crates/address_space_map/src/lib.rs::STACK_TOP
+crates/address_space_layout/src/lib.rs::STACK_TOP
 
-crates/address_space_map/src/lib.rs::STACK_TOP_PAGE
+crates/address_space_layout/src/lib.rs::STACK_TOP_PAGE
 
-crates/address_space_map/src/lib.rs::bytes
+crates/address_space_layout/src/lib.rs::bytes
 
-crates/address_space_map/src/lib.rs::check_image
+crates/address_space_layout/src/lib.rs::check_image
 
-crates/address_space_map/src/lib.rs::contains
+crates/address_space_layout/src/lib.rs::contains
 
-crates/address_space_map/src/lib.rs::holds
+crates/address_space_layout/src/lib.rs::holds
 
-crates/address_space_map/src/lib.rs::pair_page
+crates/address_space_layout/src/lib.rs::pair_page
 
-crates/address_space_map/src/lib.rs::runtime_window
+crates/address_space_layout/src/lib.rs::runtime_window
 
-crates/address_space_map/src/lib.rs::service_window
+crates/address_space_layout/src/lib.rs::service_window
 
 crates/allocation_cache/src/lib.rs::BATCH
 

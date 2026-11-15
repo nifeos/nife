@@ -439,8 +439,8 @@ struct SpawnedTerminal {
 
 /// Where `framebuffer_driver` finds the covered part of the aperture, a service window on the
 /// address-space map. Must match `components/src/framebuffer_driver.rs`'s `APERTURE_VA`.
-const SCREEN_APERTURE_VA: u64 = address_space_map::service_window(0x5800_0000);
-const _: () = assert!(address_space_map::SERVICE_WINDOWS.holds(
+const SCREEN_APERTURE_VA: u64 = address_space_layout::service_window(0x5800_0000);
+const _: () = assert!(address_space_layout::SERVICE_WINDOWS.holds(
     SCREEN_APERTURE_VA,
     SCREEN_APERTURE_VA + MAXIMUM_APERTURE_PAGES * page_frames::FRAME_SIZE
 ));

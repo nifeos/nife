@@ -7,7 +7,7 @@
 # not mention nife, a nife program or a nife package. A crate that has already left is removed from
 # this file by the pull request that moves it.
 abi
-address_space_map
+address_space_layout
 byte_glob
 byte_sink_contract
 capability_manifest_note

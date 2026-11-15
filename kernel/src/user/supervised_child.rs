@@ -27,11 +27,11 @@ use crate::sched::thread_control_block_insert_capability as insert_capability;
 /// page's placement beside the stack assumes.
 ///
 /// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
-pub const CODE_ADDRESS: u64 = address_space_map::IMAGE_BASE;
+pub const CODE_ADDRESS: u64 = address_space_layout::IMAGE_BASE;
 /// Where its one stack page goes: the map's top stack page; `sp` starts at the page's top.
 ///
 /// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
-pub const STACK_ADDRESS: u64 = address_space_map::STACK_TOP_PAGE;
+pub const STACK_ADDRESS: u64 = address_space_layout::STACK_TOP_PAGE;
 
 /// The unmapped address [`FAULT_STUB`] loads from. Distinctive, so the delivered fault address
 /// proves the message carries real fault-time state and not a zero placeholder. It is below

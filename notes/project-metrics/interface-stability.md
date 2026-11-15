@@ -36,7 +36,7 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 | `package_archive` | 1 | 1 | 20 | 130 | 37 | 28 (76%) |
 | `nifefs` | 1 | 1 | 10 | 42 | 57 | 44 (77%) |
 | `byte_sink_contract` | 1 | 2 | 8 | 50 | 41 | 40 (98%) |
-| `address_space_map` | 1 | 3 | 1 | 45 | 0 | 0 |
+| `address_space_layout` | 1 | 3 | 1 | 45 | 0 | 0 |
 | `supervision_protocol` | 0 | 0 | 22 | 70 | 65 | 56 (86%) |
 | `component_plan` | 0 | 0 | 16 | 138 | 36 | 30 (83%) |
 | `elf` | 0 | 0 | 3 | 82 | 53 | 42 (79%) |
