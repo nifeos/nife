@@ -127,7 +127,7 @@ const NAME_SERVER_CASES: [(&str, Expect); 6] = [
     ("mirror.nife.test", Expect::Address(NAME_SERVER_IP)),
     ("nosuch.nife.test", Expect::Refused(Reject::NoSuchName)),
     ("forged.nife.test", Expect::Refused(Reject::IdMismatch)),
-    ("poisoned.nife.test", Expect::Refused(Reject::NoAddress)),
+    ("poisoned.nife.test", Expect::Refused(Reject::NoIpv4Address)),
     (
         "loop.nife.test",
         Expect::Refused(Reject::Malformed(domain_name_system::Error::PointerForward)),
@@ -377,8 +377,8 @@ fn against_the_name_server() -> u64 {
             Err(stage) => return code(stage),
         };
         match (expect, verdict) {
-            (Expect::Address(want), Ok(answer)) if answer.addresses() == [*want] => {
-                resolved.get_or_insert(answer.addresses()[0]);
+            (Expect::Address(want), Ok(answer)) if answer.ipv4_addresses() == [*want] => {
+                resolved.get_or_insert(answer.ipv4_addresses()[0]);
             }
             (Expect::Refused(want), Err(got)) if *want == got => {}
             _ => return code(0xF), // the wrong verdict: the lie was believed, or the truth refused

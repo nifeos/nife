@@ -49,12 +49,12 @@ fn the_header_round_trips_on_every_value() {
     let h = Header {
         id: kani::any(),
         flags: kani::any(),
-        qdcount: kani::any(),
-        ancount: kani::any(),
-        nscount: kani::any(),
-        arcount: kani::any(),
+        question_count: kani::any(),
+        answer_count: kani::any(),
+        authority_count: kani::any(),
+        additional_count: kani::any(),
     };
-    let mut buf = [0u8; HEADER_LEN];
+    let mut buf = [0u8; HEADER_BYTES];
     h.write(&mut buf).unwrap();
     assert_eq!(Header::parse(&buf).unwrap(), h);
 }

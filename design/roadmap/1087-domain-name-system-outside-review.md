@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -94,7 +94,7 @@ are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
    BUGS list from the root doc, the minimum Rust version and the type sizes measured above. Record
    the first stranger run in `docs/stranger-test.md`. Door: two-way. Effort: S.
 
-4. Shipped text points into nife. Finding: line 4 sends the reader to `notes/name-resolution.md`.
+4. Shipped text points into nife. DONE. Finding: line 4 sends the reader to `notes/name-resolution.md`.
    Line 7 names `fuzz/fuzz_targets/domain_name_system_reply.rs`, a path in nife (item 5 moves the
    target). Lines 262 to 263 cite milestone 384 and say nothing applies `is_within`, which
    `crates/domain_name_resolution_contract/src/grants.rs` line 180 does. Lines 369 to 371 cite
