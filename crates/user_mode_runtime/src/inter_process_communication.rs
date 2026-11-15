@@ -59,7 +59,7 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 }
 
 /// **Read one entry of what this address space has mapped** (milestone 126, `pmap`,
-/// `address_space::LIST`, DECISIONS §114). Returns `(next_cursor, virtual_address, kind)`: start at `cursor = 0`, feed
+/// `address_space::LIST`, DECISIONS §114 (`pmap` gets its listing)). Returns `(next_cursor, virtual_address, kind)`: start at `cursor = 0`, feed
 /// each `next_cursor` back, and stop when [`abi::survey::DONE`] comes back. [`survey`]'s twin,
 /// same three-word-out-of-one-`invoke` shape, one object type over.
 ///

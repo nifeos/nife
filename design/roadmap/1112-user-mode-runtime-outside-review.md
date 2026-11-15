@@ -159,10 +159,24 @@ published function after the tag.
   immediates from `abi`, `Frame::len` with the `DATA_MAXIMUM` clamp, the target-gated
   dependency, `retype_sleeper` through `is_granted`, and the dependency-direction sentence. Builds
   on three targets, no test target for them.
-- **Outstanding.** Items 3, 8, 9 and 11 belong to the move lane. Item 4 changes how `script/lint`
-  builds the crate for bare-metal targets. Checked by reading `script/lint`.
-- **Outstanding.** Items 5, 13 and 15 wait on Decisions 2, 1 and 3. Item 17 adds a syscall
-  wrapper, which is the architect's call.
+- **Done.** Item 4: the crate has a host test target. Host tests cover the window, the frame,
+  `Delivered::decode`, the three child stubs, the nanosecond conversion and the `link.ld` base;
+  `script/lint` runs them on the host and builds the crate with `--lib` on the bare-metal targets,
+  and `xtask` runs them in the host suite.
+- **Done.** Item 5: a `build.rs` in the crate puts `link.ld` on the link search path, and every
+  consumer emits `-Tlink.ld` with no path. The std programs depend on the crate for it, which grew
+  their lockfiles; they are not built in this lane.
+- **Done.** Item 11: `INITIAL_RAMDISK_VIRTUAL_ADDRESS` is derived in `address_space_map` from the
+  runtime window base, and the kernel loader and this crate re-export it. The crate no longer sets
+  `test = false`.
+- **Done.** Item 13, under the provisional Decision 1: the abbreviated names are spelled out in the
+  crate and in every caller, with no alias for an old spelling. Every renamed public name carries a
+  provisional `Name:` block, and the architect ratifies them.
+- **Done.** Item 15, under the provisional Decision 3: `Message`, `Received`, `receive_message` and
+  `receive_capability_message` replace the seven projections; `receive`, `receive_capability`,
+  `receive_request` and `call` stay. No wire byte or syscall moves.
+- **Outstanding.** Items 3, 8 and 9 belong to the move lane. Item 17 adds a syscall wrapper, which
+  is the architect's call.
 
 ## Done when
 

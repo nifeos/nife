@@ -18,9 +18,9 @@ workspace = true
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
-# The x86_64 timebase page (milestone 161's `counter_hertz` follow-up): the kernel's calibrated TSC rate,
+# The x86_64 timebase page (milestone 161 (the x86_64 kernel port)'s `counter_hertz` follow-up): the kernel's calibrated TSC rate,
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
-# `cntfrq`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
+# `counter_hertz`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
 # environment_contract's kernel-side deps are, since it is tiny, no_std, and dependency-free.
 clock_contract = { version = "0.1.0", path = "../clock_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
