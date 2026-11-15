@@ -5,33 +5,33 @@ raised: 2026-11-15
 ---
 # 1116. nife's basalt pin follows basalt's newest Release
 
-The rule in force since 2026-11-15 (UTC): `xtask/basalt-pin`, the file that names the basalt commit
-and Release the gate takes its programs from (milestone 1115 (the gate builds basalt's delivered
-programs from the candidate tree)), is moved daily by a pull request that a workflow opens. The
-branch is `milestone/1116-basalt-pin-follows-release`.
+The rule in force since 2026-11-15 (UTC): a workflow opens a daily pull request that moves
+`xtask/basalt-pin`. That file names the basalt commit and Release the gate takes its programs from
+(milestone 1115 (the gate builds basalt's delivered programs from the candidate tree)). The branch
+is `milestone/1116-basalt-pin-follows-release`.
 
 What drives it: the four merge-group rows run the recipes and build script at the pinned basalt
-commit, and the pin was a month behind because only a person moved it. A recipe basalt changed did
-not reach the gate.
+commit. Only a person moved the pin, so it fell a month behind, and a recipe basalt changed did not
+reach the gate.
 
-Reuse: basalt's own `pin-bump.yml` is the shape (one branch, force-pushed on each run, one open
+Reuse: basalt's own `pin-bump.yml` has the shape (one branch, force-pushed on each run, one open
 pull request, the automation App's token), in the other direction. `vendor-watch.yml` and
-`verify-shard-refresh.yml` supply the App-optional fallback.
+`verify-shard-refresh.yml` supply the fallback for a repository without the App.
 
 ## What is in force
 
-- `.github/workflows/pin-basalt.yml` runs daily and on dispatch, as `nife-smelter[bot]`. When
-  `helpers/basalt_pin.py resolve` names a Release other than the one the pin holds, it writes both
-  lines of `xtask/basalt-pin` (commit and release), force-pushes the branch `pin/basalt`, and opens
-  the pull request or updates the one that is open. When the pin already names that Release, the run
-  is silent.
-- The target is the newest Release of basalt, by publication time, that is published (not a draft
-  or a pre-release), complete (every package nife builds has a `.nifepkg` for each of the three
-  architectures and its source archive, fully uploaded), and cut at a commit on basalt's `main`
-  (a compare of `main...<commit>` is `identical` or `behind`). A newer Release that fails a test is
-  skipped. The pin never moves backward.
-- `helpers/basalt_pin.py` holds the rule, and `--selftest` tests it with no network, run by
-  `script/lint`. `resolve` is the only part that reads GitHub.
+- `.github/workflows/pin-basalt.yml` runs daily and on dispatch. When `helpers/basalt_pin.py
+  resolve` names a Release other than the one the pin holds, the workflow writes both lines of
+  `xtask/basalt-pin` (commit and release), force-pushes the branch `pin/basalt`, and opens the pull
+  request as `nife-smelter[bot]` or updates the one that is open. When the pin already names that
+  Release, the run says nothing.
+- The target is the newest Release of basalt, by publication time, that passes three tests. It is
+  published, neither a draft nor a pre-release. It is complete: every package nife builds has a
+  `.nifepkg` for each of the three architectures and a source archive, all uploaded. Its commit is
+  on basalt's `main`: a compare of `main...<commit>` says `identical` or `behind`. A newer Release
+  that fails a test is skipped, and the pin never moves backward.
+- `helpers/basalt_pin.py` holds the rule. Its `--selftest` tests the rule with no network, and
+  `script/lint` runs it. Only `resolve` reads GitHub.
 - The workflow does not arm auto-merge. A maintainer arms the pull request with `helpers/arm.sh`
   until an architect rules on auto-merge for this pin. The pull request runs the normal gates.
 

@@ -11,7 +11,7 @@ helper under `helpers/`, outside `script/names`' scope, so this paragraph is its
 
 `xtask/basalt-pin` names the basalt commit whose recipes and build script the gate runs, and the
 Release whose published programs every other gate fetches. Nothing moved it, so it fell a month
-behind (milestone 1115). `.github/workflows/pin-basalt.yml` moves it daily, as a pull request, and
+behind (milestone 1115 (the gate builds basalt's delivered programs from the candidate tree)). `.github/workflows/pin-basalt.yml` moves it daily, as a pull request, and
 this file decides where to. The decision is pure, so it is tested without a network; `resolve` is
 the thin layer that reads basalt's Releases through `gh api` and hands them to it.
 

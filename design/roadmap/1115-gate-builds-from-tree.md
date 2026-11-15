@@ -48,8 +48,8 @@ Only the merge queue proves the workflow: no pull request run takes this path.
 
 - **Recorded.** A basalt flag that skips the digest check, so the gate need not infer success from
   exit status 1: `xtask/src/basalt.rs`, `BUGS`.
-- **Milestone 1116.** `xtask/basalt-pin` follows basalt's newest Release, by a daily pull request:
-  [1116](1116-basalt-pin-follows-release.md).
+- **Milestone 1116.** [1116 (nife's basalt pin follows basalt's newest Release)](1116-basalt-pin-follows-release.md)
+  makes `xtask/basalt-pin` follow that Release, by a daily pull request.
 - **Recorded.** A pull request's `full-ci` run and a local `script/ci-build` still fetch, so a
   wire-format break is red there and green in its merge group: `xtask/src/basalt.rs`, `BUGS`.
 
