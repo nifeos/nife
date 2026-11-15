@@ -893,11 +893,32 @@ fn reserved_memory_honors_its_own_declared_widths() {
     let mut out = [Region { start: 0, size: 0 }; 4];
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x1000, 0x2000));
+
+    // Only the root's and `/reserved-memory`'s own declarations count: a sibling bus that declares
+    // two and two before it leaves the root's one and one in force for the children.
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &1u32.to_be_bytes());
+    b.prop(b"#size-cells", &1u32.to_be_bytes());
+    b.begin_node(b"soc");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
+    b.end_node();
+    b.begin_node(b"reserved-memory");
+    b.begin_node(b"pool@1000");
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x1000, 0x2000));
 }
 
-/// `/chosen` stops meaning chosen when it closes: with the `END_NODE` comparison inverted the
-/// walker keeps attributing properties to it, and a later sibling's `linux,initrd-end`
-/// overwrites the real one, returning an initial ramdisk of the wrong size.
+/// `/chosen` stops meaning chosen when it closes, and only then: a later sibling's
+/// `linux,initrd-end` does not overwrite the real one, and a child node closing inside `/chosen`
+/// does not end it, so the properties after that child still count.
 #[test]
 fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
     let mut b = Blob::new();
@@ -917,6 +938,23 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
         .initial_ramdisk()
         .unwrap()
         .expect("the real range from /chosen");
+    assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
+
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.begin_node(b"chosen");
+    b.begin_node(b"framebuffer@0");
+    b.end_node();
+    b.prop(b"linux,initrd-start", &0x4800_0000u64.to_be_bytes());
+    b.prop(b"linux,initrd-end", &0x4802_0000u64.to_be_bytes());
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    let r = dt
+        .initial_ramdisk()
+        .unwrap()
+        .expect("the properties after the child still belong to /chosen");
     assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
 }
 
@@ -1688,16 +1726,16 @@ fn every_error_displays_as_its_own_sentence() {
 }
 
 /// A `reg` that a `Region` cannot hold is refused by every lookup that decodes one, never read as
-/// its low 64 bits or cut short. Each case is a bus declaring `cells` address cells and one size
-/// cell, with a memory node, a named device and a reserved-memory child all carrying `reg`.
+/// its low 64 bits or cut short. Each case is a bus declaring its address and size cells, with a
+/// memory node, a named device and a reserved-memory child all carrying `reg`.
 #[test]
 fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
-    fn tree(address_cells: u32, reg: &[u32]) -> Vec<u8> {
+    fn tree(address_cells: u32, size_cells: u32, reg: &[u32]) -> Vec<u8> {
         let reg: Vec<u8> = reg.iter().flat_map(|cell| cell.to_be_bytes()).collect();
         let mut b = Blob::new();
         b.begin_node(b"");
         b.prop(b"#address-cells", &address_cells.to_be_bytes());
-        b.prop(b"#size-cells", &1u32.to_be_bytes());
+        b.prop(b"#size-cells", &size_cells.to_be_bytes());
         b.begin_node(b"memory@0");
         b.prop(b"reg", &reg);
         b.end_node();
@@ -1707,7 +1745,7 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
         b.end_node();
         b.begin_node(b"reserved-memory");
         b.prop(b"#address-cells", &address_cells.to_be_bytes());
-        b.prop(b"#size-cells", &1u32.to_be_bytes());
+        b.prop(b"#size-cells", &size_cells.to_be_bytes());
         b.begin_node(b"firmware@0");
         b.prop(b"reg", &reg);
         b.end_node();
@@ -1733,22 +1771,29 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
             .collect()
     }
 
-    // Three address cells whose top cell is zero fit, and so do four: the value is 64 bits.
+    // Three address cells whose top cell is zero fit, and so do four, address or size: the value
+    // is 64 bits.
     let fits = Region {
         start: 0x2_0000_0003,
         size: 4,
     };
-    for blob in [tree(3, &[0, 2, 3, 4]), tree(4, &[0, 0, 2, 3, 4])] {
+    for blob in [
+        tree(3, 1, &[0, 2, 3, 4]),
+        tree(4, 1, &[0, 0, 2, 3, 4]),
+        tree(2, 4, &[2, 3, 0, 0, 0, 4]),
+    ] {
         for answer in answers(&blob) {
             assert_eq!(answer, Ok(vec![fits]));
         }
     }
 
-    // A nonzero third cell, more cells than libfdt allows, and a trailing partial pair.
+    // A nonzero third cell, more address or size cells than libfdt allows, and a trailing partial
+    // pair.
     for blob in [
-        tree(3, &[1, 2, 3, 4]),
-        tree(5, &[0, 0, 0, 2, 3, 4]),
-        tree(2, &[0, 0x1000, 0x10, 0]),
+        tree(3, 1, &[1, 2, 3, 4]),
+        tree(5, 1, &[0, 0, 0, 2, 3, 4]),
+        tree(2, 5, &[2, 3, 0, 0, 0, 0, 4]),
+        tree(2, 1, &[0, 0x1000, 0x10, 0]),
     ] {
         for answer in answers(&blob) {
             assert_eq!(answer, Err(Error::BadValue));

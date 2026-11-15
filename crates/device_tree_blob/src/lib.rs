@@ -1225,7 +1225,9 @@ fn cells(value: &[u8]) -> Result<u64, Error> {
         if number >> 32 != 0 {
             return Err(Error::BadValue);
         }
-        number = (number << 32) | u32::from_be_bytes(*cell) as u64;
+        // An add, not an or: the shift leaves the low 32 bits zero, so the two agree, and an add
+        // has no twin (`^` reads the same as `|` here) for a mutation run to report as alive.
+        number = (number << 32) + u64::from(u32::from_be_bytes(*cell));
     }
     Ok(number)
 }
