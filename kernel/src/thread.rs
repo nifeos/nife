@@ -5,7 +5,7 @@
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use page_frames::FRAME_SIZE;
-use paging::Flags;
+use page_tables::Flags;
 
 use crate::arch::mmu;
 use crate::sync::{InterruptSafeMutex, rank};
@@ -559,7 +559,7 @@ const FP_STATE_OFFSET: usize =
 /// Grow `Thread` past the point where the register file fits beside it and the kernel does not
 /// build.
 const _: () = assert!(
-    FP_STATE_OFFSET + size_of::<crate::arch::fp::FpState>() <= paging::PAGE_SIZE as usize,
+    FP_STATE_OFFSET + size_of::<crate::arch::fp::FpState>() <= page_tables::PAGE_SIZE as usize,
     "a Thread plus its FP register file no longer fits in one TCB page"
 );
 
@@ -618,7 +618,7 @@ const CAPABILITY_TABLE_OFFSET: usize = (FP_STATE_OFFSET + size_of::<crate::arch:
 
 /// The page is the bound for the table too, checked by the compiler as for the FP register file.
 const _: () = assert!(
-    CAPABILITY_TABLE_OFFSET + size_of::<CapabilityTableLock>() <= paging::PAGE_SIZE as usize,
+    CAPABILITY_TABLE_OFFSET + size_of::<CapabilityTableLock>() <= page_tables::PAGE_SIZE as usize,
     "a Thread, its FP register file and its capability table no longer fit in one TCB page"
 );
 

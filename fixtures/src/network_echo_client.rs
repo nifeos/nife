@@ -50,7 +50,7 @@ const STACK: u64 = grant_plan::NETWORK_SLOT;
 
 /// Where this program maps the page it shares with the stack. Any address its own image does not
 /// use; `socket_test_client`'s choice, because that one is known to be clear of a small program.
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 // SAFETY: `PAGE_FRAME_VA` is mapped read/write for one page before any access through this window
 // (`attach`), and nothing else in this program touches that range.

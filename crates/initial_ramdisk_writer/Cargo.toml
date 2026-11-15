@@ -19,7 +19,7 @@ workspace = true
 nifefs = { version = "0.1.0", path = "../nifefs" }
 # The image band every packed program is checked against (milestone 206 (a program image has under
 # 896 KiB)). Ours, `no_std`, no dependencies.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The digest and the entry name of the measurement table, so the table is written in the kernel
 # manifest's own format. Ours, `no_std`.
 measured_boot = { version = "0.1.0", path = "../measured_boot" }

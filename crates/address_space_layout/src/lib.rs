@@ -1,0 +1,494 @@
+//! **The user address-space map**: which band of a process's low half holds what, the same on all
+//! three architectures.
+//!
+//! The bands tile `[0, 2 GiB)` with no gap (a `const` assert holds that, and Kani proves it per
+//! address). Above 2 GiB only the timebase page is assigned.
+//!
+//! | band | start | end | size | what goes in it |
+//! |---|---|---|---|---|
+//! | [`NULL_GUARD`] | `0x0000_0000` | `0x0020_0000` | 2 MiB | nothing, ever |
+//! | [`PAIR_PAGES`] | `0x0020_0000` | `0x1000_0000` | 254 MiB | pages one builder agrees with the one program it builds, and a program's private windows |
+//! | [`RUNTIME_WINDOWS`] | `0x1000_0000` | `0x4000_0000` | 768 MiB | windows a loader or runtime places for a program |
+//! | [`HEAP`] | `0x4000_0000` | `0x5000_0000` | 256 MiB | the heap and nothing else |
+//! | [`SERVICE_WINDOWS`] | `0x5000_0000` | `0x6000_0000` | 256 MiB | large windows a service contract names |
+//! | [`IMAGE`] | `0x6000_0000` | `0x7F00_0000` | 496 MiB | the program's code and data |
+//! | [`STACK`] | `0x7F00_0000` | `0x7FFF_0000` | 16 MiB less 64 KiB | the stack, growing down; its lowest page is never mapped |
+//! | [`PROCESS_PAGES`] | `0x7FFF_0000` | `0x8000_0000` | 64 KiB | pages the kernel maps into every process unasked |
+
+//! # Where a new page goes
+//!
+//! Ask in order, and stop at the first yes.
+//!
+//! 1. Is it the program's code or data? [`IMAGE`].
+//! 2. Is it the stack? [`STACK`], down from [`STACK_TOP_PAGE`].
+//! 3. Does the kernel map it into every process without being asked? [`PROCESS_PAGES`].
+//! 4. Is it the heap? [`HEAP`].
+//! 5. Does a loader or a runtime place it, for programs that did not choose the address?
+//!    [`RUNTIME_WINDOWS`], with a written argument for the address in the crate that owns it.
+//! 6. Is it a large window a service contract names for several programs? [`SERVICE_WINDOWS`].
+//! 7. Otherwise it is a pair page: [`PAIR_PAGES`]. Two pairs never share an address space, so pairs
+//!    reuse addresses freely.
+//!
+//! Then write it with the band's function, so the compiler checks it: [`pair_page`],
+//! [`runtime_window`] and [`service_window`] return their argument unchanged and stop the build if
+//! it is outside the band or not page aligned.
+
+//! # Why these numbers
+//!
+//! - **The image band ends at 2 GiB** ([`CODE_MODEL_CEILING`]) because `x86_64` builds with
+//!   `code-model: small` and a static relocation model, which promise that every symbol fits a
+//!   sign-extended 32-bit immediate. The other two architectures would accept a higher image; one
+//!   layout for all three is the rule.
+//! - **The stack sits directly above the image**, so the one limit on an image is the stack's base,
+//!   and a refusal can say exactly that ([`check_image`]). The lowest page of [`STACK`] is never
+//!   mapped, so a stack at its limit faults before it touches the last page of a full image
+//!   ([`MAXIMUM_STACK_PAGES`]).
+//! - **The process pages sit beside the stack**, so they share its page tables: the stack's top
+//!   page and the current-CPU page lie in one 2 MiB window.
+
+//! # BUGS
+//!
+//! - Pair pages are checked for membership, not for collisions within one process; a program with
+//!   several windows asserts their disjointness itself.
+//! - A band function checks one page. A window of many pages whose first page sits near a band's
+//!   top runs into the next band unseen; [`Band::holds`] is the whole-range check.
+//! - Other crates restate some of these numbers, pinned by their own tests.
+//! - A loader that reports a too-large image as "could not spawn" hides [`check_image`]'s reason.
+//! - **The layout is fixed.** Every band and every fixed window sits at one address in every
+//!   process on every architecture, so there is no address-space layout randomization. The design
+//!   buys a pair page checked at compile time and one linker script; it gives up the
+//!   unpredictability that a randomizing system offers an attacker's guess.
+//!
+//! Name: ratified 2026-11-14 (UTC) (block 1076 decision N1): the layout of one address space; `user_layout` and `address_space` were set aside.
+
+#![cfg_attr(not(test), no_std)]
+#![forbid(unsafe_code)]
+
+/// The layout's version: the bands, the pair-page arithmetic and the fixed windows a loader and a
+/// kernel compile in from this crate, all one map. One constant for the whole layout; nothing
+/// checks it at run time, and a program's declaration of the interfaces it links names it.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
+/// This interface's identity in a program's `INTERFACES` note: 2, naming the address-space layout constants. The number
+/// is the crate's to keep across a rename and no other interface ever reuses it; the ids of
+/// every interface crate must differ. A program declares the pair of this id and [`VERSION`].
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const INTERFACE_ID: u64 = 2;
+
+/// The page size every loader maps in, on all three architectures.
+pub const PAGE: u64 = 4096;
+
+/// **A half-open range of user virtual addresses**, `[start, end)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Band {
+    /// The first address in the band.
+    pub start: u64,
+    /// The first address past it.
+    pub end: u64,
+}
+
+impl Band {
+    /// The band's width in bytes.
+    pub const fn bytes(&self) -> u64 {
+        self.end - self.start
+    }
+
+    /// Is `virtual_address` inside the band?
+    pub const fn contains(&self, virtual_address: u64) -> bool {
+        virtual_address >= self.start && virtual_address < self.end
+    }
+
+    /// Does the whole of `[start, end)` lie inside the band? An empty or inverted range does not.
+    pub const fn holds(&self, start: u64, end: u64) -> bool {
+        start < end && start >= self.start && end <= self.end
+    }
+}
+
+/// **The highest address a static `x86_64` image may reach.** See the crate docs: `code-model:
+/// small` with a static relocation model puts every symbol under 2 GiB. The image band ends at or
+/// below this, and every band on the map lies under it.
+pub const CODE_MODEL_CEILING: u64 = 0x8000_0000;
+
+/// **Nothing is ever mapped here**, so a null pointer, and a null pointer plus any offset under 2
+/// MiB, faults instead of reading something.
+pub const NULL_GUARD: Band = Band {
+    start: 0,
+    end: 0x20_0000,
+};
+
+/// **Pages one builder agrees with the one program it builds.** See question 7 in the crate docs.
+/// Test harnesses, fixtures and a builder's native children place their shared windows here, and
+/// pairs reuse addresses freely. A program's own private windows go here as well.
+pub const PAIR_PAGES: Band = Band {
+    start: NULL_GUARD.end,
+    end: 0x1000_0000,
+};
+
+/// **Windows a loader or runtime places on a program's behalf**: a standard library's runtime
+/// pages and per-socket frames, a builder's scratch cursor, an initial ramdisk window, a swap image
+/// window.
+pub const RUNTIME_WINDOWS: Band = Band {
+    start: PAIR_PAGES.end,
+    end: 0x4000_0000,
+};
+
+/// **The heap.** `std_runtime_contract::HEAP_BASE` and `memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS` are
+/// its start, and std's `HEAP_MAXIMUM` is its width. A program with no heap still leaves it empty.
+pub const HEAP: Band = Band {
+    start: RUNTIME_WINDOWS.end,
+    end: 0x5000_0000,
+};
+
+/// **Large windows a service contract names**, which several programs speaking one protocol share:
+/// a block channel (`0x5000_0000`, 8 MiB), a C seam's grant pages, a screen aperture.
+pub const SERVICE_WINDOWS: Band = Band {
+    start: HEAP.end,
+    end: 0x6000_0000,
+};
+
+/// **The program's own ELF segments.** A program's linker script links at [`IMAGE_BASE`], and the
+/// host test that holds the two to the same number lives with the script's owner, not here.
+pub const IMAGE: Band = Band {
+    start: SERVICE_WINDOWS.end,
+    end: 0x7F00_0000,
+};
+
+/// **The stack**, growing down from [`STACK_TOP`]. Its lowest page is never mapped.
+pub const STACK: Band = Band {
+    start: IMAGE.end,
+    end: 0x7FFF_0000,
+};
+
+/// **Pages the kernel maps into every process unasked**, placed beside the stack so they share its
+/// page tables. Sixteen pages, of which the current-CPU page uses the last.
+pub const PROCESS_PAGES: Band = Band {
+    start: STACK.end,
+    end: CODE_MODEL_CEILING,
+};
+
+/// Every band, in address order, with the name a message or a table prints.
+pub const BANDS: &[(&str, Band)] = &[
+    ("NULL_GUARD", NULL_GUARD),
+    ("PAIR_PAGES", PAIR_PAGES),
+    ("RUNTIME_WINDOWS", RUNTIME_WINDOWS),
+    ("HEAP", HEAP),
+    ("SERVICE_WINDOWS", SERVICE_WINDOWS),
+    ("IMAGE", IMAGE),
+    ("STACK", STACK),
+    ("PROCESS_PAGES", PROCESS_PAGES),
+];
+
+/// **Where every program is linked.** The linker script's `. =` line, as a number.
+pub const IMAGE_BASE: u64 = IMAGE.start;
+
+/// **The stack pointer a thread starts with.** Stacks grow down, so this is one past the highest
+/// stack byte.
+pub const STACK_TOP: u64 = STACK.end;
+
+/// **The highest stack page**: the one page every loader maps, and the page below which a program
+/// given a deeper stack gets the rest.
+pub const STACK_TOP_PAGE: u64 = STACK_TOP - PAGE;
+
+/// **The most stack pages a loader may map**, down from [`STACK_TOP_PAGE`]. One fewer than the band
+/// holds: the lowest page is a guard, so a stack at its limit faults before it can touch the last
+/// page of a maximal image.
+///
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_STACK_PAGES: u64 = STACK.bytes() / PAGE - 1;
+
+/// **Where the kernel maps the current-CPU page**: the last page
+/// of [`PROCESS_PAGES`], in the same 2 MiB page-table window as [`STACK_TOP_PAGE`].
+pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
+
+/// **A pair page's address, checked against the map at compile time.** Use it in a `const`:
+/// `const CTL_VA: u64 = pair_page(0x60_0000);`. The value is unchanged, so the address still reads
+/// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
+/// aligned, stops the build instead of colliding with a runtime page at run time.
+pub const fn pair_page(virtual_address: u64) -> u64 {
+    assert!(
+        virtual_address.is_multiple_of(PAGE),
+        "a pair page must be page aligned"
+    );
+    assert!(
+        PAIR_PAGES.contains(virtual_address),
+        "a pair page must lie in PAIR_PAGES (address_space_layout)"
+    );
+    virtual_address
+}
+
+/// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for
+/// [`RUNTIME_WINDOWS`].
+pub const fn runtime_window(virtual_address: u64) -> u64 {
+    assert!(
+        virtual_address.is_multiple_of(PAGE),
+        "a runtime window must be page aligned"
+    );
+    assert!(
+        RUNTIME_WINDOWS.contains(virtual_address),
+        "a runtime window must lie in RUNTIME_WINDOWS (address_space_layout)"
+    );
+    virtual_address
+}
+
+/// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
+/// [`SERVICE_WINDOWS`].
+pub const fn service_window(virtual_address: u64) -> u64 {
+    assert!(
+        virtual_address.is_multiple_of(PAGE),
+        "a service window must be page aligned"
+    );
+    assert!(
+        SERVICE_WINDOWS.contains(virtual_address),
+        "a service window must lie in SERVICE_WINDOWS (address_space_layout)"
+    );
+    virtual_address
+}
+
+/// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
+/// program, which is the point: the loader used to report the first page it could not map, as
+/// `AlreadyMapped`, and that named an overlap rather than a size.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImagePlacement {
+    /// The image starts in [`IMAGE`] and runs past its end, into the stack band.
+    TooLarge {
+        /// One past the image's last byte, rounded up to a page.
+        image_end: u64,
+        /// The lowest address the stack band reaches, which is where the image had to stop.
+        stack_base: u64,
+    },
+    /// The image does not start in [`IMAGE`]: it was linked for another layout, most likely the old
+    /// one at `0x40_0000`, and would land among other bands' pages.
+    OutsideBand {
+        /// The image's first byte, rounded down to a page.
+        image_start: u64,
+        /// One past its last byte, rounded up to a page.
+        image_end: u64,
+    },
+}
+
+impl core::fmt::Display for ImagePlacement {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match *self {
+            ImagePlacement::TooLarge {
+                image_end,
+                stack_base,
+            } => write!(
+                f,
+                "the program image is too large: it ends at {image_end:#x}, past the stack's base at \
+                 {stack_base:#x}; an image may be at most {} MiB",
+                IMAGE.bytes() >> 20
+            ),
+            ImagePlacement::OutsideBand {
+                image_start,
+                image_end,
+            } => write!(
+                f,
+                "the program image at {image_start:#x}..{image_end:#x} is outside the image band \
+                 {:#x}..{:#x}; relink it at {IMAGE_BASE:#x}",
+                IMAGE.start, IMAGE.end
+            ),
+        }
+    }
+}
+
+/// **Does an image spanning `[start, end)` fit the map?** `start` and `end` are the lowest and
+/// highest page bounds over the image's loadable segments. Both loaders call this before mapping
+/// anything, so an image that does not fit costs nothing and says why.
+///
+/// # Examples
+///
+/// ```
+/// use address_space_layout::{check_image, pair_page, ImagePlacement, IMAGE, STACK};
+///
+/// // A fixture's shared page is a pair page, checked at compile time.
+/// const CTL_VA: u64 = pair_page(0x60_0000);
+/// assert_eq!(CTL_VA, 0x60_0000);
+///
+/// // An image that fits is placed; one that runs into the stack is told so, in those words.
+/// assert!(check_image(IMAGE.start, IMAGE.start + 0x29_c000).is_ok());
+/// let e = check_image(IMAGE.start, IMAGE.end + 0x1000).unwrap_err();
+/// assert_eq!(e, ImagePlacement::TooLarge { image_end: IMAGE.end + 0x1000, stack_base: STACK.start });
+/// ```
+pub const fn check_image(start: u64, end: u64) -> Result<(), ImagePlacement> {
+    if IMAGE.holds(start, end) {
+        Ok(())
+    } else if IMAGE.contains(start) && end > IMAGE.end {
+        Err(ImagePlacement::TooLarge {
+            image_end: end,
+            stack_base: STACK.start,
+        })
+    } else {
+        Err(ImagePlacement::OutsideBand {
+            image_start: start,
+            image_end: end,
+        })
+    }
+}
+
+/// The bit at which each architecture's user half ends, so every user address is below `1 << shift`:
+/// aarch64 48, `x86_64` 47, `riscv64` under Sv39 38. Restated from the paging code's per-format
+/// split shift, which this crate does not depend on.
+const LOW_HALF_SPLIT_SHIFTS: [(&str, u32); 3] = [("aarch64", 48), ("x86_64", 47), ("riscv64", 38)];
+
+// The map's shape, checked where every consumer compiles it: the bands tile
+// `[0, CODE_MODEL_CEILING)` in `BANDS` order, each non-empty and page aligned at both ends, which is
+// what makes them disjoint and ordered; and the ceiling is a user address on all three
+// architectures. `verification.rs` proves the same map per address with Kani.
+const _: () = {
+    let mut at = 0;
+    let mut i = 0;
+    while i < BANDS.len() {
+        let band = BANDS[i].1;
+        assert!(
+            band.start == at,
+            "a band does not start where the band below it ends"
+        );
+        assert!(band.start < band.end, "a band is empty");
+        assert!(
+            band.start.is_multiple_of(PAGE),
+            "a band does not start on a page"
+        );
+        assert!(
+            band.end.is_multiple_of(PAGE),
+            "a band does not end on a page"
+        );
+        at = band.end;
+        i += 1;
+    }
+    assert!(
+        at == CODE_MODEL_CEILING,
+        "the bands do not end at the code-model ceiling"
+    );
+    let [(_, aarch64), (_, x86_64), (_, riscv64)] = LOW_HALF_SPLIT_SHIFTS;
+    assert!(
+        (CODE_MODEL_CEILING - 1) >> aarch64 == 0,
+        "the map reaches past aarch64's user half"
+    );
+    assert!(
+        (CODE_MODEL_CEILING - 1) >> x86_64 == 0,
+        "the map reaches past x86_64's user half"
+    );
+    assert!(
+        (CODE_MODEL_CEILING - 1) >> riscv64 == 0,
+        "the map reaches past riscv64's user half"
+    );
+};
+
+// The derived constants, checked where every consumer compiles them.
+const _: () = {
+    assert!(IMAGE_BASE.is_multiple_of(2 * 1024 * 1024));
+    assert!(STACK_TOP_PAGE >> 21 == CURRENT_CPU_PAGE >> 21);
+    assert!(STACK.contains(STACK_TOP_PAGE) && STACK_TOP_PAGE.is_multiple_of(PAGE));
+    assert!(STACK_TOP_PAGE - (MAXIMUM_STACK_PAGES - 1) * PAGE == STACK.start + PAGE);
+    assert!(PROCESS_PAGES.bytes() == 16 * PAGE && PROCESS_PAGES.contains(CURRENT_CPU_PAGE));
+};
+
+#[cfg(kani)]
+mod verification;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::assertions_on_constants)]
+    fn an_image_the_size_of_ripgrep_fits_and_the_old_ceiling_is_gone() {
+        // Milestone 121 measured ripgrep's image at 0x40_0000..0x69c_000.
+        let ripgrep = 0x69c_000 - 0x40_0000;
+        assert!(check_image(IMAGE_BASE, IMAGE_BASE + ripgrep).is_ok());
+        assert!(
+            IMAGE.bytes() / ripgrep >= 100,
+            "less than 100x headroom over ripgrep"
+        );
+        assert!(IMAGE.bytes() > 896 * 1024);
+    }
+
+    #[test]
+    fn an_image_past_the_band_is_too_large_and_names_the_stack_base() {
+        let end = IMAGE.end + PAGE;
+        assert_eq!(
+            check_image(IMAGE_BASE, end),
+            Err(ImagePlacement::TooLarge {
+                image_end: end,
+                stack_base: STACK.start
+            })
+        );
+        let text = format!("{}", check_image(IMAGE_BASE, end).unwrap_err());
+        assert!(text.contains("too large"), "{text}");
+        assert!(text.contains(&format!("{end:#x}")), "{text}");
+        assert!(text.contains(&format!("{:#x}", STACK.start)), "{text}");
+        // Exactly full is not too large.
+        assert!(check_image(IMAGE_BASE, IMAGE.end).is_ok());
+    }
+
+    #[test]
+    fn an_image_linked_for_the_old_layout_is_outside_the_band() {
+        assert_eq!(
+            check_image(0x40_0000, 0x4e_0000),
+            Err(ImagePlacement::OutsideBand {
+                image_start: 0x40_0000,
+                image_end: 0x4e_0000
+            })
+        );
+        // And so is one that starts below the band and reaches into it.
+        assert!(matches!(
+            check_image(IMAGE_BASE - PAGE, IMAGE_BASE + PAGE),
+            Err(ImagePlacement::OutsideBand { .. })
+        ));
+        // An empty image is refused rather than trivially placed, and as misplaced, not as large.
+        assert_eq!(
+            check_image(IMAGE_BASE, IMAGE_BASE),
+            Err(ImagePlacement::OutsideBand {
+                image_start: IMAGE_BASE,
+                image_end: IMAGE_BASE
+            })
+        );
+        // An image that starts below the band and ends past it is outside it; only one that starts
+        // inside the band and overruns the far edge is too large.
+        assert_eq!(
+            check_image(IMAGE_BASE - PAGE, IMAGE.end + PAGE),
+            Err(ImagePlacement::OutsideBand {
+                image_start: IMAGE_BASE - PAGE,
+                image_end: IMAGE.end + PAGE
+            })
+        );
+    }
+
+    #[test]
+    #[allow(clippy::assertions_on_constants)]
+    fn the_stack_keeps_a_guard_page_between_it_and_a_full_image() {
+        let lowest = STACK_TOP_PAGE - (MAXIMUM_STACK_PAGES - 1) * PAGE;
+        assert_eq!(lowest, STACK.start + PAGE);
+        assert!(IMAGE.end < lowest);
+        // Linux's default main-thread stack, 8 MiB, fits.
+        assert!(MAXIMUM_STACK_PAGES * PAGE >= 8 << 20);
+    }
+
+    #[test]
+    fn the_band_checks_accept_their_own_band_and_nothing_else() {
+        for &(name, band) in BANDS {
+            let virtual_address = band.start;
+            let std_panics =
+                |f: fn(u64) -> u64| std::panic::catch_unwind(|| f(virtual_address)).is_err();
+            assert_eq!(
+                !std_panics(pair_page),
+                band == PAIR_PAGES,
+                "pair_page at {name}"
+            );
+            assert_eq!(
+                !std_panics(runtime_window),
+                band == RUNTIME_WINDOWS,
+                "runtime_window at {name}"
+            );
+            assert_eq!(
+                !std_panics(service_window),
+                band == SERVICE_WINDOWS,
+                "service_window at {name}"
+            );
+        }
+        assert!(std::panic::catch_unwind(|| pair_page(0x60_0001)).is_err());
+    }
+}

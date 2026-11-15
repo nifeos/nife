@@ -10,7 +10,7 @@
 //!
 //! Name: provisional.
 
-use address_space_map::pair_page;
+use address_space_layout::pair_page;
 use designware_inter_integrated_circuit::Timing;
 use startup_page_contract::WindowKind;
 

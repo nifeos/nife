@@ -20,7 +20,7 @@ confinement_attackers = []
 
 [dependencies]
 # Each window is a pair page, checked at compile time against the address-space map.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The JH7110 Ethernet control process's handoff and report carry the driver crate's types.
 designware_ethernet = { version = "0.1.0", path = "../designware_ethernet" }
 # The xHCI register window is drawn from the controller's decoded capability registers.

@@ -89,7 +89,7 @@ The boundary decisions behind each bucket are in `helpers/rust_source.py`'s own 
 
 - kernel (694 blocks, 48,724 code lines, density 142 per 10,000). This is `kernel/src/**` (arch and
   not) plus the sixteen `crates/` members reachable *only* from the `kernel` package, over a real
-  `cargo metadata` dependency edge. `paging` and `dma_validator` are among them, both lifted out of
+  `cargo metadata` dependency edge. `page_tables` and `dma_validator` are among them, both lifted out of
   `kernel/src` on purpose so Kani could reach them.
 - A count of only `kernel/src/**` misses these sixteen crates entirely. The hand computation in
   `notes/trusted-base.md` did that when written, and its 577 undercounted the trusted base by the

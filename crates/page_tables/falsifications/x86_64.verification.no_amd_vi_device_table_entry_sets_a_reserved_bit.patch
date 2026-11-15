@@ -1,0 +1,29 @@
+Falsifies `page_tables::x86_64::no_amd_vi_device_table_entry_sets_a_reserved_bit`.
+
+The defect: `AmdVi::device_table_entry` masks its root into bits 51:12 instead of refusing a root
+that does not fit, which is what the kernel's `translating_dte` did before provisional milestone 767
+(AMD-Vi hardening before the first AMD boot). A root with a bit above 51, or an unaligned one, is
+then silently turned into a different table's address, and the device walks that table.
+
+Expected to fail: `assert!(fits, "a root the field cannot hold was accepted")`, on the first root
+with a bit outside 51:12. The permitted-bits assertion does not see it, because the mask keeps the
+entry inside the permitted bits; the read-back is what catches it, which is why the harness asks
+both. Measured on patagonia 2026-10-05 (UTC), Kani 0.67.0.
+
+diff --git a/crates/page_tables/src/x86_64.rs b/crates/page_tables/src/x86_64.rs
+index 41683dfee..04f83bf85 100644
+--- a/crates/page_tables/src/x86_64.rs
++++ b/crates/page_tables/src/x86_64.rs
+@@ -485,11 +485,8 @@ impl AmdVi {
+     /// root field can hold, because the alternative is a silent mask that points the device at a
+     /// different table. Name: provisional.
+     pub const fn device_table_entry(root: u64, domain: u16) -> Option<[u64; 4]> {
+-        if root & !AMD_VI_ADDR_MASK != 0 {
+-            return None;
+-        }
+         Some([
+-            DTE_V | DTE_TV | DTE_MODE_4_LEVEL | root | DTE_IR | DTE_IW,
++            DTE_V | DTE_TV | DTE_MODE_4_LEVEL | (root & AMD_VI_ADDR_MASK) | DTE_IR | DTE_IW,
+             domain as u64,
+             0,
+             0,

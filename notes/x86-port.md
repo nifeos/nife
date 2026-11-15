@@ -90,7 +90,7 @@ This is the part that matters for the milestone-20 claim, so it takes the form o
 a conclusion. Making the entire kernel compile for a third architecture took 42 compiler errors,
 every one of them "this `arch::` name does not exist yet", and:
 
-- **`crates/paging` did not change at all.** `paging::x86_64::Ia32e` is sixty lines of bit encoding
+- **`crates/page_tables` did not change at all.** `page_tables::x86_64::Ia32e` is sixty lines of bit encoding
   behind the existing `PageFormat` trait; `LEVELS = 4` and `SPLIT_SHIFT = 47` were the whole of the
   geometry, and the shared `Mapper` walk needed nothing.
 - `drivers/ns16550.rs` gained a type parameter and no second driver. The same 16550 QEMU's

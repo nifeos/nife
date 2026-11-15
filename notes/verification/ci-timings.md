@@ -17,7 +17,7 @@ parent conflicted on every merge that added a harness. Some history of the count
   since milestone 587 (most CI jobs do not need an arm64 host). So the count is of the tree, not of
   any one run, and no single host compiles all of them.
 - Milestone 161 (the x86_64 kernel port) added eight on 2026-09-19, the block-leaf proofs in
-  `crates/paging`.
+  `crates/page_tables`.
 
 The package count carries a `<!--count:-->` marker that `script/lint` re-derives each build. The
 harness count did too. Either could still be wrong about what it counted, and one was. It answered a

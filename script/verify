@@ -487,11 +487,11 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # is why a future editor should not just delete that check to add one back.
 CRATES="$(cat <<'TABLE'
 capability	9	the capability model
-paging	4	the address arithmetic, and the page set for an IOMMU domain
+page_tables	4	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	570	the untyped-region accounting, no double-free
 static_elf	59	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	3	the physical frame allocator
-address_space_map	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
+address_space_layout	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 allocation_cache	4	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 byte_sink_contract	6	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	0	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
