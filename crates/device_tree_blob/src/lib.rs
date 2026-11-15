@@ -185,16 +185,21 @@ pub struct DeviceTreeBlob<'a> {
 }
 
 impl<'a> DeviceTreeBlob<'a> {
+    /// Parse the blob at `ptr`, whose length the blob's own header gives.
+    ///
+    /// Reads the first 8 bytes alone, the magic and `totalsize`, and builds a slice over the
+    /// whole blob only once the magic matches and the size is at most
+    /// [`MAXIMUM_TOTALSIZE_BYTES`]. Every read is byte-wise, so `ptr` needs no alignment.
+    ///
     /// # Safety
     ///
-    /// `ptr` must point at a device tree blob that stays valid for `'a`. We read the
-    /// header to learn the blob's own length, which means we trust the first 8 bytes
-    /// before we have validated anything. The magic check immediately after is what
-    /// makes that survivable: a wrong pointer almost certainly fails it.
+    /// `ptr` must point at a device tree blob that stays valid for `'a`. The 8 bytes are read
+    /// before anything is validated, which is the one leap of faith: a wrong pointer almost
+    /// certainly fails the magic check that follows.
     pub unsafe fn from_ptr(ptr: *const u8) -> Result<Self, Error> {
         // Read just enough to learn how long the thing claims to be.
-        // SAFETY: the caller's contract is that `ptr` points at a blob valid for `'a`. This reads only the fixed-size header, which is the deliberate leap of faith the magic check on the next line exists to catch.
-        let header = unsafe { core::slice::from_raw_parts(ptr, HEADER_LEN) };
+        // SAFETY: the caller's contract is that `ptr` points at a blob valid for `'a`. This reads only the magic and the size, the deliberate leap of faith the magic check on the next line exists to catch.
+        let header = unsafe { core::slice::from_raw_parts(ptr, 8) };
         let magic = be32(header, 0)?;
         if magic != MAGIC {
             return Err(Error::BadMagic(magic));
@@ -214,6 +219,13 @@ impl<'a> DeviceTreeBlob<'a> {
     /// Parse a blob already in hand as a safe slice, rather than through an unchecked pointer.
     /// This is what [`from_ptr`](Self::from_ptr) delegates to once it has trusted the header
     /// enough to build one, and it is the entry point every host test uses directly.
+    ///
+    /// A `bytes` longer than the header's `totalsize` is accepted and trimmed to it, so a blob
+    /// read into a larger buffer parses as itself. [`MAXIMUM_TOTALSIZE_BYTES`] bounds
+    /// [`from_ptr`](Self::from_ptr) only: a slice in hand is already as long as it is. The header's
+    /// `version` decides where the structure block ends (`size_dt_struct` from version 17, the
+    /// strings block before it), and a `last_comp_version` above 17 is refused. `size_dt_strings`
+    /// and `boot_cpuid_phys` are not read; a name in the strings block is bounded by the blob's end.
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Error> {
         let magic = be32(bytes, 0)?;
         if magic != MAGIC {

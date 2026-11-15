@@ -1167,6 +1167,27 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
     assert_ne!(looked.err(), Some(Error::TooLarge(MAXIMUM_TOTALSIZE_BYTES)));
 }
 
+/// `from_ptr` reads the magic and `totalsize`, 8 bytes, before it trusts anything, and no more:
+/// a pointer to 8 bytes that fail the magic, or that pass it and claim a size of 8, is refused
+/// without a read past them. Miri (`script/undefined-behavior-check`) is what sees a read past the
+/// allocation; natively the test pins the answers.
+#[test]
+fn from_ptr_reads_eight_bytes_before_it_trusts_the_size() {
+    let wrong: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 8];
+    // SAFETY: the 8 bytes are a live local array, all `from_ptr` may read before the magic
+    // check, which fails.
+    let refused = unsafe { DeviceTreeBlob::from_ptr(wrong.as_ptr()) };
+    assert_eq!(refused.err(), Some(Error::BadMagic(0)));
+
+    let mut short = [0u8; 8];
+    short[..4].copy_from_slice(&0xd00d_feed_u32.to_be_bytes());
+    short[4..].copy_from_slice(&8u32.to_be_bytes());
+    // SAFETY: as above; the size the bytes claim, 8, is the array's length, so the slice
+    // `from_ptr` builds is the array.
+    let refused = unsafe { DeviceTreeBlob::from_ptr(short.as_ptr()) };
+    assert_eq!(refused.err(), Some(Error::Truncated));
+}
+
 /// The ceiling is 2 MiB, a figure borrowed from Linux, so a tree well under it (a board with a
 /// great many nodes) is not turned away as too large: it fails, if at all, as a parse.
 #[test]
