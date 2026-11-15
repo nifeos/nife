@@ -1,5 +1,5 @@
 //! The FS-server EL0 bins are ordinary nife ELFs, so they link against the SAME linker script
-//! `components`, `fixtures` and `std_exerciser` use, `crates/user_mode_runtime/link.ld` (linked at
+//! `components`, `fixtures` and `std_exerciser` use, the `link.ld` that `user_mode_runtime` delivers (linked at
 //! `address_space_map::IMAGE_BASE`, explicit W^X PHDRS). The link args are scoped to the EL0 bins
 //! (`rustc-link-arg-bin`), never the lib or the host test binary, which link the host way.
 //!
@@ -8,10 +8,8 @@
 //! left off links at lld's default address.
 
 fn main() {
-    let dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    println!("cargo::rerun-if-changed=../crates/user_mode_runtime/link.ld");
     for bin in ["redoxfs_server", "mkfs"] {
-        println!("cargo::rustc-link-arg-bin={bin}=-T{dir}/../crates/user_mode_runtime/link.ld");
+        println!("cargo::rustc-link-arg-bin={bin}=-Tlink.ld");
         // `_start` lives in each bin, but forcing it undefined is the same belt-and-braces
         // std_exerciser uses so the entry survives whatever the linker's ENTRY timing.
         println!("cargo::rustc-link-arg-bin={bin}=-u_start");
