@@ -305,15 +305,12 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
 
     // It must be a nifefs image.
-    let mut magic = [0u8; 8];
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
 
-    // Walk the directory, still in the block-0 buffer, to find "motd", then read its first data
-    // block.
-    let start_block = find_file(b"motd").unwrap_or_else(|| report_code(0xE4));
+    // Walk the directory, copied out of the block-0 buffer, to find "motd", then read its first
+    // data block.
+    let start_block = find_file(&directory, b"motd").unwrap_or_else(|| report_code(0xE4));
     read_block(direct_memory_access_phys, start_block as u64);
 
     // Report the file's first 8 bytes. The kernel checks them against the known contents, which
@@ -351,12 +348,9 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
 
     // The directory tells us where scratch lives; nothing about the sector is hardcoded.
     read_block(direct_memory_access_phys, 0);
-    let mut magic = [0u8; 8];
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
-    let scratch = find_file(b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
+    let scratch = find_file(&directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     // Write the pattern...
     for i in 0..BLOCK {
@@ -380,11 +374,9 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
     // The write must have landed on ITS block and nothing else: the superblock still parses and
     // the read-path file is still in the directory.
     read_block(direct_memory_access_phys, 0);
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
-    assert!(find_file(b"motd").is_some());
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
+    assert!(find_file(&directory, b"motd").is_some());
 
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
@@ -401,12 +393,9 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
     initialize();
 
     read_block(direct_memory_access_phys, 0);
-    let mut magic = [0u8; 8];
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
-    let scratch = find_file(b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
+    let scratch = find_file(&directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     for i in 0..BLOCK {
         direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, 0xAB);
@@ -498,35 +487,40 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     exit();
 }
 
-/// Find a file in the nifefs directory sitting in the block-0 buffer, returning its start
-/// block. The format is `nifefs`'s and the offsets come from that crate rather than being
-/// restated here: header (magic 8, count u32), then entries of
-/// { name\[`NAME_LEN`\], `start_block` u32, len u32 }.
+/// The 512-byte block buffer, copied out of the DMA page so the parsers below read a slice.
+fn data_block() -> [u8; BLOCK] {
+    core::array::from_fn(|i| direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64))
+}
+
+/// Find a file in a nifefs directory's first block, `directory`, returning its start block. The
+/// format is `nifefs`'s and the offsets come from that crate rather than being restated here:
+/// header (magic 8, count u32), then entries of { name\[`NAME_LEN`\], `start_block` u32, len u32 },
+/// little-endian.
 ///
-/// Only the `nifefs::ENTRIES_IN_FIRST_BLOCK` entries inside block 0 are visible; reading further
-/// would read past the DMA data buffer. The disk this walks holds three files.
-fn find_file(name: &[u8]) -> Option<u32> {
-    let count = direct_memory_access_read::<u32>(DATA_OFFSET_BYTES + 8) as usize;
-    for i in 0..count.min(nifefs::ENTRIES_IN_FIRST_BLOCK) as u64 {
-        let entry = DATA_OFFSET_BYTES + nifefs::HEADER_LEN as u64 + i * nifefs::ENTRY_LEN as u64;
-        let mut matches = true;
-        for (j, &want) in name.iter().enumerate() {
-            if direct_memory_access_read::<u8>(entry + j as u64) != want {
-                matches = false;
-                break;
-            }
-        }
+/// Only the `nifefs::ENTRIES_IN_FIRST_BLOCK` entries inside the first block are visible, and an
+/// entry `directory` is too short to hold is not. The disk this walks holds three files. A name
+/// longer than `nifefs::NAME_LEN` names no entry, so it is `None` rather than a read into the next
+/// entry.
+fn find_file(directory: &[u8], name: &[u8]) -> Option<u32> {
+    if name.len() > nifefs::NAME_LEN {
+        return None;
+    }
+    let count = u32::from_le_bytes(directory.get(8..12)?.try_into().ok()?) as usize;
+    (0..count.min(nifefs::ENTRIES_IN_FIRST_BLOCK)).find_map(|i| {
+        let at = nifefs::HEADER_LEN + i * nifefs::ENTRY_LEN;
+        let entry = directory.get(at..at + nifefs::ENTRY_LEN)?;
+        let field = &entry[..nifefs::NAME_LEN];
         // The name must end here, so "motd" does not match "motdx": either the next byte is NUL
         // padding, or the name used every byte of the field and there is no padding to check.
-        let ends = name.len() == nifefs::NAME_LEN
-            || direct_memory_access_read::<u8>(entry + name.len() as u64) == 0;
-        if matches && ends {
-            return Some(direct_memory_access_read::<u32>(
-                entry + nifefs::NAME_LEN as u64,
-            ));
-        }
-    }
-    None
+        let ends = field.get(name.len()).is_none_or(|&byte| byte == 0);
+        (field.starts_with(name) && ends).then(|| {
+            u32::from_le_bytes(
+                entry[nifefs::NAME_LEN..nifefs::NAME_LEN + 4]
+                    .try_into()
+                    .expect("four bytes"),
+            )
+        })
+    })
 }
 
 /// Build and publish the three-descriptor chain for one block transfer, and ring the device
@@ -692,34 +686,15 @@ const NET_MAC: [u8; 6] = [0x52, 0x54, 0x00, 0x12, 0x34, 0x56];
 /// DISCOVER and not some unrelated broadcast.
 const NET_XID: u32 = 0x3903_F326;
 
-fn wr_be16(off: u64, v: u16) {
-    direct_memory_access_write::<u8>(off, (v >> 8) as u8);
-    direct_memory_access_write::<u8>(off + 1, v as u8);
-}
-fn wr_be32(off: u64, v: u32) {
-    direct_memory_access_write::<u8>(off, (v >> 24) as u8);
-    direct_memory_access_write::<u8>(off + 1, (v >> 16) as u8);
-    direct_memory_access_write::<u8>(off + 2, (v >> 8) as u8);
-    direct_memory_access_write::<u8>(off + 3, v as u8);
-}
-fn rd_be16(off: u64) -> u16 {
-    ((direct_memory_access_read::<u8>(off) as u16) << 8)
-        | direct_memory_access_read::<u8>(off + 1) as u16
-}
-
-/// The IPv4 header checksum over `len` bytes at `off`: sum the 16-bit words, fold the carries, and
-/// complement. The checksum field itself must be zero when this runs.
-fn ip_checksum(off: u64, len: u64) -> u16 {
-    let mut sum: u32 = 0;
-    let mut i = 0;
-    while i + 1 < len {
-        sum += rd_be16(off + i) as u32;
-        i += 2;
-    }
-    if i < len {
+/// The IPv4 header checksum over `header`: sum the 16-bit big-endian words, fold the carries, and
+/// complement. The checksum field itself must be zero when this runs, and a header with the result
+/// written into that field sums to zero (RFC 1071).
+fn ip_checksum(header: &[u8]) -> u16 {
+    let mut sum: u32 = header
+        .chunks(2)
         // An odd trailing byte is summed as the high byte of a zero-padded word (RFC 1071).
-        sum += (direct_memory_access_read::<u8>(off + i) as u32) << 8;
-    }
+        .map(|word| u32::from(word[0]) << 8 | u32::from(word.get(1).copied().unwrap_or(0)))
+        .fold(0u32, u32::wrapping_add);
     while (sum >> 16) != 0 {
         sum = (sum & 0xffff) + (sum >> 16);
     }
@@ -827,82 +802,73 @@ fn send_frame(direct_memory_access_phys: u64, frame_len: u64, avail_idx: u16) {
     }
 }
 
-/// Build a DHCP DISCOVER (Ethernet + IPv4 + UDP + BOOTP/DHCP) at `NET_TRANSMIT_BUF + NET_HDR_LEN`,
-/// and return the Ethernet frame length. The broadcast flag is set so slirp's OFFER comes back to
-/// the broadcast address, where our single RX buffer will catch it.
-fn build_dhcp_discover() -> u64 {
-    let f = NET_TRANSMIT_BUF + NET_HDR_LEN;
+/// The length of the Ethernet frame [`dhcp_discover`] builds: Ethernet 14, IPv4 20, UDP 8, the
+/// fixed BOOTP fields and magic cookie 240, and nine bytes of options.
+const DHCP_DISCOVER_BYTES: usize = 14 + 20 + 8 + 240 + 9;
+
+// The frame fits the transmit buffer behind its virtio header, inside the DMA page.
+const _: () = assert!(
+    NET_TRANSMIT_BUF + NET_HDR_LEN + DHCP_DISCOVER_BYTES as u64
+        <= DIRECT_MEMORY_ACCESS_WINDOW_BYTES
+);
+
+/// A DHCP DISCOVER (Ethernet + IPv4 + UDP + BOOTP/DHCP), as the Ethernet frame. The broadcast
+/// flag is set so slirp's OFFER comes back to the broadcast address, where the single receive
+/// buffer will catch it.
+fn dhcp_discover() -> [u8; DHCP_DISCOVER_BYTES] {
+    let mut f = [0u8; DHCP_DISCOVER_BYTES];
 
     // --- Ethernet: to broadcast, from us, IPv4 ---
-    for i in 0..6u64 {
-        direct_memory_access_write::<u8>(f + i, 0xff);
-        direct_memory_access_write::<u8>(f + 6 + i, NET_MAC[i as usize]);
-    }
-    wr_be16(f + 12, 0x0800);
+    f[0..6].fill(0xff);
+    f[6..12].copy_from_slice(&NET_MAC);
+    f[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
 
-    let ip = f + 14;
+    let ip = 14;
     let udp = ip + 20;
     let dhcp = udp + 8;
 
-    // --- BOOTP/DHCP payload ---
-    direct_memory_access_write::<u8>(dhcp, 1); // op = BOOTREQUEST
-    direct_memory_access_write::<u8>(dhcp + 1, 1); // htype = Ethernet
-    direct_memory_access_write::<u8>(dhcp + 2, 6); // hlen
-    direct_memory_access_write::<u8>(dhcp + 3, 0); // hops
-    wr_be32(dhcp + 4, NET_XID);
-    wr_be16(dhcp + 8, 0); // secs
-    wr_be16(dhcp + 10, 0x8000); // flags = broadcast
-    for i in 12..28u64 {
-        direct_memory_access_write::<u8>(dhcp + i, 0); // ciaddr/yiaddr/siaddr/giaddr
-    }
-    for i in 0..6u64 {
-        direct_memory_access_write::<u8>(dhcp + 28 + i, NET_MAC[i as usize]); // chaddr
-    }
-    for i in 34..236u64 {
-        direct_memory_access_write::<u8>(dhcp + i, 0); // rest of chaddr, sname, file
-    }
-    wr_be32(dhcp + 236, 0x6382_5363); // DHCP magic cookie
+    // --- BOOTP/DHCP payload. Every field not written here is zero: secs, ciaddr, yiaddr, siaddr,
+    // giaddr, the rest of chaddr, sname and file. ---
+    f[dhcp] = 1; // op = BOOTREQUEST
+    f[dhcp + 1] = 1; // htype = Ethernet
+    f[dhcp + 2] = 6; // hlen
+    f[dhcp + 4..dhcp + 8].copy_from_slice(&NET_XID.to_be_bytes());
+    f[dhcp + 10..dhcp + 12].copy_from_slice(&0x8000u16.to_be_bytes()); // flags = broadcast
+    f[dhcp + 28..dhcp + 34].copy_from_slice(&NET_MAC); // chaddr
+    f[dhcp + 236..dhcp + 240].copy_from_slice(&0x6382_5363u32.to_be_bytes()); // DHCP magic cookie
 
-    // Options: message type DISCOVER, a parameter request list, end.
-    let mut o = dhcp + 240;
-    direct_memory_access_write::<u8>(o, 53); // option 53: DHCP message type
-    direct_memory_access_write::<u8>(o + 1, 1);
-    direct_memory_access_write::<u8>(o + 2, 1); // DISCOVER
-    o += 3;
-    direct_memory_access_write::<u8>(o, 55); // option 55: parameter request list
-    direct_memory_access_write::<u8>(o + 1, 3);
-    direct_memory_access_write::<u8>(o + 2, 1); // subnet mask
-    direct_memory_access_write::<u8>(o + 3, 3); // router
-    direct_memory_access_write::<u8>(o + 4, 6); // DNS
-    o += 5;
-    direct_memory_access_write::<u8>(o, 255); // end
-    o += 1;
+    // Options: message type DISCOVER (53), a parameter request list (55) asking for the subnet
+    // mask, router and DNS, then end (255).
+    f[dhcp + 240..].copy_from_slice(&[53, 1, 1, 55, 3, 1, 3, 6, 255]);
 
-    let dhcp_len = o - dhcp;
-    let udp_len = 8 + dhcp_len;
-    let ip_total = 20 + udp_len;
+    let udp_len = (DHCP_DISCOVER_BYTES - udp) as u16;
+    let ip_total = (DHCP_DISCOVER_BYTES - ip) as u16;
 
     // --- UDP: bootpc(68) -> bootps(67), checksum 0 (optional for IPv4) ---
-    wr_be16(udp, 68);
-    wr_be16(udp + 2, 67);
-    wr_be16(udp + 4, udp_len as u16);
-    wr_be16(udp + 6, 0);
+    f[udp..udp + 2].copy_from_slice(&68u16.to_be_bytes());
+    f[udp + 2..udp + 4].copy_from_slice(&67u16.to_be_bytes());
+    f[udp + 4..udp + 6].copy_from_slice(&udp_len.to_be_bytes());
 
-    // --- IPv4 header ---
-    direct_memory_access_write::<u8>(ip, 0x45); // version 4, IHL 5
-    direct_memory_access_write::<u8>(ip + 1, 0x00);
-    wr_be16(ip + 2, ip_total as u16);
-    wr_be16(ip + 4, 0); // identification
-    wr_be16(ip + 6, 0); // flags/fragment
-    direct_memory_access_write::<u8>(ip + 8, 64); // TTL
-    direct_memory_access_write::<u8>(ip + 9, 17); // protocol = UDP
-    wr_be16(ip + 10, 0); // checksum placeholder
-    wr_be32(ip + 12, 0x0000_0000); // src 0.0.0.0
-    wr_be32(ip + 16, 0xffff_ffff); // dst 255.255.255.255
-    let csum = ip_checksum(ip, 20);
-    wr_be16(ip + 10, csum);
+    // --- IPv4 header: identification, flags and fragment 0, source 0.0.0.0 ---
+    f[ip] = 0x45; // version 4, IHL 5
+    f[ip + 2..ip + 4].copy_from_slice(&ip_total.to_be_bytes());
+    f[ip + 8] = 64; // TTL
+    f[ip + 9] = 17; // protocol = UDP
+    f[ip + 16..ip + 20].fill(0xff); // destination 255.255.255.255
+    let checksum = ip_checksum(&f[ip..ip + 20]);
+    f[ip + 10..ip + 12].copy_from_slice(&checksum.to_be_bytes());
 
-    14 + ip_total
+    f
+}
+
+/// Copy [`dhcp_discover`]'s frame into the transmit buffer behind the virtio header, and return its
+/// length.
+fn build_dhcp_discover() -> u64 {
+    let frame = dhcp_discover();
+    for (i, &byte) in frame.iter().enumerate() {
+        direct_memory_access_write::<u8>(NET_TRANSMIT_BUF + NET_HDR_LEN + i as u64, byte);
+    }
+    frame.len() as u64
 }
 
 /// Wait for the receive queue's used ring to advance, discarding wakeups that were really the
