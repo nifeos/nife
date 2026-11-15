@@ -1361,6 +1361,135 @@ fn disk_size_bytes(capacity_sectors: u64) -> i64 {
 #[cfg(test)]
 mod tests;
 
+/// **Proofs of the pure logic the driver runs on bytes a device or a disk image wrote**: the
+/// directory lookup over any bytes, the Internet Protocol header checksum over any header, and the
+/// two bounded waits. The DHCP frame is a constant and the write pattern takes no outside input, so
+/// host tests cover both (`tests.rs`). See notes/verification.md.
+///
+/// Name: provisional.
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// The longest directory slice the totality proof walks: the header and two entries, so a
+    /// count past the slice, an entry cut short and a second entry are all reached.
+    const DIRECTORY_BYTES: usize = nifefs::HEADER_LEN + 2 * nifefs::ENTRY_LEN;
+
+    /// **The directory lookup is total**: for any directory bytes up to two entries long, cut at
+    /// any length, and any name up to one byte longer than the name field, `find_file` returns
+    /// without a panic or an out-of-bounds read, whatever count the header claims.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.the_directory_lookup_is_total.patch`
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn the_directory_lookup_is_total() {
+        let directory: [u8; DIRECTORY_BYTES] = kani::any();
+        let directory_length: usize = kani::any();
+        kani::assume(directory_length <= DIRECTORY_BYTES);
+        let name: [u8; nifefs::NAME_LEN + 1] = kani::any();
+        let name_length: usize = kani::any();
+        kani::assume(name_length <= nifefs::NAME_LEN + 1);
+        let _ = find_file(&directory[..directory_length], &name[..name_length]);
+    }
+
+    /// **The lookup finds an entry exactly when its name field holds the name and then ends**, and
+    /// returns that entry's start block: for one entry of any bytes and any name of up to four
+    /// bytes, a hit means the field opens with the name and the next byte is padding, and a miss
+    /// means it does not.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.the_lookup_matches_a_whole_name_only.patch`
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn the_lookup_matches_a_whole_name_only() {
+        const SHORT: usize = 4;
+        let mut directory = [0u8; nifefs::HEADER_LEN + nifefs::ENTRY_LEN];
+        directory[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let entry: [u8; nifefs::ENTRY_LEN] = kani::any();
+        directory[nifefs::HEADER_LEN..].copy_from_slice(&entry);
+        let name: [u8; SHORT] = kani::any();
+        let name_length: usize = kani::any();
+        kani::assume(name_length <= SHORT);
+        let name = &name[..name_length];
+
+        let whole = entry[..name_length] == *name && entry[name_length] == 0;
+        let start = u32::from_le_bytes(
+            entry[nifefs::NAME_LEN..nifefs::NAME_LEN + 4]
+                .try_into()
+                .expect("four bytes"),
+        );
+        assert_eq!(find_file(&directory, name), whole.then_some(start));
+    }
+
+    /// **A header carrying its own checksum sums to zero**: for any 20-byte header, writing the
+    /// checksum computed over it (with the checksum field zero) into that field makes the checksum
+    /// of the result zero, the check a receiver makes.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.a_header_carrying_its_checksum_sums_to_zero.patch`
+    #[kani::proof]
+    #[kani::unwind(11)]
+    fn a_header_carrying_its_checksum_sums_to_zero() {
+        let mut header: [u8; 20] = kani::any();
+        header[10] = 0;
+        header[11] = 0;
+        let checksum = ip_checksum(&header);
+        header[10..12].copy_from_slice(&checksum.to_be_bytes());
+        assert_eq!(ip_checksum(&header), 0);
+    }
+
+    /// **A bounded completion wait takes at most its bound of wakeups**, returns true exactly when
+    /// one of them saw the used index move, and takes all of them when none did: for any bound up
+    /// to four and any sequence of used indices.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.a_bounded_wait_stops_at_its_bound.patch`
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn a_bounded_wait_stops_at_its_bound() {
+        let bound: u32 = kani::any();
+        kani::assume(bound <= 4);
+        let used_before: u16 = kani::any();
+        let mut wakeups = 0u32;
+        let mut saw_a_move = false;
+        let moved = used_ring_moved(Some(bound), used_before, || {
+            wakeups += 1;
+            let used: u16 = kani::any();
+            saw_a_move |= used != used_before;
+            used
+        });
+        assert!(wakeups <= bound);
+        assert_eq!(moved, saw_a_move);
+        if !moved {
+            assert_eq!(wakeups, bound);
+        }
+    }
+
+    /// **A bracketed configuration read returns only a value read inside one generation**: for
+    /// any generation and value sequences, a returned value is one whose read had the same
+    /// generation before and after it.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.a_configuration_read_holds_inside_one_generation.patch`
+    #[kani::proof]
+    #[kani::unwind(18)]
+    fn a_configuration_read_holds_inside_one_generation() {
+        let mut generations = [0u32; 2];
+        let mut reads = 0u32;
+        let mut last_value = 0u64;
+        let mut generation_calls = 0u32;
+        let read = consistent_read(
+            || {
+                let generation: u32 = kani::any();
+                generations[(generation_calls % 2) as usize] = generation;
+                generation_calls += 1;
+                generation
+            },
+            || {
+                reads += 1;
+                last_value = kani::any();
+                last_value
+            },
+        );
+        assert!(reads <= CONFIGURATION_READ_ATTEMPTS);
+        if let Some(value) = read {
+            assert_eq!(value, last_value);
+            assert_eq!(generations[0], generations[1]);
+        }
+    }
+}
+
 // The direct grant's transport stays inline, so this crate root declares no child module but its
 // tests (§282 (when a file is split, the parent becomes an index)).
 /// **The direct grant's transport**: the driver drives its virtio-pci function's registers
