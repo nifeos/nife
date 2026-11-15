@@ -680,11 +680,23 @@ fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
     );
     let top = u64::MAX - PAGE_SIZE + 1;
     assert_eq!(
-        m.map_span(0x1000, top, 2 * PAGE_SIZE, f, page_tables::PageSize::Size4KiB),
+        m.map_span(
+            0x1000,
+            top,
+            2 * PAGE_SIZE,
+            f,
+            page_tables::PageSize::Size4KiB
+        ),
         Err(MapError::BadRegion)
     );
     assert_eq!(
-        m.map_span(top, 0x1000, 2 * PAGE_SIZE, f, page_tables::PageSize::Size4KiB),
+        m.map_span(
+            top,
+            0x1000,
+            2 * PAGE_SIZE,
+            f,
+            page_tables::PageSize::Size4KiB
+        ),
         Err(MapError::BadRegion)
     );
     assert_eq!(budget.get(), 16, "a refused run takes no table frame");
