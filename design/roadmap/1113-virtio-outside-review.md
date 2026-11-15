@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1062, 1069
 decision_dependencies: 46, 23
@@ -190,6 +190,13 @@ a layout each and refuses any other. Redox's `virtio-core` is PCI-only and has n
 Concrete example. A board whose firmware offers a version 1 block device today boots to a driver
 that hangs after the handshake. With the check it stops at once, and the sentence names the
 register it read.
+
+## Follow-on
+
+- **Outstanding.** The items in the lists above that do not read DONE, and Decision 3's driver-side
+  check, which waits for the ruling. The kernel's scan refuses a slot whose `Version` is not 2 in every
+  build, and the PCI transport answers the real configuration generation (item 6 and
+  `notes/virtio.md`).
 
 ## Done when
 
