@@ -200,7 +200,7 @@ pub const fn runtime_window(virtual_address: u64) -> u64 {
 ///
 /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
 /// `INITIAL_RAMDISK_VA`: `va` is ruled to expand. Moved here from the kernel's and the runtime's
-/// two copies of it (milestone 1112 item 11).
+/// two copies of it (milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves), item 11).
 pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
 
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
