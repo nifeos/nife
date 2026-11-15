@@ -457,7 +457,7 @@ cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes 
     --all-targets -- \
     --cfg kani --extern "kani=$shim/libkani.rlib" -L "$shim" -D warnings
 
-# `user_mode_runtime` has a host test target (milestone 1112 (the outside review of `user_mode_runtime`), item 4), so its tests are linted on
+# `user_mode_runtime` has a host test target (milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves), item 4), so its tests are linted on
 # the host, where libtest exists. The host-excluded set above keeps it out of the workspace passes
 # because its syscalls fault without a kernel; its tests never execute one. The bare-metal passes
 # below lint its library alone (`--lib`), since `--all-targets` would build the test harness for a
