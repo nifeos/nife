@@ -130,7 +130,7 @@ Found with `grep` at `396187b0b`.
   `--check` reports a mismatch. All seven are renamed, along with the `Falsification:` line above
   each test.
 - None of the seven diffs this file. Each patches the code under test: `kernel/src/syscall.rs`,
-  `kernel/src/sched.rs`, the two `mmu.rs` files, `crates/paging`, `crates/elf` and
+  `kernel/src/sched.rs`, the two `mmu.rs` files, `crates/page_tables`, `crates/elf` and
   `crates/domain_name_system`. Their hunks do not change, so no patch needs regenerating. Each must
   still be replayed red under its new name.
 - The new-confinement-test ratchet in `script/falsifications` decides "new" by function name. A

@@ -45,7 +45,7 @@ for swap space, page-out, demand paging, overcommit, external pager and memory p
   dead-until-reaped and reserved a message word "so a fault-reply/resume protocol can arrive
   additively".
 - §9 (locking: IrqSafeMutex, plus a discipline): "Kernel memory is never demand-paged."
-- `crates/paging/src/aarch64.rs`: the Access Flag "exists for page-replacement policy we do not
+- `crates/page_tables/src/aarch64.rs`: the Access Flag "exists for page-replacement policy we do not
   do".
 
 ## What paging out would mean here
@@ -122,7 +122,7 @@ capability and takes the page back from everyone else (milestone 23). That take-
 eviction a pager needs, on the wrong object type.
 
 **Knowing what to evict.** All three page-table encoders set the accessed bit eagerly
-(`crates/paging`: aarch64's AF, Sv39's A, and x86_64 likewise), so nothing records which pages are
+(`crates/page_tables`: aarch64's AF, Sv39's A, and x86_64 likewise), so nothing records which pages are
 in use. Replacement policy needs that bit cleared and read back. From memory, not re-read: x86_64
 sets A and D in hardware; aarch64 does so only with FEAT_HAFDBS and otherwise faults on a clear AF;
 RISC-V may either update A and D (Svadu) or fault (Svade). What radon's U74 cores and argon's A57

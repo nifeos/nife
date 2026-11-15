@@ -1,0 +1,30 @@
+Falsifies `page_tables::x86_64::index_is_always_in_bounds`.
+
+The defect: the table is declared with 256 entries. This is the half of the property the other
+two records do not touch: the harness does not assert `index < 512`, it asserts `index <
+ENTRIES`, and `ENTRIES` is what sizes `PageTable::entries`. So the proof is a statement that
+the mask and the array agree, and it is worth having precisely because the two are written in
+different files with no shared constant between them: `index` masks a literal `0x1ff`, and
+`PageTable` is `[u64; ENTRIES]`. Shrink one and the walk writes off the end of a table with
+nothing else in the crate objecting.
+
+Expected to fail: `assert!(Ia32e::index(va, level) < crate::ENTRIES)`, for any `va` whose
+selected field is 256 or more. A wrong `ENTRIES` also gives `PageTable` the wrong size, but
+nothing in the crate asserts that size, which is the point.
+
+**The index math is shared and the proof is not.** DECISIONS §19 (architectural parity) has each ISA state the
+property itself; the `aarch64` and `sv39` records break the mask in two other ways.
+
+diff --git a/crates/page_tables/src/page_table.rs b/crates/page_tables/src/page_table.rs
+index fa9a5967d..4bf77b38d 100644
+--- a/crates/page_tables/src/page_table.rs
++++ b/crates/page_tables/src/page_table.rs
+@@ -3,7 +3,7 @@
+ //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+ 
+ /// Entries per table. 4096 bytes / 8 bytes. The same for every format we support.
+-pub const ENTRIES: usize = 512;
++pub const ENTRIES: usize = 256;
+ 
+ /// A page table: one 4 KiB frame of entries.
+ ///

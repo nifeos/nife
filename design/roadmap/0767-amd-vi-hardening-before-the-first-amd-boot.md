@@ -48,7 +48,7 @@ Every format is from AMD document 48882 revision 2.62, read for this work.
 3. `DmaRegion` gains a required `writable` field. An IVMD without `IW` maps read-only, and so does
    the virtio shadow page on every architecture, since the device only reads it.
 
-It also did the cheap fifth item. The device table entry builders moved to `paging::AmdVi`, refuse
+It also did the cheap fifth item. The device table entry builders moved to `page_tables::AmdVi`, refuse
 a root the field cannot hold instead of masking it, and carry a Kani proof over every root and
 domain. A correction came with it: the driver cited its registers as section 3.4, which revision
 2.62 does not have. They are section 3.3.1, by offset.
@@ -56,7 +56,7 @@ domain. A correction came with it: the driver cited its registers as section 3.4
 ## Proof
 
 On patagonia, QEMU 11.1.1, 2026-10-05 (UTC). Each test below fails under a replayable patch in
-`kernel/falsifications/` or `crates/paging/falsifications/`:
+`kernel/falsifications/` or `crates/page_tables/falsifications/`:
 
 | Test | Machine | The defect its patch restores |
 |---|---|---|
@@ -64,7 +64,7 @@ On patagonia, QEMU 11.1.1, 2026-10-05 (UTC). Each test below fails under a repla
 | `amd_vi::tests::two_devices_behind_one_alias_never_share_a_domain` | `NIFE_IOMMU=amd` | the conflict check is skipped |
 | `amd_vi::tests::a_quarantine_blocks_the_alias_too` | `NIFE_IOMMU=amd` | quarantine skips the alias |
 | `virtio::tests::a_device_write_to_the_read_only_shadow_is_refused` | all three architectures | the shadow is writable |
-| `paging::x86_64::no_amd_vi_device_table_entry_sets_a_reserved_bit` (Kani) | any host | the root is masked, not refused |
+| `page_tables::x86_64::no_amd_vi_device_table_entry_sets_a_reserved_bit` (Kani) | any host | the root is masked, not refused |
 
 The shadow patch was also measured failing on the VT-d machine and on aarch64's SMMUv3. Host tests
 cover `UnityRegion::device_may_write` and a read-only region on all four DMA formats.

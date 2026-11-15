@@ -404,9 +404,9 @@ impl MappingHold {
         phys: u64,
         root: u64,
         va: u64,
-        flags: paging::Flags,
+        flags: page_tables::Flags,
         under: PageMapSource,
-    ) -> Result<Recorded, paging::MapError> {
+    ) -> Result<Recorded, page_tables::MapError> {
         let object = under.object(phys);
         // The enum stops a caller swapping the two arguments; this catches a wrongly computed base,
         // which would scope the record to a family it does not belong to.
@@ -415,10 +415,10 @@ impl MappingHold {
             "a mapping of {phys:#x} recorded under an object at {object:#x}: not a page of that run",
         );
         if self.would_make_writable_executable_pair(root, phys, flags) {
-            return Err(paging::MapError::WritableAndExecutable);
+            return Err(page_tables::MapError::WritableAndExecutable);
         }
         self.file(root, LogEntry { phys, va, object })
-            .ok_or(paging::MapError::OutOfPageFrames)
+            .ok_or(page_tables::MapError::OutOfPageFrames)
     }
 
     /// Whether the space rooted at `root` already maps `phys` with flags that, beside `flags`, make
@@ -434,7 +434,7 @@ impl MappingHold {
         &mut self,
         root: u64,
         phys: u64,
-        flags: paging::Flags,
+        flags: page_tables::Flags,
     ) -> bool {
         if !flags.is_writable() && !flags.is_user_executable() && !flags.is_kernel_executable() {
             return false;
@@ -803,7 +803,7 @@ pub fn revoke_region(base: u64, size: u64) {
 
 #[cfg(test)]
 mod tests {
-    use paging::Flags;
+    use page_tables::Flags;
 
     use super::*;
     use crate::capability_object::{Rights, page_frame_run_capability, page_frame_run_len};

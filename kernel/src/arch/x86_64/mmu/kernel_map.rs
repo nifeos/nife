@@ -50,7 +50,7 @@ pub(crate) fn print_summary() {
 
 // ---------------------------------------------------------------------------------------------
 // The fine-grained kernel map (milestone 161, roadmap item 1). The third instance of the same
-// shape aarch64 and riscv64 already have: build a root, walk it with `paging::Mapper`, check the
+// shape aarch64 and riscv64 already have: build a root, walk it with `page_tables::Mapper`, check the
 // things that would kill us in software, then hand the root to the hardware.
 // ---------------------------------------------------------------------------------------------
 
@@ -103,7 +103,7 @@ pub fn initialize() {
     // SAFETY: a fresh frame from the allocator, reachable through the boot tables' direct map. Zero
     // it before the hardware could ever walk it.
     unsafe {
-        (*phys_to_ptr(root)).entries = [0; paging::ENTRIES];
+        (*phys_to_ptr(root)).entries = [0; page_tables::ENTRIES];
     }
 
     // SAFETY: `root` is zeroed and page-aligned; `phys_to_ptr` is valid because `boot.s` installed
