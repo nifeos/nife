@@ -3,10 +3,10 @@ name = "clock_contract"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "The wall-clock contract: a shared clock page read through a seqlock, the propose protocol, and the policy a proposal must meet"
+description = "The wall-clock contract: a shared clock page whose readers never wait on a writer, the propose protocol, and the policy a proposal must meet"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-keywords = ["no-std", "clock", "seqlock"]
+keywords = ["no-std", "clock", "lock-free"]
 categories = ["no-std", "embedded", "date-and-time"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 
