@@ -22,8 +22,8 @@ pull request, the automation App's token), in the other direction. `vendor-watch
 
 - `.github/workflows/pin-basalt.yml` runs daily and on dispatch. When `helpers/basalt_pin.py
   resolve` names a Release other than the one the pin holds, the workflow writes both lines of
-  `xtask/basalt-pin` (commit and release), pushes the branch `pin/basalt` with force, and opens the pull
-  request as `nife-smelter[bot]` or updates the one that is open. When the pin already names that
+  `xtask/basalt-pin` (commit and release) and pushes the branch `pin/basalt` with force. It then opens
+  the pull request as `nife-smelter[bot]` or updates the one that is open. When the pin already names that
   Release, the run says nothing.
 - The target is the newest Release of basalt, by publication time, that passes three tests. basalt
   has published it, as neither a draft nor a pre-release. It holds, for every package nife builds,
