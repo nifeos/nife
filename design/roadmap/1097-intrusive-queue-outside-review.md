@@ -146,8 +146,8 @@ decides it.
    (`VecDeque` spells `push_back`, `pop_front`, `is_empty`, `len`; `NonNull` spells `as_ptr`).
    Evidence: `src/lib.rs` lines 11, 49 to 53, 64 to 66, 83, 90, 96.
    Change: one ruling on the list, then the blocks leave with item 2. The review proposes no rename.
-   Door: one-way (published names). Effort: XS after the ruling. Needs the architect: see
-   decision 2.
+   Door: two-way while the crate stays with the kernel; decision 2 decides the list,
+   provisionally. Effort: XS.
 
 7. The compile-fail doctest accepts any compile error.
    Finding: the `push_back` doctest carries ```` ```compile_fail ```` and states `E0382` only in
@@ -176,7 +176,7 @@ The P2 items are in [the appendix](1097-intrusive-queue-outside-review/later-ite
 
 ## Decisions for the architect
 
-Two one-way doors. Each is independent of the other.
+Two doors, each independent of the other. Decision 2 is decided, provisionally.
 
 ### Decision 1. Does `Queue<T>` stay `Send` for every `T`, or only for `T: Send`?
 
@@ -213,7 +213,9 @@ Recommendation: ratify them as they stand. `push_back`, `pop_front`, `is_empty` 
 says what the implementing type is; the alternatives in the field name the glue rather than the
 thing (`Adapter` in `intrusive-collections`, `Linked` in `cordyceps`). `Unqueued` says what the
 token proves, and it reads correctly at every call site that passes or receives one. `as_non_null`
-mirrors `Box::as_non_null` (unverified whether that method is stable yet).
+mirrors `Box::as_non_null`, which is still unstable in the pinned nightly (feature
+`box_as_non_null`, issue 157345), so the name matches an unstable std name. `NonNull`'s own
+`as_ptr` is stable.
 
 Prior art: the rows of the prior-art table above; `heapless::spsc::Queue` spells `enqueue` and
 `dequeue`, a spelling the standard-library rule weighs against.
@@ -221,6 +223,11 @@ Prior art: the rows of the prior-art table above; `heapless::spsc::Queue` spells
 Concrete example: `let first = ready.pop_front()?; inbox.push_back(first);` reads as the thread
 leaving one queue for another, with the token named nowhere because the types carry it. A name
 that said `dequeue` or `take_front` would read as well but would stop matching `VecDeque`.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The seven keep their spelling as they stand. The crate stays with the kernel and is not
+released, so nothing outside acts on the names. The review package lists them as provisional;
+ratifying them stays the architect's. Item 6 is the work.
 
 ## Done when
 

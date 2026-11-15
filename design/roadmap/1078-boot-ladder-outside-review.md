@@ -48,6 +48,8 @@ printer and the readers, and that is where the items below sit.
 Effort: S is half a day for a lane, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after a release (a public name, a printed wording that logs and profiles already hold, a layout, a license). Everything else is two-way, and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1078-boot-ladder-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The manifest is not standalone.
@@ -101,8 +103,9 @@ The P1 items are in [the appendix](1078-boot-ladder-outside-review/before-the-ta
 
 ## Decisions for the architect
 
-Only one-way doors. Each states the background first, then the recommendation, prior art and a
-concrete example. The repository itself follows the standing rule that clearing this review is the
+Each states the background first, then the recommendation, prior art and a concrete example.
+The ten public names are Rust identifiers, a two-way door before the first tag, and the maintainer
+has decided them, provisionally; the wordings and the printed check names wait for the architect. The repository itself follows the standing rule that clearing this review is the
 go for creating it; that is not a new decision.
 
 ### The heads are fixed shapes after the caller's system name
@@ -156,6 +159,15 @@ misnomer is in their code too.
 Example: a third-party console reader written against the released crate reads
 `boot_ladder::SHELL_BANNER` and knows without the `BUGS` entry that it is not waiting for a `$ `.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `PROMPT` becomes `SHELL_BANNER`, `SELF_TEST_CHECKS_EARLIER` becomes
+`EARLIER_SELF_TEST_CHECK_COUNTS` and `TOUR` becomes `CORE_RUNS`. `BANNER`, `MACHINE`, `SELF_TEST`,
+`SELF_TEST_SUBJECT`, `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and `SCREEN_HELD`
+keep their names. `SELF_TEST_SUBJECT` (`src/rungs.rs` line 44) is the head added after the review
+and is kept with the rest. The bytes each constant holds are the wordings decision above, not this
+one. The `self_test_program` module (`src/self_test_program.rs`), added after the review, holds
+about twenty more provisional names this decision does not cover; item 8 carries their pass as
+work.
+
 ### The printed check names spell out their words
 
 Ruled 2026-11-14 (UTC). Of the fifteen names the verdict prints, `blockdev` becomes `block_device`
@@ -178,8 +190,9 @@ The comparison with nearby work is in [the appendix](1078-boot-ladder-outside-re
 
 ## What needs the architect
 
-The ten public names, above; the architect has ruled on the heads and the check names. Nothing
-else here is one-way: the manifest, the README, the tests, the `Verdict` type and the nife-side gate are the maintainer's.
+The ten public names, above, which the maintainer has decided, provisionally; the architect has ruled
+on the heads and the check names. Nothing else here is one-way: the manifest, the README, the tests,
+the `Verdict` type and the nife-side gate are the maintainer's.
 
 ## Done when
 
@@ -192,7 +205,8 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 - **Done.** The two check names: `block_device` and `true_random_number_generator`, with the slot
   and flag that name the generator, and the other thirteen marked ratified.
 - **Outstanding.** The other items of this review, listed above and in its appendices.
-- **Outstanding.** The three renames among the ten public names, which wait for the architect.
+- **Outstanding.** The three renames among the ten public names, which the maintainer has decided,
+  provisionally.
 - **Outstanding.** Eight constants in `boot_ladder::kernel_half` still begin
   `RANDOM_NUMBER_GENERATOR_` (`FOUND`, `STATUS_OKAY`, `PROGRAM_MISSING`, `WIRED`, `256_BIT`,
   `REGISTERS`, `REPORT`, `BRING_UP_TICKS`). The check-names ruling named only the slot and the

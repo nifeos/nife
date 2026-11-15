@@ -2,7 +2,7 @@
 /// in the device's own slot; an offset outside the slot, or not word-aligned, is `WrongObject`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
-/// question 2), with [`WRITE_REGISTER`]. His words: "Yes". Refused `READ_REG` (round 7's spelling;
+/// question 2), with [`WRITE_REGISTER`]. Refused `READ_REG` (round 7's spelling;
 /// `reg` is an abbreviation).
 pub const READ_REGISTER: u64 = 0;
 /// `invoke(capability, WRITE_REGISTER, off, val, _)` -> 0. Only DMA-*safe* registers (status, features,
@@ -10,13 +10,13 @@ pub const READ_REGISTER: u64 = 0;
 /// validated paths below).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
-/// question 2), with [`READ_REGISTER`]. His words: "Yes". Refused `WRITE_REG` (round 7's spelling).
+/// question 2), with [`READ_REGISTER`]. Refused `WRITE_REG` (round 7's spelling).
 pub const WRITE_REGISTER: u64 = 1;
 /// `invoke(capability, SETUP_QUEUE, num, queue, _)` -> 0. The kernel programs the given queue's ring
 /// addresses to the fixed offsets of that queue's ring block in the driver's DMA region, so the
 /// driver never chooses them. `queue` selects the virtqueue (a virtio-net device uses receive =
 /// 0, transmit = 1; the disk uses only queue 0, and passing 0 keeps its ABI byte-identical).
-/// `BadQueue`/`WrongObject` if `queue` is out of range or the block does not fit the region.
+/// `WrongObject` when `queue` is out of range, the block does not fit the region, or the queue was never set up.
 pub const SETUP_QUEUE: u64 = 2;
 /// `invoke(capability, NOTIFY, queue, _, _)` -> 0, or `DeviceRefused` if a newly-published descriptor on
 /// that queue points outside the driver's DMA region. On refusal the device is NOT told to go.
@@ -30,9 +30,7 @@ pub const NOTIFY: u64 = 3;
 ///
 /// No method translates a virtual address and a supervisor building a driver has no spare `START`
 /// word, so the page carries the base, in its last eight bytes because no driver's rings or buffers
-/// reach them (`entropy` ends at `0x500`, `net_stack` at `0xF00`, `gpu_driver` at `0x798` and
-/// `keyboard_driver` at `0x440`). The kernel writes it; `system_initializer`, `gpu_driver` and
-/// `keyboard_driver` read it, so it is one constant.
+/// reach them. The kernel writes it and the drivers that map the region read it, so it is one constant.
 ///
 /// Name: provisional.
 pub const DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET: u64 = 4096 - 8;

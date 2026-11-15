@@ -47,6 +47,8 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the release (a public name, a wire byte, a
 dependency, a license); everything else is two-way and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1082-capability-manifest-note-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The manifest cannot stand alone.
@@ -112,8 +114,9 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 
 ## Decisions for the architect
 
-Only one-way doors. Each has the plain background first, then the recommendation, prior art and a
-concrete example.
+Each has the plain background first, then the recommendation, prior art and a concrete example.
+The names of decisions 3 and 4 are two-way before the first tag, and the maintainer has decided
+them, provisionally.
 
 ### The wire literal `nife` in a crate that may not mention nife
 
@@ -187,6 +190,9 @@ Prior art: std's `Path::is_absolute`, `Metadata::is_dir`; the crate's own `Zones
 Example: `if capability_manifest_note::service(d)? { ... }` reads as "if the service", and
 `if capability_manifest_note::asks_service(d)? { ... }` reads as the condition it is.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `service` (`src/lib.rs` line 737) becomes `asks_service`, the crate's own word for
+the request, and its callers in `program_asks` and `jig` follow. `zones` keeps its name.
+
 ### `VERSION` as the name of version 1
 
 Background: `pub const VERSION: u32 = 1` is the descriptor version with no zones and no service
@@ -204,15 +210,20 @@ name the property, never a bare `VERSION`.
 Example: `match version { BARE_VERSION => ..., ZONED_VERSION => ..., SERVICED_VERSION => ... }`
 reads as three layouts; `VERSION => ...` in that list reads as a mistake.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `VERSION` (`src/lib.rs` line 117) becomes `BARE_VERSION`, beside `ZONED_VERSION`
+and `SERVICED_VERSION`. The wire byte 1 does not change.
+
 ## Done when
 
 The checks are in [the appendix](1082-capability-manifest-note-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** The P0, P1 and P2 items of this review, and the decisions for the architect other
-  than the wire literal. This pull request lands the wire literal marker (the lint and the move
-  check accept `// wire literal`) and nothing else of the block.
+- **Outstanding.** The four decisions, the move's items, the encoding-direction harness of item 3,
+  the citation rewrite of item 4 and items 5 to 7 and 11 to 15. Checked against
+  `crates/capability_manifest_note/src/lib.rs`: `DESCRIPTOR_LEN`, `service` and `VERSION` keep their
+  names, and `decode_never_panics` still stops at one byte past version 1.
+- **Done.** The wire literal marker: the lint and the move check accept `// wire literal`.
 
 ## BUGS
 

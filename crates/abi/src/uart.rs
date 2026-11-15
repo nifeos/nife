@@ -3,7 +3,7 @@
 //! The NS16550's register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
 //! access on the JH7110 (`reg-shift = <2>`, `reg-io-width = <4>`), where a driver assuming QEMU's
 //! would read line status from the wrong register and wait forever. The kernel reads it from the
-//! device tree (`console::configure_from_dtb`) and passes it to the progenitor as its first start
+//! device tree and passes it to the progenitor as its first start
 //! word, and the progenitor to the console and input drivers, which read no tree. The word is
 //! `reg_shift | reg_io_width << 8`; 0, which aarch64 and `x86_64` pass, is QEMU's byte layout.
 //!

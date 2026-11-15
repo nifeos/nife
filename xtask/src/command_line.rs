@@ -120,6 +120,11 @@ pub(crate) fn main() -> ExitCode {
         // `rg` (milestone 810 (`ripgrep` is packaged in basalt and installed with `jig`)). Name
         // provisional. See xtask/src/basalt.rs.
         "basalt-fetch" => basalt::fetch(),
+        // The same packages built from this checkout's tree with basalt's own build at the pinned
+        // basalt commit, for the merge-group rows that run them (milestone 1115 (the gate builds
+        // basalt's delivered programs from the candidate tree)). Name provisional. See
+        // xtask/src/basalt.rs.
+        "basalt-build" => basalt::build(),
         "swish-check" => swish_check(),
         // The boot ladder's gate (milestone 268, item 6): boot every architecture's default kernel
         // and fail if its self-test verdict is not green. See script/boot-check.
