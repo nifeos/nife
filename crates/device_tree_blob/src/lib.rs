@@ -1275,14 +1275,16 @@ mod tests {
     }
 }
 
-/// Machine-checked proofs, with Kani, of the device-tree parser's leaf readers.
+/// Machine-checked proofs, with Kani, of the device-tree parser's readers.
 ///
-/// The device tree is untrusted boot input, and the whole-parse walk (a token loop over the
-/// structure block) is past what bounded model checking can do over a blob of real size. So the
-/// leaves are proved: the big-endian readers every
-/// field goes through, and the padding helper. `be32`/`be64` were hardened with a checked add first,
-/// so they are now *total*; `align4` is proved correct for any realistic length (it can overflow
-/// only far above any device-tree size, and its callers pass node-name and property lengths).
+/// The device tree is untrusted boot input. The leaves are proved for every input: the big-endian
+/// readers every field goes through, the padding helper, `cells` and `decode_regions`. `align4` is
+/// proved for every `usize`, and overflows only within 3 of `usize::MAX`, where no caller reaches:
+/// every length it is given comes from a blob, which is at most `MAXIMUM_TOTALSIZE_BYTES` through
+/// `from_ptr` and at most `u32::MAX` bytes of header-declared length otherwise. Above the leaves,
+/// `from_bytes` and one step of the token walk are proved total over blobs of a bounded size,
+/// which is as far as bounded model checking reaches over a structure of real size; the fuzz target
+/// `device_tree_blob_walk` covers the whole walk from the other side.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -1354,6 +1356,90 @@ mod verification {
         if let Ok(next) = skip_padded(at, n) {
             assert!(next >= at);
             assert!(next - at >= n);
+        }
+    }
+
+    /// **`cells` refuses a value wider than 64 bits.** For any value of up to five cells, an `Ok`
+    /// means every cell above the low two is zero and the answer is the low two, most significant
+    /// first; a nonzero cell above them is refused rather than shifted out.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.cells_refuses_a_value_wider_than_64_bits.patch`
+    #[kani::proof]
+    #[kani::unwind(14)]
+    fn cells_refuses_a_value_wider_than_64_bits() {
+        let bytes: [u8; 20] = kani::any();
+        let count: usize = kani::any();
+        kani::assume(count <= 5);
+        let value = &bytes[..count * 4];
+        let low = count.saturating_sub(2) * 4;
+        match cells(value) {
+            Ok(number) => {
+                assert!(value[..low].iter().all(|&byte| byte == 0));
+                let mut expected = 0u64;
+                for &byte in &value[low..] {
+                    expected = (expected << 8) | byte as u64;
+                }
+                assert_eq!(number, expected);
+            }
+            Err(error) => {
+                assert_eq!(error, Error::BadValue);
+                assert!(value[..low].iter().any(|&byte| byte != 0));
+            }
+        }
+    }
+
+    /// **`decode_regions` never panics and never writes past `out`.** For any `reg` value of up to
+    /// 24 bytes, any cell counts and a two-slot `out`, it returns a count no larger than `out`, or
+    /// refuses.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.decode_regions_stays_inside_its_output.patch`
+    #[kani::proof]
+    #[kani::unwind(8)]
+    fn decode_regions_stays_inside_its_output() {
+        let bytes: [u8; 24] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= bytes.len());
+        let mut out = [Region { start: 0, size: 0 }; 2];
+        if let Ok(found) = decode_regions(&bytes[..length], kani::any(), kani::any(), &mut out) {
+            assert!(found <= out.len());
+        }
+    }
+
+    /// **`from_bytes` is total.** For any buffer of up to 48 bytes (a header and a little more), it
+    /// returns a tree or an error and never panics, and a tree it returns lies inside the buffer.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.from_bytes_is_total.patch`
+    #[kani::proof]
+    fn from_bytes_is_total() {
+        let bytes: [u8; 48] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= bytes.len());
+        if let Ok(tree) = DeviceTreeBlob::from_bytes(&bytes[..length]) {
+            assert!(tree.total_size() <= length);
+            assert!(tree.structure.len() <= tree.total_size());
+        }
+    }
+
+    /// **One step of the token walk is total, moves forward, and keeps the depth in bounds.** Over
+    /// any 56-byte blob `from_bytes` accepts, three steps each return a token, the end or an error
+    /// without panicking; each token moves the cursor forward, so no walk can stall, and the depth
+    /// never passes `MAXIMUM_DEPTH`.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.a_token_step_is_total_and_moves_forward.patch`
+    #[kani::proof]
+    #[kani::unwind(17)]
+    fn a_token_step_is_total_and_moves_forward() {
+        let bytes: [u8; 56] = kani::any();
+        let Ok(tree) = DeviceTreeBlob::from_bytes(&bytes) else {
+            return;
+        };
+        let mut tokens = tree.tokens();
+        for _ in 0..3 {
+            let before = tokens.at;
+            match tokens.step() {
+                Ok(Some((depth, _))) => {
+                    assert!(tokens.at > before);
+                    assert!(depth <= MAXIMUM_DEPTH);
+                    assert!(tokens.depth <= MAXIMUM_DEPTH);
+                }
+                Ok(None) | Err(_) => return,
+            }
         }
     }
 }
