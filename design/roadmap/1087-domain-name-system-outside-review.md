@@ -50,6 +50,8 @@ somebody outside the repository acts on it after the release (a public name, a p
 wire layout, a dependency). Everything else is two-way and the maintainer decides it. Line numbers
 are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
 
+The ledger of what landed and what is left is in [the appendix](1087-domain-name-system-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
@@ -244,6 +246,9 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 
 ## Follow-on
 
+- **Outstanding.** Decisions 1 and 2 and every item the ledger leaves, which wait for #3559 to merge
+  or for an architect. Checked against `crates/domain_name_system/src/lib.rs` on `main`: the label
+  and header lengths keep their names and the crate has no README.
 - **Outstanding.** Items 1, 2, 3 and 5 and 9: the ratification pull request, the standalone manifest,
   the README and license files, the crate's own `fuzz/` directory and the mutants-exempts lines all
   belong to the move. Checked against `crates/domain_name_system` on main: none of them exists there.

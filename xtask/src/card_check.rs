@@ -85,7 +85,7 @@ pub(crate) fn card_check(arg: Option<String>) -> std::process::ExitCode {
         if !seal.is_sealed() {
             refused = true;
             print_the_fix(pair);
-            println!("\n{}", sealed_pair::THE_BOARD_IS_THE_AUTHORITY);
+            println!("\n{}", sealed_pair::AUTHORITY_NOTICE);
         }
     }
 
