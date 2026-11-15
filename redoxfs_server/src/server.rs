@@ -693,7 +693,7 @@ impl<D: Disk> Server<D> {
             Some(Some(_)) => Some(self.owners[requested as usize]),
             _ => None,
         };
-        subtree_scope::admit(self.bindings.of(badge), badge, requested, owner)
+        subtree_scope::admit(self.bindings.of(badge), badge, subtree_scope::Handle(requested), owner)
             .map(|h| h as u32)
             .map_err(refused)
     }
