@@ -404,7 +404,7 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
     }
     HEAP.initialize(
         MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
+        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
         HEAP_MAXIMUM,
     );
 

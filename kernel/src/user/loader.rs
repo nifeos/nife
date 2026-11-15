@@ -20,8 +20,8 @@ const _: () = assert!(
 /// simply *say*, and the answer is to decline and kill the thread, not to take the machine down.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoadError {
-    /// The file is not an aarch64 static ELF we are willing to run. See `elf::Error`.
-    NotLoadable(elf::Error),
+    /// The file is not an aarch64 static ELF we are willing to run. See `static_elf::Error`.
+    NotLoadable(static_elf::Error),
 
     /// It asked to be loaded somewhere it may not go.
     ///

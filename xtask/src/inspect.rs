@@ -148,7 +148,7 @@ fn strip_tag(path: &str) -> &'static str {
 /// (`llvm-objcopy --strip-debug`), and return the stripped bytes.
 ///
 /// The initial ramdisk is reserved RAM and a debug build is almost all `.debug_*`, which nothing
-/// reads (`crates/elf` parses program headers only; faults are symbolised offline against
+/// reads (`crates/static_elf` parses program headers only; faults are symbolised offline against
 /// `target/`). `--strip-debug`, not `--strip-all`, keeps the symbol table. A missing `llvm-objcopy`
 /// is a hard failure, because the measured-boot digest (§26 (the fault endpoint)'s phase B.1) is
 /// taken over these bytes, and a build whose bytes depended on installed tools would have a

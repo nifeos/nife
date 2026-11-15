@@ -70,7 +70,7 @@ The loader's last act is the mode switch in `leave_long_mode.s`: load a GDT with
 descriptor, far-return into compatibility mode, reload the data selectors, clear `CR0.PG`, clear
 `LME`, and jump. It runs from a copy below 4 GiB in an `EfiLoaderCode` page, because paging is off
 for its second half and firmware marks data allocations non-executable. The loader reads the kernel's
-ELF itself rather than through `crates/elf`, because a boot loader places segments at `p_paddr` and
+ELF itself rather than through `crates/static_elf`, because a boot loader places segments at `p_paddr` and
 must reserve the `NOLOAD` ones. [`x86-uefi-boot/loader-design.md`](x86-uefi-boot/loader-design.md)
 has each step and why.
 

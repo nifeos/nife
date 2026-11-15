@@ -10,8 +10,8 @@ use super::*;
 /// and everything under it, `fs_nameset_caretaker` for named entries of one directory (milestone
 /// 205). `None` when the archive did not carry it, or it did not measure. Name: provisional.
 pub(super) struct Caretakers {
-    pub(super) subtree: Option<elf::Elf<'static>>,
-    pub(super) nameset: Option<elf::Elf<'static>>,
+    pub(super) subtree: Option<static_elf::Elf<'static>>,
+    pub(super) nameset: Option<static_elf::Elf<'static>>,
 }
 
 /// The archive entry a spawnable program is loaded from: its own name, for every program.
@@ -195,7 +195,7 @@ pub(super) fn spawn_service(
 /// authority, the boot's measured images, and the two pieces of state a request can change.
 struct Service<'a> {
     c: Channels,
-    progs: &'a [Option<elf::Elf<'a>>; grant_plan::PROGRAM_COUNT],
+    progs: &'a [Option<static_elf::Elf<'a>>; grant_plan::PROGRAM_COUNT],
     absent: &'a [bool; grant_plan::PROGRAM_COUNT],
     care: Caretakers,
     discipline: SessionDiscipline,
@@ -292,7 +292,7 @@ impl Delegated {
 struct Resolved {
     manifest: Option<grant_plan::Manifest>,
     failure: u64,
-    image_elf: Option<elf::Elf<'static>>,
+    image_elf: Option<static_elf::Elf<'static>>,
     /// The digest of an image the live generation vouched for, which its zone grants are keyed on
     /// (milestone 892).
     image_digest: Option<measured_boot::Digest>,
@@ -744,7 +744,7 @@ impl Service<'_> {
             unvouched = vouch == grant_plan::Vouch::Unvouched;
             image_digest = (!unvouched).then_some(digest);
             let elf = if !unvouched || presented {
-                elf::Elf::parse(bytes).ok()
+                static_elf::Elf::parse(bytes).ok()
             } else {
                 None
             };
@@ -816,7 +816,7 @@ impl Service<'_> {
     }
 
     /// Build and start an interruptible job from the shell's own job untyped, and answer it.
-    fn spawn_interruptible(&self, req: &Request, elf: Option<&elf::Elf>, failure: u64) {
+    fn spawn_interruptible(&self, req: &Request, elf: Option<&static_elf::Elf>, failure: u64) {
         let Channels {
             result_ep, own_ut, ..
         } = self.c;
@@ -882,7 +882,7 @@ impl Service<'_> {
         &mut self,
         req: &Request,
         job: &Resolved,
-        elf: Option<&elf::Elf>,
+        elf: Option<&static_elf::Elf>,
         image_region: Option<u64>,
         staging: Option<u64>,
     ) {
@@ -1025,7 +1025,7 @@ impl Service<'_> {
         let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
         let wants_stdin = std_layout && wants.console_input && !quiet;
         let stdin = wants_stdin
-            .then(|| badged(self.c.boot_terminal, line_editor::proto::STDIN_BADGE).ok())
+            .then(|| badged(self.c.boot_terminal, terminal_contract::STDIN_BADGE).ok())
             .flatten();
         (stdin, wants_stdin && stdin.is_none())
     }
@@ -1552,7 +1552,7 @@ impl Service<'_> {
         &mut self,
         req: &Request,
         job: &Resolved,
-        elf: Option<&elf::Elf>,
+        elf: Option<&static_elf::Elf>,
         label: u64,
     ) -> (Resolvers, bool) {
         let mut out = NO_RESOLVERS;
@@ -1849,7 +1849,7 @@ fn start_job(built: Option<supervision_contract::Child>, req: &Request, std_layo
 /// it out of `deaths`'s domain; see notes/system-initializer.md's BUGS.
 fn build_job(
     own_ut: u64,
-    (elf, region): (Option<&elf::Elf>, Option<u64>),
+    (elf, region): (Option<&static_elf::Elf>, Option<u64>),
     (std_layout, std_parts): (bool, Option<&StdLayout>),
     native: &NativeEndowment,
     (fault, held): (Option<u64>, bool),

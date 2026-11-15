@@ -3,7 +3,7 @@
 //!
 //! The kernel is linked high with `AT()`, so `p_vaddr` and `p_paddr` are unrelated even within one
 //! file (`.text` at `p_vaddr` `0xffffffff8010a000` and `p_paddr` `0x10a000`, `.ap_trampoline` at
-//! `0x8000` and `0x166000`). The headers are read by `elf::Elf::parse`, with `elf::Segment::paddr`
+//! `0x8000` and `0x166000`). The headers are read by `static_elf::Elf::parse`, with `static_elf::Segment::paddr`
 //! (milestone 196 (a physical address on `elf::Segment`)), which validates as it reads: bounds,
 //! overlap, W^X, and the entry inside an executable segment. So a kernel that regressed to an `RWX`
 //! segment fails to boot on real firmware with a printed reason, a second mechanism behind
@@ -20,14 +20,14 @@
 //!   earlier. No linker script in this tree can produce that (one script, one contiguous physical
 //!   layout).
 
-use elf::{Elf, Segment};
+use static_elf::{Elf, Segment};
 
 /// The `[first, last)` physical range every `PT_LOAD` falls in, page-aligned outwards.
 ///
 /// The firmware is asked for it in one `AllocatePages(AllocateAddress)` call: the segments are
 /// contiguous by construction (one linker script), and one call is one failure to report instead
 /// of thirteen. **Over `paddr`, not `vaddr`**: a program loader maps at `p_vaddr` and a firmware
-/// loader places at `p_paddr`, and on this image they are unrelated (`elf::Segment::paddr`). `None`
+/// loader places at `p_paddr`, and on this image they are unrelated (`static_elf::Segment::paddr`). `None`
 /// when there is no `PT_LOAD`, which `Elf::parse` cannot produce; a return value rather than an
 /// `unwrap`, because this function is public and must be panic-free on its own terms.
 pub fn physical_span<'a>(
@@ -73,11 +73,11 @@ pub fn physical_entry<'a>(entry: u64, segments: impl Iterator<Item = Segment<'a>
 ///
 /// Worded for somebody standing at a machine that will not boot: every one means **the build is
 /// wrong**, not that a hostile file arrived, since the only ELF this loader sees is the kernel
-/// `build.rs` embedded in it. Exhaustive on purpose, with no `_` arm: `elf::Error` is a shared
+/// `build.rs` embedded in it. Exhaustive on purpose, with no `_` arm: `static_elf::Error` is a shared
 /// definition, so growing it should break this build rather than silently print the wrong sentence
 /// (rung one of AGENTS.md's ladder, for the price of a match).
-pub const fn refusal(error: elf::Error) -> &'static str {
-    use elf::Error::*;
+pub const fn refusal(error: static_elf::Error) -> &'static str {
+    use static_elf::Error::*;
     match error {
         TooSmall => "the embedded kernel is smaller than an ELF header",
         BadMagic => "the embedded kernel is not an ELF file",
@@ -108,7 +108,7 @@ pub const fn refusal(error: elf::Error) -> &'static str {
 /// A debug image cannot be installed (calef's ruling of 2026-10-03 UTC on the install boot slots: a
 /// slot holds a release image), so the stick of a debug build offers no install. A debug kernel is
 /// about 7.5 MB of which 5.8 MB is DWARF, and a slot is a fixed 64 MiB (`BOOT_FILE_MAXIMUM`).
-/// `crates/elf` reads program headers only, so this reads the section headers itself (ELF64,
+/// `crates/static_elf` reads program headers only, so this reads the section headers itself (ELF64,
 /// little-endian). `cargo xtask`'s release path strips with `--strip-debug`, which removes every
 /// `.debug_*` section and keeps the symbol table.
 pub fn carries_debug_info(elf: &[u8]) -> bool {
@@ -161,12 +161,12 @@ pub fn parse(bytes: &[u8]) -> Result<Elf<'_>, &'static str> {
 
 #[cfg(test)]
 mod tests {
-    use elf::{NATIVE_MACHINE, PF_R, PF_W, PF_X};
+    use static_elf::{NATIVE_MACHINE, PF_R, PF_W, PF_X};
 
     use super::*;
 
     /// `Segment`'s fields are all public, so the span can be tested against hand-built segments
-    /// rather than against a forged ELF. The forging belongs to `crates/elf`'s own tests, which is
+    /// rather than against a forged ELF. The forging belongs to `crates/static_elf`'s own tests, which is
     /// where `Elf::parse` is proved; what is under test here is the arithmetic over `paddr`.
     fn seg(paddr: u64, memsz: u64) -> Segment<'static> {
         Segment {
@@ -305,11 +305,11 @@ mod tests {
     }
 
     /// Every refusal has its own sentence, and none of them is empty. The value of the exhaustive
-    /// match is that adding a variant to `elf::Error` fails this build; the value of this test is
+    /// match is that adding a variant to `static_elf::Error` fails this build; the value of this test is
     /// that nobody satisfies that by pasting the same string.
     #[test]
     fn every_refusal_says_something_of_its_own() {
-        use elf::Error::*;
+        use static_elf::Error::*;
         let all = [
             TooSmall,
             BadMagic,
@@ -341,7 +341,7 @@ mod tests {
     /// refused, and the sentence a person reads names the file to go and edit.
     #[test]
     fn a_writable_executable_segment_is_named_by_the_file_that_causes_it() {
-        assert!(refusal(elf::Error::WritableAndExecutable).contains("link-x86_64.ld"));
+        assert!(refusal(static_elf::Error::WritableAndExecutable).contains("link-x86_64.ld"));
         let s = Segment {
             vaddr: 0x1000,
             paddr: 0x1000,
@@ -353,11 +353,11 @@ mod tests {
     }
 
     /// One `PT_LOAD` segment, forged by hand, with the flags and the physical address the caller
-    /// asks for. Adapted from `crates/elf`'s own doc example, which is where the format is
+    /// asks for. Adapted from `crates/static_elf`'s own doc example, which is where the format is
     /// explained; what differs here is that `p_paddr` and `p_vaddr` are **not** equal, because a
     /// physical address unrelated to the virtual one is the whole shape this module deals in.
     ///
-    /// `NATIVE_MACHINE` rather than a literal 62: `elf::Elf::parse` checks the machine of the build
+    /// `NATIVE_MACHINE` rather than a literal 62: `static_elf::Elf::parse` checks the machine of the build
     /// it is compiled into, and this test runs on whatever the developer's laptop is. The x86-64
     /// wording in [`refusal`] is about the kernel this loader ships, not about this check.
     fn forge(flags: u32, paddr: u64) -> Vec<u8> {
@@ -388,7 +388,7 @@ mod tests {
     }
 
     /// **Nothing called [`parse`] until this test, which is the hole the mutation run could not
-    /// even report.** Its one mutant (`Ok(Default::default())`) is unviable because `elf::Elf` has
+    /// even report.** Its one mutant (`Ok(Default::default())`) is unviable because `static_elf::Elf` has
     /// no `Default`, so the tool scored the function as if it did not exist; see the note in
     /// notes/mutation-testing.md for why deriving one here would be the wrong repair.
     ///
@@ -414,21 +414,24 @@ mod tests {
     }
 
     /// The other half of the same wrapper: a refusal comes back as **this loader's sentence**, not
-    /// as `elf::Error`'s `Debug`. The audience is somebody standing at a machine that will not
+    /// as `static_elf::Error`'s `Debug`. The audience is somebody standing at a machine that will not
     /// boot, so the mapping through [`refusal`] is the behaviour under test rather than an
     /// implementation detail.
     #[test]
     fn a_refused_image_arrives_as_this_loaders_sentence() {
         let bytes = forge(PF_R | PF_W | PF_X, 0x10_2000);
-        // Matched rather than unwrapped: `elf::Elf` is deliberately neither `Debug` nor
+        // Matched rather than unwrapped: `static_elf::Elf` is deliberately neither `Debug` nor
         // `PartialEq`, since it is a validated token rather than a value, and every `Result`
         // helper that reports a failure wants to print the `Ok` side.
         let sentence = |bytes: &[u8]| match parse(bytes) {
             Ok(_) => panic!("accepted an image that must be refused"),
             Err(why) => why,
         };
-        assert_eq!(sentence(&bytes), refusal(elf::Error::WritableAndExecutable));
-        assert_eq!(sentence(&[]), refusal(elf::Error::TooSmall));
+        assert_eq!(
+            sentence(&bytes),
+            refusal(static_elf::Error::WritableAndExecutable)
+        );
+        assert_eq!(sentence(&[]), refusal(static_elf::Error::TooSmall));
     }
 
     /// A minimal ELF64 with a section table: a null section, the string table, and one named

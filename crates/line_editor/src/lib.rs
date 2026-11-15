@@ -4,9 +4,9 @@
 //! IPC, UART or endpoint work, so the `line_editor` component only wires it up. It edits at a
 //! cursor, moves by control characters and ANSI sequences, kills and yanks, keeps [`HIST`] lines of
 //! history, ends a line on CR, LF or CRLF, and reports ^C, ^D, ^Z and Tab as an [`Event`]. Output
-//! newline translation is the free function [`expand_output`], and `proto` is the IPC framing. See
-//! notes/line-discipline.md for the bindings and what it leaves out, and
-//! notes/terminal-contract.md for the contract its echo and `proto` implement.
+//! newline translation is the free function [`expand_output`], and [`handoff`] carries the editor's
+//! state across a replacement. See notes/line-discipline.md for the bindings and what it leaves
+//! out, and notes/terminal-contract.md for the contract its echo implements.
 //!
 //! Name: ratified 2026-07-30 (calef) for the word and 2026-08-01 for the spelling, replacing
 //! `linedisc` and then `lineedit`. Refused `linedisc` (a Unix term of art from the model this OS
@@ -22,7 +22,7 @@
 
 // The crate root is an index (§282 (when a file is split, the parent becomes an index)): the
 // engine, the raw queue and the output side are private modules re-exported here by name. The
-// three public modules keep their docs on their `pub mod` lines below.
+// public module keeps its docs on its `pub mod` line below.
 
 mod line_disc;
 mod output;
@@ -31,25 +31,6 @@ mod raw_queue;
 pub use line_disc::{Event, HIST, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM};
 pub use output::{Sink, expand_output};
 pub use raw_queue::{RAW_QUEUE_MAXIMUM, RawQueue};
-
-/// The IPC framing of the terminal contract (notes/terminal-contract.md): opcodes, flags, and
-/// limits shared by the discipline server, its clients, and the kernel-side tests. This is a
-/// **userspace protocol**, not kernel ABI: the kernel routes these words without reading them.
-pub mod proto;
-
-/// What a supervisor routes to a `line_editor` it can replace (milestone 23 (a
-/// capability-routed component OS with live replacement)): the capability half of the terminal
-/// contract, beside the wire half in [`proto`].
-///
-/// It holds two declarations, one per output sink: the console's two-endpoint protocol, older than
-/// §12 (call/reply IPC: a one-shot reply capability), which needs a reply endpoint, and
-/// `display_terminal`'s one `CALL`, which does not. Both keep the slot order `line_editor` reads,
-/// which the `const` assertions hold them to; notes/line-discipline.md ("The component's slots")
-/// gives the order.
-///
-/// Name: provisional (the lane for milestone 23, 2026-09-27), for the module, both constants,
-/// `HANDOFF_VA` and the role and contract strings.
-pub mod component;
 
 /// The line editor's state as a handoff blob (milestone 23 (a capability-routed component OS
 /// with live replacement); §209 (state handoff is an opaque blob over a granted frame, and it is

@@ -1,0 +1,11 @@
+[package]
+name = "static_elf"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]

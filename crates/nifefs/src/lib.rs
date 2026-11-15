@@ -1,5 +1,5 @@
 //! **nifefs**: a filesystem so simple it fits in a comment. Read-only, flat, fixed-size
-//! everything: it exists to be parsed, as `crates/elf` does, and it is the boot archive. The disk
+//! everything: it exists to be parsed, as `crates/static_elf` does, and it is the boot archive. The disk
 //! tool writes an image with [`write_image`] and the userspace filesystem server reads it with
 //! [`Fs::parse`], so one definition of the format serves both. Pure logic, host-tested, no `std`.
 //!

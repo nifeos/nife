@@ -42,7 +42,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     let Some(elf) = nifefs::Fs::parse(archive)
         .ok()
         .and_then(|fs| fs.read(CHILD))
-        .and_then(|bytes| elf::Elf::parse(bytes).ok())
+        .and_then(|bytes| static_elf::Elf::parse(bytes).ok())
     else {
         refuse()
     };

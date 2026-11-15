@@ -1,6 +1,6 @@
 //! **Expansion: what a pattern on the command line designates** (milestone 47's globbing lane).
 //!
-//! `crates/glob` answers whether a pattern matches a name; this module turns that into an
+//! `crates/byte_glob` answers whether a pattern matches a name; this module turns that into an
 //! authority. The expansion you see is the grant: `echo *.txt` prints the authority `rm *.txt`
 //! would transfer, because both drive one [`Expander`] over the same listing. [`Name`] and
 //! [`NameSet`] own their bytes, since a matched name comes out of a listing read into a reused
@@ -335,12 +335,12 @@ impl<'a> Expander<'a> {
 
     /// Offer one directory entry.
     ///
-    /// The dot rule is `glob`'s default (`Dot::Special`), so `*` does not match `.config`, and that
+    /// The dot rule is `byte_glob`'s default (`Dot::Special`), so `*` does not match `.config`, and that
     /// default is not a compatibility habit here: `rm *` hands a child authority over everything it
     /// matched, so the default reading is the one that **grants less**. A user who wants the
     /// dotfiles asks for them and takes the larger grant deliberately.
     pub fn offer(&mut self, name: &[u8], is_directory: bool) {
-        if !glob::matches(self.pattern, name) || self.set.contains(name) {
+        if !byte_glob::matches(self.pattern, name) || self.set.contains(name) {
             return;
         }
         if !crate::file_name_fits(name) {
@@ -449,13 +449,13 @@ pub fn magic_component(token: &[u8]) -> Result<bool, Refusal> {
     };
     for step in lead {
         if let Step::Down(name) = step
-            && glob::has_magic(name)
+            && byte_glob::has_magic(name)
         {
             return Err(Refusal::PatternInPath);
         }
     }
     Ok(match last {
-        Step::Down(name) => glob::has_magic(name),
+        Step::Down(name) => byte_glob::has_magic(name),
         Step::Up => false,
     })
 }
