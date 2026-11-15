@@ -177,8 +177,9 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 
 ## Follow-on
 
+- **Done.** The crate's own name, `address_space_layout`.
 - **Outstanding.** The three decisions, items 15 and 17, and the move's items 2, 3, 5, 11 and 13,
-  which an architect rules or the move lane does. Checked against `crates/address_space_map`: the
+  which an architect rules or the move lane does. Checked against `crates/address_space_layout`: the
   crate has no README, `Band::new` or `window`, and still inherits its manifest from the workspace.
 
 ## BUGS
@@ -190,11 +191,6 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 - The review did not run the template's prose, README or history gates, because there is no README
   yet; the scaffolded README meets them in its own pull request.
 - This review did not verify whether `cargo xtask std-src` resolves a git dependency. The move lane runs it before the pull request.
-
-## Follow-on
-
-- **Outstanding.** The P0 and P1 items, the address and length constants, and the whole-window
-  check, which the move lane and the lanes after it carry out. The crate's own name is done.
 
 ## Index row
 
