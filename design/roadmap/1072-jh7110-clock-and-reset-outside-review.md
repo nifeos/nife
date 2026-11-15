@@ -198,12 +198,12 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
   tree-wide rule that `io` stays whole inside an expansion: the crate-workflows pin moves to the
   template that accepts `SD_IO`, `management_data_io` and `virtual_io`, and
   `virtual_input_output` becomes `virtual_io`.
-- **Done.** Items 1 to 4 and 6 to 14, built in the findings pull request for this milestone:
-  `clippy.toml`, the renames and acronym expansions, the 8-or-16-byte `reg` decoder with a
-  12-byte host test and a harness that chooses the length, the fractional PLL2 rate, the
-  `was_already_up`, `name_index` and fallback fixes, the README sections and the manifest
-  fields. The repository files (`.github/accepted-words`, the caller workflows, `-p1` patches and
-  the badge row) arrive with the move.
+- **Done.** Items 1 to 4 and 6 to 14, built in the findings pull request for this milestone. They
+  are `clippy.toml`, the renames and acronym expansions, and the 8-or-16-byte `reg` decoder with a
+  12-byte host test and a harness that chooses the length. They also cover the fractional PLL2
+  rate, the `was_already_up`, `name_index` and fallback fixes, the README sections and the
+  manifest fields. The repository files arrive with the move: `.github/accepted-words`, the caller
+  workflows, the `-p1` patches and the badge row.
 - **Outstanding.** Item 5: the full mutation census inside the 08:00-13:00 UTC window, the
   exempts file written from it, and the retirement of the crate's rows in nife's triage ledger.
 - **Outstanding.** The clock and reset server still applies the v1.3B transmit parent on every
