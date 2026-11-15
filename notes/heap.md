@@ -242,7 +242,7 @@ the process's own untyped budget. The pair that landed:
   geometrically (double, at least 8 pages, never past `maximum_bytes`). The first run is talc's
   `claim`, holding its bins; each later run is `extend`, so the heap stays one contiguous range.
   Which slot pays, and where the heap lives, are part of the program's capability contract like
-  every other slot number (notes/abi.md §4 (kernel shape)); `heap::DEFAULT_BASE` (1 GiB) is a
+  every other slot number (notes/abi.md §4 (kernel shape)); `heap::DEFAULT_BASE_VIRTUAL_ADDRESS` (1 GiB) is a
   suggested VA clear of
   every convention in the tree.
 
@@ -269,7 +269,7 @@ must name a global allocator. Only a program that names the crate links it, so a
 heap links no allocator.
 
 - Which untyped slot pays is the program's convention with its parent. No untyped, no heap.
-- `DEFAULT_BASE` (1 GiB) starts `address_space_map::HEAP`, the band the address-space map keeps for
+- `DEFAULT_BASE_VIRTUAL_ADDRESS` (1 GiB) starts `address_space_map::HEAP`, the band the address-space map keeps for
   a heap and nothing else.
 - `maximum_bytes` caps growth, so a leak exhausts the heap visibly before it eats the budget the
   program builds children from. `MAP`'s `OutOfMemory` is the hard ceiling either way, and it is

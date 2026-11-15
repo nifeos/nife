@@ -264,8 +264,8 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 ## Follow-on
 
 - **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.
-- **Outstanding.** The move itself, which waits on milestone 1017's order and on the architect's
-  clearing of the review.
+- **Outstanding.** The move itself, which waits on the architect's clearing of the review. The
+  review package states that it is ready.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
   item 12: no change until the next API change.
 

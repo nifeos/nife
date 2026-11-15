@@ -62,7 +62,8 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
-# through the same seqlock the service publishes with, so no party has its own copy of the layout.
+# through the same publish protocol the service writes with, so no party has its own copy of the
+# layout.
 clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 # The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111). The
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
@@ -184,7 +185,7 @@ e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", re
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
 extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }

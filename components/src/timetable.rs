@@ -88,7 +88,7 @@ const _: () = assert!(CHILD_REPORT != spawnproto::RUN_UNVOUCHED_SLOT);
 /// **What an admitted row is built from.**
 enum Image {
     /// Parsed out of the archive this timetable was handed, once, at registration.
-    Archived(elf::Elf<'static>),
+    Archived(static_elf::Elf<'static>),
     /// **An installed program** (store mode, Fork 8 D of milestone 152): only the name its line
     /// gave. At every fire the name is resolved in the live generation again and the line planned
     /// again against the manifest those bytes carry, as a bare word at the prompt is (calef's
@@ -369,7 +369,7 @@ impl Tally {
     }
 
     /// Fire a row with a `--mem` grant alone, and collect it before returning.
-    fn fire_exclusive(&mut self, elf: &elf::Elf, e: grant_plan::Endowment, clock: bool) {
+    fn fire_exclusive(&mut self, elf: &static_elf::Elf, e: grant_plan::Endowment, clock: bool) {
         // Alone: the next death on `DEATHS` must be this instance's, or it cannot be paired
         // with its grant (`notes/scheduled-execution/mem-entries.md`).
         self.drain();
@@ -422,7 +422,7 @@ fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
         let Some(bytes) = fs.read(e.program.name()) else {
             return Err(i);
         };
-        let Ok(elf) = elf::Elf::parse(bytes) else {
+        let Ok(elf) = static_elf::Elf::parse(bytes) else {
             return Err(i);
         };
         images[i] = Some(Image::Archived(elf));
@@ -462,10 +462,10 @@ fn resolve_installed(
 /// **What an installed row's name runs now**: the live generation's entry for it, staged and
 /// parsed, and the manifest its bytes carry. `None` when the name no longer resolves, the bytes do
 /// not hash to the entry, or they need what no timetable endows (`timetable::schedulable`).
-fn load_current(p: &Installed) -> Option<(elf::Elf<'static>, grant_plan::Manifest)> {
+fn load_current(p: &Installed) -> Option<(static_elf::Elf<'static>, grant_plan::Manifest)> {
     let name = core::str::from_utf8(&p.name[..p.len]).ok()?;
     let (len, _) = store::load(name)?;
-    let elf = elf::Elf::parse(store::staged(len)).ok()?;
+    let elf = static_elf::Elf::parse(store::staged(len)).ok()?;
     // The note, or `None` for bytes that carry none; a note that cannot be read refuses.
     let declared = match elf
         .note(
@@ -756,7 +756,7 @@ fn replace_if_asked(
 /// supervision endpoint goes in the reserved fault slot, which `START` reads and clears. Nothing is
 /// kept: since §32 (a supervisor may collect a corpse without being able to build one) the region
 /// capability is not the reap. See `notes/scheduled-execution/the-program.md`.
-fn fire(elf: &elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
+fn fire(elf: &static_elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
     let Ok(region) = process_builder::memory_region_split(BUDGET, INSTANCE_PAGES) else {
         return false;
     };
@@ -795,7 +795,7 @@ fn fire(elf: &elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
 /// the way [`fire`] deletes `region`**: it is the caller's only way to reclaim the grant later, and
 /// the caller is [`collect_grant`], called next and only next by this program's one call site.
 fn fire_with_grant(
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     arg: u64,
     mem_pages: u64,
     report: bool,

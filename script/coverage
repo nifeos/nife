@@ -4,7 +4,7 @@
 #
 # The kernel and user crates are bare-metal and only run under QEMU, where host instrumentation
 # does not reach; DECISIONS §7 deliberately keeps the testable logic in host crates, and this
-# measures exactly those (abi, capability, nifefs, device_tree_blob, elf, frames, paging, pci, ...). Requires
+# measures exactly those (abi, capability, nifefs, device_tree_blob, static_elf, frames, paging, pci, ...). Requires
 # cargo-llvm-cov. Not one of the canonical "Scripts to Rule Them All"; see notes/scripts.md.
 #
 #     script/coverage            the host crates, gated at the per-file floor (CI runs this)

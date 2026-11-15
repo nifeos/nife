@@ -8,7 +8,7 @@
 //! Regenerate them with the script in [fuzz/seeds/README.md](../../../fuzz/seeds/README.md) if a
 //! deliberate tightening of `parse` makes them invalid.
 
-use elf::Elf;
+use static_elf::Elf;
 
 /// Every seed under `fuzz/seeds/elf_parse/`.
 ///
@@ -30,7 +30,7 @@ fn seed_for_this_build() -> &'static [u8] {
     SEEDS
         .iter()
         .copied()
-        .find(|seed| machine_of(seed) == elf::NATIVE_MACHINE)
+        .find(|seed| machine_of(seed) == static_elf::NATIVE_MACHINE)
         .expect("fuzz/seeds/elf_parse/ must hold a seed for the machine this build accepts")
 }
 
@@ -60,11 +60,11 @@ fn the_fuzz_seed_is_a_valid_executable() {
     );
 }
 
-/// Every machine nife runs has a seed, checked against `elf::KNOWN_MACHINES` so a missing seed
+/// Every machine nife runs has a seed, checked against `static_elf::KNOWN_MACHINES` so a missing seed
 /// fails on every host, not only the one it is missing for.
 #[test]
 fn every_machine_nife_runs_has_a_seed() {
-    for machine in elf::KNOWN_MACHINES {
+    for machine in static_elf::KNOWN_MACHINES {
         assert!(
             SEEDS.iter().any(|seed| machine_of(seed) == machine),
             "no seed in fuzz/seeds/elf_parse/ carries e_machine {machine}; \
@@ -73,7 +73,7 @@ fn every_machine_nife_runs_has_a_seed() {
     }
     assert_eq!(
         SEEDS.len(),
-        elf::KNOWN_MACHINES.len(),
+        static_elf::KNOWN_MACHINES.len(),
         "a seed for a machine no nife build accepts is dead weight in every fuzz run"
     );
 }

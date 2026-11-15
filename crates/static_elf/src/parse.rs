@@ -38,7 +38,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// # Examples
 ///
 /// ```
-/// use elf::{Elf, Error, FOREIGN_MACHINES, NATIVE_MACHINE, PF_R, PF_W, PF_X};
+/// use static_elf::{Elf, Error, FOREIGN_MACHINES, NATIVE_MACHINE, PF_R, PF_W, PF_X};
 /// fn image(flags: u32, entry: u64) -> Vec<u8> {
 ///     const EHDR: usize = 64; const PHDR: usize = 56;
 ///     let mut v = vec![0u8; EHDR + PHDR];
