@@ -596,7 +596,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// has no such property.
     ///
     /// For a device described as a child of its bus, such as a PMIC under one of seven identical
-    /// `snps,designware-i2c` controllers on the StarFive JH7110, whose `clocks` and `resets` sit on
+    /// `snps,designware-i2c` controllers on the JH7110, whose `clocks` and `resets` sit on
     /// the bus. The parent's slot is filled when the child closes, because a node's properties
     /// precede its first subnode.
     ///
@@ -1031,7 +1031,7 @@ impl<'a> DeviceTreeBlob<'a> {
         }
         Ok(PropertyHeader {
             length_bytes: len,
-            name_offset: name_offset,
+            name_offset,
             value_at,
             next: skip_padded(value_at, len)?,
         })
@@ -1185,7 +1185,7 @@ fn decode_regions(
     if pair_bytes == 0 {
         return Ok(0);
     }
-    if value.len() % pair_bytes != 0 {
+    if !value.len().is_multiple_of(pair_bytes) {
         return Err(Error::BadValue);
     }
 
@@ -1220,11 +1220,12 @@ fn decode_regions(
 /// truncated to its low 64 bits as Linux's `of_read_number` does.
 fn cells(value: &[u8]) -> Result<u64, Error> {
     let mut number = 0u64;
-    for cell in value.chunks_exact(4) {
+    let (whole, _) = value.as_chunks::<4>();
+    for cell in whole {
         if number >> 32 != 0 {
             return Err(Error::BadValue);
         }
-        number = (number << 32) | be32(cell, 0)? as u64;
+        number = (number << 32) | u32::from_be_bytes(*cell) as u64;
     }
     Ok(number)
 }

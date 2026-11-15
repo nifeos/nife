@@ -1717,7 +1717,8 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
     }
     fn answers(blob: &[u8]) -> Vec<Result<Vec<Region>, Error>> {
         let dt = DeviceTreeBlob::from_bytes(blob).unwrap();
-        let lookups: [&dyn Fn(&mut [Region]) -> Result<usize, Error>; 4] = [
+        type Lookup<'t> = &'t dyn Fn(&mut [Region]) -> Result<usize, Error>;
+        let lookups: [Lookup<'_>; 4] = [
             &|out| dt.memory_regions(out),
             &|out| dt.node_reg(b"rtc@", out),
             &|out| dt.node_reg_compatible(b"vendor,rtc", out),
