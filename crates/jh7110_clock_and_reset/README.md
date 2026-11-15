@@ -10,22 +10,6 @@ as a tree assigns it, and the I2C input-clock arithmetic. It never touches a reg
 the window and do the volatile stores, and this crate says which word, which bit and in what order.
 It is `no_std`, depends on nothing, and its tests run on the host.
 
-## Build, test and prove
-
-You need a Rust toolchain at or above the minimum version at the foot of this page (`rustup` is the
-usual way to get one) and a git checkout. From the crate root:
-
-- `cargo build` and `cargo test` run on the host and need nothing else. The tests are 50 unit
-  tests and 2 doctests.
-- The crate also builds for bare metal. Add the three targets with `rustup target add
-  riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
-  `cargo build --lib --target <target>` for each. CI does exactly this.
-- The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
-  kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
-  checker, so it needs network access. CI uses version 0.68.0, and another version may verify
-  differently. After that, `cargo kani` runs all ten harnesses in about 5 minutes (measured 4 minutes 46 seconds), using at most about 900 MB of
-  memory. To run one, use `cargo kani --harness verification::<name> --exact`.
-
 ## EXAMPLES
 
 ```rust
@@ -109,6 +93,22 @@ The PMIC is `x-powers,axp15060` in mainline and `stf,axp15060-regulator` in the 
 phandle's `#clock-cells`, `#reset-cells` and `compatible`. A specifier for another provider, or an
 id past the domain's bounds (the vendor tree's virtual clock 298), counts in `skipped` and never
 becomes a store.
+
+## Build, test and prove
+
+You need a Rust toolchain at or above the minimum version at the foot of this page (`rustup` is the
+usual way to get one) and a git checkout. From the crate root:
+
+- `cargo build` and `cargo test` run on the host and need nothing else. The tests are 50 unit
+  tests and 2 doctests.
+- The crate also builds for bare metal. Add the three targets with `rustup target add
+  riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
+  `cargo build --lib --target <target>` for each. CI does exactly this.
+- The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+  kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+  checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+  differently. After that, `cargo kani` runs all ten harnesses in about 5 minutes (measured 4 minutes 46 seconds), using at most about 900 megabytes of
+  memory. To run one, use `cargo kani --harness verification::<name> --exact`.
 
 ## BUGS
 
