@@ -1,9 +1,10 @@
 name: pin basalt
 
-# Observed failing: never run. A scheduled workflow cannot run before it is on main, because the
-#   App's secrets are scoped to main. Its decision (helpers/basalt_pin.py) was run by hand against
-#   basalt's live Releases on 2026-11-15 and chose rolling-2026-11-15-7a72aae. See
-#   notes/observed-failing.md.
+# Observed failing: 2026-11-15, by script: `helpers/basalt_pin.py --selftest` plants each way a
+#   Release must be refused (a draft, a pre-release, a missing or half-uploaded asset, a commit off
+#   main, a lying tag) and the pin must not move backward, and `resolve` ran against basalt's live
+#   Releases and chose rolling-2026-11-15-7a72aae. A real run cannot be staged before this file is
+#   on main, because the App's secrets are scoped to main.
 
 # **Keep `xtask/basalt-pin` at basalt's newest Release** (milestone 1116 (nife's basalt pin follows
 # basalt's newest Release), provisional). The pin names the basalt commit whose recipes and build
