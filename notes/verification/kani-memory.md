@@ -59,7 +59,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 | `driver_process_contract::e1000e` | 0.18 | 1 |
 | `credential_contract` | 0.17 | 1 |
 | `address_space_map` | 0.13 | 1 |
-| `paging` | 0.10 | 1 |
+| `page_tables` | 0.10 | 1 |
 | `address_space_identifier` | 0.09 | 1 |
 | `designware_ethernet` | 0.09 | 1 |
 | `driver_process_contract::non_volatile_memory_express` | 0.08 | 1 |

@@ -3,8 +3,7 @@
 pub const REPLY: u64 = 0;
 
 /// `invoke(reply, REPLY_CAPABILITY, r0, r1, capability_slot)` -> 0, or 1 when the copy did not
-/// reach the caller: [`REPLY`], carrying one capability (each socket is its own capability; name ratified
-/// 2026-10-07 UTC, number provisional); its `CALL` returns the copy's slot in `x2`.
+/// reach the caller: [`REPLY`], carrying one capability (each socket is its own capability; number provisional); its `CALL` returns the copy's slot in `x2`.
 ///
 /// - **The carried capability needs `GRANT`** and keeps its rights; there is no rights mask, so a
 ///   server narrows first. A refused source (`NoSuchSlot`, `NotPermitted`) consumes nothing.

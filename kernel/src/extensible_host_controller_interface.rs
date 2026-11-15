@@ -104,7 +104,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         .addr();
     if crate::iommu::confine(
         dev.rid,
-        &[paging::domain::DmaRegion {
+        &[page_tables::domain::DmaRegion {
             base: dma,
             size: pages * page_frames::FRAME_SIZE,
             writable: true,

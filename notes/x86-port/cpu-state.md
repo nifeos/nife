@@ -15,7 +15,7 @@ bit it sets is per-CPU state.
 ### Write-combining for the framebuffer
 
 The kernel programs `IA32_PAT` so that `PWT` alone selects write-combining, the type
-`paging::Flags::write_combining()` encodes and the framebuffer mapping uses. Mapped like a
+`page_tables::Flags::write_combining()` encodes and the framebuffer mapping uses. Mapped like a
 register (`PCD | PWT`, strong uncacheable), every four-byte store is its own bus transaction and
 the MTRRs cannot relax it. xenon's 1920x1080 aperture is 8 MB, so a full redraw is two million
 transactions, and the boot console's scrolling swept visibly down the screen. Write-combining
@@ -32,7 +32,7 @@ merely slow for a screen nothing reads back.
 
 ### SMEP: ring 0 does not execute ring-3 pages
 
-`crates/paging`'s x86 decoder reports a user page as not kernel-executable, and every confinement
+`crates/page_tables`'s x86 decoder reports a user page as not kernel-executable, and every confinement
 test that reads a mapping through `Flags::is_kernel_executable` believes it. The hardware agrees
 only with `CR4.SMEP` set. x86 has one execute permission, `XD`, and it applies at every ring, so a
 user code page with `XD` clear is executable at ring 0 too. RISC-V refuses a supervisor fetch from a

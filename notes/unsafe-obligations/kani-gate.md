@@ -40,7 +40,7 @@ cargo clippy --workspace --exclude kernel --exclude user --exclude user_mode_run
 `--cfg kani` alone does not compile: the harnesses are written against Kani's intrinsics, and
 without the crate that provides them rustc stops at `use of unresolved module or unlinked crate
 kani`. `helpers/kani-lint-shim/` is that crate, built by `script/lint` with two plain `rustc`
-invocations before the pass runs. The surface is small, which makes this cheap: across 42 packages <!--count:harness-crates--> the tree uses exactly six Kani items, `any`, `proof`,
+invocations before the pass runs. The surface is small, which makes this cheap: across 43 packages <!--count:harness-crates--> the tree uses exactly six Kani items, `any`, `proof`,
 `assume`, `unwind`, `should_panic` and `cover!`, and no `Arbitrary` derive, no contracts, no
 `any_where`. A seventh, `stub`, appears only in `kernel`, which this pass excludes, so the shim
 lacks it. Those six items are what the shim has to cover, and they do not move when a harness is
@@ -82,7 +82,7 @@ gates in one line.
 The other thirteen are ordinary clippy, in crates nobody suspected: `doc_markdown` (4),
 `manual_range_contains` (4), `manual_let_else` (2), `len_zero` (2), `needless_range_loop` (1),
 `assertions_on_constants` (1), across `asid`, `calendar`, `credential_contract`, `nifefs`, `dma_validator`,
-`paging`, `pci` and `generational_table`. That half is the answer to "does this find anything besides unsafe",
+`page_tables`, `pci` and `generational_table`. That half is the answer to "does this find anything besides unsafe",
 and it is yes: half of what the pass finds has nothing to do with unsafe at all. One of them,
 `dma_validator`'s `assert!(RING_END <= RING_BLOCK)` over two constants, became a `const {}` assertion
 and so moved from a proof-time check to a compile-time one.

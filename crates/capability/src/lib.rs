@@ -1,12 +1,10 @@
 //! Capability tables: a file descriptor table that can point at anything.
 //!
-//! The table lives in kernel memory and userspace sees only a slot number, so the unforgeability
-//! is an array and a bounds check (§10 (process model: capability-based, microkernel)). Pure logic,
-//! host-tested and Kani-proved; the kernel supplies the object type and picks the size, which is
-//! part of the type, so creating a table allocates nothing. See notes/capabilities.md and
-//! notes/capabilities/table.md.
+//! The table lives in the kernel's memory and a program sees only a slot number, so the
+//! unforgeability is an array and a bounds check. Pure logic, host-tested and Kani-proved; the
+//! owner supplies the object type and picks the size, which is part of the type, so creating a table
+//! allocates nothing.
 //!
-
 //! # Examples
 //!
 //! Rights narrow by intersection, so a capability passed on never carries more than was held.
@@ -47,7 +45,7 @@
 /// What you may do with a capability.
 ///
 /// Rights only narrow: [`CapabilityTable::derive`] cannot widen them, because the type offers no
-/// operation that would. See notes/capabilities/table.md ("Rights only narrow").
+/// operation that would.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rights(u32);
 
@@ -63,25 +61,26 @@ impl Rights {
     /// which makes delegation a decision rather than an accident.
     pub const GRANT: Rights = Rights(1 << 2);
 
-    /// The right to **learn what exists**, as distinct from acting on it (milestone 126 (the
-    /// `procps` package)): the kernel twin of `filesystem_contract`'s directory `ENUMERATE`.
+    /// The right to **learn what exists**, as distinct from acting on it: the table's twin of a
+    /// directory's `ENUMERATE`.
     ///
-    /// A domain names its members and never acts on them (calef, 2026-08-17), so `SURVEY` takes
-    /// this rather than the `READ` that `RECEIVE` and `REAP` take. Only `Rendezvous` consults it.
-    /// See notes/capabilities/table.md.
+    /// A domain names its members and never acts on them, so a survey takes this rather than the
+    /// `READ` that a receive and a reap take. An owner decides which objects consult it.
     pub const ENUMERATE: Rights = Rights(1 << 3);
 
-    /// **The right to add a thread to a process** (milestone 812 (`std::thread::spawn` runs real
-    /// threads in one address space); §269 (how threads share a process) fork 1, calef's ruling
-    /// (b) on pull request #1892, 2026-10-10 UTC). Held on a process capability, it lets
-    /// `ThreadControlBlock::CONFIGURE` join an embryo to that process without consuming the
-    /// capability. Only `Process` consults it.
+    /// **The right to add a thread to a process.** Held on a process capability, it lets a thread
+    /// under construction join that process without consuming the capability. An owner decides
+    /// which objects consult it.
     pub const BIND: Rights = Rights(1 << 4);
 
     /// **Every defined bit.** [`from_bits`](Self::from_bits) masks against this, so a right that is
     /// missing here is silently dropped at every delegation: adding a constant above without
     /// widening this mask produces a right that cannot survive being passed on.
-    pub const ALL: Rights = Rights(0b1_1111);
+    pub const ALL: Rights = Rights::READ
+        .union(Rights::WRITE)
+        .union(Rights::GRANT)
+        .union(Rights::ENUMERATE)
+        .union(Rights::BIND);
 
     /// The raw bit pattern, for carrying rights across a boundary as an integer (a syscall
     /// register). [`from_bits`](Self::from_bits) is the inverse.
@@ -132,13 +131,9 @@ pub struct Capability<O> {
 
 impl<O> Capability<O> {
     /// **Mint a fresh capability to `object` with exactly this one's rights.** The mint site for
-    /// authority created outside [`CapabilityTable::derive`]: `MemoryRegion::SPLIT` (milestone 31
-    /// (a capability shell: designation is authorization)), `MemoryRegion::RETYPE` and every
-    /// `RETYPE_OBJECT` arm (milestone 824 (a retype mints no right its budget lacks)) in
-    /// `kernel/src/capability_object.rs`. [`split_never_widens_rights`](../src/lib.rs) proves it, so a spend-only
-    /// (GRANT-less) budget cannot split itself a GRANT-bearing child. See §16 (object revocation:
-    /// reclaim the objects a process built) and notes/capabilities/table.md ("Minting outside
-    /// `derive`").
+    /// authority created outside [`CapabilityTable::derive`], such as carving a child budget out of
+    /// a parent. The harness `split_never_widens_rights` proves it, so a spend-only (`GRANT`-less)
+    /// budget cannot split itself a `GRANT`-bearing child.
     pub fn mint_child(&self, object: O) -> Capability<O> {
         Capability {
             object,
@@ -147,12 +142,12 @@ impl<O> Capability<O> {
     }
 }
 
-/// **May this supervision rendezvous collect this thread's corpse?** (§32 (a supervisor may collect
-/// a corpse without being able to build one), design/decisions/0032-reap-without-build.md.)
+/// **May this supervision rendezvous collect this thread's corpse?** A supervisor may collect a
+/// corpse without being able to build one.
 ///
-/// The whole authorization decision of `rendezvous::REAP`, which the kernel calls
-/// (`sched::reap_supervised`) before the reclaim; nothing here mints, widens, or returns a
-/// capability, so a supervisor gains no memory authority by reaping.
+/// The whole authorization decision of a reap, which an owner calls before the reclaim; nothing
+/// here mints, widens, or returns a capability, so a supervisor gains no memory authority by
+/// reaping.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reap {
     /// Authorized: this rendezvous supervises that thread, and the thread is a corpse.
@@ -170,9 +165,13 @@ pub enum Reap {
 ///
 /// The supervision check comes first, so a live stranger and a stale name give the same answer;
 /// liveness is disclosed only inside the relationship.
-pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -> Reap {
-    match fault_ep {
-        Some(ep) if ep == invoked_ep => {
+pub const fn reap_decision(
+    supervising_rendezvous: Option<u64>,
+    invoked_rendezvous: u64,
+    dead: bool,
+) -> Reap {
+    match supervising_rendezvous {
+        Some(rendezvous) if rendezvous == invoked_rendezvous => {
             if dead {
                 Reap::Permitted
             } else {
@@ -183,19 +182,17 @@ pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -
     }
 }
 
-/// **Is this thread inside the domain that rendezvous supervises?** (milestone 126 (the `procps`
-/// package), `rendezvous::SURVEY`.)
+/// **Is this thread inside the domain that rendezvous supervises?**
 ///
-/// The scoping decision of a process view, which the kernel applies to each thread it reports
-/// (`sched::survey_supervised`). It is the predicate [`reap_decision`] authorizes with, so the
-/// threads a supervisor sees are the ones whose deaths reach it. Liveness is not an input: an
-/// uncollected corpse is still in the domain. See notes/capabilities/table.md ("Reap and survey").
-pub const fn survey_includes(fault_ep: Option<u64>, invoked_ep: u64) -> bool {
-    matches!(fault_ep, Some(ep) if ep == invoked_ep)
+/// The scoping decision of a process view, which an owner applies to each thread it reports. It is
+/// the predicate [`reap_decision`] authorizes with, so the threads a supervisor sees are the ones
+/// whose deaths reach it. Liveness is not an input: an uncollected corpse is still in the domain.
+pub const fn survey_includes(supervising_rendezvous: Option<u64>, invoked_rendezvous: u64) -> bool {
+    matches!(supervising_rendezvous, Some(rendezvous) if rendezvous == invoked_rendezvous)
 }
 
 /// Why a capability table operation was refused.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Error {
     /// **The slot is empty.** Note what this is *not*: it is not "permission denied." There is
     /// nothing there. The thing you tried to name does not exist, for you.
@@ -206,13 +203,23 @@ pub enum Error {
     NoFreeSlot,
 }
 
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            Error::NoSuchSlot => "the slot is empty or out of range",
+            Error::CannotWiden => "the rights asked for are not all held",
+            Error::NoFreeSlot => "the table is full",
+        })
+    }
+}
+
+impl core::error::Error for Error {}
+
 /// **The most slots a [`CapabilityTable`] may have: one per bit of its free-slot word.**
 ///
-/// The word is a `u64` (milestone 754 (the capability table grows to 64 slots), calef's ruling A on
-/// #1608, 2026-10-04, UTC), so [`CapabilityTable::new`] asserts `N <= 64` at compile time and
-/// `kernel/src/capability.rs` asserts it again beside `CAPABILITY_TABLE_SLOTS`. Growing past 64 is a
-/// wider word or a second one; `design/roadmap/0778-capability-tables-sized-per-process.md` is the
-/// question to answer first.
+/// The word is a `u64`, so [`CapabilityTable::new`] asserts `N <= 64` at compile time, and an owner
+/// that fixes its own table size asserts it again beside that constant. Growing past 64 is a wider
+/// word or a second one.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SLOTS: usize = u64::BITS as usize;
@@ -224,21 +231,20 @@ pub use storage::CapabilityTable;
 /// The free-slot word, the occupancy count and the high-water mark are private to this module,
 /// which changes a slot only through [`fill`](CapabilityTable::fill) and
 /// [`empty`](CapabilityTable::empty). Every other mutator is written in terms of those two, so it
-/// cannot forget the bookkeeping. `verification::the_free_mask_is_the_empty_slots` and
-/// `the_count_is_the_slots` check the two doors against the array. See
-/// notes/capabilities/table.md ("Two doors").
+/// cannot forget the bookkeeping. The harnesses `the_free_mask_is_the_empty_slots` and
+/// `the_count_is_the_slots` check the two doors against the array.
 mod storage {
-    use super::{Capability, MAXIMUM_SLOTS, note_peak};
+    #[cfg(target_has_atomic = "32")]
+    use super::note_peak;
+    use super::{Capability, MAXIMUM_SLOTS};
 
     /// A thread's capability table: a flat array, an fd table with a type tag on each entry,
-    /// rather than seL4's tree of CNodes. See notes/capabilities/table.md ("The table").
+    /// rather than seL4's tree of CNodes.
     pub struct CapabilityTable<O, const N: usize> {
         slots: [Option<Capability<O>>; N],
-        /// **Bit `i` set means slot `i` is empty** (milestone 126 (the `procps` package), calef's
-        /// ruling on #1360, 2026-09-27, UTC), so `insert`'s first free slot is one
+        /// **Bit `i` set means slot `i` is empty**, so `insert`'s first free slot is one
         /// `trailing_zeros`, and bits at and above `N` stay clear, so a full table is a zero word.
-        /// A `u64` (milestone 754 (the capability table grows to 64 slots)); the table is `N`
-        /// slots, this word and two `u16` counts, rounded to eight bytes.
+        /// A `u64`; the table is `N` slots, this word and two `u16` counts, rounded to eight bytes.
         free: u64,
         /// How many of the slots are occupied right now. Maintained by the two doors rather than
         /// counted on demand, because the thing that wants it is a high-water mark and a mark
@@ -330,12 +336,13 @@ mod storage {
             self.free &= !(1u64 << slot);
             if was_empty {
                 // Wrapping, because the wrap cannot happen and this is on every reply-capability
-                // mint (release builds check overflow, notes/overflow-checks.md). `used` counts
+                // mint (release builds check overflow). `used` counts
                 // occupied slots (`the_count_is_the_slots` proves it), this slot was empty, so the
                 // result is at most `N`, which the `u64` free mask bounds at 64.
                 self.used = self.used.wrapping_add(1);
                 if self.used > self.peak {
                     self.peak = self.used;
+                    #[cfg(target_has_atomic = "32")]
                     note_peak(self.peak, N);
                 }
             }
@@ -386,7 +393,10 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 
     /// Look up a slot. **The entire security mechanism, and it is a bounds check.**
     pub fn get(&self, slot: u64) -> Result<Capability<O>, Error> {
-        self.slot(slot as usize).ok_or(Error::NoSuchSlot)
+        // A slot that does not fit `usize` names nothing, on any target: truncating it would let
+        // `2^32 + k` name slot `k` where `usize` is 32 bits.
+        let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
+        self.slot(slot).ok_or(Error::NoSuchSlot)
     }
 
     /// Look up a slot and require rights.
@@ -411,9 +421,8 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
         Ok(slot as u64)
     }
 
-    /// Put a capability in the **first free slot at or above `floor`** (milestone 812
-    /// (`std::thread::spawn` runs real threads in one address space)). [`insert`](Self::insert) is
-    /// `floor` 0. A `std` program's low slots are fixed by number and an empty one means "not
+    /// Put a capability in the **first free slot at or above `floor`**. [`insert`](Self::insert) is
+    /// `floor` 0. A program's low slots can be fixed by number, with an empty one meaning "not
     /// granted", so what the program makes for itself must land above them.
     pub fn insert_at_or_above(
         &mut self,
@@ -429,9 +438,9 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// Put a capability in a **specific free slot**, refusing an occupied or out-of-range one.
     ///
     /// The targeted counterpart of [`insert`](Self::insert). A supervisor uses it to place a
-    /// child's supervision rendezvous in the reserved fault slot (abi's `FAULT_RENDEZVOUS_SLOT`) rather than
-    /// wherever first-free would fall, and refusing an occupied slot keeps that reservation honest:
-    /// two things must never share the slot the kernel reads at `START`.
+    /// child's supervision rendezvous in a reserved slot rather than wherever first-free would fall,
+    /// and refusing an occupied slot keeps that reservation honest: two things must never share the
+    /// slot the owner reads when the child starts.
     pub fn insert_at(&mut self, slot: u64, capability: Capability<O>) -> Result<u64, Error> {
         if slot >= N as u64 {
             return Err(Error::NoSuchSlot);
@@ -445,8 +454,8 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 
     /// Put a capability in a specific slot, replacing whatever was there.
     pub fn put(&mut self, slot: u64, capability: Capability<O>) -> Result<(), Error> {
-        self.fill(slot as usize, capability)
-            .ok_or(Error::NoSuchSlot)?;
+        let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
+        self.fill(slot, capability).ok_or(Error::NoSuchSlot)?;
         Ok(())
     }
 
@@ -456,16 +465,16 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// [`Error::CannotWiden`], not a silent clamp: a loader that quietly grants less than was asked
     /// for is a loader nobody can reason about.
     pub fn derive(&mut self, from: u64, to: u64, rights: Rights) -> Result<(), Error> {
-        let src = self.get(from)?;
+        let source = self.get(from)?;
 
-        if !rights.is_subset_of(src.rights) {
+        if !rights.is_subset_of(source.rights) {
             return Err(Error::CannotWiden);
         }
 
         self.put(
             to,
             Capability {
-                object: src.object,
+                object: source.object,
                 rights,
             },
         )
@@ -473,7 +482,8 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 
     /// Drop a capability. The object may still exist; **we simply can no longer name it.**
     pub fn delete(&mut self, slot: u64) -> Result<(), Error> {
-        self.empty(slot as usize).ok_or(Error::NoSuchSlot)?;
+        let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
+        self.empty(slot).ok_or(Error::NoSuchSlot)?;
         Ok(())
     }
 
@@ -481,7 +491,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// sweeps' primitive, behaviorally a `get`-then-`delete` per slot. It reads each slot once and
     /// walks the occupied mask, not `0..N`, because a sweep visits every thread's table for every
     /// frame a revocation touches and should cost what a table holds, not its capacity.
-    pub fn delete_matching(&mut self, matches: impl Fn(&O) -> bool) {
+    pub fn delete_matching(&mut self, mut matches: impl FnMut(&O) -> bool) {
         let mut occupied = self.occupied_mask();
         while occupied != 0 {
             let slot = occupied.trailing_zeros() as usize;
@@ -494,19 +504,20 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 }
 
 /// **The high-water mark across every capability table in this binary, and the ceiling it was
-/// measured against** (milestone 231 (nothing counts how many capability slots a boot actually
-/// uses)), packed as `peak << 16 | ceiling` so a reader gets a pair true at one instant.
+/// measured against**, packed as `peak << 16 | ceiling` so a reader gets a pair true at one instant.
 ///
-/// The kernel's idle loop, its only reader, sees the mark move without walking every thread table
-/// under the scheduler lock. [`note_peak`] saturates. See notes/capabilities/table.md.
+/// A reader sees the mark move without walking every table under a lock. [`note_peak`] saturates.
 ///
 /// # BUGS
-/// - It does not say which table: a `static` cannot be keyed by a const generic. The kernel has one
-///   instantiation; a host test binary sees whichever climbed highest, and `ceiling` tells which.
+/// - It does not say which table: a `static` cannot be keyed by a const generic. An owner with one
+///   instantiation reads the mark directly; a host test binary sees whichever climbed highest, and
+///   `ceiling` tells which.
+#[cfg(target_has_atomic = "32")]
 static PEAK: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
 
 /// Raise [`PEAK`] if `peak` beats what is recorded. Called from [`CapabilityTable`]'s one private
 /// growth path, so it cannot be forgotten.
+#[cfg(target_has_atomic = "32")]
 fn note_peak(peak: u16, ceiling: usize) {
     use core::sync::atomic::Ordering;
     let ceiling = core::cmp::min(ceiling, u16::MAX as usize) as u32;
@@ -521,17 +532,17 @@ fn note_peak(peak: u16, ceiling: usize) {
 ///
 /// `(0, 0)` before anything has ever been inserted. One number for every instantiation linked
 /// into the binary; see `PEAK`'s BUGS.
+#[cfg(target_has_atomic = "32")]
 pub fn highest_seen() -> (usize, usize) {
     let packed = PEAK.load(core::sync::atomic::Ordering::Relaxed);
     ((packed >> 16) as usize, (packed & 0xffff) as usize)
 }
 
-/// Machine-checked proofs of the capability model (§14 (the project's direction), the verification
-/// thesis).
+/// Machine-checked proofs of the capability model.
 ///
 /// Each harness proves its property for every input, symbolically: `derive_never_widens_rights`
 /// covers all 2^32 source and requested rights at once. Behind `#[cfg(kani)]`, so only `cargo
-/// kani` (`script/verify`, or `cargo kani -p capability`) builds it.
+/// kani` builds it.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -598,14 +609,14 @@ mod verification {
         cs
     }
 
-    /// **The occupancy count is the slots, for every reachable table state** (milestone 231).
+    /// **The occupancy count is the slots, for every reachable table state.**
     ///
     /// A drifted count reports a high-water mark that was never true. Covers both freeing paths,
     /// `delete` and `delete_matching`; `any_small_capability_table` builds through `put`.
     ///
     /// `#[kani::unwind(4)]` is N + 1 for this harness's N = 3: every loop is an exact `0..3` or the
     /// sweep's bit-scan, which clears one of the N occupied bits per iteration, and the unwinding
-    /// assertion fails if any loop could run a fourth time. See notes/capabilities/table.md.
+    /// assertion fails if any loop could run a fourth time.
     ///
     /// Falsification: replayable `crates/capability/falsifications/verification.the_count_is_the_slots.patch`
     #[kani::proof]
@@ -616,6 +627,32 @@ mod verification {
         }
         let mut cs = any_small_capability_table();
         assert_eq!(cs.used(), occupied(&cs), "the count is wrong at the start");
+
+        // The floor insert and a second `put` over a slot that may be occupied.
+        let _ = cs.insert_at_or_above(
+            kani::any(),
+            Capability {
+                object: kani::any(),
+                rights: Rights(kani::any()),
+            },
+        );
+        assert_eq!(
+            cs.used(),
+            occupied(&cs),
+            "insert_at_or_above left the count behind"
+        );
+        let _ = cs.put(
+            kani::any(),
+            Capability {
+                object: kani::any(),
+                rights: Rights(kani::any()),
+            },
+        );
+        assert_eq!(
+            cs.used(),
+            occupied(&cs),
+            "a second put left the count behind"
+        );
 
         let slot: u64 = kani::any();
         let _ = cs.delete(slot);
@@ -634,8 +671,7 @@ mod verification {
         assert!(cs.peak() >= cs.used());
     }
 
-    /// **The free-slot word is the set of empty slots, after every mutator** (milestone 126 (the
-    /// `procps` package), calef's ruling on #1360, 2026-09-27, UTC).
+    /// **The free-slot word is the set of empty slots, after every mutator.**
     ///
     /// `insert` believes the word: "free" over an occupied slot overwrites a live capability, and
     /// "occupied" over an empty one leaks it. Bits at and above `N` must stay clear too, or a full
@@ -661,6 +697,16 @@ mod verification {
         let _ = cs.insert(capability());
         assert_eq!(cs.free_mask(), empties(&cs), "wrong after insert");
 
+        let _ = cs.insert_at_or_above(kani::any(), capability());
+        assert_eq!(
+            cs.free_mask(),
+            empties(&cs),
+            "wrong after insert_at_or_above"
+        );
+
+        let _ = cs.put(kani::any(), capability());
+        assert_eq!(cs.free_mask(), empties(&cs), "wrong after a second put");
+
         let _ = cs.delete(kani::any());
         assert_eq!(cs.free_mask(), empties(&cs), "wrong after delete");
 
@@ -676,10 +722,42 @@ mod verification {
         assert_eq!(cs.is_empty(), empties(&cs) == 0b111);
     }
 
+    /// **The high-water mark never falls across any operation, and a floor insert never lands
+    /// below its floor.** One symbolic operation of any kind, applied to a symbolic table.
+    /// `#[kani::unwind(4)]`, by `the_count_is_the_slots`'s argument.
+    ///
+    /// Falsification: replayable `crates/capability/falsifications/verification.the_peak_never_falls_and_a_floor_insert_stays_above_its_floor.patch`
+    #[kani::proof]
+    #[kani::unwind(4)]
+    fn the_peak_never_falls_and_a_floor_insert_stays_above_its_floor() {
+        let capability = Capability {
+            object: kani::any(),
+            rights: Rights(kani::any()),
+        };
+        let mut cs = any_small_capability_table();
+        let before = cs.peak();
+        let floor: u64 = kani::any();
+        let wanted: u8 = kani::any();
+        let operation: u8 = kani::any();
+        kani::assume(operation < 5);
+        let mut landed = None;
+        match operation {
+            0 => landed = cs.insert_at_or_above(floor, capability).ok(),
+            1 => drop(cs.insert(capability)),
+            2 => drop(cs.delete(kani::any())),
+            3 => drop(cs.insert_at(kani::any(), capability)),
+            _ => cs.delete_matching(|o| *o == wanted),
+        }
+        assert!(cs.peak() >= before, "the mark fell");
+        if let Some(slot) = landed {
+            assert!(slot >= floor, "a floor insert landed below its floor");
+        }
+    }
+
     /// **Consume-on-use is final.** For every table state and every slot (in bounds or not), once
     /// `delete` succeeds the slot answers `NoSuchSlot` to both `get` and a second `delete`. This is
-    /// the mechanism that makes the one-shot Reply one-shot (§12 (Call/Reply IPC: a one-shot reply
-    /// capability)): the syscall layer deletes the Reply capability the instant it is invoked.
+    /// the mechanism that makes a one-shot reply capability one-shot: the caller of `delete` removes
+    /// it the instant it is invoked.
     /// Falsification: replayable `crates/capability/falsifications/verification.a_deleted_capability_stays_deleted.patch`
     #[kani::proof]
     fn a_deleted_capability_stays_deleted() {
@@ -759,11 +837,10 @@ mod verification {
 
     /// **Authority never widens at the other mint site either: `split` inherits, it does not
     /// grant.** `MemoryRegion::SPLIT` mints outside [`CapabilityTable::derive`] through
-    /// [`Capability::mint_child`], and this proves the child's rights are exactly the parent's (milestone
-    /// 35 (prove the DMA-confinement boundary)), which implies the subset relation. Equality is the
-    /// precise claim because §16's amendment has `SPLIT` pass `GRANT` down only when the parent
-    /// holds it, so delegability comes from the root's mint, and rights down a budget tree never
-    /// increase. See notes/capabilities/table.md ("Minting outside `derive`").
+    /// [`Capability::mint_child`], and this proves the child's rights are exactly the parent's,
+    /// which implies the subset relation. Equality is the precise claim because a split passes
+    /// `GRANT` down only when the parent holds it, so delegability comes from the root's mint, and
+    /// rights down a budget tree never increase.
     /// Falsification: replayable `crates/capability/falsifications/verification.split_never_widens_rights.patch`
     #[kani::proof]
     fn split_never_widens_rights() {
@@ -785,7 +862,7 @@ mod verification {
         assert_eq!(child.object, child_object);
     }
 
-    /// **A reap is authorized by the supervision relationship, and by nothing else** (§32). For
+    /// **A reap is authorized by the supervision relationship, and by nothing else**. For
     /// every pair of rendezvous names and every liveness, `Permitted` implies the thread's recorded
     /// fault rendezvous *is* the rendezvous being invoked and the thread is dead, so no
     /// unsupervised thread, other supervisor's child or stale name is reapable. The proof pins the
@@ -794,13 +871,14 @@ mod verification {
     #[kani::proof]
     fn reap_is_permitted_only_to_the_supervising_rendezvous() {
         let invoked: u64 = kani::any();
-        let fault_ep: Option<u64> = if kani::any() { Some(kani::any()) } else { None };
+        let supervising_rendezvous: Option<u64> =
+            if kani::any() { Some(kani::any()) } else { None };
         let dead: bool = kani::any();
 
-        match reap_decision(fault_ep, invoked, dead) {
+        match reap_decision(supervising_rendezvous, invoked, dead) {
             Reap::Permitted => {
                 assert_eq!(
-                    fault_ep,
+                    supervising_rendezvous,
                     Some(invoked),
                     "reaped through the wrong rendezvous"
                 );
@@ -809,33 +887,36 @@ mod verification {
             // A live child is refused as such only when it really is ours; otherwise the answer
             // must disclose nothing, which is the next harness.
             Reap::StillAlive => {
-                assert_eq!(fault_ep, Some(invoked));
+                assert_eq!(supervising_rendezvous, Some(invoked));
                 assert!(!dead);
             }
-            Reap::NotSupervised => assert_ne!(fault_ep, Some(invoked)),
+            Reap::NotSupervised => assert_ne!(supervising_rendezvous, Some(invoked)),
         }
     }
 
     /// **The refusal for a thread you do not supervise does not depend on the thread.** For any two
     /// liveness values, a tid whose fault rendezvous is not the invoked one answers identically, so a
     /// supervisor cannot use `REAP` to learn whether some other supervisor's child (or a recycled
-    /// tid) is alive. The two facts §32 wants distinguishable are distinguishable only *inside* the
-    /// relationship.
+    /// tid) is alive. The two facts are distinguishable only *inside* the relationship.
     /// Falsification: replayable `crates/capability/falsifications/verification.a_stranger_reveals_nothing_about_its_liveness.patch`
     #[kani::proof]
     fn a_stranger_reveals_nothing_about_its_liveness() {
         let invoked: u64 = kani::any();
-        let fault_ep: Option<u64> = if kani::any() { Some(kani::any()) } else { None };
-        kani::assume(fault_ep != Some(invoked));
+        let supervising_rendezvous: Option<u64> =
+            if kani::any() { Some(kani::any()) } else { None };
+        kani::assume(supervising_rendezvous != Some(invoked));
 
         assert_eq!(
-            reap_decision(fault_ep, invoked, true),
-            reap_decision(fault_ep, invoked, false),
+            reap_decision(supervising_rendezvous, invoked, true),
+            reap_decision(supervising_rendezvous, invoked, false),
         );
-        assert_eq!(reap_decision(fault_ep, invoked, true), Reap::NotSupervised);
+        assert_eq!(
+            reap_decision(supervising_rendezvous, invoked, true),
+            Reap::NotSupervised
+        );
     }
 
-    /// **A survey shows a thread only to the rendezvous that supervises it** (milestone 126). For
+    /// **A survey shows a thread only to the rendezvous that supervises it.** For
     /// every pair of rendezvous names, inclusion holds exactly when the recorded fault rendezvous
     /// is the invoked one. Both directions matter: a stranger is never shown, and every member is,
     /// so a monitor missing an entry can conclude the thread is gone rather than hidden.
@@ -843,15 +924,16 @@ mod verification {
     #[kani::proof]
     fn a_survey_shows_exactly_the_endpoints_own_children() {
         let invoked: u64 = kani::any();
-        let fault_ep: Option<u64> = if kani::any() { Some(kani::any()) } else { None };
+        let supervising_rendezvous: Option<u64> =
+            if kani::any() { Some(kani::any()) } else { None };
 
         assert_eq!(
-            survey_includes(fault_ep, invoked),
-            fault_ep == Some(invoked)
+            survey_includes(supervising_rendezvous, invoked),
+            supervising_rendezvous == Some(invoked)
         );
     }
 
-    /// **Seeing and collecting are scoped by the same relationship** (milestone 126). For every
+    /// **Seeing and collecting are scoped by the same relationship.** For every
     /// input, a thread is in the survey exactly when a reap of it would get past the supervision
     /// check, whatever its liveness. So the domain `ps` reports and the domain a supervisor may
     /// reap from cannot diverge, which is the property that lets one predicate answer both.
@@ -859,12 +941,13 @@ mod verification {
     #[kani::proof]
     fn the_view_and_the_reap_have_the_same_scope() {
         let invoked: u64 = kani::any();
-        let fault_ep: Option<u64> = if kani::any() { Some(kani::any()) } else { None };
+        let supervising_rendezvous: Option<u64> =
+            if kani::any() { Some(kani::any()) } else { None };
         let dead: bool = kani::any();
 
         assert_eq!(
-            survey_includes(fault_ep, invoked),
-            reap_decision(fault_ep, invoked, dead) != Reap::NotSupervised,
+            survey_includes(supervising_rendezvous, invoked),
+            reap_decision(supervising_rendezvous, invoked, dead) != Reap::NotSupervised,
         );
     }
 }

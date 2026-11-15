@@ -54,7 +54,7 @@ fn forged_elf_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; 136] {
 /// An ELF that names the base of the kernel's half as its load address is refused.
 ///
 /// The refusal is by construction: the user `Mapper` is built with `Half::Low` and cannot express a
-/// high address (`paging`'s `WrongHalf` guard, there since a host test found bits 63:48 are not
+/// high address (`page_tables`'s `WrongHalf` guard, there since a host test found bits 63:48 are not
 /// translated). `KERNEL_VA_BASE` rather than a constant makes it one attack on both ISAs: aarch64's
 /// half starts at `0xffff_0000_0000_0000`, RISC-V Sv39's at `0xffff_ffc0_0000_0000`.
 ///

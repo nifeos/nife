@@ -130,7 +130,7 @@ gives each its long form. What each one found:
 
 [`the-reverse-pass.md`](proof-retrospective/the-reverse-pass.md) holds the other half of the corpus.
 Beyond the two catches in `dtb` and `pci`, one proof obligation closed a wrap in
-`paging::domain::grant_pages` (totality, not a fix), and in `crates/glob` the prover falsified the
+`page_tables::domain::grant_pages` (totality, not a fix), and in `crates/glob` the prover falsified the
 harness's own specification. Nothing a shipped harness states has afterwards turned out to be false,
 which is either a strong result or an unfalsifiable one. The reverse pass tells them apart:
 

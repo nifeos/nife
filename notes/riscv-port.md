@@ -40,7 +40,7 @@ and every one is closed. The full account of each is in
 1. `thread::Context` was aarch64-register-shaped in portable `thread.rs`. It now lives in
    `arch/*/context.rs` behind `Context::for_kernel_thread` and `Context::for_user_thread`, and
    `thread.rs` names no register.
-2. The `paging` crate encoded the aarch64 descriptor format. A `PageFormat` trait now carries the
+2. The `page_tables` crate encoded the aarch64 descriptor format. A `PageFormat` trait now carries the
    seam, the `Mapper` walk is written once, and `Aarch64` and `Sv39` each implement it with their
    own Kani proofs (DECISIONS §17 (second architecture)).
 3. `user.rs` embedded the whole userspace-entry mechanism: an aarch64 `TrapFrame`, cache
