@@ -56,16 +56,22 @@ pub enum Refusal {
 
 impl Refusal {
     /// The errno the file-service contract answers with.
+    ///
+    /// The numbers are the contract's own constants where it names them
+    /// ([`dir::EINVAL`], [`dir::ENOTDIR`], [`dir::EISDIR`], [`dir::EPERM`] and
+    /// [`filesystem_contract::verb::file_grant::EBADF`]), so a change there reaches this table. The
+    /// contract carries no constant for `ENOENT`, `ELOOP` or `EXDEV`, and those three are the
+    /// Linux numbers written here, which is the numbering the whole contract uses.
     pub const fn errno(self) -> i32 {
         match self {
-            Refusal::Malformed => 22,                  // EINVAL
-            Refusal::NotFound => 2,                    // ENOENT
-            Refusal::NotADirectory => 20,              // ENOTDIR
-            Refusal::IsADirectory => 21,               // EISDIR
-            Refusal::Narrowed | Refusal::Refused => 1, // EPERM
-            Refusal::Symlink => 40,                    // ELOOP
-            Refusal::MountCrossing => 18,              // EXDEV
-            Refusal::NotYours => 9,                    // EBADF
+            Refusal::Malformed => dir::EINVAL,
+            Refusal::NotFound => 2, // ENOENT
+            Refusal::NotADirectory => dir::ENOTDIR,
+            Refusal::IsADirectory => dir::EISDIR,
+            Refusal::Narrowed | Refusal::Refused => dir::EPERM,
+            Refusal::Symlink => 40,       // ELOOP
+            Refusal::MountCrossing => 18, // EXDEV
+            Refusal::NotYours => filesystem_contract::verb::file_grant::EBADF,
         }
     }
 }
@@ -206,8 +212,16 @@ pub enum Binding {
     Revoked,
 }
 
+/// **A handle the client named in a request**, kept apart from the badge by type: `admit` takes
+/// both, and two bare `u64` words in a row compile in either order.
+///
+/// Name: provisional.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Handle(pub u64);
+
 /// **The handle a request under `badge` may use**, or why not. `requested` is the handle the
-/// client sent, and `owner` is the badge that minted it (`None` when no such handle is open).
+/// client sent, as a [`Handle`] so it cannot be passed where the badge goes, and `owner` is the
+/// badge that minted it (`None` when no such handle is open).
 ///
 /// An open badge passes every handle through untouched, as the server always has. A bound badge's
 /// `ROOT` becomes its grant's root, and any other handle must be one it minted. A revoked badge
@@ -215,9 +229,10 @@ pub enum Binding {
 pub fn admit(
     binding: Binding,
     badge: u64,
-    requested: u64,
+    requested: Handle,
     owner: Option<u64>,
 ) -> Result<u64, Refusal> {
+    let Handle(requested) = requested;
     match binding {
         Binding::SyncOnly => Err(Refusal::NotYours),
         Binding::Open => Ok(requested),
@@ -238,18 +253,18 @@ pub fn admit(
 ///
 /// ```
 /// use filesystem_contract::fs::ROOT;
-/// use subtree_scope::{admit, Binding, Bindings, Refusal};
+/// use subtree_scope::{admit, Binding, Bindings, Handle, Refusal};
 ///
 /// let mut table = Bindings::<4>::new();
 /// // The open caller (badge 0) binds badge 2 to the server's handle 40.
 /// table.bind(0, 2, 40).unwrap();
 /// // The bound badge's `ROOT` is that directory, and a handle it did not mint is refused.
-/// assert_eq!(admit(table.of(2), 2, ROOT, None), Ok(40));
-/// assert_eq!(admit(table.of(2), 2, 7, Some(1)), Err(Refusal::NotYours));
+/// assert_eq!(admit(table.of(2), 2, Handle(ROOT), None), Ok(40));
+/// assert_eq!(admit(table.of(2), 2, Handle(7), Some(1)), Err(Refusal::NotYours));
 /// // Taking the grant back hands the root to close, and the badge reaches nothing after.
 /// assert_eq!(table.unbind(0, 2), Ok(Some(40)));
 /// assert_eq!(table.of(2), Binding::Revoked);
-/// assert_eq!(admit(table.of(2), 2, ROOT, None), Err(Refusal::NotYours));
+/// assert_eq!(admit(table.of(2), 2, Handle(ROOT), None), Err(Refusal::NotYours));
 /// ```
 ///
 /// A badge's slot is the badge itself, compared as a `u64`, so a badge past a machine word is never
@@ -436,11 +451,11 @@ mod proofs {
         let badge: u64 = kani::any();
         let requested: u64 = kani::any();
         let owner: Option<u64> = if kani::any() { Some(kani::any()) } else { None };
-        if let Ok(h) = admit(Binding::Bound { root }, badge, requested, owner) {
+        if let Ok(h) = admit(Binding::Bound { root }, badge, Handle(requested), owner) {
             assert!(h == root || (h == requested && owner == Some(badge)));
         }
-        assert!(admit(Binding::Revoked, badge, requested, owner).is_err());
-        assert!(admit(Binding::SyncOnly, badge, requested, owner).is_err());
+        assert!(admit(Binding::Revoked, badge, Handle(requested), owner).is_err());
+        assert!(admit(Binding::SyncOnly, badge, Handle(requested), owner).is_err());
     }
 
     /// **Once bound, a badge is never open again, and a bound caller changes no binding.** Over any
@@ -600,14 +615,17 @@ mod tests {
     fn a_bound_badge_is_scoped_and_a_revoked_one_reaches_nothing() {
         let mut t = Bindings::<4>::new();
         assert_eq!(
-            admit(t.of(2), 2, 7, None),
+            admit(t.of(2), 2, Handle(7), None),
             Ok(7),
             "an open badge passes through"
         );
         t.bind(0, 2, 40).unwrap();
-        assert_eq!(admit(t.of(2), 2, ROOT, None), Ok(40));
-        assert_eq!(admit(t.of(2), 2, 7, Some(2)), Ok(7));
-        assert_eq!(admit(t.of(2), 2, 7, Some(1)), Err(Refusal::NotYours));
+        assert_eq!(admit(t.of(2), 2, Handle(ROOT), None), Ok(40));
+        assert_eq!(admit(t.of(2), 2, Handle(7), Some(2)), Ok(7));
+        assert_eq!(
+            admit(t.of(2), 2, Handle(7), Some(1)),
+            Err(Refusal::NotYours)
+        );
         assert_eq!(
             t.bind(2, 3, 41),
             Err(Refusal::Refused),
@@ -621,7 +639,10 @@ mod tests {
         );
         assert_eq!(t.unbind(0, 2), Ok(Some(40)));
         assert_eq!(t.of(2), Binding::Revoked);
-        assert_eq!(admit(t.of(2), 2, ROOT, None), Err(Refusal::NotYours));
+        assert_eq!(
+            admit(t.of(2), 2, Handle(ROOT), None),
+            Err(Refusal::NotYours)
+        );
         t.bind(0, 2, 42).unwrap();
         assert_eq!(
             t.of(2),
@@ -635,8 +656,14 @@ mod tests {
         let mut t = Bindings::<4>::new();
         t.bind_sync_only(0, 3).unwrap();
         assert_eq!(t.of(3), Binding::SyncOnly);
-        assert_eq!(admit(t.of(3), 3, ROOT, None), Err(Refusal::NotYours));
-        assert_eq!(admit(t.of(3), 3, 7, Some(3)), Err(Refusal::NotYours));
+        assert_eq!(
+            admit(t.of(3), 3, Handle(ROOT), None),
+            Err(Refusal::NotYours)
+        );
+        assert_eq!(
+            admit(t.of(3), 3, Handle(7), Some(3)),
+            Err(Refusal::NotYours)
+        );
         assert_eq!(
             t.bind_sync_only(3, 2),
             Err(Refusal::Refused),
@@ -660,14 +687,17 @@ mod tests {
         let mut t = Bindings::<4>::new();
         for badge in [4u64, 5, 1 << 40, u64::MAX] {
             assert_eq!(t.of(badge), Binding::Revoked, "{badge}");
-            assert_eq!(admit(t.of(badge), badge, 7, None), Err(Refusal::NotYours));
+            assert_eq!(
+                admit(t.of(badge), badge, Handle(7), None),
+                Err(Refusal::NotYours)
+            );
             assert_eq!(Refusal::NotYours.errno(), 9, "EBADF");
             assert_eq!(t.bind(badge, 1, 40), Err(Refusal::Refused), "as a caller");
             assert_eq!(t.bind(0, badge, 40), Err(Refusal::Refused), "as a target");
             assert_eq!(t.unbind(0, badge), Err(Refusal::Refused));
         }
         assert_eq!(t.of(0), Binding::Open, "badge 0 stays the caretaker's");
-        assert_eq!(admit(t.of(0), 0, 7, None), Ok(7));
+        assert_eq!(admit(t.of(0), 0, Handle(7), None), Ok(7));
         t.bind(0, 3, 40).unwrap();
         assert_eq!(
             t.of(3),

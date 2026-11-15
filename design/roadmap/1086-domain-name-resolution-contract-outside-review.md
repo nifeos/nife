@@ -123,8 +123,8 @@ The P1 items are in [the appendix](1086-domain-name-resolution-contract-outside-
 
 ## Decisions for the architect
 
-Only the doors that someone outside this repository acts on after the first tag. Each is one
-decision; the recommendation comes first.
+The doors that someone outside this repository acts on after the first tag. Each is one
+decision; the recommendation comes first. Decision 1 is decided, provisionally.
 
 1. The public names that the current rules reopen (item 4). Recommendation: rename all of them in
    one lane, before the tag, as below. And keep `status`, `network_step`, `Outcome`, `Denied`,
@@ -152,6 +152,16 @@ decision; the recommendation comes first.
    `MAXIMUM_NAME_TEXT_BYTES = 253` beside `domain_name_system::MAXIMUM_NAME_BYTES = 255` can tell at
    once that one holds dotted text and the other wire bytes. `NAME_TEXT_MAXIMUM` beside
    `MAXIMUM_NAME_BYTES` reads as two spellings of one thing.
+
+   Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+   tag, which the architect may revisit. The table holds, with three changes. `MAXIMUM_ADDRESSES`
+   becomes `MAXIMUM_IPV4_ADDRESSES`, not `MAXIMUM_IP_ADDRESSES`: the contract asserts it equal to
+   `domain_name_system::MAXIMUM_ADDRESSES` (`src/lib.rs` line 50), which decision 3 of milestone
+   1087 renames to `MAXIMUM_IPV4_ADDRESSES`, and the page layout says the addresses are IPv4
+   (`src/lib.rs` line 11). The offsets take the family-wide spelling `<FIELD>_OFFSET_BYTES`:
+   `OFF_NAME` becomes `NAME_OFFSET_BYTES` and `OFF_ADDRESSES` becomes
+   `IPV4_ADDRESSES_OFFSET_BYTES`. `OPERATION_ATTACH_PAGE_FRAME` waits for the socket contract's
+   operation-name ruling and moves with it. Item 4 is the work.
 
 2. The reply word to a control `CALL` (item 6). Ruled 2026-11-14 (UTC), option A. The reply uses
    `Outcome`'s packing, a status byte and a detail byte, exactly as a resolve reply does.
@@ -194,7 +204,8 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 - **Done.** Item 5, the interface identity (decision 3): the crate's docs state `INTERFACE_ID` 11
   and `VERSION` 1 as frozen.
 - **Outstanding.** Every other item of this review: items 1 to 3 before the move, items 4 and 7 to
-  11 before the tag, and items 12 to 14 for later. Decision 1, the names, waits on its ruling.
+  11 before the tag, and items 12 to 14 for later. The maintainer has decided
+  decision 1, the names, provisionally, and a lane applies them.
 - **Outstanding.** A runtime log channel for the spawner. The spawner reads the reason for a
   refused grant, but nothing lets it write a line once the shell runs, so a lane that gives it one
   also prints that reason.

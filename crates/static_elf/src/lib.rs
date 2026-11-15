@@ -1,0 +1,45 @@
+//! An ELF64 loader's front half: parse, validate, and hand back the segments to map.
+//!
+//! Pure logic that builds for the host: it parses static, little-endian `ET_EXEC` binaries for
+//! this build's own machine and refuses everything else (no dynamic linking, relocations,
+//! interpreter or PIE).
+//!
+//! See notes/elf.md and notes/elf/parser.md.
+//!
+//! Name: ratified 2026-11-14 (UTC) (block 1088, option A): `static_elf`, the one kind of file the
+//! crate accepts. The crates.io name `elf` belongs to a different, widely used parser, so the
+//! package takes the same name as the code, with no `package =` rename and no `doc(alias)` of the
+//! old spelling. Refused `executable_and_linkable_format` (the acronym test, decision 154).
+
+#![no_std]
+
+mod note;
+pub use note::{NoteError, NoteSearch, NoteSegment, NoteSegments};
+
+/// Machine-checked proofs of the loader's front half (§14 (the project's direction), milestone 18
+/// (verify the capability core, then spread inward)).
+///
+/// They prove the per-segment bounds check panic-free and in bounds. Totality of `Elf::parse` over
+/// every byte string is past bounded model checking at a useful input size; the tests cover the
+/// specific hostile files by example. See notes/verification/elf-parser-wall.md and
+/// notes/elf/parser.md.
+#[cfg(kani)]
+mod verification;
+
+#[cfg(test)]
+mod tests;
+
+mod error;
+mod machine;
+mod parse;
+mod segment;
+
+pub use error::Error;
+use machine::*;
+pub use machine::{
+    FOREIGN_MACHINES, KNOWN_MACHINES, NATIVE_MACHINE, machine_no_nife_build_accepts,
+};
+pub use parse::Elf;
+use parse::*;
+use segment::*;
+pub use segment::{PF_R, PF_W, PF_X, Segment};

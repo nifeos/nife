@@ -400,7 +400,7 @@ pub(crate) fn has_initial_ramdisk_riscv() -> bool {
 
 /// Where the `x86_64` initial ramdisk archive is written (milestone 161 (the x86_64 kernel port)).
 /// Separate from the other two because it holds `x86_64` ELFs, and the kernel's loader refuses
-/// anything whose `e_machine` is not its own (`crates/elf`'s `EXPECTED_MACHINE`).
+/// anything whose `e_machine` is not its own (`crates/static_elf`'s `EXPECTED_MACHINE`).
 pub(crate) fn x86_initial_ramdisk_path() -> String {
     workspace_root()
         .join("target/initial-ramdisk-x86_64.img")

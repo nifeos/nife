@@ -153,7 +153,7 @@ into an `Error`.
   reads the strings block as tokens.
 - A `reg` pair whose `start + size` wraps is `Error::RegionOverflow`. `Region::end` still
   saturates, because `Region` is `pub` with `pub` fields and anyone can build one. That is the
-  argument `elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
+  argument `static_elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
   own, whatever the parser that usually builds it checked. The fuzz target
   `fuzz/fuzz_targets/device_tree_blob_walk` found the panic it closes.
 - The walkers that keep per-depth state stop at a depth of 16. Past it they refuse to match

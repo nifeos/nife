@@ -240,8 +240,10 @@ pub(crate) fn open_udp(
     ports: &mut ephemeral::Ports,
 ) -> Result<(usize, u64), u64> {
     let entry = table.free().ok_or(REP_ERR)?;
+    let local_port = ports
+        .next(instant().total_millis() as u64, |p| table.port_held(p))
+        .ok_or(REP_ERR)?;
     let handle = sockets.add(udp_socket());
-    let local_port = ports.next(instant().total_millis() as u64, |p| table.port_held(p));
     let _ = sockets.get_mut::<udp::Socket>(handle).bind(local_port);
     table.install(entry, handle, Kind::Udp, local_port);
     Ok((entry, REP_OK))
@@ -254,11 +256,13 @@ pub(crate) fn open_tcp(
     ports: &mut ephemeral::Ports,
 ) -> Result<(usize, u64), u64> {
     let entry = table.free().ok_or(REP_ERR)?;
+    let local_port = ports
+        .next(instant().total_millis() as u64, |p| table.port_held(p))
+        .ok_or(REP_ERR)?;
     let handle = sockets.add(tcp::Socket::new(
         tcp::SocketBuffer::new(vec![0u8; TCP_RECEIVE_BUF]),
         tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
     ));
-    let local_port = ports.next(instant().total_millis() as u64, |p| table.port_held(p));
     table.install(entry, handle, Kind::Tcp, local_port);
     Ok((entry, REP_OK))
 }

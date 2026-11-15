@@ -135,8 +135,8 @@ pub const RUNTIME_WINDOWS: Band = Band {
     end: 0x4000_0000,
 };
 
-/// **The heap.** A heap's base is this band's start, and its maximum is this band's width. A
-/// program with no heap still leaves it empty.
+/// **The heap.** `std_runtime_contract::HEAP_BASE` and `memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS` are
+/// its start, and std's `HEAP_MAXIMUM` is its width. A program with no heap still leaves it empty.
 pub const HEAP: Band = Band {
     start: RUNTIME_WINDOWS.end,
     end: 0x5000_0000,

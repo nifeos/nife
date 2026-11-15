@@ -78,7 +78,7 @@ overflowed when the boot held more locals. So every step is `#[inline(never)]`, 
 are gone before the spawn service starts.
 
 `graphical_terminal_grants` measures the graphical stack's three programs out of line, not in the
-measured pass, for the same reason: three more `elf::Elf`s in `boot`'s frame overflowed it under
+measured pass, for the same reason: three more `static_elf::Elf`s in `boot`'s frame overflowed it under
 `package install`. `build_grant` is out of line for the spawn service's frame: an install runs
 `package_archive`'s parser beneath it.
 

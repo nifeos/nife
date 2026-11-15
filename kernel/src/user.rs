@@ -4,9 +4,9 @@
 //! a forged [`TrapFrame`] falls into `exception_restore`. See notes/userspace.md, and
 //! notes/kernel-wired-services.md for the services.
 
-use elf::Elf;
 use page_frames::{FRAME_SIZE, PageFrame};
 use paging::{Flags, Half, MapError, Mapper};
+use static_elf::Elf;
 
 use crate::arch::exceptions::{TrapFrame, enter_user};
 use crate::arch::mmu::{self, phys_to_ptr};

@@ -82,3 +82,4 @@ intrusive_fifo,intrusive_queue,f0fb1a9c,2026-10-26
 supervision_protocol,supervision_contract,4cfe7c20,2026-10-28
 block_roster,block_roster_contract,4d9f5027,2026-11-09
 pci,pci_configuration_space,41d4ed9b,2026-11-14
+elf,static_elf,3b35516a,2026-11-14

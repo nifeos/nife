@@ -366,10 +366,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "elf"
-version = "0.1.0"
-
-[[package]]
 name = "elliptic-curve"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -561,7 +557,6 @@ dependencies = [
  "address_space_map",
  "approval_file",
  "capability_manifest_note",
- "elf",
  "entropy_backend",
  "filesystem_contract",
  "grant_plan",
@@ -572,6 +567,7 @@ dependencies = [
  "package_index",
  "pinned_tls_client",
  "socket_contract",
+ "static_elf",
  "std_runtime_contract",
  "user_mode_runtime",
 ]
@@ -620,7 +616,7 @@ dependencies = [
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
- "elf",
+ "static_elf",
 ]
 
 [[package]]
@@ -1048,6 +1044,10 @@ dependencies = [
  "base64ct",
  "der",
 ]
+
+[[package]]
+name = "static_elf"
+version = "0.1.0"
 
 [[package]]
 name = "std_runtime_contract"

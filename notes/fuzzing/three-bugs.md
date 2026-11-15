@@ -37,7 +37,7 @@ Fixed twice over, at the source and at the type. `decode_reg` now refuses a wrap
 (`Error::RegionOverflow`), because a boot path should be told its memory map is impossible rather
 than work around it. And `end()` saturates, because `Region` is `pub` with `pub` fields and a type
 anyone can construct has to hold on its own. That second argument is not new here;
-`elf::Segment::page_range` already carries it in a comment.
+`static_elf::Segment::page_range` already carries it in a comment.
 
 Found by the fuzzer, in about ten minutes from a cold corpus, starting from a mutated copy of the
 committed `qemu-aarch64-virt.dtb`. Nobody had thought to look at `end()`.
