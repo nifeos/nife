@@ -354,6 +354,22 @@ fn reservations_are_read_entry_by_entry() {
     assert_eq!(dt.memory_reservations(&mut out), Ok(2));
     assert_eq!((out[0].start, out[0].size), (0, 0x1000));
     assert_eq!((out[1].start, out[1].size), (0x8000_0000, 0x2000));
+
+    // An entry that wraps the address space is refused, as a `reg` pair of that shape is, and one
+    // that ends exactly at the top is not.
+    let reservations = |entries: &[(u64, u64)]| {
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        b.prop(b"#address-cells", &2u32.to_be_bytes());
+        b.end_node();
+        b.finish_with_reservations(entries)
+    };
+    let blob = reservations(&[(0x1000, 0x1000), (u64::MAX - 0xfff, 0x1000)]);
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.memory_reservations(&mut out), Err(Error::RegionOverflow));
+    let blob = reservations(&[(u64::MAX - 0x1000, 0x1000)]);
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.memory_reservations(&mut out), Ok(1));
 }
 
 /// `/memory` on a 32-bit-style board: `#address-cells = 1`, two reg entries. Deleting the

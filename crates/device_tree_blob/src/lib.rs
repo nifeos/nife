@@ -280,6 +280,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// empty, but a real board's firmware often does not, and a kernel that skips it
     /// will happily allocate over the firmware's own tables.
     ///
+    /// An entry whose `start + size` does not fit in 64 bits is [`Error::RegionOverflow`], as a
+    /// `reg` pair of the same shape is. The specification places the block on an 8-byte boundary,
+    /// and that is not checked: every read here is byte-wise, so a misplaced block reads the same.
+    ///
     /// Name: provisional. Refused `reserved_regions`, with no alias for it (milestone 1085 (what an
     /// outside maintainer would fix before it leaves) D5).
     pub fn memory_reservations(&self, out: &mut [Region]) -> Result<usize, Error> {
@@ -294,6 +298,9 @@ impl<'a> DeviceTreeBlob<'a> {
             // The list is terminated by an all-zero entry.
             if start == 0 && size == 0 {
                 return Ok(n);
+            }
+            if start.checked_add(size).is_none() {
+                return Err(Error::RegionOverflow);
             }
 
             *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
