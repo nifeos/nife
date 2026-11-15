@@ -1648,23 +1648,17 @@ crates/device_tree_blob/src/lib.rs::from_ptr
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 
-crates/device_tree_blob/src/lib.rs::node_prop
 
-crates/device_tree_blob/src/lib.rs::node_prop_compatible
 
-crates/device_tree_blob/src/lib.rs::node_prop_inherited
 
-crates/device_tree_blob/src/lib.rs::node_props
 
 crates/device_tree_blob/src/lib.rs::node_reg
 
 crates/device_tree_blob/src/lib.rs::node_reg_compatible
 
-crates/device_tree_blob/src/lib.rs::phandle_prop
 
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions
 
-crates/device_tree_blob/src/lib.rs::reserved_regions
 
 crates/device_tree_blob/src/lib.rs::total_size
 
