@@ -39,6 +39,13 @@ struct ReadmeExample;
 /// naming both; the ABI never
 /// dual-serves.
 ///
+/// Retired numbers, and what owes the bump. A number that was served and no longer is stays in
+/// the crate as reserved and is never reused for another method; it is pinned in
+/// `tests::reserved_numbers_are_never_reused`. Removing a number that no kernel serves is not done.
+/// Changing the value or the meaning of a number a kernel serves owes a bump of this constant:
+/// `helpers/format_values_check.py` refuses a change or removal of any public number of this crate
+/// that arrives without a changed `ABI_VERSION`, and a new number owes nothing.
+///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const ABI_VERSION: u32 = 1;
 
@@ -116,10 +123,12 @@ pub type CapabilitySlot = u64;
 /// program that names it is built against one copy of this crate.
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
-/// Methods on a `Console` capability. **Historical: no longer wired up.**
+/// Methods on a `Console` capability. **Reserved: the number is retired.**
 ///
-/// No kernel serves a `Console` object any more (the console is a userspace server reached by a
-/// `Rendezvous`), and nothing in the kernel dispatches this constant.
+/// The kernel-served `Console` object was removed (the console became a userspace server
+/// reached by a `Rendezvous`), so no object type names a console and no kernel dispatches
+/// [`console::WRITE`]. The number stays in the crate as reserved and no other method on a console
+/// ever takes it.
 pub mod console;
 
 /// Methods on a `Rendezvous` capability. **This is IPC.**

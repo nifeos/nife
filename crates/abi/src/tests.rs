@@ -158,6 +158,29 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
     assert!(!RegisterShape::new(0, 4).is_word_access());
 }
 
+/// A retired number stays reserved and is never reused. Each row is a module, a method name and
+/// the number that was served; the live numbers of that module must not include the number under
+/// another name. Removing a number that no kernel serves is not done, so a row also stays
+/// pinned in the list below.
+#[test]
+fn reserved_numbers_are_never_reused() {
+    // (module, retired name, retired number, the live numbers of the same module)
+    let reserved: &[(&str, &str, u64, &[u64])] = &[
+        // No live method of a console exists; the module holds only the reserved number.
+        ("console", "WRITE", crate::console::WRITE, &[]),
+    ];
+    for (module, name, number, live) in reserved {
+        assert_eq!(
+            *number, 0,
+            "{module}::{name} keeps the number it was served under"
+        );
+        assert!(
+            !live.contains(number),
+            "{module}::{name} is reserved, so no live method takes {number}"
+        );
+    }
+}
+
 macro_rules! pinned {
     ($($path:path => $expected:expr,)*) => {
         $(assert_eq!($path, $expected, stringify!($path));)*

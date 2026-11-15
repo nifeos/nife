@@ -28,7 +28,10 @@ sides of the syscall boundary.
 - `ABI_VERSION` (1) is one number for the whole surface, and `INTERFACE_ID` (1) names this
   interface in a program's declaration of what it links. A kernel refuses, at spawn, a program
   built against another version, and the ABI never dual-serves. A renumber of any public number
-  bumps `ABI_VERSION`.
+  bumps `ABI_VERSION`. A retired number stays in the crate as reserved and is never reused; the
+  console's `WRITE` is one, and a test holds it. The version gate
+  (`helpers/format_values_check.py`) refuses a change or removal of a public number without a
+  changed `ABI_VERSION`.
 - The numbers are pinned as literals in the crate's tests, and a test counts every public number
   to see that each one is pinned. Changing a number fails the build until the test and the version
   change with it.
