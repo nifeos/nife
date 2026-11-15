@@ -195,7 +195,7 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 
 - **Done.** The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on
   decision A: the names, the rename, the `Result` return, the two accessors and the local binding.
-  Decision B is recorded as the rule in force.
+  Decision B stands as the rule in force.
 - **Done.** The branch `lane/1100-outside-review-fixes` built the code items.
   - A `PageSource` seam, 16 host tests and three Kani harnesses with falsification patches (item 8).
   - A second `initialize` refused (item 5) and a zero grow refused (item 6).
