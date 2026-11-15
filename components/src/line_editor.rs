@@ -64,13 +64,13 @@ const MODE_DISPLAY: u64 = 1;
 /// [`MODE_DISPLAY`] the same frame `display_terminal` reads at its own `OUT_VA`. Must match the
 /// wiring (the progenitor, which builds `display_terminal` too since milestone 600 (provisional)); one address
 /// either way, since the two modes never coexist in one process.
-const CONOUT_VA: u64 = address_space_map::pair_page(0x0060_0000);
+const CONOUT_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 /// The client's output page, mapped read-only: `OPERATION_WRITE` text and `OPERATION_READLINE` prompts arrive
 /// here, written by the client at its own VA for this frame.
-const APP_OUT_VA: u64 = address_space_map::pair_page(0x0080_0000);
+const APP_OUT_VA: u64 = address_space_layout::pair_page(0x0080_0000);
 /// The client's input page, mapped read/write: completed lines are delivered here for the
 /// client to read at its own VA for this frame.
-const APP_IN_VA: u64 = address_space_map::pair_page(0x0090_0000);
+const APP_IN_VA: u64 = address_space_layout::pair_page(0x0090_0000);
 
 const PAGE: usize = 4096;
 

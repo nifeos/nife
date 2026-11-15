@@ -56,7 +56,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   and untyped reclamation), §16 (object revocation); `crates/capability`).
 - **MMU escape.** EL0 reading, writing, or executing kernel memory or another address space;
   breaking W^X; a stale TLB entry exposing a dead owner's data; anything reachable from userspace
-  that maps physical memory outside the process's own untyped budget (`crates/paging`,
+  that maps physical memory outside the process's own untyped budget (`crates/page_tables`,
   notes/mmu.md).
 - **DMA escape.** A device programmed by a userspace driver to read or write memory outside the
   grant it was given, through the software descriptor validator or past the IOMMU domain (DECISIONS

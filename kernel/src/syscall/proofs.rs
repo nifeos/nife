@@ -3,7 +3,7 @@ use super::*;
 
 /// The page size the run arithmetic steps by, spelled once so the harnesses below and
 /// `run_end_virtual_address` cannot drift apart.
-const PAGE: u128 = paging::PAGE_SIZE as u128;
+const PAGE: u128 = page_tables::PAGE_SIZE as u128;
 
 /// **`run_end_virtual_address` is exact, and it refuses exactly the runs that do not fit.**
 ///
@@ -60,8 +60,10 @@ fn every_page_between_the_checked_ends_is_itself_a_user_page() {
     let Some(last_va) = run_end_virtual_address(va, count) else {
         return;
     };
-    kani::assume(paging::is_user_page_va::<crate::arch::mmu::Format>(va));
-    kani::assume(paging::is_user_page_va::<crate::arch::mmu::Format>(last_va));
+    kani::assume(page_tables::is_user_page_va::<crate::arch::mmu::Format>(va));
+    kani::assume(page_tables::is_user_page_va::<crate::arch::mmu::Format>(
+        last_va,
+    ));
 
     // What the loop body computes. In a release build this is wrapping arithmetic; the claim
     // is that it never gets the chance to wrap.
@@ -70,9 +72,9 @@ fn every_page_between_the_checked_ends_is_itself_a_user_page() {
         va as u128 + offset <= last_va as u128,
         "no page of the run is computed past the end the guard checked"
     );
-    let page_va = va + k * paging::PAGE_SIZE;
+    let page_va = va + k * page_tables::PAGE_SIZE;
     assert!(
-        paging::is_user_page_va::<crate::arch::mmu::Format>(page_va),
+        page_tables::is_user_page_va::<crate::arch::mmu::Format>(page_va),
         "every page the map loop touches is an aligned user-half page"
     );
 }

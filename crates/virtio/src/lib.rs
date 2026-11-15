@@ -50,7 +50,7 @@ use user_mode_runtime::{
 // The kernel maps the DMA page at this fixed VA (must match kernel/src/user/virtio_service.rs).
 // The device REGISTERS are NOT mapped: we drive the device through a `Virtio` capability (slot 2),
 // so we cannot point it outside this DMA region. See kernel/src/virtio.rs.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// Capability slots the kernel handed us, by convention.
 const REPORT: u64 = 0; // SEND: report the result back to the kernel

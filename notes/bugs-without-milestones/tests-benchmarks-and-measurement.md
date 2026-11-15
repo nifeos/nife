@@ -4,7 +4,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 
 | Where | Gap | Proposed milestone | Size |
 |---|---|---|---|
-|  crates/paging/tests/mapping.rs | Frame-guard binding is opt-in in this file; the sibling fixture was converted so forgetting is a compile error, this one was not (21 call sites). | Hang mapping.rs table allocation off the guard like domain.rs | S  |
+|  crates/page_tables/tests/mapping.rs | Frame-guard binding is opt-in in this file; the sibling fixture was converted so forgetting is a compile error, this one was not (21 call sites). | Hang mapping.rs table allocation off the guard like domain.rs | S  |
 |  design/decisions/0055-shell-holds-the-redirect.md (last bullet) | Every byte crosses the shell's address space twice; nothing prices it. | Price the shell's double copy for redirects | S  |
 |  design/decisions/0139-cycle-counter-authority.md (first bullet) | Cost of the added `msr` on the context-switch path is priced by shape, never measured (may be answered by 229 or 237; verify). | Measure the cycle-counter grant's switch-path cost | S  |
 |  design/decisions/0145-compartmentalization-at-process-cost.md (66 us bullet) | The 66 microsecond figure is a spawn benchmark, not a disposable-domain measurement. | Measure a disposable domain, not a spawn | M  |

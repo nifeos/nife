@@ -24,10 +24,10 @@ use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
-const CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// The page of words the thread pointers name, identical in every spinner's space.
-const VA: u64 = address_space_map::pair_page(0x0060_0000);
+const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// Word `i` of the page holds `1 << i`, and spinner `i`'s thread pointer is `VA + 8 * i`.
 const SPINNERS: usize = 2 * crate::cpu::MAXIMUM_CPUS;

@@ -50,7 +50,7 @@ const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 
 /// Where the wiring maps the clock page, read-only. Must match `kernel/src/user.rs`'s
 /// `date_tests::CLOCK_VA`.
-const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
+const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
 
 // The `a0` format selector. Must match system_tests/src/user/date_tests.rs. Zero is `Human` so that a
 // spawn that passes no arguments at all gets the default a person wants.
@@ -69,8 +69,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: byte_sink_contract::INTERFACE_ID,

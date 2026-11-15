@@ -26,7 +26,7 @@ use user_mode_runtime::{
 
 const MEMORY_REGION: u64 = 0; // retype + page tables
 const REPORT: u64 = 1;
-const VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
+const VA: u64 = address_space_layout::pair_page(0x0000_0000_00c0_0000);
 
 user_mode_runtime::program_entry!(start);
 

@@ -25,8 +25,8 @@ use user_mode_runtime::{exit, map_page_frame, receive_capability, send};
 const CHANNEL: u64 = 0; // RECEIVE_CAPABILITY the frame here
 const MEMORY_REGION: u64 = 1; // page tables for our own mappings come from here
 const REPORT: u64 = 2; // report the verdict here
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
-const RW_VA: u64 = address_space_map::pair_page(0x0000_0000_00B0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
+const RW_VA: u64 = address_space_layout::pair_page(0x0000_0000_00B0_0000);
 
 user_mode_runtime::program_entry!(start);
 

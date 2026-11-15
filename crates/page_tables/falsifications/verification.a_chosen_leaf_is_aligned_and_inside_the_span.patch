@@ -1,0 +1,26 @@
+Falsifies `page_tables::verification::a_chosen_leaf_is_aligned_and_inside_the_span`.
+
+The defect: `PageSize::largest_fitting` checks that both addresses are aligned to a
+block and forgets to check that the block fits in what is left of the span. That is
+the natural shortcut, since alignment is the part the hardware insists on, and it is
+the one that matters: on the direct map, a span ending mid-block would get a whole
+2 MiB or 1 GiB leaf, mapping the bytes past its end (a device window cacheable, or the
+kernel image's frames under a second, writable alias) while every translation inside
+the span still reads back correctly.
+
+Expected to fail: `assert!(bytes <= remaining, ...)`, for any aligned `va` and `pa`
+with less than a block remaining.
+
+diff --git a/crates/page_tables/src/page_size.rs b/crates/page_tables/src/page_size.rs
+index b0b98588b..d8088d2fc 100644
+--- a/crates/page_tables/src/page_size.rs
++++ b/crates/page_tables/src/page_size.rs
+@@ -59,7 +59,7 @@ impl PageSize {
+         // arithmetic. Every size is a power of two, so alignment is a mask test, not a division.
+         const fn fits(va: u64, pa: u64, remaining: u64, size: PageSize) -> bool {
+             let bytes = size.bytes();
+-            (va | pa) & (bytes - 1) == 0 && remaining >= bytes
++            (va | pa) & (bytes - 1) == 0
+         }
+         let allowed = largest.levels_above_bottom();
+         if allowed >= 2 && fits(va, pa, remaining, PageSize::Size1GiB) {

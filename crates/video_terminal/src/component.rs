@@ -56,7 +56,7 @@ pub const MAP_BUDGET_PAGES: u64 = 8;
 /// compositor's control page below it.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
-pub const HANDOFF_ADDRESS: u64 = address_space_map::pair_page(0x0000_0000_0b00_0000);
+pub const HANDOFF_ADDRESS: u64 = address_space_layout::pair_page(0x0000_0000_0b00_0000);
 
 /// **Pages one instance is built out of.** Its image, its stack, its page tables and its
 /// revocation log. The image is most of it, because blank cells are not zero bytes and the grid

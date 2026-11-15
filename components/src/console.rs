@@ -97,7 +97,7 @@ const REPLY: u64 = 1;
 
 /// The page the client writes text into, mapped read-only in the server's space. Must match what
 /// the client (the progenitor, or the shell) maps and what the progenitor hands the server (`CON_SHARED_VA`).
-const SHARED_VA: u64 = address_space_map::pair_page(0x0060_0000);
+const SHARED_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 /// How much of it there is. One frame, which is what `console_service` maps, and the bound every
 /// byte count from a client is clamped to.
 const PAGE: u64 = 4096;
@@ -134,7 +134,7 @@ const SCREEN_BATCHING_ENABLED: bool = false;
 const SCREEN_BATCH_NANOSECONDS: u32 = 20_000_000;
 /// Where the page `display_terminal` reads an `OPERATION_WRITE`'s bytes from is mapped, in [`MODE_SCREEN`]
 /// only. Must match `crates/system_initializer`'s `CON_SCREEN_OUT_VA`.
-const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
+const SCREEN_OUT_VA: u64 = address_space_layout::pair_page(0x0068_0000);
 
 /// The server's device mapping of the UART registers. Must match the progenitor's `CON_UART_VA`.
 // Unused on x86_64: there is no page for it to name (`user::UART_PHYS` is zero, DECISIONS §121),
@@ -142,7 +142,7 @@ const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
 // address is the wiring's fact, agreed with the progenitor, and hiding it on one architecture would make the
 // two sides of that agreement look like two different constants.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
-const UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const UART_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 
 user_mode_runtime::program_entry!(start);
 
