@@ -268,11 +268,11 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 
 ## BUGS
 
-- Items 1 and 11 are built in the crate and not in the template: the address names say which
-  address they hold (`station_mac_address`, `physical_layer_device_bus_address`), and the two
+- Items 1 and 11 are built in the crate and not in the template. The address names say which
+  address they hold (`station_mac_address`, `physical_layer_device_bus_address`). The two
   `100BASE-TX` constants spell the physical layer out as `100BASE_TWISTED_PAIR`. Both are the
-  maintainer's provisional calls, which depart from this review's recommendation of a template
-  allowance, so the move does not wait on a template change.
+  maintainer's provisional calls and depart from this review's recommendation of a template
+  allowance. The move waits on no template change.
 - The review did not verify item 16's question, which tree inverts the 10 Mbit/s transmit clock,
   against either device tree.
 - Items 15 and 17 cite Linux's `motorcomm.c` and the controller databook from memory, marked so in
