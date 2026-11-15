@@ -55,14 +55,6 @@ let mut frame_buffer = [0u8; 1514];
 assert_eq!(data_plane.receive(&mut region, &mut tails, &mut frame_buffer), None);
 ```
 
-## Building and testing
-
-`cargo build` and `cargo test` need no setup beyond a Rust toolchain at the minimum version below.
-`cargo test` runs the unit tests against the simulated controller and the example above as a
-documentation test. The crate is `no_std`, so `cargo build --target riscv64imac-unknown-none-elf`
-builds it for the bare-metal board target once `rustup target add riscv64imac-unknown-none-elf` has
-installed it. The Kani proofs under "What is proven" are the only part that needs extra tools.
-
 ## What is proven
 
 Six Kani harnesses, in `src/proofs.rs`:
@@ -104,6 +96,14 @@ shows the proof checks something; the patch header names the assertion. `patch -
 takes it out again.
 
 MDIO sequencing, the physical layer device configuration writes and controller bring-up have unit tests against the simulator but no proof.
+
+## Building and testing
+
+`cargo build` and `cargo test` need no setup beyond a Rust toolchain at the minimum version below.
+`cargo test` runs the unit tests against the simulated controller and the example above as a
+documentation test. The crate is `no_std`, so `cargo build --target riscv64imac-unknown-none-elf`
+builds it for the bare-metal board target once `rustup target add riscv64imac-unknown-none-elf` has
+installed it. The Kani proofs under "What is proven" are the only part that needs extra tools.
 
 ## BUGS
 
