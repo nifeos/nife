@@ -220,26 +220,38 @@ const VENDOR_CLOCK_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aon";
 const VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
 
 /// `JH7110_AONCLK_GMAC0_AHB` \[mainline-ids\]: a gate, `gmac0`'s `pclk`. Word `0x08`.
-pub(crate) const AONCLK_GMAC0_AHB: u32 = 2;
+#[doc(alias = "JH7110_AONCLK_GMAC0_AHB")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 2;
 /// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its CSR and bus clock). Word `0x0c`.
-pub(crate) const AONCLK_GMAC0_AXI: u32 = 3;
-/// **`gmac0` transmit clock** (`AONCLK_GMAC0_TX`, `JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
+#[doc(alias = "JH7110_AONCLK_GMAC0_AXI")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 3;
+/// **`gmac0` transmit clock** (`JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
 /// `gmac0_rmii_rtx` (1). Word `0x14`, which the vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
 /// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii` in \[vendor-board\]).
 ///
 /// [vendor-board]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/board/starfive/visionfive2/starfive_visionfive2.c
 #[doc(alias = "JH7110_AONCLK_GMAC0_TX")]
 #[doc(alias = "gmac0 transmit clock")]
-pub(crate) const AONCLK_GMAC0_TX: u32 = 5;
-/// `gmac0_tx`'s parent on a VisionFive 2 v1.3B: `gmac0_rmii_rtx`, mainline's
-/// `assigned-clock-parents` for `&gmac0` in `jh7110-starfive-visionfive-2-v1.3b.dts` beside
-/// `starfive,tx-use-rgmii-clk`, and the same bit the vendor U-Boot sets. A board whose EEPROM
-/// reports PCB revision `0xb2` is a v1.3B.
-pub(crate) const AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX: u32 = 1;
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT: u32 = 5;
+/// `JH7110_AONCLK_GMAC0_RMII_RTX` \[mainline-ids\], **4**: `gmac0`'s reduced media-independent
+/// interface (RMII) reference clock, the clock a tree's `assigned-clock-parents` names when it
+/// feeds `gmac0_tx` from it.
+#[doc(alias = "JH7110_AONCLK_GMAC0_RMII_RTX")]
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 =
+    4;
+/// `gmac0_tx`'s mux input 1, `gmac0_rmii_rtx`: the field value that selects
+/// [`ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT`], the same bit the
+/// vendor U-Boot sets.
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: u32 = 1;
+/// `gmac0_tx`'s mux input 0, `gmac0_gtxclk`: the field value that selects
+/// [`SYSCLK_GMAC0_GTXCLK`], the SYS-domain gigabit transmit clock, which is the mux's reset value.
+pub(crate) const ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT: u32 = 0;
 /// `JH7110_AONRST_GMAC0_AXI` \[mainline-ids\], `gmac0`'s `stmmaceth` reset. Bit 0 at `0x38`.
-pub(crate) const AONRST_GMAC0_AXI: u32 = 0;
+#[doc(alias = "JH7110_AONRST_GMAC0_AXI")]
+pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 0;
 /// `JH7110_AONRST_GMAC0_AHB`, `gmac0`'s `ahb` reset. Bit 1 at `0x38`.
-pub(crate) const AONRST_GMAC0_AHB: u32 = 1;
+#[doc(alias = "JH7110_AONRST_GMAC0_AHB")]
+pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 1;
 
 /// `JH7110_SYSCLK_GMAC0_GTXCLK` \[mainline-ids\]: a gated divider of PLL0, the parent of
 /// `gmac0_gtxc`. Word `0x1b0` of the SYS window.
@@ -262,26 +274,174 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_GMAC0_PTP),
 ];
 
-/// **`gmac0`'s AON-domain clocks, its transmit clock's parent, and both its resets**, in Linux's
-/// probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
+/// **`gmac0`'s AON-domain clocks and both its resets**, in Linux's probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
 /// before deasserting either reset. OpenBSD's `dwqe_fdt_attach` differs: it enables `stmmaceth` and
 /// `pclk`, deasserts both resets, then enables `tx` and `gtx`. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
 /// \[mainline-clk-header\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
 ///
+/// The transmit clock's parent is the board's, not the chip's, so it is not a step here: a tree
+/// assigns it, and [`gmac0_transmit_parent`] reads that assignment. A caller walks the parent step
+/// before this plan, since a mux is switched while its gate is still off.
+///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled
 /// out).
 pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
-    Step::EnableClock(AONCLK_GMAC0_AXI),
-    Step::EnableClock(AONCLK_GMAC0_AHB),
-    Step::SelectParent {
-        clock: AONCLK_GMAC0_TX,
-        parent: AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX,
-    },
-    Step::EnableClock(AONCLK_GMAC0_TX),
-    Step::DeassertReset(AONRST_GMAC0_AXI),
-    Step::DeassertReset(AONRST_GMAC0_AHB),
+    Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE),
+    Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
+    Step::EnableClock(ALWAYS_ON_CLOCK_GMAC0_TRANSMIT),
+    Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE),
+    Step::DeassertReset(ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
+
+/// **`gmac0_tx` fed from `gmac0_rmii_rtx`**: the parent mainline's VisionFive 2 v1.3B tree
+/// assigns, `jh7110-starfive-visionfive-2-v1.3b.dts` (\[mainline-v1.3b-dts\]):
+///
+/// ```text
+/// &gmac0 {
+///     starfive,tx-use-rgmii-clk;
+///     assigned-clocks = <&aoncrg JH7110_AONCLK_GMAC0_TX>;
+///     assigned-clock-parents = <&aoncrg JH7110_AONCLK_GMAC0_RMII_RTX>;
+/// };
+/// ```
+///
+/// [`gmac0_transmit_parent`] answers this step for that tree. It is the value for a caller that
+/// has no tree to read, and a board whose EEPROM reports PCB revision `0xb2` is a v1.3B. The
+/// v1.2A board file describes no `gmac0`, so it assigns no parent.
+///
+/// [mainline-v1.3b-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2-v1.3b.dts
+///
+/// Name: provisional.
+pub const GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT: Step =
+    Step::SelectParent {
+        clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+        parent: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+    };
+
+/// **What a `gmac0` node's `assigned-clocks` and `assigned-clock-parents` say about `gmac0_tx`.**
+///
+/// Name: provisional.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TransmitParent {
+    /// The node assigns `gmac0_tx` no parent: no step, and the mux keeps what is in it.
+    Unassigned,
+    /// The step that selects the parent the node assigns, always a [`Step::SelectParent`] of
+    /// `gmac0_tx` with one of its two inputs.
+    Assigned(Step),
+    /// The properties do not read as one-cell specifiers in two lists the parents cannot outrun,
+    /// `gmac0_tx` is assigned twice, or its parent is neither of the mux's two inputs. Nothing is
+    /// stored, and a caller logs the refusal.
+    Refused,
+}
+
+/// Which provider a specifier in `assigned-clocks` or `assigned-clock-parents` names.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AssignedClockProvider {
+    AlwaysOn,
+    System,
+    Other,
+}
+
+/// **Read one `<phandle id>` specifier of an assigned-clocks list**, or `None` when its provider
+/// has other than one cell, which leaves the rest of the list unreadable.
+fn assigned_clock<'t, E>(
+    specifier: &[u8; 8],
+    provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<Option<(AssignedClockProvider, u32)>, E> {
+    let [p0, p1, p2, p3, i0, i1, i2, i3] = *specifier;
+    let phandle = u32::from_be_bytes([p0, p1, p2, p3]);
+    let id = u32::from_be_bytes([i0, i1, i2, i3]);
+    if provider(phandle, b"#clock-cells")? != Some(&[0, 0, 0, 1][..]) {
+        return Ok(None);
+    }
+    let names = |compatible: &[u8], want: &[u8]| compatible.split(|&b| b == 0).any(|c| c == want);
+    let kind = match provider(phandle, b"compatible")? {
+        Some(c) if names(c, COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR) => {
+            AssignedClockProvider::AlwaysOn
+        }
+        Some(c) if names(c, COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR) => {
+            AssignedClockProvider::System
+        }
+        _ => AssignedClockProvider::Other,
+    };
+    Ok(Some((kind, id)))
+}
+
+/// **`gmac0_tx`'s parent, as a `gmac0` node assigns it**: the node's `assigned-clocks` and
+/// `assigned-clock-parents`, read the way [`DevicePlan::from_specifiers`] reads `clocks` and
+/// `resets`, with `provider` the same phandle lookup.
+///
+/// The binding (\[assigned-clocks\]) pairs the two lists entry by entry. An entry whose clock is
+/// mainline's `aoncrg` clock `JH7110_AONCLK_GMAC0_TX` (5) gives the step, and its parent must be
+/// one of the mux's two inputs: `aoncrg` clock `JH7110_AONCLK_GMAC0_RMII_RTX` (4) or `syscrg`
+/// clock `JH7110_SYSCLK_GMAC0_GTXCLK` (108). Every other entry is another clock's business and is
+/// passed over. A clocks list longer than the parents list is the binding's way of assigning
+/// rates alone, so the extra clocks are not read. Either property `None` gives
+/// [`TransmitParent::Unassigned`].
+///
+/// Linux's `of_clk_set_defaults` applies the same lists before the driver probes, and also takes
+/// an entry of a bare phandle `0` to mean "leave this one". This reader refuses that and any
+/// provider of more than one cell rather than guess the stride; both published JH7110 trees use
+/// one cell.
+///
+/// [assigned-clocks]: https://github.com/devicetree-org/dt-schema/blob/v2024.11/dtschema/schemas/clock/clock.yaml
+///
+/// # Errors
+///
+/// Propagates the first error `provider` returns.
+///
+/// Name: provisional.
+pub fn gmac0_transmit_parent<'t, E>(
+    assigned_clocks: Option<&[u8]>,
+    assigned_clock_parents: Option<&[u8]>,
+    mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<TransmitParent, E> {
+    let (Some(clocks), Some(parents)) = (assigned_clocks, assigned_clock_parents) else {
+        return Ok(TransmitParent::Unassigned);
+    };
+    let ((clocks, []), (parents, [])) = (clocks.as_chunks::<8>(), parents.as_chunks::<8>()) else {
+        return Ok(TransmitParent::Refused);
+    };
+    if parents.len() > clocks.len() {
+        return Ok(TransmitParent::Refused);
+    }
+    let mut found = None;
+    for (clock, parent) in clocks.iter().zip(parents) {
+        let (Some(clock), Some(parent)) = (
+            assigned_clock(clock, &mut provider)?,
+            assigned_clock(parent, &mut provider)?,
+        ) else {
+            return Ok(TransmitParent::Refused);
+        };
+        if clock
+            != (
+                AssignedClockProvider::AlwaysOn,
+                ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+            )
+        {
+            continue;
+        }
+        let input = match parent {
+            (
+                AssignedClockProvider::AlwaysOn,
+                ALWAYS_ON_CLOCK_GMAC0_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+            ) => ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT,
+            (AssignedClockProvider::System, SYSCLK_GMAC0_GTXCLK) => {
+                ALWAYS_ON_CLOCK_GMAC0_TRANSMIT_PARENT_GIGABIT_TRANSMIT
+            }
+            _ => return Ok(TransmitParent::Refused),
+        };
+        if found.is_some() {
+            return Ok(TransmitParent::Refused);
+        }
+        found = Some(Step::SelectParent {
+            clock: ALWAYS_ON_CLOCK_GMAC0_TRANSMIT,
+            parent: input,
+        });
+    }
+    Ok(found.map_or(TransmitParent::Unassigned, TransmitParent::Assigned))
+}
 
 /// Where one reset lives: which word to write, which word to watch, and which bit in both.
 ///
@@ -411,23 +571,23 @@ pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 /// then reset, for [`ENTROPY_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
 /// gated clock can hang.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-14 (UTC), as spelled (#3572).
 pub const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];
 
-/// **eMMC controller bus clock** (`SYSCLK_SDIO0_AHB`, `JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
+/// **eMMC controller bus clock** (`JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
 /// **91**: the eMMC socket's controller's bus clock, `biu` in both trees. Word `0x16c`.
 #[doc(alias = "JH7110_SYSCLK_SDIO0_AHB")]
 #[doc(alias = "emmc controller bus clock")]
-pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
-/// **microSD controller bus clock** (`SYSCLK_SDIO1_AHB`, `JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
+pub(crate) const SYSTEM_CLOCK_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 91;
+/// **microSD controller bus clock** (`JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
 /// controller's bus clock. Word `0x170`.
 #[doc(alias = "JH7110_SYSCLK_SDIO1_AHB")]
 #[doc(alias = "microsd controller bus clock")]
-pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
-/// **eMMC controller card clock** (`SYSCLK_SDIO0_SDCARD`, `JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
+pub(crate) const SYSTEM_CLOCK_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 92;
+/// **eMMC controller card clock** (`JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
 /// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
 /// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
 /// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
@@ -437,21 +597,21 @@ pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// [vendor-board-dts-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/arch/riscv/dts/starfive_visionfive2.dts
 #[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
 #[doc(alias = "emmc controller card clock")]
-pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
-/// **microSD controller card clock** (`SYSCLK_SDIO1_SDCARD`, `JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
+pub(crate) const SYSTEM_CLOCK_SD_IO_0_SD_CARD: u32 = 93;
+/// **microSD controller card clock** (`JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
 #[doc(alias = "JH7110_SYSCLK_SDIO1_SDCARD")]
 #[doc(alias = "microsd controller card clock")]
-pub(crate) const SYSCLK_SDIO1_SDCARD: u32 = 94;
-/// **eMMC controller reset** (`SYSRST_SDIO0_AHB`, `JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
+pub(crate) const SYSTEM_CLOCK_SD_IO_1_SD_CARD: u32 = 94;
+/// **eMMC controller reset** (`JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
 /// word at `0x300`.
 #[doc(alias = "JH7110_SYSRST_SDIO0_AHB")]
 #[doc(alias = "emmc controller reset")]
-pub(crate) const SYSRST_SDIO0_AHB: u32 = 64;
-/// **microSD controller reset** (`SYSRST_SDIO1_AHB`, `JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
+pub(crate) const SYSTEM_RESET_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 64;
+/// **microSD controller reset** (`JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
 #[doc(alias = "JH7110_SYSRST_SDIO1_AHB")]
 #[doc(alias = "microsd controller reset")]
-pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
+pub(crate) const SYSTEM_RESET_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 65;
 
 /// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
 /// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
@@ -460,17 +620,19 @@ pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 /// the vendor U-Boot has already brought the microSD controller up to load the boot script, and a
 /// caller can read whether it left it that way before it walks the plan.
 ///
-/// Name: ratified 2026-10-26 (UTC); renamed 2026-11-08 (UTC) to spell out the controller's name.
-pub const SD_INPUT_OUTPUT_BRING_UP: [&[Step]; 2] = [
+/// Name: ratified 2026-11-14 (UTC). The controller's name `SDIO` is written `SD_IO`, keeping `io`
+/// whole as every name does.
+#[doc(alias = "sdio")]
+pub const SD_IO_BRING_UP: [&[Step]; 2] = [
     &[
-        Step::EnableClock(SYSCLK_SDIO0_AHB),
-        Step::EnableClock(SYSCLK_SDIO0_SDCARD),
-        Step::DeassertReset(SYSRST_SDIO0_AHB),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_0_SD_CARD),
+        Step::DeassertReset(SYSTEM_RESET_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS),
     ],
     &[
-        Step::EnableClock(SYSCLK_SDIO1_AHB),
-        Step::EnableClock(SYSCLK_SDIO1_SDCARD),
-        Step::DeassertReset(SYSRST_SDIO1_AHB),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS),
+        Step::EnableClock(SYSTEM_CLOCK_SD_IO_1_SD_CARD),
+        Step::DeassertReset(SYSTEM_RESET_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS),
     ],
 ];
 
@@ -555,7 +717,9 @@ pub struct PowerManagementChipBus {
     pub controller_physical_window: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both
     /// trees. `None` when the tree names no known PMIC at all.
-    pub power_management_chip_address: Option<u32>,
+    ///
+    /// Name: ratified 2026-11-14 (UTC), saying the address is the chip's address on its bus.
+    pub power_management_chip_bus_address: Option<u32>,
 }
 
 impl PowerManagementChipBus {
@@ -576,7 +740,7 @@ impl PowerManagementChipBus {
             skipped,
             truncated: false,
             controller_physical_window: None,
-            power_management_chip_address: None,
+            power_management_chip_bus_address: None,
         };
         bus.steps[..POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len()]
             .copy_from_slice(POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
@@ -653,7 +817,7 @@ impl PowerManagementChipBus {
         if let Some(cells) = power_management_chip_register_property
             && cells.len() >= 4
         {
-            bus.power_management_chip_address =
+            bus.power_management_chip_bus_address =
                 Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
         }
         if let Some(cells) = bus_register_property {
@@ -930,7 +1094,7 @@ pub const fn inter_integrated_circuit_5_clock_frequency(
 
 /// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
 /// divider. The parent of both the PMIC bus's clock chain ([`inter_integrated_circuit_5_clock_frequency`]) and the SD/MMC
-/// controllers' card clocks ([`SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD`]), each a registration in the vendor clock driver.
+/// controllers' card clocks ([`SYSTEM_CLOCK_SD_IO_SD_CARD`]), each a registration in the vendor clock driver.
 ///
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
@@ -966,10 +1130,11 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
 /// **Each SD/MMC controller's card clock** (`ciu` in the tree), by controller index: the eMMC
 /// socket's, then the microSD slot's. Each divides [`advanced_extensible_interface_configuration_0_hertz`] by its own one-based divider.
 ///
-/// Name: ratified 2026-11-05 (UTC), #3279.
+/// Name: ratified 2026-11-14 (UTC). `SDIO` is written `SD_IO`, for [`SD_IO_BRING_UP`]'s reason.
 #[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
-pub const SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD: [u32; 2] =
-    [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
+#[doc(alias = "JH7110_SYSCLK_SDIO1_SDCARD")]
+pub const SYSTEM_CLOCK_SD_IO_SD_CARD: [u32; 2] =
+    [SYSTEM_CLOCK_SD_IO_0_SD_CARD, SYSTEM_CLOCK_SD_IO_1_SD_CARD];
 
 /// The card clocks' largest divider (the vendor driver registers them with a maximum of 15).
 ///
@@ -1370,7 +1535,9 @@ pub struct WindowLocation {
     /// Name: ratified 2026-11-08 (UTC), renamed to say the address is physical.
     pub base_physical_address: u64,
     /// Its size in bytes.
-    pub size: u64,
+    ///
+    /// Name: ratified 2026-11-14 (UTC), with the unit in the name.
+    pub size_bytes: u64,
     /// **True when the device tree said so, false when this is the window's constant.** The one
     /// field a caller's log must carry: a base that came from a constant is a base nobody on
     /// that machine confirmed, and a reader three months later cannot re-derive which it was.
@@ -1465,7 +1632,9 @@ pub struct RegisterWindow {
     /// Name: ratified 2026-11-08 (UTC), renamed to say the address is physical.
     pub base_physical_address: u64,
     /// The window's size in both published trees.
-    pub size: u64,
+    ///
+    /// Name: ratified 2026-11-14 (UTC), with the unit in the name.
+    pub size_bytes: u64,
 }
 
 impl RegisterWindow {
@@ -1476,7 +1645,7 @@ impl RegisterWindow {
     pub const fn fallback(&self) -> WindowLocation {
         WindowLocation {
             base_physical_address: self.base_physical_address,
-            size: self.size,
+            size_bytes: self.size_bytes,
             from_tree: false,
             compatible: None,
         }
@@ -1503,7 +1672,7 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
         },
     ],
     base_physical_address: SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
-    size: SYSTEM_TOP_GROUP_SIZE_BYTES,
+    size_bytes: SYSTEM_TOP_GROUP_SIZE_BYTES,
 };
 
 /// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
@@ -1526,7 +1695,7 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
         },
     ],
     base_physical_address: ALWAYS_ON_BASE_PHYSICAL_ADDRESS,
-    size: ALWAYS_ON_SIZE_BYTES,
+    size_bytes: ALWAYS_ON_SIZE_BYTES,
 };
 
 /// **The SYS window**, where I2C5's clock and reset live.
@@ -1549,7 +1718,7 @@ pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
         },
     ],
     base_physical_address: SYSTEM_BASE_PHYSICAL_ADDRESS,
-    size: SYSTEM_SIZE_BYTES,
+    size_bytes: SYSTEM_SIZE_BYTES,
 };
 
 impl WindowLocation {
@@ -1577,10 +1746,10 @@ impl WindowLocation {
                 _ => return None,
             },
         };
-        let (base_physical_address, size) = regions[index];
+        let (base_physical_address, size_bytes) = regions[index];
         Some(WindowLocation {
             base_physical_address,
-            size,
+            size_bytes,
             from_tree: true,
             compatible: Some(spelling.compatible),
         })
@@ -1598,257 +1767,9 @@ fn name_index(list: &[u8], want: &[u8]) -> Option<usize> {
         .position(|s| s == want)
 }
 
-/// Machine-checked proofs, run with `cargo kani`. The domains and plans are this crate's own
-/// constants and the device-tree properties are symbolic bytes, so each harness covers every word
-/// and every property value inside its stated bound.
+// The Kani proofs, compiled only by `cargo kani` (script/verify).
 #[cfg(kani)]
-mod verification {
-    use super::*;
-
-    /// One of the three domains this crate describes, chosen by the solver.
-    fn any_domain() -> Domain {
-        match kani::any::<u8>() % 3 {
-            0 => SYSTEM_TOP_GROUP,
-            1 => ALWAYS_ON,
-            _ => SYSTEM,
-        }
-    }
-
-    /// True when every id in `plan` is inside `domain`, no clock is selected a parent after it was
-    /// enabled, and no clock step comes after a reset release.
-    fn ungates_before_releasing(plan: &[Step], domain: &Domain) -> bool {
-        let mut released = false;
-        let mut i = 0;
-        while i < plan.len() {
-            match plan[i] {
-                Step::EnableClock(clock) => {
-                    if released || domain.clock_offset(clock).is_none() {
-                        return false;
-                    }
-                }
-                Step::SelectParent { clock, parent } => {
-                    if released || domain.clock_offset(clock).is_none() || parent > 0xf {
-                        return false;
-                    }
-                    let mut j = 0;
-                    while j < i {
-                        if plan[j] == Step::EnableClock(clock) {
-                            return false;
-                        }
-                        j += 1;
-                    }
-                }
-                Step::DeassertReset(reset) => {
-                    if domain.reset_bit(reset).is_none() {
-                        return false;
-                    }
-                    released = true;
-                }
-            }
-            i += 1;
-        }
-        true
-    }
-
-    /// The phandle lookup a caller supplies, modeled as a SYS controller with one cell. Every
-    /// specifier in the bytes the solver chooses therefore reaches the id bounds check, which is
-    /// the step that makes a store. The solver cannot afford a lookup that answers differently on
-    /// every call (the plan harnesses then run for over an hour), nor more than three specifiers, nor property lengths other than a whole number of specifiers, so the other answers (another
-    /// provider, a different cell count, an error) are covered by the host tests, not proved.
-    fn system_provider(_phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
-        if name == b"compatible" {
-            Ok(Some(COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR))
-        } else {
-            Ok(Some(&[0, 0, 0, 1]))
-        }
-    }
-
-    /// **`with_parent` changes only the mux field**: for every word and every parent, each bit
-    /// outside [`CLOCK_MULTIPLEXER_MASK`] is as it was (the enable bit and the divider among them), and
-    /// the field holds the parent's low four bits, so an over-wide parent never spills.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.with_parent_changes_only_the_mux_field.patch`
-    #[kani::proof]
-    fn with_parent_changes_only_the_mux_field() {
-        let word: u32 = kani::any();
-        let parent: u32 = kani::any();
-        let result = with_parent(word, parent);
-        assert_eq!(
-            result & !CLOCK_MULTIPLEXER_MASK,
-            word & !CLOCK_MULTIPLEXER_MASK
-        );
-        assert_eq!(result & CLOCK_ENABLE, word & CLOCK_ENABLE);
-        assert_eq!((result >> 24) & 0xf, parent & 0xf);
-    }
-
-    /// **A clock offset is one of the domain's own words**: `clock_offset` answers `None` exactly
-    /// for an index at or past the domain's clock count, and otherwise a word-aligned offset below
-    /// `4 * clocks`, which ends before the domain's first reset word.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.a_clock_offset_is_one_of_the_domains_own_words.patch`
-    #[kani::proof]
-    fn a_clock_offset_is_one_of_the_domains_own_words() {
-        let domain = any_domain();
-        let index: u32 = kani::any();
-        match domain.clock_offset(index) {
-            None => assert!(index >= domain.clocks),
-            Some(offset) => {
-                assert!(index < domain.clocks);
-                assert_eq!(offset % 4, 0);
-                assert!(offset < 4 * u64::from(domain.clocks));
-                assert!(offset + 4 <= domain.reset_assert);
-            }
-        }
-    }
-
-    /// **A reset line is one bit of one of the domain's own words**: `reset_bit` answers `None`
-    /// exactly for an id at or past the domain's reset count, and otherwise word-aligned assert and
-    /// status offsets that sit the same distance from their first words, a word index of
-    /// `id / 32` at most, and a mask of exactly one bit, the bit `id % 32`.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.a_reset_line_is_one_bit_of_one_of_the_domains_own_words.patch`
-    #[kani::proof]
-    fn a_reset_line_is_one_bit_of_one_of_the_domains_own_words() {
-        let domain = any_domain();
-        let id: u32 = kani::any();
-        match domain.reset_bit(id) {
-            None => assert!(id >= domain.resets),
-            Some(bit) => {
-                assert!(id < domain.resets);
-                assert_eq!(bit.assert_offset % 4, 0);
-                assert_eq!(bit.status_offset % 4, 0);
-                let word = bit.assert_offset - domain.reset_assert;
-                assert_eq!(word, bit.status_offset - domain.reset_status);
-                assert_eq!(word, u64::from(id / 32) * 4);
-                assert_eq!(bit.mask, 1u32 << (id % 32));
-                assert!(bit.mask.is_power_of_two());
-            }
-        }
-    }
-
-    /// **Every fixed plan ungates its clocks before it releases a reset**: the TRNG's, both halves
-    /// of the Ethernet controller's, the PMIC bus's and both SD/MMC slots' plans hold only ids
-    /// inside their own domain, put every clock step ahead of every reset release, and choose a
-    /// clock's parent before enabling that clock.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.every_fixed_plan_ungates_its_clocks_before_releasing_a_reset.patch`
-    #[kani::proof]
-    #[kani::unwind(8)]
-    fn every_fixed_plan_ungates_its_clocks_before_releasing_a_reset() {
-        assert!(ungates_before_releasing(
-            ENTROPY_BRING_UP,
-            &SYSTEM_TOP_GROUP
-        ));
-        assert!(ungates_before_releasing(GMAC0_SYSTEM_BRING_UP, &SYSTEM));
-        assert!(ungates_before_releasing(
-            GMAC0_ALWAYS_ON_BRING_UP,
-            &ALWAYS_ON
-        ));
-        assert!(ungates_before_releasing(
-            POWER_MANAGEMENT_CHIP_BUS_BRING_UP,
-            &SYSTEM
-        ));
-        assert!(ungates_before_releasing(
-            SD_INPUT_OUTPUT_BRING_UP[0],
-            &SYSTEM
-        ));
-        assert!(ungates_before_releasing(
-            SD_INPUT_OUTPUT_BRING_UP[1],
-            &SYSTEM
-        ));
-    }
-
-    /// **A plan built from a device's specifiers holds only usable steps, in order**: for two
-    /// clock specifiers and one reset specifier of any bytes, answered by a SYS controller, the
-    /// plan has at most `MAXIMUM_DEVICE_STEPS` steps, every id in the SYS domain's bounds, every
-    /// clock step ahead of every reset release.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.a_device_plan_from_specifiers_ungates_before_it_releases.patch`
-    #[kani::proof]
-    #[kani::unwind(24)]
-    fn a_device_plan_from_specifiers_ungates_before_it_releases() {
-        let clocks: [u8; 16] = kani::any();
-        let resets: [u8; 8] = kani::any();
-        let clocks = Some(&clocks[..]);
-        let resets = Some(&resets[..]);
-
-        if let Ok(device) = DevicePlan::from_specifiers(clocks, resets, system_provider) {
-            assert!(device.plan().len() <= MAXIMUM_DEVICE_STEPS);
-            assert!(ungates_before_releasing(device.plan(), &SYSTEM));
-        }
-    }
-
-    /// **The PMIC bus plan is never empty, never longer than its bound, and ungates before it
-    /// releases**: from any node properties (two clock and one reset specifier, any
-    /// `reg` bytes) and a SYS controller, `from_nodes` answers either the tree's own plan or, when the
-    /// tree gave no usable step, the constant plan, and both keep every id in the SYS domain's
-    /// bounds with every clock step ahead of every reset release.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_releases.patch`
-    #[kani::proof]
-    #[kani::unwind(24)]
-    fn the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_releases() {
-        let clocks: [u8; 16] = kani::any();
-        let resets: [u8; 8] = kani::any();
-        let bus_register_property: [u8; 16] = kani::any();
-        let chip_register_property: [u8; 4] = kani::any();
-        let clocks = Some(&clocks[..]);
-        let resets = Some(&resets[..]);
-        let bus_register_property = Some(&bus_register_property[..]);
-        let chip_register_property = Some(&chip_register_property[..]);
-
-        if let Ok(bus) = PowerManagementChipBus::from_nodes(
-            COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
-            chip_register_property,
-            bus_register_property,
-            clocks,
-            resets,
-            system_provider,
-        ) {
-            assert!(!bus.plan().is_empty());
-            assert!(bus.plan().len() <= MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS);
-            assert!(ungates_before_releasing(bus.plan(), &SYSTEM));
-            if !bus.from_tree {
-                assert!(bus.plan() == POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
-            }
-        }
-    }
-
-    /// **`is_deasserted` reads the bit the mask names**: for a one-bit mask and any status word,
-    /// the answer is that bit, and a status word with the bit clear is never released.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.is_deasserted_reads_the_bit_the_mask_names.patch`
-    #[kani::proof]
-    fn is_deasserted_reads_the_bit_the_mask_names() {
-        let status: u32 = kani::any();
-        let bit: u32 = kani::any();
-        kani::assume(bit < 32);
-        let mask = 1u32 << bit;
-        assert_eq!(is_deasserted(status, mask), (status >> bit) & 1 == 1);
-        assert!(!is_deasserted(status & !mask, mask));
-        assert!(is_deasserted(status | mask, mask));
-    }
-
-    /// **`is_clock_enabled` reads bit 31 and nothing else**: for any word the answer is the top
-    /// bit, whatever the mux and divider fields hold.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.is_clock_enabled_reads_bit_31_and_nothing_else.patch`
-    #[kani::proof]
-    fn is_clock_enabled_reads_bit_31_and_nothing_else() {
-        let word: u32 = kani::any();
-        assert_eq!(is_clock_enabled(word), word >> 31 == 1);
-        assert!(is_clock_enabled(word | CLOCK_ENABLE));
-        assert!(!is_clock_enabled(word & !CLOCK_ENABLE));
-    }
-
-    /// **`clock_divider` is the low 24 bits and nothing else**: for any word the answer is the
-    /// word's bits 23:0, so it never exceeds `0x00ff_ffff`, and neither the enable bit nor the
-    /// mux field moves it.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.clock_divider_is_the_low_24_bits_and_nothing_else.patch`
-    #[kani::proof]
-    fn clock_divider_is_the_low_24_bits_and_nothing_else() {
-        let word: u32 = kani::any();
-        assert_eq!(clock_divider(word), (word << 8) >> 8);
-        assert!(clock_divider(word) <= 0x00ff_ffff);
-        assert_eq!(clock_divider(word | CLOCK_ENABLE), clock_divider(word));
-        assert_eq!(
-            clock_divider(with_parent(word, kani::any())),
-            clock_divider(word)
-        );
-    }
-}
+mod verification;
 
 #[cfg(test)]
 mod tests;

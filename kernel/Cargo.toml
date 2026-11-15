@@ -62,7 +62,8 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
-# through the same seqlock the service publishes with, so no party has its own copy of the layout.
+# through the same publish protocol the service writes with, so no party has its own copy of the
+# layout.
 clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 # The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111). The
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a

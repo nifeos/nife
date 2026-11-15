@@ -403,20 +403,31 @@ pub mod ephemeral {
         }
 
         /// The next port at `milliseconds` on the boot clock that `held` does not say a live socket
-        /// holds. Bounded by the range, so it always returns; a stack holds far fewer sockets than
-        /// the range has ports, so in practice the first or second candidate is free. When every
-        /// port is held it returns the port the cursor stands at anyway, held or not, and says
-        /// nothing: the caller's socket table is smaller than the range, so this cannot arise there.
-        pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> u16 {
+        /// holds, or `None` when `held` says all [`SPAN`] ports of the range are held. Bounded by
+        /// the range, so it always returns; a stack holds far fewer sockets than the range has
+        /// ports, so in practice the first or second candidate is free. The cursor moves past
+        /// every port it tried, so a caller that gets `None` has used the whole range.
+        pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> Option<u16> {
+            self.next_within(milliseconds, held, SPAN)
+        }
+
+        /// [`Ports::next`] with the number of candidates it will try as a parameter, so a proof can
+        /// bound the loop at a few steps where the whole range is sixteen thousand.
+        fn next_within(
+            &mut self,
+            milliseconds: u64,
+            held: impl Fn(u16) -> bool,
+            tries: u64,
+        ) -> Option<u16> {
             self.next = self.next.max(clock(milliseconds));
-            for _ in 0..SPAN {
+            for _ in 0..tries {
                 let port = port_at(self.next);
                 self.next += 1;
                 if !held(port) {
-                    return port;
+                    return Some(port);
                 }
             }
-            port_at(self.next)
+            None
         }
     }
 
@@ -455,6 +466,75 @@ pub mod ephemeral {
             kani::assume(earlier <= later);
             assert!(clock(earlier) <= clock(later));
         }
+
+        /// **The cursor never moves backwards, and what it hands out is in range and not held.**
+        /// For any cursor position, any time and any answers from `held`, one allocation leaves
+        /// the cursor at or past where it stood and past the clock. A port it returns is in
+        /// `LO..=HI` and the last one `held` was asked about; when it returns none, it asked about
+        /// every candidate it was allowed and the cursor moved that many. The loop is bounded at
+        /// four candidates (`next_within`), because a proof over the whole [`SPAN`] of 16384 did not
+        /// finish in over an hour at 6 GiB; that the real bound behaves like four is an argument
+        /// (the loop body does not depend on the count), not a proof. The position is assumed below
+        /// 2^62, which the clock reaches after about 500 million years.
+        ///
+        /// Falsification: replayable `crates/socket_contract/falsifications/ephemeral.verification.an_allocation_never_moves_the_cursor_back_or_returns_a_held_port.patch`
+        #[kani::proof]
+        #[kani::unwind(6)]
+        fn an_allocation_never_moves_the_cursor_back_or_returns_a_held_port() {
+            let start: u64 = kani::any();
+            kani::assume(start < 1 << 62);
+            let milliseconds: u64 = kani::any();
+            let mut ports = Ports { next: start };
+            let answer = core::cell::Cell::new(false);
+            let got = ports.next_within(
+                milliseconds,
+                |_| {
+                    let held: bool = kani::any();
+                    answer.set(held);
+                    held
+                },
+                4,
+            );
+            let began = start.max(clock(milliseconds));
+            assert!(ports.next >= start);
+            assert!(ports.next > began);
+            match got {
+                Some(port) => {
+                    assert!(port >= LO);
+                    assert!(!answer.get());
+                }
+                None => assert_eq!(ports.next, began + 4),
+            }
+        }
+
+        /// **A stack started four milliseconds or more after another's last open starts past every
+        /// port the other used.** The no-reuse claim as arithmetic, where the sampled test below
+        /// covers five boot times. At a gap of at least 4 ms (`PER_SECOND` is 256, so one tick) the
+        /// clock gains a whole position, so each open of a stack that opens that far apart takes
+        /// the clock's own position and the cursor never needs its one-more fallback. So after
+        /// its open at `last` the stack has used no position past `clock(last)`, and a stack whose
+        /// first open comes at `last + gap` starts at `clock(last + gap)`, which is past it.
+        ///
+        /// Falsification: replayable `crates/socket_contract/falsifications/ephemeral.verification.a_stack_started_four_milliseconds_later_starts_past_every_port_used.patch`
+        #[kani::proof]
+        fn a_stack_started_four_milliseconds_later_starts_past_every_port_used() {
+            let last: u64 = kani::any();
+            let gap: u64 = kani::any();
+            kani::assume(last < 1 << 50);
+            kani::assume((4..1 << 50).contains(&gap));
+            // A stack that opened at `last - gap` and at `last`, 4 ms or more apart, took the
+            // clock's position both times: the step that keeps it at or below `clock(last)`.
+            kani::assume(last >= gap);
+            let mut first = Ports { next: 0 };
+            let _ = first.next(last - gap, |_| false);
+            let _ = first.next(last, |_| false);
+            assert_eq!(first.next, clock(last) + 1);
+            // The second stack's first open lands past every position the first used.
+            let mut second = Ports::new();
+            let _ = second.next(last + gap, |_| false);
+            assert_eq!(second.next, clock(last + gap) + 1);
+            assert!(clock(last + gap) > clock(last));
+        }
     }
 
     #[cfg(test)]
@@ -472,7 +552,7 @@ pub mod ephemeral {
             let mut at = start_milliseconds;
             let mut got = std::vec::Vec::new();
             for _ in 0..n {
-                got.push(ports.next(at, |_| false));
+                got.push(ports.next(at, |_| false).expect("no port is held"));
                 at += gap_milliseconds;
             }
             (got, at - gap_milliseconds)
@@ -508,7 +588,7 @@ pub mod ephemeral {
             let mut ports = Ports::new();
             let mut seen = std::collections::BTreeSet::new();
             for _ in 0..SPAN {
-                assert!(seen.insert(ports.next(1_000, |_| false)));
+                assert!(seen.insert(ports.next(1_000, |_| false).expect("no port is held")));
             }
         }
 
@@ -519,9 +599,9 @@ pub mod ephemeral {
         fn the_cursor_walks_49152_to_65535_and_wraps() {
             let mut ports = Ports::new();
             for want in 49152..=65535u16 {
-                assert_eq!(ports.next(0, |_| false), want);
+                assert_eq!(ports.next(0, |_| false), Some(want));
             }
-            assert_eq!(ports.next(0, |_| false), 49152);
+            assert_eq!(ports.next(0, |_| false), Some(49152));
         }
 
         /// A port a live socket holds is skipped, and the cursor moves past it.
@@ -530,8 +610,18 @@ pub mod ephemeral {
             let mut ports = Ports::new();
             let at = clock(10_000);
             let held = port_at(at);
-            assert_eq!(ports.next(10_000, |p| p == held), port_at(at + 1));
-            assert_eq!(ports.next(10_000, |p| p == held), port_at(at + 2));
+            assert_eq!(ports.next(10_000, |p| p == held), Some(port_at(at + 1)));
+            assert_eq!(ports.next(10_000, |p| p == held), Some(port_at(at + 2)));
+        }
+
+        /// A range with every port held yields nothing, and the cursor has moved past the whole
+        /// range, so the next allocation starts a full cycle later.
+        #[test]
+        fn a_range_with_every_port_held_yields_none() {
+            let mut ports = Ports::new();
+            assert_eq!(ports.next(0, |_| true), None);
+            assert_eq!(ports.next, SPAN);
+            assert_eq!(ports.next(0, |_| false), Some(LO));
         }
     }
 }

@@ -40,7 +40,8 @@ Every name this tree authors spells these out, function parameters included.
 | `dtb`, `ipc`, `asid`, `gpt`, `nvme`, `pcie`, `dma`, `pr` | `device_tree_blob`, `inter_process_communication`, `address_space_identifier`, `globally_unique_identifier_partition_table`, `non_volatile_memory_express`, `pci_express`, `direct_memory_access`, `pull_request` | §154's table |
 | `initrd` | `initial_ramdisk` | inside the tree; the boundary keeps the owner's spelling (below) |
 | `proto` | `protocol` | a truncation, equally short for `prototype` |
-| `rgmii`, `mdio` | `reduced_gigabit_media_independent_interface`, `management_data_input_output` | the same test |
+| `rgmii`, `mdio` | `reduced_gigabit_media_independent_interface`, `management_data_io` | the same test; `io` stays whole inside the expansion |
+| `sdio` | `sd_io` (`SD_IO` in a constant) | `SD` and `io` both stay, so only the join changes: `SD_IO_BRING_UP` |
 
 ## Short forms that stay
 
@@ -51,8 +52,8 @@ Every name this tree authors spells these out, function parameters included.
 - `id` and `Id` stay, as std writes `ThreadId`, `TypeId` and `process::id`: `device_id`,
   `DEVICE_IDS`. Spell `identifier` out only where ID is one letter of a compound specification
   acronym: `address_space_identifier`, `CardIdentification`, `version_identification`.
-- `SDIO` is not an accepted acronym. It is the vendor's label for one controller instance, so a name
-  says which instance it means.
+- `io` stays whole inside an expansion, as it does alone: `management_data_io`, `sd_io`,
+  `virtual_io` (the expansion of `virtio`) and `programmed_io`, never `input_output`.
 - `IPC` in `notes/stack-high-water/per-ipc-depth.md` is a term of art, and the document keeps it.
   `helpers/name_checks.py` carries the exception beside its check.
 - `os_primitives_benchmarker` keeps its name until the variable-width step of

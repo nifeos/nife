@@ -136,7 +136,7 @@ a repository); everything else is two-way and the maintainer decides it.
    `measured_boot::PROGENITOR` where it means the progenitor. No behavior changes today.
    Door: two-way. Effort: XS.
 
-6. The notice constant is a sentence, and it names a board in a crate that also judges QEMU images. LEFT: a public name, Decision B.
+6. The notice constant is a sentence, and it names a board in a crate that also judges QEMU images. DONE (`AUTHORITY_NOTICE`, provisional; the text says "the kernel").
    Finding: `THE_BOARD_IS_THE_AUTHORITY` is a `&str` holding two sentences. A constant's name says
    what it holds. This one is the opening of its own text. It has a leading `THE_` the naming page
    refuses for assertion constants, and it says "board" where the crate's documentation says
@@ -170,7 +170,7 @@ a repository); everything else is two-way and the maintainer decides it.
    copy that changed one of them) as causes, and the halt as the consequence.
    Door: two-way. Effort: XS.
 
-9. One British spelling in a public parameter. LEFT: a public name, Decision B.
+9. One British spelling in a public parameter. DONE (`build`, provisional).
    Finding: the one parameter of `test_support::pair`, a `&str`, is spelled the British way. The naming page spells every name the American
    way and the template's `british_spelling.py` refuses it at a ceiling of zero, so the template's
    `check` job would be red on the first push. The parameter is public because the module is.
@@ -271,8 +271,8 @@ Decision B, provisionally, and the items marked LEFT in the appendices wait on t
 
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 wait on Decision A.
 - **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
-- **Outstanding.** Items 6 and 9 (the renames of Decision B), 13 (unmeasured) and 14 (a harness): checked
-  against the tree, none exists yet.
+- **Done.** Items 6, 9, 13 and 14: `AUTHORITY_NOTICE` and `build` are the provisional names of
+  Decision B, a measurement shows `contains` is fast enough, and one proof covers it.
 
 ## Index row
 
