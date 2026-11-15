@@ -83,7 +83,7 @@ impl Frame {
     /// `DESTINATION_ADDRESS_OFFSET_BYTES` in `socket_contract`).
     ///
     /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn destination_address(&self) -> [u8; 4] {
+    pub fn destination_network_address(&self) -> [u8; 4] {
         let mut ip = [0u8; 4];
         for (i, b) in ip.iter_mut().enumerate() {
             *b = self
@@ -158,7 +158,7 @@ mod tests {
         let f = frame(&mut page);
         f.set_destination([10, 0, 2, 2], 69);
         f.set_len(512);
-        assert_eq!(f.destination_address(), [10, 0, 2, 2]);
+        assert_eq!(f.destination_network_address(), [10, 0, 2, 2]);
         assert_eq!(f.destination_port(), 69);
         assert_eq!(f.len(), 512);
     }

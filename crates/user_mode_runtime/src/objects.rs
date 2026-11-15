@@ -195,7 +195,7 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
     unsafe { invoke(frame_slot, abi::page_frame::REVOKE, 0, 0, 0) }
 }
 
-/// `MAP_INTO`: map the frame in `frame_slot` into the address space named by `address_space_slot`, at
+/// `MAP_INTO`: map the frame in `frame_slot` into the address space named by `virtual_address_space_slot`, at
 /// `virtual_address`, per `mode` (`abi::address_space::MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE`). `0` on success; a negative
 /// `abi::Error`.
 ///
@@ -208,7 +208,7 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 /// question 2). His words: "Ratify `retype_kernel_object` `address_space_map_into`." Refused
 /// `map_into` (round 7's provisional name; the method is `address_space::MAP_INTO`).
 pub fn address_space_map_into(
-    address_space_slot: u64,
+    virtual_address_space_slot: u64,
     virtual_address: u64,
     frame_slot: u64,
     mode: u64,
@@ -217,7 +217,7 @@ pub fn address_space_map_into(
     // against `mode`, and the address before it touches a page table.
     unsafe {
         invoke(
-            address_space_slot,
+            virtual_address_space_slot,
             abi::address_space::MAP_INTO,
             virtual_address,
             frame_slot,
@@ -255,9 +255,9 @@ pub fn thread_control_block_capability_insert(
     }
 }
 
-/// `CONFIGURE`: bind the address space in `address_space_slot` to the (embryo) TCB in `thread_control_block_slot`, and set
+/// `CONFIGURE`: bind the address space in `virtual_address_space_slot` to the (embryo) TCB in `thread_control_block_slot`, and set
 /// where EL0 execution begins (`entry`) and on what user stack (`user_stack_pointer`). The capability in
-/// `address_space_slot` is consumed; the space keeps its name, so a copy made first still names it while
+/// `virtual_address_space_slot` is consumed; the space keeps its name, so a copy made first still names it while
 /// the thread runs (§249 (a running address space stays nameable)). On success, the address of the
 /// child's current-CPU page (milestone 812 (`std::thread::spawn` runs real threads in one address
 /// space)), never negative; a negative `abi::Error` otherwise, `WrongObject` for a space already
@@ -271,7 +271,7 @@ pub fn thread_control_block_configure(
     thread_control_block_slot: u64,
     entry: u64,
     user_stack_pointer: u64,
-    address_space_slot: u64,
+    virtual_address_space_slot: u64,
 ) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` on both capabilities before it binds them.
     unsafe {
@@ -280,7 +280,7 @@ pub fn thread_control_block_configure(
             abi::thread_control_block::CONFIGURE,
             entry,
             user_stack_pointer,
-            address_space_slot,
+            virtual_address_space_slot,
         )
     }
 }

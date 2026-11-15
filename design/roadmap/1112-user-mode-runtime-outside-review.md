@@ -119,6 +119,8 @@ ratified `counter_frequency_contract` method `hertz`. The open row takes the spe
 and it stays open for the architect at ratification. The premises hold at `src/clock.rs` lines 45,
 72 and 128 and `src/mapped_window.rs` lines 37, 66 and 145. Item 13 is the work. Ratifying the
 names stays the architect's.
+The abbreviation gate reads a bare `address` as ambiguous, so three rows land qualified:
+`virtual_address_space_slot`, `virtual_address_space_list` and `destination_network_address`.
 
 ### Decision 2: how a program outside nife links against the layout
 

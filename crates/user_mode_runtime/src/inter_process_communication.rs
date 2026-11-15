@@ -68,7 +68,7 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 /// **That is a refusal and not an empty listing**, and a caller must print it as one.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-pub fn address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
+pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; LIST reads no more than the three words used.
     let (r0, w1, w2, ..) = unsafe { invoke5(slot, abi::address_space::LIST, cursor, 0, 0) };
     (r0 as i64, w1, w2)

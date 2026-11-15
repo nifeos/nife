@@ -36,7 +36,7 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use user_mode_runtime::{address_space_list, exit, is_granted, send};
+use user_mode_runtime::{exit, is_granted, send, virtual_address_space_list};
 
 /// The output sink: where the table goes. Slot 0 is where every spawned program's output lands.
 const REPORT: u64 = 0;
@@ -122,7 +122,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // listing cannot know its complaints up front, so it is all buffered before either stream.
     let mut rows = [pmap::Row::default(); pmap::MAXIMUM_ROWS];
     let found = pmap::collect(&mut rows, &mut |cursor| {
-        address_space_list(ADDRESS_SPACE_SLOT, cursor)
+        virtual_address_space_list(ADDRESS_SPACE_SLOT, cursor)
     });
 
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));

@@ -569,7 +569,7 @@ fn tftp_on_socket() -> ! {
     // The DATA's source endpoint, which `RECEIVE` reports in the frame header: the gateway, from a
     // real port. Not pinned to 69, since TFTP answers from a transfer-id port (RFC 1350, section 4).
     let (src_ip, src_port) = (
-        SHARED_FRAME.destination_address(),
+        SHARED_FRAME.destination_network_address(),
         SHARED_FRAME.destination_port(),
     );
     if src_ip != GW_IP {
