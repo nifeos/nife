@@ -30,11 +30,13 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         if tree.node_reg_compatible(compatible, &mut regions)? == 0 {
             continue;
         }
-        let prop = |name: &[u8]| tree.node_prop_compatible(compatible, name);
+        let prop = |name: &[u8]| tree.node_property_compatible(compatible, name);
         let phy = match prop(b"phy-handle")?.and_then(first_cell) {
-            Some(handle) => mainline_physical_layer_device(|name| tree.phandle_prop(handle, name))?,
+            Some(handle) => {
+                mainline_physical_layer_device(|name| tree.phandle_property(handle, name))?
+            }
             None => vendor_physical_layer_device(|name| {
-                tree.node_prop(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
+                tree.node_property(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
             })?,
         };
         return Discovered::from_node(regions[0].start, regions[0].size, compatible, prop, phy)

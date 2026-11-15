@@ -1648,23 +1648,17 @@ crates/device_tree_blob/src/lib.rs::from_ptr
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 
-crates/device_tree_blob/src/lib.rs::node_prop
 
-crates/device_tree_blob/src/lib.rs::node_prop_compatible
 
-crates/device_tree_blob/src/lib.rs::node_prop_inherited
 
-crates/device_tree_blob/src/lib.rs::node_props
 
 crates/device_tree_blob/src/lib.rs::node_reg
 
 crates/device_tree_blob/src/lib.rs::node_reg_compatible
 
-crates/device_tree_blob/src/lib.rs::phandle_prop
 
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions
 
-crates/device_tree_blob/src/lib.rs::reserved_regions
 
 crates/device_tree_blob/src/lib.rs::total_size
 
@@ -7265,7 +7259,6 @@ crates/usb/src/boot_keyboard.rs::MODIFIER_CODES
 
 crates/usb/src/boot_keyboard.rs::RELEASED
 
-crates/usb/src/boot_keyboard.rs::REPORT_LEN
 
 crates/usb/src/boot_keyboard.rs::changes
 
@@ -7281,23 +7274,19 @@ crates/usb/src/descriptor.rs::CLASS_HID
 
 crates/usb/src/descriptor.rs::CONFIGURATION
 
-crates/usb/src/descriptor.rs::CONFIGURATION_LEN
 
 crates/usb/src/descriptor.rs::ConfigurationHeader
 
 crates/usb/src/descriptor.rs::DEVICE
 
-crates/usb/src/descriptor.rs::DEVICE_LEN
 
 crates/usb/src/descriptor.rs::DeviceDescriptor
 
 crates/usb/src/descriptor.rs::ENDPOINT
 
-crates/usb/src/descriptor.rs::ENDPOINT_LEN
 
 crates/usb/src/descriptor.rs::INTERFACE
 
-crates/usb/src/descriptor.rs::INTERFACE_LEN
 
 crates/usb/src/descriptor.rs::PROTOCOL_KEYBOARD
 
@@ -7305,7 +7294,6 @@ crates/usb/src/descriptor.rs::Refusal
 
 crates/usb/src/descriptor.rs::SUBCLASS_BOOT
 
-crates/usb/src/descriptor.rs::control_max_packet
 
 crates/usb/src/descriptor.rs::find_boot_keyboard
 

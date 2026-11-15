@@ -274,8 +274,13 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this driver condemned at bring-up (see `_start`). It is
             // answered exactly the way a dry device is, because `NO_ENTROPY` already means the one
             // thing a client has to know: it is not getting randomness here.
+            // The crate's `take` answers a count and a little-endian word with zeros past the
+            // count; rebuilding the pair through the contract's `reply` makes that zero tail the
+            // contract's guarantee rather than the crate's.
             proto::GET if !refuse && proto::request_is_well_formed(w0) => {
-                pool.take(proto::requested_bytes(w0), &mut generate)
+                let (count, word) = pool.take(proto::requested_bytes(w0), &mut generate);
+                let count = count.min(proto::MAXIMUM_BYTES) as usize;
+                proto::reply(&word.to_le_bytes()[..count])
             }
             _ => (proto::NO_ENTROPY, 0),
         };

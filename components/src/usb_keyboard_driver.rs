@@ -52,7 +52,7 @@ use extensible_host_controller_interface::{
 };
 use startup_page_contract::StartupWindow;
 use terminal_contract as proto;
-use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
+use usb::boot_keyboard::{BootReport, REPORT_BYTES, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
 use user_mode_runtime::mapped_window::MappedWindow;
@@ -457,7 +457,8 @@ impl Host {
             return Err((BringUpStep::BadDeviceDescriptor, n as u32));
         }
         let b0 = control_buffer().read_u8(7);
-        let Some(packet) = usb::descriptor::control_max_packet(b0, context::is_superspeed(speed))
+        let Some(packet) =
+            bus_speed(speed).and_then(|bus| descriptor::control_maximum_packet_bytes(b0, bus))
         else {
             return Err((BringUpStep::BadControlPacket, b0.into()));
         };
@@ -476,7 +477,11 @@ impl Host {
 
         let n = self.transfer(
             slot,
-            SetupPacket::get_descriptor(descriptor::DEVICE, 0, descriptor::DEVICE_LEN as u16),
+            SetupPacket::get_descriptor(
+                descriptor::DEVICE,
+                0,
+                descriptor::DEVICE_DESCRIPTOR_BYTES as u16,
+            ),
         )?;
         // SAFETY: the controller finished writing the buffer before the status stage's completion,
         // which `transfer` waited for and fenced; nothing writes it until the next transfer.
@@ -488,7 +493,7 @@ impl Host {
             SetupPacket::get_descriptor(
                 descriptor::CONFIGURATION,
                 0,
-                descriptor::CONFIGURATION_LEN as u16,
+                descriptor::CONFIGURATION_HEADER_BYTES as u16,
             ),
         )?;
         // SAFETY: as above.
@@ -519,10 +524,10 @@ impl Host {
             dci + 1,
             context::endpoint(
                 context::INTERRUPT_IN,
-                keyboard.max_packet,
+                keyboard.maximum_packet_bytes,
                 extensible_host_controller_interface::interrupt_interval(speed, keyboard.interval),
                 self.interrupt.dequeue_pointer(),
-                REPORT_LEN as u16,
+                REPORT_BYTES as u16,
             ),
         );
         self.command(TransferRequestBlock::configure_endpoint(
@@ -550,9 +555,26 @@ impl Host {
     fn queue_report(&mut self, k: Attached, buffer: u64) {
         let p = self
             .interrupt
-            .enqueue(TransferRequestBlock::normal(buffer, REPORT_LEN as u16));
+            .enqueue(TransferRequestBlock::normal(buffer, REPORT_BYTES as u16));
         Host::put(direct_memory_access::INTERRUPT_RING, p);
         self.ring_doorbell(k.slot, u32::from(k.dci));
+    }
+}
+
+/// **The bus speed `usb` checks endpoint 0's packet size against**, from an xHCI port speed id
+/// (xHCI 1.2 Table 7-13). The controller crate exports only the full-speed id, so the others are
+/// told apart by the default packet size it gives each one. `None` for an id it does not know.
+fn bus_speed(speed: u8) -> Option<descriptor::Speed> {
+    if context::is_superspeed(speed) {
+        return Some(descriptor::Speed::Super);
+    }
+    if speed == port::speed::FULL {
+        return Some(descriptor::Speed::Full);
+    }
+    match port::default_control_packet(speed) {
+        Some(8) => Some(descriptor::Speed::Low),
+        Some(64) => Some(descriptor::Speed::High),
+        _ => None,
     }
 }
 
@@ -893,8 +915,8 @@ impl Host {
             return;
         }
         barrier();
-        let mut bytes = [0u8; REPORT_LEN];
-        let got = REPORT_LEN.saturating_sub(residual as usize);
+        let mut bytes = [0u8; REPORT_BYTES];
+        let got = REPORT_BYTES.saturating_sub(residual as usize);
         for (i, b) in bytes.iter_mut().enumerate().take(got) {
             *b = mapped(&DMA)
                 .read_u8(direct_memory_access::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);

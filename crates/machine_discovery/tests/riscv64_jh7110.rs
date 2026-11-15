@@ -100,12 +100,14 @@ fn the_jh7110_serial_node_states_the_dw8250_shape() {
     let dt = tree(JH7110);
     let be32 = |b: &[u8]| u32::from_be_bytes([b[0], b[1], b[2], b[3]]);
 
-    let shift = dt.node_prop(b"serial@10000000", b"reg-shift").unwrap();
-    let width = dt.node_prop(b"serial@10000000", b"reg-io-width").unwrap();
-    let clock = dt
-        .node_prop(b"serial@10000000", b"clock-frequency")
+    let shift = dt.node_property(b"serial@10000000", b"reg-shift").unwrap();
+    let width = dt
+        .node_property(b"serial@10000000", b"reg-io-width")
         .unwrap();
-    let compat = dt.node_prop(b"serial@10000000", b"compatible").unwrap();
+    let clock = dt
+        .node_property(b"serial@10000000", b"clock-frequency")
+        .unwrap();
+    let compat = dt.node_property(b"serial@10000000", b"compatible").unwrap();
 
     assert_eq!(shift.map(be32), Some(2), "registers four bytes apart");
     assert_eq!(width.map(be32), Some(4), "32-bit accesses");

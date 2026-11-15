@@ -349,7 +349,8 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
     }
     .expect("device tree is unreadable");
 
-    let Ok(Some(bytes)) = dt.node_prop_compatible(b"arm,armv8-timer", b"clock-frequency") else {
+    let Ok(Some(bytes)) = dt.node_property_compatible(b"arm,armv8-timer", b"clock-frequency")
+    else {
         return;
     };
     // The binding spells one cell; anything else is not understood, and is not a mismatch.

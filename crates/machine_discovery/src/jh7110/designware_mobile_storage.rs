@@ -32,7 +32,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>, index: u8) -> Result<Option<Slot>, Er
         if tree.node_reg(name, &mut reg)? == 0 {
             continue;
         }
-        let prop = |p: &[u8]| tree.node_prop(name, p);
+        let prop = |p: &[u8]| tree.node_property(name, p);
         if let Some(slot) = Slot::from_node(index, reg[0].start, reg[0].size, prop)? {
             return Ok(Some(slot));
         }
