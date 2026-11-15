@@ -1,0 +1,29 @@
+Falsifies `page_tables::domain::a_page_index_below_the_count_always_resolves`.
+
+The defect: the page count rounds up. `div_ceil` is the spelling you reach for when the question
+is "how many pages does this span touch", and it is the wrong question here: the domain maps
+whole pages, so a grant's last partial page is not one of its pages. `grant_page` still refuses
+that index, correctly, so the two halves of the enumeration now disagree about how many pages
+there are, and the builder's `ok_or(MapError::BadRegion)` branch stops being dead code. A grant
+whose size is not a whole number of pages fails its own build.
+
+Expected to fail: `assert!(grant_page(r, i).is_some(), "an index below the page count did not
+resolve")`, for any grant whose size is not a multiple of 4096, at the last index. This harness
+is split out from the soundness one precisely so that the fact the builder's control flow
+depends on has a proof of its own, and this is what that buys.
+
+`every_whole_page_of_the_grant_is_enumerated` is falsified by an off-by-one in `grant_page`'s
+partial-page test instead, which is the same disagreement reached from the other side.
+
+diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
+--- a/crates/page_tables/src/domain.rs
++++ b/crates/page_tables/src/domain.rs
+@@ -74,7 +74,7 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
+     if r.base.checked_add(r.size).is_none() {
+         return Err(MapError::BadRegion);
+     }
+-    Ok(r.size / PAGE_SIZE)
++    Ok(r.size.div_ceil(PAGE_SIZE))
+ }
+ 
+ /// **The IOVA of the `i`th whole page of a grant, which is also its PA (the domain is identity).**

@@ -240,7 +240,7 @@ kernel has one way in rather than two.
 doc comments link here.
 
 The scratch window is where a builder maps each frame it fills for a child: 64 MiB, 16,384 pages, at
-the bottom of `address_space_map::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
+the bottom of `address_space_layout::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
 window. `std_runtime_contract`'s three pages sit inside it, but only in a `std` program's space, and
 no `std` program builds children. A window rather than a cursor that only climbs, because the kernel
 takes scratch pages back for the builder. A scratch page maps a frame retyped from the child's

@@ -17,7 +17,7 @@ parent conflicted on every merge that added a harness. Some history of the count
   since milestone 587 (most CI jobs do not need an arm64 host). So the count is of the tree, not of
   any one run, and no single host compiles all of them.
 - Milestone 161 (the x86_64 kernel port) added eight on 2026-09-19, the block-leaf proofs in
-  `crates/paging`.
+  `crates/page_tables`.
 
 The package count carries a `<!--count:-->` marker that `script/lint` re-derives each build. The
 harness count did too. Either could still be wrong about what it counted, and one was. It answered a
@@ -48,37 +48,50 @@ considered and declined on these numbers.
 
 This is milestone 119 (the long pole is one prover). The packer balances crates by their measured
 seconds, so the slowest shard can never beat the slowest crate, and the slowest crate can never
-beat its slowest harness, one formula in one single-threaded solver. These are medians of the ten
-merge-group and push runs 42456372750 to 42523187972 (2026-11-08 UTC), with the largest harness
-of each crate from run 42523187972:
+beat its slowest harness, one formula in one single-threaded solver. The table below holds medians of the 29 merge-group runs 43642016303 to 43659021264 (2026-11-14
+and 2026-11-15 UTC), each with every shard passing. The largest harness is each crate's median over
+the shard logs of the last 40 runs:
 
 | crate | median | largest harness |
 |---|---|---|
-| `byte_glob` | 9.1 min | 9.0 min, `no_magic_means_the_pattern_is_its_own_only_match` |
-| `designware_mobile_storage` | 9.0 min | 2.2 min, four bring-up harnesses near that size |
-| `file_allocation_table` | 8.7 min | 3.5 min, `a_write_extends_the_chain_to_the_size_and_stays_inside_it` |
-| `machine_discovery` | 5.9 min | 7.1 min, `every_hex_field_the_loader_writes_is_one_the_kernel_reads_back` |
-| `calendar` | 4.3 min | 2.2 min |
-| `subtree_scope` | 3.6 min | 2.5 min |
-| the other 37 | 15.1 min | |
-| serial | 55.7 min | |
+| `memory_regions` | 9.5 min | 2.9 min |
+| `byte_glob` | 9.1 min | 7.8 min, `no_magic_means_the_pattern_is_its_own_only_match` |
+| `machine_discovery` | 6.5 min | 6.3 min |
+| `driver_process_contract::virtual_input_output` | 5.6 min | 5.6 min |
+| `subtree_scope` | 3.8 min | 3.6 min |
+| the other 33 | 16.2 min | |
+| serial | 50.6 min | |
 
-A harness can outlast its crate's median because two run at once (`VERIFY_JOBS=2`) and the
-runner's speed varies by about 20% from run to run. Packed by these medians, each prove job also
-spends about 0.7 minutes on setup:
+A harness can outlast its crate's median because two run at once (`VERIFY_JOBS=2`), and the
+runner's speed varies by about 1.6 times from run to run (`byte_glob`: 399 to 658 seconds over
+those runs). The packer splits these medians into shards as below. The other two columns sum each
+crate's 90th percentile and maximum over the same shard, and each job adds about 0.7 minutes of
+setup:
 
-| prove shards | slowest shard, median | slowest shard, worst of ten | without the driver crates leaving the tree |
+| prove shards | slowest shard, median | slowest shard, 90th percentile | slowest shard, maximum |
 |---|---|---|---|
-| four | 14.1 min | 16.1 min | 11.4 and 13.1 min |
-| **five (what runs)** | **11.6 min** | **12.3 min** | **9.3 and 10.3 min** |
-| six | 9.4 min | 10.7 min | 9.2 and 10.3 min |
+| four | 12.7 min | 14.3 min | 15.4 min |
+| **five (what runs)** | **10.1 min** | **11.6 min** | **12.5 min** |
+| six | 9.5 min | 10.6 min | 11.6 min |
 
-Four shards put the job past the 85% warning of its 20-minute budget, which #3350 reported. Five
-hold the slowest job near 60% of it. A sixth buys under two minutes while the driver crates
-(`designware_mobile_storage`, `extensible_host_controller_interface` and
-`non_volatile_memory_express`, about 10 serial minutes) are in the table, and nothing once they
-leave, because `byte_glob`'s one harness then sets the pace. `helpers/verify_times.py` keeps the table
-current, and [notes/project-metrics.md](../project-metrics.md) charts it.
+Five hold the slowest job near 60% of its 20-minute budget at the 90th percentile. A sixth buys
+under a minute, because `memory_regions` and `byte_glob` are each a shard on their own, and seven
+buy nothing more. `helpers/verify_times.py` keeps the table current, and
+[notes/project-metrics.md](../project-metrics.md) charts it.
+
+### A shard that stalls
+
+Shards whose crates sum to about 12 minutes have run into the job's 25-minute limit. The same pull
+requests passed on their other runs, so the cause is the runner and not the code.
+The table cannot explain it: no passing shard ran longer than 15.6 minutes, and each stalled one
+ran the full 25. The leading suspect is memory. `byte_glob` runs
+`a_negated_class_is_the_exact_complement_of_the_class` beside
+`no_magic_means_the_pattern_is_its_own_only_match`. On an x86_64 Linux host the pair reached
+11.6 GiB resident between them within two and a half minutes, where a 12 GiB cap stopped both, and
+the runner has 16 GB. A slow runner lengthens the time the two overlap. A job that reaches its
+limit loses its log, so the `script/verify` step has its own limit below the job's. A memory record
+runs beside it. A stalled shard then keeps its log, names the harness it was in, and shows whether
+the runner was swapping.
 
 The dangerous failure mode is a crate that lands in no shard, because an unproved crate is
 invisible. The suite goes green *faster*, and nothing says a harness stopped running. So the packer

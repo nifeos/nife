@@ -154,7 +154,7 @@ done
 
 # The host-logic crates. kernel, components and fixtures are excluded because they are `no_std`
 # binaries that only
-# run under QEMU; everything else (paging, static_elf, frames, slab, grant_plan, the protocol crates) is pure
+# run under QEMU; everything else (page_tables, static_elf, frames, slab, grant_plan, the protocol crates) is pure
 # logic that compiles and tests on the host in milliseconds. See CLAUDE.md on why that split exists.
 #
 # BUGS: this list is still written out, where the two above it are derived (milestone 312). Left

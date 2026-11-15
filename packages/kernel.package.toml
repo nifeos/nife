@@ -10,7 +10,7 @@ home = { repo = "kernel", status = "provisional" }
 crates = [
     "kernel",
     "capability",
-    "paging",
+    "page_tables",
     "page_frames",
     "address_space_identifier",
     "cpu_set",

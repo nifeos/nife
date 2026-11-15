@@ -140,7 +140,7 @@ Time:
 - `pmu::{cycles, outcome, print_summary}`: the cycle counter if there is one, and why not.
 
 Memory:
-- `mmu::Format`: this architecture's page-table format from the `paging` crate.
+- `mmu::Format`: this architecture's page-table format from the `page_tables` crate.
 - `mmu::{initialize, initialize_secondary, print_summary}`: the kernel's tables, then each core onto them.
 - `mmu::{phys_to_virt, virt_to_phys}`: the direct map, both ways.
 - `mmu::{map_page, unmap_page}`: one kernel page. Map refuses to overwrite and unmap

@@ -9,7 +9,7 @@ the generational table, the intrusive queue and the ASID allocator.
 
 ## `crates/capability`
 
-14 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
+15 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
 the table names the eight this appendix adjudicated:
 
 | Harness | Property |
@@ -53,9 +53,9 @@ parallel copy. So the proved arithmetic is the arithmetic that runs. It is a Pha
 extraction. The pure page accounting is here (address-agnostic, in page units). The byte arithmetic
 and the I/O (freeing frames, un-bumping the parent) stay in the kernel around it.
 
-## `crates/paging`
+## `crates/page_tables`
 
-38 across `crates/paging` <!--count:paging-harnesses-->, in `src/verification.rs` and one
+38 across `crates/page_tables` <!--count:page-tables-harnesses-->, in `src/verification.rs` and one
 module per architecture (`aarch64.rs`, `sv39.rs`, `x86_64.rs`, `domain.rs`); the per-architecture
 parity series those modules hold is the arch gate's record, not this appendix's. The eight below
 are the originals this appendix adjudicated, in `src/lib.rs` at the writing: the address arithmetic
@@ -75,7 +75,7 @@ inward).
 | `the_low_half_mapper_rejects_the_high_half_untouched` | for every address outside the low half (every kernel address included), `map`/`unmap`/`translate` on a `TTBR0` mapper reject before touching any memory (the harness gives the mapper a null root and a panicking frame source, so a touch is a proof failure) |
 
 The user-VA gate is a Phase-2-style extraction in miniature. `untyped::MAP` and `frame::MAP` both
-hand-rolled `va & 0xfff != 0 || (va >> 48) != 0`. Both now call `paging::is_user_page_va`, so the
+hand-rolled `va & 0xfff != 0 || (va >> 48) != 0`. Both now call `page_tables::is_user_page_va`, so the
 gate the kernel runs is the gate that is proved.
 
 The descriptor harness leans on one assumption worth recording. `pa` is taken as representable
@@ -89,7 +89,7 @@ considered and declined, not skipped. Kani only pays off on *symbolic* inputs, a
 are dead. A concrete-address round-trip is a unit test Kani happens to execute, with no gain over
 the tests already present. A symbolic-address round-trip reasons over a built four-level page table.
 That is the "BMC over real memory" case that walls the same way the ELF parser did. And the
-invariants of the walk that actually matter are *already* proved in the `paging` arithmetic
+invariants of the walk that actually matter are *already* proved in the `page_tables` arithmetic
 harnesses above: index-in-bounds, distinct pages take distinct paths, the lossless address split. So
 the round-trip would burn the solver to re-cover proved ground, or hit the wall. It stays covered by
 the host and kernel tests.

@@ -51,7 +51,7 @@ pub(super) fn map_new() {
             let page = space
                 .map_new(
                     base + i * page_frames::FRAME_SIZE,
-                    paging::Flags::user_data(),
+                    page_tables::Flags::user_data(),
                 )
                 .expect("bench: map failed");
             // Touch it so the compiler cannot dissolve the loop.

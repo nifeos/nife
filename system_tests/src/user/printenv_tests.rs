@@ -4,7 +4,7 @@ use crate::sched::RendezvousId;
 
 /// Where `printenv` expects the config page, read-only. Must match `components/src/printenv.rs`'s
 /// `CONFIG_VA`.
-const CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
+const CONFIG_VA: u64 = address_space_layout::pair_page(0x00e0_0000);
 
 /// Spawn `printenv` and return the endpoint its output arrives on.
 ///

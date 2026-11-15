@@ -50,7 +50,7 @@ const BLK_PAGE_FRAME: u64 = 4;
 
 /// Where this program puts the page it shares with the block server. **Its choice**: it holds the
 /// frame and maps it (milestone 108), so nothing on the kernel side names this address.
-const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
+const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// The transfer unit of the block service: one filesystem block per request.
 const TRANSFER: u64 = blk::BLOCK_SIZE as u64;
@@ -105,8 +105,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: clock_contract::INTERFACE_ID,

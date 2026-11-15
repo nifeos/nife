@@ -126,7 +126,7 @@ fn the_largest_blob_fits_the_handoff_pages() {
         assert!(t.handoff_len() <= HANDOFF_BYTES);
         assert!(t.write_handoff(&mut vec![0u8; HANDOFF_BYTES]).is_some());
     }
-    assert!(HANDOFF_BYTES as u64 <= HANDOFF_PAGES * address_space_map::PAGE);
+    assert!(HANDOFF_BYTES as u64 <= HANDOFF_PAGES * address_space_layout::PAGE);
 }
 
 /// **What every fixture blob was written from**: a 20 by 6 terminal fed these bytes. A scrollback

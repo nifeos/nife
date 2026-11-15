@@ -54,6 +54,8 @@ outside this repository acts on it after the first tag (a public name, a wire wo
 dependency). Everything else is two-way and the maintainer decides it. Every name proposed below is
 provisional; the architect names.
 
+The ledger of what landed and what is left is in [the appendix](1086-domain-name-resolution-contract-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The crate describes its consumers, in 54 lines. Finding: the externalization lint counts 54 lines

@@ -16,10 +16,10 @@ use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, delete_current_capability};
 use crate::syscall::invoke;
 
-const CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// The spinner's data page: word 0 is its count, word 1 how many times it has been entered.
-const VA: u64 = address_space_map::pair_page(0x0060_0000);
+const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// **The spinner.** Entry `x0` is its data page. It counts its own entries in word 1, then counts in
 /// a callee-saved register from zero and stores the register to word 0 after every step, forever.

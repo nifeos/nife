@@ -3,7 +3,7 @@
 
     python3 helpers/verify_times.py shard k/n < table          # script/verify's packer (crates on stdout)
     python3 helpers/verify_times.py shards                     # CI's prove shard count, from verify.yml
-    python3 helpers/verify_times.py shard-check k/n SECONDS < table   # warn if a shard ran far off its estimate
+    python3 helpers/verify_times.py shard-check k/n SECONDS [CRATE=SECONDS...] < table   # warn if a shard or a crate ran far off its row
     python3 helpers/verify_times.py crates [--runs N]          # median CI seconds per crate, as TSV
     python3 helpers/verify_times.py refresh [--runs N] [--dry-run]   # rewrite the table if it drifted
     python3 helpers/verify_times.py update [--since YYYY-MM-DD]       # per-run shard times for the metrics page
@@ -28,8 +28,9 @@ This file is the mechanism that keeps the table honest without anyone rememberin
 - `shard` is the packer itself, moved out of script/verify so that the run, the refresh and the
   check below all plan shards with one function rather than three that can disagree.
 - `shard-check` runs at the end of every CI shard and compares what the shard took against what the
-  table planned. **It warns and never fails** (see SHARD_WARN_PCT).
-- `refresh` is what `.github/workflows/verify-shard-refresh.yml` runs weekly: medians from the
+  table planned, and names each crate that ran far past its own row (ROW_WARN_FACTOR). **It warns
+  and never fails** (see SHARD_WARN_PCT).
+- `refresh` is what `.github/workflows/verify-shard-refresh.yml` runs daily: medians from the
   last REFRESH_RUNS green runs, and a rewrite of the table's seconds when they drifted.
 - `update` writes `notes/project-metrics/verify-runs.csv`, one row per sampled run. Nothing reads
   it since `verify-shards.svg` was retired on 2026-10-11 (UTC) for `ci-jobs.svg`, which draws every
@@ -78,14 +79,21 @@ RUN_COLUMNS = ["run", "created", "event", "prove_minutes", "refalsify_minutes", 
 # either side of its median from run to run on the same table (shard 2/2: 21.6 to 29.7 minutes), so
 # a gate at 30% would still fire on noise often enough to make main red for nothing. And a wrong
 # estimate is never wrong proofs: the packer asserts the partition, so the only cost is a slower
-# shard. A warning on the run plus the weekly refresh below is the proportionate pair. 30% would
+# shard. A warning on the run plus the daily refresh below is the proportionate pair. 30% would
 # have fired on the 2026-10-06 runs (planned 19.8, took about 27: +36%) and on none of the shards
 # after this refresh.
 SHARD_WARN_PCT = 30.0
-# The weekly refresh rewrites the table when a planned shard is off its median by more than this,
+# The daily refresh rewrites the table when a planned shard is off its median by more than this,
 # or when repacking by the fresh medians would shorten the slowest shard by REPACK_SAVING_S. Medians
 # over REFRESH_RUNS runs are steadier than one run, so the line sits lower than the warning's.
 REFRESH_PCT = 15.0
+# A crate is named on its shard's run when it took more than ROW_WARN_FACTOR times its row and at
+# least ROW_WARN_S seconds more. A shard's total hides which row is wrong: on 2026-11-14 shard 2/5
+# ran 14 minutes against a plan of 10.9 because `socket_contract`, a 3-second row, had grown new
+# harnesses and took 99 seconds, and `byte_glob` took 610 against 545. The seconds floor keeps a
+# 2-second row that took 5 from speaking; the factor keeps runner noise (about 30%) quiet.
+ROW_WARN_FACTOR = 1.5
+ROW_WARN_S = 60
 REPACK_SAVING_S = 60
 REFRESH_RUNS = 20
 # A replay time is rewritten only from a record seen in this many shard logs: one diff reaches a
@@ -195,19 +203,44 @@ def shard_verdict(estimate, actual):
     return pct if abs(pct) > SHARD_WARN_PCT else None
 
 
-def shard_check(spec, actual):
+def rows_off(table, measured):
+    """[(crate, row seconds, measured seconds)] for each crate that ran past its row by both
+    ROW_WARN_FACTOR and ROW_WARN_S, slowest overrun first. `table` and `measured` are
+    {crate: seconds}; a crate the table lacks is skipped (the packer already refused it)."""
+    off = [(c, table[c], s) for c, s in measured.items()
+           if c in table and s >= table[c] * ROW_WARN_FACTOR and s - table[c] >= ROW_WARN_S]
+    return sorted(off, key=lambda r: (r[1] - r[2], r[0]))
+
+
+def parse_measured(args):
+    """{crate: seconds} from `crate=seconds` arguments, as script/verify passes them."""
+    out = {}
+    for a in args:
+        crate, _, secs = a.rpartition("=")
+        if not crate or not secs.isdigit():
+            sys.exit("verify_times: shard-check wants crate=seconds, got %r" % a)
+        out[crate] = int(secs)
+    return out
+
+
+def shard_check(spec, actual, measured=None):
     k, n = parse_spec(spec)
-    _bins, load = pack(stdin_rows(), n)
+    rows = stdin_rows()
+    _bins, load = pack(rows, n)
     estimate = load[k - 1]
     pct = shard_verdict(estimate, actual)
+    prefix = "::warning::" if os.environ.get("GITHUB_ACTIONS") else "warning: "
     print("shard %d/%d: planned %.1f min, proved in %.1f min" % (k, n, estimate / 60, actual / 60))
     if pct is not None:
-        prefix = "::warning::" if os.environ.get("GITHUB_ACTIONS") else "warning: "
         print("%sprove shard %d/%d took %.1f min against the %.1f the table in script/verify "
-              "planned (%+.0f%%, warns past %.0f%%). The table has drifted; the weekly "
+              "planned (%+.0f%%, warns past %.0f%%). The table has drifted; the daily "
               "verify-shard-refresh workflow rewrites it, or run "
               "`python3 helpers/verify_times.py refresh` by hand."
               % (prefix, k, n, actual / 60, estimate / 60, pct, SHARD_WARN_PCT))
+    for crate, row, took in rows_off({name: secs for secs, name in rows}, measured or {}):
+        print("%s%s took %d s against its %d-second row in script/verify; its harnesses have "
+              "grown since the row was measured, and the shard plan is short by the difference."
+              % (prefix, crate, took, row))
     return 0
 
 
@@ -636,6 +669,18 @@ def selftest():
     expect("far under warns too", round(shard_verdict(1200, 600)), -50)
     expect("no estimate, no verdict", shard_verdict(0, 600), None)
 
+    # A crate past its row: the 2026-11-14 shape is named, noise and small rows are not.
+    rowtable = {"socket_contract": 3, "byte_glob": 545, "page_frames": 2, "kernel": 8}
+    expect("a grown row is named, slowest overrun first",
+           rows_off(rowtable, {"socket_contract": 99, "byte_glob": 610, "page_frames": 14, "kernel": 9}),
+           [("socket_contract", 3, 99)])
+    expect("a large row needs both the factor and the seconds",
+           rows_off(rowtable, {"byte_glob": 900}), [("byte_glob", 545, 900)])
+    expect("an unknown crate is skipped", rows_off(rowtable, {"new": 900}), [])
+    expect("crate=seconds parses, module rows included",
+           parse_measured(["byte_glob=610", "driver_process_contract::e1000e=2"]),
+           {"byte_glob": 610, "driver_process_contract::e1000e": 2})
+
     # The log reader: the explicit line wins, and the timestamp fallback measures start to start
     # and the last crate to its final Complete line.
     log = ("\ufeff2026-10-07T02:28:48.8997507Z ==> kani: calendar (the civil-date arithmetic)\n"
@@ -751,8 +796,8 @@ def main(argv):
         # the machine's heavy-job slots (helpers/verify_parallel.py).
         print(shard_count())
         return 0
-    if cmd == "shard-check" and len(argv) == 4:
-        return shard_check(argv[2], float(argv[3]))
+    if cmd == "shard-check" and len(argv) >= 4:
+        return shard_check(argv[2], float(argv[3]), parse_measured(argv[4:]))
     if cmd == "crates":
         return crates(argv[2:])
     if cmd == "refresh":

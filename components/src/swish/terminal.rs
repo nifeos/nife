@@ -7,9 +7,9 @@ use super::*;
 
 // Pages shared with the terminal (must match the wiring in the progenitor). Distinct from
 // [`FS_VA`], because a shell with a `>` holds both; `wiring.rs` asserts the windows disjoint.
-pub(super) const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000); // we write; the terminal reads
+pub(super) const OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00c0_0000); // we write; the terminal reads
 
-pub(super) const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000); // the terminal writes; we read
+pub(super) const LINE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00b0_0000); // the terminal writes; we read
 
 // SAFETY: the wiring (`crates/system_initializer`'s `SH_OUT_VA` grant) maps one page read/write at
 // OUT_VA before this shell runs, in every wiring that has a terminal at all (milestone 139 round

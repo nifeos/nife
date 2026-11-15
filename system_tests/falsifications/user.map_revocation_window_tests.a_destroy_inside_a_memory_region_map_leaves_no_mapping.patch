@@ -31,7 +31,7 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 --- a/kernel/src/syscall/memory_region.rs
 +++ b/kernel/src/syscall/memory_region.rs
 @@ -74,8 +74,6 @@
-     if !paging::is_user_page_va::<crate::arch::mmu::Format>(va) {
+     if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va) {
          return Err(Error::BadPointer);
      }
 -    #[cfg(feature = "system_tests")]
@@ -42,7 +42,7 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 @@ -88,25 +86,31 @@
      // revocation and untyped reclamation)). No capability names the page, and it is fresh, so the
      // record's writable-and-executable check finds nothing to refuse.
-     let flags = paging::Flags::user_data();
+     let flags = page_tables::Flags::user_data();
 -    let recorded = hold
 -        .record_mapping(
 -            phys,
@@ -58,7 +58,7 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 -        Err(e) => {
 -            hold.forget_recorded(root, recorded);
 -            Err(match e {
--                paging::MapError::OutOfPageFrames => Error::OutOfMemory,
+-                page_tables::MapError::OutOfPageFrames => Error::OutOfMemory,
 -                _ => Error::BadPointer, // misaligned, already mapped, or wrong half
 -            })
 +    let mapped =
@@ -84,7 +84,7 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 +            }
 +            Ok(0)
          }
-+        Err(paging::MapError::OutOfPageFrames) => Err(Error::OutOfMemory),
++        Err(page_tables::MapError::OutOfPageFrames) => Err(Error::OutOfMemory),
 +        Err(_) => Err(Error::BadPointer), // misaligned, already mapped, or wrong half
      }
  }

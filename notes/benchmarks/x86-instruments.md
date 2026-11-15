@@ -94,7 +94,7 @@ nothing") is wrong.
 ### What changes when PGE is on, and what does not
 
 `CR4.PGE` lets a TLB entry whose leaf has `G` set survive a `CR3` write. This kernel already marks
-every kernel mapping global and no user mapping global (`paging::Flags`). Turning it on changes no
+every kernel mapping global and no user mapping global (`page_tables::Flags`). Turning it on changes no
 instruction on any path. The only difference is which kernel translations the hardware still holds
 after a context switch writes `CR3`. The saving is refills, and refills are not instructions.
 

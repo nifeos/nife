@@ -66,12 +66,12 @@ unique inside its crate. In `paging` it is not. Six properties are stated once p
 `aarch64.rs`, `sv39.rs` and `x86_64.rs`, under six shared function names:
 
 ```
-paging::{aarch64,sv39,x86_64}::verification::distinct_pages_take_distinct_paths
-paging::{aarch64,sv39,x86_64}::verification::index_is_always_in_bounds
-paging::{aarch64,sv39,x86_64}::verification::the_indices_and_offset_tile_the_address
-paging::{aarch64,sv39,x86_64}::verification::the_leaf_keeps_address_and_permissions_apart
-paging::{aarch64,sv39,x86_64}::verification::the_two_halves_are_disjoint
-paging::{aarch64,sv39,x86_64}::verification::the_user_va_gate_admits_only_the_aligned_low_half
+page_tables::{aarch64,sv39,x86_64}::verification::distinct_pages_take_distinct_paths
+page_tables::{aarch64,sv39,x86_64}::verification::index_is_always_in_bounds
+page_tables::{aarch64,sv39,x86_64}::verification::the_indices_and_offset_tile_the_address
+page_tables::{aarch64,sv39,x86_64}::verification::the_leaf_keeps_address_and_permissions_apart
+page_tables::{aarch64,sv39,x86_64}::verification::the_two_halves_are_disjoint
+page_tables::{aarch64,sv39,x86_64}::verification::the_user_va_gate_admits_only_the_aligned_low_half
 ```
 
 Eighteen of that crate's twenty-six harnesses, three to a filename. `cargo kani --harness

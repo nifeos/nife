@@ -1,11 +1,11 @@
 /// `invoke(capability, MAP_INTO, va, frame_slot, writable)` -> 0. Map the frame in `frame_slot` into THIS
 /// address space at `va`, read-only or read/write. Needs `WRITE` on the address-space capability;
 /// the frame capability needs `READ` for a read-only mapping, `WRITE` for a writable one, the
-/// `frame::MAP` rule verbatim. Page tables and the revocation record are paid from the space's own
+/// [`page_frame::MAP`](super::page_frame::MAP) rule verbatim. Page tables and the revocation record are paid from the space's own
 /// backing region; a mapping whose record cannot be afforded is refused (`OutOfMemory`), never left
 /// invisible to revocation. A `MAP_READ_WRITE` of a page the space already maps as code, or a `MAP_CODE` of
 /// one it already maps writable, is refused with `NotPermitted`: no page is writable through one
-/// mapping and executable through another in one address space (claim 11). The same frame
+/// mapping and executable through another in one address space (W^X). The same frame
 /// writable in one space and code in another maps.
 pub const MAP_INTO: u64 = 0;
 
@@ -25,7 +25,7 @@ pub const MAP_READ_WRITE: u64 = 1;
 /// Map executable code: RX, never writable (W^X).
 pub const MAP_CODE: u64 = 2;
 
-/// `invoke(capability, LIST, cursor, 0, 0) -> (next_cursor, va, kind)` (`pmap`): list this space's
+/// `invoke(capability, LIST, cursor, 0, 0) -> (next_cursor, va, kind)` : list this space's
 /// mappings one entry per call, changing none, with `Rendezvous::SURVEY`'s cursors and right.
 ///
 /// - `next_cursor` returns in x0 (a0 on RISC-V), `va` in x1 and `kind` in x2, one of [`MAP_READ_ONLY`],

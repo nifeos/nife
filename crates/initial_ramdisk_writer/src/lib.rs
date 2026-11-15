@@ -59,7 +59,7 @@ pub struct Misfit {
     /// The archive entry's name.
     pub name: String,
     /// Where it falls outside the band.
-    pub placement: address_space_map::ImagePlacement,
+    pub placement: address_space_layout::ImagePlacement,
 }
 
 impl fmt::Display for Misfit {
@@ -226,7 +226,7 @@ fn programs_fit_the_address_space_map(files: &[(&str, &[u8])]) -> Result<(), Err
         let Some((lo, hi)) = image_span(bytes) else {
             continue;
         };
-        if let Err(placement) = address_space_map::check_image(lo, hi) {
+        if let Err(placement) = address_space_layout::check_image(lo, hi) {
             misfits.push(Misfit {
                 name: String::from(*name),
                 placement,
@@ -243,7 +243,7 @@ fn programs_fit_the_address_space_map(files: &[(&str, &[u8])]) -> Result<(), Err
 /// The page-rounded span of a 64-bit little-endian ELF's `PT_LOAD` segments, or `None` if `bytes`
 /// is not one or has no loadable segment.
 fn image_span(bytes: &[u8]) -> Option<(u64, u64)> {
-    const PAGE: u64 = address_space_map::PAGE;
+    const PAGE: u64 = address_space_layout::PAGE;
     let u16_at = |o: usize| Some(u16::from_le_bytes(bytes.get(o..o + 2)?.try_into().ok()?));
     let u32_at = |o: usize| Some(u32::from_le_bytes(bytes.get(o..o + 4)?.try_into().ok()?));
     let u64_at = |o: usize| Some(u64::from_le_bytes(bytes.get(o..o + 8)?.try_into().ok()?));
@@ -298,7 +298,7 @@ mod tests {
             noise.push((x >> 24) as u8);
         }
         vec![
-            ("progenitor", elf_at(address_space_map::IMAGE_BASE)),
+            ("progenitor", elf_at(address_space_layout::IMAGE_BASE)),
             ("jig", b"jig".to_vec()),
             ("mdr", b"mdr".to_vec()),
             ("wc", noise),
@@ -370,13 +370,13 @@ mod tests {
     /// `mkfs` was, is named.
     #[test]
     fn an_archive_program_outside_the_image_band_is_named() {
-        let good = elf_at(address_space_map::IMAGE_BASE);
+        let good = elf_at(address_space_layout::IMAGE_BASE);
         let mkfs_as_it_was = elf_at(0x20_0000);
         assert_eq!(
             image_span(&good),
             Some((
-                address_space_map::IMAGE_BASE,
-                address_space_map::IMAGE_BASE + 0x2000
+                address_space_layout::IMAGE_BASE,
+                address_space_layout::IMAGE_BASE + 0x2000
             ))
         );
         assert!(
@@ -413,7 +413,7 @@ mod tests {
         else {
             panic!("programs at 0x200000 fit the band");
         };
-        let placement = address_space_map::check_image(0x20_0000, 0x20_2000).unwrap_err();
+        let placement = address_space_layout::check_image(0x20_0000, 0x20_2000).unwrap_err();
         let line = |name: &str| format!("`{name}` does not fit the address-space map: {placement}");
         assert_eq!(
             refusal.to_string(),
