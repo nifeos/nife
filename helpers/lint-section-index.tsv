@@ -17,6 +17,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	0	glyph_atlas_generator	-	0	-	code	clippy: glyph_atlas_generator (its own workspace)
 -	0	redoxfs_server	-	0	-	code	clippy: redoxfs_server (its own workspace)
 -	0	fuzz	-	0	-	code	clippy: fuzz targets (its own workspace)
+-	0	fuzz	-	0	-	code	clippy: memory_region_heap fuzz target (its own workspace)
 -	0	host	-	0	host	code	clippy: the Kani proof harnesses (--cfg kani)
 -	0	aarch64	-	0	aarch64	code	clippy: kernel + user + user_mode_runtime (aarch64)
 -	0	aarch64	-	0	aarch64	code	clippy: system_tests (aarch64)

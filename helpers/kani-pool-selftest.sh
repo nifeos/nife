@@ -55,12 +55,12 @@ case "$1 $2" in
 esac
 printf '%s\n' "$*" >>"${NIFE_SELFTEST_ARGS:?}"
 printf 'start %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
-# Hold the proof, and so its units, until the selftest releases it. The bound keeps a selftest that
-# died from leaving the stub behind; it is a cleanup limit, never a pause the assertions rely on.
-waited=0
-while [ ! -e "${NIFE_SELFTEST_GO:?}" ] && [ "$waited" -lt 1200 ]; do
+# Hold the proof, and so its units, until the selftest releases it. The stub ends on the release file
+# or when the selftest process is gone, which keeps a selftest that died from leaving the stub
+# behind. It never ends on elapsed time: a count of sleeps ran out under load, freed the units
+# while the third run was still starting, and so the third run never had to wait.
+while [ ! -e "${NIFE_SELFTEST_GO:?}" ] && kill -0 "${NIFE_SELFTEST_PID:?}" 2>/dev/null; do
 	sleep 0.1
-	waited=$((waited + 1))
 done
 printf 'end %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
 exit 0
@@ -81,7 +81,7 @@ NIFE_HEAVY_SLOT_DIR="$tmp/slots"
 NIFE_HEAVY_SLOTS=16
 export NIFE_HEAVY_SLOT_DIR NIFE_HEAVY_SLOTS
 mkdir -p "$tmp/slots"
-export NIFE_SELFTEST_ARGS="$tmp/args" NIFE_SELFTEST_EVENTS="$tmp/events" NIFE_SELFTEST_GO="$tmp/go"
+export NIFE_SELFTEST_PID=$$ NIFE_SELFTEST_ARGS="$tmp/args" NIFE_SELFTEST_EVENTS="$tmp/events" NIFE_SELFTEST_GO="$tmp/go"
 GIB=$((1024 * 1024 * 1024))
 # The reserve is 12 GiB and a unit 2 GiB, so these sizes give pools of two and four units.
 POOL2=$((16 * GIB))
@@ -92,15 +92,16 @@ export NIFE_KANI_HARNESS_GIB=2
 # peak <events file>: the most proofs ever in flight at once.
 peak() { awk '/^start/ { n++; if (n > m) m = n } /^end/ { n-- } END { print m + 0 }' "$1"; }
 
-# until_true <what> <command...>: poll for up to 2 minutes until the command succeeds, and fail naming
-# <what> when it never does.
+# until_true <what> <command...>: poll until the command succeeds, and fail naming <what> when it
+# has not within DEADLINE_SECONDS of real time. The deadline counts the clock and not the polls, since
+# a poll takes far longer than its sleep on a loaded machine.
+DEADLINE_SECONDS=300
 until_true() {
 	what="$1"
 	shift
-	n=0
+	end=$(($(date +%s) + DEADLINE_SECONDS))
 	until "$@"; do
-		n=$((n + 1))
-		[ "$n" -lt 1200 ] || fail "timed out waiting for $what"
+		[ "$(date +%s)" -lt "$end" ] || fail "timed out after ${DEADLINE_SECONDS} s waiting for $what"
 		sleep 0.1
 	done
 }
@@ -253,9 +254,9 @@ for i in 1 2; do
 done
 NIFE_HEAVY_SLOTS=2 python3 "$root/helpers/heavy_slot.py" lint -- sh -c ": >'$tmp/s9-lint'" >"$tmp/s9-lint.out" 2>&1 &
 pids="$pids $!"
-# Bounded so a failure still releases the runs below; a free slot is taken within one 2 s poll.
-n=0
-while [ ! -e "$tmp/s9-lint" ] && [ "$n" -lt 300 ]; do sleep 0.1; n=$((n + 1)); done
+# Bounded so a failure still releases the runs below; the assertions after it name the missing event.
+end=$(($(date +%s) + DEADLINE_SECONDS))
+while [ ! -e "$tmp/s9-lint" ] && [ "$(date +%s)" -lt "$end" ]; do sleep 0.1; done
 st9="$(NIFE_HEAVY_SLOTS=2 NIFE_VERIFY_MEMORY_BYTES=$POOL2 python3 "$root/helpers/heavy_slot.py" --status)"
 ended9="$(grep -c '^end' "$tmp/events" || true)"
 lint9=no
@@ -274,7 +275,7 @@ printf '%s\n' "$st9" | grep -q "^2 heavy-job slots in .*, 1 held$" ||
 rm -f "$tmp/go"
 : >"$tmp/events"
 NIFE_HEAVY_SLOTS=1 python3 "$root/helpers/heavy_slot.py" lint -- sh -c \
-	": >'$tmp/s10-lint'; n=0; while [ ! -e '$tmp/go' ] && [ \$n -lt 1200 ]; do sleep 0.1; n=\$((n + 1)); done" \
+	": >'$tmp/s10-lint'; while [ ! -e '$tmp/go' ] && kill -0 $$ 2>/dev/null; do sleep 0.1; done" \
 	>"$tmp/s10-lint.out" 2>&1 &
 pids="$!"
 until_true "the stage 10 slot holder to start" test -e "$tmp/s10-lint"

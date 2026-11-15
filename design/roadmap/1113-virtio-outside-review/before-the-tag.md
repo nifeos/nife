@@ -13,10 +13,9 @@ A change to the proved layout would leave the driver reading the wrong offsets, 
 fail until a QEMU test did. `components/src/virtio_net_transport.rs` lines 28 to 31 records the same copy as
 a bug, and this crate records nothing. `notes/net/the-driver-and-dhcp.md` lines 130 to 137 says §46 (thin primitives or whole subsystems; we write everything in between) priced
 the dependency edge and the tree did not take it. The validator has no dependencies of its own
-(`crates/direct_memory_access_validator/Cargo.toml`). The fix: see Decision 2. Until the architect
-rules, add a `BUGS` entry at the constants, as `virtio_net_transport` has. Effort: S. One-way in
-the sense the brief uses: the layout is a wire contract between kernel and driver, and where it
-lives is a dependency decision.
+(`crates/direct_memory_access_validator/Cargo.toml`). The fix: the constants move to `abi::virtio`,
+as Decision 2 decides, provisionally, and this crate imports them. Effort: S. Two-way: the layout
+values do not change, only where their names live.
 
 4. The block server dies on a device error that a client can cause. `complete_blk` panics on a
 non-OK status (`:1004-1007`) and `submit_blk` panics on a refused notify (`:1153-1155`). Meanwhile
