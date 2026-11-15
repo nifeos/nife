@@ -204,15 +204,17 @@ fn a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs() {
     let parent: u32 = kani::any();
     match (kani::any::<bool>(), kani::any::<bool>()) {
         (false, false) => {
-            transmit_parent_is_an_input(ALWAYS_ON_PHANDLE, clock, ALWAYS_ON_PHANDLE, parent)
+            transmit_parent_is_an_input(ALWAYS_ON_PHANDLE, clock, ALWAYS_ON_PHANDLE, parent);
         }
         (false, true) => {
-            transmit_parent_is_an_input(ALWAYS_ON_PHANDLE, clock, SYSTEM_PHANDLE, parent)
+            transmit_parent_is_an_input(ALWAYS_ON_PHANDLE, clock, SYSTEM_PHANDLE, parent);
         }
         (true, false) => {
-            transmit_parent_is_an_input(SYSTEM_PHANDLE, clock, ALWAYS_ON_PHANDLE, parent)
+            transmit_parent_is_an_input(SYSTEM_PHANDLE, clock, ALWAYS_ON_PHANDLE, parent);
         }
-        (true, true) => transmit_parent_is_an_input(SYSTEM_PHANDLE, clock, SYSTEM_PHANDLE, parent),
+        (true, true) => {
+            transmit_parent_is_an_input(SYSTEM_PHANDLE, clock, SYSTEM_PHANDLE, parent);
+        }
     }
 }
 
