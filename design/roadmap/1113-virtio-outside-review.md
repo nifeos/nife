@@ -193,9 +193,8 @@ a layout each and refuses any other; it is one layer that both reads and drives.
 `virtio-core` is PCI-only and has no such register. Here the kernel owns the register and the
 driver sits behind it, so the check lives where the register is read.
 
-Concrete example. A board whose firmware offers a version 1 block device never reaches the driver:
-the kernel's scan does not offer the slot, so the driver is never started for it, and nothing
-drives the device with the modern handshake and finds out by its queues failing.
+Concrete example. A board whose firmware offers a version 1 block device never reaches the driver.
+The kernel's scan does not offer the slot, so nothing starts a driver for it.
 
 ## Done when
 
