@@ -65,8 +65,8 @@ fn r8(va: u64) -> u8        { WINDOW.r8(va - PAGE_FRAME_VA) }
 fn w8(va: u64, v: u8)       { WINDOW.w8(va - PAGE_FRAME_VA, v); }
 fn r16le(va: u64) -> u16    { WINDOW.r16(va - PAGE_FRAME_VA) }
 fn w16le(va: u64, v: u16)   { WINDOW.w16(va - PAGE_FRAME_VA, v); }
-fn write_payload(bytes: &[u8]) { ... OFF_PAYLOAD ... }
-fn read_payload(n: usize, out: &mut [u8]) -> usize { ... OFF_PAYLOAD ... }
+fn write_payload(bytes: &[u8]) { ... PAYLOAD_OFFSET_BYTES ... }
+fn read_payload(n: usize, out: &mut [u8]) -> usize { ... PAYLOAD_OFFSET_BYTES ... }
 ```
 
 | program | where | what the page is |

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -148,6 +148,21 @@ Prior art: seL4's `seL4_Recv` returns the badge through one out-parameter on eve
 has no `_badged` twin; Zircon's `zx_channel_read` returns bytes and handles from one call.
 Concrete example: `receive_capability_bound` has no caller in the tree today and would still be a
 published function after the tag.
+
+## Follow-on
+
+- **Done.** Item 1: `read` and `write` take the sealed `WindowInteger`, and a misaligned address
+  panics. No host test yet, since the crate has no test target (item 4).
+- **Done.** Item 2: no barrier arm carries `nomem` at this head, checked in `mapped_window.rs` and
+  `virtio.rs`.
+- **Done.** Items 6, 7, 10, 12, 14 and 16: the zero `CNTFRQ_EL0` refusal, the aarch64 stub
+  immediates from `abi`, `Frame::len` with the `DATA_MAXIMUM` clamp, the target-gated
+  dependency, `retype_sleeper` through `is_granted`, and the dependency-direction sentence. Builds
+  on three targets, no test target for them.
+- **Outstanding.** Items 3, 8, 9 and 11 belong to the move lane. Item 4 changes how `script/lint`
+  builds the crate for bare-metal targets. Checked by reading `script/lint`.
+- **Outstanding.** Items 5, 13 and 15 wait on Decisions 2, 1 and 3. Item 17 adds a syscall
+  wrapper, which is the architect's call.
 
 ## Done when
 

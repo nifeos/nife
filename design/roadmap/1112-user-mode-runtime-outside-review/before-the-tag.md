@@ -63,15 +63,15 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
 
 10. `Frame::payload_read` trusts a reply length against the page, and `Frame` cannot read the
     length field it can write.
-    Finding: `payload_read(n, out)` clamps `n` to `out.len()` and then copies from `OFF_PAYLOAD`;
+    Finding: `payload_read(n, out)` clamps `n` to `out.len()` and then copies from `PAYLOAD_OFFSET_BYTES`;
     an `n` above `DATA_MAXIMUM` with a buffer that large panics at the window's bounds check. The
     doc says "a peer's idea of a length is data", and the clamp is "the bounds check's first
     line", but it does not clamp to what the frame can hold. After #3517, `RECEIVE` is the only
-    writer of `OFF_LEN` and its doc says a client "clears it before a `RECEIVE` to watch for the
+    writer of `LENGTH_OFFSET_BYTES` and its doc says a client "clears it before a `RECEIVE` to watch for the
     reply"; `Frame` has `set_len` and no `len`, so the client it describes cannot watch.
     Evidence: `src/socket_frame.rs` lines 92 to 110; #3517's change to the `set_len` doc.
     Change: `let n = n.min(out.len()).min(DATA_MAXIMUM);` and `pub fn len(&self) -> u16` reading
-    `OFF_LEN`. `len` is the standard library's spelling for a length, which the naming rules
+    `LENGTH_OFFSET_BYTES`. `len` is the standard library's spelling for a length, which the naming rules
     prefer. The peer-word ruling (`ACCEPT`'s second reply word carries the peer's address and
     port) rides in the reply word, not the frame, so `Frame` gains no field for it. A decoder for
     that word belongs in `socket_contract`, where the host tests are. The doc of

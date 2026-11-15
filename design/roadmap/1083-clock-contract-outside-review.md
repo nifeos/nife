@@ -166,12 +166,16 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 - **Done.** Item 5 of [before the tag](1083-clock-contract-outside-review/before-the-tag.md),
   item 12 of [later items](1083-clock-contract-outside-review/later-items.md), and Decisions 1 and
   2: pull request #3576, on branch `milestone/1083-clock-page-two-copies`.
-- **Outstanding.** Items 1 to 4 and 6 to 9 before the tag, and items 10, 11 and 13 to 15 for later,
+- **Done.** Item 6 before the tag: pull request #3559, carried onto the two-copy layout by #3576.
+- **Outstanding.** Items 1 to 4 and 7 to 9 before the tag, and items 10, 11 and 13 to 15 for later,
   each checked against `crates/clock_contract` at #3576's head and still true there.
 - **Outstanding.** Decision 3, the public names, still waits for the architect.
 
 ## BUGS
 
+- A writer that was only paused, not stopped, can resume after a restarted writer's `initialize`
+  gave its claim back, and the two then write the page together. `initialize` trusts its caller to
+  know the old writer is gone; the crate's BUGS says the same.
 - The Windows row of the prior-art appendix comes from memory, not a re-read; this lane checked the Linux
   and FreeBSD rows against their sources.
 - Item 3's line numbers wait on the first full mutation run in the new repository; the reasons are

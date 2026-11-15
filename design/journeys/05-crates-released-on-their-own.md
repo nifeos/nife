@@ -97,7 +97,7 @@ publication waits for its own soak's five end conditions and its turn in the rul
 FAT crate's.
 
 The publish-ours steps hold only publish dispositions. The survey's contribute rows (paging, the GPT parser,
-`elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
+`elf`, `network_time_protocol`, `device_tree_blob`, `byte_glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
 nife controls no upstream step for them today. That wait covers the offer only. Ruled 2026-11-01
 (UTC): the four crates among the 22 move in pull request #3026's order, each to a repository of its

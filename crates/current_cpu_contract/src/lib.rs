@@ -103,22 +103,22 @@ pub const UNSCHEDULED: u64 = u64::MAX;
 /// ```
 pub const CPU_ID_BOUND: usize = 8;
 
-const OFF_MAGIC: usize = 0;
-const OFF_CPU: usize = OFF_MAGIC + 8;
-const OFF_ALLOWANCE: usize = OFF_CPU + 8;
-const OFF_TICK_HERTZ: usize = OFF_ALLOWANCE + 8;
+const MAGIC_OFFSET_BYTES: usize = 0;
+const CPU_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
+const ALLOWANCE_OFFSET_BYTES: usize = CPU_OFFSET_BYTES + 8;
+const TICK_HERTZ_OFFSET_BYTES: usize = ALLOWANCE_OFFSET_BYTES + 8;
 
 /// The whole page's size in bytes: the magic, then three little-endian `u64`s, the CPU, the
 /// allowance and the scheduler tick. Under one frame, the unit it is mapped as, and inside one
 /// cache line, so the reader is a single load on a line nobody else writes.
-pub const PAGE_BYTES: usize = OFF_TICK_HERTZ + 8;
+pub const PAGE_BYTES: usize = TICK_HERTZ_OFFSET_BYTES + 8;
 
 /// The CPU word's offset in the page, for a reader that cannot call [`CurrentCpuPage::cpu`]:
 /// hand-assembled machine code loading the word by absolute address.
 ///
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
 /// receive-rate lane.
-pub const CPU_WORD_OFFSET: u64 = OFF_CPU as u64;
+pub const CPU_WORD_OFFSET: u64 = CPU_OFFSET_BYTES as u64;
 
 /// How many threads of one process can each have a page: the slots below [`PAGE_VA`] in
 /// `address_space_map::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
@@ -164,10 +164,12 @@ pub fn build_page() -> [u8; PAGE_BYTES] {
 /// what [`build_page`] writes.
 pub fn build_page_allowing(allowance: u64, tick_hertz: u64) -> [u8; PAGE_BYTES] {
     let mut page = [0u8; PAGE_BYTES];
-    page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
-    page[OFF_CPU..OFF_CPU + 8].copy_from_slice(&UNSCHEDULED.to_le_bytes());
-    page[OFF_ALLOWANCE..OFF_ALLOWANCE + 8].copy_from_slice(&allowance.to_le_bytes());
-    page[OFF_TICK_HERTZ..OFF_TICK_HERTZ + 8].copy_from_slice(&tick_hertz.to_le_bytes());
+    page[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8].copy_from_slice(&MAGIC);
+    page[CPU_OFFSET_BYTES..CPU_OFFSET_BYTES + 8].copy_from_slice(&UNSCHEDULED.to_le_bytes());
+    page[ALLOWANCE_OFFSET_BYTES..ALLOWANCE_OFFSET_BYTES + 8]
+        .copy_from_slice(&allowance.to_le_bytes());
+    page[TICK_HERTZ_OFFSET_BYTES..TICK_HERTZ_OFFSET_BYTES + 8]
+        .copy_from_slice(&tick_hertz.to_le_bytes());
     page
 }
 
@@ -184,11 +186,11 @@ pub fn build_page_allowing(allowance: u64, tick_hertz: u64) -> [u8; PAGE_BYTES] 
 #[inline]
 pub unsafe fn publish(page_va: u64, cpu: u64) {
     // SAFETY: the caller's contract gives us a live, aligned, exclusively written buffer of at
-    // least `PAGE_BYTES`, and `OFF_CPU + 8` is inside it.
+    // least `PAGE_BYTES`, and `CPU_OFFSET_BYTES + 8` is inside it.
     // `wrapping_add` because the wrap cannot happen and this runs on every context switch (release
     // builds check overflow, notes/overflow-checks.md): the contract says `page_va` starts a live
     // buffer of `PAGE_BYTES`, and no live buffer runs past the top of the address space.
-    let word = unsafe { &*(page_va.wrapping_add(OFF_CPU as u64) as *const AtomicU64) };
+    let word = unsafe { &*(page_va.wrapping_add(CPU_OFFSET_BYTES as u64) as *const AtomicU64) };
     word.store(cpu, Ordering::Relaxed);
 }
 
@@ -259,7 +261,7 @@ impl CurrentCpuPage {
     /// answer (milestone 812, §269 fork 7), or `None` for an unrecognized page or one built without
     /// an allowance. One load, never written after the page is built, so it needs no ordering.
     pub fn allowance(&self) -> Option<core::num::NonZeroUsize> {
-        core::num::NonZeroUsize::new(self.word(OFF_ALLOWANCE)? as usize)
+        core::num::NonZeroUsize::new(self.word(ALLOWANCE_OFFSET_BYTES)? as usize)
     }
 
     /// The scheduler tick's rate in hertz, and so the resolution of every timed wait, or
@@ -273,7 +275,7 @@ impl CurrentCpuPage {
     /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
     /// receive-rate lane.
     pub fn tick_hertz(&self) -> Option<core::num::NonZeroU64> {
-        core::num::NonZeroU64::new(self.word(OFF_TICK_HERTZ)?)
+        core::num::NonZeroU64::new(self.word(TICK_HERTZ_OFFSET_BYTES)?)
     }
 
     /// Which CPU this thread is running on, or `None` if this page is unrecognized (a frame
@@ -285,7 +287,7 @@ impl CurrentCpuPage {
     ///
     /// Two aligned loads and three comparisons, no syscall.
     pub fn cpu(&self) -> Option<usize> {
-        match self.word(OFF_CPU)? {
+        match self.word(CPU_OFFSET_BYTES)? {
             UNSCHEDULED => None,
             cpu if cpu >= CPU_ID_BOUND as u64 => None,
             cpu => Some(cpu as usize),
@@ -370,7 +372,10 @@ mod tests {
     #[test]
     fn a_thread_that_never_ran_reads_as_unknown() {
         let mut bytes = aligned_page();
-        assert_eq!(&bytes.0[OFF_CPU..OFF_CPU + 8], &UNSCHEDULED.to_le_bytes());
+        assert_eq!(
+            &bytes.0[CPU_OFFSET_BYTES..CPU_OFFSET_BYTES + 8],
+            &UNSCHEDULED.to_le_bytes()
+        );
         assert_eq!(bytes.cpu(), None);
     }
 
@@ -380,7 +385,7 @@ mod tests {
     #[test]
     fn an_unrecognized_magic_reads_as_unknown() {
         let mut bytes = aligned_page();
-        bytes.0[OFF_MAGIC] ^= 0xff;
+        bytes.0[MAGIC_OFFSET_BYTES] ^= 0xff;
         bytes.publish(1);
         assert_eq!(bytes.cpu(), None);
     }
@@ -472,9 +477,9 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {
-        assert_eq!(OFF_CPU, 8);
-        assert_eq!(OFF_ALLOWANCE, 16);
-        assert_eq!(OFF_TICK_HERTZ, 24);
+        assert_eq!(CPU_OFFSET_BYTES, 8);
+        assert_eq!(ALLOWANCE_OFFSET_BYTES, 16);
+        assert_eq!(TICK_HERTZ_OFFSET_BYTES, 24);
         assert_eq!(CPU_WORD_OFFSET, 8);
         assert_eq!(PAGE_BYTES, 32);
         assert!(PAGE_BYTES <= 64, "the page must fit in one cache line");

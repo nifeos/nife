@@ -6,7 +6,7 @@ How the recovery tool [`notes/host-recovery.md`](../host-recovery.md) describes 
 file, what it is honest about, a transcript, how it is proven, and its BUGS. It was built as part
 of milestone 57 (partitioning and formatting a real drive, and extended attributes).
 
-An image written by nife carries a directory in its root called `.nife-attrs`, holding
+An image written by nife carries a directory in its root called `.extended-attributes`, holding
 one small file per node that has extended attributes, named for that node's `TreePtr` id in hex.
 `redoxfs_host ls` shows it, `extract` copies it out, and upstream's FUSE mount would too.
 
@@ -54,7 +54,7 @@ A whole recovery, on a Mac, with the attributes on the other end. This is a real
 
 ```console
 $ redoxfs_host ls backup.img /
-dir         4096  .nife-attrs
+dir         4096  .extended-attributes
 dir         4096  nested
 file@         13  photo.jpg
 
@@ -68,7 +68,7 @@ Family
 $ redoxfs_host extract backup.img / recovered
 redoxfs_host: recovered/photo.jpg: attribute user.com.apple.metadata:_kMDItemUserTags kept its
   6 bytes but not its type code 0x43535452; host filesystems have no field for it (see
-  .nife-attrs in the extracted tree)
+  .extended-attributes in the extracted tree)
 extracted / to recovered: 4 files, 3 directories, 0 symlinks, 165 bytes,
   3 attributes reattached, 1 type codes dropped
 
@@ -113,9 +113,9 @@ is the Mac's own addition to a freshly written file, not something out of the im
   named. `MAXIMUM_VALUE` here is 3 KiB, well under any host's limit, so this is a guard rather than
   a case anyone has hit.
 - The tool has no attribute call for a platform that is neither macOS nor Linux. It refuses with
-  a message saying the attributes are still in the extracted `.nife-attrs`, rather than compiling
+  a message saying the attributes are still in the extracted `.extended-attributes`, rather than compiling
   to a silent success. FreeBSD spells this `extattr_set_link` and is not wired up.
-- `extract` still copies `.nife-attrs` out, even now that the attributes are also on the
+- `extract` still copies `.extended-attributes` out, even now that the attributes are also on the
   files. That is deliberate (it is the only home the type codes have, and the last-resort record if
   a host refused everything) and it does mean a recovered tree carries one directory a user did not
   put there. An image with no attributes left on it no longer has the directory at all, since

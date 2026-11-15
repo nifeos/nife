@@ -146,8 +146,8 @@ jh7110_clock_and_reset,with_divider,replace | with ^,1,or_xor,equivalent,unclass
 jh7110_clock_and_reset,with_parent,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 job_mix,,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
 job_mix,order,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
-line_editor,,replace << with >>,2,shift,equivalent,unclassified,noise,
-line_editor,req,replace | with ^,1,or_xor,equivalent,unclassified,noise,
+line_editor,,replace << with >>,2,shift,equivalent,unclassified,noise,yes
+line_editor,req,replace | with ^,1,or_xor,equivalent,unclassified,noise,yes
 line_editor,supervisor::image_lengths,replace | with ^,4,or_xor,equivalent,unclassified,noise,
 loaded_image_check,stack_aligned,replace stack_aligned -> bool with true,1,other,gap,,gap,
 loaded_image_check,stack_works,replace stack_works -> bool with true,1,other,equivalent,unclassified,algebraic,
@@ -178,11 +178,11 @@ page_frames,PageFrameAllocator<'a>::alloc,replace + with *,1,arithmetic,equivale
 page_frames,PageFrameAllocator<'a>::alloc_contiguous,replace || with &&,1,logic,equivalent,unclassified,algebraic,yes
 page_frames,PageFrameAllocator<'a>::largest_free_run,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
 paging,,replace | with ^,1,or_xor,equivalent,algebraic,algebraic,
-pci,,replace << with >>,1,shift,equivalent,unclassified,noise,
-pci,Bdf::ecam_offset,replace | with ^,2,or_xor,equivalent,unclassified,noise_unargued,
-pci,Bdf::requester_id,replace | with ^,2,or_xor,equivalent,unclassified,noise,
-pci,mem32_window,replace | with ^,3,or_xor,equivalent,unclassified,noise,
-pci,read_bars,replace | with ^,3,or_xor,equivalent,unclassified,noise,
+pci_configuration_space,,replace << with >>,1,shift,equivalent,unclassified,noise,
+pci_configuration_space,Bdf::ecam_offset,replace | with ^,2,or_xor,equivalent,unclassified,noise_unargued,
+pci_configuration_space,Bdf::requester_id,replace | with ^,2,or_xor,equivalent,unclassified,noise,
+pci_configuration_space,mem32_window,replace | with ^,3,or_xor,equivalent,unclassified,noise,
+pci_configuration_space,read_bars,replace | with ^,3,or_xor,equivalent,unclassified,noise,
 pgrep,,replace | with ^,3,or_xor,equivalent,unclassified,noise,
 program_argument_contract,ArgPage<'a>::check,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
 screen_console,Aperture::copy_wide_screen,replace | with ^,1,or_xor,equivalent,unclassified,noise,

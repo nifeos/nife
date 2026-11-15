@@ -1,0 +1,19 @@
+Falsifies `filesystem_contract::reply::proofs::a_sent_code_round_trips`.
+
+The defect: the bound off by one in `reply_errno`, `r0 > -MAXIMUM_ERRNO`, so the last code the
+sender may send decodes as `EPROTO`.
+
+Expected to fail: `assert_eq!(reply_errno(word), Some(code))`, at `code == MAXIMUM_ERRNO`.
+
+diff --git a/crates/filesystem_contract/src/reply.rs b/crates/filesystem_contract/src/reply.rs
+--- a/crates/filesystem_contract/src/reply.rs
++++ b/crates/filesystem_contract/src/reply.rs
+@@ -71,7 +71,7 @@ pub const fn reply_err(errno: i32) -> i64 {
+ pub const fn reply_errno(r0: i64) -> Option<i32> {
+     if r0 >= 0 {
+         None
+-    } else if r0 >= -(MAXIMUM_ERRNO as i64) {
++    } else if r0 > -(MAXIMUM_ERRNO as i64) {
+         Some((-r0) as i32)
+     } else {
+         Some(EPROTO)

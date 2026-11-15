@@ -247,9 +247,13 @@ pub struct Reading {
 /// # BUGS
 ///
 /// - The orderings are checked against C11 by loom, not against Arm's or RISC-V's model.
-/// - A writer stopped while it holds the claim blocks every later writer until something clears the
-///   claim. Readers keep reading the last publish. Nothing in this crate can tell a writer that
-///   stopped for good from one that is only slow, so nothing here clears a claim it did not take.
+/// - A writer stopped while it holds the claim blocks every later writer until a restarted writer's
+///   [`initialize`](ClockPage::initialize) gives the claim back. Readers keep reading the last
+///   publish. Nothing in this crate can tell a writer that stopped for good from one that is only
+///   paused, so `initialize` trusts its caller to know: a paused writer that resumes after the
+///   claim was given back writes beside the restarted one, and the two can fill the same copy or
+///   hand out the same generation. The caller's knowledge that the old writer is gone is also what
+///   orders that writer's last stores before the restart; nothing on the page does.
 /// - The publish count is a `u64` and wraps after 2^64 publishes, at which point a reader that slept
 ///   across exactly 2^64 of them would accept a torn pair. A publish a nanosecond would take five
 ///   centuries to get there.
@@ -288,8 +292,17 @@ impl ClockPage {
         unsafe { &*self.base.add(i) }
     }
 
-    /// Stamp a fresh frame as a clock page in the unknown state. The writer does this once, before
-    /// anyone else has a mapping, so it needs no claim.
+    /// Stamp a fresh frame as a clock page in the unknown state. The writer does this at start,
+    /// before anyone else has a mapping on a fresh frame, so it needs no claim.
+    ///
+    /// **Calling it again is safe, and changes nothing a reader has seen.** A frame that already
+    /// carries the magic is a page a previous run of the writer stamped, and readers may already
+    /// map it, so it is left as it is: the publish count and both copies carry on, and a reader
+    /// comparing `generation` across a restart never sees it go backward. The one exception is a
+    /// claim left held by a writer that stopped inside a publish, which every later `publish` would
+    /// wait on forever. The caller is the only writer and the one before it has stopped, so this
+    /// gives the claim back. A copy that writer half filled is the spare one, which no reader is
+    /// using and the next publish fills whole.
     ///
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
@@ -298,6 +311,24 @@ impl ClockPage {
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
+        // A compare-exchange of the magic for itself rather than a load: it answers the same
+        // question (is the magic already there?) and writes nothing new. A lone load here left the
+        // loom model of the first initialize with a single interleaving to check.
+        if self
+            .word(MAGIC_WORD_INDEX)
+            .compare_exchange(MAGIC, MAGIC, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+        {
+            if self.word(CLAIM_WORD_INDEX).load(Ordering::Relaxed) == CLAIM_HELD {
+                // Release, as in `release`: the next writer's acquire in `try_claim` must see the
+                // publish count as this writer sees it, or it may fill the copy readers are using.
+                // That this writer sees the stopped one's last stores at all rests on the stop
+                // itself, which the restart is ordered after (BUGS).
+                self.word(CLAIM_WORD_INDEX)
+                    .store(CLAIM_FREE, Ordering::Release);
+            }
+            return;
+        }
         self.word(PUBLISH_WORD_INDEX).store(0, Ordering::Relaxed);
         self.word(CLAIM_WORD_INDEX)
             .store(CLAIM_FREE, Ordering::Relaxed);
@@ -432,8 +463,9 @@ impl ClockPage {
     fn release(&self) {
         // Release: pairs with the next writer's acquire in `try_claim`, carrying this publish's
         // count and copy to it. Without it the next writer may read a count older than this
-        // publish's and fill the copy readers are using. Loom does not fail when this is relaxed,
-        // so this one rests on the argument alone.
+        // publish's and fill the copy readers are using. Made relaxed, it fails the loom model
+        // `two_writers_serialise_rather_than_corrupt_the_page`: the second writer reads the count
+        // as it was before the first publish, and both are handed the same generation.
         self.word(CLAIM_WORD_INDEX)
             .store(CLAIM_FREE, Ordering::Release);
     }
@@ -810,6 +842,64 @@ mod tests {
         });
     }
 
+    /// A restarted writer calls `initialize` on a frame readers already map. The page must keep what
+    /// it holds: the state, the offset and above all the generation, which a reader compares across
+    /// time and which must never go backward.
+    #[test]
+    fn initializing_a_page_again_keeps_what_was_published() {
+        let frame = [const { AtomicU64::new(0) }; WORDS];
+        with_page(&frame, |page| {
+            page.initialize();
+            page.publish(state::RTC, 7);
+            let second = page.publish(state::SYNCED, 9);
+            let before = page.read();
+            assert_eq!(before.generation, second);
+            let words: [u64; WORDS] = core::array::from_fn(|i| frame[i].load(Ordering::Relaxed));
+
+            page.initialize();
+            // The raw words first: the count, the claim and both copies, every one where it was.
+            let after: [u64; WORDS] = core::array::from_fn(|i| frame[i].load(Ordering::Relaxed));
+            assert_eq!(after, words, "a restart leaves every word of the page where it was");
+            assert_eq!(page.read(), before, "a restart leaves the page as it was");
+            assert_eq!(
+                page.publish(state::RTC, 11),
+                second + 1,
+                "and the count carries on from where it was"
+            );
+        });
+    }
+
+    /// A writer that stopped between taking the claim and giving it back leaves it held, and no
+    /// later writer can publish past it. The restarted writer is the only one, so `initialize`
+    /// gives the claim back and touches nothing else: the count and the copy readers use stay as
+    /// they were, and the next publish overwrites the spare copy the stopped writer half filled.
+    #[test]
+    fn initializing_a_page_with_an_abandoned_claim_gives_it_back() {
+        let frame = [const { AtomicU64::new(0) }; WORDS];
+        with_page(&frame, |page| {
+            page.initialize();
+            let first = page.publish(state::RTC, 7);
+            let before = page.read();
+            // The stopped writer: it took the claim and filled the spare copy, and never flipped.
+            assert!(page.try_claim());
+            page.fill(state::SYNCED, 9);
+
+            page.initialize();
+            assert_eq!(frame[CLAIM_WORD_INDEX].load(Ordering::Relaxed), CLAIM_FREE);
+            assert_eq!(frame[PUBLISH_WORD_INDEX].load(Ordering::Relaxed), first);
+            assert_eq!(page.read(), before, "the restart showed a reader the half-filled copy");
+            assert_eq!(page.publish(state::SYNCED, 11), first + 1);
+            assert_eq!(
+                page.read(),
+                Reading {
+                    state: state::SYNCED,
+                    offset_nanos: 11,
+                    generation: first + 1,
+                }
+            );
+        });
+    }
+
     #[test]
     fn a_published_page_reads_back_and_counts_generations() {
         let frame = [const { AtomicU64::new(0) }; WORDS];
@@ -1096,6 +1186,78 @@ mod interleavings {
                 "vacuous harness: no execution ever reached {what}, so nothing was checked"
             );
         }
+    }
+
+    /// **A restarted writer's `initialize` is invisible to a reader.** The page already holds a
+    /// publish and readers already map it; the writer starts again and initializes the same frame
+    /// while a reader reads. Every reading is the publish, whole, and never the unknown state a
+    /// fresh stamp would show.
+    #[test]
+    fn a_restarted_initialize_never_shows_a_reader_a_reset_page() {
+        loom::model(|| {
+            let page = page();
+            page.initialize();
+            page.publish(state::RTC, 1_000);
+
+            let restarted = {
+                let p = page;
+                thread::spawn(move || p.initialize())
+            };
+
+            let r = page.read();
+            assert_eq!(
+                (r.state, r.offset_nanos, r.generation),
+                (state::RTC, 1_000, 1),
+                "a reader saw the page reset by a restart"
+            );
+
+            restarted.join().unwrap();
+        });
+    }
+
+    /// **A claim a restart gives back carries the stopped writer's publish to the next writer.**
+    ///
+    /// One thread is the writer and its restart, in program order, which stands for what the
+    /// caller of `initialize` is trusted to know: the old writer stopped before the restart. It
+    /// publishes and stops before giving the claim back, then initializes the page again. Another
+    /// writer publishes meanwhile. Whichever order the two take, they are handed generations 2 and
+    /// 3, and the page ends at 3. Making `initialize`'s store of the free claim relaxed fails this:
+    /// the second writer reads the count from before the stopped publish and is handed 2 as well.
+    #[test]
+    fn a_claim_a_restart_gives_back_carries_the_last_publish() {
+        static RESTART_FIRST: Reached = Reached::new();
+
+        loom::model(|| {
+            let page = page();
+            page.initialize();
+            page.publish(state::RTC, 1_000);
+
+            let restarted = {
+                let p = page;
+                thread::spawn(move || {
+                    p.claim();
+                    let generation = p.fill(state::SYNCED, 2_000);
+                    p.flip(generation);
+                    // Stopped here, holding the claim; the restart gives it back.
+                    p.initialize();
+                    generation
+                })
+            };
+            let other = {
+                let p = page;
+                thread::spawn(move || p.publish(state::RTC, 3_000))
+            };
+
+            let stopped = restarted.join().unwrap();
+            let later = other.join().unwrap();
+            assert_ne!(stopped, later, "two publishes were handed the same generation");
+            if later > stopped {
+                RESTART_FIRST.mark();
+            }
+            assert_eq!(page.read().generation, 3, "the page did not advance twice");
+        });
+
+        RESTART_FIRST.assert("the other writer publishing after the restart");
     }
 
     /// **A reader never sees half a publish.**

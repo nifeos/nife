@@ -58,7 +58,7 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # The shell's grant-expression logic (milestone 47's `rm -r`). The kernel plans nothing; its `rm`
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
-# `line_editor` and `video_terminal` below: no party has its own copy of a shared definition.
+# `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
@@ -175,7 +175,7 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
 designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
-pci = { version = "0.1.0", path = "../crates/pci" }
+pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configuration_space" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
@@ -201,7 +201,7 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 # The terminal contract's IPC framing (DECISIONS §21): the kernel's display-terminal tests play both
 # an application (OPERATION_WRITE) and an input driver (OPERATION_BYTES), so they speak the same protocol the
 # serial terminal's clients and drivers do rather than a second one invented for a test.
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # The installed-programs table's names and line format (milestone 198 (a package manager)), which the harness
 # writes when a test installs a program the way an installer would: milestone 152 (durable

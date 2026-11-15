@@ -70,13 +70,19 @@ fn scanout_holds_the_composed_screen(ppm: &[u8]) -> Result<(), String> {
 /// a wrong pixel format turns text into text nobody can read. Its negative control is
 /// `tests::the_scanout_check_rejects_text_that_is_one_letter_wrong`.
 fn scanout_holds_the_terminals_text(ppm: &[u8]) -> Result<(), String> {
-    // `Vt::new` then the script fed into it: a `Vt` is hundreds of KiB, and this is the one shape
-    // that works for the crate's kernel-side callers too (see `Vt`'s and `script::full_screen`'s
-    // doc comments). The scrolled script, because the kernel-side test scrolls the terminal before
-    // holding the picture up, so the host grades the scroll path (pixels moved, not re-rendered) as
-    // well.
-    let mut expect =
-        video_terminal::Vt::new(video_terminal::script::COLS, video_terminal::script::ROWS);
+    // A `Vt` is hundreds of KiB, so it lives in a `static` built at compile time and is retargeted
+    // with `reset_to`, the shape `Vt`'s doc asks of every caller, and the script is fed into it (see
+    // `script::full_screen`'s doc comment). A poisoned lock is taken anyway, since `reset_to`
+    // clears whatever a panicked caller left. The scrolled script, because the kernel-side test
+    // scrolls the terminal before holding the picture up, so the host grades the scroll path
+    // (pixels moved, not re-rendered) as well.
+    static EXPECT: std::sync::Mutex<video_terminal::Vt> = std::sync::Mutex::new(
+        video_terminal::Vt::new(video_terminal::script::COLS, video_terminal::script::ROWS),
+    );
+    let mut expect = EXPECT
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    expect.reset_to(video_terminal::script::COLS, video_terminal::script::ROWS);
     video_terminal::script::scrolled_full_screen(&mut expect, None);
     scanout_matches(ppm, |x, y| expect.pixel(x, y))
 }

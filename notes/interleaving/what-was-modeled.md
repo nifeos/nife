@@ -35,8 +35,7 @@ Two copies of the time and a publish count over a shared page. The clock service
 process holding a read mapping reads, with no lock available between them because they are in
 different address spaces. Its own documentation says the memory ordering is the point rather than
 decoration. Each reader runs on a thread of its own, and the frame starts as leftover bytes rather
-than zeros, so that weakening any ordering but one fails a harness (the crate's loom module names
-the one).
+than zeros, so that weakening any ordering fails a harness.
 
 | Harness | Property |
 |---|---|
@@ -46,6 +45,8 @@ the one).
 | `the_generation_a_reader_sees_matches_the_pair_it_read` | `Reading::generation` is a value callers depend on (did the clock step under me), not a diagnostic, so it must agree with the pair it arrived with |
 | `two_writers_serialise_rather_than_corrupt_the_page` | several processes may hold the page read/write and the claim word's compare-exchange serializes them; the page ends holding the last writer's pair, with the claim free |
 | `a_racing_reader_sees_an_unrecognised_page_or_a_whole_one` | `init` writes the magic last with a release, so a reader racing the first publish gets `UNKNOWN` or a whole page, never a recognized page with garbage in it |
+| `a_restarted_initialize_never_shows_a_reader_a_reset_page` | a restarted writer's `initialize` on a page readers already map leaves it as it is, so a reader racing the restart reads the last publish whole and never the unknown state of a fresh stamp |
+| `a_claim_a_restart_gives_back_carries_the_last_publish` | a writer that stopped holding the claim, then restarted, gives the claim back with a release, so the next writer sees the stopped publish's count and the two are never handed the same generation |
 
 ## `crates/thread_wake_handshake`, the block/wake protocol (2026-08-14)
 

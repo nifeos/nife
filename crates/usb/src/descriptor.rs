@@ -153,7 +153,8 @@ pub struct BootKeyboard {
     pub configuration: u8,
     /// The interface number, for the class requests `SET_PROTOCOL` and `SET_IDLE`.
     pub interface: u8,
-    /// The interrupt IN endpoint's address, direction bit included (`0x81` for endpoint 1 IN).
+    /// The interrupt IN endpoint's number and direction (`0x81` for endpoint 1 IN). The
+    /// specification's reserved bits 6:4 of `bEndpointAddress` are cleared.
     pub endpoint: u8,
     /// The endpoint's packet size in bytes; at least 8, or the walk refused it.
     pub max_packet: u16,
@@ -164,6 +165,9 @@ pub struct BootKeyboard {
 
 /// **Find the boot keyboard in a configuration**: the first interface (alternate setting 0) of
 /// class 3, subclass 1, protocol 1, and the first interrupt IN endpoint beneath it.
+///
+/// The walk begins after the configuration header's own `bLength`, so a header longer than nine
+/// bytes skips what the device says it carries.
 ///
 /// `config` is the configuration as the device sent it, possibly cut short by the buffer it was
 /// read into: the walk stops at the lesser of `wTotalLength` and `config.len()`, so a truncated
@@ -219,7 +223,20 @@ pub fn find_boot_keyboard(config: &[u8]) -> Result<BootKeyboard, Refusal> {
         }
         let d = &config[at..at + len];
         match d[1] {
-            INTERFACE if len >= INTERFACE_LEN => {
+            // A descriptor of a type this walk reads, too short for that type's layout, is
+            // refused: skipping it would leave the previous interface open, and the endpoint
+            // that follows would be read as that interface's.
+            INTERFACE if len < INTERFACE_LEN => {
+                return Err(Refusal::Malformed {
+                    at: u16::try_from(at).unwrap_or(u16::MAX),
+                });
+            }
+            ENDPOINT if len < ENDPOINT_LEN => {
+                return Err(Refusal::Malformed {
+                    at: u16::try_from(at).unwrap_or(u16::MAX),
+                });
+            }
+            INTERFACE => {
                 if let Some(interface) = candidate {
                     without_endpoint = Some(interface);
                 }
@@ -229,12 +246,12 @@ pub fn find_boot_keyboard(config: &[u8]) -> Result<BootKeyboard, Refusal> {
                     && d[7] == PROTOCOL_KEYBOARD;
                 candidate = is_boot_keyboard.then_some(d[2]);
             }
-            ENDPOINT if len >= ENDPOINT_LEN => {
+            ENDPOINT => {
                 if let Some(interface) = candidate {
-                    let address = d[2];
+                    let endpoint_number_and_direction = d[2] & 0x8f;
                     let interrupt = d[3] & 0x3 == 0x3;
-                    let inbound = address & 0x80 != 0;
-                    let number = address & 0x0f;
+                    let inbound = endpoint_number_and_direction & 0x80 != 0;
+                    let number = endpoint_number_and_direction & 0x0f;
                     let max_packet = u16::from_le_bytes([d[4], d[5]]) & 0x07ff;
                     if interrupt && inbound && number != 0 {
                         if max_packet < crate::boot_keyboard::REPORT_LEN as u16 {
@@ -243,7 +260,7 @@ pub fn find_boot_keyboard(config: &[u8]) -> Result<BootKeyboard, Refusal> {
                             return Ok(BootKeyboard {
                                 configuration: header.value,
                                 interface,
-                                endpoint: address,
+                                endpoint: endpoint_number_and_direction,
                                 max_packet,
                                 interval: d[6],
                             });
@@ -272,7 +289,7 @@ mod tests {
 
     /// QEMU's `usb-kbd` configuration, byte for byte as `hw/usb/dev-hid.c` builds it, which is the
     /// device the end-to-end gate types on.
-    const QEMU_USB_KBD: [u8; 34] = [
+    const QEMU_USB_KEYBOARD: [u8; 34] = [
         9, 2, 34, 0, 1, 1, 6, 0xa0, 50, // configuration
         9, 4, 0, 0, 1, 3, 1, 1, 0, // interface 0, HID boot keyboard
         9, 0x21, 0x11, 1, 0, 1, 0x22, 63, 0, // HID descriptor
@@ -282,7 +299,7 @@ mod tests {
     #[test]
     fn qemus_keyboard_is_found() {
         assert_eq!(
-            find_boot_keyboard(&QEMU_USB_KBD),
+            find_boot_keyboard(&QEMU_USB_KEYBOARD),
             Ok(BootKeyboard {
                 configuration: 1,
                 interface: 0,
@@ -356,7 +373,7 @@ mod tests {
     /// interrupt IN descriptor claiming it is not where reports arrive.
     #[test]
     fn an_endpoint_numbered_zero_is_not_the_report_endpoint() {
-        let mut config = QEMU_USB_KBD;
+        let mut config = QEMU_USB_KEYBOARD;
         config[29] = 0x80; // bEndpointAddress: IN, number 0
         assert_eq!(
             find_boot_keyboard(&config),
@@ -368,13 +385,13 @@ mod tests {
     /// the walk and name the offset.
     #[test]
     fn a_zero_or_overlong_length_is_malformed_and_never_loops() {
-        let mut config = QEMU_USB_KBD;
+        let mut config = QEMU_USB_KEYBOARD;
         config[9] = 0; // the interface descriptor's bLength
         assert_eq!(
             find_boot_keyboard(&config),
             Err(Refusal::Malformed { at: 9 })
         );
-        let mut config = QEMU_USB_KBD;
+        let mut config = QEMU_USB_KEYBOARD;
         config[27] = 200; // the endpoint descriptor claims to run far past the end
         assert_eq!(
             find_boot_keyboard(&config),
@@ -386,7 +403,7 @@ mod tests {
     #[test]
     fn a_trailing_defect_after_the_keyboard_is_tolerated() {
         let mut config = [0u8; 36];
-        config[..34].copy_from_slice(&QEMU_USB_KBD);
+        config[..34].copy_from_slice(&QEMU_USB_KEYBOARD);
         config[2] = 36; // wTotalLength covers the junk
         config[34] = 0; // a zero-length descriptor
         assert!(find_boot_keyboard(&config).is_ok());
@@ -395,7 +412,7 @@ mod tests {
     /// `wTotalLength` larger than what was read is a truncated read, which is a shorter walk.
     #[test]
     fn a_truncated_read_is_a_shorter_walk_not_an_overrun() {
-        let mut config = QEMU_USB_KBD;
+        let mut config = QEMU_USB_KEYBOARD;
         config[2] = 0xff;
         config[3] = 0xff;
         assert!(find_boot_keyboard(&config).is_ok());
@@ -412,11 +429,11 @@ mod tests {
         let d = [
             18, 1, 0x00, 0x02, 0, 0, 0, 8, 0x27, 0x06, 0x01, 0x00, 0, 0, 1, 4, 11, 1,
         ];
-        let dev = DeviceDescriptor::parse(&d).unwrap();
-        assert_eq!(dev.usb, 0x0200);
-        assert_eq!(dev.max_packet0, 8);
-        assert_eq!((dev.vendor, dev.product), (0x0627, 0x0001));
-        assert_eq!(dev.configurations, 1);
+        let device = DeviceDescriptor::parse(&d).unwrap();
+        assert_eq!(device.usb, 0x0200);
+        assert_eq!(device.max_packet0, 8);
+        assert_eq!((device.vendor, device.product), (0x0627, 0x0001));
+        assert_eq!(device.configurations, 1);
         assert_eq!(DeviceDescriptor::parse(&d[..8]), None);
         let mut wrong = d;
         wrong[1] = CONFIGURATION;
@@ -440,18 +457,18 @@ mod tests {
     /// descriptor.
     #[test]
     fn a_configuration_header_is_nine_bytes_of_type_two() {
-        let header = ConfigurationHeader::parse(&QEMU_USB_KBD[..9]).unwrap();
+        let header = ConfigurationHeader::parse(&QEMU_USB_KEYBOARD[..9]).unwrap();
         assert_eq!((header.total_length, header.value), (34, 1));
-        let mut short = QEMU_USB_KBD;
+        let mut short = QEMU_USB_KEYBOARD;
         short[0] = 8;
         assert_eq!(
             ConfigurationHeader::parse(&short),
             Err(Refusal::NotThatDescriptor)
         );
-        let mut long = QEMU_USB_KBD;
+        let mut long = QEMU_USB_KEYBOARD;
         long[0] = 10;
         assert!(ConfigurationHeader::parse(&long).is_ok());
-        let mut other = QEMU_USB_KBD;
+        let mut other = QEMU_USB_KEYBOARD;
         other[1] = INTERFACE;
         assert_eq!(
             ConfigurationHeader::parse(&other),
@@ -474,20 +491,63 @@ mod tests {
         assert_eq!((k.interface, k.endpoint), (1, 0x82));
     }
 
-    /// Descriptors too short to be the interface or endpoint their type names are skipped, not
-    /// read past their end, and a two-byte descriptor is well formed.
+    /// A descriptor of type interface or endpoint too short for its layout is refused with its
+    /// offset: skipping it would leave the previous interface open and hand the next interface's
+    /// endpoint to it. A two-byte vendor descriptor is well formed and skipped.
     #[test]
-    fn a_short_descriptor_is_skipped_and_two_bytes_is_enough() {
+    fn a_short_interface_or_endpoint_is_malformed_and_two_bytes_is_enough() {
         let config = [
             9, 2, 35, 0, 1, 1, 0, 0xa0, 50, //
             2, 0xff, // a vendor descriptor of length and type alone
-            4, 4, 0, 0, // an "interface" too short to be one
             9, 4, 0, 0, 1, 3, 1, 1, 0, // the boot keyboard
-            4, 5, 0x81, 3, // an "endpoint" too short to be one
             7, 5, 0x82, 3, 8, 0, 10, //
         ];
         let k = find_boot_keyboard(&config).unwrap();
         assert_eq!((k.interface, k.endpoint), (0, 0x82));
+
+        let short_interface = [
+            9, 2, 39, 0, 2, 1, 0, 0xa0, 50, //
+            9, 4, 0, 0, 0, 3, 1, 1, 0, // boot keyboard with no endpoint
+            4, 4, 1, 0, // an interface cut short
+            7, 5, 0x82, 3, 8, 0, 10, //
+        ];
+        assert_eq!(
+            find_boot_keyboard(&short_interface),
+            Err(Refusal::Malformed { at: 18 })
+        );
+        let short_endpoint = [
+            9, 2, 29, 0, 1, 1, 0, 0xa0, 50, //
+            9, 4, 0, 0, 1, 3, 1, 1, 0, //
+            4, 5, 0x81, 3, // an endpoint cut short
+        ];
+        assert_eq!(
+            find_boot_keyboard(&short_endpoint),
+            Err(Refusal::Malformed { at: 18 })
+        );
+    }
+
+    /// A boot interface with no endpoint, then a non-boot HID interface with one: the walk
+    /// refuses with the boot interface's number, and does not take the other's endpoint.
+    #[test]
+    fn a_boot_interface_without_an_endpoint_is_refused_by_number() {
+        let config = [
+            9, 2, 41, 0, 2, 1, 0, 0xa0, 50, //
+            9, 4, 0, 0, 0, 3, 1, 1, 0, // interface 0: boot keyboard, zero endpoints
+            9, 4, 1, 0, 1, 3, 0, 0, 0, // interface 1: HID, not boot
+            7, 5, 0x82, 3, 8, 0, 10, //
+        ];
+        assert_eq!(
+            find_boot_keyboard(&config),
+            Err(Refusal::NoInterruptIn { interface: 0 })
+        );
+    }
+
+    /// The reserved bits of `bEndpointAddress` do not reach the caller.
+    #[test]
+    fn the_endpoint_carries_only_its_number_and_direction() {
+        let mut config = QEMU_USB_KEYBOARD;
+        config[29] = 0xf1;
+        assert_eq!(find_boot_keyboard(&config).unwrap().endpoint, 0x81);
     }
 
     #[test]
@@ -503,7 +563,7 @@ mod tests {
     /// A keyboard whose endpoint cannot carry one report in a packet is refused by name.
     #[test]
     fn an_endpoint_smaller_than_a_report_is_refused() {
-        let mut config = QEMU_USB_KBD;
+        let mut config = QEMU_USB_KEYBOARD;
         config[31] = 4; // wMaxPacketSize
         assert_eq!(
             find_boot_keyboard(&config),

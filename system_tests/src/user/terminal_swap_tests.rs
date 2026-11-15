@@ -17,8 +17,8 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use line_editor::component::supervisor as s;
-use line_editor::proto;
+use line_editor_component::supervisor as s;
+use terminal_contract as proto;
 
 use super::*;
 use crate::capability_object::{
