@@ -47,6 +47,8 @@ pub const MAXIMUM_UDP_MESSAGE_BYTES: usize = 512;
 
 /// The largest message RFC 7766 lets travel over TCP: its two-byte length prefix counts up to
 /// 65,535 bytes, and the prefix itself comes on top.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 pub const MAXIMUM_TCP_MESSAGE_BYTES: usize = 65_535;
 
 /// A name in wire form is at most 255 bytes, length bytes and the root label included (section 2.3.4).
@@ -55,30 +57,43 @@ pub const MAXIMUM_TCP_MESSAGE_BYTES: usize = 65_535;
 pub const MAXIMUM_NAME_BYTES: usize = 255;
 /// A label is at most 63 bytes; the two top bits of a longer count are the compression-pointer tag.
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes; the spelling ratified
+/// in #2797 was `MAXIMUM_LABEL_LEN`.
 pub const MAXIMUM_LABEL_BYTES: usize = 63;
 
 /// The header every DNS message starts with.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 pub const HEADER_BYTES: usize = 12;
 
 /// The response bit (QR, "query or response"): set in a reply.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "QR")]
 pub const FLAG_RESPONSE: u16 = 0x8000;
 /// The opcode field. A standard query is opcode 0.
 pub const OPCODE_MASK: u16 = 0x7800;
 /// Truncated (TC): the server had more to say than the transport carried.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "TC")]
 pub const FLAG_TRUNCATED: u16 = 0x0200;
 /// Recursion desired (RD). A stub resolver always sets it, because it asks a recursive server to do the
 /// walk from the root that a stub does not.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "RD")]
 pub const FLAG_RECURSION_DESIRED: u16 = 0x0100;
 /// The response code field (RCODE), the low four bits of the flags.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "RCODE")]
 pub const RESPONSE_CODE_MASK: u16 = 0x000f;
 
 /// The response code a server sends for a name that does not exist (RFC 1035's "Name Error",
 /// called NXDOMAIN).
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "RCODE")]
 #[doc(alias = "NXDOMAIN")]
 pub const RESPONSE_CODE_NAME_ERROR: u8 = 3;
@@ -107,7 +122,8 @@ pub const MAXIMUM_CHAIN: usize = 8;
 
 /// How many IPv4 addresses an [`Answer`] keeps (see the crate's BUGS).
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes; the spelling ratified
+/// in #2797 was `MAXIMUM_ADDRESSES`.
 pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 
 /// What is wrong with some bytes, as a parser sees them.
@@ -207,6 +223,8 @@ impl Header {
     }
 
     /// The response code (RCODE), the flags' low four bits.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
     #[doc(alias = "RCODE")]
     pub fn response_code(&self) -> u8 {
         (self.flags & RESPONSE_CODE_MASK) as u8
@@ -648,6 +666,8 @@ pub struct Answer {
 
 impl Answer {
     /// The IPv4 addresses, in the order the server gave them. Never empty.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
     pub fn ipv4_addresses(&self) -> &[[u8; 4]] {
         &self.ipv4_addresses[..self.count as usize]
     }

@@ -225,6 +225,16 @@ template's gate reports zero findings on the crate.
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
 
+## Follow-on
+
+- **Outstanding.** Items 1, 2, 3 and 5 and 9: the ratification pull request, the standalone manifest,
+  the README and license files, the crate's own `fuzz/` directory and the mutants-exempts lines all
+  belong to the move. Checked against `crates/domain_name_system` on main: none of them exists there.
+- **Outstanding.** The test client in `components/src/socket_test_client.rs` still sizes its TCP
+  buffer from the UDP maximum (item 16). Checked by reading its `TcpReply::new` call.
+- **Outstanding.** Item 7's `.github/accepted-words` entries wait for the move, and the Kani
+  proofs were edited for the renames but not run in this tree.
+
 ## BUGS
 
 - No review package exists for this crate in `notes/crate-reviews/`, so this block had to assemble
