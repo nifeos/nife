@@ -10,10 +10,10 @@
 //! The format is the one the Devicetree Specification (release 0.4) defines in its chapter 5,
 //! "Flattened Devicetree (DTB) Format", and the one libfdt reads.
 //!
-//! Name: ratified 2026-09-18 (`design/decisions/` §154) and performed 2026-09-19. Refused `dtb`:
-//! "device tree blob" is a phrase people say, so the abbreviation goes. Known cost: datasheets,
-//! error messages and boot logs say `dtb`, so a reader grepping the word the machine printed will
-//! not find this identifier.
+//! Name: ratified 2026-09-18 (§154 (the acronym test is whether the phrase is spoken)) and
+//! performed 2026-09-19. Refused `dtb`: "device tree blob" is a phrase people say, so the
+//! abbreviation goes. Known cost: datasheets, error messages and boot logs say `dtb`, so a reader
+//! grepping the word the machine printed will not find this identifier.
 
 #![cfg_attr(not(test), no_std)]
 
