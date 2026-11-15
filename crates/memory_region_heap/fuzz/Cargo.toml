@@ -1,0 +1,42 @@
+# The fuzz workspace for `memory_region_heap`: talc driven the way a nife program's heap drives it.
+# See notes/talc-fuzzing.md.
+#
+# Its own workspace, the shape of the top-level `fuzz/` (see its Cargo.toml for why cargo-fuzz). It
+# lives in the crate's directory so it leaves with the crate, and the root Cargo.toml excludes it.
+#
+# Name: provisional, 2026-11-14. `fuzz`, matching the directory cargo-fuzz finds by convention, as
+# the top-level `fuzz` package does.
+
+[package]
+name = "fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+# The same talc a nife program links, plus two features that add checks and change no decision:
+# `counters` for the accounting the target compares, `error-scanning-std` for talc's own
+# consistency scan before every operation.
+talc = { version = "5.1.1", default-features = false, features = ["counters", "error-scanning-std"] }
+
+[patch.crates-io]
+talc = { path = "../../../vendor/talc" }
+
+[profile.release]
+debug = 1
+debug-assertions = true
+overflow-checks = true
+
+[[bin]]
+name = "memory_region_heap_sequence"
+path = "fuzz_targets/memory_region_heap_sequence.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
