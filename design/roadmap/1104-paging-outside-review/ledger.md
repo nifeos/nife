@@ -5,7 +5,7 @@ An appendix to [the milestone](../1104-paging-outside-review.md).
 Names minted by this work are provisional: `Flags::ALL`.
 
 - 1 LEFT: manifest, README and licenses are the crate's move preparation, which waits on the move.
-- 2 LEFT: Decision 1 (the published name) is the architect's.
+- 2 DONE: Decision 1, the crate name, is carried by the rename to `page_tables`.
 - 3 LEFT: the move rewrites the record lines and patch paths, not this work.
 - 4 LEFT: the documentation rewrite for a stranger belongs with the move, with item 1.
 - 5 LEFT: every rename is a public name, so each waits for the architect's ratification.
@@ -16,7 +16,7 @@ Names minted by this work are provisional: `Flags::ALL`.
 - 8 DONE: `Flags::ALL` lists every constructor, and every harness and host test iterates it. The
   review counted ten constructors; there are eleven, and
   `all_lists_every_public_constructor` counts them from the source so nobody can miss a twelfth.
-  The Kani harnesses run over all eleven (`script/verify --only paging`).
+  The Kani harnesses run over all eleven (`script/verify --only page_tables`).
 - 9 LEFT: the exemption port belongs to the move.
 - 10 DONE: `map_range` and `map_span` refuse a run that passes `u64::MAX` with
   `MapError::BadRegion`, before mapping anything

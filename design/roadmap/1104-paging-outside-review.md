@@ -245,10 +245,6 @@ Concrete example. `m.map_span(va, pa, len, flags, PageSize::Size1GiB)` becomes
 
 The ledger is in [the appendix](1104-paging-outside-review/ledger.md).
 
-## Follow-on
-
-- **Outstanding.** The renames, aliases, the crate name and the leaf-size spelling (items 2, 5, 6 and 14) wait on the architect, and the move preparation (items 1, 3, 4, 9, 11) waits on the move. Items 12 (moving `WritableAndExecutable`), 15 (new methods), 17 and 19 are small and unstarted. Checked against the ledger.
-
 ## Done when
 
 The checks are in [the appendix](1104-paging-outside-review/done-when.md).
@@ -271,10 +267,8 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 ## Follow-on
 
 - **Done.** Decision 1, the crate name, is carried by the rename in `crates/page_tables`.
-- **Outstanding.** Every P0 item but the crate name, every P1 item and every P2 item above. The
-  crate's tree holds none of their fixes yet, as a read of `crates/page_tables` shows.
-- **Outstanding.** Decision 2, the spelling of the leaf sizes, waits for the architect. The enum in
-  `crates/page_tables/src/page_size.rs` still holds `Size4KiB`, `Size2MiB` and `Size1GiB`.
+- **Outstanding.** Decision 2, the leaf-size spelling, waits for the architect; the enum still holds
+  `Size4KiB`. The ledger lists the other items left, each waiting on it or on the move.
 
 ## Index row
 
