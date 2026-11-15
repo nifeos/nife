@@ -14,7 +14,7 @@
 //! - **The program list is the caller's.** This crate packs what it is given; which programs an
 //!   image holds (the `[[bin]]` reader, the `packaged_only` list) is `xtask/src/archive.rs`, which a
 //!   device does not have. The device updater composes from the packages it fetched.
-//! - **The ELF check reads `PT_LOAD` headers by hand**, because `crates/elf` refuses a foreign
+//! - **The ELF check reads `PT_LOAD` headers by hand**, because `crates/static_elf` refuses a foreign
 //!   `e_machine` and the host packs riscv64 and x86_64 archives alongside aarch64 ones.
 //!
 //! Name: provisional. The crate is named for what it writes, with the tree's spelled-out word for

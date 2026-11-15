@@ -621,6 +621,20 @@ crates/boot_slot/src/lib.rs::select_excluding
 
 crates/boot_slot/src/lib.rs::unreadable
 
+crates/byte_glob/src/lib.rs::Dot
+
+crates/byte_glob/src/lib.rs::cost_bound
+
+crates/byte_glob/src/lib.rs::has_magic
+
+crates/byte_glob/src/lib.rs::literal
+
+crates/byte_glob/src/lib.rs::match_steps
+
+crates/byte_glob/src/lib.rs::matches
+
+crates/byte_glob/src/lib.rs::matches_with
+
 crates/byte_sink_contract/src/lib.rs::BAD
 
 crates/byte_sink_contract/src/lib.rs::DONE
@@ -2138,63 +2152,34 @@ crates/domain_name_system/src/proofs.rs
 
 
 
-crates/elf/src/error.rs::Error
 
-crates/elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/elf/src/machine.rs::KNOWN_MACHINES
 
-crates/elf/src/machine.rs::NATIVE_MACHINE
 
-crates/elf/src/machine.rs::machine_no_nife_build_accepts
 
-crates/elf/src/note.rs
 
-crates/elf/src/note.rs::NoteError
 
-crates/elf/src/note.rs::NoteSearch
 
-crates/elf/src/note.rs::NoteSegment
 
-crates/elf/src/note.rs::NoteSegments
 
-crates/elf/src/note.rs::from_head
 
-crates/elf/src/note.rs::new
 
-crates/elf/src/note.rs::note
 
-crates/elf/src/note.rs::range
 
-crates/elf/src/note.rs::segment
 
-crates/elf/src/parse.rs::Elf
 
-crates/elf/src/parse.rs::entry
 
-crates/elf/src/parse.rs::parse
 
-crates/elf/src/parse.rs::segments
 
-crates/elf/src/segment.rs::PF_R
 
-crates/elf/src/segment.rs::PF_W
 
-crates/elf/src/segment.rs::PF_X
 
-crates/elf/src/segment.rs::Segment
 
-crates/elf/src/segment.rs::is_executable
 
-crates/elf/src/segment.rs::is_readable
 
-crates/elf/src/segment.rs::is_writable
 
-crates/elf/src/segment.rs::page_range
 
-crates/elf/src/tests.rs
 
-crates/elf/src/verification.rs
 
 
 
@@ -3089,20 +3074,6 @@ crates/free/src/lib.rs::ShareRefusal
 crates/free/src/lib.rs::write_diagnostics
 
 crates/free/src/lib.rs::write_report
-
-crates/glob/src/lib.rs::Dot
-
-crates/glob/src/lib.rs::cost_bound
-
-crates/glob/src/lib.rs::has_magic
-
-crates/glob/src/lib.rs::literal
-
-crates/glob/src/lib.rs::match_steps
-
-crates/glob/src/lib.rs::matches
-
-crates/glob/src/lib.rs::matches_with
 
 crates/globally_unique_identifier_partition_table/src/crc.rs
 
@@ -5098,16 +5069,6 @@ crates/memory_corruption_canary_gate/src/lib.rs::new
 
 crates/memory_corruption_canary_gate/src/lib.rs::try_check
 
-crates/memory_region_heap/src/lib.rs::DEFAULT_BASE
-
-crates/memory_region_heap/src/lib.rs::MemoryRegionHeap
-
-crates/memory_region_heap/src/lib.rs::commit_all
-
-crates/memory_region_heap/src/lib.rs::committed_bytes
-
-crates/memory_region_heap/src/lib.rs::new
-
 crates/memory_regions/src/destroy.rs::DestroyOutcome
 
 crates/memory_regions/src/destroy.rs::destroy_outcome
@@ -5656,97 +5617,97 @@ crates/paging/src/x86_64.rs::blocked_device_table_entry
 
 crates/paging/src/x86_64.rs::device_table_entry
 
-crates/pci/src/lib.rs::BAR0
+crates/pci_configuration_space/src/lib.rs::BAR0
 
-crates/pci/src/lib.rs::BUS_NUMBERS
+crates/pci_configuration_space/src/lib.rs::BUS_NUMBERS
 
-crates/pci/src/lib.rs::Bar
+crates/pci_configuration_space/src/lib.rs::Bar
 
-crates/pci/src/lib.rs::Bdf
+crates/pci_configuration_space/src/lib.rs::Bdf
 
-crates/pci/src/lib.rs::CLASS_NVME
+crates/pci_configuration_space/src/lib.rs::CLASS_NVME
 
-crates/pci/src/lib.rs::CLASS_REVISION
+crates/pci_configuration_space/src/lib.rs::CLASS_REVISION
 
-crates/pci/src/lib.rs::CLASS_XHCI
+crates/pci_configuration_space/src/lib.rs::CLASS_XHCI
 
-crates/pci/src/lib.rs::CMD_BUS_MASTER
+crates/pci_configuration_space/src/lib.rs::CMD_BUS_MASTER
 
-crates/pci/src/lib.rs::CMD_MEMORY_SPACE
+crates/pci_configuration_space/src/lib.rs::CMD_MEMORY_SPACE
 
-crates/pci/src/lib.rs::COMMAND
+crates/pci_configuration_space/src/lib.rs::COMMAND
 
-crates/pci/src/lib.rs::HEADER_TYPE
+crates/pci_configuration_space/src/lib.rs::HEADER_TYPE
 
-crates/pci/src/lib.rs::HEADER_TYPE_BRIDGE
+crates/pci_configuration_space/src/lib.rs::HEADER_TYPE_BRIDGE
 
-crates/pci/src/lib.rs::INTERRUPT_PIN
+crates/pci_configuration_space/src/lib.rs::INTERRUPT_PIN
 
-crates/pci/src/lib.rs::MESSAGE_CONTROL
+crates/pci_configuration_space/src/lib.rs::MESSAGE_CONTROL
 
-crates/pci/src/lib.rs::MSIX_ENABLE
+crates/pci_configuration_space/src/lib.rs::MSIX_ENABLE
 
-crates/pci/src/lib.rs::MSIX_ENTRY_BYTES
+crates/pci_configuration_space/src/lib.rs::MSIX_ENTRY_BYTES
 
-crates/pci/src/lib.rs::MSIX_ENTRY_MASKED
+crates/pci_configuration_space/src/lib.rs::MSIX_ENTRY_MASKED
 
-crates/pci/src/lib.rs::MSIX_FUNCTION_MASK
+crates/pci_configuration_space/src/lib.rs::MSIX_FUNCTION_MASK
 
-crates/pci/src/lib.rs::MSI_64_BIT
+crates/pci_configuration_space/src/lib.rs::MSI_64_BIT
 
-crates/pci/src/lib.rs::MSI_ENABLE
+crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
-crates/pci/src/lib.rs::VENDOR_ID
+crates/pci_configuration_space/src/lib.rs::VENDOR_ID
 
-crates/pci/src/lib.rs::VIRTIO_BLK_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_GPU_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_GPU_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_INPUT_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_INPUT_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
+crates/pci_configuration_space/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
 
-crates/pci/src/lib.rs::VIRTIO_NET_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_NET_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_RNG_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_BLOCK
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_BLOCK
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_ENTROPY
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_ENTROPY
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_GPU
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_GPU
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_INPUT
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_INPUT
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_NET
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_NET
 
-crates/pci/src/lib.rs::VIRTIO_VENDOR
+crates/pci_configuration_space/src/lib.rs::VIRTIO_VENDOR
 
-crates/pci/src/lib.rs::address_low
+crates/pci_configuration_space/src/lib.rs::address_low
 
-crates/pci/src/lib.rs::bridge_buses
+crates/pci_configuration_space/src/lib.rs::bridge_buses
 
-crates/pci/src/lib.rs::data
+crates/pci_configuration_space/src/lib.rs::data
 
-crates/pci/src/lib.rs::ecam_offset
+crates/pci_configuration_space/src/lib.rs::ecam_offset
 
-crates/pci/src/lib.rs::enumerate
+crates/pci_configuration_space/src/lib.rs::enumerate
 
-crates/pci/src/lib.rs::mem32_window
+crates/pci_configuration_space/src/lib.rs::mem32_window
 
-crates/pci/src/lib.rs::read_bars
+crates/pci_configuration_space/src/lib.rs::read_bars
 
-crates/pci/src/lib.rs::requester_id
+crates/pci_configuration_space/src/lib.rs::requester_id
 
-crates/pci/src/lib.rs::walk
+crates/pci_configuration_space/src/lib.rs::walk
 
-crates/pci/src/tests.rs
+crates/pci_configuration_space/src/tests.rs
 
 crates/pgrep/src/lib.rs::BLOCKED
 
@@ -6225,6 +6186,64 @@ crates/socket_contract/src/lib.rs::udp_bind_grant
 crates/socket_contract/src/lib.rs::udp_grant_allows
 
 crates/socket_contract/src/lib.rs::word_ipv4
+
+crates/static_elf/src/error.rs::Error
+
+crates/static_elf/src/machine.rs::FOREIGN_MACHINES
+
+crates/static_elf/src/machine.rs::KNOWN_MACHINES
+
+crates/static_elf/src/machine.rs::NATIVE_MACHINE
+
+crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
+
+crates/static_elf/src/note.rs
+
+crates/static_elf/src/note.rs::NoteError
+
+crates/static_elf/src/note.rs::NoteSearch
+
+crates/static_elf/src/note.rs::NoteSegment
+
+crates/static_elf/src/note.rs::NoteSegments
+
+crates/static_elf/src/note.rs::from_head
+
+crates/static_elf/src/note.rs::new
+
+crates/static_elf/src/note.rs::note
+
+crates/static_elf/src/note.rs::range
+
+crates/static_elf/src/note.rs::segment
+
+crates/static_elf/src/parse.rs::Elf
+
+crates/static_elf/src/parse.rs::entry
+
+crates/static_elf/src/parse.rs::parse
+
+crates/static_elf/src/parse.rs::segments
+
+crates/static_elf/src/segment.rs::PF_R
+
+crates/static_elf/src/segment.rs::PF_W
+
+crates/static_elf/src/segment.rs::PF_X
+
+crates/static_elf/src/segment.rs::Segment
+
+crates/static_elf/src/segment.rs::is_executable
+
+crates/static_elf/src/segment.rs::is_readable
+
+crates/static_elf/src/segment.rs::is_writable
+
+crates/static_elf/src/segment.rs::page_range
+
+crates/static_elf/src/tests.rs
+
+crates/static_elf/src/verification.rs
 
 crates/std_runtime_contract/src/lib.rs::ARGS_PAGE
 

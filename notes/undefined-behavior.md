@@ -85,7 +85,7 @@ mechanism that had already been given one chance at rung four and lost it.
 binds one. It is a latent instance of exactly the same defect; see the `BUGS` note at `TableGuard`
 and milestone 310's follow-on.
 
-**4. A `glob` sweep failure in the triage logs: an artifact, not a finding.** One intermediate run
+**4. A `byte_glob` sweep failure in the triage logs: an artifact, not a finding.** One intermediate run
 recorded `greedy_agrees_with_exhaustive_search_over_every_short_pattern` failing with
 `checked = 43,720`; that run caught the file mid-edit, with the Miri stride applied but the
 completeness pin not yet updated. The finished edit passes under Miri and natively.
@@ -105,9 +105,9 @@ written next to the test:
 |---|---|---|
 | `network_time_protocol` `every_nanosecond_survives_the_round_trip` | all 10^9 nanoseconds, 0.6 s | strided sample (stride 999,983, prime) plus the edges |
 | `calendar` `format_and_parse_round_trip_across_the_range` | ~315,000 round trips | ~300, stride widened 1000x |
-| `glob` `greedy_agrees_with_exhaustive_search_over_every_short_pattern` | all 2,657,200 pattern/name pairs | every 61st pattern, 43,720 pairs, the completeness pin adjusted to the exact sample |
-| `glob` `the_worst_case_over_the_proof_domain_is_what_the_unwind_bounds_are_set_from` | ~1.8M runs, pins the exact argmax | skipped: a sample that misses the argmax fails against correct code |
-| `glob` pathological/quadratic bound tests | 100,000- and 2,000-byte names | 2,000 and 200; both assertions still run |
+| `byte_glob` `greedy_agrees_with_exhaustive_search_over_every_short_pattern` | all 2,657,200 pattern/name pairs | every 61st pattern, 43,720 pairs, the completeness pin adjusted to the exact sample |
+| `byte_glob` `the_worst_case_over_the_proof_domain_is_what_the_unwind_bounds_are_set_from` | ~1.8M runs, pins the exact argmax | skipped: a sample that misses the argmax fails against correct code |
+| `byte_glob` pathological/quadratic bound tests | 100,000- and 2,000-byte names | 2,000 and 200; both assertions still run |
 | `globally_unique_identifier_partition_table` header and entry-array corruption sweeps (`real_disks.rs`; two live, one already `#[ignore]`) | 260k+ parses, each re-CRCing 16 KiB | skipped; the clean-fixture tests walk the same paths |
 | `globally_unique_identifier_partition_table` small-table sweep (`table.rs`) | 261,120 parses | skipped, same reason |
 | `boot_slot` `flipping_any_padding_byte_is_refused` | all 3,908 padding bytes of the 4 KiB block | every 61st byte plus the last, 66 flips; 2,289 s under Miri before the stride |
@@ -213,7 +213,7 @@ adds it itself on a machine bootstrapped before milestone 79.
 - Miri interprets the host target (aarch64-apple-darwin locally, aarch64 Linux in CI). Endianness
   and pointer width match the kernel targets today, so nothing is lost, but a finding that depends
   on target-specific layout would be reported against the host's.
-- The samples under `cfg(miri)` are hand-maintained twins of the native domains. The `glob`
+- The samples under `cfg(miri)` are hand-maintained twins of the native domains. The `byte_glob`
   completeness pin (43,720) is the honest version of that risk: it is asserted, so a drifted
   sample fails loudly, but most of the other samples have no such pin and would shrink silently.
 - Nothing bounds one test's time under Miri. A test that is milliseconds natively and an hour
