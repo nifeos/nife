@@ -135,14 +135,14 @@ impl BootReport {
 ///   is held in the report while the lock is on, so a press and a release would toggle a keymap
 ///   twice for one change. Keyboards are expected to send the non-locking keys (0x39, 0x53, 0x47).
 pub fn evdev_code(usage: u8) -> Option<u16> {
-    EVDEV_CODES
+    CODE_BY_USAGE
         .get(usize::from(usage).checked_sub(4)?)
         .copied()
         .flatten()
 }
 
 /// Indexed by usage id from 0x04. `None` is a usage in the range with no code.
-const EVDEV_CODES: [Option<u16>; 0x88] = [
+const CODE_BY_USAGE: [Option<u16>; 0x88] = [
     Some(30),  // 0x04 a and A: KEY_A
     Some(48),  // 0x05 b and B: KEY_B
     Some(46),  // 0x06 c and C: KEY_C
