@@ -74,7 +74,8 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
 /// mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
         | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
         | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
@@ -100,11 +101,13 @@ pub const COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "aon")]
 pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
-/// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
-/// the vendor's `AON_SYSCFG_12`.
+/// The AON (always-on) system controller register holding `gmac0`'s interface select, at byte
+/// offset `0xc` of the controller: mainline's `<&aon_syscon 0xc 0x12>` second cell, the vendor's
+/// `AON_SYSCFG_12`.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const GMAC0_SYSTEM_CONTROLLER_OFFSET: u64 = 0xc;
+/// Name: ratified 2026-11-14 (UTC), #3569.
+#[doc(alias = "AON_SYSCFG_12")]
+pub const GMAC0_INTERFACE_SELECT_REGISTER: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
 pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
 /// The field is three bits wide (OpenBSD's `((1U << 3) - 1) << shift`; the vendor's mask
@@ -133,7 +136,8 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// exclusion of those mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
     REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT & SYSTEM_CONTROLLER_FIELD
         == REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT
 );

@@ -7,8 +7,9 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
   names as the crate's to fix.
 - `DataPlane::receive` returns after at most `RECEIVE_ENTRIES` consumed descriptors, a test shows
   it, and the twelve `gap` rows of the triage read `killed` in the next census.
-- `Link` and `Speed` have the home the architect named, the twelve gates are private, and the five
-  names of decision 3 carry the spelling the architect ruled, each with its alias.
+- `Link` and `Speed` live in `link` with no re-export from the Motorcomm module, the sixteen gates
+  are `pub(crate)`, and the five names of decision 3 carry the spelling ruled 2026-11-14 (UTC), each
+  with its specification alias. This holds in the tree.
 - The README has a build, test, proof and falsification section with the crate's own commands, its
   example runs under `cargo test`, and `radon` appears nowhere in the crate.
 - The manifest carries `repository`, and no comment in it points at a file outside the repository.
