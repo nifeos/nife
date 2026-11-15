@@ -141,7 +141,7 @@ destroy, reclaim). None is in a host crate, so no coverage run has a verdict on 
 | `kernel/src/self_test.rs:404` | option_else | `frames` |
 | `kernel/src/syscall.rs:706` | err_return | `memory_region_map` |
 | `kernel/src/syscall.rs:844` | err_arm | `memory_region_split` |
-| `kernel/src/syscall.rs:984` | err_arm | `address_space_map_into` |
+| `kernel/src/syscall.rs:984` | err_arm | `address_space_layout_into` |
 | `kernel/src/syscall.rs:1071` | err_return | `page_frame_map` |
 | `kernel/src/syscall.rs:1076` | err_arm | `page_frame_map` |
 | `kernel/src/user.rs:194` | none_return | `new` |

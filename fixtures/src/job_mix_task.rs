@@ -142,7 +142,7 @@ fn map_job() -> Result<u64, Refused> {
     let frame = slot(user_mode_runtime::retype_into_page_frame(region))?;
     let mut i = 0;
     while i < job_mix::MAP_CALLS {
-        zero(user_mode_runtime::address_space_map_into(
+        zero(user_mode_runtime::address_space_layout_into(
             aspace,
             MAP_TARGET_VA + i * PAGE,
             frame,
@@ -182,14 +182,14 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
             child,
             abi::object_type::ADDRESS_SPACE,
         ))?;
-        zero(user_mode_runtime::address_space_map_into(
+        zero(user_mode_runtime::address_space_layout_into(
             aspace,
             CHILD_CODE_VA,
             code_frame,
             abi::address_space::MAP_CODE,
         ))?;
         let stack = slot(user_mode_runtime::retype_into_page_frame(child))?;
-        zero(user_mode_runtime::address_space_map_into(
+        zero(user_mode_runtime::address_space_layout_into(
             aspace,
             CHILD_STACK_VA,
             stack,

@@ -84,3 +84,4 @@ block_roster,block_roster_contract,4d9f5027,2026-11-09
 glob,byte_glob,6ef795a1,2026-11-14
 pci,pci_configuration_space,41d4ed9b,2026-11-14
 address_space_map,address_space_layout,3ba9a51c,2026-11-14
+elf,static_elf,3b35516a,2026-11-14

@@ -59,7 +59,7 @@ const PHDR: usize = 56;
 const EXTRA_STACK_PAGES: u64 = 7;
 
 /// An ELF header and one `PT_LOAD`: a single executable page at the image base, holding the entry
-/// point. Enough for `elf::Elf::parse`, which is all the loader needs; the child is never started.
+/// point. Enough for `static_elf::Elf::parse`, which is all the loader needs; the child is never started.
 fn forge(out: &mut [u8; EHDR + PHDR]) {
     let base = address_space_layout::IMAGE_BASE;
     out[0..4].copy_from_slice(b"\x7fELF");
@@ -67,7 +67,7 @@ fn forge(out: &mut [u8; EHDR + PHDR]) {
     out[5] = 1; // little-endian
     out[6] = 1; // version
     out[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
-    out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+    out[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
     out[20..24].copy_from_slice(&1u32.to_le_bytes());
     out[24..32].copy_from_slice(&base.to_le_bytes()); // entry
     out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // phoff
@@ -76,7 +76,7 @@ fn forge(out: &mut [u8; EHDR + PHDR]) {
     out[56..58].copy_from_slice(&1u16.to_le_bytes()); // phnum
     let ph = &mut out[EHDR..EHDR + PHDR];
     ph[0..4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
-    ph[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+    ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
     ph[16..24].copy_from_slice(&base.to_le_bytes());
     ph[24..32].copy_from_slice(&base.to_le_bytes());
     ph[40..48].copy_from_slice(&PAGE.to_le_bytes());
@@ -114,7 +114,7 @@ fn build_then_reach() -> ! {
 
     let mut bytes = [0u8; EHDR + PHDR];
     forge(&mut bytes);
-    let Ok(image) = elf::Elf::parse(&bytes) else {
+    let Ok(image) = static_elf::Elf::parse(&bytes) else {
         send(REPORT, REPORT_FAILED, 0, 0);
         exit()
     };

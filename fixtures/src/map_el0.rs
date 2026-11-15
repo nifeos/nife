@@ -44,7 +44,7 @@
 
 use primitive_benchmark_contract::{MAP_ITERATIONS, MAP_WARMUP, Prefix, write_row};
 use user_mode_runtime::{
-    address_space_map_into, exit, now, retype_into_kernel_object, retype_into_page_frame, send,
+    address_space_layout_into, exit, now, retype_into_kernel_object, retype_into_page_frame, send,
 };
 
 /// Slot 0: where the row goes.
@@ -99,7 +99,7 @@ fn sink(w0: u64, w1: u64, w2: u64) -> byte_sink_contract::Sent {
 /// frame. Returns the syscall result: 0 on success, a negative error otherwise.
 #[inline(never)]
 fn map_one(space: u64, frame: u64, va: u64) -> i64 {
-    address_space_map_into(space, va, frame, abi::address_space::MAP_READ_ONLY)
+    address_space_layout_into(space, va, frame, abi::address_space::MAP_READ_ONLY)
 }
 
 user_mode_runtime::panic_handler!();

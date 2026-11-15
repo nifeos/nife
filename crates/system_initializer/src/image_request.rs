@@ -729,7 +729,7 @@ fn with_live_table<R>(
 /// manifest is. The ABI never dual-serves, so the comparison is equality. Bytes with no note
 /// declare nothing and pass. The refusal's two numbers (`Refusal`) stop here: the spawn reply
 /// carries a status and no text, so the person sees the refusal and not the versions.
-fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
+fn serves_declared_abi(elf: &static_elf::Elf<'_>) -> bool {
     match elf.note(capability_manifest_note::OWNER, interfaces_note::INTERFACES) {
         Ok(None) => true,
         Ok(Some(d)) => interfaces_note::decode_interfaces(d).is_ok_and(|list| {
@@ -741,13 +741,13 @@ fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
 }
 
 /// **The manifest a file's bytes are endowed with, or `None` to refuse them.** Their note is read
-/// with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
+/// with `static_elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
 /// endow a program with a manifest it did not declare. `grant_plan::image_manifest` then applies
 /// the vouch (the shell's `caps` calls the same function to preview it), and the request's own
 /// words must fit what results.
 pub(super) fn endowed_image(
-    elf: &elf::Elf<'_>,
+    elf: &static_elf::Elf<'_>,
     vouch: grant_plan::Vouch,
     arg: u64,
     mem_pages: u64,
@@ -797,14 +797,14 @@ mod tests {
         v[5] = 1;
         v[6] = 1;
         v[16..18].copy_from_slice(&2u16.to_le_bytes());
-        v[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+        v[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
         v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
         v[32..40].copy_from_slice(&64u64.to_le_bytes());
         v[54..56].copy_from_slice(&56u16.to_le_bytes());
         v[56..58].copy_from_slice(&2u16.to_le_bytes());
         let mut load = vec![0u8; 56];
         load[0..4].copy_from_slice(&1u32.to_le_bytes());
-        load[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+        load[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
         load[8..16].copy_from_slice(&(body as u64).to_le_bytes());
         load[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
         load[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -813,7 +813,7 @@ mod tests {
         v.extend_from_slice(&load);
         let mut ph = vec![0u8; 56];
         ph[0..4].copy_from_slice(&4u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&elf::PF_R.to_le_bytes());
+        ph[4..8].copy_from_slice(&static_elf::PF_R.to_le_bytes());
         ph[8..16].copy_from_slice(&((body + 16) as u64).to_le_bytes());
         ph[32..40].copy_from_slice(&(note.len() as u64).to_le_bytes());
         ph[40..48].copy_from_slice(&(note.len() as u64).to_le_bytes());
@@ -836,7 +836,7 @@ mod tests {
     }
 
     fn judged(bytes: &[u8]) -> bool {
-        serves_declared_abi(&elf::Elf::parse(bytes).expect("the fixture parses"))
+        serves_declared_abi(&static_elf::Elf::parse(bytes).expect("the fixture parses"))
     }
 
     #[test]

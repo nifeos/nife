@@ -23,7 +23,7 @@ use supervision_contract::{
     Retention,
 };
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, destroy_memory_region, invoke,
+    address_space_layout_into, capability_delete, destroy_memory_region, invoke,
     retype_into_kernel_object, retype_into_page_frame, send_capability, split_memory_region,
     thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start,
@@ -180,7 +180,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// ```no_run
 /// # use supervision_contract::{ChildEndowment, Retention};
 /// # use process_builder::{build_child, start_child};
-/// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
+/// # fn demo(own: u64, per_child: u64, elf: &static_elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 ///
 /// // `own` pays for OUR scratch mappings; `per_child` is what the child is made of. Passing a
@@ -194,7 +194,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 pub fn build_child(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
 ) -> Result<Child, ()> {
     let (child, aspace) = build_child_space(own_ut, build_ut, elf, endow)?;
@@ -231,7 +231,7 @@ pub fn build_child(
 pub fn build_child_space(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
 ) -> Result<(Child, u64), ()> {
     // The map's image band, checked before anything is retyped, the same check `kernel::user::load`
@@ -272,7 +272,7 @@ pub fn build_child_space(
 fn lay_out_child(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
     aspace: u64,
 ) -> Result<u64, ()> {
@@ -307,7 +307,7 @@ fn lay_out_child(
     for k in 0..endow.stack_pages {
         let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
+        if address_space_layout_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
         {
             capability_delete(stack_frame);
             return Err(());
@@ -364,7 +364,7 @@ fn lay_out_child(
     }
 
     for &(va, our_slot, mode) in endow.maps {
-        if address_space_map_into(aspace, va, our_slot, mode) != 0 {
+        if address_space_layout_into(aspace, va, our_slot, mode) != 0 {
             return Err(());
         }
     }
@@ -494,7 +494,7 @@ fn fill_and_map(
     let dst = unsafe { core::slice::from_raw_parts_mut(scratch as *mut u8, PAGE as usize) };
     dst.fill(0);
     let filled = fill(dst);
-    let mapped = filled.is_ok() && address_space_map_into(aspace, va, frame, mode) == 0;
+    let mapped = filled.is_ok() && address_space_layout_into(aspace, va, frame, mode) == 0;
     capability_delete(frame);
     // The page is written and in the child (or the build failed): either way this builder is done
     // with its own window onto it. Given up here, one page at a time, rather than after the child
@@ -567,7 +567,7 @@ pub fn memory_region_destroy(ut: u64) -> bool {
 /// ```no_run
 /// # use supervision_contract::{ChildEndowment, Retention};
 /// # use process_builder::{build_child, start_child};
-/// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
+/// # fn demo(own: u64, per_child: u64, elf: &static_elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 /// let child = build_child(own, per_child, elf, &endow)?;
 /// // The capability is gone after this line, because the endowment said so.

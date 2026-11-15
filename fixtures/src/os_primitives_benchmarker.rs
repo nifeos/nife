@@ -27,7 +27,7 @@
 #![no_main]
 
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, cycle_reading, destroy_memory_region, exit,
+    address_space_layout_into, capability_delete, cycle_reading, destroy_memory_region, exit,
     map_page_frame, now, receive, retype_into_kernel_object, retype_into_page_frame, send,
     split_memory_region, thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start, yield_now,
@@ -230,14 +230,14 @@ fn spawn_one(code_frame: u64) {
     let child_ut = split_memory_region(SP_UNTYPED, CHILD_PAGES) as u64;
     let aspace = retype_into_kernel_object(child_ut, abi::object_type::ADDRESS_SPACE) as u64;
     // Alias the shared code frame as the child's code; a stack from the child's own region.
-    address_space_map_into(
+    address_space_layout_into(
         aspace,
         CHILD_CODE_VA,
         code_frame,
         abi::address_space::MAP_CODE,
     );
     let stack = retype_into_page_frame(child_ut) as u64;
-    address_space_map_into(
+    address_space_layout_into(
         aspace,
         CHILD_STACK_VA,
         stack,

@@ -18,7 +18,7 @@ pub(super) fn address_space_invoke(
     [a0, a1, a2]: [u64; 3],
 ) -> Result<i64, Error> {
     match method {
-        abi::address_space::MAP_INTO => address_space_map_into(capability, name, a0, a1, a2),
+        abi::address_space::MAP_INTO => address_space_layout_into(capability, name, a0, a1, a2),
         // `ENUMERATE`, not `WRITE`: seeing a space is not shaping it (DECISIONS §114 (`pmap`
         // gets its listing: `ENUMERATE` extends to the address-space object)).
         abi::address_space::LIST => {
@@ -55,7 +55,7 @@ pub(super) fn address_space_invoke(
 /// keeps both to the end of the run; beneath them, the caller's capability table for the frame
 /// read and `MEMORY_REGION` for each page table retyped. Never `IPC_TABLES`.
 #[inline(never)]
-fn address_space_map_into(
+fn address_space_layout_into(
     capability: crate::capability_object::Capability,
     name: u64,
     a0: u64,

@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
-elf = { version = "0.1.0", path = "../elf" }
+static_elf = { version = "0.1.0", path = "../static_elf" }
 user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): where a child's
 # stack goes, and the check that refuses an image the map has no room for, shared with

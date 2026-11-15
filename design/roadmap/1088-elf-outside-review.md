@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 857, 1039
 decision_dependencies: 46, 151, 154
@@ -7,17 +7,16 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1088. `elf`: what an outside maintainer would fix before it leaves this repository
+# 1088. `static_elf`: what an outside maintainer would fix before it leaves this repository
 
-Raised by a read-only review lane. A reviewer with no prior exposure to this crate read
-`crates/elf` at the head of `main` (`cf1328af6`) in a fresh clone, the way a stranger meeting it in
-its own repository would. The review changed nothing; every item below is work for a later lane.
+Raised by a read-only review lane, when the crate was still named `elf`. A reviewer with no prior
+exposure to this crate read `crates/static_elf` at the head of `main` (`cf1328af6`) in a fresh clone.
+The reviewer read it the way a stranger meeting it in its own repository would. The review changed nothing; every item below is work for a later lane.
 
 **The crate has no review package.** `notes/crate-reviews/` holds no `elf.md` and
 [the index](../../notes/crate-reviews.md) has no row for it, so there is no settled baseline of
-names and decisions to leave closed. The one ratified name is the crate's own, `elf`, kept under
-§154 (the acronym test is whether the phrase is spoken) and recorded in `src/lib.rs`; this block does
-not reopen it. Every other public name is marked provisional in the source. The baseline the review
+names and decisions to leave closed. The one ratified name is the crate's own, `static_elf`,
+recorded in `src/lib.rs` and ruled below; this block does not reopen it. Every other public name is marked provisional in the source. The baseline the review
 did take is [milestone 784 (reuse what the tree wrote: which first-party code an existing library should replace)'s comparison of the crate against three readers](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md).
 That comparison measured fit, hostile input, proofs, cost and upkeep. It ended in the ruling that the crate
 stays ours. The baseline also takes the order in which milestone 857 (crates released on their own) moves it.
@@ -31,17 +30,17 @@ and milestone 784's probe script. No new tool.
 The rule: a crate leaves this repository only if it is publishable or used by more than one
 repository. Judged against both halves:
 
-- **Shared: yes, and on the kernel's critical path.** Eleven packages link it today
+- **Shared: yes, and on the kernel's critical path.** Eleven packages link it
   (`kernel`, `uefi_loader`, `components`, `jig`, `fixtures`, `system_tests`, `measured_boot`,
   `system_initializer`, `program_asks`, `process_builder`, `fuzz`), all inside this repository. But
   [milestone 1039 (the kernel leaves nife)](1039-the-kernel-leaves-nife.md) requires every crate the
   kernel links to have left first, and the kernel's loader (`kernel/src/user/loader.rs`) is the main
   user. The progenitor, the shell, `jig` and the UEFI loader are not kernel code and link it too. So
-  once the kernel moves, at least two repositories link `elf`, and the kernel cannot move until `elf`
+  once the kernel moves, at least two repositories link `static_elf`, and the kernel cannot move until `static_elf`
   has. The order the split already ruled meets the shared test.
-- **Publishable: not as it stands.** The crates.io name `elf` belongs to another crate (0.8.0, 14.1
+- **Publishable: not as it stands.** The crates.io name `elf` belongs to a different crate (0.8.0, 14.1
   million downloads, 3.98 million in the last 90 days, measured from the crates.io API during this
-  review). The machine the parser accepts is a compile-time constant of the host. The refusals that
+  review), which is why the crate is named `static_elf`. The machine the parser accepts is a compile-time constant of the host. The refusals that
   are this loader's policy (W^X, one segment per page at 4 KiB, 64 headers, `ET_EXEC` only) are
   hard-wired with no way to state another page size. Shipped doc comments cite this tree's paths,
   milestones, sections and the architect by name twenty-nine times. There is no README, no license
@@ -87,8 +86,7 @@ The P1 items are in [the appendix](1088-elf-outside-review/before-the-tag.md).
 ## Decisions for the architect
 
 Three doors a release would close. Each is reversible today and stays so until a tag or a publish.
-A recording lane brings them one at a time, in this order, each with the background below and the
-recommendation first.
+All three are decided, provisionally.
 
 ### D1. Which machine the parser accepts: a constant of the build, or an input
 
@@ -128,6 +126,14 @@ that can afford it). cole14 `elf`, `object` and `goblin` (option B's shape: the 
 `e_machine`). Concrete example: a basalt image step on an x86_64 build host validating every member
 of an aarch64 package before it ships, which option A allows with one call and options C refuses.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: `Elf::parse` keeps the build's machine, a
+second constructor takes the machine, and three public machine constants carry the `EM_` spelling
+as `#[doc(alias)]`. The constructor's and the constants' names stay provisional. `KNOWN_MACHINES`,
+`FOREIGN_MACHINES`, `NATIVE_MACHINE` and `machine_no_nife_build_accepts` leave the public surface,
+which is the part a release would close. The before-the-move item on the machine surface is the
+work.
+
 ### D2. Whether the loader's policy stays inside the parser
 
 Background. Five of the eighteen refusals are not the ELF format's rules but this loader's. They are
@@ -161,14 +167,26 @@ kernel. Under A it must link its kernel W^X-clean, as this tree's x86_64 kernel 
 trampoline segment was a real refusal, fixed in the linker script), and under B it would flip a
 field.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: all five refusals stay, with no knobs, and
+the overlap check's page size becomes an input. The README lists the five as this loader's policy.
+The five are `WritableAndExecutable`, `SegmentsOverlap`, `EntryNotExecutable`,
+`TooManyProgramHeaders` and the refusal of anything but a static `ET_EXEC` (`src/error.rs` lines
+60 to 83). The before-the-tag item on the overlap check is the work.
+
 ### D3. The public names before anyone outside spells them
 
 Background. The naming rules say an address spells `virtual_address` or `physical_address`
 everywhere, a length carries its unit, a specification's abbreviation stays only with its expansion and an alias, and a parameter follows the same rules as an item. The crate's public surface predates those rules and uses the ELF specification's own field names, and the source marks every name but the crate's provisional. After a release each is a one-way door. Today
 they cost one rename lane across eleven dependents (`vaddr` 7 uses, `paddr` 5, `memsz` 3, the flag
-constants 48, `page_range` 8). The crate name `elf` has its ratification and is not in question.
+constants 48, `page_range` 8). The crate name `static_elf` is ruled and is not in question.
 
 Recommendation: rule the table as one decision, A, and let the lane sweep.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Option A: the table below, with the ELF
+specification's spelling as `#[doc(alias)]` and no alias of this tree's earlier spelling. The
+before-the-tag item on the public vocabulary is the work.
 
 | today | recommended | alias | why |
 |---|---|---|---|
@@ -198,17 +216,15 @@ rule already decided which way that goes. Concrete example: `kernel/src/user/loa
 reads `let file_hi = seg.vaddr + seg.data.len() as u64;`, which under A reads
 `seg.virtual_address + seg.data.len() as u64` and says what it adds.
 
-### Held, not asked now: the crates.io name
+### The crate name
 
-`elf` on crates.io belongs to cole14's crate (14.1 million downloads). This crate cannot publish
-under its ratified name. The publishing hold makes the question moot until a combine review has
-happened, and the move does not need it. The repository can be `nifeos/elf` and the package `elf`
-with `publish = false`. A later rename of the package costs the dependents one manifest line each
-(`elf = { package = "<new name>", ... }`) with no change to any `use elf::`. Measured free during
-the review: `static_elf`, `elf_static`, `elf_executable`, `elf_program_headers`, `elf_image`,
-`elf_segments`, `static_executable`, `executable_and_linkable_format`. Taken: `elf64`, `elf_loader`.
-When publication comes up, the reviewer would bring `static_elf` first: it names the one kind
-of file the crate accepts, in two words a reader says. That is for then.
+Ruled 2026-11-14 (UTC), option A: the crate is `static_elf`, in code and in package name, with no
+`package =` rename and no `doc(alias)` of the old spelling. The crates.io name `elf` belongs to a
+different, widely used parser (14.1 million downloads), and `static_elf` was free on 2026-11-14. The
+crate stays the front half of an ELF loader for static executables; the rename changes no behavior.
+The type `Elf` and every other public name keep their spelling. The repository, when the crate
+leaves, is `nifeos/static_elf`. The notes about the file format keep their names (`notes/elf.md`,
+`notes/elf/`).
 
 ## Done when
 
@@ -222,16 +238,26 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
   the README reads the source first.
 - The review did not run `script/crate-standalone`, so the list of citations in item 1 is the
   packet's count (29 lines) and the lane doing the sweep will find the exact set.
-- The verdict that `elf` leaves rests on milestone 1039's order (every crate the kernel links
+- The verdict that `static_elf` leaves rests on milestone 1039's order (every crate the kernel links
   leaves first). If that order changes, the shared ground changes with it, and the publishable
   ground alone does not carry the move until D1, item 1 and the name all have rulings.
 - The P2 order is the reviewer's guess at what a user asks for first; nobody outside has asked.
 
+## Follow-on
+
+- **Done.** The rename to `static_elf`. It covers the directory, the package and every dependent.
+  It covers the lock files, the package tables, the gate tables and baselines. It covers the notes
+  that name the crate.
+- **Outstanding.** Every finding above, the three decisions D1 to D3, and the move to its own
+  repository. None of them was started; the rename changes no behavior and no public item.
+
 ## Index row
 
-An outside reading of `elf` before it leaves. No review package exists. The crate leaves on the
-shared ground (the kernel links it and must follow it out), not on publishability, which the taken
-crates.io name, a build-time machine constant and 29 citations of this tree rule out as it stands.
+An outside reading of `static_elf` (then named `elf`) before it leaves. No review package exists.
+The crate leaves on the shared ground: the kernel links it and must follow it out. It does not
+leave on publishability. Three things rule that out as it stands: the crates.io name `elf` taken by
+another crate (the reason for the rename), a build-time machine constant and 29 citations of this
+tree.
 Four items block the move (citations, the fuzz seeds and target, the manifest and files, a public
 name that says nife). Seven go before the first tag (a page-size hole in a public helper and in the
 overlap check, four truncating casts, `Display`, the naming sweep, a README with an example, one

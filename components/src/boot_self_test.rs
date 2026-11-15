@@ -413,7 +413,7 @@ fn spawn(
     maps: &[(u64, u64, u64)],
     args: [u64; 3],
 ) -> Result<Child, &'static str> {
-    let elf = elf::Elf::parse(bytes).map_err(|_| "its image is not an ELF")?;
+    let elf = static_elf::Elf::parse(bytes).map_err(|_| "its image is not an ELF")?;
     let pages = (bytes.len() as u64).div_ceil(process_builder::PAGE) + CHILD_SLACK_PAGES;
     let region = process_builder::memory_region_split(slot::BUDGET, pages)
         .map_err(|_| "no region for it in this program's budget")?;
@@ -618,7 +618,7 @@ fn supervised_round(
 /// thread, a pc in its code and the address it read (DECISIONS §26 (the fault endpoint)).
 fn supervised(r: &mut Report, images: &Images) {
     let bytes = images.bytes[image::KERNEL_TEST_SUBJECT];
-    let Ok(elf) = elf::Elf::parse(bytes) else {
+    let Ok(elf) = static_elf::Elf::parse(bytes) else {
         r.record(
             check!("supervised"),
             false,

@@ -53,7 +53,7 @@ impl Uart {
 
     /// Map the PL011's register page into this process; `None` if the kernel refuses.
     fn open(g: &BootEndowment, _uart_shape: u64) -> Option<Self> {
-        (address_space_map_into(
+        (address_space_layout_into(
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
@@ -94,7 +94,7 @@ impl Uart {
 
     /// Map the NS16550's register page into this process; `None` if the kernel refuses.
     fn open(g: &BootEndowment, uart_shape: u64) -> Option<Self> {
-        (address_space_map_into(
+        (address_space_layout_into(
             g.own_space,
             REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,

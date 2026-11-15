@@ -267,7 +267,7 @@ fn start(caretaker_len: u64, table_len: u64, schedule_len: u64) -> ! {
 fn vouched_caretaker(
     caretaker_len: u64,
     table_len: u64,
-) -> (Option<elf::Elf<'static>>, &'static str) {
+) -> (Option<static_elf::Elf<'static>>, &'static str) {
     // **Two blobs rather than the archive** (milestone 233 (`login` dies on every boot)): the
     // caretaker's ELF and the measurement table, their lengths in the first two argument registers
     // (notes/login/budgets-and-reclamation.md, "Two blobs rather than the archive").
@@ -300,7 +300,7 @@ fn vouched_caretaker(
     let table = core::str::from_utf8(table).unwrap_or("");
     // An empty table, an unparseable image and a zero-length blob all end here as `None`, answered
     // by the `None` arm of `mint`.
-    let care_elf = elf::Elf::parse(care_bytes).ok().filter(|_| {
+    let care_elf = static_elf::Elf::parse(care_bytes).ok().filter(|_| {
         measured_boot::verify_in_manifest(table, "fs_subtree_caretaker", care_bytes).is_ok()
     });
     (care_elf, table)
@@ -310,7 +310,7 @@ fn vouched_caretaker(
 /// caretaker `care`; `None` when either is missing or unvouched.
 fn schedule_images<'e>(
     schedule_len: u64,
-    care: &'e elf::Elf<'static>,
+    care: &'e static_elf::Elf<'static>,
     table: &str,
 ) -> Option<ScheduleImages<'e>> {
     let (keeper_len, timetable_len) = login_contract::split_schedule_lengths(schedule_len);
@@ -336,7 +336,7 @@ fn schedule_images<'e>(
 struct FrontDoor<'e> {
     own_ut: u64,
     channel_ut: u64,
-    care: Option<&'e elf::Elf<'static>>,
+    care: Option<&'e static_elf::Elf<'static>>,
     schedule: Option<ScheduleImages<'e>>,
     durable_ut: Option<u64>,
     durables: Durables,
@@ -464,7 +464,7 @@ impl FrontDoor<'_> {
 fn serve_login(
     channel: &Channel,
     own_ut: u64,
-    care: Option<&elf::Elf>,
+    care: Option<&static_elf::Elf>,
     seq: &mut u64,
     terminal_held: &mut bool,
     schedules: &mut Schedules,
@@ -1023,7 +1023,7 @@ impl Durable {
 struct ScheduleImages<'e> {
     keeper: &'static [u8],
     timetable: &'static [u8],
-    care: &'e elf::Elf<'static>,
+    care: &'e static_elf::Elf<'static>,
 }
 
 /// **Check `user_timetable_keeper` and `timetable` against the measurement table**, and answer them back with
@@ -1031,7 +1031,7 @@ struct ScheduleImages<'e> {
 fn vouched_schedule<'e>(
     keeper: &'static [u8],
     timetable: &'static [u8],
-    care: &'e elf::Elf<'static>,
+    care: &'e static_elf::Elf<'static>,
     table: &str,
 ) -> Option<ScheduleImages<'e>> {
     if keeper.is_empty() || timetable.is_empty() {
@@ -1058,7 +1058,7 @@ fn open_schedule(
     images: ScheduleImages<'_>,
     va: u64,
 ) -> Option<(u64, u64, u64)> {
-    let elf = elf::Elf::parse(images.keeper).ok()?;
+    let elf = static_elf::Elf::parse(images.keeper).ok()?;
     let timetable = images.timetable;
     let keeper = memory_region_split(budget, USER_TIMETABLE_KEEPER_REGION_PAGES).ok()?;
     // **The store, read-only, for the timetable** (Fork 8 D): a caretaker each for `activation/`
@@ -1142,7 +1142,7 @@ fn open_schedule(
 /// 0, which this process and every signed-in user's caretaker share. Built in `region` from
 /// `own_ut`'s scratch, the way [`mint`] builds one. The two narrowed endpoints, or `None` with
 /// nothing of this process's own left behind (whatever started in `region` goes with it).
-fn store_caretakers(own_ut: u64, region: u64, care: &elf::Elf) -> Option<(u64, u64)> {
+fn store_caretakers(own_ut: u64, region: u64, care: &static_elf::Elf) -> Option<(u64, u64)> {
     let badged = u64::try_from(user_mode_runtime::badge(
         FS_EP,
         login_contract::DURABLE_WINDOW,
@@ -1166,7 +1166,7 @@ fn store_caretakers(own_ut: u64, region: u64, care: &elf::Elf) -> Option<(u64, u
 fn store_caretaker(
     own_ut: u64,
     region: u64,
-    care: &elf::Elf,
+    care: &static_elf::Elf,
     badged: u64,
     name: &str,
 ) -> Option<u64> {
@@ -1288,7 +1288,7 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 /// budget, an identity too long to grant, no provisioned subtree, or `care` being `None` because
 /// `_start`'s measurement refused the caretaker. `identity_provisioner` creates the subtree; this
 /// process never does (§117).
-fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
+fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
     let care = care?;
 
     // The grant name travels in two `START` argument words, so it is capped at

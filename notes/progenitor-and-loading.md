@@ -139,7 +139,7 @@ budget for the progenitor` today; it is quoted here as it read on the day.)
 
 So `has_initial_ramdisk_aarch64` (`mkinitrd` before 2026-08-27) now strips each ELF
 (`llvm-objcopy --strip-debug`) before packing, and the archive is **4.3 MB**. Nothing lost
-anything. `crates/elf` parses program headers only and has no section-header code at all, so no
+anything. `crates/static_elf` parses program headers only and has no section-header code at all, so no
 loader on either side of the boundary could ever see a debug section. The kernel prints a raw `pc`
 on a fault, and symbolizing it is done offline against the unstripped binary still sitting in
 `target/`.

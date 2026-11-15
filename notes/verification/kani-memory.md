@@ -27,7 +27,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 | `machine_discovery` | 5.23 | 3 |
 | `file_allocation_table` | 5.02 | 3 |
 | `capability_manifest_note` | 3.60 | 2 |
-| `elf` | 3.46 | 2 |
+| `static_elf` | 3.46 | 2 |
 | `calendar` | 3.30 | 2 |
 | `usb` | 1.91 | 1 |
 | `measured_boot` | 1.81 | 1 |

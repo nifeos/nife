@@ -572,10 +572,10 @@ pub(super) fn read_manifest_note(
     if read_at(dir, handle, 0, &mut head[..head_len]).is_none() {
         return Err(Unreadable);
     }
-    let Ok(segs) = elf::NoteSegments::from_head(&head[..head_len]) else {
+    let Ok(segs) = static_elf::NoteSegments::from_head(&head[..head_len]) else {
         return Ok(None);
     };
-    let mut search = elf::NoteSearch::new(
+    let mut search = static_elf::NoteSearch::new(
         capability_manifest_note::OWNER,
         capability_manifest_note::MANIFEST,
     );
