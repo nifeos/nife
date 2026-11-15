@@ -177,7 +177,7 @@ package_index,version::weight,replace + with *,1,arithmetic,equivalent,unclassif
 page_frames,PageFrameAllocator<'a>::alloc,replace + with *,1,arithmetic,equivalent,unclassified,algebraic,
 page_frames,PageFrameAllocator<'a>::alloc_contiguous,replace || with &&,1,logic,equivalent,unclassified,algebraic,yes
 page_frames,PageFrameAllocator<'a>::largest_free_run,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
-paging,,replace | with ^,1,or_xor,equivalent,algebraic,algebraic,
+page_tables,,replace | with ^,1,or_xor,equivalent,algebraic,algebraic,
 pci_configuration_space,,replace << with >>,1,shift,equivalent,unclassified,noise,
 pci_configuration_space,Bdf::ecam_offset,replace | with ^,2,or_xor,equivalent,unclassified,noise_unargued,
 pci_configuration_space,Bdf::requester_id,replace | with ^,2,or_xor,equivalent,unclassified,noise,

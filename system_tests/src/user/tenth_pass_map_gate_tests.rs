@@ -38,7 +38,7 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 }
 
 /// The leaf flags at `va` in the space named `name`, or `None` when nothing is mapped there.
-fn flags_at(name: u64, va: u64) -> Option<paging::Flags> {
+fn flags_at(name: u64, va: u64) -> Option<page_tables::Flags> {
     let root = crate::user::user_address_space_root(name).expect("the space stopped resolving");
     mmu::translate_at(root, va).map(|(_, flags)| flags)
 }
@@ -51,7 +51,7 @@ fn map_one_page(space: u64, frame: u64, va: u64, shape: u64) -> Result<(), Error
 /// **`MAP_INTO` admits the last user page and refuses the kernel half, a straddling run and a
 /// wrapping run, leaving nothing mapped behind a refusal** (claim 10).
 ///
-/// The gate proved per format in `crates/paging` answers by construction; this drives its edges
+/// The gate proved per format in `crates/page_tables` answers by construction; this drives its edges
 /// through the dispatcher on the running architecture. A run whose *second* page would land in
 /// the kernel half must refuse and must not leave its first page mapped: `MAP_INTO` promises
 /// all-or-none, and a half-mapped run would put a writable page exactly at the boundary.
@@ -72,10 +72,10 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
     let space = sched::grant(address_space_capability(space_name, Rights::WRITE))
         .expect("grant the space capability");
 
-    let page = paging::PAGE_SIZE;
+    let page = page_tables::PAGE_SIZE;
     // The running format's own split (bit 48 on aarch64, 38 on Sv39): the gate's user half ends
     // one page below it, which is not `KERNEL_VA_BASE - PAGE` on every architecture.
-    let split = 1u64 << <crate::arch::mmu::Format as paging::PageFormat>::SPLIT_SHIFT;
+    let split = 1u64 << <crate::arch::mmu::Format as page_tables::PageFormat>::SPLIT_SHIFT;
     let last_user_page = split - page;
 
     // A one-page control at the last-but-one user page (writable), leaving the last user page
@@ -208,8 +208,8 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
 
     // The overlay: code first, then read/write asked at the same address. Derived from the
     // format's split so the address is inside the user half on every architecture.
-    let page = paging::PAGE_SIZE;
-    let split = 1u64 << <crate::arch::mmu::Format as paging::PageFormat>::SPLIT_SHIFT;
+    let page = page_tables::PAGE_SIZE;
+    let split = 1u64 << <crate::arch::mmu::Format as page_tables::PageFormat>::SPLIT_SHIFT;
     let overlay_va = split - page;
     map_one_page(space, frame, overlay_va, abi::address_space::MAP_CODE)
         .expect("MAP_INTO refused the code mapping of a READ|WRITE frame");
@@ -293,8 +293,8 @@ fn one_physical_page_is_never_writable_here_and_executable_there() {
     let space = sched::grant(address_space_capability(space_name, Rights::WRITE))
         .expect("grant the space capability");
 
-    let page = paging::PAGE_SIZE;
-    let split = 1u64 << <crate::arch::mmu::Format as paging::PageFormat>::SPLIT_SHIFT;
+    let page = page_tables::PAGE_SIZE;
+    let split = 1u64 << <crate::arch::mmu::Format as page_tables::PageFormat>::SPLIT_SHIFT;
     let executable_va = split - page;
     let writable_va = split - page * 2;
     map_one_page(
@@ -388,7 +388,7 @@ fn the_pair_is_refused_through_page_frame_map_in_either_order() {
         let one = page_frame_run_len(1);
         let f1 = sched::grant(page_frame_run_capability(first, one, rights)).expect("grant f1");
         let f2 = sched::grant(page_frame_run_capability(second, one, rights)).expect("grant f2");
-        let page = paging::PAGE_SIZE;
+        let page = page_tables::PAGE_SIZE;
         let base = 0x40_0000;
 
         // Code through MAP_INTO, then writable through PageFrame::MAP.
@@ -498,7 +498,7 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
         sched::grant(address_space_capability(n, Rights::WRITE)).expect("grant the space")
     });
 
-    let page = paging::PAGE_SIZE;
+    let page = page_tables::PAGE_SIZE;
     let base = 0x40_0000;
     let admitted = [
         (

@@ -35,7 +35,7 @@ says so:
 
 ## The pieces
 
-- `crates/paging/src/x86_64.rs`: `AmdVi`, the host page-table format, and `PageFormat::table_entry`
+- `crates/page_tables/src/x86_64.rs`: `AmdVi`, the host page-table format, and `PageFormat::table_entry`
   now takes the level, because an AMD-Vi directory entry names the level it points at.
 - `crates/machine_discovery/src/acpi/ivrs.rs`: the IVRS decoder, choosing the highest IVHD type the
   table carries, recording device-id ranges, aliases and IVMDs.

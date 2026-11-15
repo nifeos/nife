@@ -167,7 +167,7 @@ APIC, is the path worth building for that reason and is its own piece of work.
 Milestone 161's roadmap item 1, built 2026-08-24. What `boot.s` leaves behind is enough to run and
 not enough to be a kernel. It has 2 MiB pages, everything present, writable *and* executable, in both
 halves, plus an identity map of the low 4 GiB sitting in the half ring 3 will get. `mmu::initialize`
-replaces it with a four-level map built through the shared `paging::Mapper`, exactly as the other
+replaces it with a four-level map built through the shared `page_tables::Mapper`, exactly as the other
 two architectures do.
 
 What the new map says, in the order `map_everything` builds it:
@@ -225,7 +225,7 @@ architectures: COM1 is an I/O port, so nothing the page tables do can make the m
 ### What it costs, measured
 
 `556 KiB of page tables for 254 MiB of RAM` on q35 with `-m 256M`, printed on every boot. That 0.2%
-is the price of 4 KiB leaves, which is all `crates/paging` maps; Linux uses 2 MiB and 1 GiB leaves
+is the price of 4 KiB leaves, which is all `crates/page_tables` maps; Linux uses 2 MiB and 1 GiB leaves
 for this map and would pay a few kilobytes. Extrapolated, a 32 GiB machine would spend ~64 MiB of
 RAM describing its own RAM. Adding larger leaves is a change to the shared format trait that all
 three architectures would want, so it is recorded in `arch/x86_64/mmu.rs`'s `BUGS` rather than
@@ -240,7 +240,7 @@ switch starts happening often enough to measure.
 
 ## The direct map in blocks (2026-09-19)
 
-`crates/paging` maps 2 MiB and 1 GiB leaves now (`PageSize`, `Mapper::map_span`, `map_block`), and
+`crates/page_tables` maps 2 MiB and 1 GiB leaves now (`PageSize`, `Mapper::map_span`, `map_block`), and
 the direct map's RAM uses them: 560 KiB of page tables on QEMU's 256 MiB became 60 KiB, and at
 4 GiB, 8,252 KiB became 64 KiB. 1 GiB leaves are used only where `CPUID` leaf 0x80000001 reports
 `Page1GB` (`mmu::largest_leaf`); `-cpu qemu64` does not, and boots in 2 MiB blocks. Device windows

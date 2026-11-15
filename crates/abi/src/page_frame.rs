@@ -3,7 +3,7 @@
 /// maps it read-only (needs `READ`). Page tables to reach `va` come from the untyped named by
 /// `memory_region_slot`, so the kernel allocates nothing. `BadPointer` for a misaligned or high
 /// `va`, `OutOfMemory` when that untyped is exhausted, and `NotPermitted` for a writable mapping of
-/// a page this space already maps as code (claim 11: no page is writable through one mapping and
+/// a page this space already maps as code (W^X: no page is writable through one mapping and
 /// executable through another in one address space).
 ///
 /// The tables belong to that untyped, so its `DESTROY` cuts them out of this address space,
@@ -25,6 +25,6 @@ pub const REVOKE: u64 = 1;
 /// pool's holder hands a client exactly its window, as a run-naming Frame foresaw.
 ///
 /// - Needs `GRANT`: a revoke is scoped to the exact run (what `PageFrame::REVOKE` owes an
-///   overlapping run), so a slice escapes its source's revoke, so a slice escapes its source's revoke, a delegation-class power.
+///   overlapping run), so a slice escapes its source's revoke, a delegation-class power.
 /// - [`crate::Error::BadPointer`] for `count` of 0 or a range past the run's end.
 pub const SLICE: u64 = 2;

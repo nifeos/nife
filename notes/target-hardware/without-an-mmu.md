@@ -19,7 +19,7 @@ What it costs comes in three parts. There are no virtual addresses, so every pro
 position-independent or linked per deployment. There is a hard ceiling of eight-ish simultaneously
 separated things, where the capability model assumes as many address spaces as there are processes.
 And there is no demand paging, no copy-on-write, and no shared mappings. It is a port rather than a
-configuration, and most of `kernel/src/arch/*/mmu.rs` and the `paging` crate would have no
+configuration, and most of `kernel/src/arch/*/mmu.rs` and the `page_tables` crate would have no
 counterpart.
 
 Software fault isolation (Native Client, WebAssembly): bounds-check every memory access, enforced

@@ -10,12 +10,12 @@ diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/
 index 0eba0def7..7c4b745cf 100644
 --- a/crates/address_space_map/src/lib.rs
 +++ b/crates/address_space_map/src/lib.rs
-@@ -181,7 +181,7 @@ pub const fn service_window(va: u64) -> u64 {
+@@ -181,7 +181,7 @@ pub const fn service_window(virtual_address: u64) -> u64 {
          "a service window must be page aligned"
      );
      assert!(
--        SERVICE_WINDOWS.contains(va),
-+        SERVICE_WINDOWS.contains(va) || va == SERVICE_WINDOWS.end,
+-        SERVICE_WINDOWS.contains(virtual_address),
++        SERVICE_WINDOWS.contains(virtual_address) || virtual_address == SERVICE_WINDOWS.end,
          "a service window must lie in SERVICE_WINDOWS (address_space_map)"
      );
-     va
+     virtual_address

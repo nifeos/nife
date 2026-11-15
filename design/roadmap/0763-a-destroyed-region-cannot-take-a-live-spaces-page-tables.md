@@ -26,7 +26,7 @@ space's translations: fatal risk 7's confinement claim, one level up the page ta
 
 This is kernel code on the confinement path, where §46 (thin primitives or whole
 subsystems) says write it. Inside the tree, the mapping log, 762's hold and `flush_asid` were reused
-rather than given a second registry, lock or flush; the cut is the one new walk, in `crates/paging`
+rather than given a second registry, lock or flush; the cut is the one new walk, in `crates/page_tables`
 beside `unmap`.
 
 ## What was built
@@ -40,7 +40,7 @@ beside `unmap`.
   mapping log, filed by `MappingHold::retype_table` under 762's hold before the mapper links it.
   `LIST`, the leaf sweeps and rollback skip table records.
 - `DESTROY` cuts them. After its leaf pass, `revoke_region` takes each table record in range and
-  cuts that table out of the walk that reaches it (`paging::Mapper::unlink_table`, one entry
+  cuts that table out of the walk that reaches it (`page_tables::Mapper::unlink_table`, one entry
   cleared). It flushes the space's ASID (`mmu::cut_user_table`, on all three ISAs) and tombstones
   the mapping records that hung beneath it. The space keeps running and loses that span, which is what
   already happens to a leaf the region paid for. `DESTROY`'s answers are unchanged.
@@ -69,7 +69,7 @@ both kinds: a second scan of every log after the leaf pass costs `spawn_el0` 3,0
 ## Gates
 
 - `script/test --test page_table_region` passes on aarch64, riscv64 and x86_64 locally, and the
-  host test `unlinking_a_table_cuts_its_whole_span_and_nothing_else` in `crates/paging`.
+  host test `unlinking_a_table_cuts_its_whole_span_and_nothing_else` in `crates/page_tables`.
 - The whole aarch64 suite passes locally with no frame-ledger failure (300 passed, 4 skipped).
 - `script/stack-frame-check` and `script/fastpath-footprint` pass against main's baselines. On
   762's tip x86_64 `ipc_send_receive` briefly shrank 5.2% (an inlining shift) and was re-recorded;

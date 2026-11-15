@@ -165,7 +165,7 @@ one line.
   into ranges, which would need an ordering guarantee this log does not make.
 
 - `pmap` cannot tell a device mapping from ordinary read/write memory. `kind` is derived from
-  `paging::Flags`, which carries no bit for "this is device memory" as far as the syscall handler
+  `page_tables::Flags`, which carries no bit for "this is device memory" as far as the syscall handler
   can see, so a `DeviceFrame` mapping (always read/write, never executable) reads as `rw-`,
   indistinguishable from a heap page.
 

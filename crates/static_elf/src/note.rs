@@ -20,7 +20,7 @@ const PT_NOTE: u32 = 4;
 const NHDR_SIZE: usize = 12;
 
 /// Why a note lookup refused the file. Provisional name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NoteError {
     /// The first bytes are not a little-endian ELF64 header whose program header table lies inside
     /// them. [`Elf::note`] never answers this for a file [`Elf::parse`] accepted.
@@ -34,6 +34,20 @@ pub enum NoteError {
     /// The owner and type asked for appear more than once.
     Duplicate,
 }
+
+impl core::fmt::Display for NoteError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            NoteError::NotReadable => "the file's header and program headers are not readable",
+            NoteError::SegmentOutOfBounds => "a note segment's file range is not inside the file",
+            NoteError::BadAlignment => "a note segment's alignment is not 0, 1, 4 or 8",
+            NoteError::Truncated => "a note runs past the end of its segment",
+            NoteError::Duplicate => "the owner and type asked for appear more than once",
+        })
+    }
+}
+
+impl core::error::Error for NoteError {}
 
 /// **Where one `PT_NOTE` lies in its file.** Provisional name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -182,7 +196,8 @@ fn align_up(x: usize, align: usize) -> Option<usize> {
 }
 
 /// `p_align` to note padding, by LLVM's `Elf_Note_Iterator` rule: the gABI says 8-byte padding for
-/// ELF64, toolchains write 4 except under `p_align` 8. See notes/elf/parser.md.
+/// ELF64, toolchains write 4 except under `p_align` 8. Alignments 0 and 1 read as 4-byte padding for
+/// any segment, where LLVM accepts 0 only for an empty segment and refuses 1.
 fn padding(p_align: u64) -> Result<usize, NoteError> {
     match p_align {
         0 | 1 | 4 => Ok(4),
