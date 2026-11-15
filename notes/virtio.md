@@ -26,7 +26,9 @@ The kernel reads three standardized registers of each slot (magic, device-id, ve
 block device and route it to a driver. That is bus enumeration: the same thing firmware does
 walking a PCI bus, and it is the smallest amount of virtio knowledge that lets the kernel say
 "the block device is in slot 31, its interrupt is INTID 79." It does not set up a queue, negotiate
-a feature, or move a byte. Everything else is the driver's, at EL0.
+a feature, or move a byte. Everything else is the driver's, at EL0. A slot whose version is not 2
+is skipped in every build, with one line on the console, because the kernel's mediated queue setup
+writes registers only the modern layout has.
 
 The kernel hands the driver, and nothing more:
 
