@@ -115,8 +115,9 @@ state by hand. The scan loops are bounded by pinning `total = 8`, so
 
 ## `crates/device_tree_blob`
 
-Five in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's leaf readers. The whole-parse
-token loop is the same BMC wall as ELF, so the leaves are what get proved.
+Nine in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's readers. The
+leaf harnesses cover every input; above them, the `from_bytes` and token-step harnesses cover blobs
+of a bounded size, and the tests and the fuzz target carry the whole walk.
 
 | Harness | Property |
 |---|---|
@@ -124,6 +125,10 @@ token loop is the same BMC wall as ELF, so the leaves are what get proved.
 | `be32_reads_big_endian_when_in_bounds` | an in-bounds read is exactly `bytes[at..at+4]`, MSB first |
 | `align4_rounds_up_to_a_multiple_of_four` | the padding helper rounds up for every length, or answers `None` when rounding would wrap |
 | `skip_padded_never_wraps` | stepping a cursor over padded data never wraps or moves backward |
+| `cells_refuses_a_value_wider_than_64_bits` | a value of up to five cells reads whole, or draws a refusal when a cell above the low two is nonzero |
+| `decode_regions_stays_inside_its_output` | a `reg` value of up to 24 bytes, under any cell counts, never panics or writes past `out` |
+| `from_bytes_is_total` | any buffer of up to 48 bytes gives a tree inside the buffer or an error |
+| `a_token_step_is_total_and_moves_forward` | over a 56-byte blob with both blocks after the header, three steps never panic, each moves forward, and the depth stays within `MAXIMUM_DEPTH` |
 
 `be32`/`be64` were *hardened* to reach totality. Their `at + 4` / `at + 8` is now a checked add, so
 a near-`usize::MAX` offset from a corrupt blob returns `Truncated` instead of panicking. The 12

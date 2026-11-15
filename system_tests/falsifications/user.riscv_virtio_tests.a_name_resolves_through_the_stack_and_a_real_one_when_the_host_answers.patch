@@ -12,12 +12,12 @@ a wrong verdict). Measured 2026-10-04 (UTC) on riscv64: red with exactly that co
 diff --git a/crates/domain_name_system/src/lib.rs b/crates/domain_name_system/src/lib.rs
 --- a/crates/domain_name_system/src/lib.rs
 +++ b/crates/domain_name_system/src/lib.rs
-@@ -776,7 +776,7 @@
-         let mut scan = answers;
-         for _ in 0..h.ancount {
+@@ -861,8 +861,7 @@
              let Ok(record) = scan.record() else { break };
--            if record.class != CLASS_IN || record.rtype != record_type::A || record.name != owner {
-+            if record.class != CLASS_IN || record.rtype != record_type::A {
+             if record.class != CLASS_IN
+                 || record.record_type != record_type::A
+-                || record.name != owner
+             {
                  continue;
              }
              answer.ttl = answer.ttl.min(believable_time_to_live(record.ttl));

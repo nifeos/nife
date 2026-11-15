@@ -188,7 +188,6 @@ crates/timetable/src/contract.rs::E_CONFIG spelled-out
 
 crates/timetable/src/contract.rs::STORE_PAGE_VA spelled-out
 
-crates/usb/src/descriptor.rs::control_max_packet spelled-out
 
 crates/user_mode_runtime/src/objects.rs::map_page_frame question-shape
 

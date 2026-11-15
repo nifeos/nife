@@ -11,11 +11,11 @@ diff --git a/crates/domain_name_system/src/lib.rs b/crates/domain_name_system/sr
 +++ b/crates/domain_name_system/src/lib.rs
 @@ -451,9 +451,6 @@
                  if resume.is_none() {
-                     resume = Some(pos + 2);
+                     resume = Some(position + 2);
                  }
 -                if target >= fence {
 -                    return Err(Error::PointerForward);
 -                }
                  fence = target;
-                 pos = target;
+                 position = target;
              }

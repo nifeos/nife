@@ -329,7 +329,11 @@ SENTENCE_END = re.compile(r'[.!?][*_)\]"\'\u201d\u2019]*\s+(?=[A-Za-z0-9`"*\'\u2
 # The six below are notes/project-metrics/baseline-drift.md's, written by `script/metrics` for
 # milestone 415 (sub-tripwire drift accumulates across baseline saves). The appendix grows by one
 # row per baseline save. helpers/baseline_drift.py's selftest fails if one of its headings is missing here.
-GENERATED_TABLES = {'## The decisions'} | {
+#
+# The table under `## Every crate, since the first commit` is notes/project-metrics/interface-stability.md's,
+# written by helpers/interface_stability.py. It gains a row per contract crate, and the page crossed
+# the 3,000-word cap (3,013) on the 2026W46 record with no prose edited.
+GENERATED_TABLES = {'## The decisions', '## Every crate, since the first commit'} | {
     '## %s: %s' % (arch, what)
     for arch in ('aarch64', 'riscv64', 'x86_64')
     for what in ('drift per row since the anchor', 'every save since the anchor, and its reason')}

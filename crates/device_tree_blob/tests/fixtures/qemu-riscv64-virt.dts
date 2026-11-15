@@ -4,7 +4,7 @@
 // /reserved-memory node was added BY HAND, modeled on the edit OpenSBI makes before passing the
 // tree on: dumpdtb captures QEMU's tree before OpenSBI runs, but the tree our kernel actually
 // receives in a1 has OpenSBI's firmware regions in it, and reserved_memory_regions() exists
-// precisely to honour them (miss one and the frame allocator hands out OpenSBI's RAM; the first
+// precisely to honor them (miss one and the frame allocator hands out OpenSBI's RAM; the first
 // write dies on a PMP violation). Region addresses/sizes model OpenSBI 1.x defaults; the parser
 // does not care about the exact values, the tests assert what this file contains.
 /dts-v1/;

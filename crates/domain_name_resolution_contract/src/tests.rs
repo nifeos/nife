@@ -273,7 +273,7 @@ fn every_reject_has_its_own_code() {
         Reject::NoSuchName,
         Reject::ServerError(2),
         Reject::ChainTooLong,
-        Reject::NoAddress,
+        Reject::NoIpv4Address,
     ];
     let mut codes: Vec<u8> = all.iter().map(|&r| reject_code(r)).collect();
     codes.sort_unstable();

@@ -268,7 +268,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
         Err(Fail::Status(outcome)) => return (outcome, 0),
         Err(Fail::Rejected(reject)) => return (refused(reject), 0),
     };
-    let addresses = answer.addresses();
+    let addresses = answer.ipv4_addresses();
     for (k, a) in addresses.iter().enumerate().take(MAXIMUM_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
             page.w8((ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
@@ -289,9 +289,9 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
 fn refused(reject: Reject) -> Outcome {
     match reject {
         Reject::NoSuchName => Outcome::of(status::NO_SUCH_NAME),
-        Reject::ServerError(rcode) => Outcome {
+        Reject::ServerError(response_code) => Outcome {
             status: status::SERVER_ERROR,
-            detail: rcode,
+            detail: response_code,
             count: 0,
         },
         other => Outcome {

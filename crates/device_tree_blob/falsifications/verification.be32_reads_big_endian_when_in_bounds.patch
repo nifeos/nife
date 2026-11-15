@@ -1,8 +1,8 @@
 Falsifies `device_tree_blob::verification::be32_reads_big_endian_when_in_bounds`.
 
 The defect: `be32`'s conversion flipped from `from_be_bytes` to `from_le_bytes`. The device tree
-blob format is big-endian throughout (the `fdt` spec), and every field this crate hands the
-kernel, from the header's own magic number down, goes through this conversion. A byte-swapped
+blob format is big-endian throughout (the `fdt` spec), and every field this crate hands its
+caller, from the header's own magic number down, goes through this conversion. A byte-swapped
 read would still be in range and would still type-check; it just reports the wrong value for
 every multi-byte field.
 

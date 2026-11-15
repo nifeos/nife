@@ -1,22 +1,30 @@
 //! **The DNS wire format a stub resolver needs** (RFC 1035; RFC 7766 for TCP), as pure
 //! computation: the bytes of a query for one name's IPv4 addresses, and the checks a reply must pass
 //! before any address in it is believed. No socket, timer or policy; which program sends these
-//! bytes, and which names a client may ask about, are in `notes/name-resolution.md`.
+//! bytes, and which names a client may ask about, are the caller's policy.
 //!
 //! Every byte parsed here came from a server the client may not trust, so the parser is total (Kani
-//! checks the name decoder, `fuzz/fuzz_targets/domain_name_system_reply.rs` the rest), and
+//! proves the name decoder, the header codec and the TCP reassembly, and this crate's `fuzz/`
+//! target covers the rest), and
 //! [`Query::accept`] believes as little as it can: [`Reject`] lists its nine refusals, in check
 //! order. Only A records owned by the end of the CNAME chain from our name are taken, so a reply
 //! about `example.com` cannot plant an address for `bank.test`; authority and additional go unread.
 
 //! # BUGS
 //!
-//! - IPv4 only: `net_stack` builds `smoltcp` with `proto-ipv4` alone.
+//! - IPv4 only: a query asks for address records alone, so it reads no address longer than four bytes.
 //! - No EDNS(0), so UDP replies stop at [`MAXIMUM_UDP_MESSAGE_BYTES`] and a larger answer costs a TCP
 //!   retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
-//! - At most [`MAXIMUM_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
+//! - At most [`MAXIMUM_IPV4_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
 //! - Labels hold only letters, digits, `-` and `_` ([`Name::from_dotted`]): no escape syntax.
+//!
+//! # Sizes
+//!
+//! [`Name`] is 256 bytes and `Copy`, and [`Reader::record`] returns a [`Record`] by value, so
+//! [`Query::accept`] copies a name once per record on each of its three passes over the answer
+//! section. [`Answer`] is 296 bytes and `Result<Answer, Reject>` is 300, so a caller on a small
+//! stack should count them beside its 514-byte buffer.
 //!
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the external DNS wire format,
 //! named for the standard's full name, spelled out under §154 (the acronym test). His answer was
@@ -32,10 +40,16 @@ mod proofs;
 pub const PORT: u16 = 53;
 
 /// The largest message RFC 1035 lets travel over the User Datagram Protocol (UDP) without EDNS
-/// (section 4.2.1). A reply that would be larger arrives truncated, with [`FLAG_TC`] set.
+/// (section 4.2.1). A reply that would be larger arrives truncated, with [`FLAG_TRUNCATED`] set.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_UDP_MESSAGE_BYTES: usize = 512;
+
+/// The largest message RFC 7766 lets travel over TCP: its two-byte length prefix counts up to
+/// 65,535 bytes, and the prefix itself comes on top.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+pub const MAXIMUM_TCP_MESSAGE_BYTES: usize = 65_535;
 
 /// A name in wire form is at most 255 bytes, length bytes and the root label included (section 2.3.4).
 ///
@@ -43,36 +57,59 @@ pub const MAXIMUM_UDP_MESSAGE_BYTES: usize = 512;
 pub const MAXIMUM_NAME_BYTES: usize = 255;
 /// A label is at most 63 bytes; the two top bits of a longer count are the compression-pointer tag.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_LABEL_LEN: usize = 63;
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes; the spelling ratified
+/// in #2797 was `MAXIMUM_LABEL_LEN`.
+pub const MAXIMUM_LABEL_BYTES: usize = 63;
 
 /// The header every DNS message starts with.
-pub const HEADER_LEN: usize = 12;
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+pub const HEADER_BYTES: usize = 12;
 
-/// The response bit.
-pub const FLAG_QR: u16 = 0x8000;
+/// The response bit: set in a reply.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+#[doc(alias = "QR")]
+pub const FLAG_RESPONSE: u16 = 0x8000;
 /// The opcode field. A standard query is opcode 0.
 pub const OPCODE_MASK: u16 = 0x7800;
 /// Truncated: the server had more to say than the transport carried.
-pub const FLAG_TC: u16 = 0x0200;
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+#[doc(alias = "TC")]
+pub const FLAG_TRUNCATED: u16 = 0x0200;
 /// Recursion desired. A stub resolver always sets it, because it asks a recursive server to do the
 /// walk from the root that a stub does not.
-pub const FLAG_RD: u16 = 0x0100;
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+#[doc(alias = "RD")]
+pub const FLAG_RECURSION_DESIRED: u16 = 0x0100;
 /// The response code field, the low four bits of the flags.
-pub const RCODE_MASK: u16 = 0x000f;
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+#[doc(alias = "RCODE")]
+pub const RESPONSE_CODE_MASK: u16 = 0x000f;
 
 /// The response code a server sends for a name that does not exist (RFC 1035's "Name Error").
-pub const RCODE_NAME_ERROR: u8 = 3;
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+#[doc(alias = "RCODE")]
+#[doc(alias = "NXDOMAIN")]
+pub const RESPONSE_CODE_NAME_ERROR: u8 = 3;
 
 /// Record types this crate reads.
 pub mod record_type {
-    /// An IPv4 address.
+    /// An address record, whose data is one IPv4 address.
+    #[doc(alias = "address record")]
     pub const A: u16 = 1;
-    /// The owner is an alias, and the record's data is the canonical name.
+    /// A canonical name record: the owner is an alias, and the record's data is the
+    /// canonical name.
+    #[doc(alias = "canonical name record")]
     pub const CNAME: u16 = 5;
 }
 
 /// The Internet class, the only one a host-name lookup uses.
+#[doc(alias = "Internet class")]
 pub const CLASS_IN: u16 = 1;
 
 /// How many CNAME links [`Query::accept`] follows before giving up. Real chains are one or two
@@ -82,17 +119,22 @@ pub const CLASS_IN: u16 = 1;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CHAIN: usize = 8;
 
-/// How many addresses an [`Answer`] keeps (see the crate's BUGS).
+/// How many IPv4 addresses an [`Answer`] keeps (see the crate's BUGS).
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_ADDRESSES: usize = 8;
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes; the spelling ratified
+/// in #2797 was `MAXIMUM_ADDRESSES`.
+pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 
 /// What is wrong with some bytes, as a parser sees them.
 ///
 /// Decoding errors mean a message is not valid DNS and the right response is to drop it; building
 /// errors are a caller's mistake (a buffer too small, a name that cannot be one) and are reported
 /// rather than panicking, because a resolver must not be crashable by its own client's input.
+///
+/// Non-exhaustive: Longer addresses or EDNS(0) would add variants, so a caller matches with a
+/// wildcard arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// The input ends before the structure it promised.
     Truncated,
@@ -134,40 +176,44 @@ pub struct Header {
     /// QR, the opcode, AA, TC, RD, RA and the response code, packed.
     pub flags: u16,
     /// How many questions follow.
-    pub qdcount: u16,
+    #[doc(alias = "QDCOUNT")]
+    pub question_count: u16,
     /// How many answer records follow the questions.
-    pub ancount: u16,
+    #[doc(alias = "ANCOUNT")]
+    pub answer_count: u16,
     /// How many authority records follow the answers.
-    pub nscount: u16,
+    #[doc(alias = "NSCOUNT")]
+    pub authority_count: u16,
     /// How many additional records follow the authority records.
-    pub arcount: u16,
+    #[doc(alias = "ARCOUNT")]
+    pub additional_count: u16,
 }
 
 impl Header {
     /// Decode the first 12 bytes of `msg`.
     pub fn parse(msg: &[u8]) -> Result<Header> {
-        let b = msg.get(..HEADER_LEN).ok_or(Error::Truncated)?;
+        let b = msg.get(..HEADER_BYTES).ok_or(Error::Truncated)?;
         let f = |i: usize| u16::from_be_bytes([b[i], b[i + 1]]);
         Ok(Header {
             id: f(0),
             flags: f(2),
-            qdcount: f(4),
-            ancount: f(6),
-            nscount: f(8),
-            arcount: f(10),
+            question_count: f(4),
+            answer_count: f(6),
+            authority_count: f(8),
+            additional_count: f(10),
         })
     }
 
     /// Encode into the first 12 bytes of `out`.
     pub fn write(&self, out: &mut [u8]) -> Result<()> {
-        let out = out.get_mut(..HEADER_LEN).ok_or(Error::Overflow)?;
+        let out = out.get_mut(..HEADER_BYTES).ok_or(Error::Overflow)?;
         let words = [
             self.id,
             self.flags,
-            self.qdcount,
-            self.ancount,
-            self.nscount,
-            self.arcount,
+            self.question_count,
+            self.answer_count,
+            self.authority_count,
+            self.additional_count,
         ];
         for (pair, w) in out.as_chunks_mut::<2>().0.iter_mut().zip(words) {
             *pair = w.to_be_bytes();
@@ -176,8 +222,11 @@ impl Header {
     }
 
     /// The response code, the flags' low four bits.
-    pub fn rcode(&self) -> u8 {
-        (self.flags & RCODE_MASK) as u8
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+    #[doc(alias = "RCODE")]
+    pub fn response_code(&self) -> u8 {
+        (self.flags & RESPONSE_CODE_MASK) as u8
     }
 }
 
@@ -189,12 +238,16 @@ impl Header {
 /// fixed buffer. 255 bytes is the protocol's own maximum, so this type holds every valid name.
 ///
 /// **Equality is DNS equality**: ASCII letters compare without regard to case (RFC 4343), because a
-/// server may answer `Packages.Nife.Test` to a question about `packages.nife.test` and mean the
-/// same name. `Debug` prints the dotted form.
+/// server may answer `Packages.Example.Test` to a question about `packages.example.test` and mean the
+/// same name. `Debug` and `Display` print the dotted form, and [`FromStr`](core::str::FromStr)
+/// reads it ([`Name::from_dotted`]).
+///
+/// There is no `Hash`: with case-insensitive equality a hash would have to fold case first, and a
+/// caller that wants a key folds the bytes itself.
 #[derive(Clone, Copy)]
 pub struct Name {
     bytes: [u8; MAXIMUM_NAME_BYTES],
-    len: u8,
+    length_bytes: u8,
 }
 
 impl Name {
@@ -202,32 +255,36 @@ impl Name {
     pub const fn root() -> Name {
         Name {
             bytes: [0; MAXIMUM_NAME_BYTES],
-            len: 1,
+            length_bytes: 1,
         }
     }
 
     /// The wire bytes, root label included.
     pub fn as_bytes(&self) -> &[u8] {
-        &self.bytes[..self.len as usize]
+        &self.bytes[..self.length_bytes as usize]
     }
 
-    /// Encode a dotted host name (`"packages.nife.test"`, a trailing dot optional) into wire form.
+    /// Encode a dotted host name (`"packages.example.test"`, a trailing dot optional) into wire form.
     ///
     /// Each label is 1 to 63 bytes of ASCII letters, digits, `-` and `_` (see the crate's BUGS), and
     /// the whole is at most 255 bytes in wire form. `""` and `"."` are the root.
     ///
+    /// This is the DNS label alphabet the crate chose, not RFC 1123 host-name syntax: `-a.test`,
+    /// `a-.test` and `_acme-challenge.test` all pass. A caller that wants host-name rules checks
+    /// them itself.
+    ///
     /// ```
     /// use domain_name_system::{Error, Name};
     ///
-    /// let name = Name::from_dotted("nife.test.").unwrap();
-    /// assert_eq!(name.as_bytes(), b"\x04nife\x04test\x00");
-    /// assert_eq!(Name::from_dotted("nife..test"), Err(Error::BadLabel));
-    /// assert_eq!(Name::from_dotted("nife test"), Err(Error::BadCharacter));
+    /// let name = Name::from_dotted("example.test.").unwrap();
+    /// assert_eq!(name.as_bytes(), b"\x07example\x04test\x00");
+    /// assert_eq!(Name::from_dotted("example..test"), Err(Error::BadLabel));
+    /// assert_eq!(Name::from_dotted("example test"), Err(Error::BadCharacter));
     /// ```
     pub fn from_dotted(text: &str) -> Result<Name> {
         let mut out = Name {
             bytes: [0; MAXIMUM_NAME_BYTES],
-            len: 0,
+            length_bytes: 0,
         };
         let body = text.strip_suffix('.').unwrap_or(text);
         if !body.is_empty() {
@@ -235,7 +292,7 @@ impl Name {
                 if label.is_empty() {
                     return Err(Error::BadLabel);
                 }
-                if label.len() > MAXIMUM_LABEL_LEN {
+                if label.len() > MAXIMUM_LABEL_BYTES {
                     return Err(Error::LabelTooLong);
                 }
                 if !label
@@ -254,20 +311,20 @@ impl Name {
         Ok(out)
     }
 
-    /// **Is this name `zone` or a name under it**, label by label? `a.nife.test` is within
-    /// `nife.test` and so is `nife.test` itself; `evilnife.test` is not, though its text ends the
+    /// **Is this name `zone` or a name under it**, label by label? `a.example.test` is within
+    /// `example.test` and so is `example.test` itself; `evilexample.test` is not, though its text ends the
     /// same way, because the comparison only ever starts at a label boundary. Every name is within
     /// the root.
     ///
-    /// Nothing applies it yet: a resolver grant scoped to a domain is an open question of milestone
-    /// 384 (in a capability system the resolver is a grant; notes/name-resolution.md).
+    /// A resolver grant scoped to a zone uses it: a caller holding a grant for `example.test` may
+    /// ask about `example.test` and every name under it, and about nothing else.
     ///
     /// ```
     /// use domain_name_system::Name;
     ///
-    /// let zone = Name::from_dotted("nife.test").unwrap();
-    /// assert!(Name::from_dotted("packages.NIFE.test").unwrap().is_within(&zone));
-    /// assert!(!Name::from_dotted("evilnife.test").unwrap().is_within(&zone));
+    /// let zone = Name::from_dotted("example.test").unwrap();
+    /// assert!(Name::from_dotted("packages.EXAMPLE.test").unwrap().is_within(&zone));
+    /// assert!(!Name::from_dotted("evilexample.test").unwrap().is_within(&zone));
     /// ```
     pub fn is_within(&self, zone: &Name) -> bool {
         let name = self.as_bytes();
@@ -290,10 +347,10 @@ impl Name {
     fn push(&mut self, b: u8) -> Result<()> {
         let slot = self
             .bytes
-            .get_mut(self.len as usize)
+            .get_mut(self.length_bytes as usize)
             .ok_or(Error::NameTooLong)?;
         *slot = b;
-        self.len += 1;
+        self.length_bytes += 1;
         Ok(())
     }
 }
@@ -313,6 +370,22 @@ impl PartialEq for Name {
 impl Eq for Name {}
 
 impl core::fmt::Debug for Name {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Display::fmt(self, f)
+    }
+}
+
+impl core::str::FromStr for Name {
+    type Err = Error;
+
+    fn from_str(text: &str) -> Result<Name> {
+        Name::from_dotted(text)
+    }
+}
+
+/// The dotted form, with master-file escapes: a byte that is not printable ASCII, a dot or a
+/// backslash inside a label prints as a backslash and three decimal digits.
+impl core::fmt::Display for Name {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut rest = self.as_bytes();
         let mut first = true;
@@ -353,42 +426,39 @@ impl core::fmt::Debug for Name {
 pub fn decode_name(msg: &[u8], off: usize) -> Result<(Name, usize)> {
     let mut out = Name {
         bytes: [0; MAXIMUM_NAME_BYTES],
-        len: 0,
+        length_bytes: 0,
     };
     let (len, resume) = decode_name_into(msg, off, &mut out.bytes)?;
     // The engine wrote at most the array's 255 bytes, so the length fits its `u8`.
-    out.len = len as u8;
+    out.length_bytes = len as u8;
     Ok((out, resume))
 }
 
 /// The decoder's engine, over a caller-supplied output. [`decode_name`] runs it at the protocol's
 /// 255-byte maximum, and the capacity decides nothing except where [`Error::NameTooLong`] fires. It
 /// is separate so the Kani harness can prove the same loop against a small output, where the solver
-/// is fast (the multicast DNS crate this was lifted from measured twenty-plus minutes at 255).
-///
-/// Lifted unchanged from `crates/multicast_dns_protocol` (commit `0652c981`), which milestone 298
-/// (retire the multicast DNS responder and its two crates) removed along with the responder. It
-/// was Kani-proved there and never fuzzed; here it is both.
+/// is fast (the proof at the full 255 bytes measured twenty-plus minutes). It is both proved with
+/// Kani and fuzzed.
 pub(crate) fn decode_name_into(msg: &[u8], off: usize, out: &mut [u8]) -> Result<(usize, usize)> {
     let mut len = 0usize;
-    let mut pos = off;
+    let mut position = off;
     let mut resume: Option<usize> = None;
     // Every pointer must target an offset strictly below this.
     let mut fence = off;
     loop {
-        let b = *msg.get(pos).ok_or(Error::Truncated)?;
+        let b = *msg.get(position).ok_or(Error::Truncated)?;
         match b & 0xc0 {
             0xc0 => {
-                let b2 = *msg.get(pos + 1).ok_or(Error::Truncated)?;
+                let b2 = *msg.get(position + 1).ok_or(Error::Truncated)?;
                 let target = ((b as usize & 0x3f) << 8) | b2 as usize;
                 if resume.is_none() {
-                    resume = Some(pos + 2);
+                    resume = Some(position + 2);
                 }
                 if target >= fence {
                     return Err(Error::PointerForward);
                 }
                 fence = target;
-                pos = target;
+                position = target;
             }
             0x00 => {
                 if b == 0 {
@@ -396,10 +466,12 @@ pub(crate) fn decode_name_into(msg: &[u8], off: usize, out: &mut [u8]) -> Result
                         return Err(Error::NameTooLong);
                     }
                     out[len] = 0;
-                    return Ok((len + 1, resume.unwrap_or(pos + 1)));
+                    return Ok((len + 1, resume.unwrap_or(position + 1)));
                 }
                 let l = b as usize;
-                let label = msg.get(pos + 1..pos + 1 + l).ok_or(Error::Truncated)?;
+                let label = msg
+                    .get(position + 1..position + 1 + l)
+                    .ok_or(Error::Truncated)?;
                 let end = len + 1 + l;
                 if end > out.len() {
                     return Err(Error::NameTooLong);
@@ -407,7 +479,7 @@ pub(crate) fn decode_name_into(msg: &[u8], off: usize, out: &mut [u8]) -> Result
                 out[len] = b;
                 out[len + 1..end].copy_from_slice(label);
                 len = end;
-                pos += 1 + l;
+                position += 1 + l;
             }
             // 0x40 and 0x80 are reserved (RFC 1035 section 4.1.4); nothing valid emits them.
             _ => return Err(Error::BadLabel),
@@ -425,31 +497,37 @@ pub struct Question {
     /// The name asked about.
     pub name: Name,
     /// The record type asked for.
-    pub qtype: u16,
+    #[doc(alias = "QTYPE")]
+    pub record_type: u16,
     /// The class asked in.
-    pub qclass: u16,
+    #[doc(alias = "QCLASS")]
+    pub class: u16,
 }
 
 /// A decoded resource record: its fixed fields and its raw data. Data that holds a name (a CNAME's)
-/// may be compressed against the whole message, so [`cname_target`] takes the message too, and
-/// `rdata_off` says where the data sits in it.
+/// may be compressed against the whole message (a CNAME's is; an A record's is four plain bytes),
+/// so [`cname_target`] takes the message too, and `data_offset` says where the data sits in it.
 #[derive(Debug, Clone, Copy)]
 pub struct Record<'a> {
     /// The record's owner.
     pub name: Name,
     /// The record type.
-    pub rtype: u16,
+    #[doc(alias = "TYPE")]
+    pub record_type: u16,
     /// The class.
+    #[doc(alias = "CLASS")]
     pub class: u16,
-    /// Seconds a cache may keep it.
+    /// The time to live: seconds a cache may keep the record.
+    #[doc(alias = "time to live")]
     pub ttl: u32,
-    /// The data, raw.
-    pub rdata: &'a [u8],
-    /// Where `rdata` starts in the message.
-    pub rdata_off: usize,
+    /// The record data, raw.
+    #[doc(alias = "RDATA")]
+    pub data: &'a [u8],
+    /// Where `data` starts in the message.
+    pub data_offset: usize,
 }
 
-/// Walks one message in wire order: the header, then [`Reader::question`] `qdcount` times, then
+/// Walks one message in wire order: the header, then [`Reader::question`] `question_count` times, then
 /// [`Reader::record`] for each record. The reader does not count for you. It is `Clone`, so a caller
 /// can rescan a section from a saved position.
 #[derive(Clone)]
@@ -466,7 +544,7 @@ impl<'a> Reader<'a> {
         Ok(Reader {
             header: Header::parse(msg)?,
             msg,
-            off: HEADER_LEN,
+            off: HEADER_BYTES,
         })
     }
 
@@ -478,46 +556,47 @@ impl<'a> Reader<'a> {
     /// Read the next question.
     pub fn question(&mut self) -> Result<Question> {
         let (name, off) = decode_name(self.msg, self.off)?;
-        let qtype = self.u16_at(off)?;
-        let qclass = self.u16_at(off + 2)?;
+        let record_type = self.u16_at(off)?;
+        let class = self.u16_at(off + 2)?;
         self.off = off + 4;
         Ok(Question {
             name,
-            qtype,
-            qclass,
+            record_type,
+            class,
         })
     }
 
     /// Read the next resource record.
     pub fn record(&mut self) -> Result<Record<'a>> {
         let (name, off) = decode_name(self.msg, self.off)?;
-        let rtype = self.u16_at(off)?;
+        let record_type = self.u16_at(off)?;
         let class = self.u16_at(off + 2)?;
         let ttl_hi = self.u16_at(off + 4)? as u32;
         let ttl_lo = self.u16_at(off + 6)? as u32;
         let rdlen = self.u16_at(off + 8)? as usize;
-        let rdata_off = off + 10;
-        let rdata = self
+        let data_offset = off + 10;
+        let data = self
             .msg
-            .get(rdata_off..rdata_off + rdlen)
+            .get(data_offset..data_offset + rdlen)
             .ok_or(Error::Truncated)?;
-        self.off = rdata_off + rdlen;
+        self.off = data_offset + rdlen;
         Ok(Record {
             name,
-            rtype,
+            record_type,
             class,
             ttl: (ttl_hi << 16) | ttl_lo,
-            rdata,
-            rdata_off,
+            data,
+            data_offset,
         })
     }
 }
 
-/// A CNAME record's canonical name, decompressed against the whole message. The name must end
+/// A canonical name record's canonical name, decompressed against the whole message. The name must end
 /// inside the record's own data, though its pointers may reach back anywhere earlier.
+#[doc(alias = "canonical name")]
 pub fn cname_target(msg: &[u8], record: &Record<'_>) -> Result<Name> {
-    let (name, end) = decode_name(msg, record.rdata_off)?;
-    if end != record.rdata_off + record.rdata.len() {
+    let (name, end) = decode_name(msg, record.data_offset)?;
+    if end != record.data_offset + record.data.len() {
         return Err(Error::BadRecordData);
     }
     Ok(name)
@@ -562,7 +641,7 @@ pub enum Reject {
     /// loops.
     ChainTooLong,
     /// The name exists and has no A record, or the answer holds addresses only for other names.
-    NoAddress,
+    NoIpv4Address,
 }
 
 /// A TTL as a receiver believes it: RFC 2181 section 8 says one with its most significant bit set
@@ -578,7 +657,7 @@ fn believable_time_to_live(time_to_live: u32) -> u32 {
 /// The addresses a reply gave for our name, after every check passed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Answer {
-    addresses: [[u8; 4]; MAXIMUM_ADDRESSES],
+    ipv4_addresses: [[u8; 4]; MAXIMUM_IPV4_ADDRESSES],
     count: u8,
     ttl: u32,
     canonical: Name,
@@ -586,8 +665,10 @@ pub struct Answer {
 
 impl Answer {
     /// The IPv4 addresses, in the order the server gave them. Never empty.
-    pub fn addresses(&self) -> &[[u8; 4]] {
-        &self.addresses[..self.count as usize]
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+    pub fn ipv4_addresses(&self) -> &[[u8; 4]] {
+        &self.ipv4_addresses[..self.count as usize]
     }
 
     /// The smallest TTL along the chain: how long the whole answer may be believed, in seconds.
@@ -631,19 +712,20 @@ impl Query {
     }
 
     /// Write the query message (header with RD set, one question, type A, class IN) into `out`, and
-    /// return its length. At most 17 + 255 bytes, so it always fits a UDP datagram.
+    /// return its length. At most [`HEADER_BYTES`] + [`MAXIMUM_NAME_BYTES`] + 4 = 271 bytes, so it
+    /// always fits a UDP datagram.
     pub fn request(&self, out: &mut [u8]) -> Result<usize> {
         let name = self.name.as_bytes();
-        let len = HEADER_LEN + name.len() + 4;
+        let len = HEADER_BYTES + name.len() + 4;
         let out = out.get_mut(..len).ok_or(Error::Overflow)?;
         Header {
             id: self.id,
-            flags: FLAG_RD,
-            qdcount: 1,
+            flags: FLAG_RECURSION_DESIRED,
+            question_count: 1,
             ..Header::default()
         }
         .write(out)?;
-        let (q, tail) = out[HEADER_LEN..].split_at_mut(name.len());
+        let (q, tail) = out[HEADER_BYTES..].split_at_mut(name.len());
         q.copy_from_slice(name);
         tail[..2].copy_from_slice(&record_type::A.to_be_bytes());
         tail[2..].copy_from_slice(&CLASS_IN.to_be_bytes());
@@ -669,7 +751,7 @@ impl Query {
     /// ```
     /// use domain_name_system::{Query, Reject};
     ///
-    /// let query = Query::new(0x4e1f, "packages.nife.test").unwrap();
+    /// let query = Query::new(0x4e1f, "packages.example.test").unwrap();
     /// let mut request = [0u8; 512];
     /// let n = query.request(&mut request).unwrap();
     /// assert_eq!(&request[..2], &[0x4e, 0x1f]); // our transaction id
@@ -685,7 +767,7 @@ impl Query {
     /// reply.extend_from_slice(&[0, 4, 10, 0, 2, 9]); // RDLENGTH 4, then the address
     ///
     /// let answer = query.accept(&reply).unwrap();
-    /// assert_eq!(answer.addresses(), &[[10, 0, 2, 9]]);
+    /// assert_eq!(answer.ipv4_addresses(), &[[10, 0, 2, 9]]);
     /// assert_eq!(answer.ttl(), 300);
     ///
     /// // The same bytes under somebody else's transaction id are not an answer to us.
@@ -695,45 +777,45 @@ impl Query {
     pub fn accept(&self, reply: &[u8]) -> core::result::Result<Answer, Reject> {
         let mut reader = Reader::new(reply).map_err(Reject::Malformed)?;
         let h = reader.header;
-        if h.flags & FLAG_QR == 0 || h.flags & OPCODE_MASK != 0 {
+        if h.flags & FLAG_RESPONSE == 0 || h.flags & OPCODE_MASK != 0 {
             return Err(Reject::NotAResponse);
         }
         if h.id != self.id {
             return Err(Reject::IdMismatch);
         }
-        if h.flags & FLAG_TC != 0 {
+        if h.flags & FLAG_TRUNCATED != 0 {
             return Err(Reject::Truncated);
         }
-        if h.qdcount != 1 {
+        if h.question_count != 1 {
             // A server that could not parse the query may send back no question at all, and then
             // its response code is the only thing it said.
-            return Err(match (h.qdcount, h.rcode()) {
+            return Err(match (h.question_count, h.response_code()) {
                 (0, 0) | (2.., _) => Reject::QuestionMismatch,
-                (_, code) => rcode_reject(code),
+                (_, code) => response_code_reject(code),
             });
         }
         let question = reader.question().map_err(Reject::Malformed)?;
         if question.name != self.name
-            || question.qtype != record_type::A
-            || question.qclass != CLASS_IN
+            || question.record_type != record_type::A
+            || question.class != CLASS_IN
         {
             return Err(Reject::QuestionMismatch);
         }
-        if h.rcode() != 0 {
-            return Err(rcode_reject(h.rcode()));
+        if h.response_code() != 0 {
+            return Err(response_code_reject(h.response_code()));
         }
 
         // Read every answer once before believing any of them: one malformed record and the whole
         // reply is refused, rather than half of it being used.
         let answers = reader;
         let mut scan = answers.clone();
-        for _ in 0..h.ancount {
+        for _ in 0..h.answer_count {
             let record = scan.record().map_err(Reject::Malformed)?;
             if record.class != CLASS_IN {
                 continue;
             }
-            match record.rtype {
-                record_type::A if record.rdata.len() != 4 => {
+            match record.record_type {
+                record_type::A if record.data.len() != 4 => {
                     return Err(Reject::Malformed(Error::BadRecordData));
                 }
                 record_type::CNAME => {
@@ -751,10 +833,10 @@ impl Query {
         // chains in a circle ends here however the count is kept.
         'chain: for links in 0..=MAXIMUM_CHAIN {
             let mut scan = answers.clone();
-            for _ in 0..h.ancount {
+            for _ in 0..h.answer_count {
                 let Ok(record) = scan.record() else { break };
                 if record.class == CLASS_IN
-                    && record.rtype == record_type::CNAME
+                    && record.record_type == record_type::CNAME
                     && record.name == owner
                 {
                     if links == MAXIMUM_CHAIN {
@@ -769,35 +851,38 @@ impl Query {
         }
 
         let mut answer = Answer {
-            addresses: [[0; 4]; MAXIMUM_ADDRESSES],
+            ipv4_addresses: [[0; 4]; MAXIMUM_IPV4_ADDRESSES],
             count: 0,
             ttl,
             canonical: owner,
         };
         let mut scan = answers;
-        for _ in 0..h.ancount {
+        for _ in 0..h.answer_count {
             let Ok(record) = scan.record() else { break };
-            if record.class != CLASS_IN || record.rtype != record_type::A || record.name != owner {
+            if record.class != CLASS_IN
+                || record.record_type != record_type::A
+                || record.name != owner
+            {
                 continue;
             }
             answer.ttl = answer.ttl.min(believable_time_to_live(record.ttl));
             if let (Some(slot), Ok(address)) = (
-                answer.addresses.get_mut(answer.count as usize),
-                <[u8; 4]>::try_from(record.rdata),
+                answer.ipv4_addresses.get_mut(answer.count as usize),
+                <[u8; 4]>::try_from(record.data),
             ) {
                 *slot = address;
                 answer.count += 1;
             }
         }
         if answer.count == 0 {
-            return Err(Reject::NoAddress);
+            return Err(Reject::NoIpv4Address);
         }
         Ok(answer)
     }
 }
 
-fn rcode_reject(code: u8) -> Reject {
-    if code == RCODE_NAME_ERROR {
+fn response_code_reject(code: u8) -> Reject {
+    if code == RESPONSE_CODE_NAME_ERROR {
         Reject::NoSuchName
     } else {
         Reject::ServerError(code)
@@ -817,7 +902,7 @@ fn rcode_reject(code: u8) -> Reject {
 /// ```
 /// use domain_name_system::{Query, TcpReply};
 ///
-/// let query = Query::new(7, "nife.test").unwrap();
+/// let query = Query::new(7, "example.test").unwrap();
 /// let mut out = [0u8; 514];
 /// let n = query.request_tcp(&mut out).unwrap();
 /// assert_eq!(u16::from_be_bytes([out[0], out[1]]) as usize, n - 2);
@@ -836,6 +921,10 @@ pub struct TcpReply<'a> {
 impl<'a> TcpReply<'a> {
     /// Collect into `buf`, which bounds the reply: one announcing more than `buf.len() - 2` bytes is
     /// refused when its length arrives, before any of its body is read.
+    ///
+    /// A buffer no larger than [`MAXIMUM_UDP_MESSAGE_BYTES`] cannot hold the TCP reply that a
+    /// truncated UDP reply asks for, which defeats the retry. Size it for the largest reply the
+    /// caller accepts, up to [`MAXIMUM_TCP_MESSAGE_BYTES`] + 2.
     pub fn new(buf: &'a mut [u8]) -> TcpReply<'a> {
         TcpReply { buf, have: 0 }
     }

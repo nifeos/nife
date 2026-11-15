@@ -99,7 +99,7 @@ pub fn discover<'a>(dtb: &DeviceTreeBlob<'a>) -> Result<Option<Gic>, Refusal<'a>
             });
         }
         let regions = dtb
-            .node_prop_compatible(compat, b"#redistributor-regions")
+            .node_property_compatible(compat, b"#redistributor-regions")
             .map_err(Refusal::Unreadable)?
             .and_then(|v| v.get(..4))
             .map_or(1, |b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]));
@@ -133,7 +133,7 @@ pub fn discover<'a>(dtb: &DeviceTreeBlob<'a>) -> Result<Option<Gic>, Refusal<'a>
 
     // Nothing recognised. If the old label is present, the machine HAS an interrupt controller and
     // we do not know how to drive it; guessing is exactly what milestone 222 measured the cost of.
-    match dtb.node_prop(b"intc@", b"compatible") {
+    match dtb.node_property(b"intc@", b"compatible") {
         Ok(Some(compatible)) => Err(Refusal::UnknownController { compatible }),
         Ok(None) => Ok(None),
         Err(e) => Err(Refusal::Unreadable(e)),
