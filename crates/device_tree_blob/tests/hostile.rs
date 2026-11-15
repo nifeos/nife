@@ -1548,9 +1548,12 @@ fn a_property_value_is_bounded_by_the_structure_block_exactly() {
     let dt = DeviceTreeBlob::from_bytes(&past).unwrap();
     assert_eq!(dt.node_property(b"memory", b"reg"), Err(Error::Truncated));
 
-    // At the end: the declared structure size stops at the value's last byte.
+    // At the end: the declared structure size stops at the value's last byte. The root declares
+    // two size cells, so the value is one whole pair and the walk goes on past it.
     let mut b = Blob::new();
     b.begin_node(b"");
+    b.prop(b"#address-cells", &2u32.to_be_bytes());
+    b.prop(b"#size-cells", &2u32.to_be_bytes());
     b.begin_node(b"memory@0");
     b.prop(b"reg", &reg64(0x4000_0000, 0x1000));
     b.end_node();
@@ -1645,4 +1648,72 @@ fn every_error_displays_as_its_own_sentence() {
     assert!(shown[0].contains("0x12345678"));
     let boxed: Box<dyn std::error::Error> = Box::new(Error::Truncated);
     assert_eq!(boxed.to_string(), "device tree truncated");
+}
+
+/// A `reg` that a `Region` cannot hold is refused by every lookup that decodes one, never read as
+/// its low 64 bits or cut short. Each case is a bus declaring `cells` address cells and one size
+/// cell, with a memory node, a named device and a reserved-memory child all carrying `reg`.
+#[test]
+fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
+    fn tree(address_cells: u32, reg: &[u32]) -> Vec<u8> {
+        let reg: Vec<u8> = reg.iter().flat_map(|cell| cell.to_be_bytes()).collect();
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        b.prop(b"#address-cells", &address_cells.to_be_bytes());
+        b.prop(b"#size-cells", &1u32.to_be_bytes());
+        b.begin_node(b"memory@0");
+        b.prop(b"reg", &reg);
+        b.end_node();
+        b.begin_node(b"rtc@0");
+        b.prop(b"compatible", b"vendor,rtc\0");
+        b.prop(b"reg", &reg);
+        b.end_node();
+        b.begin_node(b"reserved-memory");
+        b.prop(b"#address-cells", &address_cells.to_be_bytes());
+        b.prop(b"#size-cells", &1u32.to_be_bytes());
+        b.begin_node(b"firmware@0");
+        b.prop(b"reg", &reg);
+        b.end_node();
+        b.end_node();
+        b.end_node();
+        b.finish()
+    }
+    fn answers(blob: &[u8]) -> Vec<Result<Vec<Region>, Error>> {
+        let dt = DeviceTreeBlob::from_bytes(blob).unwrap();
+        let lookups: [&dyn Fn(&mut [Region]) -> Result<usize, Error>; 4] = [
+            &|out| dt.memory_regions(out),
+            &|out| dt.node_reg(b"rtc@", out),
+            &|out| dt.node_reg_compatible(b"vendor,rtc", out),
+            &|out| dt.reserved_memory_regions(out),
+        ];
+        lookups
+            .iter()
+            .map(|lookup| {
+                let mut out = [Region { start: 0, size: 0 }; 4];
+                lookup(&mut out).map(|n| out[..n].to_vec())
+            })
+            .collect()
+    }
+
+    // Three address cells whose top cell is zero fit, and so do four: the value is 64 bits.
+    let fits = Region {
+        start: 0x2_0000_0003,
+        size: 4,
+    };
+    for blob in [tree(3, &[0, 2, 3, 4]), tree(4, &[0, 0, 2, 3, 4])] {
+        for answer in answers(&blob) {
+            assert_eq!(answer, Ok(vec![fits]));
+        }
+    }
+
+    // A nonzero third cell, more cells than libfdt allows, and a trailing partial pair.
+    for blob in [
+        tree(3, &[1, 2, 3, 4]),
+        tree(5, &[0, 0, 0, 2, 3, 4]),
+        tree(2, &[0, 0x1000, 0x10, 0]),
+    ] {
+        for answer in answers(&blob) {
+            assert_eq!(answer, Err(Error::BadValue));
+        }
+    }
 }

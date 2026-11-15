@@ -57,7 +57,10 @@ pub enum Error {
     /// reaches the end of the structure block without its end token.
     Truncated,
     /// A value has the wrong shape for what it holds: an integer property that is neither 4 nor 8
-    /// bytes long, or a node or property name with no terminating NUL inside its block.
+    /// bytes long, a node or property name with no terminating NUL inside its block, or a `reg`
+    /// that does not fit a [`Region`]. That last is a cell count above [`MAXIMUM_CELLS`], a
+    /// nonzero cell above the low two (a value wider than 64 bits), or a length that is not a
+    /// whole number of (address, size) pairs.
     BadValue,
     /// A token this parser does not recognize. The structure block is malformed.
     BadToken(u32),
@@ -129,6 +132,13 @@ const HEADER_LEN: usize = 40;
 /// crate's own name review, since a size carries its unit.
 #[doc(alias = "MAX_FDT_SIZE")]
 pub const MAXIMUM_TOTALSIZE_BYTES: usize = 2 * 1024 * 1024;
+
+/// The most cells a `#address-cells` or `#size-cells` declaration may give a `reg` value, as
+/// libfdt's `FDT_MAX_NCELLS`. A `reg` read under a larger count is [`Error::BadValue`].
+///
+/// Name: provisional.
+#[doc(alias = "FDT_MAX_NCELLS")]
+pub const MAXIMUM_CELLS: u32 = 4;
 
 /// How deeply the structure block may nest, the root counting as depth 1: 64, as Linux's
 /// `FDT_MAX_DEPTH`.
@@ -1050,21 +1060,26 @@ fn integer(value: &[u8]) -> Result<u64, Error> {
 
 /// Decode a `reg` property: a packed list of (address, size) pairs, where each value is `cells`
 /// 32-bit big-endian words concatenated.
+///
+/// A cell count above [`MAXIMUM_CELLS`], or a `value` that is not a whole number of pairs, is
+/// [`Error::BadValue`], as libfdt and Linux refuse both.
 fn decode_reg(
     value: &[u8],
     bus_address_cells: u32,
     bus_size_cells: u32,
     out: &mut [Region],
 ) -> Result<usize, Error> {
-    // Every product below is checked, because the cell counts come from the blob and a target
-    // whose `usize` is 32 bits wide can overflow them. An overflow is a refusal.
-    let cell_bytes = |cells: u32| (cells as usize).checked_mul(4).ok_or(Error::Truncated);
-    let start_bytes = cell_bytes(bus_address_cells)?;
-    let pair_bytes = start_bytes
-        .checked_add(cell_bytes(bus_size_cells)?)
-        .ok_or(Error::Truncated)?;
+    if bus_address_cells > MAXIMUM_CELLS || bus_size_cells > MAXIMUM_CELLS {
+        return Err(Error::BadValue);
+    }
+    // At most four cells each, so neither product nor the sum can overflow.
+    let start_bytes = bus_address_cells as usize * 4;
+    let pair_bytes = start_bytes + bus_size_cells as usize * 4;
     if pair_bytes == 0 {
         return Ok(0);
+    }
+    if value.len() % pair_bytes != 0 {
+        return Err(Error::BadValue);
     }
 
     let mut n = 0;
@@ -1093,10 +1108,15 @@ fn decode_reg(
     Ok(n)
 }
 
-/// Concatenate 32-bit big-endian cells into one u64.
+/// Concatenate 32-bit big-endian cells into one u64. A nonzero cell above the low two is a value
+/// wider than 64 bits, which a [`Region`] cannot hold, so it is [`Error::BadValue`] rather than
+/// truncated to its low 64 bits as Linux's `of_read_number` does.
 fn cells(value: &[u8]) -> Result<u64, Error> {
     let mut number = 0u64;
     for cell in value.chunks_exact(4) {
+        if number >> 32 != 0 {
+            return Err(Error::BadValue);
+        }
         number = (number << 32) | be32(cell, 0)? as u64;
     }
     Ok(number)

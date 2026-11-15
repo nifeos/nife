@@ -192,6 +192,10 @@ The blob is the first thing this kernel reads and the last thing it can check ag
 else. The pointer comes from firmware, before there is a frame allocator or any way to report a
 failure, so every limitation here is a limitation on the boot path specifically.
 
+- A `reg` that a `Region` cannot hold is `Error::BadValue`: a cell count above `MAXIMUM_CELLS` (4,
+  libfdt's `FDT_MAX_NCELLS`), a nonzero cell above the low two, or a length that is not a whole
+  number of pairs. Linux's `of_read_number` keeps the low 64 bits of a wider value instead, and a
+  PCI child's three-cell address is read raw through `node_property`.
 - A `reg` pair whose `start + size` wraps 64 bits is `Error::RegionOverflow`, not a clamped
   region. `kernel/src/memory.rs` decides where RAM is from these, and "the firmware's memory map
   is impossible" is something a boot path should be told. `Region::end()` saturates as a backstop,
