@@ -41,6 +41,8 @@ outside the repository acts on it after the first tag (a public name, a publishe
 Line numbers are from `crates/address_space_layout/src/lib.rs` at `137639a3` unless a path says
 otherwise.
 
+The ledger of what landed and what is left is in [the appendix](1076-address-space-map-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The host test reads a file outside the crate.
@@ -172,6 +174,12 @@ change. The name `window` ships provisional. Item 9 is the work.
 ## Done when
 
 The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** The three decisions, items 15 and 17, and the move's items 2, 3, 5, 11 and 13,
+  which an architect rules or the move lane does. Checked against `crates/address_space_map`: the
+  crate has no README, `Band::new` or `window`, and still inherits its manifest from the workspace.
 
 ## BUGS
 

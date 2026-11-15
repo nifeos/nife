@@ -114,7 +114,7 @@ test asks.
 On aarch64 it is `PXN`, which the encoder sets on every user page. On riscv64 it is the hardware,
 which refuses a supervisor fetch from a `U` page unconditionally. On `x86_64` it is `CR4.SMEP`, which
 nothing in this kernel set until that audit. So a user code page with `XD` clear was executable at
-ring 0, whatever `crates/paging`'s decoder reported.
+ring 0, whatever `crates/page_tables`'s decoder reported.
 
 It is not a userspace escape on its own, since a kernel control-flow bug has to come first. That is
 why it belongs here rather than in the table: it is the thing that turns any such bug into a full

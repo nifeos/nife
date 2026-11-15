@@ -101,7 +101,7 @@ measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
-paging = { version = "0.1.0", path = "../crates/paging" }
+page_tables = { version = "0.1.0", path = "../crates/page_tables" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 # The name resolver's grant messages and endowment, and the boot test's cases the test client
 # agrees on (milestone 384 (in a capability system the resolver is a grant), provisional name). `domain_name_system` for DNS's port.

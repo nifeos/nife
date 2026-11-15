@@ -11,29 +11,14 @@ send.
 Expected to fail: the harness's only assertion, `assert_eq!(cs.get(other),
 before)`, on any table with an occupied slot other than the victim.
 
-**Re-cut 2026-09-02 for milestone 231**, which added `used` and `peak` beside the
-slots and moved the line this applies against. The defect is unchanged and still
-reachable. It is written as an addition *after* the correct `take` and `shrank`
-pair rather than as a replacement of the body, which is a change from the previous
-cut and is what keeps the defect the one this record describes: a sweep bolted onto
-a correct delete. It also leaves the occupancy count far above the truth, which
-`the_count_is_the_slots` is the harness for.
-
-**Re-cut 2026-09-27 (UTC) for milestone 126 (the `procps` package)**, which put the
-slots behind a private `storage` module whose only two writers are `fill` and
-`empty`, and gave the table a free-slot word beside `used` and `peak`. Still a sweep bolted onto a
-correct delete, now written through `empty` because nothing outside `storage` can
-write a slot any other way. Going through the door keeps the count and the word
-true, so the only symptom left is the one this harness reads.
-
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index 7c197bdf4..ed5323ec8 100644
+index a5b8f24b3..4f31cc340 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -492,6 +492,9 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
-     /// Drop a capability. The object may still exist; **we simply can no longer name it.**
+@@ -484,6 +484,9 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
      pub fn delete(&mut self, slot: u64) -> Result<(), Error> {
-         self.empty(slot as usize).ok_or(Error::NoSuchSlot)?;
+         let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
+         self.empty(slot).ok_or(Error::NoSuchSlot)?;
 +        for t in 0..N {
 +            self.empty(t);
 +        }

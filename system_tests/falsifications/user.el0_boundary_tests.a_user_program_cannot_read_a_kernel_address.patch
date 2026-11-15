@@ -42,7 +42,7 @@ moved the hunk's home to `mmu/fine_map.rs`, with the same command: red at
 `system_tests/src/user/el0_boundary_tests.rs:98`, same assertion.
 
 The riscv64 leg is the reason the other two share a record rather than the claim being uniform.
-`crates/paging`'s RISC-V encoder turns `CAP_USER` into the Sv39 `U` bit, which forbids S-mode
+`crates/page_tables`'s RISC-V encoder turns `CAP_USER` into the Sv39 `U` bit, which forbids S-mode
 access unless `sstatus.SUM` is set. So the same defect there does not produce a kernel that lets
 userspace read it; it produces a kernel that cannot read itself, and dies before any test runs.
 riscv64's evidence for row 21 is the software walk in

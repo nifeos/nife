@@ -40,7 +40,7 @@ shape, one object over, found when the new test's first draft did exactly that. 
 after an `out` that is expected to fault, and both tests carry records replayed on `x86_64`.
 
 Ring 0 could execute a confined component's pages on `x86_64`, and the tree said otherwise.
-`crates/paging`'s decoder reported every user page as not kernel-executable and milestone 307 wrote
+`crates/page_tables`'s decoder reported every user page as not kernel-executable and milestone 307 wrote
 that the hardware made it so; x86 does so only with `CR4.SMEP`, which nothing had set. Set now, on
 every core whose CPUID offers it, with a console line either way; the sentence and the encoder
 comment are corrected rather than deleted.
@@ -60,7 +60,7 @@ the stack-gate excess (two of them on the base commit's own `kernel/` and `crate
 record replays. Then the full suite on all three architectures, one at a time (`x86_64` in both boot
 modes, aarch64, riscv64, every one exit 0). The kernel changes are
 `#[cfg(target_arch = "x86_64")]` throughout and the only cross-architecture edit is a comment in
-`crates/paging`. The other two legs were run because the brief asked for every architecture whose
+`crates/page_tables`. The other two legs were run because the brief asked for every architecture whose
 code was touched, and a comment in a shared crate is code that was touched.
 
 ## BUGS
@@ -76,7 +76,7 @@ code was touched, and a comment in a shared crate is code that was touched.
   scope alone. The lane ran `script/falsifications --sweep kernel` (16 swept, 0 survivors) and
   CI ran `--affected-since <base>`, which follows the diff into `crates/` and found that the SMEP
   comment added above `Ia32e::attrs`'s `XD` branch had moved the context of
-  `crates/paging/falsifications/x86_64.verification.no_encoded_leaf_is_both_writable_and_executable.patch`.
+  `crates/page_tables/falsifications/x86_64.verification.no_encoded_leaf_is_both_writable_and_executable.patch`.
   That is the mechanism working as its header says it should ("a patch that no longer applies means
   the covered code moved"). The record was redone against the code as it stands, defect unchanged,
   and confirmed red by hand at the harness's only assertion. The lesson for the next lane is the

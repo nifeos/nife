@@ -30,7 +30,7 @@ const SPACE_PAGES: u64 = 24;
 
 /// Two neighbouring pages in the low half, aligned and far from anything else a test maps.
 const VA: u64 = address_space_layout::pair_page(0x0060_0000);
-const NEXT: u64 = VA + paging::PAGE_SIZE;
+const NEXT: u64 = VA + page_tables::PAGE_SIZE;
 
 /// A fresh space backed by its own region. Returns its name, its root, and the region.
 fn space() -> (u64, u64, u64) {
@@ -205,7 +205,7 @@ fn unmap_of_a_va_with_nothing_mapped_is_refused_and_changes_nothing() {
     );
 
     for (va, what) in [
-        (VA + 16 * paging::PAGE_SIZE, "a va never mapped"),
+        (VA + 16 * page_tables::PAGE_SIZE, "a va never mapped"),
         (NEXT, "a va already given up"),
         (VA + 8, "a misaligned va"),
         (0xffff_ffff_ffff_0000, "a kernel-half va"),

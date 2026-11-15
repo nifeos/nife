@@ -50,7 +50,7 @@ pub(super) struct ProcessPage {
 const TABLE_OFFSET: usize =
     size_of::<ProcessPage>().next_multiple_of(align_of::<CapabilityTableLock>());
 const _: () = assert!(
-    TABLE_OFFSET + size_of::<CapabilityTableLock>() <= paging::PAGE_SIZE as usize,
+    TABLE_OFFSET + size_of::<CapabilityTableLock>() <= page_tables::PAGE_SIZE as usize,
     "a process and its capability table no longer fit in one page"
 );
 

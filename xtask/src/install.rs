@@ -84,7 +84,7 @@ pub(crate) fn ls_at_the_prompt() -> [(&'static str, &'static str); 2] {
 }
 
 /// The shell's banner as text, the first marker [`ls_at_the_prompt`] waits for.
-static SHELL_BANNER: std::sync::LazyLock<String> =
+pub(crate) static SHELL_BANNER: std::sync::LazyLock<String> =
     std::sync::LazyLock::new(|| serial_console::HEADS.prompt().to_string());
 
 /// **The gate.** `true` only if both boots did what they were supposed to.

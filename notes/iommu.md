@@ -18,12 +18,12 @@ frames it may reach.
 
 ## The seam: one domain builder, two page-table formats
 
-The payoff of the format-generic `paging` crate (DECISIONS §17) shows up a second time here. An
+The payoff of the format-generic `page_tables` crate (DECISIONS §17 (the second architecture: RISC-V, and the page-table format trait)) shows up a second time here. An
 IOMMU walks the *CPU's own* page-table format: the aarch64 SMMUv3 walks VMSAv8-64, the ratified
 RISC-V IOMMU (v1.0.1) walks Sv39. Those are the same two formats `Mapper` already builds for process
 address spaces. So a device's DMA domain is not a new kind of table. It is a `Mapper` filled with an
 identity map (IOVA == PA) over exactly the frames the device is allowed to reach:
-`paging::domain::build_identity_domain`, host-tested on both formats.
+`page_tables::domain::build_identity_domain`, host-tested on both formats.
 
 Identity, because the userspace virtio driver already puts *physical* addresses into its descriptors
 (its DMA region's frames, and the kernel's shadow page). With an IOMMU in front, the device emits

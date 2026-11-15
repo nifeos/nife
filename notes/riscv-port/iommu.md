@@ -30,7 +30,7 @@ memory. Before
 closed by architecture; the SMMU needs an explicit `GBPA.ABORT` for the same posture.
 
 Sv39 single-stage translation requires `U` on every leaf, because a device does not request
-supervisor privilege. That is why the seam builds domains with user-data flags (`paging::domain`).
+supervisor privilege. That is why the seam builds domains with user-data flags (`page_tables::domain`).
 
 `attach` allocates a device's leaf the first time its range attaches, publishes the zeroed leaf and
 only then writes the root entry naming it. It writes the context's address and tag words first and

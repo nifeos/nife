@@ -1,5 +1,5 @@
 //! The portable IOMMU seam (§20 (IOMMU-backed DMA isolation: one seam, two arch drivers)): builds a
-//! device's DMA domain with the format-generic `paging::domain::build_identity_domain` and hands
+//! device's DMA domain with the format-generic `page_tables::domain::build_identity_domain` and hands
 //! its root to whichever arch driver is compiled in (`crate::arch::iommu`). Everything ISA-specific
 //! lives under `arch/`.
 //!
@@ -7,7 +7,7 @@
 //! the device emits faults. Each driver's `initialize` denies every unattached device, so the
 //! window between Bus-Master Enable and `confine` is closed by the hardware. See notes/iommu.md.
 
-use paging::domain::{DmaRegion, build_identity_domain};
+use page_tables::domain::{DmaRegion, build_identity_domain};
 
 // The fault-reporting surface. Only the confinement tests drain it, without naming `Fault`, so
 // both re-exports may be locally unused.
@@ -215,7 +215,7 @@ pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) -> Result<(), AttachError
 /// **Build an identity domain over exactly `regions` in format `F`, and return its root.** The
 /// architecture's `build_domain` names `F`; this is the part that is the same everywhere: the
 /// frame allocator and the pointer projection the kernel's own `Mapper` uses.
-pub(crate) fn build_identity<F: paging::PageFormat>(regions: &[DmaRegion]) -> u64 {
+pub(crate) fn build_identity<F: page_tables::PageFormat>(regions: &[DmaRegion]) -> u64 {
     let root = zeroed_page_frame();
     // SAFETY: `root` is a freshly zeroed, page-aligned frame; `zeroed_page_frame` returns the same for
     // every intermediate table; `phys_to_virt` yields a pointer the Mapper contract accepts. Nobody
@@ -224,7 +224,7 @@ pub(crate) fn build_identity<F: paging::PageFormat>(regions: &[DmaRegion]) -> u6
         build_identity_domain::<_, _, F>(
             root,
             || Some(zeroed_page_frame()),
-            |pa| phys_to_virt(pa) as *mut paging::PageTable,
+            |pa| phys_to_virt(pa) as *mut page_tables::PageTable,
             regions,
         )
         .expect("IOMMU DMA domain build failed");

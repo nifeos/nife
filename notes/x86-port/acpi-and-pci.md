@@ -121,7 +121,7 @@ driver" below.
 ## The discovery seam
 
 Milestone 20's deliverable had two abstraction shapes in it. The first, "a generic level-walk plus a
-per-arch entry codec", exists and holds: `crates/paging` needed no change for a third format.
+per-arch entry codec", exists and holds: `crates/page_tables` needed no change for a third format.
 The second, "put device discovery behind a 'here is the hardware' interface (device tree today,
 ACPI/PCI later)", is not an interface. It is one boot step, `memory::initialize`, with a front end
 per description, and the shared bring-up (`boot.rs`'s `bring_up_machine`) is the same on all three.

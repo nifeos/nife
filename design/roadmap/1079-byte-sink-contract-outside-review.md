@@ -44,6 +44,8 @@ The comparison with nearby work is in [the appendix](1079-byte-sink-contract-out
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the release (a published name, a published wire behavior, a layout, a dependency, a license). Everything else is two-way, and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1079-byte-sink-contract-outside-review/ledger.md).
+
 ### P0: blocks the move or any publish
 
 1. The crate does not stand alone, and the documentation that explains it does not travel.

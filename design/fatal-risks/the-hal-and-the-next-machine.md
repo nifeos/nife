@@ -131,7 +131,7 @@ The port has a measured cost, not just a passing result, and it is the number th
 `notes/x86-port.md`'s "What had to change above `arch/`" section counted it directly. Making the
 whole kernel compile for the third architecture took 42 compiler errors, every one of them "this
 `arch::` name does not exist yet." The diff outside `arch/` was three small, named things.
-`crates/paging` needed no change at all (`Ia32e` is sixty lines behind the existing `PageFormat`
+`crates/page_tables` needed no change at all (`Ia32e` is sixty lines behind the existing `PageFormat`
 trait). `drivers/ns16550.rs` gained one type parameter, because the same 16550 is reached by MMIO on
 two architectures and by I/O ports on the third, which is a `RegisterSpace` implementation rather
 than a second driver. And `console.rs`, `user.rs`, `drivers/mod.rs` and
@@ -155,7 +155,7 @@ earlier today (2026-09-23). Every number in it comes from one machine per archit
 of the three not even that. x86_64 is xenon, a Core i5-7500T OptiPlex, on one firmware. riscv64 is
 radon, one VisionFive 2. aarch64's silicon is patagonia's own cores under Apple's hypervisor
 (notes/hvf-leg.md) plus QEMU, because argon has never booted nife at all, which the multicore
-entry's own list says in as many words. The 42 compiler errors, the untouched `crates/paging` and
+entry's own list says in as many words. The 42 compiler errors, the untouched `crates/page_tables` and
 the one type parameter measure what a third architecture cost. They say nothing about what a second
 machine of an existing architecture costs, because no second machine has been booted, and until the
 widening above was written there was no wording under which anyone would have noticed the gap.
@@ -171,12 +171,12 @@ restructure.
 
 Milestone 161 turned BUILT on 2026-09-19, and that does less to this risk than the status word
 suggests. What closed it was four follow-on items, none of them first light. 2 MiB and 1 GiB leaves
-in `crates/paging`, adopted by all three architectures' direct maps through the same `PageFormat`
+in `crates/page_tables`, adopted by all three architectures' direct maps through the same `PageFormat`
 seam. A fourth architecture would implement two more trait methods rather than change the walk,
 which is this entry's claim holding again. `cpu_start` counting a started core as absent,
 reproduced at 26 of 40 four-core QEMU boots, gone in 80 of 80 after, and fixed in
 `arch/x86_64/mod.rs` rather than in portable code. Last, `CR4.PGE` and `PCIDE`, measured and left
-off. None of it touched the kernel outside `arch/` except `crates/paging`, which every architecture
+off. None of it touched the kernel outside `arch/` except `crates/page_tables`, which every architecture
 shares. xenon has still not been asked to bring four cores online with the fix.
 
 Milestones 177 and 182 turned BUILT on 2026-09-19, and the paragraph above is now settled the way it

@@ -15,7 +15,7 @@
 //! - It proves the mapping is gone, not that the process faults on it.
 //! - `AddressSpace::map_new` does not record, deliberately: no capability names its frames.
 
-use paging::Flags;
+use page_tables::Flags;
 
 use super::{
     AddressSpace, take_user_address_space, user_address_space_create, user_address_space_map,

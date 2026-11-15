@@ -5,7 +5,7 @@
 //! notes/kernel-wired-services.md for the services.
 
 use page_frames::{FRAME_SIZE, PageFrame};
-use paging::{Flags, Half, MapError, Mapper};
+use page_tables::{Flags, Half, MapError, Mapper};
 use static_elf::Elf;
 
 use crate::arch::exceptions::{TrapFrame, enter_user};

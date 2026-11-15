@@ -120,7 +120,7 @@ at `0xffffffffd000` succeeds under (a) and fails under (b) and (c).
 - Shipped programs: under (a), no program in the tree depends on a writable-and-executable pair in one space,
   as far as a read finds. Under (b) and (c), the lane runs the suite to find any same-space double
   map; the lane knows of none, and it has not searched exhaustively.
-- Proof harnesses: one pure predicate in `crates/paging`, which takes the existing leaves' flags
+- Proof harnesses: one pure predicate in `crates/page_tables`, which takes the existing leaves' flags
   and the new flags and returns whether to admit, with a Kani proof that no admitted set holds both
   W and X. Under (c) the predicate is "no existing leaf", which is trivial.
 

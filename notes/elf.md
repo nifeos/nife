@@ -177,7 +177,7 @@ and there are fourteen of them.
 
 | Refused | Because an ELF can simply **ask** |
 |---|---|
-| `WritableAndExecutable` | ...for a page that is both. That is the thing every exploit wants, and the file is allowed to request it. `paging::Flags` has no constructor that returns one; this is what stops a *file* talking us into building one. |
+| `WritableAndExecutable` | ...for a page that is both. That is the thing every exploit wants, and the file is allowed to request it. `page_tables::Flags` has no constructor that returns one; this is what stops a *file* talking us into building one. |
 | `SegmentOutOfBounds` | `p_offset` and `p_filesz` are **attacker-controlled**. A loader that trusts them reads past the buffer and then **maps what it finds into a process**. |
 | `NotAarch64` | ...to be an x86 binary. Caught here, rather than as a mystery illegal-instruction fault at EL0. |
 | `NeedsRelocation` | ...to be a PIE. It expects a dynamic linker. We are not one, and running it anyway means jumping to an address that means nothing. |
@@ -200,8 +200,8 @@ if !self.half.contains(va) {
 }
 ```
 
-That guard has been in `paging` since milestone 4, and it was put there because a *host test*
-discovered that bits 63:48 are not translated ([higher-half.md](higher-half.md)) and we needed a
+That guard has been in `page_tables` since milestone 4 (MMU on: page tables, the kernel heap, the high half). A *host test*
+discovered that bits 63:48 are not translated ([higher-half.md](higher-half.md)), and we needed a
 way to say which table a mapping belongs to. It has been sitting there for three milestones,
 waiting for this file.
 
@@ -292,7 +292,7 @@ error, and the loader placing images physically owns that judgment.
   helper and a refusal-wording table over `static_elf::Elf`, and the loader validates the kernel it places
   instead of trusting it. What made the deletion possible was a security fix rather than an API
   change, which is the part worth remembering. The kernel's own image was the one thing in the tree
-  breaking the W^X rule `crates/static_elf` and `paging::Flags` enforce everywhere else, and the parser
+  breaking the W^X rule `crates/static_elf` and `page_tables::Flags` enforce everywhere else, and the parser
   refusing it is that rule catching the tree. `script/image-permissions` is what keeps it caught.
 
 ## The loader honors permissions and does not widen them
@@ -301,7 +301,7 @@ An ELF's `.rodata` segment is `PF_R` alone. The tempting shortcut is to map ever
 non-executable segment as `user_data()`, which is writable, quietly granting the program
 authority its own file never asked for.
 
-`paging::Flags` grew a `user_rodata()` for exactly this. Three segment shapes, three
+`page_tables::Flags` grew a `user_rodata()` for exactly this. Three segment shapes, three
 constructors, no widening:
 
 | ELF says | We map |

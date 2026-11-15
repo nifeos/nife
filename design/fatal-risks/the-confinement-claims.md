@@ -62,7 +62,7 @@ installs into the TSS I/O bitmap, so a thread that dropped its `PortRange` kept 
 its life. `system_initializer` performs exactly that delete on every x86 boot. Fixed in
 `sched::delete_current_cap`, with a test and a falsification replayed red.
 
-A second published sentence about the hardware was false and is now true. `crates/paging`'s decoder
+A second published sentence about the hardware was false and is now true. `crates/page_tables`'s decoder
 reports user pages as not kernel-executable, and milestone 307 (which assertion actually fires when
 a confinement claim is broken) wrote that the hardware makes it so; on x86 that holds only with
 `CR4.SMEP`, which nothing set. The bit is now set per core where CPUID offers it, and 307's sentence

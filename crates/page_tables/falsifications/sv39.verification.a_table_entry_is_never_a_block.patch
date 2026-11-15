@@ -1,0 +1,29 @@
+Falsifies `page_tables::sv39::a_table_entry_is_never_a_block`.
+
+The defect: a pointer PTE is made readable. On RISC-V the leaf/pointer distinction is not a
+type field; a PTE is a POINTER exactly when R, W and X are all zero, and a leaf otherwise. So
+setting R on an intermediate entry, which reads as an obviously safe permission to grant (it is
+only read, and the leaf below decides anyway), silently converts it into a megapage or gigapage
+leaf whose physical address is the next table's. The privilege model makes this worse than it
+looks on aarch64: the entry is `U`-clear, so the fault the hardware raises on a user access is
+not the one anybody expects to debug.
+
+Expected to fail: `assert!(!Sv39::is_block(Sv39::table_entry(pa)))`, for every `pa`, since
+`is_block` here is `entry & (R | W | X) != 0`.
+
+**Stated where a reader of the encoder will look**: `table_entry`'s own comment already says the
+zero in R/W/X is what marks it a pointer. This patch is the proof that the comment is enforced
+rather than merely written.
+
+diff --git a/crates/page_tables/src/sv39.rs b/crates/page_tables/src/sv39.rs
+--- a/crates/page_tables/src/sv39.rs
++++ b/crates/page_tables/src/sv39.rs
+@@ -83,7 +83,7 @@ impl PageFormat for Sv39 {
+ 
+     fn table_entry(pa: u64, _level: usize) -> u64 {
+         // A pointer PTE: PPN plus V, and R=W=X=0 (that zero is what marks it a pointer, not a leaf).
+-        (((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V
++        (((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V | R
+     }
+ 
+     fn leaf_entry(pa: u64, flags: Flags) -> u64 {

@@ -64,7 +64,7 @@ members = [
     "crates/jh7110_watchdog",
     "crates/job_mix",
     "crates/machine_discovery",
-    "crates/paging",
+    "crates/page_tables",
     "crates/pci_configuration_space",
     "crates/usb",
     "crates/timetable_store",
