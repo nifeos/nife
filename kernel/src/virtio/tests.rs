@@ -734,8 +734,8 @@ fn the_pci_transport_answers_the_device_configuration_generation() {
             core::ptr::write_volatile(
                 mmu::phys_to_virt(common + PCI_CONFIGURATION_GENERATION) as *mut u8,
                 generation,
-            )
-        };
+            );
+        }
         assert_eq!(
             t.read_reg(REG_CONFIGURATION_GENERATION),
             u32::from(generation),
