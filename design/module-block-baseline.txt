@@ -1918,13 +1918,9 @@ crates/domain_name_system/src/lib.rs::CNAME
 
 crates/domain_name_system/src/lib.rs::Error
 
-crates/domain_name_system/src/lib.rs::FLAG_QR
 
-crates/domain_name_system/src/lib.rs::FLAG_RD
 
-crates/domain_name_system/src/lib.rs::FLAG_TC
 
-crates/domain_name_system/src/lib.rs::HEADER_LEN
 
 crates/domain_name_system/src/lib.rs::Header
 
@@ -1938,9 +1934,7 @@ crates/domain_name_system/src/lib.rs::Query
 
 crates/domain_name_system/src/lib.rs::Question
 
-crates/domain_name_system/src/lib.rs::RCODE_MASK
 
-crates/domain_name_system/src/lib.rs::RCODE_NAME_ERROR
 
 crates/domain_name_system/src/lib.rs::Reader
 
@@ -1954,7 +1948,6 @@ crates/domain_name_system/src/lib.rs::TcpReply
 
 crates/domain_name_system/src/lib.rs::accept
 
-crates/domain_name_system/src/lib.rs::addresses
 
 crates/domain_name_system/src/lib.rs::as_bytes
 
@@ -1988,7 +1981,6 @@ crates/domain_name_system/src/lib.rs::parse
 
 crates/domain_name_system/src/lib.rs::question
 
-crates/domain_name_system/src/lib.rs::rcode
 
 crates/domain_name_system/src/lib.rs::record
 

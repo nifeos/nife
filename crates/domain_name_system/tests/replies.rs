@@ -2,14 +2,14 @@
 //!
 //! The three `REAL_*` fixtures (`tests/fixtures/*.dns`, one raw reply each, which `script/fuzz` also
 //! hands the `domain_name_system_reply` target as seeds) were captured on 2026-10-04 (UTC) from
-//! 1.1.1.1 with a twenty-line Python stub sending exactly the query `Query::request` writes, so they carry what a recursive
+//! 1.1.1.1 with a short Python script sending exactly the query `Query::request` writes (`tests/fixtures/README.md` has it and the id each carries), so they carry what a recursive
 //! server really does: compression pointers into the question, a CNAME pointing into its own owner,
 //! TTLs that differ along a chain. The rest are built by hand below, one per check, because nobody
 //! captures a forgery.
 
 use domain_name_system::{
-    CLASS_IN, Error, FLAG_TC, Header, MAXIMUM_ADDRESSES, MAXIMUM_CHAIN, Name, Query, Reader,
-    Reject, TcpReply, cname_target, decode_name, record_type,
+    CLASS_IN, Error, FLAG_TRUNCATED, Header, MAXIMUM_CHAIN, MAXIMUM_IPV4_ADDRESSES, Name, Query,
+    Reader, Reject, TcpReply, cname_target, decode_name, record_type,
 };
 
 /// `example.com` A, id 0x1111: two A records, owners compressed to the question.
@@ -25,7 +25,7 @@ fn a_real_reply_with_two_addresses_gives_both_in_order() {
     let query = Query::new(0x1111, "example.com").unwrap();
     let answer = query.accept(REAL_EXAMPLE).unwrap();
     assert_eq!(
-        answer.addresses(),
+        answer.ipv4_addresses(),
         &[[104, 20, 23, 154], [172, 66, 147, 243]]
     );
     assert_eq!(answer.ttl(), 0x31);
@@ -39,7 +39,7 @@ fn a_real_reply_with_two_addresses_gives_both_in_order() {
 fn a_real_cname_is_followed_and_the_shortest_ttl_wins() {
     let query = Query::new(0x2222, "www.github.com").unwrap();
     let answer = query.accept(REAL_GITHUB).unwrap();
-    assert_eq!(answer.addresses(), &[[140, 82, 116, 3]]);
+    assert_eq!(answer.ipv4_addresses(), &[[140, 82, 116, 3]]);
     assert_eq!(
         answer.canonical(),
         &Name::from_dotted("github.com").unwrap()
@@ -89,7 +89,7 @@ impl Reply {
         Header {
             id: OUR_ID,
             flags: 0x8180,
-            qdcount: 1,
+            question_count: 1,
             ..Header::default()
         }
         .write(&mut bytes)
@@ -111,14 +111,21 @@ impl Reply {
         self
     }
 
-    fn record(mut self, owner: &[u8], rtype: u16, class: u16, ttl: u32, rdata: &[u8]) -> Reply {
+    fn record(
+        mut self,
+        owner: &[u8],
+        record_type: u16,
+        class: u16,
+        ttl: u32,
+        data: &[u8],
+    ) -> Reply {
         self.bytes.extend(owner);
-        self.bytes.extend(rtype.to_be_bytes());
+        self.bytes.extend(record_type.to_be_bytes());
         self.bytes.extend(class.to_be_bytes());
         self.bytes.extend(ttl.to_be_bytes());
-        self.bytes.extend((rdata.len() as u16).to_be_bytes());
-        self.bytes.extend(rdata);
-        self.set_header(|h| h.ancount += 1)
+        self.bytes.extend((data.len() as u16).to_be_bytes());
+        self.bytes.extend(data);
+        self.set_header(|h| h.answer_count += 1)
     }
 
     fn a(self, owner: &str, address: [u8; 4]) -> Reply {
@@ -139,7 +146,7 @@ impl Reply {
         Query::new(OUR_ID, OURS)
             .unwrap()
             .accept(&self.bytes)
-            .map(|a| a.addresses().to_vec())
+            .map(|a| a.ipv4_addresses().to_vec())
     }
 }
 
@@ -175,7 +182,7 @@ fn a_query_or_another_opcode_is_not_a_response() {
 fn a_truncated_reply_says_so_rather_than_answering_from_half() {
     let r = Reply::to(OURS)
         .a(OURS, [10, 0, 2, 9])
-        .set_header(|h| h.flags |= FLAG_TC);
+        .set_header(|h| h.flags |= FLAG_TRUNCATED);
     assert_eq!(r.judged(), Err(Reject::Truncated));
 }
 
@@ -185,18 +192,18 @@ fn a_reply_to_some_other_question_is_refused() {
     assert_eq!(other_name.judged(), Err(Reject::QuestionMismatch));
 
     let mut other_type = Reply::to(OURS).a(OURS, [10, 0, 2, 9]);
-    let qtype_at = 12 + wire(OURS).len();
-    other_type.bytes[qtype_at + 1] = 28; // AAAA
+    let question_type_at = 12 + wire(OURS).len();
+    other_type.bytes[question_type_at + 1] = 28; // AAAA
     assert_eq!(other_type.judged(), Err(Reject::QuestionMismatch));
 
     let mut other_class = Reply::to(OURS).a(OURS, [10, 0, 2, 9]);
-    other_class.bytes[qtype_at + 3] = 3; // CHAOS
+    other_class.bytes[question_type_at + 3] = 3; // CHAOS
     assert_eq!(other_class.judged(), Err(Reject::QuestionMismatch));
 
-    let two_questions = Reply::to(OURS).set_header(|h| h.qdcount = 2);
+    let two_questions = Reply::to(OURS).set_header(|h| h.question_count = 2);
     assert_eq!(two_questions.judged(), Err(Reject::QuestionMismatch));
 
-    let no_question = Reply::to(OURS).set_header(|h| h.qdcount = 0);
+    let no_question = Reply::to(OURS).set_header(|h| h.question_count = 0);
     assert_eq!(no_question.judged(), Err(Reject::QuestionMismatch));
 }
 
@@ -216,12 +223,12 @@ fn response_codes_are_named_and_carried() {
     assert_eq!(nxdomain.judged(), Err(Reject::NoSuchName));
     // A server that could not read the query at all may send back no question, only a code.
     let formerr = Reply::to(OURS).set_header(|h| {
-        h.qdcount = 0;
+        h.question_count = 0;
         h.flags |= 1;
     });
     assert_eq!(formerr.judged(), Err(Reject::ServerError(1)));
     let header = formerr.header();
-    assert_eq!(header.rcode(), 1);
+    assert_eq!(header.response_code(), 1);
 }
 
 #[test]
@@ -233,12 +240,12 @@ fn an_address_for_another_name_is_never_taken() {
         .a(OURS, [10, 0, 2, 9]);
     assert_eq!(mixed.judged(), Ok(vec![[10, 0, 2, 9]]));
     let theirs_only = Reply::to(OURS).a("bank.test", [6, 6, 6, 6]);
-    assert_eq!(theirs_only.judged(), Err(Reject::NoAddress));
+    assert_eq!(theirs_only.judged(), Err(Reject::NoIpv4Address));
 }
 
 #[test]
 fn an_empty_answer_section_is_no_address() {
-    assert_eq!(Reply::to(OURS).judged(), Err(Reject::NoAddress));
+    assert_eq!(Reply::to(OURS).judged(), Err(Reject::NoIpv4Address));
 }
 
 #[test]
@@ -251,7 +258,7 @@ fn a_chain_is_followed_in_any_order_and_only_from_our_name() {
         .a("bank.test", [6, 6, 6, 6])
         .cname(OURS, "cdn.nife.test");
     let answer = Query::new(OUR_ID, OURS).unwrap().accept(&r.bytes).unwrap();
-    assert_eq!(answer.addresses(), &[[10, 0, 2, 9]]);
+    assert_eq!(answer.ipv4_addresses(), &[[10, 0, 2, 9]]);
     assert_eq!(
         answer.canonical(),
         &Name::from_dotted("origin.nife.test").unwrap()
@@ -316,16 +323,16 @@ fn other_record_types_are_ignored() {
 }
 
 #[test]
-fn addresses_past_the_cap_are_dropped_and_the_rest_kept() {
+fn addresses_past_the_limit_are_dropped_and_the_rest_kept() {
     let mut r = Reply::to(OURS);
-    for i in 0..(MAXIMUM_ADDRESSES as u8 + 2) {
+    for i in 0..(MAXIMUM_IPV4_ADDRESSES as u8 + 2) {
         r = r.a(OURS, [10, 0, 2, i]);
     }
     let got = r.judged().unwrap();
-    assert_eq!(got.len(), MAXIMUM_ADDRESSES);
+    assert_eq!(got.len(), MAXIMUM_IPV4_ADDRESSES);
     assert_eq!(
-        got[MAXIMUM_ADDRESSES - 1],
-        [10, 0, 2, MAXIMUM_ADDRESSES as u8 - 1]
+        got[MAXIMUM_IPV4_ADDRESSES - 1],
+        [10, 0, 2, MAXIMUM_IPV4_ADDRESSES as u8 - 1]
     );
 }
 
@@ -458,7 +465,7 @@ fn one_malformed_answer_refuses_the_whole_reply() {
     // An answer count that promises one more record than the bytes hold.
     let short = Reply::to(OURS)
         .a(OURS, [10, 0, 2, 9])
-        .set_header(|h| h.ancount += 1);
+        .set_header(|h| h.answer_count += 1);
     assert_eq!(short.judged(), Err(Reject::Malformed(Error::Truncated)));
 }
 
@@ -584,7 +591,7 @@ fn a_cname_target_reads_through_the_message() {
     let mut reader = Reader::new(reply).unwrap();
     reader.question().unwrap();
     let record = reader.record().unwrap();
-    assert_eq!(record.rtype, record_type::CNAME);
+    assert_eq!(record.record_type, record_type::CNAME);
     assert_eq!(record.ttl, 1952);
     assert_eq!(
         cname_target(reply, &record).unwrap(),
@@ -723,4 +730,24 @@ fn labels_that_fill_the_limit_exactly_are_not_too_long() {
 #[test]
 fn a_query_keeps_its_transaction_id() {
     assert_eq!(Query::new(0x1234, "nife.test").unwrap().id(), 0x1234);
+}
+
+#[test]
+fn a_name_prints_and_parses_as_its_dotted_form() {
+    let name: Name = "packages.example.test".parse().unwrap();
+    assert_eq!(name, Name::from_dotted("Packages.Example.TEST.").unwrap());
+    assert_eq!(format!("{name}"), "packages.example.test");
+    assert_eq!(format!("{name:?}"), "packages.example.test");
+    assert_eq!(format!("{}", Name::root()), ".");
+    assert_eq!("a b".parse::<Name>(), Err(Error::BadCharacter));
+}
+
+#[test]
+fn the_sizes_the_crate_documents_are_the_sizes_it_has() {
+    use core::mem::size_of;
+
+    use domain_name_system::Answer;
+    assert_eq!(size_of::<Name>(), 256);
+    assert_eq!(size_of::<Answer>(), 296);
+    assert_eq!(size_of::<Result<Answer, Reject>>(), 300);
 }

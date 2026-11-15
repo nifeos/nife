@@ -96,7 +96,7 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
    BUGS list from the root doc, the minimum Rust version and the type sizes measured above. Record
    the first stranger run in `docs/stranger-test.md`. Door: two-way. Effort: S.
 
-4. Shipped text points into nife. Finding: line 4 sends the reader to `notes/name-resolution.md`.
+4. Shipped text points into nife. DONE. Finding: line 4 sends the reader to `notes/name-resolution.md`.
    Line 7 names `fuzz/fuzz_targets/domain_name_system_reply.rs`, a path in nife (item 5 moves the
    target). Lines 262 to 263 cite milestone 384 and say nothing applies `is_within`, which
    `crates/domain_name_resolution_contract/src/grants.rs` line 180 does. Lines 369 to 371 cite
@@ -249,6 +249,13 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 - **Outstanding.** Decisions 1 and 2 and every item the ledger leaves, which wait for #3559 to merge
   or for an architect. Checked against `crates/domain_name_system/src/lib.rs` on `main`: the label
   and header lengths keep their names and the crate has no README.
+- **Outstanding.** Items 1, 2, 3 and 5 and 9: the ratification pull request, the standalone manifest,
+  the README and license files, the crate's own `fuzz/` directory and the mutants-exempts lines all
+  belong to the move. Checked against `crates/domain_name_system` on main: none of them exists there.
+- **Outstanding.** The test client in `components/src/socket_test_client.rs` still sizes its TCP
+  buffer from the UDP maximum (item 16). Checked by reading its `TcpReply::new` call.
+- **Outstanding.** Item 7's `.github/accepted-words` entries wait for the move, and the Kani
+  proofs were edited for the renames but not run in this tree.
 
 ## BUGS
 
