@@ -51,6 +51,16 @@ const DRIVER_FEATURES_SEL: u64 = 0x024;
 const INTERRUPT_STATUS: u64 = 0x060;
 const INTERRUPT_ACK: u64 = 0x064;
 const STATUS: u64 = 0x070;
+/// (`ConfigGeneration`, virtio 1.2 section 4.2.2) The configuration generation: the device changes
+/// it whenever the device-specific configuration changes, so a multi-word configuration read is
+/// consistent when it reads the same value before and after. Name: provisional.
+///
+/// BUGS: the kernel's mediated Peripheral Component Interconnect (PCI) transport answers 0 for
+/// this offset (`kernel/src/virtio.rs`), so on that grant the bracket in [`capacity_sectors`]
+/// always holds and checks nothing. The mmio transport and the direct grant ([`direct`]) read the
+/// device's real generation.
+#[doc(alias = "ConfigGeneration")]
+const CONFIGURATION_GENERATION: u64 = 0x0fc;
 
 // Status bits.
 const S_ACKNOWLEDGE: u32 = 1;
@@ -1270,11 +1280,35 @@ fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count:
     .expect("the kernel refused a block-server transfer, a server bug")
 }
 
-/// The disk's capacity in 512-byte sectors, from virtio-blk's capacity register.
+/// How many times [`consistent_read`] reads the configuration before it gives up on a device whose
+/// generation never holds still. A device changes its configuration rarely (a resize), so a second
+/// attempt nearly always succeeds; the rest bound a device that misbehaves.
+const CONFIGURATION_READ_ATTEMPTS: u32 = 16;
+
+/// Read a multi-word configuration value with `read`, bracketed by `generation`, until the
+/// generation is the same before and after (virtio 1.2 section 2.5.1). `None` after
+/// [`CONFIGURATION_READ_ATTEMPTS`] attempts that each saw it change. Takes closures so the
+/// bracket can be tested without a device.
+fn consistent_read(
+    mut generation: impl FnMut() -> u32,
+    mut read: impl FnMut() -> u64,
+) -> Option<u64> {
+    (0..CONFIGURATION_READ_ATTEMPTS).find_map(|_| {
+        let before = generation();
+        let value = read();
+        (generation() == before).then_some(value)
+    })
+}
+
+/// The disk's capacity in 512-byte sectors, from virtio-blk's 64-bit capacity field, read as two
+/// 32-bit halves inside one configuration generation so a resize between them cannot pair one
+/// capacity's low half with another's high half.
 fn capacity_sectors() -> u64 {
-    let lo = mr(CONFIG) as u64;
-    let hi = mr(CONFIG + 4) as u64;
-    lo | (hi << 32)
+    consistent_read(
+        || mr(CONFIGURATION_GENERATION),
+        || mr(CONFIG) as u64 | ((mr(CONFIG + 4) as u64) << 32),
+    )
+    .expect("the disk's configuration generation never held still across a capacity read")
 }
 
 /// The disk's size in bytes (sectors * 512), for `blk::SIZE`. RedoxFS asks for this once, at open,
@@ -1322,6 +1356,8 @@ pub mod direct {
     const DRIVER_FEATURES_SELECT: u64 = 0x024;
     const INTERRUPT_STATUS: u64 = 0x060;
     const STATUS: u64 = 0x070;
+    #[doc(alias = "ConfigGeneration")]
+    const CONFIGURATION_GENERATION: u64 = 0x0fc;
     const CONFIGURATION: u64 = 0x100;
 
     // The common configuration's registers (virtio 1.2 section 4.1.4.3).
@@ -1331,6 +1367,8 @@ pub mod direct {
     const COMMON_DRIVER_FEATURE: u64 = 0x0c;
     const COMMON_CONFIGURATION_INTERRUPT_VECTOR: u64 = 0x10;
     const COMMON_DEVICE_STATUS: u64 = 0x14;
+    #[doc(alias = "config_generation")]
+    const COMMON_CONFIGURATION_GENERATION: u64 = 0x15;
     const COMMON_QUEUE_SELECT: u64 = 0x16;
     const COMMON_QUEUE_ENTRIES_REGISTER: u64 = 0x18;
     const COMMON_QUEUE_INTERRUPT_VECTOR: u64 = 0x1a;
@@ -1464,6 +1502,9 @@ pub mod direct {
             DEVICE_FEATURES => load::<u32>(common + COMMON_DEVICE_FEATURE),
             INTERRUPT_STATUS => u32::from(load::<u8>(u64::from(h.interrupt_status))),
             STATUS => u32::from(load::<u8>(common + COMMON_DEVICE_STATUS)),
+            CONFIGURATION_GENERATION => {
+                u32::from(load::<u8>(common + COMMON_CONFIGURATION_GENERATION))
+            }
             o if o == CONFIGURATION || o == CONFIGURATION + 4 => match h.device {
                 Some(device) => load::<u32>(u64::from(device) + (o - CONFIGURATION)),
                 None => 0,

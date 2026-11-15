@@ -1,6 +1,6 @@
 //! Host tests of the checks the driver makes before it touches the DMA page or the device, and of
 //! the logic it runs on the page's bytes: the accessors' window check, the block server's range
-//! check, the descriptor chain's links, the completion wait's bound, the directory lookup, the
+//! check, the descriptor chain's links, the completion wait's bound, the generation-bracketed configuration read, the directory lookup, the
 //! write test's pattern, the DHCP DISCOVER and its checksum, and the DHCP OFFER parse.
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by maintainer/virtio-block-server-robustness.
@@ -414,4 +414,47 @@ fn the_completion_wait_counts_wakeups_and_stops_at_the_bound() {
     });
     assert!(moved);
     assert_eq!(wakeups, 1001);
+}
+
+/// The bracketed read returns the first value read inside one generation, retries while the
+/// generation moves across the read, and gives up after the bound on a generation that never
+/// holds still.
+#[test]
+fn a_configuration_read_holds_only_inside_one_generation() {
+    // A steady generation: the first read stands.
+    assert_eq!(consistent_read(|| 3, || 0x1_0000_0002), Some(0x1_0000_0002));
+
+    // A resize lands during the first read: the generation reads 0 before it and 1 after, so the
+    // torn value is dropped and the second attempt, wholly inside generation 1, stands.
+    let generations = [0u32, 1, 1, 1];
+    let values = [0xdead_u64, 0x2000];
+    let (mut g, mut v) = (0, 0);
+    let read = consistent_read(
+        || {
+            g += 1;
+            generations[g - 1]
+        },
+        || {
+            v += 1;
+            values[v - 1]
+        },
+    );
+    assert_eq!(read, Some(0x2000));
+    assert_eq!((g, v), (4, 2));
+
+    // A generation that moves on every read: no value, after exactly the bound.
+    let mut counter = 0u32;
+    let mut reads = 0;
+    let read = consistent_read(
+        || {
+            counter += 1;
+            counter
+        },
+        || {
+            reads += 1;
+            7
+        },
+    );
+    assert_eq!(read, None);
+    assert_eq!(reads, CONFIGURATION_READ_ATTEMPTS);
 }

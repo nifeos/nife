@@ -319,10 +319,10 @@ video_terminal abbreviations 189
 video_terminal prose_acronyms 17
 video_terminal readme_acronyms 4
 video_terminal register_names 3
-virtio abbreviations 100
+virtio abbreviations 98
 virtio prose_acronyms 17
 virtio readme_acronyms 2
-virtio register_names 6
+virtio register_names 5
 vmstat abbreviations 5
 walk_pricing abbreviations 17
 walk_pricing prose_acronyms 1
