@@ -50,7 +50,7 @@ pub enum Error {
     /// The first four bytes were not `0xd00dfeed`. Either the pointer is wrong or the
     /// bootloader did not hand over a device tree at all.
     BadMagic(u32),
-    /// The blob claims a version this parser does not read: its `last_comp_version` is above 17.
+    /// The blob claims a version this parser does not read: its `last_compatible_version` is above 17.
     UnsupportedVersion(u32),
     /// The blob, or one of its blocks, ends before something it must hold: an offset in the header
     /// points outside the blob, a property's value runs past the structure block, or the walk
@@ -118,7 +118,7 @@ const FDT_NOP: u32 = 0x4;
 const FDT_END: u32 = 0x9;
 
 const MAGIC: u32 = 0xd00d_feed;
-const HEADER_LEN: usize = 40;
+const HEADER_BYTES: usize = 40;
 
 /// The largest `totalsize` [`DeviceTreeBlob::from_ptr`] will believe, 2 MiB.
 ///
@@ -179,27 +179,27 @@ pub struct DeviceTreeBlob<'a> {
     /// The structure block alone, as the prefix of the blob that ends where the block does, so an
     /// offset into it is an offset into the blob and a read past the block is a read past the end.
     structure: &'a [u8],
-    off_struct: usize,
-    off_strings: usize,
-    off_rsvmap: usize,
+    structure_offset: usize,
+    strings_offset: usize,
+    reservations_offset: usize,
 }
 
 impl<'a> DeviceTreeBlob<'a> {
-    /// Parse the blob at `ptr`, whose length the blob's own header gives.
+    /// Parse the blob at `pointer`, whose length the blob's own header gives.
     ///
     /// Reads the first 8 bytes alone, the magic and `totalsize`, and builds a slice over the
     /// whole blob only once the magic matches and the size is at most
-    /// [`MAXIMUM_TOTALSIZE_BYTES`]. Every read is byte-wise, so `ptr` needs no alignment.
+    /// [`MAXIMUM_TOTALSIZE_BYTES`]. Every read is byte-wise, so `pointer` needs no alignment.
     ///
     /// # Safety
     ///
-    /// `ptr` must point at a device tree blob that stays valid for `'a`. The 8 bytes are read
+    /// `pointer` must point at a device tree blob that stays valid for `'a`. The 8 bytes are read
     /// before anything is validated, which is the one leap of faith: a wrong pointer almost
     /// certainly fails the magic check that follows.
-    pub unsafe fn from_ptr(ptr: *const u8) -> Result<Self, Error> {
+    pub unsafe fn from_ptr(pointer: *const u8) -> Result<Self, Error> {
         // Read just enough to learn how long the thing claims to be.
-        // SAFETY: the caller's contract is that `ptr` points at a blob valid for `'a`. This reads only the magic and the size, the deliberate leap of faith the magic check on the next line exists to catch.
-        let header = unsafe { core::slice::from_raw_parts(ptr, 8) };
+        // SAFETY: the caller's contract is that `pointer` points at a blob valid for `'a`. This reads only the magic and the size, the deliberate leap of faith the magic check on the next line exists to catch.
+        let header = unsafe { core::slice::from_raw_parts(pointer, 8) };
         let magic = be32(header, 0)?;
         if magic != MAGIC {
             return Err(Error::BadMagic(magic));
@@ -209,10 +209,10 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::TooLarge(total));
         }
 
-        // SAFETY: the magic checked out, so `ptr` really is a blob, and `total` is the length it
+        // SAFETY: the magic checked out, so `pointer` really is a blob, and `total` is the length it
         // declares for itself, now bounded by `MAXIMUM_TOTALSIZE_BYTES`; the caller's contract covers the
         // whole of it for `'a`.
-        let bytes = unsafe { core::slice::from_raw_parts(ptr, total) };
+        let bytes = unsafe { core::slice::from_raw_parts(pointer, total) };
         Self::from_bytes(bytes)
     }
 
@@ -224,7 +224,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// read into a larger buffer parses as itself. [`MAXIMUM_TOTALSIZE_BYTES`] bounds
     /// [`from_ptr`](Self::from_ptr) only: a slice in hand is already as long as it is. The header's
     /// `version` decides where the structure block ends (`size_dt_struct` from version 17, the
-    /// strings block before it), and a `last_comp_version` above 17 is refused. `size_dt_strings`
+    /// strings block before it), and a `last_compatible_version` above 17 is refused. `size_dt_strings`
     /// and `boot_cpuid_phys` are not read; a name in the strings block is bounded by the blob's end.
     ///
     /// # Examples
@@ -249,20 +249,20 @@ impl<'a> DeviceTreeBlob<'a> {
         }
 
         let total = be32(bytes, 4)? as usize;
-        if bytes.len() < total || total < HEADER_LEN {
+        if bytes.len() < total || total < HEADER_BYTES {
             return Err(Error::Truncated);
         }
 
         // We only understand version 17 and later, which is everything made since about
-        // 2005. The `last_comp_version` field is the blob telling us the oldest reader
+        // 2005. The `last_compatible_version` field is the blob telling us the oldest reader
         // it is still compatible with.
-        let last_comp_version = be32(bytes, 24)?;
-        if last_comp_version > 17 {
-            return Err(Error::UnsupportedVersion(last_comp_version));
+        let last_compatible_version = be32(bytes, 24)?;
+        if last_compatible_version > 17 {
+            return Err(Error::UnsupportedVersion(last_compatible_version));
         }
 
         let structure_start = be32(bytes, 8)? as usize;
-        let off_strings = be32(bytes, 12)? as usize;
+        let strings_offset = be32(bytes, 12)? as usize;
 
         // Where the structure block ends. From version 17 the header says how long it is; before
         // that the block runs up to the strings block, which is how libfdt reads such a blob. A
@@ -273,21 +273,24 @@ impl<'a> DeviceTreeBlob<'a> {
                 .checked_add(be32(bytes, 36)? as usize)
                 .ok_or(Error::Truncated)?
         } else {
-            off_strings
+            strings_offset
         };
         if structure_end > total || structure_end < structure_start {
             return Err(Error::Truncated);
         }
 
         let tree = DeviceTreeBlob {
-            off_struct: structure_start,
-            off_strings,
-            off_rsvmap: be32(bytes, 16)? as usize,
+            structure_offset: structure_start,
+            strings_offset,
+            reservations_offset: be32(bytes, 16)? as usize,
             bytes: &bytes[..total],
             structure: &bytes[..structure_end],
         };
 
-        if tree.off_struct >= total || tree.off_strings >= total || tree.off_rsvmap >= total {
+        if tree.structure_offset >= total
+            || tree.strings_offset >= total
+            || tree.reservations_offset >= total
+        {
             return Err(Error::Truncated);
         }
 
@@ -315,7 +318,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// Name: provisional. Refused `reserved_regions`, with no alias for it (milestone 1085 (what an
     /// outside maintainer would fix before it leaves) D5).
     pub fn memory_reservations(&self, out: &mut [Region]) -> Result<usize, Error> {
-        let mut at = self.off_rsvmap;
+        let mut at = self.reservations_offset;
         let mut n = 0;
 
         loop {
@@ -379,7 +382,7 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut named_memory = false;
         let mut typed_memory = false;
         let mut available = true;
-        let mut reg: Option<&[u8]> = None;
+        let mut register_value: Option<&[u8]> = None;
         let mut tokens = self.tokens();
 
         while let Some((depth, token)) = tokens.step()? {
@@ -389,17 +392,18 @@ impl<'a> DeviceTreeBlob<'a> {
                         named_memory = name == b"memory" || name.starts_with(b"memory@");
                         typed_memory = false;
                         available = true;
-                        reg = None;
+                        register_value = None;
                     }
                 }
                 Token::EndNode => {
                     if depth == 2
                         && (named_memory || typed_memory)
                         && available
-                        && let Some(value) = reg
+                        && let Some(value) = register_value
                     {
                         let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
-                        found += decode_reg(value, bus_address_cells, bus_size_cells, remaining)?;
+                        found +=
+                            decode_regions(value, bus_address_cells, bus_size_cells, remaining)?;
                     }
                 }
                 Token::Property { name, value } => {
@@ -410,7 +414,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     }
                     if depth == 2 {
                         match name {
-                            b"reg" => reg = Some(value),
+                            b"reg" => register_value = Some(value),
                             b"device_type" => typed_memory = value == b"memory\0",
                             b"status" => available = value == b"okay\0" || value == b"ok\0",
                             _ => {}
@@ -470,7 +474,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     );
                     if target_at == Some(depth) && name == b"reg" {
                         // A node's own `reg` uses its parent's cells, one level up.
-                        return decode_reg(
+                        return decode_regions(
                             value,
                             bus_address_cells[depth - 1],
                             bus_size_cells[depth - 1],
@@ -520,7 +524,7 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut bus_size_cells = [1u32; DEPTH_SLOTS];
         // Per open node: its `reg` value with the parent's cell counts it decodes with, and whether
         // its `compatible` named the device being looked for.
-        let mut reg = [None::<(&'a [u8], u32, u32)>; DEPTH_SLOTS];
+        let mut register_values = [None::<(&'a [u8], u32, u32)>; DEPTH_SLOTS];
         let mut matched = [false; DEPTH_SLOTS];
         let mut tokens = self.tokens();
 
@@ -529,15 +533,17 @@ impl<'a> DeviceTreeBlob<'a> {
                 Token::BeginNode { .. } => {
                     bus_address_cells[depth] = bus_address_cells[depth - 1];
                     bus_size_cells[depth] = bus_size_cells[depth - 1];
-                    reg[depth] = None;
+                    register_values[depth] = None;
                     matched[depth] = false;
                 }
                 Token::EndNode => {
                     // Depth 1 is the root, which has no `compatible` worth matching and whose `reg`
                     // would have no parent to decode against.
                     if depth >= 2 && matched[depth] {
-                        return match reg[depth] {
-                            Some((value, address, size)) => decode_reg(value, address, size, out),
+                        return match register_values[depth] {
+                            Some((value, address, size)) => {
+                                decode_regions(value, address, size, out)
+                            }
                             // Compatible but no `reg`: the device exists and has no register block
                             // to name. Zero regions, not an error.
                             None => Ok(0),
@@ -552,7 +558,7 @@ impl<'a> DeviceTreeBlob<'a> {
                         &mut bus_size_cells[depth],
                     );
                     if depth >= 2 && name == b"reg" {
-                        reg[depth] = Some((
+                        register_values[depth] = Some((
                             value,
                             bus_address_cells[depth - 1],
                             bus_size_cells[depth - 1],
@@ -900,7 +906,8 @@ impl<'a> DeviceTreeBlob<'a> {
                     }
                     if depth == 3 && in_reserved_memory && name == b"reg" {
                         let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
-                        found += decode_reg(value, bus_address_cells, bus_size_cells, remaining)?;
+                        found +=
+                            decode_regions(value, bus_address_cells, bus_size_cells, remaining)?;
                     }
                 }
             }
@@ -1001,7 +1008,7 @@ impl<'a> DeviceTreeBlob<'a> {
     fn tokens(&self) -> Tokens<'_, 'a> {
         Tokens {
             tree: self,
-            at: self.off_struct,
+            at: self.structure_offset,
             depth: 0,
         }
     }
@@ -1015,7 +1022,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// the structure block, so a caller can slice `value_at..value_at + len` without a further check.
     fn property_header(&self, at: usize) -> Result<PropertyHeader, Error> {
         let len = be32(self.structure, at)? as usize;
-        let name_off = be32(self.structure, at.checked_add(4).ok_or(Error::Truncated)?)? as usize;
+        let name_offset =
+            be32(self.structure, at.checked_add(4).ok_or(Error::Truncated)?)? as usize;
         let value_at = at.checked_add(8).ok_or(Error::Truncated)?;
         let value_end = value_at.checked_add(len).ok_or(Error::Truncated)?;
         if value_end > self.structure.len() {
@@ -1023,17 +1031,17 @@ impl<'a> DeviceTreeBlob<'a> {
         }
         Ok(PropertyHeader {
             length_bytes: len,
-            name_offset: name_off,
+            name_offset: name_offset,
             value_at,
             next: skip_padded(value_at, len)?,
         })
     }
 
-    /// A property's name: the string at `name_off` in the strings block.
-    fn string(&self, name_off: usize) -> Result<&'a [u8], Error> {
-        self.cstr(
-            self.off_strings
-                .checked_add(name_off)
+    /// A property's name: the string at `name_offset` in the strings block.
+    fn property_name(&self, name_offset: usize) -> Result<&'a [u8], Error> {
+        self.terminated_string(
+            self.strings_offset
+                .checked_add(name_offset)
                 .ok_or(Error::Truncated)?,
         )
     }
@@ -1046,7 +1054,7 @@ impl<'a> DeviceTreeBlob<'a> {
     }
 
     /// A null-terminated string in the blob, returned without its terminator.
-    fn cstr(&self, at: usize) -> Result<&'a [u8], Error> {
+    fn terminated_string(&self, at: usize) -> Result<&'a [u8], Error> {
         let rest = self.bytes.get(at..).ok_or(Error::Truncated)?;
         let end = rest.iter().position(|&b| b == 0).ok_or(Error::BadValue)?;
         Ok(&rest[..end])
@@ -1107,7 +1115,7 @@ impl<'a> Tokens<'_, 'a> {
                 FDT_PROP => {
                     let header = self.tree.property_header(self.at)?;
                     self.at = header.next;
-                    let name = self.tree.string(header.name_offset)?;
+                    let name = self.tree.property_name(header.name_offset)?;
                     // `property_header` checked the value lies inside the structure block.
                     let value = &self.tree.structure
                         [header.value_at..header.value_at + header.length_bytes];
@@ -1162,7 +1170,7 @@ fn integer(value: &[u8]) -> Result<u64, Error> {
 ///
 /// A cell count above [`MAXIMUM_CELLS`], or a `value` that is not a whole number of pairs, is
 /// [`Error::BadValue`], as libfdt and Linux refuse both.
-fn decode_reg(
+fn decode_regions(
     value: &[u8],
     bus_address_cells: u32,
     bus_size_cells: u32,
