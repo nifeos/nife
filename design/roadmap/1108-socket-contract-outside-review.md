@@ -226,12 +226,11 @@ The checks are in [the appendix](1108-socket-contract-outside-review/done-when.m
 ## Follow-on
 
 What is left: the move steps (items 2, 5, 6), the names (item 9), the inline provisional prose
-(item 10), and the parts of items 7 and 8 marked LEFT in the appendix.
+(item 10), and the part of item 8 marked LEFT in the appendix.
 
 - **Milestone 1017.** The crate moves in its order, and the move lane takes items 2, 5, 6 and 10.
-- **Outstanding.** Item 7's loop harness and no-reuse arithmetic harness, `Ports::next` returning
-  an option, and item 8's single offset type: checked against `crates/socket_contract/src/lib.rs`,
-  none exists.
+- **Outstanding.** Item 8's single offset type, which waits on the window API's offset type.
+  Item 7's loop proof is bounded at four candidates, as the appendix says.
 - **Refused.** Nothing here renames; item 9 waits for the naming pass.
 
 ## Index row

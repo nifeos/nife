@@ -39,7 +39,7 @@ own refusal turns on. When the answer is no, it says which of the two files is t
 comparing both against `target/board`. `script/board-image` now runs it on every payload it builds
 and on every card it writes. So the ordering this section relies on is read off the bytes rather
 than asserted in a comment. The kernel's check is still the authority, and this one is the early
-warning. If they ever disagree, the board is right.
+warning. If they ever disagree, the kernel is right.
 
 ## The card layout
 

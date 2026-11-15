@@ -41,13 +41,14 @@ against three failure modes:
 - Every name this tree authors, parameters included, spells these out: `cap`, `op`, `recv`, `rx`,
   `tx`, `phy`, `init`, `irq`, `fifo`, `min`, `max`, `os`, `config`, `spec`, `arg`, `mem`, `dir`,
   `prog`, `pos`, `opt` and `mtime`. The same holds for `va`, `pa`, `ipi`, `nmi`, `ist`, `msr`,
-  `dtb`, `ipc`, `asid`, `gpt`, `nvme`, `pcie`, `dma`, `pr`, `initrd`, `proto`, `rgmii` and `mdio`.
-  The appendix gives each spelling and the cases that decide it. The words are the
+  `dtb`, `ipc`, `asid`, `gpt`, `nvme`, `pcie`, `dma`, `pr`, `initrd`, `proto`, `rgmii`, `mdio` and
+  `sdio`. The appendix gives each spelling and the cases that decide it. The words are the
   `[spelled_out]` list in `vendor/crate-workflows/helpers/naming_words.toml`, the template's, and
   `script/lint` fails when this paragraph and that list disagree.
 - These stay: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`, `bios`, `id`, `efi`, `crc`,
   QEMU, `MAC`, `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
-  acronym (`address_space_identifier`). `SDIO` is not accepted.
+  acronym (`address_space_identifier`). `io` stays whole inside an expansion too: SDIO becomes `SD_IO`,
+  `mdio` becomes `management_data_io` and `virtio` becomes `virtual_io`.
 - A name that arrives across another project's interface keeps its owner's spelling, and only the
   identifier the owner wrote keeps it. A concept nife names in its own code takes nife's spelling.
   The foreign spelling stops at the boundary: past QEMU's `-initrd`, the tree says
