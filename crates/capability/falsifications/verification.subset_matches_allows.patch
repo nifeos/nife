@@ -14,8 +14,7 @@ red.
 only 2 of the 12 capability harnesses red: this one and
 `from_bits_cannot_forge_a_right`. `subset_is_reflexive`, `subset_is_transitive` and
 `derive_never_widens_rights` all stay green, the last of them because it states the
-property THROUGH the predicate being broken and so cannot see the break. See
-notes/falsification.md.
+property THROUGH the predicate being broken and so cannot see the break.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
 index 33b5819a..21614dfe 100644

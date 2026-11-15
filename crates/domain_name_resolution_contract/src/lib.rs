@@ -6,10 +6,8 @@
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
-//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client
-//! |
-//! | [`ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the
-//! resolver |
+//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client |
+//! | [`ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
 
 //! # BUGS
 //!
