@@ -444,7 +444,7 @@ pub(crate) fn configure_from_dtb() {
     };
 
     let u32_prop = |name: &[u8]| -> Option<u32> {
-        match dt.node_prop(UART_NODE, name) {
+        match dt.node_property(UART_NODE, name) {
             Ok(Some(bytes)) if bytes.len() >= 4 => {
                 Some(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
             }
@@ -459,7 +459,7 @@ pub(crate) fn configure_from_dtb() {
         // A stated clock is the only licence to reprogram the divisor; see the field's doc.
         divisor: u32_prop(b"clock-frequency").map_or(0, Shape::divisor_for),
         dw_busy_quirk: matches!(
-            dt.node_prop(UART_NODE, b"compatible"),
+            dt.node_property(UART_NODE, b"compatible"),
             Ok(Some(compat)) if compat.split(|&b| b == 0).any(|s| s == b"snps,dw-apb-uart")
         ),
     };

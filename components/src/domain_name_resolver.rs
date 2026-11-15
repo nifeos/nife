@@ -57,13 +57,13 @@ const ENTROPY: u64 = 3;
 const OWN_SPACE: u64 = protocol::endowment::OWN_SPACE_SLOT;
 
 /// Where the socket page is mapped. A private pair page: nobody else knows this address.
-const SOCKET_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const SOCKET_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 /// Where client window 0 is mapped; window `i` is `i` pages above it. Each badge's page has its
 /// own window, and a name is copied out of it before it is parsed.
-const CLIENT_VA: u64 = address_space_map::pair_page(0x0000_0000_00B0_0000);
+const CLIENT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00B0_0000);
 /// The last window, checked against the map at compile time like the first.
 const _: u64 =
-    address_space_map::pair_page(CLIENT_VA + (protocol::GRANTS_MAXIMUM as u64 - 1) * PAGE);
+    address_space_layout::pair_page(CLIENT_VA + (protocol::GRANTS_MAXIMUM as u64 - 1) * PAGE);
 
 // SAFETY: `socket_page` maps one page read/write at SOCKET_VA before any accessor runs, and every
 // accessor is reached only after it succeeded (`socket_ready`).
@@ -268,7 +268,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
         Err(Fail::Status(outcome)) => return (outcome, 0),
         Err(Fail::Rejected(reject)) => return (refused(reject), 0),
     };
-    let addresses = answer.addresses();
+    let addresses = answer.ipv4_addresses();
     for (k, a) in addresses.iter().enumerate().take(MAXIMUM_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
             page.w8((ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
@@ -289,9 +289,9 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
 fn refused(reject: Reject) -> Outcome {
     match reject {
         Reject::NoSuchName => Outcome::of(status::NO_SUCH_NAME),
-        Reject::ServerError(rcode) => Outcome {
+        Reject::ServerError(response_code) => Outcome {
             status: status::SERVER_ERROR,
-            detail: rcode,
+            detail: response_code,
             count: 0,
         },
         other => Outcome {

@@ -4,52 +4,54 @@
 
 ## Every crate, since the first commit
 
-Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
-
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
 | `calendar` | 118 | 6 | 118 | 6 | 11 | 11 (100%) |
+| `line_editor` | 77 | 27 | 92 | 146 | 71 | 58 (82%) |
 | `installed_programs` | 69 | 103 | 78 | 175 | 45 | 34 (76%) |
-| `capability_manifest_note` | 48 | 74 | 51 | 132 | 51 | 35 (69%) |
+| `capability_manifest_note` | 48 | 74 | 51 | 132 | 53 | 37 (70%) |
 | `block_roster_contract` | 48 | 11 | 48 | 11 | 18 | 12 (67%) |
-| `grant_plan` | 44 | 105 | 315 | 1187 | 270 | 210 (78%) |
-| `abi` | 22 | 38 | 63 | 208 | 160 | 144 (90%) |
+| `grant_plan` | 44 | 105 | 315 | 1187 | 275 | 213 (77%) |
+| `filesystem_contract` | 22 | 28 | 306 | 487 | 157 | 135 (86%) |
+| `abi` | 22 | 38 | 63 | 208 | 161 | 144 (89%) |
 | `supervision_contract` | 22 | 2 | 22 | 2 | 12 | 12 (100%) |
-| `filesystem_contract` | 21 | 21 | 305 | 480 | 149 | 132 (89%) |
 | `hot_swap_contract` | 19 | 0 | 38 | 126 | 74 | 67 (91%) |
 | `capability_plan` | 18 | 15 | 18 | 15 | 17 | 16 (94%) |
 | `globally_unique_identifier_partition_table` | 12 | 5 | 103 | 286 | 64 | 50 (78%) |
-| `clock_contract` | 10 | 15 | 16 | 69 | 56 | 50 (89%) |
-| `line_editor` | 8 | 27 | 23 | 146 | 69 | 56 (81%) |
-| `entropy_contract` | 8 | 19 | 12 | 37 | 57 | 39 (68%) |
-| `compositor` | 7 | 2 | 21 | 101 | 50 | 42 (84%) |
-| `graphics_contract` | 7 | 0 | 19 | 33 | 38 | 37 (97%) |
-| `counter_frequency_contract` | 7 | 8 | 9 | 23 | 36 | 29 (81%) |
-| `environment_contract` | 6 | 7 | 8 | 51 | 29 | 22 (76%) |
-| `current_cpu_contract` | 4 | 4 | 7 | 21 | 28 | 15 (54%) |
-| `credential_contract` | 3 | 3 | 39 | 73 | 50 | 42 (84%) |
+| `clock_contract` | 11 | 15 | 17 | 69 | 66 | 52 (79%) |
+| `entropy_contract` | 8 | 20 | 12 | 38 | 59 | 41 (69%) |
+| `compositor` | 7 | 2 | 21 | 101 | 52 | 44 (85%) |
+| `graphics_contract` | 7 | 0 | 19 | 33 | 39 | 38 (97%) |
+| `counter_frequency_contract` | 7 | 8 | 9 | 23 | 37 | 30 (81%) |
+| `socket_contract` | 6 | 19 | 26 | 89 | 71 | 55 (77%) |
+| `environment_contract` | 6 | 7 | 8 | 51 | 30 | 23 (77%) |
+| `current_cpu_contract` | 4 | 4 | 7 | 21 | 29 | 16 (55%) |
+| `credential_contract` | 3 | 3 | 39 | 73 | 51 | 43 (84%) |
 | `boot_slot` | 3 | 3 | 3 | 55 | 26 | 20 (77%) |
 | `machine_statistics_contract` | 3 | 5 | 3 | 5 | 6 | 4 (67%) |
 | `login_contract` | 2 | 2 | 32 | 93 | 51 | 49 (96%) |
-| `std_runtime_contract` | 2 | 5 | 4 | 29 | 29 | 26 (90%) |
-| `socket_contract` | 1 | 14 | 21 | 84 | 62 | 51 (82%) |
+| `std_runtime_contract` | 2 | 5 | 4 | 29 | 31 | 28 (90%) |
 | `package_archive` | 1 | 1 | 20 | 130 | 37 | 28 (76%) |
-| `nifefs` | 1 | 1 | 10 | 42 | 57 | 44 (77%) |
-| `byte_sink_contract` | 1 | 2 | 8 | 50 | 41 | 40 (98%) |
-| `address_space_map` | 1 | 3 | 1 | 45 | 0 | 0 |
+| `nifefs` | 1 | 1 | 10 | 42 | 58 | 45 (78%) |
+| `byte_sink_contract` | 1 | 2 | 8 | 50 | 43 | 42 (98%) |
+| `measured_boot` | 1 | 35 | 3 | 100 | 36 | 27 (75%) |
+| `address_space_layout` | 1 | 3 | 1 | 45 | 0 | 0 |
+| `byte_glob` | 1 | 0 | 1 | 0 | 1 | 1 (100%) |
+| `static_elf` | 1 | 0 | 1 | 0 | 1 | 1 (100%) |
 | `supervision_protocol` | 0 | 0 | 22 | 70 | 65 | 56 (86%) |
 | `component_plan` | 0 | 0 | 16 | 138 | 36 | 30 (83%) |
 | `elf` | 0 | 0 | 3 | 82 | 53 | 42 (79%) |
-| `measured_boot` | 0 | 35 | 2 | 100 | 35 | 26 (74%) |
 | `capability_witness_contract` | 0 | 1 | 1 | 15 | 24 | 20 (83%) |
 | `program_argument_contract` | 0 | 1 | 1 | 30 | 0 | 0 |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `allocation_cache` | 0 | 2 | 0 | 20 | 0 | 0 |
 | `glob` | 0 | 2 | 0 | 2 | 2 | 2 (100%) |
 
+Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
+
 ## What broke in 2026W46
 
-Read at `a60748a4263b` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `ed4d01870d60` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_CAPABILITY_DELETE` `SYS_CAPABILITY_DELETE`
 > - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_EXIT` `SYS_EXIT`
@@ -104,6 +106,7 @@ Read at `a60748a4263b` against the week before. Each line is one removed or chan
 > - `block_roster_contract`: removed `VERSION`
 > - `block_roster_contract`: removed `capacity_of`
 > - `block_roster_contract`: removed `write`
+> - `byte_glob`: crate renamed `glob -> byte_glob`
 > - `calendar`: removed `Civil`
 > - `calendar`: removed `Civil: impl Clone`
 > - `calendar`: removed `Civil: impl Copy`
@@ -217,6 +220,7 @@ Read at `a60748a4263b` against the week before. Each line is one removed or chan
 > - `calendar`: removed `Weekday::name`
 > - `calendar`: removed `days_in_month`
 > - `calendar`: removed `is_leap_year`
+> - `clock_contract`: changed `WORDS`
 > - `entropy_contract`: removed `DEAD`
 > - `entropy_contract`: removed `bringup_failure`
 > - `entropy_contract`: removed `delivered`
@@ -224,9 +228,86 @@ Read at `a60748a4263b` against the week before. Each line is one removed or chan
 > - `entropy_contract`: removed `req`
 > - `entropy_contract`: removed `take`
 > - `entropy_contract`: removed `want`
+> - `filesystem_contract`: changed `xattr::STORE_DIR`
 > - `grant_plan`: changed `JOB_POOL_PAGES`
 > - `grant_plan`: changed `JOB_REGION_PAGES`
 > - `grant_plan`: changed `spawnproto::SHELL_BUDGET_PAGES`
+> - `line_editor`: removed `component::CONSOLE`
+> - `line_editor`: removed `component::DISPLAY`
+> - `line_editor`: removed `component::HANDOFF_PAGES`
+> - `line_editor`: removed `component::HANDOFF_VA`
+> - `line_editor`: removed `component::INSTANCE_PAGES`
+> - `line_editor`: removed `component::STACK_PAGES`
+> - `line_editor`: removed `component::supervisor::BUDGET`
+> - `line_editor`: removed `component::supervisor::BUDGET_PAGES`
+> - `line_editor`: removed `component::supervisor::CHILD_DISPLAY_TERMINAL`
+> - `line_editor`: removed `component::supervisor::CHILD_LINE_EDITOR`
+> - `line_editor`: removed `component::supervisor::CLIENT_IN`
+> - `line_editor`: removed `component::supervisor::CLIENT_OUT`
+> - `line_editor`: removed `component::supervisor::DISPLAY_IMAGE_ADDRESS`
+> - `line_editor`: removed `component::supervisor::ELF_VA`
+> - `line_editor`: removed `component::supervisor::IN_RESERVE`
+> - `line_editor`: removed `component::supervisor::LEND`
+> - `line_editor`: removed `component::supervisor::NEEDS_RESERVE`
+> - `line_editor`: removed `component::supervisor::OWN_IMAGE_ADDRESS`
+> - `line_editor`: removed `component::supervisor::PRESENT`
+> - `line_editor`: removed `component::supervisor::QUIESCE_BOUND_MILLISECONDS`
+> - `line_editor`: removed `component::supervisor::REPLACED_HUNG`
+> - `line_editor`: removed `component::supervisor::ROLLED_BACK`
+> - `line_editor`: removed `component::supervisor::SINK`
+> - `line_editor`: removed `component::supervisor::SINK_PAGE`
+> - `line_editor`: removed `component::supervisor::SINK_REPLY`
+> - `line_editor`: removed `component::supervisor::STAND_IN_PAGES`
+> - `line_editor`: removed `component::supervisor::STOP`
+> - `line_editor`: removed `component::supervisor::STOPPED`
+> - `line_editor`: removed `component::supervisor::SURFACE`
+> - `line_editor`: removed `component::supervisor::SWAP`
+> - `line_editor`: removed `component::supervisor::SWAPPED`
+> - `line_editor`: removed `component::supervisor::SWAPPING_BUDGET_PAGES`
+> - `line_editor`: removed `component::supervisor::SWAP_RESERVE_PAGES`
+> - `line_editor`: removed `component::supervisor::TERMINAL`
+> - `line_editor`: removed `component::supervisor::image_lengths`
+> - `line_editor`: removed `component::supervisor::unpack_image_lengths`
+> - `line_editor`: removed `proto::BAD_REQUEST`
+> - `line_editor`: removed `proto::CTL_HANDOFF`
+> - `line_editor`: removed `proto::CTL_QUIT`
+> - `line_editor`: removed `proto::CTL_RESUME`
+> - `line_editor`: removed `proto::FLAG_EOF`
+> - `line_editor`: removed `proto::FLAG_INTERRUPTED`
+> - `line_editor`: removed `proto::FLAG_RETRY`
+> - `line_editor`: removed `proto::NOTE_ABSORBED`
+> - `line_editor`: removed `proto::NOTE_NOT_ABSORBED`
+> - `line_editor`: removed `proto::NOTE_NOT_WRITTEN`
+> - `line_editor`: removed `proto::NOTE_WRITTEN`
+> - `line_editor`: removed `proto::OPERATION_BYTES`
+> - `line_editor`: removed `proto::OPERATION_INTRCOUNT`
+> - `line_editor`: removed `proto::OPERATION_PRINT`
+> - `line_editor`: removed `proto::OPERATION_QUIESCE`
+> - `line_editor`: removed `proto::OPERATION_RAWMODE`
+> - `line_editor`: removed `proto::OPERATION_READLINE`
+> - `line_editor`: removed `proto::OPERATION_READRAW`
+> - `line_editor`: removed `proto::OPERATION_READ_LINE_BYTES`
+> - `line_editor`: removed `proto::OPERATION_SHIFT`
+> - `line_editor`: removed `proto::OPERATION_SUSPEND_COUNT`
+> - `line_editor`: removed `proto::OPERATION_WRITE`
+> - `line_editor`: removed `proto::QUIESCED`
+> - `line_editor`: removed `proto::RAW_ONLY_BADGE`
+> - `line_editor`: removed `proto::START_ABSORB`
+> - `line_editor`: removed `proto::START_HANDOFF`
+> - `line_editor`: removed `proto::STDIN_BADGE`
+> - `line_editor`: removed `proto::SUPERVISOR_BADGE`
+> - `line_editor`: removed `proto::admits`
+> - `line_editor`: removed `proto::is_retry`
+> - `line_editor`: removed `proto::len`
+> - `line_editor`: removed `proto::operation`
+> - `line_editor`: removed `proto::req`
+> - `measured_boot`: changed `Verdict::elf`
+> - `socket_contract`: removed `OFF_DST_IP`
+> - `socket_contract`: removed `OFF_DST_PORT`
+> - `socket_contract`: removed `OFF_LEN`
+> - `socket_contract`: removed `OFF_PAYLOAD`
+> - `socket_contract`: changed `ephemeral::Ports::next`
+> - `static_elf`: crate renamed `elf -> static_elf`
 > - `supervision_contract`: changed `ChildEndowment`
 
 ## Co-change per package
@@ -235,31 +316,31 @@ Every package in `packages/`, 2026W29 to 2026W46, by the method of the contracts
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 2331 | 1265 (54%) | 1005 (43%) | 50% | `contracts` (383) |
-| `contracts` | 1393 | 946 (68%) | 860 (62%) | 62% | `kernel` (383) |
-| `host-tools` | 963 | 671 (70%) | 555 (58%) | 64% | `kernel` (255) |
-| `system-tests` | 604 | 371 (61%) | 357 (59%) | 54% | `kernel` (157) |
-| `init` | 575 | 495 (86%) | 482 (84%) | 82% | `contracts` (178) |
-| `fixtures` | 457 | 366 (80%) | 345 (75%) | 71% | `contracts` (94) |
-| `runtime` | 312 | 258 (83%) | 237 (76%) | 75% | `kernel` (67) |
-| `drivers` | 261 | 209 (80%) | 191 (73%) | 74% | `kernel` (78) |
-| `boot` | 259 | 178 (69%) | 161 (62%) | 58% | `host-tools` (55) |
-| `display` | 239 | 169 (71%) | 157 (66%) | 60% | `kernel` (47) |
-| `swish` | 174 | 156 (90%) | 150 (86%) | 85% | `contracts` (66) |
-| `redoxfs` | 140 | 103 (74%) | 97 (69%) | 55% | `contracts` (20) |
-| `terminal` | 135 | 115 (85%) | 113 (84%) | 75% | `init` (34) |
-| `network` | 131 | 110 (84%) | 107 (82%) | 76% | `init` (29) |
-| `login` | 125 | 104 (83%) | 102 (82%) | 64% | `contracts` (17) |
-| `timetable` | 117 | 87 (74%) | 83 (71%) | 55% | `init` (16) |
-| `process-tools` | 113 | 91 (81%) | 87 (77%) | 65% | `init` (13) |
+| `kernel` | 2352 | 1280 (54%) | 1019 (43%) | 50% | `contracts` (392) |
+| `contracts` | 1450 | 974 (67%) | 886 (61%) | 61% | `kernel` (392) |
+| `host-tools` | 981 | 684 (70%) | 567 (58%) | 64% | `kernel` (258) |
+| `system-tests` | 615 | 379 (62%) | 365 (59%) | 54% | `kernel` (158) |
+| `init` | 587 | 507 (86%) | 493 (84%) | 82% | `contracts` (182) |
+| `fixtures` | 466 | 375 (80%) | 354 (76%) | 71% | `contracts` (96) |
+| `runtime` | 326 | 267 (82%) | 245 (75%) | 74% | `contracts` (69) |
+| `boot` | 271 | 189 (70%) | 171 (63%) | 60% | `host-tools` (62) |
+| `drivers` | 267 | 214 (80%) | 196 (73%) | 74% | `kernel` (81) |
+| `display` | 246 | 174 (71%) | 162 (66%) | 60% | `kernel` (47) |
+| `swish` | 177 | 158 (89%) | 152 (86%) | 85% | `contracts` (66) |
+| `redoxfs` | 147 | 109 (74%) | 103 (70%) | 56% | `contracts` (21) |
+| `network` | 140 | 115 (82%) | 112 (80%) | 74% | `init` (31) |
+| `terminal` | 140 | 120 (86%) | 117 (84%) | 76% | `init` (34) |
+| `login` | 128 | 107 (84%) | 105 (82%) | 65% | `contracts` (18) |
+| `timetable` | 118 | 88 (75%) | 84 (71%) | 55% | `init` (16) |
+| `process-tools` | 114 | 92 (81%) | 88 (77%) | 65% | `init` (13) |
 | `time` | 85 | 81 (95%) | 79 (93%) | 90% | `init` (11) |
-| `core-tools` | 64 | 58 (91%) | 58 (91%) | 79% | `process-tools` (11) |
-| `filesystem` | 53 | 48 (91%) | 47 (89%) | 80% | `contracts` (11) |
-| `jig` | 40 | 35 (88%) | 35 (88%) | 74% | `contracts` (9) |
-| `entropy` | 37 | 36 (97%) | 36 (97%) | 92% | `display` (7) |
+| `core-tools` | 65 | 59 (91%) | 59 (91%) | 79% | `process-tools` (11) |
+| `filesystem` | 56 | 51 (91%) | 50 (89%) | 82% | `contracts` (12) |
+| `jig` | 42 | 37 (88%) | 37 (88%) | 74% | `contracts` (9) |
+| `entropy` | 39 | 38 (97%) | 38 (97%) | 93% | `drivers` (8) |
 | `nife-libc` | 35 | 23 (66%) | 19 (54%) | 55% | `system-tests` (5) |
 | `disk-tools` | 34 | 34 (100%) | 34 (100%) | 100% | `core-tools` (8) |
-| `cryptography` | 28 | 26 (93%) | 24 (86%) | 87% | `fixtures` (8) |
+| `cryptography` | 29 | 27 (93%) | 25 (86%) | 87% | `fixtures` (8) |
 | `system_installer` | 25 | 25 (100%) | 25 (100%) | 100% | `host-tools` (4) |
 | `demos` | 14 | 13 (93%) | 13 (93%) | 67% | `fixtures` (2) |
 | `mdr` | 6 | 6 (100%) | 5 (83%) | 100% | `contracts` (2) |
@@ -271,7 +352,7 @@ Each crate a per-crate release milestone names (`helpers/crate_release.py`), on 
 | crate | commits | crossing | touching another | crossing, mass excluded |
 |---|---:|---:|---:|---:|
 | `designware_ethernet` | 92 | 55 (60%) | 44 (48%) | 55% |
-| `jh7110_clock_and_reset` | 74 | 52 (70%) | 43 (58%) | 62% |
+| `jh7110_clock_and_reset` | 83 | 56 (67%) | 47 (57%) | 59% |
 | `designware_mobile_storage` | 0 | 0 (0%) | 0 (0%) | none |
 | `e1000e` | 0 | 0 (0%) | 0 (0%) | none |
 | `extensible_host_controller_interface` | 0 | 0 (0%) | 0 (0%) | none |

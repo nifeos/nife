@@ -19,7 +19,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 glyph_atlas = { version = "0.1.0", path = "../glyph_atlas" }
 
 [dev-dependencies]

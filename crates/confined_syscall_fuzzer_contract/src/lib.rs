@@ -51,10 +51,10 @@ pub const ROLE_B: u64 = 1;
 pub const ROLE_WITNESS: u64 = 2;
 
 /// Where the report page is mapped, read-write, outside the playground.
-pub const REPORT_VA: u64 = address_space_map::service_window(0x5000_0000);
+pub const REPORT_VA: u64 = address_space_layout::service_window(0x5000_0000);
 /// The window the generator aims most mapping addresses at, so a `MAP` usually lands somewhere it
 /// can succeed and the page oracle can probe every page of it directly.
-pub const PLAYGROUND_VA: u64 = address_space_map::service_window(0x5100_0000);
+pub const PLAYGROUND_VA: u64 = address_space_layout::service_window(0x5100_0000);
 /// Pages in the playground.
 pub const PLAYGROUND_PAGES: u64 = 32;
 

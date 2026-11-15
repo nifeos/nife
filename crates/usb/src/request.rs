@@ -34,13 +34,17 @@ pub struct SetupPacket {
     pub value: u16,
     /// `wIndex`.
     pub index: u16,
-    /// `wLength`: how many bytes the data stage carries, zero for none.
+    /// (`length`, `wLength` in USB 2.0 Table 9-2): how many bytes the data stage carries, zero for
+    /// none.
+    #[doc(alias = "wLength")]
     pub length: u16,
 }
 
 impl SetupPacket {
     /// `GET_DESCRIPTOR` of `kind` (a [`crate::descriptor`] type) number `index`, at most `length`
-    /// bytes. A device may answer fewer, and the host must accept a short answer.
+    /// bytes. A device may answer fewer, and the host must accept a short answer. The parameter
+    /// `index` is the descriptor index, which goes in the low byte of `wValue`; the packet's own
+    /// [`SetupPacket::index`] field is `wIndex`, which this request leaves zero.
     pub const fn get_descriptor(kind: u8, index: u8, length: u16) -> SetupPacket {
         SetupPacket {
             request_type: DEVICE_TO_HOST,
@@ -121,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn the_class_requests_address_the_interface() {
+    fn the_class_requests_are_sent_to_the_interface() {
         assert_eq!(
             SetupPacket::set_boot_protocol(2).to_u64().to_le_bytes(),
             [0x21, 0x0b, 0, 0, 2, 0, 0, 0]

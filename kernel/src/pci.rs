@@ -1180,7 +1180,7 @@ mod tests {
             "the recorded ECAM window is not the tree's"
         );
         let ranges = dt
-            .node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
+            .node_property_compatible(b"pci-host-ecam-generic", b"ranges")
             .expect("the bridge's ranges parses")
             .expect("the bridge states its ranges");
         assert_eq!(

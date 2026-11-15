@@ -37,19 +37,19 @@ const REPORT: u64 = 2;
 /// relayed and never chosen here. Numbered in
 /// the `0x...00eN_0000` family `credentialer.rs` and `login.rs` already use, one past `login.rs`'s
 /// highest (`CRED_VA`, `0xe3_0000`).
-const REQ_VA: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
+const REQ_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e4_0000);
 // SAFETY: the wiring maps one page read/write at REQ_VA before this process runs (milestone 139
 // round 6).
 const REQ_WINDOW: MappedWindow =
     unsafe { MappedWindow::new(REQ_VA, credential_contract::PAGE as u64) };
 /// The page shared with the credential service. Must match `components/src/credentialer.rs`'s `PROV_VA`.
-const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+const PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 // SAFETY: the wiring maps one page read/write at PROV_VA before this process runs, the same
 // physical frame `credentialer.rs` maps at its own PROV_VA.
 const PROV_WINDOW: MappedWindow =
     unsafe { MappedWindow::new(PROV_VA, credential_contract::PAGE as u64) };
 /// The page shared with the file service, for the one `MKDIR` request this process ever sends.
-const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_00e5_0000);
+const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e5_0000);
 // SAFETY: the wiring maps one page read/write at FS_VA before this process runs, shared with the
 // file service and with nothing else.
 const FS_WINDOW: MappedWindow =

@@ -14,7 +14,7 @@ being the whole story:
    shell are exactly the split a fuzzer covers from the other side.
 2. `crates/device_tree_blob`. Four harnesses, all on `be32`/`be64`, the leaf readers. The seven
    *walkers* above them are unbounded loops over a symbolic blob carrying a depth counter and two
-   16-entry per-depth arrays. Both of the bugs found on 2026-08-02 were in that unproved region, and one of
+   per-depth arrays. Both of the bugs found on 2026-08-02 were in that unproved region, and one of
    them was an out-of-bounds index into one of those arrays.
 3. `crates/nifefs`. `Fs::parse` is proved total, with no bound on the image size at all
    (`the_validation_implies_reads_slice_is_in_bounds`). Fuzzing it for panics would be burning CI

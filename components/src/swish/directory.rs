@@ -9,7 +9,7 @@ use super::*;
 ///
 /// It is `fs_service`'s `FILE_VA_CLIENT`, the address every FS client in this system maps its half
 /// of the contract at, which is why [`OUT_VA`] moved out of the way rather than this.
-pub(super) const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+pub(super) const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 // SAFETY: the navigating wiring maps one page read/write at FS_VA before this shell runs, when it
 // has an FS_VA at all (milestone 139 round 2; see `user_mode_runtime::mapped_window`, which is what

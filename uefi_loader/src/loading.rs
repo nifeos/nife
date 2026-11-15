@@ -126,7 +126,7 @@ pub(crate) fn configuration_table(table: &SystemTable) -> &[ConfigurationTable] 
 /// putting the loader's two digests in `/chosen/bootargs` beside it (`embedded::LOADER_DIGESTS`,
 /// milestone 695 (the kernel trusts two digests handed to it by the loader)). aarch64 and riscv64
 /// both do this, identically. A tree with the wrong magic, or a `totalsize` past
-/// `device_tree_blob::MAXIMUM_TOTALSIZE`, is refused before anything is read past its header
+/// `device_tree_blob::MAXIMUM_TOTALSIZE_BYTES`, is refused before anything is read past its header
 /// (`uefi_loader::device_tree_from_firmware::bytes`).
 #[cfg(not(target_arch = "x86_64"))]
 pub(crate) fn copy_device_tree(

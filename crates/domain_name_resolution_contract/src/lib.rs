@@ -47,7 +47,7 @@ pub use wire::*;
 
 /// The resolver's own copy of the bound, checked against the parser's, because `wire` is copied
 /// into std's PAL where `domain_name_system` cannot be named.
-const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_ADDRESSES);
+const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
 
 // =================================================================================================
 // The resolver's endowment.

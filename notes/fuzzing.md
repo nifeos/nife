@@ -280,8 +280,8 @@ prefix would not be found. Letting the fuzzer choose the needle would mean struc
 which would stop the committed `.dtb` fixtures from working as seeds; that trade is worth revisiting
 with a grammar.
 
-`node_prop` matches at any depth and `node_reg` now stops at 16. The two lookups disagree about
-how deep a device tree can be, which is a behavioral wart rather than a bug: `node_prop` keeps no
+`node_property` matches at any depth and `node_reg` now stops at 16. The two lookups disagree about
+how deep a device tree can be, which is a behavioral wart rather than a bug: `node_property` keeps no
 per-depth state, so it has nothing to overflow. Nothing in the tree nests past 4.
 
 Sanitizers are on and buy very little here. The default is AddressSanitizer, and the four crates

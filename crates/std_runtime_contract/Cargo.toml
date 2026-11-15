@@ -24,4 +24,4 @@ workspace = true
 [dev-dependencies]
 # The terminal's opcode encoding, which `STDIN_READ_REQUEST` restates for the PAL.
 terminal_contract = { path = "../terminal_contract" }
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }

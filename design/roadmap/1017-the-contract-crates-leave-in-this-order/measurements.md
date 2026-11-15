@@ -15,7 +15,7 @@ python3 census.py a8b7524d7 2026-11-01T23:59:59Z set.txt
 ```
 
 The 22 are the set pull request #3022 derives for milestone 956 (the linked interfaces carry
-checkable versions): `abi address_space_map block_roster_contract byte_sink_contract calendar
+checkable versions): `abi address_space_layout block_roster_contract byte_sink_contract calendar
 capability_manifest_note clock_contract counter_frequency_contract current_cpu_contract
 domain_name_resolution_contract domain_name_system entropy_contract environment_contract
 filesystem_contract filesystem_fixture glob globally_unique_identifier_partition_table grant_plan
@@ -41,7 +41,7 @@ What each column means:
 | crate | layer | in 22 | outside | dev only outside | 30d | crossing | 90d | crossing | identity bumps 90d | API 4w | API 13w |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `abi` | 0 | 1 | 12 | 1 | 74 | 66 | 124 | 114 | 0 | 13 | 46 |
-| `address_space_map` | 0 | 2 | 17 | 2 | 19 | 18 | 21 | 19 | 0 | 1 | 1 |
+| `address_space_layout` | 0 | 2 | 17 | 2 | 19 | 18 | 21 | 19 | 0 | 1 | 1 |
 | `block_roster_contract` | 0 | 0 | 2 | 1 | 10 | 8 | 19 | 17 | 1 | 1 | 1 |
 | `byte_sink_contract` | 0 | 0 | 6 | 1 | 19 | 18 | 38 | 37 | 0 | 2 | 8 |
 | `calendar` | 0 | 0 | 3 | 1 | 22 | 21 | 37 | 36 | 0 | 5 | 5 |
@@ -88,8 +88,8 @@ pull request #3022's `carry_interfaces!` brings into every program.
 
 | package | crates of the 22 it reaches | with the note macro |
 |---|---|---|
-| `disk-tools` | 12: `abi`, `address_space_map`, `block_roster_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `filesystem_contract`, `filesystem_fixture`, `globally_unique_identifier_partition_table`, `socket_contract`, `user_mode_runtime` | 18 |
-| `process-tools` | 13: `abi`, `address_space_map`, `byte_sink_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `byte_glob`, `grant_plan`, `machine_statistics_contract`, `program_argument_contract`, `socket_contract`, `user_mode_runtime` | 16 |
+| `disk-tools` | 12: `abi`, `address_space_layout`, `block_roster_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `filesystem_contract`, `filesystem_fixture`, `globally_unique_identifier_partition_table`, `socket_contract`, `user_mode_runtime` | 18 |
+| `process-tools` | 13: `abi`, `address_space_layout`, `byte_sink_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `byte_glob`, `grant_plan`, `machine_statistics_contract`, `program_argument_contract`, `socket_contract`, `user_mode_runtime` | 16 |
 | `core-tools` | 15: the 13 of `process-tools` less `machine_statistics_contract`, plus `calendar`, `environment_contract` and `filesystem_contract` | 18 |
 
 The macro has lived in the leaf crate `interfaces_note` since 2026-11-01 (UTC), so "with the note

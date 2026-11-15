@@ -101,7 +101,7 @@ const READY: u64 = 1;
 /// Provisional and distinct from the `0x0090_0000` DMA convention `entropy.rs` and
 /// `keyboard_driver.rs` share, so the two backends cannot collide if a wiring ever needs both
 /// mapped in different processes at once.
-const TRNG_VA: u64 = address_space_map::pair_page(0x0000_0000_0094_0000);
+const TRNG_VA: u64 = address_space_layout::pair_page(0x0000_0000_0094_0000);
 
 /// How many times to poll one generation attempt before giving up on it. **Not a measured bound**:
 /// see the module doc. Large enough that a real device answering in microseconds never hits it in
@@ -274,8 +274,13 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this driver condemned at bring-up (see `_start`). It is
             // answered exactly the way a dry device is, because `NO_ENTROPY` already means the one
             // thing a client has to know: it is not getting randomness here.
+            // The crate's `take` answers a count and a little-endian word with zeros past the
+            // count; rebuilding the pair through the contract's `reply` makes that zero tail the
+            // contract's guarantee rather than the crate's.
             proto::GET if !refuse && proto::request_is_well_formed(w0) => {
-                pool.take(proto::requested_bytes(w0), &mut generate)
+                let (count, word) = pool.take(proto::requested_bytes(w0), &mut generate);
+                let count = count.min(proto::MAXIMUM_BYTES) as usize;
+                proto::reply(&word.to_le_bytes()[..count])
             }
             _ => (proto::NO_ENTROPY, 0),
         };

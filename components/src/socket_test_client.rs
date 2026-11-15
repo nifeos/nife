@@ -81,7 +81,7 @@ const OK: u64 = 1;
 const NO_ANSWER: u64 = 2;
 
 /// Where the client maps its shared frame.
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 /// The shared frame at that address, read and written through
 /// `user_mode_runtime::socket_frame::Frame`'s methods (milestone 410 (six copies of the
@@ -127,7 +127,7 @@ const NAME_SERVER_CASES: [(&str, Expect); 6] = [
     ("mirror.nife.test", Expect::Address(NAME_SERVER_IP)),
     ("nosuch.nife.test", Expect::Refused(Reject::NoSuchName)),
     ("forged.nife.test", Expect::Refused(Reject::IdMismatch)),
-    ("poisoned.nife.test", Expect::Refused(Reject::NoAddress)),
+    ("poisoned.nife.test", Expect::Refused(Reject::NoIpv4Address)),
     (
         "loop.nife.test",
         Expect::Refused(Reject::Malformed(domain_name_system::Error::PointerForward)),
@@ -377,8 +377,8 @@ fn against_the_name_server() -> u64 {
             Err(stage) => return code(stage),
         };
         match (expect, verdict) {
-            (Expect::Address(want), Ok(answer)) if answer.addresses() == [*want] => {
-                resolved.get_or_insert(answer.addresses()[0]);
+            (Expect::Address(want), Ok(answer)) if answer.ipv4_addresses() == [*want] => {
+                resolved.get_or_insert(answer.ipv4_addresses()[0]);
             }
             (Expect::Refused(want), Err(got)) if *want == got => {}
             _ => return code(0xF), // the wrong verdict: the lie was believed, or the truth refused
@@ -793,7 +793,7 @@ fn udp_bind_half() {
 /// Where the spawner maps the image's package catalogue (`package_archive::CATALOG`) for
 /// [`TEST_HTTP_PACKAGE`], read-only. The kernel test and this file must agree; see
 /// `kernel/src/user/virtio_service.rs`'s `NET_CLIENT_CATALOGUE_VA`.
-const CATALOGUE_VA: u64 = address_space_map::pair_page(0x0000_0000_00C0_0000);
+const CATALOGUE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00C0_0000);
 /// Reported in a word of its own when the fetched bytes did not match the catalogue's digest, which
 /// is the refusal the tampered fetch must produce. Distinct from `OK` and from every stage failure,
 /// so a test asserting a refusal cannot be satisfied by a broken fetch.

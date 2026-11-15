@@ -59,7 +59,7 @@ const I_REQ: u64 = 0;
 const I_READY: u64 = 1;
 
 /// Where the kernel maps this service's DMA page. Must match `kernel/src/user/entropy_service.rs`.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139;
 // see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled r8/w8/r16/w16/r32 below).
@@ -268,14 +268,15 @@ impl Pool {
         false
     }
 
-    /// Take `n` bytes, as a little-endian word plus a count.
+    /// Take `n` bytes, at most [`proto::MAXIMUM_BYTES`], as the reply [`proto::reply`] builds.
     ///
     /// A refill can land short (QEMU's virtio-rng returns fewer than the 256 bytes asked), so the
     /// bytes a client asked for can straddle two device requests; gathering across them keeps a
     /// short device read invisible. A count below `n` means the device went dry part-way, never
     /// padding; zero means it was dry from the start.
     fn take(&mut self, n: u64) -> (u64, u64) {
-        let mut word = 0u64;
+        let n = n.min(proto::MAXIMUM_BYTES);
+        let mut bytes = [0u8; proto::MAXIMUM_BYTES as usize];
         let mut got = 0;
         while got < n {
             if self.cursor == self.filled && !self.refill() {
@@ -284,7 +285,7 @@ impl Pool {
             let run = (n - got).min(self.filled - self.cursor);
             for i in 0..run {
                 let at = POOL_OFF + self.cursor + i;
-                word |= (r8(at) as u64) << (8 * (got + i));
+                bytes[(got + i) as usize] = r8(at);
                 // Zero behind the cursor. The cursor alone already guarantees no byte is served
                 // twice; this is hygiene, so a byte a client now holds is not also still sitting in
                 // a page this long-lived process keeps mapped for the rest of the boot.
@@ -293,7 +294,7 @@ impl Pool {
             self.cursor += run;
             got += run;
         }
-        (got, word)
+        proto::reply(&bytes[..got as usize])
     }
 }
 
