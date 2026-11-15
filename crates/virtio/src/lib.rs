@@ -1,16 +1,32 @@
 #![no_std]
-//! A virtio driver, block and net, at EL0.
+//! The roles of one virtio driver program, which runs at EL0 (exception level 0, user mode) and
+//! drives one virtio-blk or virtio-net device. It is not a general-purpose library: each entry
+//! point takes the DMA (direct memory access) page's physical address from a `_start`, drives the
+//! device for one role, and returns `!`.
 //!
-//! The kernel hands the process a DMA page, an `Interrupt` capability (slot 1) and a `Virtio`
-//! transport
-//! capability (slot 2); the device registers are not mapped, so every access goes through the
-//! kernel, which confines the device to the DMA page. Modern virtio-mmio (version 2), virtio 1.x
-//! sections 4.2 (MMIO), 5.1 (net) and 5.2 (block).
+//! - [`run`], [`run_write`] and [`run_write_abandon`] are one-shot block test roles: read a file,
+//!   write and read back a block, and die mid-write.
+//! - [`run_attack`] and [`run_attack_indirect`] are attackers: each aims a descriptor at kernel
+//!   memory and reports whether the kernel refused it.
+//! - [`run_net`] is a one-shot virtio-net role: a DHCP (Dynamic Host Configuration Protocol)
+//!   DISCOVER out and an OFFER back.
+//! - [`run_blk_server`] is the long-lived block server that the filesystem server reads and writes
+//!   disk blocks through.
 //!
-//! Every entry point drives a device and returns `!`, so the example on [`run`] is `no_run`; the
-//! checkable parts of this subsystem are `direct_memory_access_validator` and
-//! `filesystem_contract`. See notes/virtio.md ("The driver crate") and notes/dma.md.
-
+//! The one-shot roles report to the kernel's test on slot 0; the table beside `report_code` lists
+//! the codes. On a mediated grant the kernel hands the process the DMA page, an `Interrupt`
+//! capability (slot 1) and a `Virtio` transport capability (slot 2); the device registers are not
+//! mapped, so every access goes through the kernel, which confines the device to the DMA page. On a
+//! direct grant the driver drives a virtio-pci function itself and the IOMMU (Input-Output Memory
+//! Management Unit) confines the device; [`direct`] answers the same register vocabulary, so every
+//! role runs unchanged on either grant. Modern virtio-mmio (version 2), virtio 1.x sections 4.2
+//! (MMIO), 5.1 (net) and 5.2 (block).
+//!
+//! Every entry point drives a device, so the example on [`run`] is `no_run`. What can be checked
+//! without one is pure and host-tested here: the accessors' window check, the descriptor chain,
+//! the completion wait's bound, the configuration read's generation bracket, the directory lookup,
+//! the DHCP frames and the Internet Protocol header checksum. The ring layout's proof is in
+//! `direct_memory_access_validator`. See notes/virtio.md ("The driver crate") and notes/dma.md.
 //!
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
@@ -104,6 +120,12 @@ const VIRTIO_BLK_T_FLUSH: u32 = 4;
 const F_FLUSH_LO: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
+// BUGS: `QSIZE` and the three ring offsets below, and the net queues' 0x200 stride, restate the
+// layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
+// `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
+// change to the proved layout would leave this driver on the wrong offsets until a QEMU test
+// failed. The fix is to move the constants to `abi::virtio`, where this crate, the kernel and the
+// validator all name them, as Decision 2 of milestone 1113 (the virtio outside review) decides.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QSIZE = 128 bytes
 const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QSIZE
 const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QSIZE
@@ -303,7 +325,6 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 /// arrives as an argument.
 ///
 /// ```no_run
-/// # use user_mode_runtime::exit;
 /// fn start(direct_memory_access_phys: u64) -> ! {
 ///     virtio::run(direct_memory_access_phys)
 /// }
@@ -718,8 +739,24 @@ fn write_block(direct_memory_access_phys: u64, sector: u64) {
     complete_block(used_before);
 }
 
-/// Report a diagnostic code to the kernel and stop. Distinct from the magic, so the kernel's
-/// "not the nifefs magic" branch prints it. Only reached on a bring-up failure.
+/// Report a diagnostic code to the kernel and stop. A one-shot role sends
+/// `0xDEAD_0000_0000_0000 | code` on its report slot, distinct from every success value, so the
+/// kernel's test fails and prints the code. Only reached when a role cannot finish.
+///
+/// | code | role | what happened |
+/// |---|---|---|
+/// | `0xE4` | [`run`] | the directory has no `motd` file |
+/// | `0xE5` | the block test roles | the kernel refused a block request's notify: a descriptor left the region |
+/// | `0xE6` | [`run_write`], [`run_write_abandon`] | the directory has no `scratch` file |
+/// | `0xE7` | [`run_net`] | the kernel refused the receive buffer's notify |
+/// | `0xE8` | [`run_net`] | the kernel refused the transmit frame's notify |
+/// | `0xE9` | [`run_net`] | no receive completion within [`COMPLETION_WAKEUPS`] wakeups |
+/// | `0xEA` | [`run_net`] | frames arrived, and none was the OFFER for this transaction |
+/// | `0xEB` | the block test roles | no block completion within [`COMPLETION_WAKEUPS`] wakeups |
+/// | `0xE200 \| status` | the block test roles | the device completed a request with a status other than 0 |
+///
+/// The attackers report 1 (refused) or 0 (not refused) instead, and the long-lived block server
+/// reports nothing: it answers each client with an error.
 fn report_code(code: u64) -> ! {
     send(REPORT, 0xDEAD_0000_0000_0000 | code, 0, 0);
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
