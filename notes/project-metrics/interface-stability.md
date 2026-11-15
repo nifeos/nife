@@ -4,8 +4,6 @@
 
 ## Every crate, since the first commit
 
-Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
-
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
 | `calendar` | 118 | 6 | 118 | 6 | 11 | 11 (100%) |
@@ -48,6 +46,8 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `allocation_cache` | 0 | 2 | 0 | 20 | 0 | 0 |
 | `glob` | 0 | 2 | 0 | 2 | 2 | 2 (100%) |
+
+Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
 
 ## What broke in 2026W46
 
