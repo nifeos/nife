@@ -37,7 +37,7 @@ fn write_ehdr(out: &mut [u8], entry: u64, phnum: u16) {
     out[5] = 1; // little-endian
     out[6] = 1; // EV_CURRENT
     out[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
-    out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes()); // this build's machine
+    out[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes()); // this build's machine
     out[24..32].copy_from_slice(&entry.to_le_bytes()); // e_entry
     out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // e_phoff
     out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes()); // e_phentsize
@@ -77,14 +77,16 @@ fn forged_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; EHDR + PHDR + 16] {
 fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
     let image = forged_two_segments(
         address_space_map::IMAGE_BASE,
-        elf::PF_R | elf::PF_X,
+        static_elf::PF_R | static_elf::PF_X,
         address_space_map::IMAGE_BASE + 0x2000,
-        elf::PF_R | elf::PF_W | elf::PF_X,
+        static_elf::PF_R | static_elf::PF_W | static_elf::PF_X,
     );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
-        Some(LoadError::NotLoadable(elf::Error::WritableAndExecutable)),
+        Some(LoadError::NotLoadable(
+            static_elf::Error::WritableAndExecutable
+        )),
         "a second, writable-executable segment loaded behind a benign first one: the W^X check \
          did not reach every segment",
     );
@@ -104,9 +106,9 @@ fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
 fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
     let image = forged_two_segments(
         address_space_map::IMAGE_BASE,
-        elf::PF_R | elf::PF_X,
+        static_elf::PF_R | static_elf::PF_X,
         mmu::KERNEL_VA_BASE,
-        elf::PF_R | elf::PF_X,
+        static_elf::PF_R | static_elf::PF_X,
     );
 
     let outcome = load(&image, 0, &[]).map(|(_space, entry)| entry);
@@ -135,7 +137,11 @@ fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
 #[test_case]
 fn a_segment_whose_address_range_wraps_is_refused() {
     let vaddr = u64::MAX - page_frames::FRAME_SIZE + 1; // the last page of the space
-    let image = forged_sized(vaddr, elf::PF_R | elf::PF_X, 4 * page_frames::FRAME_SIZE);
+    let image = forged_sized(
+        vaddr,
+        static_elf::PF_R | static_elf::PF_X,
+        4 * page_frames::FRAME_SIZE,
+    );
 
     // `AddressSpace` is not `Debug`; keep only the entry point so a success is printable.
     let outcome = load(&image, 0, &[]).map(|(_space, entry)| entry);

@@ -98,7 +98,7 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     let image = unsafe {
         core::slice::from_raw_parts(contract::TIMETABLE_VA as *const u8, image_len as usize)
     };
-    let Ok(elf) = elf::Elf::parse(image) else {
+    let Ok(elf) = static_elf::Elf::parse(image) else {
         fail(3)
     };
 

@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1088-elf-outside-review.md).
 
-- `script/crate-standalone elf` reports no path, section, milestone or name citation in shipped
+- `script/crate-standalone static_elf` reports no path, section, milestone or name citation in shipped
   text, no file read from outside the crate, and a manifest with no inherited key (items 1 to 3).
 - The crate builds, tests and verifies in its own repository on the template's `check` and `proofs`
   workflows, with the three bare-metal targets passed as `targets`. `fuzz.yml` opts in with the
