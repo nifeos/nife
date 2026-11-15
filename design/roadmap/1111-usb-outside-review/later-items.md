@@ -11,8 +11,8 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
     keyboard that declares     64, and the controller hears a packet size the device cannot carry. Linux's
     handling of this case was not checked (unverified).
     Evidence: `crates/usb/src/descriptor.rs` lines 103 to 117.
-    Change: take a speed instead of a boolean. The shape is Decision 3.
-    Door: the signature is one-way once published (Decision 3). Effort: S.
+    Change: take the four-way `Speed` instead of a boolean, as Decision 3 decides, provisionally.
+    Door: two-way before the first release. Effort: S.
 
 12. Reserved bits of `bEndpointAddress` pass through to the caller.
     Finding: `BootKeyboard::endpoint` is the byte as sent. Scratch test: the crate returns `0xf1` as

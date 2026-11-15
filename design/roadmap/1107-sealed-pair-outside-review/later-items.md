@@ -37,7 +37,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     kernel that lacks it.
     Door: two-way. Effort: S.
 
-13. `contains` is a byte-at-a-time window scan over a release kernel. LEFT: unmeasured; measure on a real image first.
+13. `contains` is a byte-at-a-time window scan over a release kernel. DONE (a measurement: a 1 MiB image scans in about 1.6 ms, so the crate needs no searcher).
     Finding: `haystack.windows(32).any(|w| w == needle)` compares at every offset. A release
     kernel is several megabytes and the scan runs once per measured entry, so the cost is small
     today and unmeasured. The standard library's `memmem`-style searchers and the `memchr` crate's
@@ -48,7 +48,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     written here (ten lines, no dependency) or `memchr` behind the dependency rule.
     Door: two-way. Effort: XS to measure, S to change.
 
-14. No proof, in a crate whose two neighbors each carry two. LEFT: the crate has no proofs job to run a harness in; a lane of its own.
+14. No proof, in a crate whose two neighbors each carry two. PARTIAL: `contains_finds_a_digest_exactly_when_it_is_there`, with its falsification patch and a `script/verify` row. LEFT: the table comparison, the second harness the item allows.
     Finding: `nifefs` and `measured_boot` each have two Kani harnesses with falsification patches;
     this crate has none. Its logic is small and pure. It has `contains` (a window exists if and only
     if the needle is at some offset) and `embedded_archive` (the result starts with `MAGIC` and

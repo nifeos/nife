@@ -1,7 +1,7 @@
 //! Fuzz the package **round trip**: write a package, parse it back, verify every member.
 //!
 //! §197 (a package is one archive file) owed the reader *"a fuzz target and the Kani treatment
-//! `crates/nifefs` and `crates/elf` already carry."* This is the target, in `nifefs_roundtrip`'s
+//! `crates/nifefs` and `crates/static_elf` already carry."* This is the target, in `nifefs_roundtrip`'s
 //! round-trip shape. **The property:** for any set of (name, bytes) the writer accepts, the file
 //! parses, holds exactly that many members, reads each name back byte-identical, and passes its own
 //! digest check; failing the last would make a verifier refuse a package for no reason a user could

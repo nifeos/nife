@@ -155,9 +155,9 @@ The P2 items are in [the appendix](1085-device-tree-blob-outside-review/later-it
 
 ## Decisions for the architect
 
-Only one-way doors: names and a surface the move publishes. Each states the background first, then
-a recommendation, prior art, and an example. The names are the architect's; the lane that performs
-the move ships them provisional and the recording lane carries the rulings.
+Names and a surface the move publishes. Each states the background first, then a recommendation,
+prior art, and an example. All six are two-way doors while the crate is unreleased, and the
+maintainer has decided them, provisionally; the decision follows the six.
 
 D1. `prop` in six public names. Background: `node_prop`, `node_props`, `node_prop_compatible`,
 `parent_prop_compatible`, `node_prop_inherited` and `phandle_prop` abbreviate "property", which is a
@@ -215,6 +215,21 @@ place that knows how to trust a firmware pointer should be the parser. Prior art
 `fdt::Fdt::from_ptr` and `dtoolkit::Fdt::from_raw` are both `unsafe` constructors in the parser
 crate. Example: `unsafe { DeviceTreeBlob::from_ptr(pointer) }?` stays the kernel's one line. Effort
 none if kept.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: two-way doors while the crate is
+unreleased, which the architect may revisit. The path ruled for `dtoolkit` makes it likely that
+this crate is replaced after an upstream release and never published. D1: `node_property`,
+`node_properties`, `node_property_compatible`, `parent_property_compatible`,
+`node_property_inherited` and `phandle_property`, with no alias for the old spelling. D2: the
+parameter `compat` becomes `compatible`. D3: `reg` and `phandle` keep their spelling as the
+specification's terms; each doc comment opens with the expansion, and `node_reg` and
+`node_reg_compatible` carry `#[doc(alias = "register regions")]`. D4: `MAXIMUM_TOTALSIZE` becomes
+`MAXIMUM_TOTALSIZE_BYTES`, with `#[doc(alias = "MAX_FDT_SIZE")]`. D5: `reserved_regions` becomes
+`memory_reservations`; `reserved_memory_regions` keeps its name. D6: `from_ptr` stays as the crate's
+one `unsafe` function, and the public weekly fuzz opt-in stays off. The count in D6 is low: at
+HEAD, 16 call sites outside the crate name `DeviceTreeBlob::from_ptr`, 9 in `kernel/`, 4 in
+`uefi_loader/`, 2 in `machine_discovery` and 1 in a board-check tool. The renames are one lane, with
+the eight packages that depend on the crate; done-when's last line is the check.
 
 ## Done when
 
