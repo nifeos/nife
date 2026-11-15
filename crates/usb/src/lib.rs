@@ -6,6 +6,16 @@
 //! before reading through it, and answer a [`Refusal`] that names what was wrong rather than
 //! panicking or guessing. Its Kani harnesses prove that for every input up to a bound.
 //!
+//! The bounds are these. Every byte string of up to 20 bytes, for the device descriptor and
+//! configuration header parsers. Every configuration of up to 25 bytes, the shortest that reaches
+//! an endpoint, for [`descriptor::find_boot_keyboard`]; and up to 41 bytes in one fixed shape (a
+//! header, then two interfaces each followed by an endpoint, every byte but the lengths and types
+//! symbolic), for the paths that need a second interface. Every pair of eight-byte reports, for
+//! [`boot_keyboard::changes`]: at most twenty events, in the documented order, each naming a key
+//! that changed. Two things lie outside them: a configuration longer than 25 bytes in any other
+//! shape, which is what a real composite keyboard sends (the unit tests walk several), and the
+//! converse of the report proof, that every key which changed produces an event.
+//!
 //! - [`descriptor`]: the device descriptor, the configuration header, and
 //!   [`descriptor::find_boot_keyboard`], the walk to a boot keyboard's interrupt IN endpoint.
 //! - [`request`]: the four standard and class requests the driver sends, as setup packets.
@@ -15,8 +25,8 @@
 //!
 //! Reuse: the usage to evdev table takes its usages and names from the USB-IF HID Usage Tables 1.5
 //! and its numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an ABI header. It
-//! copies no driver. Three mappings the sources leave open (usages 0x32 and 0x46, and two-legend
-//! usage names) are this crate's choices, which [`boot_keyboard`]'s documentation states.
+//! copies no driver. Six mappings the sources leave open are this crate's choices, which
+//! [`boot_keyboard`]'s documentation states.
 
 //! # BUGS
 //!
