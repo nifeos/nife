@@ -93,19 +93,19 @@ names checked there, only suffixed forms came back free: `nife-os`, `craton-os`,
 It touches the 294 `github.com/nifeos` lines, the 22 Cargo pins, basalt's `pins.toml`, 15
 repositories, and the domain, and through the domain every image (§250).
 
-Ruled 2026-11-14 (UTC), ruling 3: the organization stays `nifeos` until the library is named.
+Ruled 2026-11-14 (UTC), ruling 3: the organization stays `nifeos` until the library takes a name.
 Ruling 4, the same day, gives it the library's name (layer 2), with the domain that name plus
 `.org`. Ruled 2026-11-15 (UTC): the name is `partsfoundry` (Parts Foundry), and the domain is
 `partsfoundry.org`. Layer 2 holds the checks and the candidates that lost. The organization is
 still `nifeos` today. Creating `partsfoundry` on GitHub and moving repositories from `nifeos`
 each wait for a separate go, before the first crates.io publish. The options below were the
-candidates for that one name and now record what was weighed.
+candidates for that one name.
 
 | option | what it says | checks | weakness |
 |---|---|---|---|
 | Keep `nifeos` | the nife operating system | ours on GitHub; crates.io `nifeos` free; the domain ours | names the kernel of one binary interface; milestone 120 kept the organization apart from the OS for this reason, and an ambient-authority binary interface under it would read as a subsidiary of the capability one |
 | A publisher name tied to no binary interface, the library's (layer 2) | the maker of the library | depends on the word | a second organization rename within two months; others may claim the old name; the old domain stays, or the images strand |
-| OSOS | open source operating systems; one name for the organization and the library | not run | dropped when `partsfoundry` was ruled |
+| OSOS | open source operating systems; one name for the organization and the library | not run | lost to `partsfoundry` |
 | `partsfoundry` | a foundry that casts the project's parts; ruled 2026-11-15 (UTC) | layer 2 | none that blocked it |
 | `nife` | the core everything rests on | GitHub `nife` belongs to a user (0 repositories, created 2010); others hold `nife.org` and `nife.dev` | not available without that user; `nife` now names one kernel (layer 4) |
 
@@ -134,21 +134,21 @@ separate go from the architect, all before the first crates.io publish.
 
 The checks ran on 2026-11-15. `partsfoundry` and its variants (`parts_foundry`, `parts-foundry`,
 `partfoundry`) are free on crates.io, on GitHub and as `.org`, `.io` and `.net` domains. `.dev` is
-free by RDAP. `partsfoundry.com` is registered (2022) and parked. No company, product or mark
-named exactly Parts Foundry turned up, and no trademark register was searched. Web results are
-crowded with metal-casting suppliers, and "parts foundry rust" lands on the Ethereum Foundry
-toolkit.
+free by RDAP. `partsfoundry.com` has an owner since 2022 and sits parked. No company, product or
+mark named exactly Parts Foundry turned up, and nobody searched a trademark register.
+Metal-casting suppliers crowd the web results, and "parts foundry rust" lands on the Ethereum
+Foundry toolkit.
 
-The candidates below were weighed, and each lost for the reason in its row.
+Each candidate below lost for the reason in its row.
 
 | option | what it says | checks | why it lost or won |
 |---|---|---|---|
 | `partsfoundry` | a foundry that casts the project's parts | free as above | won, ruled 2026-11-15 (UTC) |
-| OSOS (layer 1) | open source operating systems | not run | dropped when `partsfoundry` was ruled |
-| the geology words | the project's rock and mineral scheme | every bare word is taken on at least one of crates.io, GitHub and the `.org` domain | no bare word was free |
+| OSOS (layer 1) | open source operating systems | not run | lost to `partsfoundry` |
+| the geology words | the project's rock and mineral scheme | every bare word belongs to someone on at least one of crates.io, GitHub and the `.org` domain | no bare word was free |
 | `orebody` and other free geology terms | the same scheme | free | dropped: the geology scheme does not suit a foundry |
 | `provenfoundry` | a foundry whose parts are proven | free on crates.io, GitHub and `.org` | `provenfoundry.com` is a live site, created 2026-10-02, that sells creator products |
-| `standardfoundry` and `referencefoundry` | a foundry of standard or reference parts | not recorded | their `.com` domains are held by small unrelated businesses |
+| `standardfoundry` and `referencefoundry` | a foundry of standard or reference parts | not recorded | small unrelated businesses own their `.com` domains |
 | `assuredfoundry`, `baselinefoundry` and `componentsfoundry` | a foundry with an adjective | free | say less than `partsfoundry` |
 | `craton` | the old, stable core of a continent, on which the rest grows | crates.io free; GitHub `craton` a user (1 repository), `craton-os` free; others hold `craton.org` and `craton.dev`; an OpenStack inventory project shares the name (`python-cratonclient`) | a craton is neither core nor rock nor mineral, so it breaks milestone 120's tiers |
 | `quarry` | where every distribution's stone comes from | crates.io `quarry` taken (0.2.0, 729 downloads, "mining type information"); GitHub `quarry` a user, `quarry-os` free; `quarry.org` parked | a verb as well as a noun; the crate name has gone |

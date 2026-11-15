@@ -204,8 +204,8 @@ name or magic may spell nife.
 Ruled 2026-11-14 (UTC) that the organization and the library share one name, and ruled 2026-11-15
 (UTC) that the name is `partsfoundry` (Parts Foundry).
 
-- The organization and the library are named `partsfoundry`, written Parts Foundry in prose. The
-  domain is `partsfoundry.org`.
+- The organization and the library take the name `partsfoundry`, written Parts Foundry in prose.
+  The domain is `partsfoundry.org`.
 - The GitHub organization is still `nifeos` today. It takes the new name in a later step.
 - Crate names stay descriptive, and the page-contract crates take no common prefix. The project
   can add a prefix later, but it cannot take one away.
@@ -214,15 +214,15 @@ Ruled 2026-11-14 (UTC) that the organization and the library share one name, and
 
 What the ruling does not do. It creates no GitHub organization, moves no repository from
 `nifeos`, registers no domain and builds no website. Each of those four steps waits for a separate
-go from the architect, and all four come before the first crates.io publish. No repository, organization or
-domain is created yet, and nothing else is renamed.
+go from the architect, and all four come before the first crates.io publish. The ruling creates
+nothing and renames nothing else.
 
 The checks, run 2026-11-15 (UTC). `partsfoundry` and its variants (`parts_foundry`,
 `parts-foundry`, `partfoundry`) are free on crates.io and on GitHub, and free as `.org`, `.io` and
-`.net` domains. `.dev` is free by RDAP. `partsfoundry.com` is registered (2022) and parked. No
-company, product or mark named exactly Parts Foundry turned up, though no trademark register was
-searched. Web results are crowded with metal-casting suppliers, and a search for "parts foundry
-rust" lands on the Ethereum Foundry toolkit. The appendix lists the candidates that lost and why.
+`.net` domains. `.dev` is free by RDAP. `partsfoundry.com` has an owner since 2022 and
+sits parked. No company, product or mark named exactly Parts Foundry turned up, though nobody
+searched a trademark register. Metal-casting suppliers crowd the web results, and a search for
+"parts foundry rust" lands on the Ethereum Foundry toolkit. The appendix lists the candidates that lost and why.
 
 ## basalt stays the distribution for Moho
 
@@ -252,7 +252,7 @@ All six are ruled, hardest to change first.
 2. The capability binary interface's name. Ruled 2026-11-14 (UTC): Moho, with the ABI crate
    `moho_abi`, and `nife` stays the capability microkernel's name. The ambient-authority binary
    interface's name is still to choose.
-3. The organization. Ruled 2026-11-14 (UTC): it stays `nifeos` until the library is named. Ruled
+3. The organization. Ruled 2026-11-14 (UTC): it stays `nifeos` until the library takes a name. Ruled
    2026-11-15 (UTC): it takes the library's name, `partsfoundry`, with the domain
    `partsfoundry.org`. Creating the organization and moving repositories each wait for a separate
    go. GitHub redirects most of an organization rename, every image names the domain, and anyone
@@ -286,6 +286,5 @@ names stay open.
 - Four steps, each waiting for a separate go from the architect and all before the first crates.io
   publish: creating the `partsfoundry` GitHub organization, moving repositories from `nifeos`,
   registering `partsfoundry.org` and building the website. The website's domain comes from
-  milestone 1018 (the design record moves to `nifeos/record` and is published as a website), which
-  now has its name. The rule that a leaving crate never mentions nife (now the name of one
-  kernel) is unchanged.
+  milestone 1018 (the design record moves to `nifeos/record` and is published as a website). The
+  rule that a leaving crate never mentions nife (now the name of one kernel) stays as it was.
