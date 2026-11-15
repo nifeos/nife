@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1108-socket-contract-outside-review.md).
 
-7. The one piece of logic beyond the grants has no proof. PARTIAL: Kani `a_position_is_a_port_in_range_and_the_clock_never_runs_backwards` with its patch; the fallback is documented. LEFT: the loop harness over `held` (16384 iterations) and the no-reuse arithmetic harness; `Option<u16>` is a signature change.
+7. The one piece of logic beyond the grants has no proof. DONE: `Ports::next` returns `Option<u16>` and the socket table answers `REP_ERR` when every port is held. Three Kani harnesses with falsification patches: the position and clock, the loop (`an_allocation_never_moves_the_cursor_back_or_returns_a_held_port`) and the no-reuse arithmetic (`a_stack_started_four_milliseconds_later_starts_past_every_port_used`). The loop proof bounds the loop at four candidates through `next_within`. A proof over the whole range of 16384 did not finish in over an hour at 6 GiB. That the full-range loop behaves like the bounded one is an argument, not a proof.
    Finding: the three harnesses prove the grant packing and checks, which is the authority. The
    frame layout, the badge predicate and the lease round trip are tests of fixed values, which is
    enough for constants. `ephemeral::Ports::next` (lines 331 to 341) is a loop with a clock, a
@@ -21,7 +21,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    second is the honest shape and costs one `match` in `socket_table.rs`.
    Door: two-way (an unreleased signature). Effort: M.
 
-8. Offsets, lengths and byte orders mix types and go unstated. PARTIAL: `FRAME_BYTES` added and the byte order stated. LEFT: one type for offsets and lengths (touches five component sites).
+8. Offsets, lengths and byte orders mix types and go unstated. PARTIAL: `FRAME_BYTES` added and the byte order stated. LEFT, and not doable as written: one type for offsets and lengths. `user_mode_runtime`'s window API takes `u64` offsets, so a `usize` here moves the casts to the window calls instead of removing them; the type is for the window API's owner to change, with this crate following.
    Finding: `OFF_*` are `u64` and `DATA_MAXIMUM` is `usize`, so every caller casts
    (`DATA_MAXIMUM as u64` at five sites in `components/`, `PAYLOAD_OFFSET_BYTES as usize` in the crate's
    own line 471). `DATA_MAXIMUM = 4096 - PAYLOAD_OFFSET_BYTES` hardcodes the page size with no constant for
