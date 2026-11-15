@@ -474,7 +474,7 @@ echo "==> clippy: kernel + user + user_mode_runtime (aarch64)"
 # lint-target-dir: aarch64
 python3 helpers/clippy_record.py aarch64 cargo clippy -p kernel -p components -p fixtures \
     --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
-python3 helpers/clippy_record.py aarch64 cargo clippy -p user_mode_runtime \
+python3 helpers/clippy_record.py aarch64_user_mode_runtime cargo clippy -p user_mode_runtime \
     --target aarch64-unknown-none-softfloat --lib -- -D warnings
 
 # The system-test image (milestone 609 (the system tests leave the kernel crate)), in its own
