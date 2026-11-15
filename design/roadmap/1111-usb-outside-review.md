@@ -277,8 +277,6 @@ The checks are in [the appendix](1111-usb-outside-review/done-when.md).
 
 ## BUGS
 
-- The three falsification patches apply but were not replayed under Kani here; the walk harness
-  alone takes three minutes, and the template's `proofs / falsify` job will replay them.
 - Nobody has verified the claim that let chains set the minimum Rust version at 1.88. The `msrv`
   job decides the value.
 - No mutation census ran; the record cited is the repository's own, from before this review.

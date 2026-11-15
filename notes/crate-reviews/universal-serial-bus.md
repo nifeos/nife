@@ -6,7 +6,7 @@
 ## The package
 
 Name and version. `usb` `0.1.0` in this tree, published as `universal_serial_bus` because the name
-`usb` is taken on crates.io (milestone 857, crates released on their own). The package and the
+`usb` is taken on crates.io, as milestone 857 (crates released on their own) found. The package and the
 directory take the long name at the move, which is item 2 of
 [milestone 1111 (what an outside maintainer would fix before the first release)](../../design/roadmap/1111-usb-outside-review.md).
 Nine `Name:` blocks: the crate's own and eight public items, all provisional.
@@ -43,10 +43,7 @@ Proofs. Five Kani harnesses, each with a falsification patch:
 | `two_reports_produce_a_bounded_number_of_events` | every pair of eight-byte reports | at most twenty events |
 | `two_reports_produce_their_events_in_order` | every pair of eight-byte reports | modifiers first in bit order, then releases, then presses, each the code of a usage held in exactly one report |
 
-Outside the bounds: a configuration longer than 25 bytes in any shape but the fixed one, which is
-what a real composite keyboard sends (the unit tests walk several, and item 10's fuzz target is the
-check that reaches them), and the converse of the report proof, that every key which changed
-produces an event. The two-interface harness takes 14 s and the event-order harness 238 s, beside
+Two things lie outside the bounds. The first is a configuration longer than 25 bytes in any shape but the fixed one, which is what a real composite keyboard sends; the unit tests walk several, and item 10's fuzz target is the check that reaches them. The second is the converse of the report proof: that every key which changed produces an event. The two-interface harness takes 14 s and the event-order harness 238 s, beside
 177 s for the 25-byte walk.
 
 Dependencies. None. The one consumer in nife is `components` (`usb_keyboard_driver.rs`), by path.
@@ -66,16 +63,12 @@ tracked `.rs` file of the crate.
 | prose acronyms (`prose_acronyms.py`) | 13 findings, the move lane's: `USB`, `IN`, `HID`, `ABI`, `LEDs` in `lib.rs`; `GUI`, `ISO`, `AT`, `US`, `PC`, `AS` in `boot_keyboard.rs`; `OUT` in `descriptor.rs`; `TRB` in `request.rs`. Each is expanded at its first use or added to the template's word list |
 
 Provenance. The usage table takes its usages and names from the USB-IF HID Usage Tables 1.5 and its
-numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an ABI header, as milestone 1019
-(the driver crates carry facts from their sources, not their text) item 2 rules. Linux's
+numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an ABI header. Milestone 1019 (the driver crates carry facts from their sources, not their text) rules this in its item 2. Linux's
 `hid_keyboard[]` is a test cross-check only. The table now runs from 0x04 to 0x8b, and the rerun
 cross-check agrees on 140 of its 144 rows; the four differences are this crate's choices, which
 `the_table_matches_its_linux_cross_check` lists.
 
-Result of `script/crate-standalone`. Eight failures, each one of the move's own steps: the crate
-name and 48 names in the crate are not ratified (`python3 helpers/name_release.py --draft usb`
-prints the table); the manifest inherits `license` and `lints` and has no `rust-version` (item 1);
-and the README and both license files are missing (item 4). The build passes for the host and the
+Result of `script/crate-standalone`. Eight failures, each one of the move's own steps. The crate name and 48 names in the crate are not ratified (`python3 helpers/name_release.py --draft usb` prints the table). The manifest inherits `license` and `lints` and has no `rust-version` (item 1), and the README and both license files are missing (item 4). The build passes for the host and the
 three bare-metal targets on stable, all five harnesses prove, and each of the five falsification
 patches turns its harness red.
 
