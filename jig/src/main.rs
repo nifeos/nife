@@ -510,7 +510,7 @@ fn asks(bytes: &[u8]) -> Vec<Asks> {
         ) else {
             continue;
         };
-        let Ok(elf) = elf::Elf::parse(member) else {
+        let Ok(elf) = static_elf::Elf::parse(member) else {
             continue;
         };
         let Ok(Some(d)) = elf.note(

@@ -2152,63 +2152,34 @@ crates/domain_name_system/src/proofs.rs
 
 
 
-crates/elf/src/error.rs::Error
 
-crates/elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/elf/src/machine.rs::KNOWN_MACHINES
 
-crates/elf/src/machine.rs::NATIVE_MACHINE
 
-crates/elf/src/machine.rs::machine_no_nife_build_accepts
 
-crates/elf/src/note.rs
 
-crates/elf/src/note.rs::NoteError
 
-crates/elf/src/note.rs::NoteSearch
 
-crates/elf/src/note.rs::NoteSegment
 
-crates/elf/src/note.rs::NoteSegments
 
-crates/elf/src/note.rs::from_head
 
-crates/elf/src/note.rs::new
 
-crates/elf/src/note.rs::note
 
-crates/elf/src/note.rs::range
 
-crates/elf/src/note.rs::segment
 
-crates/elf/src/parse.rs::Elf
 
-crates/elf/src/parse.rs::entry
 
-crates/elf/src/parse.rs::parse
 
-crates/elf/src/parse.rs::segments
 
-crates/elf/src/segment.rs::PF_R
 
-crates/elf/src/segment.rs::PF_W
 
-crates/elf/src/segment.rs::PF_X
 
-crates/elf/src/segment.rs::Segment
 
-crates/elf/src/segment.rs::is_executable
 
-crates/elf/src/segment.rs::is_readable
 
-crates/elf/src/segment.rs::is_writable
 
-crates/elf/src/segment.rs::page_range
 
-crates/elf/src/tests.rs
 
-crates/elf/src/verification.rs
 
 
 
@@ -5066,16 +5037,6 @@ crates/memory_corruption_canary_gate/src/lib.rs::new
 
 crates/memory_corruption_canary_gate/src/lib.rs::try_check
 
-crates/memory_region_heap/src/lib.rs::DEFAULT_BASE
-
-crates/memory_region_heap/src/lib.rs::MemoryRegionHeap
-
-crates/memory_region_heap/src/lib.rs::commit_all
-
-crates/memory_region_heap/src/lib.rs::committed_bytes
-
-crates/memory_region_heap/src/lib.rs::new
-
 crates/memory_regions/src/destroy.rs::DestroyOutcome
 
 crates/memory_regions/src/destroy.rs::destroy_outcome
@@ -6317,6 +6278,64 @@ crates/socket_contract/src/lib.rs::udp_bind_grant
 crates/socket_contract/src/lib.rs::udp_grant_allows
 
 crates/socket_contract/src/lib.rs::word_ipv4
+
+crates/static_elf/src/error.rs::Error
+
+crates/static_elf/src/machine.rs::FOREIGN_MACHINES
+
+crates/static_elf/src/machine.rs::KNOWN_MACHINES
+
+crates/static_elf/src/machine.rs::NATIVE_MACHINE
+
+crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
+
+crates/static_elf/src/note.rs
+
+crates/static_elf/src/note.rs::NoteError
+
+crates/static_elf/src/note.rs::NoteSearch
+
+crates/static_elf/src/note.rs::NoteSegment
+
+crates/static_elf/src/note.rs::NoteSegments
+
+crates/static_elf/src/note.rs::from_head
+
+crates/static_elf/src/note.rs::new
+
+crates/static_elf/src/note.rs::note
+
+crates/static_elf/src/note.rs::range
+
+crates/static_elf/src/note.rs::segment
+
+crates/static_elf/src/parse.rs::Elf
+
+crates/static_elf/src/parse.rs::entry
+
+crates/static_elf/src/parse.rs::parse
+
+crates/static_elf/src/parse.rs::segments
+
+crates/static_elf/src/segment.rs::PF_R
+
+crates/static_elf/src/segment.rs::PF_W
+
+crates/static_elf/src/segment.rs::PF_X
+
+crates/static_elf/src/segment.rs::Segment
+
+crates/static_elf/src/segment.rs::is_executable
+
+crates/static_elf/src/segment.rs::is_readable
+
+crates/static_elf/src/segment.rs::is_writable
+
+crates/static_elf/src/segment.rs::page_range
+
+crates/static_elf/src/tests.rs
+
+crates/static_elf/src/verification.rs
 
 crates/std_runtime_contract/src/lib.rs::ARGS_PAGE
 

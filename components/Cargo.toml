@@ -739,7 +739,7 @@ vmstat = { version = "0.1.0", path = "../crates/vmstat" }
 slabtop = { version = "0.1.0", path = "../crates/slabtop" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
 uptime = { version = "0.1.0", path = "../crates/uptime" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # The JH7110's clock and reset device table, walk and request dispatch, host-tested in its own
 # crate; jh7110_clock_and_reset.rs is the volatile shell of register stores over it.

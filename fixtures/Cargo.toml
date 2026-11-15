@@ -665,7 +665,7 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 # The fixtures that carry a manifest note (milestone 597 (a program carries its manifest in an ELF
 # note), provisional): `greeting`, and the unvouched witness whose note asks for what it will not be
 # given.

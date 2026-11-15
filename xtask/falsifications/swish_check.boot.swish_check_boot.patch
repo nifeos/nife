@@ -63,7 +63,7 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
 +            unvouched,
  
      /// Build and start an interruptible job from the shell's own job untyped, and answer it.
-     fn spawn_interruptible(&self, req: &Request, elf: Option<&elf::Elf>, failure: u64) {
+     fn spawn_interruptible(&self, req: &Request, elf: Option<&static_elf::Elf>, failure: u64) {
 @@ -875,8 +877,8 @@
      ) {
          let own_ut = self.c.own_ut;

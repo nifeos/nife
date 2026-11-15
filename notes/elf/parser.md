@@ -1,7 +1,7 @@
-# The ELF parser: what `crates/elf` accepts, and why
+# The ELF parser: what `crates/static_elf` accepts, and why
 
 [`notes/elf.md`](../elf.md) carries the format and how the kernel loads a program. This page
-carries the design of the parser crate itself, `crates/elf`, which reads untrusted images: what it
+carries the design of the parser crate itself, `crates/static_elf`, which reads untrusted images: what it
 refuses, how it decides which machine a file may be for, and how it finds a note.
 
 ## The scope it parses
@@ -96,7 +96,7 @@ derived from it. Adding an architecture is one edit there and one arm of `EXPECT
   machine fails on every host, including the one where the mistake is made. A gate that fires only
   where nobody is standing is not a gate.
 - `KNOWN_MACHINES` is exported for callers with a per-machine obligation of their own.
-  `crates/elf/tests/fuzz_seed.rs` is one: the fuzz corpus needs a seed for every machine some build
+  `crates/static_elf/tests/fuzz_seed.rs` is one: the fuzz corpus needs a seed for every machine some build
   accepts.
 
 ## The fuzz seeds
@@ -104,7 +104,7 @@ derived from it. Adding an architecture is one edit there and one arm of `EXPECT
 `fuzz/fuzz_targets/elf_parse` returns at once on anything `Elf::parse` rejects. If this build's
 seed stopped parsing, the fuzzer would start from an empty corpus and have to rediscover five
 constants and a program-header table before reaching an interesting branch, while still reporting
-"no crashes". `crates/elf/tests/fuzz_seed.rs` makes that loud for a millisecond. The other fuzz
+"no crashes". `crates/static_elf/tests/fuzz_seed.rs` makes that loud for a millisecond. The other fuzz
 targets seed from fixtures that already have tests of their own
 (`crates/device_tree_blob/tests/qemu_aarch64_virt.rs`,
 `crates/globally_unique_identifier_partition_table/tests/real_disks.rs`).

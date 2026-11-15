@@ -809,7 +809,7 @@ fn vouch(
     let Ok(program) = core::str::from_utf8(named) else {
         return (S::NotExecutable, live);
     };
-    if elf::Elf::parse(bytes).is_err() {
+    if static_elf::Elf::parse(bytes).is_err() {
         return (S::NotExecutable, live);
     }
     let entry = installed_programs::Entry {

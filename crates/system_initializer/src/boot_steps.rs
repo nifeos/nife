@@ -53,27 +53,27 @@ pub(super) struct BootPrograms {
     /// The image's index sources, measured (milestone 801); empty as the catalog is.
     pub(super) index_sources: &'static str,
     pub(super) con_elf: measured_boot::Verdict<'static>,
-    pub(super) log_elf: Option<elf::Elf<'static>>,
+    pub(super) log_elf: Option<static_elf::Elf<'static>>,
     pub(super) in_elf: measured_boot::Verdict<'static>,
     pub(super) td_elf: measured_boot::Verdict<'static>,
     pub(super) ts_elf: measured_boot::Verdict<'static>,
     pub(super) sh_elf: measured_boot::Verdict<'static>,
-    pub(super) sink_elf: Option<elf::Elf<'static>>,
-    pub(super) ent_elf: Option<elf::Elf<'static>>,
-    pub(super) net_elf: Option<elf::Elf<'static>>,
+    pub(super) sink_elf: Option<static_elf::Elf<'static>>,
+    pub(super) ent_elf: Option<static_elf::Elf<'static>>,
+    pub(super) net_elf: Option<static_elf::Elf<'static>>,
     pub(super) login: LoginPrograms,
     pub(super) reaper_elf: measured_boot::Verdict<'static>,
-    pub(super) care_elf: Option<elf::Elf<'static>>,
-    pub(super) set_elf: Option<elf::Elf<'static>>,
+    pub(super) care_elf: Option<static_elf::Elf<'static>>,
+    pub(super) set_elf: Option<static_elf::Elf<'static>>,
     pub(super) fs_scoped: bool,
 }
 
 /// What the login stack is built from: its four programs and the three blobs `login` is handed.
 pub(super) struct LoginPrograms {
-    cred_elf: Option<elf::Elf<'static>>,
-    idp_elf: Option<elf::Elf<'static>>,
-    login_elf: Option<elf::Elf<'static>>,
-    audit_elf: Option<elf::Elf<'static>>,
+    cred_elf: Option<static_elf::Elf<'static>>,
+    idp_elf: Option<static_elf::Elf<'static>>,
+    login_elf: Option<static_elf::Elf<'static>>,
+    audit_elf: Option<static_elf::Elf<'static>>,
     care_blob: &'static [u8],
     keeper_blob: &'static [u8],
     timetable_blob: &'static [u8],
@@ -81,7 +81,7 @@ pub(super) struct LoginPrograms {
 
 /// The programs the shell can spawn, and the names the measurement refused among them.
 pub(super) struct Spawnable {
-    pub(super) progs: [Option<elf::Elf<'static>>; program_table::PROGRAM_COUNT],
+    pub(super) progs: [Option<static_elf::Elf<'static>>; program_table::PROGRAM_COUNT],
     /// Which programs this initial ramdisk has no entry for, so a spawn of one is answered
     /// [`program_table::spawnproto::SPAWN_NOT_IN_IMAGE`] rather than as a build failure.
     pub(super) absent: [bool; program_table::PROGRAM_COUNT],
@@ -221,7 +221,7 @@ pub(super) fn read_boot_programs(fs: &nifefs::Fs<'static>, table: &str) -> BootP
     let ent_elf = measured(fs, table, "entropy").elf;
     let net_elf = measured(fs, table, "net_stack").elf;
     // The graphical stack's programs are measured in `graphical_terminal_grants`, not here: three
-    // more `elf::Elf`s in `boot`'s frame overflow the progenitor's stack.
+    // more `static_elf::Elf`s in `boot`'s frame overflow the progenitor's stack.
 
     let cred_elf = measured(fs, table, "credentialer").elf;
     let idp_elf = measured(fs, table, "identity_provisioner").elf;
@@ -282,7 +282,7 @@ pub(super) fn read_boot_programs(fs: &nifefs::Fs<'static>, table: &str) -> BootP
 /// names the table refused; an entry the archive lacks is never a refusal.
 #[inline(never)]
 pub(super) fn measure_spawnable(fs: &nifefs::Fs<'static>, table: &str) -> Spawnable {
-    let mut progs: [Option<elf::Elf>; program_table::PROGRAM_COUNT] =
+    let mut progs: [Option<static_elf::Elf>; program_table::PROGRAM_COUNT] =
         core::array::from_fn(|_| None);
     let mut refused = [""; program_table::PROGRAM_COUNT];
     let mut refused_n = 0usize;
@@ -317,8 +317,8 @@ pub(super) fn start_device_services(
     ut: u64,
     fs: &nifefs::Fs<'static>,
     table: &str,
-    ent_elf: Option<&elf::Elf<'static>>,
-    net_elf: Option<&elf::Elf<'static>>,
+    ent_elf: Option<&static_elf::Elf<'static>>,
+    net_elf: Option<&static_elf::Elf<'static>>,
 ) -> DeviceServices {
     // First: only these slots matter, and every peak below is lower without them.
     for &c in g.for_test_roles {
@@ -354,7 +354,7 @@ pub(super) fn start_device_services(
 fn start_entropy(
     g: &BootEndowment,
     ut: u64,
-    ent_elf: Option<&elf::Elf<'static>>,
+    ent_elf: Option<&static_elf::Elf<'static>>,
     kernel_built_entropy: bool,
 ) -> Entropy {
     // No terminal is mapped yet, so the outcome is carried as data and announced later.
@@ -385,7 +385,7 @@ fn start_entropy(
 fn start_virtio_entropy(
     g: &BootEndowment,
     ut: u64,
-    ent_program: &elf::Elf<'static>,
+    ent_program: &static_elf::Elf<'static>,
 ) -> Option<u64> {
     // `NoSuchSlot` on an ungranted slot is the probe; the trio is granted whole or not at all.
     let magic = user_mode_runtime::virtio::read_register(g.virtio_rng, 0);
@@ -470,7 +470,7 @@ fn start_virtio_entropy(
 fn start_network(
     g: &BootEndowment,
     ut: u64,
-    net_elf: Option<&elf::Elf<'static>>,
+    net_elf: Option<&static_elf::Elf<'static>>,
 ) -> Option<(u64, u64, u64)> {
     let mut network: Option<(u64, u64, u64)> = None;
     if is_granted(g.virtio_net) {
@@ -498,9 +498,9 @@ pub(super) fn start_terminal_stack(
     g: &BootEndowment,
     ut: u64,
     (has_screen, uart_shape): (bool, u64),
-    con_elf: &elf::Elf<'static>,
-    log_elf: Option<&elf::Elf<'static>>,
-    ts_elf: &elf::Elf<'static>,
+    con_elf: &static_elf::Elf<'static>,
+    log_elf: Option<&static_elf::Elf<'static>>,
+    ts_elf: &static_elf::Elf<'static>,
     td_bytes: &[u8],
 ) -> Terminal {
     // Retyped with full rights, so narrowed views can be delegated.
@@ -575,7 +575,7 @@ pub(super) fn start_terminal_stack(
 fn start_console(
     g: &BootEndowment,
     ut: u64,
-    con_elf: &elf::Elf<'static>,
+    con_elf: &static_elf::Elf<'static>,
     has_screen: bool,
     uart_shape: u64,
     [request, reply, con_shared]: [u64; 3],
@@ -664,7 +664,12 @@ fn start_console(
 /// with the console's bytes (§175 (where the kernel's own output goes once userspace owns the
 /// console), ruling B). The ring's grants are released either way.
 #[inline(never)]
-fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'static>>, request: u64) {
+fn start_system_log(
+    g: &BootEndowment,
+    ut: u64,
+    log_elf: Option<&static_elf::Elf<'static>>,
+    request: u64,
+) {
     if let Some(log_program) = log_elf
         && is_granted(g.kernel_ring)
         && is_granted(g.kernel_ring_cursor)
@@ -765,7 +770,7 @@ pub(super) fn refuse_unvouched(
 pub(super) fn start_keystroke_sources(
     g: &BootEndowment,
     ut: u64,
-    in_elf: &elf::Elf<'static>,
+    in_elf: &static_elf::Elf<'static>,
     term_ep: u64,
     uart_shape: u64,
 ) {
@@ -844,7 +849,7 @@ pub(super) fn retype_spawn_channel(ut: u64) -> SpawnChannel {
 #[inline(never)]
 pub(super) fn build_shell(
     w: &Wiring,
-    sh_elf: &elf::Elf<'static>,
+    sh_elf: &static_elf::Elf<'static>,
     chan: SpawnChannel,
     sh_budget: u64,
 ) -> (supervision_contract::Child, u64) {
@@ -959,7 +964,7 @@ pub(super) fn finish_shell_endowment(
 /// and before the giveaway, because it is a system component. Returns the sink endpoint, retyped
 /// whether or not an adapter serves it. See notes/system-initializer/the-boot-order.md.
 #[inline(never)]
-pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&elf::Elf<'static>>) -> u64 {
+pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&static_elf::Elf<'static>>) -> u64 {
     let (ut, term_ep) = (w.ut, w.term.ep);
     let term_sink = must(retype_into_kernel_object_from(
         ut,

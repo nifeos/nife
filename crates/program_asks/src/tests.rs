@@ -37,7 +37,7 @@ fn elf_image(whole_note: &[u8]) -> Vec<u8> {
     v[5] = 1;
     v[6] = 1;
     v[16..18].copy_from_slice(&2u16.to_le_bytes());
-    v[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+    v[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
     v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
     v[32..40].copy_from_slice(&64u64.to_le_bytes());
     v[54..56].copy_from_slice(&56u16.to_le_bytes());
@@ -45,7 +45,7 @@ fn elf_image(whole_note: &[u8]) -> Vec<u8> {
     let code = [0xaau8; 16];
     let mut ph = vec![0u8; 56];
     ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-    ph[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+    ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
     ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
     ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
     ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -166,11 +166,11 @@ fn a_program_built_for_another_machine_still_has_its_note_read() {
         false,
     );
     let mut bytes = elf_image(&DESC.0);
-    let foreign = elf::FOREIGN_MACHINES[0];
+    let foreign = static_elf::FOREIGN_MACHINES[0];
     bytes[18..20].copy_from_slice(&foreign.to_le_bytes());
     assert_eq!(
-        elf::Elf::parse(&bytes).err(),
-        Some(elf::Error::WrongMachine)
+        static_elf::Elf::parse(&bytes).err(),
+        Some(static_elf::Error::WrongMachine)
     );
     let p = package_archive::Program {
         name: "abroad",

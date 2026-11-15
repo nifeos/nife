@@ -43,7 +43,7 @@ What. An enum the compiler forces exhaustive matching on, and a `compile_error!`
 
 This half already exists and has already paid for itself. `ArchLegs` is that enum, and its own
 doc records the bug it was created by: two variants, predicates written as `self != the_other_one`,
-and every leg answering `true` once there was a third. `crates/elf`'s `EXPECTED_MACHINE` is the
+and every leg answering `true` once there was a third. `crates/static_elf`'s `EXPECTED_MACHINE` is the
 same correction in the same week. Its reach is the problem: no shell script, YAML step, or TOML
 array can see a Rust enum, and nine of the eleven silent gaps live in exactly those three languages.
 So B is already taken where it applies and cannot apply where the gaps are.
