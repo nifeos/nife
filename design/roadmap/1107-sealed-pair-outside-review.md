@@ -258,13 +258,12 @@ The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
 ## Follow-on
 
 What is left of this review: Decisions A and B are not ruled, and the items marked LEFT in the
-appendices wait on them or on a lane of their own. The two names above are provisional until
-Decision B.
+appendices wait on them or on a lane of their own. Decision B rules on the two names above.
 
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 wait on Decision A.
 - **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
-- **Done.** Items 6, 9, 13 and 14: `AUTHORITY_NOTICE` and `build` are provisional names, `contains`
-  is measured, and one proof covers it.
+- **Done.** Items 6, 9, 13 and 14: `AUTHORITY_NOTICE` and `build` are provisional names, a measurement
+  shows `contains` is fast enough, and one proof covers it.
 
 ## Index row
 

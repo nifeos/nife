@@ -37,7 +37,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     kernel that lacks it.
     Door: two-way. Effort: S.
 
-13. `contains` is a byte-at-a-time window scan over a release kernel. DONE (measured: a 1 MiB image scans in about 1.6 ms, so no searcher is written).
+13. `contains` is a byte-at-a-time window scan over a release kernel. DONE (a measurement: a 1 MiB image scans in about 1.6 ms, so the crate needs no searcher).
     Finding: `haystack.windows(32).any(|w| w == needle)` compares at every offset. A release
     kernel is several megabytes and the scan runs once per measured entry, so the cost is small
     today and unmeasured. The standard library's `memmem`-style searchers and the `memchr` crate's

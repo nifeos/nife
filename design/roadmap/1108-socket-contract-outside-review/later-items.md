@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1108-socket-contract-outside-review.md).
 
-7. The one piece of logic beyond the grants has no proof. DONE: `Ports::next` returns `Option<u16>` and the socket table answers `REP_ERR` when every port is held. Three Kani harnesses with falsification patches: the position and clock, the loop (`an_allocation_never_moves_the_cursor_back_or_returns_a_held_port`) and the no-reuse arithmetic (`a_stack_started_four_milliseconds_later_starts_past_every_port_used`). The loop proof is bounded at four candidates through `next_within`: a proof over the whole range of 16384 did not finish in over an hour at 6 GiB, so that the full-range loop behaves like the bounded one is an argument, not a proof.
+7. The one piece of logic beyond the grants has no proof. DONE: `Ports::next` returns `Option<u16>` and the socket table answers `REP_ERR` when every port is held. Three Kani harnesses with falsification patches: the position and clock, the loop (`an_allocation_never_moves_the_cursor_back_or_returns_a_held_port`) and the no-reuse arithmetic (`a_stack_started_four_milliseconds_later_starts_past_every_port_used`). The loop proof bounds the loop at four candidates through `next_within`. A proof over the whole range of 16384 did not finish in over an hour at 6 GiB. That the full-range loop behaves like the bounded one is an argument, not a proof.
    Finding: the three harnesses prove the grant packing and checks, which is the authority. The
    frame layout, the badge predicate and the lease round trip are tests of fixed values, which is
    enough for constants. `ephemeral::Ports::next` (lines 331 to 341) is a loop with a clock, a
