@@ -1,0 +1,21 @@
+Falsifies `sealed_pair::verification::contains_finds_a_digest_exactly_when_it_is_there`.
+
+The defect: the scan skips the haystack's first window. A digest that sits at offset 0 of the
+haystack is then not found, and a pair whose trust root begins with a digest reads as refused. Every
+test that buries its digests at a later offset still passes.
+
+Expected to fail: the harness's `assert_eq!`, with the digest at offset 0.
+
+
+diff --git a/crates/sealed_pair/src/lib.rs b/crates/sealed_pair/src/lib.rs
+--- a/crates/sealed_pair/src/lib.rs
++++ b/crates/sealed_pair/src/lib.rs
+@@ -538,7 +538,7 @@ pub fn hex_string(digest: &Digest) -> String {
+ /// A scan of a release kernel (about 1 MiB) takes about 1.6 ms, and of a 10 MiB image about 11 ms,
+ /// so a faster searcher would save nothing a person could notice.
+ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+-    haystack.windows(needle.len()).any(|w| w == needle)
++    haystack.windows(needle.len()).skip(1).any(|w| w == needle)
+ }
+ 
+ /// Pairs built in memory, for this crate's own doc examples and tests and for anyone else proving a
