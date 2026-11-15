@@ -19,7 +19,7 @@ candidate (Apple Silicon's 16 KiB granule); milestone 88's server shapes could s
 
 ## What is wrong, stated precisely
 
-`crates/paging` exports two implementations of one `PageFormat` trait:
+`crates/page_tables` exports two implementations of one `PageFormat` trait:
 
 | type | `LEVELS` | granule | VA bits |
 |---|---|---|---|
@@ -27,7 +27,7 @@ candidate (Apple Silicon's 16 KiB granule); milestone 88's server shapes could s
 | `Aarch64` | 4 | 4 KiB | 48 |
 
 Both are configurations. `Sv39` names one; `Aarch64` names an architecture while describing one.
-A reader meeting `paging::Aarch64` beside `paging::Sv39` has to know that the first is not the general
+A reader meeting `page_tables::Aarch64` beside `page_tables::Sv39` has to know that the first is not the general
 aarch64 case in order to read the second correctly.
 
 ## The asymmetry is not ours, which is why the obvious fix is wrong
@@ -48,7 +48,7 @@ available.
 A module per ISA, which is rule 1's shape and what `kernel/src/arch/<isa>/` has done since milestone 1:
 
 ```
-crates/paging/src/
+crates/page_tables/src/
   aarch64/mod.rs      the aarch64 configurations
   riscv64/mod.rs      pub struct Sv39;   (and Sv48, milestone 60)
   domain.rs
@@ -73,14 +73,14 @@ is.** Doing this early means renaming 174 call sites across 16 files twice if th
 the current name blocks nothing until a sibling actually exists.
 
 So the trigger is the arrival of a second aarch64 configuration, and the deliverable until then is
-this entry plus a comment in `crates/paging/src/lib.rs` pointing at it. Then the next reader who notices
+this entry plus a comment in `crates/page_tables/src/lib.rs` pointing at it. Then the next reader who notices
 the asymmetry finds the reasoning instead of filing it again.
 
 ## Scope note
 
 When it happens: module move, type rename, and every call site. `Aarch64` and `Sv39` appear 174
 times across 16 files, including `kernel/src/arch/*/mmu.rs`, both `iommu.rs` files, and
-`crates/paging/tests/mapping.rs`. No behaviour change, and milestone 69's proof obligation applies.
+`crates/page_tables/tests/mapping.rs`. No behaviour change, and milestone 69's proof obligation applies.
 
 ## Index row
 

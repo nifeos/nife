@@ -25,7 +25,7 @@ firmware, so nife runs on bare metal on two of its three declared architectures.
 only under HVF on patagonia, which is virtualization (`notes/bench-runbook.md`). Everything it needed
 lives under `kernel/src/arch/x86_64/`, and its one defect was fixed inside `arch/x86_64/mmu.rs`. The
 cost was measured rather than merely passed: 42 compiler errors, every one "this `arch::` name does
-not exist yet", with `crates/paging` unchanged.
+not exist yet", with `crates/page_tables` unchanged.
 [`notes/x86-port.md`](../../notes/x86-port.md): *"That is the whole diff above `arch/`. A new ISA was a
 new directory."*
 

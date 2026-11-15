@@ -13,7 +13,7 @@ In brief. `kernel/link-x86_64.ld` folded `KEEP(*(.text.boot))` and `KEEP(*(.data
 output section, so the 32-bit trampoline shipped as a single `RWX` `PT_LOAD` at `0x101000`.
 
 `crates/elf::Elf::parse` refused that image outright, with `Error::WritableAndExecutable`. So the
-kernel's own image violated the W^X rule that `crates/elf` and `paging::Flags` enforce everywhere
+kernel's own image violated the W^X rule that `crates/elf` and `page_tables::Flags` enforce everywhere
 else in the tree.
 
 ## How it was found, which is the useful part
@@ -131,7 +131,7 @@ pointing existing checks at new inputs, which is what the gate now does permanen
 
 - **The gate reads flags, not semantics.** It cannot tell a segment that is `RX` and *maps* writable
   at runtime from one that does not, so it is a check on the image and not on the kernel. The runtime
-  half is `paging::Flags`, which has no writable-and-executable constructor, and the two together are
+  half is `page_tables::Flags`, which has no writable-and-executable constructor, and the two together are
   the mechanism; neither is it alone.
 - **It is not a required check in the merge queue's ruleset**, because that is a repository setting
   rather than a file in this tree. A red run is visible and does not block a merge today. `script/gates`
@@ -157,7 +157,7 @@ pointing existing checks at new inputs, which is what the gate now does permanen
 
 - **Recorded.** In `design/roadmap/0208-boot-section-wx.md`: the gate reads flags, not semantics, so
   it cannot tell a segment that is `RX` and maps writable at runtime from one that does not. It is a
-  check on the image and not on the kernel. The runtime half is `paging::Flags`, which has no
+  check on the image and not on the kernel. The runtime half is `page_tables::Flags`, which has no
   writable-and-executable constructor, and the two together are the mechanism.
 - **Recorded.** In `uefi_loader/src/image.rs`'s own `BUGS`: `Elf::parse`'s overlap check is over
   `p_vaddr`, not `p_paddr`, so nothing rejects a linker script whose segments collide physically. No

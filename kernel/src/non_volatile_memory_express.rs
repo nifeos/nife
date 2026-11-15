@@ -92,7 +92,7 @@ pub fn find_and_confine() -> Result<Found, Absent> {
     if crate::iommu::is_active() {
         // The device's own DMA run, and in a shipped boot nothing else: the controller faults on
         // any address outside it.
-        let own = paging::domain::DmaRegion {
+        let own = page_tables::domain::DmaRegion {
             base: dma,
             size: DIRECT_MEMORY_ACCESS_PAGES * page_frames::FRAME_SIZE,
             writable: true,
@@ -101,14 +101,14 @@ pub fn find_and_confine() -> Result<Found, Absent> {
         #[cfg(feature = "system_tests")]
         let extra = {
             let escape = ESCAPE_TARGET.load(core::sync::atomic::Ordering::Relaxed);
-            (escape != 0).then_some(paging::domain::DmaRegion {
+            (escape != 0).then_some(page_tables::domain::DmaRegion {
                 base: escape,
                 size: page_frames::FRAME_SIZE,
                 writable: true,
             })
         };
         #[cfg(not(feature = "system_tests"))]
-        let extra: Option<paging::domain::DmaRegion> = None;
+        let extra: Option<page_tables::domain::DmaRegion> = None;
         let confined = match extra {
             Some(x) => crate::iommu::confine(dev.rid, &[own, x]),
             None => crate::iommu::confine(dev.rid, &[own]),
