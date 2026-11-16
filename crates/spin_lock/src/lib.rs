@@ -356,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn an_unsized_lock_hands_out_its_slice() {
+    fn a_lock_around_a_slice_hands_out_the_slice() {
         let lock: &SpinLock<[u32]> = &SpinLock::new([1, 2, 3]);
         lock.lock()[1] = 5;
         assert_eq!(&*lock.lock(), &[1, 5, 3]);
