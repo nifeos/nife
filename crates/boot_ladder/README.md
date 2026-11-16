@@ -44,6 +44,20 @@ to a check name bumps the minor version and adds a compatibility entry: the earl
 for a changed total, and a list of renamed checks if a name is ever renamed. A reader built
 against one version reads a log from an older kernel by those entries and no other.
 
+## Building and testing
+
+```sh
+cargo test
+cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
+```
+
+## What is proven
+
+Two Kani harnesses show that a count never overflows and that a name list holds only plain names,
+whatever ASCII text arrives up to their bounds. A replayable patch in `falsifications/` turns each
+red. The tests cover the round trip of
+the verdict, the invariants of the check list, and the shape of every head.
+
 ## EXAMPLES
 
 Finding the verdict in a transcript, and deciding whether it is red:
@@ -68,20 +82,6 @@ Printing a head:
 use boot_ladder::Heads;
 
 assert_eq!(Heads::new("example").banner().to_string(), "example on ");
-```
-
-## What is proven
-
-Two Kani harnesses show that a count never overflows and that a name list holds only plain names,
-whatever ASCII text arrives up to their bounds. A replayable patch in `falsifications/` turns each
-red. The tests cover the round trip of
-the verdict, the invariants of the check list, and the shape of every head.
-
-## Building and testing
-
-```sh
-cargo test
-cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
 ## BUGS

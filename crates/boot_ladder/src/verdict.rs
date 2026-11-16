@@ -730,10 +730,10 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(23)]
     fn a_count_is_read_without_overflow() {
-        const LEN: usize = 21;
-        let bytes: [u8; LEN] = kani::any();
+        const LEN_BYTES: usize = 21;
+        let bytes: [u8; LEN_BYTES] = kani::any();
         let len: usize = kani::any();
-        kani::assume(len <= LEN);
+        kani::assume(len <= LEN_BYTES);
         if let Some((_, end)) = leading_number(&bytes[..len]) {
             assert!(end <= len);
         }
@@ -747,12 +747,12 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(14)]
     fn a_segment_is_read_without_panicking() {
-        const LEN: usize = 12;
-        let bytes: [u8; LEN] = kani::any();
+        const LEN_BYTES: usize = 12;
+        let bytes: [u8; LEN_BYTES] = kani::any();
         let len: usize = kani::any();
-        kani::assume(len <= LEN);
+        kani::assume(len <= LEN_BYTES);
         let mut i = 0;
-        while i < LEN {
+        while i < LEN_BYTES {
             kani::assume(bytes[i].is_ascii());
             i += 1;
         }
