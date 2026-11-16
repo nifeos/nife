@@ -84,9 +84,8 @@ documentation prose_acronyms 5
 documentation readme_acronyms 1
 documentation register_names 5
 domain_name_resolution_contract abbreviations 7
-domain_name_resolution_contract prose_acronyms 10
-domain_name_resolution_contract readme_acronyms 1
-domain_name_resolution_contract register_names 4
+domain_name_resolution_contract prose_acronyms 4
+domain_name_resolution_contract register_names 3
 domain_name_system abbreviations 30
 domain_name_system prose_acronyms 16
 domain_name_system readme_acronyms 8

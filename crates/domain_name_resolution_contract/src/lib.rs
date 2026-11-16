@@ -6,10 +6,10 @@
 //! sends anything. The README has the sequence and its diagram.
 //!
 //! The acronyms, once: the Domain Name System (DNS) maps names to Internet Protocol version 4
-//! (IPv4) addresses. A request for comments (RFC) is one of the standards that define it; RFC 1035
+//! (IPv4) addresses. An RFC (Request for Comments) is one of the standards that define it; RFC 1035
 //! is DNS itself. A name server answers over the User Datagram Protocol (UDP) or the Transmission
-//! Control Protocol (TCP). An answer carries a time to live (TTL), and NXDOMAIN ("non-existent
-//! domain") is a server's answer that a name does not exist. The Dynamic Host Configuration
+//! Control Protocol (TCP). An answer carries a TTL (time-to-live), and NXDOMAIN (non-existent
+//! domain) is a server's answer that a name does not exist. The Dynamic Host Configuration
 //! Protocol (DHCP) lease is where a spawner learns which name server to use.
 //!
 //! | bytes | field | written by |

@@ -1,7 +1,7 @@
 # domain_name_resolution_contract
 
 The contract between a confined name resolver, the program that spawns it, and the clients that ask
-it for addresses. The resolver is a program of its own. It holds the one capability that can reach a
+it for Internet Protocol version 4 (IPv4) addresses. The resolver is a program of its own. It holds the one capability that can reach a
 name server, and it answers a client only for names inside the zone that client was granted. This
 crate holds what the three parties agree on: the words each one sends, the page a name and its
 addresses cross in, and the grant table the resolver judges each name against. `no_std`, and its
@@ -12,7 +12,9 @@ spawner that grants zones, and a client library, which all link this one definit
 drift. The client half (`wire.rs`) names nothing outside itself, so a standard library that cannot
 depend on this crate can copy that one file verbatim.
 
-## The three parties
+## The contract
+
+### The three parties
 
 ```text
   spawner ──unbadged capability──┐     (GRANT: badge B may resolve names in zone Z)
@@ -25,7 +27,7 @@ The spawner holds the one unbadged capability to the resolver's endpoint. It giv
 copy carrying that client's badge. The resolver reads only badge 0's messages as grants, so a client
 cannot widen its own grant.
 
-## The sequence
+### The sequence
 
 1. The spawner grants badge B a zone with `grant_messages(B, zone)`. A zone's text travels eight
    bytes per message, after a `control_word` that names the operation, the offset, the total length
@@ -40,17 +42,17 @@ cannot widen its own grant.
 5. When a client ends, the spawner sends `forget_message(B)`. The badge is then denied every name,
    the resolver gives up its page, and the window is free for the next grant.
 
-## The page
+### The page
 
 | bytes | field | written by |
 |---|---|---|
 | `NAME_OFFSET_BYTES` (0) | the host name, dotted ASCII, at most `MAXIMUM_NAME_FIELD_BYTES` (254) bytes, a trailing dot included | the client |
 | `IPV4_ADDRESSES_OFFSET_BYTES` (0x100) | up to `MAXIMUM_IPV4_ADDRESSES` (8) IPv4 addresses, four bytes each, in the name server's order | the resolver |
 
-## The reply
+### The reply
 
 A resolve's reply is two words. The first is an `Outcome`: `status | detail << 8 | count << 16`.
-The second is the answer's time to live (TTL) in seconds. Each `status` is a distinct reason,
+The second is the answer's time to live in seconds. Each `status` is a distinct reason,
 because "no such name" is a different fact from "you may not ask":
 
 - `OK`: `count` addresses are in the page.
@@ -63,7 +65,7 @@ because "no such name" is a different fact from "you may not ask":
 error. A control `CALL` is answered with an `Outcome` too: `OK` when the message was accepted, or
 `BAD_REQUEST` with a `refusal` number in the detail byte. `control_answer` decodes it.
 
-## Zone spelling: two tiers
+### Zone spelling: two tiers
 
 A zone is compared label by label (`Name::is_within`). Granted `example.test`, a client may ask
 about `packages.example.test` and not about `evilexample.test`. One host name is an exact grant.
@@ -97,6 +99,11 @@ let elsewhere = Name::from_dotted("evilexample.test").unwrap();
 assert_eq!(grants.check(7, &elsewhere), Err(Denied::OutsideZone));
 assert_eq!(grants.check(8, &asked), Err(Denied::NoGrant));
 ```
+
+## What is proven
+
+The host tests check each piece of the grant protocol, each boundary of `is_canonical_zone`, the
+round trip of every word, and the table's size. There are no Kani harnesses.
 
 ## Building and testing
 
