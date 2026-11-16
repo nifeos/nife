@@ -844,6 +844,9 @@ class Harness:
             argv += ["-Z", "unstable-options", "--ignore-global-asm", "-Z", "stubbing"]
         if self.target is not None and self.target[1] == "bin" and len(self.pkg.bins) > 1:
             argv += ["--bin", self.target[0]]
+        elif self.target is not None and self.target[1] == "lib" and self.pkg.bins:
+            # A package of binaries that also has a library (`components`): the library alone.
+            argv += ["--lib"]
         return argv + ["--harness", self.qualified, "--exact", "--output-format=terse"]
 
 
