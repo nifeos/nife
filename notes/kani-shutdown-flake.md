@@ -13,15 +13,15 @@ Across the 97 finished merge-queue attempts from 2026-11-15T10:38Z to 2026-11-16
 lost a Kani `prove` shard. They split in two.
 
 Sixteen jobs failed in 2.2 to 3.3 minutes. Each log carries `##[error]The runner has received a
-shutdown signal`, then `The operation was canceled`. Pull requests 3567, 3574, 3603, 3606, 3608,
+shutdown signal`, then a cancellation line. Pull requests 3567, 3574, 3603, 3606, 3608,
 3609, 3611, 3612, 3616 and 3621 each lost one or more attempts this way. The one log read in full
 (run 43776160228, `prove (shard 1/5)`) shows the line arriving 2.7 minutes into the job, while a
 harness check was running.
 
-At exactly 30.0 minutes the service cancelled eight `prove (shard 2/5)` jobs. Their logs cannot be
-read: the log API answers `BlobNotFound`.
+At exactly 30.0 minutes the service cancelled eight `prove (shard 2/5)` jobs. Nobody can
+read their logs: the log API answers `BlobNotFound`.
 
-No Kani proof failure appeared in any log that could be read.
+No Kani proof failure appeared in any log that opened.
 
 ## Why a rerun cures it
 
