@@ -93,11 +93,6 @@
 
 #![no_std]
 
-// The tests and the verb tests use `std` (a panic caught, a table built at run time); one line here
-// puts it in scope for every test module.
-#[cfg(test)]
-extern crate std;
-
 use grant_plan::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
     InputDeclaration, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
@@ -1430,6 +1425,12 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
 
 #[cfg(kani)]
 mod verification;
+
+// The tests and the verb tests use `std` (a panic caught, a table built at run time); one line here
+// puts it in scope for every test module. It sits with the test modules, below the crate's code,
+// which the interface check reads up to the first `#[cfg(test)]`.
+#[cfg(test)]
+extern crate std;
 
 #[cfg(test)]
 mod verb_tests {
