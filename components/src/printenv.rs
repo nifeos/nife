@@ -2,7 +2,7 @@
 //! DECISIONS §111, notes/env-config.md).
 //!
 //! Read a page, print what it carries. Its two capabilities can change nothing: `date`'s shape,
-//! [`grant_plan::Manifest::configuration`] in place of [`grant_plan::Manifest::clock`]. The page
+//! [`grant_contract::Manifest::configuration`] in place of [`grant_contract::Manifest::clock`]. The page
 //! is mapped `READ`-only, so there is no `printenv -s TZ=...`: the missing authority is a page
 //! permission, not a check here. "No grant" is told apart from an unset key by checking for the
 //! capability before printing anything, as `date` does: `environment_contract::ConfigPage`

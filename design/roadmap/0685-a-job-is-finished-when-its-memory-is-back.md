@@ -89,7 +89,7 @@ Tests:
 - **Recorded.** The wait that a job which answers and never exits can hold, and the one-request
   stash for a second holder: `SpawnEndpoint`'s `BUGS` in `crates/system_initializer/src/lib.rs`.
 - **Recorded.** A screen-narrowed job behind a directory grant keeping its window: the `BUGS` in
-  `crates/grant_plan/src/job_windows.rs`.
+  `crates/program_table/src/job_windows.rs`.
 - **Recorded.** No boot drives seven concurrent directory-granted jobs through the real
   progenitor; this block's `BUGS` above says so.
 - **Done.** #1418's window reuse, by the same message (`Windows::reaped`).

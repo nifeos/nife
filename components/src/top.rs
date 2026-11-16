@@ -37,11 +37,11 @@ const REPORT: u64 = 0;
 
 /// **The process domain** (slot 7): a supervision endpoint with `ENUMERATE`, whose members this
 /// program may name. Everything it can see comes through here, and both walks use it.
-const DOMAIN_SLOT: u64 = grant_plan::DOMAIN_SLOT;
+const DOMAIN_SLOT: u64 = grant_contract::DOMAIN_SLOT;
 
 /// The declared second stream (slot 8, DECISIONS §67 (a program's second stream is a declaration,
 /// not a number)): complaints about the run, never about the domain, so `>` cannot swallow them.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Whether this process was granted a second stream, decided once in [`_start`].
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
@@ -83,8 +83,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,
@@ -118,7 +118,7 @@ fn rows() -> &'static mut [ps::Row] {
 
 user_mode_runtime::program_entry!(start);
 
-/// `a1` is the flag word, in `grant_plan::spawnproto`'s integer-argument position (as `pgrep`'s
+/// `a1` is the flag word, in `program_table::spawnproto`'s integer-argument position (as `pgrep`'s
 /// selector): [`top::RANK_BY_PROCESS`] ranks by process, and zero, which is all a shell can send,
 /// ranks by thread.
 fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
@@ -153,7 +153,7 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
         });
         // What became of `tload` (milestone 126, DECISIONS §225): the machine's run queue and busy
         // share, from the machine statistics page when the owner granted it.
-        let machine = if is_granted(grant_plan::MACHINE_SLOT) {
+        let machine = if is_granted(grant_contract::MACHINE_SLOT) {
             // SAFETY: granted only alongside a read-only mapping of the same frame at `PAGE_VA`,
             // which lives as long as this process (`system_initializer`'s spawn service).
             unsafe {

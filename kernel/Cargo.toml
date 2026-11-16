@@ -59,7 +59,9 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
 # `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
+# The spawn protocol's slots are the program table's.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
 # through the same publish protocol the service writes with, so no party has its own copy of the
@@ -157,7 +159,7 @@ entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
-jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06" }
+jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "497d3ec4f0b4d7fc36634dee47d1afd56eb22485" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
 # `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the

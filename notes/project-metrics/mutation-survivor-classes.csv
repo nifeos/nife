@@ -115,13 +115,13 @@ grant_plan,Windows::take,replace + with -,1,arithmetic,equivalent,algebraic,alge
 grant_plan,Windows::take,replace < with <=,1,comparison,equivalent,algebraic,algebraic,
 grant_plan,all_distinct_ids,replace < with <=,1,comparison,equivalent,algebraic,algebraic,
 grant_plan,all_distinct_names,replace < with <=,1,comparison,equivalent,algebraic,algebraic,
-grant_plan,answered_console,"replace answered_console -> (u64, u64, u64) with (0, 0, 0)",1,other,equivalent,algebraic,algebraic,
+grant_plan,answered_console,"replace answered_console -> (u64, u64, u64) with (0, 0, 0)",1,other,equivalent,algebraic,algebraic,yes
 grant_plan,answered_from_trailer,replace - with +,1,arithmetic,equivalent,algebraic,algebraic,
 grant_plan,answered_from_trailer,replace < with <=,1,comparison,equivalent,algebraic,algebraic,
-grant_plan,delegated_installer_badge,replace | with ^,2,or_xor,equivalent,caller,caller,
-grant_plan,installer_badge,replace | with ^,1,or_xor,equivalent,caller,caller,
-grant_plan,installer_label,replace | with ^,1,or_xor,equivalent,algebraic,noise,
-grant_plan,refused_ask_words,replace | with ^,1,or_xor,equivalent,algebraic,noise,
+grant_plan,delegated_installer_badge,replace | with ^,2,or_xor,equivalent,caller,caller,yes
+grant_plan,installer_badge,replace | with ^,1,or_xor,equivalent,caller,caller,yes
+grant_plan,installer_label,replace | with ^,1,or_xor,equivalent,algebraic,noise,yes
+grant_plan,refused_ask_words,replace | with ^,1,or_xor,equivalent,algebraic,noise,yes
 grant_plan,stored_words,replace < with <=,1,comparison,equivalent,algebraic,algebraic,
 graphics_contract,pixel,replace | with ^,2,or_xor,equivalent,unclassified,noise,
 graphics_contract,rect,replace | with ^,3,or_xor,equivalent,unclassified,noise,

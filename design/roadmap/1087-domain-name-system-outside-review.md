@@ -57,9 +57,9 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
 1. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
    `helpers/name_release.py --draft domain_name_system` lists the crate name and five constants as
    ratified. Every other public item has no block (`PORT`, `HEADER_LEN`, the flag and mask
-   constants, `record_type::{A, CNAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
+   constants, `record_type::{IPV4_ADDRESS, CANONICAL_NAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
    `Question`, `Record`, `Reader`, `Query`, `Reject`, `Answer`, `TcpReply`, `decode_name`,
-   `cname_target` and every method). The move commit strips the blocks, and nife keeps no other
+   `canonical_name_target` and every method). The move commit strips the blocks, and nife keeps no other
    record, so the ratification pull request is the only record these names will ever have. Evidence:
    `crate-standalone` output, `FAIL names: 48 name(s) in the crate not ratified, first PORT`.
    Change: one pull request whose body is the `--draft` table, after the architect rules items 6 and 7, so the
@@ -170,12 +170,17 @@ Recommendation, one list, ruled as one decision:
   `#[doc(alias = "QDCOUNT")]` and so on; `Header::response_code()` with alias `RCODE`.
 - `FLAG_RESPONSE` (alias `QR`), `FLAG_TRUNCATED` (alias `TC`), `FLAG_RECURSION_DESIRED` (alias
   `RD`). `RESPONSE_CODE_MASK` and `RESPONSE_CODE_NAME_ERROR` (alias `RCODE`, and `NXDOMAIN` on the
-  second). `OPCODE_MASK` stays, since "opcode" is a spoken word.
-- `Question::{record_type, class}` and `Record::{record_type, class, ttl, data, data_offset}`,
-  with the `Question` fields losing their `q` and `data_offset` spelled out.
-- Keep `ttl`, `record_type::A`, `record_type::CNAME`, `CLASS_IN` and `cname_target`: each is the
-  term a reader searches for, and each gets the expansion in its doc opening and an alias
-  (`time to live`, `address record`, `canonical name record`, `Internet class`).
+  second). `OPERATION_CODE_MASK` (alias `OPCODE`), matching `RESPONSE_CODE_MASK`.
+- `Question::{record_type, class}` and `Record::{record_type, class, ttl_seconds, data,
+  data_offset}`, with the `Question` fields losing their `q` and `data_offset` spelled out.
+  `ttl` stays an abbreviation, and the fields and methods that hold it carry the unit:
+  `Record::ttl_seconds` and `Answer::ttl_seconds()`, each with `#[doc(alias = "TTL")]` and
+  `#[doc(alias = "time to live")]`.
+- Spell `CNAME` out: `record_type::CANONICAL_NAME` (aliases `CNAME` and `canonical name record`)
+  and `canonical_name_target` (aliases `CNAME` and `canonical name`).
+- Spell `A` out: `record_type::IPV4_ADDRESS` (aliases `A` and `address record`).
+- Keep `CLASS_IN`: it is the term a reader searches for, and it gets the
+  expansion in its doc opening and an alias (`Internet class`).
 
 Alternative A: keep every specification spelling and add the aliases. This is what the `domain`
 crate does (`qdcount()`, `rcode()`, `tc()`; unverified) and what a reader with the RFC open expects.
@@ -198,9 +203,17 @@ touches it.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
 which the architect may revisit. The recommendation's list holds as written, with the
-specification's spelling as `#[doc(alias)]` on each expanded name. `ttl`, `record_type::A`,
-`record_type::CNAME`, `CLASS_IN` and `cname_target` keep their spelling as terms of art, each with
-its expansion in the doc opening and an alias. Item 7 part a is the work.
+specification's spelling as `#[doc(alias)]` on each expanded name. `CLASS_IN`
+keeps its spelling as a term of art, with its expansion in the doc opening and an alias.
+
+Ruled 2026-11-16 (UTC) for the names below. `ttl` stays an abbreviation, but the fields and methods that
+hold it carry the unit: `Record::ttl_seconds` and `Answer::ttl_seconds()`, each with
+`#[doc(alias = "TTL")]` and `#[doc(alias = "time to live")]`. The crate spells `CNAME` out:
+`record_type::CANONICAL_NAME` with aliases `CNAME` and `canonical name record`, and
+`canonical_name_target` (the maintainer's provisional spelling) with aliases `CNAME` and
+`canonical name`. `OPCODE_MASK` becomes `OPERATION_CODE_MASK` with alias `OPCODE`, matching
+`RESPONSE_CODE_MASK`. `record_type::A` becomes `record_type::IPV4_ADDRESS` with aliases `A` and `address record`. No
+alias of the old nife spelling. Item 7 part a is the work.
 
 ### Decision 3. `MAXIMUM_ADDRESSES`, `Answer::addresses` and `Reject::NoAddress`
 
@@ -267,7 +280,7 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 - No review package exists for this crate in `notes/crate-reviews/`, so this block had to assemble
   its own baseline from the ratification record, the roadmap and the resolver notes. The crate still needs a package before the architect's reading; this block is not one.
 - The template's `abbreviations` helper judged one name when run here. That is almost certainly a
-  harness problem on the reviewing side, so the abbreviations report (`tcp`, `udp`, `cname`, `ttl`
+  harness problem on the reviewing side, so the abbreviations report (`tcp`, `udp`
   and any other) stays unverified until the crate runs the template's `check` workflow.
 - The crate builds and tests at Rust 1.88 in the move's dry run (`script/crate-move --dry-run`).
 - The `register_names` helper did not flag `MAXIMUM_LABEL_LEN` or `HEADER_LEN`, while the written
