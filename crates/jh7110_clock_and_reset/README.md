@@ -1,12 +1,12 @@
 # jh7110_clock_and_reset
 
 The logic of the clock and reset generator in the StarFive JH7110, the RISC-V system-on-chip of the
-VisionFive 2. It holds the register offsets and bit fields of the STG (System-Top-Group), AON
+VisionFive 2. It holds the register offsets and bit fields of the STG (System-Top-Group), `AON`
 (always-on) and SYS (system) domains, and what each of the chip's two device trees calls the
 controllers. It holds the bring-up plans that the TRNG (true random number generator), the Ethernet
-controller, both SD/MMC (MultiMediaCard) controllers and the I2C bus of the PMIC (power management
-integrated circuit) need, the Ethernet transmit clock's parent as a tree assigns it, and the I2C
-input-clock arithmetic. It never touches a register: you map
+controller, both Secure Digital (SD) and MultiMediaCard (MMC) controllers and the I2C bus of the
+PMIC (power management integrated circuit) need. It also holds the Ethernet transmit clock's parent
+as a tree assigns it, and the I2C input-clock arithmetic. It never touches a register: you map
 the window and do the volatile stores, and this crate says which word, which bit and in what order.
 It is `no_std`, depends on nothing, and its tests run on the host.
 
@@ -53,17 +53,19 @@ Ten Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification p
   clock's parent before enabling that clock.
 - A transmit parent read from a tree's `assigned-clocks` and `assigned-clock-parents` selects one of
   the Ethernet transmit clock's two inputs and no other clock, and walked before the controller's
-  AON plan it is chosen while that clock is gated.
+  always-on plan, picks the parent while the clock is still off.
 - A `DevicePlan` or `PowerManagementChipBus` built from device-tree bytes holds only in-bounds ids,
   never more steps than its bound, and every clock step ahead of every reset release. The bus plan
   is never empty.
 - `is_deasserted`, `is_clock_enabled` and `clock_divider` read exactly the bit or field their
   definition names, for every word.
 
-The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
-kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
-checker, so it needs network access. CI uses version 0.68.0, and another version may verify
-differently.
+Each harness has a falsification record at
+`falsifications/<module.path>.<harness>.patch`. To run one, apply it with `git apply -p1` from the
+crate root, run the harness (`cargo kani --harness
+verification::a_clock_offset_is_one_of_the_domains_own_words --exact`) and watch it fail at its own
+assertion, which shows the proof checks something. The patches need a git checkout, and you revert
+each one with `git checkout -- src` before the next.
 
 Not proved: that a plan's order is the one the silicon needs, which only a board shows. The proofs
 also leave out the specifier decoders when the lookup answers differently (another provider,
@@ -89,8 +91,24 @@ The PMIC is `x-powers,axp15060` in mainline and `stf,axp15060-regulator` in the 
 (`POWER_MANAGEMENT_CHIP_COMPATIBLES`). `PowerManagementChipBus::from_nodes` and
 `DevicePlan::from_specifiers` turn a node's `clocks` and `resets` into steps, calling back for each
 phandle's `#clock-cells`, `#reset-cells` and `compatible`. A specifier for another provider, or an
-id past the domain's bounds (the vendor tree's virtual clock 298), is counted in `skipped` and never
+id past the domain's bounds (the vendor tree's virtual clock 298), counts in `skipped` and never
 becomes a store.
+
+## Build, test and prove
+
+You need a Rust toolchain at or above the minimum version at the foot of this page (`rustup` is the
+usual way to get one) and a git checkout. From the crate root:
+
+- `cargo build` and `cargo test` run on the host and need nothing else. The tests are 50 unit
+  tests and 2 doctests.
+- The crate also builds for bare metal. Add the three targets with `rustup target add
+  riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
+  `cargo build --lib --target <target>` for each. CI does exactly this.
+- The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+  kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+  checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+  differently. After that, `cargo kani` runs all ten harnesses in about 5 minutes (measured 4 minutes 46 seconds), using at most about 900 megabytes of
+  memory. To run one, use `cargo kani --harness verification::<name> --exact`.
 
 ## BUGS
 
@@ -98,7 +116,7 @@ becomes a store.
   (`standard_mode_100_kilohertz` at the input clock `inter_integrated_circuit_5_clock_frequency`
   computes, and `POWER_MANAGEMENT_CHIP_RESET_REGISTER` with its reset bit) has run only in host
   tests. No board has run the timing this release computes: 198 high counts and 297 low counts at
-  49.5 MHz. The crate makes no claim about a board.
+  49.5 megahertz (MHz). The crate makes no claim about a board.
 - `Step`, `BringUpReport`, `PowerManagementChipBus`, `DevicePlan` and `WindowLocation` are
   `#[non_exhaustive]`, so a later release can add a step kind or a field without a breaking change.
   Build a `BringUpReport` with `BringUpReport::default()` and assign its fields, and match a `Step`
@@ -106,8 +124,11 @@ becomes a store.
 - The reset `SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS` also resets the direct
   memory access (DMA) engine, so the crate offers no assert.
 - Some items describe one board and not the chip: the PMIC reset register and bit, the PMIC bus
-  plan and the I2C5 clock chain follow the VisionFive 2's AXP15060 wiring.
-- The crate describes only the STG, AON and SYS domains, each only as far as a device needed it.
+  plan and the I2C5 clock chain follow the VisionFive 2's `AXP15060` wiring.
+- `GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT` is the VisionFive 2
+  v1.3B board's choice of Ethernet transmit clock parent. The chip's own plan holds no parent
+  step, and `gmac0_transmit_parent` reads the parent from a tree's assignment instead.
+- The crate describes only the STG, `AON` and SYS domains, each only as far as a device needed it.
 
 ## Minimum Rust version
 

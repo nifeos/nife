@@ -25,6 +25,7 @@ reader names a raw address, and two Kani harnesses cover the rest. Every name ha
 | size | one `src/lib.rs` |
 | identity values | frozen: `MAGIC` (`TIMEBAS1`), `VERSION` 1, `INTERFACE_ID` 9, `PAGE_CONTENT_BYTES` 16 (the magic at offset 0, the little-endian rate at offset 8) and `PAGE_VIRTUAL_ADDRESS` `0x0000_7000_0000_0000` on `x86_64` and `0x0000_0038_0000_0000` on `riscv64`. A layout break ships as a new magic and version together. The crate header and README state them, and a host test pins them as literals. Frozen 2026-11-11 (UTC) on #3516 |
 | consumers in nife | `kernel`, `user_mode_runtime`, `process_builder`, `components` and `system_tests` (development only), by path |
+| copied by `xtask` | `cargo xtask std-src` copies `src/lib.rs` into the patched standard library as `sys/pal/nife/counterfreqproto.rs`. It finds the file through `cargo metadata` (`xtask/src/farm/copied.rs`), so a pinned crate is read from Cargo's checkout and the move changes nothing there |
 
 ## Public API
 
@@ -100,7 +101,7 @@ bare-metal targets pass.
 Ready for the architect's review. The move lane's three edits sit in the tree, and a lane checked
 them against the crate as it stands now. The template head's prose helpers (`prose_acronyms`,
 `passive_voice`, `history_phrases`, `spelled_out`, `unit_symbols` and the rest) report nothing over
-the staged copy, and the dry run of the move is clean. Both Kani harnesses verify, and each
+the staged copy, and the dry run of the move reports no finding against the crate's own files. It reports three findings in the template's scaffold (the pull request template, `CONTRIBUTING.md` and five lines that name nife), which the template owns. Both Kani harnesses verify, and each
 falsification patch turns its harness red. The harnesses assume nothing. The README says where the
 end-to-end test lives. The identity does not change. The crate stays in this tree, and no
 repository appears, until the architect clears this review.

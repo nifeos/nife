@@ -42,15 +42,14 @@ owes it, and the next `direct_memory_access_write::<u32>(OFF_HEADER + 2, ...)` h
 behavior with no diagnostic. The fix: a `debug_assert!` on bounds and `off % size_of::<T>() == 0`,
 or `MappedWindow` (item 2), whose constructor asserts once. Effort: S. Two-way.
 
-6. The handshake skips two steps the specification requires of a driver. PARTLY DONE (the status read-back, bounded, in both handshakes: `a_reset_waits_for_status_to_read_back_as_zero`; the `Version` check waits for Decision 3). After writing 0 to
+6. The handshake skipped a step the specification requires of a driver. DONE (the status read-back, bounded, in both handshakes: `a_reset_waits_for_status_to_read_back_as_zero`). The driver's `Version` check is not done, on purpose. The kernel refuses a device whose `Version` is not 2, so the driver does not check it again (Decision 3, provisional, 2026-11-15 UTC). After writing 0 to
 `Status` (`:143`, `:624`) the driver proceeds without reading `Status` back as 0, which the
 specification requires before reinitialization (virtio 1.2, the device initialization
 requirements of the PCI and MMIO transports; section numbers unverified). It checks the magic
-value (`:141`, `:622`) and never the `Version` register (`0x004 == 2`) or `DeviceID`. Today the
-kernel enumerates the device and QEMU resets synchronously, so neither gap can bite. Under the
+value (`:141`, `:622`) and never `DeviceID`. Today the
+kernel enumerates the device and QEMU resets synchronously, so the gap cannot bite. Under the
 ruled direct grant (milestone 1062 (the device control planes leave the kernel) step 7) a driver will own its own bring-up against a real
-device, and these are the two checks that catch a wrong or half-reset device. The fix: a bounded
-wait for `Status == 0`, and a `Version` check beside the magic check. Effort: S. Two-way.
+device. The bounded wait for `Status == 0` is the check that catches a half-reset device. Effort: S. Two-way.
 Inferred from reading.
 
 7. Four copies of one completion loop and three copies of one submit. `complete_block`
