@@ -58,7 +58,9 @@ The mmio variant passes the vocabulary through. The pci variant translates each 
 the virtio-pci common-config layout, the ISR byte (whose *read* is the ack, deasserting INTx),
 and the notify doorbell (`notify_base + queue_notify_off * multiplier`, resolvable only with the
 queue selected). Registers pci has no equivalent for (magic, version, device id) are synthesized,
-so the driver's sanity checks mean the same thing on both buses.
+so the driver's sanity checks mean the same thing on both buses. The configuration generation is
+not synthesized: it is the common configuration's `config_generation` byte, so a driver's
+generation-bracketed configuration read checks a real device on either bus.
 
 Everything above the seam is one copy: the shadow ring, the descriptor validator, the queue
 layout contract, the userspace driver binary. The DMA confinement was written once and now
