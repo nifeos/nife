@@ -7,8 +7,7 @@ syscall surface (7d), IPC (7e), the userspace-driver pattern (8), and interrupt-
 ## What virtio is, briefly
 
 virtio is a standard for paravirtualized devices: the "hardware" is cooperating software (QEMU,
-or a hypervisor) that agreed on an interface designed to be efficient across the guest/host
-boundary, rather than emulating some real chip register-for-register. A virtio device is driven
+or a hypervisor) speaking an interface built for the guest/host boundary, not a chip. A virtio device is driven
 through three things:
 
 - **MMIO registers** for setup and notification (feature negotiation, queue addresses, "go").
@@ -19,6 +18,7 @@ through three things:
 QEMU's `virt` machine exposes virtio over **virtio-mmio**: 32 device slots at `0x0a000000`, 0x200
 bytes apart, with interrupts SPI 16..47 (INTID 48..79). We force modern virtio (version 2),
 whose register interface gives separate physical addresses for the descriptor table and each ring.
+The kernel skips a slot of any other version.
 
 ## Who does what: the kernel enumerates, the driver operates
 
