@@ -94,6 +94,7 @@ updates:
       - "/pinned_tls_exerciser"
       - "/std_exerciser"
       - "/tools/glyph_atlas_generator"
+      - "/tools/ext4_oracle"
       - "/tools/host_reordering_litmus"
       - "/tools/jh7110_entropy_board_check"
     schedule:

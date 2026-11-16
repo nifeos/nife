@@ -79,7 +79,7 @@ line, so a Tab reaches the process that holds the authority completion needs. Co
 exactly what that authority can name, and nothing more:
 
 - In command position, a builtin (`grant_plan::BUILTINS`), a program the image names
-  (`grant_plan::Program::ALL`), or an installed program's bare name (§229 B2), read from the live
+  (`program_table::Program::ALL`), or an installed program's bare name (§229 B2), read from the live
   installed-programs table on each Tab.
 - Anywhere else, or for a word with a `/` in it, an entry of the directory the word's lead names,
   read the way `ls` reads it. That costs `ENUMERATE`, the same right `echo *` costs, so a shell that

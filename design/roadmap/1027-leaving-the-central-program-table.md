@@ -39,7 +39,7 @@ verified](1027-leaving-the-central-program-table/unverified.md).
 
 ## What the tree does today
 
-`crates/grant_plan/src/program/catalog.rs` declares 28 programs through the `programs!` macro, wire
+`crates/program_table/src/program/catalog.rs` declares 28 programs through the `programs!` macro, wire
 ids 0 to 27. `program/manifests.rs` gives each its manifest in `Program::manifest`. The shell
 resolves a bare word with `Program::from_name`, plans the line against that manifest, and sends the
 id. The progenitor turns the id back into a program with `Program::from_id`, takes the ELF it

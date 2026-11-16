@@ -19,8 +19,8 @@ use user_mode_runtime::{exit, send};
 /// Slot 0: where the line goes.
 const OUT: u64 = 0;
 
-const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
-    ..grant_plan::Program::Uptime.manifest()
+const MANIFEST: grant_contract::Manifest = grant_contract::Manifest {
+    ..program_table::Program::Uptime.manifest()
 };
 
 capability_manifest_note::carry!(MANIFEST, service = true);

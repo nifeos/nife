@@ -400,6 +400,11 @@ fn ask_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer, Reje
     verdict
 }
 
+/// Room for the largest reply RFC 7766 allows, so the retry over TCP that follows a truncated UDP
+/// reply can hold a reply larger than UDP's. Too large for a one-page stack, so it lives in `.bss`.
+static mut TCP_REPLY_BUFFER: [u8; 2 + domain_name_system::MAXIMUM_TCP_MESSAGE_BYTES] =
+    [0; 2 + domain_name_system::MAXIMUM_TCP_MESSAGE_BYTES];
+
 fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer, Reject>, u64> {
     SHARED_FRAME.set_destination(NAME_SERVER_IP, domain_name_system::PORT);
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
@@ -411,8 +416,10 @@ fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer,
     if on(SOCKET, OPERATION_SEND, n as u64).0 != n as u64 {
         return Err(0x4);
     }
-    let mut buf = [0u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES];
-    let mut reply = TcpReply::new(&mut buf);
+    // SAFETY: one thread, and this function is the only code that names `TCP_REPLY_BUFFER`; it
+    // takes the reference once per call and drops it before returning.
+    let buf = unsafe { &mut *core::ptr::addr_of_mut!(TCP_REPLY_BUFFER) };
+    let mut reply = TcpReply::new(buf);
     let mut chunk = [0u8; DATA_MAXIMUM];
     loop {
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);

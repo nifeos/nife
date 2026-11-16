@@ -5,7 +5,7 @@
 //! up, records that it stopped gracefully, and exits: the cooperative tier of §24 (interrupting the
 //! foreground process) made visible. The flag is shared memory and not an endpoint because a
 //! running computation can neither poll an endpoint (there is no non-blocking receive) nor block on
-//! one without stalling its work. See `grant_plan::job_page_frame` and notes/grant-expression.md.
+//! one without stalling its work. See `program_table::job_page_frame` and notes/grant-expression.md.
 
 //! # What it holds
 //!
@@ -26,7 +26,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use grant_plan::job_page_frame;
+use program_table::job_page_frame;
 use user_mode_runtime::exit;
 use user_mode_runtime::mapped_window::{self, MappedWindow};
 

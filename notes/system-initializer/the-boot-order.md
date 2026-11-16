@@ -50,7 +50,7 @@ says what it builds. What follows is why each step comes where it does.
    channel and the supervision endpoint would raise the early peak.
 6. `build_shell` builds the shell but does not start it, and deletes the shell's budget copy and
    window-0 slice at once. It places the configuration page at
-   `grant_plan::SHELL_CONFIGURATION_SLOT` after the build, because the build list's slots move with
+   `grant_contract::SHELL_CONFIGURATION_SLOT` after the build, because the build list's slots move with
    what the boot granted, and before the start, because the shell's `_start` probes that slot.
    `finish_shell_endowment` hands the shell the machine statistics page before the login block and
    keeps no copy, because a page held across that block would raise the highest peak.

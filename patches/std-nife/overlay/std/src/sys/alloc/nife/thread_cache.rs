@@ -7,7 +7,7 @@ use super::*;
 
 /// The calling thread's cache, when a request of this shape may use it.
 #[inline]
-pub(super) fn cache_for(layout: Layout) -> Option<(&'static mut Cache, usize)> {
+pub(super) fn cache_for(layout: Layout) -> Option<(&'static mut Cache, Class)> {
     let c = class(layout.size(), layout.align())?;
     let cache = tls::allocation_cache();
     // SAFETY: the calling thread's own cache, which nothing else touches (`tls::allocation_cache`),
@@ -17,7 +17,7 @@ pub(super) fn cache_for(layout: Layout) -> Option<(&'static mut Cache, usize)> {
 
 /// A miss: up to eight blocks of the class from the heap under one acquisition, then one of them.
 #[cold]
-pub(super) fn refill_and_take(cache: &mut Cache, c: usize) -> *mut u8 {
+pub(super) fn refill_and_take(cache: &mut Cache, c: Class) -> *mut u8 {
     {
         let mut g = lock();
         let inner = g.inner();
@@ -25,7 +25,7 @@ pub(super) fn refill_and_take(cache: &mut Cache, c: usize) -> *mut u8 {
         // to nobody else.
         unsafe { cache.refill(c, || heap_alloc(inner, class_layout(c))) };
     }
-    cache.take(c).map_or(crate::ptr::null_mut(), NonNull::as_ptr)
+    cache.pop(c).map_or(crate::ptr::null_mut(), NonNull::as_ptr)
 }
 
 /// **A thread's end**: give every block its cache holds back to the heap under one acquisition.
@@ -34,5 +34,5 @@ pub(crate) fn spill_thread_cache(cache: &mut Cache) {
     let mut g = lock();
     let inner = g.inner();
     // SAFETY: every cached block of class `c` is the heap's and was cached under `class_layout(c)`.
-    cache.drain(|c, b| unsafe { inner.heap.deallocate(b.as_ptr(), class_layout(c)) });
+    cache.give_back_all(|c, b| unsafe { inner.heap.deallocate(b.as_ptr(), class_layout(c)) });
 }

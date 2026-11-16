@@ -228,7 +228,7 @@ fn window_va(i: usize) -> u64 {
     CLIENT_VA + i as u64 * PAGE_BYTES
 }
 
-/// One resolve, start to finish: the outcome word and the TTL.
+/// One resolve, start to finish: the outcome word and the time to live in seconds.
 fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome, u64) {
     let Some(window) = state.grants.granted(badge) else {
         return (Outcome::of(status::DENIED), 0);
@@ -280,7 +280,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
             detail: 0,
             count: addresses.len() as u8,
         },
-        answer.ttl() as u64,
+        answer.ttl_seconds() as u64,
     )
 }
 
