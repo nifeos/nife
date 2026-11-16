@@ -5,8 +5,9 @@
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/capability_manifest_note#license)
 [![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/capability_manifest_note/blob/main/Cargo.toml)
 
-The ELF note a program carries to ask for authority, the compile-time encoder that writes it and
-the strict decoder that reads it. `no_std`, no allocation, no `unsafe` code of its own.
+The ELF (Executable and Linkable Format) note a program carries to ask for authority, the
+compile-time encoder that writes it and the strict decoder that reads it. `no_std`, no allocation,
+no `unsafe` code of its own.
 
 In a capability system a program starts with nothing, and something has to decide what to hand
 it: a memory grant, a file, a directory, the clock, the network. A manifest note is the program's
@@ -21,15 +22,15 @@ compiler accepts into a program's bytes, the reader accepts, and what the reader
 compiler refuses. So two readers cannot disagree about what a note meant, and a program cannot
 ship a note its own readers will refuse.
 
-## The note
+## What it does
 
-A manifest note is an ordinary ELF note. Its header is the three 4-byte words `namesz`, `descsz`
-and `type`, then the owner string `OWNER` and its NUL, padded to 8 bytes, then the descriptor. The
-owner string is the name of the operating system that defines these notes, as `FreeBSD`, `GNU`
-and `FDO` are the owners of theirs. Note types are numbered per owner, so the three types below
-collide with no one else's. The `interfaces_note` crate's note, which lists the binary interfaces
-a program links, has the same owner and header, and this crate's tests hold the two to the same
-bytes.
+A manifest note is an ordinary ELF note. Its header is the three 4-byte words `namesz`, `descsz` and
+`type`, then the owner string `OWNER` and its terminating null (NUL) byte, padded to 8 bytes, then
+the descriptor. The owner string is the name of the operating system that defines these notes, as
+`FreeBSD`, `GNU` and `FDO` are the owners of theirs. Note types are numbered per owner, so the three
+types below collide with no one else's. The `interfaces_note` crate's note, which lists the binary
+interfaces a program links, has the same owner and header, and this crate's tests hold the two to
+the same bytes.
 
 | type | constant | carried by | descriptor |
 |---|---|---|---|
@@ -160,8 +161,8 @@ The crate has no features, so a plain `cargo test` runs every unit test and doct
 
 ### Running the proofs
 
-Install Kani first: run `cargo install --locked kani-verifier --version 0.68.0`, then
-`cargo kani setup`. Setup downloads a model checker and the Rust toolchain Kani is pinned to, so it
+Install Kani first: run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. Setup downloads a model checker and the Rust toolchain Kani is pinned to, so it
 needs network access. Then run every harness:
 
 ```sh

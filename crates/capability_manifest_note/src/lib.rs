@@ -1,9 +1,9 @@
-//! A program's manifest, as the bytes of an ELF note it carries: inside the executable behind a
-//! `PT_NOTE`, so it is in the bytes a loader hashes, and changing what a program asks for changes
-//! its digest. The wire format between [`carry!`] and the loader and shell that read it; an ELF
-//! reader finds the note, and this crate starts at the descriptor: owner [`OWNER`], type
-//! [`MANIFEST`], version 1 ([`DESCRIPTOR_BYTES`] bytes), [`ZONED_VERSION`] 2 or
-//! [`SERVICED_VERSION`] 3. One manifest has exactly one encoding: [`decode`] refuses anything
+//! A program's manifest, as the bytes of an ELF (Executable and Linkable Format) note it carries:
+//! inside the executable behind a `PT_NOTE`, so it is in the bytes a loader hashes, and changing
+//! what a program asks for changes its digest. The wire format between [`carry!`] and the loader
+//! and shell that read it; an ELF reader finds the note, and this crate starts at the descriptor:
+//! owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_BYTES`] bytes), [`ZONED_VERSION`] 2
+//! or [`SERVICED_VERSION`] 3. One manifest has exactly one encoding: [`decode`] refuses anything
 //! [`encode`] would not write. The layouts are below; the README has the reasons.
 
 //! # BUGS
@@ -94,8 +94,8 @@ use grant_plan::{
     OutputDeclaration, ProgramArgumentDeclaration, ShortOptions, StartupContract, WordGrant,
 };
 
-/// The note's owner string, without its NUL: the name of the operating system that defines these
-/// notes, in lowercase, as `FreeBSD` and `GNU` name the owners of theirs.
+/// The note's owner string, without its terminating null (NUL) byte: the name of the operating
+/// system that defines these notes, in lowercase, as `FreeBSD` and `GNU` name the owners of theirs.
 ///
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
 pub const OWNER: &[u8] = b"nife"; // wire literal
