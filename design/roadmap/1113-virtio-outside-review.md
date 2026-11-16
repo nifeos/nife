@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1062, 1069
 decision_dependencies: 46, 23
@@ -195,6 +195,13 @@ driver sits behind it, so the check lives where the register is read.
 
 Concrete example. A board whose firmware offers a version 1 block device never reaches the driver.
 The kernel's scan does not offer the slot, so nothing starts a driver for it.
+
+## Follow-on
+
+- **Outstanding.** The items in the lists above that do not read DONE, and Decision 3's driver-side
+  check, which waits for the ruling. The kernel's scan refuses a slot whose `Version` is not 2 in every
+  build, and the PCI transport answers the real configuration generation (item 6 and
+  `notes/virtio.md`).
 
 ## Done when
 
