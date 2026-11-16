@@ -179,8 +179,8 @@ fn bring_up_port(
     let region = region()?;
     let inputs = Inputs {
         region_physical_address: region,
-        station_address: e.port.station_address,
-        physical_layer_device_address: e.port.physical_layer_device_address,
+        station_mac_address: e.port.station_mac_address,
+        physical_layer_device_bus_address: e.port.physical_layer_device_bus_address,
         physical_layer_device: e.port.physical_layer_device,
     };
     let control = start_control(e, inputs)?;
@@ -188,7 +188,7 @@ fn bring_up_port(
     let linked = control.1.map_err(Error::Port)?;
     let account = control.0.account;
     let station_address = account
-        .station_address
+        .station_mac_address
         .ok_or(Error::ControlReportUnreadable)?
         .0;
     // A report that says it linked and carries no link, or the reverse, is not this program's.

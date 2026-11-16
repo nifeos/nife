@@ -23,8 +23,7 @@
 //!
 //! Mainline links are pinned to `torvalds/linux` commit `cbbddb6b08cc`; vendor links to
 //! `starfive-tech/u-boot` tag `VF2_v2.10.4`, commit `1ae835c25e3d`, the release a VisionFive 2
-//! ships with. All were fetched 2026-11-01 (UTC), and every claim that names a revision was checked
-//! against these commits on 2026-11-06. The vendor branch `JH7110_VisionFive2_devel` was also read
+//! ships with. Every claim that names a revision was checked against these commits. The vendor branch `JH7110_VisionFive2_devel` was also read
 //! at commit `c4c67bb66ae6`, and where the tag and the branch differ the item says which holds it.
 //!
 //! [mainline-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110.dtsi
@@ -170,19 +169,19 @@ pub(crate) const STGCLK_SECURITY_MISC_AHB: u32 = 16;
 ///
 /// **It is a *shared* reset** (\[mainline-trng\] takes it with `devm_reset_control_get_shared`),
 /// which is a fact about the silicon rather than about Linux's API: the same line resets the whole
-/// security top block, the PL080 DMA at `0x1600_8000` included. Deasserting it is safe; asserting
+/// security top block, the `PL080` DMA at `0x1600_8000` included. Deasserting it is safe; asserting
 /// it would reset a neighbour, which is why nothing in this crate offers an assert.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "JH7110_STGRST_SEC_AHB")]
 pub const SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 3;
 
-/// **The AON (always-on) domain**, where `gmac0`'s bus clocks, its transmit clock mux and both
+/// **The always-on (`AON`) domain**, where `gmac0`'s bus clocks, its transmit clock mux and both
 /// of its resets live.
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_aon_info` (`.assert_offset = 0x38, .status_offset =
-/// 0x3C`, read 2026-10-06); the counts from \[mainline-ids\]'s `JH7110_AONRST_END` (8) and
-/// `JH7110_AONCLK_END` (14). The chip's own abbreviation is AON, kept in the copied `AONCLK_*`
+/// 0x3C`); the counts from \[mainline-ids\]'s `JH7110_AONRST_END` (8) and
+/// `JH7110_AONCLK_END` (14). The chip's own abbreviation is `AON`, kept in the copied `AONCLK_*`
 /// and `AONRST_*` names.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `AON` (the chip's abbreviation, kept as an
@@ -195,16 +194,16 @@ pub const ALWAYS_ON: Domain = Domain {
     clocks: 14,
 };
 
-/// **The AON domain's register window**, `0x1700_0000`, size `0x1_0000`: mainline's `aoncrg`
+/// **The always-on domain's register window**, `0x1700_0000`, size `0x1_0000`: mainline's `aoncrg`
 /// node and `reg-names` entry `"aon"`/`"aoncrg"` of both vendor nodes. The fallback when a tree
 /// names none of them, for [`SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS`]'s reason.
 pub(crate) const ALWAYS_ON_BASE_PHYSICAL_ADDRESS: u64 = 0x1700_0000;
 
-/// The AON window's size, `0x10000` in every tree that names it.
+/// The always-on window's size, `0x10000` in every tree that names it.
 pub(crate) const ALWAYS_ON_SIZE_BYTES: u64 = 0x1_0000;
 
-/// **AON clock and reset generator** (CRG, the device tree's `aoncrg` node, \[mainline-dts\]):
-/// mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
+/// **Always-on clock and reset generator (CRG)**, the device tree's `aoncrg` node (\[mainline-dts\]):
+/// mainline's dedicated always-on clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
 ///
 /// The vendor string is `starfive,jh7110-aoncrg`.
 ///
@@ -213,7 +212,7 @@ pub(crate) const ALWAYS_ON_SIZE_BYTES: u64 = 0x1_0000;
 #[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7110-aoncrg";
 
-/// The `reg-names` entry naming the AON window in each vendor node's spelling (`"aon"` in
+/// The `reg-names` entry naming the always-on window in each vendor node's spelling (`"aon"` in
 /// `clkgen`, the clock generator node, and `"aoncrg"` in `rstgen`, the reset generator node;
 /// \[vendor-dts\]).
 const VENDOR_CLOCK_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aon";
@@ -222,7 +221,7 @@ const VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
 /// `JH7110_AONCLK_GMAC0_AHB` \[mainline-ids\]: a gate, `gmac0`'s `pclk`. Word `0x08`.
 #[doc(alias = "JH7110_AONCLK_GMAC0_AHB")]
 pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 2;
-/// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its CSR and bus clock). Word `0x0c`.
+/// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its control and status register (CSR) and bus clock). Word `0x0c`.
 #[doc(alias = "JH7110_AONCLK_GMAC0_AXI")]
 pub(crate) const ALWAYS_ON_CLOCK_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 3;
 /// **`gmac0` transmit clock** (`JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
@@ -253,7 +252,7 @@ pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_EXTENSIBLE_INTERFACE: u32 = 0;
 #[doc(alias = "JH7110_AONRST_GMAC0_AHB")]
 pub(crate) const ALWAYS_ON_RESET_GMAC0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 1;
 
-/// `JH7110_SYSCLK_GMAC0_GTXCLK` \[mainline-ids\]: a gated divider of PLL0, the parent of
+/// `JH7110_SYSCLK_GMAC0_GTXCLK` \[mainline-ids\]: a gated divider of PLL0 (phase-locked loop 0), the parent of
 /// `gmac0_gtxc`. Word `0x1b0` of the SYS window.
 pub(crate) const SYSCLK_GMAC0_GTXCLK: u32 = 108;
 /// `JH7110_SYSCLK_GMAC0_PTP`: a gated divider, `gmac0`'s `ptp_ref`. Word `0x1b4`.
@@ -261,7 +260,7 @@ pub(crate) const SYSCLK_GMAC0_PTP: u32 = 109;
 /// `JH7110_SYSCLK_GMAC0_GTXC`: a gate, `gmac0`'s `gtx`. Word `0x1bc`.
 pub(crate) const SYSCLK_GMAC0_GTXC: u32 = 111;
 
-/// **`gmac0`'s SYS-domain clocks**, the half of its clocks that are not in the AON domain.
+/// **`gmac0`'s SYS-domain clocks**, the half of its clocks that are not in the always-on domain.
 /// Every clock mainline's `&gmac0` node names that lives in SYS, with the parent
 /// of `gtxc` first because enabling a gate under a gated parent turns nothing on. Run before
 /// [`GMAC0_ALWAYS_ON_BRING_UP`], whose resets must be released with every clock already running.
@@ -274,7 +273,7 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_GMAC0_PTP),
 ];
 
-/// **`gmac0`'s AON-domain clocks and both its resets**, in Linux's probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
+/// **`gmac0`'s always-on-domain clocks and both its resets**, in Linux's probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
 /// before deasserting either reset. OpenBSD's `dwqe_fdt_attach` differs: it enables `stmmaceth` and
 /// `pclk`, deasserts both resets, then enables `tx` and `gtx`. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
@@ -306,7 +305,7 @@ pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
 /// ```
 ///
 /// [`gmac0_transmit_parent`] answers this step for that tree. It is the value for a caller that
-/// has no tree to read, and a board whose EEPROM reports PCB revision `0xb2` is a v1.3B. The
+/// has no tree to read, and a board whose electrically erasable programmable read-only memory (EEPROM) reports printed circuit board (PCB) revision `0xb2` is a v1.3B. The
 /// v1.2A board file describes no `gmac0`, so it assigns no parent.
 ///
 /// [mainline-v1.3b-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2-v1.3b.dts
@@ -512,7 +511,7 @@ pub(crate) const SYSTEM_TOP_GROUP_SIZE_BYTES: u64 = 0x1_0000;
 /// a VisionFive 2's PMIC starts.
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_sys_info` (`.assert_offset = 0x2F8, .status_offset =
-/// 0x308`, fetched 2026-09-25); the counts from \[mainline-ids\]'s `JH7110_SYSRST_END` (126) and
+/// 0x308`); the counts from \[mainline-ids\]'s `JH7110_SYSRST_END` (126) and
 /// `JH7110_SYSCLK_END` (190). The vendor header of the U-Boot a VisionFive 2 ships with agrees on the clock
 /// count, as `JH7110_CLK_SYS_REG_END 190`, which is the boundary between clocks that have a
 /// register and the vendor's virtual ones numbered above it. The chip's own abbreviation is SYS,
@@ -560,7 +559,7 @@ pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 /// handing over (`DM_FLAG_OS_PREPARE`), and `designware_i2c_remove` ends in `reset_release_bulk`
 /// (\[vendor-i2c\]), whose `reset_release_all` *asserts* every reset before freeing it. The
 /// OpenSBI of a VisionFive 2 re-enables a clock before its I2C transfer and never touches a reset.
-/// A controller held in reset reads `IC_STATUS` as zero, so its transmit-FIFO-empty poll can never
+/// A controller held in reset reads `IC_STATUS` as zero, so its transmit buffer empty poll can never
 /// succeed. That stall is the likely reason a PMIC transfer fails after the hand-over; a board run
 /// of the plan below is what would confirm it.
 ///
@@ -589,7 +588,7 @@ pub(crate) const SYSTEM_CLOCK_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 91;
 pub(crate) const SYSTEM_CLOCK_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 92;
 /// **eMMC controller card clock** (`JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
 /// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
-/// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
+/// the vendor branch head (\[vendor-board-dts-head\]) assign 50 megahertz (MHz); the board file at
 /// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
 ///
 /// [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
@@ -613,7 +612,7 @@ pub(crate) const SYSTEM_RESET_SD_IO_0_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 64;
 #[doc(alias = "microsd controller reset")]
 pub(crate) const SYSTEM_RESET_SD_IO_1_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 65;
 
-/// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
+/// **What each Secure Digital (SD) and MultiMediaCard (MMC) controller needs before its registers answer**, slot 0 (the eMMC socket) then
 /// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
 /// [`ENTROPY_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
 /// (`clock_enable_all`, then `reset_deassert_all`). Every step is idempotent, which matters here:
@@ -686,7 +685,7 @@ pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
 pub const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
 /// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
-/// circuit) is the AXP15060 of the VisionFive 2, on I2C5.
+/// circuit) is the `AXP15060` of the VisionFive 2, on I2C5.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PmicBus` (PMIC spelled out) and
 /// `PowerManagementBus` (it collides with the `PMBus` standard's name).
@@ -695,7 +694,7 @@ pub const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 #[doc(alias = "pmic")]
 pub struct PowerManagementChipBus {
     steps: [Step; MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS],
-    len: usize,
+    step_entries: usize,
     /// **True when the plan is the tree's own `clocks` and `resets` of the PMIC's parent bus**,
     /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a
     /// caller's log must carry, for [`WindowLocation::from_tree`]'s reason.
@@ -710,8 +709,10 @@ pub struct PowerManagementChipBus {
     /// True when the bus named more usable steps than [`MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS`].
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
-    /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
-    /// or a tree that names no `reg`) leaves it `None` and the caller does not attempt the write.
+    /// tree states it. The direct reset write needs it. Both fallback paths (a bus naming no
+    /// `clocks` or `resets`, and a bus naming only foreign ones) keep it, since it describes the
+    /// bus and not the plan; a tree that names no `reg` leaves it `None` and the caller does not
+    /// attempt the write.
     ///
     /// Name: ratified 2026-11-08 (UTC), renamed to say the pair is a physical address and a size.
     pub controller_physical_window: Option<(u64, u64)>,
@@ -728,13 +729,13 @@ impl PowerManagementChipBus {
     /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn plan(&self) -> &[Step] {
-        &self.steps[..self.len]
+        &self.steps[..self.step_entries]
     }
 
     fn fallback(power_management_chip: Option<&'static [u8]>, skipped: usize) -> Self {
         let mut bus = PowerManagementChipBus {
             steps: [Step::EnableClock(0); MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS],
-            len: POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len(),
+            step_entries: POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len(),
             from_tree: false,
             power_management_chip,
             skipped,
@@ -761,12 +762,12 @@ fn parse_register_property(cells: &[u8]) -> Option<(u64, u64)> {
             cells[at + 3],
         ]))
     };
-    if cells.len() >= 16 {
+    if cells.len() == 16 {
         Some((
             (big_endian_word(0) << 32) | big_endian_word(4),
             (big_endian_word(8) << 32) | big_endian_word(12),
         ))
-    } else if cells.len() >= 8 {
+    } else if cells.len() == 8 {
         Some((big_endian_word(0), big_endian_word(4)))
     } else {
         None
@@ -828,14 +829,16 @@ impl PowerManagementChipBus {
             return Ok(bus);
         }
         let collected = collect_system_steps(clocks, resets, &mut bus.steps, &mut provider)?;
-        bus.len = collected.len;
+        bus.step_entries = collected.step_entries;
         bus.skipped = collected.skipped;
         bus.truncated = collected.truncated;
-        if bus.len == 0 {
-            return Ok(PowerManagementChipBus::fallback(
-                Some(power_management_chip),
-                bus.skipped,
-            ));
+        if bus.step_entries == 0 {
+            // Only foreign specifiers: the constant plan, and the locations the tree did state.
+            let mut fallback =
+                PowerManagementChipBus::fallback(Some(power_management_chip), bus.skipped);
+            fallback.controller_physical_window = bus.controller_physical_window;
+            fallback.power_management_chip_bus_address = bus.power_management_chip_bus_address;
+            return Ok(fallback);
         }
         bus.from_tree = true;
         Ok(bus)
@@ -844,7 +847,7 @@ impl PowerManagementChipBus {
 
 /// What [`collect_system_steps`] filled in and what it left out.
 struct Collected {
-    len: usize,
+    step_entries: usize,
     skipped: usize,
     truncated: bool,
 }
@@ -860,7 +863,7 @@ fn collect_system_steps<'t, E>(
     provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<Collected, E> {
     let mut out = Collected {
-        len: 0,
+        step_entries: 0,
         skipped: 0,
         truncated: false,
     };
@@ -870,9 +873,9 @@ fn collect_system_steps<'t, E>(
         let total = specifiers.len();
         for (i, specifier) in specifiers.enumerate() {
             match system_step(specifier, is_clock, provider)? {
-                Specifier::Step(step) if out.len < steps.len() => {
-                    steps[out.len] = step;
-                    out.len += 1;
+                Specifier::Step(step) if out.step_entries < steps.len() => {
+                    steps[out.step_entries] = step;
+                    out.step_entries += 1;
                 }
                 Specifier::Step(_) => out.truncated = true,
                 Specifier::Foreign => out.skipped += 1,
@@ -902,7 +905,7 @@ pub const MAXIMUM_DEVICE_STEPS: usize = 4;
 #[non_exhaustive]
 pub struct DevicePlan {
     steps: [Step; MAXIMUM_DEVICE_STEPS],
-    len: usize,
+    step_entries: usize,
     /// Specifiers that are not a SYS-domain gate or line, counted and never written.
     pub skipped: usize,
     /// True when the node named more usable steps than [`MAXIMUM_DEVICE_STEPS`].
@@ -915,7 +918,7 @@ impl DevicePlan {
     /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn plan(&self) -> &[Step] {
-        &self.steps[..self.len]
+        &self.steps[..self.step_entries]
     }
 
     /// **A device node's `clocks` and `resets`, as SYS-domain steps.** Either property may be
@@ -935,12 +938,12 @@ impl DevicePlan {
     ) -> Result<Self, E> {
         let mut plan = DevicePlan {
             steps: [Step::EnableClock(0); MAXIMUM_DEVICE_STEPS],
-            len: 0,
+            step_entries: 0,
             skipped: 0,
             truncated: false,
         };
         let collected = collect_system_steps(clocks, resets, &mut plan.steps, &mut provider)?;
-        plan.len = collected.len;
+        plan.step_entries = collected.step_entries;
         plan.skipped = collected.skipped;
         plan.truncated = collected.truncated;
         Ok(plan)
@@ -956,7 +959,7 @@ impl DevicePlan {
 // every timing count. Everything here is host-testable arithmetic over words the caller reads; the
 // sources are the vendor trees cited in the crate's header.
 
-/// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
+/// The SYS **syscon** window, `0x1303_0000`: where the phase-locked loop (PLL) control words live, distinct from
 /// [`SYSTEM_BASE_PHYSICAL_ADDRESS`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` at `VF2_v2.10.4`
 /// (\[vendor-regs\]: `SYS_SYSCON_BASE 0x13030000`, `SYS_CRG_BASE 0x13020000`), which resolves
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
@@ -998,7 +1001,7 @@ pub const SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0: u32 = 7;
 pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 8;
 
 /// `JH7110_APB_BUS_FUNC`, **11**. Word `0x2c`: a one-based 4-bit divider off `stg_axiahb`, the
-/// last divider before the APB tree that `u5_dw_i2c_clk_apb` (gate id 143, bit 31 only) sits on.
+/// last divider before the advanced peripheral bus (APB) tree that `u5_dw_i2c_clk_apb` (gate id 143, bit 31 only) sits on.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "JH7110_SYSCLK_APB_BUS_FUNC")]
@@ -1007,15 +1010,15 @@ pub const SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION: u32 = 11;
 /// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
 pub(crate) const OSCILLATOR_HERTZ: u64 = 24_000_000;
 
-/// The vendor PLL code's default for a PLL it cannot interpret (`deffreq` for PLL2), returned
+/// The vendor PLL code's default for a PLL it cannot interpret (`deffreq` for `PLL2`), returned
 /// rather than guessed from fields that are not in integer mode.
 pub(crate) const PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ: u64 = 1_188_000_000;
 
 /// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
 /// words come from [`SYSTEM`]'s window at the offsets the ids above give; the PLL2 words from
-/// [`SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
-/// (POSTDIV1 bits 29:28) and `0x34` (PREDIV bits 5:0), exactly the vendor `pll.c` masks.
+/// [`SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS`]'s window at `0x2c` (`DACPD` bit 15, `DSMPD` bit 16, `FBDIV` bits 28:17), `0x30`
+/// (`POSTDIV1` bits 29:28) and `0x34` (`PREDIV` bits 5:0), exactly the vendor `pll.c` masks.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279. Refused `IcClkWords` (three abbreviations; these are the
 /// inter-integrated circuit controller's clock words).
@@ -1036,15 +1039,15 @@ pub struct InterIntegratedCircuitClockWords {
     ///
     /// Name: ratified 2026-11-05 (UTC), #3279.
     pub advanced_peripheral_bus_function: u32,
-    /// SYS syscon word `0x2c`: PLL2's DACPD, DSMPD and FBDIV.
+    /// SYS syscon word `0x2c`: PLL2's `DACPD`, `DSMPD` and `FBDIV`.
     ///
     /// Name: ratified 2026-11-05 (UTC), #3279.
     pub phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: u32,
-    /// SYS syscon word `0x30`: PLL2's POSTDIV1, bits 29:28.
+    /// SYS syscon word `0x30`: PLL2's `POSTDIV1`, bits 29:28.
     ///
     /// Name: ratified 2026-11-05 (UTC), #3279.
     pub phase_locked_loop_2_post_divider_1_word: u32,
-    /// SYS syscon word `0x34`: PLL2's PREDIV, bits 5:0.
+    /// SYS syscon word `0x34`: PLL2's `PREDIV`, bits 5:0.
     ///
     /// Name: ratified 2026-11-05 (UTC), #3279.
     pub phase_locked_loop_2_pre_divider_word: u32,
@@ -1072,7 +1075,9 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
 /// the vendor clock driver's own registration; the gates do not divide. PLL2's rate follows the
 /// vendor `pll.c` exactly: integer mode (`dacpd == 1 && dsmpd == 1`) is
 /// `24 MHz * feedback_divider / (pre_divider * post_divider_1)` (the vendor code's `fbdiv`, `prediv` and
-/// `postdiv1`), anything else is the vendor's own default rather than a
+/// `postdiv1`). Fractional mode (`dacpd == 0 && dsmpd == 0`) adds the 24-bit fraction, as Linux does:
+/// `(24 MHz * fraction / 2^24 + 24 MHz * feedback_divider) / (pre_divider * post_divider_1)`. The mixed
+/// modes, and a zero feedback divider, give the vendor's own default rather than a
 /// guess. The u64 divisions truncate, as the vendor's do.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279. Refused `i2c5_ic_clk` (`ic_clk` is the `DesignWare`
@@ -1116,8 +1121,14 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
             pre_divider_raw
         };
         let post_divider_1 = 1u64 << ((words.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
+        let fraction = (words.phase_locked_loop_2_post_divider_1_word & 0x00ff_ffff) as u64;
         if dacpd == 1 && dsmpd == 1 && feedback_divider > 0 {
             OSCILLATOR_HERTZ * feedback_divider / (pre_divider * post_divider_1)
+        } else if dacpd == 0 && dsmpd == 0 && feedback_divider > 0 {
+            // Fractional mode: the fraction is bits 23:0 of the post-divider word, a 24-bit binary
+            // fraction of the feedback divider.
+            (OSCILLATOR_HERTZ * fraction / (1 << 24) + OSCILLATOR_HERTZ * feedback_divider)
+                / (pre_divider * post_divider_1)
         } else {
             PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
         }
@@ -1173,21 +1184,21 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 }
 
 /// **The 100 kHz standard-mode programming for a `DesignWare` I2C controller**: counts of the
-/// controller's input clock for the I2C standard mode's minimum SCL high time (4000 ns) and
+/// controller's input clock for the I2C standard mode's minimum serial clock line (SCL) high time (4000 ns) and
 /// minimum SCL low time (4700 ns), stretched so one SCL period is at least 10 microseconds, and a
-/// 300 ns SDA hold in input-clock counts. The control word is master mode, restart enable, slave
+/// 300 ns hold on the `SDA` (serial data) line, in input-clock counts. The control word is master mode, restart enable, slave
 /// disable, standard speed.
 ///
-/// The limits are the I2C-bus specification's standard-mode figures (the NXP specification and
-/// user manual UM10204, table of timing characteristics: `tHIGH` 4.0 us, `tLOW` 4.7 us, and the
-/// 300 ns internal SDA hold a device must provide to bridge the undefined falling edge of SCL).
+/// The limits are the I2C-bus specification's standard-mode figures (the `NXP` specification and
+/// user manual `UM10204`, table of timing characteristics: `tHIGH` 4.0 us, `tLOW` 4.7 us, and the
+/// 300 ns internal `SDA` hold a device must provide to bridge the undefined falling edge of SCL).
 /// The counts treat a phase as lasting at least its count of input-clock periods, which is how the
 /// `DesignWare` databook's `IC_SS_SCL_HCNT` and `IC_SS_SCL_LCNT` registers are described. No
 /// permissively licensed driver that this crate could cite states the equations (OpenBSD's
 /// `dwiic.c` takes the counts from firmware and FreeBSD has no `DesignWare` I2C driver), so they
 /// are derived here from those two sources and from nothing else.
 ///
-/// 100 kHz rather than a faster mode, because the AXP15060's datasheet timing is met by every
+/// 100 kHz rather than a faster mode, because the `AXP15060`'s datasheet timing is met by every
 /// standard-mode controller and the failure this answers was OpenSBI trusting a controller at
 /// reset defaults; slower than the specification floor is safe, faster is not.
 ///
@@ -1226,7 +1237,7 @@ const STANDARD_MODE_CONTROL: u32 = 0b0110_0011;
 const STANDARD_HIGH_NANOSECONDS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
 const STANDARD_LOW_NANOSECONDS: u128 = 4_700;
-/// The SDA hold a device provides to bridge SCL's undefined falling edge, in nanoseconds.
+/// The `SDA` hold a device provides to bridge SCL's undefined falling edge, in nanoseconds.
 const STANDARD_SDA_HOLD_NANOSECONDS: u128 = 300;
 /// The bus rate this module programs, in hertz.
 const STANDARD_BUS_HERTZ: u128 = 100_000;
@@ -1243,6 +1254,11 @@ const fn counts(clock_frequency: u64, period_nanoseconds: u128) -> u32 {
 
 /// The counts for a 100 kHz standard-mode bus. `clock_frequency` is the controller's input clock
 /// in hertz, the databook's `ic_clk`.
+///
+/// The controller spends a few cycles more than the programmed count in each phase (Linux's
+/// `i2c_dw_scl_hcnt` and `i2c_dw_scl_lcnt` account for `HCNT + 3` and `LCNT + 1`), so the bus runs
+/// slightly under 100 kHz, which is the safe direction. The floor of 1 count is this crate's, not
+/// the databook's; only an input clock under about 1.5 MHz reaches it.
 ///
 /// Each phase is rounded up to a whole count, so it never falls short of its specification
 /// minimum: the high count covers 4000 ns and the low count covers 4700 ns. Those two alone make a
@@ -1273,7 +1289,7 @@ pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
     }
 }
 
-/// The AXP15060 PMIC (power management integrated circuit) register OpenSBI's reset and shutdown
+/// The `AXP15060` PMIC (power management integrated circuit) register OpenSBI's reset and shutdown
 /// both go through, `0x32`, and the bit that resets: bit 6 (bit 7 powers off), as read from a
 /// VisionFive 2 board; the same register and bit are in the OpenSBI source for the board
 /// (`platform/generic/starfive/jh7110.c`, BSD-2-Clause). The caller writes the reset bit alone,
@@ -1502,8 +1518,9 @@ impl BringUpReport {
     }
 
     /// **Was the device already up before this ran?** True when every recorded clock was enabled
-    /// and, if the plan had one, the reset was already released. See the type's own doc for why
-    /// this is the question a first bring-up asks first.
+    /// and, if the plan had a reset, the plan's last reset was already released. A plan with two
+    /// resets is judged by the last alone; [`BringUpReport::all_resets_are_released`] counts them
+    /// all. See the type's own doc for why this is the question a first bring-up asks first.
     ///
     /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
@@ -1546,7 +1563,7 @@ pub struct WindowLocation {
     pub compatible: Option<&'static [u8]>,
 }
 
-/// **STG clock and reset generator** (CRG, the device tree's `stgcrg` node, \[mainline-dts\]):
+/// **STG clock and reset generator (CRG)**, the device tree's `stgcrg` node (\[mainline-dts\]):
 /// mainline's dedicated STG clock-and-reset controller node.
 ///
 /// The vendor string is `starfive,jh7110-stgcrg`.
@@ -1577,7 +1594,7 @@ pub const COMPATIBLE_VENDOR_RESET_GENERATOR: &[u8] = b"starfive,jh7110-reset";
 const VENDOR_CLOCK_GENERATOR_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stg";
 const VENDOR_RESET_GENERATOR_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stgcrg";
 
-/// **SYS clock and reset generator** (CRG, the device tree's `syscrg` node, \[mainline-dts\]):
+/// **SYS clock and reset generator (CRG)**, the device tree's `syscrg` node (\[mainline-dts\]):
 /// mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`.
 ///
 /// The vendor string is `starfive,jh7110-syscrg`.
@@ -1675,7 +1692,7 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
     size_bytes: SYSTEM_TOP_GROUP_SIZE_BYTES,
 };
 
-/// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
+/// **The always-on window**, where `gmac0`'s bus clocks, transmit clock and resets live.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `AON_WINDOW` (the domain spelled out).
 #[doc(alias = "aon", alias = "AON_WINDOW")]
@@ -1756,18 +1773,17 @@ impl WindowLocation {
     }
 }
 
-/// The position of `want` in a device-tree string list (NUL-separated, NUL-terminated).
+/// The position of `want` in a device-tree string list (null (NUL) separated, NUL terminated).
 ///
-/// Split rather than trimmed, and an empty trailing element is not counted: `"sys\0stg\0aon\0"`
-/// has three entries, not four, and `stg` is index 1. Getting that wrong would shift every window
-/// after the first.
+/// The one trailing NUL is the last entry's terminator and is not a separator: `"sys\0stg\0aon\0"`
+/// has three entries, not four, and `stg` is index 1. An empty entry in the middle still counts,
+/// so `"sys\0\0stg\0"` puts `stg` at index 2, where the tree's own string-list index puts it.
 fn name_index(list: &[u8], want: &[u8]) -> Option<usize> {
-    list.split(|&b| b == 0)
-        .filter(|s| !s.is_empty())
-        .position(|s| s == want)
+    let list = list.strip_suffix(&[0]).unwrap_or(list);
+    list.split(|&b| b == 0).position(|s| s == want)
 }
 
-// The Kani proofs, compiled only by `cargo kani` (script/verify).
+// The Kani proofs, compiled only by `cargo kani`.
 #[cfg(kani)]
 mod verification;
 

@@ -1,5 +1,5 @@
 //! **The management data input/output (MDIO) bus, through the MAC's own two registers**, and the
-//! IEEE 802.3 clause 22 registers every PHY (physical layer device) has. IEEE 802.3 clause 22
+//! IEEE 802.3 clause 22 registers every physical layer device has. IEEE 802.3 clause 22
 //! names the bus "management data input/output"; `MDIO` is its abbreviation there.
 //!
 //! The command word and the busy-bit poll are OpenBSD's `dwqe_mii_readreg` and
@@ -10,61 +10,65 @@
 //! source's spelling (`MII_` or `BMCR_` prefix included) is in its documentation and in a
 //! `#[doc(alias)]`; its documentation opens with its full name and its source's spelling.
 //!
+//! Visibility: every constant here is `pub(crate)`, because the [`ManagementDataIo`] trait takes
+//! the register as a plain number and no caller outside the crate names one. Widening a constant
+//! later breaks nobody, and narrowing it later breaks everybody.
+//!
 //! Name: ratified 2026-11-02 (UTC), #3094.
 
 use crate::{Hardware, registers};
 
-/// **CSR clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
-/// field in [`registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER`].
+/// **control and status register (CSR) clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the range of the management data clock (MDC)
+/// field in [`registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER`].
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
-#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER_CR_SHIFT")]
-pub const CLOCK_RANGE_SHIFT: u32 = 8;
-/// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_CR_SHIFT")]
+pub(crate) const CLOCK_RANGE_SHIFT: u32 = 8;
+/// **MDIO clock range for a 500 to 800 megahertz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
 /// 324 (Linux's `include/linux/stmmac.h`, `STMMAC_CSR_500_800M`).
 ///
 /// OpenBSD reads the `stmmaceth` clock's rate and picks the matching range. This driver assumes no
-/// clock framework to ask, and the choice only has to keep MDC at or under the standard's 2.5 MHz:
-/// the largest divider does that for every CSR clock up to 810 MHz and merely runs MDC slower
-/// below, which MDIO tolerates. So the driver needs no rate at all, at the cost of slower PHY
+/// clock framework to ask, and the choice only has to keep MDC at or under the standard's 2.5 megahertz:
+/// the largest divider does that for every CSR clock up to 810 megahertz and merely runs MDC slower
+/// below, which MDIO tolerates. So the driver needs no rate at all, at the cost of slower physical layer device
 /// register access during bring-up (tens of microseconds per access rather than a few), which is
 /// off every path that repeats.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR_CR_500_800")]
-pub const CLOCK_RANGE_500_TO_800_MEGAHERTZ: u32 = 7;
+pub(crate) const CLOCK_RANGE_500_TO_800_MEGAHERTZ: u32 = 7;
 /// **MDIO physical layer device address shift** (`GMAC_MAC_MDIO_ADDR_PA_SHIFT`, `dwqereg.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR_PA_SHIFT")]
-pub const PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT: u32 = 21;
+pub(crate) const PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT: u32 = 21;
 /// **MDIO register address shift** (`GMAC_MAC_MDIO_ADDR_RDA_SHIFT`, `dwqereg.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR_RDA_SHIFT")]
-pub const REGISTER_ADDRESS_SHIFT: u32 = 16;
-/// **GMII operation command, read** (`GMAC_MAC_MDIO_ADDR_GOC_READ`, `dwqereg.h`).
+pub(crate) const REGISTER_BUS_ADDRESS_SHIFT: u32 = 16;
+/// **gigabit media-independent interface (GMII) operation command, read** (`GMAC_MAC_MDIO_ADDR_GOC_READ`, `dwqereg.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR_GOC_READ")]
-pub const OPERATION_COMMAND_READ: u32 = 3 << 2;
+pub(crate) const OPERATION_COMMAND_READ: u32 = 3 << 2;
 /// **GMII operation command, write** (`GMAC_MAC_MDIO_ADDR_GOC_WRITE`, `dwqereg.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR_GOC_WRITE")]
-pub const OPERATION_COMMAND_WRITE: u32 = 1 << 2;
+pub(crate) const OPERATION_COMMAND_WRITE: u32 = 1 << 2;
 /// **GMII busy** (`GMAC_MAC_MDIO_ADDR_GB`, `dwqereg.h`): set by the driver to start a command,
 /// cleared by the controller when it is done.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "GMAC_MAC_MDIO_ADDR_GB")]
-pub const COMMAND_BUSY: u32 = 1 << 0;
+pub(crate) const COMMAND_BUSY: u32 = 1 << 0;
 
 /// How long one MDIO command may take before it is a timeout: OpenBSD's 2000 polls 10 µs apart.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3128.
-pub const COMMAND_LIMIT_MICROSECONDS: u64 = 20_000;
+pub(crate) const COMMAND_LIMIT_MICROSECONDS: u64 = 20_000;
 /// The poll interval.
 const POLL_MICROSECONDS: u64 = 10;
 
@@ -80,12 +84,13 @@ pub(crate) const BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART: u16 = 1 << 9;
 #[doc(alias = "autonegotiation enable")]
 #[doc(alias = "BMCR_ANENABLE")]
 pub(crate) const BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE: u16 = 1 << 12;
-/// **Reset to the default state** (`BMCR_RESET`, `mii.h`): a software reset of the PHY,
+/// **Reset to the default state** (`BMCR_RESET`, `mii.h`): a software reset of the physical layer device,
 /// self-clearing.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
 #[doc(alias = "BMCR_RESET")]
-pub const BASIC_MODE_CONTROL_RESET: u16 = 1 << 15;
+#[allow(dead_code, reason = "the map keeps the entry no code reads yet")]
+pub(crate) const BASIC_MODE_CONTROL_RESET: u16 = 1 << 15;
 /// **Basic mode status register** (`MII_BMSR`, `mii.h`), clause 22.
 #[doc(alias = "basic mode status register")]
 #[doc(alias = "MII_BMSR")]
@@ -95,7 +100,7 @@ pub(crate) const BASIC_MODE_STATUS_REGISTER: u8 = 0x01;
 #[doc(alias = "link status")]
 #[doc(alias = "BMSR_LSTATUS")]
 pub(crate) const BASIC_MODE_STATUS_LINK_STATUS: u16 = 1 << 2;
-/// **Isolate** (`BMCR_ISO`, OpenBSD `sys/dev/mii/mii.h`): the PHY is electrically isolated from
+/// **Isolate** (`BMCR_ISO`, OpenBSD `sys/dev/mii/mii.h`): the physical layer device is electrically isolated from
 /// the MAC.
 #[doc(alias = "isolate")]
 #[doc(alias = "BMCR_ISO")]
@@ -126,17 +131,17 @@ pub(crate) const AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER: u8 = 0x05;
 #[doc(alias = "100base-t4")]
 #[doc(alias = "ANLPAR_T4")]
 pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_T4: u16 = 0x0200;
-/// **Link partner supports 100BASE-TX full duplex** (`AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX`,
-/// IEEE 802.3 clause 28, which OpenBSD's `sys/dev/mii/mii.h` spells `ANLPAR_TX_FD`).
+/// **Link partner supports `100BASE-TX` full duplex** (`ANLPAR_TX_FD`, OpenBSD
+/// `sys/dev/mii/mii.h`), clause 28. `100BASE-TX` is IEEE 802.3's name for 100 megabits per second
+/// over two twisted pairs, so the name says twisted pair, not the standard's spelling.
 #[doc(alias = "100base-tx full duplex")]
 #[doc(alias = "ANLPAR_TX_FD")]
-pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX: u16 = 0x0100;
-/// **Link partner supports 100BASE-TX** (`AUTONEGOTIATION_LINK_PARTNER_100BASE_TX`, IEEE 802.3
-/// clause 28, which OpenBSD's `sys/dev/mii/mii.h` spells `ANLPAR_TX`). `TX` is the standard's name
-/// for the twisted-pair physical layer, so it stays.
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX: u16 = 0x0100;
+/// **Link partner supports `100BASE-TX`** (`ANLPAR_TX`, OpenBSD `sys/dev/mii/mii.h`), clause 28.
+/// `100BASE-TX` is IEEE 802.3's name for 100 megabits per second over two twisted pairs.
 #[doc(alias = "100base-tx")]
 #[doc(alias = "ANLPAR_TX")]
-pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_TX: u16 = 0x0080;
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR: u16 = 0x0080;
 /// **Link partner supports 10BASE-T full duplex** (`ANLPAR_10_FD`, OpenBSD `sys/dev/mii/mii.h`).
 #[doc(alias = "10base-t full duplex")]
 #[doc(alias = "ANLPAR_10_FD")]
@@ -177,7 +182,7 @@ pub(crate) const STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE: u16 = 0x040
 /// `BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE` (#3094) to match the tree's one-word spelling of
 /// autonegotiation.
 #[doc(alias = "BMSR_ANEGCOMPLETE")]
-pub const BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE: u16 = 1 << 5;
+pub(crate) const BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE: u16 = 1 << 5;
 /// **Physical layer device identifier 1** (`MII_PHYSID1`, `mii.h`), clause 22: the
 /// identifier's high half.
 #[doc(alias = "physical layer device identifier 1")]
@@ -197,26 +202,31 @@ pub enum Error {
     /// The busy bit stayed set for [`COMMAND_LIMIT_MICROSECONDS`]: the MAC's CSR clock is off, or the
     /// command never started.
     Timeout {
-        /// The PHY (physical layer device) addressed, by its bus address.
+        /// The physical layer device addressed, by its bus address.
         ///
-        /// Name: ratified 2026-10-26 (#2762 Decision 50): a `u8` PHY bus address is
-        /// `physical_layer_device_address`, replacing `phy`.
+        /// Name: ratified 2026-10-26 (#2762 Decision 50): a `u8` physical layer device bus address is
+        /// `physical_layer_device_bus_address`, replacing `phy`.
         #[doc(alias = "phy")]
-        physical_layer_device_address: u8,
+        physical_layer_device_bus_address: u8,
         /// The register addressed.
         register: u8,
     },
 }
 
-/// **An MDIO command word**: the clock range, the PHY and register addresses, the operation, and
+/// **An MDIO command word**: the clock range, the physical layer device and register addresses, the operation, and
 /// the busy bit that starts it. Out-of-range addresses are reduced to the field (5 bits each)
 /// rather than spilling into the neighbors. It builds the word and sends nothing.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3128.
-pub const fn command_word(physical_layer_device_address: u8, register: u8, write: bool) -> u32 {
+pub(crate) const fn command_word(
+    physical_layer_device_bus_address: u8,
+    register: u8,
+    write: bool,
+) -> u32 {
     (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
-        | (((physical_layer_device_address & 0x1f) as u32) << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
-        | (((register & 0x1f) as u32) << REGISTER_ADDRESS_SHIFT)
+        | (((physical_layer_device_bus_address & 0x1f) as u32)
+            << PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT)
+        | (((register & 0x1f) as u32) << REGISTER_BUS_ADDRESS_SHIFT)
         | if write {
             OPERATION_COMMAND_WRITE
         } else {
@@ -226,7 +236,7 @@ pub const fn command_word(physical_layer_device_address: u8, register: u8, write
 }
 
 /// The command word's five fields share no bit, so its `|`s are its `^`s: the clock range, the
-/// PHY and register addresses (five bits each, reduced by mask), the operation, and the busy
+/// physical layer device and register addresses (five bits each, reduced by mask), the operation, and the busy
 /// bit; the compiler checks the pairwise disjointness here, and the mutation exclusion for
 /// `command_word` names this constant. Each operand enters through its own field mask.
 ///
@@ -234,29 +244,29 @@ pub const fn command_word(physical_layer_device_address: u8, register: u8, write
 #[allow(dead_code)]
 pub(crate) const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
-        | (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
-        | (0x1f << REGISTER_ADDRESS_SHIFT)
+        | (0x1f << PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT)
+        | (0x1f << REGISTER_BUS_ADDRESS_SHIFT)
         | (0x3 << 2)
         | COMMAND_BUSY
         == (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
-            ^ (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
-            ^ (0x1f << REGISTER_ADDRESS_SHIFT)
+            ^ (0x1f << PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT)
+            ^ (0x1f << REGISTER_BUS_ADDRESS_SHIFT)
             ^ (0x3 << 2)
             ^ COMMAND_BUSY
 );
 
-/// **A management data input/output (MDIO) bus**: a clause 22 PHY register file, reached somehow.
-/// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated PHY is another.
+/// **A management data input/output (MDIO) bus**: a clause 22 physical layer device register file, reached somehow.
+/// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated physical layer device is another.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "mdio")]
 pub trait ManagementDataIo {
-    /// Read register `register` of the PHY at `physical_layer_device_address`.
-    fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error>;
-    /// Write `value` to register `register` of the PHY at `physical_layer_device_address`.
+    /// Read register `register` of the physical layer device at `physical_layer_device_bus_address`.
+    fn read(&mut self, physical_layer_device_bus_address: u8, register: u8) -> Result<u16, Error>;
+    /// Write `value` to register `register` of the physical layer device at `physical_layer_device_bus_address`.
     fn write(
         &mut self,
-        physical_layer_device_address: u8,
+        physical_layer_device_bus_address: u8,
         register: u8,
         value: u16,
     ) -> Result<(), Error>;
@@ -268,12 +278,12 @@ pub trait ManagementDataIo {
 pub struct Bus<'a, H: Hardware>(pub &'a mut H);
 
 impl<H: Hardware> Bus<'_, H> {
-    fn wait(&mut self, physical_layer_device_address: u8, register: u8) -> Result<(), Error> {
+    fn wait(&mut self, physical_layer_device_bus_address: u8, register: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
             if self
                 .0
-                .read(registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER)
+                .read(registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER)
                 & COMMAND_BUSY
                 == 0
             {
@@ -281,7 +291,7 @@ impl<H: Hardware> Bus<'_, H> {
             }
             if waited >= COMMAND_LIMIT_MICROSECONDS {
                 return Err(Error::Timeout {
-                    physical_layer_device_address,
+                    physical_layer_device_bus_address,
                     register,
                 });
             }
@@ -292,51 +302,51 @@ impl<H: Hardware> Bus<'_, H> {
 }
 
 impl<H: Hardware> ManagementDataIo for Bus<'_, H> {
-    fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
+    fn read(&mut self, physical_layer_device_bus_address: u8, register: u8) -> Result<u16, Error> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
-        self.wait(physical_layer_device_address, register)?;
+        self.wait(physical_layer_device_bus_address, register)?;
         self.0.write(
-            registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
-            command_word(physical_layer_device_address, register, false),
+            registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER,
+            command_word(physical_layer_device_bus_address, register, false),
         );
-        self.wait(physical_layer_device_address, register)?;
+        self.wait(physical_layer_device_bus_address, register)?;
         Ok(self.0.read(registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER) as u16)
     }
 
     fn write(
         &mut self,
-        physical_layer_device_address: u8,
+        physical_layer_device_bus_address: u8,
         register: u8,
         value: u16,
     ) -> Result<(), Error> {
-        self.wait(physical_layer_device_address, register)?;
+        self.wait(physical_layer_device_bus_address, register)?;
         self.0.write(
             registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER,
             u32::from(value),
         );
         self.0.write(
-            registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
-            command_word(physical_layer_device_address, register, true),
+            registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER,
+            command_word(physical_layer_device_bus_address, register, true),
         );
-        self.wait(physical_layer_device_address, register)
+        self.wait(physical_layer_device_bus_address, register)
     }
 }
 
-/// **The PHY's identifier**, `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`, revision included. It returns the
-/// identifier; `physical_layer_device_address` is the bus address of the device to ask.
+/// **The physical layer device's identifier**, `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`, revision included. It returns the
+/// identifier; `physical_layer_device_bus_address` is the bus address of the device to ask.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
 pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataIo,
-    physical_layer_device_address: u8,
+    physical_layer_device_bus_address: u8,
 ) -> Result<u32, Error> {
     let high = bus.read(
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         PHYSICAL_LAYER_DEVICE_ID_1_REGISTER,
     )?;
     let low = bus.read(
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         PHYSICAL_LAYER_DEVICE_ID_2_REGISTER,
     )?;
     Ok(u32::from(high) << 16 | u32::from(low))
@@ -357,28 +367,33 @@ pub(crate) const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
 /// Name: ratified 2026-11-03 (UTC), #3128.
 pub fn is_link_up(
     bus: &mut impl ManagementDataIo,
-    physical_layer_device_address: u8,
+    physical_layer_device_bus_address: u8,
 ) -> Result<bool, Error> {
-    let _ = bus.read(physical_layer_device_address, BASIC_MODE_STATUS_REGISTER)?;
-    Ok(
-        bus.read(physical_layer_device_address, BASIC_MODE_STATUS_REGISTER)?
-            & BASIC_MODE_STATUS_LINK_STATUS
-            != 0,
-    )
+    let _ = bus.read(
+        physical_layer_device_bus_address,
+        BASIC_MODE_STATUS_REGISTER,
+    )?;
+    Ok(bus.read(
+        physical_layer_device_bus_address,
+        BASIC_MODE_STATUS_REGISTER,
+    )? & BASIC_MODE_STATUS_LINK_STATUS
+        != 0)
 }
 
-/// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
+/// **Restart autonegotiation**, advertising whatever the physical layer device's own defaults advertise (every speed
 /// on a gigabit part).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3128.
 pub fn restart_autonegotiation(
     bus: &mut impl ManagementDataIo,
-    physical_layer_device_address: u8,
+    physical_layer_device_bus_address: u8,
 ) -> Result<(), Error> {
-    let basic_mode_control =
-        bus.read(physical_layer_device_address, BASIC_MODE_CONTROL_REGISTER)?;
+    let basic_mode_control = bus.read(
+        physical_layer_device_bus_address,
+        BASIC_MODE_CONTROL_REGISTER,
+    )?;
     bus.write(
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         BASIC_MODE_CONTROL_REGISTER,
         basic_mode_control
             | BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
@@ -401,7 +416,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_read_command_carries_the_largest_divider_the_addresses_and_the_busy_bit() {
+    fn a_read_command_carries_the_largest_divider_the_bus_addresses_and_the_busy_bit() {
         let c = command_word(0, PHYSICAL_LAYER_DEVICE_ID_1_REGISTER, false);
         assert_eq!(c, 7 << 8 | 2 << 16 | 3 << 2 | 1);
         let w = command_word(31, 31, true);
@@ -414,7 +429,7 @@ mod tests {
     /// busy bit stays set for `busy_reads` reads of the address register, and a read command
     /// leaves `answer` in the data register when it completes.
     struct Pair {
-        address: u32,
+        bus_address_register: u32,
         data: u32,
         answer: u16,
         busy_reads: u32,
@@ -426,7 +441,7 @@ mod tests {
     impl Pair {
         fn new(answer: u16, busy_reads: u32) -> Pair {
             Pair {
-                address: 0,
+                bus_address_register: 0,
                 data: 0,
                 answer,
                 busy_reads,
@@ -440,18 +455,18 @@ mod tests {
     impl Hardware for Pair {
         fn read(&mut self, offset: u32) -> u32 {
             match offset {
-                registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER => {
-                    if self.address & COMMAND_BUSY != 0 && !self.stuck {
+                registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER => {
+                    if self.bus_address_register & COMMAND_BUSY != 0 && !self.stuck {
                         if self.busy_reads == 0 {
-                            self.address &= !COMMAND_BUSY;
-                            if self.address & (0x3 << 2) == OPERATION_COMMAND_READ {
+                            self.bus_address_register &= !COMMAND_BUSY;
+                            if self.bus_address_register & (0x3 << 2) == OPERATION_COMMAND_READ {
                                 self.data = u32::from(self.answer);
                             }
                         } else {
                             self.busy_reads -= 1;
                         }
                     }
-                    self.address
+                    self.bus_address_register
                 }
                 registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER => self.data,
                 _ => panic!("MDIO touched {offset:#x}, outside its two registers"),
@@ -460,8 +475,8 @@ mod tests {
         fn write(&mut self, offset: u32, value: u32) {
             self.writes.push((offset, value));
             match offset {
-                registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER => {
-                    self.address = value;
+                registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER => {
+                    self.bus_address_register = value;
                 }
                 registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER => self.data = value,
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
@@ -482,7 +497,7 @@ mod tests {
         assert_eq!(
             hardware.writes,
             [(
-                registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
+                registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER,
                 command_word(4, BASIC_MODE_STATUS_REGISTER, false)
             )]
         );
@@ -505,7 +520,7 @@ mod tests {
             [
                 (registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER, 0x1200),
                 (
-                    registers::MAC_MANAGEMENT_DATA_IO_ADDRESS_REGISTER,
+                    registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER,
                     command_word(1, BASIC_MODE_CONTROL_REGISTER, true)
                 )
             ]
@@ -515,7 +530,7 @@ mod tests {
     #[test]
     fn a_command_still_busy_from_someone_else_is_waited_out_not_overwritten() {
         let mut hardware = Pair::new(0x1234, 2);
-        hardware.address = command_word(7, 9, false); // firmware's read, in flight
+        hardware.bus_address_register = command_word(7, 9, false); // firmware's read, in flight
         assert_eq!(
             Bus(&mut hardware).read(0, PHYSICAL_LAYER_DEVICE_ID_1_REGISTER),
             Ok(0x1234)
@@ -529,11 +544,11 @@ mod tests {
     fn a_busy_bit_that_never_clears_is_a_bounded_timeout_naming_the_access() {
         let mut hardware = Pair::new(0, 0);
         hardware.stuck = true;
-        hardware.address = COMMAND_BUSY;
+        hardware.bus_address_register = COMMAND_BUSY;
         assert_eq!(
             Bus(&mut hardware).read(3, BASIC_MODE_STATUS_REGISTER),
             Err(Error::Timeout {
-                physical_layer_device_address: 3,
+                physical_layer_device_bus_address: 3,
                 register: BASIC_MODE_STATUS_REGISTER
             })
         );
@@ -547,7 +562,7 @@ mod tests {
         assert_eq!(
             Bus(&mut hardware).write(2, BASIC_MODE_CONTROL_REGISTER, 1),
             Err(Error::Timeout {
-                physical_layer_device_address: 2,
+                physical_layer_device_bus_address: 2,
                 register: BASIC_MODE_CONTROL_REGISTER
             })
         );
@@ -562,7 +577,11 @@ mod tests {
     }
 
     impl ManagementDataIo for Latched {
-        fn read(&mut self, _physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
+        fn read(
+            &mut self,
+            _physical_layer_device_bus_address: u8,
+            register: u8,
+        ) -> Result<u16, Error> {
             if register == BASIC_MODE_STATUS_REGISTER {
                 let up = self.link_now && !self.dropped_since_read;
                 self.dropped_since_read = false;
@@ -572,7 +591,7 @@ mod tests {
         }
         fn write(
             &mut self,
-            _physical_layer_device_address: u8,
+            _physical_layer_device_bus_address: u8,
             register: u8,
             value: u16,
         ) -> Result<(), Error> {
@@ -626,16 +645,16 @@ mod tests {
     }
 
     #[test]
-    fn an_address_too_wide_for_its_field_does_not_spill_into_the_next() {
+    fn a_bus_address_too_wide_for_its_field_does_not_spill_into_the_next() {
         // PHY 33 is PHY 1; it must not set bit 26, which is outside the 5-bit field.
         assert_eq!(command_word(33, 0, false), command_word(1, 0, false));
         assert_eq!(
-            command_word(0, 0x3f, false) & (1 << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT),
+            command_word(0, 0x3f, false) & (1 << PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT),
             0
         );
     }
 
-    /// A restart asked of a PHY already negotiating (both bits read set) leaves both set rather
+    /// A restart asked of a physical layer device already negotiating (both bits read set) leaves both set rather
     /// than toggling them off.
     #[test]
     fn restarting_a_negotiation_already_running_keeps_it_running() {
@@ -653,7 +672,7 @@ mod tests {
     }
 
     /// Clause 22's bits as IEEE 802.3 numbers them (22.2.4.1 and 22.2.4.2), written out: the
-    /// simulated PHY reads the same names, so only a literal tells a misplaced bit from a right
+    /// simulated physical layer device reads the same names, so only a literal tells a misplaced bit from a right
     /// one.
     #[test]
     fn the_clause_22_bits_are_the_standards() {

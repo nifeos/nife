@@ -232,3 +232,19 @@ witness test rather than a proof):
 | `the_kernel_asid_is_never_allocated` | no reachable state hands a user space ASID 0, the kernel's tag |
 | `two_live_asids_are_distinct` | live allocations never alias, from any symbolic state |
 | `free_releases_exactly_its_own_asid` | free clears its own bit and no other |
+
+## `crates/memory_region_heap`
+
+Three in `crates/memory_region_heap/src/lib.rs`, the growth arithmetic of the global allocator.
+The prover cannot reach `talc`, which does the allocating through raw pointers over mapped memory.
+So the policy around it lives in the pure functions `growth_pages`, `run_succeeded` and
+`required_bytes`, and the heap calls the same functions the harnesses do. Host tests drive the rest
+through the `PageSource` seam. Two `assume`s state the type's invariant: `committed` is a whole
+number of pages inside the cap, and a run maps at most the pages it planned. One more bounds
+`talc`'s first-heap bookkeeping by a page. A host test named in the harness's comment backs each.
+
+| Harness | Property |
+|---|---|
+| `a_grow_never_commits_past_the_maximum` | for any cap, committed range, request and number of pages mapped up to the plan, the range stays inside the cap in whole pages, and a success covers the request |
+| `a_grow_at_the_maximum_is_a_refusal` | at the cap the plan holds no page, and a run of no page never succeeds, so `alloc` cannot retry forever |
+| `the_bytes_a_grow_asks_for_never_overflow` | for any valid layout, the chunk, the alignment slack and the first run add without wrapping and cover the size and tag |

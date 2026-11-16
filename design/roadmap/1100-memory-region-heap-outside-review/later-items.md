@@ -4,7 +4,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 
 ## P2: for later
 
-10. `PAGE` carries no unit.
+10. `PAGE` carries no unit. DONE (`PAGE_BYTES`).
     Finding: `const PAGE: u64 = 4096` is a length; the units rule says a length carries its unit
     (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). `address_space_layout` and `c_seam` spell it the
     same way, so this is a tree habit, not one crate's slip. `MINIMUM_GROW_PAGES` counts things and
@@ -13,7 +13,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
     Change: `PAGE_BYTES`, private, in this crate; the sibling crates in their own reviews.
     Door: two-way (private). Effort: XS.
 
-11. A panic inside the allocator holds the lock.
+11. A panic inside the allocator holds the lock. DONE (the default handler, `user_mode_runtime::panic_handler!`, ignores the message and traps, so it never allocates; the type's doc says so).
     Finding: talc's `debug_assert!`s run in debug builds inside `alloc`, `dealloc` and `realloc`
     while `locked` is `true`. If the user-mode panic handler allocates (unverified: it was not read
     for this), a debug-build allocator panic spins forever in the handler instead of faulting
@@ -24,7 +24,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
     give the heap a `try_lock` the handler can use to print without allocating.
     Door: two-way. Effort: XS to read, S to change.
 
-12. Growth is monotonic and the README should say so.
+12. Growth is monotonic and the README should say so. PARTIAL (the crate docs say the heap never shrinks; the README sentence belongs to the move lane).
     Finding: talc's `truncate` is never called, and the memory-region interface has no per-page
     return (`MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY`, `USAGE`), so a heap that peaked
     holds its peak until the region's owner destroys it. glibc trims. `dlmalloc` and `rlsf` release
@@ -34,14 +34,14 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
     return.
     Door: two-way. Effort: XS.
 
-13. No accessor for the cap or the base.
+13. No accessor for the cap or the base. DONE (`maximum_bytes` and `base_virtual_address`, provisional).
     Finding: `committed_bytes` exists. `maximum_bytes` and `base_virtual_address` do not, so a test
     or an operator cannot ask what cap is in force after a rounding or a second `initialize`.
     Evidence: `src/lib.rs` lines 126 to 131.
     Change: two accessors, named with the architect in Decision A's table.
     Door: one-way (public names). Effort: XS.
 
-14. The `unsafe impl Sync` and the guard are sound, and the argument deserves one written statement.
+14. The `unsafe impl Sync` and the guard are sound, and the argument deserves one written statement. DONE (the concurrency paragraph on the type).
     Finding: `Guard::inner(&mut self)` hands out `&mut Inner` from an `UnsafeCell` under a
     compare-exchange spinlock with `Acquire` on take and `Release` on drop. The pairing is right,
     the `&mut self` receiver stops two live `&mut Inner` from one guard, and `grow` allocates

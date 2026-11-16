@@ -18,14 +18,14 @@ use crate::{BUFFER_BYTES, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, r
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The software reset did not self-clear in [`RESET_LIMIT_MICROSECONDS`]. On this controller the usual
-    /// cause is a missing receive clock from the PHY, which the reset needs to complete.
+    /// cause is a missing receive clock from the physical layer device, which the reset needs to complete.
     ResetTimeout,
     /// The DMA region is not somewhere this controller can address: past its address width
-    /// ([`Identity::direct_memory_access_address_bits`]), or straddling a 4 GiB boundary, which the
+    /// ([`Identity::direct_memory_access_physical_address_bits`]), or straddling a 4 GiB boundary, which the
     /// 32-bit tail pointer registers cannot express.
     RegionOutOfReach {
         /// The controller's address width.
-        direct_memory_access_address_bits: u8,
+        direct_memory_access_physical_address_bits: u8,
     },
     /// The transmit queue did not finish flushing on [`stop`].
     FlushTimeout,
@@ -72,7 +72,7 @@ impl Identity {
     /// The DMA's address width from feature register 1's `ADDR64` field: 32, 40 or 48 bits.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
-    pub const fn direct_memory_access_address_bits(&self) -> u8 {
+    pub const fn direct_memory_access_physical_address_bits(&self) -> u8 {
         match (self.features[1] >> 14) & 0x3 {
             1 => 40,
             2 => 48,
@@ -80,20 +80,20 @@ impl Identity {
         }
     }
 
-    /// The transmit queue's size in bytes (the MTL's transmit FIFO), `128 << TXFIFOSIZE`.
+    /// The transmit queue's size in bytes (the transmit queue memory of the controller), `128 << TXFIFOSIZE`.
     #[doc(alias = "fifo")]
     pub(crate) const fn transmit_queue_bytes(&self) -> u32 {
         queue_bytes((self.features[1] >> 6) & 0x1f)
     }
 
-    /// The receive queue's size in bytes (the MTL's receive FIFO), `128 << RXFIFOSIZE`.
+    /// The receive queue's size in bytes (the receive queue memory of the controller), `128 << RXFIFOSIZE`.
     #[doc(alias = "fifo")]
     pub(crate) const fn receive_queue_bytes(&self) -> u32 {
         queue_bytes(self.features[1] & 0x1f)
     }
 }
 
-/// `128 << field`, with a field past the largest queue (FIFO) the databook encodes (256 KiB, field
+/// `128 << field`, with a field past the largest queue the databook encodes (256 KiB, field
 /// 11) saturating there rather than shifting a bit off the top of the word.
 #[doc(alias = "fifo")]
 const fn queue_bytes(field: u32) -> u32 {
@@ -131,32 +131,32 @@ pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
 /// or a multicast address.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3122.
-pub fn station_address(high: u32, low: u32) -> Option<[u8; 6]> {
+pub fn station_mac_address(high: u32, low: u32) -> Option<[u8; 6]> {
     let [byte_0, byte_1, byte_2, byte_3] = low.to_le_bytes();
     let [byte_4, byte_5, _, _] = high.to_le_bytes();
-    let station_address = [byte_0, byte_1, byte_2, byte_3, byte_4, byte_5];
-    if station_address == [0; 6] || station_address == [0xff; 6] || byte_0 & 1 != 0 {
+    let station_mac_address = [byte_0, byte_1, byte_2, byte_3, byte_4, byte_5];
+    if station_mac_address == [0; 6] || station_mac_address == [0xff; 6] || byte_0 & 1 != 0 {
         return None;
     }
-    Some(station_address)
+    Some(station_mac_address)
 }
 
-/// The two address register words for `station_address`: `(high, low)`, OpenBSD's
+/// The two address register words for `station_mac_address`: `(high, low)`, OpenBSD's
 /// `dwqe_lladdr_write`.
-pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
+pub(crate) const fn mac_address_words(station_mac_address: [u8; 6]) -> (u32, u32) {
     (
-        u32::from_le_bytes([station_address[4], station_address[5], 0, 0]),
+        u32::from_le_bytes([station_mac_address[4], station_mac_address[5], 0, 0]),
         u32::from_le_bytes([
-            station_address[0],
-            station_address[1],
-            station_address[2],
-            station_address[3],
+            station_mac_address[0],
+            station_mac_address[1],
+            station_mac_address[2],
+            station_mac_address[3],
         ]),
     )
 }
 
 /// **How the DMA meets the bus**: the `snps,*` properties of a board's node and its
-/// `snps,axi-config`. [`crate::jh7110::BUS_CONFIGURATION`] is radon's.
+/// `snps,axi-config`. [`crate::jh7110::BUS_CONFIGURATION`] is the board's.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -166,18 +166,18 @@ pub struct BusConfiguration {
     /// Multiply both channel burst lengths by eight (the databook's programmable burst length
     /// times 8, `PBLx8`): not `snps,no-pbl-x8`.
     #[doc(alias = "pbl")]
-    pub channel_burst_length_times_8: bool,
+    pub channel_burst_beats_times_8: bool,
     /// The transmit channel's programmable burst length (PBL), in beats: `snps,txpbl`.
     #[doc(alias = "pbl")]
-    pub transmit_channel_burst_length: u32,
+    pub transmit_channel_burst_beats: u32,
     /// The receive channel's programmable burst length (PBL), in beats: `snps,rxpbl`.
     #[doc(alias = "pbl")]
-    pub receive_channel_burst_length: u32,
+    pub receive_channel_burst_beats: u32,
     /// `snps,force_thresh_dma_mode`: threshold mode rather than store and forward.
     pub threshold_mode: bool,
     /// The system bus's permitted burst lengths: the `registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER` `BLEN` bits
     /// `snps,blen` names, a different setting from the channels' burst lengths.
-    pub bus_burst_lengths: u32,
+    pub bus_burst_beats_permitted: u32,
     /// `snps,rd_osr_lmt`.
     pub read_outstanding: u32,
     /// `snps,wr_osr_lmt`.
@@ -197,9 +197,9 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &BusConfiguration, queue_byt
         mode |= registers::RECEIVE_QUEUE_0_OPERATION_MODE_STORE_AND_FORWARD;
     }
     let receive_queue_size = (queue_bytes / 256).saturating_sub(1);
-    mode &= !registers::RECEIVE_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_MASK;
+    mode &= !registers::RECEIVE_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_BLOCKS_MASK;
     mode |= (receive_queue_size << registers::RECEIVE_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_SHIFT)
-        & registers::RECEIVE_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_MASK;
+        & registers::RECEIVE_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_BLOCKS_MASK;
     if queue_bytes >= 4096 {
         // EHFC, then RFD = 3 and RFA = 1: OpenBSD's flow control thresholds.
         mode |= 1 << 7;
@@ -238,9 +238,9 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &BusConfiguration, queue_by
     mode &= !registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_ENABLE_MASK;
     mode |= registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_ENABLED;
     let transmit_queue_size = (queue_bytes / 256).saturating_sub(1);
-    mode &= !registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_MASK;
+    mode &= !registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_BLOCKS_MASK;
     mode |= (transmit_queue_size << registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_SHIFT)
-        & registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_MASK;
+        & registers::TRANSMIT_QUEUE_0_OPERATION_MODE_QUEUE_SIZE_BLOCKS_MASK;
     mode
 }
 
@@ -256,18 +256,18 @@ pub(crate) const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
         == 0
 );
 
-/// Can a controller of `direct_memory_access_address_bits` address a region of `bytes` at
+/// Can a controller of `direct_memory_access_physical_address_bits` address a region of `bytes` at
 /// `physical_address`, with tail pointers that only carry the low 32 bits?
 pub(crate) const fn is_region_in_reach(
     physical_address: u64,
     bytes: u64,
-    direct_memory_access_address_bits: u8,
+    direct_memory_access_physical_address_bits: u8,
 ) -> bool {
     let Some(end) = physical_address.checked_add(bytes) else {
         return false;
     };
     let last = end - 1;
-    last >> direct_memory_access_address_bits == 0 && physical_address >> 32 == last >> 32
+    last >> direct_memory_access_physical_address_bits == 0 && physical_address >> 32 == last >> 32
 }
 
 /// The system bus mode: fixed burst, enhanced addressing past 32 bits, the outstanding request
@@ -277,8 +277,9 @@ fn program_system_bus_mode(hardware: &mut impl Hardware, id: &Identity, bus: &Bu
     if bus.fixed_burst {
         mode |= registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_FIXED_BURST;
     }
-    if id.direct_memory_access_address_bits() > 32 {
-        mode |= registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_ENHANCED_ADDRESS_MODE_ENABLE;
+    if id.direct_memory_access_physical_address_bits() > 32 {
+        mode |=
+            registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_ENHANCED_PHYSICAL_ADDRESS_MODE_ENABLE;
     }
     mode &= !(registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_READ_OUTSTANDING_REQUEST_LIMIT_MASK
         | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_MASK);
@@ -286,7 +287,7 @@ fn program_system_bus_mode(hardware: &mut impl Hardware, id: &Identity, bus: &Bu
         & registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_READ_OUTSTANDING_REQUEST_LIMIT_MASK
         | (bus.write_outstanding << registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_SHIFT)
             & registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_MASK
-        | bus.bus_burst_lengths;
+        | bus.bus_burst_beats_permitted;
     hardware.write(
         registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER,
         mode,
@@ -299,35 +300,34 @@ fn program_channel_bursts(hardware: &mut impl Hardware, bus: &BusConfiguration) 
     let control = hardware.read(registers::CHANNEL_CONTROL_REGISTER);
     hardware.write(
         registers::CHANNEL_CONTROL_REGISTER,
-        if bus.channel_burst_length_times_8 {
-            control | registers::CHANNEL_CONTROL_EIGHT_TIMES_PROGRAMMABLE_BURST_LENGTH
+        if bus.channel_burst_beats_times_8 {
+            control | registers::CHANNEL_CONTROL_EIGHT_TIMES_PROGRAMMABLE_BURST_BEATS
         } else {
-            control & !registers::CHANNEL_CONTROL_EIGHT_TIMES_PROGRAMMABLE_BURST_LENGTH
+            control & !registers::CHANNEL_CONTROL_EIGHT_TIMES_PROGRAMMABLE_BURST_BEATS
         },
     );
     let transmit = hardware.read(registers::CHANNEL_TRANSMIT_CONTROL_REGISTER)
-        & !registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK;
+        & !registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_BEATS_MASK;
     hardware.write(
         registers::CHANNEL_TRANSMIT_CONTROL_REGISTER,
         transmit
-            | (bus.transmit_channel_burst_length
-                << registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_LENGTH_SHIFT)
-                & registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK
+            | (bus.transmit_channel_burst_beats
+                << registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_BEATS_SHIFT)
+                & registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_BEATS_MASK
             | registers::CHANNEL_TRANSMIT_CONTROL_OPERATE_ON_SECOND_PACKET,
     );
     // The buffer size is written, not inherited (OpenBSD inherits it): a size left by firmware is
     // a fact about whoever ran last, and the device writes a frame up to it.
-    let receive_buffer_size = registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_MASK
+    let receive_buffer_size = registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_BYTES_MASK
         << registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_SHIFT;
     let receive = hardware.read(registers::CHANNEL_RECEIVE_CONTROL_REGISTER)
-        & !(registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK
-            | receive_buffer_size);
+        & !(registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_BEATS_MASK | receive_buffer_size);
     hardware.write(
         registers::CHANNEL_RECEIVE_CONTROL_REGISTER,
         receive
-            | (bus.receive_channel_burst_length
-                << registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_LENGTH_SHIFT)
-                & registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK
+            | (bus.receive_channel_burst_beats
+                << registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_BEATS_SHIFT)
+                & registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_BEATS_MASK
             | (BUFFER_BYTES as u32) << registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_SHIFT,
     );
 }
@@ -345,7 +345,7 @@ fn program_descriptor_rings(hardware: &mut impl Hardware, region: u64) {
         transmit_ring as u32,
     );
     hardware.write(
-        registers::CHANNEL_TRANSMIT_DESCRIPTOR_RING_LENGTH_REGISTER,
+        registers::CHANNEL_TRANSMIT_DESCRIPTOR_RING_LENGTH_IN_DESCRIPTORS_REGISTER,
         u32::from(TRANSMIT_ENTRIES) - 1,
     );
     hardware.write(
@@ -361,7 +361,7 @@ fn program_descriptor_rings(hardware: &mut impl Hardware, region: u64) {
         receive_ring as u32,
     );
     hardware.write(
-        registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_REGISTER,
+        registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_IN_DESCRIPTORS_REGISTER,
         u32::from(RECEIVE_ENTRIES) - 1,
     );
     hardware.write(
@@ -375,10 +375,10 @@ fn program_descriptor_rings(hardware: &mut impl Hardware, region: u64) {
 /// nothing is available until the data plane posts), both queues' modes, flow control, the
 /// receive queue enable, the station address and filter, and every interrupt masked.
 ///
-/// The FIFO sizes are the controller's own ([`Identity`]), not the tree's: radon's vendor tree
+/// The queue memory sizes are the controller's own ([`Identity`]), not the tree's: the board's vendor tree
 /// says `rx-fifo-depth = <262144>` and mainline says `<2048>` for the same silicon, and a queue
 /// size computed from the first would overflow the field into the next. The hardware's statement
-/// is the one fact about the FIFO both trees are describing.
+/// is the one fact about the queue memory both trees are describing.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn configure(
@@ -386,15 +386,16 @@ pub fn configure(
     id: &Identity,
     bus: &BusConfiguration,
     region_physical_address: u64,
-    station_address: [u8; 6],
+    station_mac_address: [u8; 6],
 ) -> Result<(), Error> {
     if !is_region_in_reach(
         region_physical_address,
         layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
-        id.direct_memory_access_address_bits(),
+        id.direct_memory_access_physical_address_bits(),
     ) {
         return Err(Error::RegionOutOfReach {
-            direct_memory_access_address_bits: id.direct_memory_access_address_bits(),
+            direct_memory_access_physical_address_bits: id
+                .direct_memory_access_physical_address_bits(),
         });
     }
 
@@ -437,11 +438,11 @@ pub fn configure(
         registers::RECEIVE_QUEUE_CONTROL_0_DATA_CENTER_BRIDGING_QUEUE_ENABLE,
     );
 
-    let (high, low) = address_words(station_address);
+    let (high, low) = mac_address_words(station_mac_address);
     hardware.write(registers::MAC_ADDRESS_0_HIGH_REGISTER, high);
     hardware.write(registers::MAC_ADDRESS_0_LOW_REGISTER, low);
     // Own unicast address and broadcast; no multicast, no promiscuous receive.
-    hardware.write(registers::MAC_PACKET_FILTER, 0);
+    hardware.write(registers::MAC_PACKET_FILTER_REGISTER, 0);
 
     hardware.write(registers::MAC_INTERRUPT_ENABLE_REGISTER, 0);
     hardware.write(registers::CHANNEL_INTERRUPT_ENABLE_REGISTER, 0);
@@ -458,7 +459,7 @@ pub fn configure(
 }
 
 /// The register fields configure composes share no bit: the outstanding-limit masks against each
-/// other and against the burst-length bits (which is what `bus_burst_lengths` carries), the
+/// other and against the burst-length bits (which is what `bus_burst_beats_permitted` carries), the
 /// transmit and receive burst-length fields against the bits set beside them, the receive buffer
 /// size against the receive burst-length field, and the pause time against the flow-control
 /// enable; the compiler checks it here, and the mutation exclusion for `configure` and the triage
@@ -473,22 +474,22 @@ pub(crate) const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
         & registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_MASK
         == 0
         && registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_READ_OUTSTANDING_REQUEST_LIMIT_MASK
-            & (registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
-                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
-                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
-                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED)
+            & (registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_256_BEATS_PERMITTED
+                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_128_BEATS_PERMITTED
+                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_64_BEATS_PERMITTED
+                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_32_BEATS_PERMITTED)
             == 0
         && registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_MASK
-            & (registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
-                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
-                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
-                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED)
+            & (registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_256_BEATS_PERMITTED
+                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_128_BEATS_PERMITTED
+                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_64_BEATS_PERMITTED
+                | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_32_BEATS_PERMITTED)
             == 0
-        && registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK
+        && registers::CHANNEL_TRANSMIT_CONTROL_PROGRAMMABLE_BURST_BEATS_MASK
             & registers::CHANNEL_TRANSMIT_CONTROL_OPERATE_ON_SECOND_PACKET
             == 0
-        && registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK
-            & (registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_MASK
+        && registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_BEATS_MASK
+            & (registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_BYTES_MASK
                 << registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_SHIFT)
             == 0
         && (0xffff << registers::TRANSMIT_FLOW_CONTROL_QUEUE_0_PAUSE_TIME_SHIFT)
@@ -503,7 +504,7 @@ pub(crate) const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
 ///
 /// OpenBSD also sets `JE` (jumbo frames). This does not: a jumbo frame cannot fit a 2048-byte
 /// buffer, would span descriptors, and would be dropped by [`crate::receive_verdict`] anyway, so
-/// accepting it into the FIFO only spends ring slots on frames that are thrown away.
+/// accepting it into the queue memory only spends ring slots on frames that are thrown away.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 {
@@ -641,7 +642,7 @@ mod tests {
     use crate::simulator::{Memory, NetworkInterfaceController};
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
-    const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
+    const STATION_MAC_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
 
     #[test]
     fn a_reset_that_completes_reports_how_long_it_took() {
@@ -671,30 +672,30 @@ mod tests {
     }
 
     #[test]
-    fn the_station_address_round_trips_through_its_registers() {
-        let (high, low) = address_words(STATION_ADDRESS);
+    fn the_station_mac_address_round_trips_through_its_registers() {
+        let (high, low) = mac_address_words(STATION_MAC_ADDRESS);
         assert_eq!(high, 0x2c47);
         assert_eq!(low, 0x0039_cf6c);
-        assert_eq!(station_address(high, low), Some(STATION_ADDRESS));
-        assert_eq!(station_address(0xffff_ffff, 0xffff_ffff), None);
-        assert_eq!(station_address(0, 0), None);
-        assert_eq!(station_address(0, 1), None, "multicast");
+        assert_eq!(station_mac_address(high, low), Some(STATION_MAC_ADDRESS));
+        assert_eq!(station_mac_address(0xffff_ffff, 0xffff_ffff), None);
+        assert_eq!(station_mac_address(0, 0), None);
+        assert_eq!(station_mac_address(0, 1), None, "multicast");
     }
 
     #[test]
-    fn identity_decodes_the_address_width_and_queue_sizes() {
+    fn identity_decodes_the_physical_address_width_and_queue_sizes() {
         let id = Identity {
             version: 0x1052,
             features: [0, 1 << 14 | 4 << 6 | 4, 0, 0],
         };
         assert_eq!(id.core_version(), 0x52);
-        assert_eq!(id.direct_memory_access_address_bits(), 40);
+        assert_eq!(id.direct_memory_access_physical_address_bits(), 40);
         assert_eq!(id.transmit_queue_bytes(), 2048);
         assert_eq!(id.receive_queue_bytes(), 2048);
     }
 
     #[test]
-    fn a_region_past_the_address_width_or_across_4_gibibytes_is_refused() {
+    fn a_region_past_the_physical_address_width_or_across_4_gibibytes_is_refused() {
         let bytes = layout::DIRECT_MEMORY_ACCESS_REGION_BYTES;
         assert!(is_region_in_reach(0x4000_0000, bytes, 32));
         assert!(!is_region_in_reach(0x1_0000_0000, bytes, 32));
@@ -716,7 +717,7 @@ mod tests {
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
-            STATION_ADDRESS,
+            STATION_MAC_ADDRESS,
         )
         .unwrap();
         assert_eq!(
@@ -746,13 +747,14 @@ mod tests {
             )
         );
         assert_eq!(
-            network_interface_controller
-                .register(registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_REGISTER),
+            network_interface_controller.register(
+                registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_IN_DESCRIPTORS_REGISTER
+            ),
             15
         );
         assert_eq!(
             network_interface_controller.register(registers::CHANNEL_RECEIVE_CONTROL_REGISTER) >> 1
-                & registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_MASK,
+                & registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_BYTES_MASK,
             2048
         );
         assert_eq!(
@@ -768,13 +770,13 @@ mod tests {
             registers::RECEIVE_QUEUE_CONTROL_0_DATA_CENTER_BRIDGING_QUEUE_ENABLE
         );
         assert_eq!(
-            station_address(
+            station_mac_address(
                 network_interface_controller.register(registers::MAC_ADDRESS_0_HIGH_REGISTER),
                 network_interface_controller.register(registers::MAC_ADDRESS_0_LOW_REGISTER)
             ),
-            Some(STATION_ADDRESS)
+            Some(STATION_MAC_ADDRESS)
         );
-        // radon's bus: fixed burst, no PBLx8, 16-beat bursts, threshold mode.
+        // the board's bus: fixed burst, no PBLx8, 16-beat bursts, threshold mode.
         assert_ne!(
             network_interface_controller
                 .register(registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER)
@@ -783,7 +785,7 @@ mod tests {
         );
         assert_eq!(
             network_interface_controller.register(registers::CHANNEL_CONTROL_REGISTER)
-                & registers::CHANNEL_CONTROL_EIGHT_TIMES_PROGRAMMABLE_BURST_LENGTH,
+                & registers::CHANNEL_CONTROL_EIGHT_TIMES_PROGRAMMABLE_BURST_BEATS,
             0
         );
         assert_eq!(
@@ -873,7 +875,7 @@ mod tests {
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
-            STATION_ADDRESS,
+            STATION_MAC_ADDRESS,
         )
         .unwrap();
         start(
@@ -936,23 +938,23 @@ mod tests {
         fn delay_microseconds(&mut self, _microseconds: u64) {}
     }
 
-    /// 40-bit addressing and 2 KiB FIFOs, the simulated controller's identity.
+    /// 40-bit addressing and 2 KiB queue memories, the simulated controller's identity.
     const FORTY_BIT: Identity = Identity {
         version: 0x1052,
         features: [0, 1 << 14 | 4 << 6 | 4, 0, 0],
     };
 
-    /// A bus unlike radon's in every field, with values wider than their fields, so each field's
-    /// mask and shift is seen: `PBLx8` on, store and forward, one burst length, and 4 KiB FIFOs
+    /// A bus unlike the board's in every field, with values wider than their fields, so each field's
+    /// mask and shift is seen: `PBLx8` on, store and forward, one burst length, and 4 KiB queue memories
     /// (big enough for flow control) at 32 bits.
     const ODD: BusConfiguration = BusConfiguration {
         fixed_burst: false,
-        channel_burst_length_times_8: true,
-        transmit_channel_burst_length: 0x48,
-        receive_channel_burst_length: 0x41,
+        channel_burst_beats_times_8: true,
+        transmit_channel_burst_beats: 0x48,
+        receive_channel_burst_beats: 0x41,
         threshold_mode: false,
-        bus_burst_lengths:
-            registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED,
+        bus_burst_beats_permitted:
+            registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_32_BEATS_PERMITTED,
         read_outstanding: 0x13,
         write_outstanding: 0x25,
     };
@@ -963,11 +965,11 @@ mod tests {
 
     fn configured(fill: u32, id: &Identity, bus: &BusConfiguration, region: u64) -> Seeded {
         let mut hardware = Seeded::new(fill);
-        configure(&mut hardware, id, bus, region, STATION_ADDRESS).unwrap();
+        configure(&mut hardware, id, bus, region, STATION_MAC_ADDRESS).unwrap();
         hardware
     }
 
-    /// **Every word `configure` writes, from both starting states, for radon's bus above 4 GiB.**
+    /// **Every word `configure` writes, from both starting states, for the board's bus above 4 GiB.**
     /// The values are worked from the header's fields by hand: the bus mode is fixed burst,
     /// enhanced addressing, both outstanding limits 15 and the four burst lengths; channel 0
     /// carries 16-beat bursts, operate-on-second-frame, and a 2048-byte buffer in bits 14:1;
@@ -1051,9 +1053,9 @@ mod tests {
         }
     }
 
-    /// The same for a bus unlike radon's at 32 bits: no enhanced addressing, each field masked to
+    /// The same for a bus unlike the board's at 32 bits: no enhanced addressing, each field masked to
     /// its width (`0x13` is 3, `0x48` is 8), `PBLx8` set, store and forward, and the flow control
-    /// thresholds a 4 KiB receive FIFO gets.
+    /// thresholds a 4 KiB receive queue memory gets.
     #[test]
     fn configure_masks_each_bus_field_to_its_width() {
         let zero = configured(0, &THIRTY_TWO_BIT, &ODD, PHYSICAL_ADDRESS);
@@ -1103,10 +1105,10 @@ mod tests {
         }
     }
 
-    /// Both queue modes in both modes from both starting states, at a FIFO big enough for flow
+    /// Both queue modes in both modes from both starting states, at a queue memory big enough for flow
     /// control: threshold mode clears store-and-forward and sets the threshold, store-and-forward
     /// sets its bit, the size is `bytes / 256 - 1`, and receive flow control is enabled with
-    /// RFD 3 and RFA 1 in place of whatever was there.
+    /// `RFD` 3 and `RFA` 1 in place of whatever was there.
     #[test]
     fn the_queue_modes_from_zero_and_from_all_ones() {
         let store_and_forward = BusConfiguration {
@@ -1220,16 +1222,16 @@ mod tests {
         );
     }
 
-    /// The address width's every encoding, and a FIFO field past the largest the databook names
+    /// The address width's every encoding, and a queue memory field past the largest the databook names
     /// saturating at 256 KiB rather than shifting bits off the word.
     #[test]
-    fn every_address_width_encoding_and_a_saturating_queue() {
+    fn every_physical_address_width_encoding_and_a_saturating_queue() {
         let width = |bits: u32| {
             Identity {
                 version: 0,
                 features: [0, bits << 14, 0, 0],
             }
-            .direct_memory_access_address_bits()
+            .direct_memory_access_physical_address_bits()
         };
         assert_eq!([0, 1, 2, 3].map(width), [32, 40, 48, 32]);
         let queue_bytes = |field: u32| {
