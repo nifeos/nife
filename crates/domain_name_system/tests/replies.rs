@@ -3,18 +3,18 @@
 //! The three `REAL_*` fixtures (`tests/fixtures/*.dns`, one raw reply each, which the crate's fuzz target also
 //! takes as seeds) were captured on 2026-10-04 (UTC) from
 //! 1.1.1.1 with a short Python script sending exactly the query `Query::request` writes (`tests/fixtures/README.md` has it and the id each carries), so they carry what a recursive
-//! server really does: compression pointers into the question, a CNAME pointing into its own owner,
+//! server really does: compression pointers into the question, a canonical name pointing into its own owner,
 //! TTLs that differ along a chain. The rest are built by hand below, one per check, because nobody
 //! captures a forgery.
 
 use domain_name_system::{
     CLASS_IN, Error, FLAG_TRUNCATED, Header, MAXIMUM_CHAIN, MAXIMUM_IPV4_ADDRESSES, Name, Query,
-    Reader, Reject, TcpReply, cname_target, decode_name, record_type,
+    Reader, Reject, TcpReply, canonical_name_target, decode_name, record_type,
 };
 
 /// `example.com` A, id 0x1111: two A records, owners compressed to the question.
 const REAL_EXAMPLE: &[u8] = include_bytes!("fixtures/example.com.dns");
-/// `www.github.com` A, id 0x2222: a CNAME to `github.com` (a pointer into the question's own name)
+/// `www.github.com` A, id 0x2222: a canonical name to `github.com` (a pointer into the question's own name)
 /// with TTL 1952, then github.com's A with TTL 33.
 const REAL_GITHUB: &[u8] = include_bytes!("fixtures/www.github.com.dns");
 /// `nosuch.invalid` A, id 0x3333: NXDOMAIN, no records.
@@ -28,7 +28,7 @@ fn a_real_reply_with_two_addresses_gives_both_in_order() {
         answer.ipv4_addresses(),
         &[[104, 20, 23, 154], [172, 66, 147, 243]]
     );
-    assert_eq!(answer.ttl(), 0x31);
+    assert_eq!(answer.ttl_seconds(), 0x31);
     assert_eq!(
         answer.canonical(),
         &Name::from_dotted("example.com").unwrap()
@@ -36,7 +36,7 @@ fn a_real_reply_with_two_addresses_gives_both_in_order() {
 }
 
 #[test]
-fn a_real_cname_is_followed_and_the_shortest_ttl_wins() {
+fn a_real_canonical_name_is_followed_and_the_shortest_time_to_live_wins() {
     let query = Query::new(0x2222, "www.github.com").unwrap();
     let answer = query.accept(REAL_GITHUB).unwrap();
     assert_eq!(answer.ipv4_addresses(), &[[140, 82, 116, 3]]);
@@ -44,7 +44,11 @@ fn a_real_cname_is_followed_and_the_shortest_ttl_wins() {
         answer.canonical(),
         &Name::from_dotted("github.com").unwrap()
     );
-    assert_eq!(answer.ttl(), 33, "the A's 33 seconds, not the CNAME's 1952");
+    assert_eq!(
+        answer.ttl_seconds(),
+        33,
+        "the A's 33 seconds, not the canonical name's 1952"
+    );
 }
 
 #[test]
@@ -95,7 +99,7 @@ impl Reply {
         .write(&mut bytes)
         .unwrap();
         bytes.extend(wire(name));
-        bytes.extend(record_type::A.to_be_bytes());
+        bytes.extend(record_type::IPV4_ADDRESS.to_be_bytes());
         bytes.extend(CLASS_IN.to_be_bytes());
         Reply { bytes }
     }
@@ -116,26 +120,32 @@ impl Reply {
         owner: &[u8],
         record_type: u16,
         class: u16,
-        ttl: u32,
+        ttl_seconds: u32,
         data: &[u8],
     ) -> Reply {
         self.bytes.extend(owner);
         self.bytes.extend(record_type.to_be_bytes());
         self.bytes.extend(class.to_be_bytes());
-        self.bytes.extend(ttl.to_be_bytes());
+        self.bytes.extend(ttl_seconds.to_be_bytes());
         self.bytes.extend((data.len() as u16).to_be_bytes());
         self.bytes.extend(data);
         self.set_header(|h| h.answer_count += 1)
     }
 
     fn a(self, owner: &str, address: [u8; 4]) -> Reply {
-        self.record(&wire(owner), record_type::A, CLASS_IN, 60, &address)
-    }
-
-    fn cname(self, owner: &str, target: &str) -> Reply {
         self.record(
             &wire(owner),
-            record_type::CNAME,
+            record_type::IPV4_ADDRESS,
+            CLASS_IN,
+            60,
+            &address,
+        )
+    }
+
+    fn canonical_name(self, owner: &str, target: &str) -> Reply {
+        self.record(
+            &wire(owner),
+            record_type::CANONICAL_NAME,
             CLASS_IN,
             60,
             &wire(target),
@@ -250,13 +260,13 @@ fn an_empty_answer_section_is_no_address() {
 
 #[test]
 fn a_chain_is_followed_in_any_order_and_only_from_our_name() {
-    // Records out of order, as some servers send them, and a stray CNAME for a name not on the chain.
+    // Records out of order, as some servers send them, and a stray canonical name for a name not on the chain.
     let r = Reply::to(OURS)
         .a("origin.zone.test", [10, 0, 2, 9])
-        .cname("cdn.zone.test", "origin.zone.test")
-        .cname("elsewhere.test", "bank.test")
+        .canonical_name("cdn.zone.test", "origin.zone.test")
+        .canonical_name("elsewhere.test", "bank.test")
         .a("bank.test", [6, 6, 6, 6])
-        .cname(OURS, "cdn.zone.test");
+        .canonical_name(OURS, "cdn.zone.test");
     let answer = Query::new(OUR_ID, OURS).unwrap().accept(&r.bytes).unwrap();
     assert_eq!(answer.ipv4_addresses(), &[[10, 0, 2, 9]]);
     assert_eq!(
@@ -266,20 +276,20 @@ fn a_chain_is_followed_in_any_order_and_only_from_our_name() {
 }
 
 #[test]
-fn an_address_for_our_name_beside_its_cname_is_not_taken() {
-    // A name with a CNAME has no other data (RFC 1034 section 3.6.2), so the chain's end is what counts.
+fn an_address_for_our_name_beside_its_canonical_name_is_not_taken() {
+    // A name with a canonical name has no other data (RFC 1034 section 3.6.2), so the chain's end is what counts.
     let r = Reply::to(OURS)
         .a(OURS, [6, 6, 6, 6])
-        .cname(OURS, "origin.zone.test")
+        .canonical_name(OURS, "origin.zone.test")
         .a("origin.zone.test", [10, 0, 2, 9]);
     assert_eq!(r.judged(), Ok(vec![[10, 0, 2, 9]]));
 }
 
 #[test]
-fn a_cname_loop_stops_at_the_chain_limit() {
+fn a_canonical_name_loop_stops_at_the_chain_limit() {
     let r = Reply::to(OURS)
-        .cname(OURS, "b.zone.test")
-        .cname("b.zone.test", OURS);
+        .canonical_name(OURS, "b.zone.test")
+        .canonical_name("b.zone.test", OURS);
     assert_eq!(r.judged(), Err(Reject::ChainTooLong));
 }
 
@@ -297,7 +307,7 @@ fn the_chain_limit_is_exactly_maximum_chain_links() {
     let chain = |links: usize| {
         let mut r = Reply::to(OURS);
         for i in 0..links {
-            r = r.cname(&names[i], &names[i + 1]);
+            r = r.canonical_name(&names[i], &names[i + 1]);
         }
         r.a(&names[links], [10, 0, 2, 9])
     };
@@ -308,8 +318,14 @@ fn the_chain_limit_is_exactly_maximum_chain_links() {
 #[test]
 fn records_in_another_class_are_ignored() {
     let r = Reply::to(OURS)
-        .record(&wire(OURS), record_type::A, 3, 60, &[6, 6, 6, 6])
-        .record(&wire(OURS), record_type::CNAME, 3, 60, &wire("bank.test"))
+        .record(&wire(OURS), record_type::IPV4_ADDRESS, 3, 60, &[6, 6, 6, 6])
+        .record(
+            &wire(OURS),
+            record_type::CANONICAL_NAME,
+            3,
+            60,
+            &wire("bank.test"),
+        )
         .a(OURS, [10, 0, 2, 9]);
     assert_eq!(r.judged(), Ok(vec![[10, 0, 2, 9]]));
 }
@@ -340,28 +356,34 @@ fn addresses_past_the_limit_are_dropped_and_the_rest_kept() {
 /// for the shortest of its records' lifetimes, so one such record on the chain or among the
 /// addresses makes the whole answer good for no time at all, rather than for about 136 years.
 #[test]
-fn a_ttl_with_the_high_bit_set_is_zero() {
+fn a_time_to_live_with_the_high_bit_set_is_zero() {
     for high in [0x8000_0000u32, 0xffff_ffff] {
         let address_only = Reply::to(OURS)
-            .record(&wire(OURS), record_type::A, CLASS_IN, high, &[10, 0, 2, 9])
+            .record(
+                &wire(OURS),
+                record_type::IPV4_ADDRESS,
+                CLASS_IN,
+                high,
+                &[10, 0, 2, 9],
+            )
             .bytes;
         let answer = Query::new(OUR_ID, OURS)
             .unwrap()
             .accept(&address_only)
             .unwrap();
-        assert_eq!(answer.ttl(), 0, "{high:#x} on the address");
+        assert_eq!(answer.ttl_seconds(), 0, "{high:#x} on the address");
 
         let on_the_chain = Reply::to(OURS)
             .record(
                 &wire(OURS),
-                record_type::CNAME,
+                record_type::CANONICAL_NAME,
                 CLASS_IN,
                 high,
                 &wire("o.zone.test"),
             )
             .record(
                 &wire("o.zone.test"),
-                record_type::A,
+                record_type::IPV4_ADDRESS,
                 CLASS_IN,
                 300,
                 &[10, 0, 2, 9],
@@ -371,60 +393,60 @@ fn a_ttl_with_the_high_bit_set_is_zero() {
             .unwrap()
             .accept(&on_the_chain)
             .unwrap();
-        assert_eq!(answer.ttl(), 0, "{high:#x} on the CNAME");
+        assert_eq!(answer.ttl_seconds(), 0, "{high:#x} on the canonical name");
     }
 
     // The control: the largest TTL with the bit clear is believed as written.
     let largest = Reply::to(OURS)
         .record(
             &wire(OURS),
-            record_type::A,
+            record_type::IPV4_ADDRESS,
             CLASS_IN,
             0x7fff_ffff,
             &[10, 0, 2, 9],
         )
         .bytes;
     let answer = Query::new(OUR_ID, OURS).unwrap().accept(&largest).unwrap();
-    assert_eq!(answer.ttl(), 0x7fff_ffff);
+    assert_eq!(answer.ttl_seconds(), 0x7fff_ffff);
 }
 
 #[test]
-fn the_ttl_is_the_smallest_on_the_chain_and_among_the_addresses() {
+fn the_time_to_live_is_the_smallest_on_the_chain_and_among_the_addresses() {
     let r = Reply::to(OURS)
         .record(
             &wire(OURS),
-            record_type::CNAME,
+            record_type::CANONICAL_NAME,
             CLASS_IN,
             500,
             &wire("o.zone.test"),
         )
         .record(
             &wire("o.zone.test"),
-            record_type::A,
+            record_type::IPV4_ADDRESS,
             CLASS_IN,
             90,
             &[10, 0, 2, 9],
         )
         .record(
             &wire("o.zone.test"),
-            record_type::A,
+            record_type::IPV4_ADDRESS,
             CLASS_IN,
             70,
             &[10, 0, 2, 8],
         );
     let answer = Query::new(OUR_ID, OURS).unwrap().accept(&r.bytes).unwrap();
-    assert_eq!(answer.ttl(), 70);
+    assert_eq!(answer.ttl_seconds(), 70);
     let short_chain = Reply::to(OURS)
         .record(
             &wire(OURS),
-            record_type::CNAME,
+            record_type::CANONICAL_NAME,
             CLASS_IN,
             5,
             &wire("o.zone.test"),
         )
         .record(
             &wire("o.zone.test"),
-            record_type::A,
+            record_type::IPV4_ADDRESS,
             CLASS_IN,
             90,
             &[10, 0, 2, 9],
@@ -433,14 +455,14 @@ fn the_ttl_is_the_smallest_on_the_chain_and_among_the_addresses() {
         .unwrap()
         .accept(&short_chain.bytes)
         .unwrap();
-    assert_eq!(answer.ttl(), 5);
+    assert_eq!(answer.ttl_seconds(), 5);
 }
 
 #[test]
 fn one_malformed_answer_refuses_the_whole_reply() {
     let long_a = Reply::to(OURS).a(OURS, [10, 0, 2, 9]).record(
         &wire(OURS),
-        record_type::A,
+        record_type::IPV4_ADDRESS,
         CLASS_IN,
         60,
         &[1, 2, 3, 4, 5],
@@ -450,12 +472,12 @@ fn one_malformed_answer_refuses_the_whole_reply() {
         Err(Reject::Malformed(Error::BadRecordData))
     );
 
-    // A CNAME whose name runs past its own record's data.
+    // A canonical name whose name runs past its own record's data.
     let mut spill = wire("o.zone.test");
     spill.truncate(3);
     let spilling = Reply::to(OURS).a(OURS, [10, 0, 2, 9]).record(
         &wire("x.test"),
-        record_type::CNAME,
+        record_type::CANONICAL_NAME,
         CLASS_IN,
         60,
         &spill,
@@ -474,7 +496,13 @@ fn a_pointer_loop_in_an_answer_is_malformed_not_a_hang() {
     // The owner is a pointer to itself.
     let at = Reply::to(OURS).bytes.len() as u16;
     let ptr = (0xc000 | at).to_be_bytes();
-    let r = Reply::to(OURS).record(&ptr, record_type::A, CLASS_IN, 60, &[10, 0, 2, 9]);
+    let r = Reply::to(OURS).record(
+        &ptr,
+        record_type::IPV4_ADDRESS,
+        CLASS_IN,
+        60,
+        &[10, 0, 2, 9],
+    );
     assert_eq!(r.judged(), Err(Reject::Malformed(Error::PointerForward)));
 }
 
@@ -586,15 +614,15 @@ fn a_name_longer_than_255_by_pointers_is_refused() {
 }
 
 #[test]
-fn a_cname_target_reads_through_the_message() {
+fn a_canonical_name_target_reads_through_the_message() {
     let reply = REAL_GITHUB;
     let mut reader = Reader::new(reply).unwrap();
     reader.question().unwrap();
     let record = reader.record().unwrap();
-    assert_eq!(record.record_type, record_type::CNAME);
-    assert_eq!(record.ttl, 1952);
+    assert_eq!(record.record_type, record_type::CANONICAL_NAME);
+    assert_eq!(record.ttl_seconds, 1952);
     assert_eq!(
-        cname_target(reply, &record).unwrap(),
+        canonical_name_target(reply, &record).unwrap(),
         Name::from_dotted("github.com").unwrap()
     );
 }
@@ -687,11 +715,11 @@ fn an_oversized_tcp_reply_is_refused_when_its_body_comes_with_its_length() {
 /// A record's TTL is two 16-bit halves on the wire, high half first; one past 65,535 seconds
 /// needs both.
 #[test]
-fn a_ttl_wider_than_sixteen_bits_reads_whole() {
+fn a_time_to_live_wider_than_sixteen_bits_reads_whole() {
     let bytes = Reply::to("zone.test")
         .record(
             &wire("zone.test"),
-            record_type::A,
+            record_type::IPV4_ADDRESS,
             CLASS_IN,
             0x0001_0002,
             &[10, 0, 0, 1],
@@ -699,7 +727,7 @@ fn a_ttl_wider_than_sixteen_bits_reads_whole() {
         .bytes;
     let mut reader = Reader::new(&bytes).unwrap();
     reader.question().unwrap();
-    assert_eq!(reader.record().unwrap().ttl, 0x0001_0002);
+    assert_eq!(reader.record().unwrap().ttl_seconds, 0x0001_0002);
 }
 
 /// A compression pointer is fourteen bits, so a target past offset 255 uses the high six.

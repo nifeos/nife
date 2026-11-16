@@ -88,7 +88,7 @@ domain_name_resolution_contract register_names 4
 domain_name_system abbreviations 30
 domain_name_system prose_acronyms 16
 domain_name_system readme_acronyms 8
-domain_name_system register_names 5
+domain_name_system register_names 6
 driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8

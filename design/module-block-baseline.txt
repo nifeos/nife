@@ -1898,13 +1898,11 @@ crates/domain_name_resolution_contract/src/wire.rs::request
 
 crates/domain_name_resolution_contract/src/wire.rs::word
 
-crates/domain_name_system/src/lib.rs::A
 
 crates/domain_name_system/src/lib.rs::Answer
 
 crates/domain_name_system/src/lib.rs::CLASS_IN
 
-crates/domain_name_system/src/lib.rs::CNAME
 
 crates/domain_name_system/src/lib.rs::Error
 
@@ -1916,7 +1914,6 @@ crates/domain_name_system/src/lib.rs::Header
 
 crates/domain_name_system/src/lib.rs::Name
 
-crates/domain_name_system/src/lib.rs::OPCODE_MASK
 
 crates/domain_name_system/src/lib.rs::PORT
 
@@ -1943,7 +1940,6 @@ crates/domain_name_system/src/lib.rs::as_bytes
 
 crates/domain_name_system/src/lib.rs::canonical
 
-crates/domain_name_system/src/lib.rs::cname_target
 
 crates/domain_name_system/src/lib.rs::decode_name
 
@@ -1980,7 +1976,6 @@ crates/domain_name_system/src/lib.rs::request_tcp
 
 crates/domain_name_system/src/lib.rs::root
 
-crates/domain_name_system/src/lib.rs::ttl
 
 crates/domain_name_system/src/lib.rs::write
 
