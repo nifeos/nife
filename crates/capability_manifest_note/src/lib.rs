@@ -2,7 +2,7 @@
 //! `PT_NOTE`, so it is in the bytes the progenitor hashes (§197 (a package is one archive file),
 //! calef's option M2, 2026-09-26 UTC). The wire format between [`carry!`] and the shell and
 //! progenitor that read it (AGENTS.md rule 7); `crates/static_elf` finds the note, and this crate starts
-//! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_LEN`] bytes) or
+//! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_BYTES`] bytes) or
 //! [`ZONED_VERSION`] 2. One manifest has exactly one encoding: [`decode`] refuses anything
 //! [`encode`] would not write. The layouts are below; notes/capability-manifest-note.md has the
 //! reasons.
@@ -59,7 +59,7 @@
 //! |---|---|---|---|
 //! | 56 | 1 | zone count | 1 to [`MAXIMUM_ZONES`] |
 //! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most
-//! [`ZONE_MAXIMUM`]; 0 is the root zone |
+//! [`MAXIMUM_ZONE_BYTES`]; 0 is the root zone |
 //!
 //! The descriptor ends with the last zone, so `descsz` need not be a multiple of four; [`ZonedNote`]
 //! pads after it. **One request is still one encoding**: a manifest that asks for no zone is
@@ -137,7 +137,9 @@ pub const NOTE_SET_VERSION: u32 = 1;
 pub const INTERFACE_ID: u64 = 7;
 
 /// How long a version 1 descriptor is, exactly; the module documentation has the layout.
-pub const DESCRIPTOR_LEN: usize = 56;
+///
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const DESCRIPTOR_BYTES: usize = 56;
 
 /// The descriptor version that carries resolver zones after version 1's fields (the module's
 /// version 2 table). Provisional name; the number and layout are
@@ -166,18 +168,20 @@ pub const MAXIMUM_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM
 /// The longest zone, in bytes of dotted text: 253, a host name's limit and the resolver's
 /// `domain_name_resolution_contract::NAME_TEXT_MAXIMUM`.
 ///
-/// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const ZONE_MAXIMUM: usize = domain_name_resolution_contract::NAME_TEXT_MAXIMUM;
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const MAXIMUM_ZONE_BYTES: usize = domain_name_resolution_contract::NAME_TEXT_MAXIMUM;
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
-const NAME_FIELD: usize = 8;
+const NAME_FIELD_BYTES: usize = 8;
 
 /// The note's three header words.
-const HEADER_LEN: usize = 12;
+const HEADER_BYTES: usize = 12;
 
 /// How long a whole manifest note is: header, owner, descriptor. Every field is already a multiple
 /// of four, so there is no trailing pad.
-pub const NOTE_LEN: usize = HEADER_LEN + NAME_FIELD + DESCRIPTOR_LEN;
+///
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const NOTE_BYTES: usize = HEADER_BYTES + NAME_FIELD_BYTES + DESCRIPTOR_BYTES;
 
 /// Why a descriptor was refused. Provisional names.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
@@ -187,7 +191,7 @@ pub enum Error {
     /// A version this reader does not know. A later layout is refused rather than guessed at.
     UnknownVersion,
     /// A descriptor cut short, or with bytes after its last field: version 1 is exactly
-    /// [`DESCRIPTOR_LEN`] bytes, and the later versions add their zone and service bytes.
+    /// [`DESCRIPTOR_BYTES`] bytes, and the later versions add their zone and service bytes.
     WrongLength,
     /// A field holds a value outside its range, or a byte the layout says is zero is not. The
     /// offset is the first such byte.
@@ -234,7 +238,7 @@ const MACHINE: usize = FLAG_LETTERS + MAXIMUM_DECLARED_SHORT_OPTIONS;
 const SHARE: usize = MACHINE + 1;
 const TAIL: usize = SHARE + 1;
 
-const _: () = assert!(TAIL + 1 == DESCRIPTOR_LEN);
+const _: () = assert!(TAIL + 1 == DESCRIPTOR_BYTES);
 
 /// Four bytes at `at`, in order. `const` because a note is built at compile time, and a helper
 /// because four hand-written copies of this loop each hid an `at - i` that no value in the notes
@@ -248,7 +252,7 @@ const fn put4(out: &mut [u8], at: usize, v: [u8; 4]) {
     }
 }
 
-const fn put8(out: &mut [u8; DESCRIPTOR_LEN], at: usize, v: u64) {
+const fn put8(out: &mut [u8; DESCRIPTOR_BYTES], at: usize, v: u64) {
     let b = v.to_le_bytes();
     let mut i = 0;
     while i < 8 {
@@ -296,9 +300,9 @@ const fn refuse_what_no_note_carries(m: &Manifest) {
 /// option that is not a declared letter or lacks a directory grant, and `reboot`, `sync`,
 /// `installer` or `catalog`, which no image may be endowed (milestone 809 (the package client
 /// becomes a program)). See notes/capability-manifest-note.md.
-pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
+pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
     refuse_what_no_note_carries(m);
-    let mut out = [0u8; DESCRIPTOR_LEN];
+    let mut out = [0u8; DESCRIPTOR_BYTES];
     let v = BARE_VERSION.to_le_bytes();
     out[0] = v[0];
     out[1] = v[1];
@@ -435,7 +439,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         return Err(Error::NoVersion);
     }
     match u32::from_le_bytes([d[0], d[1], d[2], d[3]]) {
-        BARE_VERSION if d.len() != DESCRIPTOR_LEN => return Err(Error::WrongLength),
+        BARE_VERSION if d.len() != DESCRIPTOR_BYTES => return Err(Error::WrongLength),
         BARE_VERSION => {}
         ZONED_VERSION => {
             check_zones(d)?;
@@ -445,7 +449,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         }
         _ => return Err(Error::UnknownVersion),
     }
-    let d = d.get(..DESCRIPTOR_LEN).ok_or(Error::WrongLength)?;
+    let d = d.get(..DESCRIPTOR_BYTES).ok_or(Error::WrongLength)?;
     let arg = decode_arg(d)?;
     let mem = decode_mem(d)?;
     let file = decode_file(d)?;
@@ -464,7 +468,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     let output = decode_output(d)?;
     let input = decode_input(d)?;
     let startup = decode_runtime(d)?;
-    zero(d, TAIL, DESCRIPTOR_LEN - TAIL)?;
+    zero(d, TAIL, DESCRIPTOR_BYTES - TAIL)?;
     Ok(Manifest {
         program_argument: arg,
         memory_grant: mem,
@@ -591,27 +595,27 @@ fn decode_runtime(d: &[u8]) -> Result<StartupContract, Error> {
 /// **A whole manifest note**, header and owner and descriptor, aligned as a note must be. What
 /// [`carry!`] places in the program's `.note.nife.manifest` section. Provisional name.
 #[repr(C, align(4))]
-pub struct Note(pub [u8; NOTE_LEN]);
+pub struct Note(pub [u8; NOTE_BYTES]);
 
 impl Note {
     /// The note carrying `m`.
     pub const fn of(m: &Manifest) -> Self {
-        let mut out = [0u8; NOTE_LEN];
+        let mut out = [0u8; NOTE_BYTES];
         let namesz = ((OWNER.len() + 1) as u32).to_le_bytes();
-        let descsz = (DESCRIPTOR_LEN as u32).to_le_bytes();
+        let descsz = (DESCRIPTOR_BYTES as u32).to_le_bytes();
         let kind = MANIFEST.to_le_bytes();
         put4(&mut out, 0, namesz);
         put4(&mut out, 4, descsz);
         put4(&mut out, 8, kind);
         put4(
             &mut out,
-            HEADER_LEN,
+            HEADER_BYTES,
             [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
         );
         let d = encode(m);
         let mut i = 0;
-        while i < DESCRIPTOR_LEN {
-            out[HEADER_LEN + NAME_FIELD + i] = d[i];
+        while i < DESCRIPTOR_BYTES {
+            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
             i += 1;
         }
         Self(out)
@@ -621,9 +625,10 @@ impl Note {
 /// **A version 2 descriptor's length** for these zones: version 1's 56 bytes, the count, and each
 /// zone's length byte and text.
 ///
-/// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const fn zoned_len(zones: &[&str]) -> usize {
-    let mut len = DESCRIPTOR_LEN + 1;
+/// Name: provisional. A length carries its unit (`design/naming.md`, units), and `descriptor`
+/// says which length, beside the whole note's.
+pub const fn zoned_descriptor_bytes(zones: &[&str]) -> usize {
+    let mut len = DESCRIPTOR_BYTES + 1;
     let mut i = 0;
     while i < zones.len() {
         len += 1 + zones[i].len();
@@ -632,13 +637,13 @@ pub const fn zoned_len(zones: &[&str]) -> usize {
     len
 }
 
-/// `m` and the zones it asks for, as a version 2 descriptor. `LEN` is [`zoned_len`] of
+/// `m` and the zones it asks for, as a version 2 descriptor. `LEN` is [`zoned_descriptor_bytes`] of
 /// `zones`, named by the caller's type, as [`encode_verbs`] does:
 ///
 /// ```
 /// const ZONES: &[&str] = &["", "basalt.nifeos.org"];
 /// const M: grant_plan::Manifest = grant_plan::NO_NOTE_MANIFEST;
-/// const D: [u8; capability_manifest_note::zoned_len(ZONES)] = capability_manifest_note::encode_zoned(&M, ZONES);
+/// const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)] = capability_manifest_note::encode_zoned(&M, ZONES);
 /// assert_eq!(capability_manifest_note::decode(&D), Ok(M));
 /// let zones = capability_manifest_note::zones(&D).unwrap();
 /// assert_eq!(zones.iter().collect::<Vec<_>>(), [b"".as_slice(), b"basalt.nifeos.org"]);
@@ -653,11 +658,14 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
         !zones.is_empty() && zones.len() <= MAXIMUM_ZONES,
         "a version 2 manifest asks for one to eight zones; none is version 1"
     );
-    assert!(LEN == zoned_len(zones), "LEN must be zoned_len(zones)");
+    assert!(
+        LEN == zoned_descriptor_bytes(zones),
+        "LEN must be zoned_descriptor_bytes(zones)"
+    );
     let mut out = [0u8; LEN];
     let fixed = encode(m);
     let mut i = 0;
-    while i < DESCRIPTOR_LEN {
+    while i < DESCRIPTOR_BYTES {
         out[i] = fixed[i];
         i += 1;
     }
@@ -671,8 +679,8 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
 /// sorted strictly after the one before. Returns the offset after the last zone. One body for
 /// [`encode_zoned`] and [`encode_serviced`], so the two cannot disagree about what they accept.
 const fn write_zones(out: &mut [u8], zones: &[&str]) -> usize {
-    out[DESCRIPTOR_LEN] = zones.len() as u8;
-    let mut at = DESCRIPTOR_LEN + 1;
+    out[DESCRIPTOR_BYTES] = zones.len() as u8;
+    let mut at = DESCRIPTOR_BYTES + 1;
     let mut z = 0;
     while z < zones.len() {
         let zone = zones[z].as_bytes();
@@ -702,11 +710,11 @@ const fn write_zones(out: &mut [u8], zones: &[&str]) -> usize {
 /// canonical (`domain_name_resolution_contract::is_canonical_zone`) and sorted strictly after the one before, and nothing after the
 /// last. The offset in a refusal is the first byte at fault.
 fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
-    let count = *d.get(DESCRIPTOR_LEN).ok_or(Error::WrongLength)? as usize;
+    let count = *d.get(DESCRIPTOR_BYTES).ok_or(Error::WrongLength)? as usize;
     if count == 0 || count > MAXIMUM_ZONES {
-        return Err(Error::BadField(DESCRIPTOR_LEN));
+        return Err(Error::BadField(DESCRIPTOR_BYTES));
     }
-    let mut at = DESCRIPTOR_LEN + 1;
+    let mut at = DESCRIPTOR_BYTES + 1;
     let mut previous: Option<&[u8]> = None;
     for _ in 0..count {
         let len = *d.get(at).ok_or(Error::WrongLength)? as usize;
@@ -722,7 +730,7 @@ fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
     if at != d.len() {
         return Err(Error::WrongLength);
     }
-    Ok(&d[DESCRIPTOR_LEN..])
+    Ok(&d[DESCRIPTOR_BYTES..])
 }
 
 /// Every zone and the service byte of a version 3 descriptor, checked: a count of zero to
@@ -732,11 +740,11 @@ fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
-    let count = *d.get(DESCRIPTOR_LEN).ok_or(Error::WrongLength)? as usize;
+    let count = *d.get(DESCRIPTOR_BYTES).ok_or(Error::WrongLength)? as usize;
     if count > MAXIMUM_ZONES {
-        return Err(Error::BadField(DESCRIPTOR_LEN));
+        return Err(Error::BadField(DESCRIPTOR_BYTES));
     }
-    let mut at = DESCRIPTOR_LEN + 1;
+    let mut at = DESCRIPTOR_BYTES + 1;
     let mut previous: Option<&[u8]> = None;
     for _ in 0..count {
         let len = *d.get(at).ok_or(Error::WrongLength)? as usize;
@@ -756,7 +764,7 @@ fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
     if at + 1 != d.len() {
         return Err(Error::WrongLength);
     }
-    Ok(&d[DESCRIPTOR_LEN..])
+    Ok(&d[DESCRIPTOR_BYTES..])
 }
 
 /// **Whether the manifest asks to run as a service**, the version 3 ask (milestone 911 (scripted
@@ -770,8 +778,8 @@ pub fn asks_service(d: &[u8]) -> Result<bool, Error> {
     if u32::from_le_bytes([d[0], d[1], d[2], d[3]]) != SERVICED_VERSION {
         return Ok(false);
     }
-    let count = d[DESCRIPTOR_LEN] as usize;
-    let mut at = DESCRIPTOR_LEN + 1;
+    let count = d[DESCRIPTOR_BYTES] as usize;
+    let mut at = DESCRIPTOR_BYTES + 1;
     for _ in 0..count {
         at += 1 + d[at] as usize;
     }
@@ -789,12 +797,12 @@ pub fn zones(d: &[u8]) -> Result<Zones<'_>, Error> {
     decode(d)?;
     match u32::from_le_bytes([d[0], d[1], d[2], d[3]]) {
         ZONED_VERSION => Ok(Zones {
-            records: &d[DESCRIPTOR_LEN + 1..],
+            records: &d[DESCRIPTOR_BYTES + 1..],
         }),
         SERVICED_VERSION => {
-            let count = d[DESCRIPTOR_LEN] as usize;
+            let count = d[DESCRIPTOR_BYTES] as usize;
             Ok(Zones {
-                records: &d[DESCRIPTOR_LEN + 1..DESCRIPTOR_LEN + 1 + zones_bytes(d, count)],
+                records: &d[DESCRIPTOR_BYTES + 1..DESCRIPTOR_BYTES + 1 + zones_bytes(d, count)],
             })
         }
         _ => Ok(Zones { records: &[] }),
@@ -806,7 +814,7 @@ pub fn zones(d: &[u8]) -> Result<Zones<'_>, Error> {
 fn zones_bytes(d: &[u8], count: usize) -> usize {
     let mut at = 0usize;
     for _ in 0..count {
-        at += 1 + d[DESCRIPTOR_LEN + 1 + at] as usize;
+        at += 1 + d[DESCRIPTOR_BYTES + 1 + at] as usize;
     }
     at
 }
@@ -849,7 +857,7 @@ impl<'a> Zones<'a> {
 }
 
 /// **A whole version 2 manifest note**, padded after its descriptor to the note's 4-byte
-/// alignment. `N` is [`zoned_note_len`] of the zones. What [`carry!`]'s `zones =` form places.
+/// alignment. `N` is [`zoned_note_bytes`] of the zones. What [`carry!`]'s `zones =` form places.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 #[repr(C, align(4))]
@@ -858,9 +866,9 @@ pub struct ZonedNote<const N: usize>(pub [u8; N]);
 /// How long a whole version 2 note is for these zones: header, owner, the descriptor, and the
 /// zero bytes that round it up to four.
 ///
-/// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const fn zoned_note_len(zones: &[&str]) -> usize {
-    (HEADER_LEN + NAME_FIELD + zoned_len(zones)).next_multiple_of(4)
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const fn zoned_note_bytes(zones: &[&str]) -> usize {
+    (HEADER_BYTES + NAME_FIELD_BYTES + zoned_descriptor_bytes(zones)).next_multiple_of(4)
 }
 
 impl<const N: usize> ZonedNote<N> {
@@ -869,8 +877,8 @@ impl<const N: usize> ZonedNote<N> {
     /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
     pub const fn of<const LEN: usize>(m: &Manifest, zones: &[&str]) -> Self {
         assert!(
-            N == zoned_note_len(zones),
-            "N must be zoned_note_len(zones)"
+            N == zoned_note_bytes(zones),
+            "N must be zoned_note_bytes(zones)"
         );
         let mut out = [0u8; N];
         put4(&mut out, 0, ((OWNER.len() + 1) as u32).to_le_bytes());
@@ -878,13 +886,13 @@ impl<const N: usize> ZonedNote<N> {
         put4(&mut out, 8, MANIFEST.to_le_bytes());
         put4(
             &mut out,
-            HEADER_LEN,
+            HEADER_BYTES,
             [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
         );
         let d: [u8; LEN] = encode_zoned(m, zones);
         let mut i = 0;
         while i < LEN {
-            out[HEADER_LEN + NAME_FIELD + i] = d[i];
+            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
             i += 1;
         }
         Self(out)
@@ -892,7 +900,7 @@ impl<const N: usize> ZonedNote<N> {
 }
 
 /// **A whole version 3 manifest note**, padded after its descriptor to the note's 4-byte
-/// alignment. `N` is [`serviced_note_len`] of the zones. What [`carry!`]'s `service =` form
+/// alignment. `N` is [`serviced_note_bytes`] of the zones. What [`carry!`]'s `service =` form
 /// places, with or without `zones =`.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
@@ -902,9 +910,10 @@ pub struct ServicedNote<const N: usize>(pub [u8; N]);
 /// How long a version 3 descriptor is for these zones: the zone block of version 2's layout,
 /// which may be empty here, and the service byte.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
-pub const fn serviced_len(zones: &[&str]) -> usize {
-    let mut len = DESCRIPTOR_LEN + 1 + 1;
+/// Name: provisional. A length carries its unit (`design/naming.md`, units), and `descriptor`
+/// says which length, beside the whole note's.
+pub const fn serviced_descriptor_bytes(zones: &[&str]) -> usize {
+    let mut len = DESCRIPTOR_BYTES + 1 + 1;
     let mut i = 0;
     while i < zones.len() {
         len += 1 + zones[i].len();
@@ -916,13 +925,13 @@ pub const fn serviced_len(zones: &[&str]) -> usize {
 /// How long a whole version 3 note is for these zones: header, owner, the descriptor, and the
 /// zero bytes that round it up to four.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
-pub const fn serviced_note_len(zones: &[&str]) -> usize {
-    (HEADER_LEN + NAME_FIELD + serviced_len(zones)).next_multiple_of(4)
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const fn serviced_note_bytes(zones: &[&str]) -> usize {
+    (HEADER_BYTES + NAME_FIELD_BYTES + serviced_descriptor_bytes(zones)).next_multiple_of(4)
 }
 
 /// `m`, the zones it asks for (none allowed here, which only version 3 can say), and whether it
-/// asks to run as a service, as a version 3 descriptor. `LEN` is [`serviced_len`] of `zones`.
+/// asks to run as a service, as a version 3 descriptor. `LEN` is [`serviced_descriptor_bytes`] of `zones`.
 /// It panics, a compile error in a constant, on what [`decode`] refuses: more than
 /// [`MAXIMUM_ZONES`] zones, zones not sorted ascending each once, or a zone the resolver would
 /// not spell.
@@ -938,15 +947,15 @@ pub const fn encode_serviced<const LEN: usize>(
         "a version 3 manifest asks for at most eight zones"
     );
     assert!(
-        LEN == serviced_len(zones),
-        "LEN must be serviced_len(zones)"
+        LEN == serviced_descriptor_bytes(zones),
+        "LEN must be serviced_descriptor_bytes(zones)"
     );
     let mut out = [0u8; LEN];
     // The first 56 bytes are the manifest, as version 1 spells it; `encode` wrote them into
     // `head`, and a const fn copies field by field (`IndexMut` is not const).
     let head = encode(m);
     let mut i = 0;
-    while i < DESCRIPTOR_LEN {
+    while i < DESCRIPTOR_BYTES {
         out[i] = head[i];
         i += 1;
     }
@@ -966,8 +975,8 @@ impl<const N: usize> ServicedNote<N> {
     /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub const fn of<const LEN: usize>(m: &Manifest, zones: &[&str], service: bool) -> Self {
         assert!(
-            N == serviced_note_len(zones),
-            "N must be serviced_note_len(zones)"
+            N == serviced_note_bytes(zones),
+            "N must be serviced_note_bytes(zones)"
         );
         let mut out = [0u8; N];
         put4(&mut out, 0, ((OWNER.len() + 1) as u32).to_le_bytes());
@@ -975,13 +984,13 @@ impl<const N: usize> ServicedNote<N> {
         put4(&mut out, 8, MANIFEST.to_le_bytes());
         put4(
             &mut out,
-            HEADER_LEN,
+            HEADER_BYTES,
             [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
         );
         let d: [u8; LEN] = encode_serviced(m, zones, service);
         let mut i = 0;
         while i < LEN {
-            out[HEADER_LEN + NAME_FIELD + i] = d[i];
+            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
             i += 1;
         }
         Self(out)
@@ -989,7 +998,7 @@ impl<const N: usize> ServicedNote<N> {
 }
 
 // The owner and its NUL fit the name field, which keeps the descriptor 4-aligned.
-const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
+const _: () = assert!(OWNER.len() < NAME_FIELD_BYTES && NAME_FIELD_BYTES.is_multiple_of(4));
 
 /// Carry this manifest in the program's own bytes: one line at module scope, any constant
 /// `grant_plan::Manifest`, and optionally its resolver zones, sorted, `""` for the root
@@ -1011,20 +1020,26 @@ macro_rules! carry {
     ($manifest:expr, zones = $zones:expr) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_len($zones) }> =
-            $crate::ZonedNote::of::<{ $crate::zoned_len($zones) }>(&$manifest, $zones);
+        static NIFE_MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_bytes($zones) }> =
+            $crate::ZonedNote::of::<{ $crate::zoned_descriptor_bytes($zones) }>(&$manifest, $zones);
     };
     ($manifest:expr, service = true) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len(&[]) }> =
-            $crate::ServicedNote::of::<{ $crate::serviced_len(&[]) }>(&$manifest, &[], true);
+        static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_bytes(&[]) }> =
+            $crate::ServicedNote::of::<{ $crate::serviced_descriptor_bytes(&[]) }>(
+                &$manifest,
+                &[],
+                true,
+            );
     };
     ($manifest:expr, zones = $zones:expr, service = true) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len($zones) }> =
-            $crate::ServicedNote::of::<{ $crate::serviced_len($zones) }>(&$manifest, $zones, true);
+        static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_bytes($zones) }> =
+            $crate::ServicedNote::of::<{ $crate::serviced_descriptor_bytes($zones) }>(
+                &$manifest, $zones, true,
+            );
     };
 }
 
@@ -1045,7 +1060,9 @@ pub const SUBTREE_GRANTS: u32 = 2;
 pub const SUBTREE_GRANTS_VERSION: u32 = 1;
 
 /// How long a version 1 [`SUBTREE_GRANTS`] descriptor is: a version word, then a scope word.
-pub const SUBTREE_GRANTS_LEN: usize = 8;
+///
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const SUBTREE_GRANTS_BYTES: usize = 8;
 
 /// **Which scope crate a server enforces grants through.** One value today, so the word is room for
 /// a second rather than a flag that would need a second field.
@@ -1080,7 +1097,7 @@ pub fn decode_subtree_grants(d: &[u8]) -> Result<Scope, Error> {
     {
         return Err(Error::UnknownVersion);
     }
-    if d.len() != SUBTREE_GRANTS_LEN {
+    if d.len() != SUBTREE_GRANTS_BYTES {
         return Err(Error::WrongLength);
     }
     match u32::from_le_bytes([d[4], d[5], d[6], d[7]]) {
@@ -1090,18 +1107,20 @@ pub fn decode_subtree_grants(d: &[u8]) -> Result<Scope, Error> {
 }
 
 /// How long a whole [`SUBTREE_GRANTS`] note is.
-pub const SUBTREE_GRANTS_NOTE_LEN: usize = HEADER_LEN + NAME_FIELD + SUBTREE_GRANTS_LEN;
+///
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const SUBTREE_GRANTS_NOTE_BYTES: usize = HEADER_BYTES + NAME_FIELD_BYTES + SUBTREE_GRANTS_BYTES;
 
 /// **A whole [`SUBTREE_GRANTS`] note**, what [`carry_subtree_grants!`] places. Provisional name.
 #[repr(C, align(4))]
-pub struct SubtreeGrantsNote(pub [u8; SUBTREE_GRANTS_NOTE_LEN]);
+pub struct SubtreeGrantsNote(pub [u8; SUBTREE_GRANTS_NOTE_BYTES]);
 
 impl SubtreeGrantsNote {
     /// The note declaring `scope`.
     pub const fn of(scope: Scope) -> Self {
-        let mut out = [0u8; SUBTREE_GRANTS_NOTE_LEN];
+        let mut out = [0u8; SUBTREE_GRANTS_NOTE_BYTES];
         let namesz = ((OWNER.len() + 1) as u32).to_le_bytes();
-        let descsz = (SUBTREE_GRANTS_LEN as u32).to_le_bytes();
+        let descsz = (SUBTREE_GRANTS_BYTES as u32).to_le_bytes();
         let kind = SUBTREE_GRANTS.to_le_bytes();
         let version = SUBTREE_GRANTS_VERSION.to_le_bytes();
         let word = scope.word().to_le_bytes();
@@ -1110,11 +1129,11 @@ impl SubtreeGrantsNote {
         put4(&mut out, 8, kind);
         put4(
             &mut out,
-            HEADER_LEN,
+            HEADER_BYTES,
             [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
         );
-        put4(&mut out, HEADER_LEN + NAME_FIELD, version);
-        put4(&mut out, HEADER_LEN + NAME_FIELD + 4, word);
+        put4(&mut out, HEADER_BYTES + NAME_FIELD_BYTES, version);
+        put4(&mut out, HEADER_BYTES + NAME_FIELD_BYTES + 4, word);
         Self(out)
     }
 }
@@ -1163,21 +1182,26 @@ pub const MAXIMUM_VERBS: usize = 256;
 
 /// One verb's record: the word in `grant_plan::MAXIMUM_VERB` bytes, zero-padded; then the grants'
 /// bits, little-endian; then two zero bytes.
-pub const VERB_RECORD: usize = grant_plan::MAXIMUM_VERB + 4;
+///
+/// Name: provisional. A length carries its unit (`design/naming.md`, units).
+pub const VERB_RECORD_BYTES: usize = grant_plan::MAXIMUM_VERB + 4;
 
 /// A [`VERBS`] descriptor's length for `count` verbs: the version word, the count word, and
 /// exactly `count` records. Variable, as calef ruled on #1903 (2026-10-10 (UTC)); one table still
 /// has one encoding, because the records are sorted and each verb appears once.
-pub const fn verbs_len(count: usize) -> usize {
-    8 + count * VERB_RECORD
+///
+/// Name: provisional. A length carries its unit (`design/naming.md`, units), and `descriptor`
+/// says which length, beside the whole note's.
+pub const fn verbs_descriptor_bytes(count: usize) -> usize {
+    8 + count * VERB_RECORD_BYTES
 }
 
 /// The bytes of a verb table (milestone 809). A `const fn`, so a program's table is computed by
-/// the compiler; `LEN` is [`verbs_len`] of the table's length, named by the caller's type:
+/// the compiler; `LEN` is [`verbs_descriptor_bytes`] of the table's length, named by the caller's type:
 ///
 /// ```
 /// const TABLE: &[grant_plan::VerbGrant] = grant_plan::Program::Jig.verbs();
-/// const BYTES: [u8; capability_manifest_note::verbs_len(TABLE.len())] = capability_manifest_note::encode_verbs(TABLE);
+/// const BYTES: [u8; capability_manifest_note::verbs_descriptor_bytes(TABLE.len())] = capability_manifest_note::encode_verbs(TABLE);
 /// assert_eq!(capability_manifest_note::decode_verbs(&BYTES).unwrap().len(), TABLE.len());
 /// ```
 ///
@@ -1191,8 +1215,8 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
         "a verb table holds at most 256 verbs"
     );
     assert!(
-        LEN == verbs_len(verbs.len()),
-        "LEN must be verbs_len(table.len())"
+        LEN == verbs_descriptor_bytes(verbs.len()),
+        "LEN must be verbs_descriptor_bytes(table.len())"
     );
     let mut out = [0u8; LEN];
     let version = VERBS_VERSION.to_le_bytes();
@@ -1216,7 +1240,7 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
                 "a verb table is sorted ascending by its words, each word once"
             );
         }
-        let at = 8 + i * VERB_RECORD;
+        let at = 8 + i * VERB_RECORD_BYTES;
         let mut b = 0;
         while b < word.len() {
             assert!(word[b] != 0, "a verb holds no zero byte");
@@ -1253,7 +1277,7 @@ pub struct Verbs<'a> {
 impl<'a> Verbs<'a> {
     /// How many verbs.
     pub fn len(&self) -> usize {
-        self.records.len() / VERB_RECORD
+        self.records.len() / VERB_RECORD_BYTES
     }
 
     /// Whether the table is empty, which a descriptor may say: a program whose every line is
@@ -1285,7 +1309,7 @@ impl<'a> Verbs<'a> {
 
     /// Record `i`, which [`decode_verbs`] has already checked.
     fn record(&self, i: usize) -> (&'a [u8], grant_plan::ManifestAuthorities) {
-        let r = &self.records[i * VERB_RECORD..(i + 1) * VERB_RECORD];
+        let r = &self.records[i * VERB_RECORD_BYTES..(i + 1) * VERB_RECORD_BYTES];
         let word = &r[..grant_plan::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         let bits =
@@ -1300,7 +1324,7 @@ impl<'a> Verbs<'a> {
 
 /// **A [`VERBS`] descriptor, decoded**, or why not. One table has one encoding, as [`decode`]
 /// enforces for a manifest: an unknown version, a count past [`MAXIMUM_VERBS`], a length that is
-/// not [`verbs_len`] of the count, an empty word, a zero inside a word or a nonzero byte after it,
+/// not [`verbs_descriptor_bytes`] of the count, an empty word, a zero inside a word or a nonzero byte after it,
 /// a grant bit that names no authority, a nonzero pad, or records out of order or repeated, all
 /// refuse.
 pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
@@ -1313,13 +1337,13 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     if count > MAXIMUM_VERBS {
         return Err(Error::BadField(4));
     }
-    if d.len() != verbs_len(count) {
+    if d.len() != verbs_descriptor_bytes(count) {
         return Err(Error::WrongLength);
     }
     let mut previous: Option<&[u8]> = None;
     for i in 0..count {
-        let at = 8 + i * VERB_RECORD;
-        let record = &d[at..at + VERB_RECORD];
+        let at = 8 + i * VERB_RECORD_BYTES;
+        let record = &d[at..at + VERB_RECORD_BYTES];
         let word = &record[..grant_plan::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         if len == 0 {
@@ -1358,14 +1382,14 @@ mod verb_tests {
     use super::*;
 
     const JIG: &[VerbGrant] = Program::Jig.verbs();
-    const JIG_BYTES: [u8; verbs_len(JIG.len())] = encode_verbs(JIG);
+    const JIG_BYTES: [u8; verbs_descriptor_bytes(JIG.len())] = encode_verbs(JIG);
 
     /// **`jig`'s verb table round-trips, and so does an empty one** (milestone 809, fork 2: a list
     /// of (verb, grants) pairs). What a distribution writes is what the decoder reads back, entry
     /// for entry, and the length is exactly the count's.
     #[test]
     fn a_verb_table_round_trips() {
-        assert_eq!(JIG_BYTES.len(), 8 + JIG.len() * VERB_RECORD);
+        assert_eq!(JIG_BYTES.len(), 8 + JIG.len() * VERB_RECORD_BYTES);
         let v = decode_verbs(&JIG_BYTES).unwrap();
         assert_eq!(v.len(), JIG.len());
         for (want, (word, grants)) in JIG.iter().zip(v.iter()) {
@@ -1374,7 +1398,7 @@ mod verb_tests {
             assert_eq!(v.grants_for(word), Some(want.authorities));
         }
         assert_eq!(v.grants_for(b"upgrade"), None);
-        let empty: [u8; verbs_len(0)] = encode_verbs(&[]);
+        let empty: [u8; verbs_descriptor_bytes(0)] = encode_verbs(&[]);
         assert!(decode_verbs(&empty).unwrap().is_empty());
     }
 
@@ -1384,11 +1408,11 @@ mod verb_tests {
     fn a_table_the_size_of_gits_round_trips() {
         let words: std::vec::Vec<std::string::String> =
             (0..175).map(|i| std::format!("verb{i:03}")).collect();
-        let mut d = std::vec![0u8; verbs_len(words.len())];
+        let mut d = std::vec![0u8; verbs_descriptor_bytes(words.len())];
         d[..4].copy_from_slice(&VERBS_VERSION.to_le_bytes());
         d[4..8].copy_from_slice(&(words.len() as u32).to_le_bytes());
         for (i, w) in words.iter().enumerate() {
-            let at = 8 + i * VERB_RECORD;
+            let at = 8 + i * VERB_RECORD_BYTES;
             d[at..at + w.len()].copy_from_slice(w.as_bytes());
             d[at + 16..at + 18].copy_from_slice(&ManifestAuthorities::CATALOG.bits().to_le_bytes());
         }
@@ -1447,10 +1471,10 @@ mod verb_tests {
         );
         // The first two records swapped: every byte valid, the order not.
         let mut swapped = good;
-        let (a, b) = (8, 8 + VERB_RECORD);
-        let first: [u8; VERB_RECORD] = good[a..b].try_into().unwrap();
-        swapped.copy_within(b..b + VERB_RECORD, a);
-        swapped[b..b + VERB_RECORD].copy_from_slice(&first);
+        let (a, b) = (8, 8 + VERB_RECORD_BYTES);
+        let first: [u8; VERB_RECORD_BYTES] = good[a..b].try_into().unwrap();
+        swapped.copy_within(b..b + VERB_RECORD_BYTES, a);
+        swapped[b..b + VERB_RECORD_BYTES].copy_from_slice(&first);
         assert_eq!(decode_verbs(&swapped), Err(Error::BadField(b)));
         // The same verb twice.
         let mut twice = good;
@@ -1467,8 +1491,8 @@ mod verb_tests {
     /// an eight-byte head. The layout is a wire format between the build and the loader.
     #[test]
     fn a_verb_record_is_twenty_bytes() {
-        assert_eq!(verbs_len(0), 8);
-        assert_eq!(verbs_len(1), 8 + 16 + 2 + 2);
+        assert_eq!(verbs_descriptor_bytes(0), 8);
+        assert_eq!(verbs_descriptor_bytes(1), 8 + 16 + 2 + 2);
     }
 
     /// **The full 256 verbs encode and decode**, the cap itself rather than one under it. The
@@ -1496,7 +1520,7 @@ mod verb_tests {
                 authorities: ManifestAuthorities::CATALOG,
             })
             .collect();
-        let bytes: [u8; verbs_len(N)] = encode_verbs(&table);
+        let bytes: [u8; verbs_descriptor_bytes(N)] = encode_verbs(&table);
         let v = decode_verbs(&bytes).unwrap();
         assert_eq!(v.len(), N);
         assert!(!v.is_empty());
@@ -1526,7 +1550,7 @@ mod verb_tests {
                 authorities: ManifestAuthorities::CATALOG,
             },
         ];
-        let _: [u8; verbs_len(2)] = encode_verbs(&unsorted);
+        let _: [u8; verbs_descriptor_bytes(2)] = encode_verbs(&unsorted);
     }
 }
 

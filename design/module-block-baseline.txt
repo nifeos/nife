@@ -946,19 +946,15 @@ crates/capability/src/lib.rs::used
 
 crates/capability/src/tests.rs
 
-crates/capability_manifest_note/src/lib.rs::DESCRIPTOR_LEN
 
 crates/capability_manifest_note/src/lib.rs::Error
 
-crates/capability_manifest_note/src/lib.rs::NOTE_LEN
 
 crates/capability_manifest_note/src/lib.rs::Note
 
 crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS
 
-crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS_LEN
 
-crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS_NOTE_LEN
 
 crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS_VERSION
 
@@ -970,7 +966,6 @@ crates/capability_manifest_note/src/lib.rs::VERBS
 
 crates/capability_manifest_note/src/lib.rs::VERBS_VERSION
 
-crates/capability_manifest_note/src/lib.rs::VERB_RECORD
 
 
 crates/capability_manifest_note/src/lib.rs::Verbs
@@ -999,7 +994,6 @@ crates/capability_manifest_note/src/lib.rs::of
 
 crates/capability_manifest_note/src/lib.rs::of
 
-crates/capability_manifest_note/src/lib.rs::verbs_len
 
 crates/capability_plan/src/lib.rs::Dependents
 

@@ -12,8 +12,9 @@
 use std::path::PathBuf;
 
 use capability_manifest_note::{
-    Scope, SubtreeGrantsNote, decode, decode_subtree_grants, decode_verbs, encode, encode_serviced,
-    encode_verbs, encode_zoned, asks_service, serviced_len, verbs_len, zoned_len, zones,
+    Scope, SubtreeGrantsNote, asks_service, decode, decode_subtree_grants, decode_verbs, encode,
+    encode_serviced, encode_verbs, encode_zoned, serviced_descriptor_bytes, verbs_descriptor_bytes,
+    zoned_descriptor_bytes, zones,
 };
 use grant_plan::{
     ManifestAuthorities, NO_NOTE_MANIFEST, Program, UNVOUCHED_STD_MANIFEST, VerbGrant,
@@ -69,52 +70,61 @@ fn seeds() -> Vec<(&'static str, Vec<u8>)> {
         ),
         (
             "manifest_v2_one_zone",
-            encode_zoned::<{ zoned_len(ONE) }>(&m, ONE).to_vec(),
+            encode_zoned::<{ zoned_descriptor_bytes(ONE) }>(&m, ONE).to_vec(),
         ),
         (
             "manifest_v2_root_and_one",
-            encode_zoned::<{ zoned_len(TWO) }>(&NO_NOTE_MANIFEST, TWO).to_vec(),
+            encode_zoned::<{ zoned_descriptor_bytes(TWO) }>(&NO_NOTE_MANIFEST, TWO).to_vec(),
         ),
         (
             "manifest_v2_eight_zones",
-            encode_zoned::<{ zoned_len(EIGHT) }>(&UNVOUCHED_STD_MANIFEST, EIGHT).to_vec(),
+            encode_zoned::<{ zoned_descriptor_bytes(EIGHT) }>(&UNVOUCHED_STD_MANIFEST, EIGHT)
+                .to_vec(),
         ),
         (
             "manifest_v2_longest_zone",
-            encode_zoned::<{ zoned_len(LONG) }>(&m, LONG).to_vec(),
+            encode_zoned::<{ zoned_descriptor_bytes(LONG) }>(&m, LONG).to_vec(),
         ),
         (
             "manifest_v3_no_zones_service",
-            encode_serviced::<{ serviced_len(&[]) }>(&m, &[], true).to_vec(),
+            encode_serviced::<{ serviced_descriptor_bytes(&[]) }>(&m, &[], true).to_vec(),
         ),
         (
             "manifest_v3_no_zones_plain",
-            encode_serviced::<{ serviced_len(&[]) }>(&m, &[], false).to_vec(),
+            encode_serviced::<{ serviced_descriptor_bytes(&[]) }>(&m, &[], false).to_vec(),
         ),
         (
             "manifest_v3_zones_service",
-            encode_serviced::<{ serviced_len(TWO) }>(&UNVOUCHED_STD_MANIFEST, TWO, true).to_vec(),
+            encode_serviced::<{ serviced_descriptor_bytes(TWO) }>(
+                &UNVOUCHED_STD_MANIFEST,
+                TWO,
+                true,
+            )
+            .to_vec(),
         ),
         (
             "manifest_v3_eight_zones",
-            encode_serviced::<{ serviced_len(EIGHT) }>(&m, EIGHT, false).to_vec(),
+            encode_serviced::<{ serviced_descriptor_bytes(EIGHT) }>(&m, EIGHT, false).to_vec(),
         ),
         ("subtree_grants", subtree_descriptor()),
         (
             "verbs_three",
-            encode_verbs::<{ verbs_len(3) }>(VERBS).to_vec(),
+            encode_verbs::<{ verbs_descriptor_bytes(3) }>(VERBS).to_vec(),
         ),
         (
             "verbs_one_longest_word",
-            encode_verbs::<{ verbs_len(1) }>(ONE_VERB).to_vec(),
+            encode_verbs::<{ verbs_descriptor_bytes(1) }>(ONE_VERB).to_vec(),
         ),
-        ("verbs_none", encode_verbs::<{ verbs_len(0) }>(&[]).to_vec()),
+        (
+            "verbs_none",
+            encode_verbs::<{ verbs_descriptor_bytes(0) }>(&[]).to_vec(),
+        ),
     ]
 }
 
 fn subtree_descriptor() -> Vec<u8> {
     let note = SubtreeGrantsNote::of(Scope::SubtreeScope);
-    note.0[note.0.len() - capability_manifest_note::SUBTREE_GRANTS_LEN..].to_vec()
+    note.0[note.0.len() - capability_manifest_note::SUBTREE_GRANTS_BYTES..].to_vec()
 }
 
 fn directory() -> PathBuf {

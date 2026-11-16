@@ -16,7 +16,7 @@ use super::*;
 #[kani::proof]
 #[kani::unwind(57)]
 fn a_decoded_manifest_encodes_back_to_its_bytes() {
-    let d: [u8; DESCRIPTOR_LEN] = kani::any();
+    let d: [u8; DESCRIPTOR_BYTES] = kani::any();
     if let Ok(m) = decode(&d) {
         assert!(encode(&m) == d);
     }
@@ -29,7 +29,7 @@ fn a_decoded_manifest_encodes_back_to_its_bytes() {
 #[kani::proof]
 #[kani::unwind(18)]
 fn decode_never_panics() {
-    let d: [u8; DESCRIPTOR_LEN + 1] = kani::any();
+    let d: [u8; DESCRIPTOR_BYTES + 1] = kani::any();
     let len: usize = kani::any();
     kani::assume(len <= d.len());
     let _ = decode(&d[..len]);

@@ -14,7 +14,7 @@ index a22e350ce..8e89afd9e 100644
      let output = decode_output(d)?;
      let input = decode_input(d)?;
      let startup = decode_runtime(d)?;
--    zero(d, TAIL, DESCRIPTOR_LEN - TAIL)?;
+-    zero(d, TAIL, DESCRIPTOR_BYTES - TAIL)?;
      Ok(Manifest {
          program_argument: arg,
          memory_grant: mem,

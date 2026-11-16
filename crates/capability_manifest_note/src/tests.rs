@@ -13,13 +13,13 @@ use super::*;
 #[test]
 fn a_subtree_grants_note_has_one_encoding() {
     let note = SubtreeGrantsNote::of(Scope::SubtreeScope);
-    let desc = &note.0[HEADER_LEN + NAME_FIELD..];
+    let desc = &note.0[HEADER_BYTES + NAME_FIELD_BYTES..];
     assert_eq!(decode_subtree_grants(desc), Ok(Scope::SubtreeScope));
     assert_eq!(
         u32::from_le_bytes(note.0[8..12].try_into().unwrap()),
         SUBTREE_GRANTS
     );
-    let mut bad = [0u8; SUBTREE_GRANTS_LEN];
+    let mut bad = [0u8; SUBTREE_GRANTS_BYTES];
     bad.copy_from_slice(desc);
     bad[4] = 2;
     assert_eq!(decode_subtree_grants(&bad), Err(Error::BadField(4)));
@@ -79,9 +79,9 @@ fn a_later_version_is_refused_rather_than_guessed_at() {
 #[test]
 fn a_descriptor_one_byte_long_or_short_is_refused() {
     let d = encode(&Program::Uptime.manifest());
-    assert_eq!(decode(&d[..DESCRIPTOR_LEN - 1]), Err(Error::WrongLength));
-    let mut long = [0u8; DESCRIPTOR_LEN + 1];
-    long[..DESCRIPTOR_LEN].copy_from_slice(&d);
+    assert_eq!(decode(&d[..DESCRIPTOR_BYTES - 1]), Err(Error::WrongLength));
+    let mut long = [0u8; DESCRIPTOR_BYTES + 1];
+    long[..DESCRIPTOR_BYTES].copy_from_slice(&d);
     assert_eq!(decode(&long), Err(Error::WrongLength));
 }
 
@@ -122,7 +122,7 @@ fn a_byte_the_layout_says_is_zero_is_refused() {
         SUBTREE,
         FLAG_LETTERS,
         TAIL,
-        DESCRIPTOR_LEN - 1,
+        DESCRIPTOR_BYTES - 1,
     ] {
         let mut d = base;
         d[at] = 1;
@@ -167,9 +167,9 @@ fn a_memory_range_upside_down_is_refused() {
 #[test]
 fn the_note_is_what_elf_finds() {
     let n = Note::of(&Program::Uptime.manifest());
-    assert_eq!(n.0.len(), NOTE_LEN);
+    assert_eq!(n.0.len(), NOTE_BYTES);
     assert_eq!(&n.0[0..4], &5u32.to_le_bytes());
-    assert_eq!(&n.0[4..8], &(DESCRIPTOR_LEN as u32).to_le_bytes());
+    assert_eq!(&n.0[4..8], &(DESCRIPTOR_BYTES as u32).to_le_bytes());
     assert_eq!(&n.0[8..12], &MANIFEST.to_le_bytes());
     assert_eq!(&n.0[12..20], b"nife\0\0\0\0"); // wire literal
     assert_eq!(decode(&n.0[20..]), Ok(Program::Uptime.manifest()));
@@ -313,7 +313,7 @@ fn the_layout_accepts_its_largest_values_and_checks_its_last_byte() {
 fn both_notes_state_their_owner_length_descriptor_length_and_type() {
     let n = SubtreeGrantsNote::of(Scope::SubtreeScope);
     assert_eq!(&n.0[0..4], &5u32.to_le_bytes());
-    assert_eq!(&n.0[4..8], &(SUBTREE_GRANTS_LEN as u32).to_le_bytes());
+    assert_eq!(&n.0[4..8], &(SUBTREE_GRANTS_BYTES as u32).to_le_bytes());
     assert_eq!(&n.0[8..12], &SUBTREE_GRANTS.to_le_bytes());
     assert_eq!(&n.0[12..20], b"nife\0\0\0\0"); // wire literal
     assert_eq!(&n.0[20..24], &SUBTREE_GRANTS_VERSION.to_le_bytes());
@@ -344,7 +344,7 @@ fn a_zoned_descriptor_has_one_encoding() {
         network: true,
         ..grant_plan::NO_NOTE_MANIFEST
     };
-    const D: [u8; zoned_len(ZONES)] = encode_zoned(&M, ZONES);
+    const D: [u8; zoned_descriptor_bytes(ZONES)] = encode_zoned(&M, ZONES);
     assert_eq!(decode(&D), Ok(M));
     let z = zones(&D).unwrap();
     assert!(z.has_root());
@@ -358,24 +358,25 @@ fn a_zoned_descriptor_has_one_encoding() {
         "version 1 asks none"
     );
     const NO_ROOT: &[&str] = &["nife.test"];
-    const D2: [u8; zoned_len(NO_ROOT)] = encode_zoned(&M, NO_ROOT);
+    const D2: [u8; zoned_descriptor_bytes(NO_ROOT)] = encode_zoned(&M, NO_ROOT);
     assert!(!zones(&D2).unwrap().has_root());
     const EIGHT: &[&str] = &["a", "b", "c", "d", "e", "f", "g", "h"];
-    const D8: [u8; zoned_len(EIGHT)] = encode_zoned(&M, EIGHT);
+    const D8: [u8; zoned_descriptor_bytes(EIGHT)] = encode_zoned(&M, EIGHT);
     assert_eq!(
         zones(&D8).unwrap().iter().count(),
         MAXIMUM_ZONES,
         "eight is the most, and allowed"
     );
-    let unsorted =
-        std::panic::catch_unwind(|| encode_zoned::<{ zoned_len(&["b", "a"]) }>(&M, &["b", "a"]));
+    let unsorted = std::panic::catch_unwind(|| {
+        encode_zoned::<{ zoned_descriptor_bytes(&["b", "a"]) }>(&M, &["b", "a"])
+    });
     assert!(
         unsorted.is_err(),
         "encode refuses unsorted zones, as decode does"
     );
 
     let respell = |zones: &[&[u8]]| {
-        let mut d: Vec<u8> = D[..DESCRIPTOR_LEN].to_vec();
+        let mut d: Vec<u8> = D[..DESCRIPTOR_BYTES].to_vec();
         d.push(zones.len() as u8);
         for z in zones {
             d.push(z.len() as u8);
@@ -410,8 +411,8 @@ fn a_zoned_descriptor_has_one_encoding() {
 #[test]
 fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
     const ZONES: &[&str] = &["nife.test"];
-    const NOTE: ZonedNote<{ zoned_note_len(ZONES) }> =
-        ZonedNote::of::<{ zoned_len(ZONES) }>(&grant_plan::NO_NOTE_MANIFEST, ZONES);
+    const NOTE: ZonedNote<{ zoned_note_bytes(ZONES) }> =
+        ZonedNote::of::<{ zoned_descriptor_bytes(ZONES) }>(&grant_plan::NO_NOTE_MANIFEST, ZONES);
     let n = &NOTE.0;
     // 56 + 1 + 1 + 9 = 67 bytes of descriptor after a 20-byte header and owner, rounded to 88.
     assert_eq!(n.len(), 88);
@@ -422,14 +423,14 @@ fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
     );
     let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
     assert_eq!(descsz, 67);
-    assert_eq!(descsz, zoned_len(ZONES));
-    let d = &n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz];
+    assert_eq!(descsz, zoned_descriptor_bytes(ZONES));
+    let d = &n[HEADER_BYTES + NAME_FIELD_BYTES..HEADER_BYTES + NAME_FIELD_BYTES + descsz];
     assert_eq!(
         zones(d).unwrap().iter().next(),
         Some(b"nife.test".as_slice())
     );
     assert!(
-        n[HEADER_LEN + NAME_FIELD + descsz..]
+        n[HEADER_BYTES + NAME_FIELD_BYTES + descsz..]
             .iter()
             .all(|&b| b == 0)
     );
@@ -443,25 +444,28 @@ fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
 #[test]
 fn the_service_ask_is_version_threes_and_only_its() {
     const ZONES: &[&str] = &["nife.test"];
-    const D: [u8; serviced_len(ZONES)] =
+    const D: [u8; serviced_descriptor_bytes(ZONES)] =
         encode_serviced(&grant_plan::NO_NOTE_MANIFEST, ZONES, true);
     assert_eq!(decode(&D), Ok(grant_plan::NO_NOTE_MANIFEST));
     assert_eq!(zones(&D).unwrap().iter().next(), Some(&b"nife.test"[..]));
     assert_eq!(asks_service(&D), Ok(true));
 
-    const NONE: [u8; serviced_len(&[])] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, &[], true);
+    const NONE: [u8; serviced_descriptor_bytes(&[])] =
+        encode_serviced(&grant_plan::NO_NOTE_MANIFEST, &[], true);
     assert_eq!(
         zones(&NONE).unwrap().iter().count(),
         0,
         "version 3 asks no zone"
     );
     assert_eq!(asks_service(&NONE), Ok(true));
-    const OFF: [u8; serviced_len(&[])] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, &[], false);
+    const OFF: [u8; serviced_descriptor_bytes(&[])] =
+        encode_serviced(&grant_plan::NO_NOTE_MANIFEST, &[], false);
     assert_eq!(asks_service(&OFF), Ok(false));
 
     let v1 = encode(&grant_plan::NO_NOTE_MANIFEST);
     assert_eq!(asks_service(&v1), Ok(false));
-    const ZONED: [u8; zoned_len(ZONES)] = encode_zoned(&grant_plan::NO_NOTE_MANIFEST, ZONES);
+    const ZONED: [u8; zoned_descriptor_bytes(ZONES)] =
+        encode_zoned(&grant_plan::NO_NOTE_MANIFEST, ZONES);
     assert_eq!(asks_service(&ZONED), Ok(false));
 
     let mut unknown = D;
@@ -482,8 +486,12 @@ fn the_service_ask_is_version_threes_and_only_its() {
 /// does: the `elf` reader's `descsz` is the descriptor's own.
 #[test]
 fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
-    const NOTE: ServicedNote<{ serviced_note_len(&[]) }> =
-        ServicedNote::of::<{ serviced_len(&[]) }>(&grant_plan::NO_NOTE_MANIFEST, &[], true);
+    const NOTE: ServicedNote<{ serviced_note_bytes(&[]) }> =
+        ServicedNote::of::<{ serviced_descriptor_bytes(&[]) }>(
+            &grant_plan::NO_NOTE_MANIFEST,
+            &[],
+            true,
+        );
     let n = &NOTE.0;
     // 20 bytes of header and owner, then 58 of descriptor, rounded to four: 80.
     assert_eq!(n.len(), 80);
@@ -494,31 +502,35 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
         OWNER.len() + 1
     );
     assert_eq!(
-        &n[HEADER_LEN..HEADER_LEN + OWNER.len()],
+        &n[HEADER_BYTES..HEADER_BYTES + OWNER.len()],
         OWNER,
         "the owner's name sits where the header says it does"
     );
-    assert_eq!(n[HEADER_LEN + OWNER.len()], 0, "and its NUL follows it");
+    assert_eq!(n[HEADER_BYTES + OWNER.len()], 0, "and its NUL follows it");
     let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
-    assert_eq!(descsz, serviced_len(&[]));
+    assert_eq!(descsz, serviced_descriptor_bytes(&[]));
     assert_eq!(descsz, 58);
     assert_eq!(
-        asks_service(&n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz]),
+        asks_service(&n[HEADER_BYTES + NAME_FIELD_BYTES..HEADER_BYTES + NAME_FIELD_BYTES + descsz]),
         Ok(true)
     );
     assert!(
-        n[HEADER_LEN + NAME_FIELD + descsz..]
+        n[HEADER_BYTES + NAME_FIELD_BYTES + descsz..]
             .iter()
             .all(|&b| b == 0)
     );
     // A note carrying zones places its descriptor where the owner's name ends, zones and all.
     const TWO: &[&str] = &["a.test", "b.c.test"];
-    const ZONED: ServicedNote<{ serviced_note_len(TWO) }> =
-        ServicedNote::of::<{ serviced_len(TWO) }>(&grant_plan::NO_NOTE_MANIFEST, TWO, true);
+    const ZONED: ServicedNote<{ serviced_note_bytes(TWO) }> =
+        ServicedNote::of::<{ serviced_descriptor_bytes(TWO) }>(
+            &grant_plan::NO_NOTE_MANIFEST,
+            TWO,
+            true,
+        );
     let n = &ZONED.0;
     let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
-    assert_eq!(descsz, serviced_len(TWO));
-    let d = &n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz];
+    assert_eq!(descsz, serviced_descriptor_bytes(TWO));
+    let d = &n[HEADER_BYTES + NAME_FIELD_BYTES..HEADER_BYTES + NAME_FIELD_BYTES + descsz];
     assert_eq!(decode(d), Ok(grant_plan::NO_NOTE_MANIFEST));
     assert_eq!(zones(d).unwrap().iter().count(), 2);
     assert_eq!(asks_service(d), Ok(true));
@@ -531,7 +543,8 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
 #[test]
 fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     const TWO: &[&str] = &["a.test", "b.c.test"];
-    const D: [u8; serviced_len(TWO)] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, TWO, true);
+    const D: [u8; serviced_descriptor_bytes(TWO)] =
+        encode_serviced(&grant_plan::NO_NOTE_MANIFEST, TWO, true);
     assert_eq!(decode(&D), Ok(grant_plan::NO_NOTE_MANIFEST));
     let mut got = zones(&D).unwrap().iter();
     assert_eq!(got.next(), Some(&b"a.test"[..]));
@@ -542,13 +555,13 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     const EIGHT: &[&str] = &[
         "a.test", "b.test", "c.test", "d.test", "e.test", "f.test", "g.test", "h.test",
     ];
-    const E: [u8; serviced_len(EIGHT)] =
+    const E: [u8; serviced_descriptor_bytes(EIGHT)] =
         encode_serviced(&grant_plan::NO_NOTE_MANIFEST, EIGHT, false);
     assert_eq!(decode(&E), Ok(grant_plan::NO_NOTE_MANIFEST));
     assert_eq!(zones(&E).unwrap().iter().count(), MAXIMUM_ZONES);
 
     // The same two zones, longest first: both canonical, and out of order at the second.
-    let at = DESCRIPTOR_LEN + 1;
+    let at = DESCRIPTOR_BYTES + 1;
     let mut unsorted = D;
     let mut swap = [0u8; 16];
     swap[..9].copy_from_slice(&unsorted[at + 7..at + 16]);
@@ -558,15 +571,15 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
 
     // A ninth zone is past the most a line may hold.
     let mut nine = D;
-    nine[DESCRIPTOR_LEN] = (MAXIMUM_ZONES + 1) as u8;
-    assert_eq!(decode(&nine), Err(Error::BadField(DESCRIPTOR_LEN)));
+    nine[DESCRIPTOR_BYTES] = (MAXIMUM_ZONES + 1) as u8;
+    assert_eq!(decode(&nine), Err(Error::BadField(DESCRIPTOR_BYTES)));
 
     // **The walk reads every zone to its last byte** (milestone 911): an end computed one byte
     // short lands on a zone whose last label is one character (`a.x` cut to `a.`), and one
     // computed two short lands on `ab.` from `ab.cd`. Both leave a trailing dot the contract
     // refuses, where a zone ending in a longer label would hide the same fault.
     const SHORT: &[&str] = &["a.x", "ab.cd"];
-    const S: [u8; serviced_len(SHORT)] =
+    const S: [u8; serviced_descriptor_bytes(SHORT)] =
         encode_serviced(&grant_plan::NO_NOTE_MANIFEST, SHORT, true);
     assert_eq!(decode(&S), Ok(grant_plan::NO_NOTE_MANIFEST));
     let mut got = zones(&S).unwrap().iter();
@@ -586,14 +599,17 @@ fn the_interfaces_note_shares_the_manifest_notes_header() {
             { interfaces_note::interfaces_len(1) },
         >(&list);
     let manifest = SubtreeGrantsNote::of(Scope::SubtreeScope);
-    let header = HEADER_LEN + NAME_FIELD;
+    let header = HEADER_BYTES + NAME_FIELD_BYTES;
     assert_eq!(&interfaces.0[..4], &manifest.0[..4], "namesz");
     assert_eq!(
-        &interfaces.0[HEADER_LEN..header],
-        &manifest.0[HEADER_LEN..header],
+        &interfaces.0[HEADER_BYTES..header],
+        &manifest.0[HEADER_BYTES..header],
         "owner"
     );
-    assert_eq!(&interfaces.0[HEADER_LEN..HEADER_LEN + OWNER.len()], OWNER);
+    assert_eq!(
+        &interfaces.0[HEADER_BYTES..HEADER_BYTES + OWNER.len()],
+        OWNER
+    );
     assert_eq!(
         interfaces.0.len() - header,
         interfaces_note::interfaces_len(1)
@@ -605,7 +621,7 @@ fn the_interfaces_note_shares_the_manifest_notes_header() {
 #[test]
 #[should_panic(expected = "lowercase dotted ASCII")]
 fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
-    let _ = encode_serviced::<{ serviced_len(&["Example.NET"]) }>(
+    let _ = encode_serviced::<{ serviced_descriptor_bytes(&["Example.NET"]) }>(
         &grant_plan::NO_NOTE_MANIFEST,
         &["Example.NET"],
         true,
@@ -615,7 +631,7 @@ fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
 #[test]
 #[should_panic(expected = "lowercase dotted ASCII")]
 fn the_serviced_encoder_refuses_a_zone_with_a_trailing_dot() {
-    let _ = encode_serviced::<{ serviced_len(&["example.net."]) }>(
+    let _ = encode_serviced::<{ serviced_descriptor_bytes(&["example.net."]) }>(
         &grant_plan::NO_NOTE_MANIFEST,
         &["example.net."],
         false,
