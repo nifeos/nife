@@ -34,7 +34,8 @@ import re
 import sys
 
 # One of the literals is the block driver's DMA page, which moved into `components` with the roles
-# it belongs to (milestone 1113, Decision 1); it leaves with the startup page of milestone 1069.
+# it belongs to when the virtio crate folded into the block driver; it leaves when that driver
+# reads its windows from the startup page.
 CEILING = 64
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
