@@ -457,12 +457,25 @@ cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes 
     --all-targets -- \
     --cfg kani --extern "kani=$shim/libkani.rlib" -L "$shim" -D warnings
 
+# `user_mode_runtime` has a host test target (milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves), item 4), so its tests are linted on
+# the host, where libtest exists. The host-excluded set above keeps it out of the workspace passes
+# because its syscalls fault without a kernel; its tests never execute one. The bare-metal passes
+# below lint its library alone (`--lib`), since `--all-targets` would build the test harness for a
+# target that has no libtest.
+echo "==> clippy: user_mode_runtime tests (host)"
+# lint-scope: code
+# lint-lane: host
+# lint-target-dir: host
+cargo clippy -p user_mode_runtime --all-targets -- -D warnings
+
 echo "==> clippy: kernel + user + user_mode_runtime (aarch64)"
 # lint-scope: code
 # lint-lane: aarch64
 # lint-target-dir: aarch64
 python3 helpers/clippy_record.py aarch64 cargo clippy -p kernel -p components -p fixtures \
-    -p user_mode_runtime --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
+    --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
+python3 helpers/clippy_record.py aarch64_user_mode_runtime cargo clippy -p user_mode_runtime \
+    --target aarch64-unknown-none-softfloat --lib -- -D warnings
 
 # The system-test image (milestone 609 (the system tests leave the kernel crate)), in its own
 # invocation and never beside `-p kernel`: it turns on the kernel's `system_tests` feature, cargo
@@ -610,7 +623,8 @@ echo "==> clippy: user + user_mode_runtime (x86_64)"
 # lint-scope: code
 # lint-lane: x86_64_user
 # lint-target-dir: x86_64_user
-cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unknown-none --all-targets -- -D warnings
+cargo clippy -p components -p fixtures --target x86_64-unknown-none --all-targets -- -D warnings
+cargo clippy -p user_mode_runtime --target x86_64-unknown-none --lib -- -D warnings
 
 # The kernel's build-mode features (bench, soak_test, cycle_counter_grant) each compile
 # DIFFERENT code in and out:
@@ -4178,6 +4192,9 @@ python3 helpers/packages.py --selftest
 # its partition assertion, the per-run drift warning's threshold, the log reader, the weekly
 # refresh's drift rule and table rewrite, against fixtures and the live table, with no network.
 python3 helpers/verify_times.py --selftest >/dev/null
+# Milestone 1116 (nife's basalt pin follows basalt's newest Release): which Release the pin names, with
+# no network: the newest qualifying one, each way a Release is skipped, and never backward.
+python3 helpers/basalt_pin.py --selftest >/dev/null
 # Milestone 808 (every gate accounts for its time): the CI job record's display-name mapping and
 # daily rows against a recorded run, and the near-budget issue's three transitions (open, update,
 # close after three runs under), with no network. The fetch and the sync run only in metrics.yml.

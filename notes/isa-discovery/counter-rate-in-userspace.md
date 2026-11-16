@@ -8,7 +8,7 @@ lesson.
 ## How userspace learns the rate
 
 RISC-V has no register that reports the timebase, and userspace cannot *read* the device tree, but
-the kernel can *hand it a page*. `user_mode_runtime::cntfrq` on RISC-V reads the timebase page the
+the kernel can *hand it a page*. `user_mode_runtime::counter_hertz` on RISC-V reads the timebase page the
 kernel maps read-only into every process at `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`, the mechanism
 milestone 161 (the x86_64 kernel port) shipped on `x86_64`. Not an ABI addition such as an
 aux-vector entry at process start (the way Linux passes `AT_HWCAP`), because the mechanism already

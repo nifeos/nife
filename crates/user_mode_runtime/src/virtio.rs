@@ -21,21 +21,21 @@ pub fn read_register(virtio_slot: u64, off: u64) -> i64 {
     unsafe { super::invoke(virtio_slot, abi::virtio::READ_REGISTER, off, 0, 0) }
 }
 
-/// `WRITE_REGISTER` `val` at `off` on the `Virtio` capability in `virtio_slot`. `0` on success; a
+/// `WRITE_REGISTER` `value` at `off` on the `Virtio` capability in `virtio_slot`. `0` on success; a
 /// negative `abi::Error` (`NotPermitted` for a queue-address or notify register, which only
 /// [`setup_queue`]/[`notify`] may touch).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`read_register`]. His words: "Yes". Refused `virtio_write_reg` (round 7's
 /// provisional name).
-pub fn write_register(virtio_slot: u64, off: u64, val: u64) -> i64 {
+pub fn write_register(virtio_slot: u64, off: u64, value: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the Virtio capability and refuses any register
     // this call is not DMA-safe to write.
-    unsafe { super::invoke(virtio_slot, abi::virtio::WRITE_REGISTER, off, val, 0) }
+    unsafe { super::invoke(virtio_slot, abi::virtio::WRITE_REGISTER, off, value, 0) }
 }
 
 /// `SETUP_QUEUE` virtqueue `queue` (0-indexed; a virtio-net device uses 0 = receive, 1 = transmit)
-/// with `num` descriptors, on the `Virtio` capability in `virtio_slot`. The kernel programs the
+/// with `descriptors` descriptors, on the `Virtio` capability in `virtio_slot`. The kernel programs the
 /// ring addresses to the fixed offsets of that queue's ring block in the driver's own DMA region;
 /// the driver never chooses them. `0` on success; a negative `abi::Error` (`BadQueue`/`WrongObject`
 /// if `queue` is out of range or the block does not fit the region).
@@ -43,10 +43,10 @@ pub fn write_register(virtio_slot: u64, off: u64, val: u64) -> i64 {
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`read_register`]. His words: "Yes". Refused `virtio_setup_queue` (round 7's
 /// provisional name).
-pub fn setup_queue(virtio_slot: u64, num: u64, queue: u64) -> i64 {
+pub fn setup_queue(virtio_slot: u64, descriptors: u64, queue: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the Virtio capability, `queue`, and that the
     // ring block fits the driver's DMA region before it programs anything.
-    unsafe { super::invoke(virtio_slot, abi::virtio::SETUP_QUEUE, num, queue, 0) }
+    unsafe { super::invoke(virtio_slot, abi::virtio::SETUP_QUEUE, descriptors, queue, 0) }
 }
 
 /// `NOTIFY` the device that virtqueue `queue` has new descriptors, on the `Virtio` capability in

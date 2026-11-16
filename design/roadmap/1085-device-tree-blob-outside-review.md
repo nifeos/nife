@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 857
 decision_dependencies: none
@@ -62,7 +62,7 @@ comment and `publish = false` in the release that publishes. The template's READ
 device_tree_blob`, `## EXAMPLES`, `## What is proven`, `## BUGS`, `## Minimum Rust version`, `##
 License`) is the README's shape. Effort S. Two-way.
 
-**P0-2. The documentation cites nife, and once quotes the architect.** `src/lib.rs` lines 1 to 32 (the
+**P0-2. The documentation cites nife, and once quotes the architect.** DONE, except the `Name:` blocks, which the move commit strips. `src/lib.rs` lines 1 to 32 (the
 crate's opening paragraph points at `notes/boot-protocol.md`, `notes/device-tree.md` and a decision
 section, then carries a 22-line name-provenance block naming the architect three times).
 `src/lib.rs` lines 1020 to 1022 (a quotation of the architect's ruling, which no record may carry).
@@ -78,7 +78,7 @@ standing for. The 2 MiB ceiling is Linux's `MAX_FDT_SIZE`. The saturating `end` 
 `of_n_addr_cells`. Then move the provenance to the move commit's message, and delete the quotation.
 Effort M. Two-way.
 
-**P0-3. The naming gates refuse 29 names.** `spelled_out.py` refuses the binding `dtb` 28 times:
+**P0-3. The naming gates refuse 29 names.** DONE (the binding is `tree`, and "honor" is spelled the American way). `spelled_out.py` refuses the binding `dtb` 28 times:
 `src/lib.rs` line 181 and 27 bindings across the three test files (the table replaces `dtb` with
 `device_tree_blob`; `tree` or `blob` reads better at a binding). `british_spelling.py` refuses
 `tests/hostile.rs` line 825 (the British form of "honors"). Both gates run at a ceiling of zero in the template. Effort S.
@@ -235,6 +235,16 @@ the eight packages that depend on the crate; done-when's last line is the check.
 
 The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.md).
 
+## Follow-on
+
+- **Done.** P0-2, P0-3, P1-1 to P1-4 and P2-1 to P2-14 (P2-9's documentation half), carried by
+  pull request #3612 and the lanes before it, with the tests and harnesses each item names.
+- **Outstanding.** P0-1, P1-5 and the README half of P2-9, which wait for the move. Checked by
+  reading `crates/device_tree_blob`: its manifest still inherits the workspace's license and lints
+  and reads `publish = false`, and it holds no README, no license files and no `fuzz/` directory.
+- **Recorded.** Three findings with no other home, in this file's BUGS
+  (`design/roadmap/1085-device-tree-blob-outside-review.md`).
+
 ## BUGS
 
 - P1-3 came from reading, not from a build for a 32-bit target. The review host has none, and the fix is cheap enough to land without one.
@@ -245,8 +255,12 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 - The review ran the template's helpers from a checkout of the template, not from a crate
   repository with its own ceilings. A repository created from the scaffold starts at a ceiling of
   zero, which is what the counts above assume.
-- If the ruling to take `dtoolkit` lands before this crate moves, P0 and D1 to D6 lapse. P1-1 to
-  P1-4 and P2-2, P2-3 and P2-6 still describe the parser the kernel boots with until then.
+- If the ruling to take `dtoolkit` lands before this crate moves, P0-1, P1-5 and the README half
+  of P2-9 lapse.
+- `register_names.py` still reports the public field `Region::size` (a length with no unit), a
+  rename for the move's naming review; `abbreviations.py` reports `formatter`, `core::fmt`'s word.
+- Milestone 239 (radon's device tree does not describe the TRNG) still gives the depth bound as a
+  `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64.
 
 ## Index row
 

@@ -233,6 +233,15 @@ pub const fn runtime_window(virtual_address: u64) -> u64 {
     virtual_address
 }
 
+/// **Where the initial ramdisk archive is mapped**, read-only, before a program's `_start` runs: a
+/// window of [`RUNTIME_WINDOWS`], checked against it at compile time. The kernel maps the archive
+/// here and `user_mode_runtime::initial_ramdisk` reads it here, both through this one constant.
+///
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+/// `INITIAL_RAMDISK_VA`: `va` is ruled to expand. Moved here from the kernel's and the runtime's
+/// two copies of it (milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves), item 11).
+pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
+
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`SERVICE_WINDOWS`].
 pub const fn service_window(virtual_address: u64) -> u64 {
@@ -395,12 +404,12 @@ mod tests {
 
     #[test]
     #[allow(clippy::assertions_on_constants)]
-    fn an_image_the_size_of_ripgrep_fits_and_the_old_ceiling_is_gone() {
+    fn an_image_the_size_of_a_large_program_fits_and_the_old_ceiling_is_gone() {
         // Milestone 121 measured ripgrep's image at 0x40_0000..0x69c_000.
-        let ripgrep = 0x69c_000 - 0x40_0000;
-        assert!(check_image(IMAGE_BASE, IMAGE_BASE + ripgrep).is_ok());
+        let large_program = 0x69c_000 - 0x40_0000;
+        assert!(check_image(IMAGE_BASE, IMAGE_BASE + large_program).is_ok());
         assert!(
-            IMAGE.bytes() / ripgrep >= 100,
+            IMAGE.bytes() / large_program >= 100,
             "less than 100x headroom over ripgrep"
         );
         assert!(IMAGE.bytes() > 896 * 1024);

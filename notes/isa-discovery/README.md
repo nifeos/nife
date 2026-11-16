@@ -11,7 +11,7 @@ sequel, and the `BUGS`. This directory carries the detail its prose budget has n
   `match`es, why SBI ids are derived from their tags, and the one line no test covers.
 - [`the-crate-name.md`](the-crate-name.md): why the crate is `machine_discovery`, the prior art
   behind the name, and the names it beat.
-- [`counter-rate-in-userspace.md`](counter-rate-in-userspace.md): how `user_mode_runtime::cntfrq`
+- [`counter-rate-in-userspace.md`](counter-rate-in-userspace.md): how `user_mode_runtime::counter_hertz`
   learns RISC-V's counter rate, and the lesson.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`

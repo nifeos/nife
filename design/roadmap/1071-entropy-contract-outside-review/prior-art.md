@@ -3,17 +3,20 @@
 An appendix to [the milestone](../1071-entropy-contract-outside-review.md).
 
 How the contract sits against what a reader already knows. Recent downloads are the last 90 days
-at the time of the review.
+at the time of the review. The Linux rows quote `drivers/char/random.c` and
+`arch/x86/kernel/cpu/rdrand.c` in torvalds/linux at `23c62304dde2` and from `man2/getrandom.2` in
+the man-pages repository at `9dc90054e923`. The virtio row quotes
+`device-types/entropy/description.tex` in oasis-tcs/virtio-spec at `bb1dd2e1fe89`.
 
 | system | request | reply | short answer | "no source" | health check at start |
 |---|---|---|---|---|---|
 | `getrandom` 0.4 (791.8M recent / 2.57G all) | `fill(&mut [u8]) -> Result<(), Error>` | the buffer | never: loops inside | `Error` with a code | none |
 | `rand_core` 0.10 (617.4M / 2.17G) | `fill_bytes`, `try_fill_bytes -> Result<(), Error>` | the buffer | never | `Error` | none |
-| Linux `getrandom(2)` | buffer and length | byte count | up to 256 bytes never short once the pool is ready (unverified wording) | `errno` | the pool blocks until seeded |
+| Linux `getrandom(2)` | buffer, length and flags | byte count | never short for up to 256 bytes once the pool is ready | `errno`; `EINVAL` for an unknown flag | the pool blocks until seeded |
 | OpenBSD `getentropy(2)` | buffer up to 256 bytes | fills all | never | `EIO` above 256 bytes | none |
 | Zephyr `entropy_get_entropy` | buffer and length | `0` or `-errno` | never | `-errno` | none |
-| virtio-rng | a buffer in a queue | bytes written | the device may fill fewer (unverified wording) | no device | none |
-| Linux `x86_init_rdrand` | eight `RDRAND` draws at boot | | | | refuses when consecutive draws repeat and disables the instruction (unverified detail) |
+| virtio-rng | a buffer in a queue | bytes written | at least one byte; the device may use less than the whole buffer | no device | none |
+| Linux `x86_init_rdrand` | eight `RDRAND` draws at boot | | | | fails when a draw fails or fewer than five of the seven successive pairs differ, and then clears both `RDRAND` and `RDSEED` |
 | FIPS 140-2 4.9.2, SP 800-90B 4.4.1 | | | | | compare each block with the last; a repeat is a failure |
 
 Where this crate differs: the unit is one `CALL` of one request word and two reply words, so a

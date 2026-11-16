@@ -127,7 +127,7 @@ const NAME_SERVER_CASES: [(&str, Expect); 6] = [
     ("mirror.nife.test", Expect::Address(NAME_SERVER_IP)),
     ("nosuch.nife.test", Expect::Refused(Reject::NoSuchName)),
     ("forged.nife.test", Expect::Refused(Reject::IdMismatch)),
-    ("poisoned.nife.test", Expect::Refused(Reject::NoAddress)),
+    ("poisoned.nife.test", Expect::Refused(Reject::NoIpv4Address)),
     (
         "loop.nife.test",
         Expect::Refused(Reject::Malformed(domain_name_system::Error::PointerForward)),
@@ -377,8 +377,8 @@ fn against_the_name_server() -> u64 {
             Err(stage) => return code(stage),
         };
         match (expect, verdict) {
-            (Expect::Address(want), Ok(answer)) if answer.addresses() == [*want] => {
-                resolved.get_or_insert(answer.addresses()[0]);
+            (Expect::Address(want), Ok(answer)) if answer.ipv4_addresses() == [*want] => {
+                resolved.get_or_insert(answer.ipv4_addresses()[0]);
             }
             (Expect::Refused(want), Err(got)) if *want == got => {}
             _ => return code(0xF), // the wrong verdict: the lie was believed, or the truth refused
@@ -401,7 +401,7 @@ fn ask_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer, Reje
 }
 
 fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer, Reject>, u64> {
-    SHARED_FRAME.set_dst(NAME_SERVER_IP, domain_name_system::PORT);
+    SHARED_FRAME.set_destination(NAME_SERVER_IP, domain_name_system::PORT);
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return Err(0x2);
     }
@@ -438,7 +438,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
     if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
         return 0xE1F1;
     }
-    SHARED_FRAME.set_dst(address, ECHO_PORT);
+    SHARED_FRAME.set_destination(address, ECHO_PORT);
     let mut code = OK;
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         code = 0xE1F2;
@@ -487,7 +487,7 @@ fn ask_the_host_resolver() -> u64 {
     let mut reply = [0u8; DATA_MAXIMUM];
     for _ in 0..DNS_ATTEMPTS {
         SHARED_FRAME.payload_write(&request[..n]);
-        SHARED_FRAME.set_dst(DNS_IP, DNS_PORT);
+        SHARED_FRAME.set_destination(DNS_IP, DNS_PORT);
         if on(SOCKET, OPERATION_SENDTO, n as u64).0 != REP_OK {
             return 0xE011;
         }
@@ -539,7 +539,7 @@ fn tftp_on_socket() -> ! {
     at += 1;
     SHARED_FRAME.payload_write(&rrq[..at]);
 
-    SHARED_FRAME.set_dst(GW_IP, TFTP_PORT);
+    SHARED_FRAME.set_destination(GW_IP, TFTP_PORT);
     if on(SOCKET, OPERATION_SENDTO, at as u64).0 != REP_OK {
         done(0xE041);
     }
@@ -568,7 +568,10 @@ fn tftp_on_socket() -> ! {
 
     // The DATA's source endpoint, which `RECEIVE` reports in the frame header: the gateway, from a
     // real port. Not pinned to 69, since TFTP answers from a transfer-id port (RFC 1350, section 4).
-    let (src_ip, src_port) = (SHARED_FRAME.dst_ip(), SHARED_FRAME.dst_port());
+    let (src_ip, src_port) = (
+        SHARED_FRAME.destination_network_address(),
+        SHARED_FRAME.destination_port(),
+    );
     if src_ip != GW_IP {
         done(0xE046); // the reported source is not the server that answered
     }
@@ -581,7 +584,7 @@ fn tftp_on_socket() -> ! {
     // retransmits its DATA at a closed socket while the next test brings this NIC up.
     let ack = [0x00u8, 0x04, 0x00, 0x01];
     SHARED_FRAME.payload_write(&ack);
-    SHARED_FRAME.set_dst(src_ip, src_port);
+    SHARED_FRAME.set_destination(src_ip, src_port);
     let _ = on(SOCKET, OPERATION_SENDTO, ack.len() as u64);
 
     let _ = close(SOCKET);
@@ -596,7 +599,7 @@ fn tcp_echo() -> ! {
         done(0xE020);
     }
 
-    SHARED_FRAME.set_dst(ECHO_IP, ECHO_PORT);
+    SHARED_FRAME.set_destination(ECHO_IP, ECHO_PORT);
     let (outcome, _) = on(SOCKET, OPERATION_CONNECT, 0);
     if outcome != CONNECT_ESTABLISHED {
         done(0xE021); // handshake did not complete (refused/reset)
@@ -628,7 +631,7 @@ fn tcp_echo() -> ! {
 /// back and attached again. See notes/net/the-test-clients.md and notes/net/the-outbound-gates.md.
 fn tcp_reopen() -> ! {
     attach_page_frame();
-    SHARED_FRAME.set_dst(ECHO_IP, ECHO_PORT);
+    SHARED_FRAME.set_destination(ECHO_IP, ECHO_PORT);
 
     // The first connection.
     if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
@@ -848,7 +851,7 @@ fn fetch_and_verify(stem: &str, tampered: bool, expected: &measured_boot::Digest
 }
 
 fn exchange(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64 {
-    SHARED_FRAME.set_dst(PACKAGE_IP, PACKAGE_PORT);
+    SHARED_FRAME.set_destination(PACKAGE_IP, PACKAGE_PORT);
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return 0xE093;
     }
@@ -921,7 +924,7 @@ fn tcp_drain(peer: u64) -> ! {
     if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
         done(0xE0A0);
     }
-    SHARED_FRAME.set_dst(ip, port);
+    SHARED_FRAME.set_destination(ip, port);
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         done(0xE0A1); // nobody listening at the peer, or no route to it
     }

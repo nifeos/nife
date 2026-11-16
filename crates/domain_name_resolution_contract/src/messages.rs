@@ -54,6 +54,6 @@ pub const fn reject_code(reject: domain_name_system::Reject) -> u8 {
         Reject::NoSuchName => 6,
         Reject::ServerError(_) => 7,
         Reject::ChainTooLong => 8,
-        Reject::NoAddress => 9,
+        Reject::NoIpv4Address => 9,
     }
 }
