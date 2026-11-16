@@ -19,8 +19,8 @@ is canceled.`, then `The operation was canceled.`. Pull requests 3567, 3574, 360
 (run 43776160228, `prove (shard 1/5)`) shows the line arriving 2.7 minutes into the job, while a
 harness check was running.
 
-Eight `prove (shard 2/5)` jobs were cancelled at exactly 30.0 minutes. Their logs are unreadable,
-because the log API answers `BlobNotFound`.
+At exactly 30.0 minutes the service cancelled eight `prove (shard 2/5)` jobs. Their logs cannot be
+read: the log API answers `BlobNotFound`.
 
 No Kani proof failure appeared in any log that could be read.
 
@@ -40,8 +40,8 @@ N/M)` job name that carries `##[error]The runner has received a shutdown signal`
 as the failure's own wording, and the job name scopes it to a `prove` job.
 
 - The log has to come from the whole job. `helpers/arm.sh` matches a signature against `gh run view
-  <run> --log-failed`, which prints only steps that concluded `failure`. A shard whose runner is
-  killed ends its step `cancelled`, so that command prints nothing for the shard. All 23 failed
+  <run> --log-failed`, which prints only steps that concluded `failure`. When a shard's runner dies, the
+  step ends `cancelled`, so that command prints nothing for the shard. All 23 failed
   verify merge-group runs of 2026-11-15 show this, and none had a shard step that concluded
   `failure`. So `helpers/arm.sh` also reads the whole log of any failed job that has a cancelled
   step. It leads each line with the job name and a tab, the form `--log-failed` uses.
@@ -49,13 +49,13 @@ as the failure's own wording, and the job name scopes it to a `prove` job.
   name.
 - A real proof failure does not match. Its step concludes `failure`, its log has no shutdown line,
   and the aggregate `verify (Kani proofs)` job is the only other failed job.
-- The 30.0-minute cancellations are not covered. Nobody can read their logs, so no signature
+- The signature does not cover the 30.0-minute cancellations. Nobody can read their logs, so no signature
   matches them. They still need `--despite-failed-checks`.
 
 ## Open: what stops a shard at 30.0 minutes
 
 The `prove` job has `timeout-minutes: 25` and its proving step 21, so 30.0 is neither limit. Two
-facts were read. The check run's annotation on the cancelled shards examined says `The job has
+facts came from the logs and the API. The check run's annotation on the cancelled shards examined says `The job has
 exceeded the maximum execution time of 25m0s`. In one of them (run 43772203707, pull request 3611)
 the proving step stopped reporting 1.5 minutes after it began, yet the job stayed open until 30.0
 minutes after it started. That fits a runner that stopped answering the service early, with the
