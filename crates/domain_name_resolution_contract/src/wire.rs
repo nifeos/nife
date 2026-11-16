@@ -1,6 +1,6 @@
 //! **What a client and the name resolver put on the wire**: the client's page and words, alone, so
-//! the file can be copied verbatim into std's platform layer (`cargo xtask std-src` writes it as
-//! `sys/pal/nife/resolveproto.rs`), the way every other contract that layer speaks is. It names
+//! the file can be copied verbatim into a standard library that speaks this contract, which cannot
+//! name this crate's dependency. It names
 //! nothing outside itself, which is the condition of that copy. The spawner's control words, which
 //! no client sends, are in `control`; the grant table and the reject codes need
 //! `domain_name_system`, and are in their own modules.

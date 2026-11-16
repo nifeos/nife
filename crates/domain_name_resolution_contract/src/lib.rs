@@ -1,8 +1,9 @@
-//! **What a name resolver and the programs around it agree on** (§248 (the name resolver is its
-//! own confined program)). The spawner grants each client badge a zone ([`grant_messages`]), and
+//! **What a name resolver and the programs around it agree on**. The resolver is a program of its
+//! own, confined to asking one name server, and a client may resolve only names inside the zone it
+//! was granted. The spawner grants each client badge a zone ([`grant_messages`]), and
 //! only badge 0 is read as a grant; a client attaches a page, writes a host name into it and
 //! `CALL`s [`OPERATION_RESOLVE`]; the resolver judges the name against its [`Grants`] before it
-//! sends anything. See notes/name-resolution/the-contract.md.
+//! sends anything. The README has the sequence and its diagram.
 //!
 //! | bytes | field | written by |
 //! |---|---|---|

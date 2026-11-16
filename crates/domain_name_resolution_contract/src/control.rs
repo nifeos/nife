@@ -22,13 +22,12 @@ pub const MAXIMUM_GRANTS: usize = 8;
 /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1086-resolver-contract-outside-review-items.
 pub const ROOT_ZONE: &str = "";
 
-/// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a
-/// std program at the prompt holds the network and a resolver)): empty (the root zone, any name),
+/// **Whether `zone` is spelled the one way a zone may be asked for or granted**: empty (the root zone, any name),
 /// or labels of one to 63 bytes of `a`-`z`, `0`-`9` and `-`, joined by single dots, with no dot at
 /// either end, at most [`MAXIMUM_NAME_TEXT_BYTES`] bytes in all. Lowercase only, so `Example.net` and
-/// `example.net` cannot be two spellings of one ask. A manifest note's zones
-/// (`capability_manifest_note::zones`) and the installed-programs table's `grant` lines both hold
-/// to it.
+/// `example.net` cannot be two spellings of one ask. A program's declared zones and a
+/// configuration's grants both hold to it, so what a program asks for and what it is granted
+/// compare byte for byte.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const fn is_canonical_zone(zone: &[u8]) -> bool {
@@ -73,8 +72,7 @@ pub const OPERATION_GRANT: u64 = 0x10;
 /// then on the badge is denied every name, the resolver gives up the page that badge attached, and
 /// the window is free for the next grant. A spawner that outlives its clients sends one when each
 /// client ends, which is what lets a resolver serve more than [`MAXIMUM_GRANTS`] clients in its
-/// life (milestone 892 (a std program at the prompt holds the
-/// network and a resolver); provisional).
+/// life.
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
 /// `system_log_contract` has its own `OPERATION_FORGET`; the pull request records no other name

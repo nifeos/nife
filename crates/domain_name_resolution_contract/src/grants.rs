@@ -1,7 +1,5 @@
 //! **The grant table**: which badge may resolve which zone, and in which window its page lives.
-//! Moved out of `lib.rs` unchanged by milestone 892 (a std program at the prompt holds the network
-//! and a resolver), whose forget verb grew the crate root, so the root stays an index (§282 (when a
-//! file is split, the parent becomes an index)).
+//! A module of its own so the crate root stays an index.
 //!
 //! Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC), for the module and the file.
 //! The pull request records no other name considered.
@@ -178,19 +176,19 @@ impl core::fmt::Debug for Entry {
 ///
 /// # Examples
 ///
-/// A spawner grants badge 7 the zone `nife.test`:
+/// A spawner grants badge 7 the zone `example.test`:
 ///
 /// ```
 /// use domain_name_system::Name;
 /// use domain_name_resolution_contract::{Denied, Grants, grant_messages};
 ///
 /// let mut grants = Grants::new();
-/// for (first_word, second_word) in grant_messages(7, b"nife.test").unwrap() {
+/// for (first_word, second_word) in grant_messages(7, b"example.test").unwrap() {
 ///     grants.control(first_word, second_word);
 /// }
-/// let asked = Name::from_dotted("packages.nife.test").unwrap();
+/// let asked = Name::from_dotted("packages.example.test").unwrap();
 /// assert!(grants.check(7, &asked).is_ok());
-/// let elsewhere = Name::from_dotted("evilnife.test").unwrap();
+/// let elsewhere = Name::from_dotted("evilexample.test").unwrap();
 /// assert_eq!(grants.check(7, &elsewhere), Err(Denied::OutsideZone));
 /// assert_eq!(grants.check(8, &asked), Err(Denied::NoGrant));
 /// ```
