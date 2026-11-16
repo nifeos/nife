@@ -118,8 +118,8 @@ pub const fn request(operation: u64) -> u64 {
 }
 
 /// The operation in any first word, client or control.
-pub const fn operation(w0: u64) -> u64 {
-    w0 >> 56
+pub const fn operation(first_word: u64) -> u64 {
+    first_word >> 56
 }
 
 /// A control word: `operation << 56 | offset << 48 | total << 40 | badge`, the badge in the low 32
@@ -129,12 +129,12 @@ pub const fn control_word(operation: u64, offset: u8, total: u8, badge: u32) -> 
 }
 
 /// A control word's `(operation, offset, total, badge)`.
-pub const fn control_fields(w0: u64) -> (u64, u8, u8, u32) {
+pub const fn control_fields(first_word: u64) -> (u64, u8, u8, u32) {
     (
-        w0 >> 56,
-        (w0 >> 48) as u8,
-        (w0 >> 40) as u8,
-        (w0 & 0xffff_ffff) as u32,
+        first_word >> 56,
+        (first_word >> 48) as u8,
+        (first_word >> 40) as u8,
+        (first_word & 0xffff_ffff) as u32,
     )
 }
 
@@ -284,13 +284,13 @@ mod tests {
 
     #[test]
     fn a_request_word_carries_its_operation() {
-        for op in [
+        for operation_code in [
             OPERATION_ATTACH_PAGE_FRAME,
             OPERATION_RESOLVE,
             OPERATION_GRANT,
             OPERATION_FORGET,
         ] {
-            assert_eq!(operation(request(op)), op);
+            assert_eq!(operation(request(operation_code)), operation_code);
         }
     }
 

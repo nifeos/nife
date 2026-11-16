@@ -139,8 +139,8 @@ struct Entry {
     complete: bool,
     /// The zone's text so far, while the spawner's messages arrive.
     text: [u8; MAXIMUM_NAME_TEXT_BYTES + 1],
-    text_len: u8,
-    text_total: u8,
+    text_bytes_received: u8,
+    text_bytes_total: u8,
 }
 
 impl Entry {
@@ -149,8 +149,8 @@ impl Entry {
         zone: Name::root(),
         complete: false,
         text: [0; MAXIMUM_NAME_TEXT_BYTES + 1],
-        text_len: 0,
-        text_total: 0,
+        text_bytes_received: 0,
+        text_bytes_total: 0,
     };
 }
 
@@ -169,8 +169,8 @@ impl Entry {
 /// use domain_name_resolution_contract::{Denied, Grants, grant_messages};
 ///
 /// let mut grants = Grants::new();
-/// for (w0, w1) in grant_messages(7, b"nife.test").unwrap() {
-///     grants.control(w0, w1);
+/// for (first_word, second_word) in grant_messages(7, b"nife.test").unwrap() {
+///     grants.control(first_word, second_word);
 /// }
 /// let asked = Name::from_dotted("packages.nife.test").unwrap();
 /// assert!(grants.check(7, &asked).is_ok());
@@ -198,12 +198,12 @@ impl Grants {
 
     /// **Take one control message from the spawner.** The caller has already established that it
     /// arrived with badge 0; this reads only the words.
-    pub fn control(&mut self, w0: u64, w1: u64) -> Control {
-        let (op, offset, total, badge) = control_fields(w0);
-        if op == OPERATION_FORGET {
+    pub fn control(&mut self, first_word: u64, second_word: u64) -> Control {
+        let (operation, offset, total, badge) = control_fields(first_word);
+        if operation == OPERATION_FORGET {
             return self.forget(badge);
         }
-        if op != OPERATION_GRANT {
+        if operation != OPERATION_GRANT {
             return Control::Refused(Refusal::UnknownOperation);
         }
         if badge == 0 {
@@ -226,20 +226,20 @@ impl Grants {
             // completes, so there is never a moment where a half-sent zone is in force.
             e.badge = badge;
             e.complete = false;
-            e.text_len = 0;
-            e.text_total = total;
-        } else if e.complete || offset != e.text_len || total != e.text_total {
+            e.text_bytes_received = 0;
+            e.text_bytes_total = total;
+        } else if e.complete || offset != e.text_bytes_received || total != e.text_bytes_total {
             return self.refuse(badge, Refusal::OutOfOrder);
         }
-        let bytes = w1.to_le_bytes();
-        let n = (e.text_total - e.text_len).min(8) as usize;
-        let start = e.text_len as usize;
+        let bytes = second_word.to_le_bytes();
+        let n = (e.text_bytes_total - e.text_bytes_received).min(8) as usize;
+        let start = e.text_bytes_received as usize;
         e.text[start..start + n].copy_from_slice(&bytes[..n]);
-        e.text_len += n as u8;
-        if e.text_len < e.text_total {
+        e.text_bytes_received += n as u8;
+        if e.text_bytes_received < e.text_bytes_total {
             return Control::Partial;
         }
-        let zone = core::str::from_utf8(&e.text[..e.text_len as usize])
+        let zone = core::str::from_utf8(&e.text[..e.text_bytes_received as usize])
             .ok()
             .and_then(|text| Name::from_dotted(text).ok());
         match zone {
@@ -294,8 +294,8 @@ impl Grants {
         if let Some(at) = self.position(badge) {
             let e = &mut self.entries[at];
             e.complete = false;
-            e.text_len = 0;
-            e.text_total = 0;
+            e.text_bytes_received = 0;
+            e.text_bytes_total = 0;
         }
         Control::Refused(why)
     }

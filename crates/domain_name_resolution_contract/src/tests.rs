@@ -13,8 +13,8 @@ fn grant(g: &mut Grants, badge: u32, zone: &str) -> Control {
     // The first refusal, or the last message's outcome: once a piece is refused, the ones after
     // it are continuations of nothing, and their own refusal would hide the reason.
     let mut last = Control::Partial;
-    for (w0, w1) in grant_messages(badge, zone.as_bytes()).unwrap() {
-        last = g.control(w0, w1);
+    for (first_word, second_word) in grant_messages(badge, zone.as_bytes()).unwrap() {
+        last = g.control(first_word, second_word);
         if matches!(last, Control::Refused(_)) {
             break;
         }
@@ -164,11 +164,14 @@ fn a_continuation_into_a_full_table_is_out_of_order_not_full() {
     for badge in 1..=MAXIMUM_GRANTS as u32 {
         grant(&mut g, badge, "nife.test");
     }
-    let (w0, w1) = grant_messages(99, b"packages.nife.test")
+    let (first_word, second_word) = grant_messages(99, b"packages.nife.test")
         .unwrap()
         .nth(1)
         .unwrap();
-    assert_eq!(g.control(w0, w1), Control::Refused(Refusal::OutOfOrder));
+    assert_eq!(
+        g.control(first_word, second_word),
+        Control::Refused(Refusal::OutOfOrder)
+    );
 }
 
 /// **The longest name with its trailing dot is 254 bytes, and is granted**; a total past that
@@ -196,8 +199,8 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_grant() {
     for badge in 1..=MAXIMUM_GRANTS as u32 {
         grant(&mut g, badge, "nife.test");
     }
-    let (w0, w1) = forget_message(3).unwrap();
-    assert_eq!(g.control(w0, w1), Control::Forgotten(2));
+    let (first_word, second_word) = forget_message(3).unwrap();
+    assert_eq!(g.control(first_word, second_word), Control::Forgotten(2));
     assert_eq!(g.check(3, &name("nife.test")), Err(Denied::NoGrant));
     assert_eq!(g.granted(3), None);
     // The others are untouched.
@@ -212,8 +215,11 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_grant() {
 #[test]
 fn forgetting_a_badge_with_no_window_or_badge_zero_is_refused() {
     let mut g = Grants::new();
-    let (w0, w1) = forget_message(5).unwrap();
-    assert_eq!(g.control(w0, w1), Control::Refused(Refusal::NoSuchGrant));
+    let (first_word, second_word) = forget_message(5).unwrap();
+    assert_eq!(
+        g.control(first_word, second_word),
+        Control::Refused(Refusal::NoSuchGrant)
+    );
     assert!(forget_message(0).is_none());
     assert_eq!(
         g.control(control_word(OPERATION_FORGET, 0, 0, 0), 0),
@@ -402,8 +408,11 @@ fn the_last_piece_of_a_grant_says_whether_it_took() {
     let mut g = Grants::new();
     let messages: Vec<_> = grant_messages(3, b"a.long.example.test").unwrap().collect();
     let (last, pieces) = messages.split_last().unwrap();
-    for &(w0, w1) in pieces {
-        assert_eq!(control_answer(g.control(w0, w1).reply().word()), Ok(()));
+    for &(first_word, second_word) in pieces {
+        assert_eq!(
+            control_answer(g.control(first_word, second_word).reply().word()),
+            Ok(())
+        );
     }
     assert_eq!(
         control_answer(g.control(last.0, last.1).reply().word()),
