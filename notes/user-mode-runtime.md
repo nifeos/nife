@@ -51,7 +51,7 @@ the reply comes back in the same five. The sixth register is an output and goes 
 kernel writes argument register 5 (`x5`, `a5`, `r9`) with a dead child's label when it delivers a
 death message to a plain `RECEIVE`, and leaves it alone otherwise (§148 (resolves by asking the
 kernel), as amended 2026-10-04). Declared as an input only, LLVM would keep a live value in it
-across the trap. Zero in makes `receive_fault` read `0` for anything the kernel did not stamp.
+across the trap. Zero in makes `receive_message` read `0` for anything the kernel did not stamp.
 
 On `x86_64`, two operands have no counterpart on the other architectures, and both are forced by
 the instruction. `syscall` writes the return address into `rcx` and the caller's `RFLAGS` into

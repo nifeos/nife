@@ -329,6 +329,6 @@ pub(super) fn read_named(
 /// Copy `out.len()` bytes out of the file page, starting `from` bytes in.
 pub(super) fn get_page_at(from: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = FS_WINDOW.r8((from + i) as u64);
+        *b = FS_WINDOW.read_u8((from + i) as u64);
     }
 }

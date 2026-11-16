@@ -707,7 +707,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
                 read_ok = false;
             } else {
                 for at in 0..n as u64 {
-                    window.w8(at, FS_WINDOW.r8(at));
+                    window.write_u8(at, FS_WINDOW.read_u8(at));
                 }
             }
         } else {
@@ -1327,7 +1327,7 @@ pub(super) fn screen_rendezvous() -> Option<u64> {
 /// - The next `$ ` can interleave with `terminal_sink_caretaker`'s trailing `CALL`, the display race
 ///   DECISIONS §106 (an unredirected tail stage's output goes to the screen) accepts.
 pub(super) fn await_screen(ep: u64) {
-    let (_event, tid, ..) = receive_fault(ep);
+    let Message { w1: tid, .. } = receive_message(ep).into_message();
     for _ in 0..SCREEN_REAP_ATTEMPTS {
         if reap(ep, tid) == 0 {
             return;

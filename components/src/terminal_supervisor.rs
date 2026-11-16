@@ -29,8 +29,8 @@ use line_editor_component::{self as component, supervisor as s};
 use supervision_contract::{Child as Built, ChildEndowment, Retention};
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
-    notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
+    Delivered, Message, capability_delete as delete_capability, counter_hertz, notification_poll,
+    notification_signal, notification_wait, now, receive, receive_message, receive_request, reply,
     send, send_capability, timer_arm,
 };
 use video_terminal::component as display;
@@ -668,7 +668,7 @@ impl Supervisor<'_> {
         delete_capability(badged);
         let Ok(child) = built else { fail() };
 
-        let bound = cntfrq() * s::QUIESCE_BOUND_MILLISECONDS / 1000;
+        let bound = counter_hertz() * s::QUIESCE_BOUND_MILLISECONDS / 1000;
         let started = now();
         if !process_builder::start_child(child, MODE_STAND_IN, 0, 0)
             || timer_arm(d.timer, started + bound, d.wake, DEADLINE) < 0
@@ -700,7 +700,7 @@ impl Supervisor<'_> {
         give_back(region);
         let _ = notification_poll(d.wake);
         Quiesce::Unanswered {
-            waited_milliseconds: waited * 1000 / cntfrq(),
+            waited_milliseconds: waited * 1000 / counter_hertz(),
         }
     }
 }
@@ -755,7 +755,7 @@ fn give_back(region: u64) {
 /// Wait for one death and collect it, so the child's region comes home to the budget, then drop
 /// the region capability that was kept for it.
 fn collect(faultep: u64, region: u64) {
-    let (_event, tid, _pc, _addr, _, _) = receive_fault(faultep);
+    let Message { w1: tid, .. } = receive_message(faultep).into_message();
     if user_mode_runtime::reap(faultep, tid) != 0 {
         fail()
     }

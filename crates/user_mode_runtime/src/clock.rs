@@ -11,7 +11,7 @@ use abi::cycle_counter::CycleMeaning;
 
 /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
 /// because the kernel opened `CNTKCTL_EL1.EL0VCTEN` (see kernel `timer::initialize` and notes/abi.md); the
-/// read is a plain register move, no syscall. Pair with [`cntfrq`] to turn tick deltas into seconds.
+/// read is a plain register move, no syscall. Pair with [`counter_hertz`] to turn tick deltas into seconds.
 #[cfg(target_arch = "aarch64")]
 pub fn now() -> u64 {
     let t: u64;
@@ -23,7 +23,7 @@ pub fn now() -> u64 {
 }
 
 /// The monotonic tick count (RISC-V): `rdtime`, which reads the `time` CSR. Readable from U-mode
-/// only because the kernel sets `scounteren.TM` in its per-hart timer init. Pair with [`cntfrq`]
+/// only because the kernel sets `scounteren.TM` in its per-hart timer init. Pair with [`counter_hertz`]
 /// to get seconds.
 #[cfg(target_arch = "riscv64")]
 pub fn now() -> u64 {
@@ -40,11 +40,13 @@ pub fn now() -> u64 {
 ///
 /// # Panics
 /// If the register reads zero, as it does on firmware that never programmed it: see
-/// [`cntfrq_checked`], which is this without the panic. The other two architectures read a page the
+/// [`counter_hertz_checked`], which is this without the panic. The other two architectures read a page the
 /// kernel fills and report "unknown" the same way.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "aarch64")]
-pub fn cntfrq() -> u64 {
-    cntfrq_checked().expect(
+pub fn counter_hertz() -> u64 {
+    counter_hertz_checked().expect(
         "the counter frequency is unknown: CNTFRQ_EL0 reads zero, which firmware left unprogrammed",
     )
 }
@@ -52,8 +54,10 @@ pub fn cntfrq() -> u64 {
 /// The counter frequency in Hz, or `None` if this process cannot know it (aarch64: `CNTFRQ_EL0`
 /// reads zero, which firmware that never programmed it leaves behind, and a rate of zero would
 /// divide by zero in [`monotonic_nanoseconds`]).
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "aarch64")]
-pub fn cntfrq_checked() -> Option<u64> {
+pub fn counter_hertz_checked() -> Option<u64> {
     let f: u64;
     // SAFETY: reading a system register; EL0-readable once EL0VCTEN is set.
     unsafe {
@@ -71,20 +75,24 @@ pub fn cntfrq_checked() -> Option<u64> {
 /// notes/user-mode-runtime/time.md.
 ///
 /// # Panics
-/// If the rate is unknown: see [`cntfrq_checked`], which is this without the panic.
+/// If the rate is unknown: see [`counter_hertz_checked`], which is this without the panic.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "riscv64")]
-pub fn cntfrq() -> u64 {
-    cntfrq_checked().expect(
+pub fn counter_hertz() -> u64 {
+    counter_hertz_checked().expect(
         "the counter frequency is unknown: this process's timebase page is zeroed or unrecognized",
     )
 }
 
 /// The counter frequency in Hz (RISC-V), or `None` if this process cannot know it, which includes a
-/// page carrying a rate outside the plausible band. See [`cntfrq`]
-/// for where the number comes from and [`cntfrq_checked`]'s `x86_64` twin for why "unknown" is a
+/// page carrying a rate outside the plausible band. See [`counter_hertz`]
+/// for where the number comes from and [`counter_hertz_checked`]'s `x86_64` twin for why "unknown" is a
 /// state worth representing rather than papering over.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "riscv64")]
-pub fn cntfrq_checked() -> Option<u64> {
+pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every path that builds a riscv64 process maps a page (real, or zeroed when the rate
     // was never learned) read-only at `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` before it runs:
     // `kernel::user::load`, `kernel::user::map_timebase_page`, and
@@ -127,10 +135,12 @@ pub fn now() -> u64 {
 ///
 /// # Panics
 /// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one: the panic
-/// traps (see [`trap`]) and the kernel kills the process. [`cntfrq_checked`] does not panic.
+/// traps (see [`trap`]) and the kernel kills the process. [`counter_hertz_checked`] does not panic.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
-pub fn cntfrq() -> u64 {
-    cntfrq_checked().expect(
+pub fn counter_hertz() -> u64 {
+    counter_hertz_checked().expect(
         "the counter frequency is unknown: this process's timebase page is zeroed or unrecognized",
     )
 }
@@ -138,10 +148,12 @@ pub fn cntfrq() -> u64 {
 /// The counter frequency in Hz (`x86_64`), or `None` if this process cannot know it: a zeroed page
 /// (the rate was never measured, or the parent that built this process did not know it), one whose
 /// magic does not match, or one carrying a rate outside
-/// [`counter_frequency_contract::is_plausible`]'s band. See [`cntfrq`] for where the number comes from and why the
+/// [`counter_frequency_contract::is_plausible`]'s band. See [`counter_hertz`] for where the number comes from and why the
 /// unchecked twin refuses rather than substituting a constant.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
-pub fn cntfrq_checked() -> Option<u64> {
+pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every kernel-side space-building function this crate's own docs list maps a page
     // (real, or zeroed when the rate was never learned) read-only at
     // `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` into every x86_64 process before it ever runs.
@@ -303,17 +315,47 @@ pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
     own_current_cpu_page().tick_hertz()
 }
 
-/// **Monotonic nanoseconds since boot**, from [`now`] and [`cntfrq`].
+/// **Monotonic nanoseconds since boot**, from [`now`] and [`counter_hertz`].
 ///
 /// The conversion splits into whole seconds and a remainder, because `ticks * 1_000_000_000`
 /// overflows a `u64` about five minutes into a boot at 62.5 MHz. No capability is needed: the
 /// counter is ambient, so any process can measure a duration. The wall clock is what needs one
 /// (notes/clock.md).
 pub fn monotonic_nanoseconds() -> u64 {
+    ticks_to_nanoseconds(now(), counter_hertz())
+}
+
+/// `ticks` at `hertz` ticks per second, in nanoseconds, split into whole seconds and a remainder
+/// so the product never overflows. `hertz` is non-zero: [`counter_hertz`] refuses zero.
+fn ticks_to_nanoseconds(ticks: u64, hertz: u64) -> u64 {
     use clock_contract::NS_PER_SECOND;
-    let freq = cntfrq();
-    let ticks = now();
-    let seconds = ticks / freq;
-    let rem = ticks % freq;
-    seconds * NS_PER_SECOND + rem * NS_PER_SECOND / freq
+    let seconds = ticks / hertz;
+    let remainder = ticks % hertz;
+    seconds * NS_PER_SECOND + remainder * NS_PER_SECOND / hertz
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ticks_to_nanoseconds;
+
+    #[test]
+    fn one_second_of_ticks_is_one_billion_nanoseconds() {
+        assert_eq!(ticks_to_nanoseconds(62_500_000, 62_500_000), 1_000_000_000);
+    }
+
+    #[test]
+    fn a_long_uptime_does_not_overflow() {
+        // A day at 62.5 MHz: `ticks * 1_000_000_000` alone would pass `u64::MAX`.
+        let day = 86_400u64;
+        assert_eq!(
+            ticks_to_nanoseconds(day * 62_500_000, 62_500_000),
+            day * 1_000_000_000
+        );
+    }
+
+    #[test]
+    fn the_remainder_is_scaled_not_dropped() {
+        assert_eq!(ticks_to_nanoseconds(1, 4_000_000), 250);
+        assert_eq!(ticks_to_nanoseconds(0, 4_000_000), 0);
+    }
 }
