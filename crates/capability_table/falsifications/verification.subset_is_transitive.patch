@@ -1,4 +1,4 @@
-Falsifies `capability::verification::subset_is_transitive`.
+Falsifies `capability_table::verification::subset_is_transitive`.
 
 The defect: the subset test tolerates one right's worth of slack,
 `(self.0 & !other.0).count_ones() <= 1` in place of an exact `== 0`.
@@ -15,9 +15,9 @@ Expected to fail: the harness's `assert!(a.is_subset_of(c))`, at `a = 0b11`, `b 
 `c = 0b00`, where each link of the chain gives away one right and the chain gives away two. That
 is exactly the laundering the doc comment says a flat subset check is safe because it cannot do.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -142,3 +142,3 @@ impl Rights {
      pub const fn is_subset_of(self, other: Rights) -> bool {
 -        self.0 & !other.0 == 0

@@ -89,7 +89,7 @@ The six that remain are all equivalent, each on one arithmetic fact.
   name, in the one crate where two constants sit at bit zero.
 - `ISTAT_ALL`'s four `|` under `^` (4). The five bits it unions are bits 0 through 4 of `ISTAT`, and
   no two are the same bit. On disjoint operands `|` and `^` are the same function. The argument is
-  the one `capability::note_peak` carries in
+  the one `capability_table::note_peak` carries in
   [the 2026-09-19 triage](regressions-2026-09-14-capability-to-device-tree-blob.md#capability-8-survivors-5-killed-3-equivalent).
   An argument a reader has to take on trust is worse than one they can run. So
   `the_clear_mask_is_every_named_istat_bit_and_nothing_else` now asserts the disjointness the claim

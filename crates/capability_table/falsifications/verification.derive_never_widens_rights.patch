@@ -1,4 +1,4 @@
-Falsifies `capability::derive_never_widens_rights`.
+Falsifies `capability_table::derive_never_widens_rights`.
 
 The defect: the two operands swapped inside `Rights::is_subset_of`, so the predicate
 answers "does `other` fit inside `self`" while every caller reads it as the opposite.
@@ -20,10 +20,10 @@ harness still catches that (`requested.0 & !src_rights.0` goes red on it); it is
 rather than kept because a harness carries one record and the guard-drop was never the
 blind spot.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index 86709e0e..d63c7fca 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -140,7 +140,7 @@ impl Rights {
  
      /// Is `self` no more than `other`? The subset test that [`CapabilityTable::derive`] turns on.

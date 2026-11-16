@@ -5,7 +5,7 @@
 An appendix to [`notes/falsification.md`](../falsification.md), which states each finding.
 
 The six were chosen against the cases that would embarrass the mechanism rather than a toy.
-Milestone 191 (did the proofs catch the bugs?) named `capability::subset_is_reflexive` as a
+Milestone 191 (did the proofs catch the bugs?) named `capability_table::subset_is_reflexive` as a
 tautology and the `paging` harnesses as per-ISA duplicates, so those are where a falsification
 convention has to earn its keep.
 

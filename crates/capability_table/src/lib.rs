@@ -10,7 +10,7 @@
 //! Rights narrow by intersection, so a capability passed on never carries more than was held.
 //!
 //! ```
-//! use capability::Rights;
+//! use capability_table::Rights;
 //!
 //! let held = Rights::READ.union(Rights::WRITE);
 //! assert!(held.allows(Rights::READ));
@@ -25,7 +25,7 @@
 //! No operation widens:
 //!
 //! ```
-//! use capability::Rights;
+//! use capability_table::Rights;
 //!
 //! let read_only = Rights::READ;
 //! // The best you can do with ALL on the other side is get back what you already had.
@@ -581,7 +581,7 @@ mod verification {
     use super::*;
 
     /// Every capability is a subset of itself: the reflexive base case of the derivation order.
-    /// Falsification: replayable `crates/capability/falsifications/verification.subset_is_reflexive.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.subset_is_reflexive.patch`
     #[kani::proof]
     fn subset_is_reflexive() {
         let a = Rights(kani::any());
@@ -591,7 +591,7 @@ mod verification {
     /// **Rights cannot be laundered through a chain.** If B is derived from A and C from B, then C
     /// is no more than A. This is why a *flat* subset check suffices and we never need to walk a
     /// derivation tree to bound a capability: subset is transitive, so the chain can only narrow.
-    /// Falsification: replayable `crates/capability/falsifications/verification.subset_is_transitive.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.subset_is_transitive.patch`
     #[kani::proof]
     fn subset_is_transitive() {
         let (a, b, c) = (
@@ -606,7 +606,7 @@ mod verification {
 
     /// **Userspace cannot forge a right.** `from_bits` takes an attacker-controlled syscall register
     /// (any u32) and the result holds only defined rights, for every possible input.
-    /// Falsification: replayable `crates/capability/falsifications/verification.from_bits_cannot_forge_a_right.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.from_bits_cannot_forge_a_right.patch`
     #[kani::proof]
     fn from_bits_cannot_forge_a_right() {
         let raw: u32 = kani::any();
@@ -615,7 +615,7 @@ mod verification {
 
     /// The two ways of asking the question agree: "a is no more than b" is exactly "b holds at
     /// least a". Proving them equivalent means a bug in one would show up against the other.
-    /// Falsification: replayable `crates/capability/falsifications/verification.subset_matches_allows.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.subset_matches_allows.patch`
     #[kani::proof]
     fn subset_matches_allows() {
         let (a, b) = (Rights(kani::any()), Rights(kani::any()));
@@ -651,7 +651,7 @@ mod verification {
     /// sweep's bit-scan, which clears one of the N occupied bits per iteration, and the unwinding
     /// assertion fails if any loop could run a fourth time.
     ///
-    /// Falsification: replayable `crates/capability/falsifications/verification.the_count_is_the_slots.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.the_count_is_the_slots.patch`
     #[kani::proof]
     #[kani::unwind(4)]
     fn the_count_is_the_slots() {
@@ -711,7 +711,7 @@ mod verification {
     /// table would not be a zero word. Checked over every small-table state and slot index, through
     /// every mutator. `#[kani::unwind(4)]`, by `the_count_is_the_slots`'s argument.
     ///
-    /// Falsification: replayable `crates/capability/falsifications/verification.the_free_mask_is_the_empty_slots.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.the_free_mask_is_the_empty_slots.patch`
     #[kani::proof]
     #[kani::unwind(4)]
     fn the_free_mask_is_the_empty_slots() {
@@ -759,7 +759,7 @@ mod verification {
     /// below its floor.** One symbolic operation of any kind, applied to a symbolic table.
     /// `#[kani::unwind(4)]`, by `the_count_is_the_slots`'s argument.
     ///
-    /// Falsification: replayable `crates/capability/falsifications/verification.the_peak_never_falls_and_a_floor_insert_stays_above_its_floor.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.the_peak_never_falls_and_a_floor_insert_stays_above_its_floor.patch`
     #[kani::proof]
     #[kani::unwind(4)]
     fn the_peak_never_falls_and_a_floor_insert_stays_above_its_floor() {
@@ -791,7 +791,7 @@ mod verification {
     /// `delete` succeeds the slot answers `NoSuchSlot` to both `get` and a second `delete`. This is
     /// the mechanism that makes a one-shot reply capability one-shot: the caller of `delete` removes
     /// it the instant it is invoked.
-    /// Falsification: replayable `crates/capability/falsifications/verification.a_deleted_capability_stays_deleted.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.a_deleted_capability_stays_deleted.patch`
     #[kani::proof]
     fn a_deleted_capability_stays_deleted() {
         let mut cs = any_small_capability_table();
@@ -811,7 +811,7 @@ mod verification {
     /// **Delete is slot-local.** Deleting any slot, in bounds or not, leaves every other slot
     /// exactly as it was. A server holding one-shot Reply capabilities for two callers consumes
     /// one and must still hold the other, or answering caller A would silently orphan caller B.
-    /// Falsification: replayable `crates/capability/falsifications/verification.delete_touches_only_its_slot.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.delete_touches_only_its_slot.patch`
     #[kani::proof]
     fn delete_touches_only_its_slot() {
         let mut cs = any_small_capability_table();
@@ -829,7 +829,7 @@ mod verification {
     /// if the derive succeeds then the capability it stored holds no more than the source did, and
     /// holds exactly what was asked (no silent grant of more). There is no reachable input that
     /// widens authority.
-    /// Falsification: replayable `crates/capability/falsifications/verification.derive_never_widens_rights.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.derive_never_widens_rights.patch`
     #[kani::proof]
     fn derive_never_widens_rights() {
         let source_rights = Rights(kani::any());
@@ -874,7 +874,7 @@ mod verification {
     /// a source with `GRANT` and a request inside it is never refused. Stated in raw bits, as
     /// `derive_never_widens_rights` is, so no predicate of the crate stands between the claim and
     /// the bits.
-    /// Falsification: replayable `crates/capability/falsifications/verification.delegation_needs_grant_and_never_widens.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.delegation_needs_grant_and_never_widens.patch`
     #[kani::proof]
     fn delegation_needs_grant_and_never_widens() {
         const GRANT_BIT: u32 = 1 << 2;
@@ -910,7 +910,7 @@ mod verification {
     /// which implies the subset relation. Equality is the precise claim because a split passes
     /// `GRANT` down only when the parent holds it, so delegability comes from the root's mint, and
     /// rights down a budget tree never increase.
-    /// Falsification: replayable `crates/capability/falsifications/verification.split_never_widens_rights.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.split_never_widens_rights.patch`
     #[kani::proof]
     fn split_never_widens_rights() {
         let parent = Capability {
@@ -936,7 +936,7 @@ mod verification {
     /// fault rendezvous *is* the rendezvous being invoked and the thread is dead, so no
     /// unsupervised thread, other supervisor's child or stale name is reapable. The proof pins the
     /// gate; `reap_decision` taking and returning no `Capability` pins the absence of a grant.
-    /// Falsification: replayable `crates/capability/falsifications/verification.reap_is_permitted_only_to_the_supervising_rendezvous.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.reap_is_permitted_only_to_the_supervising_rendezvous.patch`
     #[kani::proof]
     fn reap_is_permitted_only_to_the_supervising_rendezvous() {
         let invoked: u64 = kani::any();
@@ -967,7 +967,7 @@ mod verification {
     /// liveness values, a tid whose fault rendezvous is not the invoked one answers identically, so a
     /// supervisor cannot use `REAP` to learn whether some other supervisor's child (or a recycled
     /// tid) is alive. The two facts are distinguishable only *inside* the relationship.
-    /// Falsification: replayable `crates/capability/falsifications/verification.a_stranger_reveals_nothing_about_its_liveness.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.a_stranger_reveals_nothing_about_its_liveness.patch`
     #[kani::proof]
     fn a_stranger_reveals_nothing_about_its_liveness() {
         let invoked: u64 = kani::any();
@@ -989,7 +989,7 @@ mod verification {
     /// every pair of rendezvous names, inclusion holds exactly when the recorded fault rendezvous
     /// is the invoked one. Both directions matter: a stranger is never shown, and every member is,
     /// so a monitor missing an entry can conclude the thread is gone rather than hidden.
-    /// Falsification: replayable `crates/capability/falsifications/verification.a_survey_shows_exactly_the_endpoints_own_children.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.a_survey_shows_exactly_the_endpoints_own_children.patch`
     #[kani::proof]
     fn a_survey_shows_exactly_the_endpoints_own_children() {
         let invoked: u64 = kani::any();
@@ -1006,7 +1006,7 @@ mod verification {
     /// input, a thread is in the survey exactly when a reap of it would get past the supervision
     /// check, whatever its liveness. So the domain `ps` reports and the domain a supervisor may
     /// reap from cannot diverge, which is the property that lets one predicate answer both.
-    /// Falsification: replayable `crates/capability/falsifications/verification.the_view_and_the_reap_have_the_same_scope.patch`
+    /// Falsification: replayable `crates/capability_table/falsifications/verification.the_view_and_the_reap_have_the_same_scope.patch`
     #[kani::proof]
     fn the_view_and_the_reap_have_the_same_scope() {
         let invoked: u64 = kani::any();

@@ -1,4 +1,4 @@
-Falsifies `capability::a_survey_shows_exactly_the_endpoints_own_children`.
+Falsifies `capability_table::a_survey_shows_exactly_the_endpoints_own_children`.
 
 The defect: `survey_includes` reports every supervised thread rather than only the
 ones supervised *here*. This is what a `ps` written to be useful looks like before
@@ -15,10 +15,10 @@ it is stated as a predicate and again as an agreement with the reap, so a single
 widening is caught twice. It is not caught by anything in the `reap_decision`
 harnesses, which this patch leaves untouched.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index a5b8f24b3..8d650d16b 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -187,8 +187,8 @@ pub const fn reap_decision(
  /// The scoping decision of a process view, which an owner applies to each thread it reports. It is
  /// the predicate [`reap_decision`] authorizes with, so the threads a supervisor sees are the ones

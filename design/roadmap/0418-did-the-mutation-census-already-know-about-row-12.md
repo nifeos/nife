@@ -68,7 +68,7 @@ Either answer is worth more than the assumption, and the assumption a reader wou
 ## What it would take
 
 Run `script/mutation` against `crates/page_tables`, `crates/dma_validator`, `crates/capability_plan` and
-`crates/capability`, which between them carry rows 1 to 18, and compare its survivor list against the
+`crates/capability_table`, which between them carry rows 1 to 18, and compare its survivor list against the
 per-row verdicts milestone 307 recorded in `notes/confinement-claims.md`. The two instruments measure
 different things and the comparison is the deliverable: a census asks whether a change to the code is
 caught by *something*, and 307 asked whether a named assertion can catch *anything*. Where they

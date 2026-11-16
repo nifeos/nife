@@ -1,4 +1,4 @@
-Falsifies `capability::from_bits_cannot_forge_a_right`.
+Falsifies `capability_table::from_bits_cannot_forge_a_right`.
 
 The defect: the mask dropped from `Rights::from_bits`, `Rights(bits)` instead of
 `Rights(bits & Rights::ALL.0)`. `from_bits` takes an attacker-controlled syscall
@@ -8,10 +8,10 @@ the kernel believes all 32 bits of it.
 Expected to fail: `assert!(Rights::from_bits(raw).is_subset_of(Rights::ALL))`, on any
 `raw` with a bit above bit 3 set.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index d65bed7d..f33c0989 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -93,7 +93,7 @@ impl Rights {
      /// [`bits`](Self::bits), for rights that crossed a boundary in a syscall register. Undefined
      /// bits are dropped, so a caller cannot conjure a right that does not exist.

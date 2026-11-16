@@ -43,7 +43,7 @@ the trigger instead, and the scope was chosen by asking which files describe the
 | `kernel/src/syscall.rs` | the kernel's half of the same boundary |
 | `notes/capabilities.md` | the note that explains the surface to a newcomer |
 | `notes/capability-lifecycle.md` | the note that explains rights, which is what `ENUMERATE` changed |
-| `crates/capability/src/lib.rs` | where `Rights` is defined and where its argument is made |
+| `crates/capability_table/src/lib.rs` | where `Rights` is defined and where its argument is made |
 
 Plus one whole-tree class each for the two stale counts, which is the step the first sweep named as
 the one that turns a typo fix into a mechanism: **ask whether the class is bigger than the
@@ -56,7 +56,7 @@ instance.** It was, both times.
   and four syscall numbers". **This is the opposite of the direction anyone expects**: the browsable
   prose a newcomer reads was right, and the doc comment inside the boundary artifact was three weeks
   stale. A sweep that had audited only `notes/` would have found nothing and reported the ABI clean.
-- **`crates/capability`'s `Rights` is documented well and `ALL` was widened correctly.**
+- **`crates/capability_table`'s `Rights` is documented well and `ALL` was widened correctly.**
   `Rights::ALL` is `0b1111`, and its comment already warns that a constant defined without widening
   that mask is silently dropped at every delegation. Milestone 126 got this right. There was a real
   correctness question here and the answer was no.

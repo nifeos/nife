@@ -75,7 +75,7 @@ fn a_consumed_capability_cannot_be_reused() {
 /// Three capabilities are filed into this thread's own table: two endpoint capabilities and a
 /// `PageFrame` carved from a budget (the latter so a *working invocation*, not just a table read,
 /// proves a neighbor survived). The middle slot is deleted. The surviving two still resolve, and
-/// the frame still slices, which is the live-kernel form of `capability::delete_touches_only_its_slot`.
+/// the frame still slices, which is the live-kernel form of `capability_table::delete_touches_only_its_slot`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

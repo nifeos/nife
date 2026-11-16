@@ -21,7 +21,7 @@ one night.**
 So the scope is that surface and the code that consults it, read as an attacker would:
 
 - `abi::endpoint::SURVEY` (method 6) and `sched::survey_supervised`, the supervision-subtree walk;
-- `capability::Rights::ENUMERATE` (bit 3), the widening of `Rights::ALL` to `0b1111`, and every
+- `capability_table::Rights::ENUMERATE` (bit 3), the widening of `Rights::ALL` to `0b1111`, and every
   `RETYPE_OBJ` arm that now mints `Rights::ALL` in place of a hand-listed triple;
 - `fs_proto::fs::STATFS` (op 18), which takes no right and any handle, deliberately;
 - milestone 40's manual-index constants and `apropos`, the shell builtin that searches the
@@ -104,7 +104,7 @@ rights set is minted wholesale, and it names a fresh object.
 
 Two things were checked specifically because they would not be visible from the rights lattice:
 
-- **No rights check anywhere uses a proxy for `allows`.** Grepping the kernel and `crates/capability`
+- **No rights check anywhere uses a proxy for `allows`.** Grepping the kernel and `crates/capability_table`
   for `rights.bits()`, `!= Rights::NONE` and direct comparisons finds only test and proof code. Every
   authorization is `allows` or `is_subset_of`.
 - **Nothing shipped holds both `READ` and `ENUMERATE` on a supervision endpoint.**
@@ -124,7 +124,7 @@ name a thread outside the domain.
   refusal, so a caller feeding its own cursors back cannot fall off the end into an answer that reads
   as "you may not look".
 - A crafted cursor selects only a **starting slot**. The loop then skips every thread the membership
-  predicate rejects, so the entry returned is always a member. `capability::survey_includes` is the
+  predicate rejects, so the entry returned is always a member. `capability_table::survey_includes` is the
   boundary, it is `matches!(fault_ep, Some(ep) if ep == invoked_ep)` and nothing else, and it is
   Kani-proved in both directions.
 - A stale cursor cannot resolve to the wrong thread, because a slot index is stable in the sense a
@@ -263,7 +263,7 @@ worth less. But the effort is in the argument and a reader should see it.
 
 `abi::rights` is what userspace **names** a right with: it travels in a syscall register at 79 call
 sites outside `crates/abi` as this report lands, from `system_initializer`'s grant tables through
-every `SEND_CAP` and `CAP_INSERT` in `user/src/`. `capability::Rights` is what the kernel **means** by
+every `SEND_CAP` and `CAP_INSERT` in `user/src/`. `capability_table::Rights` is what the kernel **means** by
 one. Both crates are
 dependency-free and cannot see each other, so the two are two independent arrays of magic numbers,
 and until this lane **nothing compared them**.

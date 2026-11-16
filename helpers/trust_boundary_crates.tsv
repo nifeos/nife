@@ -28,9 +28,9 @@ c_program_fixture	host	-
 c_seam	userspace	fixtures
 calendar	userspace	retired
 canary_gate	kernel	retired
-capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
 capability_plan	userspace	components,fixtures
+capability_table	kernel	kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
