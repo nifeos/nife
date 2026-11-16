@@ -219,12 +219,12 @@ Ruled 2026-11-10, and closed here:
 5. One `OpenError<E>` serves both `open_file_*` methods, both verify the slot, and a test pins that
    `EntryChanged` means the same in each (P1-9).
 
-The names these rulings bring, `VolumeLayoutOptions` with `new`, `with_hidden_sectors`,
-`with_volume_id`, `with_label` and `with_file`; `CivilDateTime::new` with `CivilDateTimeError`
-(`Month`, `Day`, `Hour`, `Minute`, `Second`); `VolumeLabel::trim_ascii_end`; `DirectoryCluster`
-(`ROOT`) with `NamedEntry::directory_cluster()`; and `OpenError<E>` (`IsADirectory`,
-`IsAVolumeLabel`, `EntryChanged`, `Chain`), are ratified as built (2026-11-16 UTC) and are the rule
-in force.
+The names these rulings bring are ratified as built (2026-11-16 UTC) and are the rule in force.
+They are `VolumeLayoutOptions` with `new`, `with_hidden_sectors`, `with_volume_id`, `with_label` and
+`with_file`; `CivilDateTime::new` with `CivilDateTimeError` (`Month`, `Day`, `Hour`, `Minute`,
+`Second`); `VolumeLabel::trim_ascii_end`; `DirectoryCluster` (`ROOT`) with
+`NamedEntry::directory_cluster()`; and `OpenError<E>` (`IsADirectory`, `IsAVolumeLabel`,
+`EntryChanged`, `Chain`).
 
 For the architect, one-way, not yet ruled: the tag and the first publish, each asked separately once
 the P0 and P1 items have closed.
