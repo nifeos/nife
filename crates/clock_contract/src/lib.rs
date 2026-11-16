@@ -491,8 +491,8 @@ pub mod propose {
         word >> OPERATION_SHIFT
     }
 
-    /// `CALL(req(PROPOSE), proposed_unix_nanos)`. Ask the service to move the wall clock to
-    /// `proposed_unix_nanos`. Reply `r0` is one of the `status` codes and `r1` is
+    /// `CALL(req(PROPOSE), proposed_unix_nanoseconds)`. Ask the service to move the wall clock to
+    /// `proposed_unix_nanoseconds`. Reply `r0` is one of the `status` codes and `r1` is
     /// the wall-clock nanoseconds in force afterwards (0 when the state is unknown), so a proposer
     /// learns what happened without needing a read mapping.
     pub const PROPOSE: u64 = 1;
@@ -1513,8 +1513,8 @@ mod interleavings {
     /// with garbage in it. The release is the whole mechanism, and this harness checks it.
     #[test]
     fn a_racing_reader_sees_an_unrecognized_page_or_a_whole_one() {
-        static SAW_UNRECOGNISED: Reached = Reached::new();
-        static SAW_INITIALISED: Reached = Reached::new();
+        static SAW_UNRECOGNIZED: Reached = Reached::new();
+        static SAW_INITIALIZED: Reached = Reached::new();
 
         loom::model(|| {
             let page = page();
@@ -1529,15 +1529,15 @@ mod interleavings {
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
             match (r.state, r.offset_nanoseconds) {
-                (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
-                (state::REAL_TIME_CLOCK, 1_000) => SAW_INITIALISED.mark(),
+                (state::UNKNOWN, 0) => SAW_UNRECOGNIZED.mark(),
+                (state::REAL_TIME_CLOCK, 1_000) => SAW_INITIALIZED.mark(),
                 other => panic!("a reader saw a recognized page with garbage in it: {other:?}"),
             }
 
             writer.join().unwrap();
         });
 
-        SAW_UNRECOGNISED.assert("an execution where the reader arrives before the magic lands");
-        SAW_INITIALISED.assert("an execution where the reader arrives after the publish");
+        SAW_UNRECOGNIZED.assert("an execution where the reader arrives before the magic lands");
+        SAW_INITIALIZED.assert("an execution where the reader arrives after the publish");
     }
 }
