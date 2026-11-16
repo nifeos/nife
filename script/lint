@@ -2646,9 +2646,9 @@ REGISTRY = {
     # had already cost two sweeps their re-derivation. A lane landing a harness in one of these
     # crates bumps the number beside the marker in the same commit, which is the forcing function
     # the total `kani-harnesses` marker already exercises.
-    'capability-harnesses': (
+    'capability-table-harnesses': (
         'how many Kani proof harnesses crates/capability_table carries',
-        lambda: _harness_hits().get('capability', 0),
+        lambda: _harness_hits().get('capability_table', 0),
     ),
     'memory-regions-harnesses': (
         'how many Kani proof harnesses crates/memory_regions carries',

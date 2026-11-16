@@ -474,7 +474,9 @@ fn survey_process(threads: &Threads, ep: RendezvousId, of: &Thread) -> u64 {
         let seen_before = threads
             .iter_from(0)
             .take_while(|&(earlier, _)| earlier < slot)
-            .any(|(_, e)| capability_table::survey_includes(e.fault_ep, ep) && process_key(e) == key);
+            .any(|(_, e)| {
+                capability_table::survey_includes(e.fault_ep, ep) && process_key(e) == key
+            });
         if seen_before {
             continue;
         }
