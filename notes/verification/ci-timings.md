@@ -102,11 +102,13 @@ inside the fence on the runner (image 20261111.196.1, cap 14446 MiB):
 | `byte_glob`, `no_magic_means_the_pattern_is_its_own_only_match` alone | 8484 |
 | `byte_glob`, `a_negated_class_is_the_exact_complement_of_the_class` alone | 7598 |
 | `byte_glob`, the crate at `-j 2` | the cap, `no_magic` killed |
+| shard 2 at `-j 2`, `byte_glob` with `KANI_APART` | 12389 to 12393 |
 | `memory_regions`, the crate at `-j 2` | 10937 |
 
 Kani starts `byte_glob`'s two largest harnesses first, and together they need more than the cap. On
 the Azure hosts swap carried them; on the AWS hosts without it they lost the runner. script/verify's
-`KANI_APART` proves the negated-class harness after the rest of the row, alone.
+`KANI_APART` proves the negated-class harness after the rest of the row, alone. Over four shard-2
+runs (run 43784902792) the row then took 416 to 678 seconds, against 621 before.
 
 A new harness meets the runner first in the merge queue, since pull requests skip the prove shards.
 One that needs more than the cap fails there, named, on every run.
