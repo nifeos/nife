@@ -13,7 +13,7 @@
  * the copy radon hands nife carries it is unmeasured: the first bench boot of this driver prints
  * which source the address came from.
  *
- * Trimmed to what crates/designware_ethernet reads. `clocks`/`resets` are dropped because they
+ * Trimmed to what the designware_ethernet crate reads. `clocks`/`resets` are dropped because they
  * reference phandles this fixture does not define.
  */
 

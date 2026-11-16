@@ -21,6 +21,9 @@ against the simulator and no proof.
 
 Dependencies. None.
 
+Repository. `nifeos/designware_ethernet`. `components`, `driver_process_contract` and
+`machine_discovery` depend on it by git revision.
+
 Provenance. The crate adapts OpenBSD's `dwqe` and `ytphy` (ISC, with copyright lines in `lib.rs`)
 and `ukphy_status` (NetBSD Foundation BSD-2-Clause). Both notices are in the tree. Milestone 1019
 items 5 and 9 hold. The manifest license field reads `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`,
@@ -43,16 +46,19 @@ Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It r
 template's naming and prose gates.
 
 Names. Under Naming rules, below, with the template gates' 118 findings. The parameters carry
-spelled-out names, provisional.
+spelled-out names, provisional. `station_mac_address`, `physical_layer_device_bus_address`,
+`direct_memory_access_physical_address_bits` and the two `100BASE_TWISTED_PAIR` constants are
+ratified as built (2026-11-16 UTC; milestone 1074 (what an outside maintainer would fix before the
+move and the first tag), Decision 4).
 
 Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The 118 template gate findings, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
+| none | the repository `nifeos/designware_ethernet` exists and nife pins it by revision |
 
 Recommendation. The architect cleared the move on 2026-11-11 (UTC), and has not cleared the tag or
-publication. The move waits for the template gates.
+publication.
 
 ## Naming rules
 
