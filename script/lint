@@ -258,6 +258,10 @@ helpers/kani-pool-selftest.sh >/dev/null
 # script/kani-install repairs a dangling toolchain link and refuses a private RUSTUP_HOME, and the
 # toolchain prune keeps Kani's own, all in a temporary HOME (helpers/kani-install-selftest.sh).
 helpers/kani-install-selftest.sh >/dev/null
+# The prove shards' memory fence (helpers/memory_fence.py) reads a harness from a goto file's name,
+# keeps the command's exit status, counts an out-of-memory kill as a failure and removes its cgroup,
+# all over a plain directory standing in for the cgroup, so it needs no sudo.
+python3 helpers/memory_fence.py --selftest >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
 # lint-scope: code
@@ -3996,6 +4000,12 @@ helpers/scope-merge-base-selftest.sh >/dev/null
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
 # lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
+# The Kani proofs also run on a pull request that adds or changes a harness (ruled 2026-11-16 UTC):
+# verify.yml's draft gate asks helpers/harness_change.py, whose rule is fixtures here over a
+# throwaway repository.
+echo "==> a pull request proves when it changes a Kani harness"
+# lint-scope: code
+python3 helpers/harness_change.py --selftest >/dev/null
 # A draft's `lint` fails and a ready one's runs the real lint: the draft gate's state step under a
 # stub gh, and the lint job's own conditions evaluated for each event (helpers/draft-lint-selftest.sh).
 helpers/draft-lint-selftest.sh >/dev/null

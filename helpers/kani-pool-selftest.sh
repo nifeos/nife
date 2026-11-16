@@ -80,6 +80,10 @@ unset LINT_NO_CARGO GITHUB_ACTIONS NIFE_KANI_UNITS NIFE_KANI_POOL VERIFY_JOBS
 NIFE_HEAVY_SLOT_DIR="$tmp/slots"
 NIFE_HEAVY_SLOTS=16
 export NIFE_HEAVY_SLOT_DIR NIFE_HEAVY_SLOTS
+# script/verify's KANI_APART table would split byte_glob's row into a listing call and two proofs;
+# this file counts calls of its own, so the table is off here (helpers/verify-stub-selftest.sh tests it).
+NIFE_KANI_APART=
+export NIFE_KANI_APART
 mkdir -p "$tmp/slots"
 export NIFE_SELFTEST_PID=$$ NIFE_SELFTEST_ARGS="$tmp/args" NIFE_SELFTEST_EVENTS="$tmp/events" NIFE_SELFTEST_GO="$tmp/go"
 GIB=$((1024 * 1024 * 1024))

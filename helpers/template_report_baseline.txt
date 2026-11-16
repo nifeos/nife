@@ -64,8 +64,6 @@ credentialer prose_acronyms 8
 credentialer readme_acronyms 2
 credentialer register_names 4
 current_cpu_contract abbreviations 6
-designware_ethernet abbreviations 25
-designware_ethernet prose_acronyms 1
 designware_inter_integrated_circuit abbreviations 2
 device_tree_blob abbreviations 12
 device_tree_blob prose_acronyms 7
