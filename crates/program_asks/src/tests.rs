@@ -45,7 +45,7 @@ fn elf_image(whole_note: &[u8]) -> Vec<u8> {
     let code = [0xaau8; 16];
     let mut ph = vec![0u8; 56];
     ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-    ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
+    ph[4..8].copy_from_slice(&(static_elf::READABLE | static_elf::EXECUTABLE).to_le_bytes());
     ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
     ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
     ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());

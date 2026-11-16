@@ -589,7 +589,7 @@ pub(super) fn read_manifest_note(
             return Err(Unreadable);
         }
         if let Some(d) = search
-            .segment(&seg_buf[..len], seg.p_align)
+            .segment(&seg_buf[..len], seg.alignment)
             .map_err(|_| Unreadable)?
         {
             found = Some(capability_manifest_note::decode(d).map_err(|_| Unreadable)?);

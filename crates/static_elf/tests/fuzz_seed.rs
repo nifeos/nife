@@ -58,7 +58,7 @@ fn the_fuzz_seed_is_a_valid_executable() {
     assert!(seg.is_executable());
     assert!(!seg.is_writable());
     assert!(
-        seg.vaddr <= elf.entry() && elf.entry() < seg.vaddr + seg.memsz,
+        seg.virtual_address <= elf.entry() && elf.entry() < seg.virtual_address + seg.memory_bytes,
         "the entry point must land inside the executable segment"
     );
 }

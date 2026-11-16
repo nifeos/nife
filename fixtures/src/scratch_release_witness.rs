@@ -76,7 +76,7 @@ fn forge(out: &mut [u8; EHDR + PHDR]) {
     out[56..58].copy_from_slice(&1u16.to_le_bytes()); // phnum
     let ph = &mut out[EHDR..EHDR + PHDR];
     ph[0..4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
-    ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
+    ph[4..8].copy_from_slice(&(static_elf::READABLE | static_elf::EXECUTABLE).to_le_bytes());
     ph[16..24].copy_from_slice(&base.to_le_bytes());
     ph[24..32].copy_from_slice(&base.to_le_bytes());
     ph[40..48].copy_from_slice(&PAGE.to_le_bytes());

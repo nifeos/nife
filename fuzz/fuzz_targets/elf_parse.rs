@@ -29,7 +29,7 @@ fuzz_target!(|data: &[u8]| {
         let mut search = static_elf::NoteSearch::new(NOTE_OWNER, NOTE_TYPE);
         for seg in segs {
             let Ok(r) = seg.range(data.len()) else { break };
-            if search.segment(&data[r], seg.p_align).is_err() {
+            if search.segment(&data[r], seg.alignment).is_err() {
                 break;
             }
         }
@@ -58,6 +58,6 @@ fuzz_target!(|data: &[u8]| {
         // The tail the loader must zero: `memsz` beyond `data.len()` is `.bss`. Recomputed here
         // because a segment whose `memsz` is under its `filesz` would make this wrap, and the check
         // that forbids it is in `check_segment_bounds` rather than in this type.
-        let _ = seg.memsz - seg.data.len() as u64;
+        let _ = seg.memory_bytes - seg.data.len() as u64;
     }
 });

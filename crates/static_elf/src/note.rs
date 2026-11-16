@@ -55,11 +55,18 @@ impl core::error::Error for NoteError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoteSegment {
     /// `p_offset`: where the segment's bytes start in the file.
+    #[doc(alias = "p_offset")]
     pub offset: u64,
     /// `p_filesz`: how many bytes it has.
-    pub size: u64,
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_filesz")]
+    pub bytes: u64,
     /// `p_align`, which says how the notes inside are padded.
-    pub p_align: u64,
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_align")]
+    pub alignment: u64,
 }
 
 impl NoteSegment {
@@ -67,7 +74,7 @@ impl NoteSegment {
     /// [`NoteError::SegmentOutOfBounds`] if any of it lies past the end.
     pub fn range(&self, file_len: usize) -> Result<core::ops::Range<usize>, NoteError> {
         let start = usize::try_from(self.offset).map_err(|_| NoteError::SegmentOutOfBounds)?;
-        let size = usize::try_from(self.size).map_err(|_| NoteError::SegmentOutOfBounds)?;
+        let size = usize::try_from(self.bytes).map_err(|_| NoteError::SegmentOutOfBounds)?;
         let end = start
             .checked_add(size)
             .ok_or(NoteError::SegmentOutOfBounds)?;
@@ -136,8 +143,8 @@ impl Iterator for NoteSegments<'_> {
             if u32le(ph, 0) == PT_NOTE {
                 return Some(NoteSegment {
                     offset: u64le(ph, 8),
-                    size: u64le(ph, 32),
-                    p_align: u64le(ph, 48),
+                    bytes: u64le(ph, 32),
+                    alignment: u64le(ph, 48),
                 });
             }
         }
@@ -268,15 +275,15 @@ impl<'o> NoteSearch<'o> {
         }
     }
 
-    /// Walk one whole segment, whose header said `p_align`. The descriptor if this segment holds
-    /// the note, `None` if it does not, and a refusal if the segment is malformed or holds a second
-    /// copy of a note already found, here or in an earlier segment.
+    /// Walk one whole segment, whose header gave `alignment` as its `p_align`. The descriptor if
+    /// this segment holds the note, `None` if it does not, and a refusal if the segment is
+    /// malformed or holds a second copy of a note already found, here or in an earlier segment.
     pub fn segment<'s>(
         &mut self,
         seg: &'s [u8],
-        p_align: u64,
+        alignment: u64,
     ) -> Result<Option<&'s [u8]>, NoteError> {
-        let found = find_in_segment(seg, padding(p_align)?, self.owner, self.kind, self.seen)?;
+        let found = find_in_segment(seg, padding(alignment)?, self.owner, self.kind, self.seen)?;
         self.seen |= found.is_some();
         Ok(found)
     }
@@ -296,7 +303,7 @@ impl<'a> Elf<'a> {
         let mut found = None;
         for seg in NoteSegments::from_head(bytes)? {
             let range = seg.range(bytes.len())?;
-            if let Some(desc) = search.segment(&bytes[range], seg.p_align)? {
+            if let Some(desc) = search.segment(&bytes[range], seg.alignment)? {
                 found = Some(desc);
             }
         }
@@ -381,7 +388,7 @@ mod verification {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{NATIVE_MACHINE, PF_R, PF_X};
+    use crate::{EXECUTABLE, NATIVE_MACHINE, READABLE};
     extern crate std;
     use std::vec;
     use std::vec::Vec;
@@ -423,7 +430,7 @@ mod tests {
         let code = [0xaau8; 16];
         let mut ph = vec![0u8; 56];
         ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&(PF_R | PF_X).to_le_bytes());
+        ph[4..8].copy_from_slice(&(READABLE | EXECUTABLE).to_le_bytes());
         ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
         ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
         ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -436,7 +443,7 @@ mod tests {
         for (align, bytes) in notes {
             let mut ph = vec![0u8; 56];
             ph[0..4].copy_from_slice(&PT_NOTE.to_le_bytes());
-            ph[4..8].copy_from_slice(&PF_R.to_le_bytes());
+            ph[4..8].copy_from_slice(&READABLE.to_le_bytes());
             ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
             ph[32..40].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
             ph[40..48].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
@@ -469,7 +476,7 @@ mod tests {
         for seg in NoteSegments::from_head(bytes)? {
             let r = seg.range(bytes.len())?;
             let copy = bytes[r].to_vec();
-            if let Some(d) = search.segment(&copy, seg.p_align)? {
+            if let Some(d) = search.segment(&copy, seg.alignment)? {
                 found = Some(d.to_vec());
             }
         }

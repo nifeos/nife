@@ -102,9 +102,9 @@ fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
     out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes());
     out[56..58].copy_from_slice(&2u16.to_le_bytes()); // phnum
     let segments = [
-        (static_elf::PF_R | static_elf::PF_X, base, PAGE),
+        (static_elf::READABLE | static_elf::EXECUTABLE, base, PAGE),
         (
-            static_elf::PF_R | static_elf::PF_W,
+            static_elf::READABLE | static_elf::WRITABLE,
             base + PAGE,
             (IMAGE_PAGES - 1) * PAGE,
         ),

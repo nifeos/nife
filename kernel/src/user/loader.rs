@@ -232,8 +232,8 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
 
             // Which of the file's bytes land in this page? An intersection, because `p_vaddr`
             // need not be page-aligned.
-            let file_lo = seg.vaddr;
-            let file_hi = seg.vaddr + seg.data.len() as u64;
+            let file_lo = seg.virtual_address;
+            let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
             let hi = (va + FRAME_SIZE).min(file_hi);
             if lo < hi {

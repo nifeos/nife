@@ -34,8 +34,9 @@ fn a_passing_check_yields_an_in_bounds_range() {
 }
 
 /// **A passing check guarantees the virtual range does not overflow.** If it returns `Ok`, then
-/// `vaddr + memsz` did not wrap, so the later unchecked `seg.vaddr + seg.memsz` in `validate`
-/// cannot panic. This proves the cross-function invariant by hand-off through the type.
+/// `vaddr + memsz` did not wrap, so the later unchecked `seg.virtual_address + seg.memory_bytes`
+/// in `validate` cannot panic. This proves the cross-function invariant by hand-off through the
+/// type.
 /// Falsification: replayable `crates/static_elf/falsifications/verification.a_passing_check_has_no_address_overflow.patch`
 #[kani::proof]
 fn a_passing_check_has_no_address_overflow() {
@@ -47,17 +48,17 @@ fn a_passing_check_has_no_address_overflow() {
 }
 
 /// **`page_range` is panic-free and ordered for any segment and any page size.** `Segment` is
-/// `pub`, so its helper must be safe on its own, without `parse`'s guarantees. For every `vaddr`
-/// and `memsz`, including the near-`u64::MAX` values a hostile file names, and every page size a
-/// `PageBytes` can hold (each power of two from 1 to 2^63), the saturating arithmetic neither
-/// panics nor returns an inverted range.
+/// `pub`, so its helper must be safe on its own, without `parse`'s guarantees. For every
+/// `virtual_address` and `memory_bytes`, including the near-`u64::MAX` values a hostile file
+/// names, and every page size a `PageBytes` can hold (each power of two from 1 to 2^63), the
+/// saturating arithmetic neither panics nor returns an inverted range.
 /// Falsification: replayable `crates/static_elf/falsifications/verification.page_range_is_panic_free_and_ordered.patch`
 #[kani::proof]
 fn page_range_is_panic_free_and_ordered() {
     let seg = Segment {
-        vaddr: kani::any(),
-        paddr: kani::any(),
-        memsz: kani::any(),
+        virtual_address: kani::any(),
+        physical_address: kani::any(),
+        memory_bytes: kani::any(),
         flags: kani::any(),
         data: &[],
     };

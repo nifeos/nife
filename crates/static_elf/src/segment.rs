@@ -1,57 +1,79 @@
-//! **A loadable segment**: its `p_flags`, and what the loader reads off one.
+//! **A loadable segment**: its permission bits, and what the loader reads off one.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 /// `p_type`: a segment the loader must actually put in memory. The only one we care about.
 pub(crate) const PT_LOAD: u32 = 1;
 
-/// `p_flags`.
-pub const PF_X: u32 = 1;
+/// `PF_X` in `p_flags`: the segment holds code.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+#[doc(alias = "PF_X")]
+pub const EXECUTABLE: u32 = 1;
 
-/// `p_flags`: writable.
-pub const PF_W: u32 = 2;
+/// `PF_W` in `p_flags`: the segment may be written.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+#[doc(alias = "PF_W")]
+pub const WRITABLE: u32 = 2;
 
-/// `p_flags`: readable.
-pub const PF_R: u32 = 4;
+/// `PF_R` in `p_flags`: the segment may be read.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+#[doc(alias = "PF_R")]
+pub const READABLE: u32 = 4;
 
 /// One `PT_LOAD` segment: what to map, where, and how.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Segment<'a> {
-    /// The virtual address the program wants this at. Its choice, and we honour it or refuse.
-    pub vaddr: u64,
+    /// `p_vaddr`: the virtual address the program wants this at. Its choice, and the loader
+    /// honours it or refuses.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_vaddr")]
+    pub virtual_address: u64,
 
     /// `p_paddr`: where the segment wants to sit in physical memory, for a loader that places an
     /// image at fixed physical addresses (a firmware loader, a bootloader).
     ///
-    /// A loader mapping into a fresh address space wants [`vaddr`](Self::vaddr) and never this.
-    /// Most linkers write `paddr == vaddr` for a user program, which is the trap: a loader that
-    /// reads the wrong one works until it meets a kernel image, whose segments are linked high and
-    /// loaded low with no fixed offset between the two. Nothing in the parse checks it.
-    pub paddr: u64,
+    /// A loader mapping into a fresh address space wants
+    /// [`virtual_address`](Self::virtual_address) and never this. Most linkers write the two equal
+    /// for a user program, which is the trap: a loader that reads the wrong one works until it
+    /// meets a kernel image, whose segments are linked high and loaded low with no fixed offset
+    /// between the two. Nothing in the parse checks it.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_paddr")]
+    pub physical_address: u64,
 
-    /// How much **memory** it occupies. May exceed `data.len()`.
-    pub memsz: u64,
+    /// `p_memsz`: how many bytes of **memory** it occupies. May exceed `data.len()`.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_memsz")]
+    pub memory_bytes: u64,
 
-    /// `PF_R | PF_W | PF_X`.
+    /// `p_flags`: [`READABLE`], [`WRITABLE`] and [`EXECUTABLE`], and any other bits the file set.
+    #[doc(alias = "p_flags")]
     pub flags: u32,
 
-    /// The bytes from the file. `data.len()` is `p_filesz`, which can be less than `memsz`; the
-    /// loader must zero the tail, which is `.bss`.
+    /// The bytes from the file. `data.len()` is `p_filesz`, which can be less than
+    /// [`memory_bytes`](Self::memory_bytes); the loader must zero the tail, which is `.bss`.
+    #[doc(alias = "p_filesz")]
     pub data: &'a [u8],
 }
 
 impl Segment<'_> {
-    /// Whether `PF_R` is set in [`flags`](Self::flags).
+    /// Whether [`READABLE`] is set in [`flags`](Self::flags).
     pub fn is_readable(&self) -> bool {
-        self.flags & PF_R != 0
+        self.flags & READABLE != 0
     }
-    /// Whether `PF_W` is set in [`flags`](Self::flags).
+    /// Whether [`WRITABLE`] is set in [`flags`](Self::flags).
     pub fn is_writable(&self) -> bool {
-        self.flags & PF_W != 0
+        self.flags & WRITABLE != 0
     }
-    /// Whether `PF_X` is set in [`flags`](Self::flags).
+    /// Whether [`EXECUTABLE`] is set in [`flags`](Self::flags).
     pub fn is_executable(&self) -> bool {
-        self.flags & PF_X != 0
+        self.flags & EXECUTABLE != 0
     }
 
     /// The page-aligned range this segment touches: `[start, end)`, in pages of `page_bytes`.
@@ -59,12 +81,12 @@ impl Segment<'_> {
     /// An end past `u64::MAX` saturates there, so the range is never inverted.
     pub fn page_range(&self, page_bytes: PageBytes) -> (u64, u64) {
         let page_bytes = page_bytes.get();
-        let start = self.vaddr & !(page_bytes - 1);
-        // Saturating: `Segment` is `pub`, so this must be panic-free on a hostile `memsz` without
-        // `Elf::parse`'s overflow check. `PageBytes` rules out the zero and the non-power-of-two.
+        let start = self.virtual_address & !(page_bytes - 1);
+        // Saturating: `Segment` is `pub`, so this must be panic-free on a hostile `memory_bytes`
+        // without `Elf::parse`'s overflow check. `PageBytes` rules out the zero and the non-power-of-two.
         let end = self
-            .vaddr
-            .saturating_add(self.memsz)
+            .virtual_address
+            .saturating_add(self.memory_bytes)
             .div_ceil(page_bytes)
             .saturating_mul(page_bytes);
         (start, end)

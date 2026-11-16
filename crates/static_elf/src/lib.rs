@@ -19,9 +19,9 @@ pub use note::{NoteError, NoteSearch, NoteSegment, NoteSegments};
 /// Machine-checked proofs of the loader's front half.
 ///
 /// They prove the per-segment bounds check and the program-header offset panic-free and in bounds,
-/// and `Segment::page_range` panic-free and ordered for every page size. Totality of `Elf::parse` over
-/// every byte string is past bounded model checking at a useful input size: the overlap check is a
-/// loop over the headers inside a loop over the same, and the header table sits at a symbolic
+/// and `Segment::page_range` panic-free and ordered for every page size. Totality of `Elf::parse`
+/// over every byte string is past bounded model checking at a useful input size: the overlap check
+/// is a loop over the headers inside a loop over the same, and the header table sits at a symbolic
 /// offset in a symbolic file. So the arithmetic a hostile header can weaponize is factored into
 /// loopless functions the proofs reach, and the tests cover the specific hostile files by example.
 #[cfg(kani)]
@@ -41,4 +41,4 @@ pub use machine::{MACHINE_AARCH64, MACHINE_RISCV, MACHINE_X86_64, NATIVE_MACHINE
 pub use parse::Elf;
 use parse::*;
 use segment::*;
-pub use segment::{PF_R, PF_W, PF_X, PageBytes, Segment};
+pub use segment::{EXECUTABLE, PageBytes, READABLE, Segment, WRITABLE};

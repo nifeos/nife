@@ -292,8 +292,8 @@ fn lay_out_child(
         let (start, end) = seg.page_range(PAGE_BYTES);
         let mut va = start;
         while va < end {
-            let file_lo = seg.vaddr;
-            let file_hi = seg.vaddr + seg.data.len() as u64;
+            let file_lo = seg.virtual_address;
+            let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
             let hi = (va + PAGE).min(file_hi);
             let src = if lo < hi {

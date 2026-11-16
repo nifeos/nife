@@ -38,7 +38,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// # Examples
 ///
 /// ```
-/// use static_elf::{Elf, NATIVE_MACHINE, PF_R, PF_X, PageBytes};
+/// use static_elf::{Elf, NATIVE_MACHINE, READABLE, EXECUTABLE, PageBytes};
 /// fn image(flags: u32, entry: u64) -> Vec<u8> {
 ///     const EHDR: usize = 64; const PHDR: usize = 56;
 ///     let mut v = vec![0u8; EHDR + PHDR];
@@ -60,15 +60,16 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 ///     v
 /// }
 ///
-/// let bytes = image(PF_R | PF_X, 0x40_0000);
+/// let bytes = image(READABLE | EXECUTABLE, 0x40_0000);
 /// let elf = Elf::parse(&bytes).unwrap();
 /// assert_eq!(elf.entry(), 0x40_0000);
 /// let seg = elf.segments().next().unwrap();
 /// assert!(seg.is_readable() && seg.is_executable() && !seg.is_writable());
 /// assert_eq!(seg.page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_1000));
 ///
-/// // `paddr` equals `vaddr` here; a loader wants `vaddr` (see `Segment::paddr`).
-/// assert_eq!(seg.paddr, seg.vaddr);
+/// // The two addresses are equal here; a loader wants the virtual one (see
+/// // `Segment::physical_address`).
+/// assert_eq!(seg.physical_address, seg.virtual_address);
 /// ```
 #[derive(Debug, Clone, Copy)]
 pub struct Elf<'a> {
@@ -200,7 +201,8 @@ impl<'a> Elf<'a> {
             }
 
             if seg.is_executable()
-                && (self.entry >= seg.vaddr && self.entry < seg.vaddr + seg.memsz)
+                && (self.entry >= seg.virtual_address
+                    && self.entry < seg.virtual_address + seg.memory_bytes)
             {
                 entry_ok = true;
             }
@@ -244,9 +246,9 @@ impl<'a> Elf<'a> {
         let end = check_segment_bounds(self.bytes.len(), p_offset, filesz, vaddr, memsz)?;
 
         Ok(Some(Segment {
-            vaddr,
-            paddr,
-            memsz,
+            virtual_address: vaddr,
+            physical_address: paddr,
+            memory_bytes: memsz,
             flags,
             data: &self.bytes[p_offset..end],
         }))

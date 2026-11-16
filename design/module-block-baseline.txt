@@ -6205,12 +6205,6 @@ crates/static_elf/src/parse.rs::parse
 
 crates/static_elf/src/parse.rs::segments
 
-crates/static_elf/src/segment.rs::PF_R
-
-crates/static_elf/src/segment.rs::PF_W
-
-crates/static_elf/src/segment.rs::PF_X
-
 crates/static_elf/src/segment.rs::Segment
 
 crates/static_elf/src/segment.rs::is_executable
