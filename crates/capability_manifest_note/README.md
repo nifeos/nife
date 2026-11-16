@@ -27,7 +27,9 @@ A manifest note is an ordinary ELF note. Its header is the three 4-byte words `n
 and `type`, then the owner string `OWNER` and its NUL, padded to 8 bytes, then the descriptor. The
 owner string is the name of the operating system that defines these notes, as `FreeBSD`, `GNU`
 and `FDO` are the owners of theirs. Note types are numbered per owner, so the three types below
-collide with no one else's.
+collide with no one else's. The `interfaces_note` crate's note, which lists the binary interfaces
+a program links, has the same owner and header, and this crate's tests hold the two to the same
+bytes.
 
 | type | constant | carried by | descriptor |
 |---|---|---|---|
