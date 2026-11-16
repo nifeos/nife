@@ -294,6 +294,20 @@ fn an_entry_point_outside_every_executable_segment_is_refused() {
     );
 }
 
+/// An entry point past the file bytes of its code segment, in the zero-filled tail, would start
+/// the program on zeros. The last file byte is still a valid entry.
+#[test]
+fn an_entry_point_in_the_zero_filled_tail_is_refused() {
+    let tail = |entry| {
+        let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 0x1000);
+        b.entry = entry;
+        Elf::parse(&b.build()).err()
+    };
+    assert_eq!(tail(0x40_0010), Some(Error::EntryNotExecutable));
+    assert_eq!(tail(0x40_0fff), Some(Error::EntryNotExecutable));
+    assert_eq!(tail(0x40_000f), None);
+}
+
 /// An entry point inside a segment that is readable but NOT executable.
 #[test]
 fn an_entry_point_in_a_data_segment_is_refused() {

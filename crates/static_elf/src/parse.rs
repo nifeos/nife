@@ -41,7 +41,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// use static_elf::{Elf, NATIVE_MACHINE, READABLE, EXECUTABLE, PageBytes};
 /// fn image(flags: u32, entry: u64) -> Vec<u8> {
 ///     const EHDR: usize = 64; const PHDR: usize = 56;
-///     let mut v = vec![0u8; EHDR + PHDR];
+///     let mut v = vec![0u8; EHDR + PHDR + 16]; // 16 bytes of segment body
 ///     v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
 ///     v[4] = 2; v[5] = 1; v[6] = 1; // ELFCLASS64, ELFDATA2LSB, EV_CURRENT
 ///     v[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
@@ -56,7 +56,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 ///     v[p + 8..p + 16].copy_from_slice(&((EHDR + PHDR) as u64).to_le_bytes()); // p_offset
 ///     v[p + 16..p + 24].copy_from_slice(&0x40_0000u64.to_le_bytes()); // p_vaddr
 ///     v[p + 24..p + 32].copy_from_slice(&0x40_0000u64.to_le_bytes()); // p_paddr, equal here
-///     v[p + 40..p + 48].copy_from_slice(&4096u64.to_le_bytes()); // p_memsz; p_filesz stays 0
+///     v[p + 32..p + 48].copy_from_slice(&[16u64.to_le_bytes(), 4096u64.to_le_bytes()].concat());
 ///     v
 /// }
 ///
@@ -199,9 +199,11 @@ impl<'a> Elf<'a> {
                 return Err(Error::SegmentUnreachable);
             }
 
+            // The file's bytes, not `memory_bytes`: past them is the zero-filled tail, and a
+            // program that starts there executes zeros. See `Error::EntryNotExecutable`.
             if seg.is_executable()
                 && (self.entry >= seg.virtual_address
-                    && self.entry < seg.virtual_address + seg.memory_bytes)
+                    && self.entry - seg.virtual_address < seg.data.len() as u64)
             {
                 entry_ok = true;
             }
