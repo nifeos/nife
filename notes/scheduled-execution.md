@@ -36,7 +36,7 @@ at-boot      least_authority_demo 3
 every 1s     date
 ```
 
-At registration each command goes through `grant_plan::parse_run` and `grant_plan::plan`, which is
+At registration each command goes through `grant_plan::parse_run` and `program_table::plan`, which is
 the same function `swish` checks a prompt line with. That is one call rather than a second
 implementation, so "a scheduled entry is checked exactly as a typed one" is true in the code instead
 of being a convention two places are trusted to keep. What comes out is a `grant_plan::Endowment`:

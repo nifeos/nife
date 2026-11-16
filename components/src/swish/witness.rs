@@ -691,8 +691,8 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
 fn two_tree_rm(nav: &mut Nav) -> u64 {
     use filesystem_fixture::twotrees as tt;
     if let Command::Run(rspec) = grant_plan::parse(b"rm /second/secret")
-        && let Ok(e) =
-            grant_plan::plan(&rspec, holdings(nav), grant_plan::expand::Expansion::none())
+        && let Ok((_, e)) =
+            program_table::plan(&rspec, holdings(nav), grant_plan::expand::Expansion::none())
         && let Some(g) = e.directory
         && g.which == nav::Which::B
         && dir_grant(&g, e.short_options).is_err()
@@ -777,8 +777,8 @@ pub(super) fn globbing(spec: u64) -> ! {
     let mut granted = Text::new();
     if let Command::Run(rspec) = grant_plan::parse(line) {
         match expansion(&mut nav, &rspec) {
-            Ok(e) => match grant_plan::plan(&rspec, holdings(&nav), e) {
-                Ok(endow) => match endow.directory {
+            Ok(e) => match program_table::plan(&rspec, holdings(&nav), e) {
+                Ok((_, endow)) => match endow.directory {
                     Some(g) => swish::write_set(&g.names, &mut |b| granted.push(b)),
                     None => v |= globscape::GLOB_FAILED,
                 },

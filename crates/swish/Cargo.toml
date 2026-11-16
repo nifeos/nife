@@ -19,10 +19,12 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-# The parser, the manifests and the planner. Everything this crate renders is one of `grant_plan`'s
-# values (`Refusal`, `Endowment`, `Line`), which is why the split lands here: `grant_plan` decides
-# what a line means and this decides what the user is told about it.
+# The parser and the planner, the manifests, and the program table. Everything this crate renders is
+# one of `grant_plan`'s values (`Refusal`, `Endowment`, `Line`), which is why the split lands here:
+# `grant_plan` decides what a line means and this decides what the user is told about it.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
+program_table = { version = "0.1.0", path = "../program_table" }
 
 # The slot a `std` program finds each authority in (milestone 595 (provisional)), so `caps` names
 # the slots the progenitor will actually use for one rather than the native positions. Constants

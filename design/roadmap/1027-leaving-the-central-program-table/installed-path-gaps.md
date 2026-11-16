@@ -6,7 +6,7 @@ code would let it, what approval rule fits, and what is risky.
 
 ## Two kinds of gap
 
-`grant_plan::image_can_carry` in `crates/grant_plan/src/image.rs` refuses a manifest that declares
+`grant_plan::image_can_carry` in `crates/program_table/src/image.rs` refuses a manifest that declares
 a file, a directory, an input, a short option, `interruptible`, a silent output or a second stream,
 and every owner-granted field. Read against the callers, those refusals mix two different limits.
 

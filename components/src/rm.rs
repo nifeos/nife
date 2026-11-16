@@ -331,7 +331,7 @@ fn text(bytes: &[u8]) {
 
 /// **Close the report, then send the verdict on its own endpoint** ([`filesystem_contract::rm`]).
 ///
-/// This program's manifest declares [`grant_plan::OutputDeclaration::Bytes`], the sink contract:
+/// This program's manifest declares [`grant_contract::OutputDeclaration::Bytes`], the sink contract:
 /// self-framing byte messages ending in `(eof(), 0, 0)`, which the shell reads through
 /// `byte_sink_contract::unpack`, so `rm -rv logs | wc` works. The contract reserves the end of
 /// stream's other two words, so the status and the count cannot ride there; they go to
@@ -380,8 +380,8 @@ interfaces_note::carry_interfaces!(&[
         version: filesystem_contract::fs::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

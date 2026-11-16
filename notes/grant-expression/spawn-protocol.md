@@ -1,8 +1,8 @@
 # The spawn protocol: the exchange, and the reasons behind its words
 
-*Name: provisional, after `grant_plan::spawnproto`'s own heading.*
+*Name: provisional, after `program_table::spawnproto`'s own heading.*
 
-An appendix to [notes/grant-expression.md](../grant-expression.md). `grant_plan::spawnproto` is
+An appendix to [notes/grant-expression.md](../grant-expression.md). `program_table::spawnproto` is
 the wire between the shell and the progenitor. Its doc comments say what each word and bit holds.
 This page holds the order of the whole exchange and the reasons behind the choices that are not
 visible in the code.
@@ -132,10 +132,10 @@ arriving where a delegated capability was expected is still read whole.
   (`Wiring::run_unvouched`) without holding `RUN_UNVOUCHED_SLOT`, or a shell that cannot retype a
   frame mid-request. Nothing lets either side abandon a half-sent request. Today the boot shell is
   the only holder, and a holder can also lend its presentation to another's claim.
-- An image's manifest note (`grant_plan::image_manifest`) reaches only what these words carry, so
+- An image's manifest note (`program_table::image_manifest`) reaches only what these words carry, so
   a note declaring a file, directory, input, option, job, second stream, silent output or `std` is
-  refused (`grant_plan::image_can_carry`). Its `Endowment` names a stand-in row
-  (`grant_plan::IMAGE_ROW`), and reading that row instead of the manifest is the foot gun.
+  refused (`program_table::image_can_carry`). Its `Endowment` names a stand-in row
+  (`program_table::IMAGE_ROW`), and reading that row instead of the manifest is the foot gun.
 - The shell reads the note twice, and the progenitor judges what arrived and refuses a misfit with
   `SPAWN_REFUSED_BY_MANIFEST`. Only a plain line runs an image, never interruptibly.
 - Every activation verb, `Activation::Vouch` included, is open to any spawn-endpoint holder. That

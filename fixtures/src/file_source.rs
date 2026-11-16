@@ -28,7 +28,7 @@
 //!   frame, each with its own copy of the address and its own byte accessors.
 //!
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). `source` is this tree's own word
-//! for the reading end of the sink contract (`grant_plan::spawnproto::Wiring` carries `sink` and
+//! for the reading end of the sink contract (`program_table::spawnproto::Wiring` carries `sink` and
 //! `source`), so `file_sink` and `file_source` are one pair; see
 //! design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and notes/sink-protocol.md.
 //! Refused `sink_verifier` (names the test it serves; it verifies nothing). Refused `file_reader`

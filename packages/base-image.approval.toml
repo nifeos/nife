@@ -9,7 +9,7 @@
 #
 # **First cut, 2026-10-30 (UTC), for calef to tighten.** The grants here are the smallest set that
 # lets the tree's own base programs through. `jig` is the one base program that carries a manifest
-# note, and it asks for the network (`grant_plan::Program::Jig`, with `indexes` forbidden); no base
+# note, and it asks for the network (`program_table::Program::Jig`, with `indexes` forbidden); no base
 # program asks for a resolver zone or the service grant, so no entry allows one. `update` and
 # `remove` are false for every base package: the base image is replaced whole through the boot slot,
 # not updated or removed by a scripted install (milestone 525 (A bad upgrade cannot brick the
