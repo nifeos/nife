@@ -55,8 +55,8 @@ a repository); everything else is two-way and the maintainer decides it.
    Evidence: `crates/sealed_pair/Cargo.toml` lines 13 to 19; `notes/releasable-crates-2026-10-07/inventory.md`
    row `sealed_pair` (class C, graph `measured_boot, nifefs`); the second direction in
    `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`.
-   Change: none in this crate. The order is ruled (Decision A): `nifefs` and `measured_boot` first,
-   then this crate with or after `uefi_loader`. No repository is created for it now.
+   Change: none in this crate. Decision A rules the order: `nifefs` and `measured_boot` first,
+   then this crate with or after `uefi_loader`. It gets no repository now.
    Door: one-way (a repository). Effort: none here.
 
 ### P1: before the move, and one before the next bench evening
@@ -196,7 +196,7 @@ The P2 items are in [the appendix](1107-sealed-pair-outside-review/later-items.m
 
 ## Decisions
 
-A is ruled. B's two names are decided provisionally by the maintainer.
+The architect ruled A. The maintainer decided B's two names provisionally.
 
 ### A. When `sealed_pair` leaves, and in whose company
 
@@ -208,7 +208,7 @@ standing rule is that a crate gets a repository of its own when it is publishabl
 than one repository, and otherwise stays with the package that uses it. Whether more
 than one repository uses it depends on how many kernels there are.
 
-Ruled 2026-11-16 (UTC). No repository is created for `sealed_pair` now. It leaves after `nifefs`
+Ruled 2026-11-16 (UTC). `sealed_pair` gets no repository now. It leaves after `nifefs`
 and `measured_boot`, with or after `uefi_loader`. With more than one kernel, the expectation is that
 it becomes a crate of its own, used by several repositories. If only one repository ends up using
 it, it moves into that repository as a module and never publishes. Nothing in the crate needs a
@@ -265,7 +265,7 @@ The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
 
 ## Follow-on
 
-What is left of this review: Decision A is ruled, the maintainer has decided Decision B,
+What is left of this review: the architect has ruled Decision A, the maintainer has decided Decision B,
 provisionally, and the items marked LEFT in the appendices wait on the move or on a lane of their own.
 
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 follow the order Decision A rules.
