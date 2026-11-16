@@ -847,14 +847,16 @@ impl<'a> Zones<'a> {
     /// The zones in their sorted order, each as dotted text; the root zone is empty.
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-    pub fn iter(&self) -> impl Iterator<Item = &'a [u8]> + use<'a> {
-        let mut rest = self.records;
-        core::iter::from_fn(move || {
-            let (&len, tail) = rest.split_first()?;
-            let (zone, after) = tail.split_at(len as usize);
-            rest = after;
-            Some(zone)
-        })
+    pub fn iter(&self) -> ZonesIter<'a> {
+        ZonesIter { rest: self.records }
+    }
+
+    /// How many zones the manifest asks for. A walk of the length-prefixed records, so linear in
+    /// the count; [`decode`] bounds the count at 255.
+    ///
+    /// Name: provisional. std's spelling and meaning (`design/naming.md`), beside `is_empty`.
+    pub fn len(&self) -> usize {
+        self.iter().count()
     }
 
     /// Whether the manifest asks for no zone.
@@ -869,6 +871,38 @@ impl<'a> Zones<'a> {
     /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
     pub fn has_root(&self) -> bool {
         self.records.first() == Some(&0)
+    }
+}
+
+impl<'a> IntoIterator for &Zones<'a> {
+    type Item = &'a [u8];
+    type IntoIter = ZonesIter<'a>;
+
+    fn into_iter(self) -> ZonesIter<'a> {
+        self.iter()
+    }
+}
+
+/// **The zones of a [`Zones`], in their sorted order**, each as dotted text. The items borrow the
+/// descriptor, not the view, so they outlive both.
+///
+/// Name: provisional. The collection's name and `Iter`, as std names an iterator beside its
+/// collection; one crate holds two such views, so the collection's name comes first.
+#[derive(Clone, Debug)]
+pub struct ZonesIter<'a> {
+    rest: &'a [u8],
+}
+
+impl<'a> Iterator for ZonesIter<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<&'a [u8]> {
+        // `decode` walked these records already, so each length fits; `get` keeps a short
+        // record an end rather than a panic.
+        let (&len, tail) = self.rest.split_first()?;
+        let zone = tail.get(..len as usize)?;
+        self.rest = &tail[len as usize..];
+        Some(zone)
     }
 }
 
@@ -1284,9 +1318,13 @@ impl<'a> Verbs<'a> {
         None
     }
 
-    /// The verbs, in their sorted order, with their grants.
-    pub fn iter(&self) -> impl Iterator<Item = (&'a [u8], grant_plan::ManifestAuthorities)> + '_ {
-        (0..self.len()).map(|i| self.record(i))
+    /// The verbs, in their sorted order, with their grants. The items borrow the descriptor, not
+    /// the view, as [`Zones::iter`]'s do.
+    pub fn iter(&self) -> VerbsIter<'a> {
+        VerbsIter {
+            verbs: *self,
+            next: 0,
+        }
     }
 
     /// Record `i`, which [`decode_verbs`] has already checked.
@@ -1303,6 +1341,44 @@ impl<'a> Verbs<'a> {
         )
     }
 }
+
+impl<'a> IntoIterator for &Verbs<'a> {
+    type Item = (&'a [u8], grant_plan::ManifestAuthorities);
+    type IntoIter = VerbsIter<'a>;
+
+    fn into_iter(self) -> VerbsIter<'a> {
+        self.iter()
+    }
+}
+
+/// **The verbs of a [`Verbs`], in their sorted order**, with their grants.
+///
+/// Name: provisional. The collection's name and `Iter`, as [`ZonesIter`] is named.
+#[derive(Clone, Debug)]
+pub struct VerbsIter<'a> {
+    verbs: Verbs<'a>,
+    next: usize,
+}
+
+impl<'a> Iterator for VerbsIter<'a> {
+    type Item = (&'a [u8], grant_plan::ManifestAuthorities);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next == self.verbs.len() {
+            return None;
+        }
+        let record = self.verbs.record(self.next);
+        self.next += 1;
+        Some(record)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let left = self.verbs.len() - self.next;
+        (left, Some(left))
+    }
+}
+
+impl ExactSizeIterator for VerbsIter<'_> {}
 
 /// **A [`VERBS`] descriptor, decoded**, or why not. One table has one encoding, as [`decode`]
 /// enforces for a manifest: an unknown version, a count past [`MAXIMUM_VERBS`], a length that is
@@ -1504,6 +1580,18 @@ mod verb_tests {
         let v = decode_verbs(&bytes).unwrap();
         assert_eq!(v.len(), N);
         assert!(!v.is_empty());
+        let every = v.iter();
+        assert_eq!(every.len(), N);
+        // The items outlive the view: the iterator is taken from a view that is then dropped.
+        let words: std::vec::Vec<&[u8]> = { decode_verbs(&bytes).unwrap() }
+            .iter()
+            .map(|(word, _)| word)
+            .collect();
+        assert_eq!(words.first(), Some(&b"verb000".as_slice()));
+        assert_eq!(
+            (&v).into_iter().last().map(|(w, _)| w),
+            Some(b"verb255".as_slice())
+        );
         assert_eq!(v.grants_for(b"verb255"), Some(ManifestAuthorities::CATALOG));
     }
 

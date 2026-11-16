@@ -351,6 +351,9 @@ fn a_zoned_descriptor_has_one_encoding() {
         [b"".as_slice(), b"basalt.nifeos.org", b"example.net"]
     );
     assert!(!z.is_empty());
+    assert_eq!(z.len(), 3);
+    assert_eq!((&z).into_iter().count(), 3);
+    assert_eq!(zones(&encode(&M)).unwrap().len(), 0);
     assert!(
         zones(&encode(&M)).unwrap().is_empty(),
         "version 1 asks none"
