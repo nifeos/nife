@@ -499,7 +499,11 @@ mod tests {
         assert_eq!(BLOCK_CHANNEL, 0x5000_0000);
         // The whole band, and the last page of it, are windows.
         assert_eq!(
-            window(SERVICE_WINDOWS, SERVICE_WINDOWS.start, SERVICE_WINDOWS.bytes()),
+            window(
+                SERVICE_WINDOWS,
+                SERVICE_WINDOWS.start,
+                SERVICE_WINDOWS.bytes()
+            ),
             SERVICE_WINDOWS.start
         );
         assert_eq!(
@@ -517,13 +521,25 @@ mod tests {
         let last = SERVICE_WINDOWS.end - PAGE;
         assert!(!refused(SERVICE_WINDOWS, last, PAGE));
         assert!(refused(SERVICE_WINDOWS, last, 2 * PAGE));
-        assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start, SERVICE_WINDOWS.bytes() + PAGE));
+        assert!(refused(
+            SERVICE_WINDOWS,
+            SERVICE_WINDOWS.start,
+            SERVICE_WINDOWS.bytes() + PAGE
+        ));
         // Starts below the band, unaligned start, unaligned length, empty, and wrapping.
-        assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start - PAGE, 2 * PAGE));
+        assert!(refused(
+            SERVICE_WINDOWS,
+            SERVICE_WINDOWS.start - PAGE,
+            2 * PAGE
+        ));
         assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start + 1, PAGE));
         assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start, PAGE + 1));
         assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start, 0));
-        assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start, u64::MAX - PAGE + 1));
+        assert!(refused(
+            SERVICE_WINDOWS,
+            SERVICE_WINDOWS.start,
+            u64::MAX - PAGE + 1
+        ));
     }
 
     #[test]
