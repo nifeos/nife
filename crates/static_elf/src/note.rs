@@ -247,9 +247,9 @@ fn find_in_segment<'a>(
 
 /// **One lookup, fed a segment at a time.** Provisional name.
 ///
-/// What [`Elf::note`] does over a whole image, for a reader that holds one segment at a time (the
-/// shell). Every segment must be fed, in table order, for "the same note twice" to be caught; a
-/// caller that stops at the first match has read a different rule.
+/// What [`Elf::note`] does over a whole image, for a reader that holds one segment at a time, such
+/// as one streaming a file a page at a time. Every segment must be fed, in table order, for "the
+/// same note twice" to be caught; a caller that stops at the first match has read a different rule.
 pub struct NoteSearch<'o> {
     owner: &'o [u8],
     kind: u32,
@@ -338,7 +338,7 @@ mod verification {
     }
 
     /// **Finding the note headers in a file's first bytes never panics, and every segment it
-    /// yields was read from inside them.** The head is hostile (the shell reads it from a file
+    /// yields was read from inside them.** The head is hostile (a streaming reader takes it from a file
     /// anyone may have written), and `phoff` places the table at a symbolic position. 176 bytes is
     /// the header plus two program headers, so at most three entries of the smallest size fit; the
     /// unwind bound covers that and the four-byte magic comparison.
@@ -459,7 +459,7 @@ mod tests {
         assert_eq!(elf.segments().count(), 1, "PT_NOTE is not a load segment");
     }
 
-    /// The shell's path: the headers from the first bytes, each segment read on its own, one
+    /// The streaming path: the headers from the first bytes, each segment read on its own, one
     /// search across them. It must answer what [`Elf::note`] answers, including the refusal.
     fn streamed(bytes: &[u8]) -> Result<Option<Vec<u8>>, NoteError> {
         let mut search = NoteSearch::new(b"Test", 1);

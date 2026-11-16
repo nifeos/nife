@@ -17,8 +17,7 @@
 /// #     v[18..20].copy_from_slice(&NATIVE_MACHINE.to_le_bytes());
 /// #     v[24..32].copy_from_slice(&entry.to_le_bytes()); // e_entry
 /// #     v[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // e_phoff
-/// #     v[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes()); // e_phentsize
-/// #     v[56..58].copy_from_slice(&1u16.to_le_bytes()); // e_phnum
+/// #     v[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes()); v[56] = 1; // e_phentsize, e_phnum
 /// #     let p = EHDR;
 /// #     v[p..p + 4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
 /// #     v[p + 4..p + 8].copy_from_slice(&flags.to_le_bytes());
