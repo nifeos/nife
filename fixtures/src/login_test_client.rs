@@ -605,7 +605,7 @@ fn store_schedule(dir: u64, doc: &[u8]) -> bool {
 
 /// Poll `done` until it holds or [`DESTROY_WAIT_SECONDS`] of counter time pass, yielding between.
 fn wait(done: impl Fn() -> bool) -> bool {
-    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECONDS);
+    let ceiling = user_mode_runtime::counter_hertz().saturating_mul(DESTROY_WAIT_SECONDS);
     let started = user_mode_runtime::now();
     while user_mode_runtime::now().wrapping_sub(started) < ceiling {
         if done() {
@@ -619,14 +619,14 @@ fn wait(done: impl Fn() -> bool) -> bool {
 /// Copy `bytes` into the shared filesystem page (a name to open/create, or data to write).
 fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        FS_WINDOW.w8(i as u64, b);
+        FS_WINDOW.write_u8(i as u64, b);
     }
 }
 
 /// Read `n` bytes out of the shared filesystem page into `out`.
 fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = FS_WINDOW.r8(i as u64);
+        *b = FS_WINDOW.read_u8(i as u64);
     }
 }
 
@@ -752,7 +752,7 @@ const DESTROY_WAIT_SECONDS: u64 = 5;
 /// The bound is wall clock, which milestone 62 (tests that assert on time) argues against, because
 /// a process cannot read delivered ticks; [`DESTROY_WAIT_SECONDS`]'s 40x margin is what makes it safe.
 fn destroy_with_retry(ut: u64) -> bool {
-    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECONDS);
+    let ceiling = user_mode_runtime::counter_hertz().saturating_mul(DESTROY_WAIT_SECONDS);
     let started = user_mode_runtime::now();
     loop {
         if destroy_memory_region(ut) == 0 {
@@ -782,7 +782,7 @@ fn record(ticks: u64) {
 fn waited_microseconds() -> u64 {
     // SAFETY: as `record`.
     let ticks = unsafe { WAITED };
-    ticks.saturating_mul(1_000_000) / user_mode_runtime::cntfrq().max(1)
+    ticks.saturating_mul(1_000_000) / user_mode_runtime::counter_hertz().max(1)
 }
 
 fn done(tag: u64, w1: u64, w2: u64) -> ! {

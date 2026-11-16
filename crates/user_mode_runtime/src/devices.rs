@@ -55,12 +55,12 @@ pub fn reboot(slot: u64) -> i64 {
 /// guess. Here rather than in each driver because an instruction belongs with the code that knows
 /// the ISA.
 #[cfg(target_arch = "x86_64")]
-pub fn outb(port: u16, val: u8) {
+pub fn outb(port: u16, value: u8) {
     // SAFETY: `out` has no memory effect and no flag effect; `nostack` holds. The caller promises it
     // holds the port capability, so the CPU permits the instruction; without it this faults, which
     // is the enforcement working rather than undefined behaviour.
     unsafe {
-        core::arch::asm!("out dx, al", in("dx") port, in("al") val, options(nostack, preserves_flags));
+        core::arch::asm!("out dx, al", in("dx") port, in("al") value, options(nostack, preserves_flags));
     }
 }
 
@@ -70,10 +70,10 @@ pub fn outb(port: u16, val: u8) {
 /// effects, which is exactly why a driver, not the kernel, decides when to issue one.
 #[cfg(target_arch = "x86_64")]
 pub fn inb(port: u16) -> u8 {
-    let val: u8;
+    let value: u8;
     // SAFETY: as `outb`; the caller holds the port capability or this faults.
     unsafe {
-        core::arch::asm!("in al, dx", out("al") val, in("dx") port, options(nostack, preserves_flags));
+        core::arch::asm!("in al, dx", out("al") value, in("dx") port, options(nostack, preserves_flags));
     }
-    val
+    value
 }

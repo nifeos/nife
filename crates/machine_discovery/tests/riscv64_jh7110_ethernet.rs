@@ -34,10 +34,10 @@ fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_add
     assert_eq!(d.interrupt, Some(7));
     assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
     assert_eq!(
-        d.station_address,
+        d.station_mac_address,
         Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
     );
-    assert_eq!(d.physical_layer_device_address, 0);
+    assert_eq!(d.physical_layer_device_bus_address, 0);
     assert_eq!(d.physical_layer_device.source, SettingsSource::VendorTree);
     assert_eq!(
         Settings {
@@ -58,7 +58,7 @@ fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
         GMAC0_REGISTERS_PHYSICAL_ADDRESS
     );
     assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
-    assert_eq!(d.station_address, None);
+    assert_eq!(d.station_mac_address, None);
     assert_eq!(d.physical_layer_device.source, SettingsSource::MainlineTree);
     assert_eq!(d.physical_layer_device.receive_delay, 0xa);
     assert_eq!(d.physical_layer_device.transmit_delay, 0xa);
@@ -106,13 +106,13 @@ fn a_mainline_physical_layer_device_with_one_delay_is_read_not_replaced_by_the_f
         ),
         (10, 13)
     );
-    assert_eq!(d.physical_layer_device_address, 3);
+    assert_eq!(d.physical_layer_device_bus_address, 3);
     let mainline = tree(MAINLINE);
     assert_eq!(
         discover(&mainline)
             .unwrap()
             .unwrap()
-            .physical_layer_device_address,
+            .physical_layer_device_bus_address,
         0
     );
 }
@@ -124,5 +124,5 @@ fn a_vendor_physical_layer_device_reg_is_its_mdio_address() {
     let tree = tree(VENDOR_ADDRESSED);
     let d = discover(&tree).unwrap().unwrap();
     assert_eq!(d.physical_layer_device.source, SettingsSource::VendorTree);
-    assert_eq!(d.physical_layer_device_address, 3);
+    assert_eq!(d.physical_layer_device_bus_address, 3);
 }

@@ -1,5 +1,7 @@
 /// `invoke(capability, READ_REGISTER, off, _, _)` -> register value. Reads are DMA-safe, so any register
-/// in the device's own slot; an offset outside the slot, or not word-aligned, is `WrongObject`.
+/// in the device's own slot; an offset outside the slot, or not word-aligned, is `WrongObject`. The
+/// kernel offers only modern (version 2) devices on either bus, so the `Version` register always
+/// reads 2 here.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`WRITE_REGISTER`]. Refused `READ_REG` (round 7's spelling;

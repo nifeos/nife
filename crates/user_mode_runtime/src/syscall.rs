@@ -10,7 +10,7 @@
 /// **The one trap in this crate**, one per architecture, used by every syscall: the number in
 /// `x8`/`a7`/`rax` and six words in both directions. No register survives: the kernel writes the
 /// first on every syscall and some methods write up to the sixth, which goes in as zero so
-/// [`receive_fault`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the
+/// [`receive_message`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the
 /// kernel)). `helpers/syscall_asm.py` gates every userspace trap. See notes/user-mode-runtime.md.
 ///
 /// # Safety
@@ -20,7 +20,7 @@
 /// Name: provisional, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every syscall
 /// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
 #[cfg(target_arch = "aarch64")]
-pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
+pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
     // SAFETY: see the function doc; `x8` selects the syscall (DECISIONS §10 (process model:
     // capability-based, microkernel)), `x0..x5` carry the six-word ABI in both directions. `asm!`
@@ -28,7 +28,7 @@ pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u6
     unsafe {
         core::arch::asm!(
             "svc #0",
-            in("x8") nr,
+            in("x8") number,
             inlateout("x0") a[0] => w0,
             inlateout("x1") a[1] => w1,
             inlateout("x2") a[2] => w2,
@@ -52,14 +52,14 @@ pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u6
 /// Name: provisional, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every syscall
 /// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
 #[cfg(target_arch = "riscv64")]
-pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
+pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
     // SAFETY: see the function doc; `a7` selects the syscall (DECISIONS §10), `a0..a5` carry the
     // six-word ABI in both directions.
     unsafe {
         core::arch::asm!(
             "ecall",
-            in("a7") nr,
+            in("a7") number,
             inlateout("a0") a[0] => w0,
             inlateout("a1") a[1] => w1,
             inlateout("a2") a[2] => w2,
@@ -85,14 +85,14 @@ pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u6
 /// Name: provisional, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every syscall
 /// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
 #[cfg(target_arch = "x86_64")]
-pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
+pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
     let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
     // SAFETY: see the function doc; `rax` selects the syscall (DECISIONS §10, §124 (the `x86_64`
     // syscall ABI)), and the six argument registers carry the six-word ABI in both directions.
     unsafe {
         core::arch::asm!(
             "syscall",
-            in("rax") nr,
+            in("rax") number,
             inlateout("rdi") a[0] => w0,
             inlateout("rsi") a[1] => w1,
             inlateout("rdx") a[2] => w2,
@@ -125,7 +125,7 @@ pub unsafe fn raw_syscall(number: u64, words: [u64; 6]) -> [u64; 6] {
 }
 
 /// The six-register round trip through `SYSCALL_INVOKE`: [`trap6`] with the number fixed and the sixth
-/// word in as zero, so [`receive_fault`](crate::receive_fault) reads `0` for anything the kernel
+/// word in as zero, so [`receive_message`](crate::receive_message) reads `0` for anything the kernel
 /// did not stamp.
 ///
 /// # Safety

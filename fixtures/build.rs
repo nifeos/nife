@@ -13,10 +13,7 @@ use std::process::Command;
 
 fn main() {
     let dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let script = Path::new(&dir).join("../crates/user_mode_runtime/link.ld");
-    let script = script.display();
-    println!("cargo::rerun-if-changed={script}");
-    println!("cargo::rustc-link-arg=-T{script}");
+    println!("cargo::rustc-link-arg=-Tlink.ld");
 
     // Keep the ELF an ELF. The kernel's loader wants program headers, not a flat blob.
     println!("cargo::rustc-link-arg=--build-id=none");
