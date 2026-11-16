@@ -327,14 +327,6 @@ jobs:
       # cost more to miss. Revisit if this step's time grows past a minute.
       - name: Install Kani
         run: script/kani-install
-      # **A memory record beside the proofs**, read back by the step after them. A shard whose
-      # crates sum to about 12 minutes has run into this job's 25-minute limit while the same pull
-      # request passed on its other runs, and a job that reaches its limit loses its log, so nothing
-      # said what stalled. The suspect is memory: two of `byte_glob`'s harnesses run together and
-      # reached 11.6 GiB between them on a Linux host. vmstat is in the runner image and costs
-      # nothing measurable. notes/verification/ci-timings.md, "A shard that stalls".
-      - name: Record memory and swap every 15 seconds
-        run: nohup vmstat -t -S M 15 > "$RUNNER_TEMP/memory.log" 2>&1 &
       # **Five shards, so the slowest stays near 60% of the 20-minute budget.** Measured over the
       # 29 merge-group runs 43642016303 to 43659021264 (2026-11-14 and 2026-11-15 UTC), the suite
       # is 50.6 serial minutes of proving and a shard job adds about 0.7 minutes of setup. Packed by
@@ -346,10 +338,18 @@ jobs:
       # verify-shard-refresh.yml keeps current daily, and each shard warns when it ran more than 30%
       # off its plan or a crate ran far past its own row.
       # **The step's own limit, 21 minutes, sits under the job's 25** so a stalled shard fails here
-      # with its log kept: the log names the harness it was in, and the memory record still prints.
-      # No passing shard has run past 15.6 minutes.
+      # with its log kept: the log names the harness it was in. No passing shard has run past 15.6
+      # minutes.
+      # **The proofs run inside a memory fence** (helpers/memory_fence.py): a cgroup capped at the
+      # runner's memory less 1536 MiB, with no swap. Unfenced, a harness that outgrew the runner made
+      # the kernel kill the runner's own agent, and the job sat until its 25-minute limit with no
+      # log; 51 merge-group shard jobs went that way between 2026-11-14 and 2026-11-16 (UTC). Fenced,
+      # the kernel kills the largest CBMC, Kani fails that harness, the fence names it in an error
+      # annotation, and the shard fails in minutes with its log. The fence also prints the memory
+      # in use and each running harness every 15 seconds into this step's live log, which a lost
+      # runner keeps. notes/verification/ci-timings.md, "A shard that stalls".
       - name: script/verify --shard ${{ matrix.shard }}/5
-        run: script/verify --shard ${{ matrix.shard }}/5
+        run: python3 helpers/memory_fence.py -- script/verify --shard ${{ matrix.shard }}/5
         # VERIFY_JOBS=2, not the script's default 4, and this is a measurement, not caution: the
         # first four runs of the parallel suite on this runner were each killed ~15 minutes in,
         # inside glob's largest harnesses, as a bare "operation was canceled" with orphaned cbmc
@@ -361,19 +361,6 @@ jobs:
         timeout-minutes: 21
         env:
           VERIFY_JOBS: 2
-      - name: Print the memory record
-        if: always()
-        run: |
-          log="$RUNNER_TEMP/memory.log"
-          [ -s "$log" ] || { echo "no memory record"; exit 0; }
-          # The columns by name, since vmstat's set differs between versions.
-          awk 'NR == 2 { for (i = 1; i <= NF; i++) c[$i] = i; next }
-               NR > 2  { if (min == "" || $c["free"] < min) min = $c["free"]
-                         if ($c["swpd"] > swap) swap = $c["swpd"]
-                         if ($c["si"] + $c["so"] > traffic) traffic = $c["si"] + $c["so"] }
-               END     { print "memory: least free", min, "MiB; most swap used", swap + 0,
-                               "MiB; most swap in plus out", traffic + 0, "per second" }' "$log"
-          if [ "${{ job.status }}" != success ]; then cat "$log"; fi
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
