@@ -258,19 +258,13 @@ Example: `let length = (word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_M
 
 ### Decision 4: The five names that say what they hold
 
-Ruled 2026-11-16 (UTC), option A: the five names stand as built. MAC stays an accepted
-abbreviation (`design/naming.md`), so the doc comment of each `station_mac_address` field opens
-with "media access control".
+Ruled 2026-11-16 (UTC), option A: `station_mac_address`, `physical_layer_device_bus_address`,
+`direct_memory_access_physical_address_bits`, `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR`
+and `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX` stand as built. MAC stays an
+accepted abbreviation (`design/naming.md`), so each `station_mac_address` field's doc opens with
+"media access control".
 
-| name | what it is |
-|---|---|
-| `station_mac_address` | the station's media access control address, from the tree's `local-mac-address` |
-| `physical_layer_device_bus_address` | the physical layer device's address on the MDIO bus |
-| `direct_memory_access_physical_address_bits` | the width of the addresses the DMA engine drives, the databook's `ADDR64` |
-| `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR` | the link partner supports `100BASE-TX` |
-| `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX` | the link partner supports `100BASE-TX` full duplex |
-
-Example: `let address = discovered.station_mac_address.unwrap_or(read_from_registers);`
+Example: `let address = discovered.station_mac_address.unwrap_or(from_registers);`
 
 ### Not brought
 
@@ -300,8 +294,7 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 ## Follow-on
 
 - **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above. They are
-  the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. Decision 4,
-  ruled 2026-11-16 (UTC), keeps five names as built. The
+  the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
   `management_data_io` rename ruled the same day is built too.
 
 - **Done.** Items 1, 2, 3, 6, 7, 8, 10 and 11 are built. The crate passes the template's naming and
