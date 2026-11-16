@@ -60,8 +60,8 @@ exceeded the maximum execution time of 25m0s`. In one of them (run 43772203707, 
 the proving step stopped reporting 1.5 minutes after it began, yet the job stayed open until 30.0
 minutes after it started. That fits a runner that stopped answering the service early, with the
 service giving up 5 minutes after the job limit. Nothing read here shows the 5 minutes to be a
-documented grace period, or the cause to be a lost runner. Whether those shards ever ran their
-proofs is not known. The next step needs a cancelled shard whose log is still readable, or GitHub's
+documented grace period, or the cause to be a lost runner. Nobody knows whether those shards ever ran their
+proofs. The next step needs a cancelled shard whose log is still readable, or GitHub's
 account of how it closes a job whose runner has gone silent.
 
 ## When to remove the line
