@@ -355,3 +355,4 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W46,static_elf,1,0,1,1
 2026W46,std_runtime_contract,0,0,3,3
 2026W46,supervision_contract,1,1,2,2
+2026W47,counter_frequency_contract,0,0,2,0

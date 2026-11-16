@@ -4,7 +4,7 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 
 ## P1
 
-3. The ring layout is a copy of the proved layout, and nothing checks the copy. `QSIZE`
+3. The ring layout is a copy of the proved layout, and nothing checks the copy. NOT DONE (a BUGS entry at the constants records the copy; the move to `abi::virtio` adds public constants to `crates/abi`, so it is a pull request of its own). `QSIZE`
 (`:72`), `OFF_DESC`, `OFF_AVAIL`, `OFF_USED` (`:99-101`) and the net driver's `0x200` stride
 (`:564-569`) restate `direct_memory_access_validator::{LAYOUT_QSIZE, DESC_OFF, AVAIL_OFF,
 USED_OFF, RING_BLOCK}` as literals. The kernel aliases those constants, so the layout it runs
@@ -17,7 +17,7 @@ the dependency edge and the tree did not take it. The validator has no dependenc
 as Decision 2 decides, provisionally, and this crate imports them. Effort: S. Two-way: the layout
 values do not change, only where their names live.
 
-4. The block server dies on a device error that a client can cause. `complete_blk` panics on a
+4. The block server dies on a device error that a client can cause. DONE (a non-OK status answers `-5`, an out-of-range or overflowing block answers `-22`, and only a refused notify panics). `complete_blk` panics on a
 non-OK status (`:1004-1007`) and `submit_blk` panics on a refused notify (`:1153-1155`). Meanwhile
 `blk_flush` deliberately returns the verdict (`:1037-1047`) because, as its own comment says, the
 long-lived block server's death would block every filesystem client. A `blk::READ` or `WRITE`
@@ -31,7 +31,7 @@ shape. The fix: check `block + count` against the capacity read once at start. A
 (EINVAL) for an out-of-range request and `-5` (EIO) for a non-OK status, as the flush verb does.
 Let the panic stay only for a refused notify (a server bug). Effort: M. Two-way.
 
-5. The two `unsafe` blocks state a precondition nothing checks, and omit the one that matters.
+5. The two `unsafe` blocks state a precondition nothing checks, and omit the one that matters. DONE (`window_access_fits` checks the bounds and the alignment in both accessors).
 `direct_memory_access_write<T>` and `direct_memory_access_read<T>` (`:118-125`) are safe functions
 whose SAFETY comments say the offset lies within the DMA page and `T` fits. Neither claim has a
 check, and the block server's region spans seventeen pages and not one (`:912-919`). The comments
@@ -52,7 +52,7 @@ ruled direct grant (milestone 1062 (the device control planes leave the kernel) 
 device. The bounded wait for `Status == 0` is the check that catches a half-reset device. Effort: S. Two-way.
 Inferred from reading.
 
-7. Four copies of one completion loop and three copies of one submit. `complete_block`
+7. Four copies of one completion loop and three copies of one submit. DONE (`submit` and `complete` serve every queue; the caller reads the status byte). `complete_block`
 (`:487-510`), `complete_blk` (`:990-1008`), `complete_flush` (`:1091-1103`) and `wait_receive`
 (`:802-816`) are one loop with three endings (panic, report, return). `submit_block` (`:427-480`),
 `submit_blk` (`:1110-1157`) and `submit_flush` (`:1052-1087`) are one publish with three chains.
@@ -62,7 +62,7 @@ scores each copy separately. The fix: `submit(chain: &[Descriptor]) -> u16` and
 `complete(used_before: u16) -> u8` returning the status byte. The caller decides what a non-zero
 status means. Effort: M. Two-way.
 
-8. The receive parser trusts the buffer, not the device's length. `parse_dhcp_offer` (`:821-865`)
+8. The receive parser trusts the buffer, not the device's length. DONE (`parse_dhcp_offer` bounds every read by the used element's length). `parse_dhcp_offer` (`:821-865`)
 never reads the used ring element's `len` (the bytes the device wrote), so it parses whatever the
 buffer held before, up to `NET_RECEIVE_BUF_LEN`. The option walk's guard `o + 1 < end` (`:848`)
 admits a read at `o + 2` (`:858`) when `o + 1 == end - 1`. That read lands one byte past the
@@ -106,7 +106,7 @@ the program (Decision 1), the names become private and the same list becomes the
 worklist. The fix: one rename lane after Decision 1, bringing the public names to the architect.
 Effort: M. Two-way today (nothing has a release); one-way the day the crate publishes a name.
 
-10. The documentation describes a different crate. The crate doc (`:2`) opens with "A virtio
+10. The documentation describes a different crate. PARTLY DONE (the crate doc lists the roles, a report-code table sits beside `report_code`, and the example imports nothing unused; the README and the citations wait for Decision 1). The crate doc (`:2`) opens with "A virtio
 driver, block and net, at EL0". A stranger expects a library and finds seven `-> !` entry points.
 There is no README. Shipped text cites 17 paths into this tree, 9 milestones, 3 sections and the
 architect by name (`script/crate-standalone`), and a reader outside the tree can follow none of
