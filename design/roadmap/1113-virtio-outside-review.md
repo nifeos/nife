@@ -11,7 +11,8 @@ needs_person: yes
 
 Raised by a read-only outside review of `crates/virtio`, read as a stranger to this tree would meet
 it. It changes nothing; it lists what the next lanes change, and it puts one question to the
-architect first, because every other item depends on its answer.
+architect first, because every other item depends on its answer. The architect has ruled it
+(Decision 1).
 
 There is no review package for this crate in `notes/crate-reviews/`, no row in
 `notes/crate-reviews.md`, and no step for it in journey 5. So this review has no settled baseline
@@ -104,15 +105,16 @@ queues up through the device registers. The other is a startup page that replace
 (1069). Meanwhile the tree holds six copies of the virtio-mmio handshake and ring constants, and
 none of them is in the crate named `virtio` as a shared thing.
 
-Recommendation. The crate does not leave as a crate. Its contents fold into the program that owns
-them, `components/src/block_driver.rs` (or a module beside it), and leave with the drivers
-package. The ratified name `virtio` stays for a library, cut later, that holds what the six copies
-share. That means the register vocabulary at the transport seam, the status and feature bits, the
-handshake, the descriptor and ring accessors at the validator's fixed layout, the blk request chain
-and the net header. It has no test role and no slot convention in it. Whether to cut that
-library, and when, is a second question that waits for 1062 step 7, because the direct grant
-changes what the shared handshake does. Recommending the fold first is about the rules, not the
-effort: it is also the smaller change, and that is not why it is right.
+The rule in force, ruled 2026-11-16 (UTC). The crate does not leave this tree as a crate. Its
+contents fold into the program that owns them, `components/src/block_driver.rs` (or a module beside
+it), and leave later with the drivers package. The ratified name `virtio` is held for a library,
+cut later, that holds what the six copies share. That means the register vocabulary at the
+transport seam, the status and feature bits, the handshake, the descriptor and ring accessors at
+the validator's fixed layout, the blk request chain and the net header. It has no test role and no
+slot convention in it. Whether to cut that library, and when, waits for 1062 step 7, because the
+direct grant changes what the shared handshake does. The fold is chosen for the rules (a crate
+gets its own repository only when it would publish on its merits or when more than one repository
+consumes it), and it would be chosen at equal effort.
 
 Prior art. Linux (`drivers/virtio/virtio_ring.c` shared by every class driver), OpenBSD
 (`sys/dev/pv/virtio.c` under `vioblk` and `vio`) and Redox (`virtio-core` under `virtio-blkd`,
