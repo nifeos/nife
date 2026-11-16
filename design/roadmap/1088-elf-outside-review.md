@@ -245,9 +245,14 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 - **Done.** The rename to `static_elf`: the directory, the package, every dependent, the lock
   files, the tables and baselines, and the notes that name the crate. It changes no behavior and no
   public item.
-- **Outstanding.** Decisions D1 to D3, the move's items, the page-size type, the entry-point
-  refusal, the README and the vocabulary sweep. Checked against `crates/static_elf/src`: `vaddr`, `paddr`
-  and `memsz` keep their names and `Segment::page_range` still takes a bare `u64`.
+- **Done.** Every item that needs no move: the citations, the seeds, the manifest, the page-size
+  type, the program-header proof, the casts, `Display`, the D3 names, the README and its example,
+  and the entry-point refusal. The entry in the zero-filled tail is refused as
+  `EntryNotExecutable`, a maintainer ruling, provisional (2026-11-16 UTC): nothing is published, so
+  the refusal can still be dropped without breaking a file that passed.
+- **Outstanding.** The move's own items (the scaffold's files, the fuzz target), the four mutation
+  timeouts (the first weekly run in the new repository), the stranger test, and the shared test
+  forge.
 
 ## BUGS
 
