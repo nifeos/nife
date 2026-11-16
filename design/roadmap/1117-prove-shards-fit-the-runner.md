@@ -35,8 +35,8 @@ systemd scope. A hosted runner has no user manager, so the fence makes the cgrou
 
 - **Recorded.** Pull requests skip the prove shards, so a harness too large for the runner first
   fails in the merge queue: notes/verification/ci-timings.md, "A shard that stalls".
-- **Recorded.** The fence's reserve is a chosen number, and the harness a kill names is read from
-  a one-second sample: `helpers/memory_fence.py`, `BUGS`.
+- **Recorded.** The fence's reserve is a chosen number, and the fence reads the harness a kill
+  names from a one-second sample: `helpers/memory_fence.py`, `BUGS`.
 
 ## Index row
 

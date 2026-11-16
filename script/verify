@@ -534,16 +534,17 @@ machine_discovery	390	the firmware tables and boot handoffs: ACPI, PVH, the scre
 TABLE
 )"
 
-# **Harnesses that prove apart from the rest of their row** (milestone 1117, provisional), one per
-# line: the row, a tab, the harness's full name. Such a row proves in two passes: every other
-# harness first, at the usual width, then each one listed here with nothing beside it. Two harnesses
-# go here when, run together, they outgrow the hosted runner. `byte_glob`'s are the case: on the
-# runner, `no_magic_means_the_pattern_is_its_own_only_match` held 7.1 to 8.5 GiB for its whole 551
-# seconds and `a_negated_class_is_the_exact_complement_of_the_class` reached 7.6 GiB alone, and
-# Kani starts those two first at `-j 2`. Together they reached the memory fence's 14446 MiB cap in
-# run 43782179924, and without the fence they lost the runner on every one of the swapless hosts
-# that drew them. Apart, the row costs about one more minute. A listed harness the row no longer
-# has fails the run, so this list cannot outlive the harness it names.
+# **Harnesses that prove apart from the rest of their row** (milestone 1117 (the prove shards fit
+# the hosted runner's memory); name provisional), one per line: the row, a tab, the harness's full
+# name. Such a row proves in two passes: every other harness first, at the usual width, then each
+# one listed here with nothing beside it. A harness goes here when it and another of its row, run
+# together, outgrow the hosted runner. On the runner, byte_glob's
+# `no_magic_means_the_pattern_is_its_own_only_match` held 7.1 to 8.5 GiB for its 551 seconds and
+# `a_negated_class_is_the_exact_complement_of_the_class` reached 7.6 GiB alone, and Kani starts the
+# two first at `-j 2`. Together they reached the memory fence's 14446 MiB cap (run 43782179924).
+# Unfenced, swap carried them on the hosts that have it, and they lost the runner on 4 of the 6
+# logged shard-2 jobs on hosts of image 20261111.82.6. A listed harness the row no longer has fails
+# the run, so this list cannot outlive the harness it names.
 KANI_APART="$(cat <<'APART'
 byte_glob	verification::a_negated_class_is_the_exact_complement_of_the_class
 APART
