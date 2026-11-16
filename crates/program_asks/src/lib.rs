@@ -100,7 +100,7 @@ pub fn checked_asked_grants_of<'b>(
                 .map_err(UnreadableNote::Manifest)?
                 .network,
             capability_manifest_note::zones(d).map_err(UnreadableNote::Manifest)?,
-            capability_manifest_note::service(d).map_err(UnreadableNote::Manifest)?,
+            capability_manifest_note::asks_service(d).map_err(UnreadableNote::Manifest)?,
         )),
     };
     if let Some((_, zones, _)) = decoded
@@ -155,7 +155,7 @@ pub fn asked_grants_of<'b>(
         Some((
             capability_manifest_note::decode(d).ok()?.network,
             capability_manifest_note::zones(d).ok()?,
-            capability_manifest_note::service(d).ok()?,
+            capability_manifest_note::asks_service(d).ok()?,
         ))
     }))
 }

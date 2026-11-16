@@ -525,7 +525,7 @@ fn asks(bytes: &[u8]) -> Vec<Asks> {
         ) else {
             continue;
         };
-        let Ok(service) = capability_manifest_note::service(d) else {
+        let Ok(service) = capability_manifest_note::asks_service(d) else {
             continue;
         };
         if !m.network && !service && zones.is_empty() {

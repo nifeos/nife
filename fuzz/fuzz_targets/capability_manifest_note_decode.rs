@@ -10,7 +10,7 @@
 //!
 //! What this adds over the proofs. Kani proves `decode` total and proves `a_decoded_manifest_
 //! encodes_back_to_its_bytes`, but only up to 57 bytes, which ends at the zone count byte. The
-//! version 2 and 3 walk (`check_zones`, `check_serviced`, then `zones` and `service`) is past that
+//! version 2 and 3 walk (`check_zones`, `check_serviced`, then `zones` and `asks_service`) is past that
 //! bound, and `decode_subtree_grants` and `decode_verbs` have no harness. The committed seeds are
 //! encoded valid manifests of every version, and the mutator below builds more, so the fuzzer
 //! starts inside the zone walk rather than hoping to guess a version word and 56 canonical bytes.
@@ -21,7 +21,7 @@
 //!    (and, for version 2 and 3, the zones and the service byte the accessors report) written back
 //!    gives the input byte for byte, and decoding that gives the same manifest. The same for a
 //!    scope and a verb table.
-//! 2. **A refusal is whole.** When `decode` refuses, `zones` and `service` refuse too.
+//! 2. **A refusal is whole.** When `decode` refuses, `zones` and `asks_service` refuse too.
 //! 3. **Nothing rides on a note that the owner has not granted.** An accepted manifest never holds
 //!    `reboot`, `sync`, `installer`, `catalog`, `indexes`, `activation_directory` or
 //!    `console_input`: no note can ask for them.
@@ -37,7 +37,7 @@
 use capability_manifest_note::{
     MAXIMUM_VERBS, MAXIMUM_ZONES, SERVICED_VERSION, SUBTREE_GRANTS_LEN, SubtreeGrantsNote,
     VERB_RECORD, VERBS_VERSION, ZONED_VERSION, decode, decode_subtree_grants, decode_verbs, encode,
-    service, zones,
+    asks_service, zones,
 };
 use grant_plan::{IndexStoreDeclaration, MAXIMUM_VERB, ManifestAuthorities};
 use libfuzzer_sys::{fuzz_mutator, fuzz_target};
@@ -56,7 +56,7 @@ fn manifest(d: &[u8]) {
     let Ok(m) = decode(d) else {
         // The accessors check the descriptor whole, as `decode` does.
         assert!(zones(d).is_err());
-        assert!(service(d).is_err());
+        assert!(asks_service(d).is_err());
         return;
     };
     // What no note carries (property 3).
@@ -68,7 +68,7 @@ fn manifest(d: &[u8]) {
     let mut again = encode(&m).to_vec();
     let version = word(d);
     let zs: Vec<&[u8]> = zones(d).expect("decode accepted").iter().collect();
-    let served = service(d).expect("decode accepted");
+    let served = asks_service(d).expect("decode accepted");
     match version {
         1 => {
             assert!(zs.is_empty() && !served);

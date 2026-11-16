@@ -282,7 +282,7 @@ fn a_subtree_option_must_be_a_declared_letter_even_the_only_one() {
 #[test]
 fn the_layout_accepts_its_largest_values_and_checks_its_last_byte() {
     assert_eq!(decode(&[1, 2, 3]), Err(Error::NoVersion));
-    assert_eq!(decode(&VERSION.to_le_bytes()), Err(Error::WrongLength));
+    assert_eq!(decode(&BARE_VERSION.to_le_bytes()), Err(Error::WrongLength));
     assert_eq!(decode(&9u32.to_le_bytes()), Err(Error::UnknownVersion));
 
     let letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS] = core::array::from_fn(|i| b'a' + i as u8);
@@ -447,7 +447,7 @@ fn the_service_ask_is_version_threes_and_only_its() {
         encode_serviced(&grant_plan::NO_NOTE_MANIFEST, ZONES, true);
     assert_eq!(decode(&D), Ok(grant_plan::NO_NOTE_MANIFEST));
     assert_eq!(zones(&D).unwrap().iter().next(), Some(&b"nife.test"[..]));
-    assert_eq!(service(&D), Ok(true));
+    assert_eq!(asks_service(&D), Ok(true));
 
     const NONE: [u8; serviced_len(&[])] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, &[], true);
     assert_eq!(
@@ -455,14 +455,14 @@ fn the_service_ask_is_version_threes_and_only_its() {
         0,
         "version 3 asks no zone"
     );
-    assert_eq!(service(&NONE), Ok(true));
+    assert_eq!(asks_service(&NONE), Ok(true));
     const OFF: [u8; serviced_len(&[])] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, &[], false);
-    assert_eq!(service(&OFF), Ok(false));
+    assert_eq!(asks_service(&OFF), Ok(false));
 
     let v1 = encode(&grant_plan::NO_NOTE_MANIFEST);
-    assert_eq!(service(&v1), Ok(false));
+    assert_eq!(asks_service(&v1), Ok(false));
     const ZONED: [u8; zoned_len(ZONES)] = encode_zoned(&grant_plan::NO_NOTE_MANIFEST, ZONES);
-    assert_eq!(service(&ZONED), Ok(false));
+    assert_eq!(asks_service(&ZONED), Ok(false));
 
     let mut unknown = D;
     *unknown.last_mut().unwrap() = 2;
@@ -470,12 +470,12 @@ fn the_service_ask_is_version_threes_and_only_its() {
     trailing[..D.len()].copy_from_slice(&D);
     let cut = &D[..D.len() - 1];
     assert!(matches!(decode(&unknown), Err(Error::BadField(_))));
-    assert_eq!(service(&unknown), Err(decode(&unknown).unwrap_err()));
+    assert_eq!(asks_service(&unknown), Err(decode(&unknown).unwrap_err()));
     // The zones without the service byte: the byte at the cut is what faults.
     assert_eq!(decode(cut), Err(Error::BadField(67)));
-    assert_eq!(service(cut), Err(decode(cut).unwrap_err()));
+    assert_eq!(asks_service(cut), Err(decode(cut).unwrap_err()));
     assert_eq!(decode(&trailing), Err(Error::WrongLength));
-    assert_eq!(service(&trailing), Err(decode(&trailing).unwrap_err()));
+    assert_eq!(asks_service(&trailing), Err(decode(&trailing).unwrap_err()));
 }
 
 /// **The version 3 note names its exact length and pads to four**, as the version 2 note
@@ -503,7 +503,7 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
     assert_eq!(descsz, serviced_len(&[]));
     assert_eq!(descsz, 58);
     assert_eq!(
-        service(&n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz]),
+        asks_service(&n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz]),
         Ok(true)
     );
     assert!(
@@ -521,7 +521,7 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
     let d = &n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz];
     assert_eq!(decode(d), Ok(grant_plan::NO_NOTE_MANIFEST));
     assert_eq!(zones(d).unwrap().iter().count(), 2);
-    assert_eq!(service(d), Ok(true));
+    assert_eq!(asks_service(d), Ok(true));
 }
 
 /// **A version 3 descriptor walks its zones by their lengths to its last byte**: two zones of
@@ -537,7 +537,7 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     assert_eq!(got.next(), Some(&b"a.test"[..]));
     assert_eq!(got.next(), Some(&b"b.c.test"[..]));
     assert_eq!(got.next(), None);
-    assert_eq!(service(&D), Ok(true));
+    assert_eq!(asks_service(&D), Ok(true));
 
     const EIGHT: &[&str] = &[
         "a.test", "b.test", "c.test", "d.test", "e.test", "f.test", "g.test", "h.test",

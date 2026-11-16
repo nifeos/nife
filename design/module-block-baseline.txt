@@ -972,7 +972,6 @@ crates/capability_manifest_note/src/lib.rs::VERBS_VERSION
 
 crates/capability_manifest_note/src/lib.rs::VERB_RECORD
 
-crates/capability_manifest_note/src/lib.rs::VERSION
 
 crates/capability_manifest_note/src/lib.rs::Verbs
 

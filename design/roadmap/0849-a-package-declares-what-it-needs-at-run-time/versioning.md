@@ -21,7 +21,7 @@ manifest.
   architecture, and no dependency field.
 - Package versions are ordered by `package_index::version::newest`, which is dpkg's `verrevcmp`.
   `installed_programs::Entry::version` calls a version "a label, never an identity".
-- The manifest note checks its own format version at decode (`capability_manifest_note::VERSION`,
+- The manifest note checks its own format version at decode (`capability_manifest_note::BARE_VERSION`,
   refused as `UnknownVersion`). That is the note's encoding, not any contract's.
 - §235 (the OS is built and updated from packages)'s ABI revision field is ruled into the note and
   not built.

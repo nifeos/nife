@@ -14,8 +14,8 @@ diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_mani
          return Err(Error::NoVersion);
      }
      match u32::from_le_bytes([d[0], d[1], d[2], d[3]]) {
--        VERSION if d.len() != DESCRIPTOR_LEN => return Err(Error::WrongLength),
-         VERSION => {}
+-        BARE_VERSION if d.len() != DESCRIPTOR_LEN => return Err(Error::WrongLength),
+         BARE_VERSION => {}
          ZONED_VERSION => {
              check_zones(d)?;
          }

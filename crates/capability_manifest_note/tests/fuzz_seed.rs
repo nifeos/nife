@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use capability_manifest_note::{
     Scope, SubtreeGrantsNote, decode, decode_subtree_grants, decode_verbs, encode, encode_serviced,
-    encode_verbs, encode_zoned, service, serviced_len, verbs_len, zoned_len, zones,
+    encode_verbs, encode_zoned, asks_service, serviced_len, verbs_len, zoned_len, zones,
 };
 use grant_plan::{
     ManifestAuthorities, NO_NOTE_MANIFEST, Program, UNVOUCHED_STD_MANIFEST, VerbGrant,
@@ -167,7 +167,7 @@ fn the_seeds_reach_the_zone_walk_past_the_count_byte() {
     for (name, bytes) in seeds() {
         if name.starts_with("manifest_v3") {
             decode(&bytes).unwrap();
-            assert_eq!(service(&bytes), Ok(bytes[bytes.len() - 1] == 1));
+            assert_eq!(asks_service(&bytes), Ok(bytes[bytes.len() - 1] == 1));
         }
         if name == "manifest_v2_eight_zones" {
             assert_eq!(zones(&bytes).unwrap().iter().count(), 8);

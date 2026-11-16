@@ -114,7 +114,11 @@ pub const MANIFEST: u32 = 1;
 /// The first descriptor version: a version word, then little-endian fields in a fixed order, with
 /// no zones and no service byte. [`decode`] reads this version and [`ZONED_VERSION`] and
 /// [`SERVICED_VERSION`], and refuses any later one.
-pub const VERSION: u32 = 1;
+///
+/// Name: provisional. `BARE` says it is the version with nothing after the fixed fields, beside
+/// [`ZONED_VERSION`] and [`SERVICED_VERSION`]; a bare `VERSION` read as the current version of the
+/// format or of the crate, which it is not.
+pub const BARE_VERSION: u32 = 1;
 
 /// The version of the set of manifest note types and their descriptors: 1. A break bumps it, with
 /// the dated ledger entry the interface-stability discipline owes; an addition an older peer
@@ -295,7 +299,7 @@ const fn refuse_what_no_note_carries(m: &Manifest) {
 pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     refuse_what_no_note_carries(m);
     let mut out = [0u8; DESCRIPTOR_LEN];
-    let v = VERSION.to_le_bytes();
+    let v = BARE_VERSION.to_le_bytes();
     out[0] = v[0];
     out[1] = v[1];
     out[2] = v[2];
@@ -431,8 +435,8 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         return Err(Error::NoVersion);
     }
     match u32::from_le_bytes([d[0], d[1], d[2], d[3]]) {
-        VERSION if d.len() != DESCRIPTOR_LEN => return Err(Error::WrongLength),
-        VERSION => {}
+        BARE_VERSION if d.len() != DESCRIPTOR_LEN => return Err(Error::WrongLength),
+        BARE_VERSION => {}
         ZONED_VERSION => {
             check_zones(d)?;
         }
@@ -759,8 +763,9 @@ fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
 /// installs grant only what the owner's approval file allows)), read from a checked descriptor.
 /// `false` for version 1 and version 2, whose grammar cannot say it.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
-pub fn service(d: &[u8]) -> Result<bool, Error> {
+/// Name: provisional. A question, so a caller's `if asks_service(d)? { ... }` reads as the
+/// condition it tests; `service` read as a noun.
+pub fn asks_service(d: &[u8]) -> Result<bool, Error> {
     decode(d)?;
     if u32::from_le_bytes([d[0], d[1], d[2], d[3]]) != SERVICED_VERSION {
         return Ok(false);
@@ -797,7 +802,7 @@ pub fn zones(d: &[u8]) -> Result<Zones<'_>, Error> {
 }
 
 /// How many bytes the first `count` zones of a version 3 descriptor occupy, its count byte
-/// apart: what [`zones`] and [`service`] both walk.
+/// apart: what [`zones`] and [`asks_service`] both walk.
 fn zones_bytes(d: &[u8], count: usize) -> usize {
     let mut at = 0usize;
     for _ in 0..count {
