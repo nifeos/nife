@@ -475,8 +475,8 @@ fn the_service_ask_is_version_threes_and_only_its() {
     let cut = &D[..D.len() - 1];
     assert!(matches!(decode(&unknown), Err(Error::BadField(_))));
     assert_eq!(asks_service(&unknown), Err(decode(&unknown).unwrap_err()));
-    // The zones without the service byte: the byte at the cut is what faults.
-    assert_eq!(decode(cut), Err(Error::BadField(67)));
+    // The zones without the service byte: cut short, as any other short descriptor is.
+    assert_eq!(decode(cut), Err(Error::WrongLength));
     assert_eq!(asks_service(cut), Err(decode(cut).unwrap_err()));
     assert_eq!(decode(&trailing), Err(Error::WrongLength));
     assert_eq!(asks_service(&trailing), Err(decode(&trailing).unwrap_err()));

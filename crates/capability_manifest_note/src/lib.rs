@@ -10,7 +10,8 @@
 //! # BUGS
 //!
 //! - A foreign build carries a note only by linking an object that holds one: `-Clink-arg=note.o`
-//!   works and `llvm-objcopy --add-section` makes no program header. Nothing writes that object yet.
+//!   works and `llvm-objcopy --add-section` makes no program header. [`Note::of`] gives the bytes
+//!   that object holds; writing the object is the build's own step.
 //! - Changing a manifest means relinking, and a new digest: M2's accepted cost.
 //!
 
@@ -194,7 +195,9 @@ pub enum Error {
     /// [`DESCRIPTOR_BYTES`] bytes, and the later versions add their zone and service bytes.
     WrongLength,
     /// A field holds a value outside its range, or a byte the layout says is zero is not. The
-    /// offset is the first such byte.
+    /// offset is where the field at fault starts, not the byte inside it: the first option letter
+    /// for a list of letters that is refused, a zone's length byte for anything wrong inside that
+    /// zone, and a byte's own offset for a one-byte field or a byte that should be zero.
     BadField(usize),
 }
 
@@ -411,8 +414,9 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
     }
 }
 
-/// The manifest a version 1 descriptor spells, or why it spells none. Strict: whatever this
-/// accepts, [`encode`] turns back into the same bytes, so a descriptor has one reading.
+/// The manifest a descriptor of any version spells, or why it spells none. Strict: whatever this
+/// accepts, the encoder of its version turns back into the same bytes, so a descriptor has one
+/// reading.
 ///
 /// # Examples
 ///
@@ -432,8 +436,9 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// capability_manifest_note::carry!(grant_plan::Program::Uptime.manifest());
 /// ```
 ///
-/// A version 2 descriptor decodes to the same manifest its first 56 bytes would; its zones are
-/// checked here too, and read with [`zones`].
+/// A version 2 or version 3 descriptor decodes to the manifest its first 56 bytes spell. Its zones
+/// and its service byte are checked here too, so a refusal is the whole descriptor's, and they are
+/// read with [`zones`] and [`asks_service`].
 pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     if d.len() < 4 {
         return Err(Error::NoVersion);
@@ -708,7 +713,7 @@ const fn write_zones(out: &mut [u8], zones: &[&str]) -> usize {
 
 /// Every zone of a version 2 descriptor, checked: a count of one to [`MAXIMUM_ZONES`], each zone
 /// canonical (`domain_name_resolution_contract::is_canonical_zone`) and sorted strictly after the one before, and nothing after the
-/// last. The offset in a refusal is the first byte at fault.
+/// last. A refusal's offset is the count byte, or the length byte of the zone that breaks.
 fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
     let count = *d.get(DESCRIPTOR_BYTES).ok_or(Error::WrongLength)? as usize;
     if count == 0 || count > MAXIMUM_ZONES {
@@ -735,8 +740,9 @@ fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
 
 /// Every zone and the service byte of a version 3 descriptor, checked: a count of zero to
 /// [`MAXIMUM_ZONES`] (zero asks no zone, which version 2 refuses), each zone canonical and sorted
-/// strictly after the one before, then exactly one byte, `0` or `1`, and nothing after it. The
-/// offset in a refusal is the first byte at fault.
+/// strictly after the one before, then exactly one byte, `0` or `1`, and nothing after it. A
+/// refusal's offset is the count byte, the length byte of the zone that breaks, or the service
+/// byte; a descriptor that ends before its service byte is cut short, as any other.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
@@ -759,7 +765,8 @@ fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
     }
     match d.get(at) {
         Some(0 | 1) => {}
-        _ => return Err(Error::BadField(at)),
+        Some(_) => return Err(Error::BadField(at)),
+        None => return Err(Error::WrongLength),
     }
     if at + 1 != d.len() {
         return Err(Error::WrongLength);
