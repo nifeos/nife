@@ -46,10 +46,14 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 /// return needs (`MemoryRegionHeap::commit_all`). A budget too small to cover it leaves what did
 /// map usable, and an allocation past it refuses its line with [`Say::HeapFull`](crate::Say::HeapFull).
 pub(super) fn initialize_heap() {
-    HEAP.initialize(
-        BUDGET,
-        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-        swish::HEAP_MAXIMUM_BYTES,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            BUDGET,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            swish::HEAP_MAXIMUM_BYTES,
+        )
+        .is_ok(),
     );
     let _ = HEAP.commit_all();
 }
