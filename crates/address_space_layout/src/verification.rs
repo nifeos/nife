@@ -183,7 +183,8 @@ fn window_accepts_every_whole_window_its_band_holds() {
     let start: u64 = kani::any();
     let bytes: u64 = kani::any();
     kani::assume(start.is_multiple_of(PAGE) && bytes.is_multiple_of(PAGE) && bytes > 0);
-    kani::assume(start >= RUNTIME_WINDOWS.start && bytes <= RUNTIME_WINDOWS.end - start);
+    kani::assume(start >= RUNTIME_WINDOWS.start && start < RUNTIME_WINDOWS.end);
+    kani::assume(bytes <= RUNTIME_WINDOWS.end - start);
     assert_eq!(window(RUNTIME_WINDOWS, start, bytes), start);
 }
 
