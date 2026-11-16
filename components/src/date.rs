@@ -364,9 +364,9 @@ fn source_line(slot: u64, st: u64, generation: u64) {
         &mut buf,
         &mut n,
         match st {
-            state::RTC => b"rtc" as &[u8],
+            state::REAL_TIME_CLOCK => b"rtc" as &[u8],
             state::SET => b"set",
-            state::SYNCED => b"synced",
+            state::SYNCHRONIZED => b"synced",
             _ => b"unknown",
         },
     );

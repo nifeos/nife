@@ -33,7 +33,7 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     );
     assert_eq!(
         report[1],
-        state::RTC,
+        state::REAL_TIME_CLOCK,
         "the clock should be set from the RTC"
     );
     assert!(
@@ -45,10 +45,12 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     // And the page a reader would hold says the same thing, computed independently: the kernel
     // adds its own counter to the offset the service published, through the same seqlock.
     let r = w.page().read();
-    assert_eq!(r.state, state::RTC);
+    assert_eq!(r.state, state::REAL_TIME_CLOCK);
     assert_eq!(r.generation, 1, "one publish: the RTC reading");
-    let by_hand =
-        clock_contract::wall_nanoseconds(r.offset_nanos, clock_service::monotonic_nanoseconds());
+    let by_hand = clock_contract::wall_nanoseconds(
+        r.offset_nanoseconds,
+        clock_service::monotonic_nanoseconds(),
+    );
     assert!(
         by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NS_PER_SECOND,
         "a reader's own arithmetic ({by_hand}) should agree with the service's ({})",
@@ -111,7 +113,11 @@ fn a_proposer_can_ask_and_cannot_tell() {
     assert_eq!(got, status::ACCEPTED);
     assert!(after >= now);
     let r = w.page().read();
-    assert_eq!(r.state, state::SYNCED, "an accepted proposal is not a SET");
+    assert_eq!(
+        r.state,
+        state::SYNCHRONIZED,
+        "an accepted proposal is not a SET"
+    );
     assert_eq!(r.generation, before.generation + 1);
 }
 
@@ -164,5 +170,9 @@ fn an_unknown_opcode_is_answered_rather_than_fatal() {
     assert_eq!(r[0], status::BAD_REQUEST);
 
     let r = crate::sched::ipc_call(w.propose, [propose::req(propose::STATE), 0]);
-    assert_eq!(r[0], state::RTC, "still serving, and still knows the time");
+    assert_eq!(
+        r[0],
+        state::REAL_TIME_CLOCK,
+        "still serving, and still knows the time"
+    );
 }

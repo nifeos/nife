@@ -67,7 +67,7 @@ fn start(rtc_kind: u64, _a1: u64, _a2: u64) -> ! {
         && policy::is_plausible(unix_nanoseconds)
     {
         page.publish(
-            state::RTC,
+            state::REAL_TIME_CLOCK,
             clock_contract::offset_for(unix_nanoseconds, monotonic_nanoseconds()),
         );
     }
@@ -96,10 +96,10 @@ fn serve(page: ClockPage) -> ! {
                 let current = wall_now(&page);
                 let verdict = policy::decide(r.state, current, w1);
                 if verdict == status::ACCEPTED {
-                    // SYNCED rather than SET: this came from a source the service bounded, and the
+                    // SYNCHRONIZED rather than SET: this came from a source the service bounded, and the
                     // provenance is what a caller weighing a certificate expiry actually wants.
                     page.publish(
-                        state::SYNCED,
+                        state::SYNCHRONIZED,
                         clock_contract::offset_for(w1, monotonic_nanoseconds()),
                     );
                 }

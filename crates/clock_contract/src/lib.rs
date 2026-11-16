@@ -107,7 +107,7 @@ pub const fn offset_for(wall_nanoseconds: u64, monotonic_nanoseconds: u64) -> u6
 
 /// **The states the wall clock can be in, and one of them is "I do not know".**
 ///
-/// This is the no-silent-degradation rule on a second axis. A machine with no RTC, or
+/// This is the no-silent-degradation rule on a second axis. A machine with no real-time clock (RTC), or
 /// with an RTC reporting something impossible, must say so; confidently reporting 1970 plus uptime
 /// is the failure, because the caller cannot tell it from a real answer.
 pub mod state {
@@ -116,9 +116,10 @@ pub mod state {
     /// not be used. This is also what a zeroed page reads as, so a page nobody has published to is
     /// honest by default rather than by initialization.
     pub const UNKNOWN: u64 = 0;
-    /// Set once at startup from the hardware RTC. As good as the battery-backed clock on the board,
+    /// Set once at startup from the hardware real-time clock (RTC). As good as the battery-backed clock on the board,
     /// which on QEMU is the host's clock and on a real board is whatever the coin cell managed.
-    pub const RTC: u64 = 1;
+    #[doc(alias = "RTC")]
+    pub const REAL_TIME_CLOCK: u64 = 1;
     /// Set outright by an authority holding the page read/write: an operator, or the service's own
     /// startup on a machine where that is the only source.
     pub const SET: u64 = 2;
@@ -126,7 +127,7 @@ pub mod state {
     /// lands. Distinguished from [`SET`] because "an external source I bounded" and "a human told
     /// me" are different provenance, and the difference is exactly what a caller deciding whether
     /// to trust a certificate expiry wants.
-    pub const SYNCED: u64 = 3;
+    pub const SYNCHRONIZED: u64 = 3;
 
     /// Whether a state means the machine actually knows the time.
     pub const fn is_known(state: u64) -> bool {
@@ -246,20 +247,20 @@ unsafe impl Send for ClockPage {}
 unsafe impl Sync for ClockPage {}
 
 impl ClockPage {
-    /// Name the clock page mapped at `va`.
+    /// Name the clock page mapped at `virtual_address`.
     ///
     /// # Safety
     ///
-    /// `va` must be a mapped, 8-byte-aligned frame that is the clock page (or, for a writer about
+    /// `virtual_address` must be a mapped, 8-byte-aligned frame that is the clock page (or, for a writer about
     /// to call [`initialize`](Self::initialize), a zeroed frame that is about to become one), and
     /// it must stay mapped for as long as this value is used. Read-only is enough for
     /// [`read`](Self::read); [`publish`](Self::publish) and [`initialize`](Self::initialize) need
     /// it mapped read/write, and calling them on a read-only mapping faults the caller, which is
     /// the correct outcome: a process without the set authority cannot set the clock, and finds out
     /// immediately.
-    pub const unsafe fn new(va: u64) -> Self {
+    pub const unsafe fn new(virtual_address: u64) -> Self {
         ClockPage {
-            base: va as *const AtomicU64,
+            base: virtual_address as *const AtomicU64,
         }
     }
 
@@ -469,8 +470,8 @@ pub mod propose {
     }
 
     /// The opcode of a request word.
-    pub const fn operation(w0: u64) -> u64 {
-        w0 >> OPERATION_SHIFT
+    pub const fn operation(word: u64) -> u64 {
+        word >> OPERATION_SHIFT
     }
 
     /// `CALL(req(PROPOSE), proposed_unix_nanos)`. Ask the service to move the wall clock to
@@ -491,7 +492,7 @@ pub mod propose {
 /// The reply's first word for a [`propose::PROPOSE`]. Not an errno space: this contract has no
 /// POSIX behind it, and every refusal here is a policy answer rather than a failure.
 pub mod status {
-    /// The proposal was applied. The clock is now [`super::state::SYNCED`].
+    /// The proposal was applied. The clock is now [`super::state::SYNCHRONIZED`].
     pub const ACCEPTED: u64 = 0;
     /// Outside the sanity window entirely: [`super::policy::is_plausible`] says no machine running
     /// this code is at that instant. A proposal of 1970, or of 2038, lands here.
@@ -591,18 +592,18 @@ pub mod policy {
     /// let now = 1_800_000_000 * NS_PER_SECOND;
     ///
     /// // A small correction, in either direction, is what a time client is for.
-    /// assert_eq!(policy::decide(state::SYNCED, now, now + NS_PER_SECOND / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + NS_PER_SECOND / 2), status::ACCEPTED);
     ///
     /// // Walking the clock past a certificate expiry in one step is the classic attack.
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOSECONDS),
+    ///     policy::decide(state::SYNCHRONIZED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOSECONDS),
     ///     status::REFUSED_TOO_FAR_FORWARD,
     /// );
     ///
     /// // And the tighter half: a second forward is fine, a second and a half backward is not.
-    /// assert_eq!(policy::decide(state::SYNCED, now, now + 3 * NS_PER_SECOND / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + 3 * NS_PER_SECOND / 2), status::ACCEPTED);
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now - 3 * NS_PER_SECOND / 2),
+    ///     policy::decide(state::SYNCHRONIZED, now, now - 3 * NS_PER_SECOND / 2),
     ///     status::REFUSED_TOO_FAR_BACKWARD,
     /// );
     ///
@@ -731,7 +732,7 @@ mod tests {
 
     #[test]
     fn a_known_clock_is_stepped_only_within_the_bounds() {
-        let known = state::RTC;
+        let known = state::REAL_TIME_CLOCK;
         for (delta, want) in [
             (0i64, status::ACCEPTED),
             (
@@ -762,7 +763,7 @@ mod tests {
 
     #[test]
     fn backwards_is_held_far_tighter_than_forwards() {
-        let known = state::SYNCED;
+        let known = state::SYNCHRONIZED;
         let ten_minutes = 600 * NS_PER_SECOND;
         assert_eq!(
             policy::decide(known, NOW, NOW + ten_minutes),
@@ -817,8 +818,8 @@ mod tests {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
-            page.publish(state::RTC, 7);
-            let second = page.publish(state::SYNCED, 9);
+            page.publish(state::REAL_TIME_CLOCK, 7);
+            let second = page.publish(state::SYNCHRONIZED, 9);
             let before = page.read();
             assert_eq!(before.generation, second);
             let words: [u64; WORDS] = core::array::from_fn(|i| frame[i].load(Ordering::Relaxed));
@@ -832,7 +833,7 @@ mod tests {
             );
             assert_eq!(page.read(), before, "a restart leaves the page as it was");
             assert_eq!(
-                page.publish(state::RTC, 11),
+                page.publish(state::REAL_TIME_CLOCK, 11),
                 second + 1,
                 "and the count carries on from where it was"
             );
@@ -848,11 +849,11 @@ mod tests {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
-            let first = page.publish(state::RTC, 7);
+            let first = page.publish(state::REAL_TIME_CLOCK, 7);
             let before = page.read();
             // The stopped writer: it took the claim and filled the spare copy, and never flipped.
             assert!(page.try_claim());
-            page.fill(state::SYNCED, 9);
+            page.fill(state::SYNCHRONIZED, 9);
 
             page.initialize();
             assert_eq!(frame[CLAIM_WORD_INDEX].load(Ordering::Relaxed), CLAIM_FREE);
@@ -862,11 +863,11 @@ mod tests {
                 before,
                 "the restart showed a reader the half-filled copy"
             );
-            assert_eq!(page.publish(state::SYNCED, 11), first + 1);
+            assert_eq!(page.publish(state::SYNCHRONIZED, 11), first + 1);
             assert_eq!(
                 page.read(),
                 Reading {
-                    state: state::SYNCED,
+                    state: state::SYNCHRONIZED,
                     offset_nanoseconds: 11,
                     generation: first + 1,
                 }
@@ -885,17 +886,17 @@ mod tests {
                 "init is honest, not 1970"
             );
 
-            assert_eq!(page.publish(state::RTC, 7), 1);
+            assert_eq!(page.publish(state::REAL_TIME_CLOCK, 7), 1);
             assert_eq!(
                 page.read(),
                 Reading {
-                    state: state::RTC,
+                    state: state::REAL_TIME_CLOCK,
                     offset_nanoseconds: 7,
                     generation: 1,
                 }
             );
 
-            assert_eq!(page.publish(state::SYNCED, 9), 2);
+            assert_eq!(page.publish(state::SYNCHRONIZED, 9), 2);
             assert_eq!(
                 page.read().generation,
                 2,
@@ -912,12 +913,12 @@ mod tests {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
-            page.publish(state::RTC, 7);
+            page.publish(state::REAL_TIME_CLOCK, 7);
             let before = page.read();
 
             // A writer takes the claim and fills the other copy, then stops for good.
             page.claim();
-            assert_eq!(page.fill(state::SYNCED, 11), 2);
+            assert_eq!(page.fill(state::SYNCHRONIZED, 11), 2);
             assert_eq!(
                 page.read_once(),
                 Some(before),
@@ -934,7 +935,7 @@ mod tests {
             assert_eq!(
                 page.read(),
                 Reading {
-                    state: state::SYNCED,
+                    state: state::SYNCHRONIZED,
                     offset_nanoseconds: 11,
                     generation: 2,
                 }
@@ -984,12 +985,12 @@ mod tests {
         let page = leaked_page();
         let (first, second) = finishes_promptly("two publishes and a read", move || {
             page.initialize();
-            page.publish(state::RTC, 7);
-            page.publish(state::SYNCED, 11);
+            page.publish(state::REAL_TIME_CLOCK, 7);
+            page.publish(state::SYNCHRONIZED, 11);
             (page.read_once(), page.read())
         });
         let want = Reading {
-            state: state::SYNCED,
+            state: state::SYNCHRONIZED,
             offset_nanoseconds: 11,
             generation: 2,
         };
@@ -1003,10 +1004,10 @@ mod tests {
         let page = leaked_page();
         finishes_promptly("the first publish", move || {
             page.initialize();
-            page.publish(state::RTC, 7);
+            page.publish(state::REAL_TIME_CLOCK, 7);
         });
         assert!(page.try_claim(), "the first publish gave the claim back");
-        let waiting = std::thread::spawn(move || page.publish(state::SYNCED, 11));
+        let waiting = std::thread::spawn(move || page.publish(state::SYNCHRONIZED, 11));
         std::thread::sleep(std::time::Duration::from_millis(100));
         assert_eq!(
             page.read().generation,
@@ -1030,10 +1031,21 @@ mod tests {
         with_page(&frame, |page| {
             page.initialize();
             assert_eq!(words(), [MAGIC, 0, 0, 0, 0, 0, 0]);
-            page.publish(state::RTC, 7);
-            assert_eq!(words(), [MAGIC, 1, 0, 0, 0, state::RTC, 7]);
-            page.publish(state::SYNCED, 9);
-            assert_eq!(words(), [MAGIC, 2, 0, state::SYNCED, 9, state::RTC, 7]);
+            page.publish(state::REAL_TIME_CLOCK, 7);
+            assert_eq!(words(), [MAGIC, 1, 0, 0, 0, state::REAL_TIME_CLOCK, 7]);
+            page.publish(state::SYNCHRONIZED, 9);
+            assert_eq!(
+                words(),
+                [
+                    MAGIC,
+                    2,
+                    0,
+                    state::SYNCHRONIZED,
+                    9,
+                    state::REAL_TIME_CLOCK,
+                    7
+                ]
+            );
         });
         assert_eq!(WORDS, 7);
     }
@@ -1171,7 +1183,7 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let restarted = {
                 let p = page;
@@ -1181,7 +1193,7 @@ mod interleavings {
             let r = page.read();
             assert_eq!(
                 (r.state, r.offset_nanoseconds, r.generation),
-                (state::RTC, 1_000, 1),
+                (state::REAL_TIME_CLOCK, 1_000, 1),
                 "a reader saw the page reset by a restart"
             );
 
@@ -1204,13 +1216,13 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let restarted = {
                 let p = page;
                 thread::spawn(move || {
                     p.claim();
-                    let generation = p.fill(state::SYNCED, 2_000);
+                    let generation = p.fill(state::SYNCHRONIZED, 2_000);
                     p.flip(generation);
                     // Stopped here, holding the claim; the restart gives it back.
                     p.initialize();
@@ -1219,7 +1231,7 @@ mod interleavings {
             };
             let other = {
                 let p = page;
-                thread::spawn(move || p.publish(state::RTC, 3_000))
+                thread::spawn(move || p.publish(state::REAL_TIME_CLOCK, 3_000))
             };
 
             let stopped = restarted.join().unwrap();
@@ -1239,7 +1251,7 @@ mod interleavings {
 
     /// **A reader never sees half a publish.**
     ///
-    /// The state and the offset are a matched pair (a state of `SYNCED` with the offset from
+    /// The state and the offset are a matched pair (a state of `SYNCHRONIZED` with the offset from
     /// before the sync is a wrong wall clock, not a crash, which is the worst kind of bug to leave
     /// possible). A reader that races a publish gets the publish before it or the publish itself,
     /// never a blend.
@@ -1251,17 +1263,17 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let writer = {
                 let p = page;
-                thread::spawn(move || p.publish(state::SYNCED, 2_000))
+                thread::spawn(move || p.publish(state::SYNCHRONIZED, 2_000))
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
             match (r.state, r.offset_nanoseconds) {
-                (state::RTC, 1_000) => SAW_THE_OLD.mark(),
-                (state::SYNCED, 2_000) => SAW_THE_NEW.mark(),
+                (state::REAL_TIME_CLOCK, 1_000) => SAW_THE_OLD.mark(),
+                (state::SYNCHRONIZED, 2_000) => SAW_THE_NEW.mark(),
                 other => panic!("a torn reading: {other:?} is neither publish"),
             }
 
@@ -1287,12 +1299,12 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let writer = {
                 let p = page;
                 thread::spawn(move || {
-                    p.publish(state::SYNCED, 2_000);
+                    p.publish(state::SYNCHRONIZED, 2_000);
                     p.publish(state::SET, 3_000);
                 })
             };
@@ -1308,7 +1320,7 @@ mod interleavings {
             .join()
             .unwrap();
             match (r.state, r.offset_nanoseconds, r.generation) {
-                (state::RTC, 1_000, 1) | (state::SYNCED, 2_000, 2) => {}
+                (state::REAL_TIME_CLOCK, 1_000, 1) | (state::SYNCHRONIZED, 2_000, 2) => {}
                 (state::SET, 3_000, 3) => SAW_THE_LAST.mark(),
                 other => panic!("a torn reading across two publishes: {other:?}"),
             }
@@ -1333,7 +1345,7 @@ mod interleavings {
 
             let writer = {
                 let p = page;
-                thread::spawn(move || p.publish(state::RTC, 1_000))
+                thread::spawn(move || p.publish(state::REAL_TIME_CLOCK, 1_000))
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
@@ -1364,11 +1376,11 @@ mod interleavings {
 
             let first = {
                 let p = page;
-                thread::spawn(move || p.publish(state::RTC, 1_000))
+                thread::spawn(move || p.publish(state::REAL_TIME_CLOCK, 1_000))
             };
             let second = {
                 let p = page;
-                thread::spawn(move || p.publish(state::SYNCED, 2_000))
+                thread::spawn(move || p.publish(state::SYNCHRONIZED, 2_000))
             };
 
             let g1 = first.join().unwrap();
@@ -1381,9 +1393,9 @@ mod interleavings {
                 "two publishes did not advance the page twice"
             );
             let last = if g1 == 2 {
-                (state::RTC, 1_000)
+                (state::REAL_TIME_CLOCK, 1_000)
             } else {
-                (state::SYNCED, 2_000)
+                (state::SYNCHRONIZED, 2_000)
             };
             assert_eq!(
                 (r.state, r.offset_nanoseconds),
@@ -1426,7 +1438,7 @@ mod interleavings {
             loom::model(move || {
                 let page = page();
                 page.initialize();
-                page.publish(state::RTC, 1_000);
+                page.publish(state::REAL_TIME_CLOCK, 1_000);
                 let before = page.read();
 
                 let writer = {
@@ -1436,7 +1448,7 @@ mod interleavings {
                         if stops_after == StopsAfter::Claiming {
                             return;
                         }
-                        let generation = p.fill(state::SYNCED, 2_000);
+                        let generation = p.fill(state::SYNCHRONIZED, 2_000);
                         if stops_after == StopsAfter::Filling {
                             return;
                         }
@@ -1448,8 +1460,8 @@ mod interleavings {
                 if stops_after == StopsAfter::Flipping {
                     let r = spawn_reader(page, |p| p.read()).join().unwrap();
                     match (r.state, r.offset_nanoseconds, r.generation) {
-                        (state::RTC, 1_000, 1) => {}
-                        (state::SYNCED, 2_000, 2) => SAW_THE_NEW.mark(),
+                        (state::REAL_TIME_CLOCK, 1_000, 1) => {}
+                        (state::SYNCHRONIZED, 2_000, 2) => SAW_THE_NEW.mark(),
                         other => panic!("a torn reading beside a stopped writer: {other:?}"),
                     }
                 } else {
@@ -1489,14 +1501,14 @@ mod interleavings {
                 let p = page;
                 thread::spawn(move || {
                     p.initialize();
-                    p.publish(state::RTC, 1_000);
+                    p.publish(state::REAL_TIME_CLOCK, 1_000);
                 })
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
             match (r.state, r.offset_nanoseconds) {
                 (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
-                (state::RTC, 1_000) => SAW_INITIALISED.mark(),
+                (state::REAL_TIME_CLOCK, 1_000) => SAW_INITIALISED.mark(),
                 other => panic!("a reader saw a recognized page with garbage in it: {other:?}"),
             }
 

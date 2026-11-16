@@ -170,7 +170,7 @@ impl Wiring {
     pub fn wall_nanoseconds(&self) -> u64 {
         let r = self.page().read();
         if clock_contract::state::is_known(r.state) {
-            clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
+            clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
         } else {
             0
         }

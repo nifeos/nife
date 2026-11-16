@@ -22,7 +22,7 @@ epoch in a `u64`, which runs out in 2554.
 - The identity does not change: the magic `CLOCKv01`, `VERSION` 1, `INTERFACE_ID` 8 and the
   seven-word layout above. A layout break ships as a new magic and version together, never a new id. `VERSION` (1) is the digits of the magic: a
   reader built for one version reads another's page as no clock at all. A layout break bumps both.
-- States (`state`): `UNKNOWN`, `RTC`, `SET`, `SYNCED`. `UNKNOWN` is a real answer. A machine with no
+- States (`state`): `UNKNOWN`, `REAL_TIME_CLOCK`, `SET`, `SYNCHRONIZED`. `UNKNOWN` is a real answer. A machine with no
   usable clock must say so; reporting 1970 plus uptime is the failure this contract exists to
   prevent.
 - `ClockPage` is the page as seen through one mapping. There are many readers, several writers and
@@ -64,7 +64,7 @@ assert_eq!(wall_nanoseconds(offset, monotonic), now);
 
 // A proposal a day ahead of a synchronized clock is refused.
 assert_eq!(
-    policy::decide(state::SYNCED, now, now + 86_400 * NS_PER_SECOND),
+    policy::decide(state::SYNCHRONIZED, now, now + 86_400 * NS_PER_SECOND),
     status::REFUSED_TOO_FAR_FORWARD,
 );
 ```
