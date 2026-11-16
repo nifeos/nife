@@ -32,6 +32,7 @@
 //! rather than this wire format).
 
 #![no_std]
+#![forbid(unsafe_code)]
 
 #[cfg(kani)]
 mod proofs;
