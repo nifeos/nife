@@ -910,7 +910,6 @@ crates/capability/src/lib.rs::from_bits
 
 crates/capability/src/lib.rs::get
 
-crates/capability/src/lib.rs::get_with
 
 crates/capability/src/lib.rs::highest_seen
 
@@ -926,7 +925,6 @@ crates/capability/src/lib.rs::is_empty
 
 crates/capability/src/lib.rs::is_subset_of
 
-crates/capability/src/lib.rs::len
 
 crates/capability/src/lib.rs::mint_child
 

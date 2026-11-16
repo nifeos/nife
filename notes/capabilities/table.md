@@ -27,12 +27,12 @@ heap. The kernel picks the size once, in `kernel/src/capability_object.rs`; test
 
 ## Rights only narrow
 
-The one operation on the delegation path is intersection. `Capability::delegate` is the rule, once:
-the source must hold `GRANT`, and a request for rights it does not hold is refused rather than
-clamped, because a loader that quietly grants less than was asked is a loader nobody can reason
-about. `CapabilityTable::derive` and the kernel's `Delegation::derive` both call it, so the proof
-`delegation_needs_grant_and_never_widens` covers the code the kernel runs. If delegation could widen
-authority, anyone could hand themselves the rights they were denied by passing a capability to themselves.
+The one operation on the delegation path is intersection. `Capability::delegate` holds the rule
+once: the source must hold `GRANT`, and the crate refuses a request for rights the source lacks
+instead of clamping it. A loader that quietly grants less than was asked is a loader nobody can
+reason about. `CapabilityTable::derive` and the kernel's `Delegation::derive` both call `delegate`,
+so the proof `delegation_needs_grant_and_never_widens` covers the code the kernel runs. If delegation
+could widen authority, anyone could hand themselves the rights they were denied by passing a capability to themselves.
 
 - `GRANT` is the right to pass a capability on. It makes delegation a decision rather than an
   accident. Unix has no equivalent, which is why a child inherits every fd by default and
