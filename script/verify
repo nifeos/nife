@@ -549,6 +549,9 @@ KANI_APART="$(cat <<'APART'
 byte_glob	verification::a_negated_class_is_the_exact_complement_of_the_class
 APART
 )"
+# NIFE_KANI_APART, when set, replaces the table, and set empty it turns the table off. The selftests
+# that drive this script over a stub `cargo` turn it off, since a listed row makes two calls more.
+if [ "${NIFE_KANI_APART+set}" = set ]; then KANI_APART="$NIFE_KANI_APART"; fi
 
 # --parallel [N]: fork the shards and join their verdicts (see the flag's comment above).
 #
