@@ -649,7 +649,8 @@ pub mod policy {
 /// clean and read garbage on the first real board. The binding is what the driver actually knows
 /// how to drive, so the binding is what it is told. `CMOS` names a register map behind two I/O
 /// ports rather than behind a page, and the service reads it the same way it reads the other two.
-pub mod rtc {
+#[doc(alias = "RTC")]
+pub mod real_time_clock {
     /// No RTC in the device tree. The clock service still runs and still serves proposals; it just
     /// starts out not knowing what time it is, which is a state the contract has.
     pub const NONE: u64 = 0;
@@ -1367,7 +1368,7 @@ mod interleavings {
     /// count would fill the same copy and publish the same generation; "would corrupt silently" is
     /// a claim about interleavings, which only a model checker can check.
     #[test]
-    fn two_writers_serialise_rather_than_corrupt_the_page() {
+    fn two_writers_serialize_rather_than_corrupt_the_page() {
         static BOTH_LANDED: Reached = Reached::new();
 
         loom::model(|| {
@@ -1490,7 +1491,7 @@ mod interleavings {
     /// about a frame nobody has published to) or a fully initialized one. Never a recognized page
     /// with garbage in it. The release is the whole mechanism, and this harness checks it.
     #[test]
-    fn a_racing_reader_sees_an_unrecognised_page_or_a_whole_one() {
+    fn a_racing_reader_sees_an_unrecognized_page_or_a_whole_one() {
         static SAW_UNRECOGNISED: Reached = Reached::new();
         static SAW_INITIALISED: Reached = Reached::new();
 

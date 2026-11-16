@@ -45,7 +45,7 @@ epoch in a `u64`, which runs out in 2554.
   Moving backward makes instants happen twice, which breaks log ordering and expiry. A clock that
   is `UNKNOWN` accepts any plausible proposal. The window is a floor on plausibility, not a claim of
   accuracy.
-- `rtc` names the kinds of hardware clock a service may read: `NONE`, `PL031`, `GOLDFISH`
+- `real_time_clock` names the kinds of hardware clock a service may read: `NONE`, `PL031`, `GOLDFISH`
   and `CMOS`. `PL031` and `GOLDFISH` name a register layout the service reads through a mapped
   page; `CMOS` names the two I/O ports, `INDEX_PORT` and `DATA_PORT`, it reads through a
   port capability.

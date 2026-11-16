@@ -28,7 +28,7 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
 
     assert_ne!(
         w.kind,
-        clock_contract::rtc::NONE,
+        clock_contract::real_time_clock::NONE,
         "every machine this suite runs on has an RTC; finding none means the compatible match broke",
     );
     assert_eq!(

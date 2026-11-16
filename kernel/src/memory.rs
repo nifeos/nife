@@ -194,8 +194,11 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     {
         let mut rtc = [Region { start: 0, size: 0 }; 1];
         for (compat, kind) in [
-            (&b"arm,pl031"[..], clock_contract::rtc::PL031),
-            (&b"google,goldfish-rtc"[..], clock_contract::rtc::GOLDFISH),
+            (&b"arm,pl031"[..], clock_contract::real_time_clock::PL031),
+            (
+                &b"google,goldfish-rtc"[..],
+                clock_contract::real_time_clock::GOLDFISH,
+            ),
         ] {
             if let Ok(n) = dtb.node_reg_compatible(compat, &mut rtc)
                 && n >= 1
