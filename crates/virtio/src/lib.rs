@@ -1457,7 +1457,7 @@ mod verification {
                 .try_into()
                 .expect("four bytes"),
         );
-        assert_eq!(find_file(directory, name), whole.then_some(start));
+        assert_eq!(find_file(&directory, name), whole.then_some(start));
     }
 
     /// **A header carrying its own checksum sums to zero**: for any 20-byte header, writing the
