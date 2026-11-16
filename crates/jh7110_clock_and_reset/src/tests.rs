@@ -480,6 +480,26 @@ fn the_oscillator_root_chain_divides_and_the_phase_locked_loop_2_chain_multiplie
         inter_integrated_circuit_5_clock_frequency(&half_unit),
         (12_000_000 + 24_000_000 * 768) / 15
     );
+    // A post divider of 2 (bits 29:28 of the same word) divides by the product of both dividers,
+    // 15 * 2, so a swapped product or quotient shows here and not above, where it is 1.
+    let post_divided = InterIntegratedCircuitClockWords {
+        phase_locked_loop_2_post_divider_1_word: (1 << 28) | (1 << 23),
+        ..fractional_words
+    };
+    assert_eq!(
+        advanced_extensible_interface_configuration_0_hertz(&post_divided),
+        (12_000_000 + 24_000_000 * 768) / 30
+    );
+    // Fractional mode with a zero feedback divider is the vendor's default, as the integer mode is.
+    let fractional_without_feedback = InterIntegratedCircuitClockWords {
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: 0,
+        phase_locked_loop_2_post_divider_1_word: 1 << 23,
+        ..fractional_words
+    };
+    assert_eq!(
+        advanced_extensible_interface_configuration_0_hertz(&fractional_without_feedback),
+        PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
+    );
 }
 
 /// Whether `count` input-clock periods at `clock_frequency` last at least `minimum_nanoseconds`.
