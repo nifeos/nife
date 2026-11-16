@@ -58,7 +58,6 @@ against itself.
   Each package lists the mentions that remain, each a small edit for the move lane.
 - Harnesses and patches. In every crate, each Kani harness has exactly one falsification patch
   (the packet pairs them), and `script/crate-standalone` ran each patch and saw its harness fail.
-  `counter_frequency_contract` has no harness.
 - Units in names. The rule of 2026-11-03 spells every unit out (`_HERTZ`, not `_HZ`). A release
   review re-opens a name ratified before a later rule.
 
@@ -78,7 +77,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`designware_mobile_storage`](crate-reviews/designware-mobile-storage.md) | 8 | cleared to move; repository exists |
 | [`jh7110_clock_and_reset`](crate-reviews/jh7110-clock-and-reset.md) | 10 | cleared to move; the move waits for the template gates |
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
-| [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by three text edits |
+| [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |

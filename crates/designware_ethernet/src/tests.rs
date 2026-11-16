@@ -99,6 +99,32 @@ fn a_bad_frame_is_dropped_and_counted_without_stalling_the_ring() {
     assert_eq!(data_plane.dropped, 1);
 }
 
+/// A ring full of error frames is consumed in one call that returns `None`, counts every frame,
+/// and leaves the ring able to take the next good one.
+#[test]
+fn a_ring_full_of_error_frames_is_consumed_in_one_call_and_the_next_good_frame_arrives() {
+    let mut network_interface_controller =
+        NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
+    let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
+    let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
+    for k in 0..usize::from(RECEIVE_ENTRIES - 1) {
+        assert!(network_interface_controller.wire_in_with_error(&frame(64, k as u8)));
+    }
+    assert_eq!(
+        network_interface_controller.with(|r, t| data_plane.receive(r, t, &mut out)),
+        None
+    );
+    assert_eq!(data_plane.dropped, u32::from(RECEIVE_ENTRIES - 1));
+    let good = frame(90, 3);
+    assert!(network_interface_controller.wire_in(&good));
+    let n = network_interface_controller
+        .with(|r, t| data_plane.receive(r, t, &mut out))
+        .unwrap();
+    assert_eq!(&out[..n], &good[..]);
+}
+
 #[test]
 fn transmitted_frames_leave_in_order_and_the_ring_is_reclaimed() {
     let mut network_interface_controller =

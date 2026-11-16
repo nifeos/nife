@@ -125,7 +125,9 @@ impl DataPlane {
 
     /// Take the next received frame into `out`, returning its length, or `None` when the device has
     /// written nothing new. A descriptor judged [`ReceiveVerdict::Drop`] is consumed and counted
-    /// and the next tried, so one bad frame cannot stall the ring.
+    /// and the next tried, so one bad frame cannot stall the ring. One call looks at no more than
+    /// [`RECEIVE_ENTRIES`] descriptors, so a device that keeps refilling the ring with error frames
+    /// makes it return `None` and the caller polls again.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn receive(
@@ -134,7 +136,7 @@ impl DataPlane {
         tails: &mut impl Tails,
         out: &mut [u8],
     ) -> Option<usize> {
-        loop {
+        for _ in 0..RECEIVE_ENTRIES {
             let descriptor = layout::receive_descriptor(self.receive_next);
             let descriptor_word_3 = (region.read_u64(descriptor + 8) >> 32) as u32;
             let verdict = receive_verdict(descriptor_word_3, out.len());
@@ -170,6 +172,7 @@ impl DataPlane {
                 return got;
             }
         }
+        None
     }
 
     /// Queue `frame` for transmission.
@@ -214,7 +217,10 @@ impl DataPlane {
 
     /// Move the clean cursor past every descriptor the device has handed back.
     fn reclaim(&mut self, region: &impl DirectMemoryAccessRegion) {
-        while self.transmit_clean != self.transmit_next {
+        for _ in 0..TRANSMIT_ENTRIES {
+            if self.transmit_clean == self.transmit_next {
+                break;
+            }
             let descriptor_word_3 = (region
                 .read_u64(layout::transmit_descriptor(self.transmit_clean) + 8)
                 >> 32) as u32;

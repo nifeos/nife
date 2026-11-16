@@ -224,3 +224,25 @@ fn a_reset_waits_for_status_to_read_back_as_zero() {
     ));
     assert_eq!(reads.get(), RESET_POLLS);
 }
+
+#[test]
+fn a_device_without_version_1_is_refused_and_only_offered_features_are_accepted() {
+    // No VERSION_1 offered: refused, whatever else is offered.
+    assert_eq!(acknowledged_high_features(0), None);
+    assert_eq!(acknowledged_high_features(F_ACCESS_PLATFORM_HI), None);
+
+    // Offered: acknowledged, with ACCESS_PLATFORM only when it was offered too.
+    assert_eq!(
+        acknowledged_high_features(F_VERSION_1_HI),
+        Some(F_VERSION_1_HI)
+    );
+    assert_eq!(
+        acknowledged_high_features(F_VERSION_1_HI | F_ACCESS_PLATFORM_HI),
+        Some(F_VERSION_1_HI | F_ACCESS_PLATFORM_HI)
+    );
+
+    // A bit the device did not offer is never acknowledged.
+    let offered = F_VERSION_1_HI | (1 << 5);
+    let acknowledged = acknowledged_high_features(offered).unwrap();
+    assert_eq!(acknowledged & !offered, 0);
+}
