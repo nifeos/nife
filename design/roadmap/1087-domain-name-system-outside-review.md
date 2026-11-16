@@ -54,7 +54,7 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
 
 ### P0: blocks the move
 
-1. HELD for the architect's reading. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
+1. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
    `helpers/name_release.py --draft domain_name_system` lists the crate name and five constants as
    ratified. Every other public item has no block (`PORT`, `HEADER_LEN`, the flag and mask
    constants, `record_type::{A, CNAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
@@ -65,9 +65,9 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
    Change: one pull request whose body is the `--draft` table, after the architect rules items 6 and 7, so the
    table carries the final spellings. The names this review recommends ratified as they stand are
    every one not named in items 6 and 7. Door: each name is one-way once published; the block itself
-   is two-way. Effort: S for the lane, plus the architect's reading.
+   is two-way. Effort: S for the lane, plus the architect's reading. Held: the architect has not read the table.
 
-2. The manifest does not stand alone. DONE. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
+2. DONE. The manifest does not stand alone. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
    `categories`, and the `publish = false` line's comment names `crates/publish-allowlist.txt`, a
    file the new repository will not have. The header comment cites milestone 384 (nothing here resolves a hostname, and in a capability system the resolver is a grant) and
    `notes/name-resolution.md`. Evidence: `crates/domain_name_system/Cargo.toml` lines 4 to 17;
@@ -249,17 +249,17 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 
 ## Follow-on
 
-- **Held for the architect.** Item 1: the ratification pull request for the 51 public names the crate
-  carries that no ratification covers (`python3 helpers/name_release.py --draft domain_name_system`
-  prints the table). Decisions 1 to 3 were decided provisionally and the names are built as they
-  decided. Nothing here is renamed until the architect reads the table, and the move waits for it.
-- **At the move.** Item 5's directory (`script/crate-move` stages the fuzz target into the crate's
-  own `fuzz/`, with the three fixtures as seeds, and passes `fuzz: true` to the weekly caller because
-  the crate forbids `unsafe`), item 9's `.github/mutants-exempts` lines (they name the stripped
-  source's line numbers, so only the move commit can write them), item 7's `.github/accepted-words`
-  entries, and the stranger run. The architect's clearance of the review package and the creation of
-  the repository come first (`notes/crate-move.md`, steps 4 and 5).
-- **Not run.** `mutation / mutation` has no green full run on `main` yet; it runs in the new
+- **Outstanding.** Item 1 waits for the architect. The ratification pull request covers the 51 public
+  names that no ratification covers yet. `python3 helpers/name_release.py --draft domain_name_system`
+  prints its table. Decisions 1 to 3 stand provisionally and the code uses their spellings. The move
+  waits for the architect to read the table.
+- **Outstanding.** Four things wait for the move. `script/crate-move` stages item 5's `fuzz/`
+  directory, with the three fixtures as seeds. It passes `fuzz: true` to the weekly caller because the
+  crate forbids `unsafe`. Item 9's `.github/mutants-exempts` lines name the stripped source's line
+  numbers, so only the move commit can write them. Item 7's `.github/accepted-words` entries and the
+  stranger run come after. The architect clears the review package and the repository exists first
+  (`notes/crate-move.md`, steps 4 and 5).
+- **Outstanding.** `mutation / mutation` has no green full run on `main` yet. It first runs in the new
   repository.
 
 ## BUGS

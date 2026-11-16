@@ -5,15 +5,16 @@
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/domain_name_system#license)
 [![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/domain_name_system/blob/main/Cargo.toml)
 
-The DNS wire format a stub resolver needs (RFC 1035, and RFC 7766 for TCP), as pure computation.
-It writes the bytes of a query for one name's IPv4 addresses. It also runs the checks a reply must
+The Domain Name System (DNS) wire format a stub resolver needs, as pure computation. Request for Comments (RFC)
+1035 defines it, and RFC 7766 defines its use over the Transmission Control Protocol (TCP).
+It writes the bytes of a query for one name's Internet Protocol version 4 (IPv4) addresses. It also runs the checks a reply must
 pass before any address in it is believed. `no_std`, no dependencies, no `unsafe`. There is no socket, no timer and no
 policy. Which program sends these bytes, and which names a client may ask about, are the caller's
 business.
 
 Every byte parsed here came from a server the caller may not trust, so the parser is total on any
 input. `Query::accept` believes as little as it can. It takes only the A records owned by the end of
-the CNAME chain that starts at the name asked for, so a reply about `example.com` cannot plant an
+the canonical name (CNAME) chain that starts at the name asked for, so a reply about `example.com` cannot plant an
 address for another name. It reads nothing from the authority and additional sections. `Reject`
 lists its nine refusals in the order the checks run.
 
@@ -48,7 +49,7 @@ assert_eq!(query.accept(&reply), Err(Reject::IdMismatch));
 
 Over TCP, `Query::request_tcp` writes the two-byte length prefix and `TcpReply` collects a reply from
 however many reads it arrives in. Size its buffer for the largest reply you accept, up to
-`MAXIMUM_TCP_MESSAGE_BYTES` plus 2. A buffer no larger than `MAXIMUM_UDP_MESSAGE_BYTES` cannot hold
+`MAXIMUM_TCP_MESSAGE_BYTES` plus 2. A buffer no larger than `MAXIMUM_UDP_MESSAGE_BYTES` (the User Datagram Protocol limit) cannot hold
 the reply that a truncated UDP reply asks for.
 
 ## What is proven
@@ -78,8 +79,8 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
-The proofs need Kani, which `rustup` does not install. Run `cargo install --locked kani-verifier
---version 0.68.0`, then `cargo kani setup`. The setup step downloads a model checker, so it needs
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model checker, so it needs
 network access. CI uses version 0.68.0, and another version may verify differently.
 
 The tests in `tests/replies.rs` read three real replies captured from a recursive server. Their
@@ -96,10 +97,10 @@ bytes and `Result<Answer, Reject>` is 300. A caller on a small stack should coun
 ## BUGS
 
 - IPv4 only: a query asks for address records alone, so it reads no address longer than four bytes.
-- No EDNS(0), so UDP replies stop at `MAXIMUM_UDP_MESSAGE_BYTES` and a larger answer costs a TCP
+- No Extension Mechanisms for DNS (EDNS) version 0, so UDP replies stop at `MAXIMUM_UDP_MESSAGE_BYTES` and a larger answer costs a TCP
   retry.
-- No DNSSEC: an on-path attacker can forge the reply, transaction id and all. No "0x20" case
-  randomisation.
+- No DNS Security Extensions (DNSSEC): an on-path attacker can forge the reply, transaction id and all. No "0x20" case
+  randomization.
 - At most `MAXIMUM_IPV4_ADDRESSES` addresses are kept from one answer; the rest are dropped.
 - Labels hold only letters, digits, `-` and `_` (`Name::from_dotted`): no escape syntax.
 
