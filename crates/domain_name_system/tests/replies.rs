@@ -1,7 +1,7 @@
 //! `Query::accept` against real replies and against the replies a forger or a broken server sends.
 //!
-//! The three `REAL_*` fixtures (`tests/fixtures/*.dns`, one raw reply each, which `script/fuzz` also
-//! hands the `domain_name_system_reply` target as seeds) were captured on 2026-10-04 (UTC) from
+//! The three `REAL_*` fixtures (`tests/fixtures/*.dns`, one raw reply each, which the crate's fuzz target also
+//! takes as seeds) were captured on 2026-10-04 (UTC) from
 //! 1.1.1.1 with a short Python script sending exactly the query `Query::request` writes (`tests/fixtures/README.md` has it and the id each carries), so they carry what a recursive
 //! server really does: compression pointers into the question, a canonical name pointing into its own owner,
 //! TTLs that differ along a chain. The rest are built by hand below, one per check, because nobody
@@ -76,7 +76,7 @@ fn the_request_is_byte_for_byte_what_a_real_server_echoed() {
 // =================================================================================================
 
 const OUR_ID: u16 = 0xbeef;
-const OURS: &str = "packages.nife.test";
+const OURS: &str = "packages.zone.test";
 
 fn wire(name: &str) -> Vec<u8> {
     Name::from_dotted(name).unwrap().as_bytes().to_vec()
@@ -198,7 +198,7 @@ fn a_truncated_reply_says_so_rather_than_answering_from_half() {
 
 #[test]
 fn a_reply_to_some_other_question_is_refused() {
-    let other_name = Reply::to("mirror.nife.test").a("mirror.nife.test", [10, 0, 2, 9]);
+    let other_name = Reply::to("mirror.zone.test").a("mirror.zone.test", [10, 0, 2, 9]);
     assert_eq!(other_name.judged(), Err(Reject::QuestionMismatch));
 
     let mut other_type = Reply::to(OURS).a(OURS, [10, 0, 2, 9]);
@@ -219,7 +219,7 @@ fn a_reply_to_some_other_question_is_refused() {
 
 #[test]
 fn a_question_echoed_in_another_case_is_still_ours() {
-    let r = Reply::to("Packages.NIFE.test").a("PACKAGES.nife.TEST", [10, 0, 2, 9]);
+    let r = Reply::to("Packages.ZONE.test").a("PACKAGES.zone.TEST", [10, 0, 2, 9]);
     assert_eq!(r.judged(), Ok(vec![[10, 0, 2, 9]]));
 }
 
@@ -262,16 +262,16 @@ fn an_empty_answer_section_is_no_address() {
 fn a_chain_is_followed_in_any_order_and_only_from_our_name() {
     // Records out of order, as some servers send them, and a stray canonical name for a name not on the chain.
     let r = Reply::to(OURS)
-        .a("origin.nife.test", [10, 0, 2, 9])
-        .canonical_name("cdn.nife.test", "origin.nife.test")
+        .a("origin.zone.test", [10, 0, 2, 9])
+        .canonical_name("cdn.zone.test", "origin.zone.test")
         .canonical_name("elsewhere.test", "bank.test")
         .a("bank.test", [6, 6, 6, 6])
-        .canonical_name(OURS, "cdn.nife.test");
+        .canonical_name(OURS, "cdn.zone.test");
     let answer = Query::new(OUR_ID, OURS).unwrap().accept(&r.bytes).unwrap();
     assert_eq!(answer.ipv4_addresses(), &[[10, 0, 2, 9]]);
     assert_eq!(
         answer.canonical(),
-        &Name::from_dotted("origin.nife.test").unwrap()
+        &Name::from_dotted("origin.zone.test").unwrap()
     );
 }
 
@@ -280,16 +280,16 @@ fn an_address_for_our_name_beside_its_canonical_name_is_not_taken() {
     // A name with a canonical name has no other data (RFC 1034 section 3.6.2), so the chain's end is what counts.
     let r = Reply::to(OURS)
         .a(OURS, [6, 6, 6, 6])
-        .canonical_name(OURS, "origin.nife.test")
-        .a("origin.nife.test", [10, 0, 2, 9]);
+        .canonical_name(OURS, "origin.zone.test")
+        .a("origin.zone.test", [10, 0, 2, 9]);
     assert_eq!(r.judged(), Ok(vec![[10, 0, 2, 9]]));
 }
 
 #[test]
 fn a_canonical_name_loop_stops_at_the_chain_limit() {
     let r = Reply::to(OURS)
-        .canonical_name(OURS, "b.nife.test")
-        .canonical_name("b.nife.test", OURS);
+        .canonical_name(OURS, "b.zone.test")
+        .canonical_name("b.zone.test", OURS);
     assert_eq!(r.judged(), Err(Reject::ChainTooLong));
 }
 
@@ -300,7 +300,7 @@ fn the_chain_limit_is_exactly_maximum_chain_links() {
             if i == 0 {
                 OURS.to_string()
             } else {
-                format!("hop{i}.nife.test")
+                format!("hop{i}.zone.test")
             }
         })
         .collect();
@@ -379,10 +379,10 @@ fn a_time_to_live_with_the_high_bit_set_is_zero() {
                 record_type::CANONICAL_NAME,
                 CLASS_IN,
                 high,
-                &wire("o.nife.test"),
+                &wire("o.zone.test"),
             )
             .record(
-                &wire("o.nife.test"),
+                &wire("o.zone.test"),
                 record_type::IPV4_ADDRESS,
                 CLASS_IN,
                 300,
@@ -418,17 +418,17 @@ fn the_time_to_live_is_the_smallest_on_the_chain_and_among_the_addresses() {
             record_type::CANONICAL_NAME,
             CLASS_IN,
             500,
-            &wire("o.nife.test"),
+            &wire("o.zone.test"),
         )
         .record(
-            &wire("o.nife.test"),
+            &wire("o.zone.test"),
             record_type::IPV4_ADDRESS,
             CLASS_IN,
             90,
             &[10, 0, 2, 9],
         )
         .record(
-            &wire("o.nife.test"),
+            &wire("o.zone.test"),
             record_type::IPV4_ADDRESS,
             CLASS_IN,
             70,
@@ -442,10 +442,10 @@ fn the_time_to_live_is_the_smallest_on_the_chain_and_among_the_addresses() {
             record_type::CANONICAL_NAME,
             CLASS_IN,
             5,
-            &wire("o.nife.test"),
+            &wire("o.zone.test"),
         )
         .record(
-            &wire("o.nife.test"),
+            &wire("o.zone.test"),
             record_type::IPV4_ADDRESS,
             CLASS_IN,
             90,
@@ -473,7 +473,7 @@ fn one_malformed_answer_refuses_the_whole_reply() {
     );
 
     // A canonical name whose name runs past its own record's data.
-    let mut spill = wire("o.nife.test");
+    let mut spill = wire("o.zone.test");
     spill.truncate(3);
     let spilling = Reply::to(OURS).a(OURS, [10, 0, 2, 9]).record(
         &wire("x.test"),
@@ -530,8 +530,8 @@ fn dotted_names_encode_and_refuse() {
     let label63 = "a".repeat(63);
     assert!(Name::from_dotted(&label63).is_ok());
     assert_eq!(Name::from_dotted(&"a".repeat(64)), Err(Error::LabelTooLong));
-    assert_eq!(Name::from_dotted(".nife"), Err(Error::BadLabel));
-    assert_eq!(Name::from_dotted("nife.."), Err(Error::BadLabel));
+    assert_eq!(Name::from_dotted(".zone"), Err(Error::BadLabel));
+    assert_eq!(Name::from_dotted("zone.."), Err(Error::BadLabel));
     assert_eq!(Name::from_dotted("ni/fe"), Err(Error::BadCharacter));
     assert_eq!(Name::from_dotted("nifé"), Err(Error::BadCharacter));
 
@@ -545,8 +545,8 @@ fn dotted_names_encode_and_refuse() {
 #[test]
 fn a_name_prints_dotted_and_escapes_what_is_not_text() {
     assert_eq!(
-        format!("{:?}", Name::from_dotted("nife.test").unwrap()),
-        "nife.test"
+        format!("{:?}", Name::from_dotted("zone.test").unwrap()),
+        "zone.test"
     );
     assert_eq!(format!("{:?}", Name::root()), ".");
     let (odd, _) = decode_name(b"\x03a.b\x00", 0).unwrap();
@@ -555,24 +555,24 @@ fn a_name_prints_dotted_and_escapes_what_is_not_text() {
 
 #[test]
 fn within_is_label_by_label() {
-    let zone = Name::from_dotted("nife.test").unwrap();
+    let zone = Name::from_dotted("zone.test").unwrap();
     let n = |s| Name::from_dotted(s).unwrap();
-    assert!(n("nife.test").is_within(&zone));
-    assert!(n("a.b.NIFE.TEST").is_within(&zone));
-    assert!(!n("evilnife.test").is_within(&zone));
+    assert!(n("zone.test").is_within(&zone));
+    assert!(n("a.b.ZONE.TEST").is_within(&zone));
+    assert!(!n("evilzone.test").is_within(&zone));
     assert!(!n("test").is_within(&zone));
-    assert!(!n("nife.test.evil").is_within(&zone));
-    assert!(!n("x.nife.text").is_within(&zone));
+    assert!(!n("zone.test.evil").is_within(&zone));
+    assert!(!n("x.zone.text").is_within(&zone));
     assert!(n("anything.at.all").is_within(&Name::root()));
     assert!(!Name::root().is_within(&zone));
 }
 
 #[test]
 fn the_name_decoder_resumes_after_the_first_pointer() {
-    // "nife" at 0, then "a" + pointer to 0 at 6.
-    let msg = b"\x04nife\x00\x01a\xc0\x00";
+    // "zone" at 0, then "a" + pointer to 0 at 6.
+    let msg = b"\x04zone\x00\x01a\xc0\x00";
     let (name, resume) = decode_name(msg, 6).unwrap();
-    assert_eq!(name, Name::from_dotted("a.nife").unwrap());
+    assert_eq!(name, Name::from_dotted("a.zone").unwrap());
     assert_eq!(resume, msg.len());
     let (_, resume) = decode_name(msg, 0).unwrap();
     assert_eq!(resume, 6);
@@ -633,7 +633,7 @@ fn a_canonical_name_target_reads_through_the_message() {
 
 #[test]
 fn a_buffer_too_small_is_overflow_not_a_panic() {
-    let q = Query::new(1, "nife.test").unwrap();
+    let q = Query::new(1, "zone.test").unwrap();
     let mut small = [0u8; 20];
     assert_eq!(q.request(&mut small), Err(Error::Overflow));
     assert_eq!(q.request_tcp(&mut small[..1]), Err(Error::Overflow));
@@ -645,12 +645,12 @@ fn a_buffer_too_small_is_overflow_not_a_panic() {
     let mut exact = [0u8; 12 + 11 + 4];
     assert_eq!(q.request(&mut exact), Ok(27));
     assert_eq!(q.id(), 1);
-    assert_eq!(q.name(), &Name::from_dotted("nife.test").unwrap());
+    assert_eq!(q.name(), &Name::from_dotted("zone.test").unwrap());
 }
 
 #[test]
 fn the_tcp_request_is_the_udp_request_with_its_length_in_front() {
-    let q = Query::new(0x0102, "nife.test").unwrap();
+    let q = Query::new(0x0102, "zone.test").unwrap();
     let mut udp = [0u8; 512];
     let n = q.request(&mut udp).unwrap();
     let mut tcp = [0u8; 514];
@@ -716,9 +716,9 @@ fn an_oversized_tcp_reply_is_refused_when_its_body_comes_with_its_length() {
 /// needs both.
 #[test]
 fn a_time_to_live_wider_than_sixteen_bits_reads_whole() {
-    let bytes = Reply::to("nife.test")
+    let bytes = Reply::to("zone.test")
         .record(
-            &wire("nife.test"),
+            &wire("zone.test"),
             record_type::IPV4_ADDRESS,
             CLASS_IN,
             0x0001_0002,
@@ -734,12 +734,12 @@ fn a_time_to_live_wider_than_sixteen_bits_reads_whole() {
 #[test]
 fn a_pointer_past_offset_255_reaches_its_target() {
     let mut msg = vec![0u8; 300];
-    msg.extend(wire("nife.test"));
+    msg.extend(wire("zone.test"));
     let at = msg.len();
     msg.extend((0xc000u16 | 300).to_be_bytes());
     assert_eq!(
         decode_name(&msg, at).unwrap().0,
-        Name::from_dotted("nife.test").unwrap()
+        Name::from_dotted("zone.test").unwrap()
     );
 }
 
@@ -757,7 +757,7 @@ fn labels_that_fill_the_limit_exactly_are_not_too_long() {
 
 #[test]
 fn a_query_keeps_its_transaction_id() {
-    assert_eq!(Query::new(0x1234, "nife.test").unwrap().id(), 0x1234);
+    assert_eq!(Query::new(0x1234, "zone.test").unwrap().id(), 0x1234);
 }
 
 #[test]

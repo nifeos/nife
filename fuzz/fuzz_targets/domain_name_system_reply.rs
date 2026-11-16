@@ -1,12 +1,10 @@
 //! Fuzz a stub resolver's reply checks with arbitrary bytes as the reply.
 //!
-//! A forged reply that panics `crates/domain_name_system` takes name resolution down, and one that
-//! slips an address past `Query::accept` sends a client to the wrong host (milestone 384 (in a
-//! capability system the resolver is a grant)). Kani proves the name decoder and the TCP reassembly
-//! on small inputs; `accept` is too large for the solver. The input is the raw reply, so the
-//! captures in `crates/domain_name_system/tests/fixtures` seed it unmodified, and the query is
-//! built from the reply's own id and question so a mutation reaches the answer section.
-//! notes/fuzzing/targets.md has more.
+//! A forged reply that panics the crate takes name resolution down, and one that slips an address
+//! past `Query::accept` sends a client to the wrong host. Kani proves the name decoder, the header
+//! codec and the TCP reassembly on small inputs; `accept` is too large for the solver. The input is
+//! the raw reply, so the captures in `tests/fixtures` seed it unmodified, and the query is built
+//! from the reply's own id and question so a mutation reaches the answer section.
 
 //! # What is asserted, beyond "it returned"
 //!
@@ -82,7 +80,7 @@ fuzz_target!(|reply: &[u8]| {
         .ok()
         .and_then(|q| dotted(&q.name))
         .and_then(|text| Query::new(id, &text).ok())
-        .unwrap_or_else(|| Query::new(id, "packages.nife.test").unwrap());
+        .unwrap_or_else(|| Query::new(id, "packages.zone.test").unwrap());
 
     if let Ok(answer) = asked.accept(reply) {
         // Property 1.

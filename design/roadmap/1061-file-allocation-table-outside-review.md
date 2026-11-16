@@ -149,8 +149,7 @@ two strings fails loudly; a swap of the three sizes compiles.
 
 Ruled 2026-11-10. `VolumeLayout::new(options, clock)` takes a `VolumeLayoutOptions`, built as the
 general format's `FormatOptions` is: `VolumeLayoutOptions::new(total_sectors)`,
-`with_hidden_sectors`, `with_volume_id`, `with_label` and `with_file(name, size_bytes)`. The names
-are provisional until the release review. nife's two callers, `xtask/src/cloud_image.rs` and
+`with_hidden_sectors`, `with_volume_id`, `with_label` and `with_file(name, size_bytes)`. nife's two callers, `xtask/src/cloud_image.rs` and
 `components/src/system_installer.rs`, move to the new shape when nife takes the release. One-way
 (signature). S to M.
 
@@ -164,7 +163,7 @@ Ruled 2026-11-10. The fields become private. A checked
 no calendar holds: a month outside 1 to 12, a day past the end of its month, an hour, minute or
 second out of range. Six getters (`year`, `month`, `day`, `hour`, `minute`, `second`) read it. A
 year FAT cannot store stays the writer's `TimeOutOfRange` refusal, since a real date can fall
-outside FAT's range. The error's name is the lane's to mint, provisional with the rest. nife's fuzz
+outside FAT's range. The error is `CivilDateTimeError`. nife's fuzz
 target `fuzz/fuzz_targets/file_allocation_table_writer.rs` builds the value by literal and moves to
 `new`. One-way (shape). S.
 
@@ -187,7 +186,7 @@ and the chain walk, not the type, refuses it. The stranger run named it as a sur
 Ruled 2026-11-10. A `DirectoryCluster(u32)` type with the associated constant
 `DirectoryCluster::ROOT` replaces the `u32` in every method that takes a directory.
 `NamedEntry::directory_cluster() -> Option<DirectoryCluster>` returns it for a directory entry and
-`None` for a file. The names are provisional until the release review. One-way (signatures). M.
+`None` for a file. One-way (signatures). M.
 
 #### P1-9. `open_file_reader` cannot report a device error
 
@@ -201,8 +200,7 @@ Ruled 2026-11-10. One generic `OpenError<E>`, with `IsADirectory`, `IsAVolumeLab
 and `Chain(ChainError<E>)`, replaces `FileOpenError`, and `Volume::open_file_reader` and `WritableVolume::open_file_writer`
 both return it. Both verify the directory slot at open. A test pins that
 `EntryChanged` means the same in each: the slot no longer holds the entry the caller passed. The
-stale-entry entry in the README's `BUGS` shrinks to looking the entry up again after a write. The
-name is provisional until the release review. nife's fuzz target
+stale-entry entry in the README's `BUGS` shrinks to looking the entry up again after a write. nife's fuzz target
 `fuzz/fuzz_targets/file_allocation_table_boot_sector.rs` matches the new error. One-way (shape). S
 to M.
 
@@ -221,7 +219,12 @@ Ruled 2026-11-10, and closed here:
 5. One `OpenError<E>` serves both `open_file_*` methods, both verify the slot, and a test pins that
    `EntryChanged` means the same in each (P1-9).
 
-Every name these rulings bring is provisional until the release review ratifies them together.
+The names these rulings bring are ratified as built (2026-11-16 UTC) and are the rule in force.
+They are `VolumeLayoutOptions` with `new`, `with_hidden_sectors`, `with_volume_id`, `with_label` and
+`with_file`; `CivilDateTime::new` with `CivilDateTimeError` (`Month`, `Day`, `Hour`, `Minute`,
+`Second`); `VolumeLabel::trim_ascii_end`; `DirectoryCluster` (`ROOT`) with
+`NamedEntry::directory_cluster()`; and `OpenError<E>` (`IsADirectory`, `IsAVolumeLabel`,
+`EntryChanged`, `Chain`).
 
 For the architect, one-way, not yet ruled: the tag and the first publish, each asked separately once
 the P0 and P1 items have closed.
@@ -266,7 +269,7 @@ Checked 2026-11-14 (UTC) against `nifeos/file_allocation_table`. Its tag `v0.1.0
 - **Outstanding.** P2-4: the seeds sit in `fuzz/seeds/`, which the weekly fuzz job does not read;
   issue `nifeos/file_allocation_table#36` is open.
 - **Outstanding.** The second stranger run: `docs/stranger-test.md` still reads `Last run:
-  2026-11-06`. The release review's ratification of the P1-5 to P1-9 names is not on record.
+  2026-11-06`.
 
 ## Index row
 

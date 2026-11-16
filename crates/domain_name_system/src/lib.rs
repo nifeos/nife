@@ -1,5 +1,6 @@
-//! **The DNS wire format a stub resolver needs** (RFC 1035; RFC 7766 for TCP), as pure
-//! computation: the bytes of a query for one name's IPv4 addresses, and the checks a reply must pass
+//! **The Domain Name System (DNS) wire format a stub resolver needs** (Request for Comments (RFC)
+//! 1035; RFC 7766 for the Transmission Control Protocol, TCP), as pure
+//! computation: the bytes of a query for one name's Internet Protocol version 4 (IPv4) addresses, and the checks a reply must pass
 //! before any address in it is believed. No socket, timer or policy; which program sends these
 //! bytes, and which names a client may ask about, are the caller's policy.
 //!
@@ -13,9 +14,9 @@
 //! # BUGS
 //!
 //! - IPv4 only: a query asks for address records alone, so it reads no address longer than four bytes.
-//! - No EDNS(0), so UDP replies stop at [`MAXIMUM_UDP_MESSAGE_BYTES`] and a larger answer costs a TCP
+//! - No Extension Mechanisms for DNS (EDNS) version 0, so UDP (the User Datagram Protocol) replies stop at [`MAXIMUM_UDP_MESSAGE_BYTES`] and a larger answer costs a TCP
 //!   retry.
-//! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
+//! - No DNS Security Extensions (DNSSEC): an on-path attacker can forge the reply, id and all. No "0x20" case randomization.
 //! - At most [`MAXIMUM_IPV4_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
 //! - Labels hold only letters, digits, `-` and `_` ([`Name::from_dotted`]): no escape syntax.
 //!
@@ -32,6 +33,7 @@
 //! rather than this wire format).
 
 #![no_std]
+#![forbid(unsafe_code)]
 
 #[cfg(kani)]
 mod proofs;
