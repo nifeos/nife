@@ -177,9 +177,9 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 
 ## Follow-on
 
-- **Done.** The crate's own name, `address_space_layout`.
-- **Done in this tree.** Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16, and the README of item 5. The
-  crate has `window` (provisional) and a manifest that stands alone.
+- **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,
+  and the README of item 5, are done in this tree: the crate has `window` (provisional) and a
+  manifest that stands alone.
 - **Outstanding.** Decision 2 and with it item 7; items 15 and 17, each a new public name; and the
   move's items 2, 5 (the rest of the scaffold), 11 and 13, with item 18 left to block 1017.
 
