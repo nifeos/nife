@@ -120,7 +120,7 @@ fn serve(page: ClockPage) -> ! {
 fn wall_now(page: &ClockPage) -> u64 {
     let r = page.read();
     if state::is_known(r.state) {
-        clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
+        clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
     } else {
         0
     }

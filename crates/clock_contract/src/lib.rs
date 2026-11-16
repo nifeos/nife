@@ -17,11 +17,6 @@
 //! that order. The id stays 8 for good. A layout break ships as a new magic and a new version
 //! together, never a new id, and a retired value is never reused.
 //!
-//! # BUGS
-//!
-//! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`, kept for
-//!   a standard-library overlay, which reads them by those names. Use the newer spellings.
-//!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `clock`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
 
@@ -70,8 +65,9 @@ pub const NS_PER_SECOND: u64 = 1_000_000_000;
 /// Saturating rather than wrapping: an implausible offset should read as an implausible time, not
 /// as a plausible one on the other side of the wrap.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane/unit-symbols-sweep-1: `wall_nanos` under the
-/// unit-symbol ruling of that date.
+/// Name: provisional, minted 2026-10-27 (UTC) by lane/unit-symbols-sweep-1: `wall_nanoseconds` spells
+/// out the unit that `wall_nanos` abbreviated. 1083 Decision 3 (provisional) deleted the `wall_nanos`
+/// spelling the overlay read.
 ///
 /// # Examples
 ///
@@ -97,25 +93,6 @@ pub const NS_PER_SECOND: u64 = 1_000_000_000;
 /// ```
 pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
     offset_nanoseconds.saturating_add(monotonic_nanoseconds)
-}
-
-/// (`NANOS_PER_SEC`, a standard-library overlay, which reads this name from its generated copy
-/// of this file.)
-/// The spelling of [`NS_PER_SECOND`] that the overlay reads.
-///
-/// Name: provisional. Kept for that reader; the crate's own spelling is `NS_PER_SECOND`, and the
-/// overlay moves to it with its next edit.
-#[doc(alias = "nanoseconds per second, overlay spelling")]
-pub const NANOS_PER_SEC: u64 = NS_PER_SECOND;
-
-/// (`wall_nanos`, a standard-library overlay, which reads this name from its generated copy of
-/// this file.)
-/// The spelling of [`wall_nanoseconds`] that the overlay reads; see [`NANOS_PER_SEC`].
-///
-/// Name: provisional. Kept for the overlay, as [`NANOS_PER_SEC`] is.
-#[doc(alias = "wall clock nanoseconds, overlay spelling")]
-pub const fn wall_nanos(offset_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
-    wall_nanoseconds(offset_nanoseconds, monotonic_nanoseconds)
 }
 
 /// The offset that makes `monotonic_nanoseconds` read as `wall_nanoseconds`: what the clock service writes
@@ -215,11 +192,11 @@ const fn copy_for(generation: u64) -> usize {
 pub struct Reading {
     /// One of [`state`]'s values.
     pub state: u64,
-    /// (`offset_nanos`, a standard-library overlay, which reads this field from its generated
+    /// (`offset_nanoseconds`, a standard-library overlay, which reads this field from its generated
     /// copy of this file.)
     /// Wall-clock nanoseconds at monotonic zero. Meaningless unless [`state::is_known`].
     #[doc(alias = "offset in nanoseconds")]
-    pub offset_nanos: u64,
+    pub offset_nanoseconds: u64,
     /// How many times the page has been published to: the publish count this reading came with. A
     /// reader that cares whether the clock stepped under it (a log, a cache with an expiry)
     /// compares this across two readings instead of comparing timestamps and guessing.
@@ -350,7 +327,7 @@ impl ClockPage {
     pub fn read(&self) -> Reading {
         const UNKNOWN: Reading = Reading {
             state: state::UNKNOWN,
-            offset_nanos: 0,
+            offset_nanoseconds: 0,
             generation: 0,
         };
         // Acquire: pairs with the release store of the magic in `initialize`.
@@ -390,7 +367,7 @@ impl ClockPage {
         // across two publishes see that it did.
         (self.word(PUBLISH_WORD_INDEX).load(Ordering::Relaxed) == generation).then_some(Reading {
             state: st,
-            offset_nanos: off,
+            offset_nanoseconds: off,
             generation,
         })
     }
@@ -783,16 +760,6 @@ mod tests {
         }
     }
 
-    /// The std overlay reads the older spellings; they must stay the same value and the same sum.
-    #[test]
-    fn the_overlay_spellings_agree_with_the_ruled_ones() {
-        assert_eq!(NANOS_PER_SEC, NS_PER_SECOND);
-        assert_eq!(wall_nanos(40, 2), wall_nanoseconds(40, 2));
-        assert_eq!(wall_nanos(u64::MAX, 1), u64::MAX);
-    }
-
-    /// The asymmetry is a decision, not an accident, so it gets a test that fails if someone
-    /// "tidies" the two constants into one.
     #[test]
     fn backwards_is_held_far_tighter_than_forwards() {
         let known = state::SYNCED;
@@ -834,7 +801,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::UNKNOWN,
-                    offset_nanos: 0,
+                    offset_nanoseconds: 0,
                     generation: 0,
                 }
             );
@@ -900,7 +867,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::SYNCED,
-                    offset_nanos: 11,
+                    offset_nanoseconds: 11,
                     generation: first + 1,
                 }
             );
@@ -923,7 +890,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::RTC,
-                    offset_nanos: 7,
+                    offset_nanoseconds: 7,
                     generation: 1,
                 }
             );
@@ -968,7 +935,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::SYNCED,
-                    offset_nanos: 11,
+                    offset_nanoseconds: 11,
                     generation: 2,
                 }
             );
@@ -1023,7 +990,7 @@ mod tests {
         });
         let want = Reading {
             state: state::SYNCED,
-            offset_nanos: 11,
+            offset_nanoseconds: 11,
             generation: 2,
         };
         assert_eq!(first, Some(want), "a look with no publish running is whole");
@@ -1213,7 +1180,7 @@ mod interleavings {
 
             let r = page.read();
             assert_eq!(
-                (r.state, r.offset_nanos, r.generation),
+                (r.state, r.offset_nanoseconds, r.generation),
                 (state::RTC, 1_000, 1),
                 "a reader saw the page reset by a restart"
             );
@@ -1292,7 +1259,7 @@ mod interleavings {
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
-            match (r.state, r.offset_nanos) {
+            match (r.state, r.offset_nanoseconds) {
                 (state::RTC, 1_000) => SAW_THE_OLD.mark(),
                 (state::SYNCED, 2_000) => SAW_THE_NEW.mark(),
                 other => panic!("a torn reading: {other:?} is neither publish"),
@@ -1340,7 +1307,7 @@ mod interleavings {
             })
             .join()
             .unwrap();
-            match (r.state, r.offset_nanos, r.generation) {
+            match (r.state, r.offset_nanoseconds, r.generation) {
                 (state::RTC, 1_000, 1) | (state::SYNCED, 2_000, 2) => {}
                 (state::SET, 3_000, 3) => SAW_THE_LAST.mark(),
                 other => panic!("a torn reading across two publishes: {other:?}"),
@@ -1419,7 +1386,7 @@ mod interleavings {
                 (state::SYNCED, 2_000)
             };
             assert_eq!(
-                (r.state, r.offset_nanos),
+                (r.state, r.offset_nanoseconds),
                 last,
                 "the page does not hold the pair of the writer that published last: {r:?}"
             );
@@ -1480,7 +1447,7 @@ mod interleavings {
 
                 if stops_after == StopsAfter::Flipping {
                     let r = spawn_reader(page, |p| p.read()).join().unwrap();
-                    match (r.state, r.offset_nanos, r.generation) {
+                    match (r.state, r.offset_nanoseconds, r.generation) {
                         (state::RTC, 1_000, 1) => {}
                         (state::SYNCED, 2_000, 2) => SAW_THE_NEW.mark(),
                         other => panic!("a torn reading beside a stopped writer: {other:?}"),
@@ -1527,7 +1494,7 @@ mod interleavings {
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
-            match (r.state, r.offset_nanos) {
+            match (r.state, r.offset_nanoseconds) {
                 (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
                 (state::RTC, 1_000) => SAW_INITIALISED.mark(),
                 other => panic!("a reader saw a recognized page with garbage in it: {other:?}"),

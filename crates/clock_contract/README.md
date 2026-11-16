@@ -89,8 +89,6 @@ RUSTFLAGS="--cfg loom" cargo test --release      # the clock page under every in
 
 - A writer stopped while it holds the claim blocks every later writer until something clears the
   claim. Readers keep reading the last publish. Nothing here clears a claim it did not take.
-- `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`,
-  kept for a standard-library overlay, which reads them by those names. Use the newer spellings.
 
 ## Minimum Rust version
 
