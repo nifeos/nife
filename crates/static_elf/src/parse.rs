@@ -97,7 +97,7 @@ impl<'a> Elf<'a> {
     ///
     /// `machine` is an `e_machine` value, normally one of [`MACHINE_AARCH64`], [`MACHINE_RISCV`] and
     /// [`MACHINE_X86_64`]. A tool on one machine that checks a program for another (a packager
-    /// validating every member of an aarch64 package on an x86_64 build host) calls this. Every
+    /// validating every member of an aarch64 package on an `x86_64` build host) calls this. Every
     /// other check is the same as `parse`'s.
     ///
     /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.

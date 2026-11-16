@@ -16,7 +16,7 @@ pub const MACHINE_AARCH64: u16 = 183;
 #[doc(alias = "EM_RISCV")]
 pub const MACHINE_RISCV: u16 = 243;
 
-/// `e_machine` for x86_64.
+/// `e_machine` for `x86_64`.
 ///
 /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
 #[doc(alias = "EM_X86_64")]

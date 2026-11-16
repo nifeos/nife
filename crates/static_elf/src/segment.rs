@@ -112,7 +112,7 @@ impl Segment<'_> {
 pub struct PageBytes(u64);
 
 impl PageBytes {
-    /// A 4 KiB page, the smallest page each of aarch64, riscv64 and x86_64 maps.
+    /// A 4 KiB page, the smallest page each of `aarch64`, `riscv64` and `x86_64` maps.
     ///
     /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
     pub const FOUR_KIBIBYTES: PageBytes = PageBytes(4096);

@@ -48,16 +48,16 @@ pub enum Error {
     TooSmall,
     /// No `\x7fELF`.
     BadMagic,
-    /// 32-bit. We do not have a 32-bit anything.
+    /// 32-bit. The crate reads ELF64 only.
     Not64Bit,
-    /// Big-endian. `aarch64` can be, and ours is not.
+    /// Big-endian. `aarch64` can be, and the crate reads little-endian only.
     NotLittleEndian,
     /// `e_version` is not 1.
     BadVersion,
     /// `e_machine` is not the machine asked for: a riscv binary handed to an `aarch64` loader, say,
     /// caught here rather than as an illegal-instruction fault when the program starts.
     WrongMachine,
-    /// A PIE or shared object. It expects a dynamic linker to relocate it. We are not one.
+    /// A PIE or shared object, which expects a dynamic linker to relocate it.
     NeedsRelocation,
     /// Not an executable at all (a relocatable object, a core dump).
     NotExecutable,
