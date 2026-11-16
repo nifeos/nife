@@ -127,6 +127,9 @@ pub mod state {
     pub const UNKNOWN: u64 = 0;
     /// Set once at startup from the hardware real-time clock (RTC). As good as the battery-backed clock on the board,
     /// which on QEMU is the host's clock and on a real board is whatever the coin cell managed.
+    ///
+    /// Name: provisional. Spelled out under 1083 Decision 3, which replaced `RTC` and keeps it as a
+    /// doc alias.
     #[doc(alias = "RTC")]
     pub const REAL_TIME_CLOCK: u64 = 1;
     /// Set outright by an authority holding the page read/write: an operator, or the service's own
@@ -136,6 +139,8 @@ pub mod state {
     /// lands. Distinguished from [`SET`] because "an external source I bounded" and "a human told
     /// me" are different provenance, and the difference is exactly what a caller deciding whether
     /// to trust a certificate expiry wants.
+    ///
+    /// Name: provisional. Spelled out under 1083 Decision 3, which replaced `SYNCED`.
     pub const SYNCHRONIZED: u64 = 3;
 
     /// Whether a state means the machine actually knows the time.

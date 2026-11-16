@@ -1,4 +1,4 @@
-Falsifies `clock_contract::verification::a_proposal_is_accepted_only_inside_the_policys_bounds`.
+Falsifies `clock_contract::verification::a_proposal_is_accepted_only_inside_the_policy_bounds`.
 
 The defect: the forward step bound is off by one (`MAXIMUM_STEP_FORWARD_NANOSECONDS + 1`), so a
 proposal one nanosecond past the largest allowed step is accepted.

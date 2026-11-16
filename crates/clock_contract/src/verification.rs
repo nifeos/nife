@@ -11,8 +11,9 @@ use super::*;
 /// clock already knows the time, only when the step lies inside the bound on its side. It also
 /// accepts every proposal that meets both, so a refusal is never a surprise. This is the function
 /// a compromised proposer can aim at.
+/// Falsification: replayable `crates/clock_contract/falsifications/verification.a_proposal_is_accepted_only_inside_the_policy_bounds.patch`
 #[kani::proof]
-fn a_proposal_is_accepted_only_inside_the_policys_bounds() {
+fn a_proposal_is_accepted_only_inside_the_policy_bounds() {
     let current_state: u64 = kani::any();
     let current: u64 = kani::any();
     let proposed: u64 = kani::any();
@@ -45,6 +46,7 @@ fn a_proposal_is_accepted_only_inside_the_policys_bounds() {
 /// The wire format and the arithmetic the page's readers and writers agree on: the opcode that
 /// `propose::req` puts in the top byte comes back out of `propose::operation`, and the offset
 /// `offset_for` computes reads back as the wall time through `wall_nanoseconds`.
+/// Falsification: replayable `crates/clock_contract/falsifications/verification.the_request_word_and_the_offset_round_trip.patch`
 #[kani::proof]
 fn the_request_word_and_the_offset_round_trip() {
     let opcode: u64 = kani::any();
