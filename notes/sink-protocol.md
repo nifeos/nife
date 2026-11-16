@@ -46,7 +46,7 @@ The difference is whether the writer learns anything. A CALL would return "bytes
 for a self-framing message is always "all of them", and it would pay a second IPC hop on the hottest
 path in the system to say so. Back-pressure does not need the reply: SEND blocks until a receiver
 takes the message, so the rendezvous is the flow control, which is the property
-`line_editor::proto::OPERATION_BYTES` had already written down.
+`terminal_contract::OPERATION_BYTES` had already written down.
 
 SEND makes the reader of a pipe an ordinary program that does nothing but `receive`. With a CALL
 protocol every pipe reader would owe a reply, which means every program on the right of a `|` would
@@ -75,8 +75,12 @@ semantics does, and it is the opcode list that makes that true rather than polic
   w0 = (op << 56) | len          w1, w2 = up to 16 bytes, little-endian, low word first
 
   OPERATION_BYTES = 0    len = 1..=16   the bytes are in w1|w2
-  OPERATION_EOF   = 1    len = 0        the writer is finished
+  OPERATION_EOF   = 1    len = 0        the writer is finished; w1 = w2 = 0
 ```
+
+An end of stream is exactly `(eof(), 0, 0)`: a writer sends zero in its two later words, and
+`unpack` refuses any other end of stream as malformed. A result due after the stream (`rm`'s exit
+status) goes on an endpoint of its own.
 
 `OPERATION_BYTES` is zero on purpose. With the opcode at zero a bytes message's first word is
 exactly its byte count, which is bit for bit the framing std's stdout already sent. So unifying the

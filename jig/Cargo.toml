@@ -26,17 +26,18 @@ publish = false
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
 # same change), where the package source answers (`socket_contract::fixture`), the `std` layout's
 # pages (`std_runtime_contract`), and the syscalls a `std` program has no binding for
-# (`user_mode_runtime`, `abi`, `address_space_map`).
+# (`user_mode_runtime`, `abi`, `address_space_layout`).
 [dependencies]
 abi = { path = "../crates/abi" }
-address_space_map = { path = "../crates/address_space_map" }
+address_space_layout = { path = "../crates/address_space_layout" }
 filesystem_contract = { path = "../crates/filesystem_contract" }
-grant_plan = { path = "../crates/grant_plan" }
+grant_contract = { path = "../crates/grant_contract" }
+program_table = { path = "../crates/program_table" }
 http_response = { path = "../crates/http_response" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 # Finding each program's manifest note in a package, to list what it asks the owner for at install
 # (milestone 892 (a std program at the prompt holds the network and a resolver)).
-elf = { path = "../crates/elf" }
+static_elf = { path = "../crates/static_elf" }
 package_archive = { path = "../crates/package_archive" }
 # What is installed, for `list -u`: the installed-programs table's reader and where it lives.
 installed_programs = { path = "../crates/installed_programs" }

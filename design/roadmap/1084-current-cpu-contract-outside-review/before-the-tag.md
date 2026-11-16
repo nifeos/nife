@@ -64,10 +64,10 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
    call sites and the tests call it.
    Evidence: `src/lib.rs` lines 143 to 166; `kernel/src/user/address_space.rs` line 159;
    `kernel/src/user/address_space_registry.rs` line 300.
-   Change: recommended, `build_page_with(allowance: Option<NonZeroU64>, tick_hertz:
-   Option<NonZeroU64>)`, with `build_page()` kept as the all-unknown page. The name is the
-   architect's (Decision B); the parameter types are the maintainer's.
-   Door: one-way (a published name and signature). Effort: S, including the two kernel call sites.
+   Change: `build_page_with(allowance: Option<NonZeroU64>, tick_hertz:
+   Option<NonZeroU64>)`, with `build_page()` kept as the all-unknown page. Decision B decides the
+   name, provisionally; the parameter types are the maintainer's.
+   Door: two-way before the first tag. Effort: S, including the two kernel call sites.
 
 10. Nothing is machine-checked, and the template expects a proof or a stated reason.
     Finding: no `#[kani::proof]` and no `falsifications/`. The three sibling contract crates reviewed so far (`socket_contract`, `block_roster_contract`, `entropy_contract`) each carry a
@@ -96,7 +96,7 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
 
 12. The standard library copies this file by name, and a stranger cannot see that.
     Finding: `xtask/src/farm/copied.rs` copies `crates/current_cpu_contract/src/lib.rs` into the
-    standard library's platform layer and rewrites `address_space_map::` to a sibling module. A
+    standard library's platform layer and rewrites `address_space_layout::` to a sibling module. A
     second source file, a `mod`, or an `include!` in this crate would break that copy with no
     signal inside the crate's own repository. After the move the farm takes the copy from the pinned package's directory (`cargo metadata`), so the constraint survives the move.
     Evidence: `xtask/src/farm/copied.rs` lines 125 to 145; `xtask/src/farm/generate.rs` lines 61

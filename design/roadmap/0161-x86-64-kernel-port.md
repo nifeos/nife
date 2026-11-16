@@ -77,7 +77,7 @@ Early boot ([early-boot.md](0161-x86-64-kernel-port/early-boot.md)):
 2. The console: the existing NS16550 driver, given a `RegisterSpace` type parameter so the same
    part works at an I/O port.
 3. The trap path: GDT, TSS (double fault on its own IST) and an IDT. Proven by taking an `int3`.
-4. The page-table format: `crates/paging/src/x86_64.rs`, sixty lines plus host tests and Kani
+4. The page-table format: `crates/page_tables/src/x86_64.rs`, sixty lines plus host tests and Kani
    harnesses, with no change to the generic walk.
 5. The PVH handoff, parsed in `crates/machine_discovery` and host-tested.
 6. ACPI (RSDP, MADT, MCFG), host-tested, every checksum verified, checked against q35's firmware.
@@ -110,7 +110,7 @@ Processes and userspace ([processes-and-userspace.md](0161-x86-64-kernel-port/pr
 Plus the build wiring: `kernel/build.rs`, `.cargo/config.toml`, `rust-toolchain.toml`,
 `helpers/qemu-runner-x86_64.sh` and an x86_64 pass in `script/lint`. The evidence that the `arch/`
 split is real: the whole kernel compiled for a third architecture after 42 compiler errors, every
-one a missing `arch::` name. `crates/paging` needed nothing.
+one a missing `arch::` name. `crates/page_tables` needed nothing.
 
 ## The open list, and where each item ended
 
@@ -151,7 +151,7 @@ arch-contract names that did not stretch to a third architecture were renamed `a
 - **Milestone 176.** Item 0's last piece, the CMOS RTC seam, is built rather than "DECIDED but not yet
   built": `kernel/src/arch/x86_64/rtc.rs` reads CMOS at boot and `clock_protocol`'s RTC seam carries
   the seed to the clock service.
-- **Done.** `crates/paging` maps 2 MiB and 1 GiB leaves on all three CPU formats, and all three kernels'
+- **Done.** `crates/page_tables` maps 2 MiB and 1 GiB leaves on all three CPU formats, and all three kernels'
   direct maps use them for RAM. See "Closing the follow-on" below.
 - **Milestone 215.** Item 2's MSI half is built: an MSI intid is its vector, a `virtio-blk-pci`
   completion reaches a ring-3 driver, and the enable and acknowledge paths are correctly no-ops for
@@ -210,7 +210,7 @@ Each item was re-checked against the tree first. One was already done by another
 failure 3, milestone 316); the other three were open as written. The working is in
 [closing.md](0161-x86-64-kernel-port/closing.md).
 
-1. Blocks in `crates/paging`. `PageFormat` grew `block_entry` and `is_block` with no defaults, and
+1. Blocks in `crates/page_tables`. `PageFormat` grew `block_entry` and `is_block` with no defaults, and
    `Mapper` gained `map_block` and `map_span`. Nothing splits a block. x86_64's kernel page tables
    on 256 MiB went from 560 KiB to 60 KiB. Eight new Kani harnesses prove the leaf choice and each
    format's block encoding. The fastpath stayed byte-identical to `main`. `PageSize`, `map_block`,
@@ -237,7 +237,7 @@ Splits real work out of milestone 20's stale text: DECISIONS §19 declared x86_6
 milestone 20's own "Deliverable, in two parts" named it, but 20 is BUILT for the HAL split and
 RISC-V alone (`kernel/src/arch/` has no `x86_64/`). BUILT 2026-09-19. The fine map, IO APIC, ring
 3, real processes, VT-d, a real userspace and SMP bring-up are built. The last four items closed
-together: 2 MiB and 1 GiB leaves in `crates/paging` on all three formats, proved, taking x86's
+together: 2 MiB and 1 GiB leaves in `crates/page_tables` on all three formats, proved, taking x86's
 direct map from 560 KiB of tables to 60 KiB. SMP failure (1) was `cpu_start` counting a started
 core as absent (26 of 40 four-core boots before, 80 of 80 at three to eight cores after).
 Milestone 316 fixed failure (3). `CR4.PGE`/`PCIDE` were measured and left off because the pinned

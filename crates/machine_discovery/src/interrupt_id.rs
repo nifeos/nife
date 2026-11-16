@@ -31,16 +31,16 @@ const GIC_PPI_BASE: u32 = 16;
 /// understand (see the module's BUGS). The caller owns the fallback, and should say which source
 /// won, so a bench transcript names the number's origin.
 pub fn of_node(dt: &DeviceTreeBlob<'_>, node: &[u8]) -> Result<Option<u32>, Error> {
-    let Some(interrupts) = dt.node_prop(node, b"interrupts")? else {
+    let Some(interrupts) = dt.node_property(node, b"interrupts")? else {
         return Ok(None);
     };
-    let Some(parent) = dt.node_prop_inherited(node, b"interrupt-parent")? else {
+    let Some(parent) = dt.node_property_inherited(node, b"interrupt-parent")? else {
         return Ok(None);
     };
     let Some(phandle) = be32_word(parent, 0) else {
         return Ok(None);
     };
-    let Some(cells_prop) = dt.phandle_prop(phandle, b"#interrupt-cells")? else {
+    let Some(cells_prop) = dt.phandle_property(phandle, b"#interrupt-cells")? else {
         return Ok(None);
     };
     let Some(cells) = be32_word(cells_prop, 0) else {
@@ -66,7 +66,7 @@ pub fn of_node(dt: &DeviceTreeBlob<'_>, node: &[u8]) -> Result<Option<u32>, Erro
 
 /// Is the controller `phandle` names a PLIC: does it state one of [`crate::plic::COMPATIBLES`]?
 fn is_a_plic(dt: &DeviceTreeBlob<'_>, phandle: u32) -> Result<bool, Error> {
-    let Some(compatible) = dt.phandle_prop(phandle, b"compatible")? else {
+    let Some(compatible) = dt.phandle_property(phandle, b"compatible")? else {
         return Ok(false);
     };
     Ok(compatible

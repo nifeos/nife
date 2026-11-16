@@ -48,7 +48,7 @@ use process_builder::{
 };
 use supervision_contract::{ChildEndowment, Retention};
 use timetable::contract as tt;
-use user_mode_runtime::{capability_delete, exit, reap, receive_fault, send, yield_now};
+use user_mode_runtime::{Message, capability_delete, exit, reap, receive_message, send, yield_now};
 
 /// The readiness endpoint, `WRITE`.
 const READY: u64 = contract::READY_SLOT;
@@ -98,7 +98,7 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     let image = unsafe {
         core::slice::from_raw_parts(contract::TIMETABLE_VA as *const u8, image_len as usize)
     };
-    let Ok(elf) = elf::Elf::parse(image) else {
+    let Ok(elf) = static_elf::Elf::parse(image) else {
         fail(3)
     };
 
@@ -165,7 +165,9 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     // C). The reap still decides, so a message that is not the timetable's death is skipped rather
     // than believed.
     loop {
-        let (event, tid, ..) = receive_fault(e);
+        let Message {
+            w0: event, w1: tid, ..
+        } = receive_message(e).into_message();
         let death = event == abi::fault::EVENT_EXIT || event == abi::fault::EVENT_FAULT;
         if death && reaped(e, tid) {
             break;

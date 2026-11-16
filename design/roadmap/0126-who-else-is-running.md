@@ -202,7 +202,7 @@ still put process state in a namespace a program reaches by naming rather than b
   What-is-left.md, section 5.
 - `pmap` shows one row per mapped page with no range coalescing, because the revocation log records
   one entry per page and nothing about adjacency. It also cannot tell a device mapping from ordinary
-  read/write memory, since `paging::Flags` carries no device bit the syscall handler can see.
+  read/write memory, since `page_tables::Flags` carries no device bit the syscall handler can see.
 - `procps` ships without `sysctl` (§115) and without its signaling stratum (milestone 455). A
   reader who expects `kill` or `sysctl` to be a program will not find one.
 - Aggregate statistics are a side channel, and capabilities do not close it. CPU time per thread,

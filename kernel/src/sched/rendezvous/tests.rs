@@ -83,11 +83,7 @@ fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
     let mut found = 0;
     for (_, t) in sched.threads.iter_from(0) {
         let table = sched.threads.capabilities(t.id).unwrap().lock();
-        for slot in 0..table.len() as u64 {
-            if table.get(slot).is_ok_and(|c| c.object == target) {
-                found += 1;
-            }
-        }
+        found += table.iter().filter(|(_, c)| c.object == target).count();
         drop(table);
         if matches!(t.outgoing_capability, Some(c) if c.object == target) {
             found += 1;

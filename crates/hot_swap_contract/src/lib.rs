@@ -153,7 +153,7 @@ pub const RPT_UNCOLLECTABLE: u64 = 13;
 
 /// **The incumbent did not answer `OPERATION_QUIESCE` within the operator's bound, so the operator
 /// treats it as hung.** `w1` = the bound, `w2` = how long the operator actually waited, both in the
-/// counter's ticks (`user_mode_runtime::now`, at `user_mode_runtime::cntfrq` ticks a second).
+/// counter's ticks (`user_mode_runtime::now`, at `user_mode_runtime::counter_hertz` ticks a second).
 ///
 /// The operator's own verdict, reached by milestone 106 (a wait that ends on either the interrupt
 /// or the deadline)'s timed wait and by nothing the incumbent said: a hung instance announces
@@ -297,16 +297,16 @@ pub const PAGE: u64 = 4096;
 /// The shared log page, mapped read/write into the operator and into each instance. One byte per
 /// sequence number, holding the version of whoever served it. The operator's witness, in the
 /// operator's own address space, written by processes that never see each other.
-pub const LOG_VA: u64 = address_space_map::pair_page(0x0300_0000);
+pub const LOG_VA: u64 = address_space_layout::pair_page(0x0300_0000);
 
 /// The device's registers, at the same virtual address in every instance. The same number on both
 /// sides is what lets the kernel's reported fault address be compared directly against this
 /// constant, with no translation step to get wrong.
-pub const DEV_VA: u64 = address_space_map::pair_page(0x0310_0000);
+pub const DEV_VA: u64 = address_space_layout::pair_page(0x0310_0000);
 
 /// Where the operator copies an instance's program image, so a component's builder holds one ELF
 /// rather than the whole initial ramdisk.
-pub const IMAGE_VA: u64 = address_space_map::runtime_window(0x3000_0000);
+pub const IMAGE_VA: u64 = address_space_layout::runtime_window(0x3000_0000);
 
 /// **The confused-deputy attacker's chosen offset** (milestone 633, third pass). `log_put` writes
 /// at `LOG_VA + log_base + arg`; with `log_base = 0` this lands at `DEV_VA`, the first register of

@@ -15,7 +15,7 @@ It is a `git grep` and a reading, not a mechanism.
 **Premise re-checked 2026-09-19 by running the sweep's own grep, and it has candidates.**
 `git grep -in 'one less than\|minus one\|zero means one' -- crates/ kernel/` returns 17 hits.
 Milestone 319's own two sites account for four of them and are settled. The rest have not been read
-against the rule this block states, and at least three are the family. `crates/pci` reads an MSI-X
+against the rule this block states, and at least three are the family. `crates/pci_configuration_space` reads an MSI-X
 table size the specification stores as the count minus one in eleven bits.
 `kernel/src/arch/x86_64/interrupt_controller.rs` reads the I/O APIC's LVT entry count minus one out
 of a version

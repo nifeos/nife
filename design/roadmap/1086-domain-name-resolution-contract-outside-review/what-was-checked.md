@@ -28,7 +28,7 @@ Verified firsthand, on a fresh shallow clone of `main` at the merge of #3467:
   `crates/installed_programs` and `fuzz/fuzz_targets/capability_manifest_note_decode.rs`. The last
   five use `is_canonical_zone` and the two limits only.
 - The rendered rustdoc of the crate root shows the layout table with its header and first row as a
-  table and its second row as literal pipe characters. The cause is that the row for `OFF_ADDRESSES`
+  table and its second row as literal pipe characters. The cause is that the row for `ADDRESSES_OFFSET_BYTES`
   breaks across two source lines (`src/lib.rs` lines 7 to 12).
 - The recorded mutation figures are the census rows in `notes/project-metrics/mutation-census.csv`
   (the latest: 157 mutants, 134 caught, 6 missed, 0 timed out, 17 unviable) and the six missed sites
@@ -40,7 +40,7 @@ Verified firsthand, on a fresh shallow clone of `main` at the merge of #3467:
   crate's own. The one fuzz target that links it (`capability_manifest_note_decode`) links other
   crates of the tree as well, so the dry run keeps it here.
 
-Inferred from reading, not run: the size of `Grants` (item 14), the behavior of the spawner when a grant draws a refusal (item 6), and the template's live workflows over the staged tree.
+Inferred from reading, not run: the size of `Grants` (item 14) and the template's live workflows over the staged tree.
 
 Not run: a mutation census (outside its window), the template's heavy jobs (coverage, Miri,
 semver), a stranger test, `script/crate-standalone`, and the dry run's build half.

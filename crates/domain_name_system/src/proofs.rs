@@ -1,4 +1,4 @@
-//! Machine-checked proofs (Kani), run by `script/verify`. A name server, or anyone who can forge
+//! Machine-checked proofs (Kani), run by `cargo kani`. A name server, or anyone who can forge
 //! its replies, feeds the name decoder, and it must terminate and stay in bounds on **every** byte
 //! string, which a fuzzer can only sample. The compression pointer loop is the classic DNS parser
 //! hang; the decoder's strictly-backwards fence makes it an error, and the first harness quantifies
@@ -49,12 +49,12 @@ fn the_header_round_trips_on_every_value() {
     let h = Header {
         id: kani::any(),
         flags: kani::any(),
-        qdcount: kani::any(),
-        ancount: kani::any(),
-        nscount: kani::any(),
-        arcount: kani::any(),
+        question_count: kani::any(),
+        answer_count: kani::any(),
+        authority_count: kani::any(),
+        additional_count: kani::any(),
     };
-    let mut buf = [0u8; HEADER_LEN];
+    let mut buf = [0u8; HEADER_BYTES];
     h.write(&mut buf).unwrap();
     assert_eq!(Header::parse(&buf).unwrap(), h);
 }

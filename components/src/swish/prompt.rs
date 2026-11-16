@@ -171,7 +171,7 @@ fn read_line(prompt: &[u8], out: &mut [u8]) -> (usize, u64) {
     };
     let len = (len as usize).min(out.len());
     for (i, b) in out[..len].iter_mut().enumerate() {
-        *b = LINE_WINDOW.r8(i as u64);
+        *b = LINE_WINDOW.read_u8(i as u64);
     }
     (len, flags)
 }
@@ -237,10 +237,10 @@ impl line_editor::Sink for Echo {
             if b == b'\r' && bytes.get(i + 1) == Some(&b'\n') {
                 continue;
             }
-            if self.used == user_mode_runtime::mapped_window::PAGE as usize {
+            if self.used == user_mode_runtime::mapped_window::PAGE_BYTES as usize {
                 self.flush();
             }
-            OUT_WINDOW.w8(self.used as u64, b);
+            OUT_WINDOW.write_u8(self.used as u64, b);
             self.used += 1;
         }
     }
@@ -331,7 +331,7 @@ fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Ech
                 for b in grant_plan::BUILTINS {
                     each(b, false);
                 }
-                for p in grant_plan::Program::ALL {
+                for p in program_table::Program::ALL {
                     each(p.name().as_bytes(), false);
                 }
                 // And what the live installed-programs table names by bare word (§229 (how a bare
@@ -344,7 +344,7 @@ fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Ech
                         // refused when run.
                         if installed_programs::lookup(text, entry.program)
                             .is_ok_and(|found| found == Some(entry))
-                            && grant_plan::Program::from_name(entry.program.as_bytes()).is_none()
+                            && program_table::Program::from_name(entry.program.as_bytes()).is_none()
                         {
                             each(entry.program.as_bytes(), false);
                         }

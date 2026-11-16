@@ -11,8 +11,8 @@
 //! survives a resume, and the resumed read repaints nothing. The replacement's half needs the
 //! handoff page count first (`design/roadmap/0659-a-region-retypes-a-frame-run.md`).
 
-use line_editor::proto;
 use raw_mode_service as svc;
+use terminal_contract as proto;
 
 use super::*;
 use crate::sched;

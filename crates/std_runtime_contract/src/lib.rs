@@ -34,7 +34,7 @@
 //! **Generated verbatim into the PAL** by `cargo xtask std-src` (as `sys/pal/nife/runtimeproto.rs`),
 //! like `abi` and every contract the PAL reads, so this file stays a valid non-root module: no
 //! crate attributes survive the copy, nor does the test module. Every address below is a row of
-//! `crates/address_space_map` (milestone 206 (a program image has under 896 KiB),
+//! `crates/address_space_layout` (milestone 206 (a program image has under 896 KiB),
 //! DECISIONS §171 (where a program image starts) option D), restated as a number because the PAL
 //! has no crate to name; the test module pins each to its band, the shape `byte_sink_contract`
 //! uses for `abi`. A std program is linked at the map's `IMAGE_BASE` and its stack grows down from
@@ -91,15 +91,15 @@ pub const RESOLVER_SLOT: u64 = 9;
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const RESOLVER_SLOTS: [u64; 8] = [RESOLVER_SLOT, 22, 23, 24, 25, 26, 27, 28];
 
-/// **Standard input: the terminal endpoint, badged `line_editor::proto::STDIN_BADGE`** (milestone
+/// **Standard input: the terminal endpoint, badged `terminal_contract::STDIN_BADGE`** (milestone
 /// 892; calef, 2026-10-19 (UTC), on #2405: "a"). std's `Stdin::read` asks it for the line being
 /// typed, eight bytes at a time (`OPERATION_READ_LINE_BYTES`); an empty slot is end of input at
-/// once. Placed only for a program whose manifest sets `grant_plan::Manifest::console_input`.
+/// once. Placed only for a program whose manifest sets `grant_contract::Manifest::console_input`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const STDIN_SLOT: u64 = 29;
 
-/// **The word std `CALL`s [`STDIN_SLOT`] with**: `line_editor::proto::OPERATION_READ_LINE_BYTES` in
+/// **The word std `CALL`s [`STDIN_SLOT`] with**: `terminal_contract::OPERATION_READ_LINE_BYTES` in
 /// the opcode bits, no length. Restated as a number for the PAL, which cannot name `line_editor`;
 /// this crate's test pins it to the terminal's own encoding.
 ///
@@ -156,22 +156,22 @@ pub const ARGS_PAGE: u64 = 0x1400_0000;
 pub const RESOLVER_PAGE: u64 = 0x1500_0000;
 
 /// **Where the loader maps a copy of the image's package catalog**, read-only, for a program that
-/// declares `grant_plan::Manifest::catalog` (milestone 809 (the package client becomes a program)):
+/// declares `grant_contract::Manifest::catalog` (milestone 809 (the package client becomes a program)):
 /// `package_archive::CATALOG`'s `<stem> <digest>` lines, padded with zero bytes to the page's end.
 /// The page is the child's own, carved from its region, so its reap takes it back; its capability
-/// is at `grant_plan::CATALOG_SLOT`, above the ten fixed slots, for the program to probe. One page
+/// is at `grant_contract::CATALOG_SLOT`, above the ten fixed slots, for the program to probe. One page
 /// above the resolver's. Provisional.
 pub const CATALOG_PAGE: u64 = 0x1600_0000;
 
 /// **Where the loader maps a copy of the image's index sources**, read-only, for a program that
-/// holds `grant_plan::Manifest::indexes` (milestone 801 (packages over the internet)): the
+/// holds `grant_contract::Manifest::indexes` (milestone 801 (packages over the internet)): the
 /// `package_index::SOURCES_ENTRY` text, padded with zero bytes to the page's end, as
-/// [`CATALOG_PAGE`] is. Its capability is at `grant_plan::INDEX_SOURCES_SLOT`. One page above the
+/// [`CATALOG_PAGE`] is. Its capability is at `grant_contract::INDEX_SOURCES_SLOT`. One page above the
 /// catalog's. Provisional, 2026-10-12 (UTC).
 pub const INDEX_SOURCES_PAGE: u64 = 0x1700_0000;
 
 /// Where the heap starts: the start of the address-space map's heap band, and the same value as
-/// `memory_region_heap::DEFAULT_BASE`.
+/// `memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS`.
 pub const HEAP_BASE: u64 = 0x4000_0000;
 /// The heap's growth cap: the heap band's whole width. Only a bound on the address range: the
 /// budget in [`MEMORY_REGION_SLOT`] is the real, per-program limit.
@@ -189,7 +189,7 @@ pub const HEAP_MAXIMUM: u64 = 256 * 1024 * 1024;
 /// Name: provisional.
 pub const STACK_PAGES: u64 = 32;
 
-// The stack band holds 4,080 pages less a guard (`address_space_map::MAXIMUM_STACK_PAGES`); the
+// The stack band holds 4,080 pages less a guard (`address_space_layout::MAXIMUM_STACK_PAGES`); the
 // test below pins the exact figure. This line keeps a nonsense value out of the PAL, which cannot
 // see the map.
 const _: () = assert!(STACK_PAGES > 0 && STACK_PAGES <= 4079);
@@ -203,7 +203,7 @@ mod tests {
     /// The stdin request is the terminal's own encoding of its read, which the PAL cannot import.
     #[test]
     fn the_stdin_request_is_the_terminals_read() {
-        use line_editor::proto;
+        use terminal_contract as proto;
         assert_eq!(
             STDIN_READ_REQUEST,
             proto::req(proto::OPERATION_READ_LINE_BYTES, 0)
@@ -269,7 +269,7 @@ mod tests {
         for (i, a) in pages.iter().enumerate() {
             assert_eq!(a % PAGE, 0, "{a:#x} is not page aligned");
             assert!(
-                address_space_map::RUNTIME_WINDOWS.holds(*a, *a + PAGE),
+                address_space_layout::RUNTIME_WINDOWS.holds(*a, *a + PAGE),
                 "{a:#x} is not in the address-space map's runtime windows"
             );
             for b in &pages[i + 1..] {
@@ -285,9 +285,9 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_heap_and_the_stack_are_the_address_space_maps() {
-        assert_eq!(HEAP_BASE, address_space_map::HEAP.start);
-        assert_eq!(HEAP_MAXIMUM, address_space_map::HEAP.bytes());
-        assert!(STACK_PAGES <= address_space_map::MAXIMUM_STACK_PAGES);
-        assert_eq!(address_space_map::MAXIMUM_STACK_PAGES, 4079);
+        assert_eq!(HEAP_BASE, address_space_layout::HEAP.start);
+        assert_eq!(HEAP_MAXIMUM, address_space_layout::HEAP.bytes());
+        assert!(STACK_PAGES <= address_space_layout::MAXIMUM_STACK_PAGES);
+        assert_eq!(address_space_layout::MAXIMUM_STACK_PAGES, 4079);
     }
 }

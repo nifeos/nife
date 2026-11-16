@@ -4,7 +4,9 @@ The defect: `fill_with` refuses only a reply that delivers more than it asked fo
 short one. The standard library's caller accepts partial counts on purpose; this function promises
 the opposite, and the defect quietly leaves bytes in the slice that the service never sent.
 
-Expected to fail: the harness's match on the result, which meets `Ok` where one reply was short.
+Expected to fail: the harness's match on the result, which meets `Ok` where one reply was short,
+and the closure's check of each asked count against what remains, which the accepted short reply
+leaves behind.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs

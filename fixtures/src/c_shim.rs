@@ -65,7 +65,15 @@ unsafe extern "C" {
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, attempt: u64, _a2: u64) -> ! {
-    HEAP.initialize(HEAP_UT, memory_region_heap::DEFAULT_BASE, HEAP_MAXIMUM);
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            HEAP_UT,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
+    );
 
     // Report *before* the call, because two of the three attempts never return from it. This is how
     // the test knows a restarted instance reached its work at all.

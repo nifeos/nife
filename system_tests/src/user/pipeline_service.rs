@@ -11,8 +11,8 @@ use crate::sched::RendezvousId;
 const ROLE_PIPELINE: u64 = 3;
 
 /// The VAs the shell hardcodes for its terminal pages. Must match components/src/swish.rs.
-const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
-const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000);
+const OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00c0_0000);
+const LINE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00b0_0000);
 
 /// The budget the shell mints its pipes out of, and the region of the job it holds (milestone 933 (every job is built the way a supervised job is)).
 /// Each pipeline and each job splits a region off this and gives it back, so one number covers a
@@ -107,7 +107,7 @@ const ROLE_TIMING: u64 = 5;
 /// Where the shell maps its own clock page, read-only. Must match `components/src/swish.rs`'s
 /// `SH_CLOCK_VA` and `crates/system_initializer`'s. **Not** `date`'s `CLOCK_VA`: that is where a
 /// *child* maps one, and the shell already has the terminal's output frame at that address.
-const SH_CLOCK_VA: u64 = address_space_map::pair_page(0x0000_0000_00d0_0000);
+const SH_CLOCK_VA: u64 = address_space_layout::pair_page(0x0000_0000_00d0_0000);
 
 /// **The same shell, one capability wider**: a directory at slot 4 and the page it shares with
 /// the FS server (milestone 50's `>` and `<`).
@@ -128,7 +128,7 @@ const ROLE_REDIRECT: u64 = 4;
 
 /// Where an FS client maps the page it shares with the FS server (`fs_service`'s
 /// `FILE_VA_CLIENT`, and `components/src/swish.rs`'s `FS_VA`).
-const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 fn start_with(
     role: u64,
@@ -326,8 +326,8 @@ pub fn transcript(w: &Wiring, sentinel: &[u8], out: &mut [u8]) -> usize {
         else {
             panic!("the shell sent the terminal something that was not a CALL");
         };
-        let n = line_editor::proto::len(w0);
-        if line_editor::proto::operation(w0) == line_editor::proto::OPERATION_WRITE {
+        let n = terminal_contract::len(w0);
+        if terminal_contract::operation(w0) == terminal_contract::OPERATION_WRITE {
             let mut buf = TRANSCRIPT.lock();
             let at = WRITTEN.load(Ordering::SeqCst);
             let n = n.min(buf.len().saturating_sub(at));
@@ -435,12 +435,12 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         let (w0, w1, w2) = (m[0], m[1], m[2]);
         // The shell says a job it held is gone (milestone 933). The stub kept no window for it and
         // answers nothing, as the real progenitor does.
-        if grant_plan::spawnproto::released_label(w0, w2).is_some() {
+        if program_table::spawnproto::released_label(w0, w2).is_some() {
             continue;
         }
-        let prog = grant_plan::Program::from_id(grant_plan::spawnproto::prog_id(w0));
-        let arg = grant_plan::spawnproto::program_argument(w1);
-        let wiring = grant_plan::spawnproto::wiring(w2);
+        let prog = program_table::Program::from_id(program_table::spawnproto::prog_id(w0));
+        let arg = program_table::spawnproto::program_argument(w1);
+        let wiring = program_table::spawnproto::wiring(w2);
 
         // In the protocol's order. A capability received but never expected, or expected and
         // never sent, deadlocks both sides, which is why the order is the contract.
@@ -475,7 +475,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // A `--mem` grant is received and dropped: no stage of the pipeline script asks for
         // one, and receiving it anyway is what keeps the two sides in lockstep if one ever
         // does. `user/src/system_initializer.rs` is where a budget actually reaches a child.
-        if grant_plan::spawnproto::memory_grant_pages(w2) > 0 {
+        if program_table::spawnproto::memory_grant_pages(w2) > 0 {
             let m = crate::sched::inter_process_communication_receive_capability(spawn_ep);
             let _ = crate::sched::delete_current_capability(m[1]);
         }
@@ -538,16 +538,16 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                 result,
                 [
                     if started {
-                        grant_plan::spawnproto::SPAWN_OK
+                        program_table::spawnproto::SPAWN_OK
                     } else {
-                        grant_plan::spawnproto::SPAWN_FAILED
+                        program_table::spawnproto::SPAWN_FAILED
                     },
                     0,
                     0,
                 ],
             );
         } else if !started {
-            crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_FAILED, 0, 0]);
+            crate::sched::ipc_send(result, [program_table::spawnproto::SPAWN_FAILED, 0, 0]);
         }
     }
 }
@@ -556,11 +556,11 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
 /// region is dropped, since the stub builds nothing from it and the shell destroys an empty one; the
 /// exit endpoint is what the job answers on and dies on, so the shell reads it as it does at the
 /// prompt. A share view, when the program declares one, is dropped too.
-fn take_held(spawn_ep: RendezvousId, prog: Option<grant_plan::Program>) -> Option<RendezvousId> {
+fn take_held(spawn_ep: RendezvousId, prog: Option<program_table::Program>) -> Option<RendezvousId> {
     let region = crate::sched::inter_process_communication_receive_capability(spawn_ep);
     let _ = crate::sched::delete_current_capability(region[1]);
     let exit = take_rendezvous(spawn_ep);
-    if prog.is_some_and(grant_plan::spawnproto::held_shares) {
+    if prog.is_some_and(program_table::spawnproto::held_shares) {
         let share = crate::sched::inter_process_communication_receive_capability(spawn_ep);
         let _ = crate::sched::delete_current_capability(share[1]);
     }
@@ -572,7 +572,7 @@ fn take_held(spawn_ep: RendezvousId, prog: Option<grant_plan::Program>) -> Optio
 fn answer_held(result: RendezvousId, label: Option<u64>) {
     match label {
         Some(label) => {
-            crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_OK, label, 0]);
+            crate::sched::ipc_send(result, [program_table::spawnproto::SPAWN_OK, label, 0]);
             crate::sched::inter_process_communication_send_capability(
                 result,
                 0,
@@ -580,7 +580,7 @@ fn answer_held(result: RendezvousId, label: Option<u64>) {
                 0,
             );
         }
-        None => crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_FAILED, 0, 0]),
+        None => crate::sched::ipc_send(result, [program_table::spawnproto::SPAWN_FAILED, 0, 0]),
     }
 }
 

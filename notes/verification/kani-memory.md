@@ -22,12 +22,12 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 
 | row | peak GiB | units |
 |---|---:|---:|
-| `glob` | 8.37 | 5 |
+| `byte_glob` | 8.37 | 5 |
 | `subtree_scope` | 5.80 | 3 |
 | `machine_discovery` | 5.23 | 3 |
 | `file_allocation_table` | 5.02 | 3 |
 | `capability_manifest_note` | 3.60 | 2 |
-| `elf` | 3.46 | 2 |
+| `static_elf` | 3.46 | 2 |
 | `calendar` | 3.30 | 2 |
 | `usb` | 1.91 | 1 |
 | `measured_boot` | 1.81 | 1 |
@@ -58,8 +58,8 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 | `periodic_deadline` | 0.19 | 1 |
 | `driver_process_contract::e1000e` | 0.18 | 1 |
 | `credential_contract` | 0.17 | 1 |
-| `address_space_map` | 0.13 | 1 |
-| `paging` | 0.10 | 1 |
+| `address_space_layout` | 0.13 | 1 |
+| `page_tables` | 0.10 | 1 |
 | `address_space_identifier` | 0.09 | 1 |
 | `designware_ethernet` | 0.09 | 1 |
 | `driver_process_contract::non_volatile_memory_express` | 0.08 | 1 |
@@ -73,7 +73,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 A row weighs its peak rounded up to whole units, at least one. There is no further margin: the peak
 already holds the compile and the page cache, and CBMC uses the same memory for the same program
 and version. Thirty-seven of the 44 measured rows weigh one unit, so a single-row run at
-`VERIFY_JOBS=4` takes 8 GiB where it took 40. `glob` is the largest row and weighs 10 GiB, the same
+`VERIFY_JOBS=4` takes 8 GiB where it took 40. `byte_glob` is the largest row and weighs 10 GiB, the same
 as the default, so a run over the whole table (`--shard`, `--parallel`, no flag) weighs what it did.
 
 A row counts only for the code it measured. When the crate's directory differs from the recorded

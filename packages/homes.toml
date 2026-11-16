@@ -139,12 +139,7 @@ paths = ["notes/compositor/arithmetic.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/designware_ethernet alone; it leaves with that crate (§315)"
-paths = ["notes/designware-ethernet/the-hardware.md"]
-
-[[home]]
-status = "undecided"
-reason = "about crates/elf alone; it leaves with that crate (§315)"
+reason = "about crates/static_elf alone; it leaves with that crate (§315)"
 paths = ["notes/elf/parser.md"]
 
 [[home]]
@@ -154,7 +149,7 @@ paths = ["notes/file-allocation-table.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/glob alone; it leaves with that crate (§315)"
+reason = "about crates/byte_glob alone; it leaves with that crate (§315)"
 paths = ["notes/glob.md", "notes/glob/"]
 
 [[home]]
@@ -204,7 +199,7 @@ paths = ["notes/packages/package-archive.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/paging alone; it leaves with that crate (§315)"
+reason = "about crates/page_tables alone; it leaves with that crate (§315)"
 paths = ["notes/paging.md", "notes/verification/paging-blocks.md"]
 
 [[home]]
@@ -227,6 +222,11 @@ paths = ["notes/video-terminal.md", "notes/video-terminal/"]
 status = "provisional"
 repo = "designware_mobile_storage"
 paths = ["notes/designware-mobile-storage/driver.md"]
+
+[[home]]
+status = "provisional"
+repo = "designware_ethernet"
+paths = ["notes/designware-ethernet/the-hardware.md"]
 
 [[home]]
 status = "provisional"

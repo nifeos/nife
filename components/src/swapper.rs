@@ -22,8 +22,8 @@ use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, cntfrq, map_page_frame, now, receive, receive_bound,
-    receive_fault, revoke_page_frame, send, timer_arm, trap,
+    Message, address_space_layout_into, capability_delete, counter_hertz, map_page_frame, now,
+    receive, receive_message, revoke_page_frame, send, timer_arm, trap,
 };
 
 /// What the kernel grants us, and nothing else.
@@ -277,7 +277,7 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
 /// the client's own declaration, and un-park the plant within a bound; `direct`'s last act.
 fn attack_the_service(
     w: &Wiring,
-    client_img: &elf::Elf,
+    client_img: &static_elf::Elf,
     client: &capability_plan::Plan,
     corpses: &mut u64,
 ) {
@@ -320,11 +320,11 @@ fn attack_the_service(
     // so the run fails at the test's assertion rather than a watchdog. The bound can also fire
     // before the plant has sent (spawn order is not run order), and then the plant never exits and
     // the reap would hang, so with a refusal reported that case bails on its own stage.
-    if timer_arm(TIMER, now() + cntfrq() / 2, WAKE, 1) < 0 {
+    if timer_arm(TIMER, now() + counter_hertz() / 2, WAKE, 1) < 0 {
         bail(35);
     }
-    match receive_bound(w.svc) {
-        user_mode_runtime::Received::Message(word, _, _)
+    match receive_message(w.svc) {
+        user_mode_runtime::Received::Message(user_mode_runtime::Message { w0: word, .. })
             if word == hot_swap_contract::PLANT_MARKER => {}
         user_mode_runtime::Received::Notification(_) if refused => bail(37),
         user_mode_runtime::Received::Notification(_) => {}
@@ -336,7 +336,7 @@ fn attack_the_service(
 /// Build the replacement with everything except the device, not configured, and report it built:
 /// step 1 of [`direct`] and [`hung`]. Bails `stage` or `stage + 1`.
 fn build_without_devices(
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     component: &capability_plan::Plan,
     faultep: u64,
     stage: u64,
@@ -392,12 +392,12 @@ fn revoke_device(stage: u64) {
 /// started. Bails `stage` through `stage + 2`.
 fn endow_devices_and_start(
     u: Unstarted,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     component: &capability_plan::Plan,
     stage: u64,
 ) {
     for &(va, slot, mode) in component.devices() {
-        if address_space_map_into(u.aspace, va, slot, mode) != 0 {
+        if address_space_layout_into(u.aspace, va, slot, mode) != 0 {
             bail(stage)
         }
     }
@@ -588,7 +588,7 @@ fn plan_handoff(
 
 /// Attempt one: a replacement that cannot read the incumbent's layout refuses, exits, and is
 /// collected, and the incumbent is told to resume.
-fn attempt_refused(w: &Wiring, refuser: Unstarted, v2: &elf::Elf, corpses: &mut u64) {
+fn attempt_refused(w: &Wiring, refuser: Unstarted, v2: &static_elf::Elf, corpses: &mut u64) {
     drain(w, 97);
     launch(
         refuser,
@@ -621,7 +621,7 @@ fn attempt_refused(w: &Wiring, refuser: Unstarted, v2: &elf::Elf, corpses: &mut 
 
 /// Attempt two: drain again, start the replacement that understands the layout, and commit the
 /// swap on its `NOTE_ABSORBED` by telling the incumbent to quit.
-fn attempt_absorbed(w: &Wiring, absorber: Unstarted, v2: &elf::Elf) {
+fn attempt_absorbed(w: &Wiring, absorber: Unstarted, v2: &static_elf::Elf) {
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 102);
     drain(w, 103);
     launch(
@@ -676,7 +676,7 @@ struct Unstarted {
 }
 
 fn build_unstarted(
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     plan: &capability_plan::Plan,
     faultep: u64,
     stage: u64,
@@ -705,12 +705,12 @@ fn build_unstarted(
     }
 }
 
-fn launch(u: Unstarted, elf: &elf::Elf, args: [u64; 3], stage: u64) {
+fn launch(u: Unstarted, elf: &static_elf::Elf, args: [u64; 3], stage: u64) {
     capability_delete(launch_keeping_region(u, elf, args, stage));
 }
 
 /// [`launch`], returning the child's region capability instead of dropping it.
-fn launch_keeping_region(u: Unstarted, elf: &elf::Elf, args: [u64; 3], stage: u64) -> u64 {
+fn launch_keeping_region(u: Unstarted, elf: &static_elf::Elf, args: [u64; 3], stage: u64) -> u64 {
     if process_builder::configure_child(u.child.tcb, u.aspace, elf.entry()).is_err() {
         bail(stage)
     }
@@ -1029,7 +1029,7 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     // asked as on the direct channel with a deadline (milestone 106 (a wait that ends on either the
     // interrupt or the deadline)). No answer within the bound means hung.
 
-    let bound = cntfrq() * QUIESCE_BOUND_MILLISECONDS / 1000;
+    let bound = counter_hertz() * QUIESCE_BOUND_MILLISECONDS / 1000;
     let (waited, stand_in) = match quiesce_within(w, stand_in, &client_img, bound, 112) {
         Quiesce::Unanswered { waited, stand_in } => (waited, stand_in),
         // This role exists to run against a hung incumbent, so an answer means the fixture did not
@@ -1105,7 +1105,7 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
 fn quiesce_within(
     w: &Wiring,
     stand_in: Unstarted,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     bound: u64,
     stage: u64,
 ) -> Quiesce {
@@ -1119,10 +1119,12 @@ fn quiesce_within(
     if timer_arm(TIMER, started + bound, WAKE, 1) < 0 {
         bail(stage + 2)
     }
-    match receive_bound(w.note) {
-        user_mode_runtime::Received::Message(kind, answer, _)
-            if kind == hot_swap_contract::NOTE_QUIESCE_ANSWERED =>
-        {
+    match receive_message(w.note) {
+        user_mode_runtime::Received::Message(user_mode_runtime::Message {
+            w0: kind,
+            w1: answer,
+            ..
+        }) if kind == hot_swap_contract::NOTE_QUIESCE_ANSWERED => {
             // A deadline that passed between the answer and this cancel has already signaled, and
             // its word waits on the notification for the next bound receive. At this bound against
             // a healthy answer's latency (see `QUIESCE_BOUND_MILLISECONDS`) that window is never reached.
@@ -1256,7 +1258,7 @@ fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
 /// caller's business because it is configuration and not authority (which log entries this instance
 /// writes, and which of `swap_boundary_witness`'s three roles it is playing).
 fn start_child(
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     plan: &capability_plan::Plan,
     faultep: u64,
     args: [u64; 3],
@@ -1268,7 +1270,7 @@ fn start_child(
 /// [`start_child`], returning the child's region capability instead of dropping it: the authority
 /// to end the child whatever it is doing ([`end_region`]).
 fn start_child_keeping_region(
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     plan: &capability_plan::Plan,
     faultep: u64,
     args: [u64; 3],
@@ -1296,7 +1298,7 @@ fn start_child_keeping_region(
 /// [`start_child`], for a child with a notification bound to its thread before it runs: `broker`,
 /// whose §231 warning arrives as a signal while it is parked receiving on its front endpoint.
 fn start_bound(
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     plan: &capability_plan::Plan,
     faultep: u64,
     signal: u64,
@@ -1335,7 +1337,12 @@ fn start_bound(
 /// with all five instance regions back in this budget. The one that is not tidiness is the one
 /// below; the rest are here so the test can assert that a swap system reclaims itself.
 fn collect_corpse(faultep: u64, collected: &mut u64) -> (u64, u64) {
-    let (event, tid, _pc, addr, ..) = receive_fault(faultep);
+    let Message {
+        w0: event,
+        w1: tid,
+        badge: addr,
+        ..
+    } = receive_message(faultep).into_message();
     send(REPORT, hot_swap_contract::RPT_DEATH, tid, event);
     // We hold no capability to that region: we deleted it the moment the child was started, and the
     // authority for this is the supervision relationship, not the memory.
@@ -1403,8 +1410,8 @@ fn expect_note(note: u64, want: u64, stage: u64) -> u64 {
     w1
 }
 
-fn image<'a>(fs: &nifefs::Fs<'a>, name: &str, stage: u64) -> elf::Elf<'a> {
-    match fs.read(name).map(elf::Elf::parse) {
+fn image<'a>(fs: &nifefs::Fs<'a>, name: &str, stage: u64) -> static_elf::Elf<'a> {
+    match fs.read(name).map(static_elf::Elf::parse) {
         Some(Ok(e)) => e,
         _ => bail(stage),
     }

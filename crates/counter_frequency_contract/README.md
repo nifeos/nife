@@ -1,5 +1,10 @@
 # counter_frequency_contract
 
+[![check](https://github.com/nifeos/counter_frequency_contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/counter_frequency_contract/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/nifeos/counter_frequency_contract/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/counter_frequency_contract/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/counter_frequency_contract#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/counter_frequency_contract/blob/main/Cargo.toml)
+
 The page that tells a process how many counter ticks make a second, on the architectures that have
 no register that says so (aarch64 reads `CNTFRQ_EL0` and maps no page). `no_std`, no dependencies.
 A kernel and the user-mode runtime of its processes share this one definition, so the writer and

@@ -14,6 +14,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Two boot slots, so a bad upgrade cannot brick the machine](../boot-slots.md).
 - [Packages that build the OS, and divisions that release together: the measurements](../packages-and-divisions.md).
 - [The first repository split: which preconditions hold, which cut goes first, and what basalt must be](../the-first-split.md).
+- [The gate and the programs basalt delivers](../gate-builds-delivered-programs-from-tree.md): building them from the candidate tree, or repinning, measured.
 - [Installing nife onto a disk from a boot stick](../installing.md).
 - [The FAT32 writer](../file-allocation-table.md): the volume's shape, VFAT long names, and who reads it back.
 - [The sealed pair](../sealed-pair.md): checking on the host that a kernel vouches for the archive beside it.

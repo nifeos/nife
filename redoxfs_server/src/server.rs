@@ -99,10 +99,8 @@ impl<D: Disk> Server<D> {
             return Err(Error::new(syscall::error::ENOENT));
         }
         let (ptr, kind) = self.lookup(parent, name)?;
-        if kind == Kind::Directory {
-            return Err(Error::new(EISDIR));
-        }
-        // A file, and never a symbolic link or a mount point: `subtree_scope` owns that rule.
+        // A file, and never a directory (`EISDIR`), a symbolic link or a mount point:
+        // `subtree_scope` owns that rule.
         subtree_scope::landing(kind, false).map_err(refused)?;
         // Registered open in the engine's usage table, so an unlink leaves this handle a live node
         // ([`Server::unlink`]). Done directly rather than by `Transaction::on_open_node`, whose
@@ -695,9 +693,14 @@ impl<D: Disk> Server<D> {
             Some(Some(_)) => Some(self.owners[requested as usize]),
             _ => None,
         };
-        subtree_scope::admit(self.bindings.of(badge), badge, requested, owner)
-            .map(|h| h as u32)
-            .map_err(refused)
+        subtree_scope::admit(
+            self.bindings.of(badge),
+            badge,
+            subtree_scope::Handle(requested),
+            owner,
+        )
+        .map(|h| h as u32)
+        .map_err(refused)
     }
 
     /// Whether some badge's grant is rooted at `handle` (see [`Server::close`]).
@@ -758,7 +761,7 @@ impl<D: Disk> Server<D> {
     /// **`UNBIND`: take `badge`'s grant back.** Closes every handle the badge minted and the grant's
     /// root, and leaves the badge revoked, so it reaches nothing from then on.
     pub fn unbind(&mut self, caller: u64, badge: u64) -> Result<()> {
-        let root = self.bindings.unbind(caller, badge).map_err(refused)?;
+        let held = self.bindings.unbind(caller, badge).map_err(refused)?;
         let minted: Vec<u32> = (0..self.owners.len())
             .filter(|&h| self.owners[h] == badge && self.handles[h].is_some())
             .map(|h| h as u32)
@@ -767,7 +770,8 @@ impl<D: Disk> Server<D> {
             self.owners[h as usize] = 0;
             let _ = self.close(h);
         }
-        if root != filesystem_contract::fs::ROOT {
+        // Handle 0 is never closed, even when a badge was bound to it.
+        if let Some(root) = held.filter(|&r| r != filesystem_contract::fs::ROOT) {
             let _ = self.close(root as u32);
         }
         Ok(())

@@ -18,6 +18,10 @@ crate-type = ["rlib"]
 [workspace]
 
 [dependencies]
+# Delivers `link.ld` (the image layout every program links with), through its build script. Linked
+# for that and nothing else, so no source line names it.
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+
 # The `std::io::ErrorKind` to `errno` table, host-tested in the main workspace (milestone 835 (a C
 # library, stage 1: files, clock and memory)).
 c_library_errno = { path = "../crates/c_library_errno" }

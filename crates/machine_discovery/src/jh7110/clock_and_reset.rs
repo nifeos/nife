@@ -12,7 +12,8 @@
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 use jh7110_clock_and_reset::{
     ALWAYS_ON_WINDOW, MAXIMUM_REGISTER_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES,
-    PowerManagementChipBus, RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, WindowLocation,
+    PowerManagementChipBus, RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, TransmitParent,
+    WindowLocation,
 };
 
 /// **Find the STG clock and reset window in `tree`**, where the TRNG's clocks and reset live.
@@ -71,7 +72,7 @@ fn discover_window(
         }
         let names = match spelling.window {
             None => None,
-            Some(_) => tree.node_prop_compatible(spelling.compatible, b"reg-names")?,
+            Some(_) => tree.node_property_compatible(spelling.compatible, b"reg-names")?,
         };
         let mut pairs = [(0, 0); MAXIMUM_REGISTER_ENTRIES];
         for (pair, region) in pairs.iter_mut().zip(&regions[..n]) {
@@ -98,23 +99,56 @@ fn discover_window(
 /// has not ruled on it.
 pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PowerManagementChipBus, Error> {
     for pmic in POWER_MANAGEMENT_CHIP_COMPATIBLES {
-        if tree.node_prop_compatible(pmic, b"compatible")?.is_none() {
+        if tree
+            .node_property_compatible(pmic, b"compatible")?
+            .is_none()
+        {
             continue;
         }
-        let clocks = tree.parent_prop_compatible(pmic, b"clocks")?;
-        let resets = tree.parent_prop_compatible(pmic, b"resets")?;
+        let clocks = tree.parent_property_compatible(pmic, b"clocks")?;
+        let resets = tree.parent_property_compatible(pmic, b"resets")?;
         // Both addresses are optional in the tree and neither affects the plan, so a read that
         // fails leaves each unstated rather than failing the plan.
-        let pmic_reg = tree.node_prop_compatible(pmic, b"reg").ok().flatten();
-        let bus_reg = tree.parent_prop_compatible(pmic, b"reg").ok().flatten();
+        let pmic_reg = tree.node_property_compatible(pmic, b"reg").ok().flatten();
+        let bus_reg = tree.parent_property_compatible(pmic, b"reg").ok().flatten();
         return PowerManagementChipBus::from_nodes(
             pmic,
             pmic_reg,
             bus_reg,
             clocks,
             resets,
-            |phandle, name| tree.phandle_prop(phandle, name),
+            |phandle, name| tree.phandle_property(phandle, name),
         );
     }
     Ok(PowerManagementChipBus::without_power_management_chip())
+}
+
+/// **Read the first Ethernet port's transmit clock parent out of `tree`**: the `assigned-clocks`
+/// and `assigned-clock-parents` of the port [`super::designware_ethernet::discover`] finds,
+/// mainline's `compatible` tried first, handed to [`jh7110_clock_and_reset::gmac0_transmit_parent`].
+/// A tree naming no port, or a port that assigns no parent (the vendor tree), gets
+/// [`TransmitParent::Unassigned`].
+///
+/// # Errors
+///
+/// Propagates [`Error`] if the blob is malformed.
+///
+/// Name: provisional.
+pub fn first_ethernet_port_transmit_parent(
+    tree: &DeviceTreeBlob<'_>,
+) -> Result<TransmitParent, Error> {
+    for compatible in designware_ethernet::jh7110::COMPATIBLES {
+        if tree
+            .node_property_compatible(compatible, b"compatible")?
+            .is_none()
+        {
+            continue;
+        }
+        return jh7110_clock_and_reset::gmac0_transmit_parent(
+            tree.node_property_compatible(compatible, b"assigned-clocks")?,
+            tree.node_property_compatible(compatible, b"assigned-clock-parents")?,
+            |phandle, name| tree.phandle_property(phandle, name),
+        );
+    }
+    Ok(TransmitParent::Unassigned)
 }

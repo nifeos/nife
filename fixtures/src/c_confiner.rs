@@ -31,7 +31,7 @@
 // two parts this milestone leans on: a child born with shared pages and born supervised.
 use c_seam::checks;
 use supervision_contract::{ChildEndowment, Retention};
-use user_mode_runtime::{capability_delete, map_page_frame, receive_fault, send};
+use user_mode_runtime::{Message, capability_delete, map_page_frame, receive_message, send};
 
 /// What the kernel grants us, and nothing else.
 const ROOT_UT: u64 = 0; // the construction budget: what we build each instance out of
@@ -44,13 +44,28 @@ const INSTANCE_PAGES: u64 = 96;
 
 user_mode_runtime::program_entry!(start);
 
+/// One death notice: the event, the thread, the program counter and the faulting address.
+fn receive_death(faultep: u64) -> (u64, u64, u64, u64) {
+    let Message {
+        w0: event,
+        w1: tid,
+        w2: pc,
+        badge: addr,
+        ..
+    } = receive_message(faultep).into_message();
+    (event, tid, pc, addr)
+}
+
 fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     // SAFETY: forwarded from user_mode_runtime::initial_ramdisk::bytes's own contract.
     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };
     let Ok(fs) = nifefs::Fs::parse(archive) else {
         bail(1)
     };
-    let Some(shim) = fs.read("c_shim").and_then(|b| elf::Elf::parse(b).ok()) else {
+    let Some(shim) = fs
+        .read("c_shim")
+        .and_then(|b| static_elf::Elf::parse(b).ok())
+    else {
         bail(2)
     };
 
@@ -146,7 +161,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
         // Block until the child dies, one way or the other. All five words, because the fourth is the
         // faulting address and this is the program that cares where the C code pointed.
-        let (event, tid, pc, addr, ..) = receive_fault(faultep);
+        let (event, tid, pc, addr) = receive_death(faultep);
         send(REPORT, c_seam::RPT_DEATH, tid, event);
         send(REPORT, c_seam::RPT_SITE, pc, addr);
         send(
@@ -173,7 +188,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // Park rather than exit, so we do not become a death of our own for somebody else to handle.
     loop {
-        let (event, tid, pc, addr, ..) = receive_fault(faultep);
+        let (event, tid, pc, addr) = receive_death(faultep);
         send(REPORT, c_seam::RPT_DEATH, tid, event);
         send(REPORT, c_seam::RPT_SITE, pc, addr);
     }

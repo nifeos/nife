@@ -64,8 +64,8 @@ const BLK_PAGE_FRAME: u64 = 4;
 
 /// Where this program puts the page it shares with the block server. **Its choice**: it holds the
 /// frame and maps it (milestone 108). Clear of the heap, which runs from
-/// `memory_region_heap::DEFAULT_BASE` (1 GiB) for [`HEAP_MAXIMUM`].
-const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
+/// `memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS` (1 GiB) for [`HEAP_MAXIMUM`].
+const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// One filesystem block / one shared page, in bytes. RedoxFS's `BLOCK_SIZE` and the blk wire's
 /// transfer unit are the same number, which is what lets a `Disk` block be a blk block.
@@ -119,10 +119,14 @@ pub const R_NO_FILE: u64 = 0x_4E_4F_46_4C_45;
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
-        HEAP_MAXIMUM,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            MEMORY_REGION,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
     );
 
     // The shared page, mapped out of the same budget the heap draws on (milestone 108). It is

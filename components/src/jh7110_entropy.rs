@@ -101,7 +101,7 @@ const READY: u64 = 1;
 /// Provisional and distinct from the `0x0090_0000` DMA convention `entropy.rs` and
 /// `keyboard_driver.rs` share, so the two backends cannot collide if a wiring ever needs both
 /// mapped in different processes at once.
-const TRNG_VA: u64 = address_space_map::pair_page(0x0000_0000_0094_0000);
+const TRNG_VA: u64 = address_space_layout::pair_page(0x0000_0000_0094_0000);
 
 /// How many times to poll one generation attempt before giving up on it. **Not a measured bound**:
 /// see the module doc. Large enough that a real device answering in microseconds never hits it in
@@ -204,6 +204,10 @@ fn generate() -> Option<[u8; 32]> {
                     break; // out of the poll loop; the outer loop's next iteration retries GENE_RANDNUM
                 }
                 GenerationOutcome::NotReady => continue,
+                // `STAT.R256` is clear, so the words hold a 128-bit answer that the crate refuses
+                // to serve. `initialize` set `MODE.R256` and nothing here clears it, so a reseed
+                // would not change the width: the device is reported as answering nothing.
+                GenerationOutcome::WrongOutputWidth => return None,
             }
         }
     }
@@ -236,7 +240,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Word 1 carries the byte count and, in its high half, the `STAT` seen right after
     // `initialize`, whose `R256` says whether the 32 bytes are all device output or only 16 of
     // them.
-    let bytes_in_hand = pool.remaining() as u64;
+    let bytes_in_hand = pool.remaining_bytes() as u64;
     send(
         READY,
         report,
@@ -274,7 +278,15 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this driver condemned at bring-up (see `_start`). It is
             // answered exactly the way a dry device is, because `NO_ENTROPY` already means the one
             // thing a client has to know: it is not getting randomness here.
-            proto::GET if !refuse => pool.take(proto::requested_bytes(w0), &mut generate),
+            // The crate's `take_into` fills the slice it is given and answers how much of it it
+            // filled, so the reply is built from those bytes through the contract's `reply`,
+            // which makes the zero tail past the count the contract's guarantee.
+            proto::GET if !refuse && proto::request_is_well_formed(w0) => {
+                let mut bytes = [0u8; proto::MAXIMUM_BYTES as usize];
+                let wanted = proto::requested_bytes(w0).min(proto::MAXIMUM_BYTES) as usize;
+                let served = pool.take_into(&mut bytes[..wanted], &mut generate);
+                proto::reply(&bytes[..served])
+            }
             _ => (proto::NO_ENTROPY, 0),
         };
         reply(capability, count, word);

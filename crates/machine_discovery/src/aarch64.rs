@@ -61,7 +61,7 @@ pub struct Isa {
 /// What a machine is missing that this kernel needs.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct Missing {
-    /// No 4 KiB granule at stage 1. Every page table in `crates/paging` is 4 KiB.
+    /// No 4 KiB granule at stage 1. Every page table in `crates/page_tables` is 4 KiB.
     pub granule_4k: bool,
     /// Fewer than 8 ASID bits. Unreachable on a conforming part (ARM's only two encodings are 8 and
     /// 16), which is exactly why it is worth checking: a reserved encoding decodes here as 0 and
@@ -344,9 +344,9 @@ impl Psci {
     pub fn from_device_tree(
         dt: &device_tree_blob::DeviceTreeBlob<'_>,
     ) -> Result<Option<Psci>, device_tree_blob::Error> {
-        let method = dt.node_prop(b"psci", b"method")?;
-        let cpu_on = dt.node_prop(b"psci", b"cpu_on")?;
-        let compatible = dt.node_prop(b"psci", b"compatible")?;
+        let method = dt.node_property(b"psci", b"method")?;
+        let cpu_on = dt.node_property(b"psci", b"cpu_on")?;
+        let compatible = dt.node_property(b"psci", b"compatible")?;
 
         // None of the three: either there is no `/psci` node, or there is one holding nothing. The
         // two are indistinguishable through this API and mean the same thing to every caller, so

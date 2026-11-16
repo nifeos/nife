@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 abi = { version = "0.1.0", path = "../abi" }
 # The boot self-test's shared terms (milestone 1063 (the boot self-test's spawning checks run from
 # userspace)): the kernel half's page and the slots, addresses and messages of `boot_self_test`,
@@ -20,10 +20,12 @@ boot_ladder = { version = "0.1.0", path = "../boot_ladder" }
 # the kernel's page and its readers agree on, so this progenitor maps it where they look.
 machine_statistics_contract = { version = "0.1.0", path = "../machine_statistics_contract" }
 nifefs = { version = "0.1.0", path = "../nifefs" }
-elf = { version = "0.1.0", path = "../elf" }
-# The grant expression and its wire form: what the shell resolved a typed line into, and the
-# protocol init decodes on the other side of the spawn channel. This crate is that other side.
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+static_elf = { version = "0.1.0", path = "../static_elf" }
+# The manifests and slot numbers a child is endowed by, and the spawn protocol's wire form with the
+# program table it names: the protocol init decodes on the other side of the spawn channel. This
+# crate is that other side, and it plans no line, so it does not link the planner.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+program_table = { version = "0.1.0", path = "../program_table" }
 # The wire format of a manifest a program carries in its own bytes (milestone 597 (a program carries
 # its manifest in an ELF note), provisional): the progenitor endows a file's bytes from the note
 # they carry.
@@ -37,7 +39,9 @@ interfaces_note = { version = "0.1.0", path = "../interfaces_note" }
 # nothing with it (filesystem_contract has no non-dev dependencies of its own).
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The terminal contract's framing, for the one sentence init prints (`proto::OPERATION_WRITE`).
-line_editor = { version = "0.1.0", path = "../line_editor" }
+terminal_contract = { version = "0.1.0", path = "../terminal_contract" }
+# The slot order `terminal_supervisor` is endowed in, which init builds it with.
+line_editor_component = { version = "0.1.0", path = "../line_editor_component" }
 # The hash and the manifest format the kernel measures init with (milestone 104). This crate is the
 # next link: it reads the same shape of table out of the archive and applies it to what IT loads.
 measured_boot = { version = "0.1.0", path = "../measured_boot" }

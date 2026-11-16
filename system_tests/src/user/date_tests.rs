@@ -3,7 +3,7 @@ use crate::capability_object::{Rights, page_frame_capability, rendezvous_capabil
 use crate::sched::RendezvousId;
 
 /// Where `date` expects the clock page, read-only. Must match components/src/date.rs's `CLOCK_VA`.
-const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
+const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
 
 // The `a0` format selector, and the `a1`/`a2` conventions. Must match components/src/date.rs.
 const FMT_HUMAN: u64 = 0;
@@ -82,7 +82,7 @@ fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
     let diag = crate::sched::create_rendezvous_from(region).expect("no rendezvous from region");
     crate::sched::spawn(move || {
         crate::sched::grant_at(
-            grant_plan::DIAGNOSTICS_SLOT,
+            grant_contract::DIAGNOSTICS_SLOT,
             rendezvous_capability(diag, Rights::WRITE),
         )
         .expect("date's declared diagnostic slot was already occupied");

@@ -1,0 +1,21 @@
+Falsifies `static_elf::note::verification::a_passing_extent_is_inside_and_advances`.
+
+The defect: the padded end is never compared with the segment's length, so a note whose descriptor
+runs past its segment is blessed. This is the lenient reader the module documentation refuses.
+
+Expected to fail: `e.next <= len`.
+
+diff --git a/crates/static_elf/src/note.rs b/crates/static_elf/src/note.rs
+index 42f88a9b2..f95b11b76 100644
+--- a/crates/static_elf/src/note.rs
++++ b/crates/static_elf/src/note.rs
+@@ -99,9 +99,6 @@ fn note_extent(
+         .checked_add(descsz as usize)
+         .ok_or(NoteError::Truncated)?;
+     let next = align_up(desc_end, align).ok_or(NoteError::Truncated)?;
+-    if next > len {
+-        return Err(NoteError::Truncated);
+-    }
+     Ok(Extent {
+         name_start,
+         name_end,

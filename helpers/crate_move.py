@@ -27,6 +27,15 @@ BARE_METAL = ('aarch64-unknown-none-softfloat', 'riscv64imac-unknown-none-elf', 
 DEP_TABLES = ('dependencies', 'dev-dependencies', 'build-dependencies')
 # The word, not a longer one: `nifeos` in a repository URL is allowed.
 NIFE_WORD = re.compile(r'(?<![A-Za-z0-9_])nife(?![A-Za-z0-9_])', re.I)
+# A wire literal keeps its spelling (ruled 2026-11-14 UTC): a line ending in this marker is exempt.
+# The same marker as helpers/lint_externalized_crates.py.
+WIRE_LITERAL = re.compile(r'(?://|#|/\*)\s*wire literal(?:\s*\*/)?\s*$')
+
+
+def nife_mentions(text):
+    """The 1-based numbers of the lines that name nife without the wire literal marker."""
+    return [n for n, line in enumerate(text.split('\n'), 1)
+            if NIFE_WORD.search(line) and not WIRE_LITERAL.search(line)]
 HUNK = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$')
 # The scaffold's own description of itself, and the crate README's starting shape, which is used
 # only when the crate brings no README.
@@ -178,14 +187,33 @@ def add_repository(manifest, crate):
     return new
 
 
-def caller_workflow(text, sha, targets):
-    """A scaffold caller with its pin filled in; `ci.yml` also gets its targets and the soak flag."""
+def caller_workflow(text, sha, targets, cron=None):
+    """A scaffold caller with its pin filled in; `ci.yml` also gets its targets and the soak flag,
+    and `mutation.yml` its cron line when `cron` is given."""
     text = text.replace('@PINS@', '@' + sha)
+    if cron is not None:
+        text = text.replace('@MUTATION_CRON@', cron)
     if "targets: ''" in text:
         text = text.replace("targets: ''", 'targets: ' + ' '.join(targets) + '\n'
                             '      # The soak publishes nothing, so the manifest carries publish = false on purpose.\n'
                             '      allow-unpublished: true')
     return text
+
+
+def mutation_cron(tree, crate, report):
+    """The repository's mutation cron line, from the template's own `mutation_plan.py schedule`,
+    or None (reported) when the template has no planner, which leaves the placeholder in place."""
+    plan = os.path.join(tree, 'helpers', 'mutation_plan.py')
+    if not os.path.exists(plan):
+        report('note', 'mutation cron', 'the template has no helpers/mutation_plan.py; fill @MUTATION_CRON@ by hand')
+        return None
+    run = subprocess.run([sys.executable, plan, 'schedule', crate], capture_output=True, text=True)
+    line = run.stdout.strip()
+    if run.returncode or len(line.split()) != 5:
+        report('FAIL', 'mutation cron', f'mutation_plan.py schedule {crate}: {tail(run.stderr or line)}')
+        return None
+    report('ok', 'mutation cron', line)
+    return line
 
 
 def consumers(root, crate):
@@ -643,6 +671,7 @@ def stage(root, crate, into, tree, sha, report):
     pkg = manifest.get('package', {})
     targets = pkg.get('metadata', {}).get('docs', {}).get('rs', {}).get('targets') or list(BARE_METAL)
     scaffold = os.path.join(tree, 'scaffold')
+    cron = mutation_cron(tree, crate, report)
     kept, added = [], 0
     for dirpath, _dirs, names in os.walk(scaffold):
         for name in names:
@@ -659,7 +688,7 @@ def stage(root, crate, into, tree, sha, report):
             os.makedirs(os.path.dirname(to), exist_ok=True)
             text = open(os.path.join(dirpath, name)).read()
             if dest.startswith('.github/workflows/'):
-                text = caller_workflow(text, sha, targets)
+                text = caller_workflow(text, sha, targets, cron)
             open(to, 'w').write(text)
             shutil.copymode(os.path.join(dirpath, name), to)
             added += 1
@@ -780,8 +809,7 @@ def checks(into, tree, rev, report):
              for f in staged.files if f.endswith(crate_release.TEXT) or f.startswith('.githooks/')}
     for step, why in crate_release.citation_findings(texts):
         report('FAIL', 'citations', why)
-    hits = [f'{f}:{n}' for f, t in sorted(texts.items())
-            for n, line in enumerate(t.split('\n'), 1) if NIFE_WORD.search(line)]
+    hits = [f'{f}:{n}' for f, t in sorted(texts.items()) for n in nife_mentions(t)]
     if hits:
         report('FAIL', 'mentions nife', f'{len(hits)} line(s), first {", ".join(hits[:4])}')
     else:
@@ -957,6 +985,9 @@ def selftest():
     wf = "    uses: o/r/.github/workflows/check.yml@PINS@\n    with:\n      targets: ''\n"
     out = caller_workflow(wf, 'abc', ['t1', 't2'])
     assert '@abc' in out and 'targets: t1 t2' in out and 'allow-unpublished: true' in out, out
+    cron_wf = "    - cron: '@MUTATION_CRON@'\n"
+    assert caller_workflow(cron_wf, 'abc', [], '1 2 * * 3') == "    - cron: '1 2 * * 3'\n"
+    assert caller_workflow(cron_wf, 'abc', []) == cron_wf, 'no cron leaves the placeholder'
     assert NIFE_WORD.search('used by nife') and not NIFE_WORD.search('github.com/nifeos/x')
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, '.cargo'))
@@ -967,6 +998,9 @@ def selftest():
     assert 'caught 54, missed 3, timeout 1, unviable 4' in note and '3 missed' in note, note
     assert all(l.startswith('#') for l in note.splitlines()) and not NIFE_WORD.search(note), note
     assert 'no line is expected' in exempts_note((9, 0, 0, 0))
+    assert nife_mentions('a nife line\nb"nife"; // wire literal\nx\n') == [1]
+    assert nife_mentions('KEEP(*(.note.nife.*)) /* wire literal */') == []
+    assert nife_mentions('// wire literal nife') == [1]
     print('crate_move selftest: ok')
 
 

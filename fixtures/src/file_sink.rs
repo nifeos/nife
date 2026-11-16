@@ -63,7 +63,7 @@ const FS: u64 = 1;
 const REPORT: u64 = 2;
 
 /// The page shared with the FS server. Matches `fs_service`'s `FILE_VA_CLIENT`.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the FS contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 
@@ -75,7 +75,7 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.w8(i as u64, b);
+        WINDOW.write_u8(i as u64, b);
     }
 }
 

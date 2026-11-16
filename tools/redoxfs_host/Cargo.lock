@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -83,7 +83,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -202,10 +202,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -213,10 +209,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "grant_plan"
+name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "glob",
  "program_argument_contract",
 ]
 
@@ -411,7 +406,7 @@ dependencies = [
 name = "redoxfs_server"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "capability_manifest_note",
  "filesystem_contract",
  "filesystem_fixture",
@@ -525,9 +520,9 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "uuid"
-version = "1.29.0"
+version = "1.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
+checksum = "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c"
 dependencies = [
  "getrandom",
 ]

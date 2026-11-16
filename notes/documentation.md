@@ -226,7 +226,7 @@ what it did, including the kernel's one wait point that made the first one hard,
   nothing leaks. Both entries are in full in
   [documentation/narrowing-bugs.md](documentation/narrowing-bugs.md).
 - **No pager, and the reason is authority rather than effort.** Paging needs a keypress; a keypress
-  needs `line_editor::proto::OPERATION_READLINE`; and that opcode rides on the terminal endpoint
+  needs `terminal_contract::OPERATION_READLINE`; and that opcode rides on the terminal endpoint
   whose read side *is* the keyboard. The spawn protocol has no way to hand a child the right to read
   one line without handing it the terminal, which is the exact thing `terminal_sink_caretaker`
   exists to prevent. So a long page scrolls off. The fix is a decision about the spawn protocol, and
@@ -255,7 +255,7 @@ what it did, including the kernel's one wait point that made the first one hard,
   that ratio. Why each search limit above is drawn where it is, entry by entry, is in
   [documentation/search-limitations.md](documentation/search-limitations.md).
 - `mdr` reads the whole page before it writes, so a page is bounded by its heap. The heap is the
-  job's region, 384 pages (`grant_plan::STD_REGION_PAGES`), less `mdr`'s image, which loads 71 of
+  job's region, 384 pages (`program_table::STD_REGION_PAGES`), less `mdr`'s image, which loads 71 of
   them on aarch64. The store's largest page, about 18 KB, renders at the prompt
   (`script/swish-check`).
 - Table cells are truncated to their column width, so a wide table on an 80-column terminal

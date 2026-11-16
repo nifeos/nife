@@ -1,15 +1,11 @@
 # The merge queue, and the three things that watch it
 
-Three scripts, all maintainer tools rather than front doors. Two were born on 2026-08-04 out of the
-same evening's failures: `helpers/merge-drain.sh`, which landed what did not need an architect
-and since 2026-10-03 labels what a maintainer session must pick up, and `helpers/trunk-health.sh`,
-which says when `main` is red. `helpers/lane-claim-check.sh` joined them on
-2026-08-31 and watches one step earlier, for work that has not reached the queue at all. A fourth,
-`helpers/at-risk-check.sh`, joined on 2026-09-23 and watches earlier still, for uncommitted work
-sitting in a lane worktree. It was first called from `helpers/trunk-health.sh`'s loop, so "three
-things that watch" named the count of things that run unattended in this repository's automation.
-Since 2026-09-24 it runs from `launchd` on each developer's own machine instead (its section says
-why). Names are provisional.
+Four maintainer tools, none of them a front door. `helpers/merge-drain.sh` labels what a
+maintainer session must pick up, and `helpers/trunk-health.sh` says when `main` is red.
+`helpers/lane-claim-check.sh` watches for work that has not reached the queue at all. Those three
+run unattended in Actions, which is the count in the title. `helpers/at-risk-check.sh` watches for
+uncommitted work in a lane worktree, from `launchd` on each developer's own machine (its section
+says why). Names are provisional.
 
 The evidence and history behind each section are in [`merge-queue/`](merge-queue/README.md), and
 each section links the appendix it summarizes.
@@ -187,7 +183,7 @@ logs the run it cites; otherwise it runs everything. The queue's check timeout i
 [`merge-queue/main-push-and-check-timeout.md`](merge-queue/main-push-and-check-timeout.md) has the
 premise checked against history and the eviction timeline.
 
-## The heavy gates run only in the queue (provisional, ruled 2026-11-03 UTC)
+## The heavy gates run only in the queue, and the proofs also on a harness change
 
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 1.
 
@@ -197,6 +193,12 @@ request satisfies the heavy names without running them. The queue merges on the 
 run, which skips none of them. A job runs only in the queue when it boots a kernel under QEMU or
 proves with Kani. So does one that took five minutes or more in the runs of 2026-11-03 UTC. The
 mutation gate stays on the pull request at about three, since a survivor is the lane's to triage.
+That much is provisional, ruled 2026-11-03 UTC.
+
+Since 2026-11-16 (UTC), verify.yml's Kani jobs also run on a pull request that adds or changes a
+harness, so a harness too large for the hosted runner fails before it reaches the queue.
+`helpers/harness_change.py` decides and fails toward running; its header has the rule. The
+required names do not change.
 
 | on a pull request | in the merge group only |
 |---|---|

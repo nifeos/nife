@@ -18,7 +18,7 @@ pub fn send(slot: u64, w0: u64, w1: u64, w2: u64) -> i64 {
 }
 
 /// **Collect the corpse of a child this supervision endpoint supervises** (DECISIONS §32).
-/// `tid` is the thread id the kernel stamped on the death message [`receive_fault`] returned. `0` on
+/// `tid` is the thread id the kernel stamped on the death message [`receive_message`] returned. `0` on
 /// success; a negative [`abi::Error`] otherwise, and the three that matter are worth telling apart:
 /// `StillAlive` (not dead yet, so wait or escalate to the owner's `MemoryRegion::DESTROY`),
 /// `NotSupervised` (not a child of this endpoint, or already collected), and `NotPermitted` (the
@@ -59,14 +59,16 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 }
 
 /// **Read one entry of what this address space has mapped** (milestone 126, `pmap`,
-/// `address_space::LIST`, DECISIONS §114). Returns `(next_cursor, va, kind)`: start at `cursor = 0`, feed
+/// `address_space::LIST`, DECISIONS §114 (`pmap` gets its listing)). Returns `(next_cursor, virtual_address, kind)`: start at `cursor = 0`, feed
 /// each `next_cursor` back, and stop when [`abi::survey::DONE`] comes back. [`survey`]'s twin,
 /// same three-word-out-of-one-`invoke` shape, one object type over.
 ///
 /// A negative first word is an [`abi::Error`], and the one that matters is `NotPermitted`: this
 /// capability does not carry `ENUMERATE`, so the holder may map into the space but not list it.
 /// **That is a refusal and not an empty listing**, and a caller must print it as one.
-pub fn list(slot: u64, cursor: u64) -> (i64, u64, u64) {
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; LIST reads no more than the three words used.
     let (r0, w1, w2, ..) = unsafe { invoke5(slot, abi::address_space::LIST, cursor, 0, 0) };
     (r0 as i64, w1, w2)
@@ -104,45 +106,6 @@ pub fn receive(slot: u64) -> (u64, u64, u64) {
     (w0, w1, w2)
 }
 
-/// [`receive`], also returning the **sender's badge** in the fourth position: `(w0, w1, w2, badge)`.
-/// The badge is the value stamped on the endpoint capability the sender invoked
-/// (`abi::rendezvous::BADGE`), or 0 when it was unbadged. The `RECEIVE` twin of [`receive_capability_badged`],
-/// for a server whose clients `SEND` rather than `CALL`: the system log stamps a byte-sink writer
-/// this way (milestone 613 (a system log service), provisional; the name is provisional too).
-pub fn receive_badged(slot: u64) -> (u64, u64, u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE writes the badge into the fourth word.
-    let (w0, w1, w2, w3, _) = unsafe { invoke5(slot, abi::rendezvous::RECEIVE, 0, 0, 0) };
-    (w0, w1, w2, w3)
-}
-
-/// [`receive_badged`] for a thread with a bound notification: `Ok((w0, w1, w2, badge))` for a
-/// message, `Err(word)` when the bound notification ended the receive, told apart by the
-/// kernel-written `x4` exactly as [`receive_bound`] does. The log service's one wait point, which
-/// takes writers' lines and the kernel's ring signal alike (milestone 342 (the kernel and the
-/// `console` server drive one UART from two address spaces)). Name provisional.
-pub fn receive_badged_bound(slot: u64) -> Result<(u64, u64, u64, u64), u64> {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE returns five words.
-    let (w0, w1, w2, w3, w4) = unsafe { invoke5(slot, abi::rendezvous::RECEIVE, 0, 0, 0) };
-    if w4 == abi::notification::BOUND {
-        Err(w1)
-    } else {
-        Ok((w0, w1, w2, w3))
-    }
-}
-
-/// `RECEIVE` **all six words** on the endpoint capability in `slot`: `(w0, w1, w2, w3, w4, w5)`.
-///
-/// A fault notification is five words, `(event, tid, pc, addr, reserved)` (§26 (the fault
-/// endpoint) implementation note 4); ordinary three-word IPC leaves the top two zero. A checking
-/// supervisor reads `w3`, the faulting address. The sixth word is the dead child's label (§148
-/// (resolves by asking the kernel), as amended 2026-10-04): the badge its builder put on the
-/// supervision capability in `abi::fault::FAULT_RENDEZVOUS_SLOT`, or `0` when unbadged or unstamped,
-/// because `invoke6` zeroes the register on the way in. See `abi::fault`.
-pub fn receive_fault(slot: u64) -> (u64, u64, u64, u64, u64, u64) {
-    // SAFETY: forwarded from `invoke6`'s contract.
-    unsafe { invoke6(slot, abi::rendezvous::RECEIVE, 0, 0, 0) }
-}
-
 /// `RECEIVE_CAPABILITY` on the endpoint capability in `slot`: receive a message that may carry a
 /// capability. Blocks until one arrives; returns `(w0, capability_slot, w1)`, where `capability_slot` is where
 /// the incoming capability landed in this thread's capability table, or [`abi::rendezvous::NO_CAPABILITY`] if the
@@ -159,76 +122,135 @@ pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
     (w0, w1, w2)
 }
 
-/// [`receive_capability`], also returning the **sender's badge** in the fourth position (milestone 599 (a frame per filesystem client channel),
-/// provisional): `(w0, received_slot, w1, badge)`. The badge is the value stamped on the endpoint
-/// capability the sender invoked (`abi::rendezvous::BADGE`), or 0 when it was unbadged, so a server
-/// serving many clients on one endpoint tells them apart. A server that does not care which client
-/// called keeps using [`receive_capability`]; this is for one that maps a per-client resource by badge.
-///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
-/// `receive_cap_badged` under the capability ruling of 2026-10-06 (UTC).
-pub fn receive_capability_badged(slot: u64) -> (u64, u64, u64, u64) {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY writes the badge into the fourth word.
-    let (w0, w1, w2, w3, ..) =
-        unsafe { invoke5(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
-    (w0, w1, w2, w3)
-}
-
 /// **Mint a badged copy of the endpoint capability in `slot`** (milestone 599, provisional):
 /// `abi::rendezvous::BADGE`. Returns the slot the badged copy landed in, or a negative error
 /// (`NotPermitted` without `GRANT`, or for a zero badge or an already-badged source). The new slot
 /// holds a copy of the endpoint with `badge` stamped on it. The kernel delivers
-/// that badge to a server's [`receive_capability_badged`] whenever this copy is used to `CALL` or `SEND_CAPABILITY`,
+/// that badge to a server's [`receive_capability_message`] whenever this copy is used to `CALL` or `SEND_CAPABILITY`,
 /// which is how a client the progenitor built is told apart from its siblings on one endpoint.
 pub fn badge(slot: u64, badge: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the endpoint capability and mints into a free slot.
     unsafe { invoke(slot, abi::rendezvous::BADGE, badge, 0, 0) }
 }
 
-/// **What a bound thread's receive returned** (milestone 151 (notification objects)): an ordinary message, or the bound
-/// notification's word. *(Name provisional, milestone 151's lane.)*
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// **One message a receive returned**: the three words the sender passed, the badge on the endpoint
+/// capability it invoked, the label the kernel stamped, and what came with the first word, typed.
+/// *(Name provisional: milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix
+/// before it leaves), Decision 3.)*
+///
+/// The fields are the registers the kernel wrote, so each receive is one projection of the same
+/// words rather than its own return shape:
+///
+/// | field | register | meaning |
+/// |---|---|---|
+/// | `w0` | `x0` | the sender's first word |
+/// | `w1` | `x1` | the sender's second word, or the capability slot of a [`receive_capability_message`] |
+/// | `w2` | `x2` | the sender's third word |
+/// | `badge` | `x3` | the sender's badge, `0` when unbadged |
+/// | `label` | `x5` | a death message's label (`abi::fault`), `0` otherwise |
+///
+/// A death message from a supervision endpoint (`abi::fault`) is the same words read another way:
+/// `w0` is the event, `w1` the thread id, `w2` the program counter and `badge` the faulting address.
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Message {
+    /// `x0`: the sender's first word, or a death message's event.
+    pub w0: u64,
+    /// `x1`: the sender's second word, or a capability message's slot, or a death message's thread id.
+    pub w1: u64,
+    /// `x2`: the sender's third word, or a death message's program counter.
+    pub w2: u64,
+    /// `x3`: the badge on the capability the sender invoked, `0` when unbadged, or a death
+    /// message's faulting address.
+    pub badge: u64,
+    /// `x5`: the dead child's label (§148 (resolves by asking the kernel)), `0` when unbadged or
+    /// unstamped. `invoke6` zeroes the register on the way in, so any other receive reads `0`.
+    pub label: u64,
+    /// What `w1` is, told by the kernel-written `x4`: a [`Reply`], a delegated capability or
+    /// nothing. Always [`Delivered::Nothing`] after a plain [`receive_message`].
+    pub delivered: Delivered,
+}
+
+/// **What a receive on a thread with a bound notification returned** (milestone 151 (notification
+/// objects)): an ordinary message, or the bound notification's word. *(Name provisional.)*
+#[derive(Debug, PartialEq, Eq)]
 pub enum Received {
-    /// A sender's three words, exactly what [`receive`] returns.
-    Message(u64, u64, u64),
+    /// A sender's message.
+    Message(Message),
     /// The bound notification ended the receive; this is its word.
     Notification(u64),
 }
 
-/// `RECEIVE` on the endpoint capability in `slot`, for a thread with a notification bound to it
-/// ([`notification_bind`]): blocks until either a message arrives or the notification is
-/// signalled, and says which.
-///
-/// **It tests `x4`, not `x0`**, and that is the whole reason this wrapper exists rather than
-/// callers reading [`receive`]: `x0` is the sender's own first word, so a sender can put
-/// [`abi::notification::BOUND`] there, while `x4` is written only by the kernel. See
-/// `abi::notification::BOUND` and notes/notification-objects.md. *(Name provisional.)*
-pub fn receive_bound(slot: u64) -> Received {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE returns five words.
-    let (w0, w1, w2, _, w4) = unsafe { invoke5(slot, abi::rendezvous::RECEIVE, 0, 0, 0) };
-    if w4 == abi::notification::BOUND {
-        Received::Notification(w1)
-    } else {
-        Received::Message(w0, w1, w2)
+impl Received {
+    /// The message, for a thread that has no notification bound, where the kernel never writes
+    /// [`abi::notification::BOUND`] and so the other arm cannot happen.
+    ///
+    /// # Panics
+    /// If the receive was ended by a notification: the caller bound one and should match instead.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn into_message(self) -> Message {
+        match self {
+            Received::Message(message) => message,
+            Received::Notification(word) => {
+                panic!("a notification ended a receive on a thread that bound none: word {word:#x}")
+            }
+        }
     }
 }
 
-/// [`receive_capability`], for a thread with a bound notification: a message comes back as
-/// `Received::Message(w0, reply_slot, w1)`, and a signal on the bound notification as
-/// `Received::Notification(word)`, told apart by the kernel-written `w4` exactly as in
-/// [`receive_bound`].
+/// **`RECEIVE` on the endpoint capability in `slot`, every word the kernel returns**: blocks until a
+/// sender arrives, or, for a thread with a notification bound to it ([`notification_bind`]), until
+/// the notification is signalled, and says which. One call for the receives that used to differ
+/// only in the words they kept: the badge, the six words of a death message and the bound
+/// notification.
 ///
-/// Name: provisional (the lane for milestone 23 (a capability-routed component OS with live
-/// replacement), 2026-09-27), for `broker`'s advisory warning, DECISIONS §231 (a swap's warning to
-/// a dependent is advisory, and the supervisor never waits for it).
-pub fn receive_capability_bound(slot: u64) -> Received {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY returns five words.
-    let (w0, w1, w2, _, w4) =
-        unsafe { invoke5(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
+/// **It tests `x4`, not `x0`**: `x0` is the sender's own first word, so a sender can put
+/// [`abi::notification::BOUND`] there, while `x4` is written only by the kernel. See
+/// `abi::notification::BOUND` and notes/notification-objects.md. A caller with no bound notification
+/// takes the message with [`Received::into_message`]. *(Name provisional.)*
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+pub fn receive_message(slot: u64) -> Received {
+    // SAFETY: forwarded from `invoke6`'s contract; RECEIVE returns up to six words.
+    let (w0, w1, w2, badge, w4, label) =
+        unsafe { invoke6(slot, abi::rendezvous::RECEIVE, 0, 0, 0) };
     if w4 == abi::notification::BOUND {
         Received::Notification(w1)
     } else {
-        Received::Message(w0, w1, w2)
+        Received::Message(Message {
+            w0,
+            w1,
+            w2,
+            badge,
+            label,
+            delivered: Delivered::Nothing,
+        })
+    }
+}
+
+/// **`RECEIVE_CAPABILITY` on the endpoint capability in `slot`, every word the kernel returns**:
+/// [`receive_message`] for a message that may carry a capability. `w1` is where the capability
+/// landed (or [`abi::rendezvous::NO_CAPABILITY`]), and `delivered` types it by the kernel's `x4`,
+/// as [`receive_request`] does for a `CALL` server. *(Name provisional.)*
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+pub fn receive_capability_message(slot: u64) -> Received {
+    // SAFETY: forwarded from `invoke6`'s contract; RECEIVE_CAPABILITY returns up to six words.
+    let (w0, w1, w2, badge, w4, label) =
+        unsafe { invoke6(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
+    if w4 == abi::notification::BOUND {
+        Received::Notification(w1)
+    } else {
+        Received::Message(Message {
+            w0,
+            w1,
+            w2,
+            badge,
+            label,
+            delivered: Delivered::decode(w1, w4),
+        })
     }
 }
 
@@ -266,7 +288,7 @@ pub fn notification_bind(slot: u64, thread_slot: u64) -> i64 {
 /// `0`, or a negative [`abi::Error`].
 ///
 /// A timer does not block. Wait on the notification ([`notification_wait`]), or receive with it
-/// bound ([`receive_bound`]), and the wait ends on the deadline or on anything else that signals it.
+/// bound ([`receive_message`]), and the wait ends on the deadline or on anything else that signals it.
 pub fn timer_arm(timer_slot: u64, deadline: u64, notification_slot: u64, bits: u64) -> i64 {
     // SAFETY: `svc`/`ecall`/`syscall`; the kernel validates both capabilities.
     unsafe {
@@ -299,9 +321,7 @@ pub fn timer_cancel(timer_slot: u64) -> i64 {
 /// caller with an empty one keeps whatever it did before (its `BUGS` says which).
 pub fn retype_sleeper(memory_region_slot: u64, reserved: u64) -> Option<(u64, u64)> {
     for slot in 0..reserved {
-        // SAFETY: `svc`/`ecall`/`syscall` with a method no object has: a held slot answers
-        // `BadMethod` and does nothing, and an empty one answers `NoSuchSlot`.
-        if unsafe { invoke(slot, u64::MAX, 0, 0, 0) } == abi::Error::NoSuchSlot as i64 {
+        if !objects::is_granted(slot) {
             return None;
         }
     }
@@ -490,24 +510,6 @@ pub fn receive_request(slot: u64) -> Request {
         badge,
         delivered: Delivered::decode(x1, x4),
     }
-}
-
-/// [`receive_request`] for a thread with a bound notification: `Ok` for a message, `Err(word)` when
-/// the bound notification ended the receive, told apart by `x4` as [`receive_bound`] does. Name
-/// provisional (milestone 706).
-pub fn receive_request_bound(slot: u64) -> Result<Request, u64> {
-    // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY returns five words.
-    let (w0, x1, w1, badge, x4) =
-        unsafe { invoke5(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) };
-    if x4 == abi::notification::BOUND {
-        return Err(x1);
-    }
-    Ok(Request {
-        w0,
-        w1,
-        badge,
-        delivered: Delivered::decode(x1, x4),
-    })
 }
 
 /// `SEND_CAPABILITY` on the endpoint capability in `slot`: delegate a (possibly narrowed) copy of the

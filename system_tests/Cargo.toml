@@ -70,7 +70,7 @@ startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_cont
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
 confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_syscall_fuzzer_contract" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 environment_contract = { version = "0.1.0", path = "../crates/environment_contract" }
 # The C programs' directory in the test image and their command lines (milestone 835 (a C library,
@@ -78,7 +78,9 @@ environment_contract = { version = "0.1.0", path = "../crates/environment_contra
 c_program_fixture = { path = "../crates/c_program_fixture" }
 filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
 filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a
 # user's schedule)). The timetable test is the registrar until milestone 152 (durable delegation)
 # rebuilds the durable session, so it stages replacements with the same `timetable::registration`
@@ -93,14 +95,15 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The `date` tests parse what `date` printed back with the crate that printed it (ruled
 # 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
 jiff = { version = "0.2.43", default-features = false }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
-paging = { version = "0.1.0", path = "../crates/paging" }
+page_tables = { version = "0.1.0", path = "../crates/page_tables" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 # The name resolver's grant messages and endowment, and the boot test's cases the test client
 # agrees on (milestone 384 (in a capability system the resolver is a grant), provisional name). `domain_name_system` for DNS's port.
@@ -112,4 +115,4 @@ domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" 
 spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }
 std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contract" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }

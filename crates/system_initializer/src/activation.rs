@@ -375,7 +375,7 @@ pub(super) fn package_manager_parts(
 }
 
 /// **The image's package catalog, copied into a fresh page of the child's own region**, for a
-/// child that declares `grant_plan::Manifest::catalog` (milestone 809 (the package client becomes
+/// child that declares `grant_contract::Manifest::catalog` (milestone 809 (the package client becomes
 /// a program)), and mapped read-only at `std_runtime_contract::CATALOG_PAGE`. The rest of the page
 /// is zero, which is where the text ends. `None` if the catalog does not fit in a page or the page
 /// could not be made; the spawn is then refused rather than started with half a catalog.
@@ -809,7 +809,7 @@ fn vouch(
     let Ok(program) = core::str::from_utf8(named) else {
         return (S::NotExecutable, live);
     };
-    if elf::Elf::parse(bytes).is_err() {
+    if static_elf::Elf::parse(bytes).is_err() {
         return (S::NotExecutable, live);
     }
     let entry = installed_programs::Entry {

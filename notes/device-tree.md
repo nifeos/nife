@@ -134,20 +134,32 @@ The blob comes from firmware, and firmware is the trust boundary here, so these 
 robustness rather than confinement. Each one costs a comparison and turns a crash on the boot path
 into an `Error`.
 
-- `MAXIMUM_TOTALSIZE` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
+- `MAXIMUM_TOTALSIZE_BYTES` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
   before anything else is checked, and the magic says only that the pointer is at a blob. A
   `totalsize` of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the
   end of RAM. The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has
   met is QEMU `virt`'s, under 64 KiB, and a VisionFive 2's U-Boot tree is under 32 KiB.
 - `be32` and `be64` add with `checked_add`, because every offset comes out of the blob. The
   verification module proves both total.
+- Every walker checks its cursor steps too. `property_header` reads a property's length and name
+  offset, and refuses one whose value would pass the end of the structure block. `skip_padded` and
+  `skip_name` step over padded data with a checked add. On a target whose `usize` is 32 bits, a
+  length near `u32::MAX` ends the walk as `Truncated`, where an unchecked sum would wrap or panic.
+  A 64-bit host cannot build that input through a blob. The unit tests in `src/lib.rs` hold the
+  helpers to it, and the verification module proves `skip_padded` never wraps.
+- **Every walker stops at the end of the structure block.** `from_bytes` reads `size_dt_struct`
+  (version 17 and later; before that the block ends at the strings block, as libfdt reads it) and
+  refuses a block that runs past the blob. A block with no `FDT_END` ends the walk as `Truncated`, and nothing
+  reads the strings block as tokens.
 - A `reg` pair whose `start + size` wraps is `Error::RegionOverflow`. `Region::end` still
   saturates, because `Region` is `pub` with `pub` fields and anyone can build one. That is the
-  argument `elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
+  argument `static_elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
   own, whatever the parser that usually builds it checked. The fuzz target
   `fuzz/fuzz_targets/device_tree_blob_walk` found the panic it closes.
-- The walkers that keep per-depth state stop at a depth of 16. Past it they refuse to match
-  rather than return an `Error`, so they never index past their stacks (BUGS below).
+- Every lookup reads the structure block through one token walk, which refuses a node nested
+  deeper than `MAXIMUM_DEPTH` (64, libfdt's `FDT_MAX_DEPTH`) as `Error::TooDeep` and a block whose
+  `FDT_BEGIN_NODE` and `FDT_END_NODE` tokens do not balance as `Error::BadStructure`. Every walker
+  answers a given blob the same way, and none indexes past its per-depth state.
 
 ## Finding a node
 
@@ -162,15 +174,15 @@ a convention; a real driver matches `compatible`, such as `"arm,cortex-a15-gic"`
 The RTC is `pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one
 finds nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can
 drive. `compatible` lists the most specific entry first, and a match on any entry counts.
-`node_prop_compatible`, `parent_prop_compatible` and `phandle_prop` follow the same pattern: the
+`node_property_compatible`, `parent_property_compatible` and `phandle_property` follow the same pattern: the
 deciding property may come after the wanted one in a node, so each open node's candidate is
 remembered and the answer is taken when a matching node closes.
 
-`node_prop_inherited` exists because `interrupt-parent` sits in a different place on each machine.
+`node_property_inherited` exists because `interrupt-parent` sits in a different place on each machine.
 QEMU's riscv64 `virt` writes it on the serial node, QEMU's aarch64 `virt` once on the root, and the
 mainline JH7110 dtsi on `/soc`. A read of the device's own node alone works on one of the three.
 
-`node_props` reads every match, because a heterogeneous RISC-V machine describes each hart as its
+`node_properties` reads every match, because a heterogeneous RISC-V machine describes each hart as its
 own `cpu@` node with its own `riscv,isa`. A kernel that read the first one and then scheduled onto
 any hart would have read the wrong node, and the JH7110 is that machine.
 
@@ -180,28 +192,18 @@ The blob is the first thing this kernel reads and the last thing it can check ag
 else. The pointer comes from firmware, before there is a frame allocator or any way to report a
 failure, so every limitation here is a limitation on the boot path specifically.
 
-- **A node nested deeper than 16 is invisible to `node_reg` and `node_reg_compatible`.** Both carry
-  `#address-cells`/`#size-cells` down a fixed 16-entry per-depth stack, and past it they stop
-  tracking, so they refuse to match rather than decode a region with cell widths they no longer
-  know. Nothing in the trees we boot nests past 4. `node_prop` keeps no per-depth state and so has
-  no such limit, which means the two lookups disagree about how deep a tree can be. Until
-  2026-08-02 `node_reg` did not refuse: it matched at any depth and then indexed past the stack,
-  which was an out-of-bounds panic on a 17-deep tree (milestone 42, notes/fuzzing.md).
+- A `reg` that a `Region` cannot hold is `Error::BadValue`: a cell count above `MAXIMUM_CELLS` (4,
+  libfdt's `FDT_MAX_NCELLS`), a nonzero cell above the low two, or a length that is not a whole
+  number of pairs. Linux's `of_read_number` keeps the low 64 bits of a wider value instead, and a
+  PCI child's three-cell address is read raw through `node_property`.
 - A `reg` pair whose `start + size` wraps 64 bits is `Error::RegionOverflow`, not a clamped
   region. `kernel/src/memory.rs` decides where RAM is from these, and "the firmware's memory map
   is impossible" is something a boot path should be told. `Region::end()` saturates as a backstop,
   because the type is `pub` with `pub` fields.
-- **`memory_regions` finds `/memory` nodes by NAME, not by `device_type`.** `device_type = "memory"`
-  is the more correct check and arrives after the node name; the name is unambiguous on every board
-  we have met. A board that spells it otherwise would have its RAM missed entirely.
-- **`node_reg` matches a node-name prefix rather than `compatible`.** That is a deliberate
+- **`node_reg` matches a node-name prefix rather than `compatible`, and answers for the first match
+  only** (zero regions when it has no `reg`, as `node_property` answers `None`). That is a deliberate
   simplification for two boards, documented at the function. `node_reg_compatible` is the correct
   one and is what milestone 51's RTC lookup uses.
-- Nothing validates the structure block's nesting balance. A blob with more `FDT_END_NODE`
-  tokens than `FDT_BEGIN_NODE` is walked rather than refused: the three `usize` walkers saturate
-  their depth at zero and the three `i32` ones let it go negative. Neither can index anything (every
-  array access is guarded and the negative depths simply match nothing), so it is a wart rather than
-  a hole, but an unbalanced tree is not told apart from a well-formed one.
 - **Cell widths come from the nearest ancestor that declares them, not from the spec's default.**
   The Devicetree Specification says a node without `#address-cells` gives its children 2 and 1.
   The walkers carry the parent's widths down instead, as Linux's `of_n_addr_cells` does, so a bus

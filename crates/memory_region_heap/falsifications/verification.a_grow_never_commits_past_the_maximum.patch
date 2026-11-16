@@ -1,0 +1,22 @@
+Falsifies `memory_region_heap::verification::a_grow_never_commits_past_the_maximum`.
+
+The defect: the plan caps the growth at the whole cap instead of at the room left under it, so a
+heap that already holds pages is allowed to map as many again as the cap holds. The doubling term
+and the request both reach it, and the committed range then leaves the cap.
+
+Expected to fail: the harness's arithmetic on the committed range after a run of `got` pages
+(an addition overflow, and the bound `after <= maximum`). Red in under a second on 2026-11-15.
+
+diff --git a/crates/memory_region_heap/src/lib.rs b/crates/memory_region_heap/src/lib.rs
+index b961c1948..bfbbaa69f 100644
+--- a/crates/memory_region_heap/src/lib.rs
++++ b/crates/memory_region_heap/src/lib.rs
+@@ -473,7 +473,7 @@ fn growth_pages(committed: u64, maximum: u64, need: u64) -> Option<(u64, u64)> {
+     let want_pages = need_pages
+         .max(committed / PAGE_BYTES) // doubling: as many again as we have
+         .max(MINIMUM_GROW_PAGES)
+-        .min(maximum.saturating_sub(committed) / PAGE_BYTES);
++        .min(maximum / PAGE_BYTES);
+     if want_pages < need_pages {
+         return None;
+     }

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 151, 242
@@ -44,6 +44,8 @@ The comparison with nearby work is in [the appendix](1079-byte-sink-contract-out
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the release (a published name, a published wire behavior, a layout, a dependency, a license). Everything else is two-way, and the maintainer decides it.
 
+The ledger of what landed and what is left is in [the appendix](1079-byte-sink-contract-outside-review/ledger.md).
+
 ### P0: blocks the move or any publish
 
 1. The crate does not stand alone, and the documentation that explains it does not travel.
@@ -70,8 +72,8 @@ somebody outside the repository acts on it after the release (a published name, 
    Evidence: `src/lib.rs` lines 19 to 27 (the comment) and 46 (opcode 0 taken);
    `crates/interfaces_note/src/lib.rs` lines 4 to 7; `design/roadmap/1000-*.md` line 23.
    Change: the comment states what is true: a program's note declares the pair (`INTERFACE_ID`, `VERSION`). The contract has no wire operation for versions and, being one-way, cannot have one without a reply. A framing change bumps `VERSION`, and a sink that serves two versions does so by accepting both framings, which is what "serves N and N-1" means for a stream. Whether a
-   wire version operation is ever added is decision A.
-   Door: the comment is two-way; the wire question is one-way, decision A. Effort: S.
+   wire version operation is ever added is decision A, decided provisionally: none.
+   Door: two-way, decision A. Effort: S.
 
 ### P2: later
 
@@ -83,8 +85,9 @@ The P1 items are in [the appendix](1079-byte-sink-contract-outside-review/before
 
 ## Decisions for the architect
 
-Only one-way doors. Each gives the background, then the recommendation, then prior art and one
-concrete example. The maintainer brings them one at a time.
+Each gives the background, then the recommendation, then prior art and one concrete example.
+A, B and D are two-way before the first tag, and the maintainer has decided them, provisionally.
+C has its ruling.
 
 ### A. Does the byte-sink contract ever get a wire version operation?
 
@@ -108,6 +111,12 @@ Example: a sink implementer who followed the current comment would answer opcode
 word. Every `println!` from a std program sends opcode 0 with a byte count, and that sink would
 treat each line as a version query.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. No such operation exists and nobody has built against one, and a later `VERSION`
+can add one. The contract has no wire version operation. The pair (`INTERFACE_ID`, `VERSION`)
+declared in the program's `INTERFACES` note is the check, made by the spawner, and the `VERSION`
+documentation says so. Item 2 is the work: the comment at `src/lib.rs` lines 19 to 27 still
+promises a `CALL` of `OPERATION_VERSION`, where opcode 0 is `OPERATION_BYTES` (line 46).
+
 ### B. Does `fixture` ship in the published crate?
 
 Background: item 3. The module is six items for four in-tree consumers, documented against nife
@@ -126,25 +135,32 @@ so behind a feature, which keeps the names in the documentation.
 Example: on docs.rs, `byte_sink_contract::fixture::SINK_NAME` would read `"sinkout"` with a sentence
 about a file created on a test image by a program the reader cannot find.
 
-### C. What are the second and third words of an end-of-stream message?
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. No publish happens while the publishing hold stands, and keeping the fixtures out
+is the stricter choice. `fixture` (`src/lib.rs` lines 282 to 309) moves to an in-tree crate,
+`byte_sink_fixture` (name provisional), as `filesystem_fixture` is for `filesystem_contract`. Item 3
+is the work.
 
-Background: item 8. The contract defines `w0` for `OPERATION_EOF` and is silent on `w1` and `w2`.
-`unpack` discards them. `rm` carries its exit status and a count there, read only by kernel-side
-fixture tests; the shell drops them past a `|`.
+### C. The second and third words of an end-of-stream message are reserved
 
-Recommendation: reserved. A conforming writer sends zero in both and a conforming sink ignores them, which is what every decoder in the tree does. Either `rm` records its use as a private agreement outside this contract, or `rm` moves its verdict to a channel of its own. The stricter reading, `Malformed` on a non-zero word, breaks `rm` today for no reader's benefit. The looser one, a defined
-status trailer, puts a supervision fact on a stream, which the `OPERATION_EOF` documentation argues
-against in its own words. Reserving them keeps a trailer possible under a later `VERSION`.
+Ruled 2026-11-14 (UTC), option A: a writer sends zero in both, and a sink refuses an end of stream
+with either word non-zero as `Msg::Malformed`. `unpack` decodes `Msg::Eof` only from the exact
+message `(eof(), 0, 0)`, so a first word with any bit set below the opcode fails the same way,
+which is what its documentation says the low 32 bits are. A Kani harness proves that equivalence
+over every three words, with a falsification patch.
+
+`rm` reports its exit status and its count on a verdict endpoint of its own, slot 2
+(`filesystem_contract::rm::VERDICT_SLOT`), after its report stream ends. A `SEND` returns only once
+a receiver takes its message, so the verdict cannot overtake the text, and a reader drains the report
+before receiving it. The spawn service leaves that slot empty, so at the prompt the kernel refuses the
+send and `rm` exits; the kernel's granted-directory and granted-set wirings grant it when a test asks.
 
 Prior art: Unix delivers a producer's exit status through `wait(2)` to its parent, never through the
 pipe; `set -o pipefail` reads statuses from the supervisor, not the stream. HTTP chunked transfer
-defines an explicit trailer after the last chunk, which is what a defined status word would be, and
-it is a defined part of that framing, not an unused field.
+defines an explicit trailer after the last chunk; a defined trailer would need a new `VERSION` here.
 
-Example: `rm -rv logs | wc` today: `rm` sends `eof()` with status and count, the shell's pipeline
-reader matches `Msg::Eof` and returns, and `wc` sees an end of stream and no status. The same words
-reach the fixture test that spawns `rm` directly. One message, two meanings, decided by who
-receives.
+Example: `rm -rv logs | wc`: `rm` sends its lines and `(eof(), 0, 0)`, `wc` counts them and sees a
+well-formed end, and the verdict goes to slot 2, which nothing at the prompt holds. A guest test
+that spawns `rm` directly reads the same report and then the verdict.
 
 ### D. The names
 
@@ -167,9 +183,24 @@ that "the first word" in prose throughout.
 Example for `INLINE_MAXIMUM`: `MAXIMUM_NAME_BYTES` versus `MAXIMUM_NAME_LEN` in `design/naming.md`
 is this case; `INLINE_MAXIMUM` is a byte count and its documentation says so in its first words.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. The table above holds with one row changed: `INLINE_MAXIMUM` becomes
+`MAXIMUM_INLINE_BYTES`, not `INLINE_MAXIMUM_BYTES`, because a limit opens with `MAXIMUM_`, which is
+the table's own reason. `req` becomes `first_word`, `Msg` becomes `Message` and `ret` becomes
+`returned`. `w0`, `w1`, `w2`, `OPERATION_EOF`, `eof`, `Msg::Eof`, `pack`, `unpack`, `classify`,
+`severity`, `with_severity`, `kind`, `len`, `operation`, `Sent` and its variants keep their names.
+No old-name alias. Item 9 is the work.
+
 ## Done when
 
 The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Every item except before-the-tag item 8, and decisions A, B and D. Checked by
+  reading each item and decision in this block against the tree at this branch's head: decision C
+  and item 8 are the only ones built, and the others still describe the tree as it stands.
+- **Recorded.** The shell does not see `rm`'s exit status, since no exit status reaches a parent;
+  `notes/rm.md` keeps it in its BUGS.
 
 ## BUGS
 
@@ -178,8 +209,6 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 - Item 11 came from reading, not from a build for a 16-bit target; the fix is cheap enough to land
   without one.
 - This review did not check the prior-art figures marked unverified. Confirm or drop them before the README cites any of them.
-- This review checked by search only whether `rm`'s verdict words have a reader outside the kernel-side fixture tests. A reader that obtains them another way would change item 8's weight, not its
-  finding.
 - The review did not run the QEMU-side `sink_tests`; the indifference proof they carry stands on the
   tree's own gates.
 

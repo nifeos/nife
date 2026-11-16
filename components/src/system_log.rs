@@ -37,8 +37,8 @@ use system_log_contract::kernel_ring::{self, Cursor, DETACHED, Read, Ring};
 use system_log_contract::record::{self, flags};
 use system_log_contract::{console, read};
 use user_mode_runtime::{
-    cntfrq, exit, monotonic_nanoseconds, notification_signal, now, receive_badged,
-    receive_badged_bound, send, timer_arm,
+    Message, Received, counter_hertz, exit, monotonic_nanoseconds, notification_signal, now,
+    receive_message, send, timer_arm,
 };
 
 /// Slot 0, the intake endpoint, `READ`: writers, readers and the spawner all `SEND` here. The
@@ -75,13 +75,13 @@ const WINDOWS: u64 = read::WINDOWS as u64;
 /// (0-based) is the page at `read::WINDOW_VA + n * 4096`, mapped read-write here and by the same
 /// spawner into reader *n*. A window past the count is never written, and a missing notification
 /// slot is a reader nobody can wake: its window still holds the answer.
-const WINDOW_VA: u64 = address_space_map::pair_page(read::WINDOW_VA);
+const WINDOW_VA: u64 = address_space_layout::pair_page(read::WINDOW_VA);
 /// Where the spawner maps the kernel's ring (read-only, `kernel_ring::PAGES` pages) in
 /// [`MODE_KERNEL`]. Must match `crates/system_initializer`'s `LOG_RING_VA`.
-const RING_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const RING_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 /// Where the spawner maps the kernel ring's cursor page (read-write). Must match
 /// `crates/system_initializer`'s `LOG_CURSOR_VA`.
-const CURSOR_VA: u64 = address_space_map::pair_page(0x0080_0000);
+const CURSOR_VA: u64 = address_space_layout::pair_page(0x0080_0000);
 
 /// The whole service's state, in `.bss` rather than on the one-page stack: the 64 KiB ring is
 /// sixteen times the stack.
@@ -101,10 +101,12 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
         drain(log, &mut flush_armed);
     }
     loop {
-        let (w0, w1, w2, badge) = if kernel {
-            match receive_badged_bound(INTAKE) {
-                Ok(m) => m,
-                Err(word) => {
+        let Message {
+            w0, w1, w2, badge, ..
+        } = if kernel {
+            match receive_message(INTAKE) {
+                Received::Message(message) => message,
+                Received::Notification(word) => {
                     if word & FLUSH_BIT != 0 {
                         flush_armed = false;
                         send(CONSOLE, console::OPERATION_FLUSH << 56, 0, 0);
@@ -116,7 +118,7 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
                 }
             }
         } else {
-            receive_badged(INTAKE)
+            receive_message(INTAKE).into_message()
         };
         // The intake endpoint was destroyed (its owner reclaimed the region it lived in): this
         // service has nothing left to serve. Only badge 0 can mean it, because the kernel writes
@@ -192,7 +194,7 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
                         let deadline = now().saturating_add(abi::timer::counter_ticks_for(
                             0,
                             FLUSH_NANOSECONDS,
-                            cntfrq(),
+                            counter_hertz(),
                         ));
                         *flush_armed = timer_arm(TIMER, deadline, KERNEL_NOTIFIED, FLUSH_BIT) >= 0;
                     }

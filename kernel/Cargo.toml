@@ -1,5 +1,5 @@
 # Name: ratified 2026-10-22 (calef, #2562). AGENTS.md's naming section keeps "standard terms a
-# reader already knows from outside", which is why `elf`, `pci`, `paging` and `glob` were left alone
+# reader already knows from outside", which is why `elf`, `pci` and `glob` were left alone
 # by the same rule. `kernel` is the standard term for the thing this is.
 
 [package]
@@ -58,11 +58,14 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # The shell's grant-expression logic (milestone 47's `rm -r`). The kernel plans nothing; its `rm`
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
-# `line_editor` and `video_terminal` below: no party has its own copy of a shared definition.
+# `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
+# The spawn protocol's slots are the program table's.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
-# through the same seqlock the service publishes with, so no party has its own copy of the layout.
+# through the same publish protocol the service writes with, so no party has its own copy of the
+# layout.
 clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 # The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111). The
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
@@ -112,7 +115,7 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # The user address-space map (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): where the loader puts a
 # program's image and stack, and the check that refuses an image that does not fit, shared with the
 # userspace loader so the two cannot disagree about either.
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
 # Where each device-driver process finds its windows, and the spawn words each one receives: the
 # process layout around the device crates (`e1000e`, `designware_ethernet`,
 # `designware_mobile_storage`, `extensible_host_controller_interface`,
@@ -156,7 +159,7 @@ entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
-jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06" }
+jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "497d3ec4f0b4d7fc36634dee47d1afd56eb22485" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
 # `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the
@@ -174,7 +177,7 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
 designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
-pci = { version = "0.1.0", path = "../crates/pci" }
+pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configuration_space" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
@@ -184,7 +187,7 @@ e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", re
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
 extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }
@@ -200,7 +203,7 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 # The terminal contract's IPC framing (DECISIONS §21): the kernel's display-terminal tests play both
 # an application (OPERATION_WRITE) and an input driver (OPERATION_BYTES), so they speak the same protocol the
 # serial terminal's clients and drivers do rather than a second one invented for a test.
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 # The installed-programs table's names and line format (milestone 198 (a package manager)), which the harness
 # writes when a test installs a program the way an installer would: milestone 152 (durable
@@ -211,7 +214,7 @@ installed_programs = { version = "0.1.0", path = "../crates/installed_programs",
 # looking at a monitor, which is the one thing nobody in this project can do from a lane. The kernel
 # half is `console::attach_screen`: an address, a geometry and a lock it already holds.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
-paging = { version = "0.1.0", path = "../crates/paging" }
+page_tables = { version = "0.1.0", path = "../crates/page_tables" }
 memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # The socket contract (milestone 30, and 107's inbound half). The kernel's spawn service is what
 # *grants* a net server its listen ports, so it packs the grant with the same `listen_grant` the
@@ -281,7 +284,7 @@ board = []
 # The T-Head TH1520 (milestone 89 (Scaleway EM-RV1)): the board build, for Scaleway's Elastic Metal
 # RV1 rather than radon. It moves the early console to UART0 at 0xff_e701_4000 (arch/riscv64/
 # machine.rs) and selects the page-table format with T-Head's memory-type bits (XTheadMae,
-# paging::Sv39Mae), which firmware turns on. A kernel built with it refuses to run on a hart
+# page_tables::Sv39Mae), which firmware turns on. A kernel built with it refuses to run on a hart
 # without MAEE, and one built without it refuses a hart with it. riscv64 only. Name provisional.
 board_th1520 = ["board"]
 # The benchmark boot (milestone 21): run the microbenchmarks and halt. See script/bench.

@@ -41,7 +41,7 @@ The question: **what stops a session writing `activation/`**, when the progenito
 
 ## What the tree already does in the analogous case
 
-The attribute store. `redoxfs_server`'s `check_component` refuses `.nife-attrs` in every directory,
+The attribute store. `redoxfs_server`'s `check_component` refuses `.extended-attributes` in every directory,
 to every client, and `READDIR` does not list it (milestone 57 (partitioning and formatting a real drive)). That is a name no client may reach
 as bytes, enforced where no client can route around it. It works because nothing but the server
 writes the store. Here the progenitor, a client, must write the table.
@@ -77,7 +77,7 @@ one boot process. And its filter must cover every name-taking verb, the forget-a
 
 ### C. The server reserves the name, and serves it on a second, privileged endpoint
 
-The `.nife-attrs` rule, extended. One rule in one place, covering every client including a buggy
+The `.extended-attributes` rule, extended. One rule in one place, covering every client including a buggy
 caretaker. It needs the server to know which endpoint a request arrived on, and it cannot today: one
 receive loop, one endpoint, no badges. A second receive loop is a second thread over one `Server`,
 and badges are a kernel change. Either is a restructure well beyond this lane.

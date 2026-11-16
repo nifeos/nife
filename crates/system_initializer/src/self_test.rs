@@ -24,7 +24,7 @@ use super::*;
 use crate::boot_steps::Entropy;
 
 /// Where the progenitor maps the transcript frame, read-only, to print it.
-const TRANSCRIPT_VIEW_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f90_0000);
+const TRANSCRIPT_VIEW_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0f90_0000);
 
 /// The program's own stack, in pages: it parses ELF images and builds children, a deeper chain than
 /// an ordinary child's.
@@ -180,7 +180,7 @@ fn run_measured(
             placed: &placed[..n],
             maps: &[
                 (
-                    address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
+                    address_space_layout::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
                     g.self_test_page,
                     abi::address_space::MAP_READ_ONLY,
                 ),
@@ -190,7 +190,7 @@ fn run_measured(
                     abi::address_space::MAP_READ_ONLY,
                 ),
                 (
-                    address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
+                    address_space_layout::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
                     frame,
                     abi::address_space::MAP_READ_WRITE,
                 ),
@@ -283,7 +283,7 @@ fn placements(
     }
     if grants.random_number_generator {
         place(
-            slot::RANDOM_NUMBER_GENERATOR,
+            slot::TRUE_RANDOM_NUMBER_GENERATOR,
             g.self_test_random_number_generator,
             abi::rights::WRITE,
         );
@@ -318,7 +318,12 @@ fn placements(
 fn wait_for_verdict(report: u64) -> (usize, Option<u64>) {
     let mut end = 0usize;
     let tally = loop {
-        let (code, at, packed, ..) = user_mode_runtime::receive_fault(report);
+        let user_mode_runtime::Message {
+            w0: code,
+            w1: at,
+            w2: packed,
+            ..
+        } = user_mode_runtime::receive_message(report).into_message();
         match code {
             message::LINE => end = (at as usize).min(contract::TRANSCRIPT_BYTES),
             message::DONE => {

@@ -30,7 +30,7 @@ and `design/naming.md`. Nothing below reopens:
 - the two renames the page-contract family rule already settles (`design/naming/crates.md`), which
   `helpers/name_release.py --draft current_cpu_contract` prints as pre-ruled: `PAGE_BYTES` to
   `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`;
-- the dependency on `address_space_map`, which milestone 1017 step 3 orders ahead of this crate.
+- the dependency on `address_space_layout`, which milestone 1017 step 3 orders ahead of this crate.
 
 Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_externalized_crates.py`,
 `helpers/template_report_gates.py`, Miri, the template's `scaffold/` and `sample/`. No new tool.
@@ -62,11 +62,11 @@ layout, an identity, a dependency); everything else is two-way and the maintaine
 1. The manifest is nife's, not a crate's.
    Finding: `license.workspace = true` and `[lints] workspace = true` inherit from a workspace the
    copy does not have. There is no `rust-version`, no `description`, no `repository`, no `[package.metadata.docs.rs] targets`. The `publish = false` comment sends a reader to `crates/publish-allowlist.txt`, a nife path. The package comment names the architect and a
-   ruling by date. The dependency on `address_space_map` is by path.
+   ruling by date. The dependency on `address_space_layout` is by path.
    Evidence: `crates/current_cpu_contract/Cargo.toml` lines 1 to 21.
    Change: inline `license = "MIT OR Apache-2.0"`; `[lints.rust]` carrying
    `unsafe_op_in_unsafe_fn` and `missing_docs`; `rust-version = "1.88"` as the family states, after one build proves it. Add a one-sentence `description`, `repository`, and the three bare-metal targets under `[package.metadata.docs.rs]`. Write a `publish = false` comment a stranger can act on ("set to
-   `true` only in the release that publishes"). Depend on `address_space_map` by version once it has left.
+   `true` only in the release that publishes"). Depend on `address_space_layout` by version once it has left.
    Door: two-way (the license is the family's, already ruled). Effort: S.
 
 2. The files a stranger needs are missing.
@@ -103,10 +103,10 @@ layout, an identity, a dependency); everything else is two-way and the maintaine
    page-contract family rule.
    Evidence: `src/lib.rs` lines 35, 42, 51, 73, 98, 108, 115, 121, 127, 141, 149, 159, 179, 211,
    228, 255, 269, 277; the gate's output.
-   Change: one pull request that carries the `--draft` table, with Decision B below as its ask. Then one rename lane applies the ratified spellings in the crate, the kernel (six sites), the
+   Change: the `--draft` table as Decision B below decides it, provisionally. Then one rename lane applies those spellings in the crate, the kernel (six sites), the
    runtime, the fixtures, the system tests and `xtask/src/farm`. Ratified names get their blocks in
    the commit that applies them; the move commit strips them.
-   Door: one-way (published names). Effort: S for the rename lane once ruled.
+   Door: two-way before the first tag (Decision B). Effort: S for the rename lane.
 
 ### P2: later
 
@@ -118,7 +118,8 @@ The P1 items are in [the appendix](1084-current-cpu-contract-outside-review/befo
 
 ## Decisions for the architect
 
-Only the one-way doors. The architect rules on each one on its own.
+Decision A was the architect's. Decision B is two-way before the first tag, and the maintainer has
+decided it, provisionally.
 
 ### Decision A. Is the bound on CPU ids part of this page's identity?
 
@@ -200,6 +201,16 @@ Prior art: the sibling package ratified 13 names in one pull request with the sa
 Concrete example: after the rename, the reader's one line in a runtime reads
 `CurrentCpuPage::new(PAGE_VIRTUAL_ADDRESS)`, which is the sibling's shape to the word.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The table holds as written, with one row changed. `PAGE_BYTES` becomes
+`PAGE_CONTENT_BYTES` and `PAGE_VA` becomes `PAGE_VIRTUAL_ADDRESS`; `thread_page_va` becomes
+`thread_page_virtual_address`; the parameters `page_va` and `va` become `page_virtual_address` and
+`virtual_address`; `build_page_allowing` becomes `build_page_with`. `CPU_ID_BOUND` keeps its name
+over `MAXIMUM_CPUS`, with Decision A's rule in its documentation. The changed row is
+`CPU_WORD_OFFSET` (`src/lib.rs` line 121). The table keeps it because an offset carries no unit
+suffix. But the 2026-11-14 family-wide ruling names every page-field offset `<FIELD>_OFFSET_BYTES`,
+so it takes that form in the offset sweep, with the crate's private `OFF_` constants. Every other
+name in the table keeps its spelling. No old-name alias. Item 4 is the work.
+
 ## Done when
 
 The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-when.md).
@@ -220,8 +231,10 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-What is left of this review: Decision B (the names) is not ruled, and every other before-the-tag
+What is left of this review: the rename pass of Decision B (decided provisionally), and every other before-the-tag
 item except item 5, plus the P0 and P2 items, is open.
+The ledger of what landed is in
+[the appendix](1084-current-cpu-contract-outside-review/ledger.md).
 
 - **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
   rename pass of Decision B and the P0 items above land, so the standalone gate can pass.

@@ -1,6 +1,6 @@
 //! RISC-V virtual memory: the Sv39 half of the `arch` page-table contract.
 //!
-//! The descriptor format is `paging::Sv39` (DECISIONS §17 (the second architecture: RISC-V)). This
+//! The descriptor format is `page_tables::Sv39` (DECISIONS §17 (the second architecture: RISC-V)). This
 //! module composes `satp`, builds the kernel's W^X tables, maps user pages through `Mapper<_, _,
 //! Sv39>`, shares the kernel half into every process root, and does TLB maintenance with
 //! `sfence.vma`.
@@ -10,7 +10,7 @@
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use paging::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
+use page_tables::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 
 use super::instructions;
 use crate::memory;
@@ -20,9 +20,9 @@ use crate::memory;
 /// Per machine: the TH1520 build uses `Sv39Mae`, whose leaves carry T-Head memory types because
 /// firmware turns `XTheadMae` on. `arch::isa::initialize` refuses a hart that disagrees.
 #[cfg(not(feature = "board_th1520"))]
-pub type Format = paging::Sv39;
+pub type Format = page_tables::Sv39;
 #[cfg(feature = "board_th1520")]
-pub(crate) type Format = paging::Sv39Mae;
+pub(crate) type Format = page_tables::Sv39Mae;
 
 /// The console UART, mapped as device memory so printing survives the switch off the boot table.
 const UART_BASE: u64 = super::machine::CONSOLE_UART_PHYS;
@@ -126,7 +126,7 @@ const _: () = {
 /// `boot.s` loads its physical address into `satp`, so it is a real static in `.data`. See
 /// notes/riscv-port/memory.md for which gigapages it maps and why.
 #[repr(C, align(4096))]
-struct BootTable([u64; paging::ENTRIES]);
+struct BootTable([u64; page_tables::ENTRIES]);
 
 const fn boot_table() -> BootTable {
     // Sv39 gigapage leaf: V R W X A D set.
@@ -150,7 +150,7 @@ const fn boot_table() -> BootTable {
         };
         ((pa >> 12) << 10) | LEAF | memory_type
     }
-    let mut t = [0u64; paging::ENTRIES];
+    let mut t = [0u64; page_tables::ENTRIES];
     t[0] = giga(0x0000_0000); // identity: 0..1 GiB, covers the UART at 0x1000_0000
     t[1] = giga(0x4000_0000); // identity: 1..2 GiB, the VF2's low DRAM and U-Boot's default DTB
     t[2] = giga(0x8000_0000); // identity: 2..3 GiB, covers the kernel/RAM at 0x8020_0000
@@ -216,7 +216,7 @@ pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 pub(crate) const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// The PLIC input for INTx line A on `virt`'s root complex; B, C and D follow, by the standard
-/// swizzle in `pci::intx_interrupt_number`.
+/// swizzle in `pci_configuration_space::intx_interrupt_number`.
 #[doc(alias = "irq")]
 pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 32;
 
@@ -281,7 +281,7 @@ pub fn initialize() {
         .addr();
     // SAFETY: a fresh frame; zero it before the hardware can ever walk it.
     unsafe {
-        (*phys_to_ptr(root)).entries = [0; paging::ENTRIES];
+        (*phys_to_ptr(root)).entries = [0; page_tables::ENTRIES];
     }
 
     // SAFETY: `root` is zeroed and page-aligned; `phys_to_ptr` is valid because the boot table's
@@ -452,12 +452,12 @@ where
 
     // 6b. The JH7110's STG clock and reset generator, which ungates the TRNG.
     if let Some(crg) = memory::jh7110_clock_and_reset() {
-        direct_map_device_window(m, crg.base_physical_address, crg.size)?;
+        direct_map_device_window(m, crg.base_physical_address, crg.size_bytes)?;
     }
 
     // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, and gmac0's clocks.
     if let Some(sys) = memory::jh7110_sys_window() {
-        direct_map_device_window(m, sys.base_physical_address, sys.size)?;
+        direct_map_device_window(m, sys.base_physical_address, sys.size_bytes)?;
     }
 
     // 6c'. The SYS syscon, the PLL words the PMIC route's starter derives the I2C clock from. The
@@ -481,7 +481,7 @@ where
             e.port.registers_physical_address + e.port.registers_size_bytes,
             Flags::device(),
         )?;
-        direct_map_device_window(m, e.aon.base_physical_address, e.aon.size)?;
+        direct_map_device_window(m, e.aon.base_physical_address, e.aon.size_bytes)?;
         direct_map(
             m,
             e.syscon.base_physical_address,
@@ -964,7 +964,7 @@ pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
 }
 
 /// Invalidate `va`'s translation, for every ASID, on every online hart. Discharges a
-/// `paging::TlbFlush`.
+/// `page_tables::TlbFlush`.
 ///
 /// `sfence.vma` orders the preceding page-table write and completes locally, so no barrier is
 /// needed. Other harts get an SBI RFENCE once they are online.
@@ -1044,7 +1044,7 @@ pub(crate) fn share_kernel_half(root: u64) {
     unsafe {
         let dst = &mut (*phys_to_ptr(root)).entries;
         let src = &(*phys_to_ptr(kernel_root)).entries;
-        dst[256..paging::ENTRIES].copy_from_slice(&src[256..paging::ENTRIES]);
+        dst[256..page_tables::ENTRIES].copy_from_slice(&src[256..page_tables::ENTRIES]);
     }
 }
 
