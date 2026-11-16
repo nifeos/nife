@@ -683,7 +683,10 @@ fn a_return_keeps_every_run_inside_its_parents_spent_part() {
     // loop is one the model checker cannot bound, and unrolling it ran CBMC past a hosted
     // runner's memory before the solver started.
     let [root, child, grandchild] = names.map(|n| table.snapshot(n));
-    assert!(grandchild.is_none(), "the claimed grandchild still resolves");
+    assert!(
+        grandchild.is_none(),
+        "the claimed grandchild still resolves"
+    );
     let (root, child) = (root.expect("root"), child.expect("child"));
     for s in [root, child] {
         assert!(s.retyped_to <= s.watermark, "retyped past the watermark");
