@@ -174,6 +174,39 @@ fn service_window_refuses_every_address_its_doc_forbids() {
     refused_inputs_never_reach_here();
 }
 
+/// **[`window`] accepts every whole window [`RUNTIME_WINDOWS`] holds**: a page aligned start and a
+/// page aligned, non-empty length whose end lies inside the band. It returns the start unchanged.
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.window_accepts_every_whole_window_its_band_holds.patch`
+#[kani::proof]
+#[kani::unwind(1)]
+fn window_accepts_every_whole_window_its_band_holds() {
+    let start: u64 = kani::any();
+    let bytes: u64 = kani::any();
+    kani::assume(start.is_multiple_of(PAGE) && bytes.is_multiple_of(PAGE) && bytes > 0);
+    kani::assume(start >= RUNTIME_WINDOWS.start && bytes <= RUNTIME_WINDOWS.end - start);
+    assert_eq!(window(RUNTIME_WINDOWS, start, bytes), start);
+}
+
+/// **[`window`] refuses every window its doc forbids**: an unaligned start or length, an empty one,
+/// one that wraps, or one that is not wholly inside the band.
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.window_refuses_every_window_its_doc_forbids.patch`
+#[kani::proof]
+#[kani::should_panic]
+#[kani::unwind(1)]
+fn window_refuses_every_window_its_doc_forbids() {
+    let start: u64 = kani::any();
+    let bytes: u64 = kani::any();
+    let allowed = start.is_multiple_of(PAGE)
+        && bytes.is_multiple_of(PAGE)
+        && bytes > 0
+        && start >= RUNTIME_WINDOWS.start
+        && start < RUNTIME_WINDOWS.end
+        && bytes <= RUNTIME_WINDOWS.end - start;
+    kani::assume(!allowed);
+    window(RUNTIME_WINDOWS, start, bytes);
+    refused_inputs_never_reach_here();
+}
+
 /// **[`check_image`] places exactly the images the image band holds, for every pair of bounds.** A
 /// non-empty `[start, end)` inside [`IMAGE`] is placed. One that starts inside and runs past the end
 /// is too large, naming its own end and the stack's base, which is the image band's end. Anything
