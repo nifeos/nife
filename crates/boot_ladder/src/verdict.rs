@@ -355,7 +355,7 @@ impl<'a> ParsedVerdict<'a> {
     ///
     /// Name: provisional.
     pub fn parse(tail: &'a str) -> Option<Self> {
-        let tail = tail.trim_end();
+        let tail = tail.trim_ascii_end();
         let (passed, rest) = digits(tail)?;
         let (total, rest) = digits(rest.strip_prefix(" of ")?)?;
         let rest = rest.strip_prefix(" passed")?;
@@ -420,7 +420,13 @@ impl<'a> ParsedVerdict<'a> {
 /// The decimal number `text` begins with and what follows it, or `None` when it begins with no
 /// digit or the number does not fit.
 fn digits(text: &str) -> Option<(usize, &str)> {
-    let bytes = text.as_bytes();
+    let (value, end) = leading_number(text.as_bytes())?;
+    Some((value, &text[end..]))
+}
+
+/// The value of the decimal number `bytes` begins with and where it ends, or `None` when it begins
+/// with no digit or the number does not fit.
+fn leading_number(bytes: &[u8]) -> Option<(usize, usize)> {
     let mut value = 0usize;
     let mut end = 0;
     while end < bytes.len() && bytes[end].is_ascii_digit() {
@@ -429,7 +435,7 @@ fn digits(text: &str) -> Option<(usize, &str)> {
             .checked_add(usize::from(bytes[end] - b'0'))?;
         end += 1;
     }
-    (end > 0).then(|| (value, &text[end..]))
+    (end > 0).then_some((value, end))
 }
 
 /// One `, N <marker><names>` segment at the front of `text`: its count, its names (up to the next
@@ -437,7 +443,7 @@ fn digits(text: &str) -> Option<(usize, &str)> {
 fn segment<'a>(text: &'a str, marker: &str) -> Option<(usize, &'a str, &'a str)> {
     let (count, rest) = digits(text.strip_prefix(", ")?)?;
     let rest = rest.strip_prefix(' ')?.strip_prefix(marker)?;
-    let end = rest.find(',').unwrap_or(rest.len());
+    let end = rest.bytes().position(|b| b == b',').unwrap_or(rest.len());
     // A check's name is `[a-z0-9_]`, so a list holds those and the spaces between them.
     let plain = |b: &u8| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'_' | b' ');
     rest.as_bytes()[..end]
@@ -716,19 +722,32 @@ mod tests {
 mod verification {
     use super::*;
 
-    /// **Reading a verdict never panics, whatever bytes arrive.** The line comes off a serial link
-    /// or a photograph, so any ASCII text up to the bound is a possible input. The counts are
-    /// checked against overflow and every slice index is a position after an ASCII byte. The
-    /// harness may fix the grammar's first words in the leading bytes, so the proof reaches the
-    /// segments instead of stopping at the first byte that is not a digit, and leaves the rest
-    /// symbolic.
+    /// **Reading a count never overflows, however many digits arrive.** Twenty digits overflow a
+    /// 64-bit count, so the bound is one digit longer than that. Other bytes end the count at the
+    /// first one, which the segment harness below covers.
     ///
-    /// Falsification: replayable `crates/boot_ladder/falsifications/verdict.verification.reading_a_verdict_never_panics.patch`
+    /// Falsification: replayable `crates/boot_ladder/falsifications/verdict.verification.a_count_is_read_without_overflow.patch`
     #[kani::proof]
-    #[kani::unwind(26)]
-    fn reading_a_verdict_never_panics() {
-        const LEN: usize = 24;
-        let mut bytes: [u8; LEN] = kani::any();
+    #[kani::unwind(23)]
+    fn a_count_is_read_without_overflow() {
+        const LEN: usize = 21;
+        let bytes: [u8; LEN] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= LEN);
+        if let Some((_, end)) = leading_number(&bytes[..len]) {
+            assert!(end <= len);
+        }
+    }
+
+    /// **Reading one list segment never panics and returns only plain names**, whatever bytes
+    /// follow its marker, so a name list holds nothing a reader could mistake for the grammar.
+    ///
+    /// Falsification: replayable `crates/boot_ladder/falsifications/verdict.verification.a_segment_is_read_without_panicking.patch`
+    #[kani::proof]
+    #[kani::unwind(14)]
+    fn a_segment_is_read_without_panicking() {
+        const LEN: usize = 12;
+        let bytes: [u8; LEN] = kani::any();
         let len: usize = kani::any();
         kani::assume(len <= LEN);
         let mut i = 0;
@@ -736,18 +755,15 @@ mod verification {
             kani::assume(bytes[i].is_ascii());
             i += 1;
         }
-        // The grammar's fixed words in front, so the proof reaches the segments rather than
-        // stopping at the first byte that is not a digit.
-        let shape: &[u8] = b"1 of 1 passed, 1 ";
-        let mut k = 0;
-        while k < shape.len() && kani::any() {
-            bytes[k] = shape[k];
-            k += 1;
-        }
         let text = core::str::from_utf8(&bytes[..len]).unwrap();
-        if let Some(read) = ParsedVerdict::parse(text) {
-            let _ = read.absent_names().count();
-            let _ = read.failed_names().count();
+        if let Some((_, names, rest)) = segment(text, SELF_TEST_ABSENT) {
+            assert!(names.len() + rest.len() <= text.len());
+            assert!(
+                names.bytes().all(|b| b.is_ascii_lowercase()
+                    || b.is_ascii_digit()
+                    || b == b'_'
+                    || b == b' ')
+            );
         }
     }
 }
