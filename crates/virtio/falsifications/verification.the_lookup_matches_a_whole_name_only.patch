@@ -1,0 +1,18 @@
+Falsifies `virtio::verification::the_lookup_matches_a_whole_name_only`.
+
+The defect: the end-of-name check is dropped, so a name matches any entry whose field merely
+starts with it. "motd" then finds an entry named "motdx", and the driver loads the wrong file.
+
+Expected to fail: the harness's `assert_eq!(find_file(&directory, name), whole.then_some(start))`,
+on an entry whose field opens with the name and has a nonzero byte after it.
+
+diff --git a/crates/virtio/src/lib.rs b/crates/virtio/src/lib.rs
+--- a/crates/virtio/src/lib.rs
++++ b/crates/virtio/src/lib.rs
+@@ -531,4 +531,4 @@ fn find_file(directory: &[u8], name: &[u8]) -> Option<u32> {
+         // padding, or the name used every byte of the field and there is no padding to check.
+-        let ends = field.get(name.len()).is_none_or(|&byte| byte == 0);
+-        (field.starts_with(name) && ends).then(|| {
++        let _ends = field.get(name.len()).is_none_or(|&byte| byte == 0);
++        field.starts_with(name).then(|| {
+             u32::from_le_bytes(

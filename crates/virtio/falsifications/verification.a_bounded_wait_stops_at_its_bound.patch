@@ -1,0 +1,17 @@
+Falsifies `virtio::verification::a_bounded_wait_stops_at_its_bound`.
+
+The defect: the bounded wait counts with an inclusive range, `0..=wakeups` in place of
+`0..wakeups`. That is one wakeup past the bound, and for a bound of zero, one wakeup where none
+was allowed.
+
+Expected to fail: the harness's `assert!(wakeups <= bound)`, on a run where no wakeup sees the
+used index move.
+
+diff --git a/crates/virtio/src/lib.rs b/crates/virtio/src/lib.rs
+--- a/crates/virtio/src/lib.rs
++++ b/crates/virtio/src/lib.rs
+@@ -684,3 +684,3 @@ fn used_ring_moved(
+     match bound {
+-        Some(wakeups) => (0..wakeups).any(|_| wake_and_read() != used_before),
++        Some(wakeups) => (0..=wakeups).any(|_| wake_and_read() != used_before),
+         None => loop {
