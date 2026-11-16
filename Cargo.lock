@@ -1835,6 +1835,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
+ "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",

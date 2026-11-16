@@ -32,7 +32,7 @@
 #![no_main]
 
 use terminal_contract as proto;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};
 
@@ -60,10 +60,10 @@ const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 const RING_VA: u64 = address_space_layout::pair_page(0x0000_0000_0082_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139).
-const DMA: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
+const DMA: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 // SAFETY: the wiring maps one page read/write at RING_VA, shared with the compositor, before this
 // program runs.
-const RING: MappedWindow = unsafe { MappedWindow::new(RING_VA, PAGE) };
+const RING: MappedWindow = unsafe { MappedWindow::new(RING_VA, PAGE_BYTES) };
 
 // virtio-mmio register offsets. The §18 transport seam speaks this vocabulary on both buses, so a
 // driver written against it runs over PCIe and over mmio without knowing which it got.
@@ -124,15 +124,15 @@ fn event_buf(i: usize) -> u64 {
 }
 
 fn r16(off: u64) -> u16 {
-    DMA.r16(off)
+    DMA.read_u16(off)
 }
 
 fn r32(off: u64) -> u32 {
-    DMA.r32(off)
+    DMA.read_u32(off)
 }
 
 fn w16(off: u64, v: u16) {
-    DMA.w16(off, v);
+    DMA.write_u16(off, v);
 }
 
 fn mr(off: u64) -> u32 {
@@ -166,7 +166,7 @@ fn die(code: u64) -> ! {
 fn ring_push(tail: &mut u32, byte: u8) {
     use compositor::proto::ring;
     let at = ring::BYTES + (*tail % ring::CAPACITY) as u64;
-    RING.w8(at, byte);
+    RING.write_u8(at, byte);
     *tail = tail.wrapping_add(1);
 }
 
@@ -180,7 +180,7 @@ fn ring_publish(tail: u32) {
     // after `ring_publish` orders it against the compositor anyway, because the compositor is
     // blocked in `receive_capability` on that doorbell. See notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
-    RING.w32(ring::TAIL, tail);
+    RING.write_u32(ring::TAIL, tail);
 }
 
 /// **[`MODE_DIRECT`]: send whatever is buffered as one `OPERATION_BYTES` `CALL`.** Byte for byte the

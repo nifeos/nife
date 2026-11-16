@@ -73,7 +73,8 @@ const ROLE_WAITER: u64 = 3;
 // SAFETY: the kernel's `soak::run` maps one page read/write at `soak_page::VA` in every worker's
 // address space before starting it, and `soak_page`'s host tests prove every offset this program
 // uses lands inside that page.
-const PAGE: MappedWindow = unsafe { MappedWindow::new(soak_page::VA, mapped_window::PAGE) };
+const PAGE_BYTES: MappedWindow =
+    unsafe { MappedWindow::new(soak_page::VA, mapped_window::PAGE_BYTES) };
 
 user_mode_runtime::program_entry!(start);
 
@@ -117,7 +118,7 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
                 }
             }
             wakes = wakes.wrapping_add(1);
-            PAGE.write(wakes_at, wakes);
+            PAGE_BYTES.write(wakes_at, wakes);
             continue;
         }
         if role == ROLE_GRINDER {
@@ -137,7 +138,7 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
                 // without its reply capability is exactly the shape of defect this workload is
                 // looking for, and swallowing it would be the soak lying about itself.
                 mismatches = mismatches.wrapping_add(1);
-                PAGE.write(mismatches_at, mismatches);
+                PAGE_BYTES.write(mismatches_at, mismatches);
             }
         } else {
             debug_assert!(role == ROLE_CALLER);
@@ -145,12 +146,12 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
             let (got, _) = call(ENDPOINT, sequence, 0);
             if got != soak_page::answer(sequence) {
                 mismatches = mismatches.wrapping_add(1);
-                PAGE.write(mismatches_at, mismatches);
+                PAGE_BYTES.write(mismatches_at, mismatches);
             }
         }
 
         rounds = rounds.wrapping_add(1);
-        PAGE.write(rounds_at, rounds);
+        PAGE_BYTES.write(rounds_at, rounds);
 
         // The jitter. xorshift64, four instructions, no memory traffic; the low bits decide how
         // many spins to burn before the next round trip. 0..63 is enough to slide a pair's phase
