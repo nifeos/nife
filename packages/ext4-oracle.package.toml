@@ -1,0 +1,15 @@
+# ext4-oracle: the read oracle of milestone 190 (ext4, read and write), a host tool that compares
+# what `rsext4` reads from a generated image with what `debugfs` reads. No Debian analogue; the
+# closest is a test suite's differential harness, which is never installed.
+#
+# A test package so that the package-boundary rule refuses a link to it from anything that ships:
+# its `rsext4` is ruled host-only (pull request #3639, 2026-11-16 UTC), not the §46 adoption
+# ruling. The corpus recipe and the debugfs side under tools/ext4_oracle/ come with the crate.
+#
+# Name: provisional, the lane's proposal; calef names packages. The home is undecided: it leaves
+# with the ext4 server it judges, whose package is not yet named.
+
+name = "ext4-oracle"
+kind = "test"
+home = { status = "undecided", reason = "it leaves with the ext4 server it judges, whose package is not yet named" }
+crates = ["ext4_oracle"]
