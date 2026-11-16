@@ -1,0 +1,21 @@
+Falsifies `device_tree_blob::verification::cells_refuses_a_value_wider_than_64_bits`.
+
+The defect: `cells` drops its check that the value so far fits in 32 bits before it shifts the
+next cell in. The loop still compiles and still reads one- and two-cell values correctly, which is
+all most real trees declare; only a nonzero cell above the low two differs, and then the high cell
+is shifted out of the u64 and the region is silently truncated to its low 64 bits, which is how
+Linux's `of_read_number` reads it and what this crate refuses.
+
+Expected to fail: the harness's `assert!(value[..low].iter().all(|&byte| byte == 0))` on the `Ok`
+arm, for any value of three or more cells with a nonzero cell above the low two.
+
+diff --git a/crates/device_tree_blob/src/lib.rs b/crates/device_tree_blob/src/lib.rs
+index 79c98ee22..f324b9eff 100644
+--- a/crates/device_tree_blob/src/lib.rs
++++ b/crates/device_tree_blob/src/lib.rs
+@@ -1224,5 +1224,2 @@ fn cells(value: &[u8]) -> Result<u64, Error> {
+     for cell in whole {
+-        if number >> 32 != 0 {
+-            return Err(Error::BadValue);
+-        }
+         // An add, not an or: the shift leaves the low 32 bits zero, so the two agree, and an add

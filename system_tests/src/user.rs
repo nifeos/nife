@@ -13,7 +13,7 @@ pub use kernel::system_test_access::user::*;
 #[allow(unused_imports)]
 use page_frames::{FRAME_SIZE, PageFrame};
 #[allow(unused_imports)]
-use paging::{Flags, Half, MapError, Mapper};
+use page_tables::{Flags, Half, MapError, Mapper};
 #[allow(unused_imports)]
 use static_elf::Elf;
 
@@ -1223,7 +1223,7 @@ mod ninth_pass_supervision_tests;
 /// pass at the confinement claim, claims 10 and 11). A confined budget holder's `MemoryRegion::MAP`
 /// is refused `BadPointer` for a kernel-half and an unaligned address, tied to the proved
 /// `is_user_page_va` gate, and every `Flags` a mapping path installs is writable or user-executable,
-/// never both. One layer up from `crates/paging`'s per-format proofs.
+/// never both. One layer up from `crates/page_tables`'s per-format proofs.
 ///
 /// Cross-ISA: the gate is instantiated at the running architecture's `Format` (DECISIONS §19).
 #[cfg(test)]

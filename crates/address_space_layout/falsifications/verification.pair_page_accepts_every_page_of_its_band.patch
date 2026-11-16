@@ -1,0 +1,21 @@
+Falsifies `address_space_layout::verification::pair_page_accepts_every_page_of_its_band`.
+
+The defect: an off-by-one in `pair_page`'s band check, which asks about the page after `virtual_address`, so
+the last page of `PAIR_PAGES` is refused.
+
+Expected to fail: the harness's claim that no allowed address reaches `pair_page`'s asserts; Kani
+reports "a pair page must lie in PAIR_PAGES" reachable at `virtual_address = 0x0FFF_F000`.
+
+diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
+index cf32cd949..254257eec 100644
+--- a/crates/address_space_layout/src/lib.rs
++++ b/crates/address_space_layout/src/lib.rs
+@@ -213,7 +213,7 @@ pub const fn pair_page(virtual_address: u64) -> u64 {
+         "a pair page must be page aligned"
+     );
+     assert!(
+-        PAIR_PAGES.contains(virtual_address),
++        PAIR_PAGES.contains(virtual_address + PAGE),
+         "a pair page must lie in PAIR_PAGES (address_space_layout)"
+     );
+     virtual_address

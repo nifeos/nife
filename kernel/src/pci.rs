@@ -11,7 +11,7 @@
 
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 
-use paging::PAGE_SIZE;
+use page_tables::PAGE_SIZE;
 use pci_configuration_space::{Bar, Bdf};
 
 use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE};
@@ -259,8 +259,8 @@ fn adopt(bdf: Bdf, index: usize, bar: &pci_configuration_space::Bar) -> bool {
     }
     let mut pa = lo;
     while pa < hi {
-        match mmu::map_page(mmu::phys_to_virt(pa), pa, paging::Flags::device()) {
-            Ok(()) | Err(paging::MapError::AlreadyMapped) => {}
+        match mmu::map_page(mmu::phys_to_virt(pa), pa, page_tables::Flags::device()) {
+            Ok(()) | Err(page_tables::MapError::AlreadyMapped) => {}
             Err(e) => {
                 crate::println!(
                     "  pci: {:02x}:{:02x}.{} BAR{index} at {:#x} could not be mapped ({e:?}); \
@@ -404,7 +404,7 @@ pub(crate) struct PciVirtioDevice {
     /// transport's config area is at a fixed offset (0x100) instead.
     pub device_config: Option<u64>,
     /// What a starter needs to draw a direct grant's register window
-    /// (`driver_process_contract::virtual_input_output::register_window`): the four structures as the capability
+    /// (`driver_process_contract::virtual_io::register_window`): the four structures as the capability
     /// list names them, each BAR's base and size, and the MSI-X table and pending-bit array this
     /// function must never map. A mediated grant reads none of it.
     pub direct: PciVirtioDirect,
@@ -415,13 +415,13 @@ pub(crate) struct PciVirtioDevice {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct PciVirtioDirect {
     /// The four structures, by BAR and offset.
-    pub structures: driver_process_contract::virtual_input_output::Structures,
+    pub structures: driver_process_contract::virtual_io::Structures,
     /// Each BAR's physical base, zero for one the function does not have.
     pub bar_bases: [u64; 6],
     /// Each BAR's size in bytes, zero for one the function does not have.
     pub bar_bytes: [u64; 6],
     /// The MSI-X table and pending-bit array, as byte ranges of their BARs.
-    pub withheld: [driver_process_contract::virtual_input_output::Withheld; 2],
+    pub withheld: [driver_process_contract::virtual_io::Withheld; 2],
 }
 
 /// Find the first modern virtio-blk function on the bus and bring it up. `None` if there is no
@@ -634,10 +634,8 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
     // walk is the contract's, so the mediated transport and a direct grant's window read one list
     // the same way.
     let (structures, notify_mult) =
-        driver_process_contract::virtual_input_output::structures(bdf, &mut |b, o| {
-            cfg_read32(b, o)
-        })?;
-    let resolve = |s: &driver_process_contract::virtual_input_output::Structure| -> Option<u64> {
+        driver_process_contract::virtual_io::structures(bdf, &mut |b, o| cfg_read32(b, o))?;
+    let resolve = |s: &driver_process_contract::virtual_io::Structure| -> Option<u64> {
         let bar = bars.get(s.bar as usize)?.as_ref()?;
         (s.offset.checked_add(s.length)? <= bar.size)
             .then(|| bar.base.checked_add(s.offset))
@@ -654,9 +652,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
         structures,
         bar_bases: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.base)),
         bar_bytes: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.size)),
-        withheld: driver_process_contract::virtual_input_output::withheld(bdf, &mut |b, o| {
-            cfg_read32(b, o)
-        }),
+        withheld: driver_process_contract::virtual_io::withheld(bdf, &mut |b, o| cfg_read32(b, o)),
     };
 
     // The upper half of this dword is STATUS, whose error bits are write-1-to-clear, so it is
@@ -1184,7 +1180,7 @@ mod tests {
             "the recorded ECAM window is not the tree's"
         );
         let ranges = dt
-            .node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
+            .node_property_compatible(b"pci-host-ecam-generic", b"ranges")
             .expect("the bridge's ranges parses")
             .expect("the bridge states its ranges");
         assert_eq!(

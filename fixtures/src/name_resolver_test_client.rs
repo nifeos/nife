@@ -39,7 +39,7 @@ use domain_name_resolution_contract::{
     Outcome, endowment, request, status,
 };
 use socket_contract as socket;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
     call, call_receiving, capability_delete, exit, map_page_frame, retype_into_page_frame, send,
     send_capability,
@@ -50,14 +50,14 @@ const RESOLVER: u64 = 1;
 const MEMORY_REGION: u64 = 2;
 const STACK: u64 = 3;
 
-const RESOLVER_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
-const SOCKET_VA: u64 = address_space_map::pair_page(0x0000_0000_00A1_0000);
+const RESOLVER_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
+const SOCKET_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A1_0000);
 
 // SAFETY: `attach` maps each page read/write at its address before the first access through it, and
 // the program stops before any access when a map fails.
-const RESOLVER_PAGE: MappedWindow = unsafe { MappedWindow::new(RESOLVER_VA, PAGE) };
+const RESOLVER_PAGE: MappedWindow = unsafe { MappedWindow::new(RESOLVER_VA, PAGE_BYTES) };
 // SAFETY: as above.
-const SOCKET_PAGE: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE) };
+const SOCKET_PAGE: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE_BYTES) };
 
 user_mode_runtime::program_entry!(start);
 
@@ -88,12 +88,12 @@ fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
 /// One resolve: the reply word and the first address, packed.
 fn resolve(name: &[u8]) -> (u64, u64) {
     for (i, &b) in name.iter().enumerate() {
-        RESOLVER_PAGE.w8((NAME_OFFSET_BYTES + i) as u64, b);
+        RESOLVER_PAGE.write_u8((NAME_OFFSET_BYTES + i) as u64, b);
     }
     let (word, _ttl) = call(RESOLVER, request(OPERATION_RESOLVE), name.len() as u64);
     let mut a = [0u8; 4];
     for (j, b) in a.iter_mut().enumerate() {
-        *b = RESOLVER_PAGE.r8((ADDRESSES_OFFSET_BYTES + j) as u64);
+        *b = RESOLVER_PAGE.read_u8((ADDRESSES_OFFSET_BYTES + j) as u64);
     }
     (word, endowment::server(a))
 }
@@ -128,9 +128,9 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {
-        SOCKET_PAGE.w8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET_PAGE.w16(
+    SOCKET_PAGE.write_u16(
         socket::DESTINATION_PORT_OFFSET_BYTES,
         socket::fixture::ECHO_PEER_PORT,
     );
@@ -138,14 +138,14 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in MSG.iter().enumerate() {
-        SOCKET_PAGE.w8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, socket::OPERATION_SEND, MSG.len() as u64).0 == MSG.len() as u64
         && call(socket, socket::OPERATION_RECEIVE, 0).0 == MSG.len() as u64
         && MSG
             .iter()
             .enumerate()
-            .all(|(i, &b)| SOCKET_PAGE.r8(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
+            .all(|(i, &b)| SOCKET_PAGE.read_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
     {
         ECHO_OK
     } else {

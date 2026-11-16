@@ -79,7 +79,7 @@ least one ISA the row applies to." Rows 12 to 18 are exempt; the other 27 must b
 | The report's own table | 1 to 9, 19 to 34; rows 10 and 11 graded `host` | 25 |
 | Fresh attacks only, no carry-over | 2, 4 to 9, 19 to 34 | 23 |
 
-Rows 10 (the user-VA gate) and 11 (W^X) were attacked with new host tests in `crates/paging`, not
+Rows 10 (the user-VA gate) and 11 (W^X) were attacked with new host tests in `crates/page_tables`, not
 booted. They are not among the exempt rows. Row 2 is fresh: `eighth_pass_endpoint_usurper_tests`
 asks for `READ` through `SEND_CAP`'s rights register, which is row 2's claim.
 
@@ -124,7 +124,7 @@ passed in the first. Another lane's QEMU was running throughout, with load avera
 No leg timed out, so none needed an idle rerun. Rows 1 and 3, which the reviewer booted on
 aarch64 only, passed on all three ISAs.
 
-The host rows reran green with `cargo test -p paging -p direct_memory_access_validator -p
+The host rows reran green with `cargo test -p page_tables -p direct_memory_access_validator -p
 component_plan -p c_seam`: rows 10 to 18, every new test.
 
 ## The claims

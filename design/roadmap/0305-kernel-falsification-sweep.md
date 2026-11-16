@@ -154,7 +154,7 @@ of them RISC-V's. The aarch64 falsification is one flag at one call site: map th
 with `Flags::user_rodata()` and EL0 may read it, while the kernel goes on reading it too because
 this kernel never sets `PSTATE.PAN`.
 
-The same defect cannot be booted on RISC-V. `crates/paging`'s Sv39 encoder turns `CAP_USER` into
+The same defect cannot be booted on RISC-V. `crates/page_tables`'s Sv39 encoder turns `CAP_USER` into
 the `U` bit, and S-mode access to a `U` page faults unless `sstatus.SUM` is set, which this kernel
 sets only inside a test helper. A kernel that marked its own memory user-readable there would not be
 a kernel userspace can read; it would be a kernel that cannot read itself, dead before the first

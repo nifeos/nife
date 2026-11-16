@@ -42,6 +42,10 @@ publish = false
 [workspace]
 
 [dependencies]
+# Delivers `link.ld` (the image layout every program links with), through its build script. Linked
+# for that and nothing else, so no source line names it.
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+
 # The protocol crate DECISIONS §196 ruled on, with default features off plus `tls12`, which is the
 # seven-crate shape that ruling measured.
 rustls = { version = "0.23", default-features = false, features = ["std"] }

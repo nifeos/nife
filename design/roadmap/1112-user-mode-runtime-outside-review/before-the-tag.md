@@ -38,7 +38,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    Evidence: every source file; `src/virtio.rs` line 72; `notes/user-mode-runtime.md` and
    `notes/user-mode-runtime/time.md`.
    Change: rewrite each doc comment to state the rule rather than cite the ruling: "the sixth word
-   goes in as zero so `receive_fault` reads 0 unless the kernel stamped a label" needs no section
+   goes in as zero so `receive_message` reads 0 unless the kernel stamped a label" needs no section
    number. Move the two notes into the repository's `docs/`, trimmed of tree paths, and point the
    crate root at them. Keep the kernel-side facts a reader needs (which register the kernel
    writes, what maps the timebase page) as statements, not as paths. Delete the one line naming
@@ -81,11 +81,11 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
 11. `INITIAL_RAMDISK_VIRTUAL_ADDRESS` is a literal here and a derived value in the kernel, and
     nothing checks they agree.
     Finding: this crate says `0x2000_0000`; the kernel says
-    `address_space_map::runtime_window(0x2000_0000)`. The doc says "must match" and no test
+    `address_space_layout::runtime_window(0x2000_0000)`. The doc says "must match" and no test
     asserts it (none found by search; unverified beyond that). After the move the two live in
     different repositories.
     Evidence: `src/initial_ramdisk.rs` line 34; `kernel/src/user/loader.rs` line 297.
-    Change: `address_space_map` leaves before this crate (milestone 1017 (the contract crates leave in this order), step 3), so depend on it
+    Change: `address_space_layout` leaves before this crate (milestone 1017 (the contract crates leave in this order), step 3), so depend on it
     and define the constant as the kernel does, from one source; or have the kernel import this
     crate's constant. One of the two, not both.
     Door: two-way (both sides are nife's). Effort: XS.

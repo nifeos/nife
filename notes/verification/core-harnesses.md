@@ -9,7 +9,7 @@ the generational table, the intrusive queue and the ASID allocator.
 
 ## `crates/capability`
 
-14 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
+15 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
 the table names the eight this appendix adjudicated:
 
 | Harness | Property |
@@ -53,9 +53,9 @@ parallel copy. So the proved arithmetic is the arithmetic that runs. It is a Pha
 extraction. The pure page accounting is here (address-agnostic, in page units). The byte arithmetic
 and the I/O (freeing frames, un-bumping the parent) stay in the kernel around it.
 
-## `crates/paging`
+## `crates/page_tables`
 
-38 across `crates/paging` <!--count:paging-harnesses-->, in `src/verification.rs` and one
+38 across `crates/page_tables` <!--count:page-tables-harnesses-->, in `src/verification.rs` and one
 module per architecture (`aarch64.rs`, `sv39.rs`, `x86_64.rs`, `domain.rs`); the per-architecture
 parity series those modules hold is the arch gate's record, not this appendix's. The eight below
 are the originals this appendix adjudicated, in `src/lib.rs` at the writing: the address arithmetic
@@ -75,7 +75,7 @@ inward).
 | `the_low_half_mapper_rejects_the_high_half_untouched` | for every address outside the low half (every kernel address included), `map`/`unmap`/`translate` on a `TTBR0` mapper reject before touching any memory (the harness gives the mapper a null root and a panicking frame source, so a touch is a proof failure) |
 
 The user-VA gate is a Phase-2-style extraction in miniature. `untyped::MAP` and `frame::MAP` both
-hand-rolled `va & 0xfff != 0 || (va >> 48) != 0`. Both now call `paging::is_user_page_va`, so the
+hand-rolled `va & 0xfff != 0 || (va >> 48) != 0`. Both now call `page_tables::is_user_page_va`, so the
 gate the kernel runs is the gate that is proved.
 
 The descriptor harness leans on one assumption worth recording. `pa` is taken as representable
@@ -89,7 +89,7 @@ considered and declined, not skipped. Kani only pays off on *symbolic* inputs, a
 are dead. A concrete-address round-trip is a unit test Kani happens to execute, with no gain over
 the tests already present. A symbolic-address round-trip reasons over a built four-level page table.
 That is the "BMC over real memory" case that walls the same way the ELF parser did. And the
-invariants of the walk that actually matter are *already* proved in the `paging` arithmetic
+invariants of the walk that actually matter are *already* proved in the `page_tables` arithmetic
 harnesses above: index-in-bounds, distinct pages take distinct paths, the lossless address split. So
 the round-trip would burn the solver to re-cover proved ground, or hit the wall. It stays covered by
 the host and kernel tests.
@@ -115,8 +115,9 @@ state by hand. The scan loops are bounded by pinning `total = 8`, so
 
 ## `crates/device_tree_blob`
 
-Five in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's leaf readers. The whole-parse
-token loop is the same BMC wall as ELF, so the leaves are what get proved.
+Nine in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's readers. The
+leaf harnesses cover every input; above them, the `from_bytes` and token-step harnesses cover blobs
+of a bounded size, and the tests and the fuzz target carry the whole walk.
 
 | Harness | Property |
 |---|---|
@@ -124,6 +125,10 @@ token loop is the same BMC wall as ELF, so the leaves are what get proved.
 | `be32_reads_big_endian_when_in_bounds` | an in-bounds read is exactly `bytes[at..at+4]`, MSB first |
 | `align4_rounds_up_to_a_multiple_of_four` | the padding helper rounds up for every length, or answers `None` when rounding would wrap |
 | `skip_padded_never_wraps` | stepping a cursor over padded data never wraps or moves backward |
+| `cells_refuses_a_value_wider_than_64_bits` | a value of up to five cells reads whole, or draws a refusal when a cell above the low two is nonzero |
+| `decode_regions_stays_inside_its_output` | a `reg` value of up to 24 bytes, under any cell counts, never panics or writes past `out` |
+| `from_bytes_is_total` | any buffer of up to 48 bytes gives a tree inside the buffer or an error |
+| `a_token_step_is_total_and_moves_forward` | over a 56-byte blob with both blocks after the header, three steps never panic, each moves forward, and the depth stays within `MAXIMUM_DEPTH` |
 
 `be32`/`be64` were *hardened* to reach totality. Their `at + 4` / `at + 8` is now a checked add, so
 a near-`usize::MAX` offset from a corrupt blob returns `Truncated` instead of panicking. The 12
@@ -227,3 +232,19 @@ witness test rather than a proof):
 | `the_kernel_asid_is_never_allocated` | no reachable state hands a user space ASID 0, the kernel's tag |
 | `two_live_asids_are_distinct` | live allocations never alias, from any symbolic state |
 | `free_releases_exactly_its_own_asid` | free clears its own bit and no other |
+
+## `crates/memory_region_heap`
+
+Three in `crates/memory_region_heap/src/lib.rs`, the growth arithmetic of the global allocator.
+The prover cannot reach `talc`, which does the allocating through raw pointers over mapped memory.
+So the policy around it lives in the pure functions `growth_pages`, `run_succeeded` and
+`required_bytes`, and the heap calls the same functions the harnesses do. Host tests drive the rest
+through the `PageSource` seam. Two `assume`s state the type's invariant: `committed` is a whole
+number of pages inside the cap, and a run maps at most the pages it planned. One more bounds
+`talc`'s first-heap bookkeeping by a page. A host test named in the harness's comment backs each.
+
+| Harness | Property |
+|---|---|
+| `a_grow_never_commits_past_the_maximum` | for any cap, committed range, request and number of pages mapped up to the plan, the range stays inside the cap in whole pages, and a success covers the request |
+| `a_grow_at_the_maximum_is_a_refusal` | at the cap the plan holds no page, and a run of no page never succeeds, so `alloc` cannot retry forever |
+| `the_bytes_a_grow_asks_for_never_overflow` | for any valid layout, the chunk, the alignment slack and the first run add without wrapping and cover the size and tag |

@@ -649,16 +649,16 @@ impl Isa {
     /// defaults for the kernel to complete.
     pub fn from_device_tree(dt: &DeviceTreeBlob<'_>) -> Result<Isa, Error> {
         let mut extensions = [None; MAXIMUM_HARTS];
-        let harts = dt.node_props(b"cpu@", b"riscv,isa-extensions", &mut extensions)?;
+        let harts = dt.node_properties(b"cpu@", b"riscv,isa-extensions", &mut extensions)?;
 
         let mut legacy = [None; MAXIMUM_HARTS];
-        dt.node_props(b"cpu@", b"riscv,isa", &mut legacy)?;
+        dt.node_properties(b"cpu@", b"riscv,isa", &mut legacy)?;
 
         let mut isa_base = [None; MAXIMUM_HARTS];
-        dt.node_props(b"cpu@", b"riscv,isa-base", &mut isa_base)?;
+        dt.node_properties(b"cpu@", b"riscv,isa-base", &mut isa_base)?;
 
         let mut mmu_type = [None; MAXIMUM_HARTS];
-        dt.node_props(b"cpu@", b"mmu-type", &mut mmu_type)?;
+        dt.node_properties(b"cpu@", b"mmu-type", &mut mmu_type)?;
 
         // Which harts may speak for the machine at all. A disabled hart never runs kernel code,
         // and neither does one whose own ISA string disclaims supervisor mode, so what they
@@ -666,7 +666,7 @@ impl Isa {
         // Both gates are needed: mainline JH7110 trees exclude the S7 by `status`, and the vendor
         // tree marks it "okay" so only the missing `s` in `rv64imacu` excludes it.
         let mut status = [None; MAXIMUM_HARTS];
-        dt.node_props(b"cpu@", b"status", &mut status)?;
+        dt.node_properties(b"cpu@", b"status", &mut status)?;
         let enabled = |i: usize| {
             status[i].is_none_or(crate::cpu_list::is_okay)
                 && legacy[i].is_none_or(|s| supervisor_mode_claim(s) != Some(false))

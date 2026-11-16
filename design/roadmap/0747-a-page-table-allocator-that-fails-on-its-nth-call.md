@@ -17,7 +17,7 @@ test file, helper and test names are provisional.)*
 
 ## What it does
 
-`crates/paging/tests/nth_allocation.rs` wraps the mapper's `alloc_page_frame` closure so it fails on
+`crates/page_tables/tests/nth_allocation.rs` wraps the mapper's `alloc_page_frame` closure so it fails on
 exactly one call, N, counted from 0, and sweeps N upward until the mapping succeeds. It covers
 `map_block` (each leaf size), `map_range` across a 1 GiB boundary, `map_span` with a 4 KiB head, two
 2 MiB blocks, a 1 GiB block and a 4 KiB tail, and `build_identity_domain` over two regions. Each runs
@@ -40,7 +40,7 @@ wholesale (`notes/teardown.md`). Nothing was fixed, because nothing was wrong.
 
 ## Falsifications
 
-Four, one per test, under `crates/paging/falsifications/nth_allocation.*.patch`, each replayed red
+Four, one per test, under `crates/page_tables/falsifications/nth_allocation.*.patch`, each replayed red
 and reverted green on 2026-10-04 (UTC). Two are an "atomic" unwind that clears the entry a failed map
 installed (in `map_block`, and in `map`), which orphans the tables below it; assertion (1) catches
 both. Two are a "best effort" `map_span` and domain build that skip a failed leaf and map the rest;

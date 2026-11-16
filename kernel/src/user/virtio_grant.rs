@@ -19,7 +19,7 @@
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 
-use driver_process_contract::virtual_input_output::{
+use driver_process_contract::virtual_io::{
     self as contract, HandOff, RegisterWindow, WindowRefusal,
 };
 
@@ -28,10 +28,10 @@ use crate::pci::PciVirtioDevice;
 use crate::sync::{InterruptSafeMutex, rank};
 
 /// Where a direct driver's register window starts. The driver reads it from the startup page.
-const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
+const REGISTERS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0100_0000);
 
 /// Where a direct driver's DMA region starts. The driver reads it from the startup page.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0200_0000);
 
 /// The most DMA pages a direct grant carries, so the mappings fit a fixed array.
 ///
@@ -179,7 +179,7 @@ pub(crate) fn carve(
             let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
             let confined = crate::iommu::confine(
                 d.rid,
-                &[paging::domain::DmaRegion {
+                &[page_tables::domain::DmaRegion {
                     base: dma,
                     size: pages as u64 * FRAME_SIZE,
                     writable: true,

@@ -50,10 +50,10 @@ const KEYS: u64 = 2;
 /// The page the write endpoint's server reads. Which frame backs it is the progenitor's business;
 /// on arm 0 it is the page the discipline reads (`line_editor`'s `APP_OUT`), on arm 1 the page
 /// `display_terminal` reads (its `OUT_VA`). Must match the spawn wiring; the address is ours.
-const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
+const OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a0_0000);
 /// The page the discipline delivers completed lines into, read-only. Arm 0 only; arm 1's reads
 /// are register-only and no second page is mapped.
-const IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
+const IN_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a1_0000);
 
 // SAFETY: the wiring maps OUT_VA read/write before this program runs, on either arm; nothing
 // below writes it before a flush-sized batch is composed and never past one page.
@@ -81,7 +81,7 @@ impl Echo {
             if self.used == 4096 {
                 self.flush();
             }
-            OUT_WINDOW.w8(self.used as u64, b);
+            OUT_WINDOW.write_u8(self.used as u64, b);
             self.used += 1;
         }
     }
@@ -117,7 +117,7 @@ fn discipline_arm() -> ! {
         // The prompt rides the READLINE request's own page: the discipline reads it from there
         // and paints it, which is what keeps the prompt and the echoing cursor in one place.
         for (i, &b) in PROMPT.iter().enumerate() {
-            OUT_WINDOW.w8(i as u64, b);
+            OUT_WINDOW.write_u8(i as u64, b);
         }
         let (len, flags) = call(
             KEYS,
@@ -132,7 +132,7 @@ fn discipline_arm() -> ! {
         let len = (len as usize).min(4096);
         let mut line = [0u8; 4096];
         for (i, b) in line.iter_mut().enumerate().take(len) {
-            *b = IN_WINDOW.r8(i as u64);
+            *b = IN_WINDOW.read_u8(i as u64);
         }
         if line[..len] == QUIT[..] {
             break;

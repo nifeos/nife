@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1062, 1069
 decision_dependencies: 46, 23
@@ -63,7 +63,7 @@ crate would be a repository nobody outside could use and that pins the SDK back 
 fix: see Decision 1. Effort: S to fold the roles into the program, L to re-cut a library. One-way:
 a repository and a published name.
 
-**2. No test can run anywhere but under QEMU, and no proof exists.** The crate has zero unit
+**2. No test can run anywhere but under QEMU, and no proof exists.** DONE (the pure logic takes slices or closures, with host tests in `tests.rs` and Kani harnesses in `verification`). The crate has zero unit
 tests, no Kani harness, and one `no_run` doctest (`:192-197`). Its pure logic is `find_file`
 (`:399-421`), `pattern_byte` (`:232-239`), `ip_checksum` (`:606-617`), `build_dhcp_discover`
 (`:723-796`) and `parse_dhcp_offer` (`:821-865`). Each reads or writes the fixed `DMA_VA` through
@@ -84,8 +84,8 @@ The P1 items are in [the appendix](1113-virtio-outside-review/before-the-tag.md)
 
 ## Decisions for the architect
 
-Only one-way doors. Each with the background first, then the recommendation, prior art and a
-concrete example.
+Three decisions, each with the background first, then the recommendation, prior art and a
+concrete example. The maintainer decides Decision 2, provisionally, below.
 
 ### Decision 1. Whether `crates/virtio` leaves this tree, and as what
 
@@ -155,29 +155,53 @@ and `:99-101` and `components/src/virtio_net_transport.rs` lines 73 to 87 spell 
 `0x100`, `0x200`. After the move, each of those is `abi::virtio::RING_...` and a change to the
 proved layout is a compile error in every driver.
 
-### Decision 3. Whether the driver refuses a device whose `Version` is not 2
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. The layout values are already the agreement between kernel and driver and do not change;
+only the home of their names moves, inside unreleased crates. They stay relevant after the virtio
+default ruling of 2026-11-11, because every mediated grant still uses `SETUP_QUEUE` at the
+validator's layout. The five constants (`crates/direct_memory_access_validator/src/lib.rs` lines
+294 to 304) move to `abi::virtio`, beside the DMA-layout fact already there
+(`crates/abi/src/virtio.rs` line 38), with `RING_END`, which the validator derives from them and
+the kernel also aliases. The validator and the kernel alias them from there. The present names fail
+the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
+names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
+maintainer would fix in `abi` before the move), its item 11. Item 3 is the work.
 
-Background. A virtio-mmio device reports a version in the register at `0x004`: 1 for the legacy
-layout, 2 for the layout the specification now describes. The driver checks the magic value and
-nothing else, so it would drive a legacy device with the modern handshake and find out by its
-queues failing. The direct transport (the virtio-pci path of 1062 step 7) has no such register. Its
-`read` answers a made-up magic and zero for any offset it does not name. A check written against
-the mmio register would therefore refuse every direct grant, unless that transport also answers it. QEMU's
-`virt` machine offers legacy mmio devices unless told otherwise, so which version the test suites
-meet today is a measurement this review did not make.
+### Decision 3. The driver does not check `Version`; the kernel does
 
-Recommendation. Check `Version == 2` beside the magic, and have the direct transport answer 2 for
-that offset, after one run of each QEMU suite on each architecture shows which version the devices
-report. Refusing a legacy device is the stricter choice and loosening it later is compatible;
-accepting one now and tightening later is not. This changes what the driver accepts, which is why
-it is brought and not made.
+The maintainer ruled this on 2026-11-15 (UTC), provisional: a two-way door, which the architect may
+revisit.
+
+The rule in force. The driver reads the magic value and never the `Version` register. The kernel
+is the one layer that reads a real `Version`. It offers only modern devices on either bus: it
+refuses any value but 2 in every build, on the mmio scan, and its PCI transport answers 2 for the
+same offset. A driver never sees a device whose `Version` is not 2, so a driver-side check would
+test what the kernel already tested. The direct transport (the virtio-pci path of 1062 step 7) has
+no such register and answers 0 for any offset it does not name. A driver-side check would need that
+transport to invent an answer. The maintainer closes item 6's driver half as not done, on purpose.
+
+Background. A virtio-mmio device reports a version in the register at `0x004`. Version 1 is the
+legacy layout and version 2 is the modern layout the kernel drives. The virtio specification
+commit `oasis-tcs/virtio-spec@bb1dd2e1` (2026-06-01) adds mmio version 3. It keeps the version 2
+register layout and makes reset asynchronous: the driver polls `Status` until it reads 0. So
+versions other than 2 exist, and the kernel's `SUPPORTED_VERSION` of 2 refuses version 3 too,
+which is the strict choice. Accepting 3 later needs the kernel's `reset_to_features_ok` to poll
+`Status` the way `unregister` does after its reset (`kernel/src/virtio.rs`).
 
 Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 and version 2 with
-a layout each and refuses any other. Redox's `virtio-core` is PCI-only and has no such register.
+a layout each and refuses any other; it is one layer that both reads and drives. Redox's
+`virtio-core` is PCI-only and has no such register. Here the kernel owns the register and the
+driver sits behind it, so the check lives where the register is read.
 
-Concrete example. A board whose firmware offers a version 1 block device today boots to a driver
-that hangs after the handshake. With the check it stops at once, and the sentence names the
-register it read.
+Concrete example. A board whose firmware offers a version 1 block device never reaches the driver.
+The kernel's scan does not offer the slot, so nothing starts a driver for it.
+
+## Follow-on
+
+- **Outstanding.** The items in the lists above that do not read DONE, and Decision 3's driver-side
+  check, which waits for the ruling. The kernel's scan refuses a slot whose `Version` is not 2 in every
+  build, and the PCI transport answers the real configuration generation (item 6 and
+  `notes/virtio.md`).
 
 ## Done when
 
@@ -189,8 +213,8 @@ The checks are in [the appendix](1113-virtio-outside-review/done-when.md).
   entry points and from `notes/virtio.md`, and did not observe it.
 - Items 6 and 13 cite specification requirements from memory; nobody has verified the section
   numbers,   and the recording lane should confirm them against virtio 1.2 before the text lands.
-- Item 14 states a performance shape and no figure. A figure needs `script/bench` on a machine
-  with the storage rows, which the review did not run.
+- Item 14's figure is the storage benchmark already recorded in `notes/benchmarks.md`; nobody ran
+  `script/bench` for this milestone.
 - The crates.io figures are one API call each at the time of the review; the `virtio` name's
   availability on crates.io rests on a single not-found response.
 - The six-copy count of the handshake constants comes from a `grep` for the magic value and

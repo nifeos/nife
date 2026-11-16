@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -46,6 +46,8 @@ outside the repository acts on it after the first tag (a public name, a publishe
 release, so a public rename is one-way only from the tag on; the items say "one-way at the tag"
 for those.
 
+The ledger of what landed and what is left is in [the appendix](1077-allocation-cache-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The manifest and the files do not stand alone.
@@ -91,8 +93,8 @@ The P1 items are in [the appendix](1077-allocation-cache-outside-review/before-t
 
 ## Decisions for the architect
 
-Only one-way doors. Each is plain background first, the recommendation, then prior art and one
-example.
+Each is plain background first, the recommendation, then prior art and one example. Decisions 2
+and 3 are two-way before the first tag, and the maintainer has decided them, provisionally.
 
 ### Decision 1: Whether the crate gets a repository of its own
 
@@ -133,6 +135,12 @@ Example: `let class = class(48, 8).unwrap(); cache.push(class, block)?; let agai
 cache.pop(class);` and `const _: () = assert!(size_of::<Block>() > MAXIMUM_CLASS_BYTES);` in the
 consumer's thread block.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The crate keeps the name `allocation_cache`. `GRID` becomes `GRID_BYTES`, `LARGEST`
+`MAXIMUM_CLASS_BYTES`, `DEPTH` `BLOCKS_PER_CLASS`, `BATCH` `BATCH_BLOCKS` and `MOST_CACHED_BYTES`
+`MAXIMUM_CACHED_BYTES`; `CLASSES` stays. `put` becomes `push` and `take` becomes `pop`. `drain`
+takes a closure today, so it becomes `give_back_all`, unless the rename lane makes it return an
+iterator, in which case it keeps `drain` with std's meaning. Item 7 is the work.
+
 ### Decision 3: A `Class` newtype in the public signatures
 
 Background: item 4. Every method takes the class as a bare `usize` that the caller got from
@@ -152,6 +160,10 @@ Example: `pub struct Class(u8); pub const fn class(size: usize, align: usize) ->
 pub fn pop(&mut self, class: Class) -> Option<NonNull<u8>>; pub const fn class_bytes(class: Class)
 -> usize;`
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `class` returns `Option<Class>`, where `Class` is a `#[repr(transparent)]` newtype over
+`u8` with a private field, and `class_bytes`, `class_layout`, `count`, `pop`, `push`, `spill` and
+`refill` take it. The name `Class` ships provisional. Item 4 is the work.
+
 ### Not brought
 
 Items 5, 6, 8, 9 and 12 change no public name and carry a recommendation; the maintainer decides
@@ -161,6 +173,13 @@ consumer.
 ## Done when
 
 The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Decisions 1 to 3, the move's items 1, 3, 10 and 11, the bounded model of item 8
+  and the `Drop` assertion of item 12. Checked against `crates/allocation_cache/src`: `Class`,
+  `MAXIMUM_CLASS_BYTES` and `push` do not exist, and no model of `put` and `take` is in
+  `verification.rs`.
 
 ## BUGS
 

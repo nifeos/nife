@@ -174,8 +174,8 @@ pub fn configure_thread_control_block_joining(
 /// because `x86_64`'s `wrmsr` to `IA32_FS_BASE` raises `#GP` in the kernel on a non-canonical
 /// value. The same rule on every architecture (§19 (architectural parity is a tenet)).
 fn is_thread_pointer(value: u64) -> bool {
-    use paging::PageFormat;
-    value == 0 || crate::arch::mmu::Format::is_in_half(paging::Half::Low, value)
+    use page_tables::PageFormat;
+    value == 0 || crate::arch::mmu::Format::is_in_half(page_tables::Half::Low, value)
 }
 
 /// **The calling thread's thread pointer**, for the first entry to user mode: riscv64's

@@ -18,8 +18,8 @@
 #![no_main]
 
 use user_mode_runtime::{
-    Received, exit, notification_bind, notification_poll, notification_signal, notification_wait,
-    receive_bound, require, retype_into_kernel_object, send, send_capability,
+    Message, Received, exit, notification_bind, notification_poll, notification_signal,
+    notification_wait, receive_message, require, retype_into_kernel_object, send, send_capability,
 };
 
 const MEMORY_REGION: u64 = 0;
@@ -55,16 +55,16 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 
     // A signal counted while we are not receiving ends our next receive at once.
     require(notification_signal(n, 0b1000) == 0);
-    require(receive_bound(ENDPOINT) == Received::Notification(0b1000));
+    require(receive_message(ENDPOINT) == Received::Notification(0b1000));
 
     // Hand the kernel test a signal-only view of the notification, then block receiving twice.
     require(send_capability(REPORT, n, abi::rights::WRITE, 0) == 0);
     for _ in 0..2 {
-        match receive_bound(ENDPOINT) {
+        match receive_message(ENDPOINT) {
             Received::Notification(word) => {
                 send(REPORT, abi::notification::BOUND, word, 1);
             }
-            Received::Message(w0, w1, _) => {
+            Received::Message(Message { w0, w1, .. }) => {
                 send(REPORT, w0, w1, 0);
             }
         }

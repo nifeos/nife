@@ -39,7 +39,7 @@ fn discovery_finds_the_riscv_windows_the_constants_named() {
         }
     );
     let ranges = dtb
-        .node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
+        .node_property_compatible(b"pci-host-ecam-generic", b"ranges")
         .unwrap()
         .expect("the bridge states its ranges");
     assert_eq!(
@@ -66,7 +66,7 @@ fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
         "no node claims the generic-ECAM binding"
     );
     assert_eq!(
-        dtb.node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
+        dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
             .unwrap(),
         None,
         "and no ranges either: both reads memory::initialize performs come back empty"
@@ -86,7 +86,7 @@ fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
 fn the_intx_swizzle_matches_the_interrupt_map() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let map = dtb
-        .node_prop(b"pci@", b"interrupt-map")
+        .node_property(b"pci@", b"interrupt-map")
         .unwrap()
         .expect("the pci node has no interrupt-map");
 
@@ -134,7 +134,7 @@ fn discovery_finds_the_aarch64_windows_the_constants_named() {
         }
     );
     let ranges = dtb
-        .node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
+        .node_property_compatible(b"pci-host-ecam-generic", b"ranges")
         .unwrap()
         .expect("the bridge states its ranges");
     assert_eq!(
@@ -154,7 +154,7 @@ fn discovery_finds_the_aarch64_windows_the_constants_named() {
 fn the_intx_swizzle_matches_the_aarch64_interrupt_map() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_AARCH64_VIRT).unwrap();
     let map = dtb
-        .node_prop(b"pcie@", b"interrupt-map")
+        .node_property(b"pcie@", b"interrupt-map")
         .unwrap()
         .expect("the pcie node has no interrupt-map");
 

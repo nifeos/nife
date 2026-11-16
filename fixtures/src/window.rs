@@ -57,8 +57,8 @@ const BUDGET: u64 = 4;
 /// uses the same addresses**, which is the point: two clients' surfaces are the same virtual address
 /// in different address spaces, so "the neighbour's surface" is not somewhere a client can reach by
 /// guessing.
-const CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
-const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0061_0000);
+const CTL_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
+const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0061_0000);
 /// The screen and the window list, read-only, and **only** for a client granted them.
 ///
 /// `SCREEN_VA` is 2 MiB-aligned (milestone 142 (a text display good enough that people use it
@@ -67,8 +67,8 @@ const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0061_0000);
 /// `PageFrame::MAP` would refuse the window list as already mapped. At 924x344 (311 page frames,
 /// 1.25 MiB, the scanout since 2026-08-27) the screen fits one 2 MiB page-table window;
 /// `compositor_service::MAP_BUDGET_PAGES`'s comment has the arithmetic.
-const SCREEN_VA: u64 = address_space_map::pair_page(0x0000_0000_0080_0000);
-const WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
+const SCREEN_VA: u64 = address_space_layout::pair_page(0x0000_0000_0080_0000);
+const WLIST_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c00_0000);
 
 /// Roles, as a bitmask in `arg0`. A plain window is 0.
 const ROLE_INPUT: u64 = 1 << 0;
@@ -149,11 +149,11 @@ fn wr32(va: u64, v: u32) {
 /// that check passes, and threaded to every `px_write`/`px_read` call rather than declared as a
 /// file-level constant (milestone 139 round 4).
 fn px_write(surface: &MappedWindow, i: usize, v: u32) {
-    surface.w32((i * 4) as u64, v);
+    surface.write_u32((i * 4) as u64, v);
 }
 
 fn px_read(surface: &MappedWindow, i: usize) -> u32 {
-    surface.r32((i * 4) as u64)
+    surface.read_u32((i * 4) as u64)
 }
 
 fn die(code: u64) -> ! {

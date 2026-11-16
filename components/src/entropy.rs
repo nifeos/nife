@@ -28,7 +28,7 @@
 #![no_main]
 
 use entropy_contract as proto;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
@@ -59,11 +59,11 @@ const I_REQ: u64 = 0;
 const I_READY: u64 = 1;
 
 /// Where the kernel maps this service's DMA page. Must match `kernel/src/user/entropy_service.rs`.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139;
 // see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled r8/w8/r16/w16/r32 below).
-const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
+const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 
 // virtio-mmio register offsets. The §18 transport seam speaks this vocabulary on both buses, so
 // this driver runs over PCIe and over mmio without knowing which one it got.
@@ -139,23 +139,23 @@ fn refuses_service(report: u64) -> bool {
 }
 
 fn r8(off: u64) -> u8 {
-    WINDOW.r8(off)
+    WINDOW.read_u8(off)
 }
 
 fn w8(off: u64, v: u8) {
-    WINDOW.w8(off, v);
+    WINDOW.write_u8(off, v);
 }
 
 fn r16(off: u64) -> u16 {
-    WINDOW.r16(off)
+    WINDOW.read_u16(off)
 }
 
 fn w16(off: u64, v: u16) {
-    WINDOW.w16(off, v);
+    WINDOW.write_u16(off, v);
 }
 
 fn r32(off: u64) -> u32 {
-    WINDOW.r32(off)
+    WINDOW.read_u32(off)
 }
 
 fn mr(off: u64) -> u32 {
@@ -268,14 +268,15 @@ impl Pool {
         false
     }
 
-    /// Take `n` bytes, as a little-endian word plus a count.
+    /// Take `n` bytes, at most [`proto::MAXIMUM_BYTES`], as the reply [`proto::reply`] builds.
     ///
     /// A refill can land short (QEMU's virtio-rng returns fewer than the 256 bytes asked), so the
     /// bytes a client asked for can straddle two device requests; gathering across them keeps a
     /// short device read invisible. A count below `n` means the device went dry part-way, never
     /// padding; zero means it was dry from the start.
     fn take(&mut self, n: u64) -> (u64, u64) {
-        let mut word = 0u64;
+        let n = n.min(proto::MAXIMUM_BYTES);
+        let mut bytes = [0u8; proto::MAXIMUM_BYTES as usize];
         let mut got = 0;
         while got < n {
             if self.cursor == self.filled && !self.refill() {
@@ -284,7 +285,7 @@ impl Pool {
             let run = (n - got).min(self.filled - self.cursor);
             for i in 0..run {
                 let at = POOL_OFF + self.cursor + i;
-                word |= (r8(at) as u64) << (8 * (got + i));
+                bytes[(got + i) as usize] = r8(at);
                 // Zero behind the cursor. The cursor alone already guarantees no byte is served
                 // twice; this is hygiene, so a byte a client now holds is not also still sitting in
                 // a page this long-lived process keeps mapped for the rest of the boot.
@@ -293,7 +294,7 @@ impl Pool {
             self.cursor += run;
             got += run;
         }
-        (got, word)
+        proto::reply(&bytes[..got as usize])
     }
 }
 

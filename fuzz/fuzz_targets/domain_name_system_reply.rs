@@ -21,8 +21,8 @@
 #![no_main]
 
 use domain_name_system::{
-    CLASS_IN, Header, MAXIMUM_ADDRESSES, Name, Query, Reader, TcpReply, cname_target, decode_name,
-    record_type,
+    CLASS_IN, Header, MAXIMUM_IPV4_ADDRESSES, Name, Query, Reader, TcpReply, cname_target,
+    decode_name, record_type,
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -44,24 +44,24 @@ fn dotted(name: &Name) -> Option<String> {
     Some(out)
 }
 
-/// Every class-IN record of `rtype` in the answer section, as (owner, data offset, data).
-fn answers(reply: &[u8], rtype: u16) -> Vec<(Name, usize, Vec<u8>)> {
+/// Every class-IN record of `record_type` in the answer section, as (owner, data offset, data).
+fn answers(reply: &[u8], record_type: u16) -> Vec<(Name, usize, Vec<u8>)> {
     let mut found = Vec::new();
     let Ok(mut reader) = Reader::new(reply) else {
         return found;
     };
     let header = reader.header;
-    for _ in 0..header.qdcount {
+    for _ in 0..header.question_count {
         if reader.question().is_err() {
             return found;
         }
     }
-    for _ in 0..header.ancount {
+    for _ in 0..header.answer_count {
         let Ok(r) = reader.record() else {
             return found;
         };
-        if r.class == CLASS_IN && r.rtype == rtype {
-            found.push((r.name, r.rdata_off, r.rdata.to_vec()));
+        if r.class == CLASS_IN && r.record_type == record_type {
+            found.push((r.name, r.data_offset, r.data.to_vec()));
         }
     }
     found
@@ -86,10 +86,13 @@ fuzz_target!(|reply: &[u8]| {
 
     if let Ok(answer) = asked.accept(reply) {
         // Property 1.
-        assert!(!answer.addresses().is_empty() && answer.addresses().len() <= MAXIMUM_ADDRESSES);
+        assert!(
+            !answer.ipv4_addresses().is_empty()
+                && answer.ipv4_addresses().len() <= MAXIMUM_IPV4_ADDRESSES
+        );
         let canonical = *answer.canonical();
         let a_records = answers(reply, record_type::A);
-        for address in answer.addresses() {
+        for address in answer.ipv4_addresses() {
             assert!(
                 a_records
                     .iter()
@@ -106,11 +109,11 @@ fuzz_target!(|reply: &[u8]| {
                             reply,
                             &domain_name_system::Record {
                                 name: *owner,
-                                rtype: record_type::CNAME,
+                                record_type: record_type::CNAME,
                                 class: CLASS_IN,
                                 ttl: 0,
-                                rdata: data,
-                                rdata_off: *at,
+                                data,
+                                data_offset: *at,
                             },
                         )
                         .is_ok()

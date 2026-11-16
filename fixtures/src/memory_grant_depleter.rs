@@ -48,7 +48,7 @@ const BUDGET: u64 = 1;
 const PAGE: u64 = 4096;
 /// Where we start mapping: the bottom of the address-space map's runtime windows, a window that
 /// grows upward with nothing else of this program's in it.
-const SPEND_BASE: u64 = address_space_map::runtime_window(0x1000_0000);
+const SPEND_BASE: u64 = address_space_layout::runtime_window(0x1000_0000);
 
 user_mode_runtime::program_entry!(start);
 

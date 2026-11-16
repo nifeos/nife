@@ -33,7 +33,7 @@ use ::driver_process_contract::designware_ethernet::{
     DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
 use contract::device::bring_up::{self as port_bring_up, Inputs};
-use contract::device::motorcomm_physical_layer_device::Link;
+use contract::device::link::Link;
 use contract::device::{layout, registers};
 
 use super::*;
@@ -152,7 +152,7 @@ fn bring_up() -> Result<Found, Absent> {
     Ok(Found {
         handoff,
         dma_page: e.port.registers_physical_address
-            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES),
         link,
     })
 }
@@ -179,8 +179,8 @@ fn bring_up_port(
     let region = region()?;
     let inputs = Inputs {
         region_physical_address: region,
-        station_address: e.port.station_address,
-        physical_layer_device_address: e.port.physical_layer_device_address,
+        station_mac_address: e.port.station_mac_address,
+        physical_layer_device_bus_address: e.port.physical_layer_device_bus_address,
         physical_layer_device: e.port.physical_layer_device,
     };
     let control = start_control(e, inputs)?;
@@ -188,7 +188,7 @@ fn bring_up_port(
     let linked = control.1.map_err(Error::Port)?;
     let account = control.0.account;
     let station_address = account
-        .station_address
+        .station_mac_address
         .ok_or(Error::ControlReportUnreadable)?
         .0;
     // A report that says it linked and carries no link, or the reverse, is not this program's.

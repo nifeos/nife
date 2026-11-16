@@ -24,7 +24,7 @@ It takes `IPC_TABLES`, which is free when the hang is a blocked thread rather th
 ## What each column is for
 
 - `address_space` is the root of the thread's space, and it is what tells threads of different
-  processes apart. Every user program's link address is `address_space_map::IMAGE_BASE`, so a bare
+  processes apart. Every user program's link address is `address_space_layout::IMAGE_BASE`, so a bare
   `pc` resolves plausibly against several binaries. Threads sharing a root are one process; 0 is a
   kernel thread.
 - The same statement that writes `Blocked` writes `wait`. A `Blocked` thread with `wait=-`

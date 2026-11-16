@@ -26,10 +26,10 @@ publish = false
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
 # same change), where the package source answers (`socket_contract::fixture`), the `std` layout's
 # pages (`std_runtime_contract`), and the syscalls a `std` program has no binding for
-# (`user_mode_runtime`, `abi`, `address_space_map`).
+# (`user_mode_runtime`, `abi`, `address_space_layout`).
 [dependencies]
 abi = { path = "../crates/abi" }
-address_space_map = { path = "../crates/address_space_map" }
+address_space_layout = { path = "../crates/address_space_layout" }
 filesystem_contract = { path = "../crates/filesystem_contract" }
 grant_contract = { path = "../crates/grant_contract" }
 program_table = { path = "../crates/program_table" }

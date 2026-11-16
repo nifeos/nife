@@ -22,8 +22,8 @@ use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, cntfrq, map_page_frame, now, receive, receive_bound,
-    receive_fault, revoke_page_frame, send, timer_arm, trap,
+    Message, address_space_layout_into, capability_delete, counter_hertz, map_page_frame, now,
+    receive, receive_message, revoke_page_frame, send, timer_arm, trap,
 };
 
 /// What the kernel grants us, and nothing else.
@@ -320,11 +320,11 @@ fn attack_the_service(
     // so the run fails at the test's assertion rather than a watchdog. The bound can also fire
     // before the plant has sent (spawn order is not run order), and then the plant never exits and
     // the reap would hang, so with a refusal reported that case bails on its own stage.
-    if timer_arm(TIMER, now() + cntfrq() / 2, WAKE, 1) < 0 {
+    if timer_arm(TIMER, now() + counter_hertz() / 2, WAKE, 1) < 0 {
         bail(35);
     }
-    match receive_bound(w.svc) {
-        user_mode_runtime::Received::Message(word, _, _)
+    match receive_message(w.svc) {
+        user_mode_runtime::Received::Message(user_mode_runtime::Message { w0: word, .. })
             if word == hot_swap_contract::PLANT_MARKER => {}
         user_mode_runtime::Received::Notification(_) if refused => bail(37),
         user_mode_runtime::Received::Notification(_) => {}
@@ -397,7 +397,7 @@ fn endow_devices_and_start(
     stage: u64,
 ) {
     for &(va, slot, mode) in component.devices() {
-        if address_space_map_into(u.aspace, va, slot, mode) != 0 {
+        if address_space_layout_into(u.aspace, va, slot, mode) != 0 {
             bail(stage)
         }
     }
@@ -1029,7 +1029,7 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     // asked as on the direct channel with a deadline (milestone 106 (a wait that ends on either the
     // interrupt or the deadline)). No answer within the bound means hung.
 
-    let bound = cntfrq() * QUIESCE_BOUND_MILLISECONDS / 1000;
+    let bound = counter_hertz() * QUIESCE_BOUND_MILLISECONDS / 1000;
     let (waited, stand_in) = match quiesce_within(w, stand_in, &client_img, bound, 112) {
         Quiesce::Unanswered { waited, stand_in } => (waited, stand_in),
         // This role exists to run against a hung incumbent, so an answer means the fixture did not
@@ -1119,10 +1119,12 @@ fn quiesce_within(
     if timer_arm(TIMER, started + bound, WAKE, 1) < 0 {
         bail(stage + 2)
     }
-    match receive_bound(w.note) {
-        user_mode_runtime::Received::Message(kind, answer, _)
-            if kind == hot_swap_contract::NOTE_QUIESCE_ANSWERED =>
-        {
+    match receive_message(w.note) {
+        user_mode_runtime::Received::Message(user_mode_runtime::Message {
+            w0: kind,
+            w1: answer,
+            ..
+        }) if kind == hot_swap_contract::NOTE_QUIESCE_ANSWERED => {
             // A deadline that passed between the answer and this cancel has already signaled, and
             // its word waits on the notification for the next bound receive. At this bound against
             // a healthy answer's latency (see `QUIESCE_BOUND_MILLISECONDS`) that window is never reached.
@@ -1335,7 +1337,12 @@ fn start_bound(
 /// with all five instance regions back in this budget. The one that is not tidiness is the one
 /// below; the rest are here so the test can assert that a swap system reclaims itself.
 fn collect_corpse(faultep: u64, collected: &mut u64) -> (u64, u64) {
-    let (event, tid, _pc, addr, ..) = receive_fault(faultep);
+    let Message {
+        w0: event,
+        w1: tid,
+        badge: addr,
+        ..
+    } = receive_message(faultep).into_message();
     send(REPORT, hot_swap_contract::RPT_DEATH, tid, event);
     // We hold no capability to that region: we deleted it the moment the child was started, and the
     // authority for this is the supervision relationship, not the memory.

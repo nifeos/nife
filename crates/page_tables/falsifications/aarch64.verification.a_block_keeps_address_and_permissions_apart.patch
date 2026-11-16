@@ -1,0 +1,25 @@
+Falsifies `page_tables::aarch64::verification::a_block_keeps_address_and_permissions_apart`.
+
+The defect: `Aarch64::block_entry` sets bits [1:0] to `0b11`, the way `leaf_entry` does.
+At L3 that means PAGE, and the leaf encoder is correct to set it. At L1 and L2 the same
+two bits mean TABLE, so the "block" is a table descriptor whose address field is the
+start of somebody's 2 MiB of memory: the hardware walks that memory as a page table.
+`is_block` then reads the entry as a table too, so the software walk agrees with the
+hardware and translation fails rather than lying, which is why the round trip alone is
+not enough and the bit pattern is asserted as a literal.
+
+Expected to fail: `assert_eq!(block & 0b11, 0b01, "not a block descriptor")`.
+
+diff --git a/crates/page_tables/src/aarch64.rs b/crates/page_tables/src/aarch64.rs
+index 497feba6..9a543b50 100644
+--- a/crates/page_tables/src/aarch64.rs
++++ b/crates/page_tables/src/aarch64.rs
+@@ -173,7 +173,7 @@ impl PageFormat for Aarch64 {
+         match size {
+             PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
+             PageSize::Size2MiB | PageSize::Size1GiB => {
+-                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | VALID)
++                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | TABLE_OR_PAGE | VALID)
+             }
+         }
+     }

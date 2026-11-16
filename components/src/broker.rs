@@ -93,7 +93,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // is advisory, and the supervisor never waits for it)). A signal only wakes us when idle; a
         // request that arrives first finds the page already written, and a signal we never see
         // costs latency and nothing else.
-        let got = user_mode_runtime::receive_request_bound(FRONT);
+        let got = user_mode_runtime::receive_capability_message(FRONT);
         // SAFETY: `BROKER` declares the warning page read-only at `BROKER_WARN_VA`, so every broker
         // has it mapped; the operator writes it before it signals.
         let wants_down = unsafe {
@@ -113,10 +113,10 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             up = true;
             send(RPT, hot_swap_contract::RPT_DRAINED, drained, buffered);
         }
-        let Ok(req) = got else {
+        let user_mode_runtime::Received::Message(req) = got else {
             continue; // the signal itself carries nothing; the page is the message
         };
-        let (operation, arg) = (req.w0, req.w1);
+        let (operation, arg) = (req.w0, req.w2);
         // The contract says CALL. Anything but the kernel's Reply has nobody to answer, and a
         // delegation is deleted rather than kept (milestone 706 (a `CALL` server can tell a Reply
         // from a delegation)).

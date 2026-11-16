@@ -39,9 +39,9 @@ use boot_ladder::self_test_program::{
 use boot_ladder::verdict::{CheckLine, Outcome, SubjectLine, Tally, check};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,
-    notification_bind, notification_poll, reap, receive_bound, receive_fault,
-    retype_into_kernel_object, send, survey, timer_arm, timer_cancel, yield_now,
+    Message, Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,
+    notification_bind, notification_poll, reap, receive_message, retype_into_kernel_object, send,
+    survey, timer_arm, timer_cancel, yield_now,
 };
 
 user_mode_runtime::program_entry!(start);
@@ -52,14 +52,15 @@ user_mode_runtime::program_entry!(start);
 /// Name: provisional.
 const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
 
-const KERNEL_HALF_VA: u64 = address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
-const TRANSCRIPT_VA: u64 = address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
-const IMAGES_VA: u64 = address_space_map::pair_page(contract::IMAGES_VIRTUAL_ADDRESS);
+const KERNEL_HALF_VA: u64 = address_space_layout::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
+const TRANSCRIPT_VA: u64 = address_space_layout::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
+const IMAGES_VA: u64 = address_space_layout::pair_page(contract::IMAGES_VIRTUAL_ADDRESS);
 const DISK_DMA_PEEK_VA: u64 =
-    address_space_map::pair_page(contract::DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS);
+    address_space_layout::pair_page(contract::DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS);
 const BLOCK_DRIVER_DMA_VA: u64 =
-    address_space_map::pair_page(contract::BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS);
-const UNMAPPED_ADDRESS: u64 = address_space_map::pair_page(contract::ABSENT_PAGE_VIRTUAL_ADDRESS);
+    address_space_layout::pair_page(contract::BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS);
+const UNMAPPED_ADDRESS: u64 =
+    address_space_layout::pair_page(contract::ABSENT_PAGE_VIRTUAL_ADDRESS);
 
 /// `kernel_test_subject`'s role that reads its second argument and dies:
 /// `fixtures/src/kernel_test_subject.rs`'s `READ_KERNEL`.
@@ -281,7 +282,7 @@ fn deadline() -> Option<Deadline> {
 /// The counter's rate, or a gigahertz when this process cannot know it, which only makes a wait
 /// longer.
 fn frequency() -> u64 {
-    user_mode_runtime::cntfrq_checked()
+    user_mode_runtime::counter_hertz_checked()
         .filter(|&f| f != 0)
         .unwrap_or(1_000_000_000)
 }
@@ -316,8 +317,8 @@ fn receive_within(ep: u64, seconds: u64, d: Option<&Deadline>) -> Option<(u64, u
     let Some(d) = armed else {
         return Some(user_mode_runtime::receive(ep));
     };
-    let got = match receive_bound(ep) {
-        Received::Message(a, b, c) => Some((a, b, c)),
+    let got = match receive_message(ep) {
+        Received::Message(Message { w0, w1, w2, .. }) => Some((w0, w1, w2)),
         Received::Notification(_) => None,
     };
     let _ = timer_cancel(d.timer);
@@ -383,7 +384,13 @@ impl Child {
             return None;
         }
         // A corpse parked as the endpoint's sender makes this return at once.
-        let (event, tid, pc, address, ..) = receive_fault(self.supervisor);
+        let Message {
+            w0: event,
+            w1: tid,
+            w2: pc,
+            badge: address,
+            ..
+        } = receive_message(self.supervisor).into_message();
         Some((event, tid, pc, address))
     }
 

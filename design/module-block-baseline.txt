@@ -427,53 +427,53 @@ crates/address_space_identifier/src/lib.rs::free
 
 crates/address_space_identifier/src/lib.rs::new
 
-crates/address_space_map/src/lib.rs::BANDS
+crates/address_space_layout/src/lib.rs::BANDS
 
-crates/address_space_map/src/lib.rs::Band
+crates/address_space_layout/src/lib.rs::Band
 
-crates/address_space_map/src/lib.rs::CODE_MODEL_CEILING
+crates/address_space_layout/src/lib.rs::CODE_MODEL_CEILING
 
-crates/address_space_map/src/lib.rs::CURRENT_CPU_PAGE
+crates/address_space_layout/src/lib.rs::CURRENT_CPU_PAGE
 
-crates/address_space_map/src/lib.rs::HEAP
+crates/address_space_layout/src/lib.rs::HEAP
 
-crates/address_space_map/src/lib.rs::IMAGE
+crates/address_space_layout/src/lib.rs::IMAGE
 
-crates/address_space_map/src/lib.rs::IMAGE_BASE
+crates/address_space_layout/src/lib.rs::IMAGE_BASE
 
-crates/address_space_map/src/lib.rs::ImagePlacement
+crates/address_space_layout/src/lib.rs::ImagePlacement
 
-crates/address_space_map/src/lib.rs::NULL_GUARD
+crates/address_space_layout/src/lib.rs::NULL_GUARD
 
-crates/address_space_map/src/lib.rs::PAGE
+crates/address_space_layout/src/lib.rs::PAGE
 
-crates/address_space_map/src/lib.rs::PAIR_PAGES
+crates/address_space_layout/src/lib.rs::PAIR_PAGES
 
-crates/address_space_map/src/lib.rs::PROCESS_PAGES
+crates/address_space_layout/src/lib.rs::PROCESS_PAGES
 
-crates/address_space_map/src/lib.rs::RUNTIME_WINDOWS
+crates/address_space_layout/src/lib.rs::RUNTIME_WINDOWS
 
-crates/address_space_map/src/lib.rs::SERVICE_WINDOWS
+crates/address_space_layout/src/lib.rs::SERVICE_WINDOWS
 
-crates/address_space_map/src/lib.rs::STACK
+crates/address_space_layout/src/lib.rs::STACK
 
-crates/address_space_map/src/lib.rs::STACK_TOP
+crates/address_space_layout/src/lib.rs::STACK_TOP
 
-crates/address_space_map/src/lib.rs::STACK_TOP_PAGE
+crates/address_space_layout/src/lib.rs::STACK_TOP_PAGE
 
-crates/address_space_map/src/lib.rs::bytes
+crates/address_space_layout/src/lib.rs::bytes
 
-crates/address_space_map/src/lib.rs::check_image
+crates/address_space_layout/src/lib.rs::check_image
 
-crates/address_space_map/src/lib.rs::contains
+crates/address_space_layout/src/lib.rs::contains
 
-crates/address_space_map/src/lib.rs::holds
+crates/address_space_layout/src/lib.rs::holds
 
-crates/address_space_map/src/lib.rs::pair_page
+crates/address_space_layout/src/lib.rs::pair_page
 
-crates/address_space_map/src/lib.rs::runtime_window
+crates/address_space_layout/src/lib.rs::runtime_window
 
-crates/address_space_map/src/lib.rs::service_window
+crates/address_space_layout/src/lib.rs::service_window
 
 crates/allocation_cache/src/lib.rs::BATCH
 
@@ -1080,7 +1080,6 @@ crates/clock_contract/src/lib.rs::ClockPage
 
 crates/clock_contract/src/lib.rs::GOLDFISH
 
-crates/clock_contract/src/lib.rs::MAGIC
 
 crates/clock_contract/src/lib.rs::NONE
 
@@ -1649,23 +1648,17 @@ crates/device_tree_blob/src/lib.rs::from_ptr
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 
-crates/device_tree_blob/src/lib.rs::node_prop
 
-crates/device_tree_blob/src/lib.rs::node_prop_compatible
 
-crates/device_tree_blob/src/lib.rs::node_prop_inherited
 
-crates/device_tree_blob/src/lib.rs::node_props
 
 crates/device_tree_blob/src/lib.rs::node_reg
 
 crates/device_tree_blob/src/lib.rs::node_reg_compatible
 
-crates/device_tree_blob/src/lib.rs::phandle_prop
 
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions
 
-crates/device_tree_blob/src/lib.rs::reserved_regions
 
 crates/device_tree_blob/src/lib.rs::total_size
 
@@ -1925,13 +1918,9 @@ crates/domain_name_system/src/lib.rs::CNAME
 
 crates/domain_name_system/src/lib.rs::Error
 
-crates/domain_name_system/src/lib.rs::FLAG_QR
 
-crates/domain_name_system/src/lib.rs::FLAG_RD
 
-crates/domain_name_system/src/lib.rs::FLAG_TC
 
-crates/domain_name_system/src/lib.rs::HEADER_LEN
 
 crates/domain_name_system/src/lib.rs::Header
 
@@ -1945,9 +1934,7 @@ crates/domain_name_system/src/lib.rs::Query
 
 crates/domain_name_system/src/lib.rs::Question
 
-crates/domain_name_system/src/lib.rs::RCODE_MASK
 
-crates/domain_name_system/src/lib.rs::RCODE_NAME_ERROR
 
 crates/domain_name_system/src/lib.rs::Reader
 
@@ -1961,7 +1948,6 @@ crates/domain_name_system/src/lib.rs::TcpReply
 
 crates/domain_name_system/src/lib.rs::accept
 
-crates/domain_name_system/src/lib.rs::addresses
 
 crates/domain_name_system/src/lib.rs::as_bytes
 
@@ -1995,7 +1981,6 @@ crates/domain_name_system/src/lib.rs::parse
 
 crates/domain_name_system/src/lib.rs::question
 
-crates/domain_name_system/src/lib.rs::rcode
 
 crates/domain_name_system/src/lib.rs::record
 
@@ -5433,157 +5418,157 @@ crates/page_frames/src/lib.rs::page_frames_in
 
 crates/page_frames/src/lib.rs::stats
 
-crates/paging/src/aarch64.rs
+crates/page_tables/src/aarch64.rs
 
-crates/paging/src/aarch64.rs::Aarch64
+crates/page_tables/src/aarch64.rs::Aarch64
 
-crates/paging/src/aarch64.rs::DEVICE
+crates/page_tables/src/aarch64.rs::DEVICE
 
-crates/paging/src/aarch64.rs::NORMAL
+crates/page_tables/src/aarch64.rs::NORMAL
 
-crates/paging/src/aarch64.rs::VALUE
+crates/page_tables/src/aarch64.rs::VALUE
 
-crates/paging/src/domain.rs
+crates/page_tables/src/domain.rs
 
-crates/paging/src/domain.rs::DmaRegion
+crates/page_tables/src/domain.rs::DmaRegion
 
-crates/paging/src/domain.rs::build_identity_domain
+crates/page_tables/src/domain.rs::build_identity_domain
 
-crates/paging/src/domain.rs::flags
+crates/page_tables/src/domain.rs::flags
 
-crates/paging/src/domain.rs::grant_page
+crates/page_tables/src/domain.rs::grant_page
 
-crates/paging/src/domain.rs::grant_pages
+crates/page_tables/src/domain.rs::grant_pages
 
-crates/paging/src/eighth_pass_attacks.rs
+crates/page_tables/src/eighth_pass_attacks.rs
 
-crates/paging/src/flag_tests.rs
+crates/page_tables/src/flag_tests.rs
 
-crates/paging/src/flags.rs::Flags
+crates/page_tables/src/flags.rs::Flags
 
-crates/paging/src/flags.rs::bits
+crates/page_tables/src/flags.rs::bits
 
-crates/paging/src/flags.rs::device
+crates/page_tables/src/flags.rs::device
 
-crates/paging/src/flags.rs::is_device
+crates/page_tables/src/flags.rs::is_device
 
-crates/paging/src/flags.rs::is_global
+crates/page_tables/src/flags.rs::is_global
 
-crates/paging/src/flags.rs::is_kernel_executable
+crates/page_tables/src/flags.rs::is_kernel_executable
 
-crates/paging/src/flags.rs::is_user_accessible
+crates/page_tables/src/flags.rs::is_user_accessible
 
-crates/paging/src/flags.rs::is_user_executable
+crates/page_tables/src/flags.rs::is_user_executable
 
-crates/paging/src/flags.rs::is_writable
+crates/page_tables/src/flags.rs::is_writable
 
-crates/paging/src/flags.rs::kernel_code
+crates/page_tables/src/flags.rs::kernel_code
 
-crates/paging/src/flags.rs::kernel_data
+crates/page_tables/src/flags.rs::kernel_data
 
-crates/paging/src/flags.rs::kernel_rodata
+crates/page_tables/src/flags.rs::kernel_rodata
 
-crates/paging/src/flags.rs::user_code
+crates/page_tables/src/flags.rs::user_code
 
-crates/paging/src/flags.rs::user_data
+crates/page_tables/src/flags.rs::user_data
 
-crates/paging/src/flags.rs::user_device
+crates/page_tables/src/flags.rs::user_device
 
-crates/paging/src/flags.rs::user_rodata
+crates/page_tables/src/flags.rs::user_rodata
 
-crates/paging/src/flags.rs::user_write_combining
+crates/page_tables/src/flags.rs::user_write_combining
 
-crates/paging/src/geometry_tests.rs
+crates/page_tables/src/geometry_tests.rs
 
-crates/paging/src/mapper.rs::MapError
+crates/page_tables/src/mapper.rs::MapError
 
-crates/paging/src/mapper.rs::Mapper
+crates/page_tables/src/mapper.rs::Mapper
 
-crates/paging/src/mapper.rs::Walk
+crates/page_tables/src/mapper.rs::Walk
 
-crates/paging/src/mapper.rs::WalkEnd
+crates/page_tables/src/mapper.rs::WalkEnd
 
-crates/paging/src/mapper.rs::end
+crates/page_tables/src/mapper.rs::end
 
-crates/paging/src/mapper.rs::half
+crates/page_tables/src/mapper.rs::half
 
-crates/paging/src/mapper.rs::map
+crates/page_tables/src/mapper.rs::map
 
-crates/paging/src/mapper.rs::map_block
+crates/page_tables/src/mapper.rs::map_block
 
-crates/paging/src/mapper.rs::map_range
+crates/page_tables/src/mapper.rs::map_range
 
-crates/paging/src/mapper.rs::map_span
+crates/page_tables/src/mapper.rs::map_span
 
-crates/paging/src/mapper.rs::new
+crates/page_tables/src/mapper.rs::new
 
-crates/paging/src/mapper.rs::root
+crates/page_tables/src/mapper.rs::root
 
-crates/paging/src/mapper.rs::steps
+crates/page_tables/src/mapper.rs::steps
 
-crates/paging/src/mapper.rs::translate
+crates/page_tables/src/mapper.rs::translate
 
-crates/paging/src/mapper.rs::unlink_table
+crates/page_tables/src/mapper.rs::unlink_table
 
-crates/paging/src/mapper.rs::unmap
+crates/page_tables/src/mapper.rs::unmap
 
-crates/paging/src/page_format.rs::Half
+crates/page_tables/src/page_format.rs::Half
 
-crates/paging/src/page_format.rs::PageFormat
+crates/page_tables/src/page_format.rs::PageFormat
 
-crates/paging/src/page_format.rs::is_user_page_va
+crates/page_tables/src/page_format.rs::is_user_page_va
 
-crates/paging/src/page_size.rs::ALL
+crates/page_tables/src/page_size.rs::ALL
 
-crates/paging/src/page_size.rs::PAGE_SIZE
+crates/page_tables/src/page_size.rs::PAGE_SIZE
 
-crates/paging/src/page_size.rs::PageSize
+crates/page_tables/src/page_size.rs::PageSize
 
-crates/paging/src/page_size.rs::bytes
+crates/page_tables/src/page_size.rs::bytes
 
-crates/paging/src/page_size.rs::largest_fitting
+crates/page_tables/src/page_size.rs::largest_fitting
 
-crates/paging/src/page_size.rs::levels_above_bottom
+crates/page_tables/src/page_size.rs::levels_above_bottom
 
-crates/paging/src/page_table.rs::ENTRIES
+crates/page_tables/src/page_table.rs::ENTRIES
 
-crates/paging/src/page_table.rs::PageTable
+crates/page_tables/src/page_table.rs::PageTable
 
-crates/paging/src/page_table.rs::new
+crates/page_tables/src/page_table.rs::new
 
-crates/paging/src/sv39.rs
+crates/page_tables/src/sv39.rs
 
-crates/paging/src/sv39.rs::Sv39
+crates/page_tables/src/sv39.rs::Sv39
 
-crates/paging/src/sv39.rs::memory_type_of
+crates/page_tables/src/sv39.rs::memory_type_of
 
-crates/paging/src/tlb_flush.rs::TlbFlush
+crates/page_tables/src/tlb_flush.rs::TlbFlush
 
-crates/paging/src/tlb_flush.rs::address
+crates/page_tables/src/tlb_flush.rs::address
 
-crates/paging/src/tlb_flush.rs::assume_no_stale_entry
+crates/page_tables/src/tlb_flush.rs::assume_no_stale_entry
 
-crates/paging/src/tlb_flush.rs::flush
+crates/page_tables/src/tlb_flush.rs::flush
 
-crates/paging/src/verification.rs
+crates/page_tables/src/verification.rs
 
-crates/paging/src/x86_64.rs
+crates/page_tables/src/x86_64.rs
 
-crates/paging/src/x86_64.rs::AmdVi
+crates/page_tables/src/x86_64.rs::AmdVi
 
-crates/paging/src/x86_64.rs::Ia32e
+crates/page_tables/src/x86_64.rs::Ia32e
 
-crates/paging/src/x86_64.rs::MSR
+crates/page_tables/src/x86_64.rs::MSR
 
-crates/paging/src/x86_64.rs::RESET
+crates/page_tables/src/x86_64.rs::RESET
 
-crates/paging/src/x86_64.rs::VALUE
+crates/page_tables/src/x86_64.rs::VALUE
 
-crates/paging/src/x86_64.rs::Vtd
+crates/page_tables/src/x86_64.rs::Vtd
 
-crates/paging/src/x86_64.rs::blocked_device_table_entry
+crates/page_tables/src/x86_64.rs::blocked_device_table_entry
 
-crates/paging/src/x86_64.rs::device_table_entry
+crates/page_tables/src/x86_64.rs::device_table_entry
 
 crates/pci_configuration_space/src/lib.rs::BAR0
 
@@ -5980,8 +5965,6 @@ crates/sealed_pair/src/lib.rs::BOOT_PROGRAMS
 crates/sealed_pair/src/lib.rs::EntrySeal
 
 crates/sealed_pair/src/lib.rs::Seal
-
-crates/sealed_pair/src/lib.rs::THE_BOARD_IS_THE_AUTHORITY
 
 crates/sealed_pair/src/lib.rs::TableDisagreement
 
@@ -7360,7 +7343,6 @@ crates/usb/src/boot_keyboard.rs::MODIFIER_CODES
 
 crates/usb/src/boot_keyboard.rs::RELEASED
 
-crates/usb/src/boot_keyboard.rs::REPORT_LEN
 
 crates/usb/src/boot_keyboard.rs::changes
 
@@ -7376,23 +7358,19 @@ crates/usb/src/descriptor.rs::CLASS_HID
 
 crates/usb/src/descriptor.rs::CONFIGURATION
 
-crates/usb/src/descriptor.rs::CONFIGURATION_LEN
 
 crates/usb/src/descriptor.rs::ConfigurationHeader
 
 crates/usb/src/descriptor.rs::DEVICE
 
-crates/usb/src/descriptor.rs::DEVICE_LEN
 
 crates/usb/src/descriptor.rs::DeviceDescriptor
 
 crates/usb/src/descriptor.rs::ENDPOINT
 
-crates/usb/src/descriptor.rs::ENDPOINT_LEN
 
 crates/usb/src/descriptor.rs::INTERFACE
 
-crates/usb/src/descriptor.rs::INTERFACE_LEN
 
 crates/usb/src/descriptor.rs::PROTOCOL_KEYBOARD
 
@@ -7400,7 +7378,6 @@ crates/usb/src/descriptor.rs::Refusal
 
 crates/usb/src/descriptor.rs::SUBCLASS_BOOT
 
-crates/usb/src/descriptor.rs::control_max_packet
 
 crates/usb/src/descriptor.rs::find_boot_keyboard
 
@@ -7448,17 +7425,11 @@ crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
 crates/user_mode_runtime/src/clock.rs::current_cpu
 
@@ -7495,7 +7466,6 @@ crates/user_mode_runtime/src/inter_process_communication.rs::decode
 
 crates/user_mode_runtime/src/inter_process_communication.rs::into_reply
 
-crates/user_mode_runtime/src/inter_process_communication.rs::list
 
 crates/user_mode_runtime/src/inter_process_communication.rs::notification_bind
 
@@ -7509,17 +7479,7 @@ crates/user_mode_runtime/src/inter_process_communication.rs::reap
 
 crates/user_mode_runtime/src/inter_process_communication.rs::receive
 
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_fault
-
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_request
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_request_bound
 
 crates/user_mode_runtime/src/inter_process_communication.rs::reply
 
@@ -7543,27 +7503,18 @@ crates/user_mode_runtime/src/mapped_window.rs
 
 crates/user_mode_runtime/src/mapped_window.rs::MappedWindow
 
-crates/user_mode_runtime/src/mapped_window.rs::PAGE
 
 crates/user_mode_runtime/src/mapped_window.rs::new
 
-crates/user_mode_runtime/src/mapped_window.rs::r16
 
-crates/user_mode_runtime/src/mapped_window.rs::r32
 
-crates/user_mode_runtime/src/mapped_window.rs::r64
 
-crates/user_mode_runtime/src/mapped_window.rs::r8
 
 crates/user_mode_runtime/src/mapped_window.rs::read
 
-crates/user_mode_runtime/src/mapped_window.rs::w16
 
-crates/user_mode_runtime/src/mapped_window.rs::w32
 
-crates/user_mode_runtime/src/mapped_window.rs::w64
 
-crates/user_mode_runtime/src/mapped_window.rs::w8
 
 crates/user_mode_runtime/src/mapped_window.rs::write
 
@@ -7579,9 +7530,7 @@ crates/user_mode_runtime/src/process.rs::yield_now
 
 crates/user_mode_runtime/src/socket_frame.rs::Frame
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_ip
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_port
 
 crates/user_mode_runtime/src/socket_frame.rs::new
 
@@ -7589,7 +7538,6 @@ crates/user_mode_runtime/src/socket_frame.rs::payload_read
 
 crates/user_mode_runtime/src/socket_frame.rs::payload_write
 
-crates/user_mode_runtime/src/socket_frame.rs::set_dst
 
 crates/user_mode_runtime/src/socket_frame.rs::set_len
 

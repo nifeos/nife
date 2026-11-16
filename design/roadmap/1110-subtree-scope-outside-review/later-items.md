@@ -4,7 +4,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
 
 ## P2: later
 
-11. `Refusal::errno` restates numbers the contract defines. LEFT: needs contract constants that do not exist for four errnos.
+11. `Refusal::errno` restates numbers the contract defines. DONE (`errno` reads `dir::EINVAL`, `ENOTDIR`, `EISDIR`, `EPERM` and `file_grant::EBADF`; `ENOENT`, `ELOOP` and `EXDEV` stay literal and the doc says whose numbering they are).
     Finding: `EPERM`, `ENOTDIR` and `EINVAL` exist in `filesystem_contract::dir` (and `EISDIR`,
     which item 4 needs); the crate writes 1, 20 and 22 again. `ENOENT`, `ELOOP`, `EXDEV` and
     `EBADF` have no constant in the contract. The numbers are Linux's generic values (`ELOOP` is 40
@@ -16,7 +16,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
     saying whose numbering the rest follow.
     Door: two-way. Effort: XS.
 
-12. `admit` takes three `u64` words in a row. LEFT: a signature change with newtypes.
+12. `admit` takes three `u64` words in a row. DONE (`requested` is a `Handle`; `badge` and `owner` differ in type, so no pair swaps silently; the server wraps at its one call). `Badge` is not a type: `Bindings` takes bare badges.
     Finding: `admit(binding, badge, requested, owner)`; swapping `badge` and `requested` compiles,
     and the one call site is the only thing that keeps them straight.
     Evidence: `crates/subtree_scope/src/lib.rs` lines 183 to 188; `redoxfs_server/src/server.rs`

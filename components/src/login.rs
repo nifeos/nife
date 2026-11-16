@@ -93,7 +93,7 @@ static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
 /// **Where this process maps the file service's shared page itself, to read the owner's
 /// run-unvouched list** ([`listed`]). Below [`CRED_VA`] and the per-channel window above it, which
 /// is the only thing in this space that grows.
-const LIST_VA: u64 = address_space_map::pair_page(0x0000_0000_00e2_0000);
+const LIST_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e2_0000);
 
 /// Whether [`LIST_VA`] holds the file page. Mapped once, at [`_start`], from [`OWN_UT_PAGES`]'
 /// region, before any session exists, so its page tables sit at the bottom of that watermark and
@@ -101,11 +101,11 @@ const LIST_VA: u64 = address_space_map::pair_page(0x0000_0000_00e2_0000);
 static LIST_MAPPED: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
 
 /// The page shared with the credential service, for the relayed `VERIFY`.
-const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
+const CRED_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e3_0000);
 /// The base of the scratch VA range [`connect`] takes one fresh page from per channel it mints: a
 /// VA is never reused, since `page_frame::MAP` refuses an already-mapped one and the page held a
 /// secret. Numbered in the same family as `credentialer.rs`'s request pages, in another process.
-const CONNECT_VA_BASE: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
+const CONNECT_VA_BASE: u64 = address_space_layout::pair_page(0x0000_0000_00e4_0000);
 /// One channel's whole cost: two `RETYPE_OBJECT`s (request, result), one `RETYPE` (the staging page),
 /// and the page tables `page_frame::MAP` needs for that page's own mapping. Three pages minimum,
 /// with margin over a tight count for the same reason [`CARETAKER_REGION_PAGES`] is (a region too
@@ -122,7 +122,7 @@ const CHANNEL_UT_PAGES: u64 = 32;
 /// Where a built caretaker and the file service's shared page meet. Must match
 /// `components/src/fs_subtree_caretaker.rs`'s `PAGE_VA` (the same address every caretaker in this tree
 /// uses, since the caretaker itself hardcodes it and this process copies its ELF, not its address).
-const CARETAKER_FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const CARETAKER_FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 /// This process's own scratch: page tables for [`build_child`]'s own temporary mappings (never a
 /// child's), spent only by [`mint`]'s `build_child` calls. `supervision_contract::fill_and_map`'s
@@ -925,7 +925,7 @@ impl Durable {
             // (`timetable::registration`'s layout).
             unsafe { &*((self.va + off as u64) as *const AtomicU64) }
         };
-        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECONDS);
+        let ceiling = user_mode_runtime::counter_hertz().saturating_mul(END_WAIT_SECONDS);
         let started = user_mode_runtime::now();
         let mut asked = 0u64;
         while !self.exited() {
@@ -973,7 +973,7 @@ impl Durable {
             registration::request(registration::REPLACE, 1),
             Ordering::Release,
         );
-        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECONDS);
+        let ceiling = user_mode_runtime::counter_hertz().saturating_mul(END_WAIT_SECONDS);
         let started = user_mode_runtime::now();
         while word(registration::REPLY).load(Ordering::Acquire) != 1 {
             if user_mode_runtime::now().wrapping_sub(started) >= ceiling {

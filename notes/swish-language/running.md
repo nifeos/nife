@@ -113,7 +113,7 @@ reach this path on: `Words` output refuses `>` and a pipe's left side, and
 ## The screen-narrowed tail
 
 The kernel's exit delivery is the completion signal for a tail stage narrowed to the screen.
-`receive_fault` blocks until the child is dead and unreaped, which is stronger than "it painted its
+`receive_message` blocks until the child is dead and unreaped, which is stronger than "it painted its
 last line". A dead thread cannot enqueue another `SEND`, so the child cannot still be mid-write.
 What can still be in flight is `terminal_sink_caretaker`'s trailing `CALL` to `line_editor`. That is
 the caretaker-hop display race §106 (an unredirected tail stage's output goes to the screen)

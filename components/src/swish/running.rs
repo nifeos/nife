@@ -213,7 +213,7 @@ fn release_region(region: u64) {
 
 /// **Where this shell writes what it sends the progenitor in frames**: the argv pages
 /// ([`ARGV_VA`]), the name-set pages ([`SET_VA`]), then an image's frames ([`IMAGE_VA`], DECISIONS §219 option D).
-pub(super) const IMAGE_WINDOW: u64 = address_space_map::pair_page(0x0000_0000_0400_0000);
+pub(super) const IMAGE_WINDOW: u64 = address_space_layout::pair_page(0x0000_0000_0400_0000);
 
 /// **The window this shell writes an image's frames through**, above the name-set pages. At most
 /// [`spawnproto::IMAGE_MAXIMUM_PAGES`] pages, which is 4 MiB and so crosses 2 MiB page-table spans.
@@ -707,7 +707,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
                 read_ok = false;
             } else {
                 for at in 0..n as u64 {
-                    window.w8(at, FS_WINDOW.r8(at));
+                    window.write_u8(at, FS_WINDOW.read_u8(at));
                 }
             }
         } else {
@@ -1329,7 +1329,7 @@ pub(super) fn screen_rendezvous() -> Option<u64> {
 /// - The next `$ ` can interleave with `terminal_sink_caretaker`'s trailing `CALL`, the display race
 ///   DECISIONS §106 (an unredirected tail stage's output goes to the screen) accepts.
 pub(super) fn await_screen(ep: u64) {
-    let (_event, tid, ..) = receive_fault(ep);
+    let Message { w1: tid, .. } = receive_message(ep).into_message();
     for _ in 0..SCREEN_REAP_ATTEMPTS {
         if reap(ep, tid) == 0 {
             return;

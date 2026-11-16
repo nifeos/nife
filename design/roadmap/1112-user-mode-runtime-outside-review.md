@@ -18,7 +18,7 @@ inherit. The review treats as settled only what a ruling elsewhere already fixes
 `VERSION` and `INTERFACE_ID` (the names every contract crate carries), `INTERFACE_ID = 20` for the
 entry registers and link layout, and the ratified function names the `Name:` blocks record. It is also the
 order of extraction in milestone 1017 (the contract crates leave in this order). That order places this
-crate in step 3, after `abi`, `address_space_map`, `current_cpu_contract` and the five contract
+crate in step 3, after `abi`, `address_space_layout`, `current_cpu_contract` and the five contract
 crates it links. Nothing here reopens those. Where a later rule contradicts a recorded ruling, the
 item says so.
 
@@ -71,7 +71,7 @@ The P1 items are in [the appendix](1112-user-mode-runtime-outside-review/before-
 
 ## Decisions for the architect
 
-Only the one-way doors. Each is one decision, with the background first.
+Three decisions, each with the background first, and each decided provisionally below.
 
 ### Decision 1: the names a stranger meets
 
@@ -88,7 +88,7 @@ Recommendation, one row per name, the stricter spelling first:
 | today | recommended | why |
 |---|---|---|
 | `va` (three parameters) | `virtual_address` | the `[spelled_out]` list says so; the sibling contract crates already renamed theirs |
-| `aspace`, `aspace_slot` | `address_space_slot` | abbreviation; `address_space_map_into` already spells it |
+| `aspace`, `aspace_slot` | `address_space_slot` | abbreviation; `address_space_layout_into` already spells it |
 | `tcb_slot` | `thread_control_block_slot` | the function names already spell it |
 | `user_sp` | `user_stack_pointer` | abbreviation |
 | `nr` | `number` | abbreviation |
@@ -110,9 +110,21 @@ Prior art: `rustix` spells every parameter out. Its one exception, `fd`, is a na
 `x86_64` who sees `cntfrq()` searches for a register that does not exist; one who sees
 `counter_hertz()` does not.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
+revisit. These are names in an unreleased crate, and a crate
+tag is a pre-release. The table above is the rule as written, with `counter_hertz` matching the
+ratified `counter_frequency_contract` method `hertz`. The open row takes the spelled-out form:
+`r8` to `w64` (`src/mapped_window.rs` lines 100 to 130, 147 call sites) become `read_u8` to
+`write_u64`. Removing them in favor of the existing `read::<T>` (line 84) is the stricter option,
+and it stays open for the architect at ratification. The premises hold at `src/clock.rs` lines 45,
+72 and 128 and `src/mapped_window.rs` lines 37, 66 and 145. Item 13 is the work. Ratifying the
+names stays the architect's.
+The abbreviation gate reads a bare `address` as ambiguous, so three rows land qualified:
+`virtual_address_space_slot`, `virtual_address_space_list` and `destination_network_address`.
+
 ### Decision 2: how a program outside nife links against the layout
 
-Background. `link.ld` is interface 20, the entry registers and link layout. Today eight build
+Background. `link.ld` is interface 20, the entry registers and link layout. Today nine build
 scripts in nife reach it by a relative path into this crate's directory, and that path stops
 existing at the move. A consumer of the released crate needs a documented way to link with the script. The consumer is a program built outside nife, as described by the SDK archive of milestone 607 (nife is built and updated from packages, and its source divides by purpose). That way is a
 published behavior from the first release on.
@@ -120,13 +132,20 @@ published behavior from the first release on.
 Recommendation: the embedded Rust mechanism. This crate's `build.rs` copies `link.ld` into
 `OUT_DIR` and emits `cargo:rustc-link-search`; a program links with `-C link-arg=-Tlink.ld` and
 no path. The script's base stays `0x60000000`, and the test that checks it against
-`address_space_map::IMAGE_BASE` moves here. The alternative, each consumer vendoring a copy, is
+`address_space_layout::IMAGE_BASE` moves here. The alternative, each consumer vendoring a copy, is
 what milestone 73 (name the aarch64 files aarch64, before x86_64 makes it worse) refused ("two copies would be two places to be wrong about the base") and the
-move would make it eight copies.
+move would make it nine copies.
 
 Prior art: `cortex-m-rt` (`link.x`, 10.6 million downloads) and `riscv-rt` (`link.x`) do exactly
 this, and every embedded Rust binary's `.cargo/config.toml` carries `-Tlink.x`. Concrete example:
 `jig/build.rs` becomes one `println!("cargo::rustc-link-arg=-Tlink.ld")`.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door until `disk-tools`
+leaves (milestone 1017 step 4), which the architect may revisit before then. No repository outside
+nife links against the layout yet. Once `disk-tools` leaves, the mechanism is a published
+convention, so this ruling must stand or change before that step. The crate delivers `link.ld`
+the way `cortex-m-rt` and `riscv-rt` deliver `link.x`, as recommended above, and no consumer
+vendors a copy. Item 5 is the work.
 
 ### Decision 3: the receive surface before the first tag
 
@@ -149,6 +168,12 @@ has no `_badged` twin; Zircon's `zx_channel_read` returns bytes and handles from
 Concrete example: `receive_capability_bound` has no caller in the tree today and would still be a
 published function after the tag.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which is a pre-release, and the architect may revisit it. The smaller surface, as recommended
+above: a wrapper added back later is compatible, and one removed is not. The ten functions are at
+`src/inter_process_communication.rs` lines 101 to 498, and `receive_capability_bound` (line 224)
+has no caller outside the crate. Item 15 is the work.
+
 ## Follow-on
 
 - **Done.** Item 1: `read` and `write` take the sealed `WindowInteger`, and a misaligned address
@@ -159,10 +184,25 @@ published function after the tag.
   immediates from `abi`, `Frame::len` with the `DATA_MAXIMUM` clamp, the target-gated
   dependency, `retype_sleeper` through `is_granted`, and the dependency-direction sentence. Builds
   on three targets, no test target for them.
-- **Outstanding.** Items 3, 8, 9 and 11 belong to the move lane. Item 4 changes how `script/lint`
-  builds the crate for bare-metal targets. Checked by reading `script/lint`.
-- **Outstanding.** Items 5, 13 and 15 wait on Decisions 2, 1 and 3. Item 17 adds a syscall
-  wrapper, which is the architect's call.
+- **Done.** Item 4: the crate has a host test target. Host tests cover the window, the frame,
+  `Delivered::decode`, the three child stubs, the nanosecond conversion and the `link.ld` base.
+  `script/lint` runs them on the host and builds the crate with `--lib` on the bare-metal targets.
+  `xtask` runs them in the host suite.
+- **Done.** Item 5: a `build.rs` in the crate puts `link.ld` on the link search path, and every
+  consumer emits `-Tlink.ld` with no path. The std programs depend on the crate for it, which grew
+  their lockfiles. This lane does not build them.
+- **Done.** Item 11: `address_space_layout` derives `INITIAL_RAMDISK_VIRTUAL_ADDRESS` from the
+  runtime window base, and the kernel loader and this crate re-export it. The crate no longer sets
+  `test = false`.
+- **Done.** Item 13, under the provisional Decision 1: the crate and every caller spell out the abbreviated
+  names, with no alias for an old spelling. Every renamed public name carries a
+  provisional `Name:` block. The architect ratifies them.
+- **Done.** Item 15, under the provisional Decision 3: `Message`, `Received`, `receive_message` and
+  `receive_capability_message` replace the seven projections. `receive`, `receive_capability`,
+  `receive_request` and `call` stay. No wire byte or syscall moves.
+- **Done.** Item 17, provisional: the crate has no `exit_thread` wrapper and the docs of `exit` say
+  why. No `no_std` program needs the fifth number; a wrapper added later is compatible.
+- **Outstanding.** Items 3, 8 and 9 belong to the move lane.
 
 ## Done when
 

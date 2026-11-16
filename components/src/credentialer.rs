@@ -50,12 +50,12 @@ const READY: u64 = 4;
 
 /// The provisioner's page. Plaintext secrets cross it; nothing but the provisioner maps it, and it
 /// is a frame of its own, never the verify page's.
-const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+const PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 // SAFETY: the wiring maps one page read/write at PROV_VA before this program runs (milestone 139
 // round 6).
 const PROV_WINDOW: MappedWindow = unsafe { MappedWindow::new(PROV_VA, proto::PAGE as u64) };
 /// A client's page. Must match `fixtures/src/credentialer_test_client.rs`.
-const VERIFY_VA: u64 = address_space_map::pair_page(0x0000_0000_00e1_0000);
+const VERIFY_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e1_0000);
 // SAFETY: as PROV_WINDOW's.
 const VERIFY_WINDOW: MappedWindow = unsafe { MappedWindow::new(VERIFY_VA, proto::PAGE as u64) };
 
@@ -92,10 +92,14 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(
-        BUDGET,
-        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-        HEAP_MAXIMUM,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            BUDGET,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
     );
 
     let cost = Cost::DEFAULT;

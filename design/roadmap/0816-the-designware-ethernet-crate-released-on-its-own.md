@@ -35,7 +35,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   the room, every ring offset is inside the region, and the PHY link decode returns a link only
   the registers justify.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**, which is codebase
-  rule 2 (a driver gets what it needs passed in): inline `address_space_map::pair_page`
+  rule 2 (a driver gets what it needs passed in): inline `address_space_layout::pair_page`
   (`src/lib.rs`), and have the caller pass the register region instead of `jh7110::discover` and
   `discover_aon_syscon` reading a `DeviceTreeBlob`. The device-tree queries move to the kernel side,
   which already depends on `device_tree_blob`. The tests also `include_bytes!` a fixture from
@@ -154,8 +154,7 @@ template's prose caps.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   `Handoff` is nife's spawn ABI. The cut removed `jh7110::discover`, which took a `DeviceTreeBlob`.
 - The architect cleared the crate's review on 2026-11-11 (UTC), which approves creating
-  `nifeos/designware_ethernet`. The clearance covers neither the tag nor a publication. The move
-  waits for the rename pass in *Before the move*.
+  `nifeos/designware_ethernet`. The clearance covers neither the tag nor a publication.
 
 ## Exit
 
@@ -210,11 +209,16 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** The move. `crates/designware_ethernet` is still in this tree and the crate
-  repository does not exist. What remains is the repository, the rename pass, the move, the tag
-  `v0.1.0`, the soak's end conditions, the publication and nife consuming the release by semantic
-  version. Checked by `ls crates/designware_ethernet` and by `gh api repos/nifeos/designware_ethernet`,
-  which returns not found.
+- **Done.** The rename pass and the outside review's findings that precede the move
+  ([1074](1074-designware-ethernet-outside-review.md) says which). The crate passes the template's
+  naming and prose gates, bounds `receive` and `reclaim`, and its manifest points at its own
+  repository.
+- **Done.** The move. The crate lives at `nifeos/designware_ethernet`, `crates/designware_ethernet`
+  no longer exists, and `components`, `driver_process_contract` and `machine_discovery` pin a
+  commit of the repository's `main` by git revision.
+- **Outstanding.** The tag `v0.1.0-pre.1`, which waits for calef, the soak's end conditions, the
+  publication and nife consuming the release by semantic version. Checked by
+  `git ls-remote --tags https://github.com/nifeos/designware_ethernet`, which lists no tag.
 - **Recorded.** Publishing to crates.io waits on the maintainers' hold and an architect's approval,
   as the *Release* section states.
 

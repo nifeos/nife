@@ -29,6 +29,10 @@ publish = false
 # `no_std` and dependency-free, and the demo touches only its `fixture` module: it does NOT speak
 # the wire protocol, because that is `std::fs`'s job now (the whole point of this milestone).
 [dependencies]
+# Delivers `link.ld` (the image layout every program links with), through its build script. Linked
+# for that and nothing else, so no source line names it.
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+
 filesystem_contract = { path = "../crates/filesystem_contract" }
 filesystem_fixture = { path = "../crates/filesystem_fixture" }
 

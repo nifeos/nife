@@ -52,13 +52,13 @@ const FILE: u64 = 2;
 const READY: u64 = 3;
 
 /// Where the kernel maps the two shared regions: the block channel, a service window on the
-/// address-space map (`crates/address_space_map`), above the heap band and below the image band.
+/// address-space map (`crates/address_space_layout`), above the heap band and below the image band.
 ///
 /// [`BLK_PAGE`] is `blk::TRANSFER_MAXIMUM` bytes wide rather than one page (milestone 138 step 4)
 /// and [`FILE_PAGE`] is `fs::TRANSFER_MAXIMUM` bytes wide rather than one page (step 3);
 /// [`FILE_PAGE`] sits above [`BLK_PAGE`] by exactly `blk::TRANSFER_MAXIMUM` so growing either
 /// region stays inside the 8 MiB nothing else this process maps comes within.
-const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
+const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAXIMUM as u64;
 
 /// One filesystem block, in bytes: the unit [`BLK_PAGE`] is carved into. The transfer unit for
@@ -402,10 +402,14 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
         inject::AFTER_BLOCKS.store(crash_after_blocks, Ordering::Relaxed);
         inject::TEAR_BYTES.store(crash_tear_bytes, Ordering::Relaxed);
     }
-    HEAP.initialize(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-        HEAP_MAXIMUM,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            MEMORY_REGION,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
     );
 
     // A bad image, or a block server that never answers correctly, faults here; the server never

@@ -649,7 +649,9 @@ jobs:
   # the short build checks (fastpath footprint, boot file size, stack frames, image permissions,
   # reproducible build, interleavings, coverage, supply chain). The jobs that boot kernels under
   # QEMU, fuzz, bench and probe crates, and verify.yml's proofs, run in the merge group, on a push
-  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label. Each
+  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label.
+  # verify.yml's proofs also run on a pull request that adds or changes a Kani harness (ruled
+  # 2026-11-16 UTC; helpers/harness_change.py). Each
   # of those jobs ends its `if:` with the same clause: a merge group or a push runs it by event
   # name alone, and only a gate that answered `heavy=false` (helpers/full_ci.py) skips it. A job
   # skipped by its condition reports Success, so the required names hold on a pull request
@@ -869,6 +871,17 @@ jobs:
       # basalt's recipe records at the commit `xtask/basalt-pin` names, and ripgrep's own host build for the reference answer. The
       # legs then type `jig install ripgrep` against those bytes, so this job tests `jig` and
       # basalt's delivery too, and run the package's `rg` by path over the walk. About 9 MB.
+      # **In the queue the row runs basalt's programs built from this tree** (milestone 1115 (the
+      # gate builds basalt's delivered programs from the candidate tree)). In a merge group and on
+      # a push to main, `cargo xtask basalt-build` builds them for this row's architectures with
+      # basalt's own build at the commit `xtask/basalt-pin` names, and the row's `basalt-fetch`
+      # takes them from that repository (`NIFE_BASALT_REPOSITORY`) instead of basalt's Release. So
+      # a change that breaks a wire format the programs read is tested against rebuilt programs in
+      # its own merge group. A pull request's run fetches, to stay cheap. xtask/src/basalt.rs has
+      # the rest.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build aarch64 riscv64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
       - if: steps.merge-group-gate.outputs.skip != 'true'
@@ -987,7 +1000,11 @@ jobs:
         name: Open /dev/kvm to the runner user
         run: helpers/open-kvm.sh
 
-      # The row fetches `rg` from basalt first; the `swish-check` job above says why.
+      # The row fetches `rg` from basalt first (in the queue, builds it from this tree); the
+      # `swish-check` job above says why.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build x86_64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
       - if: steps.merge-group-gate.outputs.skip != 'true'
@@ -1069,6 +1086,11 @@ jobs:
         run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
+      # In the queue the row runs basalt's programs built from this tree; the `swish-check` job
+      # above says why.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build aarch64 riscv64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: helpers/hang_evidence.py run -- script/ci-build rg-threads-aarch64-riscv64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
@@ -1120,6 +1142,11 @@ jobs:
         run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
+      # In the queue the row runs basalt's programs built from this tree; the `swish-check` job
+      # above says why.
+      - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
+        name: Build basalt's delivered programs from this tree
+        run: cargo xtask basalt-build x86_64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: helpers/hang_evidence.py run -- script/ci-build rg-threads-x86_64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
@@ -2326,7 +2353,7 @@ jobs:
         id: deny
         run: echo "version=$(cat .cargo-deny-version)" >> "$GITHUB_OUTPUT"
       - if: steps.merge-group-gate.outputs.skip != 'true'
-        uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # v2.90.2
+        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: cargo-deny@${{ steps.deny.outputs.version }}
       # The published .crate tarballs script/vendor-verify hashes. Keyed on the pin files, so
@@ -2603,7 +2630,7 @@ jobs:
         name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       - if: steps.merge-group-gate.outputs.skip != 'true'
-        uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # v2.90.2
+        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: cargo-llvm-cov
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,

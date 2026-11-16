@@ -63,8 +63,8 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
         destination: "sys/pal/nife/fsproto.rs",
     },
     // The wall-clock contract (DECISIONS §43 (reading the clock is a page)), so the time PAL reads the clock page with the same
-    // seqlock and the same layout the clock service publishes it with. A drift here would be a
-    // torn read of a timestamp rather than a compile error.
+    // publish protocol and the same layout the clock service publishes it with. A drift here would
+    // be a torn read of a timestamp rather than a compile error.
     CopiedFile {
         package: "clock_contract",
         file: "src/lib.rs",
@@ -134,7 +134,7 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
     // kernel builds it with. It names one constant of the address-space map, so the map comes too,
     // and [`std_generate_modules`] points the name at it.
     CopiedFile {
-        package: "address_space_map",
+        package: "address_space_layout",
         file: "src/lib.rs",
         destination: "sys/pal/nife/addressmap.rs",
     },

@@ -38,7 +38,8 @@ tree=$(cargo tree -i user_mode_runtime --prefix none)
 case "${1:-names}" in
 names)
     # The first line of an inverted tree is its root, `user_mode_runtime` itself, and the set
-    # keeps it: the crate is as host-uncompilable as anything that depends on it.
+    # keeps it: no syscall may run on the host, so the crate stays out of the workspace passes. Its
+    # own tests run in a pass of their own (xtask's host tests and script/lint's host clippy name it).
     printf '%s\n' "$tree" | awk '{print $1}' | sort -u
     ;;
 paths)

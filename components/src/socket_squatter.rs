@@ -20,7 +20,7 @@
 
 use abi::rights;
 use socket_contract::*;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
     badge, call, call_receiving, capability_delete, exit, map_page_frame, now, receive,
     receive_capability, retype_into_page_frame, send, send_capability, yield_now,
@@ -50,7 +50,7 @@ pub(crate) const RPT_QUIET: u64 = 0;
 // minting a socket with `BADGE` on the front door; re-badging its own socket; its own socket after
 // `CLOSE` (`RECEIVE`); and the closed socket asked to open another.
 
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 /// slirp's gateway hosts the built-in TFTP server; the literals `socket_test_client` dials, so the
 /// bytes armed here are the request the victim itself would send.
@@ -62,7 +62,7 @@ const TFTP_PORT: u16 = 69;
 const WATCH_SECONDS: u64 = 5;
 
 // SAFETY: `run` maps this page writable at PAGE_FRAME_VA before any read or write below.
-static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE) };
+static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE_BYTES) };
 
 /// **The squat, against capabilities.** See notes/net/the-test-clients.md for the five steps.
 pub fn run() -> ! {
@@ -136,7 +136,7 @@ pub fn run() -> ! {
     // 5. Arm a valid request in our page and watch it for the victim's reply.
     let mut p = PAYLOAD_OFFSET_BYTES;
     let mut put = |v: u8| {
-        WINDOW.w8(p, v);
+        WINDOW.write_u8(p, v);
         p += 1;
     };
     put(0x00);
@@ -150,22 +150,22 @@ pub fn run() -> ! {
     }
     put(0x00);
     for (i, &b) in GW_IP.iter().enumerate() {
-        WINDOW.w8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        WINDOW.write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    WINDOW.w16(DESTINATION_PORT_OFFSET_BYTES, TFTP_PORT);
+    WINDOW.write_u16(DESTINATION_PORT_OFFSET_BYTES, TFTP_PORT);
     // Clear the length field: only a RECEIVE writes it (a send carries its length in the CALL
     // argument), so a nonzero value below means the stack delivered something into this frame.
-    WINDOW.w16(LENGTH_OFFSET_BYTES, 0);
+    WINDOW.write_u16(LENGTH_OFFSET_BYTES, 0);
 
     send(REPORT, RPT_ARMED, refused, recv_refused);
 
-    let deadline = now() + WATCH_SECONDS * user_mode_runtime::cntfrq();
-    while now() < deadline && WINDOW.r16(LENGTH_OFFSET_BYTES) == 0 {
+    let deadline = now() + WATCH_SECONDS * user_mode_runtime::counter_hertz();
+    while now() < deadline && WINDOW.read_u16(LENGTH_OFFSET_BYTES) == 0 {
         yield_now();
     }
-    let len = WINDOW.r16(LENGTH_OFFSET_BYTES);
-    let opcode = ((WINDOW.r8(PAYLOAD_OFFSET_BYTES) as u16) << 8)
-        | WINDOW.r8(PAYLOAD_OFFSET_BYTES + 1) as u16;
+    let len = WINDOW.read_u16(LENGTH_OFFSET_BYTES);
+    let opcode = ((WINDOW.read_u8(PAYLOAD_OFFSET_BYTES) as u16) << 8)
+        | WINDOW.read_u8(PAYLOAD_OFFSET_BYTES + 1) as u16;
     send(
         REPORT,
         if len != 0 { RPT_LEAKED } else { RPT_QUIET },

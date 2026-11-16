@@ -148,7 +148,7 @@ A note is not a home. Each finding is recorded where a reader meets the code, or
 - Row 17: `BUGS` in `direct_memory_access_validator`'s module doc and on `shadow_one_head`, and
   `design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md`.
 - Row 3: `BUGS` on `cap::memory_region_cap`. Row 5: `BUGS` on `sched::delete_current_cap`. Row 11:
-  `BUGS` on `paging::Flags`. Row 30: `BUGS` on `Thread::outgoing_cap`.
+  `BUGS` on `page_tables::Flags`. Row 30: `BUGS` on `Thread::outgoing_cap`.
 - Rows 19 and 24: a `BUGS` section in `redoxfs_server/src/dispatch.rs` for the window TOCTOU.
   Two existing records were corrected rather than added to. `Server::rmdir`'s doc said a dangling
   handle fails with `ENOENT`, and `system_initializer`'s `Windows` `BUGS` said a job whose window
@@ -169,7 +169,7 @@ not reproduce, and xenon is not yet exercising the IOMMU.
 ## AMD-Vi: a whole IOMMU with no claim
 
 `NIFE_IOMMU=amd` selects a second x86 IOMMU driver (`kernel/src/arch/x86_64/amd_vi.rs`, page tables
-in `crates/paging/src/x86_64.rs` `AmdVi`), chosen when the firmware publishes an IVRS and no DMAR.
+in `crates/page_tables/src/x86_64.rs` `AmdVi`), chosen when the firmware publishes an IVRS and no DMAR.
 Nothing in the claims file covers it. Findings, strongest first, all read, not booted:
 
 1. The firmware exclusion range is never cleared. The driver does not write the Exclusion Base/Limit

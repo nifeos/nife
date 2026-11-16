@@ -3,7 +3,7 @@ use crate::capability_object::{Rights, page_frame_capability, rendezvous_capabil
 use crate::sched::RendezvousId;
 
 /// Where `date` expects the clock page, read-only. Must match components/src/date.rs's `CLOCK_VA`.
-const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
+const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
 
 // The `a0` format selector, and the `a1`/`a2` conventions. Must match components/src/date.rs.
 const FMT_HUMAN: u64 = 0;

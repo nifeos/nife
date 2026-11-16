@@ -50,7 +50,7 @@
 
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Received, call, cntfrq, now, receive, receive_bound, send, timer_arm, timer_cancel,
+    Message, Received, call, counter_hertz, now, receive_message, send, timer_arm, timer_cancel,
 };
 
 /// The PL011's register block, declared with `tock_registers::register_map!`: every offset is
@@ -97,7 +97,7 @@ const REPLY: u64 = 1;
 
 /// The page the client writes text into, mapped read-only in the server's space. Must match what
 /// the client (the progenitor, or the shell) maps and what the progenitor hands the server (`CON_SHARED_VA`).
-const SHARED_VA: u64 = address_space_map::pair_page(0x0060_0000);
+const SHARED_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 /// How much of it there is. One frame, which is what `console_service` maps, and the bound every
 /// byte count from a client is clamped to.
 const PAGE: u64 = 4096;
@@ -134,7 +134,7 @@ const SCREEN_BATCHING_ENABLED: bool = false;
 const SCREEN_BATCH_NANOSECONDS: u32 = 20_000_000;
 /// Where the page `display_terminal` reads an `OPERATION_WRITE`'s bytes from is mapped, in [`MODE_SCREEN`]
 /// only. Must match `crates/system_initializer`'s `CON_SCREEN_OUT_VA`.
-const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
+const SCREEN_OUT_VA: u64 = address_space_layout::pair_page(0x0068_0000);
 
 /// The server's device mapping of the UART registers. Must match the progenitor's `CON_UART_VA`.
 // Unused on x86_64: there is no page for it to name (`user::UART_PHYS` is zero, DECISIONS §121),
@@ -142,7 +142,7 @@ const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
 // address is the wiring's fact, agreed with the progenitor, and hiding it on one architecture would make the
 // two sides of that agreement look like two different constants.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
-const UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const UART_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 
 user_mode_runtime::program_entry!(start);
 
@@ -165,16 +165,17 @@ fn start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
         // until the window's deadline ends the wait instead (milestone 151 (notification objects)'s
         // bound receive; on a thread with nothing bound it is an ordinary receive, which is the fallback's path).
         let (len, w1, w2) = match if screen {
-            receive_bound(REQUEST)
+            receive_message(REQUEST)
         } else {
-            let (len, w1, w2) = receive(REQUEST);
-            Received::Message(len, w1, w2)
+            Received::Message(receive_message(REQUEST).into_message())
         } {
             Received::Notification(_) => {
                 paint_screen(&mut batch);
                 continue;
             }
-            Received::Message(len, w1, w2) => (len, w1, w2),
+            Received::Message(Message {
+                w0: len, w1, w2, ..
+            }) => (len, w1, w2),
         };
 
         // **A kernel line from the log service** (milestone 342 (the kernel and the `console`
@@ -313,7 +314,7 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         let deadline = now().saturating_add(abi::timer::counter_ticks_for(
             0,
             SCREEN_BATCH_NANOSECONDS,
-            cntfrq(),
+            counter_hertz(),
         ));
         if timer_arm(TIMER, deadline, NOTIFIED, 1) >= 0 {
             b.armed = true;
@@ -409,7 +410,7 @@ fn uart_put(byte: u8) {
         if polls >= POLLS_BEFORE_CLOCK {
             let t = now();
             match deadline {
-                None => deadline = Some(t.saturating_add(cntfrq())),
+                None => deadline = Some(t.saturating_add(counter_hertz())),
                 Some(d) if t > d => transmit_never_emptied(shape.offset(LSR)),
                 Some(_) => {}
             }

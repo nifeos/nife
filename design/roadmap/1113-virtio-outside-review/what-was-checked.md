@@ -11,7 +11,7 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at `cf1328af6` and
 - `cargo test -p virtio`: zero unit tests, one documentation test (`no_run`, so it compiles and
   never runs). No Kani harness and no falsification patch exist (`script/crate-review-packet`).
 - `script/crate-standalone --no-kani virtio`: 16 failures. Four path dependencies leave the   crate
-  (`address_space_map`, `nifefs`, `filesystem_contract`, `user_mode_runtime`). The crate   inherits
+  (`address_space_layout`, `nifefs`, `filesystem_contract`, `user_mode_runtime`). The crate   inherits
   `license` and `lints` from the workspace. It has no `rust-version`, no README, no   `LICENSE-MIT`
   and no `LICENSE-APACHE`. The shipped text holds 9 milestone citations, 17 paths   into this tree,
   3 section citations and one architect's name. The build step skipped because a   dependency sits

@@ -44,7 +44,7 @@ import re
 # rather than a parse, and every count built on it is honest rather than close: a naive grep for
 # `unsafe {` over this tree scores 1071 against the census's 1057, and the fourteen it invents are
 # all `unsafe {}` written inside a `//!` doc example in `intrusive`, `inter_process_communication`,
-# `paging` and `user_mode_heap`. Those are documentation ABOUT unsafe, and a ceiling that counted
+# `page_tables` and `user_mode_heap`. Those are documentation ABOUT unsafe, and a ceiling that counted
 # them would fire when somebody improved a doc comment.
 #
 # Block comments are matched non-greedily and do NOT nest, which Rust's do. The tree has none
@@ -203,7 +203,7 @@ def unsafe_census(files):
 # nife" 561 -- and flagged in its own BUGS that nothing keeps it computed. This is that mechanism.
 #
 # **The split that hand computation did NOT make, and the one this file exists to make**: crates/
-# is not one population. `crates/paging` and `crates/direct_memory_access_validator` were lifted out
+# is not one population. `crates/page_tables` and `crates/direct_memory_access_validator` were lifted out
 # of `kernel/src` on purpose so a model checker could reach them (see the BUGS in
 # notes/trusted-base.md, which names exactly this risk: "a tree can shrink [the kernel line count]
 # by moving code out of `kernel/src` without reducing what anyone has to trust"). A crate that ships

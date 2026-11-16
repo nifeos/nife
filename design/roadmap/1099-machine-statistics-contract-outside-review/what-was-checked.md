@@ -8,7 +8,7 @@ workspace with its two path dependencies beside it and the workspace's license a
 
 - `cargo test`: six unit tests and one documentation test pass on the current stable and on 1.88.
   `cargo clippy --all-targets -- -D warnings` is green on stable for this crate. On 1.88 the same
-  command is red, but in `address_space_map` (a dead constant, `LOW_HALF_SPLIT_SHIFTS`), not in
+  command is red, but in `address_space_layout` (a dead constant, `LOW_HALF_SPLIT_SHIFTS`), not in
   this crate (BUGS). `cargo doc` with warnings denied is clean.
 - The crate builds and passes clippy with warnings denied for `x86_64-unknown-none`,
   `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf` on the nightly this tree

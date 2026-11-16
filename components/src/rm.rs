@@ -50,7 +50,7 @@ const REPORT: u64 = 1;
 /// Where the verdict goes, after the report has ended.
 const VERDICT: u64 = rm::VERDICT_SLOT;
 /// The page shared with the FS server.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
@@ -94,14 +94,14 @@ const MAXIMUM_ROUNDS: usize = 64;
 /// Copy `bytes` into the shared page.
 fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(filesystem_contract::PAGE).enumerate() {
-        WINDOW.w8(i as u64, b);
+        WINDOW.write_u8(i as u64, b);
     }
 }
 
 /// Copy `n` bytes out of it (a listing landed there).
 fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = WINDOW.r8(i as u64);
+        *b = WINDOW.read_u8(i as u64);
     }
 }
 
@@ -352,8 +352,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: byte_sink_contract::INTERFACE_ID,

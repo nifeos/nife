@@ -1221,7 +1221,7 @@ fn start_identity_provisioner(
     ));
     capability_delete(req_frame);
     let idp_page = must(window_page(g.fs_page, 0).ok_or(()));
-    let mapped = address_space_map_into(
+    let mapped = address_space_layout_into(
         idp_aspace,
         IDP_FS_VA,
         idp_page,

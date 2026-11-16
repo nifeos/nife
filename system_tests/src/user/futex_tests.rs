@@ -22,12 +22,12 @@ use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
-const CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// The page the waiter uses: the futex word at `+0`, a count of returns at `+8`, and at `+16` the
 /// OR of every `WAIT` result plus one, so a woken return (`0`) sets bit 0, a changed-word return
 /// (`1`) sets bit 1, and any error (negative) sets high bits that cannot be mistaken for either.
-const VA: u64 = address_space_map::pair_page(0x0060_0000);
+const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// **The waiter.** Entry registers: its own space's capability slot, `VA`, the flags. Forever:
 /// `WAIT(slot, VA, flags, expected 0)`, OR the result plus one into `+16`, count the return in

@@ -68,9 +68,9 @@ capability_manifest_note::carry!(grant_contract::Manifest {
 });
 
 /// **Where the staging run is mapped**: one package, read here and handed on a page at a time. A
-/// window of this program's own, so a pair page (`address_space_map`'s rule 7), clear of everything
+/// window of this program's own, so a pair page (`address_space_layout`'s rule 7), clear of everything
 /// a loader maps into a `std` program. Four MiB, `spawnproto::IMAGE_MAXIMUM_PAGES` pages.
-const STAGING_VA: u64 = address_space_map::pair_page(0x0400_0000);
+const STAGING_VA: u64 = address_space_layout::pair_page(0x0400_0000);
 
 /// This machine's architecture, as a package stem spells it.
 const ARCHITECTURE: &str = std::env::consts::ARCH;

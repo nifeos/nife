@@ -25,7 +25,7 @@ pub(crate) const REPORT: u64 = 1;
 /// maps every page of it here (`kernel/src/user/fs_service/channel.rs`, `map_channel`). A client
 /// may not ask for more than it mapped, and this one maps all of it, which is what lets the
 /// throughput role measure the contract's own ceiling rather than a page.
-const FILE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const FILE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 // SAFETY: the kernel's wiring maps every page of the fs::TRANSFER_MAXIMUM-byte channel at FILE_VA
 // before this program runs (milestone 139 round 2; see `user_mode_runtime::mapped_window`, which is what
@@ -37,7 +37,7 @@ pub(crate) const WINDOW: MappedWindow =
 /// Copy `bytes` into the shared page (a name to open, or data to write).
 pub(crate) fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        WINDOW.w8(i as u64, b);
+        WINDOW.write_u8(i as u64, b);
     }
 }
 
@@ -45,14 +45,14 @@ pub(crate) fn put_page(bytes: &[u8]) {
 /// rename's source and destination names sit back to back.
 pub(crate) fn put_page_at(off: usize, bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        WINDOW.w8((off + i) as u64, b);
+        WINDOW.write_u8((off + i) as u64, b);
     }
 }
 
 /// Read `n` bytes out of the shared page (a completed read landed there).
 pub(crate) fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = WINDOW.r8(i as u64);
+        *b = WINDOW.read_u8(i as u64);
     }
 }
 

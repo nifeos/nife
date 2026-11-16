@@ -10,7 +10,8 @@ name: kernel mutants cost
 # **Small and manual, never scheduled.** The rolling census is held, so this has no cron. It runs
 # when someone dispatches it, and on a pull request from this repository that edits this file (a
 # fork's pull request never reaches it: the condition below, and nothing here is self-hosted). Each
-# leg stops starting new mutants after `budget` seconds, which keeps it inside the job bound.
+# leg stops starting new mutants after `budget` seconds, which keeps it inside the job bound: the two
+# baselines on the x86_64 leg take about 14 minutes under TCG, then the budget, then the last mutant.
 #
 # Observed failing: 2026-10-27, by script: a real red needs a kernel whose tiers fail, which only a
 #   hosted run on a broken tree stages. The arm that turns this job red is the driver's non-zero
@@ -49,7 +50,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     # The x86_64 leg boots under TCG on the arm64 pool, as ci.yml's `test-shard` does.
     runs-on: ubuntu-26.04-arm
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +68,7 @@ jobs:
       - name: Read the pinned cargo-mutants version
         id: mutants
         run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # v2.90.2
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: cargo-mutants@${{ steps.mutants.outputs.version }}
 

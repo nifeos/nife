@@ -30,7 +30,7 @@ them, and which claims rest on them.
 |---|---|
 | `aarch64-unknown-none-softfloat` | none |
 | `riscv64imac-unknown-none-elf` | none |
-| `x86_64-unknown-none` | `uuid` 1.29.0 |
+| `x86_64-unknown-none` | `uuid` 1.29.2 |
 
 `--all-features` gives the same set. `uuid` arrives on x86_64 through `boot_slot` and
 `globally_unique_identifier_partition_table`, and pulls no procedural macro or build script into
@@ -53,7 +53,7 @@ build compiles it.
 
 | Crate | Hand-written sites outside tests | Compiled into the kernel | Reached by the kernel | Expansions (reached) | In test modules |
 |---|---|---|---|---|---|
-| `uuid` 1.29.0 | 23: 19 blocks, 2 in macro bodies, 2 `unsafe fn` | 13 | 0 | 6 (0) | 2 |
+| `uuid` 1.29.2 | 23: 19 blocks, 2 in macro bodies, 2 `unsafe fn` | 13 | 0 | 6 (0) | 2 |
 
 `python3 helpers/kernel_dependency_unsafe.py --summary` prints the first, fifth and sixth columns
 from the table. The census in
@@ -109,7 +109,7 @@ The guard's `deref` and `deref_mut` blocks turn that ordering into a `&mut T` wi
 Loom proves it in the C11 model; it is not a proof about aarch64 or riscv64 silicon
 ([interleaving.md](interleaving.md)).
 
-## uuid 1.29.0
+## uuid 1.29.2
 
 x86_64 only, with default features off and none enabled
 (`crates/globally_unique_identifier_partition_table/Cargo.toml`).
@@ -172,7 +172,7 @@ the message.
 
 ```
 $ python3 helpers/kernel_dependency_unsafe.py --summary
-uuid 1.29.0: 31 rows; 23 hand-written outside tests (block 19, block in a macro body 2, fn 2); 6 macro expansions; 2 in test modules
+uuid 1.29.2: 31 rows; 23 hand-written outside tests (block 19, block in a macro body 2, fn 2); 6 macro expansions; 2 in test modules
 ```
 
 ## BUGS

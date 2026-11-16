@@ -50,7 +50,7 @@ These are worth more than the findings, because each one is a shape that did not
   moment a third variant exists. Now `All` with explicit `matches!`.
 - `rust-toolchain.toml`'s `targets`: three entries, and the only architecture list in the tree
   that a tool reads rather than a human copies.
-- `.cargo/config.toml`: three `[target.*] runner` blocks. `crates/paging/src/`: `aarch64.rs`,
+- `.cargo/config.toml`: three `[target.*] runner` blocks. `crates/page_tables/src/`: `aarch64.rs`,
   `sv39.rs`, `x86_64.rs`. `crates/machine_discovery/src/`, `bench/baseline-<arch>.txt`,
   `helpers/qemu-runner-<arch>.sh`, `kernel/link-<arch>.ld`, and twelve files under
   `kernel/src/arch/<arch>/`: all complete at three.

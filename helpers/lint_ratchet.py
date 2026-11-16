@@ -101,8 +101,10 @@ BASELINE = 'design/lint-baseline.tsv'
 SAVED = 'target/lint-clippy'
 CONFIGURATIONS = {
     'host': ('--workspace', '--all-targets', 'kernel', 'system_tests'),
-    'aarch64': ('-p', 'kernel', 'components', 'fixtures', 'user_mode_runtime',
+    'aarch64': ('-p', 'kernel', 'components', 'fixtures',
                 'aarch64-unknown-none-softfloat', '--all-targets'),
+    'aarch64_user_mode_runtime': ('-p', 'user_mode_runtime', 'aarch64-unknown-none-softfloat',
+                                  '--lib'),
     'system_tests': ('-p', 'system_tests', 'aarch64-unknown-none-softfloat', '--all-targets'),
     'riscv64': ('-p', 'kernel', 'riscv64imac-unknown-none-elf'),
     'x86_64': ('-p', 'kernel', 'x86_64-unknown-none'),
@@ -677,7 +679,7 @@ def saved_cases():
         case('--check on such a directory exits non-zero and prints the files',
              status == 1 and 'host.json' in printed.getvalue())
         case('every required configuration is checked, not only those present',
-             len(CONFIGURATIONS) == 10)
+             len(CONFIGURATIONS) == 11)
     case('newest_input names a file of the tree', newest_input()[1] != '')
     return cases
 

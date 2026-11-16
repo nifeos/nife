@@ -14,25 +14,25 @@ use super::*;
 /// installed-programs table. Mapped once, on first use, with page tables from its own budget.
 /// Clear of every other window this process maps (`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`, the
 /// peek pages below it, and `process_builder::SCRATCH_WINDOW` at `0x1000_0000`).
-pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_0000);
+pub(super) const ACTIVATION_FS_VA: u64 = address_space_layout::pair_page(0x0f40_0000);
 
 /// **Where the progenitor maps the second mounted tree's client-window pool**, to zero a window
 /// between two jobs. Past [`ACTIVATION_FS_VA`]'s pool, which is the same size, and
 /// below [`IMAGE_STAGING_VA`].
-pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_map::pair_page(0x0f50_0000);
+pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_layout::pair_page(0x0f50_0000);
 
 /// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAXIMUM_PAGES`]
 /// pages at most. A fixed window, because every page mapped here comes from a staging region this
 /// process destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
 /// (capability revocation and untyped reclamation)), so the next request finds it empty. The page
 /// tables behind it come from `own_ut` and are reused.
-const IMAGE_STAGING_VA: u64 = address_space_map::pair_page(0x0f80_0000);
+const IMAGE_STAGING_VA: u64 = address_space_layout::pair_page(0x0f80_0000);
 
 // The largest image's copy stays inside the pair band, clear of the loader's scratch window at its
 // top.
 const _: () = assert!(
     IMAGE_STAGING_VA + spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE
-        <= address_space_map::PAIR_PAGES.end
+        <= address_space_layout::PAIR_PAGES.end
 );
 
 /// **Take the argv's frame off the spawn endpoint and map it where this process can read it**
@@ -397,7 +397,9 @@ impl SpawnEndpoint {
                 m
             }
             None => loop {
-                let (w0, w1, w2, badge) = receive_badged(self.ep);
+                let Message {
+                    w0, w1, w2, badge, ..
+                } = receive_message(self.ep).into_message();
                 if badge == spawnproto::UNDERTAKER_BADGE {
                     self.reaped(w0);
                     continue;
@@ -421,7 +423,9 @@ impl SpawnEndpoint {
             if self.abandoned {
                 return (0, 0, 0);
             }
-            let (w0, w1, w2, badge) = receive_badged(self.ep);
+            let Message {
+                w0, w1, w2, badge, ..
+            } = receive_message(self.ep).into_message();
             if badge == spawnproto::UNDERTAKER_BADGE {
                 self.reaped(w0);
                 continue;
@@ -444,7 +448,13 @@ impl SpawnEndpoint {
             if self.abandoned {
                 return (0, abi::rendezvous::NO_CAPABILITY, 0);
             }
-            let (w0, slot, w1, badge) = receive_capability_badged(self.ep);
+            let Message {
+                w0,
+                w1: slot,
+                w2: w1,
+                badge,
+                ..
+            } = receive_capability_message(self.ep).into_message();
             if badge == spawnproto::UNDERTAKER_BADGE {
                 if slot != abi::rendezvous::NO_CAPABILITY {
                     capability_delete(slot);
@@ -478,7 +488,9 @@ impl SpawnEndpoint {
         if self.any_stashed() {
             return false;
         }
-        let (w0, w1, w2, badge) = receive_badged(self.ep);
+        let Message {
+            w0, w1, w2, badge, ..
+        } = receive_message(self.ep).into_message();
         if badge == spawnproto::UNDERTAKER_BADGE {
             self.reaped(w0);
             true

@@ -677,3 +677,71 @@ fn a_device_nobody_bound_outlives_other_threads() {
     assert!(read_register(id, REG_STATUS).is_some());
     assert!(release_borrowed(id, dma));
 }
+
+/// A slot whose `Version` is not 2 is refused whatever the device type, so a legacy or undefined
+/// layout never reaches the kernel's modern queue setup or a driver written for it.
+///
+/// Falsification: replayable `kernel/falsifications/virtio.tests.a_slot_whose_version_is_not_2_is_refused.patch`
+#[test_case]
+fn a_slot_whose_version_is_not_2_is_refused() {
+    for version in [0, 1, 3, u32::MAX] {
+        assert_eq!(
+            classify(MAGIC, version, DEVICE_ID_BLOCK),
+            SlotIdentity::Refused {
+                version,
+                device_id: DEVICE_ID_BLOCK
+            }
+        );
+    }
+    assert_eq!(
+        classify(MAGIC, 2, DEVICE_ID_BLOCK),
+        SlotIdentity::Device(DEVICE_ID_BLOCK)
+    );
+}
+
+/// Slots that are not devices stay quiet whatever their version.
+#[test_case]
+fn a_slot_without_magic_or_device_is_not_reported_as_refused() {
+    assert_eq!(classify(0, 1, DEVICE_ID_NET), SlotIdentity::NotVirtio);
+    assert_eq!(classify(MAGIC, 1, 0), SlotIdentity::Empty);
+    assert_eq!(classify(MAGIC, 2, 0), SlotIdentity::Empty);
+}
+
+/// The PCI transport answers the configuration generation from the device's common configuration,
+/// not a constant, so a driver's bracketed capacity read sees a resize on that bus too.
+///
+/// A real frame stands in for the common configuration block, so the test needs no PCI function:
+/// it writes a generation byte where the device keeps it and reads it back in the mmio vocabulary.
+///
+/// Falsification: replayable `kernel/falsifications/virtio.tests.the_pci_transport_answers_the_device_configuration_generation.patch`
+#[test_case]
+fn the_pci_transport_answers_the_device_configuration_generation() {
+    let common = crate::memory::alloc().expect("no frame").addr();
+    let t = Transport::Pci {
+        common,
+        notify_base: 0,
+        notify_mult: 0,
+        device_type: DEVICE_ID_BLOCK,
+        notify_addr: [0; MAXIMUM_QUEUES],
+        isr: 0,
+        msix_vector: pci_configuration_space::VIRTIO_MSIX_NO_VECTOR,
+        device_config: None,
+    };
+    for generation in [0x5a_u8, 0xff, 0x01] {
+        // SAFETY: `common` is a frame this test allocated, reached through the direct map, and
+        // `PCI_CONFIGURATION_GENERATION` lies inside it.
+        unsafe {
+            core::ptr::write_volatile(
+                mmu::phys_to_virt(common + PCI_CONFIGURATION_GENERATION) as *mut u8,
+                generation,
+            );
+        }
+        assert_eq!(
+            t.read_reg(REG_CONFIGURATION_GENERATION),
+            u32::from(generation),
+            "the PCI transport did not answer the device's configuration generation, so a \
+             bracketed configuration read on that bus checks nothing",
+        );
+    }
+    crate::memory::free(page_frames::PageFrame::from_addr(common));
+}

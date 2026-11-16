@@ -44,7 +44,7 @@ inferring it from a count.
 
 ## Row 12's proof could not fail, and the tree had written down that it could
 
-`paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` is row 12's whole evidence for the claim of
+`page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` is row 12's whole evidence for the claim of
 §20 (IOMMU-backed DMA isolation) that an IOMMU entry sets no bit the hardware treats as reserved. It
 stated all three of its assertions, and its `kani::assume`, through `VTD_ADDR_MASK`, `VTD_R` and
 `VTD_W`. Those are the three constants `Vtd::leaf_entry` builds its result out of:

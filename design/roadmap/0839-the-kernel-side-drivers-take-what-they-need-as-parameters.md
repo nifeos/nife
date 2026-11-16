@@ -24,7 +24,7 @@ static. The kernel files that wire those crates to a device do not obey it. This
 three things they reach for into parameters: the device's base address, a DMA allocator, and an
 IOMMU handle.
 
-Reuse: nothing taken; the shape is the tree's own. `crates/paging`'s `Mapper` already takes its frame
+Reuse: nothing taken; the shape is the tree's own. `crates/page_tables`'s `Mapper` already takes its frame
 allocator as a closure, which milestone 774 (a page-table allocator that fails on its Nth call) cites
 as rule 2 paying off. `kernel/src/drivers/pl011.rs` is constructed from a base address and knows
 nothing else. A search of `kernel/` and `crates/` for an existing DMA-allocator or IOMMU trait
@@ -110,7 +110,7 @@ separate argument.
    e1000e gates in `notes/e1000e.md`, the NVMe and xHCI gates, and `virtio`'s two IOMMU tests
    (`the_iommu_faults_a_dma_that_escapes_the_domain`, `a_device_write_to_the_read_only_shadow_is_refused`).
 4. Both `virtio` falsification patches under `kernel/falsifications/` still apply and still fail the
-   test they name. They patch `kernel/src/iommu.rs` and `crates/paging`, so an IOMMU handle that
+   test they name. They patch `kernel/src/iommu.rs` and `crates/page_tables`, so an IOMMU handle that
    moves code in `iommu.rs` has to carry them along.
 5. `script/fastpath-footprint` and `script/stack-frame-check` are unchanged; none of these paths is
    hot, so a change there is a finding.

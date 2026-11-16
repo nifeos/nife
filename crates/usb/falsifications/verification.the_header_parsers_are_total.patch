@@ -1,16 +1,16 @@
 Falsifies `usb::verification::the_header_parsers_are_total`.
 
-The defect: `DeviceDescriptor::parse` loses its length check and indexes `b[0]` of whatever it is handed, so an
+The defect: `DeviceDescriptor::parse` loses its length check and indexes `bytes[0]` of whatever it is handed, so an
 empty or short descriptor from the device is an out-of-bounds read.
 
-Expected to fail: the bounds check on `b[0]` in `DeviceDescriptor::parse`.
+Expected to fail: the bounds check on `bytes[0]` in `DeviceDescriptor::parse`.
 
 diff --git a/crates/usb/src/descriptor.rs b/crates/usb/src/descriptor.rs
-index cb5c8bef7..857bc3010 100644
 --- a/crates/usb/src/descriptor.rs
 +++ b/crates/usb/src/descriptor.rs
-@@ -88,3 +88,3 @@ impl DeviceDescriptor {
-     pub fn parse(b: &[u8]) -> Option<DeviceDescriptor> {
--        if b.len() < DEVICE_LEN || (b[0] as usize) < DEVICE_LEN || b[1] != DEVICE {
-+        if (b[0] as usize) < DEVICE_LEN || b[1] != DEVICE {
-             return None;
+@@ -92,4 +92,3 @@
+     pub fn parse(bytes: &[u8]) -> Option<DeviceDescriptor> {
+-        if bytes.len() < DEVICE_DESCRIPTOR_BYTES
+-            || (bytes[0] as usize) < DEVICE_DESCRIPTOR_BYTES
++        if (bytes[0] as usize) < DEVICE_DESCRIPTOR_BYTES
+             || bytes[1] != DEVICE
