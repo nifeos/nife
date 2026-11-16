@@ -139,11 +139,6 @@ paths = ["notes/compositor/arithmetic.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/designware_ethernet alone; it leaves with that crate (§315)"
-paths = ["notes/designware-ethernet/the-hardware.md"]
-
-[[home]]
-status = "undecided"
 reason = "about crates/static_elf alone; it leaves with that crate (§315)"
 paths = ["notes/elf/parser.md"]
 
@@ -227,6 +222,11 @@ paths = ["notes/video-terminal.md", "notes/video-terminal/"]
 status = "provisional"
 repo = "designware_mobile_storage"
 paths = ["notes/designware-mobile-storage/driver.md"]
+
+[[home]]
+status = "provisional"
+repo = "designware_ethernet"
+paths = ["notes/designware-ethernet/the-hardware.md"]
 
 [[home]]
 status = "provisional"
