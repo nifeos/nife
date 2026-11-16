@@ -1397,7 +1397,9 @@ fn disk_size_bytes(capacity_sectors: u64) -> i64 {
         .min(i64::MAX as u64) as i64
 }
 
-#[cfg(test)]
+// The host tests run on the host only: the bare-metal targets the package also builds for have no
+// libtest, and `--all-targets` would otherwise try to build the harness for them.
+#[cfg(all(test, not(target_os = "none")))]
 mod tests;
 
 /// **Proofs of the pure logic the driver runs on bytes a device or a disk image wrote**: the
@@ -1417,7 +1419,7 @@ mod verification {
     /// **The directory lookup is total**: for any directory bytes up to two entries long, cut at
     /// any length, and any name up to one byte longer than the name field, `find_file` returns
     /// without a panic or an out-of-bounds read, whatever count the header claims.
-    /// Falsification: replayable `components/falsifications/verification.the_directory_lookup_is_total.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.the_directory_lookup_is_total.patch`
     #[kani::proof]
     #[kani::unwind(36)]
     fn the_directory_lookup_is_total() {
@@ -1434,7 +1436,7 @@ mod verification {
     /// returns that entry's start block: for one entry of any bytes and any name of up to four
     /// bytes, a hit means the field opens with the name and the next byte is padding, and a miss
     /// means it does not.
-    /// Falsification: replayable `components/falsifications/verification.the_lookup_matches_a_whole_name_only.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.the_lookup_matches_a_whole_name_only.patch`
     #[kani::proof]
     #[kani::unwind(36)]
     fn the_lookup_matches_a_whole_name_only() {
@@ -1460,7 +1462,7 @@ mod verification {
     /// **A header carrying its own checksum sums to zero**: for any 20-byte header, writing the
     /// checksum computed over it (with the checksum field zero) into that field makes the checksum
     /// of the result zero, the check a receiver makes.
-    /// Falsification: replayable `components/falsifications/verification.a_header_carrying_its_checksum_sums_to_zero.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.a_header_carrying_its_checksum_sums_to_zero.patch`
     #[kani::proof]
     #[kani::unwind(11)]
     fn a_header_carrying_its_checksum_sums_to_zero() {
@@ -1475,7 +1477,7 @@ mod verification {
     /// **A bounded completion wait takes at most its bound of wakeups**, returns true exactly when
     /// one of them saw the used index move, and takes all of them when none did: for any bound up
     /// to four and any sequence of used indices.
-    /// Falsification: replayable `components/falsifications/verification.a_bounded_wait_stops_at_its_bound.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.a_bounded_wait_stops_at_its_bound.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn a_bounded_wait_stops_at_its_bound() {
@@ -1500,7 +1502,7 @@ mod verification {
     /// **A bracketed configuration read returns only a value read inside one generation**: for
     /// any generation and value sequences, a returned value is one whose read had the same
     /// generation before and after it.
-    /// Falsification: replayable `components/falsifications/verification.a_configuration_read_holds_inside_one_generation.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.a_configuration_read_holds_inside_one_generation.patch`
     #[kani::proof]
     #[kani::unwind(18)]
     fn a_configuration_read_holds_inside_one_generation() {
