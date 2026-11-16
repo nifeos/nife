@@ -219,7 +219,7 @@ The P2 items are in [the appendix](1074-designware-ethernet-outside-review/later
 
 ## Decisions for the architect
 
-Only one-way doors. Each was a public name or path that the first tag fixes. All three are ruled
+Only one-way doors. Each was a public name or path that the first tag fixes. All four are ruled
 and built.
 
 ### Decision 1: Where the link type lives
@@ -256,6 +256,16 @@ Ruled 2026-11-14 (UTC). The five names carry the spellings below, each `Name:` l
 
 Example: `let length = (word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK) as usize;`
 
+### Decision 4: The five names that say what they hold
+
+Ruled 2026-11-16 (UTC), option A: `station_mac_address`, `physical_layer_device_bus_address`,
+`direct_memory_access_physical_address_bits`, `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR`
+and `AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX` stand as built. MAC stays an
+accepted abbreviation (`design/naming.md`), so each `station_mac_address` field's doc opens with
+"media access control".
+
+Example: `let address = discovered.station_mac_address.unwrap_or(from_registers);`
+
 ### Not brought
 
 The two Motorcomm alias sets wait for the architect already and are not restated here. Items 6 and
@@ -268,9 +278,8 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 
 ## BUGS
 
-- Items 1 (the address rule) and 11 are the template's to fix. Until they land, the crate cannot
-  reach zero findings without renames this block recommends against, and the move waits on them or
-  on an allowance file the template does not yet read.
+- Items 1 and 11 are built in the crate and not in the template, which has no allowance for
+  either shape; Decision 4 ratifies the crate's names instead.
 - The review did not verify item 16's question, which tree inverts the 10 Mbit/s transmit clock,
   against either device tree.
 - Items 15 and 17 cite Linux's `motorcomm.c` and the controller databook from memory, marked so in
@@ -288,11 +297,14 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
   `management_data_io` rename ruled the same day is built too.
 
-- **Outstanding.** The other review items stay open. Those are the manifest and README work (items
-  2 and 7 onward), the bounds on `receive` and `reclaim` (item 3) and the visibility rule for
-  register constants (item 6). They also include the template's address rule and acronym findings
-  (items 1 and 11) and the stranger run. The architect still has to rule the two Motorcomm alias
-  sets and the remaining renames the register gate names. A lane builds each ruling when it arrives.
+- **Done.** Items 1, 2, 3, 6, 7, 8, 10 and 11 are built. The crate passes the template's naming and
+  prose gates and bounds `receive` and `reclaim`. Only the constants a caller uses stay `pub`. The
+  crate names the board and its two device trees. The README has its build, proof and falsification
+  sections, and `cargo test` compiles its example.
+
+- **Outstanding.** Item 9 is the move's own regeneration of the patches. The P2 items stay open. The
+  architect still has to rule the two Motorcomm alias sets and the remaining renames the register
+  gate names. A lane builds each ruling when it arrives.
 
 ## Index row
 
