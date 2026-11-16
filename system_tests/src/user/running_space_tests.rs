@@ -129,7 +129,7 @@ fn start_reader(region: u64) -> (u64, u64, u64, u64, u64) {
             STACK_VA + page_frames::FRAME_SIZE,
             given,
         ),
-        Ok(current_cpu_contract::PAGE_VA as i64),
+        Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
         "premise: CONFIGURE refused the reader's space, or did not answer its current-CPU page",
     );
     assert!(
@@ -342,7 +342,7 @@ fn a_second_bind_of_a_bound_space_is_refused() {
 
     assert_eq!(
         configure(tcbs[0], first),
-        Ok(current_cpu_contract::PAGE_VA as i64),
+        Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
         "premise: the first bind"
     );
     assert_eq!(

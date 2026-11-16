@@ -143,7 +143,7 @@ fn main_block() -> *mut Block {
         rtabort!("no memory for the main thread's thread-local block");
     }
     // SAFETY: just made, ours.
-    unsafe { (*block).cpu_page = currentcpuproto::PAGE_VA };
+    unsafe { (*block).cpu_page = currentcpuproto::PAGE_VIRTUAL_ADDRESS };
     // SAFETY: `invoke` traps to the kernel, which validates the capability.
     let set = unsafe {
         rt::invoke(
