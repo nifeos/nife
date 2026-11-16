@@ -1,0 +1,50 @@
+# A throwaway measurement for pull request 3567: the peak memory of its return harness and its crate
+# on the hosted ubuntu-26.04 runner, in a cgroup capped below the runner's memory so a harness that
+# does not fit is killed by the kernel and measured, rather than taking the runner down. This branch
+# never merges.
+name: kani memory probe
+on:
+  push:
+    branches: [lane/kani-return-probe]
+permissions:
+  contents: read
+jobs:
+  harness:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: mr-3567-return-alone, ref: c1bf31c5aaed6e4e47c52a0fa73707ce92c5b635, crate: memory_regions, args: "--harness proofs::a_return_keeps_every_run_inside_its_parents_spent_part --exact -j 1" }
+          - { name: mr-3567-crate-j2-a, ref: c1bf31c5aaed6e4e47c52a0fa73707ce92c5b635, crate: memory_regions, args: "-j 2" }
+          - { name: mr-3567-crate-j2-b, ref: c1bf31c5aaed6e4e47c52a0fa73707ce92c5b635, crate: memory_regions, args: "-j 2" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ matrix.ref }}
+      - run: script/kani-install
+      - name: prove under a cgroup cap, sampling memory every 10 seconds
+        run: |
+          echo "image: $ImageOS $ImageVersion"; nproc; grep -E 'MemTotal|MemAvailable|SwapTotal' /proc/meminfo
+          total_kib=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+          cap=$(( (total_kib - 1536 * 1024) * 1024 ))
+          cg=/sys/fs/cgroup/kani-probe
+          cat /sys/fs/cgroup/cgroup.subtree_control
+          sudo mkdir -p $cg
+          echo $cap | sudo tee $cg/memory.max
+          echo 0 | sudo tee $cg/memory.swap.max || true
+          ( while sleep 10; do
+              printf 'sample %s cgroup %s MiB, available %s MiB, top: %s\n' "$(date -u +%H:%M:%S)" \
+                "$(( $(cat $cg/memory.current) / 1048576 ))" \
+                "$(( $(awk '/MemAvailable/ {print $2}' /proc/meminfo) / 1024 ))" \
+                "$(ps -eo rss=,comm= --sort=-rss | head -3 | awk '{printf "%s=%dMiB ", $2, $1/1024}')"
+            done ) &
+          sampler=$!
+          rc=0
+          bash -c "echo \$\$ | sudo tee $cg/cgroup.procs >/dev/null; exec cargo kani -p ${{ matrix.crate }} --output-format=terse ${{ matrix.args }}" || rc=$?
+          kill $sampler || true
+          echo "exit: $rc"
+          echo "peak: $(( $(cat $cg/memory.peak) / 1048576 )) MiB of a cap of $(( cap / 1048576 )) MiB"
+          cat $cg/memory.events
