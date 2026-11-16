@@ -31,9 +31,9 @@ fn every_ring_offset_is_inside_the_region() {
     assert!(layout::transmit_buffer(i) + BUFFER_BYTES <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
 }
 
-/// **Whatever the PHY answers, the link decode returns a link only the registers justify.** All
+/// **Whatever the physical layer device answers, the link decode returns a link only the registers justify.** All
 /// six registers are the device's, so each is every value. A link needs the status bit up and the
-/// PHY not isolated; with autonegotiation on it also needs autonegotiation complete, and the
+/// physical layer device not isolated; with autonegotiation on it also needs autonegotiation complete, and the
 /// speed and duplex are abilities both ends advertise; with it off they are the forced bits. The
 /// decode also ends, with no panic, on every combination, which Kani checks of every function it
 /// runs.
@@ -88,11 +88,11 @@ fn a_link_is_decoded_only_from_what_the_registers_say() {
                 }
                 link::Speed::Hundred => {
                     assert!(!gigabit_full && !gigabit_half);
-                    assert!(common & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) != 0);
+                    assert!(common & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) != 0);
                 }
                 link::Speed::Ten => {
                     assert!(!gigabit_full && !gigabit_half);
-                    assert!(common & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) == 0);
+                    assert!(common & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) == 0);
                     assert!(
                         common
                             & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
@@ -144,19 +144,19 @@ fn a_transmit_descriptor_keeps_its_length_inside_its_fields() {
 /// field, the operation bits say read or write as asked, and the busy bit that starts the command
 /// is set.
 ///
-/// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_management_data_io_command_word_keeps_each_address_in_its_own_field.patch`
+/// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_management_data_io_command_word_keeps_each_bus_address_in_its_own_field.patch`
 #[kani::proof]
-fn a_management_data_io_command_word_keeps_each_address_in_its_own_field() {
+fn a_management_data_io_command_word_keeps_each_bus_address_in_its_own_field() {
     let device: u8 = kani::any();
     let register: u8 = kani::any();
     let write: bool = kani::any();
     let word = management_data_io::command_word(device, register, write);
     assert!(
-        (word >> management_data_io::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT) & 0x1f
+        (word >> management_data_io::PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT) & 0x1f
             == (device & 0x1f) as u32
     );
     assert!(
-        (word >> management_data_io::REGISTER_ADDRESS_SHIFT) & 0x1f == (register & 0x1f) as u32
+        (word >> management_data_io::REGISTER_BUS_ADDRESS_SHIFT) & 0x1f == (register & 0x1f) as u32
     );
     assert!(
         (word >> management_data_io::CLOCK_RANGE_SHIFT) & 0xf
@@ -205,8 +205,8 @@ fn a_coherent_verdict_needs_every_account_to_agree() {
         assert!(
             receive_verdict(
                 observation.receive_descriptor_word_3,
-                cache_coherence::PROBE_LENGTH
-            ) == ReceiveVerdict::Frame(cache_coherence::PROBE_LENGTH)
+                cache_coherence::PROBE_FRAME_BYTES
+            ) == ReceiveVerdict::Frame(cache_coherence::PROBE_FRAME_BYTES)
         );
     }
 }

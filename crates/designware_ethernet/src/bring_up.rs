@@ -1,5 +1,5 @@
 //! **The port's whole bring-up, in order**: identify the controller, take the station address,
-//! configure the PHY, reset the controller, run the coherence probe, reset again, program both
+//! configure the physical layer device, reset the controller, run the coherence probe, reset again, program both
 //! rings, wait for a link and start at its speed. A [`Port`] supplies the register window, the DMA
 //! region and a clock; this module supplies the order and every decision, so the process that
 //! drives the silicon and the host tests that drive the simulation run the same code.
@@ -57,27 +57,27 @@ pub trait Port: Hardware {
 pub struct Inputs {
     /// The DMA region's physical base, which descriptors name.
     pub region_physical_address: u64,
-    /// (`station_address`, the IEEE 802.3 standard's name for a MAC address) The tree's
+    /// (`station_mac_address`, the Institute of Electrical and Electronics Engineers (IEEE) 802.3 standard's name for a media access control (MAC) address) The tree's
     /// `local-mac-address`, if it has one.
     #[doc(alias = "mac_address")]
-    pub station_address: Option<[u8; 6]>,
-    /// (`physical_layer_device_address`, the IEEE 802.3 standard's PHY address) The PHY's MDIO
+    pub station_mac_address: Option<[u8; 6]>,
+    /// (`physical_layer_device_bus_address`, the IEEE 802.3 standard's physical layer device address) The physical layer device's MDIO
     /// address.
     #[doc(alias = "phy")]
     #[doc(alias = "phy_address")]
-    pub physical_layer_device_address: u8,
-    /// The PHY's board settings.
+    pub physical_layer_device_bus_address: u8,
+    /// The physical layer device's board settings.
     #[doc(alias = "phy")]
     pub physical_layer_device: Settings,
 }
 
-/// How long the bring-up waits for the PHY to resolve a link after autonegotiation restarts. A
+/// How long the bring-up waits for the physical layer device to resolve a link after autonegotiation restarts. A
 /// gigabit negotiation takes about three seconds; five is slack, not a guess at a slow switch.
 ///
 /// Name: provisional.
 pub const LINK_WAIT_MILLISECONDS: u64 = 5000;
 
-/// How often the link wait asks the PHY.
+/// How often the link wait asks the physical layer device.
 const LINK_POLL_MICROSECONDS: u64 = 10_000;
 
 /// Why the bring-up refused the port.
@@ -98,7 +98,7 @@ pub enum Error {
     /// An MDIO command did not complete.
     #[doc(alias = "mdio")]
     ManagementDataIo(management_data_io::Error),
-    /// The PHY is not the YT8531 these board settings are for.
+    /// The physical layer device is not the `YT8531` these board settings are for.
     UnknownPhysicalLayerDevice {
         /// What it answered.
         id: u32,
@@ -116,7 +116,7 @@ pub enum Error {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "mac_address_source")]
 pub enum AddressSource {
-    /// The tree's `local-mac-address`, which U-Boot writes from the board's EEPROM.
+    /// The tree's `local-mac-address`, which U-Boot writes from the board's electrically erasable programmable read-only memory (EEPROM).
     Tree,
     /// The controller's address registers, as firmware left them.
     Registers,
@@ -130,20 +130,20 @@ pub enum AddressSource {
 pub struct Account {
     /// The controller's version register.
     pub version: u32,
-    /// (`direct_memory_access_address_bits`, the databook's `ADDR64` field) The DMA's address
+    /// (`direct_memory_access_physical_address_bits`, the databook's `ADDR64` field) The DMA's address
     /// width.
     #[doc(alias = "addr64")]
-    pub direct_memory_access_address_bits: u8,
-    /// The PHY's identifier.
+    pub direct_memory_access_physical_address_bits: u8,
+    /// The physical layer device's identifier.
     #[doc(alias = "phy")]
     pub physical_layer_device_id: u32,
-    /// The PHY's I/O voltage, and which tree spelling its settings came from, once configured.
+    /// The physical layer device's I/O voltage, and which tree spelling its settings came from, once configured.
     #[doc(alias = "phy")]
     pub physical_layer_device: Option<(u32, SettingsSource)>,
-    /// (`station_address`, the IEEE 802.3 standard's name for a MAC address) The station address
+    /// (`station_mac_address`, the IEEE 802.3 standard's name for a MAC address) The station address
     /// and where it came from.
     #[doc(alias = "mac_address")]
-    pub station_address: Option<([u8; 6], AddressSource)>,
+    pub station_mac_address: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds: the probe's, then the real one's.
     pub resets_microseconds: [u64; 2],
     /// The coherence probe's verdict and what it saw.
@@ -170,7 +170,8 @@ pub fn bring_up(
 ) -> Result<([u8; 6], Option<Link>), Error> {
     let id = Identity::read(port);
     account.version = id.version;
-    account.direct_memory_access_address_bits = id.direct_memory_access_address_bits();
+    account.direct_memory_access_physical_address_bits =
+        id.direct_memory_access_physical_address_bits();
     if id.version == 0 || id.version == u32::MAX {
         return Err(Error::Silent {
             version: id.version,
@@ -178,16 +179,16 @@ pub fn bring_up(
     }
 
     // The address before the reset, which returns the registers to all ones.
-    let station = match inputs.station_address {
+    let station = match inputs.station_mac_address {
         Some(m) => (m, AddressSource::Tree),
-        None => controller::station_address(
+        None => controller::station_mac_address(
             port.read(registers::MAC_ADDRESS_0_HIGH_REGISTER),
             port.read(registers::MAC_ADDRESS_0_LOW_REGISTER),
         )
         .map(|m| (m, AddressSource::Registers))
         .ok_or(Error::NoStationAddress)?,
     };
-    account.station_address = Some(station);
+    account.station_mac_address = Some(station);
     let station = station.0;
 
     bring_up_physical_layer_device(port, inputs, account)?;
@@ -217,13 +218,13 @@ pub fn bring_up(
     Ok((station, link))
 }
 
-/// Identify the PHY, refuse any other part, and configure it for the board.
+/// Identify the physical layer device, refuse any other part, and configure it for the board.
 fn bring_up_physical_layer_device(
     port: &mut impl Port,
     inputs: &Inputs,
     account: &mut Account,
 ) -> Result<(), Error> {
-    let device = inputs.physical_layer_device_address;
+    let device = inputs.physical_layer_device_bus_address;
     account.physical_layer_device_id =
         management_data_io::physical_layer_device_id(&mut management_data_io::Bus(port), device)
             .map_err(Error::ManagementDataIo)?;
@@ -254,7 +255,7 @@ fn wait_for_link(
     inputs: &Inputs,
     account: &mut Account,
 ) -> Result<Option<Link>, Error> {
-    let device = inputs.physical_layer_device_address;
+    let device = inputs.physical_layer_device_bus_address;
     management_data_io::restart_autonegotiation(&mut management_data_io::Bus(&mut *port), device)
         .map_err(Error::ManagementDataIo)?;
     let started = port.now_microseconds();
@@ -348,8 +349,8 @@ mod tests {
     fn inputs() -> Inputs {
         Inputs {
             region_physical_address: REGION,
-            station_address: Some(STATION),
-            physical_layer_device_address: 0,
+            station_mac_address: Some(STATION),
+            physical_layer_device_bus_address: 0,
             physical_layer_device: Settings::FALLBACK_GMAC0,
         }
     }
@@ -372,7 +373,7 @@ mod tests {
         );
         assert!(matches!(account.coherence, Some((Verdict::Coherent, _))));
         assert_eq!(
-            account.station_address,
+            account.station_mac_address,
             Some((STATION, AddressSource::Tree))
         );
         assert_eq!(
@@ -430,7 +431,7 @@ mod tests {
         let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
         let mut account = Account::default();
         let no_tree = Inputs {
-            station_address: None,
+            station_mac_address: None,
             ..inputs()
         };
         assert_eq!(
@@ -440,7 +441,7 @@ mod tests {
         assert_eq!(account.physical_layer_device_id, 0);
     }
 
-    /// Another PHY is refused before its registers are written.
+    /// Another physical layer device is refused before its registers are written.
     #[test]
     fn another_physical_layer_device_is_refused_and_named() {
         let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
@@ -454,8 +455,8 @@ mod tests {
         assert_eq!(account.physical_layer_device, None);
     }
 
-    /// A PHY that drives no receive clock leaves the reset hung, and the refusal comes after the
-    /// PHY was configured, which the account shows.
+    /// A physical layer device that drives no receive clock leaves the reset hung, and the refusal comes after the
+    /// physical layer device was configured, which the account shows.
     #[test]
     fn a_reset_with_no_receive_clock_is_refused_after_the_physical_layer_device() {
         let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
