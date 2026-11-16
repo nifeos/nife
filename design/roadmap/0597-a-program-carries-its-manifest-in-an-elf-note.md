@@ -175,7 +175,7 @@ policy case, and the streaming reader agreeing with the whole-image reader.
   version 1's `file` field if calef rules that before anything outside this tree writes a note.
   Checked 2026-09-26 against `maintainer/170-ruling`, which held only its claim commit.
 - **Recorded.** An image request that can carry a file, a directory, an input and options, which
-  is what lets a note declare them, is in `crates/grant_plan/src/spawnproto.rs`'s BUGS. It is the
+  is what lets a note declare them, is in `crates/program_table/src/spawnproto.rs`'s BUGS. It is the
   wiring a named program already has, over the image path.
 - **Milestone 595.** A `std` image: the progenitor sizes an image's region before the bytes, and
   so the note, arrive. Milestone 595 (the shell runs a `std` program)'s Follow-on carries it.

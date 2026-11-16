@@ -7,8 +7,10 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
-use grant_plan::{Endowment, Manifest};
+use grant_contract::Manifest;
+use grant_plan::Endowment;
 use periodic_deadline::next_after;
+use program_table::Program;
 
 use crate::admission::{admit, admit_installed_row};
 use crate::{Admission, Document, Entry, Held, MAXIMUM_ENTRIES, Schedule, Unbacked, recurrence};
@@ -57,7 +59,18 @@ impl<'a> Row<'a> {
     /// The endowment this row's child will be granted, or `None` if it never fires.
     pub fn endowment(&self) -> Option<Endowment> {
         match self.admission {
-            Admission::Fires(e) => Some(e),
+            Admission::Fires(_, e) => Some(e),
+            _ => None,
+        }
+    }
+
+    /// The program this row's child is built as, or `None` if it never fires. An installed
+    /// program's row is `program_table::IMAGE_ROW`.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
+    pub fn program(&self) -> Option<Program> {
+        match self.admission {
+            Admission::Fires(program, _) => Some(program),
             _ => None,
         }
     }
@@ -164,7 +177,7 @@ impl<'a> Registry<'a> {
     /// 152 (durable delegation), Fork 8 ruled D by calef on 2026-09-27, on #1377): each entry is
     /// planned against the manifest its program's bytes carry, which the caller read from the live
     /// activation generation and passes as `manifests[i]` for entry `i`. That is how the prompt binds
-    /// an installed program's line (`grant_plan::plan_against` under `grant_plan::IMAGE_ROW`), so a
+    /// an installed program's line (`grant_plan::plan_against` under `program_table::IMAGE_ROW`), so a
     /// line means at the prompt and in a schedule the same thing.
     ///
     /// The caller answers first whether each program is installed and [`schedulable`](crate::schedulable) at all; this
@@ -216,8 +229,8 @@ impl<'a> Registry<'a> {
     pub fn programs(&self) -> u64 {
         let mut set = 0u64;
         for r in self.rows() {
-            if let Some(e) = r.endowment() {
-                set |= 1 << e.program.id();
+            if let Some(program) = r.program() {
+                set |= 1 << program.id();
             }
         }
         set

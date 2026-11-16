@@ -78,7 +78,9 @@ environment_contract = { version = "0.1.0", path = "../crates/environment_contra
 c_program_fixture = { path = "../crates/c_program_fixture" }
 filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
 filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The registration page's layout (milestone 129 (scheduled execution), DECISIONS §222 (who holds a
 # user's schedule)). The timetable test is the registrar until milestone 152 (durable delegation)
 # rebuilds the durable session, so it stages replacements with the same `timetable::registration`

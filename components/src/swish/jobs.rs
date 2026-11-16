@@ -63,8 +63,8 @@ pub(super) static CONSUMED: core::sync::atomic::AtomicU64 = core::sync::atomic::
 /// Run a supervised foreground job: mint its resources from our own budget, direct the progenitor to build it
 /// from a region we hold, then watch it under the two-tier `^C` escalation until it stops or we tear
 /// it down. This is the whole of DECISIONS §24 on the shell's side.
-pub(super) fn spawn_interruptible(jobs: &mut Jobs, e: Endowment) {
-    let Some(h) = start_supervised(e, true) else {
+pub(super) fn spawn_interruptible(jobs: &mut Jobs, program: Program, e: Endowment) {
+    let Some(h) = start_supervised(program, e, true) else {
         return;
     };
     print(b"  running ");
@@ -122,10 +122,10 @@ fn give_back(job_fr: u64, job_ut: u64) {
     capability_delete(job_ut);
 }
 
-/// **Mint, direct and start a supervised job**, and hand back what this shell holds for it once the
+/// **Mint, direct and start a supervised job** as `program`, and hand back what this shell holds for it once the
 /// progenitor says it is running. `None` has already said why. `foreground` is whether the shell
 /// will watch it now, which decides whether the terminal leaves raw mode before it exists.
-fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
+fn start_supervised(program: Program, e: Endowment, foreground: bool) -> Option<Held> {
     // Mint the job's resources. RETYPE the shared frame first, then SPLIT the construction budget,
     // so the budget is the top of our watermark and DESTROY returns its pages cleanly (LIFO).
     let Some(job_fr) = retype_page_frame() else {
@@ -172,7 +172,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     // progenitor maps it). We keep our own copies: the untyped to tear the job down, the frame to
     // signal it and read it.
     let (w0, w1, w2) = spawnproto::request(
-        e.program.id(),
+        program.id(),
         e.program_argument,
         e.memory_grant_pages,
         spawnproto::Wiring {
@@ -239,7 +239,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
         job_ut,
         budget: 0,
         tcb,
-        program: e.program,
+        program,
         started: 0,
         stopped: false,
     })
@@ -444,7 +444,7 @@ pub(super) fn reclaim(job_ut: u64) -> bool {
 /// 2026-11-01 UTC). The kernel refuses that `DESTROY` for good (`HasChildren`, DECISIONS §16 (object revocation)), so
 /// when `USAGE`'s `CHILDREN` record shows one this prints a sentence naming the job and stops
 /// retrying at once; the pages stay spent until reboot.
-pub(super) fn release_budget(slot: u64, program: grant_plan::Program) {
+pub(super) fn release_budget(slot: u64, program: Program) {
     let verdict = swish::reclaim_budget_within(
         RECLAIM_PATIENCE_NANOSECONDS,
         || destroy_memory_region(slot),
@@ -507,7 +507,7 @@ pub(super) struct Held {
     budget: u64,
     /// `WRITE` on the job's thread, for `SUSPEND` and `RESUME` (DECISIONS §309).
     tcb: u64,
-    program: grant_plan::Program,
+    program: program_table::Program,
     /// Suspended by `^Z`, and not running until `bg` or `fg` resumes it.
     stopped: bool,
     /// When it went into the background, counted in jobs started, so `fg` with no operand takes
@@ -541,7 +541,7 @@ impl Held {
         job_ut: u64,
         budget: Option<u64>,
         tcb: u64,
-        program: grant_plan::Program,
+        program: program_table::Program,
     ) -> Held {
         Held {
             watch: Watch::Exit { label },
@@ -630,10 +630,12 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
         Err(Say::Cannot(r)) => return refuse(spec, r),
         Err(said) => return say(said),
     };
-    match grant_plan::plan(&spec, holdings(nav), expanded) {
+    match program_table::plan(&spec, holdings(nav), expanded) {
         Err(r) => refuse(spec, r),
-        Ok(endow) if endow.interruptible => spawn_background(&mut nav.jobs, endow),
-        Ok(endow) => spawn_background_held(&mut nav.jobs, endow, &spec),
+        Ok((program, endow)) if endow.interruptible => {
+            spawn_background(&mut nav.jobs, program, endow);
+        }
+        Ok((program, endow)) => spawn_background_held(&mut nav.jobs, program, endow, &spec),
     }
 }
 
@@ -645,7 +647,7 @@ fn not_held() {
 /// Start an ordinary program in the background with this shell holding its region and its exit
 /// (milestone 933). Its output goes to the terminal's sink, so a program that answers in a word,
 /// which only this shell can read, is refused.
-fn spawn_background_held(jobs: &mut Jobs, e: Endowment, spec: &ParsedInvocation) {
+fn spawn_background_held(jobs: &mut Jobs, program: Program, e: Endowment, spec: &ParsedInvocation) {
     use grant_plan::line::{Sink, Source};
     if !jobs.held.iter().any(Option::is_none) {
         refused();
@@ -653,20 +655,17 @@ fn spawn_background_held(jobs: &mut Jobs, e: Endowment, spec: &ParsedInvocation)
         return;
     }
     let plain = matches!(e.sink, Sink::Report) && matches!(e.source, Source::None);
-    let Some(pages) = hold_pages(&e, spec.line()).filter(|_| plain) else {
+    let Some(pages) = hold_pages(program, &e, spec.line()).filter(|_| plain) else {
         return not_held();
     };
-    if !e.program.manifest().output.is_byte_stream()
-        && !matches!(
-            e.program.manifest().output,
-            grant_plan::OutputDeclaration::Silent
-        )
+    if !e.manifest.output.is_byte_stream()
+        && !matches!(e.manifest.output, grant_contract::OutputDeclaration::Silent)
     {
         refused();
         print(b"  & cannot run a program that answers in a word: only this shell can read one\n");
         return;
     }
-    let argv = if e.program.manifest().program_argument.hears_words() {
+    let argv = if e.manifest.program_argument.hears_words() {
         match assemble_argv(spec.line(), 0) {
             Ok(a) => Some(a),
             Err(Some(r)) => return refuse(*spec, r),
@@ -676,6 +675,7 @@ fn spawn_background_held(jobs: &mut Jobs, e: Endowment, spec: &ParsedInvocation)
         None
     };
     spawn(
+        program,
         e,
         argv,
         Some(Hold {
@@ -704,14 +704,14 @@ pub(super) fn keep_background(jobs: &mut Jobs, mut h: Held) {
 }
 
 /// Start a supervised job and keep what this shell holds for it, without watching it.
-fn spawn_background(jobs: &mut Jobs, e: Endowment) {
+fn spawn_background(jobs: &mut Jobs, program: Program, e: Endowment) {
     // The slot is found before anything is minted, so a full table spawns nothing.
     let Some(i) = jobs.held.iter().position(Option::is_none) else {
         refused();
         print(b"  this shell already holds as many background jobs as it can list\n");
         return;
     };
-    let Some(mut h) = start_supervised(e, false) else {
+    let Some(mut h) = start_supervised(program, e, false) else {
         return;
     };
     jobs.started += 1;

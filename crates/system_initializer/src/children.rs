@@ -27,10 +27,10 @@ pub(super) fn build_grant(
     care: &Caretakers,
     care_words: (u64, u64, u64),
     set_seen: Option<u64>,
-    manifest: Option<grant_plan::Manifest>,
+    manifest: Option<grant_contract::Manifest>,
 ) -> Option<u64> {
     let words = match manifest.map(|m| m.program_argument) {
-        Some(grant_plan::ProgramArgumentDeclaration::Words(g)) => {
+        Some(grant_contract::ProgramArgumentDeclaration::Words(g)) => {
             use filesystem_contract::grant as gr;
             let rights = gr::spec_rights(care_words.2) & g.rights();
             (
