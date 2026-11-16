@@ -7,7 +7,7 @@
 /// # Examples
 ///
 /// ```
-/// use static_elf::{Elf, Error, FOREIGN_MACHINES, NATIVE_MACHINE, PF_R, PF_W, PF_X};
+/// use static_elf::{Elf, Error, MACHINE_AARCH64, MACHINE_X86_64, NATIVE_MACHINE, PF_R, PF_W, PF_X};
 /// # fn image(flags: u32, entry: u64) -> Vec<u8> {
 /// #     const EHDR: usize = 64; const PHDR: usize = 56;
 /// #     let mut v = vec![0u8; EHDR + PHDR];
@@ -36,10 +36,12 @@
 /// let nowhere = image(PF_R | PF_X, 0x99_0000);
 /// assert!(matches!(Elf::parse(&nowhere), Err(Error::EntryNotExecutable)));
 ///
-/// // A foreign binary (which machines are foreign depends on the build).
+/// // A binary for another machine than this build's, which `parse_for_machine` accepts by name.
+/// let other = if NATIVE_MACHINE == MACHINE_X86_64 { MACHINE_AARCH64 } else { MACHINE_X86_64 };
 /// let mut foreign = image(PF_R | PF_X, 0x40_0000);
-/// foreign[18..20].copy_from_slice(&FOREIGN_MACHINES[0].to_le_bytes());
+/// foreign[18..20].copy_from_slice(&other.to_le_bytes());
 /// assert!(matches!(Elf::parse(&foreign), Err(Error::WrongMachine)));
+/// assert!(Elf::parse_for_machine(&foreign, other).is_ok());
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Error {

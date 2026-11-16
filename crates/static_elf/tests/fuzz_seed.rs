@@ -2,7 +2,7 @@
 //!
 //! `fuzz/fuzz_targets/elf_parse` returns at once on anything `Elf::parse` rejects, so a seed that
 //! stops parsing leaves the fuzzer an empty corpus while it still reports no crashes. There is one
-//! seed per machine nife runs, differing only at offset 18 (`e_machine`). See notes/elf/parser.md
+//! seed per machine the crate names, differing only at offset 18 (`e_machine`). See notes/elf/parser.md
 //! ("The fuzz seeds").
 //!
 //! Regenerate them with the script in [fuzz/seeds/README.md](../../../fuzz/seeds/README.md) if a
@@ -60,11 +60,18 @@ fn the_fuzz_seed_is_a_valid_executable() {
     );
 }
 
-/// Every machine nife runs has a seed, checked against `static_elf::KNOWN_MACHINES` so a missing seed
-/// fails on every host, not only the one it is missing for.
+/// Every machine the crate names.
+const MACHINES: [u16; 3] = [
+    static_elf::MACHINE_AARCH64,
+    static_elf::MACHINE_RISCV,
+    static_elf::MACHINE_X86_64,
+];
+
+/// Every machine the crate names has a seed, checked against all three so a missing seed fails on
+/// every host, not only the one it is missing for.
 #[test]
-fn every_machine_nife_runs_has_a_seed() {
-    for machine in static_elf::KNOWN_MACHINES {
+fn every_named_machine_has_a_seed() {
+    for machine in MACHINES {
         assert!(
             SEEDS.iter().any(|seed| machine_of(seed) == machine),
             "no seed in fuzz/seeds/elf_parse/ carries e_machine {machine}; \
@@ -73,7 +80,7 @@ fn every_machine_nife_runs_has_a_seed() {
     }
     assert_eq!(
         SEEDS.len(),
-        static_elf::KNOWN_MACHINES.len(),
-        "a seed for a machine no nife build accepts is dead weight in every fuzz run"
+        MACHINES.len(),
+        "a seed for a machine no build accepts is dead weight in every fuzz run"
     );
 }

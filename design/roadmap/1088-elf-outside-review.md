@@ -136,6 +136,15 @@ as `#[doc(alias)]`. The constructor's and the constants' names stay provisional.
 which is the part a release would close. The before-the-move item on the machine surface is the
 work.
 
+As built, `NATIVE_MACHINE` stays public, the one part of the ruling's list the lane did not apply.
+It does not name an organization's targets: it is the machine `Elf::parse` accepts in this build,
+the same fact as the `cfg` arms behind it. Nine files outside the crate (14 uses, in
+`system_tests`, `fixtures`, `measured_boot`, `system_initializer`, `program_asks` and
+`uefi_loader`) forge a header to test what follows the machine check, and without the constant
+each would copy the three-arm `cfg(target_arch)` table, which is the duplication the derived list
+was built to end. `KNOWN_MACHINES`, `FOREIGN_MACHINES` and the guard (now `unknown_machine`) are
+test-only. Removing `NATIVE_MACHINE` before the tag stays open to the architect.
+
 ### D2. Whether the loader's policy stays inside the parser
 
 Background. Five of the eighteen refusals are not the ELF format's rules but this loader's. They are

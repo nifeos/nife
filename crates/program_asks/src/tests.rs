@@ -166,7 +166,11 @@ fn a_program_built_for_another_machine_still_has_its_note_read() {
         false,
     );
     let mut bytes = elf_image(&DESC.0);
-    let foreign = static_elf::FOREIGN_MACHINES[0];
+    let foreign = if static_elf::NATIVE_MACHINE == static_elf::MACHINE_X86_64 {
+        static_elf::MACHINE_AARCH64
+    } else {
+        static_elf::MACHINE_X86_64
+    };
     bytes[18..20].copy_from_slice(&foreign.to_le_bytes());
     assert_eq!(
         static_elf::Elf::parse(&bytes).err(),

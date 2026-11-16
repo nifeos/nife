@@ -51,8 +51,8 @@ never grew the third case, so on an x86_64 host the `elf_parse` corpus was silen
 `crates/static_elf/tests/fuzz_seed.rs` went red with no available fix (milestone 288).
 
 `crates/static_elf/tests/fuzz_seed.rs` now asserts that the seed for *this* build parses, and that this
-directory holds a seed for every machine in `static_elf::KNOWN_MACHINES`, so adding a fourth architecture
-fails on whatever host adds it.
+directory holds a seed for each of `static_elf::MACHINE_AARCH64`, `MACHINE_RISCV` and `MACHINE_X86_64`,
+so a missing seed fails on every host.
 
 ## BUGS
 
@@ -64,8 +64,8 @@ mean a corpus count of three overstates what any one run starts from by two.
 
 **Nothing checks that the committed bytes match the generator below.** The script is a record a
 reader can re-run, not a gate: an edit to the seeds that the script would not produce passes every
-check in this repository, so long as the result still parses and carries a machine
-`static_elf::KNOWN_MACHINES` names. Re-running it was verified byte-identical for the aarch64 seed when the
+check in this repository, so long as the result still parses and carries a machine one of
+`static_elf`'s `MACHINE_` constants names. Re-running it was verified byte-identical for the aarch64 seed when the
 other two were written (milestone 288), which is evidence about one day rather than a mechanism.
 
 Regenerate all three with:

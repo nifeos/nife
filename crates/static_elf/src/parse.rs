@@ -38,7 +38,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// # Examples
 ///
 /// ```
-/// use static_elf::{Elf, Error, FOREIGN_MACHINES, NATIVE_MACHINE, PF_R, PF_W, PF_X};
+/// use static_elf::{Elf, NATIVE_MACHINE, PF_R, PF_X};
 /// fn image(flags: u32, entry: u64) -> Vec<u8> {
 ///     const EHDR: usize = 64; const PHDR: usize = 56;
 ///     let mut v = vec![0u8; EHDR + PHDR];
@@ -83,7 +83,21 @@ impl<'a> Elf<'a> {
     /// Validate the whole file up front: header, program header table bounds, and every segment's
     /// bounds, permissions and address arithmetic. A `Ok(Elf)` has nothing left to check; every
     /// later accessor and [`segments`](Self::segments) iteration step trusts this pass completely.
+    ///
+    /// The file must be for this build's own machine, [`NATIVE_MACHINE`]; a file for any other
+    /// machine is [`Error::WrongMachine`]. [`parse_for_machine`](Self::parse_for_machine) names the
+    /// machine instead.
     pub fn parse(bytes: &'a [u8]) -> Result<Self, Error> {
+        Self::parse_for_machine(bytes, EXPECTED_MACHINE)
+    }
+
+    /// [`parse`](Self::parse), for a file built for `machine` rather than for this build's own.
+    ///
+    /// `machine` is an `e_machine` value, normally one of [`MACHINE_AARCH64`], [`MACHINE_RISCV`] and
+    /// [`MACHINE_X86_64`]. A tool on one machine that checks a program for another (a packager
+    /// validating every member of an aarch64 package on an x86_64 build host) calls this. Every
+    /// other check is the same as `parse`'s. Name: provisional.
+    pub fn parse_for_machine(bytes: &'a [u8], machine: u16) -> Result<Self, Error> {
         if bytes.len() < EHDR_SIZE {
             return Err(Error::TooSmall);
         }
@@ -104,7 +118,7 @@ impl<'a> Elf<'a> {
         let e_type = u16le(bytes, 16);
         let e_machine = u16le(bytes, 18);
 
-        if e_machine != EXPECTED_MACHINE {
+        if e_machine != machine {
             return Err(Error::WrongMachine);
         }
         match e_type {

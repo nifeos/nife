@@ -193,18 +193,18 @@ fn memsz_smaller_than_filesz_is_refused() {
     assert_eq!(Elf::parse(&bytes).err(), Some(Error::SegmentTruncated));
 }
 
-/// A binary for a machine nife does not run at all is refused. SPARC (2) goes through
-/// [`machine_no_nife_build_accepts`] in a `const`, so if it ever joins `KNOWN_MACHINES` this fails
-/// to compile instead of asserting something false.
+/// A binary for a machine the crate does not name at all is refused. SPARC (2) goes through
+/// [`unknown_machine`] in a `const`, so if it ever joins `KNOWN_MACHINES` this fails to compile
+/// instead of asserting something false.
 #[test]
 fn a_binary_for_another_machine_is_refused() {
-    const EM_SPARC: u16 = machine_no_nife_build_accepts(2);
+    const EM_SPARC: u16 = unknown_machine(2);
     let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
     b.e_machine = EM_SPARC;
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::WrongMachine));
 }
 
-/// A binary for either of the other nife architectures is refused: the check is symmetric.
+/// A binary for either of the other named architectures is refused: the check is symmetric.
 /// [`FOREIGN_MACHINES`] rather than a written-out pair, which would be true only on one host.
 #[test]
 fn a_binary_for_the_other_supported_machine_is_refused() {
@@ -212,6 +212,24 @@ fn a_binary_for_the_other_supported_machine_is_refused() {
         let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
         b.e_machine = machine;
         assert_eq!(Elf::parse(&b.build()).err(), Some(Error::WrongMachine));
+    }
+}
+
+/// `parse_for_machine` accepts the machine it is given and refuses every other, this build's own
+/// included, so a tool on one machine validates a program for another with the same checks.
+#[test]
+fn a_named_machine_is_the_one_accepted() {
+    for machine in KNOWN_MACHINES {
+        let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+        b.e_machine = machine;
+        let bytes = b.build();
+        for asked in KNOWN_MACHINES {
+            assert_eq!(
+                Elf::parse_for_machine(&bytes, asked).is_ok(),
+                asked == machine,
+                "file for {machine}, asked for {asked}"
+            );
+        }
     }
 }
 
@@ -245,17 +263,17 @@ fn foreign_machines_derives_the_same_list_at_runtime() {
 /// return survives every other test, because every number it could return is foreign too.
 #[test]
 fn a_machine_no_build_accepts_is_handed_back_unchanged() {
-    const EM_SPARC: u16 = machine_no_nife_build_accepts(2);
+    const EM_SPARC: u16 = unknown_machine(2);
     assert_eq!(EM_SPARC, 2);
-    assert_eq!(machine_no_nife_build_accepts(0x3fff), 0x3fff);
+    assert_eq!(unknown_machine(0x3fff), 0x3fff);
 }
 
-/// The guard refuses a machine nife runs. Without a runtime rejection, a loop bound mutated so the
+/// The guard refuses a machine the crate names. Without a runtime rejection, a loop bound mutated so the
 /// loop never runs (`i < len` as `==` or `>`) checks nothing and no test sees it.
 #[test]
 #[should_panic(expected = "some build accepts it")]
 fn a_machine_this_tree_runs_on_is_refused_by_the_guard() {
-    let _ = machine_no_nife_build_accepts(core::hint::black_box(NATIVE_MACHINE));
+    let _ = unknown_machine(core::hint::black_box(NATIVE_MACHINE));
 }
 
 /// A PIE expects a dynamic linker to relocate it. We are not one, and loading it as if we
