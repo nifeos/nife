@@ -740,7 +740,8 @@ mod verification {
     }
 
     /// **Reading one list segment never panics and returns only plain names**, whatever bytes
-    /// follow its marker, so a name list holds nothing a reader could mistake for the grammar.
+    /// follow its marker, so a name list holds nothing a reader could mistake for the grammar. The
+    /// marker is one byte, so the bound leaves room for names after it.
     ///
     /// Falsification: replayable `crates/boot_ladder/falsifications/verdict.verification.a_segment_is_read_without_panicking.patch`
     #[kani::proof]
@@ -756,7 +757,7 @@ mod verification {
             i += 1;
         }
         let text = core::str::from_utf8(&bytes[..len]).unwrap();
-        if let Some((_, names, rest)) = segment(text, SELF_TEST_ABSENT) {
+        if let Some((_, names, rest)) = segment(text, "x") {
             assert!(names.len() + rest.len() <= text.len());
             assert!(
                 names.bytes().all(|b| b.is_ascii_lowercase()
