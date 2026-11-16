@@ -23,9 +23,9 @@ use user_mode_runtime::{exit, send};
 const OUT: u64 = 0;
 
 /// **What this program asks for**: `uptime`'s output and the network.
-const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
+const MANIFEST: grant_contract::Manifest = grant_contract::Manifest {
     network: true,
-    ..grant_plan::Program::Uptime.manifest()
+    ..program_table::Program::Uptime.manifest()
 };
 
 capability_manifest_note::carry!(MANIFEST, zones = &["", "nife.test"]);

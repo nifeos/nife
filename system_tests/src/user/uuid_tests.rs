@@ -3,8 +3,8 @@ use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Spawn `uuid` with **nothing but somewhere to print**, which is what a program that did not
-/// declare [`grant_plan::Manifest::entropy`] is born holding: its whole cspace is slot 0, so
-/// [`grant_plan::ENTROPY_SLOT`] is empty and a `CALL` on it can only be refused by the kernel
+/// declare [`grant_contract::Manifest::entropy`] is born holding: its whole cspace is slot 0, so
+/// [`grant_contract::ENTROPY_SLOT`] is empty and a `CALL` on it can only be refused by the kernel
 /// (`printenv_tests::spawn_printenv`'s `None` arm, one authority over).
 ///
 /// There is no `Some` arm, as a limitation: `Spawn::grants` fills a table from slot 0 upward and

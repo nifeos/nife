@@ -39,7 +39,7 @@ const RESULT: u64 = 0;
 // `Program::LeastAuthorityDemo`'s compiled-in manifest and never this note. Run as a file
 // (`script/swish-check` stages a copy nobody vouched for), the note is the only manifest there is,
 // and it asks for an argument: which unvouched bytes may not be given, so that line is refused.
-capability_manifest_note::carry!(grant_plan::Program::LeastAuthorityDemo.manifest());
+capability_manifest_note::carry!(program_table::Program::LeastAuthorityDemo.manifest());
 
 user_mode_runtime::program_entry!(start);
 

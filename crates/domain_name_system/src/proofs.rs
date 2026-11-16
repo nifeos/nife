@@ -1,4 +1,4 @@
-//! Machine-checked proofs (Kani), run by `script/verify`. A name server, or anyone who can forge
+//! Machine-checked proofs (Kani), run by `cargo kani`. A name server, or anyone who can forge
 //! its replies, feeds the name decoder, and it must terminate and stay in bounds on **every** byte
 //! string, which a fuzzer can only sample. The compression pointer loop is the classic DNS parser
 //! hang; the decoder's strictly-backwards fence makes it an error, and the first harness quantifies

@@ -87,7 +87,7 @@ keeps a little memory for the rest of the suite, which has no margin left.
   to whatever its note asks, the network included, and the owner's vouch is the only check.
 - Every activation verb, `vouch` included, is open to whoever holds the spawn endpoint. The boot
   prompt is the only holder, so that is the owner. A session given one would be the owner too;
-  before any is, the verbs need a presentation of their own (`grant_plan::spawnproto`'s BUGS).
+  before any is, the verbs need a presentation of their own (`program_table::spawnproto`'s BUGS).
 - A vouch of a name an installed package already uses replaces that package's entry, as an
   install of a newer version would. The package's bytes stay under `packages/`, and a rollback
   brings its entry back.

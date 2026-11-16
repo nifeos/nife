@@ -24,13 +24,13 @@ use socket_contract::fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 // What it asks the owner for: its words (every `std` image hears them), its output, the network,
 // and names in `nife.test`.
 capability_manifest_note::carry!(
-    grant_plan::Manifest {
-        program_argument: grant_plan::ProgramArgumentDeclaration::Words(
-            grant_plan::WordGrant::ReadOnly
+    grant_contract::Manifest {
+        program_argument: grant_contract::ProgramArgumentDeclaration::Words(
+            grant_contract::WordGrant::ReadOnly
         ),
         network: true,
-        startup: grant_plan::StartupContract::Std,
-        ..grant_plan::NO_NOTE_MANIFEST
+        startup: grant_contract::StartupContract::Std,
+        ..program_table::NO_NOTE_MANIFEST
     },
     zones = &["nife.test"]
 );

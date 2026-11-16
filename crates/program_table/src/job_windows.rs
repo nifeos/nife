@@ -197,7 +197,7 @@ mod tests {
     /// fix, milestone 685). Six jobs hold all six windows and none has been reaped, so a seventh
     /// gets nothing; once one is reaped, its window and only its window comes back.
     ///
-    /// Falsification: replayable `crates/grant_plan/falsifications/job_windows.tests.take_never_hands_out_a_window_whose_last_holder_is_unreaped.patch`
+    /// Falsification: replayable `crates/program_table/falsifications/job_windows.tests.take_never_hands_out_a_window_whose_last_holder_is_unreaped.patch`
     #[test]
     fn take_never_hands_out_a_window_whose_last_holder_is_unreaped() {
         let mut p = pool();
@@ -281,7 +281,7 @@ mod tests {
     /// out, because the only `UNBIND` left would be one at reuse, after the window had a new
     /// holder. Once the reap's `UNBIND` has cleared the bit, the window is free.
     ///
-    /// Falsification: replayable `crates/grant_plan/falsifications/job_windows.tests.take_never_hands_out_a_bound_window.patch`
+    /// Falsification: replayable `crates/program_table/falsifications/job_windows.tests.take_never_hands_out_a_bound_window.patch`
     #[test]
     fn take_never_hands_out_a_bound_window() {
         let mut p = Windows::new(1, 2);
