@@ -427,11 +427,19 @@ fn flag(d: &[u8], at: usize) -> Result<bool, Error> {
 }
 
 /// A byte that must be zero, because the field it belongs to is absent.
+///
+/// A plain loop rather than `iter().position`, which reaches `memchr`; the meaning is the same, and
+/// the proofs run through this function on every descriptor they choose.
 fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
-    match d[at..at + len].iter().position(|&b| b != 0) {
-        Some(i) => Err(Error::BadField(at + i)),
-        None => Ok(()),
+    let field = &d[at..at + len];
+    let mut i = 0;
+    while i < field.len() {
+        if field[i] != 0 {
+            return Err(Error::BadField(at + i));
+        }
+        i += 1;
     }
+    Ok(())
 }
 
 /// The manifest a descriptor of any version spells, or why it spells none. Strict: whatever this
