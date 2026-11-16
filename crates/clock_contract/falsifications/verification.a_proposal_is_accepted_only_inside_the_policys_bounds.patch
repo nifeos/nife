@@ -1,0 +1,20 @@
+Falsifies `clock_contract::verification::a_proposal_is_accepted_only_inside_the_policys_bounds`.
+
+The defect: the forward step bound is off by one (`MAXIMUM_STEP_FORWARD_NANOSECONDS + 1`), so a
+proposal one nanosecond past the largest allowed step is accepted.
+
+Expected to fail: the harness's `assert!(proposed - current <= ...MAXIMUM_STEP_FORWARD_NANOSECONDS)`.
+
+diff --git a/crates/clock_contract/src/lib.rs b/crates/clock_contract/src/lib.rs
+index 56f817d8c..4733152f4 100644
+--- a/crates/clock_contract/src/lib.rs
++++ b/crates/clock_contract/src/lib.rs
+@@ -642,7 +642,7 @@ pub mod policy {
+             return status::ACCEPTED;
+         }
+         if proposed_nanoseconds > current_nanoseconds {
+-            if proposed_nanoseconds - current_nanoseconds > MAXIMUM_STEP_FORWARD_NANOSECONDS {
++            if proposed_nanoseconds - current_nanoseconds > MAXIMUM_STEP_FORWARD_NANOSECONDS + 1 {
+                 return status::REFUSED_TOO_FAR_FORWARD;
+             }
+         } else if current_nanoseconds - proposed_nanoseconds > MAXIMUM_STEP_BACKWARD_NANOSECONDS {

@@ -71,7 +71,7 @@ assert_eq!(
 
 ## What is proven
 
-There are no Kani harnesses. The loom run checks three claims against the C11 model, not against the
+Two Kani harnesses (`cargo kani`) cover every input. `policy::decide` accepts a proposal only inside the plausibility window and the step bounds, and accepts every plausible proposal when the time is unknown. The request word's opcode and the offset arithmetic round trip. Each has a patch under `falsifications/` that makes it fail. The loom run checks three claims against the C11 model, not against the
 Arm or RISC-V memory models: a reader never returns a torn pair, including a reader that sleeps
 across two publishes; a writer stopped at any point inside a publish never makes a reader wait; and
 two writers never interleave. Weakening any ordering on the page fails one of them, except the
