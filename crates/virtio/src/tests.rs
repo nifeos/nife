@@ -1,5 +1,7 @@
-//! Host tests of the checks the driver makes before it touches the DMA page or the device: the
-//! accessors' window check, the block server's range check, and the DHCP OFFER parse.
+//! Host tests of the checks the driver makes before it touches the DMA page or the device, and of
+//! the logic it runs on the page's bytes: the accessors' window check, the block server's range
+//! check, the descriptor chain's links, the completion wait's bound, the generation-bracketed configuration read, the directory lookup, the
+//! write test's pattern, the DHCP DISCOVER and its checksum, and the DHCP OFFER parse.
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by maintainer/virtio-block-server-robustness.
 
@@ -223,6 +225,238 @@ fn a_reset_waits_for_status_to_read_back_as_zero() {
         }
     ));
     assert_eq!(reads.get(), RESET_POLLS);
+}
+
+/// A nifefs image of `files`, written by `nifefs` itself, so the lookup is tested against the format
+/// and not against this file's idea of it.
+fn image(files: &[(&str, &[u8])]) -> Vec<u8> {
+    let mut out = vec![0u8; nifefs::image_size(files)];
+    nifefs::write_image(files, &mut out).expect("the test image fits");
+    out
+}
+
+/// The start block `nifefs` itself records for `name` in `image`.
+fn start_block_of(image: &[u8], name: &str) -> u32 {
+    nifefs::Fs::parse(image)
+        .expect("the test image parses")
+        .entries()
+        .find(|entry| entry.name_eq(name))
+        .expect("the file is in the image")
+        .start_block
+}
+
+/// The lookup finds every file in the first block at the start block `nifefs` recorded, and a
+/// name that is only a prefix of an entry, or that an entry is a prefix of, finds nothing.
+#[test]
+fn find_file_returns_the_start_block_nifefs_recorded() {
+    let longest = "the-thirty-two-byte-name-is-full";
+    assert_eq!(longest.len(), nifefs::NAME_LEN);
+    let disk = image(&[
+        ("motd", b"hello"),
+        ("scratch", &[0u8; 512]),
+        (longest, b"x"),
+    ]);
+    let directory = &disk[..BLOCK];
+    for name in ["motd", "scratch", longest] {
+        assert_eq!(
+            find_file(directory, name.as_bytes()),
+            Some(start_block_of(&disk, name)),
+            "{name}"
+        );
+    }
+    assert_eq!(find_file(directory, b"mot"), None);
+    assert_eq!(find_file(directory, b"motdx"), None);
+    assert_eq!(find_file(directory, b"absent"), None);
+}
+
+/// A name longer than the field names no entry, even when its first `NAME_LEN` bytes are an
+/// entry's whole name: the lookup answers `None` rather than reading past the field.
+#[test]
+fn find_file_refuses_a_name_longer_than_the_field() {
+    let longest = "the-thirty-two-byte-name-is-full";
+    let disk = image(&[(longest, b"x")]);
+    let longer = [longest.as_bytes(), b"!"].concat();
+    assert_eq!(find_file(&disk[..BLOCK], &longer), None);
+}
+
+/// A directory that claims more entries than the block holds, or a buffer shorter than the
+/// header, answers `None` rather than reading past the slice.
+#[test]
+fn find_file_reads_nothing_past_its_slice() {
+    let mut disk = image(&[("motd", b"hello")]);
+    disk[8..12].copy_from_slice(&u32::MAX.to_le_bytes());
+    let block = &disk[..BLOCK];
+    assert_eq!(
+        find_file(block, b"motd"),
+        Some(start_block_of(&image(&[("motd", b"hello")]), "motd"))
+    );
+    assert_eq!(find_file(block, b"absent"), None);
+    // Cut inside the first entry's start block: the entry is not visible.
+    let cut = nifefs::HEADER_LEN + nifefs::NAME_LEN + 2;
+    assert_eq!(find_file(&block[..cut], b"motd"), None);
+    assert_eq!(find_file(&block[..4], b"motd"), None);
+}
+
+/// The write test's pattern: the literal the kernel test asserts, then a position-dependent byte, so
+/// a block that came back shifted by one byte matches nowhere past the head.
+#[test]
+fn the_write_pattern_opens_with_the_literal_and_moves_with_position() {
+    let pattern: Vec<u8> = (0..BLOCK).map(pattern_byte).collect();
+    assert_eq!(&pattern[..8], b"CRKWRIT1");
+    assert_eq!(pattern[8], 8u8.wrapping_mul(31) ^ 0x5A);
+    assert!((8..BLOCK - 1).all(|i| pattern[i] != pattern[i + 1]));
+}
+
+/// The checksum of `RFC 1071`'s own example words, and of a header with its checksum written in,
+/// which sums to zero; an odd trailing byte is summed as the high byte of a padded word.
+#[test]
+fn ip_checksum_matches_rfc_1071() {
+    // RFC 1071 section 3: the words 0001 f203 f4f5 f6f7 sum to ddf2 with the carries folded.
+    assert_eq!(
+        ip_checksum(&[0x00, 0x01, 0xf2, 0x03, 0xf4, 0xf5, 0xf6, 0xf7]),
+        !0xddf2
+    );
+    // A worked IPv4 header, UDP from 192.168.0.1 to 192.168.0.199: checksum b861.
+    let mut header = [
+        0x45, 0x00, 0x00, 0x73, 0x00, 0x00, 0x40, 0x00, 0x40, 0x11, 0x00, 0x00, 0xc0, 0xa8, 0x00,
+        0x01, 0xc0, 0xa8, 0x00, 0xc7,
+    ];
+    assert_eq!(ip_checksum(&header), 0xb861);
+    header[10..12].copy_from_slice(&0xb861u16.to_be_bytes());
+    assert_eq!(ip_checksum(&header), 0);
+    assert_eq!(ip_checksum(&[0x12]), !0x1200);
+    assert_eq!(ip_checksum(&[]), 0xffff);
+}
+
+/// The DISCOVER is a broadcast `BOOTREQUEST` for our transaction from our MAC, with a valid IPv4
+/// checksum and lengths that agree with the frame, and asks for DISCOVER in option 53.
+#[test]
+fn the_dhcp_discover_is_a_well_formed_broadcast_request() {
+    let f = dhcp_discover();
+    assert_eq!(f.len(), 291);
+    assert_eq!(&f[0..6], &[0xff; 6]);
+    assert_eq!(&f[6..12], &NET_MAC);
+    assert_eq!(&f[12..14], &[0x08, 0x00]);
+    let ip = &f[14..34];
+    assert_eq!(ip[0], 0x45);
+    assert_eq!(
+        usize::from(u16::from_be_bytes([ip[2], ip[3]])),
+        f.len() - 14
+    );
+    assert_eq!((ip[8], ip[9]), (64, 17));
+    assert_eq!(&ip[12..16], &[0; 4]);
+    assert_eq!(&ip[16..20], &[0xff; 4]);
+    assert_eq!(ip_checksum(ip), 0, "the header checksum is valid");
+    let udp = &f[34..42];
+    assert_eq!(u16::from_be_bytes([udp[0], udp[1]]), 68);
+    assert_eq!(u16::from_be_bytes([udp[2], udp[3]]), 67);
+    assert_eq!(
+        usize::from(u16::from_be_bytes([udp[4], udp[5]])),
+        f.len() - 34
+    );
+    assert_eq!(&udp[6..8], &[0, 0]);
+    let dhcp = &f[42..];
+    assert_eq!(&dhcp[0..4], &[1, 1, 6, 0]);
+    assert_eq!(&dhcp[4..8], &NET_XID.to_be_bytes());
+    assert_eq!(&dhcp[8..12], &[0, 0, 0x80, 0]);
+    assert!(dhcp[12..28].iter().all(|&b| b == 0));
+    assert_eq!(&dhcp[28..34], &NET_MAC);
+    assert!(dhcp[34..236].iter().all(|&b| b == 0));
+    assert_eq!(&dhcp[236..240], &[0x63, 0x82, 0x53, 0x63]);
+    assert_eq!(&dhcp[240..], &[53, 1, 1, 55, 3, 1, 3, 6, 255]);
+}
+
+/// Every descriptor of a chain but the last carries `VIRTQ_DESC_F_NEXT` and links to the one after it; the last
+/// keeps only its own flags and links nowhere, and a one-descriptor chain is its own last.
+#[test]
+fn a_chain_links_each_descriptor_to_the_next_and_ends_at_the_last() {
+    assert_eq!(chained(0, 3, 0), (VIRTQ_DESC_F_NEXT, 1));
+    assert_eq!(
+        chained(1, 3, VIRTQ_DESC_F_WRITE),
+        (VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE, 2)
+    );
+    assert_eq!(chained(2, 3, VIRTQ_DESC_F_WRITE), (VIRTQ_DESC_F_WRITE, 0));
+    assert_eq!(
+        chained(0, 1, VIRTQ_DESC_F_INDIRECT),
+        (VIRTQ_DESC_F_INDIRECT, 0)
+    );
+    assert_eq!(chained(0, 2, 0), (VIRTQ_DESC_F_NEXT, 1));
+    assert_eq!(chained(1, 2, VIRTQ_DESC_F_WRITE), (VIRTQ_DESC_F_WRITE, 0));
+}
+
+/// The completion wait skips wakeups that leave the used index where it was, returns on the first
+/// that moves it, and with a bound gives up after exactly that many wakeups.
+#[test]
+fn the_completion_wait_counts_wakeups_and_stops_at_the_bound() {
+    // Moves on the third wakeup: found within a bound of three, and the wait stops there.
+    let mut wakeups = 0;
+    let moved = used_ring_moved(Some(COMPLETION_WAKEUPS), 7, || {
+        wakeups += 1;
+        if wakeups >= 3 { 8 } else { 7 }
+    });
+    assert!(moved);
+    assert_eq!(wakeups, 3);
+
+    // Never moves: gives up after exactly the bound.
+    let mut wakeups = 0;
+    let moved = used_ring_moved(Some(COMPLETION_WAKEUPS), 7, || {
+        wakeups += 1;
+        7
+    });
+    assert!(!moved);
+    assert_eq!(wakeups, COMPLETION_WAKEUPS);
+
+    // Unbounded: waits past any bound, and a wrap from u16::MAX to 0 is a move.
+    let mut wakeups = 0u32;
+    let moved = used_ring_moved(None, u16::MAX, || {
+        wakeups += 1;
+        if wakeups > 1000 { 0 } else { u16::MAX }
+    });
+    assert!(moved);
+    assert_eq!(wakeups, 1001);
+}
+
+/// The bracketed read returns the first value read inside one generation, retries while the
+/// generation moves across the read, and gives up after the bound on a generation that never
+/// holds still.
+#[test]
+fn a_configuration_read_holds_only_inside_one_generation() {
+    // A steady generation: the first read stands.
+    assert_eq!(consistent_read(|| 3, || 0x1_0000_0002), Some(0x1_0000_0002));
+
+    // A resize lands during the first read: the generation reads 0 before it and 1 after, so the
+    // torn value is dropped and the second attempt, wholly inside generation 1, stands.
+    let generations = [0u32, 1, 1, 1];
+    let values = [0xdead_u64, 0x2000];
+    let (mut g, mut v) = (0, 0);
+    let read = consistent_read(
+        || {
+            g += 1;
+            generations[g - 1]
+        },
+        || {
+            v += 1;
+            values[v - 1]
+        },
+    );
+    assert_eq!(read, Some(0x2000));
+    assert_eq!((g, v), (4, 2));
+
+    // A generation that moves on every read: no value, after exactly the bound.
+    let mut counter = 0u32;
+    let mut reads = 0;
+    let read = consistent_read(
+        || {
+            counter += 1;
+            counter
+        },
+        || {
+            reads += 1;
+            7
+        },
+    );
+    assert_eq!(read, None);
+    assert_eq!(reads, CONFIGURATION_READ_ATTEMPTS);
 }
 
 #[test]
