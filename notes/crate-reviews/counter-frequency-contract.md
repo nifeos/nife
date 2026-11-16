@@ -118,15 +118,14 @@ The template head runs more than `v7`. Over the same staged copy, every check of
 standalone job passes. Those are the vocabulary, passive voice (none in 578 README words), history
 phrases, acronyms, banned figures and the function-length ratchet. They are also the seven naming
 checks, the service-model prose check, the README badge row, acronym order, inflated wording and
-section order. Clippy with
-warnings denied passes on stable and on 1.88, for the host with every target and for each
+section order. Clippy with warnings denied passes on stable and on 1.88, for the host with every target and for each
 bare-metal library, and so does the `--cfg kani` clippy pass. `cargo doc` with warnings denied
 passes.
 
-The dry run reports three findings, all in the `v7` scaffold and none in the crate: an architect's
-name in `.github/pull_request_template.md`, a path into this tree in `CONTRIBUTING.md`, and five
-lines that name nife (one each in `.githooks/commit-msg`, `deny.toml` and
-`docs/stranger-test.md`, two in `rustfmt.toml`). The template head's scaffold names nife
+The dry run reports three findings, all in the `v7` scaffold and none in the crate. They are an
+architect's name in `.github/pull_request_template.md` and a path into this tree in
+`CONTRIBUTING.md`. The third is five lines that name nife: one each in `.githooks/commit-msg`,
+`deny.toml` and `docs/stranger-test.md`, and two in `rustfmt.toml`. The template head's scaffold names nife
 nowhere, and it adds `_typos.toml`, which `v7` lacks; the head's spelling check passes over the
 crate's own files.
 
