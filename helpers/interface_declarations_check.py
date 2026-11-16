@@ -227,9 +227,17 @@ NIFEOS_GIT = 'git+https://github.com/nifeos/'
 
 
 def metadata():
-    out = subprocess.run(['cargo', 'metadata', '--format-version', '1', '--offline'],
-                         check=True, capture_output=True, text=True).stdout
-    return json.loads(out)
+    # Offline first, so a machine with the registry cached needs no network. A tree whose lockfile
+    # names a version this machine has not downloaded (a queued dependency bump, which is what
+    # `script/preflight-queue --arm-check` lints over) cannot be read offline, so it retries online
+    # and downloads what it lacks; with no network that retry fails too, and the failure is real.
+    for flags in (['--offline'], []):
+        run = subprocess.run(['cargo', 'metadata', '--format-version', '1'] + flags,
+                             capture_output=True, text=True)
+        if run.returncode == 0:
+            return json.loads(run.stdout)
+    sys.stderr.write(run.stderr)
+    raise SystemExit('cargo metadata failed offline and online; the dependency graph is unread')
 
 
 def tree_problems():
