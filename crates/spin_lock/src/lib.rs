@@ -67,6 +67,22 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 /// choice, made so an inlined `lock` need not build an offset past a large `T`; it is not part of
 /// the API, and the fields are private. Nobody has measured the saving.
 ///
+/// # Examples
+///
+/// A counter in a static, taken by two threads. `new` is `const`, so the lock needs no lazy setup:
+///
+/// ```
+/// use spin_lock::SpinLock;
+///
+/// static HITS: SpinLock<u32> = SpinLock::new(0);
+///
+/// let other = std::thread::spawn(|| *HITS.lock() += 1);
+/// *HITS.lock() += 1;
+/// other.join().unwrap();
+/// assert_eq!(*HITS.lock(), 2);
+/// assert!(HITS.try_lock().is_some(), "every guard above was dropped at its statement's end");
+/// ```
+///
 /// Name: ratified 2026-10-26 (UTC), on #2760.
 #[repr(C)]
 pub struct SpinLock<T: ?Sized> {
