@@ -4,7 +4,8 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 
 | item | state |
 |---|---|
-| 1, 3 | left: the move's, and decision 1 may close the move |
+| 1 | left: lands in this tree before the `runtime` package's move |
+| 3 | left: the `runtime` package's move, since decision 1 is ruled |
 | 2 | done: the root doc states a class, the owner's three obligations, why the heap layout shapes the uncached path and the zeroed rule; the consumer, the generator and the note are gone; the BUGS name the leak on drop |
 | 4 | done for the arithmetic: `class` compares before it rounds (`a_size_near_the_top_of_usize_has_no_class`); the bare index is decision 3 |
 | 5 | done: the sentence on `Cache` and `an_all_zero_cache_is_empty` |
