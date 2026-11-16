@@ -54,7 +54,7 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
 
 ### P0: blocks the move
 
-1. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
+1. HELD for the architect's reading. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
    `helpers/name_release.py --draft domain_name_system` lists the crate name and five constants as
    ratified. Every other public item has no block (`PORT`, `HEADER_LEN`, the flag and mask
    constants, `record_type::{A, CNAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
@@ -67,7 +67,7 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
    every one not named in items 6 and 7. Door: each name is one-way once published; the block itself
    is two-way. Effort: S for the lane, plus the architect's reading.
 
-2. The manifest does not stand alone. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
+2. The manifest does not stand alone. DONE. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
    `categories`, and the `publish = false` line's comment names `crates/publish-allowlist.txt`, a
    file the new repository will not have. The header comment cites milestone 384 (nothing here resolves a hostname, and in a capability system the resolver is a grant) and
    `notes/name-resolution.md`. Evidence: `crates/domain_name_system/Cargo.toml` lines 4 to 17;
@@ -95,6 +95,9 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
    memory not measured). It adds one falsification run with its printed `VERIFICATION:- FAILED`, the
    BUGS list from the root doc, the minimum Rust version and the type sizes measured above. Record
    the first stranger run in `docs/stranger-test.md`. Door: two-way. Effort: S.
+   DONE for the README and both license files, which now sit in the crate directory. The scaffold's
+   other files, the caller workflows and `docs/stranger-test.md` come from `script/crate-move` at
+   the move, and the stranger run follows the move (step 12 of `notes/crate-move.md`).
 
 4. Shipped text points into nife. DONE. Finding: line 4 sends the reader to `notes/name-resolution.md`.
    Line 7 names `fuzz/fuzz_targets/domain_name_system_reply.rs`, a path in nife (item 5 moves the
@@ -246,16 +249,18 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 
 ## Follow-on
 
-- **Outstanding.** Decisions 1 and 2 and every item the ledger leaves, which wait for #3559 to merge
-  or for an architect. Checked against `crates/domain_name_system/src/lib.rs` on `main`: the label
-  and header lengths keep their names and the crate has no README.
-- **Outstanding.** Items 1, 2, 3 and 5 and 9: the ratification pull request, the standalone manifest,
-  the README and license files, the crate's own `fuzz/` directory and the mutants-exempts lines all
-  belong to the move. Checked against `crates/domain_name_system` on main: none of them exists there.
-- **Outstanding.** The test client in `components/src/socket_test_client.rs` still sizes its TCP
-  buffer from the UDP maximum (item 16). Checked by reading its `TcpReply::new` call.
-- **Outstanding.** Item 7's `.github/accepted-words` entries wait for the move, and the Kani
-  proofs were edited for the renames but not run in this tree.
+- **Held for the architect.** Item 1: the ratification pull request for the 51 public names the crate
+  carries that no ratification covers (`python3 helpers/name_release.py --draft domain_name_system`
+  prints the table). Decisions 1 to 3 were decided provisionally and the names are built as they
+  decided. Nothing here is renamed until the architect reads the table, and the move waits for it.
+- **At the move.** Item 5's directory (`script/crate-move` stages the fuzz target into the crate's
+  own `fuzz/`, with the three fixtures as seeds, and passes `fuzz: true` to the weekly caller because
+  the crate forbids `unsafe`), item 9's `.github/mutants-exempts` lines (they name the stripped
+  source's line numbers, so only the move commit can write them), item 7's `.github/accepted-words`
+  entries, and the stranger run. The architect's clearance of the review package and the creation of
+  the repository come first (`notes/crate-move.md`, steps 4 and 5).
+- **Not run.** `mutation / mutation` has no green full run on `main` yet; it runs in the new
+  repository.
 
 ## BUGS
 
@@ -264,7 +269,7 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 - The template's `abbreviations` helper judged one name when run here. That is almost certainly a
   harness problem on the reviewing side, so the abbreviations report (`tcp`, `udp`, `cname`, `ttl`
   and any other) stays unverified until the crate runs the template's `check` workflow.
-- The build at Rust 1.88 was not run; `as_chunks_mut` is the only item known to set that floor.
+- The crate builds and tests at Rust 1.88 in the move's dry run (`script/crate-move --dry-run`).
 - The `register_names` helper did not flag `MAXIMUM_LABEL_LEN` or `HEADER_LEN`, while the written
   rule does. Whether the helper reads a `_LEN` suffix by design is a template question this block
   raises and does not answer.
