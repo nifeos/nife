@@ -78,7 +78,7 @@ def main():
 
     os.makedirs(f'{root}/attributes')
     write(f'{root}/attributes/small', b'small\n')
-    os.setxattr(f'{root}/attributes/small', 'user.colour', b'blue')
+    os.setxattr(f'{root}/attributes/small', 'user.color', b'blue')
     os.setxattr(f'{root}/attributes/small', 'user.empty', b'')
     write(f'{root}/attributes/large', b'large\n')
     os.setxattr(f'{root}/attributes/large', 'user.blob', data(rng, 900))
