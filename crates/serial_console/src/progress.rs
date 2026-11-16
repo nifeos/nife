@@ -16,6 +16,8 @@
 
 use core::fmt;
 
+use boot_ladder::verdict::ParsedVerdict;
+
 use crate::{HEADS, board};
 
 /// How far the boot got, as an ordered ladder.
@@ -53,7 +55,7 @@ pub enum Stage {
     Machine,
     /// The boot self-test printed its verdict (`boot_ladder::Heads::self_test`).
     ///
-    /// The verdict arrives after [`Stage::Tour`]'s line, from the hand-over, and the ratchet keeps
+    /// The verdict arrives after [`Stage::CoreRuns`]'s line, from the hand-over, and the ratchet keeps
     /// the order below; [`BootProgress::has_reached`] is what waits for the line itself.
     ///
     /// **This is the stage to wait for**: it is reachable on every architecture, it means paging,
@@ -65,16 +67,16 @@ pub enum Stage {
     ///
     /// Printed after the kernel's half of the self-test and before the hand-over, which prints the
     /// verdict, on all three architectures. It says the machine was described and the kernel's own
-    /// checks ran. It is not the default to wait for: [`Stage::Prompt`] is above it, and a boot
+    /// checks ran. It is not the default to wait for: [`Stage::ShellBanner`] is above it, and a boot
     /// that stops here has not handed over. Whether the checks passed is
     /// [`Failure::SelfTestFailed`]'s to say, not this rung's.
-    Tour,
-    /// Userspace is up and the shell is offering a prompt (`boot_ladder::Heads::prompt`).
+    CoreRuns,
+    /// Userspace is up and the shell is offering a prompt (`boot_ladder::Heads::shell_banner`).
     ///
     /// The terminal state of a default boot on every architecture: nothing halts, so the prompt is
-    /// the signal that the boot finished. Above [`Stage::Tour`] because a boot that reaches a
+    /// the signal that the boot finished. Above [`Stage::CoreRuns`] because a boot that reaches a
     /// prompt has gone past the tour. `cargo xtask boot-check` asserts it on every architecture.
-    Prompt,
+    ShellBanner,
     /// A sustained workload announced itself and is expected to keep speaking.
     ///
     /// **The only stage after which silence is a failure again.** Below it, a boot ends with the
@@ -95,7 +97,7 @@ pub enum Stage {
     ///
     /// It is what lets `--until sweep-done` exit `0` when the sweep finished, `2` when it spoke
     /// and then stopped, and `3` when the time ran out with points still to print. Silence after
-    /// it is the correct end state, as after [`Stage::Tour`], and `watch::Policy::quiet_after`
+    /// it is the correct end state, as after [`Stage::CoreRuns`], and `watch::Policy::quiet_after`
     /// exempts it.
     SweepDone,
 }
@@ -112,8 +114,8 @@ impl Stage {
             Stage::Banner => "kernel banner",
             Stage::Machine => "machine described",
             Stage::SelfTest => "self-test verdict",
-            Stage::Tour => "boot tour complete",
-            Stage::Prompt => "shell prompt",
+            Stage::CoreRuns => "boot tour complete",
+            Stage::ShellBanner => "shell prompt",
             Stage::Soak => "soak running",
             Stage::Sweep => "job-mix sweep running",
             Stage::SweepDone => "job-mix sweep complete",
@@ -367,7 +369,7 @@ impl BootProgress {
     /// **Whether this boot has shown `wanted`**, which a watch waits for.
     ///
     /// The ratchet's order, except for [`Stage::SelfTest`]: the kernel prints its half and then
-    /// [`Stage::Tour`]'s line, and the verdict follows from the hand-over, so a boot past the tour
+    /// [`Stage::CoreRuns`]'s line, and the verdict follows from the hand-over, so a boot past the tour
     /// has shown the verdict only once its line arrived. Without that, `--until selftest` would
     /// stop at the tour line, before the verdict it was run to read.
     ///
@@ -388,7 +390,7 @@ impl BootProgress {
     ///
     /// `false` on every live boot. It reads captured logs:
     /// `tests/fixtures/captured/vf2-2026-09-01-userspace.log` carries the line, evidence off real
-    /// silicon that cannot be re-taken. Ask `reached() >= Stage::Prompt` of a board booted today.
+    /// silicon that cannot be re-taken. Ask `reached() >= Stage::ShellBanner` of a board booted today.
     /// Not a stage, so the ladder stays a ladder; notes/board-console/markers.md has why.
     #[must_use]
     pub fn userspace_ran(&self) -> bool {
@@ -521,8 +523,8 @@ impl BootProgress {
         }
         // The shell's banner is the top rung; `boot_ladder`'s BUGS says why the banner
         // rather than the `$ ` itself.
-        if HEADS.prompt().is_in(line) {
-            self.reach(Stage::Prompt);
+        if HEADS.shell_banner().is_in(line) {
+            self.reach(Stage::ShellBanner);
         }
 
         if self
@@ -537,8 +539,8 @@ impl BootProgress {
         if line.contains("init/build") {
             self.userspace_ran = true;
         }
-        if let Some(at) = HEADS.tour().find_in(line).map(|r| r.start) {
-            self.reach(Stage::Tour);
+        if let Some(at) = HEADS.core_runs().find_in(line).map(|r| r.start) {
+            self.reach(Stage::CoreRuns);
             if complete && self.banner_line.is_none() {
                 self.banner_line = Some(line[at..].to_string());
             }
@@ -599,67 +601,50 @@ impl BootProgress {
             Some(Failure::KernelPanic(
                 line[at + "[PANIC] ".len()..].to_string(),
             ))
+        } else if complete && let Some(verdict) = ParsedVerdict::in_line(HEADS, line) {
+            // The verdict grammar is `boot_ladder`'s, shared with the program that prints it. A
+            // list of failed checks makes it red before anything else is asked of it.
+            if verdict.is_red() {
+                // Both markers on one complete line: the tour's preemption check also prints
+                // `FAILED:`, and the verdict prefix alone is every green boot.
+                Some(Failure::SelfTestFailed(
+                    verdict.failed_names().collect::<Vec<_>>().join(" "),
+                ))
+            } else if let Some(name) = verdict
+                .absent_names()
+                .find(|name| self.board.must_not_be_absent.contains(name))
+            {
+                // The kernel reports a check `absent` when the machine has nothing for it to
+                // test, and only the profile knows whether it should have.
+                Some(Failure::SelfTestFailed(format!(
+                    "{name} (absent on {}, which has the device for it)",
+                    self.board.name
+                )))
+            } else if verdict.total != boot_ladder::SELF_TEST_CHECKS.len()
+                && !boot_ladder::EARLIER_SELF_TEST_CHECK_COUNTS.contains(&verdict.total)
+            {
+                // A total that is neither `SELF_TEST_CHECKS`'s length nor an earlier one is a
+                // kernel built against a list this tree never had, so its `4 of 4 passed` is not
+                // green.
+                Some(Failure::SelfTestFailed(format!(
+                    "the verdict counted {} checks and boot_ladder lists {}",
+                    verdict.total,
+                    boot_ladder::SELF_TEST_CHECKS.len()
+                )))
+            } else {
+                None
+            }
         } else if complete
             && let Some(at) = HEADS.self_test().find_in(line).map(|r| r.start)
             && let Some(failed) = line[at..].find(boot_ladder::SELF_TEST_FAILED)
         {
-            // Both markers on one complete line: the tour's preemption check also prints
-            // `FAILED:`, and the verdict prefix alone is every green boot.
+            // A verdict line that is not the grammar (a link that corrupted its counts) still
+            // says it failed, so it is never read as a green boot.
             let names = line[at + failed + boot_ladder::SELF_TEST_FAILED.len()..].trim();
             Some(Failure::SelfTestFailed(names.to_string()))
-        } else if complete
-            && let Some(at) = HEADS.self_test().find_in(line).map(|r| r.start)
-            && let Some(name) = Self::verdict_absences(&line[at..])
-                .find(|name| self.board.must_not_be_absent.contains(name))
-        {
-            // The kernel reports a check `absent` when the machine has nothing for it to test,
-            // and only the profile knows whether it should have (calef, 2026-10-20 UTC, #2447).
-            Some(Failure::SelfTestFailed(format!(
-                "{name} (absent on {}, which has the device for it)",
-                self.board.name
-            )))
-        } else if complete
-            && let Some(tail) = HEADS.self_test().find_in(line).map(|r| &line[r.end..])
-            && let Some(total) = Self::verdict_total(tail)
-            && total != boot_ladder::SELF_TEST_CHECKS.len()
-            && !boot_ladder::SELF_TEST_CHECKS_EARLIER.contains(&total)
-        {
-            // A total that is neither `SELF_TEST_CHECKS`'s length nor an earlier one
-            // (`SELF_TEST_CHECKS_EARLIER`) is a kernel built against a list this tree never had,
-            // so its `4 of 4 passed` is not green.
-            Some(Failure::SelfTestFailed(format!(
-                "the verdict counted {total} checks and boot_ladder lists {}",
-                boot_ladder::SELF_TEST_CHECKS.len()
-            )))
         } else {
             None
         }
-    }
-
-    /// The names a verdict lists after `boot_ladder::SELF_TEST_ABSENT`, given the verdict line
-    /// from its `boot_ladder::Heads::self_test` head. The list ends at the comma before a `FAILED:` count, or
-    /// at the end of the line.
-    fn verdict_absences(verdict: &str) -> impl Iterator<Item = &str> {
-        let names = verdict
-            .find(boot_ladder::SELF_TEST_ABSENT)
-            .map_or("", |at| {
-                let rest = &verdict[at + boot_ladder::SELF_TEST_ABSENT.len()..];
-                rest.split(',').next().unwrap_or("")
-            });
-        names.split_whitespace()
-    }
-
-    /// The `Y` in a verdict's `X of Y passed`, given the text after the verdict's head.
-    ///
-    /// `None` for anything that is not that shape, so an unfamiliar verdict is left alone rather
-    /// than reported as a count it never printed.
-    fn verdict_total(tail: &str) -> Option<usize> {
-        let mut words = tail.split_whitespace();
-        words.next()?.parse::<usize>().ok()?;
-        if words.next()? != "of" {
-            return None;
-        }
-        words.next()?.trim_end_matches(',').parse().ok()
     }
 
     /// Pull the numbers out of one `soak-test: t=... beat=... rounds=...` line.

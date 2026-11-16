@@ -44,7 +44,7 @@ fn the_captured_boot_runs_the_whole_tour() {
     let progress = run(include_str!(
         "../../tests/fixtures/captured/vf2-2026-09-01-manual-boot.log"
     ));
-    assert_eq!(progress.reached(), Stage::Tour);
+    assert_eq!(progress.reached(), Stage::CoreRuns);
     assert_eq!(progress.failure(), None);
     assert!(progress.is_relocated());
     assert!(
@@ -96,7 +96,7 @@ fn the_ladder_climbs_banner_machine_self_test_prompt() {
     assert_eq!(progress.reached(), Stage::SelfTest);
     assert_eq!(progress.failure(), None, "a green verdict is not a failure");
     progress.observe_line("nife capability shell. naming a resource in a command IS granting it.");
-    assert_eq!(progress.reached(), Stage::Prompt);
+    assert_eq!(progress.reached(), Stage::ShellBanner);
 }
 
 /// **The verdict follows the tour line** (milestone 1063 (the boot self-test's spawning checks run
@@ -108,19 +108,19 @@ fn the_verdict_after_the_tour_is_what_a_self_test_wait_waits_for() {
     let mut progress = BootProgress::new(&crate::board::EMULATOR);
     progress.observe_line("nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz");
     progress.observe_line("nife: the capability core runs on aarch64.");
-    assert_eq!(progress.reached(), Stage::Tour);
+    assert_eq!(progress.reached(), Stage::CoreRuns);
     assert!(
         !progress.has_reached(Stage::SelfTest),
         "the tour line is not the verdict"
     );
-    assert!(progress.has_reached(Stage::Tour));
+    assert!(progress.has_reached(Stage::CoreRuns));
     progress.observe_line(
         "nife self-test: 11 of 15 passed, 4 absent: block_device device_interrupt clock true_random_number_generator",
     );
     assert!(progress.has_reached(Stage::SelfTest));
     assert_eq!(
         progress.reached(),
-        Stage::Tour,
+        Stage::CoreRuns,
         "the ratchet does not step back"
     );
     assert_eq!(progress.failure(), None);
@@ -290,11 +290,17 @@ fn the_new_rungs_sit_where_the_milestone_put_them() {
     assert!(Stage::Machine > Stage::Banner);
     assert!(Stage::SelfTest > Stage::Machine);
     assert!(
-        Stage::Tour > Stage::SelfTest,
+        Stage::CoreRuns > Stage::SelfTest,
         "the riscv tour runs after it"
     );
-    assert!(Stage::Prompt > Stage::Tour, "a prompt is past any tour");
-    assert!(Stage::Soak > Stage::Prompt, "a soak replaces the handoff");
+    assert!(
+        Stage::ShellBanner > Stage::CoreRuns,
+        "a prompt is past any tour"
+    );
+    assert!(
+        Stage::Soak > Stage::ShellBanner,
+        "a soak replaces the handoff"
+    );
 }
 
 /// The banner is not the end of the story, and the two captures differ by exactly this: both
@@ -305,7 +311,7 @@ fn the_tour_line_outranks_the_banner() {
     progress.observe_line("nife on RISC-V (rv64, S-mode, Sv39)");
     assert_eq!(progress.reached(), Stage::Banner);
     progress.observe_line("nife: the capability core runs on RISC-V.");
-    assert_eq!(progress.reached(), Stage::Tour);
+    assert_eq!(progress.reached(), Stage::CoreRuns);
 }
 
 /// The trust boundary refusing, captured rather than imagined. Note where it got to: past the
@@ -336,7 +342,7 @@ fn the_captured_userspace_boot_ran_a_child() {
     let progress = run(include_str!(
         "../../tests/fixtures/captured/vf2-2026-09-01-userspace.log"
     ));
-    assert_eq!(progress.reached(), Stage::Tour);
+    assert_eq!(progress.reached(), Stage::CoreRuns);
     assert_eq!(progress.failure(), None);
     assert!(progress.userspace_ran());
 }
@@ -353,7 +359,7 @@ fn the_captured_soak_reaches_the_soak_stage_and_its_last_beat_is_read() {
     )));
     assert_eq!(progress.reached(), Stage::Soak);
     assert!(
-        progress.reached() > Stage::Tour,
+        progress.reached() > Stage::CoreRuns,
         "a soak is a stage past the tour, which is what re-arms the quiet check"
     );
     assert_eq!(progress.failure(), None);
@@ -752,7 +758,10 @@ fn a_refused_sweep_is_announced_with_its_reason() {
 /// The two sweep rungs are an order, and these are the comparisons the tools make.
 #[test]
 fn the_sweep_rungs_sit_above_the_boot_ladder() {
-    assert!(Stage::Sweep > Stage::Prompt, "a sweep replaces the handoff");
+    assert!(
+        Stage::Sweep > Stage::ShellBanner,
+        "a sweep replaces the handoff"
+    );
     assert!(
         Stage::SweepDone > Stage::Sweep,
         "finishing outranks starting, which is the whole of part 2"
@@ -789,13 +798,13 @@ fn the_same_capture_climbs_radons_prologue_and_not_xenons() {
     let log = include_str!("../../tests/fixtures/captured/vf2-2026-09-01-manual-boot.log");
 
     let as_radon = feed(&board::RADON, log);
-    assert_eq!(as_radon.reached(), Stage::Tour);
+    assert_eq!(as_radon.reached(), Stage::CoreRuns);
     assert!(as_radon.is_relocated(), "Moving Image from is U-Boot's");
 
     let as_xenon = feed(&board::XENON, log);
     assert_eq!(
         as_xenon.reached(),
-        Stage::Tour,
+        Stage::CoreRuns,
         "the kernel's own ladder is shared and is read the same either way"
     );
     assert!(
@@ -855,8 +864,8 @@ fn every_stage_has_its_own_label() {
     assert_eq!(Stage::Banner.label(), "kernel banner");
     assert_eq!(Stage::Machine.label(), "machine described");
     assert_eq!(Stage::SelfTest.label(), "self-test verdict");
-    assert_eq!(Stage::Tour.label(), "boot tour complete");
-    assert_eq!(Stage::Prompt.label(), "shell prompt");
+    assert_eq!(Stage::CoreRuns.label(), "boot tour complete");
+    assert_eq!(Stage::ShellBanner.label(), "shell prompt");
     assert_eq!(Stage::Soak.label(), "soak running");
     assert_eq!(Stage::Sweep.label(), "job-mix sweep running");
     assert_eq!(Stage::SweepDone.label(), "job-mix sweep complete");
@@ -868,7 +877,7 @@ fn every_stage_has_its_own_label() {
 /// would still return `Ok`, and only reading what actually landed in the string catches it.
 #[test]
 fn displaying_a_stage_writes_its_label() {
-    assert_eq!(Stage::Tour.to_string(), "boot tour complete");
+    assert_eq!(Stage::CoreRuns.to_string(), "boot tour complete");
 }
 
 /// `Failure::describe`'s one match guard, both ways: with a reason, the diagnosis and the
@@ -944,7 +953,10 @@ fn absences_and_failures_are_read_apart() {
         Some(&Failure::SelfTestFailed("entropy".to_string())),
     );
     assert_eq!(
-        BootProgress::verdict_absences(&line).collect::<Vec<_>>(),
+        boot_ladder::verdict::ParsedVerdict::in_line(crate::HEADS, &line)
+            .unwrap()
+            .absent_names()
+            .collect::<Vec<_>>(),
         ["block_device", "device_interrupt"],
     );
 }

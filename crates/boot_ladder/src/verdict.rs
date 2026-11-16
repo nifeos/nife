@@ -317,6 +317,121 @@ pub fn subject_thread(heads: Heads<'_>, line: &str) -> Option<u64> {
     digits.parse().ok()
 }
 
+/// **A verdict line's tail, read back**: the counts and the two name lists that follow the
+/// [`self_test`](Heads::self_test) head, in the grammar [`Verdict`] prints. Writer and readers
+/// share this one grammar, so a change to a separator breaks the round-trip test here and not a
+/// reader on a bench.
+///
+/// `X of Y passed`, then optionally `, N absent: <names>`, then optionally `, M FAILED: <names>`.
+/// Names are `[a-z0-9_]` words separated by single spaces. It borrows the line and allocates
+/// nothing.
+///
+/// Name: provisional (the review in milestone 1078).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ParsedVerdict<'a> {
+    /// How many checks passed.
+    pub passed: usize,
+    /// How many checks the verdict counted: [`CHECKS`] for a kernel built from this list, and one
+    /// of [`EARLIER_SELF_TEST_CHECK_COUNTS`](crate::EARLIER_SELF_TEST_CHECK_COUNTS) for an older one.
+    pub total: usize,
+    absent: Option<(usize, &'a str)>,
+    failed: Option<(usize, &'a str)>,
+}
+
+impl<'a> ParsedVerdict<'a> {
+    /// **The verdict `text` holds under `heads`**, found anywhere in the line (a serial link may
+    /// put bytes before the head), or `None` when the line has no verdict head or its tail is not
+    /// the grammar.
+    pub fn in_line(heads: Heads<'_>, line: &'a str) -> Option<Self> {
+        let at = heads.self_test().find_in(line)?.end;
+        Self::parse(&line[at..])
+    }
+
+    /// **The verdict whose tail is `tail`**, the text after the head, or `None` for anything that
+    /// is not the grammar, so an unfamiliar line is left alone rather than reported as counts it
+    /// never printed. Trailing white space is ignored.
+    pub fn parse(tail: &'a str) -> Option<Self> {
+        let tail = tail.trim_end();
+        let (passed, rest) = digits(tail)?;
+        let (total, rest) = digits(rest.strip_prefix(" of ")?)?;
+        let rest = rest.strip_prefix(" passed")?;
+        let (absent, rest) = match segment(rest, SELF_TEST_ABSENT) {
+            Some((count, names, rest)) => (Some((count, names)), rest),
+            None => (None, rest),
+        };
+        let (failed, rest) = match segment(rest, SELF_TEST_FAILED) {
+            Some((count, names, rest)) => (Some((count, names)), rest),
+            None => (None, rest),
+        };
+        rest.is_empty().then_some(Self {
+            passed,
+            total,
+            absent,
+            failed,
+        })
+    }
+
+    /// How many checks the verdict says were absent: `0` when it has no absent list.
+    pub fn absent_count(&self) -> usize {
+        self.absent.map_or(0, |(count, _)| count)
+    }
+
+    /// How many checks the verdict says failed: `0` when it has no failed list.
+    pub fn failed_count(&self) -> usize {
+        self.failed.map_or(0, |(count, _)| count)
+    }
+
+    /// Whether the verdict carries a failed list, which is what makes it red.
+    pub fn is_red(&self) -> bool {
+        self.failed.is_some()
+    }
+
+    /// The names the verdict lists as absent, in the order printed.
+    pub fn absent_names(&self) -> impl Iterator<Item = &'a str> + use<'a> {
+        self.absent
+            .map_or("", |(_, names)| names)
+            .split(' ')
+            .filter(|n| !n.is_empty())
+    }
+
+    /// The names the verdict lists as failed, in the order printed.
+    pub fn failed_names(&self) -> impl Iterator<Item = &'a str> + use<'a> {
+        self.failed
+            .map_or("", |(_, names)| names)
+            .split(' ')
+            .filter(|n| !n.is_empty())
+    }
+}
+
+/// The decimal number `text` begins with and what follows it, or `None` when it begins with no
+/// digit or the number does not fit.
+fn digits(text: &str) -> Option<(usize, &str)> {
+    let bytes = text.as_bytes();
+    let mut value = 0usize;
+    let mut end = 0;
+    while end < bytes.len() && bytes[end].is_ascii_digit() {
+        value = value
+            .checked_mul(10)?
+            .checked_add(usize::from(bytes[end] - b'0'))?;
+        end += 1;
+    }
+    (end > 0).then(|| (value, &text[end..]))
+}
+
+/// One `, N <marker><names>` segment at the front of `text`: its count, its names (up to the next
+/// comma or the end) and what follows.
+fn segment<'a>(text: &'a str, marker: &str) -> Option<(usize, &'a str, &'a str)> {
+    let (count, rest) = digits(text.strip_prefix(", ")?)?;
+    let rest = rest.strip_prefix(' ')?.strip_prefix(marker)?;
+    let end = rest.find(',').unwrap_or(rest.len());
+    // A check's name is `[a-z0-9_]`, so a list holds those and the spaces between them.
+    let plain = |b: &u8| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'_' | b' ');
+    rest.as_bytes()[..end]
+        .iter()
+        .all(plain)
+        .then(|| (count, &rest[..end], &rest[end..]))
+}
+
 #[cfg(test)]
 mod tests {
     extern crate std;
@@ -494,5 +609,131 @@ mod tests {
             format!("{line}"),
             "  self-test       : timer      ok      advanced"
         );
+    }
+
+    /// **What the writer prints, the reader reads back**, for every combination of outcomes the
+    /// tally can hold: the counts, and each name list in order. The test that fails when a
+    /// separator changes on one side only.
+    #[test]
+    fn a_printed_verdict_parses_back_to_its_tally() {
+        for (passed, absent, failed) in [
+            (0usize, 0usize, 0usize),
+            (CHECKS, 0, 0),
+            (CHECKS - 2, 1, 1),
+            (1, 3, 2),
+            (0, 0, CHECKS),
+            (0, CHECKS, 0),
+        ] {
+            let mut t = Tally::new();
+            for i in 0..CHECKS {
+                let outcome = if i < passed {
+                    Outcome::Passed
+                } else if i < passed + absent {
+                    Outcome::Absent
+                } else if i < passed + absent + failed {
+                    Outcome::Failed
+                } else {
+                    Outcome::Passed
+                };
+                t.record(i, outcome);
+            }
+            let line = format!("{}", t.verdict(HEADS));
+            let read = ParsedVerdict::in_line(HEADS, &line).expect("the printed verdict parses");
+            let expected = |mask: u64| -> Vec<&'static str> { super::names(mask).collect() };
+            assert_eq!(read.total, CHECKS, "{line}");
+            assert_eq!(read.passed, t.passed.count_ones() as usize, "{line}");
+            assert_eq!(
+                read.absent_count(),
+                t.absent.count_ones() as usize,
+                "{line}"
+            );
+            assert_eq!(
+                read.failed_count(),
+                t.failed.count_ones() as usize,
+                "{line}"
+            );
+            assert_eq!(read.absent_names().collect::<Vec<_>>(), expected(t.absent));
+            assert_eq!(read.failed_names().collect::<Vec<_>>(), expected(t.failed));
+            assert_eq!(read.is_red(), t.failed != 0);
+        }
+    }
+
+    /// The reader finds the head after bytes a serial link corrupted, ignores trailing white
+    /// space, and takes an older kernel's total as printed.
+    #[test]
+    fn the_reader_takes_what_a_log_holds() {
+        let read = ParsedVerdict::in_line(
+            HEADS,
+            "\u{fffd}x example self-test: 4 of 5 passed, 1 absent: clock \r",
+        )
+        .expect("a verdict after noise");
+        assert_eq!((read.passed, read.total), (4, 5));
+        assert_eq!(read.absent_names().collect::<Vec<_>>(), ["clock"]);
+        assert!(!read.is_red());
+    }
+
+    /// Anything that is not the grammar is left alone: no head, a different separator, a wrong
+    /// order, text after the lists, a count that does not fit.
+    #[test]
+    fn a_line_that_is_not_the_grammar_is_refused() {
+        for tail in [
+            "",
+            "3 of three passed",
+            "3 off 4 passed",
+            "3 of 4 passed,",
+            "3 of 4 passed, 1 FAILED: clock, 1 absent: timer",
+            "3 of 4 passed, 1 absent: clock; 1 FAILED: timer",
+            "3 of 4 passed, one absent: clock",
+            "3 of 4 passed and more",
+            "99999999999999999999999 of 4 passed",
+        ] {
+            assert_eq!(ParsedVerdict::parse(tail), None, "{tail:?}");
+        }
+        assert_eq!(
+            ParsedVerdict::in_line(HEADS, "example self-test subject: thread 4"),
+            None
+        );
+        assert_eq!(ParsedVerdict::in_line(HEADS, "nothing here"), None);
+    }
+}
+
+/// Proofs, run by `cargo kani` and compiled by nothing else.
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// **Reading a verdict never panics, whatever bytes arrive.** The line comes off a serial link
+    /// or a photograph, so any ASCII text up to the bound is a possible input. The counts are
+    /// checked against overflow and every slice index is a position after an ASCII byte. The
+    /// harness may fix the grammar's first words in the leading bytes, so the proof reaches the
+    /// segments instead of stopping at the first byte that is not a digit, and leaves the rest
+    /// symbolic.
+    ///
+    /// Falsification: replayable `crates/boot_ladder/falsifications/verdict.verification.reading_a_verdict_never_panics.patch`
+    #[kani::proof]
+    #[kani::unwind(26)]
+    fn reading_a_verdict_never_panics() {
+        const LEN: usize = 24;
+        let mut bytes: [u8; LEN] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= LEN);
+        let mut i = 0;
+        while i < LEN {
+            kani::assume(bytes[i].is_ascii());
+            i += 1;
+        }
+        // The grammar's fixed words in front, so the proof reaches the segments rather than
+        // stopping at the first byte that is not a digit.
+        let shape: &[u8] = b"1 of 1 passed, 1 ";
+        let mut k = 0;
+        while k < shape.len() && kani::any() {
+            bytes[k] = shape[k];
+            k += 1;
+        }
+        let text = core::str::from_utf8(&bytes[..len]).unwrap();
+        if let Some(read) = ParsedVerdict::parse(text) {
+            let _ = read.absent_names().count();
+            let _ = read.failed_names().count();
+        }
     }
 }

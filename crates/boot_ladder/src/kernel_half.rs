@@ -42,15 +42,15 @@ pub mod word {
     /// The register window of the JH7110 true random number generator (TRNG), physical.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_REGISTERS: usize = 6;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_REGISTERS: usize = 6;
     /// The TRNG service's three-word readiness report (`entropy_contract`).
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_REPORT: usize = 7;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_REPORT: usize = 7;
     /// Counter ticks from the start of the TRNG's bring-up to its readiness report.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS: usize = 10;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS: usize = 10;
     /// The JH7110 clock-and-reset window, physical.
     ///
     /// Name: provisional.
@@ -84,19 +84,19 @@ pub mod flag {
     /// The device tree names a JH7110 TRNG.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_FOUND: u64 = 1 << 1;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_FOUND: u64 = 1 << 1;
     /// The tree marks that TRNG `okay`.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_STATUS_OKAY: u64 = 1 << 2;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_STATUS_OKAY: u64 = 1 << 2;
     /// The archive had no `jh7110_entropy` program, so nothing was wired.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING: u64 = 1 << 3;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING: u64 = 1 << 3;
     /// The TRNG service was wired; the progenitor holds its request endpoint.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_WIRED: u64 = 1 << 4;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_WIRED: u64 = 1 << 4;
     /// The service sent its readiness report before the kernel's deadline.
     ///
     /// Name: ratified 2026-11-14 (UTC), block 1078.
@@ -125,7 +125,7 @@ pub mod flag {
     /// The TRNG's status register says it gives 256-bit answers.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_256_BIT: u64 = 1 << 11;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_256_BIT: u64 = 1 << 11;
     /// The progenitor holds disk 0's virtio-mmio trio for the `block_device` check.
     ///
     /// Name: provisional.
@@ -202,17 +202,17 @@ mod tests {
     fn each_flag_is_its_own_bit() {
         let flags = [
             flag::INJECT,
-            flag::RANDOM_NUMBER_GENERATOR_FOUND,
-            flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY,
-            flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING,
-            flag::RANDOM_NUMBER_GENERATOR_WIRED,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_FOUND,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_STATUS_OKAY,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_WIRED,
             flag::TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED,
             flag::CLOCK_REPORTED,
             flag::CLOCK_RUNNING,
             flag::CLOCK_RELEASED,
             flag::CLOCK_ALREADY_UP,
             flag::CLOCK_FROM_TREE,
-            flag::RANDOM_NUMBER_GENERATOR_256_BIT,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_256_BIT,
             flag::DISK_MEMORY_MAPPED,
             flag::DISK_PCI,
         ];

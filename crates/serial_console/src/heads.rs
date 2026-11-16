@@ -19,8 +19,8 @@ fn the_heads_print_the_bytes_the_logs_hold() {
         HEADS.machine(),
         HEADS.self_test(),
         HEADS.self_test_subject(),
-        HEADS.tour(),
-        HEADS.prompt(),
+        HEADS.core_runs(),
+        HEADS.shell_banner(),
         HEADS.screen_held(),
     ]
     .map(|head| head.to_string());
