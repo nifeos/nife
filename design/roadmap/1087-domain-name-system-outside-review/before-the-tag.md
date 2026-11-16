@@ -4,7 +4,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
 
 ## P1: before the first tag
 
-5. The fuzz target lives in nife's `fuzz/` workspace, not in the crate, and the crate's doc leans
+5. PARTLY DONE (`#![forbid(unsafe_code)]` is in; `script/crate-move` stages the `fuzz/` directory at the move). The fuzz target lives in nife's `fuzz/` workspace, not in the crate, and the crate's doc leans
    on it. Finding: `fuzz/fuzz_targets/domain_name_system_reply.rs` asserts the three properties the
    root doc relies on ("`Query::accept` is total, and that is fuzzed", line 651), seeded by
    `tests/fixtures`. The template's `fuzz.yml` fuzzes only a repository with its own
@@ -72,7 +72,7 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
    good for the sake of a field the RFC itself says to zero.
    Door: two-way (a behavior fixed before any release). Effort: XS.
 
-9. The three equivalent mutants need a home in the new repository.
+9. AT THE MOVE. The three equivalent mutants need a home in the new repository.
    Finding: the census records three survivors (`Name::is_within` `<` to `<=`, two `|` to `^` on
    disjoint bit ranges), each triaged as equivalent with a reason. The template's `mutation`
    workflow goes red on a survivor absent from `.github/mutants-exempts`, and the release gate reads
