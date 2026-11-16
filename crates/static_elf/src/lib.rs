@@ -18,7 +18,8 @@ pub use note::{NoteError, NoteSearch, NoteSegment, NoteSegments};
 
 /// Machine-checked proofs of the loader's front half.
 ///
-/// They prove the per-segment bounds check panic-free and in bounds. Totality of `Elf::parse` over
+/// They prove the per-segment bounds check and the program-header offset panic-free and in bounds,
+/// and `Segment::page_range` panic-free and ordered for every page size. Totality of `Elf::parse` over
 /// every byte string is past bounded model checking at a useful input size: the overlap check is a
 /// loop over the headers inside a loop over the same, and the header table sits at a symbolic
 /// offset in a symbolic file. So the arithmetic a hostile header can weaponize is factored into

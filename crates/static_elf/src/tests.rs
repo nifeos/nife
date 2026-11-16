@@ -390,6 +390,22 @@ fn the_overlap_check_follows_the_page_size_given() {
     Elf::parse_with(&bytes, NATIVE_MACHINE, PageBytes::FOUR_KIBIBYTES).expect("as parse");
 }
 
+/// A header offset is returned only when the whole 56-byte header ends inside the table, and an
+/// index or entry size large enough to wrap is `None` rather than a panic.
+#[test]
+fn a_program_header_offset_holds_a_whole_header() {
+    assert_eq!(program_header_offset(64, 0, 56, 120), Some(64));
+    assert_eq!(program_header_offset(64, 1, 56, 176), Some(120));
+    assert_eq!(
+        program_header_offset(64, 1, 56, 175),
+        None,
+        "one byte short"
+    );
+    assert_eq!(program_header_offset(0, 0, 56, 55), None);
+    assert_eq!(program_header_offset(0, usize::MAX, 56, usize::MAX), None);
+    assert_eq!(program_header_offset(usize::MAX, 0, 56, usize::MAX), None);
+}
+
 /// Pins the byte order of the field reader with a value whose two bytes differ. Every field
 /// the parser checks happens to have a zero high byte in the other fixtures, so a reader that
 /// picked up the wrong neighbouring byte would still pass them.

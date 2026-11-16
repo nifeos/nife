@@ -77,6 +77,7 @@ pub struct Elf<'a> {
     phoff: usize,
     phnum: usize,
     phentsize: usize,
+    table_end: usize,
 }
 
 impl<'a> Elf<'a> {
@@ -175,6 +176,7 @@ impl<'a> Elf<'a> {
             phoff,
             phnum,
             phentsize,
+            table_end,
         };
 
         elf.validate(page_bytes)?;
@@ -223,7 +225,8 @@ impl<'a> Elf<'a> {
 
     /// The `i`th program header, if it is a `PT_LOAD`.
     fn segment_at(&self, i: usize) -> Result<Option<Segment<'a>>, Error> {
-        let off = self.phoff + i * self.phentsize;
+        let off = program_header_offset(self.phoff, i, self.phentsize, self.table_end)
+            .ok_or(Error::BadProgramHeaders)?;
         let ph = &self.bytes[off..off + PHDR_SIZE];
 
         if u32le(ph, 0) != PT_LOAD {
@@ -260,6 +263,26 @@ impl<'a> Elf<'a> {
         // dropped from `validate` would make a segment vanish from this iterator, which the tests
         // that count segments catch.
         (0..self.phnum).filter_map(|i| self.segment_at(i).ok().flatten())
+    }
+}
+
+/// Where the `i`th program header starts, `phoff + i * phentsize`, when all `PHDR_SIZE` bytes of it
+/// end at or before `table_end`; otherwise `None`.
+///
+/// `parse` bounds the whole table before any header is read, so a valid index always fits. This
+/// checks it again, as loopless arithmetic the proofs reach, so the slice each caller takes is in
+/// bounds whatever the index and the fields. Both the parse and the note walk call it.
+pub(crate) fn program_header_offset(
+    phoff: usize,
+    i: usize,
+    phentsize: usize,
+    table_end: usize,
+) -> Option<usize> {
+    let off = i.checked_mul(phentsize)?.checked_add(phoff)?;
+    if off.checked_add(PHDR_SIZE)? <= table_end {
+        Some(off)
+    } else {
+        None
     }
 }
 

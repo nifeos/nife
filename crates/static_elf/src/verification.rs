@@ -65,3 +65,19 @@ fn page_range_is_panic_free_and_ordered() {
     let (start, end) = seg.page_range(page_bytes);
     assert!(start <= end);
 }
+
+/// **A program header offset that passes is a whole header inside the table.** If
+/// `program_header_offset` returns `Some(off)`, then `off + PHDR_SIZE` does not wrap and is at most
+/// `table_end`, so the slice `segment_at` and the note walk take is in bounds. For every offset,
+/// index, entry size and table end, with no precondition from `parse`.
+/// Falsification: replayable `crates/static_elf/falsifications/verification.a_program_header_offset_is_a_whole_header_inside_the_table.patch`
+#[kani::proof]
+fn a_program_header_offset_is_a_whole_header_inside_the_table() {
+    let table_end: usize = kani::any();
+    if let Some(off) = program_header_offset(kani::any(), kani::any(), kani::any(), table_end) {
+        assert!(
+            off.checked_add(PHDR_SIZE)
+                .is_some_and(|end| end <= table_end)
+        );
+    }
+}

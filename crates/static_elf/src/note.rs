@@ -11,7 +11,8 @@
 //! rule and the hostile cases.
 
 use super::{
-    EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAXIMUM_PHNUM, PHDR_SIZE, u16le, u32le, u64le,
+    EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAXIMUM_PHNUM, PHDR_SIZE,
+    program_header_offset, u16le, u32le, u64le,
 };
 
 /// `p_type` for a segment of notes.
@@ -129,7 +130,8 @@ impl Iterator for NoteSegments<'_> {
 
     fn next(&mut self) -> Option<NoteSegment> {
         while self.next < self.phnum {
-            let ph = &self.table[self.next * self.phentsize..][..PHDR_SIZE];
+            let off = program_header_offset(0, self.next, self.phentsize, self.table.len())?;
+            let ph = &self.table[off..off + PHDR_SIZE];
             self.next += 1;
             if u32le(ph, 0) == PT_NOTE {
                 return Some(NoteSegment {
