@@ -6172,13 +6172,10 @@ crates/socket_contract/src/lib.rs::word_ipv4
 
 crates/static_elf/src/error.rs::Error
 
-crates/static_elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/static_elf/src/machine.rs::KNOWN_MACHINES
 
 crates/static_elf/src/machine.rs::NATIVE_MACHINE
 
-crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
 
 crates/static_elf/src/note.rs
 

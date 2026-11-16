@@ -5,14 +5,20 @@
 
 /// `e_machine` for 64-bit Arm. Pass it to [`Elf::parse_for_machine`](crate::Elf::parse_for_machine)
 /// to validate an aarch64 program on any host.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
 #[doc(alias = "EM_AARCH64")]
 pub const MACHINE_AARCH64: u16 = 183;
 
 /// `e_machine` for RISC-V, which ELF64 uses for RV64.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
 #[doc(alias = "EM_RISCV")]
 pub const MACHINE_RISCV: u16 = 243;
 
 /// `e_machine` for x86_64.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
 #[doc(alias = "EM_X86_64")]
 pub const MACHINE_X86_64: u16 = 62;
 
