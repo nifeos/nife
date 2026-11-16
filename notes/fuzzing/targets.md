@@ -88,8 +88,8 @@ sixty-second smoke run left versions 2 and 3 past the count byte in its corpus.
 
 ## `domain_name_system_reply`
 
-The real captures in `crates/domain_name_system/tests/fixtures` seed the target unmodified, and
-`script/fuzz` passes that directory read-only, as it passes every seed directory.
+The real captures in `tests/fixtures` seed the target unmodified, and the fuzz run passes that
+directory read-only, as it passes every seed directory.
 
 ## `http_response_feed`
 
