@@ -13,8 +13,7 @@ Across the 97 finished merge-queue attempts from 2026-11-15T10:38Z to 2026-11-16
 lost a Kani `prove` shard. They split in two.
 
 Sixteen jobs failed in 2.2 to 3.3 minutes. Each log carries `##[error]The runner has received a
-shutdown signal. This can happen when the runner service is stopped, or a manually started runner
-is canceled.`, then `The operation was canceled.`. Pull requests 3567, 3574, 3603, 3606, 3608,
+shutdown signal`, then `The operation was canceled`. Pull requests 3567, 3574, 3603, 3606, 3608,
 3609, 3611, 3612, 3616 and 3621 each lost one or more attempts this way. The one log read in full
 (run 43776160228, `prove (shard 1/5)`) shows the line arriving 2.7 minutes into the job, while a
 harness check was running.
@@ -27,16 +26,15 @@ No Kani proof failure appeared in any log that could be read.
 ## Why a rerun cures it
 
 The shard is idempotent. In `.github/workflows/verify.yml` a `prove` job holds `contents: read`
-and nothing more. It checks out the tree, restores the Rust cache (saved only outside a merge
-group), installs Kani, runs `script/verify --shard N/5` and prints a memory record. It writes
+and nothing more. It checks out the tree, restores the Rust cache (a merge group never saves it), installs Kani, runs `script/verify --shard N/5` and prints a memory record. It writes
 nothing that a later attempt reads, so the same shard on the same tree gives the same verdict. A
 runner taken away says nothing about the proofs. The matrix sets `fail-fast: false`, so the other
 shards still report.
 
 ## What the signature matches, and what it does not
 
-`helpers/known-flakes.tsv` lists `kani-shutdown`. Its signature is a line led by a `prove (shard
-N/M)` job name that carries `##[error]The runner has received a shutdown signal`. That is as narrow
+`helpers/known-flakes.tsv` lists `kani-shutdown`. Its signature is a line that starts with a `prove (shard
+N/M)` job name and carries `##[error]The runner has received a shutdown signal`. That is as narrow
 as the failure's own wording, and the job name scopes it to a `prove` job.
 
 - The log has to come from the whole job. `helpers/arm.sh` matches a signature against `gh run view
