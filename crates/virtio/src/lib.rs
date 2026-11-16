@@ -353,7 +353,7 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
 
     // Walk the directory, copied out of the block-0 buffer, to find "motd", then read its first
     // data block.
-    let start_block = find_file(&directory, b"motd").unwrap_or_else(|| report_code(0xE4));
+    let start_block = find_file(directory, b"motd").unwrap_or_else(|| report_code(0xE4));
     read_block(direct_memory_access_phys, start_block as u64);
 
     // Report the file's first 8 bytes. The kernel checks them against the known contents, which
@@ -393,7 +393,7 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
     let directory = data_block();
     assert!(directory[..8] == nifefs::MAGIC);
-    let scratch = find_file(&directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
+    let scratch = find_file(directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     // Write the pattern...
     for i in 0..BLOCK {
@@ -419,7 +419,7 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
     let directory = data_block();
     assert!(directory[..8] == nifefs::MAGIC);
-    assert!(find_file(&directory, b"motd").is_some());
+    assert!(find_file(directory, b"motd").is_some());
 
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
@@ -438,7 +438,7 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
     let directory = data_block();
     assert!(directory[..8] == nifefs::MAGIC);
-    let scratch = find_file(&directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
+    let scratch = find_file(directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     for i in 0..BLOCK {
         direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, 0xAB);
@@ -516,9 +516,25 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     exit();
 }
 
-/// The 512-byte block buffer, copied out of the DMA page so the parsers below read a slice.
-fn data_block() -> [u8; BLOCK] {
-    core::array::from_fn(|i| direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64))
+/// The 512-byte block buffer in the DMA page, as a slice, so the parsers below read a slice. It is
+/// a view and not a copy: a copy on the stack overflowed the driver's one-page stack in a debug
+/// build. Call it only after a request has completed, and drop the slice before the next submit,
+/// since the device writes this buffer while a read is in flight.
+fn data_block() -> &'static [u8] {
+    assert!(
+        window_access_fits(
+            DATA_OFFSET_BYTES,
+            BLOCK,
+            1,
+            DIRECT_MEMORY_ACCESS_WINDOW_BYTES
+        ),
+        "the data block lies outside the DMA page"
+    );
+    // SAFETY: the assertion above holds the buffer inside the first page of the DMA region, which
+    // is mapped read/write at region() for every role, and a `u8` slice needs no alignment. The
+    // device is idle on this buffer once the request completed, and the callers drop the slice
+    // before the next submit.
+    unsafe { core::slice::from_raw_parts((region() + DATA_OFFSET_BYTES) as *const u8, BLOCK) }
 }
 
 /// Find a file in a nifefs directory's first block, `directory`, returning its start block. The
@@ -1441,7 +1457,7 @@ mod verification {
                 .try_into()
                 .expect("four bytes"),
         );
-        assert_eq!(find_file(&directory, name), whole.then_some(start));
+        assert_eq!(find_file(directory, name), whole.then_some(start));
     }
 
     /// **A header carrying its own checksum sums to zero**: for any 20-byte header, writing the
