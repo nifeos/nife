@@ -7,8 +7,8 @@ together outgrow the page.*
 The architect reads this to clear the crate for its move to its own repository, in step 2 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` leaves it. The outside review behind it is
-[milestone 1073](../../design/roadmap/1073-counter-frequency-contract-outside-review.md), and every
-item of that review has landed or is settled.
+[milestone 1073 (`counter_frequency_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1073-counter-frequency-contract-outside-review.md),
+and every item of that review has landed or the maintainer has settled it.
 
 ## In one paragraph
 
@@ -18,8 +18,8 @@ little-endian `u64`. The crate also holds the page's fixed virtual address per a
 band of rates worth believing (100 kilohertz to 100 gigahertz), which the kernel's three boot paths
 share. It is `no_std` with no dependency of any kind, normal, build or development. Unlike the
 other contract crates, it has `unsafe`, because the reader names a raw address. Two Kani harnesses
-prove the reader's magic compare and the round trip, each with a falsification patch. Every name is
-ratified, and each unit is spelled out. No file in the crate names nife, a path in this tree or a
+prove the reader's magic compare and the round trip, each with a falsification patch. The architect ratified
+every name, and each name spells its unit out. No file in the crate names nife, a path in this tree or a
 private machine.
 
 ## Identity
@@ -115,9 +115,10 @@ the file and comment ratchets, orphan modules, markdown links and the falsificat
 pass.
 
 The template head runs more than `v7`. Over the same staged copy, every check of the head's
-standalone job passes: the vocabulary, passive voice (none in 578 README words), history phrases,
-acronyms, banned figures, the function-length ratchet, the seven naming checks, the service-model
-prose check, the README badge row, acronym order, inflated wording and section order. Clippy with
+standalone job passes. Those are the vocabulary, passive voice (none in 578 README words), history
+phrases, acronyms, banned figures and the function-length ratchet. They are also the seven naming
+checks, the service-model prose check, the README badge row, acronym order, inflated wording and
+section order. Clippy with
 warnings denied passes on stable and on 1.88, for the host with every target and for each
 bare-metal library, and so does the `--cfg kani` clippy pass. `cargo doc` with warnings denied
 passes.
