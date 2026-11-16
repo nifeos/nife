@@ -35,7 +35,7 @@ use domain_name_resolution_contract::fixture::{
     CASES, ECHO_FAILED, ECHO_NO_ADDRESS, ECHO_OK, ECHO_SKIPPED, WITH_NETWORK,
 };
 use domain_name_resolution_contract::{
-    ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE,
+    IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE,
     Outcome, endowment, request, status,
 };
 use socket_contract as socket;
@@ -93,7 +93,7 @@ fn resolve(name: &[u8]) -> (u64, u64) {
     let (word, _ttl) = call(RESOLVER, request(OPERATION_RESOLVE), name.len() as u64);
     let mut a = [0u8; 4];
     for (j, b) in a.iter_mut().enumerate() {
-        *b = RESOLVER_PAGE.read_u8((ADDRESSES_OFFSET_BYTES + j) as u64);
+        *b = RESOLVER_PAGE.read_u8((IPV4_ADDRESSES_OFFSET_BYTES + j) as u64);
     }
     (word, endowment::server(a))
 }

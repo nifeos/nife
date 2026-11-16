@@ -9,13 +9,17 @@
 /// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
 /// 255-byte wire limit is 253 characters of dotted text.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const NAME_TEXT_MAXIMUM: usize = 253;
+/// Name: provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone 1086's decision 1:
+/// a limit opens `MAXIMUM_` and ends with its unit.
+pub const MAXIMUM_NAME_TEXT_BYTES: usize = 253;
 
-/// How many addresses one answer carries back, the same bound `domain_name_system::Answer` keeps.
+/// How many IPv4 addresses one answer carries back, the same bound `domain_name_system::Answer`
+/// keeps.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_ADDRESSES: usize = 8;
+/// Name: provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone 1086's decision 1:
+/// an address that is not a memory location says which kind it is, as
+/// `domain_name_system::MAXIMUM_IPV4_ADDRESSES` does.
+pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
 ///
@@ -24,30 +28,33 @@ pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// Where the resolver writes the addresses in the client's page, four bytes each, in the order the
 /// name server gave them.
 ///
-/// Name: ratified 2026-11-14 (UTC) (#3571).
-pub const ADDRESSES_OFFSET_BYTES: usize = 0x100;
+/// Name: the `<FIELD>_OFFSET_BYTES` shape ratified 2026-11-14 (UTC) (#3571); the field's spelling
+/// `IPV4_ADDRESSES` is provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone
+/// 1086's decision 1.
+pub const IPV4_ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
 // The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
 // addresses end inside the page.
-const _: () = assert!(NAME_OFFSET_BYTES + NAME_TEXT_MAXIMUM < ADDRESSES_OFFSET_BYTES);
-const _: () = assert!(ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_ADDRESSES <= 4096);
+const _: () = assert!(NAME_OFFSET_BYTES + MAXIMUM_NAME_TEXT_BYTES < IPV4_ADDRESSES_OFFSET_BYTES);
+const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <= 4096);
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const GRANTS_MAXIMUM: usize = 8;
+/// Name: provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone 1086's decision 1:
+/// a count names the things, the limit word first.
+pub const MAXIMUM_GRANTS: usize = 8;
 
 /// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a
 /// std program at the prompt holds the network and a resolver)): empty (the root zone, any name),
 /// or labels of one to 63 bytes of `a`-`z`, `0`-`9` and `-`, joined by single dots, with no dot at
-/// either end, at most [`NAME_TEXT_MAXIMUM`] bytes in all. Lowercase only, so `Example.net` and
+/// either end, at most [`MAXIMUM_NAME_TEXT_BYTES`] bytes in all. Lowercase only, so `Example.net` and
 /// `example.net` cannot be two spellings of one ask. A manifest note's zones
 /// (`capability_manifest_note::zones`) and the installed-programs table's `grant` lines both hold
 /// to it.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const fn is_canonical_zone(zone: &[u8]) -> bool {
-    if zone.len() > NAME_TEXT_MAXIMUM {
+    if zone.len() > MAXIMUM_NAME_TEXT_BYTES {
         return false;
     }
     let mut label = 0;
@@ -96,7 +103,7 @@ pub const OPERATION_GRANT: u64 = 0x10;
 /// the second word is unused. A `CALL` is answered as a grant's last piece is ([`refusal`]). From
 /// then on the badge is denied every name, the resolver gives up the page that badge attached, and
 /// the window is free for the next grant. A spawner that outlives its clients sends one when each
-/// client ends, which is what lets a resolver serve more than [`GRANTS_MAXIMUM`] clients in its
+/// client ends, which is what lets a resolver serve more than [`MAXIMUM_GRANTS`] clients in its
 /// life (milestone 892 (a std program at the prompt holds the
 /// network and a resolver); provisional).
 ///
@@ -230,7 +237,7 @@ pub struct Outcome {
     pub status: u8,
     /// What else the status carries: a reject code, a response code, a network step, or 0.
     pub detail: u8,
-    /// How many addresses the resolver wrote at [`ADDRESSES_OFFSET_BYTES`]: 0 unless the status is OK.
+    /// How many addresses the resolver wrote at [`IPV4_ADDRESSES_OFFSET_BYTES`]: 0 unless the status is OK.
     pub count: u8,
 }
 
@@ -253,14 +260,14 @@ impl Outcome {
     /// of them set is not its reply: it is the kernel's error from a `CALL` that failed (a negative
     /// number, read as an enormous one), and decodes to `None`. So does a word the resolver cannot
     /// send: a status the [`status`] module does not define, or a count above
-    /// [`MAXIMUM_ADDRESSES`]. The bound belongs here, where every client gets it.
+    /// [`MAXIMUM_IPV4_ADDRESSES`]. The bound belongs here, where every client gets it.
     pub const fn from_word(word: u64) -> Option<Outcome> {
         if word >> 24 != 0 {
             return None;
         }
         let status = word as u8;
         let count = (word >> 16) as u8;
-        if status > status::BAD_REQUEST || count as usize > MAXIMUM_ADDRESSES {
+        if status > status::BAD_REQUEST || count as usize > MAXIMUM_IPV4_ADDRESSES {
             return None;
         }
         Some(Outcome {
@@ -310,10 +317,10 @@ mod tests {
     /// A word the resolver cannot send is refused by the contract, so no client has to clamp it.
     #[test]
     fn an_outcome_word_the_resolver_cannot_send_is_refused() {
-        let count_too_large = status::OK as u64 | (MAXIMUM_ADDRESSES as u64 + 1) << 16;
+        let count_too_large = status::OK as u64 | (MAXIMUM_IPV4_ADDRESSES as u64 + 1) << 16;
         assert_eq!(Outcome::from_word(count_too_large), None);
         assert_eq!(Outcome::from_word(255 << 16), None);
-        let at_the_limit = status::OK as u64 | (MAXIMUM_ADDRESSES as u64) << 16;
+        let at_the_limit = status::OK as u64 | (MAXIMUM_IPV4_ADDRESSES as u64) << 16;
         assert!(Outcome::from_word(at_the_limit).is_some());
         assert!(Outcome::from_word(status::BAD_REQUEST as u64).is_some());
         assert_eq!(Outcome::from_word(status::BAD_REQUEST as u64 + 1), None);

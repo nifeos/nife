@@ -32,8 +32,8 @@
 
 use abi::rights;
 use domain_name_resolution_contract::{
-    self as protocol, ADDRESSES_OFFSET_BYTES, Grants, MAXIMUM_ADDRESSES, NAME_OFFSET_BYTES,
-    NAME_TEXT_MAXIMUM, Outcome, endowment, network_step, status,
+    self as protocol, Grants, IPV4_ADDRESSES_OFFSET_BYTES, MAXIMUM_IPV4_ADDRESSES,
+    MAXIMUM_NAME_TEXT_BYTES, NAME_OFFSET_BYTES, Outcome, endowment, network_step, status,
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
 use socket_contract as socket;
@@ -63,7 +63,7 @@ const SOCKET_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 const CLIENT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00B0_0000);
 /// The last window, checked against the map at compile time like the first.
 const _: u64 =
-    address_space_layout::pair_page(CLIENT_VA + (protocol::GRANTS_MAXIMUM as u64 - 1) * PAGE_BYTES);
+    address_space_layout::pair_page(CLIENT_VA + (protocol::MAXIMUM_GRANTS as u64 - 1) * PAGE_BYTES);
 
 // SAFETY: `socket_page` maps one page read/write at SOCKET_VA before any accessor runs, and every
 // accessor is reached only after it succeeded (`socket_ready`).
@@ -88,7 +88,7 @@ struct State {
     grants: Grants,
     /// The slot of the page frame mapped in each window, while one is: what a forget unmaps and
     /// deletes.
-    attached: [Option<u64>; protocol::GRANTS_MAXIMUM],
+    attached: [Option<u64>; protocol::MAXIMUM_GRANTS],
     request: [u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [u8; TCP_REPLY_MAXIMUM],
     chunk: [u8; socket::DATA_MAXIMUM],
@@ -96,7 +96,7 @@ struct State {
 
 static mut STATE: State = State {
     grants: Grants::new(),
-    attached: [None; protocol::GRANTS_MAXIMUM],
+    attached: [None; protocol::MAXIMUM_GRANTS],
     request: [0; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [0; TCP_REPLY_MAXIMUM],
     chunk: [0; socket::DATA_MAXIMUM],
@@ -243,10 +243,10 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
 
     // Copied out before it is read, so what is judged and what is asked are the same bytes.
     let len = len as usize;
-    if len == 0 || len > NAME_TEXT_MAXIMUM + 1 {
+    if len == 0 || len > MAXIMUM_NAME_TEXT_BYTES + 1 {
         return (Outcome::of(status::BAD_NAME), 0);
     }
-    let mut text = [0u8; NAME_TEXT_MAXIMUM + 1];
+    let mut text = [0u8; MAXIMUM_NAME_TEXT_BYTES + 1];
     for (i, b) in text[..len].iter_mut().enumerate() {
         *b = page.read_u8((NAME_OFFSET_BYTES + i) as u64);
     }
@@ -269,9 +269,9 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
         Err(Fail::Rejected(reject)) => return (refused(reject), 0),
     };
     let addresses = answer.ipv4_addresses();
-    for (k, a) in addresses.iter().enumerate().take(MAXIMUM_ADDRESSES) {
+    for (k, a) in addresses.iter().enumerate().take(MAXIMUM_IPV4_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
-            page.write_u8((ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
+            page.write_u8((IPV4_ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
         }
     }
     (

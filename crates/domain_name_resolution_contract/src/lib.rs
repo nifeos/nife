@@ -6,12 +6,12 @@
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
-//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client |
-//! | [`ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
+//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`MAXIMUM_NAME_TEXT_BYTES`] bytes | the client |
+//! | [`IPV4_ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_IPV4_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
 
 //! # BUGS
 //!
-//! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`GRANTS_MAXIMUM`] at
+//! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`MAXIMUM_GRANTS`] at
 //!   once.
 //! - One zone per badge: two unrelated domains need two badges, or their common parent.
 //! - Grant messages carry eight bytes each (`RECEIVE_CAPABILITY` returns two words, one the control word),
@@ -47,7 +47,7 @@ pub use wire::*;
 
 /// The resolver's own copy of the bound, checked against the parser's, because `wire` is copied
 /// into std's PAL where `domain_name_system` cannot be named.
-const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
+const _: () = assert!(MAXIMUM_IPV4_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
 
 // =================================================================================================
 // The resolver's endowment.
