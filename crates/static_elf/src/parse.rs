@@ -67,8 +67,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// assert!(seg.is_readable() && seg.is_executable() && !seg.is_writable());
 /// assert_eq!(seg.page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_1000));
 ///
-/// // The two addresses are equal here; a loader wants the virtual one (see
-/// // `Segment::physical_address`).
+/// // Equal here; a program loader maps at the virtual one, a boot loader places at the other.
 /// assert_eq!(seg.physical_address, seg.virtual_address);
 /// ```
 #[derive(Debug, Clone, Copy)]

@@ -7,8 +7,7 @@
 /// # Examples
 ///
 /// ```
-/// use static_elf::{EXECUTABLE, Elf, Error, NATIVE_MACHINE, READABLE, WRITABLE};
-/// use static_elf::{MACHINE_AARCH64, MACHINE_X86_64};
+/// use static_elf::*;
 /// # fn image(flags: u32, entry: u64) -> Vec<u8> {
 /// #     const EHDR: usize = 64; const PHDR: usize = 56;
 /// #     let mut v = vec![0u8; EHDR + PHDR];
