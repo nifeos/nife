@@ -2,19 +2,41 @@
 name = "capability_manifest_note"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The ELF note a program carries to ask for authority, its compile-time encoder and its strict decoder"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/capability_manifest_note"
+readme = "README.md"
+keywords = ["no-std", "elf", "manifest", "capability", "kani"]
+categories = ["no-std", "no-std::no-alloc", "parsing"]
+publish = false     # held until the maintainers decide the first release
 
-[lints]
-workspace = true
+# no_std and no allocation. A program states what it needs as a `grant_plan::Manifest` constant;
+# `carry!` has the compiler encode it into an ELF note in the program's own bytes, and a loader or a
+# shell decodes that note, refusing any spelling but the one encoding.
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
 # The type a note carries. The note is `grant_plan::Manifest` in bytes, so the vocabulary is the one
-# the shell already binds lines against and the progenitor already endows from.
+# the shell already binds lines against and the loader already endows from.
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
 # The zone limits and spelling, which are the resolver's: a manifest asks for what a badge can carry.
-domain_name_resolution_contract = { path = "../domain_name_resolution_contract" }
+domain_name_resolution_contract = { version = "0.1.0", path = "../domain_name_resolution_contract" }
 
 [dev-dependencies]
-# Only to hold its note header to this crate's: the leaf crate repeats `OWNER` so it can depend on nothing.
-interfaces_note = { path = "../interfaces_note" }
+# Only to hold its note header to this crate's: that crate repeats the owner string so it can
+# depend on nothing, and a test here is what notices if the two drift.
+interfaces_note = { version = "0.1.0", path = "../interfaces_note" }
