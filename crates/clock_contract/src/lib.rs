@@ -703,6 +703,10 @@ pub mod real_time_clock {
     pub const DATA_PORT: u16 = 0x71;
 }
 
+// The Kani proofs, compiled only by `cargo kani`.
+#[cfg(kani)]
+mod verification;
+
 #[cfg(all(test, not(loom)))]
 mod tests {
     use super::*;
