@@ -12,8 +12,7 @@ fn main() {
     compile_seeded_c(&dir);
     println!("cargo::rerun-if-env-changed=NIFE_C_ARCHIVE");
     println!("cargo::rerun-if-env-changed=NIFE_C_NOTE");
-    println!("cargo::rerun-if-changed=../crates/user_mode_runtime/link.ld");
-    println!("cargo::rustc-link-arg-bins=-T{dir}/../crates/user_mode_runtime/link.ld");
+    println!("cargo::rustc-link-arg-bins=-Tlink.ld");
     println!("cargo::rustc-link-arg-bins=-u_start");
     println!("cargo::rustc-link-arg-bins=--build-id=none");
     if let Ok(archive) = std::env::var("NIFE_C_ARCHIVE") {

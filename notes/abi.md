@@ -186,8 +186,8 @@ the child's label, rides in argument register 5; notes/supervision.md has it (mi
 two forks)).
 
 The userspace side of that is two functions rather than one, and the split is not an ABI difference:
-`user_mode_runtime::receive` reads three words and `user_mode_runtime::receive_fault` reads all five, both from the same `RECEIVE`.
-`receive_fault` arrived with milestone 36 (notes/c-seam.md), the first program to want `w3`. A restart
+`user_mode_runtime::receive` reads three words and `user_mode_runtime::receive_message` reads all five, both from the same `RECEIVE`.
+The five-word read arrived with milestone 36 (notes/c-seam.md), the first program to want `w3`. A restart
 policy needs the event and the tid, but a *checker* needs the faulting address, because that is the
 only word that says where the dead thread actually pointed.
 
@@ -201,7 +201,7 @@ later without a format change: the corpse it would resume is still there.
 §10 says no ambient authority, and the object surface honors it: everything a program can *do* goes
 through a capability. There is exactly one deliberate exception, and it is a read, not a do: EL0
 can read the virtual counter (`CNTVCT_EL0`) and its frequency (`CNTFRQ_EL0`), via `user_mode_runtime::now`
-and `user_mode_runtime::cntfrq`, no syscall. The kernel opens this in `timer::initialize`
+and `user_mode_runtime::counter_hertz`, no syscall. The kernel opens this in `timer::initialize`
 (`CNTKCTL_EL1.EL0VCTEN`); without it the read traps.
 
 It is an exception made with eyes open. A monotonic counter grants no authority to *affect*

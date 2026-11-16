@@ -33,7 +33,7 @@ use e1000e::{
     DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME_BYTES, TAIL_IN_PAGE, Tails, layout,
 };
 use startup_page_contract::StartupWindow;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES, doorbell_barrier};
 
 /// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
 /// nothing sooner. The kernel rounds every timed wait up to the next scheduler tick
@@ -46,15 +46,23 @@ pub(crate) const POLL_MILLISECONDS: u64 = 1;
 static PLANE: StartupWindow = unsafe {
     StartupWindow::new(
         ::driver_process_contract::e1000e::DATA_PLANE_KIND,
-        layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE,
+        layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE_BYTES,
     )
 };
 // SAFETY: as above.
-static RECEIVE_QUEUE: StartupWindow =
-    unsafe { StartupWindow::new(::driver_process_contract::e1000e::RECEIVE_QUEUE_KIND, PAGE) };
+static RECEIVE_QUEUE: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::e1000e::RECEIVE_QUEUE_KIND,
+        PAGE_BYTES,
+    )
+};
 // SAFETY: as above.
-static TRANSMIT_QUEUE: StartupWindow =
-    unsafe { StartupWindow::new(::driver_process_contract::e1000e::TRANSMIT_QUEUE_KIND, PAGE) };
+static TRANSMIT_QUEUE: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::e1000e::TRANSMIT_QUEUE_KIND,
+        PAGE_BYTES,
+    )
+};
 
 /// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
 /// declares.
@@ -69,10 +77,10 @@ struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        mapped(&PLANE).r64(off)
+        mapped(&PLANE).read_u64(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        mapped(&PLANE).w64(off, v);
+        mapped(&PLANE).write_u64(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
         mapped(&PLANE).copy_to_slice(off, out);
@@ -87,10 +95,10 @@ struct Queues;
 
 impl Tails for Queues {
     fn set_receive_tail(&mut self, v: u32) {
-        mapped(&RECEIVE_QUEUE).w32(TAIL_IN_PAGE, v);
+        mapped(&RECEIVE_QUEUE).write_u32(TAIL_IN_PAGE, v);
     }
     fn set_transmit_tail(&mut self, v: u32) {
-        mapped(&TRANSMIT_QUEUE).w32(TAIL_IN_PAGE, v);
+        mapped(&TRANSMIT_QUEUE).write_u32(TAIL_IN_PAGE, v);
     }
     fn barrier(&mut self) {
         doorbell_barrier();
@@ -145,7 +153,8 @@ impl GigabitNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let word = mapped(&PLANE).r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
+        let word =
+            mapped(&PLANE).read_u64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
         e1000e::receive_verdict(word, MAXIMUM_FRAME_BYTES) != e1000e::ReceiveVerdict::NotYet
     }
 }

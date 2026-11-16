@@ -18,6 +18,10 @@ publish = false
 [workspace]
 
 [dependencies]
+# Delivers `link.ld` (the image layout every program links with), through its build script. Linked
+# for that and nothing else, so no source line names it.
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+
 pinned_tls_client = { path = "../pinned_tls_client" }
 # Named only to match on the refusal a test expects; already in the graph.
 rustls = { version = "0.23", default-features = false, features = ["std"] }

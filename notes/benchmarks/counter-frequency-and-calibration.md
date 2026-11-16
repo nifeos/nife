@@ -16,7 +16,7 @@ CSR runs at 4 MHz, not QEMU's 10 MHz.
 Every process that calls `now` needs the rate, with no capability to ask for, so the page is mapped
 unconditionally. `kernel::user::load` and `kernel::user::map_timebase_page` map it into the spaces
 the kernel builds. `supervision_contract::build_child_space` maps it too, and there the parent
-writes a fresh page from its own `user_mode_runtime::cntfrq_checked` reading. A parent that does
+writes a fresh page from its own `user_mode_runtime::counter_hertz_checked` reading. A parent that does
 not know the rate writes zeroes, and `CounterFrequencyPage::hertz` reads that as `None`, never a fabricated
 rate. A process spawned another way has no page, and `cntfrq` faults on the unmapped read. That is
 deliberate: dying says the rate is unknown, and a plausible number would not. A new spawn path
@@ -33,7 +33,7 @@ magnitude, to catch a division that went the wrong way rather than to police har
 
 ## 2026-09-21: the userspace counter frequency was a constant on riscv64, and what it did not reach
 
-`user_mode_runtime::cntfrq` returned a hardcoded `10_000_000` on riscv64 from the port until this
+`user_mode_runtime::counter_hertz` returned a hardcoded `10_000_000` on riscv64 from the port until this
 date. The std PAL (`sys/pal/nife/rt.rs`) carried its own copy of the same constant. QEMU `virt` runs
 its `time` CSR at exactly that rate, so the number was right on every machine the suite runs on. It
 was wrong by 2.5x on radon, whose JH7110 states 4 MHz. calef's ruling that ended it: *"We should
