@@ -10,6 +10,39 @@ name to `Heads::new`, and the program that prints a line and every program that 
 head from the same `Heads`, so both sides hold the same bytes. A head prints through `Display` and
 matches a line in place, so neither side allocates.
 
+## EXAMPLES
+
+Finding the verdict in a transcript, and deciding whether it is red:
+
+```rust
+use boot_ladder::{Heads, verdict::ParsedVerdict};
+
+let heads = Heads::new("example");
+let line = "\u{fffd} example self-test: 12 of 15 passed, 3 absent: clock, 1 FAILED: entropy";
+
+// The head is found after the noise, and the tail is read through the shared grammar.
+assert!(heads.self_test().is_in(line));
+let verdict = ParsedVerdict::in_line(heads, line).unwrap();
+assert_eq!((verdict.passed, verdict.total), (12, 15));
+assert!(verdict.is_red());
+assert_eq!(verdict.failed_names().collect::<Vec<_>>(), ["entropy"]);
+```
+
+Printing a head:
+
+```rust
+use boot_ladder::Heads;
+
+assert_eq!(Heads::new("example").banner().to_string(), "example on ");
+```
+
+## What is proven
+
+Two Kani harnesses show that a count never overflows and that a name list holds only plain names,
+whatever ASCII text arrives up to their bounds. A replayable patch in `falsifications/` turns each
+red. The tests cover the round trip of
+the verdict, the invariants of the check list, and the shape of every head.
+
 ## The matching rule
 
 A head begins a line, but a serial link may put corrupted bytes in front of it. A reader therefore
@@ -49,39 +82,6 @@ against one version reads a log from an older kernel by those entries and no oth
 ```sh
 cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
-```
-
-## What is proven
-
-Two Kani harnesses show that a count never overflows and that a name list holds only plain names,
-whatever ASCII text arrives up to their bounds. A replayable patch in `falsifications/` turns each
-red. The tests cover the round trip of
-the verdict, the invariants of the check list, and the shape of every head.
-
-## EXAMPLES
-
-Finding the verdict in a transcript, and deciding whether it is red:
-
-```rust
-use boot_ladder::{Heads, verdict::ParsedVerdict};
-
-let heads = Heads::new("example");
-let line = "\u{fffd} example self-test: 12 of 15 passed, 3 absent: clock, 1 FAILED: entropy";
-
-// The head is found after the noise, and the tail is read through the shared grammar.
-assert!(heads.self_test().is_in(line));
-let verdict = ParsedVerdict::in_line(heads, line).unwrap();
-assert_eq!((verdict.passed, verdict.total), (12, 15));
-assert!(verdict.is_red());
-assert_eq!(verdict.failed_names().collect::<Vec<_>>(), ["entropy"]);
-```
-
-Printing a head:
-
-```rust
-use boot_ladder::Heads;
-
-assert_eq!(Heads::new("example").banner().to_string(), "example on ");
 ```
 
 ## BUGS
