@@ -19,7 +19,27 @@ the pins in this directory were taken deliberately. What to do about a gap is in
 
 Pinned at upstream git commit `5d028d54f2da`; no registry carries it.
 
-**Upstream git: current.** No commits on the tracked branch since the pinned sha.
+**Upstream git: 15 non-merge commits** since the pinned sha (plus 4 merge commits, dropped), head `4d9eea223eda`.
+
+Full comparison: https://github.com/nifeos/crate-workflows/compare/5d028d54f2da8df1ac1950656a8a8d73cd4e7b4c...main
+
+- 2026-11-14 `10602beb00a` Add crate_info, the one place that says what a crate is
+- 2026-11-14 `8bf6516991b` Name the semver baseline from the crate's own release tags
+- 2026-11-14 `0c94cb1cb80` Release names the crate it releases
+- 2026-11-14 `6efb2320956` Keep two crates' calls in one run from colliding
+- 2026-11-14 `b0b28dc1d80` Hold weekly, label and settings checks to a repository of several crates
+- 2026-11-14 `ad8c7de06dc` Judge mutation by the workspace root, where cargo-mutants names files from
+- 2026-11-14 `fe1061ae3fc` Prove the two shapes: selftest calls for a workspace, lint asks both, docs
+- 2026-11-14 `33edf06b3d5` Fix the root record name, and tighten what PR 64 loosened
+- 2026-11-15 `41a3eeb2bdb` claim: issue 59, a loom job for a crate that uses loom
+- 2026-11-15 `b55a236ed82` Allow git sources on the project's organization in deny.toml
+- 2026-11-15 `cb314ef3400` Say whether a crate depends on loom, from cargo metadata
+- 2026-11-15 `083f4e5d16f` Add the loom run script and a loom fixture with three broken variants
+- 2026-11-15 `b791de04cb5` Run the loom models in proofs.yml, and prove the job in the selftest
+- 2026-11-15 `8bca63b72e3` Trim words the README and CHANGELOG repeat, to make room under the cap
+- 2026-11-15 `b004ffe064c` Require proofs / loom, and document the job and how a crate opts in
+
+Upstream has not touched any file our `include` list names.
 
 ## redoxfs
 
