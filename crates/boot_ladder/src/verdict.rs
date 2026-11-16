@@ -326,7 +326,7 @@ pub fn subject_thread(heads: Heads<'_>, line: &str) -> Option<u64> {
 /// Names are `[a-z0-9_]` words separated by single spaces. It borrows the line and allocates
 /// nothing.
 ///
-/// Name: provisional (the review in milestone 1078).
+/// Name: provisional.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ParsedVerdict<'a> {
     /// How many checks passed.
@@ -342,6 +342,8 @@ impl<'a> ParsedVerdict<'a> {
     /// **The verdict `text` holds under `heads`**, found anywhere in the line (a serial link may
     /// put bytes before the head), or `None` when the line has no verdict head or its tail is not
     /// the grammar.
+    ///
+    /// Name: provisional.
     pub fn in_line(heads: Heads<'_>, line: &'a str) -> Option<Self> {
         let at = heads.self_test().find_in(line)?.end;
         Self::parse(&line[at..])
@@ -350,6 +352,8 @@ impl<'a> ParsedVerdict<'a> {
     /// **The verdict whose tail is `tail`**, the text after the head, or `None` for anything that
     /// is not the grammar, so an unfamiliar line is left alone rather than reported as counts it
     /// never printed. Trailing white space is ignored.
+    ///
+    /// Name: provisional.
     pub fn parse(tail: &'a str) -> Option<Self> {
         let tail = tail.trim_end();
         let (passed, rest) = digits(tail)?;
@@ -372,21 +376,29 @@ impl<'a> ParsedVerdict<'a> {
     }
 
     /// How many checks the verdict says were absent: `0` when it has no absent list.
+    ///
+    /// Name: provisional.
     pub fn absent_count(&self) -> usize {
         self.absent.map_or(0, |(count, _)| count)
     }
 
     /// How many checks the verdict says failed: `0` when it has no failed list.
+    ///
+    /// Name: provisional.
     pub fn failed_count(&self) -> usize {
         self.failed.map_or(0, |(count, _)| count)
     }
 
     /// Whether the verdict carries a failed list, which is what makes it red.
+    ///
+    /// Name: provisional.
     pub fn is_red(&self) -> bool {
         self.failed.is_some()
     }
 
     /// The names the verdict lists as absent, in the order printed.
+    ///
+    /// Name: provisional.
     pub fn absent_names(&self) -> impl Iterator<Item = &'a str> + use<'a> {
         self.absent
             .map_or("", |(_, names)| names)
@@ -395,6 +407,8 @@ impl<'a> ParsedVerdict<'a> {
     }
 
     /// The names the verdict lists as failed, in the order printed.
+    ///
+    /// Name: provisional.
     pub fn failed_names(&self) -> impl Iterator<Item = &'a str> + use<'a> {
         self.failed
             .map_or("", |(_, names)| names)

@@ -208,10 +208,11 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   of item 2 except the move's scaffold; the ledger has each.
 - **Done.** The constants in `boot_ladder::kernel_half` that named the generator begin
   `TRUE_RANDOM_NUMBER_GENERATOR_`, so the check-names ruling holds across the crate.
-- **Outstanding.** Item 7's `script/lint` gate for head literals, a new lint section and so a
-  reviewed interface; item 12, which waits on milestone 972; the pass over the `self_test_program`
-  names, listed in the ledger; and the move's own files (`CHANGELOG.md`, `_typos.toml`,
-  `docs/stranger-test.md`).
+- **Outstanding.** Item 7's `script/lint` gate for head literals. It is a new lint section, so a
+  reviewed interface.
+- **Outstanding.** Item 12, which waits on milestone 972 (the boot stick's shared names are code).
+- **Outstanding.** The pass over the `self_test_program` names, listed in the ledger.
+- **Outstanding.** The move's own files: `CHANGELOG.md`, `_typos.toml` and `docs/stranger-test.md`.
 
 ## BUGS
 
