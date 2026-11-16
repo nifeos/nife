@@ -183,25 +183,24 @@ fn window_accepts_every_whole_window_its_band_holds() {
     let start: u64 = kani::any();
     let bytes: u64 = kani::any();
     kani::assume(start.is_multiple_of(PAGE) && bytes.is_multiple_of(PAGE) && bytes > 0);
-    kani::assume(start >= RUNTIME_WINDOWS.start && start < RUNTIME_WINDOWS.end);
+    kani::assume((RUNTIME_WINDOWS.start..RUNTIME_WINDOWS.end).contains(&start));
     kani::assume(bytes <= RUNTIME_WINDOWS.end - start);
     assert_eq!(window(RUNTIME_WINDOWS, start, bytes), start);
 }
 
 /// **[`window`] refuses every window its doc forbids**: an unaligned start or length, an empty one,
 /// one that wraps, or one that is not wholly inside the band.
-/// Falsification: replayable `crates/address_space_layout/falsifications/verification.window_refuses_every_window_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.window_refuses_every_malformed_or_overrunning_window.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
-fn window_refuses_every_window_its_doc_forbids() {
+fn window_refuses_every_malformed_or_overrunning_window() {
     let start: u64 = kani::any();
     let bytes: u64 = kani::any();
     let allowed = start.is_multiple_of(PAGE)
         && bytes.is_multiple_of(PAGE)
         && bytes > 0
-        && start >= RUNTIME_WINDOWS.start
-        && start < RUNTIME_WINDOWS.end
+        && (RUNTIME_WINDOWS.start..RUNTIME_WINDOWS.end).contains(&start)
         && bytes <= RUNTIME_WINDOWS.end - start;
     kani::assume(!allowed);
     window(RUNTIME_WINDOWS, start, bytes);

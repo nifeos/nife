@@ -1,4 +1,4 @@
-Falsifies `address_space_layout::verification::window_refuses_every_window_its_doc_forbids`.
+Falsifies `address_space_layout::verification::window_refuses_every_malformed_or_overrunning_window`.
 
 The defect: `window` no longer checks that the length is a whole number of pages, so an unaligned length inside the band is accepted.
 

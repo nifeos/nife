@@ -11,40 +11,6 @@ new page is placed by the table and not by choosing a number beside the others. 
 it claims is a Kani harness in the tree, and every harness carries a falsification patch that shows
 what turns it red.
 
-## The bands
-
-| band | start | end | size | what goes in it |
-|---|---|---|---|---|
-| `NULL_GUARD` | `0x0000_0000` | `0x0020_0000` | 2 MiB | nothing, ever |
-| `PAIR_PAGES` | `0x0020_0000` | `0x1000_0000` | 254 MiB | pages one builder agrees with the one program it builds, and a program's private windows |
-| `RUNTIME_WINDOWS` | `0x1000_0000` | `0x4000_0000` | 768 MiB | windows a loader or runtime places for a program |
-| `HEAP` | `0x4000_0000` | `0x5000_0000` | 256 MiB | the heap and nothing else |
-| `SERVICE_WINDOWS` | `0x5000_0000` | `0x6000_0000` | 256 MiB | large windows a service contract names |
-| `IMAGE` | `0x6000_0000` | `0x7F00_0000` | 496 MiB | the program's code and data |
-| `STACK` | `0x7F00_0000` | `0x7FFF_0000` | 16 MiB less 64 KiB | the stack, growing down; its lowest page is never mapped |
-| `PROCESS_PAGES` | `0x7FFF_0000` | `0x8000_0000` | 64 KiB | pages the kernel maps into every process unasked |
-
-The crate's root documentation, which `cargo doc --open` shows, holds the same table, the order in
-which to ask where a new page goes, and the reasons for the numbers.
-
-## Build, test and prove
-
-You need a Rust toolchain at or above the minimum version at the foot of this page (`rustup` is the
-usual way to get one) and a git checkout. From the crate root:
-
-- `cargo build` and `cargo test` run on the host and need nothing else. The tests are unit tests
-  and two doctests.
-- The crate also builds for bare metal. Add the three targets with `rustup target add
-  riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
-  `cargo build --lib --target <target>` for each.
-- The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
-  kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
-  checker, so it needs network access. After that, `cargo kani` runs all eleven harnesses in about
-  fifteen seconds on one development machine, most of it compiling. A passing run prints a long
-  list of checks, some marked `UNREACHABLE` or `SUCCESS` for standard library code, and one summary
-  line per harness; only the final `VERIFICATION:- SUCCESSFUL` and the line `Complete - 11
-  successfully verified harnesses` matter.
-
 ## What is proven
 
 Eleven Kani harnesses state the layout per address and per window:
@@ -60,7 +26,7 @@ Eleven Kani harnesses state the layout per address and per window:
   and `service_window_refuses_every_address_its_doc_forbids`: each refuses an unaligned address or
   one outside its band, so the build stops.
 - `window_accepts_every_whole_window_its_band_holds` and
-  `window_refuses_every_window_its_doc_forbids`: `window` accepts a page aligned, non-empty window
+  `window_refuses_every_malformed_or_overrunning_window`: `window` accepts a page aligned, non-empty window
   that lies wholly inside its band, and refuses an unaligned, empty, wrapping or overrunning one.
 - `check_image_places_exactly_what_the_image_band_holds`: for every pair of bounds, `check_image`
   places the image, calls it too large, or calls it outside the band, as its documentation says.
@@ -99,6 +65,40 @@ println!("{refusal}");
 // the program image is too large: it ends at 0x7f001000, past the stack's base at 0x7f000000;
 // an image may be at most 496 MiB
 ```
+
+## The bands
+
+| band | start | end | size | what goes in it |
+|---|---|---|---|---|
+| `NULL_GUARD` | `0x0000_0000` | `0x0020_0000` | 2 MiB | nothing, ever |
+| `PAIR_PAGES` | `0x0020_0000` | `0x1000_0000` | 254 MiB | pages one builder agrees with the one program it builds, and a program's private windows |
+| `RUNTIME_WINDOWS` | `0x1000_0000` | `0x4000_0000` | 768 MiB | windows a loader or runtime places for a program |
+| `HEAP` | `0x4000_0000` | `0x5000_0000` | 256 MiB | the heap and nothing else |
+| `SERVICE_WINDOWS` | `0x5000_0000` | `0x6000_0000` | 256 MiB | large windows a service contract names |
+| `IMAGE` | `0x6000_0000` | `0x7F00_0000` | 496 MiB | the program's code and data |
+| `STACK` | `0x7F00_0000` | `0x7FFF_0000` | 16 MiB less 64 KiB | the stack, growing down; its lowest page is never mapped |
+| `PROCESS_PAGES` | `0x7FFF_0000` | `0x8000_0000` | 64 KiB | pages the kernel maps into every process unasked |
+
+The crate's root documentation, which `cargo doc --open` shows, holds the same table, the order in
+which to ask where a new page goes, and the reasons for the numbers.
+
+## Build, test and prove
+
+You need a Rust toolchain at or above the minimum version at the foot of this page (`rustup` is the
+usual way to get one) and a git checkout. From the crate root:
+
+- `cargo build` and `cargo test` run on the host and need nothing else. The tests are unit tests
+  and two doctests.
+- The crate also builds for bare metal. Add the three targets with `rustup target add
+  riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
+  `cargo build --lib --target <target>` for each.
+- The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+  kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+  checker, so it needs network access. After that, `cargo kani` runs all eleven harnesses in about
+  fifteen seconds on one development machine, most of it compiling. A passing run prints a long
+  list of checks, some marked `UNREACHABLE` or `SUCCESS` for standard library code, and one summary
+  line per harness; only the final `VERIFICATION:- SUCCESSFUL` and the line `Complete - 11
+  successfully verified harnesses` matter.
 
 ## BUGS
 
