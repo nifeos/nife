@@ -1,6 +1,9 @@
 //! **What the spawner tells the name resolver**: the control words it sends through the unbadged
 //! capability, the reply's refusal reasons, and the one spelling a zone may take. No client sends
 //! these, so they stay out of the file the standard library copies (`wire`).
+//!
+//! Name: provisional, minted 2026-11-16 (UTC) by milestone/1086-resolver-contract-outside-review-items.
+//! Private: the items are re-exported at the crate root, so the module's name is not public.
 
 use super::wire::{MAXIMUM_NAME_TEXT_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE};
 #[cfg(doc)]
@@ -54,6 +57,8 @@ pub const fn is_canonical_zone(zone: &[u8]) -> bool {
 /// appends. The spawner `CALL`s the last piece of each grant, and the reply's first word says
 /// whether the grant is in force ([`Outcome`], as described at [`refusal`]). Starting at 0x10 so
 /// that no client opcode is ever also a control opcode.
+///
+/// Name: provisional. Its origin is not recorded.
 pub const OPERATION_GRANT: u64 = 0x10;
 /// **The spawner withdraws a badge's grant.** A plain `SEND` or a `CALL` through the unbadged
 /// capability, whose first word is a [`control_word`] naming the badge, with offset and total 0;
@@ -75,11 +80,15 @@ const _: () =
 
 /// A control word: `operation << 56 | offset << 48 | total << 40 | badge`, the badge in the low 32
 /// bits. `offset` and `total` are bytes of the zone's text.
+///
+/// Name: provisional. Its origin is not recorded.
 pub const fn control_word(operation: u64, offset: u8, total: u8, badge: u32) -> u64 {
     (operation << 56) | ((offset as u64) << 48) | ((total as u64) << 40) | badge as u64
 }
 
 /// A control word's `(operation, offset, total, badge)`.
+///
+/// Name: provisional. Its origin is not recorded.
 pub const fn control_fields(first_word: u64) -> (u64, u8, u8, u32) {
     (
         first_word >> 56,

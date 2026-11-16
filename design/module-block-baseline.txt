@@ -1882,7 +1882,6 @@ crates/domain_name_resolution_contract/src/wire.rs::OPEN
 
 crates/domain_name_resolution_contract/src/wire.rs::OPERATION_ATTACH_PAGE_FRAME
 
-crates/domain_name_resolution_contract/src/wire.rs::OPERATION_GRANT
 
 crates/domain_name_resolution_contract/src/wire.rs::OPERATION_RESOLVE
 
@@ -1894,9 +1893,7 @@ crates/domain_name_resolution_contract/src/wire.rs::SEND
 
 crates/domain_name_resolution_contract/src/wire.rs::SERVER_ERROR
 
-crates/domain_name_resolution_contract/src/wire.rs::control_fields
 
-crates/domain_name_resolution_contract/src/wire.rs::control_word
 
 crates/domain_name_resolution_contract/src/wire.rs::from_word
 
