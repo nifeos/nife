@@ -1,0 +1,27 @@
+# Its own workspace root, deliberately NOT a member of the nife workspace, for the reason
+# tools/glyph_atlas_generator is one: `rsext4` below is ruled for this host tool only, and its own
+# lockfile keeps it out of the graph any shipped program is built from. `script/supply-chain` finds
+# that lockfile on its own and runs cargo-deny over it; deny.toml's `wrappers` entry refuses
+# `rsext4` in any graph where something else depends on it, and the package-boundary rule refuses
+# a link to this crate from anything outside a test package (packages/ext4-oracle.package.toml).
+# `script/fmt` reaches it by --manifest-path; the CI job `ext4 read oracle` builds, lints and runs it.
+[workspace]
+
+# Name: provisional. It is the oracle of milestone 190 (ext4, read and write), and the directory
+# already carried the name. calef names things.
+[package]
+name = "ext4_oracle"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# The implementation under test. Ruled 2026-11-16 (UTC) on pull request #3639: a host-only
+# dependency of this tool, pinned exactly, in a workspace of its own, never in a nife image,
+# kernel, program or shipping lockfile. That ruling is not the §46 (thin primitives or whole
+# subsystems) ruling on whether nife ships `rsext4`, which stays open. Pinned exactly because the
+# expected results in `expected.txt` describe what 0.9.2 reads; a bump re-measures them.
+# Default features off: the reader needs no `std` integration from the crate, and the defaults
+# would add nothing the oracle reads.
+[dependencies]
+rsext4 = { version = "=0.9.2", default-features = false }

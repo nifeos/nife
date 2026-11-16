@@ -77,10 +77,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "byte_glob"
-version = "0.1.0"
-
-[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -91,7 +87,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -270,10 +266,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "grant_plan"
+name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "byte_glob",
  "program_argument_contract",
 ]
 

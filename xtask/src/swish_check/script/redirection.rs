@@ -13,7 +13,7 @@ use super::*;
 pub(super) const LINES: &[Line] = &[
     // **`uuid`, at the real prompt** (milestone 111 (a shell that can endow a child with entropy)),
     // the only gate that can run it: the progenitor places a `WRITE` view of the entropy service at
-    // `grant_plan::ENTROPY_SLOT`, and elsewhere the kernel plays the progenitor and fills a table
+    // `grant_contract::ENTROPY_SLOT`, and elsewhere the kernel plays the progenitor and fills a table
     // from slot 0 upward. The value is not asserted, since a predictable version-4 identifier is
     // drawn from nothing; the shape is. 36 characters and a newline make `1 1 37`, and a `uuid`
     // endowed with nothing leaves the file empty (its refusal goes to the second stream), so the

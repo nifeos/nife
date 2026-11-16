@@ -27,10 +27,12 @@ heap. The kernel picks the size once, in `kernel/src/capability_object.rs`; test
 
 ## Rights only narrow
 
-The one operation on the delegation path is intersection. `derive` refuses a request for rights the
-source does not hold rather than clamping it, because a loader that quietly grants less than was
-asked is a loader nobody can reason about. If delegation could widen authority, anyone could hand
-themselves the rights they were denied by passing a capability to themselves.
+The one operation on the delegation path is intersection. `Capability::delegate` holds the rule
+once: the source must hold `GRANT`, and the crate refuses a request for rights the source lacks
+instead of clamping it. A loader that quietly grants less than was asked is a loader nobody can
+reason about. `CapabilityTable::derive` and the kernel's `Delegation::derive` both call `delegate`,
+so the proof `delegation_needs_grant_and_never_widens` covers the code the kernel runs. If delegation
+could widen authority, anyone could hand themselves the rights they were denied by passing a capability to themselves.
 
 - `GRANT` is the right to pass a capability on. It makes delegation a decision rather than an
   accident. Unix has no equivalent, which is why a child inherits every fd by default and
@@ -67,7 +69,7 @@ down a budget tree never increase, and a spend-only (`GRANT`-less) budget cannot
 ## Reap and survey
 
 `reap_decision` is the whole authorization of `rendezvous::REAP`, as pure logic the kernel calls
-(`sched::reap_supervised`) before it reclaims. It takes no `Cap` and returns none, so a supervisor
+(`sched::reap_supervised`) before it reclaims. It takes no `Capability` and returns none, so a supervisor
 gains no authority by reaping. The supervision check comes first, so a live stranger and a stale
 name give the same answer. Only inside the relationship does liveness change the answer.
 
@@ -110,8 +112,8 @@ the scheduler (`kernel/src/sched/`) scans for the owning thread once. It scans o
 
 ## The proofs
 
-The Kani harnesses quantify over every input: `derive_never_widens_rights` covers all 2^32 source
-and requested rights at once. They run under `cargo kani` (`script/verify`), not `cargo test`.
+The Kani harnesses quantify over every input: `derive_never_widens_rights` and
+`delegation_needs_grant_and_never_widens` cover all 2^32 source and requested rights at once. They run under `cargo kani` (`script/verify`), not `cargo test`.
 
 The table harnesses use a three-slot table and carry `#[kani::unwind(4)]`, which is N + 1. The
 builder and the folds loop over `0..3` exactly. The sweep's bit-scan clears one occupied bit per

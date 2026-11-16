@@ -69,7 +69,7 @@ yields it, and drops one in a file that an open pull request carrying `architect
    constant or the same numbers and layout words do not fire: an identifier renamed in the
    sentence, a constant moved to another crate, `pub(crate)` widened to `pub`.
 4. **spawnproto**: a `pub const` changed in a file named `spawnproto.rs` (the wire layout
-   `crates/grant_plan/src/spawnproto.rs` documents; matched by filename rather than the one path in
+   `crates/program_table/src/spawnproto.rs` documents; matched by filename rather than the one path in
    the tree today, so a second one elsewhere is still caught). Same-value renames pair off as in
    rule 1.
 5. **decisions**: `CLAUDE.md` changed at all, or a `design/decisions/*.md` file (excluding

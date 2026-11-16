@@ -40,7 +40,7 @@ pub(super) const SLOT_GAUGE: &str = "capability slots:";
 pub(super) const SHELL_STATIC_KIBIBYTES: u64 = 80;
 
 /// **The most of the shell's budget `free`'s `Yours:` line may report in use**, in KiB: the shell's
-/// own static pages, and two job regions (`grant_plan::JOB_REGION_PAGES`, 60 pages of 4 KiB). One
+/// own static pages, and two job regions (`program_table::JOB_REGION_PAGES`, 60 pages of 4 KiB). One
 /// is `free`'s own, which its BUGS says it counts. The other is slack for a job the shell has not
 /// yet collected. A reading above is a region the shell split off and did not get back. Since
 /// milestone 933 (every job is built the way a supervised job is) the row describes the shell's

@@ -1,7 +1,7 @@
 # Leaving the central program table: every row, classified
 
 [The proposal](../1027-leaving-the-central-program-table.md) holds the end state and the order. This
-appendix classifies each row of the `programs!` table in `crates/grant_plan/src/program/catalog.rs`.
+appendix classifies each row of the `programs!` table in `crates/program_table/src/program/catalog.rs`.
 The lane read every fact here from the tree at this branch's base. A file and a symbol
 stand in for line numbers, which §277 (cite a heading or a symbol) forbids.
 

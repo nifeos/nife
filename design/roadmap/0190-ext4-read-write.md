@@ -41,9 +41,16 @@ public API:
 
 - Read. On a 640 MiB image `mke2fs` made with its defaults (3,025 entries, an extent tree of
   depth 2, an htree directory), every file read back byte-identical to what Linux wrote. Images
-  with 1 KiB and 2 KiB blocks failed to mount with an `Io` error. The test device reported
-  4,096-byte sectors, which may be the cause; the crate's own round-trip tests at those block sizes
-  pass.
+  with 1 KiB and 2 KiB blocks failed to mount because the test device reported 4,096-byte sectors,
+  which cannot hold such a block; the refusal is right and its `Io` report is not (`BUGS`).
+- Read oracle, 2026-11-16 (UTC). Seven images `mke2fs` 1.47.2 generated, of 3,060 entries each:
+  its defaults at 4, 2 and 1 KiB blocks, without `metadata_csum` at 4 and 1 KiB, with
+  `inline_data`, and without `orphan_file`. `debugfs` and `rsext4` each list every entry's kind,
+  mode, owner, links, size, four times, content, extended attributes and extents. On each image
+  that mounts, on 512-byte and 4,096-byte sectors, 3,057 entries are equal, depth-2 extent trees and
+  the htree included; the three that differ are the times `rsext4` cannot report (`BUGS`).
+  `inline_data` refuses to mount. The tables are in
+  [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
 - Write, bug 1. When a directory grows past its inline extents into a level-1 extent leaf, the
   directory's `i_blocks` comes out 16 sectors short. It reproduces at every size tried from 300 to
   3,000 entries. `e2fsck -fn` exits 4 ("i_blocks is 488, should be 504"). The directory's contents
@@ -62,7 +69,7 @@ public API:
 - Targets. It builds unchanged for nife's three targets, measured by milestone 997 (ext4
   through rsext4, under milestone 37's crash injector). Nothing has run it under nife.
 
-Not yet tested: a mount by the kernel rather than `e2fsck`, writes reordered between flushes,
+Not yet tested: a mount or a read by the kernel rather than `e2fsck` and `debugfs`, writes reordered between flushes,
 extended attribute writes, volumes over 1 GiB, concurrent callers, `orphan_file`, hostile images,
 and performance.
 
@@ -105,6 +112,13 @@ agent-written submissions is read, and followed, before the first one.
    A directory block walk ends and stays inside its block. The software CRC32C equals the bitwise
    definition. Harnesses that upstream does not want are kept here, against the crate's public
    API.
+7. Mount reports why it refused. `mount_with_services`, `device_has_error_state` and
+   `reload_after_journal_replay` map every error from `read_superblock` to a bare `Io`, so a block
+   size the device's sectors cannot hold reads as a failed read. The reproducer mounts a 1 KiB-block
+   superblock on a 4,096-byte-sector device and requires an error other than `Io`.
+8. `InodeInfo` reports whole times. Its four times are the raw 32-bit seconds fields, which drop
+   nanoseconds, times before 1970 and times past 2106; the crate already decodes all three
+   inside, and writes them.
 
 **Every issue and pull request text is shown to the architect before it is filed.** An upstream
 submission is an outward step, and the review is of the exact text, not of the idea. A fuzz finding
@@ -171,6 +185,12 @@ pull request, which carries `needs-architect` and shows, for the version it pins
 Phase 1 may start against the oracle on the host before the ruling. Nothing links `rsext4` into a
 nife image until it is given.
 
+The rule in force for the oracle, ruled 2026-11-16 (UTC) on pull request #3639: `rsext4`, pinned at
+exactly 0.9.2, is a host-only dependency of `tools/ext4_oracle`, in a workspace and lockfile of its
+own. It never enters a nife image, kernel, program or the lockfile of a shipping package. deny.toml
+refuses the crate anywhere else, and the oracle is a `test` package, so no shipping package may link
+it. That ruling is not the adoption ruling above, which stays open.
+
 ## Done when
 
 - Bugs 1 and 2 and the recovery-flag order are fixed in a crates.io release of `rsext4`, each with
@@ -207,8 +227,19 @@ nife image until it is given.
 - `e2fsck` has no Rust equivalent here. A drive damaged on nife is repaired by plugging it into
   Linux.
 - The `metadata_csum` claim about calef's drives is inferred from `mke2fs`'s default until the
-  `dumpe2fs -h` survey measures it.
-- The 1 KiB and 2 KiB mount failures are not yet explained.
+  `dumpe2fs -h` survey measures it. The read oracle covers images with and without it, and with and
+  without `metadata_csum_seed` and `orphan_file`, which `mke2fs` enables by default only from
+  e2fsprogs 1.47.0.
+- No reader can address a block smaller than the device's logical sector, so `rsext4` refuses
+  1 KiB and 2 KiB blocks on a 4,096-byte-sector device, as Linux does. It reports the refusal as a bare `Io`
+  with no context, the error a failed read gives (upstream item 7).
+- `rsext4` cannot read `inline_data`, even read-only: the mount refuses the image. `mke2fs` does
+  not enable it by default, so it matters only if a drive's `dumpe2fs -h` shows it.
+- `rsext4`'s `InodeInfo` reports each time as the 32-bit seconds field alone. A file's nanoseconds,
+  a time before 1970 and a time past 2106 read back wrong (upstream item 8), so `ext4_server` cannot
+  give a reader the time Linux wrote until that lands.
+- The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
+  could not mount a loop device.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
   round.
 
@@ -217,10 +248,16 @@ nife image until it is given.
 - **Done.** The plan: this block and its survey appendix name the crate, the measurements, the
   upstream work, our own tests and the conditions above.
 - **Outstanding.** The upstream round: the two bug fixes, the recovery-flag order, the safety
-  arguments, the cast replacement, the fuzz targets and the Kani harnesses. Each text goes to the
+  arguments, the cast replacement, the fuzz targets, the Kani harnesses, the mount's error report
+  and whole times in `InodeInfo`. Each text goes to the
   architect before anyone files it.
-- **Outstanding.** Our side: the oracle, the image corpus, the write-reordering and power-cut sweeps,
-  hostile-image fuzzing, and `ext4_server` itself.
+- **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
+  measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
+- **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
+  sector-size report as a test, and the CI job `ext4-read-oracle` on an x86_64 host.
+- **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
+  second read oracle, a volume over 1 GiB, the oracle's write half, the write-reordering and
+  power-cut sweeps, hostile-image fuzzing, and `ext4_server` itself.
 - **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
 
 ## Index row

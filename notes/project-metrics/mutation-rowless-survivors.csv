@@ -1,5 +1,4 @@
 crate,function,mutation
-allocation_cache,class,replace > with >=
 designware_ethernet,Handoff::pack,replace | with ^
 designware_ethernet,fifo_bytes,replace > with >=
 designware_ethernet,mac_conf,replace | with ^

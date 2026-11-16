@@ -45,7 +45,7 @@ an instant whose local year is negative.
 
 `date` goes through `jiff::Timestamp` and a fixed `Offset`, because jiff's span arithmetic links in its
 error formatting, and a debug build of `date` with it no longer fits the region a job is built in
-(`grant_plan::JOB_REGION_PAGES`). A `Timestamp` ends at 9999-12-30T22:00:00Z, so `date` refuses the
+(`program_table::JOB_REGION_PAGES`). A `Timestamp` ends at 9999-12-30T22:00:00Z, so `date` refuses the
 last day of year 9999, past the clock's 2100 ceiling. The timetable and the C library do civil
 arithmetic from the epoch with a `SignedDuration` and keep the whole range.
 

@@ -15,7 +15,7 @@ reading `result_ep` while that program runs.
 On the spawn endpoint, an edit to the installed-programs table is asked first, because under that
 bit no other bit of word 2 means anything. Only the owner's console sends it (`vouch`).
 
-Everything else is a spawn, in one of three shapes (`grant_plan::spawnproto`):
+Everything else is a spawn, in one of three shapes (`program_table::spawnproto`):
 
 - A normal job. `Service::spawn_job` builds the child in a region it splits off the job pool, with
   a supervision endpoint in its fault slot.
@@ -70,14 +70,14 @@ An image that hears words is a `std` program and gets a `std` region (milestone 
 program is told what to do)). The note that says which is inside frames not yet copied. So the argv
 bit sizes the region, and `endowed_image` checks that the note agrees. A directory grant rides an
 image only for bytes that hear words, and their region also holds the caretaker
-(`grant_plan::STD_REGION_PAGES`). The region is as large as the image (milestone 595 (the shell runs a `std` program);
-`IMAGE_POOL_PAGES`, `grant_plan::image_region_pages`).
+(`program_table::STD_REGION_PAGES`). The region is as large as the image (milestone 595 (the shell runs a `std` program);
+`IMAGE_POOL_PAGES`, `program_table::image_region_pages`).
 
 A vouched image is endowed with the manifest its own ELF note carries (milestone 597 (a program
-carries its manifest in an ELF note)), or `grant_plan::NO_NOTE_MANIFEST` without one. The digest
+carries its manifest in an ELF note)), or `program_table::NO_NOTE_MANIFEST` without one. The digest
 that vouched covers the note, so installing the package installed its manifest. An unvouched image
 is built only for a caller that presented the run-unvouched capability. It then gets
-`grant_plan::UNVOUCHED_MANIFEST` whatever its note asks, because an unvouched note grants nothing
+`program_table::UNVOUCHED_MANIFEST` whatever its note asks, because an unvouched note grants nothing
 (§219). Any other miss is refused with its own word, and so are bytes whose manifest forbids the
 request. An image is endowed only from what `endowed_image` decided, never from a program row, so no
 row's authority reaches it.
@@ -117,7 +117,7 @@ process domain, the inert-configuration page, randomness and the network. So are
 share views, the reboot object, a sync-only file capability and console input. A person does not
 designate any of them, so no bit on the wire carries them. The program's declaration decides, which
 keeps its dependence on each visible in what it holds. A boot without the service leaves a declaring
-child an empty slot, which is what its second stream reports. `grant_plan::image_can_carry` keeps
+child an empty slot, which is what its second stream reports. `program_table::image_can_carry` keeps
 `reboot` off every image, so only the built-in `reboot` declares it.
 
 ## A normal job's region and grants
@@ -129,7 +129,7 @@ subtree's death): a child's resources come from its supervisor's region. One rec
 the caretaker cannot outlive the grant it carries.
 
 A `std` program's region is larger, because it is also the heap; see
-`grant_plan::STD_REGION_PAGES` for why one region rather than two. It covers a caretaker too. An
+`program_table::STD_REGION_PAGES` for why one region rather than two. It covers a caretaker too. An
 installer holder is built from the image pool. Its region carries a package's staging run beside its
 heap, and the progenitor's copy of the package is carved beside it.
 
