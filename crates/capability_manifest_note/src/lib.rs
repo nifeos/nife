@@ -421,18 +421,14 @@ fn flag(d: &[u8], at: usize) -> Result<bool, Error> {
 
 /// A byte that must be zero, because the field it belongs to is absent.
 ///
-/// A plain loop rather than `iter().position`, which reaches `memchr`; the meaning is the same, and
-/// the proofs run through this function on every descriptor they choose.
+/// A loop over the indices rather than `iter().position`, which reaches `memchr`; the meaning is
+/// the same, and the proofs run through this function on every descriptor they choose.
 fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
     let field = &d[at..at + len];
-    let mut i = 0;
-    while i < field.len() {
-        if field[i] != 0 {
-            return Err(Error::BadField(at + i));
-        }
-        i += 1;
+    match (0..field.len()).find(|&i| field[i] != 0) {
+        Some(i) => Err(Error::BadField(at + i)),
+        None => Ok(()),
     }
-    Ok(())
 }
 
 /// The manifest a descriptor of any version spells, or why it spells none. Strict: whatever this
@@ -1447,8 +1443,8 @@ mod verb_tests {
     const JIG: &[VerbGrant] = Program::Jig.verbs();
     const JIG_BYTES: [u8; verbs_descriptor_bytes(JIG.len())] = encode_verbs(JIG);
 
-    /// **A program's verb table round-trips, and so does an empty one**. What a distribution writes is what the decoder reads back, entry
-    /// for entry, and the length is exactly the count's.
+    /// **A program's verb table round-trips, and so does an empty one**. What a distribution writes
+    /// is what the decoder reads back, entry for entry, and the length is exactly the count's.
     #[test]
     fn a_verb_table_round_trips() {
         assert_eq!(JIG_BYTES.len(), 8 + JIG.len() * VERB_RECORD_BYTES);
@@ -1460,6 +1456,15 @@ mod verb_tests {
             assert_eq!(v.grants_for(word), Some(want.authorities));
         }
         assert_eq!(v.grants_for(b"upgrade"), None);
+        // The iterator ends after the last verb, which `take` checks without waiting on one that
+        // never ends, and it counts down as it goes: each step leaves one fewer, the last none.
+        assert_eq!(v.iter().take(JIG.len() + 1).count(), JIG.len());
+        let mut walk = v.iter();
+        for left in (0..JIG.len()).rev() {
+            assert!(walk.next().is_some());
+            assert_eq!(walk.len(), left);
+        }
+        assert_eq!(walk.next(), None);
         let empty: [u8; verbs_descriptor_bytes(0)] = encode_verbs(&[]);
         assert!(decode_verbs(&empty).unwrap().is_empty());
     }
