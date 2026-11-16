@@ -17,9 +17,9 @@ The second port is proposed in pull request #2470 (radon's second Ethernet port,
 
 | piece | where | what it does |
 |---|---|---|
-| everything computed | `crates/designware_ethernet` | register map, descriptors, the DMA region's layout, the handoff, ring logic, MDIO, the YT8531's board settings, the controller sequences, the coherence probe and its verdict, the device-tree query. Host-tested against a simulated controller; three Kani harnesses |
+| everything computed | the `designware_ethernet` crate, in `nifeos/designware_ethernet` | register map, descriptors, the DMA region's layout, the handoff, ring logic, MDIO, the YT8531's board settings, the controller sequences, the coherence probe and its verdict, the device-tree query. Host-tested against a simulated controller; three Kani harnesses |
 | the clocks | `crates/jh7110_clock_and_reset` | the AON domain, a parent-select step, and `gmac0`'s two plans, walked by the existing `drivers/jh7110_clock_and_reset.rs` |
-| the bring-up's order | `crates/designware_ethernet`'s `bring_up` | PHY, reset, the coherence probe, rings, link, start, over a `Port`; the simulation runs it on the host |
+| the bring-up's order | the `designware_ethernet` crate's `bring_up` | PHY, reset, the coherence probe, rings, link, start, over a `Port`; the simulation runs it on the host |
 | control plane | `components/src/designware_ethernet_control.rs` | RGMII select, then `bring_up` over the first two register pages and the region; reports, exits |
 | the kernel's part | `kernel/src/user/designware_ethernet_service.rs` | finds the port, has the clock and reset server bring it up, allocates the region, spawns both processes; `net_stack` gets no MAC page |
 | data plane | `components/src/designware_ethernet_transport.rs`, inside `net_stack` | posts receive buffers, copies frames, moves the two tail pointers, polls |
