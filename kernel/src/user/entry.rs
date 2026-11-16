@@ -152,7 +152,7 @@ pub fn spawn_elf_child_builder(
         let content: u64 = elf
             .segments()
             .map(|seg| {
-                let (start, end) = seg.page_range(FRAME_SIZE);
+                let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
                 (end - start) / FRAME_SIZE
             })
             .sum::<u64>()

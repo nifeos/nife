@@ -469,7 +469,7 @@ fn a_nonsense_physical_address_is_not_a_parse_error() {
     assert_eq!(segs[0].paddr, u64::MAX);
     assert_eq!(segs[1].paddr, 0);
     // And `page_range` is the *virtual* range, which is the other half of the same trap.
-    assert_eq!(segs[0].page_range(4096), (0x40_0000, 0x40_1000));
+    assert_eq!(segs[0].page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_1000));
 }
 
 #[test]
@@ -482,7 +482,25 @@ fn page_range_covers_the_whole_segment() {
         data: &[],
     };
     // 0x400800..0x401100 spans two pages: 0x400000 and 0x401000.
-    assert_eq!(seg.page_range(4096), (0x40_0000, 0x40_2000));
+    assert_eq!(seg.page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_2000));
+}
+
+/// The same segment rounds to the page size it is given: one 16 KiB page holds what took two
+/// 4 KiB pages.
+#[test]
+fn page_range_rounds_to_the_page_size_given() {
+    let seg = Segment {
+        vaddr: 0x40_0800,
+        paddr: 0x40_0800,
+        memsz: 0x900,
+        flags: PF_R,
+        data: &[],
+    };
+    let sixteen = PageBytes::new(0x4000).unwrap();
+    assert_eq!(seg.page_range(sixteen), (0x40_0000, 0x40_4000));
+    assert_eq!(PageBytes::FOUR_KIBIBYTES.get(), 4096);
+    assert_eq!(PageBytes::new(1 << 63).map(PageBytes::get), Some(1 << 63));
+    assert_eq!(PageBytes::new(0x3000), None);
 }
 
 /// A 64-bit offset or size the target cannot hold is refused as out of bounds, never truncated

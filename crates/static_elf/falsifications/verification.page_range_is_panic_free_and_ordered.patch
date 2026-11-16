@@ -10,15 +10,15 @@ Expected to fail: the panic-free half of the claim, as an arithmetic overflow, a
 not fit. `Segment` is `pub`, so it must hold without `parse`'s guarantees.
 
 diff --git a/crates/static_elf/src/segment.rs b/crates/static_elf/src/segment.rs
-index 7fa9ab50c..230140613 100644
+index 0c8ab5f93..370c5e9e2 100644
 --- a/crates/static_elf/src/segment.rs
 +++ b/crates/static_elf/src/segment.rs
-@@ -92,7 +92,7 @@ impl Segment<'_> {
+@@ -66,7 +66,7 @@ impl Segment<'_> {
              .vaddr
              .saturating_add(self.memsz)
-             .div_ceil(page_size)
--            .saturating_mul(page_size);
-+            * page_size;
+             .div_ceil(page_bytes)
+-            .saturating_mul(page_bytes);
++            * page_bytes;
          (start, end)
      }
  }

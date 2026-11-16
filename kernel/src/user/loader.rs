@@ -63,7 +63,7 @@ fn check_image_band(elf: &Elf) -> Result<(), LoadError> {
     let mut lo = u64::MAX;
     let mut hi = 0;
     for seg in elf.segments() {
-        let (start, end) = seg.page_range(FRAME_SIZE);
+        let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
         lo = lo.min(start);
         hi = hi.max(end);
     }
@@ -97,7 +97,7 @@ pub fn load(
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (start, end) = seg.page_range(FRAME_SIZE);
+            let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
             (end - start) / FRAME_SIZE
         })
         .sum::<u64>()
@@ -224,7 +224,7 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
             Flags::user_rodata()
         };
 
-        let (start, end) = seg.page_range(FRAME_SIZE);
+        let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
         let mut va = start;
         while va < end {
             let page = space.map_new(va, flags).map_err(LoadError::Unmappable)?;

@@ -40,4 +40,4 @@ pub use machine::{MACHINE_AARCH64, MACHINE_RISCV, MACHINE_X86_64, NATIVE_MACHINE
 pub use parse::Elf;
 use parse::*;
 use segment::*;
-pub use segment::{PF_R, PF_W, PF_X, Segment};
+pub use segment::{PF_R, PF_W, PF_X, PageBytes, Segment};

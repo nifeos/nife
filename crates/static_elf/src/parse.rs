@@ -38,7 +38,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// # Examples
 ///
 /// ```
-/// use static_elf::{Elf, NATIVE_MACHINE, PF_R, PF_X};
+/// use static_elf::{Elf, NATIVE_MACHINE, PF_R, PF_X, PageBytes};
 /// fn image(flags: u32, entry: u64) -> Vec<u8> {
 ///     const EHDR: usize = 64; const PHDR: usize = 56;
 ///     let mut v = vec![0u8; EHDR + PHDR];
@@ -65,7 +65,7 @@ pub(crate) const MAXIMUM_PHNUM: usize = 64;
 /// assert_eq!(elf.entry(), 0x40_0000);
 /// let seg = elf.segments().next().unwrap();
 /// assert!(seg.is_readable() && seg.is_executable() && !seg.is_writable());
-/// assert_eq!(seg.page_range(4096), (0x40_0000, 0x40_1000));
+/// assert_eq!(seg.page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_1000));
 ///
 /// // `paddr` equals `vaddr` here; a loader wants `vaddr` (see `Segment::paddr`).
 /// assert_eq!(seg.paddr, seg.vaddr);
@@ -193,8 +193,8 @@ impl<'a> Elf<'a> {
             // No two segments may claim the same page. See `Error::SegmentsOverlap`.
             for j in 0..i {
                 if let Some(other) = self.segment_at(j)? {
-                    let (a0, a1) = seg.page_range(4096);
-                    let (b0, b1) = other.page_range(4096);
+                    let (a0, a1) = seg.page_range(PageBytes::FOUR_KIBIBYTES);
+                    let (b0, b1) = other.page_range(PageBytes::FOUR_KIBIBYTES);
                     if a0 < b1 && b0 < a1 {
                         return Err(Error::SegmentsOverlap);
                     }

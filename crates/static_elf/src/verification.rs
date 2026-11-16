@@ -46,9 +46,10 @@ fn a_passing_check_has_no_address_overflow() {
     }
 }
 
-/// **`page_range` is panic-free and ordered for any segment.** `Segment` is `pub`, so its helper
-/// must be safe on its own, without `parse`'s guarantees. For every `vaddr` and `memsz`,
-/// including the near-`u64::MAX` values a hostile file names, the saturating arithmetic neither
+/// **`page_range` is panic-free and ordered for any segment and any page size.** `Segment` is
+/// `pub`, so its helper must be safe on its own, without `parse`'s guarantees. For every `vaddr`
+/// and `memsz`, including the near-`u64::MAX` values a hostile file names, and every page size a
+/// `PageBytes` can hold (each power of two from 1 to 2^63), the saturating arithmetic neither
 /// panics nor returns an inverted range.
 /// Falsification: replayable `crates/static_elf/falsifications/verification.page_range_is_panic_free_and_ordered.patch`
 #[kani::proof]
@@ -60,6 +61,7 @@ fn page_range_is_panic_free_and_ordered() {
         flags: kani::any(),
         data: &[],
     };
-    let (start, end) = seg.page_range(4096);
+    let page_bytes = PageBytes::new(1 << (kani::any::<u8>() % 64)).unwrap();
+    let (start, end) = seg.page_range(page_bytes);
     assert!(start <= end);
 }

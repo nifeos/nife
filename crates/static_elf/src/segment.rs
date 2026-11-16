@@ -54,16 +54,62 @@ impl Segment<'_> {
         self.flags & PF_X != 0
     }
 
-    /// The page-aligned range this segment touches: `[start, end)`.
-    pub fn page_range(&self, page_size: u64) -> (u64, u64) {
-        let start = self.vaddr & !(page_size - 1);
+    /// The page-aligned range this segment touches: `[start, end)`, in pages of `page_bytes`.
+    ///
+    /// An end past `u64::MAX` saturates there, so the range is never inverted.
+    pub fn page_range(&self, page_bytes: PageBytes) -> (u64, u64) {
+        let page_bytes = page_bytes.get();
+        let start = self.vaddr & !(page_bytes - 1);
         // Saturating: `Segment` is `pub`, so this must be panic-free on a hostile `memsz` without
-        // `Elf::parse`'s overflow check.
+        // `Elf::parse`'s overflow check. `PageBytes` rules out the zero and the non-power-of-two.
         let end = self
             .vaddr
             .saturating_add(self.memsz)
-            .div_ceil(page_size)
-            .saturating_mul(page_size);
+            .div_ceil(page_bytes)
+            .saturating_mul(page_bytes);
         (start, end)
+    }
+}
+
+/// The size of a page in bytes: a nonzero power of two, checked once when the value is made.
+///
+/// A page size of zero would divide by zero in [`Segment::page_range`], and one that is not a
+/// power of two would return a range that is not page-aligned. Taking this type instead of a bare
+/// `u64` makes both impossible without a check at every call.
+///
+/// ```
+/// use static_elf::PageBytes;
+/// const FRAME: PageBytes = PageBytes::new(16384).unwrap();
+/// assert_eq!(FRAME.get(), 16384);
+/// assert_eq!(PageBytes::new(0), None);
+/// assert_eq!(PageBytes::new(3000), None);
+/// ```
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct PageBytes(u64);
+
+impl PageBytes {
+    /// A 4 KiB page, the smallest page each of aarch64, riscv64 and x86_64 maps.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    pub const FOUR_KIBIBYTES: PageBytes = PageBytes(4096);
+
+    /// `bytes` as a page size, or `None` when it is zero or not a power of two.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    pub const fn new(bytes: u64) -> Option<Self> {
+        if bytes.is_power_of_two() {
+            Some(Self(bytes))
+        } else {
+            None
+        }
+    }
+
+    /// The page size in bytes.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    pub const fn get(self) -> u64 {
+        self.0
     }
 }

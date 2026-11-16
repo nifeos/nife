@@ -640,7 +640,7 @@ fn supervised(r: &mut Report, images: &Images) {
         }
     };
     let in_code = elf.segments().any(|s| {
-        let (start, end) = s.page_range(process_builder::PAGE);
+        let (start, end) = s.page_range(process_builder::PAGE_BYTES);
         s.is_executable() && (start..end).contains(&pc)
     });
     let ok =

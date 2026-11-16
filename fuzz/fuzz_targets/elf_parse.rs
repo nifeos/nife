@@ -11,12 +11,15 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use static_elf::Elf;
+use static_elf::{Elf, PageBytes};
 
 /// The note the target looks up. Any owner and type would do: the walk refuses a malformed or
 /// duplicated note whatever it asks for, so the search exercises every segment either way.
 const NOTE_OWNER: &[u8] = b"GNU";
 const NOTE_TYPE: u32 = 1;
+
+/// The larger of the two page sizes the walk rounds segments to.
+const SIXTEEN_KIBIBYTES: PageBytes = PageBytes::new(16384).unwrap();
 
 fuzz_target!(|data: &[u8]| {
     // The shell's streaming note reader runs on bytes nobody has parsed as a program yet, so it is
@@ -50,8 +53,8 @@ fuzz_target!(|data: &[u8]| {
         // Both page sizes the tree can boot with. 4 KiB is what both ISAs use today; 16 KiB is on
         // the aarch64 roadmap and the arithmetic differs (`div_ceil` then `saturating_mul`), so
         // fuzzing only the one we ship would prove the less interesting half.
-        let _ = seg.page_range(4096);
-        let _ = seg.page_range(16384);
+        let _ = seg.page_range(PageBytes::FOUR_KIBIBYTES);
+        let _ = seg.page_range(SIXTEEN_KIBIBYTES);
         // The tail the loader must zero: `memsz` beyond `data.len()` is `.bss`. Recomputed here
         // because a segment whose `memsz` is under its `filesz` would make this wrap, and the check
         // that forbids it is in `check_segment_bounds` rather than in this type.

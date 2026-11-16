@@ -181,7 +181,7 @@ fn progenitor_address_space(
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (s, e) = seg.page_range(FRAME_SIZE);
+            let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
             (e - s) / FRAME_SIZE
         })
         .sum::<u64>()
