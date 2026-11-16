@@ -52,9 +52,8 @@ An appendix to [the milestone](../1087-domain-name-system-outside-review.md).
     one-liner over a UDP socket, or `dig +noedns` with its raw output), and the id each fixture
     carries. Door: two-way. Effort: XS.
 
-16. Callers size the TCP buffer from the UDP maximum. DONE in the crate (`MAXIMUM_TCP_MESSAGE_BYTES`,
-    provisional, and the `TcpReply::new` sentence); the test client in nife still sizes from the
-    UDP maximum and is the one open piece. Finding: `TcpReply`'s doc says the buffer
+16. Callers size the TCP buffer from the UDP maximum. DONE (`MAXIMUM_TCP_MESSAGE_BYTES`, provisional, the
+    `TcpReply::new` sentence, and the test client, whose reply buffer now holds 65,535 bytes plus the prefix). Finding: `TcpReply`'s doc says the buffer
     bounds the reply and says nothing about how large a TCP reply may be. RFC 7766 allows 65,535
     bytes. `components/src/socket_test_client.rs` line 409 gives `TcpReply` a `2 +
     MAXIMUM_UDP_MESSAGE_BYTES` buffer, so the TCP retry that the BUGS list promises for a truncated
