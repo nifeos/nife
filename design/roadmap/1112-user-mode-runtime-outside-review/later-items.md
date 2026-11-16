@@ -64,9 +64,9 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
     Change: state the direction rule instead. Effort: XS. Door: two-way.
 
 17. No wrapper for `SYSCALL_EXIT_THREAD`.
-    Finding: `abi` defines it; this crate wraps `SYSCALL_EXIT`, `SYSCALL_YIELD`,
-    `SYSCALL_CAPABILITY_DELETE` and `SYSCALL_INVOKE` and not the fifth number. Nobody has verified
-    whether any     `no_std` program needs it. The std overlay may be its only caller.
-    Evidence: `crates/abi/src/lib.rs` line 85; `src/process.rs`.
-    Change: `exit_thread() -> !` beside `exit`, or a sentence saying why not. Effort: XS. Door:
-    two-way.
+    Rule in force (2026-11-15 UTC, provisional): the crate has no `exit_thread() -> !`. It wraps
+    `SYSCALL_EXIT`, `SYSCALL_YIELD`, `SYSCALL_CAPABILITY_DELETE` and `SYSCALL_INVOKE`, and no
+    `no_std` program in `components/` needs the fifth number; only the std overlay
+    (`patches/std-nife/overlay/std/src/sys/pal/nife/rt.rs`) and `system_tests` invoke it, and each
+    traps it directly. The crate says so in the docs of `exit`. A public API nobody has verified a
+    use for is not grown; a wrapper added later is compatible. Door: two-way.

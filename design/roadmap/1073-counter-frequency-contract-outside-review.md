@@ -64,7 +64,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
 | 7, documentation a stranger reads | landed, #3556, with the review package's three move edits and its proposed items 1 and 2 |
 | 8, the template's prose gates | landed, #3556 |
 | 9, two Kani harnesses with falsification patches | landed, #3556, and the verify table has a row for the crate |
-| 10, private offset constants | held: a family decision, written up below |
+| 10, private offset constants | landed, #3571: `MAGIC_OFFSET_BYTES` and `HERTZ_OFFSET_BYTES`, under the family rule below |
 | 11, README says where the end-to-end test lives | landed, #3556 |
 | 12, `Debug` prints the address | no change, folds into the next API change |
 
@@ -225,7 +225,7 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 ## Decisions for the architect
 
-The architect froze the identity on 2026-11-11 (#3516). One item waits on a family decision.
+The architect froze the identity on 2026-11-11 (#3516). No decision is open.
 
 ### How the page crates spell their offset constants (item 10)
 
@@ -245,21 +245,25 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
   milestone's dependency on milestone 1017 stands in for that ordering.
 - `script/crate-move --dry-run` runs the pinned template's checks, not the template head's, and
   its notes say so. The dry run also runs no clippy pass, so item 2 was invisible to it, and its
-  citation check did not report the manifest comment of item 6. Both are findings against
-  `helpers/crate_move.py`, for a lane of its own.
-- The dry run's two remaining findings (`.github/pull_request_template.md` line 2 and
-  `CONTRIBUTING.md` line 23, plus four more "mentions nife" lines in `.githooks/commit-msg`,
-  `deny.toml` and `docs/stranger-test.md`) are in the template's scaffold, not in this crate, and
-  are the template's to fix.
+  citation check did not report the manifest comment of item 6. The same gap hid two more refusals
+  that the template head and stable clippy made over the staged copy: a README with no badge row,
+  and a bare `VisionFive` that nife's own `clippy.toml` accepts and the standalone copy does not.
+  Both are fixed in the crate. All of these are findings against `helpers/crate_move.py`, for a
+  lane of its own.
+- The dry run's three remaining findings (`.github/pull_request_template.md` line 2,
+  `CONTRIBUTING.md` line 23, and five "mentions nife" lines in `.githooks/commit-msg`, `deny.toml`,
+  `docs/stranger-test.md` and `rustfmt.toml`) are in the pinned `v7` scaffold, not in this crate.
+  The template head's scaffold names nife nowhere, so a move at the next template release clears
+  them.
 - Item 5 came from reading, not from a build for a 32-bit target; the fix is cheap enough to land
   without one, and the three targets the crate names are all 64-bit.
-- Nobody verified whether `proofs / kani` is green on a crate with no `#[kani::proof]`; item 9
-  removes the question.
 - The kernel's writer caches the page's physical frame on first use; if `frequency_checked` is
   `None` at that moment, every later process reads the zeroed frame (`kernel/src/user/loader.rs`
   lines 159 to 190). That is kernel behavior the kernel's own BUGS should carry, outside this
   crate, and this note records it because the crate's contract does not cover it.
-- Nobody re-ran the mutation census; the carried baseline row reads "missed 0".
+- Nobody re-ran the mutation census since both harnesses and the out-of-band test landed; the
+  carried baseline row reads "missed 0". The review package names the run, for the 08:00 to 13:00
+  UTC window.
 
 ## Follow-on
 
@@ -275,5 +279,5 @@ An outside review of `counter_frequency_contract` before it leaves this tree. It
 have landed. They cover the `std` farm's source lookup, the stable clippy failure and the BUGS
 entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
 assertion, the manifest comment and the documentation fixes. The rest are the template's prose
-gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. The identity does not change. One item waits for the
-architect: the spelling of the page crates' private offset constants, a family decision.
+gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. Item 10, the private offset constants, follows the family rule. The identity does not change, and
+the crate waits for the architect to clear its review.

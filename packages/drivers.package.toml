@@ -16,8 +16,9 @@ crates = [
 # resets the NIC and programs the rings' bases through it, and `net_stack` in the network package
 # drives the rings (milestone 494 (a driver for the network card a PC actually has)). Both link it,
 # so it is an interface rather than an internal crate.
-# `designware_ethernet` is the same contract for the JH7110's Ethernet controller (milestone 53
-# (the board's own peripherals: network and storage on real silicon)), for the same reason.
+# The crate `designware_ethernet` lives in the repository `nifeos/designware_ethernet` and is not
+# listed here. It is the same contract for the JH7110's Ethernet controller (milestone 53 (the
+# board's own peripherals: network and storage on real silicon)), for the same reason.
 # The crate `designware_mobile_storage` lives in the repository `nifeos/designware_mobile_storage`
 # and is not listed here. It is the JH7110's SD/MMC driver (milestone 53 (the board's own
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
@@ -30,7 +31,6 @@ crates = [
 # The crate `jh7110_entropy` lives in the repository `nifeos/jh7110_entropy` and is not listed here;
 # the EL0 server of the same name drives the device and stays a program below.
 interfaces = [
-    "designware_ethernet",
     # The DesignWare I2C master: the PMIC route drives it, and `driver_process_contract` carries
     # its standard-mode timing in the route's spawn words, so both link it.
     "designware_inter_integrated_circuit",

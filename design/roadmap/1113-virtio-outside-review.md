@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1062, 1069
 decision_dependencies: 46, 23
@@ -63,7 +63,7 @@ crate would be a repository nobody outside could use and that pins the SDK back 
 fix: see Decision 1. Effort: S to fold the roles into the program, L to re-cut a library. One-way:
 a repository and a published name.
 
-**2. No test can run anywhere but under QEMU, and no proof exists.** The crate has zero unit
+**2. No test can run anywhere but under QEMU, and no proof exists.** DONE (the pure logic takes slices or closures, with host tests in `tests.rs` and Kani harnesses in `verification`). The crate has zero unit
 tests, no Kani harness, and one `no_run` doctest (`:192-197`). Its pure logic is `find_file`
 (`:399-421`), `pattern_byte` (`:232-239`), `ip_checksum` (`:606-617`), `build_dhcp_discover`
 (`:723-796`) and `parse_dhcp_offer` (`:821-865`). Each reads or writes the fixed `DMA_VA` through
@@ -196,6 +196,13 @@ driver sits behind it, so the check lives where the register is read.
 Concrete example. A board whose firmware offers a version 1 block device never reaches the driver.
 The kernel's scan does not offer the slot, so nothing starts a driver for it.
 
+## Follow-on
+
+- **Outstanding.** The items in the lists above that do not read DONE, and Decision 3's driver-side
+  check, which waits for the ruling. The kernel's scan refuses a slot whose `Version` is not 2 in every
+  build, and the PCI transport answers the real configuration generation (item 6 and
+  `notes/virtio.md`).
+
 ## Done when
 
 The checks are in [the appendix](1113-virtio-outside-review/done-when.md).
@@ -206,8 +213,8 @@ The checks are in [the appendix](1113-virtio-outside-review/done-when.md).
   entry points and from `notes/virtio.md`, and did not observe it.
 - Items 6 and 13 cite specification requirements from memory; nobody has verified the section
   numbers,   and the recording lane should confirm them against virtio 1.2 before the text lands.
-- Item 14 states a performance shape and no figure. A figure needs `script/bench` on a machine
-  with the storage rows, which the review did not run.
+- Item 14's figure is the storage benchmark already recorded in `notes/benchmarks.md`; nobody ran
+  `script/bench` for this milestone.
 - The crates.io figures are one API call each at the time of the review; the `virtio` name's
   availability on crates.io rests on a single not-found response.
 - The six-copy count of the handshake constants comes from a `grep` for the magic value and

@@ -122,6 +122,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	every mutation exclusion names code that exists
 -	1	-	-	0	-	code	the shared scope/architect-label merge-base resolution
 -	1	-	-	0	-	code	a pull request skips the heavy gates unless it carries full-ci
+-	1	-	-	0	-	code	a pull request proves when it changes a Kani harness
 -	1	-	-	0	-	code	format values move with their version constants
 -	1	-	-	0	-	both	the first cut's programs declare what they link
 -	1	-	-	1	-	both	em-dashes

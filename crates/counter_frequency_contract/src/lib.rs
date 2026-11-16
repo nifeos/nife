@@ -55,7 +55,7 @@ pub const INTERFACE_ID: u64 = 9;
 
 /// **The slowest counter this crate believes**, 100 kilohertz. Far below anything real, because a
 /// false refusal on somebody's silicon turns a machine that would have run into one that will not
-/// boot: the VisionFive 2's 4 megahertz `time` register is the slowest counter met so far, and 100
+/// boot: the `VisionFive` 2's 4 megahertz `time` register is the slowest counter met so far, and 100
 /// kilohertz sits above the 32.768 kilohertz watch crystal on purpose. Anything under it is a failed
 /// measurement, not a slow part.
 ///

@@ -2,16 +2,34 @@
 name = "spin_lock"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "A no_std test-and-set spinlock whose mutual exclusion and release-to-acquire ordering are checked under the loom model checker"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "spinlock", "mutex", "loom"]
+categories = ["no-std", "embedded", "concurrency"]
+publish = false     # `false` until the release that publishes; that release deletes the line
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker and `cfg(loom)` by a loom run; neither is cargo's, so
+# without this line `-D warnings` refuses every `#[cfg(loom)]` in the ordinary lint pass.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(loom)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
 
-# Loom is a dependency of this crate ONLY under `--cfg loom`, which nothing but
-# `script/interleaving-check` sets. Cargo evaluates `cfg(loom)` as false for every real target, so a
-# normal `cargo build`, `cargo test`, `cargo clippy` or `cargo tree` never resolves it and never
-# compiles a line of it. See notes/interleaving.md for what that costs in Cargo.lock, which is the
-# one place it is visible. This is tokio's own gating pattern, for the same reason.
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]
+
+# Loom, only under `--cfg loom`, which only a model-checking run sets. Cargo evaluates `cfg(loom)`
+# as false for every real target, so a normal `cargo build`, `cargo test`, `cargo clippy` or
+# `cargo tree` never resolves it and never compiles a line of it. The lockfile still lists loom's
+# tree, which is why a lockfile beside this crate is large. This is tokio's own gating pattern.
 [target.'cfg(loom)'.dependencies]
 loom = "0.7"
