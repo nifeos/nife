@@ -236,7 +236,7 @@ def run(command, reserve_mib, interval):
                     line += "; " + ", ".join("%s %d MiB" % p for p in
                                              sorted(procs.values(), key=lambda p: -p[1]))
                 say(line)
-    watcher = threading.Thread(target=watch, daemon=True)
+    watcher = threading.Thread(target=watch)
     watcher.start()
     status = child.wait()
     done.set()
