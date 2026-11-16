@@ -35,7 +35,7 @@ fn a_new_capability_table_can_name_nothing() {
     let cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
 
     assert!(cs.is_empty());
-    for slot in 0..cs.len() as u64 {
+    for slot in 0..cs.capacity() as u64 {
         assert_eq!(cs.get(slot).err(), Some(Error::NoSuchSlot));
     }
 }
@@ -114,7 +114,7 @@ fn derive_cannot_widen_rights() {
         0,
         Capability {
             object: Obj::PageFrame(0x1000),
-            rights: Rights::READ,
+            rights: Rights::READ.union(Rights::GRANT),
         },
     )
     .unwrap();
@@ -122,7 +122,7 @@ fn derive_cannot_widen_rights() {
     // Narrowing to nothing: fine.
     assert!(cs.derive(0, 1, Rights::NONE).is_ok());
     // Same rights: fine.
-    assert!(cs.derive(0, 2, Rights::READ).is_ok());
+    assert!(cs.derive(0, 2, Rights::READ.union(Rights::GRANT)).is_ok());
 
     // **Asking for WRITE when we only hold READ.**
     assert_eq!(
@@ -165,24 +165,85 @@ fn you_cannot_delegate_what_you_do_not_hold() {
     assert_eq!(cs.derive(3, 4, Rights::READ).err(), Some(Error::NoSuchSlot));
 }
 
+/// **A capability without `GRANT` cannot be passed on, whatever is asked for.** The refusal is
+/// its own answer, distinct from asking for more than is held, and a refused derive leaves the
+/// destination slot empty.
 #[test]
-fn get_with_refuses_rights_you_do_not_have() {
+fn a_capability_without_grant_is_not_delegable() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
-    cs.put(
-        0,
-        Capability {
-            object: Obj::Console,
-            rights: Rights::READ,
-        },
-    )
-    .unwrap();
+    let source = Capability {
+        object: Obj::Console,
+        rights: Rights::READ.union(Rights::WRITE),
+    };
+    cs.put(0, source).unwrap();
 
-    assert!(cs.get_with(0, Rights::READ).is_ok());
     assert_eq!(
-        cs.get_with(0, Rights::WRITE).err(),
+        source.delegate(Rights::READ).err(),
+        Some(Error::NotDelegable)
+    );
+    assert_eq!(
+        source.delegate(Rights::NONE).err(),
+        Some(Error::NotDelegable)
+    );
+    assert_eq!(
+        cs.derive(0, 1, Rights::READ).err(),
+        Some(Error::NotDelegable)
+    );
+    assert_eq!(cs.get(1).err(), Some(Error::NoSuchSlot));
+}
+
+/// With `GRANT`, `delegate` narrows to exactly what was asked, names the same object, and refuses
+/// a right the source lacks as `CannotWiden`.
+#[test]
+fn delegate_narrows_to_what_was_asked_and_refuses_more() {
+    let source = Capability {
+        object: Obj::PageFrame(0x8000),
+        rights: Rights::READ.union(Rights::GRANT),
+    };
+    let copy = source.delegate(Rights::READ).unwrap();
+    assert_eq!(copy.object, source.object);
+    assert_eq!(copy.rights, Rights::READ);
+    assert_eq!(
+        source.delegate(Rights::WRITE).err(),
         Some(Error::CannotWiden)
     );
-    assert_eq!(cs.get_with(9, Rights::READ).err(), Some(Error::NoSuchSlot));
+}
+
+/// `iter` walks exactly the occupied slots, lowest first, and agrees with `get`.
+#[test]
+fn iter_walks_the_occupied_slots_in_order() {
+    let capability = |n| Capability {
+        object: Obj::PageFrame(n),
+        rights: Rights::READ,
+    };
+    let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
+    assert_eq!(cs.iter().count(), 0);
+    cs.put(40, capability(4)).unwrap();
+    cs.put(3, capability(1)).unwrap();
+    cs.put(63, capability(6)).unwrap();
+    cs.delete(40).unwrap();
+    let mut walk = cs.iter();
+    assert_eq!(walk.next(), Some((3, capability(1))));
+    assert_eq!(walk.next(), Some((63, capability(6))));
+    assert_eq!(walk.next(), None);
+    for (slot, held) in cs.iter() {
+        assert_eq!(cs.get(slot), Ok(held));
+    }
+}
+
+/// A specific slot that is occupied is `SlotOccupied`, and a full table is `NoFreeSlot`: two
+/// different facts.
+#[test]
+fn an_occupied_slot_is_not_a_full_table() {
+    let capability = Capability {
+        object: Obj::Console,
+        rights: Rights::READ,
+    };
+    let mut cs: CapabilityTable<Obj, 2> = CapabilityTable::new();
+    cs.insert_at(0, capability).unwrap();
+    assert_eq!(cs.insert_at(0, capability), Err(Error::SlotOccupied));
+    cs.insert_at(1, capability).unwrap();
+    assert_eq!(cs.insert(capability), Err(Error::NoFreeSlot));
 }
 
 #[test]
@@ -212,7 +273,7 @@ fn rights_arithmetic() {
     assert_eq!(Rights::ALL.intersect(Rights::READ), Rights::READ);
 }
 
-/// The four cases of §32's reap gate, spelled out as the readable companion to the symbolic
+/// The four cases of the reap gate, spelled out as the readable companion to the symbolic
 /// proofs: my corpse, my live child, another supervisor's child, an unsupervised thread (which
 /// is also what a stale tid looks like, because a name that does not resolve carries no
 /// rendezvous).
@@ -224,12 +285,12 @@ fn reap_authorizes_only_a_corpse_this_rendezvous_supervises() {
     assert_eq!(reap_decision(None, 7, true), Reap::NotSupervised);
 }
 
-/// The scoping half of §32's gate, and the reason it has a `cargo test` companion at all: a
-/// mutation run of 2026-09-19 (milestone 326) replaced `survey_includes` with a constant `true`
+/// The scoping half of the gate, and the reason it has a `cargo test` companion at all: a
+/// mutation run replaced `survey_includes` with a constant `true`
 /// and again with a constant `false`, and **both survived the whole suite**. Kani proves this
 /// predicate for every input, but `script/verify` is a different gate on a different cadence,
 /// so a build that answered "everyone is in your domain" would reach a reviewer with
-/// `script/test` green. Liveness is deliberately absent: a corpse is still in the domain, which
+/// the test suite green. Liveness is deliberately absent: a corpse is still in the domain, which
 /// is what lets `ps` show a `Dead` child its supervisor has not collected.
 #[test]
 fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
@@ -242,8 +303,7 @@ fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
 /// **Both halves of the packed high-water word, read exactly rather than as a floor.**
 ///
 /// `PEAK` is shared by every table in this binary, so a floor cannot pin either half: `>>` for
-/// `<<` in the peak half and `&` for `|` or `^` in the ceiling half survived one (milestone 326
-/// (nobody has been assigned to turn a mutation score upward)). Exactness holds because
+/// `<<` in the peak half and `&` for `|` or `^` in the ceiling half survived one. Exactness holds because
 /// `fetch_max` only raises and no other test exceeds 64 of 64 (the free-slot edge test ties it,
 /// writing the same word); a test that outgrows it fails loudly.
 #[test]
@@ -314,7 +374,7 @@ fn a_full_table_says_so() {
 }
 
 /// **`insert_at_or_above` never lands below its floor**, finds the first free slot at or above
-/// it, and is `insert` at floor 0 (milestone 812).
+/// it, and is `insert` at floor 0.
 #[test]
 fn insert_at_or_above_respects_its_floor() {
     let mut t: CapabilityTable<u8, 64> = CapabilityTable::new();
@@ -345,7 +405,7 @@ fn insert_at_or_above_respects_its_floor() {
 
 /// The rights bits are the syscall wire format: delegation names them in a register, and
 /// `from_bits` turns the register back into authority, masking off undefined bits. The exact values
-/// are pinned because milestone 85 (mutation testing over the host crates)'s mutants (`1 << 1` as
+/// are pinned because mutants (`1 << 1` as
 /// `1 >> 1`, `from_bits` using `|` instead of a mask) survived when nothing pinned them. The `ALL`
 /// union is spelled out by hand, since a right missing from `ALL` is dropped at every delegation
 /// and a check that read `ALL` to check `ALL` would pass whatever it was given.
@@ -395,10 +455,10 @@ fn insert_at_fills_exactly_the_named_slot() {
     // The other slots are still empty, so it did not spray.
     assert_eq!(cs.get(0).err(), Some(Error::NoSuchSlot));
     // Occupied refuses; out of range is a different answer, as everywhere.
-    assert_eq!(cs.insert_at(2, capability).err(), Some(Error::NoFreeSlot));
+    assert_eq!(cs.insert_at(2, capability).err(), Some(Error::SlotOccupied));
     assert_eq!(cs.insert_at(9, capability).err(), Some(Error::NoSuchSlot));
-    // len is the table's size in slots, not its population.
-    assert_eq!(cs.len(), 4);
+    // capacity is the table's size in slots, not its population.
+    assert_eq!(cs.capacity(), 4);
 }
 
 /// **The high-water mark is a mark, not a level**, which is the whole reason it exists: a boot
