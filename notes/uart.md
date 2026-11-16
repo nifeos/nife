@@ -158,7 +158,7 @@ show one stream. It holds no screen device: the pixels are `display_terminal`'s 
 
 The screen can be batched. Writes are staged into the out page, and one `OPERATION_WRITE` hands the
 batch over when a timer deadline ends the next receive. The deadline arrives through a notification
-bound to the server's thread (`receive_bound`) and `Timer::ARM`. A paint per write cost most of the
+bound to the server's thread (`receive_message`) and `Timer::ARM`. A paint per write cost most of the
 `x86_64` swish leg's time under TCG, which is what batching is for. With batching on, an ack
 promises the wire, and the screen within one window. A spawner that gives no timer or notification
 slot still gets a working console, since the first refused `ARM` drops it to one paint per write.

@@ -42,7 +42,7 @@ What a stranger may find surprising:
   `unsafe impl`, on the argument that the page has one writer before any reader exists.
 - `hertz()` answers `Some` for any page with the magic, so a page built with a rate of 0 reads as
   `Some(0)`. The crate documents a zeroed frame as "unknown", and the reader applies
-  `is_plausible` itself; `user_mode_runtime::cntfrq_checked` does.
+  `is_plausible` itself; `user_mode_runtime::counter_hertz_checked` does.
 - `PAGE_VIRTUAL_ADDRESS` exists on aarch64 too, with the `x86_64` value, although aarch64 maps no
   page and reads `CNTFRQ_EL0` instead.
 

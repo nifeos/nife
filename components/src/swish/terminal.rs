@@ -17,12 +17,12 @@ pub(super) const LINE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00b0
 // read_volatile/write_volatile loop in `stage` below, the same way [`FS_WINDOW`] collapsed the FS
 // cluster's in round 2). Constructing a window touches no memory.
 pub(super) const OUT_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(OUT_VA, user_mode_runtime::mapped_window::PAGE) };
+    unsafe { MappedWindow::new(OUT_VA, user_mode_runtime::mapped_window::PAGE_BYTES) };
 
 // SAFETY: as `OUT_WINDOW`'s, but the wiring's `LINE_VA` grant, mapped read-only, and this is what
 // collapsed the hand-rolled loop in `read_line` below.
 pub(super) const LINE_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(LINE_VA, user_mode_runtime::mapped_window::PAGE) };
+    unsafe { MappedWindow::new(LINE_VA, user_mode_runtime::mapped_window::PAGE_BYTES) };
 
 /// Print through the terminal: write the text into the shared page, CALL `OPERATION_WRITE`. The reply
 /// means the bytes are on the wire and the page is ours again.
@@ -35,7 +35,7 @@ pub(super) fn print(s: &[u8]) {
 /// Copy `n` bytes into the outgoing shared page.
 pub(super) fn stage(s: &[u8], n: usize) {
     for (i, &b) in s[..n].iter().enumerate() {
-        OUT_WINDOW.w8(i as u64, b);
+        OUT_WINDOW.write_u8(i as u64, b);
     }
 }
 

@@ -77,3 +77,29 @@ pub const SEND_THEN_EXIT: [u8; 46] = {
         0x0F, 0x05, // syscall             (EXIT)
     ]
 };
+
+#[cfg(test)]
+mod tests {
+    use super::SEND_THEN_EXIT;
+
+    #[test]
+    fn the_stub_is_not_empty_and_ends_in_a_trap() {
+        #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
+        {
+            assert_eq!(SEND_THEN_EXIT.len(), 9);
+            #[cfg(target_arch = "aarch64")]
+            assert_eq!(SEND_THEN_EXIT[8], 0xD400_0001, "svc #0");
+            #[cfg(target_arch = "riscv64")]
+            assert_eq!(SEND_THEN_EXIT[8], 0x0000_0073, "ecall");
+        }
+        #[cfg(target_arch = "x86_64")]
+        {
+            assert_eq!(&SEND_THEN_EXIT[SEND_THEN_EXIT.len() - 2..], &[0x0F, 0x05]);
+            // `mov esi, SEND` carries the method number little-endian.
+            assert_eq!(
+                u32::from_le_bytes(SEND_THEN_EXIT[6..10].try_into().unwrap()),
+                abi::rendezvous::SEND as u32
+            );
+        }
+    }
+}

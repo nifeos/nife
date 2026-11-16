@@ -30,7 +30,7 @@ use network_time_protocol::{Query, Reject, Timestamp};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    call, call_receiving, cntfrq, exit, map_page_frame, now, retype_into_page_frame,
+    call, call_receiving, counter_hertz, exit, map_page_frame, now, retype_into_page_frame,
     retype_sleeper, send, send_capability, sleep_until, yield_now,
 };
 
@@ -146,7 +146,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
         // T1 as late as it can honestly be taken: the request carries the nonce, not the send
         // time, so only one IPC lies between this reading and the datagram leaving. The server is
         // the one the wiring named in `a0`/`a1`; which server to ask is an endowment.
-        SHARED_FRAME.set_dst((server_ip as u32).to_be_bytes(), server_port as u16);
+        SHARED_FRAME.set_destination((server_ip as u32).to_be_bytes(), server_port as u16);
         let Some(t1) = stamp(local.now()) else {
             done(RPT_BAD_LOCAL_TIME, local.now(), 0);
         };
@@ -253,7 +253,7 @@ impl LocalClock {
 /// `u64` about five minutes into a boot, and the clock built on it jumps backwards by six centuries.
 /// The clock service's copy of this arithmetic carries the same note.
 fn monotonic_nanoseconds() -> u64 {
-    let freq = cntfrq();
+    let freq = counter_hertz();
     let ticks = now();
     let seconds = ticks / freq;
     let rem = ticks % freq;
@@ -289,7 +289,7 @@ fn poll_gap() {
         let ticks = abi::timer::counter_ticks_for(
             RETRY_GAP_NANOSECONDS / 1_000_000_000,
             (RETRY_GAP_NANOSECONDS % 1_000_000_000) as u32,
-            cntfrq(),
+            counter_hertz(),
         );
         if sleep_until(
             timer,
