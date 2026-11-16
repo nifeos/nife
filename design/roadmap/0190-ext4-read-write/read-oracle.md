@@ -27,7 +27,11 @@ line. The fields:
 [`tools/ext4_oracle/debugfs_manifest.py`](../../../tools/ext4_oracle/debugfs_manifest.py)
 prints the `debugfs` side. The `rsext4` side mounts read-only with journal replay off, walks
 `read_directory` from the root, and reads each file, link, attribute list and extent map through
-the crate's public API. It stays outside the tree until the architect rules on the dependency.
+the crate's public API; it is [`tools/ext4_oracle/src/main.rs`](../../../tools/ext4_oracle/src/main.rs).
+[`tools/ext4_oracle/compare.py`](../../../tools/ext4_oracle/compare.py) builds the corpus, runs both
+sides on each image at both sector sizes, and holds the outcomes to
+[`tools/ext4_oracle/expected.txt`](../../../tools/ext4_oracle/expected.txt). The CI job
+`ext4-read-oracle` runs it in every merge group, and on a pull request that touches the oracle.
 
 The tree holds 3,060 entries: 3,031 regular files, 23 directories, 5 symbolic links and a FIFO.
 They put each shape the reader must handle in front of it:
@@ -109,8 +113,9 @@ gives, with no context. Two other call sites do the same: `device_has_error_stat
 With the mapping removed, the same mount reports
 `BadSuperblock, Operation { op: "device:filesystem_geometry" }`. The crate's own
 `tests/linux_image_repro.rs` opens its images with 4,096-byte sectors, which is how the 2026-11-14
-measurement met it. A reproducer that fails on 0.9.2 and passes with the mapping removed waits
-with its draft upstream text for the architect's review, and nobody has filed either.
+measurement met it. [`tools/ext4_oracle/tests/sector_size_refusal.rs`](../../../tools/ext4_oracle/tests/sector_size_refusal.rs)
+pins 0.9.2's bare `Io`, so a release that fixes it fails the test, and the fix inverts the assertion.
+The draft upstream report waits for the architect's review, and nobody has filed it.
 
 ## What this does not measure
 

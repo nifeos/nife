@@ -185,6 +185,12 @@ pull request, which carries `needs-architect` and shows, for the version it pins
 Phase 1 may start against the oracle on the host before the ruling. Nothing links `rsext4` into a
 nife image until it is given.
 
+The rule in force for the oracle, ruled 2026-11-16 (UTC) on pull request #3639: `rsext4`, pinned at
+exactly 0.9.2, is a host-only dependency of `tools/ext4_oracle`, in a workspace and lockfile of its
+own. It never enters a nife image, kernel, program or the lockfile of a shipping package. deny.toml
+refuses the crate anywhere else, and the oracle is a `test` package, so no shipping package may link
+it. That ruling is not the adoption ruling above, which stays open.
+
 ## Done when
 
 - Bugs 1 and 2 and the recovery-flag order are fixed in a crates.io release of `rsext4`, each with
@@ -234,8 +240,6 @@ nife image until it is given.
   give a reader the time Linux wrote until that lands.
 - The read oracle compares against `debugfs`, which is libext2fs, not the Linux kernel; this host
   could not mount a loop device.
-- The oracle's `rsext4` side stays outside the tree, since adding the crate even as a host-only
-  dependency of `tools/ext4_oracle` is the adoption ruling's to give.
 - No phase is priced. The honest estimate comes after the corpus survey and the first upstream
   round.
 
@@ -249,7 +253,9 @@ nife image until it is given.
   architect before anyone files it.
 - **Done.** The read oracle's corpus and its `debugfs` side, in `tools/ext4_oracle/`, and its first
   measurement, in [the read-oracle appendix](0190-ext4-read-write/read-oracle.md).
-- **Outstanding.** Our side: the oracle's `rsext4` side in the tree and in CI, the kernel as a
+- **Done.** The oracle's `rsext4` side in the tree, its expected outcomes, the reproducer of the
+  sector-size report as a test, and the CI job `ext4-read-oracle` on an x86_64 host.
+- **Outstanding.** Our side: the oracle on aarch64 and riscv64 hosts, the kernel as a
   second read oracle, a volume over 1 GiB, the oracle's write half, the write-reordering and
   power-cut sweeps, hostile-image fuzzing, and `ext4_server` itself.
 - **Outstanding.** The adoption ruling under §46 (thin primitives or whole subsystems), which no lane can give.
