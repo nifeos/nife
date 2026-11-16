@@ -72,8 +72,9 @@ assert_eq!(Heads::new("example").banner().to_string(), "example on ");
 
 ## What is proven
 
-One Kani harness shows that reading a verdict never panics, whatever ASCII text up to its bound
-arrives. A replayable patch in `falsifications/` turns it red. The tests cover the round trip of
+Two Kani harnesses show that a count never overflows and that a name list holds only plain names,
+whatever ASCII text arrives up to their bounds. A replayable patch in `falsifications/` turns each
+red. The tests cover the round trip of
 the verdict, the invariants of the check list, and the shape of every head.
 
 ## Building and testing
