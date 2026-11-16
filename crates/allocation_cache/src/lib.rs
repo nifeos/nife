@@ -261,6 +261,9 @@ impl Cache {
 
     /// A cached block of `class`, or `None` when there is none and the caller must go to the heap.
     /// The glibc spelling is `tcache_get`.
+    ///
+    /// Name: provisional, per the maintainer's provisional ruling of 2026-11-14 on decision 2 of
+    /// the outside review: `std` and `heapless` spell a bounded stack's `pop` this way.
     #[doc(alias = "tcache_get")]
     pub fn pop(&mut self, class: Class) -> Option<NonNull<u8>> {
         let head = NonNull::new(self.heads[class.index()])?;
@@ -274,6 +277,9 @@ impl Cache {
     /// Keep `block` as a free block of `class`. Hands it back as `Err` when the class is full, and
     /// the caller should [`spill`](Self::spill) and try again, or free it to the heap. The glibc
     /// spelling is `tcache_put`.
+    ///
+    /// Name: provisional, as [`pop`](Self::pop): `std` and `heapless` spell a bounded stack's
+    /// `push` this way, with the same `Result<(), T>` on a full container.
     ///
     /// # Safety
     ///

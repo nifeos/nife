@@ -475,19 +475,14 @@ crates/address_space_layout/src/lib.rs::runtime_window
 
 crates/address_space_layout/src/lib.rs::service_window
 
-crates/allocation_cache/src/lib.rs::BATCH
 
 crates/allocation_cache/src/lib.rs::CLASSES
 
 crates/allocation_cache/src/lib.rs::Cache
 
-crates/allocation_cache/src/lib.rs::DEPTH
 
-crates/allocation_cache/src/lib.rs::GRID
 
-crates/allocation_cache/src/lib.rs::LARGEST
 
-crates/allocation_cache/src/lib.rs::MOST_CACHED_BYTES
 
 crates/allocation_cache/src/lib.rs::cached_bytes
 
@@ -497,17 +492,14 @@ crates/allocation_cache/src/lib.rs::class_bytes
 
 crates/allocation_cache/src/lib.rs::count
 
-crates/allocation_cache/src/lib.rs::drain
 
 crates/allocation_cache/src/lib.rs::new
 
-crates/allocation_cache/src/lib.rs::put
 
 crates/allocation_cache/src/lib.rs::refill
 
 crates/allocation_cache/src/lib.rs::spill
 
-crates/allocation_cache/src/lib.rs::take
 
 crates/bitmap_font/src/glyphs.rs
 
