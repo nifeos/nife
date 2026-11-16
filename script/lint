@@ -4000,6 +4000,12 @@ helpers/scope-merge-base-selftest.sh >/dev/null
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
 # lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
+# The Kani proofs also run on a pull request that adds or changes a harness (ruled 2026-11-16 UTC):
+# verify.yml's draft gate asks helpers/harness_change.py, whose rule is fixtures here over a
+# throwaway repository.
+echo "==> a pull request proves when it changes a Kani harness"
+# lint-scope: code
+python3 helpers/harness_change.py --selftest >/dev/null
 # A draft's `lint` fails and a ready one's runs the real lint: the draft gate's state step under a
 # stub gh, and the lint job's own conditions evaluated for each event (helpers/draft-lint-selftest.sh).
 helpers/draft-lint-selftest.sh >/dev/null

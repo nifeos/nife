@@ -123,6 +123,7 @@ jobs:
       run: ${{ steps.state.outputs.run }}
       prose: ${{ steps.prose.outputs.prose }}
       heavy: ${{ steps.heavy.outputs.heavy }}
+      harness: ${{ steps.harness.outputs.harness }}
     timeout-minutes: 10
     steps:
       - name: Start the job wall-time clock
@@ -187,10 +188,11 @@ jobs:
           [ -n "$base" ] && [ "$base" != "$(git rev-parse HEAD)" ] || base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
           echo "==> classifying $base..HEAD"
           python3 helpers/prose_only.py classify "$base"
-      # The proofs are heavy gates and run only in the merge queue (provisional, ruled 2026-11-03
-      # UTC; ci.yml's comment above `test-host` has the rule). On a pull request without the
-      # `full-ci` label every job below skips by condition, which reports Success, and the merge
-      # group runs them by event name whatever this step answers.
+      # The proofs are heavy gates and run in the merge queue (ci.yml's comment above `test-host`
+      # has the rule), and on a pull request that changes a harness (the next step). On a pull
+      # request without the `full-ci` label and without a harness change every job below skips by
+      # condition, which reports Success, and the merge group runs them by event name whatever
+      # these steps answer.
       - name: Does this run take the heavy gates?
         id: heavy
         if: steps.state.outputs.run != 'false'
@@ -200,6 +202,18 @@ jobs:
           FULL_CI_INPUT: ${{ inputs.full_ci }}
           GH_TOKEN: ${{ github.token }}
         run: python3 helpers/full_ci.py decide
+      # The proofs run on a pull request whose diff adds or changes a Kani harness, a
+      # falsification patch or script/verify (ruled 2026-11-16 UTC; notes/merge-queue.md). A
+      # harness too large for the runner then fails here in minutes, not in the queue. The jobs
+      # below read `harness != 'false'`, so a step that fails or never writes the output runs them.
+      - name: Does this change add or change a Kani harness?
+        id: harness
+        if: steps.state.outputs.run != 'false'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 helpers/harness_change.py decide
       # A draft or an already-tested push skips the checkout, so there is no helper to run, and
       # those runs take seconds.
       - name: Check the job's wall time against its budget
@@ -213,7 +227,7 @@ jobs:
     name: verify scope
     runs-on: ubuntu-26.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false') }}
     outputs:
       needed: ${{ steps.scope.outputs.needed }}
       base: ${{ steps.scope.outputs.base }}
@@ -288,7 +302,7 @@ jobs:
       !cancelled() &&
       needs.scope.outputs.needed == 'true' &&
       needs.gate.outputs.run != 'false' &&
-      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false')
     # The prove shards stay hosted: an owned slot runs this CPU-bound work about 1.4 to 1.9 times slower,
     # which passes the 20-minute budget. notes/owned-runners.md.
     runs-on: ubuntu-26.04
@@ -397,7 +411,7 @@ jobs:
       always() &&
       needs.scope.outputs.needed == 'true' &&
       needs.gate.outputs.run != 'false' &&
-      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false')
     runs-on: ubuntu-26.04-arm
     # The whole job is about a minute (above).
     # 25 minutes is the 20-minute budget plus margin, from milestone 721 (each merge-group CI job
@@ -443,7 +457,7 @@ jobs:
       always() &&
       needs.scope.outputs.needed == 'true' &&
       needs.gate.outputs.run != 'false' &&
-      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false')
     runs-on: ubuntu-26.04-arm
     # Cold about 3 minutes, warm under 1 (above).
     # 25 minutes is the 20-minute budget plus margin, from milestone 721 (each merge-group CI job
@@ -531,7 +545,7 @@ jobs:
       needs.scope.outputs.falsify-shards != '[]' &&
       needs.scope.outputs.falsify-shards != '' &&
       needs.gate.outputs.run != 'false' &&
-      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false')
     runs-on: ubuntu-26.04-arm
     # 30 against the 17-minute target (20 until calef's 2026-10-07 ruling on #1802): ample, for a stale weight, a cold Kani install, or one
     # record at its own 15-minute limit. A shard that needs more is a packing input to fix (the
@@ -589,7 +603,7 @@ jobs:
   falsify:
     name: re-falsify the harnesses this change can reach
     needs: [gate, scope, falsify-shard]
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false') }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
@@ -633,7 +647,7 @@ jobs:
       !cancelled() &&
       needs.gate.outputs.run != 'false' &&
       needs.gate.outputs.prose != 'true' &&
-      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false' || needs.gate.outputs.harness != 'false')
     runs-on: ubuntu-26.04
     # Reads two strings. The proving is upstream; nothing here needs a toolchain, a checkout or a
     # cache.
