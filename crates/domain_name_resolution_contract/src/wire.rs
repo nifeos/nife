@@ -28,9 +28,9 @@ pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// Where the resolver writes the addresses in the client's page, four bytes each, in the order the
 /// name server gave them.
 ///
-/// Name: the `<FIELD>_OFFSET_BYTES` shape ratified 2026-11-14 (UTC) (#3571); the field's spelling
-/// `IPV4_ADDRESSES` is provisional, decided by the maintainer on 2026-11-14 (UTC) at the
-/// crate's outside review.
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
+/// the `<FIELD>_OFFSET_BYTES` shape is the family-wide one ratified 2026-11-14 (UTC) (#3571), and
+/// the field is spelled `IPV4_ADDRESSES` as `MAXIMUM_IPV4_ADDRESSES` is.
 pub const IPV4_ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
 // The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
