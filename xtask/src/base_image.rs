@@ -1462,9 +1462,9 @@ programs = ["progenitor", "swish", "jig"]
     }
 
     fn network_note() -> Vec<u8> {
-        let manifest = grant_plan::Manifest {
+        let manifest = grant_contract::Manifest {
             network: true,
-            ..grant_plan::Program::Uptime.manifest()
+            ..program_table::Program::Uptime.manifest()
         };
         capability_manifest_note::Note::of(&manifest).0.to_vec()
     }

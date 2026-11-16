@@ -111,7 +111,7 @@ fn no_program_declares_both_a_file_and_an_input() {
 /// The id, the name and [`PROGRAM_COUNT`] are generated from one declaration (`programs!`), so
 /// this states the contract the progenitor relies on: it sizes its table by [`PROGRAM_COUNT`] and
 /// indexes it by id, so every declared id must fit, and an id nothing declares must decode to
-/// `None` rather than to a neighbour.
+/// `None` rather than to a neighbor.
 #[test]
 fn prog_id_round_trips() {
     assert!(

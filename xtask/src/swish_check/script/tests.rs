@@ -130,7 +130,7 @@ fn every_question_cue_ends_where_the_prompt_ends() {
 }
 
 /// **A job count names a program** ([`Line`]'s doc): no line may claim more jobs than it has
-/// stages whose head is something the progenitor can build, a `grant_plan::Program` or an
+/// stages whose head is something the progenitor can build, a `program_table::Program` or an
 /// installed package's path, after the `time` and `xargs` prefixes. A `caps` head is a preview
 /// and builds nothing. A bound from above only; a tag that is too low is the case no host test
 /// can see, and the transcript cannot either.
@@ -152,7 +152,9 @@ fn a_job_count_names_a_program() {
             // shell's own test (`components/src/swish.rs`, `run`).
             .filter(|head| {
                 head.contains('/')
-                    || grant_plan::Program::ALL.iter().any(|p| p.name() == *head)
+                    || program_table::Program::ALL
+                        .iter()
+                        .any(|p| p.name() == *head)
                     || INSTALLED_BY_THE_SCRIPT.contains(head)
             })
             .count();
@@ -170,7 +172,7 @@ fn every_spawnable_program_has_a_swish_check_line() {
     // Programs a transcript cannot drive, each with the reason. Empty: `SWISH_CHECK_INTERRUPTED`
     // presses `^C` for the two supervised demonstrators.
     const UNSCRIPTED: [&str; 0] = [];
-    for p in grant_plan::Program::ALL {
+    for p in program_table::Program::ALL {
         let name = p.name();
         let scripted = SWISH_CHECK_SCRIPT
             .iter()

@@ -158,8 +158,9 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
  "interfaces_note",
+ "program_table",
 ]
 
 [[package]]
@@ -241,6 +242,7 @@ dependencies = [
  "filesystem_fixture",
  "free",
  "globally_unique_identifier_partition_table",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
@@ -263,6 +265,7 @@ dependencies = [
  "pmap",
  "process_builder",
  "program_argument_contract",
+ "program_table",
  "ps",
  "screen_console",
  "slabtop",
@@ -557,6 +560,7 @@ dependencies = [
  "entropy_contract",
  "filesystem_contract",
  "filesystem_fixture",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
@@ -569,6 +573,7 @@ dependencies = [
  "nifefs",
  "primitive_benchmark_contract",
  "process_builder",
+ "program_table",
  "soak_page",
  "socket_contract",
  "startup_page_contract",
@@ -628,13 +633,22 @@ name = "glyph_atlas"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
  "filesystem_contract",
- "primitive_benchmark_contract",
+ "grant_contract",
  "program_argument_contract",
+ "program_table",
 ]
 
 [[package]]
@@ -769,8 +783,8 @@ dependencies = [
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.2.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
+version = "0.3.0-pre.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -873,6 +887,7 @@ dependencies = [
  "pci_configuration_space",
  "periodic_deadline",
  "primitive_benchmark_contract",
+ "program_table",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -1189,10 +1204,22 @@ name = "program_asks"
 version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
- "grant_plan",
+ "grant_contract",
  "installed_programs",
  "package_archive",
+ "program_table",
  "static_elf",
+]
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "grant_contract",
+ "grant_plan",
+ "primitive_benchmark_contract",
+ "program_argument_contract",
 ]
 
 [[package]]
@@ -1224,9 +1251,9 @@ dependencies = [
 
 [[package]]
 name = "r-efi"
-version = "7.1.0"
+version = "7.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0ff379dd174eec5b2cab797063a2e7592dfcf0bf0323a50eeee724ee3537f13"
+checksum = "985ede7b27e96936c369ba18787c9178af0ef38d130792fc88e936242a7071c4"
 
 [[package]]
 name = "regex-automata"
@@ -1453,8 +1480,10 @@ dependencies = [
  "documentation",
  "environment_contract",
  "filesystem_contract",
+ "grant_contract",
  "grant_plan",
  "installed_programs",
+ "program_table",
  "std_runtime_contract",
 ]
 
@@ -1494,7 +1523,7 @@ dependencies = [
  "domain_name_resolution_contract",
  "entropy_contract",
  "filesystem_contract",
- "grant_plan",
+ "grant_contract",
  "graphics_contract",
  "installed_programs",
  "interfaces_note",
@@ -1507,6 +1536,7 @@ dependencies = [
  "package_index",
  "process_builder",
  "program_asks",
+ "program_table",
  "socket_contract",
  "static_elf",
  "std_runtime_contract",
@@ -1560,6 +1590,7 @@ dependencies = [
  "environment_contract",
  "filesystem_contract",
  "filesystem_fixture",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "jiff",
@@ -1577,6 +1608,7 @@ dependencies = [
  "page_tables",
  "pgrep",
  "pmap",
+ "program_table",
  "ps",
  "socket_contract",
  "spin_lock",
@@ -1647,9 +1679,11 @@ name = "timetable"
 version = "0.1.0"
 dependencies = [
  "clock_contract",
+ "grant_contract",
  "grant_plan",
  "jiff",
  "periodic_deadline",
+ "program_table",
 ]
 
 [[package]]
@@ -1965,7 +1999,7 @@ dependencies = [
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
  "glyph_atlas",
- "grant_plan",
+ "grant_contract",
  "graphics_contract",
  "initial_ramdisk_writer",
  "installed_programs",
@@ -1975,6 +2009,7 @@ dependencies = [
  "package_archive",
  "package_index",
  "program_asks",
+ "program_table",
  "screen_console",
  "sealed_pair",
  "serial_console",
