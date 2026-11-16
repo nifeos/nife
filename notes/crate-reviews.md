@@ -26,9 +26,9 @@ Every result below comes from `main` as it stands.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because a repository exists for only six of these crates:
+workflows did not run either, because a repository exists for only seven of these crates:
 `file_allocation_table`, `non_volatile_memory_express`, `generational_table`, `e1000e`,
-`designware_mobile_storage` and `extensible_host_controller_interface`. The
+`designware_mobile_storage`, `extensible_host_controller_interface` and `designware_ethernet`. The
 stranger record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
@@ -58,7 +58,6 @@ against itself.
   Each package lists the mentions that remain, each a small edit for the move lane.
 - Harnesses and patches. In every crate, each Kani harness has exactly one falsification patch
   (the packet pairs them), and `script/crate-standalone` ran each patch and saw its harness fail.
-  `counter_frequency_contract` has no harness.
 - Units in names. The rule of 2026-11-03 spells every unit out (`_HERTZ`, not `_HZ`). A release
   review re-opens a name ratified before a later rule.
 
@@ -74,11 +73,11 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`generational_table`](crate-reviews/generational-table.md) | 4 | cleared to move; repository exists |
 | [`non_volatile_memory_express`](crate-reviews/non-volatile-memory-express.md) | 5 | cleared to move; repository exists |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
-| [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; the move waits for the template gates |
+| [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; repository exists |
 | [`designware_mobile_storage`](crate-reviews/designware-mobile-storage.md) | 8 | cleared to move; repository exists |
 | [`jh7110_clock_and_reset`](crate-reviews/jh7110-clock-and-reset.md) | 10 | cleared to move; the move waits for the template gates |
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
-| [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by three text edits |
+| [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |

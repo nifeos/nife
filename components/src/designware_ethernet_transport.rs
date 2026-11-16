@@ -2,7 +2,7 @@
 //! peripherals: network and storage on real silicon); notes/designware-ethernet.md).
 //!
 //! `e1000e_transport.rs`'s shape for radon: the volatile shell around
-//! `crates/designware_ethernet`'s [`DataPlane`], which is two windows and a barrier. The ring
+//! the `designware_ethernet` crate's [`DataPlane`], which is two windows and a barrier. The ring
 //! logic, the descriptor formats and the judgment of every word the device writes are in the
 //! crate, host-tested against a simulated controller. The kernel already brought the port up,
 //! measured that its DMA is coherent, and started both channels with nothing available

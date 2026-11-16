@@ -1,16 +1,32 @@
 #![no_std]
-//! A virtio driver, block and net, at EL0.
+//! The roles of one virtio driver program, which runs at EL0 (exception level 0, user mode) and
+//! drives one virtio-blk or virtio-net device. It is not a general-purpose library: each entry
+//! point takes the DMA (direct memory access) page's physical address from a `_start`, drives the
+//! device for one role, and returns `!`.
 //!
-//! The kernel hands the process a DMA page, an `Interrupt` capability (slot 1) and a `Virtio`
-//! transport
-//! capability (slot 2); the device registers are not mapped, so every access goes through the
-//! kernel, which confines the device to the DMA page. Modern virtio-mmio (version 2), virtio 1.x
-//! sections 4.2 (MMIO), 5.1 (net) and 5.2 (block).
+//! - [`run`], [`run_write`] and [`run_write_abandon`] are one-shot block test roles: read a file,
+//!   write and read back a block, and die mid-write.
+//! - [`run_attack`] and [`run_attack_indirect`] are attackers: each aims a descriptor at kernel
+//!   memory and reports whether the kernel refused it.
+//! - [`run_net`] is a one-shot virtio-net role: a DHCP (Dynamic Host Configuration Protocol)
+//!   DISCOVER out and an OFFER back.
+//! - [`run_blk_server`] is the long-lived block server that the filesystem server reads and writes
+//!   disk blocks through.
 //!
-//! Every entry point drives a device and returns `!`, so the example on [`run`] is `no_run`; the
-//! checkable parts of this subsystem are `direct_memory_access_validator` and
-//! `filesystem_contract`. See notes/virtio.md ("The driver crate") and notes/dma.md.
-
+//! The one-shot roles report to the kernel's test on slot 0; the table beside `report_code` lists
+//! the codes. On a mediated grant the kernel hands the process the DMA page, an `Interrupt`
+//! capability (slot 1) and a `Virtio` transport capability (slot 2); the device registers are not
+//! mapped, so every access goes through the kernel, which confines the device to the DMA page. On a
+//! direct grant the driver drives a virtio-pci function itself and the IOMMU (Input-Output Memory
+//! Management Unit) confines the device; [`direct`] answers the same register vocabulary, so every
+//! role runs unchanged on either grant. Modern virtio-mmio (version 2), virtio 1.x sections 4.2
+//! (MMIO), 5.1 (net) and 5.2 (block).
+//!
+//! Every entry point drives a device, so the example on [`run`] is `no_run`. What can be checked
+//! without one is pure and host-tested here: the accessors' window check, the descriptor chain,
+//! the completion wait's bound, the configuration read's generation bracket, the directory lookup,
+//! the DHCP frames and the Internet Protocol header checksum. The ring layout's proof is in
+//! `direct_memory_access_validator`. See notes/virtio.md ("The driver crate") and notes/dma.md.
 //!
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
@@ -51,6 +67,16 @@ const DRIVER_FEATURES_SEL: u64 = 0x024;
 const INTERRUPT_STATUS: u64 = 0x060;
 const INTERRUPT_ACK: u64 = 0x064;
 const STATUS: u64 = 0x070;
+/// (`ConfigGeneration`, virtio 1.2 section 4.2.2) The configuration generation: the device changes
+/// it whenever the device-specific configuration changes, so a multi-word configuration read is
+/// consistent when it reads the same value before and after. Name: provisional.
+///
+/// BUGS: the kernel's mediated Peripheral Component Interconnect (PCI) transport answers 0 for
+/// this offset (`kernel/src/virtio.rs`), so on that grant the bracket in [`capacity_sectors`]
+/// always holds and checks nothing. The mmio transport and the direct grant ([`direct`]) read the
+/// device's real generation.
+#[doc(alias = "ConfigGeneration")]
+const CONFIGURATION_GENERATION: u64 = 0x0fc;
 
 // Status bits.
 const S_ACKNOWLEDGE: u32 = 1;
@@ -94,6 +120,13 @@ const VIRTIO_BLK_T_FLUSH: u32 = 4;
 const F_FLUSH_LO: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
+// BUGS: `QSIZE` and the three ring offsets below, and the net queues' 0x200 stride, restate the
+// layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
+// `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
+// change to the proved layout would leave this driver on the wrong offsets until a QEMU test
+// failed. The fix is to move the constants to `abi::virtio`, where this crate, the kernel and the
+// validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
+// before it leaves this tree) decides.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QSIZE = 128 bytes
 const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QSIZE
 const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QSIZE
@@ -227,6 +260,17 @@ fn reset_device() {
     );
 }
 
+/// The high feature word the driver acknowledges, given the word the device offered: `VERSION_1`
+/// and, only if offered, `ACCESS_PLATFORM`. `None` when the device does not offer `VERSION_1`: the
+/// specification forbids a driver to accept a feature the device did not offer, and a device
+/// without it is not a modern device this driver can drive.
+fn acknowledged_high_features(device_high: u32) -> Option<u32> {
+    if device_high & F_VERSION_1_HI == 0 {
+        return None;
+    }
+    Some(F_VERSION_1_HI | (device_high & F_ACCESS_PLATFORM_HI))
+}
+
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
 /// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
@@ -241,6 +285,8 @@ fn initialize() {
 /// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
 /// bit was negotiated. See notes/virtio.md ("Feature negotiation").
 fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
+    // The driver checks the magic and not `Version`: the kernel offers only modern (version 2)
+    // devices on either bus, so a `Version` check here would test what the kernel already tested.
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
     reset_device();
@@ -258,14 +304,12 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
         driver_features_lo | if flush { F_FLUSH_LO } else { 0 },
     );
 
-    // The high word: VERSION_1 always, ACCESS_PLATFORM only if offered, so the ack stays a subset
-    // of the offer.
+    // The high word: VERSION_1 (refused when not offered), ACCESS_PLATFORM only if offered, so
+    // the ack stays a subset of the offer.
     mw(DEVICE_FEATURES_SEL, 1);
     let dev_hi = mr(DEVICE_FEATURES);
-    let mut ack_hi = F_VERSION_1_HI;
-    if dev_hi & F_ACCESS_PLATFORM_HI != 0 {
-        ack_hi |= F_ACCESS_PLATFORM_HI;
-    }
+    let ack_hi = acknowledged_high_features(dev_hi)
+        .expect("the device does not offer VIRTIO_F_VERSION_1, so it is not a modern device");
     mw(DRIVER_FEATURES_SEL, 1);
     mw(DRIVER_FEATURES, ack_hi);
 
@@ -293,7 +337,6 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 /// arrives as an argument.
 ///
 /// ```no_run
-/// # use user_mode_runtime::exit;
 /// fn start(direct_memory_access_phys: u64) -> ! {
 ///     virtio::run(direct_memory_access_phys)
 /// }
@@ -305,15 +348,12 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     read_block(direct_memory_access_phys, 0);
 
     // It must be a nifefs image.
-    let mut magic = [0u8; 8];
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
 
-    // Walk the directory, still in the block-0 buffer, to find "motd", then read its first data
-    // block.
-    let start_block = find_file(b"motd").unwrap_or_else(|| report_code(0xE4));
+    // Walk the directory, copied out of the block-0 buffer, to find "motd", then read its first
+    // data block.
+    let start_block = find_file(directory, b"motd").unwrap_or_else(|| report_code(0xE4));
     read_block(direct_memory_access_phys, start_block as u64);
 
     // Report the file's first 8 bytes. The kernel checks them against the known contents, which
@@ -351,12 +391,9 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
 
     // The directory tells us where scratch lives; nothing about the sector is hardcoded.
     read_block(direct_memory_access_phys, 0);
-    let mut magic = [0u8; 8];
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
-    let scratch = find_file(b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
+    let scratch = find_file(directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     // Write the pattern...
     for i in 0..BLOCK {
@@ -380,11 +417,9 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
     // The write must have landed on ITS block and nothing else: the superblock still parses and
     // the read-path file is still in the directory.
     read_block(direct_memory_access_phys, 0);
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
-    assert!(find_file(b"motd").is_some());
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
+    assert!(find_file(directory, b"motd").is_some());
 
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
@@ -401,12 +436,9 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
     initialize();
 
     read_block(direct_memory_access_phys, 0);
-    let mut magic = [0u8; 8];
-    for (i, b) in magic.iter_mut().enumerate() {
-        *b = direct_memory_access_read::<u8>(DATA_OFFSET_BYTES + i as u64);
-    }
-    assert!(magic == nifefs::MAGIC);
-    let scratch = find_file(b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
+    let directory = data_block();
+    assert!(directory[..8] == nifefs::MAGIC);
+    let scratch = find_file(directory, b"scratch").unwrap_or_else(|| report_code(0xE6)) as u64;
 
     for i in 0..BLOCK {
         direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, 0xAB);
@@ -421,30 +453,26 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
 /// the device to write there. The kernel validates the descriptor on submit and refuses, so the
 /// device is never told to go and never touches the address. Reports 1 if the kernel refused
 /// (correct), 0 if the notify went through (a hole). Used by the security test.
-pub fn run_attack(direct_memory_access_phys: u64) -> ! {
+pub fn run_attack(_direct_memory_access_phys: u64) -> ! {
     initialize();
 
     // The forbidden target: the kernel's own image, which the device would happily DMA over if it
     // were ever handed this address.
     const KERNEL_ADDR: u64 = 0xffff_0000_4008_0000;
 
-    // A single descriptor pointing OUTSIDE our DMA region, marked device-writable.
-    write_desc(0, KERNEL_ADDR, 512, VIRTQ_DESC_F_WRITE, 0);
+    // A single descriptor pointing OUTSIDE our DMA region, marked device-writable. The kernel walks
+    // it on submit, sees KERNEL_ADDR is outside our region, and refuses.
+    let refused = submit(
+        &BLOCK_QUEUE,
+        &[Descriptor {
+            physical_address: KERNEL_ADDR,
+            length_bytes: 512,
+            flags: VIRTQ_DESC_F_WRITE,
+        }],
+    )
+    .is_none();
+    send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
-    // Submit. The kernel walks the descriptor, sees KERNEL_ADDR is outside our region, and refuses.
-    let r = notify(VIRTIO, 0);
-    send(REPORT, if r < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (good), 0 = it went through (bad)
-
-    let _ = direct_memory_access_phys;
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
     // (notes/virtio.md).
     exit();
@@ -470,152 +498,273 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     direct_memory_access_write::<u16>(REQUEST_HEADER_OFFSET_BYTES + 14, 0); // inner desc next
 
     // desc[0]: flagged INDIRECT, pointing at the in-region table above. Wholly in-region, so only
-    // the INDIRECT handling stands between this and a kernel-memory DMA.
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_INDIRECT,
-        0,
-    );
+    // the INDIRECT handling stands between this and a kernel-memory DMA. The kernel refuses the
+    // indirect descriptor and never rings the device.
+    let refused = submit(
+        &BLOCK_QUEUE,
+        &[Descriptor {
+            physical_address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
+            length_bytes: 16,
+            flags: VIRTQ_DESC_F_INDIRECT,
+        }],
+    )
+    .is_none();
+    send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
-    // The kernel refuses the indirect descriptor and never rings the device.
-    let r = notify(VIRTIO, 0);
-    send(REPORT, if r < 0 { 1 } else { 0 }, 0, 0); // 1 = refused (good), 0 = it went through (bad)
-
-    let _ = direct_memory_access_phys;
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
     // (notes/virtio.md).
     exit();
 }
 
-/// Find a file in the nifefs directory sitting in the block-0 buffer, returning its start
-/// block. The format is `nifefs`'s and the offsets come from that crate rather than being
-/// restated here: header (magic 8, count u32), then entries of
-/// { name\[`NAME_LEN`\], `start_block` u32, len u32 }.
-///
-/// Only the `nifefs::ENTRIES_IN_FIRST_BLOCK` entries inside block 0 are visible; reading further
-/// would read past the DMA data buffer. The disk this walks holds three files.
-fn find_file(name: &[u8]) -> Option<u32> {
-    let count = direct_memory_access_read::<u32>(DATA_OFFSET_BYTES + 8) as usize;
-    for i in 0..count.min(nifefs::ENTRIES_IN_FIRST_BLOCK) as u64 {
-        let entry = DATA_OFFSET_BYTES + nifefs::HEADER_LEN as u64 + i * nifefs::ENTRY_LEN as u64;
-        let mut matches = true;
-        for (j, &want) in name.iter().enumerate() {
-            if direct_memory_access_read::<u8>(entry + j as u64) != want {
-                matches = false;
-                break;
-            }
-        }
-        // The name must end here, so "motd" does not match "motdx": either the next byte is NUL
-        // padding, or the name used every byte of the field and there is no padding to check.
-        let ends = name.len() == nifefs::NAME_LEN
-            || direct_memory_access_read::<u8>(entry + name.len() as u64) == 0;
-        if matches && ends {
-            return Some(direct_memory_access_read::<u32>(
-                entry + nifefs::NAME_LEN as u64,
-            ));
-        }
-    }
-    None
+/// The 512-byte block buffer in the DMA page, as a slice, so the parsers below read a slice. It is
+/// a view and not a copy: a copy on the stack overflowed the driver's one-page stack in a debug
+/// build. Call it only after a request has completed, and drop the slice before the next submit,
+/// since the device writes this buffer while a read is in flight.
+fn data_block() -> &'static [u8] {
+    assert!(
+        window_access_fits(
+            DATA_OFFSET_BYTES,
+            BLOCK,
+            1,
+            DIRECT_MEMORY_ACCESS_WINDOW_BYTES
+        ),
+        "the data block lies outside the DMA page"
+    );
+    // SAFETY: the assertion above holds the buffer inside the first page of the DMA region, which
+    // is mapped read/write at region() for every role, and a `u8` slice needs no alignment. The
+    // device is idle on this buffer once the request completed, and the callers drop the slice
+    // before the next submit.
+    unsafe { core::slice::from_raw_parts((region() + DATA_OFFSET_BYTES) as *const u8, BLOCK) }
 }
 
-/// Build and publish the three-descriptor chain for one block transfer, and ring the device
-/// through the kernel. Returns the used-ring index from before the submit, which
-/// [`complete_block`] compares against. A read (`T_IN`) marks the data descriptor device-writable
+/// Find a file in a nifefs directory's first block, `directory`, returning its start block. The
+/// format is `nifefs`'s and the offsets come from that crate rather than being restated here:
+/// header (magic 8, count u32), then entries of { name\[`NAME_LEN`\], `start_block` u32, len u32 },
+/// little-endian.
+///
+/// Only the `nifefs::ENTRIES_IN_FIRST_BLOCK` entries inside the first block are visible, and an
+/// entry `directory` is too short to hold is not. The disk this walks holds three files. A name
+/// longer than `nifefs::NAME_LEN` names no entry, so it is `None` rather than a read into the next
+/// entry.
+fn find_file(directory: &[u8], name: &[u8]) -> Option<u32> {
+    if name.len() > nifefs::NAME_LEN {
+        return None;
+    }
+    let count = u32::from_le_bytes(directory.get(8..12)?.try_into().ok()?) as usize;
+    (0..count.min(nifefs::ENTRIES_IN_FIRST_BLOCK)).find_map(|i| {
+        let at = nifefs::HEADER_LEN + i * nifefs::ENTRY_LEN;
+        let entry = directory.get(at..at + nifefs::ENTRY_LEN)?;
+        let field = &entry[..nifefs::NAME_LEN];
+        // The name must end here, so "motd" does not match "motdx": either the next byte is NUL
+        // padding, or the name used every byte of the field and there is no padding to check.
+        let ends = field.get(name.len()).is_none_or(|&byte| byte == 0);
+        (field.starts_with(name) && ends).then(|| {
+            u32::from_le_bytes(
+                entry[nifefs::NAME_LEN..nifefs::NAME_LEN + 4]
+                    .try_into()
+                    .expect("four bytes"),
+            )
+        })
+    })
+}
+
+/// One queue's rings in the DMA page, by offset, and its number for `notify`.
+struct Queue {
+    number: u64,
+    descriptor_table: u64,
+    available_ring: u64,
+    used_ring: u64,
+}
+
+/// The disk's one queue.
+const BLOCK_QUEUE: Queue = Queue {
+    number: 0,
+    descriptor_table: DESCRIPTOR_TABLE_OFFSET_BYTES,
+    available_ring: AVAILABLE_RING_OFFSET_BYTES,
+    used_ring: USED_RING_OFFSET_BYTES,
+};
+
+/// One buffer of a descriptor chain. [`submit`] adds `VIRTQ_DESC_F_NEXT` and the link itself, so
+/// `flags` carries only the direction (`VIRTQ_DESC_F_WRITE`) or `VIRTQ_DESC_F_INDIRECT`.
+#[derive(Clone, Copy)]
+struct Descriptor {
+    physical_address: u64,
+    length_bytes: u32,
+    flags: u16,
+}
+
+/// The flags and `next` field of descriptor `i` in a chain of `chain_length` laid out from head 0:
+/// every descriptor but the last carries `VIRTQ_DESC_F_NEXT` and links to `i + 1`, and the last
+/// links nowhere.
+fn chained(i: usize, chain_length: usize, flags: u16) -> (u16, u16) {
+    if i + 1 < chain_length {
+        (flags | VIRTQ_DESC_F_NEXT, i as u16 + 1)
+    } else {
+        (flags, 0)
+    }
+}
+
+/// **Submit one request**: write `chain` into `queue`'s descriptor table from head 0, publish head
+/// 0 in the available ring, and ring the device. Returns the used ring's index from before the
+/// submit, which [`complete`] waits to see move, or `None` when the transport refused the notify:
+/// on a mediated grant the kernel checks every descriptor and refuses one that leaves the region.
+///
+/// Every request reuses head 0 and is waited for before the next is written, so one request is
+/// in flight per queue and each costs one interrupt. It is the simplest shape a virtio driver can
+/// take, and the slowest. It stays because it is fast enough for the one production path, the
+/// block server. Measured through the confined block server, a block costs 39.0 microseconds at
+/// the margin, against 38.7 to 53.3 microseconds for a raw virtio read on Linux at the same tier.
+/// A 64 kibibyte sequential read runs at 189.9 mebibytes a second (Hypervisor.framework, `--smp`;
+/// notes/benchmarks.md, "Filesystem throughput"). A request already moves up to
+/// `blk::TRANSFER_BLOCKS` blocks as one descriptor, so the driver pays the interrupt per request
+/// and not per block. Several requests in flight would need a free list of descriptor heads and a
+/// completion that matches used-ring elements to their requests, and nothing measured yet asks
+/// for either.
+fn submit(queue: &Queue, chain: &[Descriptor]) -> Option<u16> {
+    for (i, descriptor) in chain.iter().enumerate() {
+        let (flags, next) = chained(i, chain.len(), descriptor.flags);
+        write_desc_at(
+            queue.descriptor_table,
+            i as u64,
+            descriptor.physical_address,
+            descriptor.length_bytes,
+            flags,
+            next,
+        );
+    }
+    // avail: { u16 flags; u16 idx; u16 ring[QSIZE]; }, and used: { u16 flags; u16 idx; ... }.
+    let used_before: u16 = direct_memory_access_read::<u16>(queue.used_ring + 2);
+    let idx: u16 = direct_memory_access_read::<u16>(queue.available_ring + 2);
+    direct_memory_access_write::<u16>(
+        queue.available_ring + 4 + (idx as u64 % QSIZE as u64) * 2,
+        0,
+    ); // ring[idx] = head 0
+    virtio_ring_barrier(); // the descriptors and ring entry must be visible before we bump idx
+    direct_memory_access_write::<u16>(queue.available_ring + 2, idx.wrapping_add(1));
+    virtio_ring_barrier(); // idx must be visible before we notify
+    (notify(VIRTIO, queue.number) >= 0).then_some(used_before)
+}
+
+/// **Submit one block request**: the 16-byte header the device reads (type, reserved, sector), the
+/// data buffer at `data` (an offset in the DMA region and a length) if the request moves any, and
+/// the status byte the device writes. A read (`T_IN`) marks the data descriptor device-writable
 /// and a write (`T_OUT`) does not; the kernel checks every address on NOTIFY, whatever the flag.
-fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u16 {
-    // The request header the device reads: type, reserved, sector.
+fn submit_block_request(
+    direct_memory_access_phys: u64,
+    req_type: u32,
+    sector: u64,
+    data: Option<(u64, u32)>,
+) -> Option<u16> {
     direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, req_type);
     direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
     direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, sector);
     direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff); // the device overwrites this with 0 on success
 
-    let data_flags = if req_type == VIRTIO_BLK_T_IN {
-        VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE // read: the device fills our buffer
-    } else {
-        VIRTQ_DESC_F_NEXT // write: the device consumes our buffer
+    let header = Descriptor {
+        physical_address: direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
+        length_bytes: 16,
+        flags: 0,
     };
-
-    // desc[0]: header, device reads it.          NEXT -> 1
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_NEXT,
-        1,
-    );
-    // desc[1]: data buffer, direction above.     NEXT -> 2
-    write_desc(
-        1,
-        direct_memory_access_phys + DATA_OFFSET_BYTES,
-        BLOCK as u32,
-        data_flags,
-        2,
-    );
-    // desc[2]: status byte, device WRITES it.  (end of chain)
-    write_desc(
-        2,
-        direct_memory_access_phys + STATUS_OFFSET_BYTES,
-        1,
-        VIRTQ_DESC_F_WRITE,
-        0,
-    );
-
-    // Publish the head descriptor (index 0) in the available ring.
-    // avail: { u16 flags; u16 idx; u16 ring[QSIZE]; }
-    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    ); // ring[idx] = head 0
-    virtio_ring_barrier(); // the descriptor and ring entry must be visible before we bump idx
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier(); // idx must be visible before we notify
-
-    // The kernel rings the device only if every published descriptor stays inside our DMA region.
-    if notify(VIRTIO, 0) < 0 {
-        report_code(0xE5); // the kernel refused our request (a descriptor escaped our region)
+    let status = Descriptor {
+        physical_address: direct_memory_access_phys + STATUS_OFFSET_BYTES,
+        length_bytes: 1,
+        flags: VIRTQ_DESC_F_WRITE,
+    };
+    match data {
+        Some((offset, length_bytes)) => {
+            let data = Descriptor {
+                physical_address: direct_memory_access_phys + offset,
+                length_bytes,
+                // read: the device fills the buffer; write: the device consumes it
+                flags: if req_type == VIRTIO_BLK_T_IN {
+                    VIRTQ_DESC_F_WRITE
+                } else {
+                    0
+                },
+            };
+            submit(&BLOCK_QUEUE, &[header, data, status])
+        }
+        None => submit(&BLOCK_QUEUE, &[header, status]),
     }
-
-    used_before
 }
 
-/// Wait for the completion of a submitted transfer and confirm the device reported success.
+/// Submit one 512-byte block transfer from the DMA data buffer for a test role. Reports `0xE5`
+/// when the kernel refuses it.
+fn submit_block(direct_memory_access_phys: u64, sector: u64, req_type: u32) -> u16 {
+    submit_block_request(
+        direct_memory_access_phys,
+        req_type,
+        sector,
+        Some((DATA_OFFSET_BYTES, BLOCK as u32)),
+    )
+    // The kernel refused our request: a descriptor escaped our region.
+    .unwrap_or_else(|| report_code(0xE5))
+}
+
+/// How many wakeups a one-shot test role waits for its request's completion before it reports that
+/// none came. QEMU completes a request inside `NOTIFY`, so the first wakeup is nearly always the
+/// completion; the rest absorb stale and shared-line wakeups.
+const COMPLETION_WAKEUPS: u32 = 64;
+
+/// Whether the used ring's index moved off `used_before` within `bound` wakeups, or ever when
+/// `bound` is `None`. `wake_and_read` waits for one wakeup and returns the used index after it, so
+/// the loop can be tested without a device.
 ///
 /// The completion is the used ring advancing, not the wakeup: the line is shared, and a wakeup can
-/// be spurious, coalesced, or a dead driver's pending completion. So loop until `used.idx` moves.
-/// See notes/virtio.md ("A completion is the used ring advancing") and notes/dma.md.
-fn complete_block(used_before: u16) {
-    loop {
+/// be spurious, coalesced, or a dead driver's pending completion. See notes/virtio.md ("A
+/// completion is the used ring advancing") and notes/dma.md.
+fn used_ring_moved(
+    bound: Option<u32>,
+    used_before: u16,
+    mut wake_and_read: impl FnMut() -> u16,
+) -> bool {
+    match bound {
+        Some(wakeups) => (0..wakeups).any(|_| wake_and_read() != used_before),
+        None => loop {
+            if wake_and_read() != used_before {
+                return true;
+            }
+        },
+    }
+}
+
+/// **Wait for `queue`'s used ring to move off `used_before`**, waking on the device interrupt, for
+/// at most `bound` wakeups (`None`: for as long as it takes). Returns whether it moved.
+///
+/// A one-shot test role passes [`COMPLETION_WAKEUPS`] and reports when it runs out (`0xE9` for the
+/// net receive, `0xEB` for a block request), so a device that never completes fails the test
+/// instead of hanging the suite. The block server passes `None`: giving up would leave its request
+/// on the ring at descriptor head 0, and the next request would rewrite descriptors the device may
+/// still be reading. Neither helps against a device that raises no interrupt at all, since each
+/// wakeup is a WAIT that blocks until the line fires.
+fn complete(queue: &Queue, used_before: u16, bound: Option<u32>) -> bool {
+    used_ring_moved(bound, used_before, || {
         // The kernel masks the line and delivers the interrupt as a notification; its pending count
         // returns WAIT at once if the interrupt fired before this call.
         interrupt_wait(INTERRUPT);
-
         // Quiet the device (read its interrupt-status, acknowledge it), then re-enable the line at
         // the controller, which the kernel masked when it fired.
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT);
-
         virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
-            break; // our request is on the used ring; this wakeup was really ours
-        }
-        // The used ring has not moved, so that wakeup belonged to someone else (a stale completion
-        // from a dead driver, most likely). Wait again for our own.
+        direct_memory_access_read::<u16>(queue.used_ring + 2)
+    })
+}
+
+/// The status byte the device wrote for the last block request: 0 is `VIRTIO_BLK_S_OK`.
+fn block_status() -> u8 {
+    direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES)
+}
+
+/// Wait for a test role's block transfer to complete, and confirm the device reported success.
+/// Reports `0xEB` when no completion arrives within [`COMPLETION_WAKEUPS`], and `0xE200 | status`
+/// on any other status.
+fn complete_block(used_before: u16) {
+    if !complete(&BLOCK_QUEUE, used_before, Some(COMPLETION_WAKEUPS)) {
+        report_code(0xEB);
     }
-    let st = direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES);
+    let st = block_status();
     if st != 0 {
         report_code(0xE200 | st as u64); // device reported a non-OK status
     }
@@ -634,22 +783,29 @@ fn write_block(direct_memory_access_phys: u64, sector: u64) {
     complete_block(used_before);
 }
 
-/// Report a diagnostic code to the kernel and stop. Distinct from the magic, so the kernel's
-/// "not the nifefs magic" branch prints it. Only reached on a bring-up failure.
+/// Report a diagnostic code to the kernel and stop. A one-shot role sends
+/// `0xDEAD_0000_0000_0000 | code` on its report slot, distinct from every success value, so the
+/// kernel's test fails and prints the code. Only reached when a role cannot finish.
+///
+/// | code | role | what happened |
+/// |---|---|---|
+/// | `0xE4` | [`run`] | the directory has no `motd` file |
+/// | `0xE5` | the block test roles | the kernel refused a block request's notify: a descriptor left the region |
+/// | `0xE6` | [`run_write`], [`run_write_abandon`] | the directory has no `scratch` file |
+/// | `0xE7` | [`run_net`] | the kernel refused the receive buffer's notify |
+/// | `0xE8` | [`run_net`] | the kernel refused the transmit frame's notify |
+/// | `0xE9` | [`run_net`] | no receive completion within [`COMPLETION_WAKEUPS`] wakeups |
+/// | `0xEA` | [`run_net`] | frames arrived, and none was the OFFER for this transaction |
+/// | `0xEB` | the block test roles | no block completion within [`COMPLETION_WAKEUPS`] wakeups |
+/// | `0xE200 \| status` | the block test roles | the device completed a request with a status other than 0 |
+///
+/// The attackers report 1 (refused) or 0 (not refused) instead, and the long-lived block server
+/// reports nothing: it answers each client with an error.
 fn report_code(code: u64) -> ! {
     send(REPORT, 0xDEAD_0000_0000_0000 | code, 0, 0);
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
     // (notes/virtio.md).
     exit();
-}
-
-/// Write one 16-byte descriptor: { u64 addr; u32 len; u16 flags; u16 next; }.
-fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
-    let base = DESCRIPTOR_TABLE_OFFSET_BYTES + i * 16;
-    direct_memory_access_write::<u64>(base, addr);
-    direct_memory_access_write::<u32>(base + 8, len);
-    direct_memory_access_write::<u16>(base + 12, flags);
-    direct_memory_access_write::<u16>(base + 14, next);
 }
 
 // =================================================================================================
@@ -678,8 +834,9 @@ const NET_RECEIVE_AVAIL: u64 = 0x080;
 const NET_RECEIVE_USED: u64 = 0x100;
 const NET_TRANSMIT_DESC: u64 = 0x200;
 const NET_TRANSMIT_AVAIL: u64 = 0x280;
-// The transmit used ring lives at 0x300 (queue 1's block + USED_OFF), but the driver never reads it:
-// it does not wait on transmit completions, only on the receive side, so there is no constant for it.
+// The driver never waits on transmit completions, only on the receive side; [`submit`] reads the
+// transmit used ring's index and nothing reads its elements.
+const NET_TRANSMIT_USED: u64 = 0x300;
 /// One receive buffer: the 12-byte virtio header plus room for a full 1514-byte Ethernet frame.
 const NET_RECEIVE_BUF: u64 = 0x400;
 const NET_RECEIVE_BUF_LEN: u64 = 0x600;
@@ -692,34 +849,15 @@ const NET_MAC: [u8; 6] = [0x52, 0x54, 0x00, 0x12, 0x34, 0x56];
 /// DISCOVER and not some unrelated broadcast.
 const NET_XID: u32 = 0x3903_F326;
 
-fn wr_be16(off: u64, v: u16) {
-    direct_memory_access_write::<u8>(off, (v >> 8) as u8);
-    direct_memory_access_write::<u8>(off + 1, v as u8);
-}
-fn wr_be32(off: u64, v: u32) {
-    direct_memory_access_write::<u8>(off, (v >> 24) as u8);
-    direct_memory_access_write::<u8>(off + 1, (v >> 16) as u8);
-    direct_memory_access_write::<u8>(off + 2, (v >> 8) as u8);
-    direct_memory_access_write::<u8>(off + 3, v as u8);
-}
-fn rd_be16(off: u64) -> u16 {
-    ((direct_memory_access_read::<u8>(off) as u16) << 8)
-        | direct_memory_access_read::<u8>(off + 1) as u16
-}
-
-/// The IPv4 header checksum over `len` bytes at `off`: sum the 16-bit words, fold the carries, and
-/// complement. The checksum field itself must be zero when this runs.
-fn ip_checksum(off: u64, len: u64) -> u16 {
-    let mut sum: u32 = 0;
-    let mut i = 0;
-    while i + 1 < len {
-        sum += rd_be16(off + i) as u32;
-        i += 2;
-    }
-    if i < len {
+/// The IPv4 header checksum over `header`: sum the 16-bit big-endian words, fold the carries, and
+/// complement. The checksum field itself must be zero when this runs, and a header with the result
+/// written into that field sums to zero (`RFC 1071`).
+fn ip_checksum(header: &[u8]) -> u16 {
+    let mut sum: u32 = header
+        .chunks(2)
         // An odd trailing byte is summed as the high byte of a zero-padded word (RFC 1071).
-        sum += (direct_memory_access_read::<u8>(off + i) as u32) << 8;
-    }
+        .map(|word| u32::from(word[0]) << 8 | u32::from(word.get(1).copied().unwrap_or(0)))
+        .fold(0u32, u32::wrapping_add);
     while (sum >> 16) != 0 {
         sum = (sum & 0xffff) + (sum >> 16);
     }
@@ -744,10 +882,8 @@ fn initialize_net() {
     // conditional ack the disk driver makes so one binary works on the bare NIC and the confined one.
     mw(DEVICE_FEATURES_SEL, 1);
     let dev_hi = mr(DEVICE_FEATURES);
-    let mut ack_hi = F_VERSION_1_HI;
-    if dev_hi & F_ACCESS_PLATFORM_HI != 0 {
-        ack_hi |= F_ACCESS_PLATFORM_HI;
-    }
+    let ack_hi = acknowledged_high_features(dev_hi)
+        .expect("the device does not offer VIRTIO_F_VERSION_1, so it is not a modern device");
     mw(DRIVER_FEATURES_SEL, 1);
     mw(DRIVER_FEATURES, ack_hi);
 
@@ -765,8 +901,24 @@ fn initialize_net() {
     );
 }
 
-/// Write one descriptor into an explicit descriptor table (the disk's `write_desc` is hardwired to
-/// queue 0's; the NIC has two tables).
+/// The receive queue's rings.
+const NET_RECEIVE_QUEUE: Queue = Queue {
+    number: NET_RECEIVE_Q,
+    descriptor_table: NET_RECEIVE_DESC,
+    available_ring: NET_RECEIVE_AVAIL,
+    used_ring: NET_RECEIVE_USED,
+};
+
+/// The transmit queue's rings.
+const NET_TRANSMIT_QUEUE: Queue = Queue {
+    number: NET_TRANSMIT_Q,
+    descriptor_table: NET_TRANSMIT_DESC,
+    available_ring: NET_TRANSMIT_AVAIL,
+    used_ring: NET_TRANSMIT_USED,
+};
+
+/// Write one 16-byte descriptor, { u64 addr; u32 len; u16 flags; u16 next; }, into the descriptor
+/// table at `desc_base`.
 fn write_desc_at(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16) {
     let b = desc_base + i * 16;
     direct_memory_access_write::<u64>(b, addr);
@@ -777,152 +929,117 @@ fn write_desc_at(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: 
 
 /// Post the single receive buffer as a device-writable descriptor and ring queue 0. Re-callable: it
 /// re-uses descriptor head 0 with a fresh available-ring slot each time, so the device fills the
-/// same buffer again. `direct_memory_access_phys` is the DMA page's physical base (descriptors
-/// speak physical).
-fn post_receive(direct_memory_access_phys: u64, avail_idx: u16) {
-    write_desc_at(
-        NET_RECEIVE_DESC,
-        0,
-        direct_memory_access_phys + NET_RECEIVE_BUF,
-        NET_RECEIVE_BUF_LEN as u32,
-        VIRTQ_DESC_F_WRITE, // the device WRITES the received frame here
-        0,
-    );
-    direct_memory_access_write::<u16>(
-        NET_RECEIVE_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(NET_RECEIVE_AVAIL + 2, avail_idx.wrapping_add(1));
-    virtio_ring_barrier();
+/// same buffer again. Reports `0xE7` when the kernel refuses it. `direct_memory_access_phys` is
+/// the DMA page's physical base (descriptors speak physical).
+fn post_receive(direct_memory_access_phys: u64) {
     // The kernel validates the receive descriptor (device-writable, in our region).
-    if notify(VIRTIO, NET_RECEIVE_Q) < 0 {
-        report_code(0xE7);
-    }
+    submit(
+        &NET_RECEIVE_QUEUE,
+        &[Descriptor {
+            physical_address: direct_memory_access_phys + NET_RECEIVE_BUF,
+            length_bytes: NET_RECEIVE_BUF_LEN as u32,
+            flags: VIRTQ_DESC_F_WRITE, // the device WRITES the received frame here
+        }],
+    )
+    .unwrap_or_else(|| report_code(0xE7));
 }
 
 /// Transmit the frame already built at `NET_TRANSMIT_BUF + NET_HDR_LEN`, of `frame_len` bytes: zero
 /// the virtio header in front of it, post one device-readable descriptor, and ring queue 1.
-fn send_frame(direct_memory_access_phys: u64, frame_len: u64, avail_idx: u16) {
+/// Reports `0xE8` when the kernel refuses it.
+fn send_frame(direct_memory_access_phys: u64, frame_len: u64) {
     for i in 0..NET_HDR_LEN {
         direct_memory_access_write::<u8>(NET_TRANSMIT_BUF + i, 0);
     }
-    write_desc_at(
-        NET_TRANSMIT_DESC,
-        0,
-        direct_memory_access_phys + NET_TRANSMIT_BUF,
-        (NET_HDR_LEN + frame_len) as u32,
-        0, // device READS the buffer (transmit)
-        0,
-    );
-    direct_memory_access_write::<u16>(
-        NET_TRANSMIT_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(NET_TRANSMIT_AVAIL + 2, avail_idx.wrapping_add(1));
-    virtio_ring_barrier();
-    if notify(VIRTIO, NET_TRANSMIT_Q) < 0 {
-        report_code(0xE8);
-    }
+    submit(
+        &NET_TRANSMIT_QUEUE,
+        &[Descriptor {
+            physical_address: direct_memory_access_phys + NET_TRANSMIT_BUF,
+            length_bytes: (NET_HDR_LEN + frame_len) as u32,
+            flags: 0, // device READS the buffer (transmit)
+        }],
+    )
+    .unwrap_or_else(|| report_code(0xE8));
 }
 
-/// Build a DHCP DISCOVER (Ethernet + IPv4 + UDP + BOOTP/DHCP) at `NET_TRANSMIT_BUF + NET_HDR_LEN`,
-/// and return the Ethernet frame length. The broadcast flag is set so slirp's OFFER comes back to
-/// the broadcast address, where our single RX buffer will catch it.
-fn build_dhcp_discover() -> u64 {
-    let f = NET_TRANSMIT_BUF + NET_HDR_LEN;
+/// The length of the Ethernet frame [`dhcp_discover`] builds: Ethernet 14, IPv4 20, UDP 8, the
+/// fixed BOOTP fields and magic cookie 240, and nine bytes of options.
+const DHCP_DISCOVER_BYTES: usize = 14 + 20 + 8 + 240 + 9;
+
+// The frame fits the transmit buffer behind its virtio header, inside the DMA page.
+const _: () = assert!(
+    NET_TRANSMIT_BUF + NET_HDR_LEN + DHCP_DISCOVER_BYTES as u64
+        <= DIRECT_MEMORY_ACCESS_WINDOW_BYTES
+);
+
+/// A DHCP DISCOVER (Ethernet + IPv4 + UDP + BOOTP/DHCP), as the Ethernet frame. The broadcast
+/// flag is set so slirp's OFFER comes back to the broadcast address, where the single receive
+/// buffer will catch it.
+fn dhcp_discover() -> [u8; DHCP_DISCOVER_BYTES] {
+    let mut f = [0u8; DHCP_DISCOVER_BYTES];
 
     // --- Ethernet: to broadcast, from us, IPv4 ---
-    for i in 0..6u64 {
-        direct_memory_access_write::<u8>(f + i, 0xff);
-        direct_memory_access_write::<u8>(f + 6 + i, NET_MAC[i as usize]);
-    }
-    wr_be16(f + 12, 0x0800);
+    f[0..6].fill(0xff);
+    f[6..12].copy_from_slice(&NET_MAC);
+    f[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
 
-    let ip = f + 14;
+    let ip = 14;
     let udp = ip + 20;
     let dhcp = udp + 8;
 
-    // --- BOOTP/DHCP payload ---
-    direct_memory_access_write::<u8>(dhcp, 1); // op = BOOTREQUEST
-    direct_memory_access_write::<u8>(dhcp + 1, 1); // htype = Ethernet
-    direct_memory_access_write::<u8>(dhcp + 2, 6); // hlen
-    direct_memory_access_write::<u8>(dhcp + 3, 0); // hops
-    wr_be32(dhcp + 4, NET_XID);
-    wr_be16(dhcp + 8, 0); // secs
-    wr_be16(dhcp + 10, 0x8000); // flags = broadcast
-    for i in 12..28u64 {
-        direct_memory_access_write::<u8>(dhcp + i, 0); // ciaddr/yiaddr/siaddr/giaddr
-    }
-    for i in 0..6u64 {
-        direct_memory_access_write::<u8>(dhcp + 28 + i, NET_MAC[i as usize]); // chaddr
-    }
-    for i in 34..236u64 {
-        direct_memory_access_write::<u8>(dhcp + i, 0); // rest of chaddr, sname, file
-    }
-    wr_be32(dhcp + 236, 0x6382_5363); // DHCP magic cookie
+    // --- BOOTP/DHCP payload. Every field not written here is zero: secs, ciaddr, yiaddr, siaddr,
+    // giaddr, the rest of chaddr, sname and file. ---
+    f[dhcp] = 1; // op = BOOTREQUEST
+    f[dhcp + 1] = 1; // htype = Ethernet
+    f[dhcp + 2] = 6; // hlen
+    f[dhcp + 4..dhcp + 8].copy_from_slice(&NET_XID.to_be_bytes());
+    f[dhcp + 10..dhcp + 12].copy_from_slice(&0x8000u16.to_be_bytes()); // flags = broadcast
+    f[dhcp + 28..dhcp + 34].copy_from_slice(&NET_MAC); // chaddr
+    f[dhcp + 236..dhcp + 240].copy_from_slice(&0x6382_5363u32.to_be_bytes()); // DHCP magic cookie
 
-    // Options: message type DISCOVER, a parameter request list, end.
-    let mut o = dhcp + 240;
-    direct_memory_access_write::<u8>(o, 53); // option 53: DHCP message type
-    direct_memory_access_write::<u8>(o + 1, 1);
-    direct_memory_access_write::<u8>(o + 2, 1); // DISCOVER
-    o += 3;
-    direct_memory_access_write::<u8>(o, 55); // option 55: parameter request list
-    direct_memory_access_write::<u8>(o + 1, 3);
-    direct_memory_access_write::<u8>(o + 2, 1); // subnet mask
-    direct_memory_access_write::<u8>(o + 3, 3); // router
-    direct_memory_access_write::<u8>(o + 4, 6); // DNS
-    o += 5;
-    direct_memory_access_write::<u8>(o, 255); // end
-    o += 1;
+    // Options: message type DISCOVER (53), a parameter request list (55) asking for the subnet
+    // mask, router and DNS, then end (255).
+    f[dhcp + 240..].copy_from_slice(&[53, 1, 1, 55, 3, 1, 3, 6, 255]);
 
-    let dhcp_len = o - dhcp;
-    let udp_len = 8 + dhcp_len;
-    let ip_total = 20 + udp_len;
+    let udp_len = (DHCP_DISCOVER_BYTES - udp) as u16;
+    let ip_total = (DHCP_DISCOVER_BYTES - ip) as u16;
 
     // --- UDP: bootpc(68) -> bootps(67), checksum 0 (optional for IPv4) ---
-    wr_be16(udp, 68);
-    wr_be16(udp + 2, 67);
-    wr_be16(udp + 4, udp_len as u16);
-    wr_be16(udp + 6, 0);
+    f[udp..udp + 2].copy_from_slice(&68u16.to_be_bytes());
+    f[udp + 2..udp + 4].copy_from_slice(&67u16.to_be_bytes());
+    f[udp + 4..udp + 6].copy_from_slice(&udp_len.to_be_bytes());
 
-    // --- IPv4 header ---
-    direct_memory_access_write::<u8>(ip, 0x45); // version 4, IHL 5
-    direct_memory_access_write::<u8>(ip + 1, 0x00);
-    wr_be16(ip + 2, ip_total as u16);
-    wr_be16(ip + 4, 0); // identification
-    wr_be16(ip + 6, 0); // flags/fragment
-    direct_memory_access_write::<u8>(ip + 8, 64); // TTL
-    direct_memory_access_write::<u8>(ip + 9, 17); // protocol = UDP
-    wr_be16(ip + 10, 0); // checksum placeholder
-    wr_be32(ip + 12, 0x0000_0000); // src 0.0.0.0
-    wr_be32(ip + 16, 0xffff_ffff); // dst 255.255.255.255
-    let csum = ip_checksum(ip, 20);
-    wr_be16(ip + 10, csum);
+    // --- IPv4 header: identification, flags and fragment 0, source 0.0.0.0 ---
+    f[ip] = 0x45; // version 4, IHL 5
+    f[ip + 2..ip + 4].copy_from_slice(&ip_total.to_be_bytes());
+    f[ip + 8] = 64; // TTL
+    f[ip + 9] = 17; // protocol = UDP
+    f[ip + 16..ip + 20].fill(0xff); // destination 255.255.255.255
+    let checksum = ip_checksum(&f[ip..ip + 20]);
+    f[ip + 10..ip + 12].copy_from_slice(&checksum.to_be_bytes());
 
-    14 + ip_total
+    f
+}
+
+/// Copy [`dhcp_discover`]'s frame into the transmit buffer behind the virtio header, and return its
+/// length.
+fn build_dhcp_discover() -> u64 {
+    let frame = dhcp_discover();
+    for (i, &byte) in frame.iter().enumerate() {
+        direct_memory_access_write::<u8>(NET_TRANSMIT_BUF + NET_HDR_LEN + i as u64, byte);
+    }
+    frame.len() as u64
 }
 
 /// Wait for the receive queue's used ring to advance, discarding wakeups that were really the
 /// transmit completion (the device's interrupt line is shared across both queues). Returns false if
-/// no receive completion arrives within a bounded number of wakeups. Mirrors the disk's
-/// `complete_block`: the used ring, not the wakeup, is the completion.
+/// no receive completion arrives within [`COMPLETION_WAKEUPS`].
 fn wait_receive(receive_used_before: u16) -> bool {
-    for _ in 0..64 {
-        // Blocks until the device raises its line.
-        interrupt_wait(INTERRUPT);
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
-        // Re-enable the line the kernel masked when it fired.
-        interrupt_acknowledge(INTERRUPT);
-        virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(NET_RECEIVE_USED + 2) != receive_used_before {
-            return true;
-        }
-    }
-    false
+    complete(
+        &NET_RECEIVE_QUEUE,
+        receive_used_before,
+        Some(COMPLETION_WAKEUPS),
+    )
 }
 
 /// Parse the frame in the receive buffer as a DHCP OFFER for our transaction. `used_slot` is the
@@ -1036,12 +1153,10 @@ fn parse_offer_in_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
 pub fn run_net(direct_memory_access_phys: u64) -> ! {
     initialize_net();
 
-    let mut receive_avail: u16 = 0;
-    post_receive(direct_memory_access_phys, receive_avail);
-    receive_avail = receive_avail.wrapping_add(1);
+    post_receive(direct_memory_access_phys);
 
     let frame_len = build_dhcp_discover();
-    send_frame(direct_memory_access_phys, frame_len, 0);
+    send_frame(direct_memory_access_phys, frame_len);
 
     let mut receive_used: u16 = 0;
     for _ in 0..8 {
@@ -1057,8 +1172,7 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
         }
 
         // Not our OFFER (some other broadcast): re-post the buffer and wait for the next frame.
-        post_receive(direct_memory_access_phys, receive_avail);
-        receive_avail = receive_avail.wrapping_add(1);
+        post_receive(direct_memory_access_phys);
     }
     report_code(0xEA); // frames arrived, but none was our DHCP OFFER
 }
@@ -1171,26 +1285,21 @@ fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Optio
 }
 
 /// Complete a block-server request by waiting on the completion interrupt, not by polling the used
-/// ring, with the same loop as [`complete_block`]. `true` if the device completed with
-/// `VIRTIO_BLK_S_OK`. It does not panic on another status: the long-lived block server's death
-/// would block every filesystem client, so the verdict goes back to the one that asked. A WAIT per
-/// read fits the test watchdog, since whole-block requests keep the mount's read count in the low
-/// hundreds. See notes/virtio.md ("A completion is the used ring advancing").
+/// ring, with [`complete`]. `true` if the device completed with `VIRTIO_BLK_S_OK`. It does not
+/// panic on another status: the long-lived block server's death would block every filesystem
+/// client, so the verdict goes back to the one that asked. A WAIT per read fits the test watchdog,
+/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtio.md
+/// ("A completion is the used ring advancing").
+///
+/// The wait has no bound, unlike a test role's. Giving up would leave the request on the ring with
+/// its descriptors at head 0, and the next request would rewrite them while the device may still
+/// read them; a server that stops answering is the safer failure.
 fn complete_blk(used_before: u16) -> bool {
     // QEMU completes inside `NOTIFY`, so the interrupt is usually already pending and the kernel's
     // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
     // message)) returns this WAIT at once.
-    loop {
-        interrupt_wait(INTERRUPT);
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(INTERRUPT);
-        virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
-            break; // our request is on the used ring; this wakeup was really ours
-        }
-    }
-    direct_memory_access_read::<u8>(STATUS_OFFSET_BYTES) == 0
+    complete(&BLOCK_QUEUE, used_before, None);
+    block_status() == 0
 }
 
 /// Read `count` contiguous filesystem blocks starting at `sector` in a single virtio request,
@@ -1224,109 +1333,61 @@ fn blk_flush(direct_memory_access_phys: u64) -> bool {
 
 /// A flush's **two**-descriptor chain: the 16-byte request header the device reads, and the status
 /// byte it writes. No data descriptor, because a flush moves no data (virtio 1.2 §5.2.6.1); a chain
-/// with one would be describing a transfer the device was never asked to make.
+/// with one would be describing a transfer the device was never asked to make. The sector field is
+/// unused for a flush and the specification says to set it to 0, so no stale sector from the
+/// previous request is left in the header.
 fn submit_flush(direct_memory_access_phys: u64) -> u16 {
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, VIRTIO_BLK_T_FLUSH);
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
-    // The sector field is unused for a flush and the spec says to set it to 0; written so no stale
-    // sector from the previous request is left in the header.
-    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, 0);
-    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff);
-
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_NEXT,
-        1,
-    );
-    write_desc(
-        1,
-        direct_memory_access_phys + STATUS_OFFSET_BYTES,
-        1,
-        VIRTQ_DESC_F_WRITE,
-        0,
-    );
-
-    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
     // As `submit_blk`: the kernel validates every descriptor against the region.
-    if notify(VIRTIO, 0) < 0 {
-        panic!();
-    }
-    used_before
+    submit_block_request(direct_memory_access_phys, VIRTIO_BLK_T_FLUSH, 0, None)
+        .expect("the kernel refused the block server's flush, a server bug")
 }
 
-/// Build and publish the three-descriptor chain for a `count`-block transfer and ring the device
-/// through the kernel. Mirrors [`submit_block`] but with one data descriptor spanning `count`
-/// contiguous blocks at [`BLOCK_SERVER_DATA_OFFSET_BYTES`] (milestone 138 step 4): virtio-blk asks only that its
-/// length be whole sectors. Returns the used-ring index from before the submit, which
-/// [`complete_block`] compares against.
+/// Submit a `count`-block transfer: as [`submit_block`], but with one data descriptor spanning
+/// `count` contiguous blocks at [`BLOCK_SERVER_DATA_OFFSET_BYTES`] (milestone 138 step 4):
+/// virtio-blk asks only that its length be whole sectors. Returns the used-ring index from before
+/// the submit, which [`complete_blk`] compares against.
 fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count: u64) -> u16 {
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES, req_type);
-    direct_memory_access_write::<u32>(REQUEST_HEADER_OFFSET_BYTES + 4, 0);
-    direct_memory_access_write::<u64>(REQUEST_HEADER_OFFSET_BYTES + 8, sector);
-    direct_memory_access_write::<u8>(STATUS_OFFSET_BYTES, 0xff);
-
-    let data_flags = if req_type == VIRTIO_BLK_T_IN {
-        VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE // read: the device fills the data pages
-    } else {
-        VIRTQ_DESC_F_NEXT // write: the device consumes the data pages
-    };
     let data_len = count * blk::BLOCK_SIZE as u64;
-    write_desc(
-        0,
-        direct_memory_access_phys + REQUEST_HEADER_OFFSET_BYTES,
-        16,
-        VIRTQ_DESC_F_NEXT,
-        1,
-    );
-    write_desc(
-        1,
-        direct_memory_access_phys + BLOCK_SERVER_DATA_OFFSET_BYTES,
-        data_len as u32,
-        data_flags,
-        2,
-    );
-    write_desc(
-        2,
-        direct_memory_access_phys + STATUS_OFFSET_BYTES,
-        1,
-        VIRTQ_DESC_F_WRITE,
-        0,
-    );
-
-    let used_before: u16 = direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2);
-    let idx: u16 = direct_memory_access_read::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2);
-    direct_memory_access_write::<u16>(
-        AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
-        0,
-    );
-    virtio_ring_barrier();
-    direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier();
-
-    // The kernel validates every descriptor against the 2-page region before ringing; a refusal
-    // here is a block-server bug, so fault rather than limp on.
-    if notify(VIRTIO, 0) < 0 {
-        panic!();
-    }
-    used_before
+    submit_block_request(
+        direct_memory_access_phys,
+        req_type,
+        sector,
+        Some((BLOCK_SERVER_DATA_OFFSET_BYTES, data_len as u32)),
+    )
+    // The kernel validates every descriptor against the region before ringing; a refusal here is a
+    // block-server bug, so fault rather than limp on.
+    .expect("the kernel refused a block-server transfer, a server bug")
 }
 
-/// The disk's capacity in 512-byte sectors, from virtio-blk's capacity register.
+/// How many times [`consistent_read`] reads the configuration before it gives up on a device whose
+/// generation never holds still. A device changes its configuration rarely (a resize), so a second
+/// attempt nearly always succeeds; the rest bound a device that misbehaves.
+const CONFIGURATION_READ_ATTEMPTS: u32 = 16;
+
+/// Read a multi-word configuration value with `read`, bracketed by `generation`, until the
+/// generation is the same before and after (virtio 1.2 section 2.5.1). `None` after
+/// [`CONFIGURATION_READ_ATTEMPTS`] attempts that each saw it change. Takes closures so the
+/// bracket can be tested without a device.
+fn consistent_read(
+    mut generation: impl FnMut() -> u32,
+    mut read: impl FnMut() -> u64,
+) -> Option<u64> {
+    (0..CONFIGURATION_READ_ATTEMPTS).find_map(|_| {
+        let before = generation();
+        let value = read();
+        (generation() == before).then_some(value)
+    })
+}
+
+/// The disk's capacity in 512-byte sectors, from virtio-blk's 64-bit capacity field, read as two
+/// 32-bit halves inside one configuration generation so a resize between them cannot pair one
+/// capacity's low half with another's high half.
 fn capacity_sectors() -> u64 {
-    let lo = mr(CONFIG) as u64;
-    let hi = mr(CONFIG + 4) as u64;
-    lo | (hi << 32)
+    consistent_read(
+        || mr(CONFIGURATION_GENERATION),
+        || mr(CONFIG) as u64 | ((mr(CONFIG + 4) as u64) << 32),
+    )
+    .expect("the disk's configuration generation never held still across a capacity read")
 }
 
 /// The disk's size in bytes (sectors * 512), for `blk::SIZE`. RedoxFS asks for this once, at open,
@@ -1341,6 +1402,135 @@ fn disk_size_bytes(capacity_sectors: u64) -> i64 {
 
 #[cfg(test)]
 mod tests;
+
+/// **Proofs of the pure logic the driver runs on bytes a device or a disk image wrote**: the
+/// directory lookup over any bytes, the Internet Protocol header checksum over any header, and the
+/// two bounded waits. The DHCP frame is a constant and the write pattern takes no outside input, so
+/// host tests cover both (`tests.rs`). See notes/verification.md.
+///
+/// Name: provisional.
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// The longest directory slice the totality proof walks: the header and two entries, so a
+    /// count past the slice, an entry cut short and a second entry are all reached.
+    const DIRECTORY_BYTES: usize = nifefs::HEADER_LEN + 2 * nifefs::ENTRY_LEN;
+
+    /// **The directory lookup is total**: for any directory bytes up to two entries long, cut at
+    /// any length, and any name up to one byte longer than the name field, `find_file` returns
+    /// without a panic or an out-of-bounds read, whatever count the header claims.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.the_directory_lookup_is_total.patch`
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn the_directory_lookup_is_total() {
+        let directory: [u8; DIRECTORY_BYTES] = kani::any();
+        let directory_length: usize = kani::any();
+        kani::assume(directory_length <= DIRECTORY_BYTES);
+        let name: [u8; nifefs::NAME_LEN + 1] = kani::any();
+        let name_length: usize = kani::any();
+        kani::assume(name_length <= nifefs::NAME_LEN + 1);
+        let _ = find_file(&directory[..directory_length], &name[..name_length]);
+    }
+
+    /// **The lookup finds an entry exactly when its name field holds the name and then ends**, and
+    /// returns that entry's start block: for one entry of any bytes and any name of up to four
+    /// bytes, a hit means the field opens with the name and the next byte is padding, and a miss
+    /// means it does not.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.the_lookup_matches_a_whole_name_only.patch`
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn the_lookup_matches_a_whole_name_only() {
+        const SHORT: usize = 4;
+        let mut directory = [0u8; nifefs::HEADER_LEN + nifefs::ENTRY_LEN];
+        directory[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let entry: [u8; nifefs::ENTRY_LEN] = kani::any();
+        directory[nifefs::HEADER_LEN..].copy_from_slice(&entry);
+        let name: [u8; SHORT] = kani::any();
+        let name_length: usize = kani::any();
+        kani::assume(name_length <= SHORT);
+        let name = &name[..name_length];
+
+        let whole = entry[..name_length] == *name && entry[name_length] == 0;
+        let start = u32::from_le_bytes(
+            entry[nifefs::NAME_LEN..nifefs::NAME_LEN + 4]
+                .try_into()
+                .expect("four bytes"),
+        );
+        assert_eq!(find_file(&directory, name), whole.then_some(start));
+    }
+
+    /// **A header carrying its own checksum sums to zero**: for any 20-byte header, writing the
+    /// checksum computed over it (with the checksum field zero) into that field makes the checksum
+    /// of the result zero, the check a receiver makes.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.a_header_carrying_its_checksum_sums_to_zero.patch`
+    #[kani::proof]
+    #[kani::unwind(11)]
+    fn a_header_carrying_its_checksum_sums_to_zero() {
+        let mut header: [u8; 20] = kani::any();
+        header[10] = 0;
+        header[11] = 0;
+        let checksum = ip_checksum(&header);
+        header[10..12].copy_from_slice(&checksum.to_be_bytes());
+        assert_eq!(ip_checksum(&header), 0);
+    }
+
+    /// **A bounded completion wait takes at most its bound of wakeups**, returns true exactly when
+    /// one of them saw the used index move, and takes all of them when none did: for any bound up
+    /// to four and any sequence of used indices.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.a_bounded_wait_stops_at_its_bound.patch`
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn a_bounded_wait_stops_at_its_bound() {
+        let bound: u32 = kani::any();
+        kani::assume(bound <= 4);
+        let used_before: u16 = kani::any();
+        let mut wakeups = 0u32;
+        let mut saw_a_move = false;
+        let moved = used_ring_moved(Some(bound), used_before, || {
+            wakeups += 1;
+            let used: u16 = kani::any();
+            saw_a_move |= used != used_before;
+            used
+        });
+        assert!(wakeups <= bound);
+        assert_eq!(moved, saw_a_move);
+        if !moved {
+            assert_eq!(wakeups, bound);
+        }
+    }
+
+    /// **A bracketed configuration read returns only a value read inside one generation**: for
+    /// any generation and value sequences, a returned value is one whose read had the same
+    /// generation before and after it.
+    /// Falsification: replayable `crates/virtio/falsifications/verification.a_configuration_read_holds_inside_one_generation.patch`
+    #[kani::proof]
+    #[kani::unwind(18)]
+    fn a_configuration_read_holds_inside_one_generation() {
+        let mut generations = [0u32; 2];
+        let mut reads = 0u32;
+        let mut last_value = 0u64;
+        let mut generation_calls = 0u32;
+        let read = consistent_read(
+            || {
+                let generation: u32 = kani::any();
+                generations[(generation_calls % 2) as usize] = generation;
+                generation_calls += 1;
+                generation
+            },
+            || {
+                reads += 1;
+                last_value = kani::any();
+                last_value
+            },
+        );
+        assert!(reads <= CONFIGURATION_READ_ATTEMPTS);
+        if let Some(value) = read {
+            assert_eq!(value, last_value);
+            assert_eq!(generations[0], generations[1]);
+        }
+    }
+}
 
 // The direct grant's transport stays inline, so this crate root declares no child module but its
 // tests (§282 (when a file is split, the parent becomes an index)).
@@ -1374,6 +1564,8 @@ pub mod direct {
     const DRIVER_FEATURES_SELECT: u64 = 0x024;
     const INTERRUPT_STATUS: u64 = 0x060;
     const STATUS: u64 = 0x070;
+    #[doc(alias = "ConfigGeneration")]
+    const CONFIGURATION_GENERATION: u64 = 0x0fc;
     const CONFIGURATION: u64 = 0x100;
 
     // The common configuration's registers (virtio 1.2 section 4.1.4.3).
@@ -1383,6 +1575,8 @@ pub mod direct {
     const COMMON_DRIVER_FEATURE: u64 = 0x0c;
     const COMMON_CONFIGURATION_INTERRUPT_VECTOR: u64 = 0x10;
     const COMMON_DEVICE_STATUS: u64 = 0x14;
+    #[doc(alias = "config_generation")]
+    const COMMON_CONFIGURATION_GENERATION: u64 = 0x15;
     const COMMON_QUEUE_SELECT: u64 = 0x16;
     const COMMON_QUEUE_ENTRIES_REGISTER: u64 = 0x18;
     const COMMON_QUEUE_INTERRUPT_VECTOR: u64 = 0x1a;
@@ -1516,6 +1710,9 @@ pub mod direct {
             DEVICE_FEATURES => load::<u32>(common + COMMON_DEVICE_FEATURE),
             INTERRUPT_STATUS => u32::from(load::<u8>(u64::from(h.interrupt_status))),
             STATUS => u32::from(load::<u8>(common + COMMON_DEVICE_STATUS)),
+            CONFIGURATION_GENERATION => {
+                u32::from(load::<u8>(common + COMMON_CONFIGURATION_GENERATION))
+            }
             o if o == CONFIGURATION || o == CONFIGURATION + 4 => match h.device {
                 Some(device) => load::<u32>(u64::from(device) + (o - CONFIGURATION)),
                 None => 0,

@@ -103,7 +103,6 @@ members = [
     "crates/network_time_protocol",
     "crates/disk_tree",
     "crates/driver_process_contract",
-    "crates/designware_ethernet",
     "crates/work_steal_slot",
     "crates/allocation_cache",
     "crates/user_mode_runtime",

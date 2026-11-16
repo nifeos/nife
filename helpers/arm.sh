@@ -179,7 +179,19 @@ if [ "$reason" = failed_checks ] && [ "$built" = "$head" ]; then
 	if [ "$group" != - ] && [ -z "$despite_failed" ] && grep -q '^[^#]' "$flakes" 2>/dev/null; then
 		logs="$(gh api "repos/{owner}/{repo}/actions/runs?head_sha=$group&event=merge_group&per_page=100" 2>/dev/null |
 			jq -r '.workflow_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' 2>/dev/null |
-			while read -r run; do gh run view "$run" --log-failed 2>/dev/null; done)"
+			while read -r run; do
+				gh run view "$run" --log-failed 2>/dev/null
+				# A job the runner killed ends its step `cancelled`, and --log-failed prints only
+				# failed steps, so it prints nothing for that job. Read such a job's whole log, each
+				# line led by the job's name and a tab as --log-failed leads its own, so that a
+				# signature can be scoped to one job.
+				gh api "repos/{owner}/{repo}/actions/runs/$run/jobs?per_page=100" \
+					--jq '.jobs[] | select(.conclusion == "failure" and (.steps | map(.conclusion) | index("cancelled"))) | "\(.id)\t\(.name)"' 2>/dev/null |
+					while IFS='	' read -r job jname; do
+						gh api "repos/{owner}/{repo}/actions/jobs/$job/logs" 2>/dev/null |
+							awk -v n="$jname" '{ print n "\t" $0 }'
+					done
+			done)"
 		matched="$(grep '^[^#]' "$flakes" | while IFS='	' read -r name signature record; do
 			[ -n "$signature" ] || continue
 			if printf '%s\n' "$logs" | grep -qE -- "$signature"; then
