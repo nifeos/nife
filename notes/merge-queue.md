@@ -187,7 +187,7 @@ logs the run it cites; otherwise it runs everything. The queue's check timeout i
 [`merge-queue/main-push-and-check-timeout.md`](merge-queue/main-push-and-check-timeout.md) has the
 premise checked against history and the eviction timeline.
 
-## The heavy gates run only in the queue (provisional, ruled 2026-11-03 UTC)
+## The heavy gates run only in the queue, and the proofs also on a harness change
 
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 1.
 
@@ -197,6 +197,17 @@ request satisfies the heavy names without running them. The queue merges on the 
 run, which skips none of them. A job runs only in the queue when it boots a kernel under QEMU or
 proves with Kani. So does one that took five minutes or more in the runs of 2026-11-03 UTC. The
 mutation gate stays on the pull request at about three, since a survivor is the lane's to triage.
+That much is provisional, ruled 2026-11-03 UTC.
+
+The rule in force since 2026-11-16 (UTC) adds one exception. verify.yml's Kani jobs (`verify
+scope`, the `prove` shards, the kernel proofs and `re-falsify`) also run on a pull request whose
+diff adds or changes a harness. A harness that outgrows the hosted runner then fails on its own
+pull request in minutes, and does not evict the entries queued behind it. `helpers/harness_change.py`
+decides, and its header has the rule: a `#[kani::proof]` function added, removed or edited (as
+tokens, so a comment inside one does not count), a file under a `falsifications/` directory, or
+`script/verify`, whose tables plan the shards. It fails toward running. Every other heavy gate
+stays in the queue, and the required names do not change: a pull request that touches no harness
+skips the proofs as before, and each skipped job reports Success.
 
 | on a pull request | in the merge group only |
 |---|---|
@@ -204,7 +215,7 @@ mutation gate stays on the pull request at about three, since a survivor is the 
 | `test`, as `test-host`: the host crates alone | `swish-check`, `swish-check-x86_64`, `boot-check`, `base-image` |
 | `mutation gate` | `rg-threads`, `rg-threads-x86_64`, `cpu matrix`, `watchdog`, `fuzz-guests` |
 | fastpath footprint, boot file size, stack frames, image permissions | `fuzz` (both shards), `bench`, `crate probes` |
-| reproducible build, `interleavings`, `coverage`, `supply chain` | verify.yml: `verify scope`, the `prove` shards, the kernel proofs, `re-falsify` |
+| reproducible build, `interleavings`, `coverage`, `supply chain` | verify.yml: `verify scope`, the `prove` shards, the kernel proofs, `re-falsify` (on a pull request too when a harness changes) |
 | `architect hold`, `ready status`, `empty diff` | kernel mutants (diff-scoped) and CodeQL run on pushes to `main` |
 
 A lane that changes kernel logic, or a workflow that runs a heavy job, runs the heavy set before it

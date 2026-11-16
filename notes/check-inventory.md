@@ -46,7 +46,8 @@ history and in nothing that lives in this tree.
 Nineteen check names reached a pull request then. The 2026-09-30 split (#1468) replaced the first
 row with four jobs pending calef's ruleset edit; later checks have no rows yet. "Blocks" means in
 ruleset 19596094's `required_status_checks`. Without the `full-ci` label, a pull request skips
-the heavy checks, which report Success (notes/merge-queue.md).
+the heavy checks, which report Success, except that one adding or changing a Kani harness runs
+verify.yml's (notes/merge-queue.md).
 
 | check name | workflow | trigger | blocks | result 2026-09-03 |
 |---|---|---|---|---|
@@ -60,12 +61,12 @@ the heavy checks, which report Success (notes/merge-queue.md).
 | `fastpath footprint (the IPC path must stay L1i-sized)` | ci | PR, merge queue, push | **yes** | green |
 | `stack frames (no frame over a third of a thread stack)` | ci | PR, merge queue, push | **yes** | green |
 | `fuzz (parsers, 60s per target)` | ci | merge queue, push, `full-ci` PR | **yes** | green |
-| `verify (Kani proofs)` | verify | merge queue, push, `full-ci` PR | **yes** | green |
+| `verify (Kani proofs)` | verify | merge queue, push, `full-ci` PR, harness-change PR | **yes** | green |
 | `image permissions (no kernel image ships a writable-executable segment)` | ci | PR, merge queue, push | no | green |
-| `re-falsify the harnesses this change can reach` | verify | merge queue, push, `full-ci` PR | no | green today, **was red through a merge** |
+| `re-falsify the harnesses this change can reach` | verify | merge queue, push, `full-ci` PR, harness-change PR | no | green today, **was red through a merge** |
 | `architect hold (needs-architect label)` | architect-hold | PR, merge queue | no | green |
-| `verify scope` | verify | merge queue, push, `full-ci` PR | no | green |
-| `prove (shard N/5)` | verify | merge queue, push, `full-ci` PR | no | green |
+| `verify scope` | verify | merge queue, push, `full-ci` PR, harness-change PR | no | green |
+| `prove (shard N/5)` | verify | merge queue, push, `full-ci` PR, harness-change PR | no | green |
 | `draft gate` (two jobs, one name) | ci, verify | PR, push | no | green |
 
 Three of the unrequired five are correct as they stand. `verify scope` and the two `prove` shards
