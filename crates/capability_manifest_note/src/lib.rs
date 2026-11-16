@@ -264,6 +264,26 @@ const fn put8(out: &mut [u8; DESCRIPTOR_BYTES], at: usize, v: u64) {
     }
 }
 
+/// **One note, written once for every note type**: the three header words (`namesz` is the owner
+/// and its NUL, `descsz` the descriptor's exact length, then the type), the owner with its NUL and
+/// zero padding, then the descriptor. `out` is zeroed and as long as the note, so whatever this
+/// does not write is the padding after the descriptor.
+const fn write_note(out: &mut [u8], kind: u32, descriptor: &[u8]) {
+    put4(out, 0, ((OWNER.len() + 1) as u32).to_le_bytes());
+    put4(out, 4, (descriptor.len() as u32).to_le_bytes());
+    put4(out, 8, kind.to_le_bytes());
+    let mut i = 0;
+    while i < OWNER.len() {
+        out[HEADER_BYTES + i] = OWNER[i];
+        i += 1;
+    }
+    let mut i = 0;
+    while i < descriptor.len() {
+        out[HEADER_BYTES + NAME_FIELD_BYTES + i] = descriptor[i];
+        i += 1;
+    }
+}
+
 /// **The grants a note has no spelling for**, refused at compile time in a constant: each is the
 /// owner's console's to grant, or no image's at all, so no installed bytes may ask for it.
 const fn refuse_what_no_note_carries(m: &Manifest) {
@@ -606,23 +626,7 @@ impl Note {
     /// The note carrying `m`.
     pub const fn of(m: &Manifest) -> Self {
         let mut out = [0u8; NOTE_BYTES];
-        let namesz = ((OWNER.len() + 1) as u32).to_le_bytes();
-        let descsz = (DESCRIPTOR_BYTES as u32).to_le_bytes();
-        let kind = MANIFEST.to_le_bytes();
-        put4(&mut out, 0, namesz);
-        put4(&mut out, 4, descsz);
-        put4(&mut out, 8, kind);
-        put4(
-            &mut out,
-            HEADER_BYTES,
-            [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
-        );
-        let d = encode(m);
-        let mut i = 0;
-        while i < DESCRIPTOR_BYTES {
-            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
-            i += 1;
-        }
+        write_note(&mut out, MANIFEST, &encode(m));
         Self(out)
     }
 }
@@ -888,20 +892,8 @@ impl<const N: usize> ZonedNote<N> {
             "N must be zoned_note_bytes(zones)"
         );
         let mut out = [0u8; N];
-        put4(&mut out, 0, ((OWNER.len() + 1) as u32).to_le_bytes());
-        put4(&mut out, 4, (LEN as u32).to_le_bytes());
-        put4(&mut out, 8, MANIFEST.to_le_bytes());
-        put4(
-            &mut out,
-            HEADER_BYTES,
-            [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
-        );
         let d: [u8; LEN] = encode_zoned(m, zones);
-        let mut i = 0;
-        while i < LEN {
-            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
-            i += 1;
-        }
+        write_note(&mut out, MANIFEST, &d);
         Self(out)
     }
 }
@@ -986,25 +978,14 @@ impl<const N: usize> ServicedNote<N> {
             "N must be serviced_note_bytes(zones)"
         );
         let mut out = [0u8; N];
-        put4(&mut out, 0, ((OWNER.len() + 1) as u32).to_le_bytes());
-        put4(&mut out, 4, (LEN as u32).to_le_bytes());
-        put4(&mut out, 8, MANIFEST.to_le_bytes());
-        put4(
-            &mut out,
-            HEADER_BYTES,
-            [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
-        );
         let d: [u8; LEN] = encode_serviced(m, zones, service);
-        let mut i = 0;
-        while i < LEN {
-            out[HEADER_BYTES + NAME_FIELD_BYTES + i] = d[i];
-            i += 1;
-        }
+        write_note(&mut out, MANIFEST, &d);
         Self(out)
     }
 }
 
-// The owner and its NUL fit the name field, which keeps the descriptor 4-aligned.
+// The owner and its NUL fit the name field, which keeps the descriptor 4-aligned. `write_note`
+// copies the owner whole, so an owner of any length this allows is written in full.
 const _: () = assert!(OWNER.len() < NAME_FIELD_BYTES && NAME_FIELD_BYTES.is_multiple_of(4));
 
 /// Carry this manifest in the program's own bytes: one line at module scope, any constant
@@ -1125,22 +1106,11 @@ pub struct SubtreeGrantsNote(pub [u8; SUBTREE_GRANTS_NOTE_BYTES]);
 impl SubtreeGrantsNote {
     /// The note declaring `scope`.
     pub const fn of(scope: Scope) -> Self {
+        let mut d = [0u8; SUBTREE_GRANTS_BYTES];
+        put4(&mut d, 0, SUBTREE_GRANTS_VERSION.to_le_bytes());
+        put4(&mut d, 4, scope.word().to_le_bytes());
         let mut out = [0u8; SUBTREE_GRANTS_NOTE_BYTES];
-        let namesz = ((OWNER.len() + 1) as u32).to_le_bytes();
-        let descsz = (SUBTREE_GRANTS_BYTES as u32).to_le_bytes();
-        let kind = SUBTREE_GRANTS.to_le_bytes();
-        let version = SUBTREE_GRANTS_VERSION.to_le_bytes();
-        let word = scope.word().to_le_bytes();
-        put4(&mut out, 0, namesz);
-        put4(&mut out, 4, descsz);
-        put4(&mut out, 8, kind);
-        put4(
-            &mut out,
-            HEADER_BYTES,
-            [OWNER[0], OWNER[1], OWNER[2], OWNER[3]],
-        );
-        put4(&mut out, HEADER_BYTES + NAME_FIELD_BYTES, version);
-        put4(&mut out, HEADER_BYTES + NAME_FIELD_BYTES + 4, word);
+        write_note(&mut out, SUBTREE_GRANTS, &d);
         Self(out)
     }
 }
