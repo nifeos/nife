@@ -33,7 +33,9 @@ import os
 import re
 import sys
 
-CEILING = 63
+# One of the literals is the block driver's DMA page, which moved into `components` with the roles
+# it belongs to (milestone 1113, Decision 1); it leaves with the startup page of milestone 1069.
+CEILING = 64
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCOPE = os.path.join('components', 'src')

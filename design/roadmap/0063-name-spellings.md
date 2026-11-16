@@ -187,8 +187,8 @@ Effort: small, and almost entirely mechanical, but it touches paths in `script/`
 
 - **Recorded.** `design/naming.md` lists what this milestone deliberately did not rename, so the
   next reader does not "fix" one by mistake. They are the `shell` boot mode beside the `swish`
-  binary and the `caps` shell builtin. Also `crates/virtio`'s first line still calling itself a
-  virtio-blk driver, and the
+  binary and the `caps` shell builtin. Also the block driver's roles module's first line still
+  calling itself a virtio-blk driver, and the
   measured-boot manifest at `target/init-measure-<arch>.txt`.
 - **Recorded.** `design/naming.md` also keeps this block's `target/` and `targets/` entry, told in
   `BUGS`.

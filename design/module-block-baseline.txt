@@ -101,6 +101,20 @@ c_library/src/start.rs::CMain
 
 c_library/src/start.rs::run
 
+components/src/block_driver_roles.rs::run
+
+components/src/block_driver_roles.rs::run_attack
+
+components/src/block_driver_roles.rs::run_attack_indirect
+
+components/src/block_driver_roles.rs::run_blk_server
+
+components/src/block_driver_roles.rs::run_net
+
+components/src/block_driver_roles.rs::run_write
+
+components/src/block_driver_roles.rs::run_write_abandon
+
 components/src/credentialer.rs::RPT_READY
 
 components/src/designware_ethernet_transport.rs::bring_up
@@ -7607,19 +7621,12 @@ crates/video_terminal/src/vt.rs::width
 
 crates/video_terminal/src/vt/tests.rs
 
-crates/virtio/src/lib.rs::run
 
-crates/virtio/src/lib.rs::run_attack
 
-crates/virtio/src/lib.rs::run_attack_indirect
 
-crates/virtio/src/lib.rs::run_blk_server
 
-crates/virtio/src/lib.rs::run_net
 
-crates/virtio/src/lib.rs::run_write
 
-crates/virtio/src/lib.rs::run_write_abandon
 
 crates/vmstat/src/lib.rs::write_diagnostics
 
