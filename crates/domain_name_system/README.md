@@ -5,9 +5,9 @@
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/domain_name_system#license)
 [![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/domain_name_system/blob/main/Cargo.toml)
 
-The DNS wire format a stub resolver needs (RFC 1035, and RFC 7766 for TCP), as pure computation: the
-bytes of a query for one name's IPv4 addresses, and the checks a reply must pass before any address
-in it is believed. `no_std`, no dependencies, no `unsafe`. There is no socket, no timer and no
+The DNS wire format a stub resolver needs (RFC 1035, and RFC 7766 for TCP), as pure computation.
+It writes the bytes of a query for one name's IPv4 addresses. It also runs the checks a reply must
+pass before any address in it is believed. `no_std`, no dependencies, no `unsafe`. There is no socket, no timer and no
 policy. Which program sends these bytes, and which names a client may ask about, are the caller's
 business.
 
@@ -55,8 +55,8 @@ the reply that a truncated UDP reply asks for.
 
 Three Kani harnesses in `src/proofs.rs` prove three things:
 
-- `the_name_decoder_is_total_and_in_bounds`: the name decoder never reads outside the message and
-  always terminates, on any bytes and any start offset.
+- `the_name_decoder_is_total_and_in_bounds`: on any bytes and any start offset, the name decoder
+  stays inside the message and terminates.
 - `the_header_round_trips_on_every_value`: a header written and parsed again is the header.
 - `tcp_reassembly_is_total_and_honest`: `TcpReply` is total on any split of its input and refuses a
   reply longer than it announced.
@@ -88,8 +88,8 @@ that feeds `Query::accept` arbitrary bytes.
 
 ## Sizes
 
-`Name` is 256 bytes and `Copy`, and `Reader::record` returns a `Record` by value, so `Query::accept`
-copies a name once per record on each of its three passes over the answer section. `Answer` is 296
+`Name` is 256 bytes and `Copy`, and `Reader::record` returns a `Record` by value. So `Query::accept` copies
+a name once per record on each of its three passes over the answer section. `Answer` is 296
 bytes and `Result<Answer, Reject>` is 300. A caller on a small stack should count them beside its
 514-byte buffer.
 
