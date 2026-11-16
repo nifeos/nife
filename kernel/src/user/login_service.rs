@@ -171,7 +171,8 @@ pub fn start(
     construction_pages: u64,
     schedule: bool,
 ) -> Wiring {
-    let elf = Elf::parse(image).expect("login is not loadable");
+    let elf = Elf::parse_with(image, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        .expect("login is not loadable");
 
     let blobs = read_login_blobs(schedule);
     let aspace = build_login_space(&elf, &blobs, verify_page_frame);

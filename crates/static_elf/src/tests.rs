@@ -373,6 +373,23 @@ fn segments_in_adjacent_pages_are_accepted() {
     Elf::parse(&descending).expect("adjacent pages, code second");
 }
 
+/// Two segments one 4 KiB page apart share a 16 KiB page. `parse` accepts them, and a parse told
+/// the loader maps 16 KiB pages refuses them, so the overlap check follows the page size given.
+#[test]
+fn the_overlap_check_follows_the_page_size_given() {
+    let bytes = Builder::new()
+        .seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16)
+        .seg(PF_R | PF_W, 0x40_1000, &[0xbb; 16], 16)
+        .build();
+    Elf::parse(&bytes).expect("different 4 KiB pages");
+    let sixteen = PageBytes::new(0x4000).unwrap();
+    assert_eq!(
+        Elf::parse_with(&bytes, NATIVE_MACHINE, sixteen).err(),
+        Some(Error::SegmentsOverlap)
+    );
+    Elf::parse_with(&bytes, NATIVE_MACHINE, PageBytes::FOUR_KIBIBYTES).expect("as parse");
+}
+
 /// Pins the byte order of the field reader with a value whose two bytes differ. Every field
 /// the parser checks happens to have a zero high byte in the other fixtures, so a reader that
 /// picked up the wrong neighbouring byte would still pass them.
@@ -469,7 +486,10 @@ fn a_nonsense_physical_address_is_not_a_parse_error() {
     assert_eq!(segs[0].paddr, u64::MAX);
     assert_eq!(segs[1].paddr, 0);
     // And `page_range` is the *virtual* range, which is the other half of the same trap.
-    assert_eq!(segs[0].page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_1000));
+    assert_eq!(
+        segs[0].page_range(PageBytes::FOUR_KIBIBYTES),
+        (0x40_0000, 0x40_1000)
+    );
 }
 
 #[test]
@@ -482,7 +502,10 @@ fn page_range_covers_the_whole_segment() {
         data: &[],
     };
     // 0x400800..0x401100 spans two pages: 0x400000 and 0x401000.
-    assert_eq!(seg.page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_2000));
+    assert_eq!(
+        seg.page_range(PageBytes::FOUR_KIBIBYTES),
+        (0x40_0000, 0x40_2000)
+    );
 }
 
 /// The same segment rounds to the page size it is given: one 16 KiB page holds what took two

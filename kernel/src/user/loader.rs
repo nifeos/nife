@@ -89,7 +89,8 @@ pub fn load(
     windowed: u64,
     windows: &[startup_page_contract::Window],
 ) -> Result<(AddressSpace, u64), LoadError> {
-    let elf = Elf::parse(image).map_err(LoadError::NotLoadable)?;
+    let elf = Elf::parse_with(image, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        .map_err(LoadError::NotLoadable)?;
     check_image_band(&elf)?;
 
     // Counted from the file before anything is carved: a binary that lies about its size exhausts

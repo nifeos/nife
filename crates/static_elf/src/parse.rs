@@ -86,9 +86,10 @@ impl<'a> Elf<'a> {
     ///
     /// The file must be for this build's own machine, [`NATIVE_MACHINE`]; a file for any other
     /// machine is [`Error::WrongMachine`]. [`parse_for_machine`](Self::parse_for_machine) names the
-    /// machine instead.
+    /// machine instead. No two segments may share a 4 KiB page;
+    /// [`parse_with`](Self::parse_with) names the page size as well.
     pub fn parse(bytes: &'a [u8]) -> Result<Self, Error> {
-        Self::parse_for_machine(bytes, EXPECTED_MACHINE)
+        Self::parse_with(bytes, EXPECTED_MACHINE, PageBytes::FOUR_KIBIBYTES)
     }
 
     /// [`parse`](Self::parse), for a file built for `machine` rather than for this build's own.
@@ -100,6 +101,18 @@ impl<'a> Elf<'a> {
     ///
     /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
     pub fn parse_for_machine(bytes: &'a [u8], machine: u16) -> Result<Self, Error> {
+        Self::parse_with(bytes, machine, PageBytes::FOUR_KIBIBYTES)
+    }
+
+    /// [`parse_for_machine`](Self::parse_for_machine), refusing two segments that share a page of
+    /// `page_bytes` rather than of 4 KiB.
+    ///
+    /// A loader that maps in pages larger than 4 KiB passes its own page size. Two segments in
+    /// different 4 KiB pages of one 16 KiB page pass `parse`, and a loader mapping 16 KiB pages
+    /// then meets a page it has already mapped, after part of the program is in place.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    pub fn parse_with(bytes: &'a [u8], machine: u16, page_bytes: PageBytes) -> Result<Self, Error> {
         if bytes.len() < EHDR_SIZE {
             return Err(Error::TooSmall);
         }
@@ -164,12 +177,12 @@ impl<'a> Elf<'a> {
             phentsize,
         };
 
-        elf.validate()?;
+        elf.validate(page_bytes)?;
         Ok(elf)
     }
 
     /// Every check, before the caller maps a single page.
-    fn validate(&self) -> Result<(), Error> {
+    fn validate(&self, page_bytes: PageBytes) -> Result<(), Error> {
         let mut entry_ok = false;
 
         for i in 0..self.phnum {
@@ -193,8 +206,8 @@ impl<'a> Elf<'a> {
             // No two segments may claim the same page. See `Error::SegmentsOverlap`.
             for j in 0..i {
                 if let Some(other) = self.segment_at(j)? {
-                    let (a0, a1) = seg.page_range(PageBytes::FOUR_KIBIBYTES);
-                    let (b0, b1) = other.page_range(PageBytes::FOUR_KIBIBYTES);
+                    let (a0, a1) = seg.page_range(page_bytes);
+                    let (b0, b1) = other.page_range(page_bytes);
                     if a0 < b1 && b0 < a1 {
                         return Err(Error::SegmentsOverlap);
                     }

@@ -141,7 +141,8 @@ pub fn spawn_elf_child_builder(
     .expect("no building budget for the builder");
 
     let tid = crate::sched::spawn(move || {
-        let elf = match Elf::parse(builder_bytes) {
+        let elf = match Elf::parse_with(builder_bytes, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        {
             Ok(e) => e,
             Err(e) => {
                 crate::println!("  the {entry} image is not loadable: {e:?}");

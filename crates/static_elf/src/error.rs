@@ -73,9 +73,11 @@ pub enum Error {
     WritableAndExecutable,
     /// A segment that is neither readable nor executable. Nothing can ever touch it.
     SegmentUnreachable,
-    /// Two segments want the same page. Legal ELF, and common when `.text` and `.rodata` share a
-    /// page, but refused: a loader that gives each segment its own permissions cannot give one page
-    /// two, so a linker script for this loader page-aligns every segment.
+    /// Two segments want the same page, on pages of the size the parse was given (4 KiB unless
+    /// [`Elf::parse_with`](crate::Elf::parse_with) named another). Legal ELF, and common when
+    /// `.text` and `.rodata` share a page, but refused: a loader that gives each segment its own
+    /// permissions cannot give one page two, so a linker script for this loader page-aligns every
+    /// segment.
     SegmentsOverlap,
     /// The entry point is not inside any executable segment. The program cannot start.
     EntryNotExecutable,
