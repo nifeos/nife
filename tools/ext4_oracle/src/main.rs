@@ -103,6 +103,18 @@ fn read_all<F>(
 }
 
 fn main() {
+    let mut fs = mount_from_arguments();
+    let mut lines = walk(&mut fs);
+    lines.sort();
+    let mut out = std::io::stdout().lock();
+    for l in lines {
+        writeln!(out, "{l}").unwrap();
+    }
+}
+
+/// Open the image the arguments name and mount it read-only, or exit: 64 on a usage error, 2 with
+/// one `MOUNT-ERROR` line when the crate refuses the mount.
+fn mount_from_arguments() -> Fs {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 {
         eprintln!("usage: ext4_oracle <image> <sector-size>");
@@ -120,14 +132,17 @@ fn main() {
         sectors,
     };
     let services = MountServices::new(FixedClock, (), NoopObserver);
-    let mut fs: Fs = match Ext4::mount(image, services, MountOptions::read_only_no_journal_replay())
-    {
+    match Ext4::mount(image, services, MountOptions::read_only_no_journal_replay()) {
         Ok(fs) => fs,
         Err(e) => {
             println!("MOUNT-ERROR\t{e:?}");
             std::process::exit(2);
         }
-    };
+    }
+}
+
+/// One manifest line per entry under the root, unsorted, walking every directory.
+fn walk(fs: &mut Fs) -> Vec<String> {
     let mut lines = Vec::new();
     let mut stack = vec![(b"".to_vec(), fs.root_inode())];
     while let Some((prefix, dir)) = stack.pop() {
@@ -153,113 +168,17 @@ fn main() {
                 let mut p = prefix.clone();
                 p.push(b'/');
                 p.extend_from_slice(&entry.name);
-                let shown = hex_or_text(&p);
                 let info = match fs.inode(entry.inode) {
                     Ok(i) => i,
                     Err(e) => {
-                        lines.push(format!("{shown}\tINODE-ERROR\t{e:?}"));
+                        lines.push(format!("{}\tINODE-ERROR\t{e:?}", hex_or_text(&p)));
                         continue;
                     }
                 };
-                let kind = format!("{:?}", info.file_type());
-                let mut content = String::from("-");
-                let mut extents = String::from("-");
-                match info.file_type() {
-                    DirectoryEntryType::RegularFile | DirectoryEntryType::Symlink => {
-                        let number = entry.inode;
-                        content = match read_all(&mut fs, |fs: &mut Fs, off, buf| {
-                            fs.read_inode(number, off, buf)
-                        }) {
-                            Ok(b) if matches!(info.file_type(), DirectoryEntryType::Symlink) => {
-                                hex(&b)
-                            }
-                            Ok(b) => format!("{}:{:016x}", b.len(), fnv(&b)),
-                            Err(e) => format!("READ-ERROR {e}"),
-                        };
-                    }
-                    DirectoryEntryType::Directory => stack.push((p.clone(), entry.inode)),
-                    _ => {}
+                if matches!(info.file_type(), DirectoryEntryType::Directory) {
+                    stack.push((p.clone(), entry.inode));
                 }
-                if matches!(
-                    info.file_type(),
-                    DirectoryEntryType::RegularFile | DirectoryEntryType::Directory
-                ) {
-                    extents = match fs.inode_extents(
-                        entry.inode,
-                        0,
-                        u64::MAX / 2,
-                        FileExtentTarget::Data,
-                        100_000,
-                    ) {
-                        Ok(map) => {
-                            let mut parts: Vec<String> = map
-                                .extents
-                                .iter()
-                                .map(|x| match x.state {
-                                    FileExtentState::Inline => "inline".to_string(),
-                                    s => format!(
-                                        "{}+{}@{}{}",
-                                        x.logical_start / block_size(&fs),
-                                        x.length.div_ceil(block_size(&fs)),
-                                        x.physical_start / block_size(&fs),
-                                        if s == FileExtentState::Unwritten {
-                                            "u"
-                                        } else {
-                                            ""
-                                        }
-                                    ),
-                                })
-                                .collect();
-                            if !map.complete {
-                                parts.push("INCOMPLETE".into());
-                            }
-                            if parts.is_empty() {
-                                "none".into()
-                            } else {
-                                parts.join(",")
-                            }
-                        }
-                        Err(e) => format!("EXTENT-ERROR {e:?}"),
-                    };
-                }
-                let xattrs = match fs.list_xattrs(entry.inode) {
-                    Ok(names) => {
-                        let mut v: Vec<String> = names
-                            .iter()
-                            .map(|n| {
-                                let full = format!(
-                                    "{}{}",
-                                    namespace(n.namespace),
-                                    String::from_utf8_lossy(&n.name)
-                                );
-                                match fs.get_xattr(entry.inode, n.namespace, &n.name) {
-                                    Ok(val) => format!("{full}={}:{:016x}", val.len(), fnv(&val)),
-                                    Err(e) => format!("{full}=ERROR {e:?}"),
-                                }
-                            })
-                            .collect();
-                        v.sort();
-                        if v.is_empty() {
-                            "none".into()
-                        } else {
-                            v.join(",")
-                        }
-                    }
-                    Err(e) => format!("XATTR-ERROR {e:?}"),
-                };
-                lines.push(format!(
-                    "{shown}\t{}\t{kind}\t{:o}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{content}\t{xattrs}\t{extents}",
-                    entry.inode.raw(),
-                    info.mode & 0o7777,
-                    info.uid,
-                    info.gid,
-                    info.links,
-                    info.size,
-                    info.atime,
-                    info.ctime,
-                    info.mtime,
-                    info.btime,
-                ));
+                lines.push(entry_line(fs, &p, entry.inode, &info));
             }
             cursor = entries.last().unwrap().next_cursor;
             if cursor == DirectoryCursor::End {
@@ -267,10 +186,111 @@ fn main() {
             }
         }
     }
-    lines.sort();
-    let mut out = std::io::stdout().lock();
-    for l in lines {
-        writeln!(out, "{l}").unwrap();
+    lines
+}
+
+/// The manifest line of one entry, in `debugfs_manifest.py`'s fields.
+fn entry_line(fs: &mut Fs, path: &[u8], number: InodeNumber, info: &InodeInfo) -> String {
+    let kind = format!("{:?}", info.file_type());
+    let content = content_of(fs, number, info);
+    let extents = if matches!(
+        info.file_type(),
+        DirectoryEntryType::RegularFile | DirectoryEntryType::Directory
+    ) {
+        extents_of(fs, number)
+    } else {
+        String::from("-")
+    };
+    let xattrs = attributes_of(fs, number);
+    format!(
+        "{}\t{}\t{kind}\t{:o}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{content}\t{xattrs}\t{extents}",
+        hex_or_text(path),
+        number.raw(),
+        info.mode & 0o7777,
+        info.uid,
+        info.gid,
+        info.links,
+        info.size,
+        info.atime,
+        info.ctime,
+        info.mtime,
+        info.btime,
+    )
+}
+
+/// A file's length and FNV-1a-64, a symbolic link's target in hex, or `-` for anything else.
+fn content_of(fs: &mut Fs, number: InodeNumber, info: &InodeInfo) -> String {
+    let is_link = matches!(info.file_type(), DirectoryEntryType::Symlink);
+    if !is_link && !matches!(info.file_type(), DirectoryEntryType::RegularFile) {
+        return String::from("-");
+    }
+    match read_all(fs, |fs: &mut Fs, off, buf| fs.read_inode(number, off, buf)) {
+        Ok(b) if is_link => hex(&b),
+        Ok(b) => format!("{}:{:016x}", b.len(), fnv(&b)),
+        Err(e) => format!("READ-ERROR {e}"),
+    }
+}
+
+/// The leaf extents as `logical+length@physical`, in blocks, with `u` marking an unwritten one.
+fn extents_of(fs: &mut Fs, number: InodeNumber) -> String {
+    let map = match fs.inode_extents(number, 0, u64::MAX / 2, FileExtentTarget::Data, 100_000) {
+        Ok(map) => map,
+        Err(e) => return format!("EXTENT-ERROR {e:?}"),
+    };
+    let block = block_size(fs);
+    let mut parts: Vec<String> = map
+        .extents
+        .iter()
+        .map(|x| match x.state {
+            FileExtentState::Inline => "inline".to_string(),
+            s => format!(
+                "{}+{}@{}{}",
+                x.logical_start / block,
+                x.length.div_ceil(block),
+                x.physical_start / block,
+                if s == FileExtentState::Unwritten {
+                    "u"
+                } else {
+                    ""
+                }
+            ),
+        })
+        .collect();
+    if !map.complete {
+        parts.push("INCOMPLETE".into());
+    }
+    if parts.is_empty() {
+        "none".into()
+    } else {
+        parts.join(",")
+    }
+}
+
+/// Every extended attribute as `name=length:FNV-1a-64`, sorted, or `none`.
+fn attributes_of(fs: &mut Fs, number: InodeNumber) -> String {
+    let names = match fs.list_xattrs(number) {
+        Ok(names) => names,
+        Err(e) => return format!("XATTR-ERROR {e:?}"),
+    };
+    let mut v: Vec<String> = names
+        .iter()
+        .map(|n| {
+            let full = format!(
+                "{}{}",
+                namespace(n.namespace),
+                String::from_utf8_lossy(&n.name)
+            );
+            match fs.get_xattr(number, n.namespace, &n.name) {
+                Ok(val) => format!("{full}={}:{:016x}", val.len(), fnv(&val)),
+                Err(e) => format!("{full}=ERROR {e:?}"),
+            }
+        })
+        .collect();
+    v.sort();
+    if v.is_empty() {
+        "none".into()
+    } else {
+        v.join(",")
     }
 }
 
