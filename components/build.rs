@@ -10,20 +10,18 @@ use std::path::Path;
 
 fn main() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    link_el0(Path::new(&manifest_dir));
+    link_el0();
     carry_jh7110_entropy_identity(Path::new(&manifest_dir));
 }
 
 /// Point the linker at the shared EL0 script and keep the output an ELF.
 ///
-/// Duplicated, four lines of it, in `fixtures/build.rs`: a build script is per-package and there is
+/// Duplicated, three lines of it, in `fixtures/build.rs`: a build script is per-package and there is
 /// nowhere below this that two packages can share code without a third crate existing to hold it.
-/// The thing that would actually hurt to duplicate, the layout, is the one file both call.
-fn link_el0(manifest_dir: &Path) {
-    let script = manifest_dir.join("../crates/user_mode_runtime/link.ld");
-    let script = script.display();
-    println!("cargo::rerun-if-changed={script}");
-    println!("cargo::rustc-link-arg=-T{script}");
+/// The thing that would actually hurt to duplicate, the layout, is the one file both name, and
+/// `user_mode_runtime`'s build script puts it on the search path.
+fn link_el0() {
+    println!("cargo::rustc-link-arg=-Tlink.ld");
 
     // Keep the ELF an ELF. The kernel's loader wants program headers, not a flat blob.
     println!("cargo::rustc-link-arg=--build-id=none");

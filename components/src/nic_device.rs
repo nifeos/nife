@@ -10,7 +10,7 @@ pub(crate) const MAC: [u8; 6] = [0x52, 0x54, 0x00, 0x12, 0x34, 0x56];
 
 /// smoltcp's clock, from the monotonic counter, in milliseconds.
 pub(crate) fn instant() -> Instant {
-    let milliseconds = (now() as u128 * 1000 / cntfrq() as u128) as i64;
+    let milliseconds = (now() as u128 * 1000 / counter_hertz() as u128) as i64;
     Instant::from_millis(milliseconds)
 }
 

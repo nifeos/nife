@@ -34,7 +34,7 @@ use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::Handoff;
 use filesystem_contract::blk;
 use startup_page_contract::StartupWindow;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{exit, receive_request, reply, send};
 
 /// The request endpoint.
@@ -60,7 +60,7 @@ const EROFS: i32 = 30;
 static REGISTERS: StartupWindow = unsafe {
     StartupWindow::new(
         ::driver_process_contract::designware_mobile_storage::REGISTER_KIND,
-        PAGE,
+        PAGE_BYTES,
     )
 };
 
@@ -87,12 +87,12 @@ struct Page;
 impl RegisterWindowAndClock for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        mapped(&REGISTERS).r32(u64::from(offset))
+        mapped(&REGISTERS).read_u32(u64::from(offset))
     }
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        mapped(&REGISTERS).w32(u64::from(offset), value);
+        mapped(&REGISTERS).write_u32(u64::from(offset), value);
     }
 
     fn now_microseconds(&mut self) -> u64 {

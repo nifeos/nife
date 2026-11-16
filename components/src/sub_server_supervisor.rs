@@ -27,7 +27,7 @@ use supervision_contract::{
     REP_BUILT, REPORT_FAILED, REPORT_SUP_GAVE_UP, REPORT_SUP_SAW_DEATH, REQ_BUILD,
     SUB_SERVER_LABELS,
 };
-use user_mode_runtime::{receive, receive_fault, send};
+use user_mode_runtime::{Message, receive, receive_message, send};
 
 /// What `root_supervisor` endowed us with, in order. Notice what is missing: memory.
 const REQ: u64 = 0; // WRITE: ask the spawner to build or reap
@@ -63,7 +63,12 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     while children.iter().any(|c| c.running) {
         // The kernel is the only sender here, so the tid and the label are trustworthy without
         // asking anyone (§26 (the fault endpoint), item 5; and §148 as amended, for the label).
-        let (event, tid, _pc, _addr, _reserved, label) = receive_fault(FAULT);
+        let Message {
+            w0: event,
+            w1: tid,
+            label,
+            ..
+        } = receive_message(FAULT).into_message();
         send(REPORT, REPORT_SUP_SAW_DEATH, label, event);
 
         // Reap first, either way: the corpse is dead-until-reaped, so its region stays pinned until we
@@ -103,7 +108,9 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // Park rather than exit. Exiting would make *us* a death our own supervisor has to handle, and a
     // supervisor whose last act is to create work for its parent is a poor one.
     loop {
-        let (event, _tid, _pc, _addr, _reserved, label) = receive_fault(FAULT);
+        let Message {
+            w0: event, label, ..
+        } = receive_message(FAULT).into_message();
         send(REPORT, REPORT_SUP_SAW_DEATH, label, event);
     }
 }

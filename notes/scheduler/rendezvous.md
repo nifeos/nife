@@ -93,7 +93,7 @@ Only a plain `RECEIVE` gets the label. `RECEIVE_CAPABILITY` lays out its result 
 `RECEIVE` as the death message's receive. A kernel thread has no user frame, so it gets nothing; the
 bytes at its stack top are its own stack. An ordinary message writes nothing to the register. A
 supervisor that wants 0 to mean "not stamped by the kernel" zeroes it before the receive, as
-`user_mode_runtime::receive_fault` does. And a child cannot forge a label, because the badge it
+`user_mode_runtime::receive_message` does. And a child cannot forge a label, because the badge it
 sends with arrives in word 3.
 
 ## Call and reply

@@ -119,6 +119,8 @@ ratified `counter_frequency_contract` method `hertz`. The open row takes the spe
 and it stays open for the architect at ratification. The premises hold at `src/clock.rs` lines 45,
 72 and 128 and `src/mapped_window.rs` lines 37, 66 and 145. Item 13 is the work. Ratifying the
 names stays the architect's.
+The abbreviation gate reads a bare `address` as ambiguous, so three rows land qualified:
+`virtual_address_space_slot`, `virtual_address_space_list` and `destination_network_address`.
 
 ### Decision 2: how a program outside nife links against the layout
 
@@ -182,10 +184,24 @@ has no caller outside the crate. Item 15 is the work.
   immediates from `abi`, `Frame::len` with the `DATA_MAXIMUM` clamp, the target-gated
   dependency, `retype_sleeper` through `is_granted`, and the dependency-direction sentence. Builds
   on three targets, no test target for them.
-- **Outstanding.** Items 3, 8, 9 and 11 belong to the move lane. Item 4 changes how `script/lint`
-  builds the crate for bare-metal targets. Checked by reading `script/lint`.
-- **Outstanding.** Items 5, 13 and 15 are the work of Decisions 2, 1 and 3, which the maintainer
-  has decided, provisionally. Item 17 adds a syscall wrapper, which is the architect's call.
+- **Done.** Item 4: the crate has a host test target. Host tests cover the window, the frame,
+  `Delivered::decode`, the three child stubs, the nanosecond conversion and the `link.ld` base.
+  `script/lint` runs them on the host and builds the crate with `--lib` on the bare-metal targets.
+  `xtask` runs them in the host suite.
+- **Done.** Item 5: a `build.rs` in the crate puts `link.ld` on the link search path, and every
+  consumer emits `-Tlink.ld` with no path. The std programs depend on the crate for it, which grew
+  their lockfiles. This lane does not build them.
+- **Done.** Item 11: `address_space_layout` derives `INITIAL_RAMDISK_VIRTUAL_ADDRESS` from the
+  runtime window base, and the kernel loader and this crate re-export it. The crate no longer sets
+  `test = false`.
+- **Done.** Item 13, under the provisional Decision 1: the crate and every caller spell out the abbreviated
+  names, with no alias for an old spelling. Every renamed public name carries a
+  provisional `Name:` block. The architect ratifies them.
+- **Done.** Item 15, under the provisional Decision 3: `Message`, `Received`, `receive_message` and
+  `receive_capability_message` replace the seven projections. `receive`, `receive_capability`,
+  `receive_request` and `call` stay. No wire byte or syscall moves.
+- **Outstanding.** Items 3, 8 and 9 belong to the move lane. Item 17 adds a syscall wrapper, which
+  is the architect's call.
 
 ## Done when
 

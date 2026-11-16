@@ -62,7 +62,7 @@ pub(super) fn wait_for_nic(
     let ticks = abi::timer::counter_ticks_for(
         microseconds / 1_000_000,
         ((microseconds % 1_000_000) * 1000) as u32,
-        cntfrq(),
+        counter_hertz(),
     );
     if timer_arm(RETRANSMIT, now().saturating_add(ticks), WAKE, 1) == 0 {
         interrupt_wait(INTERRUPT); // 1: a frame; BOUND: the deadline
@@ -93,11 +93,11 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
     if frame_waiting {
         return;
     }
-    // `cntfrq`'s discipline: a process that cannot know the tick dies saying so, rather than
+    // `counter_hertz`'s discipline: a process that cannot know the tick dies saying so, rather than
     // guessing one and silently paying a tick per round trip again.
     let tick_hertz = user_mode_runtime::tick_hertz()
         .expect("the scheduler tick is unknown: this thread's current-CPU page carries none");
-    let tick = cntfrq() / tick_hertz;
+    let tick = counter_hertz() / tick_hertz;
     let due = iface
         .poll_delay(instant(), sockets)
         .map(|d| d.total_micros());
@@ -115,7 +115,7 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
         polled_wait::Next::Sleep(0) => return,
         polled_wait::Next::Sleep(microseconds) => microseconds,
     };
-    let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, cntfrq());
+    let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
     if sleep_until(RETRANSMIT, WAKE, now().saturating_add(ticks)) < 0 {
         user_mode_runtime::yield_now();
     }
