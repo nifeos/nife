@@ -100,6 +100,14 @@ paths = [
 ]
 
 [[home]]
+# The ext4 read oracle's corpus recipe and its debugfs side, milestone 190 (ext4, read and write:
+# a Rust implementation with libext2fs as the host-side oracle). It judges the ext4 server, which
+# is not yet a package.
+status = "undecided"
+reason = "it leaves with the ext4 server it judges, whose package is not yet named"
+paths = ["tools/ext4_oracle/"]
+
+[[home]]
 status = "undecided"
 reason = "every repository carries its own copy; this one follows the root"
 paths = ["LICENSE-MIT", "LICENSE-APACHE"]
