@@ -11,7 +11,7 @@ needs_person: yes
 
 Raised by a read-only outside review of `crates/virtio`, read as a stranger to this tree would meet
 it. It changes nothing; it lists what the next lanes change, and it puts one question to the
-architect first, because every other item depends on its answer. The architect has ruled it
+architect first, because every other item depends on its answer. The architect ruled it
 (Decision 1).
 
 There is no review package for this crate in `notes/crate-reviews/`, no row in
@@ -112,9 +112,9 @@ cut later, that holds what the six copies share. That means the register vocabul
 transport seam, the status and feature bits, the handshake, the descriptor and ring accessors at
 the validator's fixed layout, the blk request chain and the net header. It has no test role and no
 slot convention in it. Whether to cut that library, and when, waits for 1062 step 7, because the
-direct grant changes what the shared handshake does. The fold is chosen for the rules (a crate
-gets its own repository only when it would publish on its merits or when more than one repository
-consumes it), and it would be chosen at equal effort.
+direct grant changes what the shared handshake does. The rules favor the fold (a crate gets
+its own repository only when it would publish on its merits or when more than one repository
+consumes it), and the fold would win at equal effort.
 
 Prior art. Linux (`drivers/virtio/virtio_ring.c` shared by every class driver), OpenBSD
 (`sys/dev/pv/virtio.c` under `vioblk` and `vio`) and Redox (`virtio-core` under `virtio-blkd`,
