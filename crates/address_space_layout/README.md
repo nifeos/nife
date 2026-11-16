@@ -11,33 +11,6 @@ new page is placed by the table and not by choosing a number beside the others. 
 it claims is a Kani harness in the tree, and every harness carries a falsification patch that shows
 what turns it red.
 
-## What is proven
-
-Eleven Kani harnesses state the layout per address and per window:
-
-- `every_address_below_the_ceiling_lies_in_exactly_one_band`: every address below 2 GiB is in one
-  band and no address above it is in any, each band is page aligned, and the whole map lies in the
-  user half of all three architectures.
-- `the_bands_are_listed_in_address_order`: `BANDS` is in address order.
-- `pair_page_accepts_every_page_of_its_band`, `runtime_window_accepts_every_page_of_its_band` and
-  `service_window_accepts_every_page_of_its_band`: each band function accepts every page of its
-  band, returns it unchanged, and the page lies in no other band.
-- `pair_page_refuses_every_address_its_doc_forbids`, `runtime_window_refuses_every_address_its_doc_forbids`
-  and `service_window_refuses_every_address_its_doc_forbids`: each refuses an unaligned address or
-  one outside its band, so the build stops.
-- `window_accepts_every_whole_window_its_band_holds` and
-  `window_refuses_every_malformed_or_overrunning_window`: `window` accepts a page aligned, non-empty window
-  that lies wholly inside its band, and refuses an unaligned, empty, wrapping or overrunning one.
-- `check_image_places_exactly_what_the_image_band_holds`: for every pair of bounds, `check_image`
-  places the image, calls it too large, or calls it outside the band, as its documentation says.
-
-Each harness has a falsification record at
-`falsifications/<module>.<harness>.patch`; applying it with `git apply -p1` from the crate root
-makes that harness fail at its own assertion, which shows the proof checks something. The patches
-need a git checkout, and you revert each one with `git checkout -- src` before the next.
-
-Not proven: that two windows in one band do not overlap. The crate that places them asserts that.
-
 ## EXAMPLES
 
 Place a pair page and a whole window in a `const`, so a wrong address stops the build:
@@ -65,6 +38,33 @@ println!("{refusal}");
 // the program image is too large: it ends at 0x7f001000, past the stack's base at 0x7f000000;
 // an image may be at most 496 MiB
 ```
+
+## What is proven
+
+Eleven Kani harnesses state the layout per address and per window:
+
+- `every_address_below_the_ceiling_lies_in_exactly_one_band`: every address below 2 GiB is in one
+  band and no address above it is in any, each band is page aligned, and the whole map lies in the
+  user half of all three architectures.
+- `the_bands_are_listed_in_address_order`: `BANDS` is in address order.
+- `pair_page_accepts_every_page_of_its_band`, `runtime_window_accepts_every_page_of_its_band` and
+  `service_window_accepts_every_page_of_its_band`: each band function accepts every page of its
+  band, returns it unchanged, and the page lies in no other band.
+- `pair_page_refuses_every_address_its_doc_forbids`, `runtime_window_refuses_every_address_its_doc_forbids`
+  and `service_window_refuses_every_address_its_doc_forbids`: each refuses an unaligned address or
+  one outside its band, so the build stops.
+- `window_accepts_every_whole_window_its_band_holds` and
+  `window_refuses_every_malformed_or_overrunning_window`: `window` accepts a page aligned, non-empty window
+  that lies wholly inside its band, and refuses an unaligned, empty, wrapping or overrunning one.
+- `check_image_places_exactly_what_the_image_band_holds`: for every pair of bounds, `check_image`
+  places the image, calls it too large, or calls it outside the band, as its documentation says.
+
+Each harness has a falsification record at
+`falsifications/<module>.<harness>.patch`; applying it with `git apply -p1` from the crate root
+makes that harness fail at its own assertion, which shows the proof checks something. The patches
+need a git checkout, and you revert each one with `git checkout -- src` before the next.
+
+Not proven: that two windows in one band do not overlap. The crate that places them asserts that.
 
 ## The bands
 
