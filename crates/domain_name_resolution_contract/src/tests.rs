@@ -432,3 +432,25 @@ fn the_last_piece_of_a_grant_says_whether_it_took() {
     );
     assert_eq!(g.granted(4), None);
 }
+
+/// **The table's size, measured**: 4,160 bytes of a resolver's state. Each of the eight entries is
+/// a 4-byte badge, a 256-byte `Name`, the name field's 254 bytes of text and three one-byte fields,
+/// 517 bytes padded to 520 for the badge's alignment.
+#[test]
+fn the_grant_table_is_the_size_its_entries_add_up_to() {
+    let entry =
+        (4 + core::mem::size_of::<Name>() + MAXIMUM_NAME_FIELD_BYTES + 3).next_multiple_of(4);
+    assert_eq!(entry, 520);
+    assert_eq!(core::mem::size_of::<Grants>(), MAXIMUM_GRANTS * entry);
+    assert_eq!(core::mem::size_of::<Grants>(), 4160);
+}
+
+/// **A table prints its grants**, each zone as dotted text, so a failing test shows the state.
+#[test]
+fn a_grant_table_prints_each_zone_as_dotted_text() {
+    let mut g = Grants::new();
+    assert_eq!(grant(&mut g, 3, "example.test"), Control::Granted(0));
+    let printed = std::format!("{g:?}");
+    assert!(printed.contains("badge: 3"), "{printed}");
+    assert!(printed.contains("example.test"), "{printed}");
+}

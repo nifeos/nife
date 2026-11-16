@@ -154,11 +154,27 @@ impl Entry {
     };
 }
 
+/// The badge, the zone as dotted text (as `Name` prints it), whether it is in force, and how much
+/// of a grant in progress has arrived. The text buffer itself is left out: its bytes past the
+/// count are stale.
+impl core::fmt::Debug for Entry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Entry")
+            .field("badge", &self.badge)
+            .field("zone", &self.zone)
+            .field("complete", &self.complete)
+            .field("text_bytes_received", &self.text_bytes_received)
+            .field("text_bytes_total", &self.text_bytes_total)
+            .finish()
+    }
+}
+
 /// **Which badge may resolve which zone**, and which window its page lives in.
 ///
 /// An entry's index is its client's window, fixed for the resolver's life (see the crate's BUGS),
 /// so the resolver maps a client's page at the same place every time and a re-grant does not move
-/// it.
+/// it. Every `usize` the table hands back ([`Control::Granted`], [`Control::Forgotten`],
+/// [`Grants::check`], [`Grants::granted`]) is that window, below [`MAXIMUM_GRANTS`].
 ///
 /// # Examples
 ///
@@ -178,6 +194,7 @@ impl Entry {
 /// assert_eq!(grants.check(7, &elsewhere), Err(Denied::OutsideZone));
 /// assert_eq!(grants.check(8, &asked), Err(Denied::NoGrant));
 /// ```
+#[derive(Debug)]
 pub struct Grants {
     entries: [Entry; MAXIMUM_GRANTS],
 }

@@ -17,7 +17,8 @@ pub fn grant_messages(badge: u32, zone: &[u8]) -> Option<impl Iterator<Item = (u
     let messages = zone.len().div_ceil(8).max(1);
     Some((0..messages).map(move |i| {
         let start = i * 8;
-        let part = zone.get(start..).unwrap_or(&[]);
+        // `start` is below the length, or 0 for the root, so the slice is always in range.
+        let part = &zone[start..];
         let n = part.len().min(8);
         let mut bytes = [0u8; 8];
         bytes[..n].copy_from_slice(&part[..n]);
