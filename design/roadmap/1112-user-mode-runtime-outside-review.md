@@ -200,8 +200,9 @@ has no caller outside the crate. Item 15 is the work.
 - **Done.** Item 15, under the provisional Decision 3: `Message`, `Received`, `receive_message` and
   `receive_capability_message` replace the seven projections. `receive`, `receive_capability`,
   `receive_request` and `call` stay. No wire byte or syscall moves.
-- **Outstanding.** Items 3, 8 and 9 belong to the move lane. Item 17 adds a syscall wrapper, which
-  is the architect's call.
+- **Done.** Item 17, provisional: the crate has no `exit_thread` wrapper and the docs of `exit` say
+  why. No `no_std` program needs the fifth number; a wrapper added later is compatible.
+- **Outstanding.** Items 3, 8 and 9 belong to the move lane.
 
 ## Done when
 
