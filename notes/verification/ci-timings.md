@@ -81,17 +81,35 @@ buy nothing more. `helpers/verify_times.py` keeps the table current, and
 
 ### A shard that stalls
 
-Shards whose crates sum to about 12 minutes have run into the job's 25-minute limit. The same pull
-requests passed on their other runs, so the cause is the runner and not the code.
-The table cannot explain it: no passing shard ran longer than 15.6 minutes, and each stalled one
-ran the full 25. The leading suspect is memory. `byte_glob` runs
-`a_negated_class_is_the_exact_complement_of_the_class` beside
-`no_magic_means_the_pattern_is_its_own_only_match`. On an x86_64 Linux host the pair reached
-11.6 GiB resident between them within two and a half minutes, where a 12 GiB cap stopped both, and
-the runner has 16 GB. A slow runner lengthens the time the two overlap. A job that reaches its
-limit loses its log, so the `script/verify` step has its own limit below the job's. A memory record
-runs beside it. A stalled shard then keeps its log, names the harness it was in, and shows whether
-the runner was swapping.
+A hosted runner has about 16 GB: 15983 MiB on the Azure hosts, with 3 GiB of swap, and 15700 MiB on
+the AWS hosts, some of them with no swap. Unfenced, CBMC processes that outgrow it make the kernel's
+out-of-memory killer take the runner's own agent. GitHub then says "The runner has received a
+shutdown signal", the job sits until its 25-minute limit, and GitHub cancels it about five minutes
+later, so it reads 30.0 minutes with no log past the kill.
+
+So the `script/verify` step runs inside `helpers/memory_fence.py`: a cgroup capped at the runner's
+memory less 1536 MiB, with no swap. A harness that outgrows the cap loses its CBMC, Kani reports
+that harness as failed, the fence names it in an error annotation, and the shard fails in minutes
+with its log. Every 15 seconds the fence also prints its use and each running CBMC with the harness
+it proves. A shard that still stalls keeps its log, because the step's own limit, 21 minutes, sits
+below the job's.
+
+Two rows have outgrown the runner. Their peaks, alone at `-j 1` and as a crate at `-j 2`, measured
+inside the fence on the runner (image 20261111.196.1, cap 14446 MiB):
+
+| what ran | peak (MiB) |
+|---|---|
+| `byte_glob`, `no_magic_means_the_pattern_is_its_own_only_match` alone | 8484 |
+| `byte_glob`, `a_negated_class_is_the_exact_complement_of_the_class` alone | 7598 |
+| `byte_glob`, the crate at `-j 2` | the cap, `no_magic` killed |
+| `memory_regions`, the crate at `-j 2` | 10937 |
+
+Kani starts `byte_glob`'s two largest harnesses first, and together they need more than the cap. On
+the Azure hosts swap carried them; on the AWS hosts without it they lost the runner. script/verify's
+`KANI_APART` proves the negated-class harness after the rest of the row, alone.
+
+A new harness meets the runner first in the merge queue, since pull requests skip the prove shards.
+One that needs more than the cap fails there, named, on every run.
 
 The dangerous failure mode is a crate that lands in no shard, because an unproved crate is
 invisible. The suite goes green *faster*, and nothing says a harness stopped running. So the packer
