@@ -15,7 +15,7 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
 | 9 | decided: the weekly fuzz opt-in stays off, and the crate is fuzzed on the project's own host; the template's scan is not changed |
 | 10 | done: `Display`, `core::error::Error` and `Hash` for `Error` |
 | 11 | done: `Zones::len`, `ZonesIter` and `VerbsIter`, with `IntoIterator` for both views |
-| 12 | done: harnesses for the zone walk through a version 3 descriptor, the verb table and the subtree-grants note, each with a falsification patch |
+| 12 | open: `zero` is a loop that leaves `memchr` out of the proofs, and three harnesses were added, each with a falsification patch. `decode_subtree_grants_never_panics` passes. `decode_never_panics_through_a_serviced_descriptor` runs CBMC out of memory under a 12 GiB cap, with either form of `zero`; the plan limits it to lengths 56 to 62 bytes. `a_decoded_verb_table_finds_each_verb` does not finish within 15 minutes; the plan gives it a smaller bound |
 | 13 | done: `write_note` writes every note's header and copies the owner whatever its length |
 | 14 | done: every dependency has a `version`, and the README says the two crates share the note header |
 | 15 | done: `std` is named once, at the crate root, for tests |
