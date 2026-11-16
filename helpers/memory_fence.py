@@ -251,8 +251,9 @@ def run(command, reserve_mib, interval):
             % (peak // MEBIBYTE if peak is not None else "unknown", cap, len(kills)))
         for victim in kills:
             what = "%s at %d MiB" % victim if victim else "a process the samples did not see"
-            print("::error title=out of memory::the memory fence's cap of %d MiB killed %s; the "
-                  "harness needs more memory than this runner has" % (cap, what), flush=True)
+            print("::error title=out of memory::the memory fence's cap of %d MiB killed %s; it and "
+                  "the CBMCs in the last sample beside it needed more memory than this runner has"
+                  % (cap, what), flush=True)
         remove_fence(cgroup)
         if kills and status == 0:
             status = 1
