@@ -45,7 +45,9 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
     let config = HOLDS_CONFIG
         .load(core::sync::atomic::Ordering::Relaxed)
         .then(|| unsafe {
-            environment_contract::ConfigPage::new(grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS)
+            environment_contract::ConfigPage::new(
+                grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
+            )
         });
     swish::write_capabilities(
         tail,
@@ -104,18 +106,18 @@ fn capabilities_image(nav: &mut Nav, spec: ParsedInvocation) {
             return print(swish::image_refusal_sentence(r));
         }
     };
-    let m = declared.unwrap_or(grant_plan::NO_NOTE_MANIFEST);
-    if !grant_plan::image_can_carry(&m) {
+    let m = declared.unwrap_or(program_table::NO_NOTE_MANIFEST);
+    if !program_table::image_can_carry(&m) {
         nav.close(handle);
         return print(swish::image_refusal_sentence(
-            grant_plan::ImageRefusal::NotCarried,
+            program_table::ImageRefusal::NotCarried,
         ));
     }
     // **Expanded, or designated, once the note says which** (milestone 205): bytes that hear words
     // have their words designated rather than their patterns expanded, and only the note says
     // whether these do.
     let expanded = match m.program_argument {
-        grant_plan::ProgramArgumentDeclaration::Words(grant) => {
+        grant_contract::ProgramArgumentDeclaration::Words(grant) => {
             swish::designation(spec.line(), grant, &mut |token| nav.expand(token))
         }
         _ => expansion(nav, &spec),
@@ -130,8 +132,7 @@ fn capabilities_image(nav: &mut Nav, spec: ParsedInvocation) {
             };
         }
     };
-    let e = match grant_plan::plan_against(&spec, grant_plan::IMAGE_ROW, m, holdings(nav), expanded)
-    {
+    let e = match grant_plan::plan_against(&spec, m, holdings(nav), expanded) {
         Ok(e) => e,
         Err(r) => {
             nav.close(handle);
@@ -291,7 +292,7 @@ pub(super) fn with_live_table<R>(nav: &Nav, f: impl FnOnce(&str, u32) -> Option<
 /// program), B2), from the image's programs and the live table, refined by the nearest version set
 /// when it names the program (milestone 614, ruling 4). See `swish::bare`.
 pub(super) fn bare(nav: &Nav, word: &[u8]) -> swish::bare::Bare {
-    let image = grant_plan::Program::from_name(word).is_some();
+    let image = program_table::Program::from_name(word).is_some();
     with_live_table(nav, |text, _| {
         // The set is consulted only for a name the table answers at all: it selects among
         // installed versions, so for anything else it can only change nothing, and the reads are

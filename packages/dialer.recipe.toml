@@ -1,7 +1,7 @@
 # dialer, as a package: the fixture `dialer`, whose version 2 manifest note asks for the network
 # and two resolver zones (milestone 892 (a std program at the prompt holds the network and a
 # resolver)). Installing it lists the asks; no owner's grant of the network is recorded, so it is
-# refused at the prompt and in `caps` (`grant_plan::ImageRefusal::NetworkNotGranted`).
+# refused at the prompt and in `caps` (`program_table::ImageRefusal::NetworkNotGranted`).
 # `script/swish-check` installs it from the disk on every leg. Name: provisional 2026-10-19 (UTC).
 
 name = "dialer"

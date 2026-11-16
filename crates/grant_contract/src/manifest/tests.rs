@@ -43,36 +43,3 @@ fn an_option_set_may_hold_exactly_its_maximum_and_no_repeat() {
     assert!(ShortOptions::try_new(b"ab").is_some());
     assert!(ShortOptions::try_new(b"a-").is_none());
 }
-
-/// The `std` unvouched manifest is in the `std` layout, which is what makes it that manifest.
-#[test]
-fn the_std_unvouched_manifest_is_a_std_manifest() {
-    assert_eq!(UNVOUCHED_STD_MANIFEST.startup, StartupContract::Std);
-    assert_eq!(UNVOUCHED_MANIFEST.startup, StartupContract::Native);
-}
-
-/// A file's region is the image's own pages and the runtime's region, added.
-#[test]
-fn an_image_region_is_its_pages_plus_its_runtimes() {
-    assert_eq!(STD_REGION_PAGES, 384);
-    assert_eq!(image_region_pages(10, StartupContract::Std, 99), 10 + 384);
-    assert_eq!(image_region_pages(10, StartupContract::Native, 99), 10 + 99);
-    assert_eq!(image_region_pages(0, StartupContract::Native, 0), 0);
-}
-
-/// **A package manager's region carries one package more**: a named `std` program's region is
-/// [`STD_REGION_PAGES`], and one declaring the installer adds the largest image it may read.
-#[test]
-fn an_installer_region_holds_one_more_package() {
-    let jig = Program::Jig.manifest();
-    assert!(jig.installer);
-    assert_eq!(
-        named_std_region_pages(&jig),
-        STD_REGION_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
-    );
-    let plain = Manifest {
-        installer: false,
-        ..jig
-    };
-    assert_eq!(named_std_region_pages(&plain), STD_REGION_PAGES);
-}

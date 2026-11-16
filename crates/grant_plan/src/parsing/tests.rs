@@ -328,6 +328,38 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
     }
 }
 
+/// **The verb is the second word, with the third beside it when both fit** ([`verb_of`]): `None`
+/// for a bare program name, the second word alone when no third follows or the third would not
+/// fit, both joined by one space when they fit, and `None` when the second word is longer than
+/// [`MAXIMUM_VERB`] or, quoted, holds a space itself.
+#[test]
+fn the_verb_is_the_second_word_and_the_third_when_both_fit() {
+    let verb = |line: &[u8]| {
+        let mut out = [0u8; MAXIMUM_VERB];
+        verb_of(line, &mut out).map(<[u8]>::to_vec)
+    };
+    assert_eq!(verb(b"jig"), None);
+    assert_eq!(verb(b"jig list").as_deref(), Some(&b"list"[..]));
+    assert_eq!(verb(b"jig list -u").as_deref(), Some(&b"list -u"[..]));
+    assert_eq!(
+        verb(b"jig 'install' greeting").as_deref(),
+        Some(&b"install greeting"[..])
+    );
+    assert_eq!(verb(b"jig list -u extra").as_deref(), Some(&b"list -u"[..]));
+    // A third word that does not fit beside the second leaves the second alone.
+    assert_eq!(
+        verb(b"jig list seventeen-bytes-x").as_deref(),
+        Some(&b"list"[..])
+    );
+    // A second word one byte past the bound is no verb; one at the bound is.
+    assert_eq!(verb(b"jig abcdefghijklmnopq"), None);
+    assert_eq!(
+        verb(b"jig abcdefghijklmnop").as_deref(),
+        Some(&b"abcdefghijklmnop"[..])
+    );
+    assert_eq!(verb(b"jig 'list -u'"), None);
+}
+
 #[test]
 fn echo_keeps_internal_spacing() {
     assert_eq!(parse(b"echo hello world"), Command::Echo(b"hello world"));

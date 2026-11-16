@@ -43,6 +43,7 @@ cargo fmt --manifest-path tools/redoxfs_host/Cargo.toml "$@"
 # The atlas generator (milestone 142 (a text display good enough that people use it instead of a
 # GUI)) is its own workspace for the same reason.
 cargo fmt --manifest-path tools/glyph_atlas_generator/Cargo.toml "$@"
+cargo fmt --manifest-path tools/ext4_oracle/Cargo.toml "$@"
 cargo fmt --manifest-path tools/host_reordering_litmus/Cargo.toml "$@"
 cargo fmt --manifest-path tools/jh7110_entropy_board_check/Cargo.toml "$@"
 
