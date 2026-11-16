@@ -30,7 +30,7 @@ pub struct BootEndowment {
     /// defaults (`TZ=UTC`, `LANG=C`, `TERM=dumb`) into it before the progenitor exists
     /// (`kernel::user::boot_config_page`). Handed on,
     /// `READ` alone, only to a child whose manifest declares
-    /// [`grant_plan::Manifest::configuration`].
+    /// [`grant_contract::Manifest::configuration`].
     pub config_page: u64,
     /// **The filesystem, when this boot has one** (milestone 50). The kernel wires the block server
     /// and the FS server before it starts us and grants the service endpoint plus the page its
@@ -128,7 +128,7 @@ pub struct BootEndowment {
     /// [`config_page`](BootEndowment::config_page), so its slot never moves. [`boot`](crate::boot) hands it to
     /// the boot prompt's shell when [`GRANT_MACHINE_PAGE`](crate::GRANT_MACHINE_PAGE) says the owner allows it, and keeps no
     /// copy; the shell sends it back with the spawn request of a program that declares
-    /// [`grant_plan::Manifest::machine`] (`spawnproto::MACHINE_BIT`).
+    /// [`grant_contract::Manifest::machine`] (`spawnproto::MACHINE_BIT`).
     ///
     /// Name: provisional, milestone 126's `free` lane, 2026-09-26.
     pub machine_page: u64,
@@ -184,7 +184,7 @@ pub struct BootEndowment {
     /// progenitor hands out)), `WRITE | GRANT`: the one capability
     /// on the machine that may restart it, granted on every boot. [`boot`](crate::boot) never invokes it. The
     /// spawn service keeps it and places `WRITE` in a child whose manifest declares
-    /// [`grant_plan::Manifest::reboot`], which syncs for itself through its sync-only
+    /// [`grant_contract::Manifest::reboot`], which syncs for itself through its sync-only
     /// capability. The shell holds none.
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
@@ -193,7 +193,7 @@ pub struct BootEndowment {
     /// step 5; §251, "A board's PMIC route runs in userspace"), `WRITE | GRANT`: an endpoint the
     /// kernel grants only on a board whose tree names the power controller's bus, and empty on
     /// every other machine. [`boot`](crate::boot) never calls it. The spawn service keeps it and
-    /// places `WRITE` at [`grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] in the child that holds
+    /// places `WRITE` at [`grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] in the child that holds
     /// the reboot object, which asks the route before the object.
     ///
     /// Name: provisional.
@@ -216,14 +216,15 @@ pub struct BootEndowment {
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_page: u64,
     /// The request endpoint of the JH7110 true random number generator (TRNG) service, `WRITE |
-    /// GRANT`, which the `clock` and `trng` checks draw through. **Absent** on every machine but a
-    /// JH7110; [`boot`](crate::boot) probes. Passed to `boot_self_test` and then deleted.
+    /// GRANT`, which the `clock` and `true_random_number_generator` checks draw through. **Absent**
+    /// on every machine but a JH7110; [`boot`](crate::boot) probes. Passed to `boot_self_test` and
+    /// then deleted.
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_random_number_generator: u64,
-    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the `blockdev`
-    /// check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot) probes. Passed to
-    /// `boot_self_test` and then deleted.
+    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the
+    /// `block_device` check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot)
+    /// probes. Passed to `boot_self_test` and then deleted.
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_disk: [u64; 3],
@@ -242,8 +243,8 @@ pub struct BootEndowment {
 }
 
 /// **The shell's second mounted tree**: a second file service the kernel granted, which the boot
-/// shell holds at `grant_plan::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
-/// (`grant_plan::spawnproto::MOUNTED_TREE_NAME`). Passed to [`boot`](crate::boot) beside
+/// shell holds at `program_table::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
+/// (`program_table::spawnproto::MOUNTED_TREE_NAME`). Passed to [`boot`](crate::boot) beside
 /// [`BootEndowment`] rather than folded into it, because it is the mounted tree's whole description
 /// and a boot without one passes `None`.
 ///

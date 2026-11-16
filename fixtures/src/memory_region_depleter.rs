@@ -38,7 +38,7 @@ use user_mode_runtime::{map_memory_region_page, send};
 
 const MEMORY_REGION: u64 = 0;
 const REPORT: u64 = 1;
-const BASE_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
+const BASE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00c0_0000);
 
 user_mode_runtime::program_entry!(start);
 

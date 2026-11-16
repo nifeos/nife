@@ -15,10 +15,10 @@ needs_person: no
 
 Row 11 of `notes/confinement-claims.md` was proved on x86_64 only. §19 (architectural parity is a tenet) makes a capability a gate on every ISA, so two Kani harnesses close the gap. Each is stated in raw-bit literals, over all eight `Flags` constructors and any masked physical address:
 
-- `paging::aarch64::verification::no_encoded_leaf_is_both_writable_and_executable`: a leaf with `AP[2]` (bit 7) clear carries both `PXN` (bit 53) and `UXN` (bit 54).
-- `paging::sv39::verification::no_encoded_leaf_is_both_writable_and_executable`: a leaf with `W` (bit 2) set has `X` (bit 3) clear.
+- `page_tables::aarch64::verification::no_encoded_leaf_is_both_writable_and_executable`: a leaf with `AP[2]` (bit 7) clear carries both `PXN` (bit 53) and `UXN` (bit 54).
+- `page_tables::sv39::verification::no_encoded_leaf_is_both_writable_and_executable`: a leaf with `W` (bit 2) set has `X` (bit 3) clear.
 
-Both verify in under a second. Each has a replayable falsification under `crates/paging/falsifications/` (aarch64 drops `PXN` on a writable page; Sv39 sets `X` on a writable page), and `script/falsifications --sweep paging` returns red on all three W^X harnesses. Row 11 now names three harnesses and three records.
+Both verify in under a second. Each has a replayable falsification under `crates/page_tables/falsifications/` (aarch64 drops `PXN` on a writable page; Sv39 sets `X` on a writable page), and `script/falsifications --sweep paging` returns red on all three W^X harnesses. Row 11 now names three harnesses and three records.
 
 No counterexample was found: both encoders already keep write and execute apart.
 

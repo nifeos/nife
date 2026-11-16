@@ -65,7 +65,8 @@ OWED = {}
 NOT_A_FORMAT = {
     'calendar': 'arithmetic on seconds and dates, with no peer',
     'domain_name_system': 'RFC 1035, a format nife does not own, exchanged with name servers',
-    'glob': 'a pattern matcher on two byte strings, with no peer',
+    'byte_glob': 'a pattern matcher on two byte strings, with no peer',
+    'grant_plan': 'the shell\'s command-line planner; the format it plans to is grant_contract\'s',
     'globally_unique_identifier_partition_table':
         'UEFI\'s on-disk table, whose revision the header carries; nife does not own the format',
 }
@@ -227,9 +228,17 @@ NIFEOS_GIT = 'git+https://github.com/nifeos/'
 
 
 def metadata():
-    out = subprocess.run(['cargo', 'metadata', '--format-version', '1', '--offline'],
-                         check=True, capture_output=True, text=True).stdout
-    return json.loads(out)
+    # Offline first, so a machine with the registry cached needs no network. A tree whose lockfile
+    # names a version this machine has not downloaded (a queued dependency bump, which is what
+    # `script/preflight-queue --arm-check` lints over) cannot be read offline, so it retries online
+    # and downloads what it lacks; with no network that retry fails too, and the failure is real.
+    for flags in (['--offline'], []):
+        run = subprocess.run(['cargo', 'metadata', '--format-version', '1'] + flags,
+                             capture_output=True, text=True)
+        if run.returncode == 0:
+            return json.loads(run.stdout)
+    sys.stderr.write(run.stderr)
+    raise SystemExit('cargo metadata failed offline and online; the dependency graph is unread')
 
 
 def tree_problems():

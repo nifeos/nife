@@ -453,7 +453,7 @@ pub fn verify_in_manifest(text: &str, name: &str, bytes: &[u8]) -> Result<(), Ve
 #[derive(Default)]
 pub struct Verdict<'a> {
     /// The parsed image, if and only if the table vouched for the bytes and they are an ELF.
-    pub elf: Option<elf::Elf<'a>>,
+    pub elf: Option<static_elf::Elf<'a>>,
     /// The archive had this entry and the table would not vouch for it.
     pub unvouched: bool,
 }
@@ -504,7 +504,7 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
         };
     }
     Verdict {
-        elf: elf::Elf::parse(bytes).ok(),
+        elf: static_elf::Elf::parse(bytes).ok(),
         unvouched: false,
     }
 }
@@ -1013,7 +1013,7 @@ mod tests {
     ///
     /// Hand-rolled rather than borrowed from `elf`'s own test builder, which is private to that
     /// crate. One `PT_LOAD` segment, readable and executable, with the entry point inside it, which
-    /// is the least `elf::Elf::parse` accepts. `elf::NATIVE_MACHINE` exists for exactly this: a
+    /// is the least `static_elf::Elf::parse` accepts. `static_elf::NATIVE_MACHINE` exists for exactly this: a
     /// forged header has to write *some* machine number and the native one is what gets past the
     /// machine check.
     fn tiny_elf() -> Vec<u8> {
@@ -1028,7 +1028,7 @@ mod tests {
         out[5] = 1; // ELFDATA2LSB
         out[6] = 1; // EV_CURRENT
         out[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
-        out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+        out[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
         out[24..32].copy_from_slice(&entry.to_le_bytes());
         out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // e_phoff
         out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes());
@@ -1036,7 +1036,7 @@ mod tests {
 
         let ph = &mut out[EHDR..EHDR + PHDR];
         ph[0..4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
-        ph[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+        ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
         ph[8..16].copy_from_slice(&((EHDR + PHDR) as u64).to_le_bytes()); // p_offset
         ph[16..24].copy_from_slice(&entry.to_le_bytes()); // p_vaddr
         ph[24..32].copy_from_slice(&entry.to_le_bytes()); // p_paddr

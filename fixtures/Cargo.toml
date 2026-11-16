@@ -622,7 +622,7 @@ packaged_only = ["greeting", "noteless", "greeting_v2", "alto", "tenor", "dialer
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 # The words the milestone 7-19 capability demonstrations agree on, now that each is its own
 # binary (milestone 291). AGENTS.md rule 7: what two binaries must agree on is a crate.
@@ -648,7 +648,9 @@ capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 # The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
 hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
 # layout and the reply transform live in one crate rather than in two copies.
 soak_page = { version = "0.1.0", path = "../crates/soak_page" }
@@ -663,7 +665,7 @@ timetable = { version = "0.1.0", path = "../crates/timetable" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 # The fixtures that carry a manifest note (milestone 597 (a program carries its manifest in an ELF
 # note), provisional): `greeting`, and the unvouched witness whose note asks for what it will not be
 # given.
@@ -671,7 +673,7 @@ capability_manifest_note = { version = "0.1.0", path = "../crates/capability_man
 filesystem_contract = { version = "0.1.0", path = "../crates/filesystem_contract" }
 filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
-line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
 primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule

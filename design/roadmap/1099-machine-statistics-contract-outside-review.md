@@ -62,15 +62,15 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    `virtual_address` (the spelled-out rule covers parameters), and the review's flags beside the
    names they concern. Items 9 and 10 add names; the same pull request carries them so the table is
    ratified once.
-   Door: one-way after the move (every name goes public); the ratification is the architect's by
-   rule. Effort: S for the lane.
+   Door: two-way before the first tag; the maintainer decides the names, provisionally, under "The
+   ratification table of item 1", and the ratification is the architect's by rule. Effort: S for the lane.
 
 2. The manifest and the files a stranger needs.
    Finding: `license.workspace = true` and `[lints] workspace = true` come from the workspace; there is no
    `rust-version`, `description`, `readme`, `keywords` or `categories`; no README, `LICENSE-MIT`
    or `LICENSE-APACHE`; and the `publish = false` comment cites `crates/publish-allowlist.txt`, a
    file the new repository will not hold. The dry run's build fails at `cargo generate-lockfile`
-   on the inherited `license`. The two dependencies are path dependencies on `current_cpu_contract` and `address_space_map`, which leave at step 3 of milestone 1017 (the contract crates leave in this order). This crate is at step 6, so the order already holds. The move manifest pins both by `rev` on their `nifeos` repositories, which the standing approval for own-crate dependencies covers.
+   on the inherited `license`. The two dependencies are path dependencies on `current_cpu_contract` and `address_space_layout`, which leave at step 3 of milestone 1017 (the contract crates leave in this order). This crate is at step 6, so the order already holds. The move manifest pins both by `rev` on their `nifeos` repositories, which the standing approval for own-crate dependencies covers.
    Evidence: `crates/machine_statistics_contract/Cargo.toml` lines 5, 6, 13 to 18;
    `script/crate-standalone` output, nine manifest and file failures; the dry run's `build` line.
    Change: write the manifest in `block_roster_contract`'s shape (`rust-version = "1.88"`, the literal license, the literal lint tables, a one-sentence `description`, `readme`, `keywords` and `categories`). Add the two license texts. Write the README from the scaffold's `README-crate.md`
@@ -167,6 +167,13 @@ might misread, it says so here; the lane carries these beside the rows.
   `TICK_HERTZ`, `TOTAL_FRAMES`, `FREE_FRAMES`, `BUSY_TICKS`, `IDLE_TICKS`, `CONTEXT_SWITCHES`,
   `INTERRUPTS`, `RUNNABLE`, `cpu`: units spelled out, std spellings where std has one, no flag.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The names the table carries into item 1's pull request are these.
+`PAGE_CONTENT_BYTES` and `PAGE_VIRTUAL_ADDRESS`, with the parameters `page_va` and `va` as
+`virtual_address`. `PAGE_WORDS` and `word::LINE_WORDS`. `Snapshot` stays, and a lane rewords the module
+sentence. `counter` becomes `atomic_word`. The rest stay as written. There is no alias of the
+old spellings. Ratifying the table stays the architect's.
+
 ## Done when
 
 The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md).
@@ -177,10 +184,10 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
   did not do what a package does: enumerate every public item with its signature for the
   architect's reading, or run `script/crate-review-packet`. A package lane can still write one
   before the architect reads the crate.
-- `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_map` (an unused
+- `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_layout` (an unused
   `LOW_HALF_SPLIT_SHIFTS`), which this crate links. In the crate's own repository a git dependency
-  is not linted, so this does not block here; it is `address_space_map`'s finding, for that
-  crate's review. The same build prints a future-incompatibility notice for `address_space_map`,
+  is not linted, so this does not block here; it is `address_space_layout`'s finding, for that
+  crate's review. The same build prints a future-incompatibility notice for `address_space_layout`,
   which the review did not chase.
 - The dry run never reported the two path dependencies because its build stopped earlier (item
   12). The move lane reads `script/crate-standalone` as well as the dry run.

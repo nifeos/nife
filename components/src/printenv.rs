@@ -2,7 +2,7 @@
 //! DECISIONS §111, notes/env-config.md).
 //!
 //! Read a page, print what it carries. Its two capabilities can change nothing: `date`'s shape,
-//! [`grant_plan::Manifest::configuration`] in place of [`grant_plan::Manifest::clock`]. The page
+//! [`grant_contract::Manifest::configuration`] in place of [`grant_contract::Manifest::clock`]. The page
 //! is mapped `READ`-only, so there is no `printenv -s TZ=...`: the missing authority is a page
 //! permission, not a check here. "No grant" is told apart from an unset key by checking for the
 //! capability before printing anything, as `date` does: `environment_contract::ConfigPage`
@@ -51,7 +51,7 @@ const CONFIG_SLOT: u64 = 1;
 
 /// Where the wiring maps the config page, read-only. Must match
 /// `crates/system_initializer`'s `CHILD_CONFIG_VA`.
-const CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
+const CONFIG_VA: u64 = address_space_layout::pair_page(0x00e0_0000);
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
@@ -62,8 +62,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: byte_sink_contract::INTERFACE_ID,

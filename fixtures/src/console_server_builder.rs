@@ -32,9 +32,9 @@ const REPORT: u64 = 1;
 const UART_DEVICE: u64 = 2;
 const CHILD: &str = "console";
 /// Must match the console server's `SHARED_VA`.
-const SHARED_VA: u64 = address_space_map::pair_page(0x0060_0000);
+const SHARED_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 /// Must match the console server's `UART_VA`.
-const CHILD_UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
+const CHILD_UART_VA: u64 = address_space_layout::pair_page(0x0070_0000);
 
 user_mode_runtime::program_entry!(start);
 
@@ -45,7 +45,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     let Some(elf) = nifefs::Fs::parse(archive)
         .ok()
         .and_then(|fs| fs.read(CHILD))
-        .and_then(|bytes| elf::Elf::parse(bytes).ok())
+        .and_then(|bytes| static_elf::Elf::parse(bytes).ok())
     else {
         refuse()
     };

@@ -6,10 +6,8 @@
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
-//! | [`OFF_NAME`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client
-//! |
-//! | [`OFF_ADDRESSES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the
-//! resolver |
+//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client |
+//! | [`ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
 
 //! # BUGS
 //!
@@ -27,9 +25,10 @@
 
 /// The version of the name resolver protocol and its zone limits: 1. A break bumps it, with the
 /// dated ledger entry the interface-stability discipline owes; an addition an older peer ignores
-/// does not.
+/// does not. Version 1 includes the reply to a spawner's control `CALL` ([`refusal`]).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its version. The
+/// value is frozen at 1, ruled 2026-11-14 (UTC).
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 11, naming the name resolver
@@ -38,7 +37,8 @@ pub const VERSION: u32 = 1;
 /// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
 /// tree to it. A program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface
+/// identity. The value is frozen at 11, ruled 2026-11-14 (UTC).
 pub const INTERFACE_ID: u64 = 11;
 
 mod wire;
@@ -47,7 +47,7 @@ pub use wire::*;
 
 /// The resolver's own copy of the bound, checked against the parser's, because `wire` is copied
 /// into std's PAL where `domain_name_system` cannot be named.
-const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_ADDRESSES);
+const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
 
 // =================================================================================================
 // The resolver's endowment.

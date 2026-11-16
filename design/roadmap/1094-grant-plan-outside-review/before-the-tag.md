@@ -4,7 +4,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
 
 ## P1: before the first release
 
-4. The tokenizer drops a seventeenth token on the floor.
+4. The tokenizer drops a seventeenth token on the floor. DONE (`a_seventeenth_token_is_refused_and_never_dropped`, `the_earliest_token_nothing_can_place_is_named_when_the_line_is_also_too_long`; `parse_run` records the first token the buffer had no room for as `unexpected`, and `tokenize` keeps its signature).
    Finding: `tokenize` writes into a caller's array and stops when it is full ("Tokens past
    `out.len()` are dropped"), and `parse_run` gives it sixteen slots. The crate's own rule, stated
    at `Refusal::Unexpected` and again at `ParsedInvocation::unexpected`, is that the crate refuses a token nothing can
@@ -62,21 +62,21 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
 7. Public names that need a decoder.
    Finding: `design/naming.md` spells out `prog`, `pos`, `opt`, `proto`, `dir` and the rest, and
    names "abbreviations that need a decoder" as the first failure mode. The public offenders are
-   these. The modules `nav` (`src/lib.rs` line 47) and `spawnproto` (line 49). The module `rmopt`
+   these. The modules `nav` (`src/lib.rs` line 43) and `spawnproto` (line 44). The module `rmopt`
    (`src/command.rs` line 287). The function `spawnproto::prog_id` (`src/spawnproto.rs` line 976).
    The field and method `BindEntry::pos` (`src/nav.rs` lines 497 and 507). The constant
-   `COOP_GRACE_TICKS` (`src/escalation.rs` line 383), where `tick` is also on the vocabulary page's
+   `COOP_GRACE_TICKS` (`src/escalation.rs` line 26), where `tick` is also on the vocabulary page's
    list of words whose kernel meaning differs. The assertion constant `THE_RIGHTS_BITS_SHARE_NO_BIT`
-   (`src/manifest.rs` line 402), where the rule is `_DO_NOT_OVERLAP` with no leading `THE_`, and
-   `.cargo/mutants.toml` names it. The module `job_page_frame`, where `frame` is on the same list.
+   (`src/manifest.rs` line 413), where the rule is `_DO_NOT_OVERLAP` with no leading `THE_`, and
+   `.cargo/mutants.toml` names it. The module `job_page_frame` (`src/lib.rs` line 40), where `frame` is on the same list.
    `Cwd` and `argv` are terms of art a reader knows (`getcwd`, `argv`), and `Program::from_id`
    keeps `id`, which the rulings accept. `same_bytes` (`src/program/catalog.rs` line 143) is already
    flagged in its own `Name:` block. The private `is_op`, `is_diag_op`, `prog`, `pos`, `dir`,
    `arg`, `mem_pages` and `args` bindings are the maintainer's to sweep.
    Evidence: `spelled_out.py` output; `design/naming.md`, "Acronyms and abbreviations" and
    "Vocabulary".
-   Change: the second decision below covers the public ones. A sweep lane takes the private ones.
-   Door: one-way at the release for the public names; two-way for the private ones. Effort: S.
+   Change: the names the second decision decides, provisionally, for the public ones. A sweep lane
+   takes the private ones. Door: two-way before the first tag. Effort: S.
 
 8. British spellings in doc comments.
    Finding: the British form of "recognize" (`src/line.rs` line 224), the British form of "behavior" (`src/nav.rs` line 139), the British form of "honors"

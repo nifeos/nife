@@ -84,7 +84,7 @@ And moving output off the shell's own read loop opens a narrower race than notes
 between a child's exit and its own trailing delivery through the caretaker.
 
 Decided (§106, 2026-08-22): take it. Checking `SINK_BIT`'s existing contract
-(`crates/grant_plan/src/spawnproto.rs`) found the fork's own write-up had overpriced it. The child's
+(`crates/program_table/src/spawnproto.rs`) found the fork's own write-up had overpriced it. The child's
 output slot is already opaque to the program ("the shell delegates an endpoint and init puts it
 where the result endpoint would have gone, so the child writes to a pipe or a file sink without
 knowing which"). So no program's manifest changes, only shell-and-init default-routing logic.

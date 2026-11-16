@@ -26,7 +26,7 @@ pub const THREAD_CONTROL_BLOCK: u64 = 3;
 pub const NOTIFICATION: u64 = 4;
 
 /// A timer: one deadline and the notification it signals when
-/// the deadline passes. See [`crate::timer`]. Confirmed on 2026-09-27 (UTC).
+/// the deadline passes. See [`crate::timer`].
 pub const TIMER: u64 = 5;
 
 /// **A process**: the capability table its threads share,

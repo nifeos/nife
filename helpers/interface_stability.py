@@ -67,7 +67,7 @@ SCRATCH = pathlib.Path('target/interface-stability')
 # says protocol), and the named formats two programs agree on. Three members sit outside that
 # note's census: `capability_manifest_note` was born on 2026-09-26, after it, and is exactly the
 # kind of crate the division names; `machine_statistics_contract` holds the one definition of where
-# each word of the kernel's statistics page lives, and `glob` is the pattern language the shell's
+# each word of the kernel's statistics page lives, and `byte_glob` is the pattern language the shell's
 # expansion and its grant share. Membership is by the crate's name TODAY; a week in the past counts
 # the crates whose directory later became one of these (LINEAGE below), which is a restatement like
 # every other series on the metrics page.
@@ -79,7 +79,7 @@ CONTRACTS = (
     'login_contract', 'machine_statistics_contract', 'socket_contract', 'std_runtime_contract',
     'supervision_contract',
     'hot_swap_contract',
-    'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'glob',
+    'static_elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'byte_glob',
     'globally_unique_identifier_partition_table', 'grant_plan', 'capability_plan', 'compositor',
     'line_editor', 'capability_manifest_note',
     # Two more of the formats the first cut links, added 2026-10-29 (UTC) by
@@ -1046,9 +1046,6 @@ def render_appendix(rows, crates, week, events, rev, package_lines=()):
            'each column counts, and what none of them can see, is '
            '[notes/interface-stability.md](../interface-stability.md).*', '',
            '## Every crate, since the first commit', '',
-           'Sorted by breaking changes in the last four weeks (%s to %s), then by all time. '
-           'Co-change counts a commit once per contract crate it touches, so a column does not '
-           'sum to the page\'s weekly share.' % (recent[0], recent[-1]), '',
            '| crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits '
            '| crossing another division |',
            '|---|---:|---:|---:|---:|---:|---:|']
@@ -1057,6 +1054,12 @@ def render_appendix(rows, crates, week, events, rev, package_lines=()):
         share = '' if not t[2] else ' (%d%%)' % round(100.0 * t[3] / t[2])
         out.append('| `%s` | %d | %d | %d | %d | %d | %d%s |'
                    % (crate, r[0], r[1], t[0], t[1], t[2], t[3], share))
+    # The note sits under the table, not above it: helpers/prose_ratchet.py counts through the table
+    # under this heading (GENERATED_TABLES), and only a table that follows its heading directly is
+    # skipped, so a sentence between them would put every row back in the word count.
+    out += ['', 'Sorted by breaking changes in the last four weeks (%s to %s), then by all time. '
+            'Co-change counts a commit once per contract crate it touches, so a column does not '
+            'sum to the page\'s weekly share.' % (recent[0], recent[-1])]
     out += ['', '## What broke in %s' % week, '',
             'Read at `%s` against the week before. Each line is one removed or changed public '
             'item, quoted as it stood that week; a crate rename is one line for the whole '

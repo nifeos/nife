@@ -6,11 +6,11 @@
  * that package; milestone 73 had already refused to rename it on the ground that it is
  * genuinely shared, and two copies would be two places to be wrong about the base.
  *
- * The base is `address_space_map::IMAGE_BASE` (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): the start of
+ * The base is `address_space_layout::IMAGE_BASE` (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): the start of
  * the image band, which runs up to the stack band at 0x7F00_0000, so an image may be 496 MiB. It
  * was 0x400000 until 2026-09-26, which left 896 KiB before the stack, and `ripgrep` had to be
  * relinked by substitution to fit. A linker script cannot name a Rust constant, so the number is
- * written here and `crates/address_space_map`'s host test parses this line and fails if the two
+ * written here and `crates/address_space_layout`'s host test parses this line and fails if the two
  * differ. Everything above 2 GiB is out of reach for this line: x86_64 links with the small code
  * model, which puts every symbol under 0x8000_0000 (see that crate's docs).
  *
@@ -59,7 +59,7 @@ SECTIONS
      * 2026-09-26). `capability_manifest_note::carry!` puts one note in `.note.nife.manifest`, and this keeps
      * it twice over: in the `rodata` PT_LOAD, so its bytes are in the file and covered by the
      * digest the progenitor vouches on, and in a PT_NOTE of its own, which is how the shell and the
-     * progenitor find it (`crates/elf`'s `Elf::note`) without section headers, which `strip` may
+     * progenitor find it (`crates/static_elf`'s `Elf::note`) without section headers, which `strip` may
      * delete from a program that still runs.
      *
      * KEEP, because nothing references the note and the linker would otherwise collect it. It is
@@ -67,8 +67,8 @@ SECTIONS
      * that places it, so every other `.note*` a toolchain adds is still thrown away. A program that
      * carries no note gets an empty section here and a PT_NOTE with no notes in it, which reads as
      * "no manifest". */
-    .note.nife : ALIGN(4) {
-        KEEP(*(.note.nife.*))
+    .note.nife : ALIGN(4) { /* wire literal */
+        KEEP(*(.note.nife.*)) /* wire literal */
     } :rodata :note
 
     .data : ALIGN(4096) {
@@ -94,7 +94,7 @@ SECTIONS
     } :data
 
     /* .bss is in the `data` segment but occupies NO space in the file. That is what makes
-     * p_memsz > p_filesz, and the loader has to zero the difference. See crates/elf.
+     * p_memsz > p_filesz, and the loader has to zero the difference. See crates/static_elf.
      *
      * ALIGN(4096) here is not tidiness, it is the same rule the sections above follow, and it was
      * missing. A program with .bss and an EMPTY .data (nothing initialized and non-zero) gets its

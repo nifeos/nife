@@ -12,12 +12,12 @@ was not undefined behavior:
 
 ```
 error: memory leaked: alloc78416 (Rust heap, size: 4096, align: 4096), allocated here:
-   --> crates/paging/src/domain.rs:425:26
+   --> crates/page_tables/src/domain.rs:425:26
 error: aborting due to 5 previous errors
-error: test failed, to rerun pass `-p paging --lib`
+error: test failed, to rerun pass `-p page_tables --lib`
 ```
 
-`crates/paging`'s domain tests back synthetic physical addresses with real zeroed host frames, so
+`crates/page_tables`'s domain tests back synthetic physical addresses with real zeroed host frames, so
 the page-table walker has memory to walk. Those frames were never freed. `cargo test` does not care,
 because the process exits; Miri checks for leaks by default and does.
 
@@ -121,7 +121,7 @@ and the crate's other thirty pass unchanged.
   2:58:13 in CI, and the workflow's header asks for its 240-minute budget to be tightened once `compositor` is
   sampled. This milestone supplies the number the header was missing and does not answer whether the
   cadence is worth it. See the follow-on.
-- `crates/paging/tests/mapping.rs` still has the opt-in shape this milestone removed from
+- `crates/page_tables/tests/mapping.rs` still has the opt-in shape this milestone removed from
   `domain.rs`. `TableGuard` must be bound by hand; every test in the file does bind one today, so
   nothing leaks, and nothing keeps that true. Recorded in a `BUGS` section at `TableGuard` rather
   than fixed, because converting it touches twenty-one call sites in a file that is not failing.
@@ -146,7 +146,7 @@ and the crate's other thirty pass unchanged.
   the bullet above being more than an argument: a per-crate wall clock from one instrumented run.
   `cargo miri test` prints per-target timings already and nobody has collected them. It is step 1 of
   that block, which is why the two bullets share a number.
-- **Recorded.** `crates/paging/tests/mapping.rs`'s `TableGuard` is the same opt-in shape this
+- **Recorded.** `crates/page_tables/tests/mapping.rs`'s `TableGuard` is the same opt-in shape this
   milestone removed from `domain.rs`, and it is a `BUGS` section at the guard rather than a fix, for
   the reason stated there: twenty-one call sites in a file that is not failing. `script/lint` cannot
   check it, because "a test that allocates and forgets a guard" is not a grep.
@@ -160,7 +160,7 @@ and the crate's other thirty pass unchanged.
 ## Index row
 
 `.github/workflows/undefined-behavior-check.yml` had **never once succeeded**, five scheduled runs
-red since 2026-08-11, and the cause was never undefined behavior: `crates/paging`'s domain tests
+red since 2026-08-11, and the cause was never undefined behavior: `crates/page_tables`'s domain tests
 leaked five zeroed host frames, which `cargo test` ignores and Miri's default leak check does not.
 The interesting part is that the guard was not missing. `PoolGuard` had been added on 2026-08-03 for
 exactly this leak, and a test written afterwards simply did not bind one, which is AGENTS.md's rung

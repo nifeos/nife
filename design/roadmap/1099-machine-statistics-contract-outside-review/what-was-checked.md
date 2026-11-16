@@ -8,7 +8,7 @@ workspace with its two path dependencies beside it and the workspace's license a
 
 - `cargo test`: six unit tests and one documentation test pass on the current stable and on 1.88.
   `cargo clippy --all-targets -- -D warnings` is green on stable for this crate. On 1.88 the same
-  command is red, but in `address_space_map` (a dead constant, `LOW_HALF_SPLIT_SHIFTS`), not in
+  command is red, but in `address_space_layout` (a dead constant, `LOW_HALF_SPLIT_SHIFTS`), not in
   this crate (BUGS). `cargo doc` with warnings denied is clean.
 - The crate builds and passes clippy with warnings denied for `x86_64-unknown-none`,
   `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf` on the nightly this tree
@@ -39,7 +39,7 @@ workspace with its two path dependencies beside it and the workspace's license a
   mutation baseline row it carries reads 33 mutants, none missed, five unviable.
 - `helpers/lint_externalized_crates.py --count`: one hit for this crate, at its ceiling of one
   (the sentence "nife does not page out", `src/lib.rs` line 16).
-- Every caller: `kernel/src/machine_statistics.rs` (the writer). `kernel/src/sched/preemption.rs`, `kernel/src/sched/interrupt_route.rs`, `kernel/src/sched/placement.rs` and `kernel/src/memory.rs` (the call sites). `crates/free`, `crates/vmstat` and `crates/top` (the reader libraries and their host tests). `components/src/free.rs`, `components/src/vmstat.rs` and `components/src/top.rs` (the `INTERFACES` declarations and the `Snapshot::read` calls). `crates/system_initializer/src/spawn_loop.rs` (the mapping at the fixed address). `crates/grant_plan/src/manifest.rs` (the slot). Last, `system_tests/src/user/machine_statistics_tests.rs`. Neither `xtask/` nor `patches/` copies this
+- Every caller: `kernel/src/machine_statistics.rs` (the writer). `kernel/src/sched/preemption.rs`, `kernel/src/sched/interrupt_route.rs`, `kernel/src/sched/placement.rs` and `kernel/src/memory.rs` (the call sites). `crates/free`, `crates/vmstat` and `crates/top` (the reader libraries and their host tests). `components/src/free.rs`, `components/src/vmstat.rs` and `components/src/top.rs` (the `INTERFACES` declarations and the `Snapshot::read` calls). `crates/system_initializer/src/spawn_loop.rs` (the mapping at the fixed address). `crates/grant_contract/src/manifest.rs` (the slot). Last, `system_tests/src/user/machine_statistics_tests.rs`. Neither `xtask/` nor `patches/` copies this
   crate's source into the `std` platform layer, so the path-copy hazard the sibling reviews found
   does not apply here.
 - The interface id table in milestone 956 (the linked interfaces carry checkable versions)'s block assigns 4 to this crate, and

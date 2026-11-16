@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: none
@@ -46,6 +46,8 @@ The comparison with nearby work is in [the appendix](1082-capability-manifest-no
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the release (a public name, a wire byte, a
 dependency, a license); everything else is two-way and the maintainer decides it.
+
+The ledger of what landed and what is left is in [the appendix](1082-capability-manifest-note-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -112,8 +114,9 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 
 ## Decisions for the architect
 
-Only one-way doors. Each has the plain background first, then the recommendation, prior art and a
-concrete example.
+Each has the plain background first, then the recommendation, prior art and a concrete example.
+The names of decisions 3 and 4 are two-way before the first tag, and the maintainer has decided
+them, provisionally.
 
 ### The wire literal `nife` in a crate that may not mention nife
 
@@ -125,10 +128,18 @@ crate at a ceiling of 37 hits, of which 10 lines in `src/lib.rs` are these liter
 name `NIFE_MANIFEST_NOTE`. The prose mentions can all go (item 4). The literals cannot change
 without a new owner string, which is a wire break. A progenitor reading the new string would find no note in any program built so far. A program carrying the new string would be a native program with no authority to an old progenitor.
 
-Recommendation: keep `OWNER = b"nife"` and the section name as they are, and have the
-externalization lint exempt byte-string literals, `link_section` names and identifiers that spell
-the owner, while the lane removes every prose mention. The README says, once, that the owner string is
-the name of the operating system that defines the note, as `FreeBSD`, `GNU` and `FDO` are.
+Ruled 2026-11-14 UTC (decision O): the owner string and the section name keep their bytes. Bytes
+that already sit on a wire or in built programs may spell `nife` after the crate leaves. This is the
+one exception to the rule that a leaving crate never mentions nife, and it covers wire literals
+only: owner strings, section names, magic values and the tests that assert those bytes. A line that
+holds one ends with the comment `// wire literal` (provisional spelling). The externalization lint
+and `script/crate-move` accept a marked line and refuse an unmarked mention. The lint prints every
+marked line. The lane removes every prose mention, and prose says "the owner string" without
+repeating the word. The README says, once, that the owner string is the name of the
+operating system that defines the note, as `FreeBSD`, `GNU` and `FDO` are. The marker is already on
+the lines of `boot_ladder`, `system_log_contract` and `user_mode_runtime/link.ld`; the lint lists
+them once those crates join the externalization list (it scans only listed crates, and only their
+`Cargo.toml`, README and `src/`).
 
 Prior art: the owner string namespaces ELF notes, and the owner is the project that defines
 the descriptor: `FreeBSD` for `NT_FREEBSD_*`, `GNU` for `NT_GNU_PROPERTY_TYPE_0`, `FDO` for the
@@ -179,6 +190,9 @@ Prior art: std's `Path::is_absolute`, `Metadata::is_dir`; the crate's own `Zones
 Example: `if capability_manifest_note::service(d)? { ... }` reads as "if the service", and
 `if capability_manifest_note::asks_service(d)? { ... }` reads as the condition it is.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `service` (`src/lib.rs` line 737) becomes `asks_service`, the crate's own word for
+the request, and its callers in `program_asks` and `jig` follow. `zones` keeps its name.
+
 ### `VERSION` as the name of version 1
 
 Background: `pub const VERSION: u32 = 1` is the descriptor version with no zones and no service
@@ -196,12 +210,27 @@ name the property, never a bare `VERSION`.
 Example: `match version { BARE_VERSION => ..., ZONED_VERSION => ..., SERVICED_VERSION => ... }`
 reads as three layouts; `VERSION => ...` in that list reads as a mistake.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `VERSION` (`src/lib.rs` line 117) becomes `BARE_VERSION`, beside `ZONED_VERSION`
+and `SERVICED_VERSION`. The wire byte 1 does not change.
+
 ## Done when
 
 The checks are in [the appendix](1082-capability-manifest-note-outside-review/done-when.md).
 
+## Follow-on
+
+- **Outstanding.** The four decisions, the move's items, the encoding-direction harness of item 3,
+  the citation rewrite of item 4 and items 5 to 7 and 11 to 15. Checked against
+  `crates/capability_manifest_note/src/lib.rs`: `DESCRIPTOR_LEN`, `service` and `VERSION` keep their
+  names, and `decode_never_panics` still stops at one byte past version 1.
+- **Done.** The wire literal marker: the lint and the move check accept `// wire literal`.
+
 ## BUGS
 
+- Identifiers that spell the word are not wire literals, so the marker does not cover them: the
+  `NIFE_MANIFEST_NOTE` and `NIFE_SUBTREE_GRANTS_NOTE` statics that the `carry!` macros emit, and the
+  `NIFE_DATA` and `NIFE_BOOT` constants of `globally_unique_identifier_partition_table`. Each needs a
+  rename lane before its crate leaves; the lint counts them until then.
 - The review inferred item 8's failure of `tests/fuzz_seed.rs` in the staged repository. The dry run's build step stopped at the manifest before any test ran. The fix is right whether or not the
   inference is.
 - Item 9's recommendation leaves the version 2 and 3 zone walk fuzzed only on nife's private

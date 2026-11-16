@@ -43,7 +43,7 @@ An appendix to [the milestone](../1106-program-argument-contract-outside-review.
     `record_bytes`. With it, add the pedantic lints a stranger runs. Put `#[must_use]` on `parse`,
     `iter`, `len`, `is_empty` and `count`. Add `impl IntoIterator for &ArgumentPage`. Add `Debug` on
     the three public types. Add `FusedIterator` on `Iter`. Add an `# Errors` section on `push`. Put
-    `u32::try_from` or a `const` assertion `PAGE_CONTENT_BYTES <= u32::MAX as usize` behind the two
+    `u32::try_from` or a `const` assertion `MAXIMUM_RECORDS_BYTES <= u32::MAX as usize` behind the two
     `as u32` casts at lines 125 and 140.
     Door: two-way. Effort: S.
 

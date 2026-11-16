@@ -8,7 +8,7 @@
 //! application's output page and its own pixels: no device, interrupt, DMA authority, physical
 //! address, or way to name another client's anything. With a control endpoint it can be replaced
 //! live, by `video_terminal::component`'s `OPERATION_QUIESCE`/`START_ABSORB` exchange, and it takes
-//! the quiesce only on its supervisor's `line_editor::proto::SUPERVISOR_BADGE` copy.
+//! the quiesce only on its supervisor's `terminal_contract::SUPERVISOR_BADGE` copy.
 
 //! # One endpoint, and why input does not ring the doorbell
 //!
@@ -34,7 +34,7 @@
 
 use compositor::proto::ctl;
 use graphics_contract as gfx;
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Delivered, call, receive_request, reply, send};
 use video_terminal::status::{MODE_DISPLAY, MODE_WINDOW};
@@ -70,12 +70,12 @@ const _: () = assert!(OUT_PAGE_FRAME == SURFACE_FRAME + 1);
 /// `OUT_VA` and `CTL_VA` sit clear of it; one inside it would be refused by `PageFrame::MAP` as
 /// already mapped. The 2 MiB alignment keeps the run in as few page-table windows as possible
 /// (`display_service::MAP_BUDGET_PAGES`'s comment has the arithmetic).
-const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// The page an application writes the bytes of an `OPERATION_WRITE` into. The terminal contract's
 /// "control by message, bulk by shared page" split (DECISIONS §10 (process model: capability-based, microkernel. Untyped memory deferred.)), the same one `filesystem_contract` makes.
-const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_0a00_0000);
+const OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_0a00_0000);
 /// The compositor's per-client control page. [`MODE_WINDOW`] only.
-const CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0a01_0000);
+const CTL_VA: u64 = address_space_layout::pair_page(0x0000_0000_0a01_0000);
 
 /// Failure codes, in a `0xDEAD_...` word so a failure names its step rather than hanging.
 const E_INFO: u64 = 0x01;
@@ -152,7 +152,7 @@ fn paint(
             // The rectangle is either the engine's damage or the whole surface this process asked
             // the geometry of, and `Vt::pixel` is defined outside its own grid (it is the default
             // background), which is what makes the second case safe as well as correct.
-            surface.w32(off, t.pixel(x, y));
+            surface.write_u32(off, t.pixel(x, y));
         }
     }
     (x0, y0, w, h)
@@ -341,7 +341,7 @@ impl HandoffRun {
         unsafe {
             core::slice::from_raw_parts_mut(
                 component::HANDOFF_ADDRESS as *mut u8,
-                (video_terminal::handoff::HANDOFF_PAGES * address_space_map::PAGE) as usize,
+                (video_terminal::handoff::HANDOFF_PAGES * address_space_layout::PAGE) as usize,
             )
         }
     }
@@ -382,7 +382,7 @@ impl HandoffRun {
                 send(component::SUPERVISOR, proto::NOTE_ABSORBED, 0, 0);
             }
             Err(refusal) => {
-                // `line_editor::proto::NOTE_NOT_ABSORBED`'s codes: 0 no blob, 1 malformed (a grid
+                // `terminal_contract::NOTE_NOT_ABSORBED`'s codes: 0 no blob, 1 malformed (a grid
                 // of another shape is one: its cells would land on the wrong rows), otherwise the
                 // layout found.
                 let code = match refusal {

@@ -1,6 +1,6 @@
 //! **The VT-d driver: Intel's IOMMU, in front of the PCIe bus.** The register file, the root and
 //! context tables and register-based invalidation; the translation tables are the portable seam's,
-//! built in [`paging::x86_64::Vtd`]. Every DRHD the DMAR names gets its own root table, all-absent
+//! built in [`page_tables::x86_64::Vtd`]. Every DRHD the DMAR names gets its own root table, all-absent
 //! before `GCMD.TE` is set so no device is unconstrained by omission, and `attach` goes to the
 //! unit the DMAR says owns the device. A device no unit owns gets no context entry, and
 //! [`scope_of`] says so.
@@ -35,9 +35,9 @@ use machine_discovery::acpi::{
     DmarUnits, Drhd, InterruptRemappingClaims, MAXIMUM_RESERVED_REGION_DEVICES,
     MAXIMUM_TRANSLATION_UNITS, SCOPE_PCI_ENDPOINT,
 };
-use paging::PageFormat;
-use paging::x86_64::Vtd;
-use pci::MsiTarget;
+use page_tables::PageFormat;
+use page_tables::x86_64::Vtd;
+use pci_configuration_space::MsiTarget;
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{InterruptSafeMutex, rank};
@@ -905,7 +905,10 @@ fn owner_index(rid: u32) -> Option<usize> {
 /// must also map (VT-d 4.1 section 3.16). [`crate::iommu::confine`] adds them to every domain it
 /// builds, so confining a USB controller or the GPU never takes away memory the firmware still
 /// DMAs into. Name: provisional (milestone 594).
-pub(crate) fn for_each_reserved_region(rid: u32, each: &mut dyn FnMut(paging::domain::DmaRegion)) {
+pub(crate) fn for_each_reserved_region(
+    rid: u32,
+    each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+) {
     if super::amd_vi::is_active() {
         return super::amd_vi::for_each_reserved_region(rid, each);
     }
@@ -920,7 +923,7 @@ pub(crate) fn for_each_reserved_region(rid: u32, each: &mut dyn FnMut(paging::do
         func,
         &mut crate::pci::bridge_bus_range,
         &mut |r| {
-            each(paging::domain::DmaRegion {
+            each(page_tables::domain::DmaRegion {
                 base: r.base,
                 size: r.size(),
                 // An RMRR carries no permission bits: it is memory firmware both reads and writes
@@ -1151,12 +1154,12 @@ pub fn is_active() -> bool {
 }
 
 /// **Build a DMA domain over exactly `regions` in the format this machine's IOMMU walks**, and
-/// return its root: [`paging::x86_64::AmdVi`] when an AMD-Vi unit is up, [`Vtd`] otherwise. The two
+/// return its root: [`page_tables::x86_64::AmdVi`] when an AMD-Vi unit is up, [`Vtd`] otherwise. The two
 /// share the CPU's four-level, 4 KiB-leaf shape and nothing else that matters: `Vtd`'s and
 /// `AmdVi`'s own docs say why neither encoding, nor `Ia32e`'s, would work in the other's place.
-pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
+pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
     if super::amd_vi::is_active() {
-        crate::iommu::build_identity::<paging::x86_64::AmdVi>(regions)
+        crate::iommu::build_identity::<page_tables::x86_64::AmdVi>(regions)
     } else {
         crate::iommu::build_identity::<Vtd>(regions)
     }

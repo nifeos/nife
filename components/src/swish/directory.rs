@@ -9,7 +9,7 @@ use super::*;
 ///
 /// It is `fs_service`'s `FILE_VA_CLIENT`, the address every FS client in this system maps its half
 /// of the contract at, which is why [`OUT_VA`] moved out of the way rather than this.
-pub(super) const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+pub(super) const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 // SAFETY: the navigating wiring maps one page read/write at FS_VA before this shell runs, when it
 // has an FS_VA at all (milestone 139 round 2; see `user_mode_runtime::mapped_window`, which is what
@@ -50,13 +50,13 @@ pub(super) fn echo(nav: &mut Nav, text: &[u8], out: &mut dyn FnMut(&[u8])) -> Sa
 /// Copy a name into the page shared with the FS server.
 pub(super) fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(filesystem_contract::PAGE).enumerate() {
-        FS_WINDOW.w8(i as u64, b);
+        FS_WINDOW.write_u8(i as u64, b);
     }
 }
 
 /// Copy `n` bytes out of that page (a listing landed there).
 pub(super) fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = FS_WINDOW.r8(i as u64);
+        *b = FS_WINDOW.read_u8(i as u64);
     }
 }

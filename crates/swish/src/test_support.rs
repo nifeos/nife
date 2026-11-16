@@ -34,7 +34,7 @@ pub(crate) fn listing(names: &[&'static [u8]]) -> NameSet {
 
 pub(crate) fn endowment(prog: Program) -> Endowment {
     Endowment {
-        program: prog,
+        manifest: prog.manifest(),
         program_argument: 0,
         memory_grant_pages: 0,
         file: None,

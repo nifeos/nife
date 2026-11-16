@@ -33,7 +33,7 @@
 #![no_main]
 
 use clock_contract::{ClockPage, policy, propose, rtc, state, status};
-use user_mode_runtime::{cntfrq, now, receive_request, reply, send};
+use user_mode_runtime::{counter_hertz, now, receive_request, reply, send};
 
 /// The propose endpoint (slot 0): the service receives proposals on it. Everything that arrives here
 /// is a request, never a command.
@@ -43,10 +43,10 @@ const PROPOSE_EP: u64 = 0;
 const REPORT: u64 = 1;
 
 /// The clock page, mapped **read/write**: this process is a setter.
-const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
+const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
 /// The RTC's registers, device-typed. Only mapped when the machine has an RTC we can drive; `a0`
 /// says which, and [`rtc::NONE`] means this address is not mapped and must not be touched.
-const RTC_VA: u64 = address_space_map::pair_page(0x00d0_0000);
+const RTC_VA: u64 = address_space_layout::pair_page(0x00d0_0000);
 
 /// The startup report's first word, so a reader of the endpoint knows this is the clock speaking.
 const RPT_READY: u64 = 0x_c10c_c0de;
@@ -132,7 +132,7 @@ fn wall_now(page: &ClockPage) -> u64 {
 /// billion: at 62.5 MHz the naive product overflows a `u64` after about five minutes of uptime, and
 /// the resulting wall clock would jump backwards by six centuries at the wrap.
 fn monotonic_nanoseconds() -> u64 {
-    let freq = cntfrq();
+    let freq = counter_hertz();
     let ticks = now();
     let seconds = ticks / freq;
     let rem = ticks % freq;

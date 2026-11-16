@@ -85,11 +85,7 @@ pub(crate) fn delete_device_frame_capabilities_from_others(phys: u64) {
             continue;
         }
         let mut table = owned.lock();
-        for slot in 0..table.len() as u64 {
-            if table.get(slot).is_ok_and(|c| c.object == target) {
-                let _ = table.delete(slot);
-            }
-        }
+        table.delete_matching(|object| *object == target);
         drop(table);
         if matches!(t.outgoing_capability, Some(c) if c.object == target) {
             t.outgoing_capability = None;
@@ -146,11 +142,7 @@ pub(super) fn delete_port_range_capabilities_impl(base: u16, count: u16, keeper:
                 continue;
             }
             let mut table = capabilities.lock();
-            for slot in 0..table.len() as u64 {
-                if table.get(slot).is_ok_and(|c| c.object == target) {
-                    let _ = table.delete(slot);
-                }
-            }
+            table.delete_matching(|object| *object == target);
             drop(table);
             // A `PortRange` in flight is in no table; see `delete_page_frame_capabilities_where`.
             if matches!(t.outgoing_capability, Some(c) if c.object == target) {
@@ -300,7 +292,7 @@ fn install_current_port_grant(capability: crate::capability_object::Capability) 
 /// Name: provisional, minted 2026-10-22 (UTC) by lane/321-repeat-count.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn current_capability_slots() -> (usize, usize) {
-    current_capabilities().map_or((0, 0), |t| (t.used(), t.len()))
+    current_capabilities().map_or((0, 0), |t| (t.used(), t.capacity()))
 }
 
 /// Hand the current thread a capability at an explicit `slot`, leaving lower slots empty.
@@ -325,10 +317,7 @@ pub fn grant_at(
 /// a run placed with [`grant_at`] and absent from `Spawn::grants` is still counted.
 pub(crate) fn current_mappable_pages() -> u64 {
     current_capabilities().map_or(0, |t| {
-        (0..t.len() as u64)
-            .filter_map(|slot| t.get(slot).ok())
-            .map(|c| c.object.mappable_pages())
-            .sum()
+        t.iter().map(|(_, c)| c.object.mappable_pages()).sum()
     })
 }
 
@@ -368,16 +357,10 @@ impl Delegation {
         table: &crate::capability_object::CapabilityTable,
     ) -> Result<crate::capability_object::Capability, abi::Error> {
         let src = table.get(self.slot).map_err(|_| abi::Error::NoSuchSlot)?;
-        if !src.rights.allows(crate::capability_object::Rights::GRANT) {
-            return Err(abi::Error::NotPermitted); // holder may not pass this on
-        }
-        if !self.rights.is_subset_of(src.rights) {
-            return Err(abi::Error::NotPermitted); // delegation may only narrow, never widen
-        }
-        Ok(crate::capability_object::Capability {
-            object: src.object,
-            rights: self.rights,
-        })
+        // The crate's rule, proved there: the holder may pass it on (`GRANT`) and the copy only
+        // narrows. Both refusals are one answer on the syscall surface.
+        src.delegate(self.rights)
+            .map_err(|_| abi::Error::NotPermitted)
     }
 }
 

@@ -127,7 +127,7 @@ A green run is only interesting if you can say what it ruled out.
 **Hardware A/D update (`svadu`).** `rv64` has it: the machine sets a page table entry's Accessed and
 Dirty bits itself. `sifive-u54` and `thead-c906` do not have it, and `rva22s64`/`rva23s64`
 advertise `svade`, its opposite (the machine faults and software must set them). A kernel that left
-A and D clear would work on `rv64` and page-fault forever on the board. `crates/paging/src/sv39.rs`
+A and D clear would work on `rv64` and page-fault forever on the board. `crates/page_tables/src/sv39.rs`
 sets both eagerly, with a comment saying why, so this was already closed; the matrix turns
 "we think we handled that" into a machine that would have punished us and did not.
 

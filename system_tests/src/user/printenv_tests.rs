@@ -4,14 +4,14 @@ use crate::sched::RendezvousId;
 
 /// Where `printenv` expects the config page, read-only. Must match `components/src/printenv.rs`'s
 /// `CONFIG_VA`.
-const CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
+const CONFIG_VA: u64 = address_space_layout::pair_page(0x00e0_0000);
 
 /// Spawn `printenv` and return the endpoint its output arrives on.
 ///
 /// `page` is the whole of its config authority, `date_tests::spawn_date`'s own shape: `Some(phys)`
 /// grants the frame with **`READ`** and maps it **read-only**, the same rung
 /// `crates/system_initializer`'s real wiring grants a child that declares
-/// [`grant_plan::Manifest::configuration`]. `None` grants no capability at all, which is the other
+/// [`grant_contract::Manifest::configuration`]. `None` grants no capability at all, which is the other
 /// "nothing to print" cause and a different message.
 fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
     let image = program("printenv").expect("no printenv program in the initial ramdisk");

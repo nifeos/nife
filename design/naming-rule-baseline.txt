@@ -83,7 +83,6 @@ crates/firmware_configuration/src/lib.rs::DmaCommand spelled-out
 
 crates/grant_plan/src/nav.rs::pos spelled-out
 
-crates/grant_plan/src/spawnproto.rs::prog_id spelled-out
 
 crates/grant_plan/src/word.rs::span question-shape
 
@@ -103,9 +102,9 @@ crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant questi
 
 crates/jh7110_watchdog/src/lib.rs::max_reset_after_seconds spelled-out
 
-crates/line_editor/src/component.rs::ELF_VA spelled-out
+crates/line_editor_component/src/lib.rs::ELF_VA spelled-out
 
-crates/line_editor/src/component.rs::HANDOFF_VA spelled-out
+crates/line_editor_component/src/lib.rs::HANDOFF_VA spelled-out
 
 crates/login_contract/src/lib.rs::CARETAKER_ELF_VA spelled-out
 
@@ -127,27 +126,28 @@ crates/machine_discovery/src/riscv64.rs::SBI_IPI spelled-out
 
 crates/machine_statistics_contract/src/lib.rs::PAGE_VA spelled-out
 
-crates/memory_region_heap/src/lib.rs::commit_all question-shape
 
 crates/nifefs/src/lib.rs::DIR_BLOCKS spelled-out
 
 crates/nifefs/src/lib.rs::name_eq question-shape
 
-crates/paging/src/domain.rs::DmaRegion spelled-out
+crates/page_tables/src/domain.rs::DmaRegion spelled-out
 
-crates/paging/src/mapper.rs::walk question-shape
+crates/page_tables/src/mapper.rs::walk question-shape
 
-crates/paging/src/page_format.rs::is_user_page_va spelled-out
+crates/page_tables/src/page_format.rs::is_user_page_va spelled-out
 
-crates/paging/src/x86_64.rs::MSR spelled-out
+crates/page_tables/src/x86_64.rs::MSR spelled-out
 
-crates/pci/src/lib.rs::CLASS_NVME spelled-out
+crates/pci_configuration_space/src/lib.rs::CLASS_NVME spelled-out
 
-crates/pci/src/lib.rs::mem32_window spelled-out
+crates/pci_configuration_space/src/lib.rs::mem32_window spelled-out
 
 crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 
 crates/program_argument_contract/src/lib.rs::from_va spelled-out
+
+crates/program_table/src/spawnproto.rs::prog_id spelled-out
 
 crates/screen_console/src/lib.rs::copy question-shape
 
@@ -189,7 +189,6 @@ crates/timetable/src/contract.rs::E_CONFIG spelled-out
 
 crates/timetable/src/contract.rs::STORE_PAGE_VA spelled-out
 
-crates/usb/src/descriptor.rs::control_max_packet spelled-out
 
 crates/user_mode_runtime/src/objects.rs::map_page_frame question-shape
 

@@ -74,7 +74,7 @@ The P1 items are in [the appendix](1093-globally-unique-identifier-partition-tab
 
 ## Decisions for the architect
 
-Two one-way doors are open that the review package does not hold. The package's own two decisions
+Two doors are open that the review package does not hold, and both are decided, provisionally. The package's own two decisions
 (where `NIFE_DATA` and `NIFE_BOOT` live; whether `lba` and `mbr` spell out) stand before these and
 are not restated.
 
@@ -90,7 +90,7 @@ imports it `as Table`.
 Recommendation: `PartitionTable`. The crate path already says which partition table, so the type
 says what it is inside that path, as `std::collections::hash_map::HashMap` does not repeat
 "collections" and `gpt_disk_types::GptHeader` repeats only the three letters. The recommendation is
-about reading, not effort: the rename is mechanical across seven callers. The cost is one more name
+about reading, not effort: the rename is mechanical across sixteen files outside the crate. The cost is one more name
 in the family (the crate and its type no longer match), which `uuid::Uuid` shows is not the only
 convention. Refused alternatives: `Table` (the generic word the naming page warns against) and
 `Gpt` (the acronym the ratified crate name avoids).
@@ -100,7 +100,11 @@ Prior art: `gpt::GptDisk`, `gpt_disk_types::GptHeader` and `GptPartitionEntryArr
 `GloballyUniqueIdentifierPartitionTable::parse(&disk[512..1024], &disk[1024..1024 + 16384])?`; the
 recommendation makes it `PartitionTable::parse(...)`.
 
-One-way after the first tag. Effort: XS.
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The type becomes `PartitionTable`, with no alias. Three callers
+already import it `as Table` (`xtask/src/confirm.rs` line 41, `xtask/src/rollback.rs` line 66,
+`uefi_loader/src/chooser.rs` line 38). A tag is a pre-release that only nifeos repositories pin.
+Effort: XS.
 
 ### Decision 2: the dependency the public API carries
 
@@ -122,7 +126,11 @@ Prior art: `gpt` 4.1 uses `uuid`; `gpt_disk_types` and `uefi` use `uguid`. Concr
 loader does not use the `uefi` crate's `Guid`; a downstream that does would convert through
 `Uuid::from_bytes(guid.to_bytes())` plus `guid::from_disk`, two lines.
 
-One-way after the first tag. Effort: none; the decision records the state.
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door now, which the architect
+may revisit. `uuid::Uuid` stays; `uuid` is already a dependency (`Cargo.toml` line 36, version
+1.28.0, default features off), so no new dependency is asked. The type in a signature becomes
+one-way at the first crates.io publish, which is on hold, and the publish review rechecks it against
+`uguid` with the measured demand in hand. Effort: none; the decision records the state.
 
 ## Done when
 

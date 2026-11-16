@@ -427,67 +427,62 @@ crates/address_space_identifier/src/lib.rs::free
 
 crates/address_space_identifier/src/lib.rs::new
 
-crates/address_space_map/src/lib.rs::BANDS
+crates/address_space_layout/src/lib.rs::BANDS
 
-crates/address_space_map/src/lib.rs::Band
+crates/address_space_layout/src/lib.rs::Band
 
-crates/address_space_map/src/lib.rs::CODE_MODEL_CEILING
+crates/address_space_layout/src/lib.rs::CODE_MODEL_CEILING
 
-crates/address_space_map/src/lib.rs::CURRENT_CPU_PAGE
+crates/address_space_layout/src/lib.rs::CURRENT_CPU_PAGE
 
-crates/address_space_map/src/lib.rs::HEAP
+crates/address_space_layout/src/lib.rs::HEAP
 
-crates/address_space_map/src/lib.rs::IMAGE
+crates/address_space_layout/src/lib.rs::IMAGE
 
-crates/address_space_map/src/lib.rs::IMAGE_BASE
+crates/address_space_layout/src/lib.rs::IMAGE_BASE
 
-crates/address_space_map/src/lib.rs::ImagePlacement
+crates/address_space_layout/src/lib.rs::ImagePlacement
 
-crates/address_space_map/src/lib.rs::NULL_GUARD
+crates/address_space_layout/src/lib.rs::NULL_GUARD
 
-crates/address_space_map/src/lib.rs::PAGE
+crates/address_space_layout/src/lib.rs::PAGE
 
-crates/address_space_map/src/lib.rs::PAIR_PAGES
+crates/address_space_layout/src/lib.rs::PAIR_PAGES
 
-crates/address_space_map/src/lib.rs::PROCESS_PAGES
+crates/address_space_layout/src/lib.rs::PROCESS_PAGES
 
-crates/address_space_map/src/lib.rs::RUNTIME_WINDOWS
+crates/address_space_layout/src/lib.rs::RUNTIME_WINDOWS
 
-crates/address_space_map/src/lib.rs::SERVICE_WINDOWS
+crates/address_space_layout/src/lib.rs::SERVICE_WINDOWS
 
-crates/address_space_map/src/lib.rs::STACK
+crates/address_space_layout/src/lib.rs::STACK
 
-crates/address_space_map/src/lib.rs::STACK_TOP
+crates/address_space_layout/src/lib.rs::STACK_TOP
 
-crates/address_space_map/src/lib.rs::STACK_TOP_PAGE
+crates/address_space_layout/src/lib.rs::STACK_TOP_PAGE
 
-crates/address_space_map/src/lib.rs::bytes
+crates/address_space_layout/src/lib.rs::bytes
 
-crates/address_space_map/src/lib.rs::check_image
+crates/address_space_layout/src/lib.rs::check_image
 
-crates/address_space_map/src/lib.rs::contains
+crates/address_space_layout/src/lib.rs::contains
 
-crates/address_space_map/src/lib.rs::holds
+crates/address_space_layout/src/lib.rs::holds
 
-crates/address_space_map/src/lib.rs::pair_page
+crates/address_space_layout/src/lib.rs::pair_page
 
-crates/address_space_map/src/lib.rs::runtime_window
+crates/address_space_layout/src/lib.rs::runtime_window
 
-crates/address_space_map/src/lib.rs::service_window
+crates/address_space_layout/src/lib.rs::service_window
 
-crates/allocation_cache/src/lib.rs::BATCH
 
 crates/allocation_cache/src/lib.rs::CLASSES
 
 crates/allocation_cache/src/lib.rs::Cache
 
-crates/allocation_cache/src/lib.rs::DEPTH
 
-crates/allocation_cache/src/lib.rs::GRID
 
-crates/allocation_cache/src/lib.rs::LARGEST
 
-crates/allocation_cache/src/lib.rs::MOST_CACHED_BYTES
 
 crates/allocation_cache/src/lib.rs::cached_bytes
 
@@ -497,17 +492,14 @@ crates/allocation_cache/src/lib.rs::class_bytes
 
 crates/allocation_cache/src/lib.rs::count
 
-crates/allocation_cache/src/lib.rs::drain
 
 crates/allocation_cache/src/lib.rs::new
 
-crates/allocation_cache/src/lib.rs::put
 
 crates/allocation_cache/src/lib.rs::refill
 
 crates/allocation_cache/src/lib.rs::spill
 
-crates/allocation_cache/src/lib.rs::take
 
 crates/bitmap_font/src/glyphs.rs
 
@@ -550,21 +542,14 @@ crates/bitmap_font/src/tests.rs
 
 
 
-crates/boot_ladder/src/rungs.rs::BANNER
 
-crates/boot_ladder/src/rungs.rs::MACHINE
 
-crates/boot_ladder/src/rungs.rs::PROMPT
 
-crates/boot_ladder/src/rungs.rs::SCREEN_HELD
 
-crates/boot_ladder/src/rungs.rs::SELF_TEST
 
-crates/boot_ladder/src/rungs.rs::SELF_TEST_CHECKS
 
 crates/boot_ladder/src/rungs.rs::SELF_TEST_FAILED
 
-crates/boot_ladder/src/rungs.rs::TOUR
 
 crates/boot_slot/src/lib.rs::EMPTY
 
@@ -627,6 +612,20 @@ crates/boot_slot/src/lib.rs::select
 crates/boot_slot/src/lib.rs::select_excluding
 
 crates/boot_slot/src/lib.rs::unreadable
+
+crates/byte_glob/src/lib.rs::Dot
+
+crates/byte_glob/src/lib.rs::cost_bound
+
+crates/byte_glob/src/lib.rs::has_magic
+
+crates/byte_glob/src/lib.rs::literal
+
+crates/byte_glob/src/lib.rs::match_steps
+
+crates/byte_glob/src/lib.rs::matches
+
+crates/byte_glob/src/lib.rs::matches_with
 
 crates/byte_sink_contract/src/lib.rs::BAD
 
@@ -903,7 +902,6 @@ crates/capability/src/lib.rs::from_bits
 
 crates/capability/src/lib.rs::get
 
-crates/capability/src/lib.rs::get_with
 
 crates/capability/src/lib.rs::highest_seen
 
@@ -919,7 +917,6 @@ crates/capability/src/lib.rs::is_empty
 
 crates/capability/src/lib.rs::is_subset_of
 
-crates/capability/src/lib.rs::len
 
 crates/capability/src/lib.rs::mint_child
 
@@ -1073,7 +1070,6 @@ crates/clock_contract/src/lib.rs::ClockPage
 
 crates/clock_contract/src/lib.rs::GOLDFISH
 
-crates/clock_contract/src/lib.rs::MAGIC
 
 crates/clock_contract/src/lib.rs::NONE
 
@@ -1642,23 +1638,17 @@ crates/device_tree_blob/src/lib.rs::from_ptr
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 
-crates/device_tree_blob/src/lib.rs::node_prop
 
-crates/device_tree_blob/src/lib.rs::node_prop_compatible
 
-crates/device_tree_blob/src/lib.rs::node_prop_inherited
 
-crates/device_tree_blob/src/lib.rs::node_props
 
 crates/device_tree_blob/src/lib.rs::node_reg
 
 crates/device_tree_blob/src/lib.rs::node_reg_compatible
 
-crates/device_tree_blob/src/lib.rs::phandle_prop
 
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions
 
-crates/device_tree_blob/src/lib.rs::reserved_regions
 
 crates/device_tree_blob/src/lib.rs::total_size
 
@@ -1876,10 +1866,6 @@ crates/domain_name_resolution_contract/src/wire.rs::NO_SOCKET_PAGE
 
 crates/domain_name_resolution_contract/src/wire.rs::NO_SUCH_NAME
 
-crates/domain_name_resolution_contract/src/wire.rs::OFF_ADDRESSES
-
-crates/domain_name_resolution_contract/src/wire.rs::OFF_NAME
-
 crates/domain_name_resolution_contract/src/wire.rs::OK
 
 crates/domain_name_resolution_contract/src/wire.rs::OPEN
@@ -1912,29 +1898,22 @@ crates/domain_name_resolution_contract/src/wire.rs::request
 
 crates/domain_name_resolution_contract/src/wire.rs::word
 
-crates/domain_name_system/src/lib.rs::A
 
 crates/domain_name_system/src/lib.rs::Answer
 
 crates/domain_name_system/src/lib.rs::CLASS_IN
 
-crates/domain_name_system/src/lib.rs::CNAME
 
 crates/domain_name_system/src/lib.rs::Error
 
-crates/domain_name_system/src/lib.rs::FLAG_QR
 
-crates/domain_name_system/src/lib.rs::FLAG_RD
 
-crates/domain_name_system/src/lib.rs::FLAG_TC
 
-crates/domain_name_system/src/lib.rs::HEADER_LEN
 
 crates/domain_name_system/src/lib.rs::Header
 
 crates/domain_name_system/src/lib.rs::Name
 
-crates/domain_name_system/src/lib.rs::OPCODE_MASK
 
 crates/domain_name_system/src/lib.rs::PORT
 
@@ -1942,9 +1921,7 @@ crates/domain_name_system/src/lib.rs::Query
 
 crates/domain_name_system/src/lib.rs::Question
 
-crates/domain_name_system/src/lib.rs::RCODE_MASK
 
-crates/domain_name_system/src/lib.rs::RCODE_NAME_ERROR
 
 crates/domain_name_system/src/lib.rs::Reader
 
@@ -1958,13 +1935,11 @@ crates/domain_name_system/src/lib.rs::TcpReply
 
 crates/domain_name_system/src/lib.rs::accept
 
-crates/domain_name_system/src/lib.rs::addresses
 
 crates/domain_name_system/src/lib.rs::as_bytes
 
 crates/domain_name_system/src/lib.rs::canonical
 
-crates/domain_name_system/src/lib.rs::cname_target
 
 crates/domain_name_system/src/lib.rs::decode_name
 
@@ -1992,7 +1967,6 @@ crates/domain_name_system/src/lib.rs::parse
 
 crates/domain_name_system/src/lib.rs::question
 
-crates/domain_name_system/src/lib.rs::rcode
 
 crates/domain_name_system/src/lib.rs::record
 
@@ -2002,7 +1976,6 @@ crates/domain_name_system/src/lib.rs::request_tcp
 
 crates/domain_name_system/src/lib.rs::root
 
-crates/domain_name_system/src/lib.rs::ttl
 
 crates/domain_name_system/src/lib.rs::write
 
@@ -2149,63 +2122,34 @@ crates/domain_name_system/src/proofs.rs
 
 
 
-crates/elf/src/error.rs::Error
 
-crates/elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/elf/src/machine.rs::KNOWN_MACHINES
 
-crates/elf/src/machine.rs::NATIVE_MACHINE
 
-crates/elf/src/machine.rs::machine_no_nife_build_accepts
 
-crates/elf/src/note.rs
 
-crates/elf/src/note.rs::NoteError
 
-crates/elf/src/note.rs::NoteSearch
 
-crates/elf/src/note.rs::NoteSegment
 
-crates/elf/src/note.rs::NoteSegments
 
-crates/elf/src/note.rs::from_head
 
-crates/elf/src/note.rs::new
 
-crates/elf/src/note.rs::note
 
-crates/elf/src/note.rs::range
 
-crates/elf/src/note.rs::segment
 
-crates/elf/src/parse.rs::Elf
 
-crates/elf/src/parse.rs::entry
 
-crates/elf/src/parse.rs::parse
 
-crates/elf/src/parse.rs::segments
 
-crates/elf/src/segment.rs::PF_R
 
-crates/elf/src/segment.rs::PF_W
 
-crates/elf/src/segment.rs::PF_X
 
-crates/elf/src/segment.rs::Segment
 
-crates/elf/src/segment.rs::is_executable
 
-crates/elf/src/segment.rs::is_readable
 
-crates/elf/src/segment.rs::is_writable
 
-crates/elf/src/segment.rs::page_range
 
-crates/elf/src/tests.rs
 
-crates/elf/src/verification.rs
 
 
 
@@ -2439,9 +2383,7 @@ crates/filesystem_contract/src/lib.rs::READY
 
 crates/filesystem_contract/src/lib.rs::operation
 
-crates/filesystem_contract/src/lib.rs::reply_err
 
-crates/filesystem_contract/src/lib.rs::reply_errno
 
 crates/filesystem_contract/src/lib.rs::req
 
@@ -2462,6 +2404,10 @@ crates/filesystem_contract/src/nameset.rs::encode
 crates/filesystem_contract/src/nameset.rs::iter
 
 crates/filesystem_contract/src/nameset/tests.rs
+
+crates/filesystem_contract/src/reply.rs::reply_err
+
+crates/filesystem_contract/src/reply.rs::reply_errno
 
 crates/filesystem_contract/src/rm.rs
 
@@ -3099,20 +3045,6 @@ crates/free/src/lib.rs::write_diagnostics
 
 crates/free/src/lib.rs::write_report
 
-crates/glob/src/lib.rs::Dot
-
-crates/glob/src/lib.rs::cost_bound
-
-crates/glob/src/lib.rs::has_magic
-
-crates/glob/src/lib.rs::literal
-
-crates/glob/src/lib.rs::match_steps
-
-crates/glob/src/lib.rs::matches
-
-crates/glob/src/lib.rs::matches_with
-
 crates/globally_unique_identifier_partition_table/src/crc.rs
 
 crates/globally_unique_identifier_partition_table/src/crc.rs::crc32
@@ -3269,6 +3201,74 @@ crates/globally_unique_identifier_partition_table/src/testing.rs::sample_disk
 
 crates/globally_unique_identifier_partition_table/src/verification.rs
 
+crates/grant_contract/src/manifest.rs::DIAGNOSTICS_SLOT
+
+crates/grant_contract/src/manifest.rs::DOMAIN_SLOT
+
+crates/grant_contract/src/manifest.rs::ENTROPY_SLOT
+
+crates/grant_contract/src/manifest.rs::Manifest
+
+crates/grant_contract/src/manifest.rs::NETWORK_SLOT
+
+crates/grant_contract/src/manifest.rs::diagnostics_slot
+
+crates/grant_contract/src/manifest.rs::hears_words
+
+crates/grant_contract/src/manifest.rs::is_byte_stream
+
+crates/grant_contract/src/manifest.rs::letters
+
+crates/grant_contract/src/manifest.rs::new
+
+crates/grant_contract/src/manifest.rs::rights
+
+crates/grant_contract/src/manifest.rs::rights
+
+crates/grant_contract/src/manifest.rs::try_new
+
+crates/grant_contract/src/manifest/tests.rs
+
+crates/grant_contract/src/verbs.rs::ALL
+
+crates/grant_contract/src/verbs.rs::CATALOG
+
+crates/grant_contract/src/verbs.rs::CLOCK
+
+crates/grant_contract/src/verbs.rs::CONFIGURATION
+
+crates/grant_contract/src/verbs.rs::DOMAIN
+
+crates/grant_contract/src/verbs.rs::ENTROPY
+
+crates/grant_contract/src/verbs.rs::INDEXES
+
+crates/grant_contract/src/verbs.rs::INDEXES_WRITE
+
+crates/grant_contract/src/verbs.rs::INSTALLER
+
+crates/grant_contract/src/verbs.rs::MACHINE
+
+crates/grant_contract/src/verbs.rs::NETWORK
+
+crates/grant_contract/src/verbs.rs::NONE
+
+crates/grant_contract/src/verbs.rs::SHARE
+
+crates/grant_contract/src/verbs.rs::VerbGrant
+
+crates/grant_contract/src/verbs.rs::bits
+
+crates/grant_contract/src/verbs.rs::contains
+
+crates/grant_contract/src/verbs.rs::from_bits
+
+crates/grant_contract/src/verbs.rs::narrow_by_verb
+
+crates/grant_contract/src/verbs.rs::union
+
+crates/grant_contract/src/verbs.rs::verb_of_page
+
 crates/grant_plan/src/command.rs::Command
 
 crates/grant_plan/src/command.rs::Endowment
@@ -3391,57 +3391,31 @@ crates/grant_plan/src/expand.rs::only
 
 crates/grant_plan/src/expand.rs::push
 
-crates/grant_plan/src/image.rs
 
-crates/grant_plan/src/image.rs::ImageRefusal
 
-crates/grant_plan/src/image.rs::image_can_carry
 
-crates/grant_plan/src/image.rs::image_hears_words
 
-crates/grant_plan/src/image.rs::image_manifest
 
-crates/grant_plan/src/image.rs::image_request_fits
 
-crates/grant_plan/src/image/tests.rs
 
-crates/grant_plan/src/job_page_frame.rs
 
-crates/grant_plan/src/job_page_frame.rs::DONE
 
-crates/grant_plan/src/job_page_frame.rs::HEARTBEAT
 
-crates/grant_plan/src/job_page_frame.rs::INTERRUPT
 
-crates/grant_plan/src/job_page_frame.rs::STATUS
 
-crates/grant_plan/src/job_page_frame.rs::STATUS_DONE
 
-crates/grant_plan/src/job_page_frame.rs::STATUS_INTERRUPTED
 
-crates/grant_plan/src/job_windows.rs::Label
 
-crates/grant_plan/src/job_windows.rs::Windows
 
-crates/grant_plan/src/job_windows.rs::any
 
-crates/grant_plan/src/job_windows.rs::expect
 
-crates/grant_plan/src/job_windows.rs::is_bound
 
-crates/grant_plan/src/job_windows.rs::new
 
-crates/grant_plan/src/job_windows.rs::new
 
-crates/grant_plan/src/job_windows.rs::reaped
 
-crates/grant_plan/src/job_windows.rs::reaped
 
-crates/grant_plan/src/job_windows.rs::release
 
-crates/grant_plan/src/job_windows.rs::set_bound
 
-crates/grant_plan/src/job_windows.rs::take
 
 crates/grant_plan/src/lexing.rs::file_name_fits
 
@@ -3477,35 +3451,20 @@ crates/grant_plan/src/line.rs::stage_count
 
 crates/grant_plan/src/line.rs::stages
 
-crates/grant_plan/src/manifest.rs::DIAGNOSTICS_SLOT
 
-crates/grant_plan/src/manifest.rs::DOMAIN_SLOT
 
-crates/grant_plan/src/manifest.rs::ENTROPY_SLOT
 
-crates/grant_plan/src/manifest.rs::Manifest
 
-crates/grant_plan/src/manifest.rs::NETWORK_SLOT
 
-crates/grant_plan/src/manifest.rs::UNVOUCHED_STD_MANIFEST
 
-crates/grant_plan/src/manifest.rs::diagnostics_slot
 
-crates/grant_plan/src/manifest.rs::hears_words
 
-crates/grant_plan/src/manifest.rs::is_byte_stream
 
-crates/grant_plan/src/manifest.rs::letters
 
-crates/grant_plan/src/manifest.rs::new
 
-crates/grant_plan/src/manifest.rs::rights
 
-crates/grant_plan/src/manifest.rs::rights
 
-crates/grant_plan/src/manifest.rs::try_new
 
-crates/grant_plan/src/manifest/tests.rs
 
 crates/grant_plan/src/nav.rs
 
@@ -3619,13 +3578,11 @@ crates/grant_plan/src/planning.rs::Streams
 
 crates/grant_plan/src/planning.rs::check_chain
 
-crates/grant_plan/src/planning.rs::plan
 
 crates/grant_plan/src/planning.rs::plan_against
 
 crates/grant_plan/src/planning.rs::plan_against_with
 
-crates/grant_plan/src/planning.rs::plan_stage
 
 crates/grant_plan/src/planning.rs::redirect_target
 
@@ -3637,21 +3594,13 @@ crates/grant_plan/src/planning/tests/operands.rs
 
 crates/grant_plan/src/planning/tests/streams.rs
 
-crates/grant_plan/src/program/catalog.rs::ALL
 
-crates/grant_plan/src/program/catalog.rs::from_id
 
-crates/grant_plan/src/program/catalog.rs::from_name
 
-crates/grant_plan/src/program/catalog.rs::id
 
-crates/grant_plan/src/program/catalog.rs::name
 
-crates/grant_plan/src/program/manifests.rs::manifest
 
-crates/grant_plan/src/program/manifests.rs::verbs
 
-crates/grant_plan/src/program/tests.rs
 
 crates/grant_plan/src/refusal.rs::Refusal
 
@@ -3659,105 +3608,56 @@ crates/grant_plan/src/refusal.rs::message
 
 crates/grant_plan/src/refusal/tests.rs
 
-crates/grant_plan/src/spawnproto.rs
 
-crates/grant_plan/src/spawnproto.rs::Activation
 
-crates/grant_plan/src/spawnproto.rs::ActivationStatus
 
-crates/grant_plan/src/spawnproto.rs::GRANT_WORDS
 
-crates/grant_plan/src/spawnproto.rs::IMAGE_PAGE
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_FAILED
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_NO_DISPLAY
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_OK
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_REFUSED_BY_MANIFEST
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_UNVOUCHED
 
-crates/grant_plan/src/spawnproto.rs::UNDERTAKER_BADGE
 
-crates/grant_plan/src/spawnproto.rs::Wiring
 
-crates/grant_plan/src/spawnproto.rs::activation
 
-crates/grant_plan/src/spawnproto.rs::activation_reply
 
-crates/grant_plan/src/spawnproto.rs::activation_request
 
-crates/grant_plan/src/spawnproto.rs::from_word
 
-crates/grant_plan/src/spawnproto.rs::holder_from_words
 
-crates/grant_plan/src/spawnproto.rs::holder_words
 
-crates/grant_plan/src/spawnproto.rs::image_len
 
-crates/grant_plan/src/spawnproto.rs::image_pages
 
-crates/grant_plan/src/spawnproto.rs::installer_badge
 
-crates/grant_plan/src/spawnproto.rs::installer_label
 
-crates/grant_plan/src/spawnproto.rs::installer_serves
 
-crates/grant_plan/src/spawnproto.rs::is_interruptible
 
-crates/grant_plan/src/spawnproto.rs::prog_id
 
-crates/grant_plan/src/spawnproto.rs::reaped
 
-crates/grant_plan/src/spawnproto.rs::request
 
-crates/grant_plan/src/spawnproto.rs::wiring
 
 crates/grant_plan/src/tests.rs
 
-crates/grant_plan/src/verbs.rs::ALL
 
-crates/grant_plan/src/verbs.rs::CATALOG
 
-crates/grant_plan/src/verbs.rs::CLOCK
 
-crates/grant_plan/src/verbs.rs::CONFIGURATION
 
-crates/grant_plan/src/verbs.rs::DOMAIN
 
-crates/grant_plan/src/verbs.rs::ENTROPY
 
-crates/grant_plan/src/verbs.rs::INDEXES
 
-crates/grant_plan/src/verbs.rs::INDEXES_WRITE
 
-crates/grant_plan/src/verbs.rs::INSTALLER
 
-crates/grant_plan/src/verbs.rs::MACHINE
 
-crates/grant_plan/src/verbs.rs::NETWORK
 
-crates/grant_plan/src/verbs.rs::NONE
 
-crates/grant_plan/src/verbs.rs::SHARE
 
-crates/grant_plan/src/verbs.rs::VerbGrant
 
-crates/grant_plan/src/verbs.rs::bits
 
-crates/grant_plan/src/verbs.rs::contains
 
-crates/grant_plan/src/verbs.rs::from_bits
 
-crates/grant_plan/src/verbs.rs::narrow_by_verb
 
-crates/grant_plan/src/verbs.rs::union
 
-crates/grant_plan/src/verbs.rs::verb_of
 
-crates/grant_plan/src/verbs.rs::verb_of_page
 
 crates/grant_plan/src/word.rs
 
@@ -4265,48 +4165,6 @@ crates/job_mix/src/lib.rs::order
 
 crates/job_mix/src/lib.rs::spread
 
-crates/line_editor/src/component.rs
-
-crates/line_editor/src/component.rs::BUDGET
-
-crates/line_editor/src/component.rs::BUDGET_PAGES
-
-crates/line_editor/src/component.rs::CLIENT_IN
-
-crates/line_editor/src/component.rs::CLIENT_OUT
-
-crates/line_editor/src/component.rs::CONSOLE
-
-crates/line_editor/src/component.rs::DISPLAY
-
-crates/line_editor/src/component.rs::ELF_VA
-
-crates/line_editor/src/component.rs::HANDOFF_PAGES
-
-crates/line_editor/src/component.rs::HANDOFF_VA
-
-crates/line_editor/src/component.rs::INSTANCE_PAGES
-
-crates/line_editor/src/component.rs::ROLLED_BACK
-
-crates/line_editor/src/component.rs::SINK
-
-crates/line_editor/src/component.rs::SINK_PAGE
-
-crates/line_editor/src/component.rs::SINK_REPLY
-
-crates/line_editor/src/component.rs::STACK_PAGES
-
-crates/line_editor/src/component.rs::STOP
-
-crates/line_editor/src/component.rs::STOPPED
-
-crates/line_editor/src/component.rs::SWAP
-
-crates/line_editor/src/component.rs::SWAPPED
-
-crates/line_editor/src/component.rs::TERMINAL
-
 crates/line_editor/src/handoff.rs
 
 crates/line_editor/src/handoff.rs::LAYOUT
@@ -4379,50 +4237,6 @@ crates/line_editor/src/output.rs::expand_output
 
 crates/line_editor/src/output/tests.rs
 
-crates/line_editor/src/proto.rs
-
-crates/line_editor/src/proto.rs::BAD_REQUEST
-
-crates/line_editor/src/proto.rs::CTL_QUIT
-
-crates/line_editor/src/proto.rs::CTL_RESUME
-
-crates/line_editor/src/proto.rs::FLAG_EOF
-
-crates/line_editor/src/proto.rs::FLAG_INTERRUPTED
-
-crates/line_editor/src/proto.rs::NOTE_ABSORBED
-
-crates/line_editor/src/proto.rs::OPERATION_BYTES
-
-crates/line_editor/src/proto.rs::OPERATION_INTRCOUNT
-
-crates/line_editor/src/proto.rs::OPERATION_PRINT
-
-crates/line_editor/src/proto.rs::OPERATION_RAWMODE
-
-crates/line_editor/src/proto.rs::OPERATION_READLINE
-
-crates/line_editor/src/proto.rs::OPERATION_READRAW
-
-crates/line_editor/src/proto.rs::OPERATION_SHIFT
-
-crates/line_editor/src/proto.rs::OPERATION_WRITE
-
-crates/line_editor/src/proto.rs::QUIESCED
-
-crates/line_editor/src/proto.rs::START_ABSORB
-
-crates/line_editor/src/proto.rs::is_retry
-
-crates/line_editor/src/proto.rs::len
-
-crates/line_editor/src/proto.rs::operation
-
-crates/line_editor/src/proto.rs::req
-
-crates/line_editor/src/proto/tests.rs
-
 crates/line_editor/src/raw_queue.rs::RawQueue
 
 crates/line_editor/src/raw_queue.rs::is_empty
@@ -4434,6 +4248,47 @@ crates/line_editor/src/raw_queue.rs::pop8
 crates/line_editor/src/raw_queue.rs::push
 
 crates/line_editor/src/raw_queue/tests.rs
+
+
+crates/line_editor_component/src/lib.rs::BUDGET
+
+crates/line_editor_component/src/lib.rs::BUDGET_PAGES
+
+crates/line_editor_component/src/lib.rs::CLIENT_IN
+
+crates/line_editor_component/src/lib.rs::CLIENT_OUT
+
+crates/line_editor_component/src/lib.rs::CONSOLE
+
+crates/line_editor_component/src/lib.rs::DISPLAY
+
+crates/line_editor_component/src/lib.rs::ELF_VA
+
+crates/line_editor_component/src/lib.rs::HANDOFF_PAGES
+
+crates/line_editor_component/src/lib.rs::HANDOFF_VA
+
+crates/line_editor_component/src/lib.rs::INSTANCE_PAGES
+
+crates/line_editor_component/src/lib.rs::ROLLED_BACK
+
+crates/line_editor_component/src/lib.rs::SINK
+
+crates/line_editor_component/src/lib.rs::SINK_PAGE
+
+crates/line_editor_component/src/lib.rs::SINK_REPLY
+
+crates/line_editor_component/src/lib.rs::STACK_PAGES
+
+crates/line_editor_component/src/lib.rs::STOP
+
+crates/line_editor_component/src/lib.rs::STOPPED
+
+crates/line_editor_component/src/lib.rs::SWAP
+
+crates/line_editor_component/src/lib.rs::SWAPPED
+
+crates/line_editor_component/src/lib.rs::TERMINAL
 
 crates/loaded_image_check/src/lib.rs::verify
 
@@ -5152,16 +5007,6 @@ crates/memory_corruption_canary_gate/src/lib.rs::new
 
 crates/memory_corruption_canary_gate/src/lib.rs::try_check
 
-crates/memory_region_heap/src/lib.rs::DEFAULT_BASE
-
-crates/memory_region_heap/src/lib.rs::MemoryRegionHeap
-
-crates/memory_region_heap/src/lib.rs::commit_all
-
-crates/memory_region_heap/src/lib.rs::committed_bytes
-
-crates/memory_region_heap/src/lib.rs::new
-
 crates/memory_regions/src/destroy.rs::DestroyOutcome
 
 crates/memory_regions/src/destroy.rs::destroy_outcome
@@ -5558,249 +5403,249 @@ crates/page_frames/src/lib.rs::page_frames_in
 
 crates/page_frames/src/lib.rs::stats
 
-crates/paging/src/aarch64.rs
+crates/page_tables/src/aarch64.rs
 
-crates/paging/src/aarch64.rs::Aarch64
+crates/page_tables/src/aarch64.rs::Aarch64
 
-crates/paging/src/aarch64.rs::DEVICE
+crates/page_tables/src/aarch64.rs::DEVICE
 
-crates/paging/src/aarch64.rs::NORMAL
+crates/page_tables/src/aarch64.rs::NORMAL
 
-crates/paging/src/aarch64.rs::VALUE
+crates/page_tables/src/aarch64.rs::VALUE
 
-crates/paging/src/domain.rs
+crates/page_tables/src/domain.rs
 
-crates/paging/src/domain.rs::DmaRegion
+crates/page_tables/src/domain.rs::DmaRegion
 
-crates/paging/src/domain.rs::build_identity_domain
+crates/page_tables/src/domain.rs::build_identity_domain
 
-crates/paging/src/domain.rs::flags
+crates/page_tables/src/domain.rs::flags
 
-crates/paging/src/domain.rs::grant_page
+crates/page_tables/src/domain.rs::grant_page
 
-crates/paging/src/domain.rs::grant_pages
+crates/page_tables/src/domain.rs::grant_pages
 
-crates/paging/src/eighth_pass_attacks.rs
+crates/page_tables/src/eighth_pass_attacks.rs
 
-crates/paging/src/flag_tests.rs
+crates/page_tables/src/flag_tests.rs
 
-crates/paging/src/flags.rs::Flags
+crates/page_tables/src/flags.rs::Flags
 
-crates/paging/src/flags.rs::bits
+crates/page_tables/src/flags.rs::bits
 
-crates/paging/src/flags.rs::device
+crates/page_tables/src/flags.rs::device
 
-crates/paging/src/flags.rs::is_device
+crates/page_tables/src/flags.rs::is_device
 
-crates/paging/src/flags.rs::is_global
+crates/page_tables/src/flags.rs::is_global
 
-crates/paging/src/flags.rs::is_kernel_executable
+crates/page_tables/src/flags.rs::is_kernel_executable
 
-crates/paging/src/flags.rs::is_user_accessible
+crates/page_tables/src/flags.rs::is_user_accessible
 
-crates/paging/src/flags.rs::is_user_executable
+crates/page_tables/src/flags.rs::is_user_executable
 
-crates/paging/src/flags.rs::is_writable
+crates/page_tables/src/flags.rs::is_writable
 
-crates/paging/src/flags.rs::kernel_code
+crates/page_tables/src/flags.rs::kernel_code
 
-crates/paging/src/flags.rs::kernel_data
+crates/page_tables/src/flags.rs::kernel_data
 
-crates/paging/src/flags.rs::kernel_rodata
+crates/page_tables/src/flags.rs::kernel_rodata
 
-crates/paging/src/flags.rs::user_code
+crates/page_tables/src/flags.rs::user_code
 
-crates/paging/src/flags.rs::user_data
+crates/page_tables/src/flags.rs::user_data
 
-crates/paging/src/flags.rs::user_device
+crates/page_tables/src/flags.rs::user_device
 
-crates/paging/src/flags.rs::user_rodata
+crates/page_tables/src/flags.rs::user_rodata
 
-crates/paging/src/flags.rs::user_write_combining
+crates/page_tables/src/flags.rs::user_write_combining
 
-crates/paging/src/geometry_tests.rs
+crates/page_tables/src/geometry_tests.rs
 
-crates/paging/src/mapper.rs::MapError
+crates/page_tables/src/mapper.rs::MapError
 
-crates/paging/src/mapper.rs::Mapper
+crates/page_tables/src/mapper.rs::Mapper
 
-crates/paging/src/mapper.rs::Walk
+crates/page_tables/src/mapper.rs::Walk
 
-crates/paging/src/mapper.rs::WalkEnd
+crates/page_tables/src/mapper.rs::WalkEnd
 
-crates/paging/src/mapper.rs::end
+crates/page_tables/src/mapper.rs::end
 
-crates/paging/src/mapper.rs::half
+crates/page_tables/src/mapper.rs::half
 
-crates/paging/src/mapper.rs::map
+crates/page_tables/src/mapper.rs::map
 
-crates/paging/src/mapper.rs::map_block
+crates/page_tables/src/mapper.rs::map_block
 
-crates/paging/src/mapper.rs::map_range
+crates/page_tables/src/mapper.rs::map_range
 
-crates/paging/src/mapper.rs::map_span
+crates/page_tables/src/mapper.rs::map_span
 
-crates/paging/src/mapper.rs::new
+crates/page_tables/src/mapper.rs::new
 
-crates/paging/src/mapper.rs::root
+crates/page_tables/src/mapper.rs::root
 
-crates/paging/src/mapper.rs::steps
+crates/page_tables/src/mapper.rs::steps
 
-crates/paging/src/mapper.rs::translate
+crates/page_tables/src/mapper.rs::translate
 
-crates/paging/src/mapper.rs::unlink_table
+crates/page_tables/src/mapper.rs::unlink_table
 
-crates/paging/src/mapper.rs::unmap
+crates/page_tables/src/mapper.rs::unmap
 
-crates/paging/src/page_format.rs::Half
+crates/page_tables/src/page_format.rs::Half
 
-crates/paging/src/page_format.rs::PageFormat
+crates/page_tables/src/page_format.rs::PageFormat
 
-crates/paging/src/page_format.rs::is_user_page_va
+crates/page_tables/src/page_format.rs::is_user_page_va
 
-crates/paging/src/page_size.rs::ALL
+crates/page_tables/src/page_size.rs::ALL
 
-crates/paging/src/page_size.rs::PAGE_SIZE
+crates/page_tables/src/page_size.rs::PAGE_SIZE
 
-crates/paging/src/page_size.rs::PageSize
+crates/page_tables/src/page_size.rs::PageSize
 
-crates/paging/src/page_size.rs::bytes
+crates/page_tables/src/page_size.rs::bytes
 
-crates/paging/src/page_size.rs::largest_fitting
+crates/page_tables/src/page_size.rs::largest_fitting
 
-crates/paging/src/page_size.rs::levels_above_bottom
+crates/page_tables/src/page_size.rs::levels_above_bottom
 
-crates/paging/src/page_table.rs::ENTRIES
+crates/page_tables/src/page_table.rs::ENTRIES
 
-crates/paging/src/page_table.rs::PageTable
+crates/page_tables/src/page_table.rs::PageTable
 
-crates/paging/src/page_table.rs::new
+crates/page_tables/src/page_table.rs::new
 
-crates/paging/src/sv39.rs
+crates/page_tables/src/sv39.rs
 
-crates/paging/src/sv39.rs::Sv39
+crates/page_tables/src/sv39.rs::Sv39
 
-crates/paging/src/sv39.rs::memory_type_of
+crates/page_tables/src/sv39.rs::memory_type_of
 
-crates/paging/src/tlb_flush.rs::TlbFlush
+crates/page_tables/src/tlb_flush.rs::TlbFlush
 
-crates/paging/src/tlb_flush.rs::address
+crates/page_tables/src/tlb_flush.rs::address
 
-crates/paging/src/tlb_flush.rs::assume_no_stale_entry
+crates/page_tables/src/tlb_flush.rs::assume_no_stale_entry
 
-crates/paging/src/tlb_flush.rs::flush
+crates/page_tables/src/tlb_flush.rs::flush
 
-crates/paging/src/verification.rs
+crates/page_tables/src/verification.rs
 
-crates/paging/src/x86_64.rs
+crates/page_tables/src/x86_64.rs
 
-crates/paging/src/x86_64.rs::AmdVi
+crates/page_tables/src/x86_64.rs::AmdVi
 
-crates/paging/src/x86_64.rs::Ia32e
+crates/page_tables/src/x86_64.rs::Ia32e
 
-crates/paging/src/x86_64.rs::MSR
+crates/page_tables/src/x86_64.rs::MSR
 
-crates/paging/src/x86_64.rs::RESET
+crates/page_tables/src/x86_64.rs::RESET
 
-crates/paging/src/x86_64.rs::VALUE
+crates/page_tables/src/x86_64.rs::VALUE
 
-crates/paging/src/x86_64.rs::Vtd
+crates/page_tables/src/x86_64.rs::Vtd
 
-crates/paging/src/x86_64.rs::blocked_device_table_entry
+crates/page_tables/src/x86_64.rs::blocked_device_table_entry
 
-crates/paging/src/x86_64.rs::device_table_entry
+crates/page_tables/src/x86_64.rs::device_table_entry
 
-crates/pci/src/lib.rs::BAR0
+crates/pci_configuration_space/src/lib.rs::BAR0
 
-crates/pci/src/lib.rs::BUS_NUMBERS
+crates/pci_configuration_space/src/lib.rs::BUS_NUMBERS
 
-crates/pci/src/lib.rs::Bar
+crates/pci_configuration_space/src/lib.rs::Bar
 
-crates/pci/src/lib.rs::Bdf
+crates/pci_configuration_space/src/lib.rs::Bdf
 
-crates/pci/src/lib.rs::CLASS_NVME
+crates/pci_configuration_space/src/lib.rs::CLASS_NVME
 
-crates/pci/src/lib.rs::CLASS_REVISION
+crates/pci_configuration_space/src/lib.rs::CLASS_REVISION
 
-crates/pci/src/lib.rs::CLASS_XHCI
+crates/pci_configuration_space/src/lib.rs::CLASS_XHCI
 
-crates/pci/src/lib.rs::CMD_BUS_MASTER
+crates/pci_configuration_space/src/lib.rs::CMD_BUS_MASTER
 
-crates/pci/src/lib.rs::CMD_MEMORY_SPACE
+crates/pci_configuration_space/src/lib.rs::CMD_MEMORY_SPACE
 
-crates/pci/src/lib.rs::COMMAND
+crates/pci_configuration_space/src/lib.rs::COMMAND
 
-crates/pci/src/lib.rs::HEADER_TYPE
+crates/pci_configuration_space/src/lib.rs::HEADER_TYPE
 
-crates/pci/src/lib.rs::HEADER_TYPE_BRIDGE
+crates/pci_configuration_space/src/lib.rs::HEADER_TYPE_BRIDGE
 
-crates/pci/src/lib.rs::INTERRUPT_PIN
+crates/pci_configuration_space/src/lib.rs::INTERRUPT_PIN
 
-crates/pci/src/lib.rs::MESSAGE_CONTROL
+crates/pci_configuration_space/src/lib.rs::MESSAGE_CONTROL
 
-crates/pci/src/lib.rs::MSIX_ENABLE
+crates/pci_configuration_space/src/lib.rs::MSIX_ENABLE
 
-crates/pci/src/lib.rs::MSIX_ENTRY_BYTES
+crates/pci_configuration_space/src/lib.rs::MSIX_ENTRY_BYTES
 
-crates/pci/src/lib.rs::MSIX_ENTRY_MASKED
+crates/pci_configuration_space/src/lib.rs::MSIX_ENTRY_MASKED
 
-crates/pci/src/lib.rs::MSIX_FUNCTION_MASK
+crates/pci_configuration_space/src/lib.rs::MSIX_FUNCTION_MASK
 
-crates/pci/src/lib.rs::MSI_64_BIT
+crates/pci_configuration_space/src/lib.rs::MSI_64_BIT
 
-crates/pci/src/lib.rs::MSI_ENABLE
+crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
-crates/pci/src/lib.rs::VENDOR_ID
+crates/pci_configuration_space/src/lib.rs::VENDOR_ID
 
-crates/pci/src/lib.rs::VIRTIO_BLK_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_GPU_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_GPU_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_INPUT_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_INPUT_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
+crates/pci_configuration_space/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
 
-crates/pci/src/lib.rs::VIRTIO_NET_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_NET_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_RNG_MODERN
+crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_MODERN
 
-crates/pci/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
+crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_BLOCK
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_BLOCK
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_ENTROPY
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_ENTROPY
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_GPU
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_GPU
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_INPUT
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_INPUT
 
-crates/pci/src/lib.rs::VIRTIO_TYPE_NET
+crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_NET
 
-crates/pci/src/lib.rs::VIRTIO_VENDOR
+crates/pci_configuration_space/src/lib.rs::VIRTIO_VENDOR
 
-crates/pci/src/lib.rs::address_low
+crates/pci_configuration_space/src/lib.rs::address_low
 
-crates/pci/src/lib.rs::bridge_buses
+crates/pci_configuration_space/src/lib.rs::bridge_buses
 
-crates/pci/src/lib.rs::data
+crates/pci_configuration_space/src/lib.rs::data
 
-crates/pci/src/lib.rs::ecam_offset
+crates/pci_configuration_space/src/lib.rs::ecam_offset
 
-crates/pci/src/lib.rs::enumerate
+crates/pci_configuration_space/src/lib.rs::enumerate
 
-crates/pci/src/lib.rs::mem32_window
+crates/pci_configuration_space/src/lib.rs::mem32_window
 
-crates/pci/src/lib.rs::read_bars
+crates/pci_configuration_space/src/lib.rs::read_bars
 
-crates/pci/src/lib.rs::requester_id
+crates/pci_configuration_space/src/lib.rs::requester_id
 
-crates/pci/src/lib.rs::walk
+crates/pci_configuration_space/src/lib.rs::walk
 
-crates/pci/src/tests.rs
+crates/pci_configuration_space/src/tests.rs
 
 crates/pgrep/src/lib.rs::BLOCKED
 
@@ -5902,6 +5747,130 @@ crates/program_argument_contract/src/lib.rs::parse
 
 crates/program_argument_contract/src/lib.rs::push
 
+crates/program_table/src/image.rs
+
+crates/program_table/src/image.rs::ImageRefusal
+
+crates/program_table/src/image.rs::image_can_carry
+
+crates/program_table/src/image.rs::image_hears_words
+
+crates/program_table/src/image.rs::image_manifest
+
+crates/program_table/src/image.rs::image_request_fits
+
+crates/program_table/src/image/tests.rs
+
+crates/program_table/src/job_page_frame.rs
+
+crates/program_table/src/job_page_frame.rs::DONE
+
+crates/program_table/src/job_page_frame.rs::HEARTBEAT
+
+crates/program_table/src/job_page_frame.rs::INTERRUPT
+
+crates/program_table/src/job_page_frame.rs::STATUS
+
+crates/program_table/src/job_page_frame.rs::STATUS_DONE
+
+crates/program_table/src/job_page_frame.rs::STATUS_INTERRUPTED
+
+crates/program_table/src/job_windows.rs::Label
+
+crates/program_table/src/job_windows.rs::Windows
+
+crates/program_table/src/job_windows.rs::any
+
+crates/program_table/src/job_windows.rs::expect
+
+crates/program_table/src/job_windows.rs::is_bound
+
+crates/program_table/src/job_windows.rs::new
+
+crates/program_table/src/job_windows.rs::new
+
+crates/program_table/src/job_windows.rs::reaped
+
+crates/program_table/src/job_windows.rs::reaped
+
+crates/program_table/src/job_windows.rs::release
+
+crates/program_table/src/job_windows.rs::set_bound
+
+crates/program_table/src/job_windows.rs::take
+
+crates/program_table/src/program/catalog.rs::ALL
+
+crates/program_table/src/program/catalog.rs::from_id
+
+crates/program_table/src/program/catalog.rs::from_name
+
+crates/program_table/src/program/catalog.rs::id
+
+crates/program_table/src/program/catalog.rs::name
+
+crates/program_table/src/program/manifests.rs::manifest
+
+crates/program_table/src/program/manifests.rs::verbs
+
+crates/program_table/src/program/tests.rs
+
+crates/program_table/src/spawnproto.rs
+
+crates/program_table/src/spawnproto.rs::Activation
+
+crates/program_table/src/spawnproto.rs::ActivationStatus
+
+crates/program_table/src/spawnproto.rs::GRANT_WORDS
+
+crates/program_table/src/spawnproto.rs::IMAGE_PAGE
+
+crates/program_table/src/spawnproto.rs::SPAWN_FAILED
+
+crates/program_table/src/spawnproto.rs::SPAWN_NO_DISPLAY
+
+crates/program_table/src/spawnproto.rs::SPAWN_OK
+
+crates/program_table/src/spawnproto.rs::SPAWN_REFUSED_BY_MANIFEST
+
+crates/program_table/src/spawnproto.rs::SPAWN_UNVOUCHED
+
+crates/program_table/src/spawnproto.rs::UNDERTAKER_BADGE
+
+crates/program_table/src/spawnproto.rs::Wiring
+
+crates/program_table/src/spawnproto.rs::activation
+
+crates/program_table/src/spawnproto.rs::activation_reply
+
+crates/program_table/src/spawnproto.rs::activation_request
+
+crates/program_table/src/spawnproto.rs::from_word
+
+crates/program_table/src/spawnproto.rs::holder_from_words
+
+crates/program_table/src/spawnproto.rs::holder_words
+
+crates/program_table/src/spawnproto.rs::image_len
+
+crates/program_table/src/spawnproto.rs::image_pages
+
+crates/program_table/src/spawnproto.rs::installer_badge
+
+crates/program_table/src/spawnproto.rs::installer_label
+
+crates/program_table/src/spawnproto.rs::installer_serves
+
+crates/program_table/src/spawnproto.rs::is_interruptible
+
+crates/program_table/src/spawnproto.rs::prog_id
+
+crates/program_table/src/spawnproto.rs::reaped
+
+crates/program_table/src/spawnproto.rs::request
+
+crates/program_table/src/spawnproto.rs::wiring
+
 crates/ps/src/lib.rs::Row
 
 crates/ps/src/lib.rs::Survey
@@ -5981,8 +5950,6 @@ crates/sealed_pair/src/lib.rs::BOOT_PROGRAMS
 crates/sealed_pair/src/lib.rs::EntrySeal
 
 crates/sealed_pair/src/lib.rs::Seal
-
-crates/sealed_pair/src/lib.rs::THE_BOARD_IS_THE_AUTHORITY
 
 crates/sealed_pair/src/lib.rs::TableDisagreement
 
@@ -6216,14 +6183,6 @@ crates/socket_contract/src/lib.rs::NO_LISTEN_GRANT
 
 crates/socket_contract/src/lib.rs::NO_NAMESERVER
 
-crates/socket_contract/src/lib.rs::OFF_DST_IP
-
-crates/socket_contract/src/lib.rs::OFF_DST_PORT
-
-crates/socket_contract/src/lib.rs::OFF_LEN
-
-crates/socket_contract/src/lib.rs::OFF_PAYLOAD
-
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 
 crates/socket_contract/src/lib.rs::OPERATION_ATTACH_PAGE_FRAME
@@ -6287,6 +6246,64 @@ crates/socket_contract/src/lib.rs::udp_bind_grant
 crates/socket_contract/src/lib.rs::udp_grant_allows
 
 crates/socket_contract/src/lib.rs::word_ipv4
+
+crates/static_elf/src/error.rs::Error
+
+crates/static_elf/src/machine.rs::FOREIGN_MACHINES
+
+crates/static_elf/src/machine.rs::KNOWN_MACHINES
+
+crates/static_elf/src/machine.rs::NATIVE_MACHINE
+
+crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
+
+crates/static_elf/src/note.rs
+
+crates/static_elf/src/note.rs::NoteError
+
+crates/static_elf/src/note.rs::NoteSearch
+
+crates/static_elf/src/note.rs::NoteSegment
+
+crates/static_elf/src/note.rs::NoteSegments
+
+crates/static_elf/src/note.rs::from_head
+
+crates/static_elf/src/note.rs::new
+
+crates/static_elf/src/note.rs::note
+
+crates/static_elf/src/note.rs::range
+
+crates/static_elf/src/note.rs::segment
+
+crates/static_elf/src/parse.rs::Elf
+
+crates/static_elf/src/parse.rs::entry
+
+crates/static_elf/src/parse.rs::parse
+
+crates/static_elf/src/parse.rs::segments
+
+crates/static_elf/src/segment.rs::PF_R
+
+crates/static_elf/src/segment.rs::PF_W
+
+crates/static_elf/src/segment.rs::PF_X
+
+crates/static_elf/src/segment.rs::Segment
+
+crates/static_elf/src/segment.rs::is_executable
+
+crates/static_elf/src/segment.rs::is_readable
+
+crates/static_elf/src/segment.rs::is_writable
+
+crates/static_elf/src/segment.rs::page_range
+
+crates/static_elf/src/tests.rs
+
+crates/static_elf/src/verification.rs
 
 crates/std_runtime_contract/src/lib.rs::ARGS_PAGE
 
@@ -6972,6 +6989,49 @@ crates/system_log_contract/src/lib.rs::word
 
 crates/system_log_contract/src/lib.rs::wrote
 
+
+crates/terminal_contract/src/lib.rs::BAD_REQUEST
+
+crates/terminal_contract/src/lib.rs::CTL_QUIT
+
+crates/terminal_contract/src/lib.rs::CTL_RESUME
+
+crates/terminal_contract/src/lib.rs::FLAG_EOF
+
+crates/terminal_contract/src/lib.rs::FLAG_INTERRUPTED
+
+crates/terminal_contract/src/lib.rs::NOTE_ABSORBED
+
+crates/terminal_contract/src/lib.rs::OPERATION_BYTES
+
+crates/terminal_contract/src/lib.rs::OPERATION_INTRCOUNT
+
+crates/terminal_contract/src/lib.rs::OPERATION_PRINT
+
+crates/terminal_contract/src/lib.rs::OPERATION_RAWMODE
+
+crates/terminal_contract/src/lib.rs::OPERATION_READLINE
+
+crates/terminal_contract/src/lib.rs::OPERATION_READRAW
+
+crates/terminal_contract/src/lib.rs::OPERATION_SHIFT
+
+crates/terminal_contract/src/lib.rs::OPERATION_WRITE
+
+crates/terminal_contract/src/lib.rs::QUIESCED
+
+crates/terminal_contract/src/lib.rs::START_ABSORB
+
+crates/terminal_contract/src/lib.rs::is_retry
+
+crates/terminal_contract/src/lib.rs::len
+
+crates/terminal_contract/src/lib.rs::operation
+
+crates/terminal_contract/src/lib.rs::req
+
+crates/terminal_contract/src/tests.rs
+
 crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECONDS
 
 crates/test_times/src/lib.rs::HEADING
@@ -7268,7 +7328,6 @@ crates/usb/src/boot_keyboard.rs::MODIFIER_CODES
 
 crates/usb/src/boot_keyboard.rs::RELEASED
 
-crates/usb/src/boot_keyboard.rs::REPORT_LEN
 
 crates/usb/src/boot_keyboard.rs::changes
 
@@ -7284,23 +7343,19 @@ crates/usb/src/descriptor.rs::CLASS_HID
 
 crates/usb/src/descriptor.rs::CONFIGURATION
 
-crates/usb/src/descriptor.rs::CONFIGURATION_LEN
 
 crates/usb/src/descriptor.rs::ConfigurationHeader
 
 crates/usb/src/descriptor.rs::DEVICE
 
-crates/usb/src/descriptor.rs::DEVICE_LEN
 
 crates/usb/src/descriptor.rs::DeviceDescriptor
 
 crates/usb/src/descriptor.rs::ENDPOINT
 
-crates/usb/src/descriptor.rs::ENDPOINT_LEN
 
 crates/usb/src/descriptor.rs::INTERFACE
 
-crates/usb/src/descriptor.rs::INTERFACE_LEN
 
 crates/usb/src/descriptor.rs::PROTOCOL_KEYBOARD
 
@@ -7308,7 +7363,6 @@ crates/usb/src/descriptor.rs::Refusal
 
 crates/usb/src/descriptor.rs::SUBCLASS_BOOT
 
-crates/usb/src/descriptor.rs::control_max_packet
 
 crates/usb/src/descriptor.rs::find_boot_keyboard
 
@@ -7356,17 +7410,11 @@ crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
 crates/user_mode_runtime/src/clock.rs::current_cpu
 
@@ -7403,7 +7451,6 @@ crates/user_mode_runtime/src/inter_process_communication.rs::decode
 
 crates/user_mode_runtime/src/inter_process_communication.rs::into_reply
 
-crates/user_mode_runtime/src/inter_process_communication.rs::list
 
 crates/user_mode_runtime/src/inter_process_communication.rs::notification_bind
 
@@ -7417,17 +7464,7 @@ crates/user_mode_runtime/src/inter_process_communication.rs::reap
 
 crates/user_mode_runtime/src/inter_process_communication.rs::receive
 
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_fault
-
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_request
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_request_bound
 
 crates/user_mode_runtime/src/inter_process_communication.rs::reply
 
@@ -7451,27 +7488,18 @@ crates/user_mode_runtime/src/mapped_window.rs
 
 crates/user_mode_runtime/src/mapped_window.rs::MappedWindow
 
-crates/user_mode_runtime/src/mapped_window.rs::PAGE
 
 crates/user_mode_runtime/src/mapped_window.rs::new
 
-crates/user_mode_runtime/src/mapped_window.rs::r16
 
-crates/user_mode_runtime/src/mapped_window.rs::r32
 
-crates/user_mode_runtime/src/mapped_window.rs::r64
 
-crates/user_mode_runtime/src/mapped_window.rs::r8
 
 crates/user_mode_runtime/src/mapped_window.rs::read
 
-crates/user_mode_runtime/src/mapped_window.rs::w16
 
-crates/user_mode_runtime/src/mapped_window.rs::w32
 
-crates/user_mode_runtime/src/mapped_window.rs::w64
 
-crates/user_mode_runtime/src/mapped_window.rs::w8
 
 crates/user_mode_runtime/src/mapped_window.rs::write
 
@@ -7487,9 +7515,7 @@ crates/user_mode_runtime/src/process.rs::yield_now
 
 crates/user_mode_runtime/src/socket_frame.rs::Frame
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_ip
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_port
 
 crates/user_mode_runtime/src/socket_frame.rs::new
 
@@ -7497,7 +7523,6 @@ crates/user_mode_runtime/src/socket_frame.rs::payload_read
 
 crates/user_mode_runtime/src/socket_frame.rs::payload_write
 
-crates/user_mode_runtime/src/socket_frame.rs::set_dst
 
 crates/user_mode_runtime/src/socket_frame.rs::set_len
 

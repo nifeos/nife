@@ -66,7 +66,7 @@ impl Held {
         let page = unsafe { StartupPage::mapped() }.expect("no startup page");
         let windows = KINDS.map(|(_, kind)| {
             page.window(kind).map(|w| {
-                assert!(u64::from(w.pages) * address_space_map::PAGE >= USED_WINDOW_BYTES);
+                assert!(u64::from(w.pages) * address_space_layout::PAGE >= USED_WINDOW_BYTES);
                 // SAFETY: the spawner maps every window it lists for the life of the process, the
                 // syscon read-only and the three domains read/write, and this server writes only
                 // what `Windows::write` is handed, which is never the syscon.
@@ -89,7 +89,7 @@ impl Windows for Held {
     }
 
     fn read(&mut self, window: WindowName, offset: u64) -> u32 {
-        self.window(window).r32(offset)
+        self.window(window).read_u32(offset)
     }
 
     fn write(&mut self, window: WindowName, offset: u64, value: u32) {
@@ -98,7 +98,7 @@ impl Windows for Held {
             WindowName::SystemController,
             "the syscon is read-only"
         );
-        self.window(window).w32(offset, value);
+        self.window(window).write_u32(offset, value);
     }
 }
 

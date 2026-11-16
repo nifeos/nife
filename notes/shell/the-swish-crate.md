@@ -79,7 +79,7 @@ line, so a Tab reaches the process that holds the authority completion needs. Co
 exactly what that authority can name, and nothing more:
 
 - In command position, a builtin (`grant_plan::BUILTINS`), a program the image names
-  (`grant_plan::Program::ALL`), or an installed program's bare name (§229 B2), read from the live
+  (`program_table::Program::ALL`), or an installed program's bare name (§229 B2), read from the live
   installed-programs table on each Tab.
 - Anywhere else, or for a word with a `/` in it, an entry of the directory the word's lead names,
   read the way `ls` reads it. That costs `ENUMERATE`, the same right `echo *` costs, so a shell that
@@ -124,7 +124,7 @@ arrives it is another row, not another command.
 ## What a word designates
 
 `swish::words` decides whether a word is a designation to resolve or text to print. It asks
-`glob::has_magic` first, because an `echo` word is arbitrary text: `a:b` is not a path and must not
+`byte_glob::has_magic` first, because an `echo` word is arbitrary text: `a:b` is not a path and must not
 be refused as one. A pattern anywhere but the last component is refused, since selecting
 directories to walk is an authority question (notes/glob.md).
 

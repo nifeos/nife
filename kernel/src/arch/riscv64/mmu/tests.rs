@@ -189,7 +189,7 @@ fn the_stack_is_writable_and_not_executable() {
 
 /// The UART is mapped as device memory in the kernel's flags.
 ///
-/// Base Sv39 has no memory-type field, so this checks the RSW bit `paging::Sv39` keeps, not what
+/// Base Sv39 has no memory-type field, so this checks the RSW bit `page_tables::Sv39` keeps, not what
 /// the hardware was told. See notes/riscv-port/memory.md and notes/page-tables.md.
 #[test_case]
 fn the_uart_is_mapped_as_device_memory() {
@@ -226,7 +226,7 @@ fn an_allocated_frame_is_reachable_through_the_mmu() {
 /// previous owner's data, with correct tables in memory.
 #[test_case]
 fn unmap_invalidates_the_tlb() {
-    use paging::Flags;
+    use page_tables::Flags;
 
     use crate::arch::mmu::{self, phys_to_virt};
 
@@ -280,7 +280,7 @@ fn unmap_invalidates_the_tlb() {
 /// so a change goes through break-before-make as on aarch64.
 #[test_case]
 fn the_kernel_mapper_refuses_to_overwrite() {
-    use paging::{Flags, MapError};
+    use page_tables::{Flags, MapError};
 
     use crate::arch::mmu;
 

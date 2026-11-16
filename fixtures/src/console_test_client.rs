@@ -28,7 +28,7 @@ use user_mode_runtime::{exit, receive, require, send};
 
 /// The page shared with the console server. We write text here; the server reads it. Mapped
 /// read/write here, read-only there. Must match `components/src/console.rs`'s `SHARED_VA`.
-const SHARED_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const SHARED_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 /// Slot 0 sends the print request; the server receives it there.
 const REQUEST: u64 = 0;

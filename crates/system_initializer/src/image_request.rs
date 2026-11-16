@@ -14,25 +14,25 @@ use super::*;
 /// installed-programs table. Mapped once, on first use, with page tables from its own budget.
 /// Clear of every other window this process maps (`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`, the
 /// peek pages below it, and `process_builder::SCRATCH_WINDOW` at `0x1000_0000`).
-pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_0000);
+pub(super) const ACTIVATION_FS_VA: u64 = address_space_layout::pair_page(0x0f40_0000);
 
 /// **Where the progenitor maps the second mounted tree's client-window pool**, to zero a window
 /// between two jobs. Past [`ACTIVATION_FS_VA`]'s pool, which is the same size, and
 /// below [`IMAGE_STAGING_VA`].
-pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_map::pair_page(0x0f50_0000);
+pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_layout::pair_page(0x0f50_0000);
 
 /// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAXIMUM_PAGES`]
 /// pages at most. A fixed window, because every page mapped here comes from a staging region this
 /// process destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
 /// (capability revocation and untyped reclamation)), so the next request finds it empty. The page
 /// tables behind it come from `own_ut` and are reused.
-const IMAGE_STAGING_VA: u64 = address_space_map::pair_page(0x0f80_0000);
+const IMAGE_STAGING_VA: u64 = address_space_layout::pair_page(0x0f80_0000);
 
 // The largest image's copy stays inside the pair band, clear of the loader's scratch window at its
 // top.
 const _: () = assert!(
     IMAGE_STAGING_VA + spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE
-        <= address_space_map::PAIR_PAGES.end
+        <= address_space_layout::PAIR_PAGES.end
 );
 
 /// **Take the argv's frame off the spawn endpoint and map it where this process can read it**
@@ -130,7 +130,7 @@ pub(super) struct SpawnEndpoint {
     /// so the request unwinds instead of waiting for frames nobody will send.
     pub(super) abandoned: bool,
     /// The endpoint each live installer holder's answers go back on, by its job's label
-    /// (`grant_plan::INSTALLER_REPLY_SLOT`). Ours is `WRITE`; the holder's is `READ`. Deleted at
+    /// (`grant_contract::INSTALLER_REPLY_SLOT`). Ours is `WRITE`; the holder's is `READ`. Deleted at
     /// the holder's reap.
     replies: [Option<(u64, u64, &'static str)>; INSTALLER_HOLDERS],
     /// The label the next job's supervision capability carries (DECISIONS §148 (resolves by asking
@@ -147,6 +147,18 @@ pub(super) struct SpawnEndpoint {
 
 /// How many first messages [`SpawnEndpoint`] keeps from senders it is not serving.
 const STASHED: usize = 4;
+
+/// **Why [`SpawnEndpoint::grant_resolver`] returned no badge**, which decides whether waiting for
+/// a reap can help.
+///
+/// Name: provisional.
+enum NoGrant {
+    /// No badge or capability slot is free now, and a due reap may free one.
+    Wait,
+    /// There is no resolver, or it refused the grant, or its answer was no answer: no reap changes
+    /// that.
+    Refused,
+}
 
 /// **How many installer holders may be alive at once** (milestone 809): one reply endpoint each.
 /// A spawn that would be one more is refused. `jig` is a foreground job, so one is the usual
@@ -173,25 +185,50 @@ impl SpawnEndpoint {
     }
 
     /// **Grant job `label` a resolver badge for `zone`** (milestone 892), and return a fresh badged
-    /// copy of the resolver's endpoint for the caller to place and delete. `None` with no resolver,
-    /// with every badge held by a live job, or if the kernel refused the copy (and then the grant is
-    /// forgotten at once).
+    /// copy of the resolver's endpoint for the caller to place and delete. [`NoGrant::Wait`] with
+    /// every badge held by a live job, or if the kernel refused the copy (and then the grant is
+    /// forgotten at once): a due reap may change either. [`NoGrant::Refused`] with no resolver, or
+    /// when the resolver refused the grant, which no reap changes.
+    ///
+    /// Every piece but the last is a `SEND`. The last is a `CALL`, and the resolver's answer
+    /// (`domain_name_resolution_contract::control_answer`) says whether the grant is in force. A
+    /// refusal, or a word that is no answer, is no grant: the badge is forgotten in the resolver
+    /// too, so its window is free, and the entry here stays free. The reason has nowhere to be
+    /// written yet (the crate's BUGS).
     ///
     /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
     /// The pull request records no other name considered.
-    pub(super) fn grant_resolver(&mut self, label: u64, zone: &str) -> Option<u64> {
-        let ep = self.resolver?;
-        let entry = self.resolving.iter().position(Option::is_none)?;
+    fn grant_resolver(&mut self, label: u64, zone: &str) -> Result<u64, NoGrant> {
+        let ep = self.resolver.ok_or(NoGrant::Refused)?;
+        let entry = self
+            .resolving
+            .iter()
+            .position(Option::is_none)
+            .ok_or(NoGrant::Wait)?;
         let badge = entry as u32 + 1;
-        for (w0, w1) in domain_name_resolution_contract::grant_messages(badge, zone.as_bytes())? {
-            send(ep, w0, w1, 0);
+        let mut pieces = domain_name_resolution_contract::grant_messages(badge, zone.as_bytes())
+            .ok_or(NoGrant::Refused)?
+            .peekable();
+        let mut answer = Err(None);
+        while let Some((w0, w1)) = pieces.next() {
+            if pieces.peek().is_some() {
+                send(ep, w0, w1, 0);
+            } else {
+                answer = domain_name_resolution_contract::control_answer(call(ep, w0, w1).0);
+            }
+        }
+        if answer.is_err() {
+            if let Some((w0, w1)) = domain_name_resolution_contract::forget_message(badge) {
+                send(ep, w0, w1, 0);
+            }
+            return Err(NoGrant::Refused);
         }
         self.resolving[entry] = Some(label);
         match badged(ep, badge as u64) {
-            Ok(copy) => Some(copy),
+            Ok(copy) => Ok(copy),
             Err(()) => {
                 self.forget_resolver(label);
-                None
+                Err(NoGrant::Wait)
             }
         }
     }
@@ -199,13 +236,20 @@ impl SpawnEndpoint {
     /// **A resolver badge for `zone`, when the job may hold one** (milestone 892): the badged copy,
     /// and whether a job that should hold one is going without, which refuses its spawn. A badge
     /// every live job holds may be one a finished job's due reap frees, as a window may, so this
-    /// waits for the reaps that are due before it gives up. `zone` is `None` for a job the table
-    /// names no zone for or that is not eligible; on a boot with no resolver nothing is owed.
+    /// waits for the reaps that are due before it gives up. A grant the resolver refused is given
+    /// up at once, since no reap changes it. `zone` is `None` for a job the table names no zone for
+    /// or that is not eligible; on a boot with no resolver nothing is owed.
     pub(super) fn resolver_for(&mut self, label: u64, zone: Option<&str>) -> (Option<u64>, bool) {
         let Some(zone) = zone.filter(|_| self.resolver.is_some()) else {
             return (None, false);
         };
-        let copy = self.until_reaped(|s| s.grant_resolver(label, zone));
+        let copy = self
+            .until_reaped(|s| match s.grant_resolver(label, zone) {
+                Ok(copy) => Some(Some(copy)),
+                Err(NoGrant::Refused) => Some(None),
+                Err(NoGrant::Wait) => None,
+            })
+            .flatten();
         (copy, copy.is_none())
     }
 
@@ -353,7 +397,9 @@ impl SpawnEndpoint {
                 m
             }
             None => loop {
-                let (w0, w1, w2, badge) = receive_badged(self.ep);
+                let Message {
+                    w0, w1, w2, badge, ..
+                } = receive_message(self.ep).into_message();
                 if badge == spawnproto::UNDERTAKER_BADGE {
                     self.reaped(w0);
                     continue;
@@ -377,7 +423,9 @@ impl SpawnEndpoint {
             if self.abandoned {
                 return (0, 0, 0);
             }
-            let (w0, w1, w2, badge) = receive_badged(self.ep);
+            let Message {
+                w0, w1, w2, badge, ..
+            } = receive_message(self.ep).into_message();
             if badge == spawnproto::UNDERTAKER_BADGE {
                 self.reaped(w0);
                 continue;
@@ -400,7 +448,13 @@ impl SpawnEndpoint {
             if self.abandoned {
                 return (0, abi::rendezvous::NO_CAPABILITY, 0);
             }
-            let (w0, slot, w1, badge) = receive_capability_badged(self.ep);
+            let Message {
+                w0,
+                w1: slot,
+                w2: w1,
+                badge,
+                ..
+            } = receive_capability_message(self.ep).into_message();
             if badge == spawnproto::UNDERTAKER_BADGE {
                 if slot != abi::rendezvous::NO_CAPABILITY {
                     capability_delete(slot);
@@ -434,7 +488,9 @@ impl SpawnEndpoint {
         if self.any_stashed() {
             return false;
         }
-        let (w0, w1, w2, badge) = receive_badged(self.ep);
+        let Message {
+            w0, w1, w2, badge, ..
+        } = receive_message(self.ep).into_message();
         if badge == spawnproto::UNDERTAKER_BADGE {
             self.reaped(w0);
             true
@@ -600,7 +656,7 @@ pub(super) fn staged_image(len: u64) -> &'static [u8] {
 
 /// **Is this image vouched for, and was it granted the network?** Its SHA-256, looked up in the
 /// live generation of the activation set (`installed_programs`), with that generation's `grant`
-/// lines. [`grant_plan::Vouch::Unvouched`] on a miss and on every failure to read the table, which
+/// lines. [`program_table::Vouch::Unvouched`] on a miss and on every failure to read the table, which
 /// then vouches for nothing. The digest comes back too, for [`granted_zones`]. The page used is
 /// window 0, the shell's, sound because the shell is parked on the result endpoint for the whole
 /// of a spawn.
@@ -609,8 +665,8 @@ pub(super) fn vouched(
     fs: Option<Fs>,
     own_ut: u64,
     fs_mapped: &mut bool,
-) -> (grant_plan::Vouch, measured_boot::Digest) {
-    use grant_plan::Vouch;
+) -> (program_table::Vouch, measured_boot::Digest) {
+    use program_table::Vouch;
     let digest = measured_boot::sha256(bytes);
     let vouch = with_live_table(fs, own_ut, fs_mapped, |table| {
         match installed_programs::lookup_digest(table, &digest) {
@@ -685,7 +741,7 @@ fn with_live_table<R>(
 /// manifest is. The ABI never dual-serves, so the comparison is equality. Bytes with no note
 /// declare nothing and pass. The refusal's two numbers (`Refusal`) stop here: the spawn reply
 /// carries a status and no text, so the person sees the refusal and not the versions.
-fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
+fn serves_declared_abi(elf: &static_elf::Elf<'_>) -> bool {
     match elf.note(capability_manifest_note::OWNER, interfaces_note::INTERFACES) {
         Ok(None) => true,
         Ok(Some(d)) => interfaces_note::decode_interfaces(d).is_ok_and(|list| {
@@ -697,18 +753,18 @@ fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
 }
 
 /// **The manifest a file's bytes are endowed with, or `None` to refuse them.** Their note is read
-/// with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
+/// with `static_elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
-/// endow a program with a manifest it did not declare. `grant_plan::image_manifest` then applies
+/// endow a program with a manifest it did not declare. `program_table::image_manifest` then applies
 /// the vouch (the shell's `caps` calls the same function to preview it), and the request's own
 /// words must fit what results.
 pub(super) fn endowed_image(
-    elf: &elf::Elf<'_>,
-    vouch: grant_plan::Vouch,
+    elf: &static_elf::Elf<'_>,
+    vouch: program_table::Vouch,
     arg: u64,
     mem_pages: u64,
     words: bool,
-) -> Option<grant_plan::Manifest> {
+) -> Option<grant_contract::Manifest> {
     let declared = match elf.note(
         capability_manifest_note::OWNER,
         capability_manifest_note::MANIFEST,
@@ -731,8 +787,8 @@ pub(super) fn endowed_image(
     ) {
         return None;
     }
-    let m = grant_plan::image_manifest(declared, vouch).ok()?;
-    grant_plan::image_request_fits(&m, arg, mem_pages, words).then_some(m)
+    let m = program_table::image_manifest(declared, vouch).ok()?;
+    program_table::image_request_fits(&m, arg, mem_pages, words).then_some(m)
 }
 
 #[cfg(test)]
@@ -753,14 +809,14 @@ mod tests {
         v[5] = 1;
         v[6] = 1;
         v[16..18].copy_from_slice(&2u16.to_le_bytes());
-        v[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+        v[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
         v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
         v[32..40].copy_from_slice(&64u64.to_le_bytes());
         v[54..56].copy_from_slice(&56u16.to_le_bytes());
         v[56..58].copy_from_slice(&2u16.to_le_bytes());
         let mut load = vec![0u8; 56];
         load[0..4].copy_from_slice(&1u32.to_le_bytes());
-        load[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+        load[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
         load[8..16].copy_from_slice(&(body as u64).to_le_bytes());
         load[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
         load[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -769,7 +825,7 @@ mod tests {
         v.extend_from_slice(&load);
         let mut ph = vec![0u8; 56];
         ph[0..4].copy_from_slice(&4u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&elf::PF_R.to_le_bytes());
+        ph[4..8].copy_from_slice(&static_elf::PF_R.to_le_bytes());
         ph[8..16].copy_from_slice(&((body + 16) as u64).to_le_bytes());
         ph[32..40].copy_from_slice(&(note.len() as u64).to_le_bytes());
         ph[40..48].copy_from_slice(&(note.len() as u64).to_le_bytes());
@@ -792,7 +848,7 @@ mod tests {
     }
 
     fn judged(bytes: &[u8]) -> bool {
-        serves_declared_abi(&elf::Elf::parse(bytes).expect("the fixture parses"))
+        serves_declared_abi(&static_elf::Elf::parse(bytes).expect("the fixture parses"))
     }
 
     #[test]

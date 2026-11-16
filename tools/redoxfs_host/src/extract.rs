@@ -22,7 +22,7 @@ pub struct ExtractStats {
     pub attrs_skipped: u64,
     /// Attributes whose bytes were reattached but whose **type code** could not be, because no host
     /// filesystem has a per-attribute type word. The codes stay readable in the extracted
-    /// `.nife-attrs` blobs. Only counted for a code that is not [`xattr::RAW`], since dropping a
+    /// `.extended-attributes` blobs. Only counted for a code that is not [`xattr::RAW`], since dropping a
     /// zero loses nothing.
     pub kinds_dropped: u64,
 }
@@ -105,11 +105,11 @@ pub(crate) fn reattach<D: Disk>(
                 if attr.kind != xattr::RAW {
                     // Named per attribute rather than summarised, because the code is the one part
                     // of this record the host cannot carry and a reader who wants it needs to know
-                    // which file to go back to `.nife-attrs` for.
+                    // which file to go back to `.extended-attributes` for.
                     eprintln!(
                         "redoxfs_host: {}: attribute {shown} kept its {} bytes but not its type \
                          code {:#010x}; host filesystems have no field for it (see \
-                         .nife-attrs in the extracted tree)",
+                         .extended-attributes in the extracted tree)",
                         dest.display(),
                         attr.value.len(),
                         attr.kind,

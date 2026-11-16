@@ -51,7 +51,7 @@ const SURFACE_FRAME: u64 = 3;
 
 /// Where this program puts the surface. **Its choice, not the kernel's**: it holds the frames and
 /// maps them (milestone 108).
-const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const SURFACE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
 /// Failure codes, reported in a `0xDEAD_...` word so a failure names its step.
 const E_INFO: u64 = 0x01;
@@ -70,11 +70,11 @@ const E_SURFACE: u64 = 0x05;
 const SURFACE: MappedWindow = unsafe { MappedWindow::new(SURFACE_VA, gfx::SURFACE_BYTES as u64) };
 
 fn px_write(i: usize, v: u32) {
-    SURFACE.w32((i * 4) as u64, v);
+    SURFACE.write_u32((i * 4) as u64, v);
 }
 
 fn px_read(i: usize) -> u32 {
-    SURFACE.r32((i * 4) as u64)
+    SURFACE.read_u32((i * 4) as u64)
 }
 
 fn die(code: u64) -> ! {

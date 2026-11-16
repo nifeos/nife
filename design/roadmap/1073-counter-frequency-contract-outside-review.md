@@ -64,7 +64,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
 | 7, documentation a stranger reads | landed, #3556, with the review package's three move edits and its proposed items 1 and 2 |
 | 8, the template's prose gates | landed, #3556 |
 | 9, two Kani harnesses with falsification patches | landed, #3556, and the verify table has a row for the crate |
-| 10, private offset constants | held: a family decision, written up below |
+| 10, private offset constants | landed, #3571: `MAGIC_OFFSET_BYTES` and `HERTZ_OFFSET_BYTES`, under the family rule below |
 | 11, README says where the end-to-end test lives | landed, #3556 |
 | 12, `Debug` prints the address | no change, folds into the next API change |
 
@@ -176,7 +176,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    rate" and `new`'s safety section says "every `x86_64` process" and opens a sentence in
    lowercase; the package's proposed items 1 and 2 cover these and they belong in the same lane.
    Evidence: `crates/counter_frequency_contract/src/lib.rs` lines 102, 104 to 105, 119 to 120,
-   124, 134, 170 to 171 and 190; `crates/address_space_map/src/lib.rs` lines 4 to 5.
+   124, 134, 170 to 171 and 190; `crates/address_space_layout/src/lib.rs` lines 4 to 5.
    Change: delete the stale sentence and the alias sentences, say "byte-aligned" in the example,
    and apply the package's items 1 and 2 in the same pull request.
    Door: two-way. Effort: S.
@@ -225,29 +225,14 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 ## Decisions for the architect
 
-The architect froze the identity on 2026-11-11 (#3516). One item waits on a family decision.
+The architect froze the identity on 2026-11-11 (#3516). No decision is open.
 
-### Which spelling the page crates use for their private offset constants (item 10)
+### How the page crates spell their offset constants (item 10)
 
-Background. Each fixed-layout page crate names the byte position of a field with a private
-constant, and this crate writes `OFF_MAGIC` and `OFF_HERTZ`. The sibling page crates use the same
-`OFF_` prefix. The constants are private, so no caller or published name depends on them. The
-question is whether a stranger reading one crate should meet `OFF_` or a spelled-out `_OFFSET`
-suffix, and the answer has to be the same in every page crate or the family reads as inconsistent.
-
-Recommendation: leave `OFF_` for now and decide once for the whole family of page crates in one
-sweep, because renaming one crate alone makes it the odd one out and the template's abbreviations
-check only reports. If the family chooses to spell it out, the names are `MAGIC_OFFSET` and
-`HERTZ_OFFSET`.
-
-Prior art. The Linux kernel and OpenBSD both abbreviate field offsets in private headers
-(`_OFF`, `_OFFSET` are both common); neither enforces one spelling across subsystems (unverified in
-detail). nife's own rule spells out units and register names and leaves private locals alone.
-
-Concrete example. `crates/block_roster_contract` uses `HEADER_BYTES` and `ENTRY_BYTES`, while this
-crate uses `OFF_HERTZ`; a reader moving between the two sees two spellings for one idea.
-
-Door: two-way (private). Not changed by this lane, which never renames.
+Ruled 2026-11-14 (UTC) for the whole family: the byte position of a page field or region-layout
+field is named `<FIELD>_OFFSET_BYTES`, with the field name spelled out under `design/naming.md`.
+This crate's constants are `MAGIC_OFFSET_BYTES` and `HERTZ_OFFSET_BYTES`. A constant that counts
+words says `_OFFSET_WORDS`. No old spelling is kept as an alias.
 
 ## Done when
 
@@ -260,29 +245,31 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
   milestone's dependency on milestone 1017 stands in for that ordering.
 - `script/crate-move --dry-run` runs the pinned template's checks, not the template head's, and
   its notes say so. The dry run also runs no clippy pass, so item 2 was invisible to it, and its
-  citation check did not report the manifest comment of item 6. Both are findings against
-  `helpers/crate_move.py`, for a lane of its own.
-- The dry run's two remaining findings (`.github/pull_request_template.md` line 2 and
-  `CONTRIBUTING.md` line 23, plus four more "mentions nife" lines in `.githooks/commit-msg`,
-  `deny.toml` and `docs/stranger-test.md`) are in the template's scaffold, not in this crate, and
-  are the template's to fix.
+  citation check did not report the manifest comment of item 6. The same gap hid two more refusals
+  that the template head and stable clippy made over the staged copy: a README with no badge row,
+  and a bare `VisionFive` that nife's own `clippy.toml` accepts and the standalone copy does not.
+  Both are fixed in the crate. All of these are findings against `helpers/crate_move.py`, for a
+  lane of its own.
+- The dry run's three remaining findings (`.github/pull_request_template.md` line 2,
+  `CONTRIBUTING.md` line 23, and five "mentions nife" lines in `.githooks/commit-msg`, `deny.toml`,
+  `docs/stranger-test.md` and `rustfmt.toml`) are in the pinned `v7` scaffold, not in this crate.
+  The template head's scaffold names nife nowhere, so a move at the next template release clears
+  them.
 - Item 5 came from reading, not from a build for a 32-bit target; the fix is cheap enough to land
   without one, and the three targets the crate names are all 64-bit.
-- Nobody verified whether `proofs / kani` is green on a crate with no `#[kani::proof]`; item 9
-  removes the question.
 - The kernel's writer caches the page's physical frame on first use; if `frequency_checked` is
   `None` at that moment, every later process reads the zeroed frame (`kernel/src/user/loader.rs`
   lines 159 to 190). That is kernel behavior the kernel's own BUGS should carry, outside this
   crate, and this note records it because the crate's contract does not cover it.
-- Nobody re-ran the mutation census; the carried baseline row reads "missed 0".
+- Nobody re-ran the mutation census since both harnesses and the out-of-band test landed; the
+  carried baseline row reads "missed 0". The review package names the run, for the 08:00 to 13:00
+  UTC window.
 
 ## Follow-on
 
-- **Outstanding.** Item 10, the spelling of the page crates' private offset constants: a family
-  decision for an architect, written up under the decisions above. Checked 2026-11-14 against
-  `crates/counter_frequency_contract/src/lib.rs`, where `OFF_MAGIC` and `OFF_HERTZ` stand.
-- **Outstanding.** The move itself, which waits on milestone 1017's order and on the architect's
-  clearing of the review.
+- **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.
+- **Outstanding.** The move itself, which waits on the architect's clearing of the review. The
+  review package states that it is ready.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
   item 12: no change until the next API change.
 
@@ -292,5 +279,5 @@ An outside review of `counter_frequency_contract` before it leaves this tree. It
 have landed. They cover the `std` farm's source lookup, the stable clippy failure and the BUGS
 entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
 assertion, the manifest comment and the documentation fixes. The rest are the template's prose
-gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. The identity does not change. One item waits for the
-architect: the spelling of the page crates' private offset constants, a family decision.
+gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. Item 10, the private offset constants, follows the family rule. The identity does not change, and
+the crate waits for the architect to clear its review.

@@ -72,7 +72,7 @@ changes together with its server and its client, which is what a monorepo is goo
 makes into two or three pull requests.
 
 Settled by 610's proposed rule (four weeks with no breaking change): `program_argument_contract`,
-`boot_slot`, `capability_witness_contract`, `compositor`, `current_cpu_contract`, `elf`,
+`boot_slot`, `capability_witness_contract`, `compositor`, `current_cpu_contract`, `static_elf`,
 `capability_manifest_note`, `measured_boot`, `std_runtime_contract`. Nine of the 30 crates 610 measures.
 
 ## 2. Which division could go first: coupling by candidate
@@ -128,8 +128,8 @@ What the table says, read rather than summarized:
 - The dependents column counts Cargo links. A program named by a gate (`swish-check`'s `ps`
   line, a QEMU runner starting `redoxfs_server`) is a dependency the split must also carry, and
   the path-reference column only half catches it.
-- 610's per-crate view measures 30 crates. `machine_statistics_contract`, `glob`,
-  `address_space_map` and `subtree_scope`, which the candidate cuts link, have no row, so their
+- 610's per-crate view measures 30 crates. `machine_statistics_contract`, `byte_glob`,
+  `address_space_layout` and `subtree_scope`, which the candidate cuts link, have no row, so their
   stability is unmeasured. The proposal carries this as a precondition rather than a BUGS line on
   610, because a lane does not edit another milestone's block.
 - Thirty days is one regime: milestones 606, 609 and 611 all landed inside it. The column 610 owes

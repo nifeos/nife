@@ -8,7 +8,7 @@
 //! # Capability contract
 //!
 //! - slot 0: the terminal rendezvous (CALL: `OPERATION_WRITE` / `OPERATION_READLINE`).
-//! - slot 1: a spawn rendezvous (direct the progenitor to start a program; `grant_plan::spawnproto`).
+//! - slot 1: a spawn rendezvous (direct the progenitor to start a program; `program_table::spawnproto`).
 //! - slot 2: a result rendezvous (receive a spawned program's answer).
 //! - slot 3: an untyped budget, the memory it grants with `--mem`.
 //! - `OUT_VA` (text out) and `LINE_VA` (lines in): pages shared with the terminal. The directory
@@ -44,16 +44,17 @@ use grant_plan::line::{self, Line, Source};
 use grant_plan::nav::{self, Cwd, Refused, Step};
 use grant_plan::{
     Action, Command, DirectoryGrant as GrantDir, Endowment, Escalation, ParsedInvocation, Refusal,
-    Streams, TouchOperands, job_page_frame, spawnproto,
+    Streams, TouchOperands,
 };
-use line_editor::proto;
+use program_table::{Program, job_page_frame, spawnproto};
 use swish::{Route, Say, Status, Untimed, sequence};
+use terminal_contract as proto;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, capability_delete, cntfrq, destroy_memory_region, exit, monotonic_nanoseconds, now, reap,
-    receive, receive_capability, receive_fault, retype_into_kernel_object, retype_sleeper, send,
-    sleep_until, split_memory_region, thread_control_block_resume, thread_control_block_suspend,
-    yield_now,
+    Message, call, capability_delete, counter_hertz, destroy_memory_region, exit,
+    monotonic_nanoseconds, now, reap, receive, receive_capability, receive_message,
+    retype_into_kernel_object, retype_sleeper, send, sleep_until, split_memory_region,
+    thread_control_block_resume, thread_control_block_suspend, yield_now,
 };
 
 // **The shell is a directory of modules** (milestone 844 (the shell program is split along its

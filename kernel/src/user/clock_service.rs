@@ -6,8 +6,8 @@ use crate::sched::RendezvousId;
 ///
 /// `CLOCK_VA` is public because the set authority lives there, and the NTP tests aim a write at it
 /// from a process that holds no such mapping.
-pub const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
-const RTC_VA: u64 = address_space_map::pair_page(0x00d0_0000);
+pub const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
+const RTC_VA: u64 = address_space_layout::pair_page(0x00d0_0000);
 
 /// What the clock service was wired with, so a test (or a real progenitor) can play its clients.
 pub struct Wiring {
@@ -158,8 +158,8 @@ fn spawn_with(
 
 impl Wiring {
     /// The clock page as the kernel sees it, through the direct map. A reader process would
-    /// hold a read-only mapping instead; the seqlock and the layout are the same either way,
-    /// because they come from the one contract crate.
+    /// hold a read-only mapping instead; the publish protocol and the layout are the same either
+    /// way, because they come from the one contract crate.
     pub fn page(&self) -> clock_contract::ClockPage {
         // SAFETY: a frame this module allocated and still owns, named through the direct map.
         unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(self.page_phys)) }

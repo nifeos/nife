@@ -11,10 +11,14 @@ use super::*;
 
 /// Set up this process's heap, then the smoltcp interface over `dev`, seeded from the clock.
 pub(super) fn heap_and_interface(dev: &mut Nic) -> Interface {
-    HEAP.initialize(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
-        HEAP_MAXIMUM,
+    // A refused wiring (a misaligned base, a cap under a page) leaves no heap: stop here, legibly.
+    user_mode_runtime::require(
+        HEAP.initialize(
+            MEMORY_REGION,
+            memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
+            HEAP_MAXIMUM,
+        )
+        .is_ok(),
     );
 
     let mut config = Config::new(HardwareAddress::Ethernet(EthernetAddress(dev.mac())));

@@ -157,7 +157,7 @@ pub const NO_MISMATCH: u64 = PIXELS as u64;
 // ================================================================================================
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// `filesystem_contract` and `line_editor::proto` use, so all three contracts read alike.
+/// `filesystem_contract` and `terminal_contract` use, so all three contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// Build a request's first word from an opcode and a 56-bit operand.

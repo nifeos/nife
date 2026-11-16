@@ -26,6 +26,13 @@ use screen_console::{Cells, PixelSink, ScreenConsole};
 
 use crate::sync::{InterruptSafeMutex, rank};
 
+/// **The heads of this system's boot lines**, built from the name every one of them begins with.
+/// The kernel prints the banner, machine, tour, screen-hold and (with no progenitor) verdict lines
+/// through it; `serial_console` builds the same heads to read them.
+///
+/// Name: provisional.
+pub(crate) const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
+
 /// The console UART's **physical** address on QEMU's `virt` machine.
 #[cfg(target_arch = "aarch64")]
 const UART_PHYS: u64 = 0x0900_0000; // PL011
@@ -365,7 +372,7 @@ fn hold_screen_for_host() {
     CONSOLE.lock().uart.discard_waiting_bytes();
     crate::println!(
         "{}send any byte on this line to release it",
-        boot_ladder::SCREEN_HELD
+        HEADS.screen_held()
     );
 
     let start = crate::arch::timer::ticks();
@@ -437,7 +444,7 @@ pub(crate) fn configure_from_dtb() {
     };
 
     let u32_prop = |name: &[u8]| -> Option<u32> {
-        match dt.node_prop(UART_NODE, name) {
+        match dt.node_property(UART_NODE, name) {
             Ok(Some(bytes)) if bytes.len() >= 4 => {
                 Some(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
             }
@@ -452,7 +459,7 @@ pub(crate) fn configure_from_dtb() {
         // A stated clock is the only licence to reprogram the divisor; see the field's doc.
         divisor: u32_prop(b"clock-frequency").map_or(0, Shape::divisor_for),
         dw_busy_quirk: matches!(
-            dt.node_prop(UART_NODE, b"compatible"),
+            dt.node_property(UART_NODE, b"compatible"),
             Ok(Some(compat)) if compat.split(|&b| b == 0).any(|s| s == b"snps,dw-apb-uart")
         ),
     };

@@ -119,7 +119,7 @@ a smaller monitor core, described as separate `cpu@` nodes with different `riscv
 kernel that reads the first node and then schedules a thread onto any hart has read the wrong node
 some of the time.
 
-So `dtb` grew [`node_props`](../crates/device_tree_blob/src/lib.rs), which answers for every matching node rather
+So `dtb` grew [`node_properties`](../crates/device_tree_blob/src/lib.rs), which answers for every matching node rather
 than the first, and the record carries two sets:
 
 - **`common`**, the intersection over every hart that describes itself. This is what "an instruction
@@ -288,6 +288,6 @@ reasoning are in [psci-conduit.md](isa-discovery/psci-conduit.md).
   real chip may differ is the one place no emulator can tell us about.
 - [ASIDs](address-space-identifiers.md) for what the ASID width is load-bearing for.
 - [The counter rate in userspace](isa-discovery/counter-rate-in-userspace.md): how
-  `user_mode_runtime::cntfrq` learns RISC-V's rate from a page the kernel maps, and the lesson.
+  `user_mode_runtime::counter_hertz` learns RISC-V's rate from a page the kernel maps, and the lesson.
 - [The device tree](device-tree.md) for the parser this reads through.
 - [The RISC-V port](riscv-port.md) for the SBI calls whose extensions are now probed.

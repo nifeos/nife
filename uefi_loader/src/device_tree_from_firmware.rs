@@ -1,5 +1,5 @@
 //! **The firmware's device tree, as a slice the loader may read**: the magic checked and the
-//! header's `totalsize` held under `device_tree_blob::MAXIMUM_TOTALSIZE` before any slice of that
+//! header's `totalsize` held under `device_tree_blob::MAXIMUM_TOTALSIZE_BYTES` before any slice of that
 //! length exists.
 //!
 //! The firmware hands aarch64 and riscv64 a bare pointer in its configuration table, and the only
@@ -14,7 +14,7 @@
 use device_tree_blob::{DeviceTreeBlob, Error};
 
 /// **The bytes of the device tree at `source`**, after `DeviceTreeBlob::from_ptr` has checked its
-/// magic, bounded its `totalsize` by `device_tree_blob::MAXIMUM_TOTALSIZE` and parsed its header.
+/// magic, bounded its `totalsize` by `device_tree_blob::MAXIMUM_TOTALSIZE_BYTES` and parsed its header.
 /// Refuses with the sentence for the firmware console.
 ///
 /// # Safety
@@ -44,7 +44,7 @@ fn reason(error: Error) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use device_tree_blob::MAXIMUM_TOTALSIZE;
+    use device_tree_blob::MAXIMUM_TOTALSIZE_BYTES;
 
     use super::*;
 
@@ -88,7 +88,7 @@ mod tests {
     /// owned memory and the test is sound whichever way it goes; the ceiling is what decides it.
     #[test]
     fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
-        let claimed = MAXIMUM_TOTALSIZE + 1;
+        let claimed = MAXIMUM_TOTALSIZE_BYTES + 1;
         let mut tree = QEMU.to_vec();
         tree[4..8].copy_from_slice(&(claimed as u32).to_be_bytes());
         tree.resize(claimed + 64, 0);

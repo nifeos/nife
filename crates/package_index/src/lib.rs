@@ -849,7 +849,7 @@ location-root sectigo-root-e46
 ";
 
 /// **The index store's directory**, inside the activation directory: `activation/indexes`, which
-/// the progenitor opens for a package manager holding `grant_plan::Manifest::indexes` (milestone
+/// the progenitor opens for a package manager holding `grant_contract::Manifest::indexes` (milestone
 /// 801 (packages over the internet), ruling I2). Name: provisional 2026-10-12 (UTC).
 pub const STORE_DIRECTORY: &str = "indexes";
 

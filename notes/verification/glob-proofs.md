@@ -5,7 +5,7 @@
 An appendix to [notes/verification.md](../verification.md). It holds what proving the glob matcher
 taught about the cost of a proof.
 
-Six harnesses are in `crates/glob/src/lib.rs`, the pattern matcher of milestone 47 (navigation and
+Six harnesses are in `crates/byte_glob/src/lib.rs`, the pattern matcher of milestone 47 (navigation and
 naming). See [glob.md](../glob.md) for the crate itself, which carries the harness table. The target
 is a loop over two byte strings where the pattern is untrusted. So the property that matters is the
 one BMC is best at: totality, meaning no panic and no hang on any input.
@@ -32,7 +32,7 @@ back in 42 seconds with the counterexample. It is worth recording, because the r
 harness is to suspect the code.
 
 The cost, stated rather than discovered: about ten minutes of solver time for the six, which makes
-`glob`'s proofs the slowest in this suite. Two thirds of it is the two harnesses that quantify over
+`byte_glob`'s proofs the slowest in this suite. Two thirds of it is the two harnesses that quantify over
 a symbolic-length pattern *and* a symbolic-length name at once. The expensive thing is not the property,
 it is the second symbolic length. Cutting one harness's name bound from three bytes to two took it from 279s to 199s without
 weakening it, because that harness's rule is a predicate on the name's first byte.

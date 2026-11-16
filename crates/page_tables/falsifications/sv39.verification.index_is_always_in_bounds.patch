@@ -1,0 +1,29 @@
+Falsifies `page_tables::sv39::index_is_always_in_bounds`.
+
+The defect: the mask is gone, so the index is every bit of the address from `shift` upward
+rather than the nine that name an entry. It reads as harmless because at the *last* level the
+shift is 12 and a page-aligned 39-bit VA has little left above it, and it is not: at level 0 on
+Sv39 the shift is 30 and everything in bits 63:30 lands in the index, including the
+sign-extension bits that are not part of the translation at all.
+
+Expected to fail: `assert!(Sv39::index(va, level) < crate::ENTRIES)`, for any `va` with a bit
+set above the nine the field should have covered. Nothing else is in the harness body, so
+nothing else can fail first.
+
+**The index math is shared and the proof is not.** `PageFormat::index` is one default method in
+`lib.rs`; the `aarch64` record widens the mask to ten bits and the `x86_64` one shrinks the
+table under it, so the three patches break the same line in three ways.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+index 476dfcac4..2922cb4a7 100644
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -107,7 +107,7 @@ pub trait PageFormat {
+     /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
+     fn index(va: u64, level: usize) -> usize {
+         let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
+-        ((va >> shift) & 0x1ff) as usize
++        (va >> shift) as usize
+     }
+ 
+     /// Does `va` lie in `half` for this format? The top bits (above [`SPLIT_SHIFT`](Self::SPLIT_SHIFT))

@@ -30,9 +30,9 @@ use machine_statistics_contract::{PAGE_VA, Snapshot};
 use user_mode_runtime::{exit, is_granted, memory_region_usage, send};
 
 const REPORT: u64 = 0;
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
-const MACHINE_SLOT: u64 = grant_plan::MACHINE_SLOT;
-const SHARE_SLOT: u64 = grant_plan::SHARE_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
+const MACHINE_SLOT: u64 = grant_contract::MACHINE_SLOT;
+const SHARE_SLOT: u64 = grant_contract::SHARE_SLOT;
 
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 
@@ -45,8 +45,8 @@ interfaces_note::carry_interfaces!(&[
         version: abi::ABI_VERSION
     },
     interfaces_note::Declared {
-        id: address_space_map::INTERFACE_ID,
-        version: address_space_map::VERSION
+        id: address_space_layout::INTERFACE_ID,
+        version: address_space_layout::VERSION
     },
     interfaces_note::Declared {
         id: machine_statistics_contract::INTERFACE_ID,
@@ -73,8 +73,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

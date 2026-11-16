@@ -10,11 +10,11 @@ diff --git a/crates/domain_name_system/src/lib.rs b/crates/domain_name_system/sr
 +++ b/crates/domain_name_system/src/lib.rs
 @@ -232,8 +232,8 @@
              self.flags,
-             self.qdcount,
-             self.ancount,
--            self.nscount,
-             self.arcount,
-+            self.nscount,
+             self.question_count,
+             self.answer_count,
+-            self.authority_count,
+             self.additional_count,
++            self.authority_count,
          ];
          for (pair, w) in out.as_chunks_mut::<2>().0.iter_mut().zip(words) {
              *pair = w.to_be_bytes();

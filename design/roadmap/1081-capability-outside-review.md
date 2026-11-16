@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: 151, 305
@@ -52,6 +52,8 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the move or the release (a repository name, a
 published name, a published behavior, a layout, a license); everything else is two-way and the
 maintainer decides it. Every name proposed below is provisional.
+
+The ledger of what landed and what is left is in [the appendix](1081-capability-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -110,7 +112,7 @@ maintainer decides it. Every name proposed below is provisional.
    lines 340 to 400; `kernel/src/syscall.rs` lines 196 to 214; `grep -rn '\.derive(' kernel/src`.
    Change: put the rule in the crate once, as a method on `Capability<O>`: `delegate(&self,
    rights: Rights) -> Result<Capability<O>, Error>` (name provisional), refusing without `GRANT`
-   and refusing a widening, with a new error variant for the first refusal (`NotDelegable`,
+   and refusing a widening, with a new error variant for the first refusal (`GrantRequired`,
    provisional). Have `Delegation::derive` and `CapabilityTable::derive` call it, so the kernel's
    lock discipline stays where it is and the rule has one body. Prove it: a harness over all 2^32
    source and requested rights that `Ok` implies `GRANT` held and the result's bits are within the
@@ -220,6 +222,13 @@ Door: one-way (a repository name and a published crate name). This review rechec
 
 The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
+## Follow-on
+
+- **Outstanding.** Decision D1, the move's items 1 and 13, the `peak` cargo feature of item 11 (a
+  published name; the `target_has_atomic` gate is in), item 16 and the syscall layer's two inline
+  `GRANT` tests of item 3. The names `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
+  are provisional, and each becomes a published name when the crate releases.
+
 ## BUGS
 
 - Item 4 came from reading and from clippy; the review ran no 32-bit build, because the host has no 32-bit target and the review adds nothing to a machine.
@@ -234,6 +243,10 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 - Item 16 is optional, and the review measured it only on a 64-bit host.
 - Nothing confirms the claim in D1 that the name was free when ratified: crates.io's API gives the
   other crate's creation date and the review did not compare it.
+
+- Item 3's kernel half and item 12's three kernel walks were checked with `cargo check` for the three
+  kernel targets and `--features system_tests`, and the crate's tests and Kani harnesses ran; the
+  kernel's QEMU suite is left to the queue.
 
 ## Index row
 

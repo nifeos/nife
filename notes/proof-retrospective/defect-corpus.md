@@ -38,7 +38,7 @@ emulator.
 
 Judgment, and it is the strongest one in this study: this is a defect a proof would have caught,
 the proof is already written, and the only thing missing is that the timer does not call it. That
-is the Phase-2 extraction pattern `memory_regions`, `inter_process_communication`, `dma_validator` and `paging::domain` all
+is the Phase-2 extraction pattern `memory_regions`, `inter_process_communication`, `dma_validator` and `page_tables::domain` all
 took, applied to a subsystem that has not had it yet.
 
 ## 5 and 6. The two concurrency defects, and why one tool found one of them
@@ -126,7 +126,7 @@ device-tree architectures, where nothing runs before this kernel. False on x86_6
 QEMU resets `-device nvme`'s BAR0 to a live address of its own choosing, unrelated to the window
 `mmu::map_everything` actually mapped, and the first register touch page-faults.
 
-`crates/pci` has five harnesses, one of which is `ecam_offset_stays_inside_the_window`. A sixth
+`crates/pci_configuration_space` has five harnesses, one of which is `ecam_offset_stays_inside_the_window`. A sixth
 stating "a BAR this function accepts is inside the mapped window" would have been written, in
 2026-07, against the predicate the code used, because that predicate was believed. A proof would
 have encoded the bug. The thing that found it was attaching a real device to a real boot path, which

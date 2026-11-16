@@ -16,7 +16,7 @@ hot path of a microkernel: switches are what an IPC-heavy system does all day.
 
 1. **The `nG` bit** (descriptor bit 11, "not-global"): a TLB entry made from an `nG` mapping is
    tagged with the ASID that was live during the walk, and matches lookups only under that same
-   ASID. Every *user* constructor in `paging` now sets it. Kernel mappings stay global on
+   ASID. Every *user* constructor in `page_tables` now sets it. Kernel mappings stay global on
    purpose: the high half is identical for everyone, and tagging it would waste TLB entries
    re-caching the same kernel translation per process.
 2. **The ASID rides in `TTBR0_EL1`'s top bits**, written together with the table root as one

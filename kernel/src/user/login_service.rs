@@ -5,7 +5,7 @@ use crate::capability_object::{
 use crate::sched::{self, RendezvousId};
 
 /// Where the service maps its own request to the credential service. Must match `components/src/login.rs`.
-const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
+const CRED_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e3_0000);
 
 /// How many pages a `login_test_client` run's own `memory_region_capability` (slot 3) holds.
 ///
@@ -128,7 +128,7 @@ pub struct Wiring {
     pub term_ep: RendezvousId,
     /// The stand-in run-unvouched endpoint (§219 gate D2), `READ`: the progenitor's
     /// role, played by the harness. `login` holds it `WRITE | GRANT` at
-    /// `grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
+    /// `program_table::spawnproto::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
     /// `ipc_receive`s here to confirm the copy a session was handed names this object.
     pub run_unvouched: RendezvousId,
     /// `login`'s own thread: what `retype_fault::arm` names, and whose capability table a sweep
@@ -408,10 +408,10 @@ fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
     let landed = sched::thread_control_block_insert_capability(
         tid,
         rendezvous_capability(run_unvouched, Rights::WRITE.union(Rights::GRANT)),
-        Some(grant_plan::spawnproto::RUN_UNVOUCHED_SLOT),
+        Some(program_table::spawnproto::RUN_UNVOUCHED_SLOT),
     )
     .expect("insert run_unvouched");
-    assert_eq!(landed, grant_plan::spawnproto::RUN_UNVOUCHED_SLOT);
+    assert_eq!(landed, program_table::spawnproto::RUN_UNVOUCHED_SLOT);
     let window = super::fs_service::durable_window().expect("the file service is wired");
     let landed = sched::thread_control_block_insert_capability(
         tid,

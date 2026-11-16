@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -50,22 +50,24 @@ somebody outside the repository acts on it after the release (a public name, a p
 wire layout, a dependency). Everything else is two-way and the maintainer decides it. Line numbers
 are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
 
+The ledger of what landed and what is left is in [the appendix](1087-domain-name-system-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
    `helpers/name_release.py --draft domain_name_system` lists the crate name and five constants as
    ratified. Every other public item has no block (`PORT`, `HEADER_LEN`, the flag and mask
-   constants, `record_type::{A, CNAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
+   constants, `record_type::{IPV4_ADDRESS, CANONICAL_NAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
    `Question`, `Record`, `Reader`, `Query`, `Reject`, `Answer`, `TcpReply`, `decode_name`,
-   `cname_target` and every method). The move commit strips the blocks, and nife keeps no other
+   `canonical_name_target` and every method). The move commit strips the blocks, and nife keeps no other
    record, so the ratification pull request is the only record these names will ever have. Evidence:
    `crate-standalone` output, `FAIL names: 48 name(s) in the crate not ratified, first PORT`.
    Change: one pull request whose body is the `--draft` table, after the architect rules items 6 and 7, so the
    table carries the final spellings. The names this review recommends ratified as they stand are
    every one not named in items 6 and 7. Door: each name is one-way once published; the block itself
-   is two-way. Effort: S for the lane, plus the architect's reading.
+   is two-way. Effort: S for the lane, plus the architect's reading. Held: the architect has not read the table.
 
-2. The manifest does not stand alone. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
+2. DONE. The manifest does not stand alone. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
    `categories`, and the `publish = false` line's comment names `crates/publish-allowlist.txt`, a
    file the new repository will not have. The header comment cites milestone 384 (nothing here resolves a hostname, and in a capability system the resolver is a grant) and
    `notes/name-resolution.md`. Evidence: `crates/domain_name_system/Cargo.toml` lines 4 to 17;
@@ -93,8 +95,11 @@ are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
    memory not measured). It adds one falsification run with its printed `VERIFICATION:- FAILED`, the
    BUGS list from the root doc, the minimum Rust version and the type sizes measured above. Record
    the first stranger run in `docs/stranger-test.md`. Door: two-way. Effort: S.
+   DONE for the README and both license files, which now sit in the crate directory. The scaffold's
+   other files, the caller workflows and `docs/stranger-test.md` come from `script/crate-move` at
+   the move, and the stranger run follows the move (step 12 of `notes/crate-move.md`).
 
-4. Shipped text points into nife. Finding: line 4 sends the reader to `notes/name-resolution.md`.
+4. Shipped text points into nife. DONE. Finding: line 4 sends the reader to `notes/name-resolution.md`.
    Line 7 names `fuzz/fuzz_targets/domain_name_system_reply.rs`, a path in nife (item 5 moves the
    target). Lines 262 to 263 cite milestone 384 and say nothing applies `is_within`, which
    `crates/domain_name_resolution_contract/src/grants.rs` line 180 does. Lines 369 to 371 cite
@@ -118,8 +123,8 @@ The P1 items are in [the appendix](1087-domain-name-system-outside-review/before
 
 ## Decisions for the architect
 
-Only one-way doors. Each is one decision, with the background first and the recommendation before
-the alternatives. The review recommends ratifying the remaining 40-odd names as they stand, and they need only the pull request of item 1.
+Each is one decision, with the background first and the recommendation before the alternatives.
+All three are decided, provisionally. The review recommends ratifying the remaining 40-odd names as they stand, and they need only the pull request of item 1.
 
 ### Decision 1. `MAXIMUM_LABEL_LEN` and `HEADER_LEN`
 
@@ -142,6 +147,10 @@ constant for it. The nife rule is stricter than both, deliberately.
 Concrete example: a caller sizing a label buffer writes `[0u8; MAXIMUM_LABEL_BYTES]` and knows the
 unit from the name, as it already does with `[0u8; MAXIMUM_UDP_MESSAGE_BYTES]`.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation holds: `MAXIMUM_LABEL_BYTES` and
+`HEADER_BYTES`, with no alias of the old spellings. Item 6 is the work.
+
 ### Decision 2. The specification's abbreviations in public field and constant names
 
 Background. RFC 1035 names the header counts `QDCOUNT`, `ANCOUNT`, `NSCOUNT`, `ARCOUNT`, the flag
@@ -161,12 +170,17 @@ Recommendation, one list, ruled as one decision:
   `#[doc(alias = "QDCOUNT")]` and so on; `Header::response_code()` with alias `RCODE`.
 - `FLAG_RESPONSE` (alias `QR`), `FLAG_TRUNCATED` (alias `TC`), `FLAG_RECURSION_DESIRED` (alias
   `RD`). `RESPONSE_CODE_MASK` and `RESPONSE_CODE_NAME_ERROR` (alias `RCODE`, and `NXDOMAIN` on the
-  second). `OPCODE_MASK` stays, since "opcode" is a spoken word.
-- `Question::{record_type, class}` and `Record::{record_type, class, ttl, data, data_offset}`,
-  with the `Question` fields losing their `q` and `data_offset` spelled out.
-- Keep `ttl`, `record_type::A`, `record_type::CNAME`, `CLASS_IN` and `cname_target`: each is the
-  term a reader searches for, and each gets the expansion in its doc opening and an alias
-  (`time to live`, `address record`, `canonical name record`, `Internet class`).
+  second). `OPERATION_CODE_MASK` (alias `OPCODE`), matching `RESPONSE_CODE_MASK`.
+- `Question::{record_type, class}` and `Record::{record_type, class, ttl_seconds, data,
+  data_offset}`, with the `Question` fields losing their `q` and `data_offset` spelled out.
+  `ttl` stays an abbreviation, and the fields and methods that hold it carry the unit:
+  `Record::ttl_seconds` and `Answer::ttl_seconds()`, each with `#[doc(alias = "TTL")]` and
+  `#[doc(alias = "time to live")]`.
+- Spell `CNAME` out: `record_type::CANONICAL_NAME` (aliases `CNAME` and `canonical name record`)
+  and `canonical_name_target` (aliases `CNAME` and `canonical name`).
+- Spell `A` out: `record_type::IPV4_ADDRESS` (aliases `A` and `address record`).
+- Keep `CLASS_IN`: it is the term a reader searches for, and it gets the
+  expansion in its doc opening and an alias (`Internet class`).
 
 Alternative A: keep every specification spelling and add the aliases. This is what the `domain`
 crate does (`qdcount()`, `rcode()`, `tc()`; unverified) and what a reader with the RFC open expects.
@@ -184,8 +198,22 @@ picked for `network_time_protocol` and `non_volatile_memory_express`.
 
 Concrete example: a log line in the resolver today reads `h.qdcount != 1`. After the ruling it reads
 `header.question_count != 1`, and a reader who has never opened RFC 1035 knows what refused the
-reply. this decision leaves `domain_name_resolution_contract::reject_code` alone; Decision 3
+reply. This decision leaves `domain_name_resolution_contract::reject_code` alone; Decision 3
 touches it.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation's list holds as written, with the
+specification's spelling as `#[doc(alias)]` on each expanded name. `CLASS_IN`
+keeps its spelling as a term of art, with its expansion in the doc opening and an alias.
+
+Ruled 2026-11-16 (UTC) for the names below. `ttl` stays an abbreviation, but the fields and methods that
+hold it carry the unit: `Record::ttl_seconds` and `Answer::ttl_seconds()`, each with
+`#[doc(alias = "TTL")]` and `#[doc(alias = "time to live")]`. The crate spells `CNAME` out:
+`record_type::CANONICAL_NAME` with aliases `CNAME` and `canonical name record`, and
+`canonical_name_target` (the maintainer's provisional spelling) with aliases `CNAME` and
+`canonical name`. `OPCODE_MASK` becomes `OPERATION_CODE_MASK` with alias `OPCODE`, matching
+`RESPONSE_CODE_MASK`. `record_type::A` becomes `record_type::IPV4_ADDRESS` with aliases `A` and `address record`. No
+alias of the old nife spelling. Item 7 part a is the work.
 
 ### Decision 3. `MAXIMUM_ADDRESSES`, `Answer::addresses` and `Reject::NoAddress`
 
@@ -221,18 +249,40 @@ Concrete example: today `answer.addresses()` returns `&[[u8; 4]]`, and the type 
 the reader learns these are IPv4. After the ruling `answer.ipv4_addresses()` says it, and the
 template's gate reports zero findings on the crate.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The recommendation holds: `MAXIMUM_IPV4_ADDRESSES`,
+`Answer::ipv4_addresses()` and its field, `Reject::NoIpv4Address` and the test names to match,
+with no template exemption. The contract crate's assertion and `reject_code` arm follow, and the
+code number 9 does not change. Item 7 part b is the work, and milestone 1086 (`domain_name_resolution_contract`) decision 1 takes
+`MAXIMUM_IPV4_ADDRESSES` to match.
+
 ## Done when
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
+
+## Follow-on
+
+- **Outstanding.** Item 1 waits for the architect. The ratification pull request covers the 51 public
+  names that no ratification covers yet. `python3 helpers/name_release.py --draft domain_name_system`
+  prints its table. Decisions 1 to 3 stand provisionally and the code uses their spellings. The move
+  waits for the architect to read the table.
+- **Outstanding.** Four things wait for the move. `script/crate-move` stages item 5's `fuzz/`
+  directory, with the three fixtures as seeds. It passes `fuzz: true` to the weekly caller because the
+  crate forbids `unsafe`. Item 9's `.github/mutants-exempts` lines name the stripped source's line
+  numbers, so only the move commit can write them. Item 7's `.github/accepted-words` entries and the
+  stranger run come after. The architect clears the review package and the repository exists first
+  (`notes/crate-move.md`, steps 4 and 5).
+- **Outstanding.** `mutation / mutation` has no green full run on `main` yet. It first runs in the new
+  repository.
 
 ## BUGS
 
 - No review package exists for this crate in `notes/crate-reviews/`, so this block had to assemble
   its own baseline from the ratification record, the roadmap and the resolver notes. The crate still needs a package before the architect's reading; this block is not one.
 - The template's `abbreviations` helper judged one name when run here. That is almost certainly a
-  harness problem on the reviewing side, so the abbreviations report (`tcp`, `udp`, `cname`, `ttl`
+  harness problem on the reviewing side, so the abbreviations report (`tcp`, `udp`
   and any other) stays unverified until the crate runs the template's `check` workflow.
-- The build at Rust 1.88 was not run; `as_chunks_mut` is the only item known to set that floor.
+- The crate builds and tests at Rust 1.88 in the move's dry run (`script/crate-move --dry-run`).
 - The `register_names` helper did not flag `MAXIMUM_LABEL_LEN` or `HEADER_LEN`, while the written
   rule does. Whether the helper reads a `_LEN` suffix by design is a template question this block
   raises and does not answer.

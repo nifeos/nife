@@ -29,7 +29,7 @@ a transfer buffer) at a virtual address compiled into it. The spawner that maps 
 in the same number. Two costs follow.
 
 1. Two components can never share one address space, because nothing stops their numbers from
-   colliding; `address_space_map`'s own `BUGS` section says it checks pair pages for membership
+   colliding; `address_space_layout`'s own `BUGS` section says it checks pair pages for membership
    and not for collisions within one process.
 2. Each address is an agreement between two programs. Where both sides read one constant from a
    contract crate, that agreement is code. Where each side writes its own literal and a comment says
@@ -88,7 +88,7 @@ that may share one address space.
 `std_runtime_contract` already places such pages for std programs (`CONFIG_PAGE`, `ARGS_PAGE`,
 `CLOCK_PAGE`) at fixed addresses in the runtime band.
 
-`address_space_map` is a versioned contract (interface 2, version 1). `PROCESS_PAGES`, the band
+`address_space_layout` is a versioned contract (interface 2, version 1). `PROCESS_PAGES`, the band
 the kernel maps into every process unasked, is full: its sixteen pages are the per-thread
 current-CPU slots (`current_cpu_contract::THREAD_PAGE_SLOTS`).
 
@@ -101,7 +101,7 @@ stays fixed, the page's own. Each `kind` is a number in the contract crate both 
 agreement is code. The kernel's spawners and `system_initializer` both write the page.
 
 Its cost: a new contract crate with its own interface identity, one fixed page added to
-`address_space_map`, and one page mapped per spawn. A page alone in its tables costs 1,245 ticks
+`address_space_layout`, and one page mapped per spawn. A page alone in its tables costs 1,245 ticks
 per spawn (notes/benchmarks/spawn-el0.md); placed beside the runtime pages it costs a leaf. Each
 component changes a constant into a lookup, and its spawner adds one entry per window.
 
@@ -137,7 +137,7 @@ change is a coordinated change across all of them. The interface id, once minted
 
 The page is the only address in the public contract. It sits at one fixed address and carries an
 interface id and a version, as the other wire contracts do (`environment_contract`,
-`address_space_map`). A program walks its entries, takes the kinds it knows, and skips any kind it
+`address_space_layout`). A program walks its entries, takes the kinds it knows, and skips any kind it
 does not know. So a later kernel may add kinds, and may move a window between releases, without
 breaking a program built against an earlier page. The version changes only when the entry format
 itself changes.
@@ -154,7 +154,7 @@ The other options serve an outside program less well:
 One point stays open. A program whose windows land at addresses the kernel chooses must not assume
 where its own image sits either, or two programs in one space still collide on their images. Today
 every program does assume it. `crates/user_mode_runtime/link.ld` links every component at
-`address_space_map::IMAGE_BASE`, all three targets in `targets/` build with
+`address_space_layout::IMAGE_BASE`, all three targets in `targets/` build with
 `"relocation-model": "static"`, and `x86_64` adds `code-model: small`, which keeps every symbol
 under 2 GiB. The loader accepts only a static executable: `crates/elf/src/parse.rs` refuses an
 `ET_DYN` image with `Error::NeedsRelocation`. So the page frees the windows, and a shared address
@@ -191,7 +191,7 @@ Each claim below names the source that states it.
 
 Where nife differs. Linux, seL4 and Fuchsia each find their table through a register or the
 initial stack; nife's three start words are already in use, so the page sits at an address fixed
-by `address_space_map` instead. Fuchsia hands the process its address-space handle and lets it map;
+by `address_space_layout` instead. Fuchsia hands the process its address-space handle and lets it map;
 in nife the capabilities a process holds already say what it may touch, and the page adds only
 addresses, never authority. A Windows program reads modules and parameters from its block; nife's
 page holds only window addresses.

@@ -1,0 +1,28 @@
+Falsifies `page_tables::x86_64::distinct_pages_take_distinct_paths`.
+
+The defect: `%` where `&` belongs. The two spellings sit one keystroke apart, `0x1ff` reads as
+"the index range" either way, and the result still passes the bounds proof (every value is
+under 511, so `index_is_always_in_bounds` stays green under this patch, which is why it is
+recorded against the injectivity harness and not that one). What it destroys is injectivity: a
+field of `0x1ff` and a field of `0` both give index 0, so the entry every table's walk reaches
+first is shared with the entry it should reach last.
+
+Expected to fail: `assert_eq!(a, b)`, for the pair whose bottom index field is `0x1ff` in one
+address and `0` in the other, with the rest equal.
+
+**The index math is shared and the proof is not.** The `aarch64` and `sv39` records break the
+stride and the field width; this one leaves both right and breaks the reduction.
+
+diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
+index 476dfcac4..ef6fe64fb 100644
+--- a/crates/page_tables/src/page_format.rs
++++ b/crates/page_tables/src/page_format.rs
+@@ -107,7 +107,7 @@ pub trait PageFormat {
+     /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
+     fn index(va: u64, level: usize) -> usize {
+         let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
+-        ((va >> shift) & 0x1ff) as usize
++        ((va >> shift) % 0x1ff) as usize
+     }
+ 
+     /// Does `va` lie in `half` for this format? The top bits (above [`SPLIT_SHIFT`](Self::SPLIT_SHIFT))

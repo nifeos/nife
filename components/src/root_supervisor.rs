@@ -21,6 +21,7 @@
 
 // Each binary in the tree compiles the shared module but uses a different slice of it (the sub-server
 // builds nothing, the supervisor holds no memory), so the unused halves are expected, not dead.
+use static_elf::Elf;
 use supervision_contract::{
     ChildEndowment, REPORT_CONSTRUCTION_AUTHORITY_DROPPED, REPORT_FAILED, REPORT_SUP_SAW_DEATH,
     Retention,
@@ -38,7 +39,7 @@ const REPORT: u64 = 1; // WRITE|GRANT, so we can endow the servers with a narrow
 const SPAWNER_BUDGET_PAGES: u64 = 384;
 
 /// Where the spawner finds the one program image it is allowed to build. Must match spawner.rs.
-const SPAWNER_IMAGE_VA: u64 = address_space_map::runtime_window(0x3000_0000);
+const SPAWNER_IMAGE_VA: u64 = address_space_layout::runtime_window(0x3000_0000);
 
 user_mode_runtime::program_entry!(start);
 
@@ -48,12 +49,12 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     let Ok(fs) = nifefs::Fs::parse(archive) else {
         bail(1)
     };
-    let Some(spawner) = fs.read("spawner").and_then(|b| elf::Elf::parse(b).ok()) else {
+    let Some(spawner) = fs.read("spawner").and_then(|b| Elf::parse(b).ok()) else {
         bail(2)
     };
     let Some(sub_server_supervisor) = fs
         .read("sub_server_supervisor")
-        .and_then(|b| elf::Elf::parse(b).ok())
+        .and_then(|b| Elf::parse(b).ok())
     else {
         bail(3)
     };

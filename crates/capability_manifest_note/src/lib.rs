@@ -1,7 +1,7 @@
 //! A program's manifest, as the bytes of an ELF note it carries: inside the executable behind a
 //! `PT_NOTE`, so it is in the bytes the progenitor hashes (§197 (a package is one archive file),
 //! calef's option M2, 2026-09-26 UTC). The wire format between [`carry!`] and the shell and
-//! progenitor that read it (AGENTS.md rule 7); `crates/elf` finds the note, and this crate starts
+//! progenitor that read it (AGENTS.md rule 7); `crates/static_elf` finds the note, and this crate starts
 //! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_LEN`] bytes) or
 //! [`ZONED_VERSION`] 2. One manifest has exactly one encoding: [`decode`] refuses anything
 //! [`encode`] would not write. The layouts are below; notes/capability-manifest-note.md has the
@@ -17,7 +17,7 @@
 //! # The descriptor, version 1
 //!
 //! A version word, then little-endian fields in a fixed order (the encoding calef ratified
-//! 2026-09-26). Every field is one of `grant_plan::Manifest`'s, in bytes; nothing here is a new
+//! 2026-09-26). Every field is one of `grant_contract::Manifest`'s, in bytes; nothing here is a new
 //! authority.
 //!
 //! | offset | size | field | values |
@@ -29,7 +29,7 @@
 //! | 7 | 1 | `dir` | 0 forbidden, 1 required |
 //! | 8 | 8 | `mem` minimum pages | 0 unless `mem` is required |
 //! | 16 | 8 | `mem` maximum pages | 0 unless `mem` is required; at least the minimum |
-//! | 24 | 1 | `output` | 0 silent, 1 words, 2 bytes, 3 bytes and diagnostics (at `grant_plan::DIAGNOSTICS_SLOT`) |
+//! | 24 | 1 | `output` | 0 silent, 1 words, 2 bytes, 3 bytes and diagnostics (at `grant_contract::DIAGNOSTICS_SLOT`) |
 //! | 25 | 1 | `input` | 0 forbidden, 1 required |
 //! | 26 | 1 | `input` writes while reading | 0 or 1; 0 unless `input` is required |
 //! | 27 | 1 | `dir`'s subtree option | 0 for none, else one of the declared option letters; 0 unless `dir` is required |
@@ -41,7 +41,7 @@
 //! | 33 | 1 | `entropy` | 0 or 1 |
 //! | 34 | 1 | `network` | 0 or 1 |
 //! | 35 | 1 | `startup` | 0 native, 1 std |
-//! | 36 | 1 | option count | at most `grant_plan::MAXIMUM_DECLARED_SHORT_OPTIONS` (16) |
+//! | 36 | 1 | option count | at most `grant_contract::MAXIMUM_DECLARED_SHORT_OPTIONS` (16) |
 //! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
 //! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
 //! | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
@@ -86,13 +86,13 @@
 //!
 //! Name: ratified 2026-10-18 (calef, "`capability_manifest_note`"). The descriptor is the capabilities
 //! a program requests ("manifest" in the Android sense), and "note" separates the ELF-note encoding
-//! from `grant_plan::Manifest`, the in-memory type. The owner string, the type number and the
+//! from `grant_contract::Manifest`, the in-memory type. The owner string, the type number and the
 //! encoding are ratified separately; [`carry!`] and the public functions are provisional. Version
 //! 3 is provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
 #![no_std]
 
-use grant_plan::{
+use grant_contract::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
     InputDeclaration, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
     OutputDeclaration, ProgramArgumentDeclaration, ShortOptions, StartupContract, WordGrant,
@@ -102,7 +102,7 @@ use grant_plan::{
 /// `design/naming.md` rules it spelled everywhere.
 ///
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
-pub const OWNER: &[u8] = b"nife";
+pub const OWNER: &[u8] = b"nife"; // wire literal
 
 /// The note type that carries a manifest: `1`, "manifest".
 ///
@@ -111,9 +111,9 @@ pub const OWNER: &[u8] = b"nife";
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
 pub const MANIFEST: u32 = 1;
 
-/// The descriptor version this crate writes and the only one it reads. The encoding it numbers (a
-/// version word, then little-endian fields in a fixed order) is calef's ruling of 2026-09-26; the
-/// field order of version 1 is milestone 597's lane's design, in the module documentation.
+/// The first descriptor version: a version word, then little-endian fields in a fixed order, with
+/// no zones and no service byte. [`decode`] reads this version and [`ZONED_VERSION`] and
+/// [`SERVICED_VERSION`], and refuses any later one.
 pub const VERSION: u32 = 1;
 
 /// The version of the set of manifest note types and their descriptors: 1. A break bumps it, with
@@ -176,19 +176,34 @@ const HEADER_LEN: usize = 12;
 pub const NOTE_LEN: usize = HEADER_LEN + NAME_FIELD + DESCRIPTOR_LEN;
 
 /// Why a descriptor was refused. Provisional names.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Error {
     /// Fewer than four bytes, so not even a version.
     NoVersion,
     /// A version this reader does not know. A later layout is refused rather than guessed at.
     UnknownVersion,
-    /// A version 1 descriptor that is not exactly [`DESCRIPTOR_LEN`] bytes: cut short, or with
-    /// bytes after the last field.
+    /// A descriptor cut short, or with bytes after its last field: version 1 is exactly
+    /// [`DESCRIPTOR_LEN`] bytes, and the later versions add their zone and service bytes.
     WrongLength,
     /// A field holds a value outside its range, or a byte the layout says is zero is not. The
     /// offset is the first such byte.
     BadField(usize),
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::NoVersion => f.write_str("fewer than four bytes, so no version word"),
+            Error::UnknownVersion => f.write_str("a descriptor version this reader does not know"),
+            Error::WrongLength => f.write_str("a descriptor cut short or with bytes after its end"),
+            Error::BadField(at) => {
+                write!(f, "a field at offset {at} holds a value outside its range")
+            }
+        }
+    }
+}
+
+impl core::error::Error for Error {}
 
 // Offsets, named once so `encode` and `decode` cannot disagree about where a field is.
 const ARG: usize = 4;
@@ -273,7 +288,7 @@ const fn refuse_what_no_note_carries(m: &Manifest) {
 
 /// `m` as a version 1 descriptor. A `const fn`, so a program's note is computed by the compiler
 /// from the constant its source declares ([`carry!`]). Panics, a compile error in a constant, on
-/// what the layout cannot spell: a second stream off `grant_plan::DIAGNOSTICS_SLOT`, a subtree
+/// what the layout cannot spell: a second stream off `grant_contract::DIAGNOSTICS_SLOT`, a subtree
 /// option that is not a declared letter or lacks a directory grant, and `reboot`, `sync`,
 /// `installer` or `catalog`, which no image may be endowed (milestone 809 (the package client
 /// becomes a program)). See notes/capability-manifest-note.md.
@@ -288,14 +303,16 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     out[ARG] = match m.program_argument {
         ProgramArgumentDeclaration::Forbidden => 0,
         ProgramArgumentDeclaration::Required => 1,
-        // A program whose line is its argv (milestone 205 (how a foreign program is told what to
-        // do), §170 (how a foreign program is told what to do)). Added to version 1 in place on 2026-09-27; see the module's "one encoding"
-        // paragraph for calef's ruling.
+        // A program whose line is its argv; see the module's "one encoding" paragraph.
         ProgramArgumentDeclaration::Words(WordGrant::ReadOnly) => 2,
         ProgramArgumentDeclaration::Words(WordGrant::ReadWrite) => 3,
         ProgramArgumentDeclaration::Words(WordGrant::Create) => 4,
     };
     if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
+        assert!(
+            minimum <= maximum,
+            "a required memory grant has a minimum no greater than its maximum"
+        );
         out[MEM] = 1;
         put8(&mut out, MEM_MINIMUM, minimum);
         put8(&mut out, MEM_MAXIMUM, maximum);
@@ -329,7 +346,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         OutputDeclaration::BytesAndDiagnostics { slot } => {
             assert!(
                 slot == DIAGNOSTICS_SLOT,
-                "a second stream lands at grant_plan::DIAGNOSTICS_SLOT"
+                "a second stream lands at grant_contract::DIAGNOSTICS_SLOT"
             );
             3
         }
@@ -392,7 +409,7 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// # Examples
 ///
 /// ```
-/// let m = grant_plan::Program::Uptime.manifest();
+/// let m = program_table::Program::Uptime.manifest();
 /// let bytes = capability_manifest_note::encode(&m);
 /// assert_eq!(capability_manifest_note::decode(&bytes), Ok(m));
 ///
@@ -404,7 +421,7 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// A program carries its note with one line at module scope:
 ///
 /// ```ignore
-/// capability_manifest_note::carry!(grant_plan::Program::Uptime.manifest());
+/// capability_manifest_note::carry!(program_table::Program::Uptime.manifest());
 /// ```
 ///
 /// A version 2 descriptor decodes to the same manifest its first 56 bytes would; its zones are
@@ -616,7 +633,7 @@ pub const fn zoned_len(zones: &[&str]) -> usize {
 ///
 /// ```
 /// const ZONES: &[&str] = &["", "basalt.nifeos.org"];
-/// const M: grant_plan::Manifest = grant_plan::NO_NOTE_MANIFEST;
+/// const M: grant_contract::Manifest = program_table::NO_NOTE_MANIFEST;
 /// const D: [u8; capability_manifest_note::zoned_len(ZONES)] = capability_manifest_note::encode_zoned(&M, ZONES);
 /// assert_eq!(capability_manifest_note::decode(&D), Ok(M));
 /// let zones = capability_manifest_note::zones(&D).unwrap();
@@ -641,6 +658,15 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
         i += 1;
     }
     put4(&mut out, 0, ZONED_VERSION.to_le_bytes());
+    write_zones(&mut out, zones);
+    out
+}
+
+/// **Write a zone count and its length-prefixed zones after the fixed fields**, checking each zone
+/// as [`decode`] will: canonical, at most 253 bytes (so its length fits the prefix byte), and
+/// sorted strictly after the one before. Returns the offset after the last zone. One body for
+/// [`encode_zoned`] and [`encode_serviced`], so the two cannot disagree about what they accept.
+const fn write_zones(out: &mut [u8], zones: &[&str]) -> usize {
     out[DESCRIPTOR_LEN] = zones.len() as u8;
     let mut at = DESCRIPTOR_LEN + 1;
     let mut z = 0;
@@ -665,7 +691,7 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
         at += 1 + zone.len();
         z += 1;
     }
-    out
+    at
 }
 
 /// Every zone of a version 2 descriptor, checked: a count of one to [`MAXIMUM_ZONES`], each zone
@@ -924,24 +950,7 @@ pub const fn encode_serviced<const LEN: usize>(
     out[1] = v[1];
     out[2] = v[2];
     out[3] = v[3];
-    out[DESCRIPTOR_LEN] = zones.len() as u8;
-    let mut at = DESCRIPTOR_LEN + 1;
-    let mut z = 0;
-    while z < zones.len() {
-        let zone = zones[z].as_bytes();
-        out[at] = zone.len() as u8;
-        let mut b = 0;
-        while b < zone.len() {
-            out[at + 1 + b] = zone[b];
-            b += 1;
-        }
-        assert!(
-            z == 0 || before(zones[z - 1].as_bytes(), zone),
-            "zones are sorted ascending, each once"
-        );
-        at += 1 + zone.len();
-        z += 1;
-    }
+    let at = write_zones(&mut out, zones);
     out[at] = service as u8;
     out
 }
@@ -978,9 +987,9 @@ impl<const N: usize> ServicedNote<N> {
 const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
 
 /// Carry this manifest in the program's own bytes: one line at module scope, any constant
-/// `grant_plan::Manifest`, and optionally its resolver zones, sorted, `""` for the root
+/// `grant_contract::Manifest`, and optionally its resolver zones, sorted, `""` for the root
 /// ([`ZonedNote`]). It places one [`Note`] in `.note.nife.manifest`; used twice it is a duplicate
-/// symbol, and readers refuse a file with two notes (`elf::NoteError::Duplicate`).
+/// symbol, and readers refuse a file with two notes (`static_elf::NoteError::Duplicate`).
 ///
 /// ```ignore
 /// capability_manifest_note::carry!(MANIFEST, zones = &["basalt.nifeos.org"]);
@@ -991,24 +1000,24 @@ const _: () = assert!(OWNER.len() < NAME_FIELD && NAME_FIELD.is_multiple_of(4));
 macro_rules! carry {
     ($manifest:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::Note = $crate::Note::of(&$manifest);
     };
     ($manifest:expr, zones = $zones:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_len($zones) }> =
             $crate::ZonedNote::of::<{ $crate::zoned_len($zones) }>(&$manifest, $zones);
     };
     ($manifest:expr, service = true) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len(&[]) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_len(&[]) }>(&$manifest, &[], true);
     };
     ($manifest:expr, zones = $zones:expr, service = true) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_len($zones) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_len($zones) }>(&$manifest, $zones, true);
     };
@@ -1117,7 +1126,7 @@ impl SubtreeGrantsNote {
 macro_rules! carry_subtree_grants {
     ($scope:expr) => {
         #[used]
-        #[unsafe(link_section = ".note.nife.manifest")]
+        #[unsafe(link_section = ".note.nife.manifest")] // wire literal
         static NIFE_SUBTREE_GRANTS_NOTE: $crate::SubtreeGrantsNote =
             $crate::SubtreeGrantsNote::of($scope);
     };
@@ -1130,7 +1139,7 @@ macro_rules! carry_subtree_grants {
 
 /// The note type that carries a program's verb table: `3`. Each entry names one word a line may
 /// give after the program's name and which progenitor-endowed authorities that line is granted
-/// (`grant_plan::narrow_by_verb`); a word not in the table is granted none. Nothing in the image
+/// (`grant_contract::narrow_by_verb`); a word not in the table is granted none. Nothing in the image
 /// carries it yet, and the progenitor refuses installed bytes that do. See
 /// notes/capability-manifest-note.md.
 ///
@@ -1147,9 +1156,9 @@ pub const VERBS_VERSION: u32 = 1;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_VERBS: usize = 256;
 
-/// One verb's record: the word in `grant_plan::MAXIMUM_VERB` bytes, zero-padded; then the grants'
+/// One verb's record: the word in `grant_contract::MAXIMUM_VERB` bytes, zero-padded; then the grants'
 /// bits, little-endian; then two zero bytes.
-pub const VERB_RECORD: usize = grant_plan::MAXIMUM_VERB + 4;
+pub const VERB_RECORD: usize = grant_contract::MAXIMUM_VERB + 4;
 
 /// A [`VERBS`] descriptor's length for `count` verbs: the version word, the count word, and
 /// exactly `count` records. Variable, as calef ruled on #1903 (2026-10-10 (UTC)); one table still
@@ -1162,7 +1171,7 @@ pub const fn verbs_len(count: usize) -> usize {
 /// the compiler; `LEN` is [`verbs_len`] of the table's length, named by the caller's type:
 ///
 /// ```
-/// const TABLE: &[grant_plan::VerbGrant] = grant_plan::Program::Jig.verbs();
+/// const TABLE: &[grant_contract::VerbGrant] = program_table::Program::Jig.verbs();
 /// const BYTES: [u8; capability_manifest_note::verbs_len(TABLE.len())] = capability_manifest_note::encode_verbs(TABLE);
 /// assert_eq!(capability_manifest_note::decode_verbs(&BYTES).unwrap().len(), TABLE.len());
 /// ```
@@ -1171,7 +1180,7 @@ pub const fn verbs_len(count: usize) -> usize {
 /// [`MAXIMUM_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that
 /// is not sorted ascending by its words' bytes with each word once. Sorted is what makes one table
 /// one encoding.
-pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> [u8; LEN] {
+pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_contract::VerbGrant]) -> [u8; LEN] {
     assert!(
         verbs.len() <= MAXIMUM_VERBS,
         "a verb table holds at most 256 verbs"
@@ -1193,7 +1202,7 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
     while i < verbs.len() {
         let word = verbs[i].verb.as_bytes();
         assert!(
-            !word.is_empty() && word.len() <= grant_plan::MAXIMUM_VERB,
+            !word.is_empty() && word.len() <= grant_contract::MAXIMUM_VERB,
             "a verb is one to sixteen bytes"
         );
         if i > 0 {
@@ -1210,8 +1219,8 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
             b += 1;
         }
         let bits = verbs[i].authorities.bits().to_le_bytes();
-        out[at + grant_plan::MAXIMUM_VERB] = bits[0];
-        out[at + grant_plan::MAXIMUM_VERB + 1] = bits[1];
+        out[at + grant_contract::MAXIMUM_VERB] = bits[0];
+        out[at + grant_contract::MAXIMUM_VERB + 1] = bits[1];
         i += 1;
     }
     out
@@ -1250,7 +1259,7 @@ impl<'a> Verbs<'a> {
 
     /// What `verb` is granted, or `None` for a word that is no verb in the table. A binary search,
     /// since the records are sorted.
-    pub fn grants_for(&self, verb: &[u8]) -> Option<grant_plan::ManifestAuthorities> {
+    pub fn grants_for(&self, verb: &[u8]) -> Option<grant_contract::ManifestAuthorities> {
         let (mut lo, mut hi) = (0, self.len());
         while lo < hi {
             let mid = lo + (hi - lo) / 2;
@@ -1265,21 +1274,25 @@ impl<'a> Verbs<'a> {
     }
 
     /// The verbs, in their sorted order, with their grants.
-    pub fn iter(&self) -> impl Iterator<Item = (&'a [u8], grant_plan::ManifestAuthorities)> + '_ {
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (&'a [u8], grant_contract::ManifestAuthorities)> + '_ {
         (0..self.len()).map(|i| self.record(i))
     }
 
     /// Record `i`, which [`decode_verbs`] has already checked.
-    fn record(&self, i: usize) -> (&'a [u8], grant_plan::ManifestAuthorities) {
+    fn record(&self, i: usize) -> (&'a [u8], grant_contract::ManifestAuthorities) {
         let r = &self.records[i * VERB_RECORD..(i + 1) * VERB_RECORD];
-        let word = &r[..grant_plan::MAXIMUM_VERB];
+        let word = &r[..grant_contract::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
-        let bits =
-            u16::from_le_bytes([r[grant_plan::MAXIMUM_VERB], r[grant_plan::MAXIMUM_VERB + 1]]);
+        let bits = u16::from_le_bytes([
+            r[grant_contract::MAXIMUM_VERB],
+            r[grant_contract::MAXIMUM_VERB + 1],
+        ]);
         (
             &word[..len],
-            grant_plan::ManifestAuthorities::from_bits(bits)
-                .unwrap_or(grant_plan::ManifestAuthorities::NONE),
+            grant_contract::ManifestAuthorities::from_bits(bits)
+                .unwrap_or(grant_contract::ManifestAuthorities::NONE),
         )
     }
 }
@@ -1306,7 +1319,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     for i in 0..count {
         let at = 8 + i * VERB_RECORD;
         let record = &d[at..at + VERB_RECORD];
-        let word = &record[..grant_plan::MAXIMUM_VERB];
+        let word = &record[..grant_contract::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         if len == 0 {
             return Err(Error::BadField(at));
@@ -1315,14 +1328,16 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
             return Err(Error::BadField(at + len + k));
         }
         let bits = u16::from_le_bytes([
-            record[grant_plan::MAXIMUM_VERB],
-            record[grant_plan::MAXIMUM_VERB + 1],
+            record[grant_contract::MAXIMUM_VERB],
+            record[grant_contract::MAXIMUM_VERB + 1],
         ]);
-        if grant_plan::ManifestAuthorities::from_bits(bits).is_none() {
-            return Err(Error::BadField(at + grant_plan::MAXIMUM_VERB));
+        if grant_contract::ManifestAuthorities::from_bits(bits).is_none() {
+            return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB));
         }
-        if record[grant_plan::MAXIMUM_VERB + 2] != 0 || record[grant_plan::MAXIMUM_VERB + 3] != 0 {
-            return Err(Error::BadField(at + grant_plan::MAXIMUM_VERB + 2));
+        if record[grant_contract::MAXIMUM_VERB + 2] != 0
+            || record[grant_contract::MAXIMUM_VERB + 3] != 0
+        {
+            return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB + 2));
         }
         if previous.is_some_and(|p| !before(p, &word[..len])) {
             return Err(Error::BadField(at));
@@ -1339,7 +1354,8 @@ mod verification;
 mod verb_tests {
     extern crate std;
 
-    use grant_plan::{ManifestAuthorities, Program, VerbGrant};
+    use grant_contract::{ManifestAuthorities, VerbGrant};
+    use program_table::Program;
 
     use super::*;
 

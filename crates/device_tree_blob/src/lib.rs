@@ -1,37 +1,21 @@
 //! A minimal flattened device tree (FDT) parser: bytes in, regions and property values out.
 //!
-//! The blob is the machine describing itself (where RAM, the UART and the interrupt controller
-//! are, how many CPUs exist), handed over by firmware (notes/boot-protocol.md). Every integer in
-//! it is big-endian, so every read goes through `be32` or `be64`. The blob is untrusted input:
-//! every offset is checked, every walk is bounded, and a malformed blob is an [`Error`] rather
-//! than a panic. The crate is pure logic, so its tests run on the host against trees dumped from
-//! QEMU (§7 (testing: QEMU harness + host-testable crates)). See notes/device-tree.md.
+//! The blob is the machine describing itself (where RAM, the serial port and the interrupt
+//! controller are, how many CPUs exist), handed over by firmware: a bootloader, a UEFI loader or
+//! QEMU. Every integer in it is big-endian, so every read goes through `be32` or `be64`. The blob
+//! is untrusted input: every offset is checked, every walk is bounded, and a malformed blob is an
+//! [`Error`] rather than a panic. The crate is pure logic with no target code, so its tests run on
+//! the host against trees dumped from QEMU's `virt` machines and against hand-built hostile blobs.
 //!
+//! The format is the flattened one that chapter 5 of the Devicetree Specification (release 0.4)
+//! defines, and the one libfdt reads.
+//!
+//! Name: ratified 2026-09-18 (§154 (the acronym test is whether the phrase is spoken)) and
+//! performed 2026-09-19. Refused `dtb`: "device tree blob" is a phrase people say, so the
+//! abbreviation goes. Known cost: datasheets, error messages and boot logs say `dtb`, so a reader
+//! grepping the word the machine printed will not find this identifier.
 
-//! Name: ratified 2026-09-18 (calef, `design/decisions/` §154), **deratifying the 2026-08-01
-//! ratification** to do it, and performed 2026-09-19. Refused `dtb`.
-//!
-//! §154's test is whether the expansion is a phrase people actually say. "device tree blob" is,
-//! so it goes, where `pci` stays because "peripheral component interconnect" is not.
-//!
-//! The 2026-08-01 block called this one of the standard terms "already right and must not be
-//! touched". That was an exemption rather than a test, and §154 records the three-layer
-//! contradiction the exemptions left behind.
-//!
-//! **Known cost**: datasheets, error messages and this kernel's own output say `dtb`, so a reader
-//! grepping the word the machine printed will not find this identifier. Weighed and accepted.
-//!
-//! **Performed 2026-09-19**, with the type (`Dtb` to `DeviceTreeBlob`) and the fuzz target
-//! (`dtb_walk` to `device_tree_blob_walk`, dictionary included) under calef's rulings of that
-//! day. Census of `dtb` as a word, not counting the blob files' extension or `dtc -I dtb`: 327 before, 159
-//! after. Of the survivors, 64 name **the blob rather than the crate** and pass the ownership test
-//! the other way: `let dtb`, `kernel_main(dtb)`, `crate::DTB`, `dtb_ptr`, `configure_from_dtb`,
-//! and the test file `crates/pci/tests/qemu_virt_dtb.rs`. 15 are in `design/decisions/`, 2 are this
-//! block's refusal and known cost, and 78 are the old name in an account, a measurement or a
-//! ruling. **The blob files' extension did not move**: 86 occurrences and 20 files before and after,
-//! every filename unchanged, the five fixtures here included (their directory moved, they did not).
-
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 
 /// A contiguous span of physical memory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,43 +29,86 @@ pub struct Region {
 impl Region {
     /// One past the last byte, **saturating**.
     ///
-    /// Saturating because the type is `pub` with `pub` fields, so its values may come from a
-    /// hostile blob, and `kernel/src/memory.rs`'s `place_bitmap` calls this on every RAM region
-    /// before a boot can report a failure; a plain add would panic there under overflow checks
+    /// Saturating because the type is `pub` with `pub` fields, so anyone can build one whose
+    /// `start + size` wraps, and a caller placing an allocator over every RAM region may call this
+    /// before it can report a failure; a plain add would panic there under overflow checks
     /// (regression in `tests/hostile.rs`). A saturated end is still wrong, so the parser refuses a
-    /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check. See
-    /// notes/device-tree.md ("The parser's bounds").
+    /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check.
     pub fn end(&self) -> u64 {
         self.start.saturating_add(self.size)
     }
 }
 
 /// Why parsing the blob failed.
+///
+/// Each fault has its own variant, as libfdt separates `FDT_ERR_TRUNCATED`, `FDT_ERR_BADVALUE` and
+/// `FDT_ERR_BADSTRUCTURE`, so a caller printing the error at boot names the fault the firmware made.
+/// The enum is `#[non_exhaustive]`: a later fault gets its own variant without breaking a caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
-    /// The first four bytes weren't `0xd00dfeed`. Either the pointer is wrong or the
-    /// bootloader didn't give us a device tree at all.
+    /// The first four bytes were not `0xd00dfeed`. Either the pointer is wrong or the
+    /// bootloader did not hand over a device tree at all.
     BadMagic(u32),
-    /// The blob claims a version we don't understand.
+    /// The blob claims a version this parser does not read: its `last_compatible_version` is above 17.
     UnsupportedVersion(u32),
-    /// An offset in the header points outside the blob. Truncated or corrupt.
+    /// The blob, or one of its blocks, ends before something it must hold: an offset in the header
+    /// points outside the blob, a property's value runs past the structure block, or the walk
+    /// reaches the end of the structure block without its end token.
     Truncated,
-    /// A token we don't recognize. The structure block is malformed.
+    /// A value has the wrong shape for what it holds: an integer property that is neither 4 nor 8
+    /// bytes long, a node or property name with no terminating NUL inside its block, or a `reg`
+    /// that does not fit a [`Region`]. That last is a cell count above [`MAXIMUM_CELLS`], a
+    /// nonzero cell above the low two (a value wider than 64 bits), or a length that is not a
+    /// whole number of (address, size) pairs.
+    BadValue,
+    /// A token this parser does not recognize. The structure block is malformed.
     BadToken(u32),
     /// The caller's output slice was too small to hold every region found.
     TooManyRegions,
-    /// The header's `totalsize` is larger than [`MAXIMUM_TOTALSIZE`], so
+    /// The structure block's nesting does not balance: a node closes when none is open, or the
+    /// block's end token arrives while a node is still open.
+    BadStructure,
+    /// The structure block nests deeper than [`MAXIMUM_DEPTH`].
+    TooDeep,
+    /// The header's `totalsize` is larger than [`MAXIMUM_TOTALSIZE_BYTES`], so
     /// [`from_ptr`](DeviceTreeBlob::from_ptr) refused to build a slice of that length over
     /// memory nobody has checked. Carries the size claimed.
     TooLarge(usize),
     /// A `reg` pair whose `start + size` does not fit in 64 bits, so the region names memory that
     /// cannot exist.
     ///
-    /// Refused rather than clamped, and here rather than left to [`Region::end`]: the caller is
-    /// `kernel/src/memory.rs` deciding where RAM is, and a boot path should be told the firmware's
-    /// memory map is impossible rather than quietly work around it.
+    /// Refused rather than clamped, and here rather than left to [`Region::end`]: a caller deciding
+    /// where RAM is should be told the firmware's memory map is impossible rather than quietly
+    /// work around it.
     RegionOverflow,
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::BadMagic(magic) => write!(formatter, "bad device tree magic {magic:#010x}"),
+            Error::UnsupportedVersion(version) => {
+                write!(formatter, "unsupported device tree version {version}")
+            }
+            Error::Truncated => formatter.write_str("device tree truncated"),
+            Error::BadValue => formatter.write_str("malformed device tree property value or name"),
+            Error::BadToken(token) => write!(formatter, "unknown device tree token {token:#x}"),
+            Error::BadStructure => formatter.write_str("device tree nodes do not balance"),
+            Error::TooDeep => formatter.write_str("device tree nests deeper than the maximum"),
+            Error::TooManyRegions => formatter.write_str("too many regions for the output slice"),
+            Error::TooLarge(size) => {
+                write!(
+                    formatter,
+                    "device tree claims {size} bytes, above the ceiling"
+                )
+            }
+            Error::RegionOverflow => formatter.write_str("region wraps the 64-bit address space"),
+        }
+    }
+}
+
+impl core::error::Error for Error {}
 
 // Structure-block tokens.
 const FDT_BEGIN_NODE: u32 = 0x1;
@@ -91,19 +118,38 @@ const FDT_NOP: u32 = 0x4;
 const FDT_END: u32 = 0x9;
 
 const MAGIC: u32 = 0xd00d_feed;
-const HEADER_LEN: usize = 40;
+const HEADER_BYTES: usize = 40;
 
 /// The largest `totalsize` [`DeviceTreeBlob::from_ptr`] will believe, 2 MiB.
 ///
 /// `from_ptr` trusts the header's length before anything is validated, and the magic says only
 /// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
-/// 4 GiB slice read past the end of RAM, a data abort in `memory::initialize` before any handler can say
-/// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
-/// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
-/// 64 KiB. See notes/device-tree.md ("The parser's bounds").
+/// 4 GiB slice read past the end of RAM, a fault on the boot path before any handler can say why.
+/// 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in `arch/arm64/include/asm/boot.h`); QEMU's `virt`
+/// blobs are under 64 KiB.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_TOTALSIZE: usize = 2 * 1024 * 1024;
+/// Name: provisional. Ratified as `MAXIMUM_TOTALSIZE` on 2026-10-27 (#2797); `_BYTES` added at the
+/// crate's own name review, since a size carries its unit.
+#[doc(alias = "MAX_FDT_SIZE")]
+pub const MAXIMUM_TOTALSIZE_BYTES: usize = 2 * 1024 * 1024;
+
+/// The most cells a `#address-cells` or `#size-cells` declaration may give a `reg` value, as
+/// libfdt's `FDT_MAX_NCELLS`. A `reg` read under a larger count is [`Error::BadValue`].
+///
+/// Name: provisional.
+#[doc(alias = "FDT_MAX_NCELLS")]
+pub const MAXIMUM_CELLS: u32 = 4;
+
+/// How deeply the structure block may nest, the root counting as depth 1: 64, as Linux's
+/// `FDT_MAX_DEPTH`.
+///
+/// A lookup keeps a few words per open node on the caller's stack, so the nesting has a bound. A
+/// tree nested deeper is refused with [`Error::TooDeep`] by every lookup alike, rather than read by
+/// some and not others. Real trees nest well under ten deep.
+///
+/// Name: provisional.
+#[doc(alias = "FDT_MAX_DEPTH")]
+pub const MAXIMUM_DEPTH: usize = 64;
 
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {
     // `at + 4` is a checked add, not a bare one: `at` comes straight out of the (untrusted) blob,
@@ -121,44 +167,81 @@ fn be64(bytes: &[u8], at: usize) -> Result<u64, Error> {
 }
 
 /// A parsed, borrowed device tree blob.
+///
+/// Each lookup walks the structure block from its first token, so a lookup costs one pass over the
+/// tree and holds nothing between calls. Every walk refuses the same faults when it reaches them:
+/// a tree whose nesting does not balance ([`Error::BadStructure`]), one nested deeper than
+/// [`MAXIMUM_DEPTH`] ([`Error::TooDeep`]), and a structure block that ends before its end token
+/// ([`Error::Truncated`]). A lookup that finds its answer first returns it without walking on.
 #[derive(Debug)]
 pub struct DeviceTreeBlob<'a> {
     bytes: &'a [u8],
-    off_struct: usize,
-    off_strings: usize,
-    off_rsvmap: usize,
+    /// The structure block alone, as the prefix of the blob that ends where the block does, so an
+    /// offset into it is an offset into the blob and a read past the block is a read past the end.
+    structure: &'a [u8],
+    structure_offset: usize,
+    strings_offset: usize,
+    reservations_offset: usize,
 }
 
 impl<'a> DeviceTreeBlob<'a> {
+    /// Parse the blob at `pointer`, whose length the blob's own header gives.
+    ///
+    /// Reads the first 8 bytes alone, the magic and `totalsize`, and builds a slice over the
+    /// whole blob only once the magic matches and the size is at most
+    /// [`MAXIMUM_TOTALSIZE_BYTES`]. Every read is byte-wise, so `pointer` needs no alignment.
+    ///
     /// # Safety
     ///
-    /// `ptr` must point at a device tree blob that stays valid for `'a`. We read the
-    /// header to learn the blob's own length, which means we trust the first 8 bytes
-    /// before we have validated anything. The magic check immediately after is what
-    /// makes that survivable: a wrong pointer almost certainly fails it.
-    pub unsafe fn from_ptr(ptr: *const u8) -> Result<Self, Error> {
+    /// `pointer` must point at a device tree blob that stays valid for `'a`. The 8 bytes are read
+    /// before anything is validated, which is the one leap of faith: a wrong pointer almost
+    /// certainly fails the magic check that follows.
+    pub unsafe fn from_ptr(pointer: *const u8) -> Result<Self, Error> {
         // Read just enough to learn how long the thing claims to be.
-        // SAFETY: the caller's contract is that `ptr` points at a blob valid for `'a`. This reads only the fixed-size header, which is the deliberate leap of faith the magic check on the next line exists to catch.
-        let header = unsafe { core::slice::from_raw_parts(ptr, HEADER_LEN) };
+        // SAFETY: the caller's contract is that `pointer` points at a blob valid for `'a`. This reads only the magic and the size, the deliberate leap of faith the magic check on the next line exists to catch.
+        let header = unsafe { core::slice::from_raw_parts(pointer, 8) };
         let magic = be32(header, 0)?;
         if magic != MAGIC {
             return Err(Error::BadMagic(magic));
         }
         let total = be32(header, 4)? as usize;
-        if total > MAXIMUM_TOTALSIZE {
+        if total > MAXIMUM_TOTALSIZE_BYTES {
             return Err(Error::TooLarge(total));
         }
 
-        // SAFETY: the magic checked out, so `ptr` really is a blob, and `total` is the length it
-        // declares for itself, now bounded by `MAXIMUM_TOTALSIZE`; the caller's contract covers the
+        // SAFETY: the magic checked out, so `pointer` really is a blob, and `total` is the length it
+        // declares for itself, now bounded by `MAXIMUM_TOTALSIZE_BYTES`; the caller's contract covers the
         // whole of it for `'a`.
-        let bytes = unsafe { core::slice::from_raw_parts(ptr, total) };
+        let bytes = unsafe { core::slice::from_raw_parts(pointer, total) };
         Self::from_bytes(bytes)
     }
 
     /// Parse a blob already in hand as a safe slice, rather than through an unchecked pointer.
     /// This is what [`from_ptr`](Self::from_ptr) delegates to once it has trusted the header
     /// enough to build one, and it is the entry point every host test uses directly.
+    ///
+    /// A `bytes` longer than the header's `totalsize` is accepted and trimmed to it, so a blob
+    /// read into a larger buffer parses as itself. [`MAXIMUM_TOTALSIZE_BYTES`] bounds
+    /// [`from_ptr`](Self::from_ptr) only: a slice in hand is already as long as it is. The header's
+    /// `version` decides where the structure block ends (`size_dt_struct` from version 17, the
+    /// strings block before it), and a `last_compatible_version` above 17 is refused. `size_dt_strings`
+    /// and `boot_cpuid_phys` are not read; a name in the strings block is bounded by the blob's end.
+    ///
+    /// # Examples
+    ///
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it:
+    ///
+    /// ```
+    /// use device_tree_blob::{DeviceTreeBlob, Region};
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// assert_eq!(tree.total_size(), blob.len());
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Error> {
         let magic = be32(bytes, 0)?;
         if magic != MAGIC {
@@ -166,30 +249,52 @@ impl<'a> DeviceTreeBlob<'a> {
         }
 
         let total = be32(bytes, 4)? as usize;
-        if bytes.len() < total || total < HEADER_LEN {
+        if bytes.len() < total || total < HEADER_BYTES {
             return Err(Error::Truncated);
         }
 
         // We only understand version 17 and later, which is everything made since about
-        // 2005. The `last_comp_version` field is the blob telling us the oldest reader
+        // 2005. The `last_compatible_version` field is the blob telling us the oldest reader
         // it is still compatible with.
-        let last_comp_version = be32(bytes, 24)?;
-        if last_comp_version > 17 {
-            return Err(Error::UnsupportedVersion(last_comp_version));
+        let last_compatible_version = be32(bytes, 24)?;
+        if last_compatible_version > 17 {
+            return Err(Error::UnsupportedVersion(last_compatible_version));
         }
 
-        let dtb = DeviceTreeBlob {
-            off_struct: be32(bytes, 8)? as usize,
-            off_strings: be32(bytes, 12)? as usize,
-            off_rsvmap: be32(bytes, 16)? as usize,
-            bytes: &bytes[..total],
-        };
+        let structure_start = be32(bytes, 8)? as usize;
+        let strings_offset = be32(bytes, 12)? as usize;
 
-        if dtb.off_struct >= total || dtb.off_strings >= total || dtb.off_rsvmap >= total {
+        // Where the structure block ends. From version 17 the header says how long it is; before
+        // that the block runs up to the strings block, which is how libfdt reads such a blob. A
+        // walk that reaches this end without `FDT_END` is truncated; without the bound it would
+        // read the strings block as tokens.
+        let structure_end = if be32(bytes, 20)? >= 17 {
+            structure_start
+                .checked_add(be32(bytes, 36)? as usize)
+                .ok_or(Error::Truncated)?
+        } else {
+            strings_offset
+        };
+        if structure_end > total || structure_end < structure_start {
             return Err(Error::Truncated);
         }
 
-        Ok(dtb)
+        let tree = DeviceTreeBlob {
+            structure_offset: structure_start,
+            strings_offset,
+            reservations_offset: be32(bytes, 16)? as usize,
+            bytes: &bytes[..total],
+            structure: &bytes[..structure_end],
+        };
+
+        if tree.structure_offset >= total
+            || tree.strings_offset >= total
+            || tree.reservations_offset >= total
+        {
+            return Err(Error::Truncated);
+        }
+
+        Ok(tree)
     }
 
     /// How many bytes the blob occupies. We need this to mark it as reserved: it is
@@ -199,24 +304,34 @@ impl<'a> DeviceTreeBlob<'a> {
     }
 
     /// The memory reservation block: regions the bootloader is telling us **not to
-    /// touch**, before we've parsed a single node.
+    /// touch**, before a single node is parsed.
     ///
     /// This is a separate, deliberately dead-simple structure precisely so that a
-    /// kernel can honour it without having to parse anything. QEMU's `virt` leaves it
+    /// kernel can honor it without having to parse anything. QEMU's `virt` leaves it
     /// empty, but a real board's firmware often does not, and a kernel that skips it
     /// will happily allocate over the firmware's own tables.
-    pub fn reserved_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
-        let mut at = self.off_rsvmap;
+    ///
+    /// An entry whose `start + size` does not fit in 64 bits is [`Error::RegionOverflow`], as a
+    /// `reg` pair of the same shape is. The specification places the block on an 8-byte boundary,
+    /// and that is not checked: every read here is byte-wise, so a misplaced block reads the same.
+    ///
+    /// Name: provisional. Refused `reserved_regions`, with no alias for it (milestone 1085 (what an
+    /// outside maintainer would fix before it leaves) D5).
+    pub fn memory_reservations(&self, out: &mut [Region]) -> Result<usize, Error> {
+        let mut at = self.reservations_offset;
         let mut n = 0;
 
         loop {
             let start = be64(self.bytes, at)?;
-            let size = be64(self.bytes, at + 8)?;
-            at += 16;
+            let size = be64(self.bytes, at.checked_add(8).ok_or(Error::Truncated)?)?;
+            at = at.checked_add(16).ok_or(Error::Truncated)?;
 
             // The list is terminated by an all-zero entry.
             if start == 0 && size == 0 {
                 return Ok(n);
+            }
+            if start.checked_add(size).is_none() {
+                return Err(Error::RegionOverflow);
             }
 
             *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
@@ -224,408 +339,318 @@ impl<'a> DeviceTreeBlob<'a> {
         }
     }
 
-    /// Every `/memory` node's `reg` property: the actual RAM, written into `out`.
+    /// Every memory node's `reg` property: the actual RAM, written into `out`.
+    ///
+    /// A memory node is a child of the root that is named `memory` or `memory@<address>`, or that
+    /// says `device_type = "memory"`, and that the firmware has not disabled: a `status` other than
+    /// `"okay"` (or the older `"ok"`) leaves the node out, as Linux leaves it out. Its `reg` is
+    /// decoded with the root's cell widths. Linux's `linux,usable-memory`, which a kexec loader
+    /// writes to narrow a bank, is not read.
     ///
     /// Returns how many regions it wrote; refuses a full `out` with [`Error::TooManyRegions`] and a
     /// wrapping pair with [`Error::RegionOverflow`].
+    ///
+    /// # Examples
+    ///
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it:
+    ///
+    /// ```
+    /// use device_tree_blob::{DeviceTreeBlob, Region};
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// let mut ram = [Region { start: 0, size: 0 }; 4];
+    /// let banks = tree.memory_regions(&mut ram)?;
+    /// assert_eq!(&ram[..banks], [Region { start: 0x8000_0000, size: 0x800_0000 }]);
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
     pub fn memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
-        // `reg` is a list of (address, size) pairs, but how many 32-bit cells each of
-        // those takes is not fixed. It's declared by #address-cells and #size-cells on
-        // the PARENT node. For a /memory node the parent is the root.
-        //
-        // The spec's defaults are 2 and 1. Nearly every 64-bit machine says 2 and 2
-        // (i.e. 64-bit addresses, 64-bit sizes), but we read them rather than assume.
-        let mut address_cells = 2u32;
-        let mut size_cells = 1u32;
+        // `reg` is a list of (address, size) pairs, but how many 32-bit cells each of those takes
+        // is not fixed. It is declared by #address-cells and #size-cells on the PARENT node, which
+        // for a memory node is the root. The specification's defaults are 2 and 1. Nearly every
+        // 64-bit machine says 2 and 2, but they are read rather than assumed.
+        let mut bus_address_cells = 2u32;
+        let mut bus_size_cells = 1u32;
 
         let mut found = 0;
-        let mut depth = 0i32;
+        // What the depth-2 node now open has said so far. `device_type` and `status` may follow
+        // `reg`, so the node is judged when it closes. Keyed on depth 2: a child of a memory node,
+        // which no real tree has, neither adds to nor clears its parent's answer.
+        let mut named_memory = false;
+        let mut typed_memory = false;
+        let mut available = true;
+        let mut register_value: Option<&[u8]> = None;
+        let mut tokens = self.tokens();
 
-        // The depth at which we entered a /memory node, or None.
-        //
-        // Tracking the *depth* rather than a bare "am I inside one" flag matters: a
-        // node's properties are the ones seen while `depth` equals the node's own depth.
-        // If a /memory node ever had a child, a bare flag would be cleared by the
-        // child's END_NODE and we'd stop reading the parent's remaining properties. No
-        // real device tree does this today, which is exactly why it would be a lurking
-        // bug rather than an obvious one.
-        let mut memory_at: Option<i32> = None;
-        let mut at = self.off_struct;
-
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
-                    at += align4(name.len() + 1);
-                    depth += 1;
-
-                    // A memory node is a child of the root named `memory` or
-                    // `memory@<address>`. (There is also a `device_type = "memory"`
-                    // property, which is the more correct check, but it arrives *after*
-                    // the node name and the name is unambiguous in practice.)
-                    if depth == 2 && (name == b"memory" || name.starts_with(b"memory@")) {
-                        memory_at = Some(depth);
+                Token::BeginNode { name } => {
+                    if depth == 2 {
+                        named_memory = name == b"memory" || name.starts_with(b"memory@");
+                        typed_memory = false;
+                        available = true;
+                        register_value = None;
                     }
                 }
-
-                FDT_END_NODE => {
-                    if memory_at == Some(depth) {
-                        memory_at = None;
+                Token::EndNode => {
+                    if depth == 2
+                        && (named_memory || typed_memory)
+                        && available
+                        && let Some(value) = register_value
+                    {
+                        let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
+                        found +=
+                            decode_regions(value, bus_address_cells, bus_size_cells, remaining)?;
                     }
-                    depth -= 1;
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    let name = self.cstr(self.off_strings + name_off)?;
-
-                    // The root's cell counts, which we need before we can decode any
-                    // `reg`. They appear on the root node, which we visit first, so by
-                    // the time we reach a /memory node these are correct.
+                Token::Property { name, value } => {
+                    // The root's cell counts. A node's properties precede its children, so by the
+                    // time a memory node closes these are the root's.
                     if depth == 1 {
+                        declare_cells(name, value, &mut bus_address_cells, &mut bus_size_cells);
+                    }
+                    if depth == 2 {
                         match name {
-                            b"#address-cells" if len == 4 => {
-                                address_cells = be32(self.bytes, value_at)?;
-                            }
-                            b"#size-cells" if len == 4 => size_cells = be32(self.bytes, value_at)?,
+                            b"reg" => register_value = Some(value),
+                            b"device_type" => typed_memory = value == b"memory\0",
+                            b"status" => available = value == b"okay\0" || value == b"ok\0",
                             _ => {}
                         }
                     }
-
-                    if memory_at == Some(depth) && name == b"reg" {
-                        found += self.decode_reg(
-                            value_at,
-                            len,
-                            address_cells,
-                            size_cells,
-                            &mut out[found..],
-                        )?;
-                    }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(found),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(found)
     }
 
-    /// The `reg` regions of the first node whose name starts with `prefix`, searched at any depth.
+    /// The register regions (`reg`, the specification's name for the property) of the first node
+    /// whose name starts with `prefix`, searched at any depth.
     ///
     /// Decodes with the `#address-cells`/`#size-cells` of the node's **parent**, carried down a
     /// per-depth stack, so a device nested under `/soc` reads as well as one under the root. A GIC
     /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
     /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
-    /// is the correct lookup. A node deeper than the stack is not matched. See notes/device-tree.md
-    /// ("Finding a node").
+    /// is the correct lookup. The first match is the answer: one with no `reg` yields zero regions, and
+    /// a later match's `reg` is never read in its place.
+    #[doc(alias = "register regions")]
     pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
-        // #address-cells/#size-cells declared by the node at each depth, applying to its children.
-        // Depth 0 is the pre-root sentinel; the root is depth 1. Spec defaults are 2 and 1.
-        const MAXIMUM_DEPTH: usize = 16;
-        let mut acells = [2u32; MAXIMUM_DEPTH];
-        let mut scells = [1u32; MAXIMUM_DEPTH];
-
-        let mut depth = 0usize;
+        // The cell counts declared by the node open at each depth, applying to its children. Depth
+        // 0 is the slot above the root; the root is depth 1. The specification's defaults are 2
+        // and 1.
+        let mut bus_address_cells = [2u32; DEPTH_SLOTS];
+        let mut bus_size_cells = [1u32; DEPTH_SLOTS];
         let mut target_at: Option<usize> = None;
-        let mut at = self.off_struct;
+        let mut tokens = self.tokens();
 
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
-                    at += align4(name.len() + 1);
-                    depth += 1;
-                    // Inherit the parent's cell counts as this node's defaults, until/unless this
-                    // node declares its own (its props, processed below, come before its children).
-                    if depth < MAXIMUM_DEPTH {
-                        acells[depth] = acells[depth - 1];
-                        scells[depth] = scells[depth - 1];
-                    }
-
-                    // `(2..MAXIMUM_DEPTH)`, not `>= 2`: the `reg` arm below reads `acells[depth -
-                    // 1]`, which is out of bounds once `depth` reaches 17, a boot-time panic on a
-                    // hostile blob (tests/hostile.rs). Past `MAXIMUM_DEPTH` the cell counts are no
-                    // longer tracked, so refusing to match is honest where a clamped index would
-                    // decode the wrong widths. `node_reg_compatible` refuses the same way at its
-                    // END_NODE.
-                    if (2..MAXIMUM_DEPTH).contains(&depth)
-                        && name.starts_with(prefix)
-                        && target_at.is_none()
-                    {
+                Token::BeginNode { name } => {
+                    // A node inherits its parent's cell counts until it declares its own (its
+                    // properties come before its children).
+                    bus_address_cells[depth] = bus_address_cells[depth - 1];
+                    bus_size_cells[depth] = bus_size_cells[depth - 1];
+                    if depth >= 2 && target_at.is_none() && name.starts_with(prefix) {
                         target_at = Some(depth);
                     }
                 }
-
-                FDT_END_NODE => {
+                Token::EndNode => {
                     if target_at == Some(depth) {
-                        // We have walked the whole node. If it had a `reg` we already decoded
-                        // it; either way, stop looking.
-                        target_at = None;
+                        // The whole node has been walked. Had it a `reg`, the property arm would
+                        // have answered, so it has none. The first match is the answer, as for
+                        // `node_property` and `node_reg_compatible`: zero regions, and a later
+                        // node's `reg` is not a substitute.
+                        return Ok(0);
                     }
-                    depth = depth.saturating_sub(1);
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    let name = self.cstr(self.off_strings + name_off)?;
-
-                    // Record the cell counts this node declares for its children (depth+1 will read
-                    // them off the stack). A node's own `reg`, decoded below, uses its PARENT's. A
-                    // declaration that is not exactly one cell is ignored, here and in every walker,
-                    // so the inherited width stands: `be32` of a shorter value would read the padding
-                    // and the next token as the count.
-                    if depth < MAXIMUM_DEPTH {
-                        match name {
-                            b"#address-cells" if len == 4 => {
-                                acells[depth] = be32(self.bytes, value_at)?;
-                            }
-                            b"#size-cells" if len == 4 => {
-                                scells[depth] = be32(self.bytes, value_at)?;
-                            }
-                            _ => {}
-                        }
-                    }
-
+                Token::Property { name, value } => {
+                    declare_cells(
+                        name,
+                        value,
+                        &mut bus_address_cells[depth],
+                        &mut bus_size_cells[depth],
+                    );
                     if target_at == Some(depth) && name == b"reg" {
-                        // Decode with the parent's cells: the node one level up (depth - 1).
-                        return self.decode_reg(
-                            value_at,
-                            len,
-                            acells[depth - 1],
-                            scells[depth - 1],
+                        // A node's own `reg` uses its parent's cells, one level up.
+                        return decode_regions(
+                            value,
+                            bus_address_cells[depth - 1],
+                            bus_size_cells[depth - 1],
                             out,
                         );
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(0),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(0)
     }
 
-    /// The `reg` regions of the first node whose `compatible` list contains `compat`, searched at
-    /// any depth.
+    /// The register regions (`reg`, the specification's name for the property) of the first node
+    /// whose `compatible` property lists the entry `compatible`, searched at any depth.
     ///
     /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
     /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. The empty piece after the
-    /// final NUL is not an entry, so an empty `compat` matches nothing. `compatible` may follow
+    /// final NUL is not an entry, so an empty `compatible` matches nothing. The property may follow
     /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
     /// decoded when the matched node closes; a matched parent is still answered after its
-    /// children close. Returns zero regions for a match with no `reg`. See notes/device-tree.md
-    /// ("Finding a node").
-    pub fn node_reg_compatible(&self, compat: &[u8], out: &mut [Region]) -> Result<usize, Error> {
-        const MAXIMUM_DEPTH: usize = 16;
-        let mut acells = [2u32; MAXIMUM_DEPTH];
-        let mut scells = [1u32; MAXIMUM_DEPTH];
-        // Per open node: where its `reg` value sits and how wide its cells are, and whether its
-        // `compatible` named the device we are looking for.
-        let mut reg = [None::<(usize, usize, u32, u32)>; MAXIMUM_DEPTH];
-        let mut matched = [false; MAXIMUM_DEPTH];
+    /// children close. Returns zero regions for a match with no `reg`.
+    ///
+    /// # Examples
+    ///
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it:
+    ///
+    /// ```
+    /// use device_tree_blob::{DeviceTreeBlob, Region};
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// let mut rtc = [Region { start: 0, size: 0 }; 1];
+    /// let found = tree.node_reg_compatible(b"google,goldfish-rtc", &mut rtc)?;
+    /// assert_eq!(&rtc[..found], [Region { start: 0x10_1000, size: 0x1000 }]);
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
+    #[doc(alias = "register regions")]
+    pub fn node_reg_compatible(
+        &self,
+        compatible: &[u8],
+        out: &mut [Region],
+    ) -> Result<usize, Error> {
+        let mut bus_address_cells = [2u32; DEPTH_SLOTS];
+        let mut bus_size_cells = [1u32; DEPTH_SLOTS];
+        // Per open node: its `reg` value with the parent's cell counts it decodes with, and whether
+        // its `compatible` named the device being looked for.
+        let mut register_values = [None::<(&'a [u8], u32, u32)>; DEPTH_SLOTS];
+        let mut matched = [false; DEPTH_SLOTS];
+        let mut tokens = self.tokens();
 
-        let mut depth = 0usize;
-        let mut at = self.off_struct;
-
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
-                    at += align4(name.len() + 1);
-                    depth += 1;
-                    if depth < MAXIMUM_DEPTH {
-                        acells[depth] = acells[depth - 1];
-                        scells[depth] = scells[depth - 1];
-                        reg[depth] = None;
-                        matched[depth] = false;
-                    }
+                Token::BeginNode { .. } => {
+                    bus_address_cells[depth] = bus_address_cells[depth - 1];
+                    bus_size_cells[depth] = bus_size_cells[depth - 1];
+                    register_values[depth] = None;
+                    matched[depth] = false;
                 }
-
-                FDT_END_NODE => {
+                Token::EndNode => {
                     // Depth 1 is the root, which has no `compatible` worth matching and whose `reg`
                     // would have no parent to decode against.
-                    if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
-                        return match reg[depth] {
-                            Some((value_at, len, a, s)) => {
-                                self.decode_reg(value_at, len, a, s, out)
+                    if depth >= 2 && matched[depth] {
+                        return match register_values[depth] {
+                            Some((value, address, size)) => {
+                                decode_regions(value, address, size, out)
                             }
                             // Compatible but no `reg`: the device exists and has no register block
-                            // we can name. Zero regions, not an error.
+                            // to name. Zero regions, not an error.
                             None => Ok(0),
                         };
                     }
-                    depth = depth.saturating_sub(1);
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    let name = self.cstr(self.off_strings + name_off)?;
-
-                    if depth < MAXIMUM_DEPTH {
-                        match name {
-                            b"#address-cells" if len == 4 => {
-                                acells[depth] = be32(self.bytes, value_at)?;
-                            }
-                            b"#size-cells" if len == 4 => {
-                                scells[depth] = be32(self.bytes, value_at)?;
-                            }
-                            b"reg" if depth >= 2 => {
-                                reg[depth] =
-                                    Some((value_at, len, acells[depth - 1], scells[depth - 1]));
-                            }
-                            b"compatible" => {
-                                let bytes = self
-                                    .bytes
-                                    .get(value_at..value_at + len)
-                                    .ok_or(Error::Truncated)?;
-                                matched[depth] = bytes
-                                    .split(|&b| b == 0)
-                                    .any(|s| !s.is_empty() && s == compat);
-                            }
-                            _ => {}
-                        }
+                Token::Property { name, value } => {
+                    declare_cells(
+                        name,
+                        value,
+                        &mut bus_address_cells[depth],
+                        &mut bus_size_cells[depth],
+                    );
+                    if depth >= 2 && name == b"reg" {
+                        register_values[depth] = Some((
+                            value,
+                            bus_address_cells[depth - 1],
+                            bus_size_cells[depth - 1],
+                        ));
+                    }
+                    if name == b"compatible" {
+                        matched[depth] = lists_entry(value, compatible);
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(0),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(0)
     }
 
-    /// The raw bytes of property `name` on the first node whose `compatible` list contains
-    /// `compat`, searched at any depth. `Ok(None)` when no such node exists, or the node has no
+    /// The raw bytes of property `name` on the first node whose `compatible` property lists the
+    /// entry `compatible`, searched at any depth. `Ok(None)` when no such node exists, or the node has no
     /// such property.
     ///
     /// The property twin of [`node_reg_compatible`](Self::node_reg_compatible), deciding when the
     /// matched node closes for the same reason. It exists because labels differ between machines:
     /// the PLIC is `plic@c000000` on QEMU `virt` and `interrupt-controller@c000000` on the JH7110.
-    pub fn node_prop_compatible(
+    ///
+    /// Name: provisional. Refused `node_prop_compatible`, with no alias for it (milestone 1085
+    /// (what an outside maintainer would fix before it leaves) D1).
+    pub fn node_property_compatible(
         &self,
-        compat: &[u8],
+        compatible: &[u8],
         name: &[u8],
     ) -> Result<Option<&'a [u8]>, Error> {
-        self.prop_compatible_up(compat, name, 0)
+        self.property_compatible_up(compatible, name, 0)
     }
 
     /// The raw bytes of property `name` on the **parent** of the first node whose `compatible`
-    /// list contains `compat`. `Ok(None)` when no such node exists, or its parent has no such
-    /// property.
+    /// property lists the entry `compatible`. `Ok(None)` when no such node exists, or its parent
+    /// has no such property.
     ///
     /// For a device described as a child of its bus, such as a PMIC under one of seven identical
-    /// `snps,designware-i2c` controllers, whose `clocks` and `resets` sit on the bus (milestone 592
-    /// (radon's cold reboot dies in OpenSBI's PMIC write), provisional). The parent's slot is filled
-    /// when the child closes, because a node's properties precede its first subnode.
+    /// `snps,designware-i2c` controllers on the JH7110, whose `clocks` and `resets` sit on
+    /// the bus. The parent's slot is filled when the child closes, because a node's properties
+    /// precede its first subnode.
     ///
-    /// Name: provisional (milestone 592), 2026-09-25. calef names public functions.
-    pub fn parent_prop_compatible(
+    /// Name: provisional, 2026-09-25. Refused `parent_prop_compatible`, the abbreviation, with no
+    /// alias for it; `property` is spelled out across the crate's lookups.
+    pub fn parent_property_compatible(
         &self,
-        compat: &[u8],
+        compatible: &[u8],
         name: &[u8],
     ) -> Result<Option<&'a [u8]>, Error> {
-        self.prop_compatible_up(compat, name, 1)
+        self.property_compatible_up(compatible, name, 1)
     }
 
-    /// The shared walk behind the two `*_prop_compatible` reads: property `name` on the node `up`
-    /// levels above the first node matching `compat` (0 for the node itself, 1 for its parent).
-    fn prop_compatible_up(
+    /// The shared walk behind the two `*_property_compatible` reads: property `name` on the node `up`
+    /// levels above the first node whose `compatible` property lists the argument (0 for the node itself, 1 for its parent).
+    fn property_compatible_up(
         &self,
-        compat: &[u8],
+        compatible: &[u8],
         name: &[u8],
         up: usize,
     ) -> Result<Option<&'a [u8]>, Error> {
-        const MAXIMUM_DEPTH: usize = 16;
-        // Per open node: where `name`'s value sits, and whether `compatible` matched.
-        let mut found = [None::<(usize, usize)>; MAXIMUM_DEPTH];
-        let mut matched = [false; MAXIMUM_DEPTH];
+        // Per open node: `name`'s value, and whether `compatible` matched.
+        let mut found = [None::<&'a [u8]>; DEPTH_SLOTS];
+        let mut matched = [false; DEPTH_SLOTS];
+        let mut tokens = self.tokens();
 
-        let mut depth = 0usize;
-        let mut at = self.off_struct;
-
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
-                    at += align4(nm.len() + 1);
-                    depth += 1;
-                    if depth < MAXIMUM_DEPTH {
-                        found[depth] = None;
-                        matched[depth] = false;
+                Token::BeginNode { .. } => {
+                    found[depth] = None;
+                    matched[depth] = false;
+                }
+                Token::EndNode => {
+                    // Depth 1 is the root, which carries no `compatible` worth matching here.
+                    // `depth >= 2` and `up <= 1` keep the answer at the root or below it.
+                    if depth >= 2 && matched[depth] {
+                        return Ok(found[depth - up]);
                     }
                 }
-
-                FDT_END_NODE => {
-                    // Depth 1 is the root, which carries no `compatible` worth matching here; a
-                    // node past MAXIMUM_DEPTH was never tracked, so it cannot answer (the same
-                    // refusal node_reg records: not finding is honest, misreporting is not).
-                    if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
-                        // `depth >= 2` and `up <= 1` keep this at the root or below it.
-                        return match found[depth - up] {
-                            Some((value_at, len)) => self
-                                .bytes
-                                .get(value_at..value_at + len)
-                                .map(Some)
-                                .ok_or(Error::Truncated),
-                            None => Ok(None),
-                        };
+                Token::Property {
+                    name: property_name,
+                    value,
+                } => {
+                    // Two independent `if`s, so asking for `compatible` itself still answers.
+                    if property_name == name {
+                        found[depth] = Some(value);
                     }
-                    depth = depth.saturating_sub(1);
-                }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    let pname = self.cstr(self.off_strings + name_off)?;
-                    if depth < MAXIMUM_DEPTH {
-                        // Two independent `if`s, so asking for `compatible` itself still answers.
-                        if pname == name {
-                            found[depth] = Some((value_at, len));
-                        }
-                        if pname == b"compatible" {
-                            let bytes = self
-                                .bytes
-                                .get(value_at..value_at + len)
-                                .ok_or(Error::Truncated)?;
-                            matched[depth] = bytes
-                                .split(|&b| b == 0)
-                                .any(|s| !s.is_empty() && s == compat);
-                        }
+                    if property_name == b"compatible" {
+                        matched[depth] = lists_entry(value, compatible);
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(None),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(None)
     }
 
     /// The raw bytes of property `name` on the first node whose name starts with `prefix`,
@@ -634,55 +659,38 @@ impl<'a> DeviceTreeBlob<'a> {
     /// The generic escape hatch next to the decoded accessors above: some properties have
     /// per-binding layouts no general decoder can know (`interrupt-map` is the motivating case:
     /// its entry width depends on three different nodes' cell counts). The caller gets the bytes
-    /// (big-endian cells, per the DTB spec) and owns the interpretation; the pci crate's fixture
-    /// tests use this to hold the INTx swizzle against the machine's own routing table.
-    pub fn node_prop(&self, prefix: &[u8], name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
-        let mut depth = 0usize;
+    /// (big-endian cells, as the specification lays them out) and owns the interpretation.
+    ///
+    /// Name: provisional. Refused `node_prop`, with no alias for it (milestone 1085 (what an
+    /// outside maintainer would fix before it leaves) D1).
+    pub fn node_property(&self, prefix: &[u8], name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
         let mut target_at: Option<usize> = None;
-        let mut at = self.off_struct;
+        let mut tokens = self.tokens();
 
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
-                    at += align4(nm.len() + 1);
-                    depth += 1;
-                    if depth >= 2 && nm.starts_with(prefix) && target_at.is_none() {
+                Token::BeginNode { name: node_name } => {
+                    if depth >= 2 && target_at.is_none() && node_name.starts_with(prefix) {
                         target_at = Some(depth);
                     }
                 }
-
-                FDT_END_NODE => {
+                Token::EndNode => {
                     if target_at == Some(depth) {
                         // Walked the whole matched node: it has no such property.
                         return Ok(None);
                     }
-                    depth = depth.saturating_sub(1);
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    if target_at == Some(depth) && self.cstr(self.off_strings + name_off)? == name {
-                        return self
-                            .bytes
-                            .get(value_at..value_at + len)
-                            .map(Some)
-                            .ok_or(Error::Truncated);
+                Token::Property {
+                    name: property_name,
+                    value,
+                } => {
+                    if target_at == Some(depth) && property_name == name {
+                        return Ok(Some(value));
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(None),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(None)
     }
 
     /// Property `name` on the first node whose name starts with `prefix`, **falling back to the
@@ -692,390 +700,268 @@ impl<'a> DeviceTreeBlob<'a> {
     /// For the properties the spec defines as inheritable, such as `interrupt-parent`, which QEMU's
     /// two `virt` boards and the JH7110 dtsi each write at a different level. The nearest enclosing
     /// value wins, per the spec. A node's properties precede its children, so one walk suffices:
-    /// the answer is taken at the target's `END_NODE`. See notes/device-tree.md.
-    pub fn node_prop_inherited(
+    /// the answer is taken at the target's `END_NODE`.
+    ///
+    /// Name: provisional. Refused `node_prop_inherited`, with no alias for it (milestone 1085 (what
+    /// an outside maintainer would fix before it leaves) D1).
+    pub fn node_property_inherited(
         &self,
         prefix: &[u8],
         name: &[u8],
     ) -> Result<Option<&'a [u8]>, Error> {
-        const MAXIMUM_DEPTH: usize = 16;
-        // Where `name`'s value sits on the node open at each depth, `None` where it has none. A
-        // BEGIN_NODE resets its own depth's slot, so a closed sibling's value can never leak into
-        // the ancestor scan (which only reads the depths still open above the target anyway).
-        let mut values = [None::<(usize, usize)>; MAXIMUM_DEPTH];
-
-        let mut depth = 0usize;
+        // `name`'s value on the node open at each depth, `None` where it has none. A node's
+        // beginning resets its own slot, so a closed sibling's value never reaches the ancestor
+        // scan (which reads only the depths still open above the target anyway).
+        let mut values = [None::<&'a [u8]>; DEPTH_SLOTS];
         let mut target_at: Option<usize> = None;
-        let mut at = self.off_struct;
+        let mut tokens = self.tokens();
 
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
-                    at += align4(nm.len() + 1);
-                    depth += 1;
-                    if depth < MAXIMUM_DEPTH {
-                        values[depth] = None;
-                    }
-                    // The same `(2..MAXIMUM_DEPTH)` refusal as `node_reg`: a node deeper than the
-                    // value stack was never tracked, and answering for it would mean answering
-                    // from ancestors we stopped recording. Not finding it is honest.
-                    if (2..MAXIMUM_DEPTH).contains(&depth)
-                        && nm.starts_with(prefix)
-                        && target_at.is_none()
-                    {
+                Token::BeginNode { name: node_name } => {
+                    values[depth] = None;
+                    if depth >= 2 && target_at.is_none() && node_name.starts_with(prefix) {
                         target_at = Some(depth);
                     }
                 }
-
-                FDT_END_NODE => {
+                Token::EndNode => {
                     if target_at == Some(depth) {
                         // The whole target node has been walked: its own value if it had one,
                         // else the nearest open ancestor's, root included.
-                        for d in (1..=depth).rev() {
-                            if let Some((value_at, len)) = values[d] {
-                                return self
-                                    .bytes
-                                    .get(value_at..value_at + len)
-                                    .map(Some)
-                                    .ok_or(Error::Truncated);
-                            }
-                        }
-                        return Ok(None);
-                    }
-                    depth = depth.saturating_sub(1);
-                }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    if depth < MAXIMUM_DEPTH && self.cstr(self.off_strings + name_off)? == name {
-                        values[depth] = Some((value_at, len));
+                        return Ok(values[1..=depth].iter().rev().find_map(|value| *value));
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(None),
-                other => return Err(Error::BadToken(other)),
+                Token::Property {
+                    name: property_name,
+                    value,
+                } => {
+                    if property_name == name {
+                        values[depth] = Some(value);
+                    }
+                }
             }
         }
+        Ok(None)
     }
 
-    /// The raw bytes of property `name` on the node whose `phandle` is `phandle`. `Ok(None)` when
-    /// no node carries that phandle, or the node has no such property.
+    /// The raw bytes of property `name` on the node whose phandle (`phandle`, the specification's
+    /// name for a node's numeric handle, which other nodes use to refer to it) is `phandle`.
+    /// `Ok(None)` when no node carries that phandle, or the node has no such property.
     ///
     /// How a property that refers to another node is followed, such as `interrupt-parent` to the
     /// controller's `#interrupt-cells`. Both `phandle` and the legacy `linux,phandle` are honored,
-    /// because old dtc wrote the latter. As in [`node_prop_compatible`](Self::node_prop_compatible),
+    /// because old dtc wrote the latter. As in [`node_property_compatible`](Self::node_property_compatible),
     /// the answer is taken when the matching node closes.
-    pub fn phandle_prop(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
-        const MAXIMUM_DEPTH: usize = 16;
-        // Per open node: where `name`'s value sits, and whether its phandle matched.
-        let mut found = [None::<(usize, usize)>; MAXIMUM_DEPTH];
-        let mut matched = [false; MAXIMUM_DEPTH];
+    ///
+    /// Name: provisional. Refused `phandle_prop`, with no alias for it (milestone 1085 (what an
+    /// outside maintainer would fix before it leaves) D1).
+    pub fn phandle_property(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
+        // Per open node: `name`'s value, and whether its phandle matched.
+        let mut found = [None::<&'a [u8]>; DEPTH_SLOTS];
+        let mut matched = [false; DEPTH_SLOTS];
+        let mut tokens = self.tokens();
 
-        let mut depth = 0usize;
-        let mut at = self.off_struct;
-
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
-                    at += align4(nm.len() + 1);
-                    depth += 1;
-                    if depth < MAXIMUM_DEPTH {
-                        found[depth] = None;
-                        matched[depth] = false;
+                Token::BeginNode { .. } => {
+                    found[depth] = None;
+                    matched[depth] = false;
+                }
+                Token::EndNode => {
+                    // Depth 1 is the root, which no phandle names in practice.
+                    if depth >= 2 && matched[depth] {
+                        return Ok(found[depth]);
                     }
                 }
-
-                FDT_END_NODE => {
-                    // Depth 1 is the root, which no phandle names in practice; a node past
-                    // MAXIMUM_DEPTH was never tracked, so it cannot answer (node_reg's refusal).
-                    if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
-                        return match found[depth] {
-                            Some((value_at, len)) => self
-                                .bytes
-                                .get(value_at..value_at + len)
-                                .map(Some)
-                                .ok_or(Error::Truncated),
-                            None => Ok(None),
-                        };
+                Token::Property {
+                    name: property_name,
+                    value,
+                } => {
+                    if property_name == name {
+                        found[depth] = Some(value);
                     }
-                    depth = depth.saturating_sub(1);
-                }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    let pname = self.cstr(self.off_strings + name_off)?;
-                    if depth < MAXIMUM_DEPTH {
-                        if pname == name {
-                            found[depth] = Some((value_at, len));
-                        }
-                        if (pname == b"phandle" || pname == b"linux,phandle")
-                            && len == 4
-                            && be32(self.bytes, value_at)? == phandle
-                        {
-                            matched[depth] = true;
-                        }
+                    if (property_name == b"phandle" || property_name == b"linux,phandle")
+                        && value.len() == 4
+                        && be32(value, 0)? == phandle
+                    {
+                        matched[depth] = true;
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(None),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(None)
     }
 
     /// Property `name` on **every** node whose name starts with `prefix`, in tree order.
     ///
     /// For a node that repeats, such as each hart's `cpu@` on a heterogeneous RISC-V machine like
-    /// the JH7110 (milestone 60 (ISA discovery)). `out[i]` is `None` when the *i*th match has no
+    /// the JH7110, whose harts differ in their `riscv,isa`. `out[i]` is `None` when the *i*th match has no
     /// such property, which differs from there being no *i*th match. Returns the number of matching
     /// **nodes**, which may exceed `out.len()`; the excess is counted and not written, so a caller
-    /// can tell it under-provisioned. See notes/device-tree.md.
+    /// can tell it under-provisioned.
+    ///
+    /// Name: provisional. Refused `node_props`, with no alias for it (milestone 1085 (what an
+    /// outside maintainer would fix before it leaves) D1).
     ///
     /// # Examples
     ///
-    /// ```no_run
-    /// # fn f(dt: &device_tree_blob::DeviceTreeBlob<'_>) -> Result<(), device_tree_blob::Error> {
-    /// let mut isa = [None; 8];
-    /// let harts = dt.node_props(b"cpu@", b"riscv,isa", &mut isa)?;
-    /// assert!(harts <= isa.len(), "more harts than slots: widen the array");
-    /// # Ok(())
-    /// # }
+    /// QEMU's riscv64 `virt` machine, as the crate's test fixture holds it, has one hart:
+    ///
     /// ```
-    pub fn node_props(
+    /// use device_tree_blob::DeviceTreeBlob;
+    ///
+    /// let blob = include_bytes!(concat!(
+    ///     env!("CARGO_MANIFEST_DIR"),
+    ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
+    /// ));
+    /// let tree = DeviceTreeBlob::from_bytes(blob)?;
+    /// let mut isa = [None; 8];
+    /// let harts = tree.node_properties(b"cpu@", b"riscv,isa-base", &mut isa)?;
+    /// assert!(harts <= isa.len(), "more harts than slots: widen the array");
+    /// assert_eq!(isa[..harts], [Some(&b"rv64i\0"[..])]);
+    /// # Ok::<(), device_tree_blob::Error>(())
+    /// ```
+    pub fn node_properties(
         &self,
         prefix: &[u8],
         name: &[u8],
         out: &mut [Option<&'a [u8]>],
     ) -> Result<usize, Error> {
-        let mut depth = 0usize;
-        // The depth of the node currently being read, `None` when the walk is outside every match.
-        // Nested matches are impossible by construction: a node only becomes the target while there
-        // is no target, so a `cpu@0/cpu@1` (which no binding produces) reads as one node.
+        // The depth of the node being read, `None` outside every match. Nested matches are
+        // impossible by construction: a node becomes the target only while there is none, so a
+        // `cpu@0/cpu@1` (which no binding produces) reads as one node.
         let mut target_at: Option<usize> = None;
         let mut matched = 0usize;
-        let mut at = self.off_struct;
+        let mut tokens = self.tokens();
 
         for slot in out.iter_mut() {
             *slot = None;
         }
 
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let nm = self.cstr(at)?;
-                    at += align4(nm.len() + 1);
-                    depth += 1;
-                    if depth >= 2 && nm.starts_with(prefix) && target_at.is_none() {
+                Token::BeginNode { name: node_name } => {
+                    if depth >= 2 && target_at.is_none() && node_name.starts_with(prefix) {
                         target_at = Some(depth);
                         matched += 1;
                     }
                 }
-
-                FDT_END_NODE => {
+                Token::EndNode => {
                     if target_at == Some(depth) {
                         target_at = None;
                     }
-                    depth = depth.saturating_sub(1);
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
+                Token::Property {
+                    name: property_name,
+                    value,
+                } => {
                     if target_at == Some(depth)
-                        && self.cstr(self.off_strings + name_off)? == name
+                        && property_name == name
                         && let Some(slot) = out.get_mut(matched - 1)
                     {
-                        *slot = Some(
-                            self.bytes
-                                .get(value_at..value_at + len)
-                                .ok_or(Error::Truncated)?,
-                        );
+                        *slot = Some(value);
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(matched),
-                other => return Err(Error::BadToken(other)),
             }
         }
+        Ok(matched)
     }
 
-    /// The regions carved out by the `/reserved-memory` node's children.
+    /// The regions carved out by the root's `reserved-memory` node's children. A node of that name
+    /// anywhere deeper is not the reservation list and is not read.
     ///
     /// The other place firmware names memory the OS must not touch, beside the block
-    /// [`reserved_regions`](Self::reserved_regions) reads; on RISC-V, OpenSBI reserves its PMP-guarded
+    /// [`memory_reservations`](Self::memory_reservations) reads; on RISC-V, OpenSBI reserves its PMP-guarded
     /// region here, and missing it faults the first write into it. Each depth-3 child's `reg` is
     /// decoded with `/reserved-memory`'s own cell counts, which default to the root's.
     pub fn reserved_memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
-        let mut address_cells = 2u32;
-        let mut size_cells = 2u32;
+        let mut bus_address_cells = 2u32;
+        let mut bus_size_cells = 2u32;
+        // Whether the depth-2 node now open is `/reserved-memory`. A child of the root only, as
+        // `memory_regions` reads `/memory`: one nested under another node is not the reservation
+        // list, and its children would be decoded with the root's cell counts rather than their
+        // own parent's.
+        let mut in_reserved_memory = false;
+        let mut found = 0;
+        let mut tokens = self.tokens();
 
-        let mut depth = 0i32;
-        let mut resv_depth: Option<i32> = None;
-        let mut n = 0;
-        let mut at = self.off_struct;
-
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
-                    at += align4(name.len() + 1);
-                    depth += 1;
-
-                    if resv_depth.is_none() && name == b"reserved-memory" {
-                        resv_depth = Some(depth);
+                Token::BeginNode { name } => {
+                    if depth == 2 && name == b"reserved-memory" {
+                        in_reserved_memory = true;
                     }
                 }
-
-                FDT_END_NODE => {
-                    if resv_depth == Some(depth) {
+                Token::EndNode => {
+                    if depth == 2 && in_reserved_memory {
                         // Walked the whole /reserved-memory node; nothing more to find.
-                        return Ok(n);
-                    }
-                    depth -= 1;
-                }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    let name = self.cstr(self.off_strings + name_off)?;
-
-                    // The root's cell counts are the defaults for the reserved-memory children.
-                    if depth == 1 {
-                        match name {
-                            b"#address-cells" if len == 4 => {
-                                address_cells = be32(self.bytes, value_at)?;
-                            }
-                            b"#size-cells" if len == 4 => size_cells = be32(self.bytes, value_at)?,
-                            _ => {}
-                        }
-                    }
-
-                    if let Some(rd) = resv_depth {
-                        if depth == rd {
-                            // The reserved-memory node may declare its own cell counts for children.
-                            match name {
-                                b"#address-cells" if len == 4 => {
-                                    address_cells = be32(self.bytes, value_at)?;
-                                }
-                                b"#size-cells" if len == 4 => {
-                                    size_cells = be32(self.bytes, value_at)?;
-                                }
-                                _ => {}
-                            }
-                        } else if depth == rd + 1 && name == b"reg" {
-                            let dest = out.get_mut(n..).ok_or(Error::TooManyRegions)?;
-                            n += self.decode_reg(value_at, len, address_cells, size_cells, dest)?;
-                        }
+                        return Ok(found);
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(n),
-                other => return Err(Error::BadToken(other)),
+                Token::Property { name, value } => {
+                    // The root's cell counts are the defaults for the reserved-memory children,
+                    // and the node may declare its own.
+                    if depth == 1 || (depth == 2 && in_reserved_memory) {
+                        declare_cells(name, value, &mut bus_address_cells, &mut bus_size_cells);
+                    }
+                    if depth == 3 && in_reserved_memory && name == b"reg" {
+                        let remaining = out.get_mut(found..).ok_or(Error::TooManyRegions)?;
+                        found +=
+                            decode_regions(value, bus_address_cells, bus_size_cells, remaining)?;
+                    }
+                }
             }
         }
+        Ok(found)
     }
 
     /// The initial ramdisk, if the bootloader placed one.
     ///
     /// Declared in `/chosen` as `linux,initrd-start` and `linux,initrd-end`.
     ///
-    /// **This memory is ours to protect.** The bootloader loaded a file into RAM for us
-    /// and told us where it put it. If we don't reserve it, the frame allocator hands it
-    /// out to the first caller and the initial ramdisk is destroyed before we ever read a byte of
-    /// it. Milestone 10 (a shell at EL0) and milestone 32 (a real filesystem) both
-    /// want this, and by then the bug would be far away from its cause.
+    /// **This memory is the kernel's to protect.** The bootloader loaded a file into RAM for it
+    /// and said where it put it. A kernel that does not reserve it lets its frame allocator hand it
+    /// out to the first caller, and the initial ramdisk is destroyed before anything reads a byte of
+    /// it, a bug that shows up far from its cause.
     ///
-    /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round
-    /// 11). His words: "B for #1998." Refused `initrd` (the foreign spelling, which stops at the
+    /// Name: ratified 2026-10-12 (#1998). Refused `initrd` (the foreign spelling, which stops at the
     /// boundary where it arrives).
     pub fn initial_ramdisk(&self) -> Result<Option<Region>, Error> {
         let mut start: Option<u64> = None;
         let mut end: Option<u64> = None;
+        let mut in_chosen = false;
+        let mut tokens = self.tokens();
 
-        let mut depth = 0i32;
-        let mut chosen_at: Option<i32> = None;
-        let mut at = self.off_struct;
-
-        loop {
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
-                    at += align4(name.len() + 1);
-                    depth += 1;
-                    if depth == 2 && name == b"chosen" {
-                        chosen_at = Some(depth);
+                Token::BeginNode { name } => {
+                    if depth == 2 {
+                        in_chosen = name == b"chosen";
                     }
                 }
-
-                FDT_END_NODE => {
-                    if chosen_at == Some(depth) {
-                        chosen_at = None;
+                Token::EndNode => {
+                    if depth == 2 {
+                        in_chosen = false;
                     }
-                    depth -= 1;
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    if chosen_at == Some(depth) {
-                        match self.cstr(self.off_strings + name_off)? {
-                            b"linux,initrd-start" => start = Some(self.int(value_at, len)?),
-                            b"linux,initrd-end" => end = Some(self.int(value_at, len)?),
+                Token::Property { name, value } => {
+                    if depth == 2 && in_chosen {
+                        match name {
+                            b"linux,initrd-start" => start = Some(integer(value)?),
+                            b"linux,initrd-end" => end = Some(integer(value)?),
                             _ => {}
                         }
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => break,
-                other => return Err(Error::BadToken(other)),
             }
         }
 
         Ok(match (start, end) {
             // `linux,initrd-end` is exclusive, so an empty initial ramdisk (start == end) is a
             // "no".
-            (Some(s), Some(e)) if e > s => Some(Region {
-                start: s,
-                size: e - s,
+            (Some(start), Some(end)) if end > start => Some(Region {
+                start,
+                size: end - start,
             }),
             _ => None,
         })
@@ -1084,157 +970,323 @@ impl<'a> DeviceTreeBlob<'a> {
     /// **The kernel's command line**: `/chosen/bootargs`, without its terminating NUL, or
     /// `Ok(None)` when the tree has no `/chosen` or no such property.
     ///
-    /// QEMU writes it from `-append`, U-Boot from its `bootargs` variable, and `uefi_loader` from
-    /// its device-tree patch. It carries the loader's two digests
-    /// (`measured_boot::loader_digests`). Only the root's own `chosen` child counts, as for
+    /// QEMU writes it from `-append`, U-Boot from its `bootargs` variable, and a UEFI loader from
+    /// the device-tree patch it applies. Only the root's own `chosen` child counts, as for
     /// [`Self::initial_ramdisk`]. A value with no NUL is returned whole, since the property's
     /// length bounds it either way.
     ///
-    /// Name: provisional, minted 2026-11-01 (UTC) by
-    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader. Spelled out rather than
-    /// `bootargs`, the binding's spelling, for the reason the ramdisk's accessor refused `initrd`.
+    /// Name: provisional, minted 2026-11-01 (UTC). Spelled out rather than `bootargs`, the
+    /// binding's spelling, for the reason the ramdisk's accessor refused `initrd`.
     pub fn boot_arguments(&self) -> Result<Option<&'a [u8]>, Error> {
-        let mut depth = 0i32;
         let mut in_chosen = false;
-        let mut at = self.off_struct;
+        let mut tokens = self.tokens();
 
-        loop {
-            let before = at;
-            let token = be32(self.bytes, at)?;
-            at += 4;
-
+        while let Some((depth, token)) = tokens.step()? {
             match token {
-                FDT_BEGIN_NODE => {
-                    let name = self.cstr(at)?;
-                    at += align4(name.len() + 1);
-                    depth += 1;
+                Token::BeginNode { name } => {
                     if depth == 2 && name == b"chosen" {
                         in_chosen = true;
                     }
                 }
-
-                FDT_END_NODE => {
-                    if in_chosen && depth == 2 {
+                Token::EndNode => {
+                    if depth == 2 && in_chosen {
                         return Ok(None);
                     }
-                    depth -= 1;
                 }
-
-                FDT_PROP => {
-                    let len = be32(self.bytes, at)? as usize;
-                    let name_off = be32(self.bytes, at + 4)? as usize;
-                    let value_at = at + 8;
-                    at = value_at + align4(len);
-
-                    if in_chosen
-                        && depth == 2
-                        && self.cstr(self.off_strings + name_off)? == b"bootargs"
-                    {
-                        let value = self
-                            .bytes
-                            .get(value_at..value_at + len)
-                            .ok_or(Error::Truncated)?;
+                Token::Property { name, value } => {
+                    if depth == 2 && in_chosen && name == b"bootargs" {
                         let end = value.iter().position(|&b| b == 0).unwrap_or(value.len());
                         return Ok(Some(&value[..end]));
                     }
                 }
-
-                FDT_NOP => {}
-                FDT_END => return Ok(None),
-                other => return Err(Error::BadToken(other)),
             }
-            // Every token moves the cursor forward, which is what ends the loop on a tree with no
-            // `FDT_END`; a test build checks it, so a cursor that stalls fails rather than spins.
-            debug_assert!(at > before, "a device tree token did not advance the walk");
+        }
+        Ok(None)
+    }
+
+    /// A walk over the structure block's tokens, from its first.
+    fn tokens(&self) -> Tokens<'_, 'a> {
+        Tokens {
+            tree: self,
+            at: self.structure_offset,
+            depth: 0,
         }
     }
 
-    /// An integer property.
+    /// The header of the property whose `FDT_PROP` token ended just before `at`: its value's length,
+    /// the offset of its name in the strings block, where its value starts, and where the next
+    /// token starts (after the value's padding).
     ///
-    /// The device tree spec lets these be either 32 or 64 bits wide, and **the only way
-    /// to tell is the property's length**. QEMU writes `linux,initrd-start` as 8 bytes;
-    /// a 32-bit platform writes 4. Assume one and you silently misread the other.
-    fn int(&self, at: usize, len: usize) -> Result<u64, Error> {
-        match len {
-            4 => Ok(be32(self.bytes, at)? as u64),
-            8 => Ok(be64(self.bytes, at)?),
-            _ => Err(Error::Truncated),
+    /// Every sum is checked, because `len` and the name offset are `u32`s from the blob and a target
+    /// whose `usize` is 32 bits wide can overflow them. The value's whole extent must lie inside
+    /// the structure block, so a caller can slice `value_at..value_at + len` without a further check.
+    fn property_header(&self, at: usize) -> Result<PropertyHeader, Error> {
+        let len = be32(self.structure, at)? as usize;
+        let name_offset =
+            be32(self.structure, at.checked_add(4).ok_or(Error::Truncated)?)? as usize;
+        let value_at = at.checked_add(8).ok_or(Error::Truncated)?;
+        let value_end = value_at.checked_add(len).ok_or(Error::Truncated)?;
+        if value_end > self.structure.len() {
+            return Err(Error::Truncated);
         }
+        Ok(PropertyHeader {
+            length_bytes: len,
+            name_offset,
+            value_at,
+            next: skip_padded(value_at, len)?,
+        })
     }
 
-    /// Decode a `reg` property: a packed list of (address, size) pairs, where each
-    /// value is `cells` 32-bit big-endian words concatenated.
-    fn decode_reg(
-        &self,
-        at: usize,
-        len: usize,
-        address_cells: u32,
-        size_cells: u32,
-        out: &mut [Region],
-    ) -> Result<usize, Error> {
-        let pair_bytes = (address_cells as usize + size_cells as usize) * 4;
-        if pair_bytes == 0 {
-            return Ok(0);
-        }
-
-        let mut n = 0;
-        let mut cursor = at;
-
-        while cursor + pair_bytes <= at + len {
-            let start = self.cells(cursor, address_cells)?;
-            let size = self.cells(cursor + address_cells as usize * 4, size_cells)?;
-            cursor += pair_bytes;
-
-            // A zero-size region is legal and useless. Skip it rather than handing the
-            // allocator an empty range to reason about.
-            if size == 0 {
-                continue;
-            }
-
-            // A region that runs past the top of the address space is not a region. Refused rather
-            // than skipped, because a zero-size entry is a *legal* thing firmware writes and this is
-            // not: see `Error::RegionOverflow`.
-            if start.checked_add(size).is_none() {
-                return Err(Error::RegionOverflow);
-            }
-
-            *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
-            n += 1;
-        }
-
-        Ok(n)
+    /// A property's name: the string at `name_offset` in the strings block.
+    fn property_name(&self, name_offset: usize) -> Result<&'a [u8], Error> {
+        self.terminated_string(
+            self.strings_offset
+                .checked_add(name_offset)
+                .ok_or(Error::Truncated)?,
+        )
     }
 
-    /// Read `count` 32-bit big-endian cells and concatenate them into one u64.
-    fn cells(&self, at: usize, count: u32) -> Result<u64, Error> {
-        let mut value = 0u64;
-        for i in 0..count as usize {
-            value = (value << 32) | be32(self.bytes, at + i * 4)? as u64;
-        }
-        Ok(value)
+    /// A node's name: the string at `at` in the structure block, which must end inside it.
+    fn node_name(&self, at: usize) -> Result<&'a [u8], Error> {
+        let rest = self.structure.get(at..).ok_or(Error::Truncated)?;
+        let end = rest.iter().position(|&b| b == 0).ok_or(Error::BadValue)?;
+        Ok(&rest[..end])
     }
 
     /// A null-terminated string in the blob, returned without its terminator.
-    fn cstr(&self, at: usize) -> Result<&'a [u8], Error> {
+    fn terminated_string(&self, at: usize) -> Result<&'a [u8], Error> {
         let rest = self.bytes.get(at..).ok_or(Error::Truncated)?;
-        let end = rest.iter().position(|&b| b == 0).ok_or(Error::Truncated)?;
+        let end = rest.iter().position(|&b| b == 0).ok_or(Error::BadValue)?;
         Ok(&rest[..end])
     }
 }
 
-/// Everything in the structure block is padded to a 4-byte boundary.
-fn align4(n: usize) -> usize {
-    n.div_ceil(4) * 4
+/// One slot per depth a walk can reach, and one for depth 0 above the root, so a per-depth stack
+/// indexed by a depth [`Tokens`] hands out is never out of bounds.
+const DEPTH_SLOTS: usize = MAXIMUM_DEPTH + 1;
+
+/// One token of the structure block, as [`Tokens`] hands it out. `FDT_NOP` is skipped and
+/// `FDT_END` ends the walk, so neither appears.
+enum Token<'a> {
+    /// A node opens. Its depth is its own.
+    BeginNode { name: &'a [u8] },
+    /// The node open at this depth closes.
+    EndNode,
+    /// A property of the node open at this depth: its name from the strings block, and its value,
+    /// which lies inside the structure block.
+    Property { name: &'a [u8], value: &'a [u8] },
 }
 
-/// Machine-checked proofs of the device-tree parser's leaf readers (DECISIONS §14, milestone 18).
+/// The one walk over the structure block that every lookup uses.
 ///
-/// The device tree is untrusted boot input, and the whole-parse walk (a token loop over the
-/// structure block) is past what bounded model checking can do, the same wall the ELF parser hit
-/// (see notes/verification.md). So, as there, the leaves are proved: the big-endian readers every
-/// field goes through, and the padding helper. `be32`/`be64` were hardened with a checked add first,
-/// so they are now *total*; `align4` is proved correct for any realistic length (it can overflow
-/// only far above any device-tree size, and its callers pass node-name and property lengths).
+/// It carries the checks every lookup needs in one place: each token advances the cursor, the walk
+/// never leaves the structure block, the nesting balances, and it never goes deeper than
+/// [`MAXIMUM_DEPTH`]. So a depth it hands out is between 0 and `MAXIMUM_DEPTH`, and a node's depth
+/// is at least 1. libfdt's `fdt_next_tag` is the same shape.
+struct Tokens<'t, 'a> {
+    tree: &'t DeviceTreeBlob<'a>,
+    at: usize,
+    /// How many nodes are open.
+    depth: usize,
+}
+
+impl<'a> Tokens<'_, 'a> {
+    /// The next token, with the depth of the node it belongs to; `Ok(None)` at `FDT_END`.
+    fn step(&mut self) -> Result<Option<(usize, Token<'a>)>, Error> {
+        loop {
+            let token = be32(self.tree.structure, self.at)?;
+            // `be32` succeeded, so four bytes lay inside the block at `at`, and this cannot wrap.
+            self.at += 4;
+            match token {
+                FDT_BEGIN_NODE => {
+                    let name = self.tree.node_name(self.at)?;
+                    self.at = skip_name(self.at, name)?;
+                    if self.depth == MAXIMUM_DEPTH {
+                        return Err(Error::TooDeep);
+                    }
+                    self.depth += 1;
+                    return Ok(Some((self.depth, Token::BeginNode { name })));
+                }
+                FDT_END_NODE => {
+                    let depth = self.depth;
+                    self.depth = depth.checked_sub(1).ok_or(Error::BadStructure)?;
+                    return Ok(Some((depth, Token::EndNode)));
+                }
+                FDT_PROP => {
+                    let header = self.tree.property_header(self.at)?;
+                    self.at = header.next;
+                    let name = self.tree.property_name(header.name_offset)?;
+                    // `property_header` checked the value lies inside the structure block.
+                    let value = &self.tree.structure
+                        [header.value_at..header.value_at + header.length_bytes];
+                    return Ok(Some((self.depth, Token::Property { name, value })));
+                }
+                FDT_NOP => {}
+                FDT_END if self.depth == 0 => return Ok(None),
+                FDT_END => return Err(Error::BadStructure),
+                other => return Err(Error::BadToken(other)),
+            }
+        }
+    }
+}
+
+/// Record a `#address-cells` or `#size-cells` declaration into the counts the node declares for
+/// its children. A declaration that is not exactly one cell is ignored, so the inherited width
+/// stands: a shorter value read as a cell would take the padding and the next token as the count.
+fn declare_cells(name: &[u8], value: &[u8], bus_address_cells: &mut u32, bus_size_cells: &mut u32) {
+    let Ok(cell) = <[u8; 4]>::try_from(value) else {
+        return;
+    };
+    match name {
+        b"#address-cells" => *bus_address_cells = u32::from_be_bytes(cell),
+        b"#size-cells" => *bus_size_cells = u32::from_be_bytes(cell),
+        _ => {}
+    }
+}
+
+/// Whether a `compatible` value, a list of NUL-terminated strings, lists `entry`. The empty piece
+/// after the final NUL is not an entry, so an empty `entry` matches nothing.
+fn lists_entry(value: &[u8], entry: &[u8]) -> bool {
+    value
+        .split(|&b| b == 0)
+        .any(|piece| !piece.is_empty() && piece == entry)
+}
+
+/// An integer property.
+///
+/// The specification lets these be either 32 or 64 bits wide, and **the only way to tell is the
+/// property's length**. QEMU writes `linux,initrd-start` as 8 bytes; a 32-bit platform writes 4.
+/// Assume one and you silently misread the other.
+fn integer(value: &[u8]) -> Result<u64, Error> {
+    match value.len() {
+        4 => Ok(be32(value, 0)? as u64),
+        8 => be64(value, 0),
+        _ => Err(Error::BadValue),
+    }
+}
+
+/// Decode a `reg` property: a packed list of (address, size) pairs, where each value is `cells`
+/// 32-bit big-endian words concatenated.
+///
+/// A cell count above [`MAXIMUM_CELLS`], or a `value` that is not a whole number of pairs, is
+/// [`Error::BadValue`], as libfdt and Linux refuse both.
+fn decode_regions(
+    value: &[u8],
+    bus_address_cells: u32,
+    bus_size_cells: u32,
+    out: &mut [Region],
+) -> Result<usize, Error> {
+    if bus_address_cells > MAXIMUM_CELLS || bus_size_cells > MAXIMUM_CELLS {
+        return Err(Error::BadValue);
+    }
+    // At most four cells each, so neither product nor the sum can overflow.
+    let start_bytes = bus_address_cells as usize * 4;
+    let pair_bytes = start_bytes + bus_size_cells as usize * 4;
+    if pair_bytes == 0 {
+        return Ok(0);
+    }
+    if !value.len().is_multiple_of(pair_bytes) {
+        return Err(Error::BadValue);
+    }
+
+    let mut n = 0;
+    for pair in value.chunks_exact(pair_bytes) {
+        let (start, size) = pair.split_at(start_bytes);
+        let start = cells(start)?;
+        let size = cells(size)?;
+
+        // A zero-size region is legal and useless. Skip it rather than handing the allocator an
+        // empty range to reason about.
+        if size == 0 {
+            continue;
+        }
+
+        // A region that runs past the top of the address space is not a region. Refused rather
+        // than skipped, because a zero-size entry is a *legal* thing firmware writes and this is
+        // not: see `Error::RegionOverflow`.
+        if start.checked_add(size).is_none() {
+            return Err(Error::RegionOverflow);
+        }
+
+        *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
+        n += 1;
+    }
+
+    Ok(n)
+}
+
+/// Concatenate 32-bit big-endian cells into one u64. A nonzero cell above the low two is a value
+/// wider than 64 bits, which a [`Region`] cannot hold, so it is [`Error::BadValue`] rather than
+/// truncated to its low 64 bits as Linux's `of_read_number` does.
+fn cells(value: &[u8]) -> Result<u64, Error> {
+    let mut number = 0u64;
+    let (whole, _) = value.as_chunks::<4>();
+    for cell in whole {
+        if number >> 32 != 0 {
+            return Err(Error::BadValue);
+        }
+        // An add, not an or: the shift leaves the low 32 bits zero, so the two agree, and an add
+        // has no twin (`^` reads the same as `|` here) for a mutation run to report as alive.
+        number = (number << 32) + u64::from(u32::from_be_bytes(*cell));
+    }
+    Ok(number)
+}
+
+/// A property header, as [`DeviceTreeBlob::property_header`] reads it.
+struct PropertyHeader {
+    length_bytes: usize,
+    name_offset: usize,
+    value_at: usize,
+    next: usize,
+}
+
+/// Everything in the structure block is padded to a 4-byte boundary. `None` for a length so close
+/// to `usize::MAX` that rounding up wraps, which only a 32-bit target's `u32` length can reach.
+fn align4(n: usize) -> Option<usize> {
+    n.checked_add(3).map(|up| up & !3)
+}
+
+/// Where the token after `n` bytes of padded data at `at` starts, or `Truncated` when the sum wraps.
+fn skip_padded(at: usize, n: usize) -> Result<usize, Error> {
+    align4(n)
+        .and_then(|padded| at.checked_add(padded))
+        .ok_or(Error::Truncated)
+}
+
+/// Where the token after a node's name starts: the name, its NUL, and the padding to four bytes.
+fn skip_name(at: usize, name: &[u8]) -> Result<usize, Error> {
+    skip_padded(at, name.len().checked_add(1).ok_or(Error::Truncated)?)
+}
+
+/// The cursor arithmetic, on the values a 32-bit target's `usize` would overflow, which a 64-bit
+/// host cannot reach through a blob (a blob's lengths are `u32`).
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_cursor_step_that_would_wrap_is_refused_and_a_normal_one_is_not() {
+        assert_eq!(skip_padded(8, 5), Ok(16));
+        assert_eq!(skip_padded(0, 0), Ok(0));
+        assert_eq!(skip_padded(usize::MAX - 2, 4), Err(Error::Truncated));
+        assert_eq!(skip_padded(0, usize::MAX - 2), Err(Error::Truncated));
+        assert_eq!(skip_padded(0, usize::MAX), Err(Error::Truncated));
+        assert_eq!(align4(usize::MAX - 3), Some(usize::MAX - 3));
+        assert_eq!(align4(usize::MAX - 2), None);
+        assert_eq!(skip_name(4, b"abc"), Ok(8));
+    }
+}
+
+/// Machine-checked proofs, with Kani, of the device-tree parser's readers.
+///
+/// The device tree is untrusted boot input. The leaves are proved for every input: the big-endian
+/// readers every field goes through, the padding helper, `cells` and `decode_regions`. `align4` is
+/// proved for every `usize`, and overflows only within 3 of `usize::MAX`, where no caller reaches:
+/// every length it is given comes from a blob, which is at most `MAXIMUM_TOTALSIZE_BYTES` through
+/// `from_ptr` and at most `u32::MAX` bytes of header-declared length otherwise. Above the leaves,
+/// `from_bytes` and one step of the token walk are proved total over blobs of a bounded size,
+/// which is as far as bounded model checking reaches over a structure of real size; the fuzz target
+/// `device_tree_blob_walk` covers the whole walk from the other side.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -1279,17 +1331,120 @@ mod verification {
         }
     }
 
-    /// **`align4` rounds up to a multiple of four.** For any realistic length, `align4(n)` is a
-    /// multiple of 4, at least `n`, and less than `n + 4`. The bound is far above any device-tree
-    /// field length and only rules out the overflow point of the internal `* 4`.
+    /// **`align4` rounds up to a multiple of four.** For any length, `align4(n)` is either `None`
+    /// (only when rounding up would wrap) or a multiple of 4 that is at least `n` and less than
+    /// `n + 4`.
     /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.align4_rounds_up_to_a_multiple_of_four.patch`
     #[kani::proof]
     fn align4_rounds_up_to_a_multiple_of_four() {
         let n: usize = kani::any();
-        kani::assume(n <= 1 << 60);
-        let a = align4(n);
-        assert!(a.is_multiple_of(4));
-        assert!(a >= n);
-        assert!(a < n + 4);
+        match align4(n) {
+            Some(a) => {
+                assert!(a.is_multiple_of(4));
+                assert!(a >= n);
+                assert!(a - n < 4);
+            }
+            None => assert!(n > usize::MAX - 3),
+        }
+    }
+
+    /// **Stepping over padded data is total.** For any position and length, `skip_padded` returns
+    /// a position at least as far along or refuses; it never panics or wraps.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.skip_padded_never_wraps.patch`
+    #[kani::proof]
+    fn skip_padded_never_wraps() {
+        let at: usize = kani::any();
+        let n: usize = kani::any();
+        if let Ok(next) = skip_padded(at, n) {
+            assert!(next >= at);
+            assert!(next - at >= n);
+        }
+    }
+
+    /// **`cells` refuses a value wider than 64 bits.** For any value of up to five cells, an `Ok`
+    /// means every cell above the low two is zero and the answer is the low two, most significant
+    /// first; a nonzero cell above them is refused rather than shifted out.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.cells_refuses_a_value_wider_than_64_bits.patch`
+    #[kani::proof]
+    #[kani::unwind(14)]
+    fn cells_refuses_a_value_wider_than_64_bits() {
+        let bytes: [u8; 20] = kani::any();
+        let count: usize = kani::any();
+        kani::assume(count <= 5);
+        let value = &bytes[..count * 4];
+        let low = count.saturating_sub(2) * 4;
+        match cells(value) {
+            Ok(number) => {
+                assert!(value[..low].iter().all(|&byte| byte == 0));
+                let mut expected = 0u64;
+                for &byte in &value[low..] {
+                    expected = (expected << 8) | byte as u64;
+                }
+                assert_eq!(number, expected);
+            }
+            Err(error) => {
+                assert_eq!(error, Error::BadValue);
+                assert!(value[..low].iter().any(|&byte| byte != 0));
+            }
+        }
+    }
+
+    /// **`decode_regions` never panics and never writes past `out`.** For any `reg` value of up to
+    /// 24 bytes, any cell counts and a two-slot `out`, it returns a count no larger than `out`, or
+    /// refuses.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.decode_regions_stays_inside_its_output.patch`
+    #[kani::proof]
+    #[kani::unwind(8)]
+    fn decode_regions_stays_inside_its_output() {
+        let bytes: [u8; 24] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= bytes.len());
+        let mut out = [Region { start: 0, size: 0 }; 2];
+        if let Ok(found) = decode_regions(&bytes[..length], kani::any(), kani::any(), &mut out) {
+            assert!(found <= out.len());
+        }
+    }
+
+    /// **`from_bytes` is total.** For any buffer of up to 48 bytes (a header and a little more), it
+    /// returns a tree or an error and never panics, and a tree it returns lies inside the buffer.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.from_bytes_is_total.patch`
+    #[kani::proof]
+    fn from_bytes_is_total() {
+        let bytes: [u8; 48] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= bytes.len());
+        if let Ok(tree) = DeviceTreeBlob::from_bytes(&bytes[..length]) {
+            assert!(tree.total_size() <= length);
+            assert!(tree.structure.len() <= tree.total_size());
+        }
+    }
+
+    /// **One step of the token walk is total, moves forward, and keeps the depth in bounds.** Over
+    /// any 56-byte blob `from_bytes` accepts whose structure and strings blocks start after the
+    /// header, three steps each return a token, the end or an error without panicking; each token
+    /// moves the cursor forward, so no walk can stall, and the depth never passes `MAXIMUM_DEPTH`.
+    /// Starting both blocks after the header bounds every name scan at 16 bytes, which is what
+    /// keeps the unwinding small; the bytes of the blocks themselves are unconstrained.
+    /// Falsification: replayable `crates/device_tree_blob/falsifications/verification.a_token_step_is_total_and_moves_forward.patch`
+    #[kani::proof]
+    #[kani::unwind(17)]
+    fn a_token_step_is_total_and_moves_forward() {
+        let bytes: [u8; 56] = kani::any();
+        let Ok(tree) = DeviceTreeBlob::from_bytes(&bytes) else {
+            return;
+        };
+        kani::assume(tree.structure_offset == HEADER_BYTES && tree.strings_offset >= HEADER_BYTES);
+        let mut tokens = tree.tokens();
+        for _ in 0..3 {
+            let before = tokens.at;
+            match tokens.step() {
+                Ok(Some((depth, _))) => {
+                    assert!(tokens.at > before);
+                    assert!(depth <= MAXIMUM_DEPTH);
+                    assert!(tokens.depth <= MAXIMUM_DEPTH);
+                }
+                Ok(None) | Err(_) => return,
+            }
+        }
     }
 }

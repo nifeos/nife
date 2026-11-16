@@ -49,7 +49,7 @@ Where is the file whose `BUGS` section holds the entry (a roadmap number means t
 
 - [Kernel, ABI and component plumbing (part 1 of 2)](kernel-abi-and-component-plumbing-1.md): 68 rows.
 - [Kernel, ABI and component plumbing (part 2 of 2)](kernel-abi-and-component-plumbing-2.md): 15 rows.
-- [Drivers, boot and install (part 1 of 2)](drivers-boot-and-install-1.md): 71 rows.
+- [Drivers, boot and install (part 1 of 2)](drivers-boot-and-install-1.md): 70 rows.
 - [Drivers, boot and install (part 2 of 2)](drivers-boot-and-install-2.md): 3 rows.
 - [Network stack](network-stack.md): 18 rows.
 - [Filesystem and storage](filesystem-and-storage.md): 28 rows.

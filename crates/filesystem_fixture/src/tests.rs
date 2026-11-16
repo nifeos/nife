@@ -472,10 +472,10 @@ fn the_subtree_fixture_is_grantable_and_unambiguous() {
 /// **A verdict word cannot be mistaken for a line of text**, which every witness in this fixture
 /// rests on: a receiver reads "the first message is the verdict" as "this run printed nothing".
 ///
-/// **`rm` no longer rides this word** (2026-08-17). It declares the sink contract, so it ends its
-/// stream with the byte-sink contract's `eof()` and its status and count ride in the two words that message
-/// leaves free; the same property is pinned over there by `eof_is_not_a_byte_count`. What is
-/// checked here is the word the attackers and the shell witnesses still use.
+/// `rm` does not use this word. It declares the sink contract, so it ends its report with the
+/// byte-sink contract's `(eof(), 0, 0)`, pinned over there by `eof_is_not_a_byte_count`, and sends
+/// its status and count after that on an endpoint of its own (`filesystem_contract::rm`). What is
+/// checked here is the word the attackers and the shell witnesses use.
 #[test]
 fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
     // A frame's first word is a byte count into the two payload words, so 16 is its ceiling.

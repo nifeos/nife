@@ -84,14 +84,14 @@ const _: () = assert!(
 );
 
 /// **Where a child that declares `machine` finds the page**, read-only. A pair page on the
-/// address-space map (`address_space_map::pair_page`): the progenitor and the one child it builds
+/// address-space map (`address_space_layout::pair_page`): the progenitor and the one child it builds
 /// agree on it, the way they agree on the clock page's address.
 ///
 /// Under the map it costs what any pair page does, which `system_initializer`'s
 /// `JOB_REGION_PAGES` counts. Why this address is in notes/machine-statistics.md.
 ///
 /// Ratified 2026-09-27 (calef, #1360's table).
-pub const PAGE_VA: u64 = address_space_map::pair_page(0x005F_F000);
+pub const PAGE_VA: u64 = address_space_layout::pair_page(0x005F_F000);
 
 /// **Word indices into the page.** A per-core word is `cpu(id) + OFFSET`.
 pub mod word {

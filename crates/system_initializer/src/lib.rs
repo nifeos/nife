@@ -25,6 +25,7 @@
 //! - Native slot 1 is the source or the `--mem` budget, safe only while no manifest has both.
 //! - No boot shows a base digest refusal's UART line: the kernel halts first; host tests cover it.
 //! - `refusal_console` copies `console`'s polled transmit per architecture rather than sharing it.
+//! - A grant the resolver refuses fails the spawn without saying why: nothing writes a line here.
 //!
 //! Name: ratified 2026-08-04 (calef). `BootEndowment` ratified the same day.
 
@@ -56,27 +57,27 @@ use client_windows::*;
 pub use endowment::{BootEndowment, MountedTreeGrant};
 use fault::*;
 use filesystem_contract::{dir, fs as fs_operation};
-use grant_plan::job_windows::{ReapsDue, Windows};
-use grant_plan::{Program, spawnproto};
 use image_request::*;
 use layout::*;
 pub use layout::{
     CHILD_STACK_PAGES, GRANT_MACHINE_PAGE, IMAGE_POOL_PAGES, JOBS_BUDGET_PAGES,
     PROGENITOR_RESERVED_PAGES, SHELL_STACK_PAGES,
 };
-use line_editor::proto;
 use measurement::*;
 use process_builder::{
     build_child, forget_thread_control_block, hand_to_requester, retype_into_kernel_object_from,
     retype_into_page_frame_from as retype_page_frame, start_child,
 };
+use program_table::job_windows::{ReapsDue, Windows};
+use program_table::{Program, spawnproto};
 use self_test::*;
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};
 // The tree's only loader, named here rather than qualified at every call.
 use supervision_contract::{ChildEndowment, Retention};
+use terminal_contract as proto;
 use user_mode_runtime::{
-    address_space_map_into, call, capability_delete, is_granted, map_page_frame, receive,
-    receive_badged, receive_capability_badged, retype_into_kernel_object, retype_into_page_frame,
-    send, send_capability, slice_page_frame,
+    Message, address_space_layout_into, call, capability_delete, is_granted, map_page_frame,
+    receive, receive_capability_message, receive_message, retype_into_kernel_object,
+    retype_into_page_frame, send, send_capability, slice_page_frame,
 };

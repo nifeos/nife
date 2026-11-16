@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 820, 1060
 decision_dependencies: 154
@@ -111,7 +111,7 @@ maintainer decides it.
    Evidence: `crates/usb/src/descriptor.rs` lines 20 to 27, 63, 76, 111, 124, 159, 195, 234, 238,
    260; `crates/usb/src/boot_keyboard.rs` lines 34 and 38; `crates/usb/src/request.rs` lines 38
    and 124.
-   Change: the public renames are Decision 1. The private ones belong to the maintainer. Rename
+   Change: the public renames are Decision 1's table, decided provisionally. Rename
    locals `config` to `configuration` and `max_packet` to `maximum_packet_bytes`. Rename the test
    `the_class_requests_address_the_interface` to `the_class_requests_are_sent_to_the_interface`
    (the gate reads a leading `address` as a verb). Rename the binding `address` in the walk to
@@ -119,7 +119,7 @@ maintainer decides it.
    caller changes with the public names: `usb_keyboard_driver.rs` reads `keyboard.max_packet`,
    `descriptor::DEVICE_LEN`, `descriptor::CONFIGURATION_LEN`, `REPORT_LEN` and
    `control_max_packet`.
-   Door: public names are one-way (Decision 1); private names are two-way. Effort: M, counting the
+   Door: two-way before the first release. Effort: M, counting the
    caller.
 
 ### P2: later
@@ -132,7 +132,9 @@ The P1 items are in [the appendix](1111-usb-outside-review/before-the-tag.md).
 
 ## Decisions for the architect
 
-Only one-way doors. The maintainer rules everything else above as provisional.
+Three decisions, each decided provisionally below. The maintainer rules everything else above as
+provisional. The ruling on the published crate name `universal_serial_bus` stands, and nothing here
+reopens it.
 
 ### Decision 1. The public names the template's gates refuse
 
@@ -165,6 +167,14 @@ byte this crate calls `address`. Concrete example: after the change the driver r
 `keyboard.maximum_packet_bytes` where it reads `keyboard.max_packet`, and the sentence in
 `context::endpoint(...)`'s call site needs no comment to say what unit it passes.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. These are names in an unreleased crate, and `usb`
+itself is not the name it publishes under. The table above is the rule, every row as recommended,
+including `parse(bytes)`. The specification's spellings stay as aliases (`bMaxPacketSize0`,
+`wTotalLength`, `wLength`, `ErrorRollOver`, `bcdUSB`). No old spelling of this tree stays as an
+alias. The premises hold at `crates/usb/src/descriptor.rs` lines 20 to 27, 76, 111, 159 and 195,
+and `boot_keyboard.rs` line 34. Item 3 is the work. Ratifying the names stays the architect's.
+
 ### Decision 2. What `changes` emits: Linux key codes or HID usages
 
 Background. `changes(before, after, event)` calls `event(code, pressed)` with `code` an evdev
@@ -192,6 +202,16 @@ evdev by definition, which does not hold for a crate. Concrete example: left shi
 report, today `[(42, true), (35, true)]`, would be `[(0xe1, true), (0x0b, true)]`, and the driver's
 closure maps each through `evdev_code`.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. The door is not one-way, as the background above
+reads it. Before the first release the only caller is in nife, and the codes cross no wire: the
+driver feeds them into its own keymap (`components/src/usb_keyboard_driver.rs`, `keys.event(EV_KEY,
+code, ...)` near line 906). `changes` (`boot_keyboard.rs` line 245) emits HID usages, modifiers as
+0xe0 to 0xe7, in the same order and under the same bound. The driver maps each usage through
+`evdev_code` (line 121), and `MODIFIER_CODES` (line 43) leaves the public surface. It also follows
+the rule that the usage table follows the HID Usage Tables. The block chose the evdev form only
+for effort.
+
 ### Decision 3. One result type for the three parsers, and a speed for the control packet size
 
 Background. `ConfigurationHeader::parse` answers `Result<_, Refusal>`; `DeviceDescriptor::parse`
@@ -216,23 +236,49 @@ Concrete example: a device descriptor whose `bDescriptorType` is 2 answers
 `Err(Refusal::NotThatDescriptor)` and the driver's bring-up report says so instead of "bad device
 descriptor, 18 bytes".
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
+release, which the architect may revisit. `DeviceDescriptor::parse` (`descriptor.rs` line 88)
+returns `Result<DeviceDescriptor, Refusal>`, and `BootReport::parse` keeps `Option`. The four-way
+`Speed` replaces `superspeed: bool` (line 111). Item 11 is the work.
+
+## Follow-on
+
+- **Done.** Items 8, 9 and 12: a type-4 or type-5 descriptor shorter than its layout is
+  `Malformed { at }` (`a_short_interface_or_endpoint_is_malformed_and_two_bytes_is_enough`), a
+  usage duplicated in the earlier report releases once (`a_duplicated_usage_releases_once`), and
+  `endpoint` carries only its number and direction (`the_endpoint_carries_only_its_number_and_direction`).
+- **Done.** Item 7: `a_boot_interface_without_an_endpoint_is_refused_by_number` covers the
+  `without_endpoint` path. `two_interfaces_are_walked_as_two` fixes a 41-byte shape of two
+  interfaces and reaches all three paths that need a second one (14 s under Kani), and
+  `two_reports_produce_their_events_in_order` proves the event order and that each event names a
+  key that changed (238 s). Each has a falsification patch, and `lib.rs` names the bounds and the
+  two things outside them.
+- **Done.** Item 13 in the crate: the walk's start, the report's tail and `get_descriptor`'s
+  `index`. The README sentences are item 4's.
+- **Done.** Item 3, by Decision 1's table: every public and private name the gates refused, and
+  the caller, with item 14's private locals. The template's naming helpers refuse 0 of 239 names.
+- **Done.** Item 11: `control_maximum_packet_bytes` takes a `Speed` and accepts 8 at low speed, 64
+  at high speed, 8, 16, 32 or 64 at full speed and the exponent 9 at SuperSpeed, and its
+  documentation states what Linux's hub driver does instead. The driver maps the xHCI port speed
+  to it.
+- **Done.** Item 6: the table runs through 0x8b, each row from the Usage Tables and
+  `input-event-codes.h`; the Linux cross-check agrees on 140 of 144 rows and names the four
+  choices.
+- **Done.** Item 5: [the review package](../../notes/crate-reviews/universal-serial-bus.md) and
+  its index row.
+- **Outstanding.** Items 1, 2, 4 and 10 are the move lane's (manifest, name, scaffold files, fuzz
+  crate), as are the 13 prose acronym findings the package lists.
+- **Outstanding.** The work of Decision 2 (`changes` emits HID usages) and of Decision 3's other
+  half (`DeviceDescriptor::parse` answers `Result`).
+
 ## Done when
 
 The checks are in [the appendix](1111-usb-outside-review/done-when.md).
 
 ## BUGS
 
-- The three falsification patches apply but were not replayed under Kani here; the walk harness
-  alone takes three minutes, and the template's `proofs / falsify` job will replay them.
-- The usage names and `KEY_*` matches in item 6 are from memory. The lane that builds it reads them
-  from the HID Usage Tables 1.5 and `input-event-codes.h`, as the earlier rows came from them. This
-  block's list is a worklist, not a source.
 - Nobody has verified the claim that let chains set the minimum Rust version at 1.88. The `msrv`
   job decides the value.
-- Linux's treatment of an out-of-range `bMaxPacketSize0` at low and high speed (item 11) was not
-  checked.
-- The cost of a shaped two-interface harness (item 7) is a guess; the existing walk harness takes
-  177 seconds at 25 bytes, and the lane measures before it commits a bound.
 - No mutation census ran; the record cited is the repository's own, from before this review.
 
 ## Index row
@@ -242,5 +288,6 @@ block the move: a manifest that cannot stand alone, a crate that contradicts its
 lacks its promised alias, and thirty names the template's gates refuse. Seven land before the tag.
 They are the scaffold files, a review package the crate never had, and a usage table that stops
 short of every non-US keyboard. They also cover the two-interface paths no proof or test reaches, a
-lenient short-descriptor rule, a doubled release, and the missing fuzz target. Four wait for later. Three one-way doors go to the architect: the public rename table, whether `changes` speaks evdev or HID, and one result type for
-the parsers with a speed for the control packet size.
+lenient short-descriptor rule, a doubled release, and the missing fuzz target. Four wait for later. The maintainer has decided three decisions, provisionally: the public rename table, that
+`changes` speaks HID usages, and one result type for the parsers with a speed for the control
+packet size.

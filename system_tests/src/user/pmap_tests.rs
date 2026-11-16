@@ -118,9 +118,9 @@ fn a_viewer_sees_every_mapping_and_can_touch_none_of_it() {
     let builder = hold_builder(name);
     let viewer = hold_viewer(name);
 
-    const CODE_VA: u64 = address_space_map::pair_page(0x0040_0000);
-    const RW_VA: u64 = address_space_map::pair_page(0x0050_0000);
-    const RO_VA: u64 = address_space_map::pair_page(0x0060_0000);
+    const CODE_VA: u64 = address_space_layout::pair_page(0x0040_0000);
+    const RW_VA: u64 = address_space_layout::pair_page(0x0050_0000);
+    const RO_VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
     let (code_frame, code_region) = page_frame(Rights::READ);
     assert_eq!(

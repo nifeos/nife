@@ -35,7 +35,7 @@ fn forged_elf_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; 136] {
     out[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
     // This build's own machine, so the forgery gets past the machine check and reaches the
     // property under test rather than being refused for being foreign.
-    out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+    out[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
     out[24..32].copy_from_slice(&vaddr.to_le_bytes()); // e_entry
     out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // e_phoff
     out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes());
@@ -54,14 +54,14 @@ fn forged_elf_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; 136] {
 /// An ELF that names the base of the kernel's half as its load address is refused.
 ///
 /// The refusal is by construction: the user `Mapper` is built with `Half::Low` and cannot express a
-/// high address (`paging`'s `WrongHalf` guard, there since a host test found bits 63:48 are not
+/// high address (`page_tables`'s `WrongHalf` guard, there since a host test found bits 63:48 are not
 /// translated). `KERNEL_VA_BASE` rather than a constant makes it one attack on both ISAs: aarch64's
 /// half starts at `0xffff_0000_0000_0000`, RISC-V Sv39's at `0xffff_ffc0_0000_0000`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.elf_loader_tests.an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused.patch`
 #[test_case]
 fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
-    let image = forged_elf(mmu::KERNEL_VA_BASE, elf::PF_R | elf::PF_X);
+    let image = forged_elf(mmu::KERNEL_VA_BASE, static_elf::PF_R | static_elf::PF_X);
 
     assert_eq!(
         load(&image, 0, &[]).err(),
@@ -72,20 +72,22 @@ fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
 
 /// And a binary asking for a page that is both writable and executable.
 ///
-/// Caught in `crates/elf`, on the host, in microseconds. But assert it end-to-end too: the
+/// Caught in `crates/static_elf`, on the host, in microseconds. But assert it end-to-end too: the
 /// value of the host test is that it is fast, not that it is the only line of defence.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.elf_loader_tests.an_elf_that_asks_for_a_writable_executable_page_is_refused.patch`
 #[test_case]
 fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
     let image = forged_elf(
-        address_space_map::IMAGE_BASE,
-        elf::PF_R | elf::PF_W | elf::PF_X,
+        address_space_layout::IMAGE_BASE,
+        static_elf::PF_R | static_elf::PF_W | static_elf::PF_X,
     );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
-        Some(LoadError::NotLoadable(elf::Error::WritableAndExecutable)),
+        Some(LoadError::NotLoadable(
+            static_elf::Error::WritableAndExecutable
+        )),
     );
 }
 
@@ -99,9 +101,13 @@ fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
 /// half a gigabyte, so reaching `AddressSpace::new` would have reported running out of memory.
 #[test_case]
 fn an_image_too_large_for_its_band_is_refused_as_too_large() {
-    use address_space_map::{IMAGE, IMAGE_BASE, ImagePlacement, PAGE, STACK};
+    use address_space_layout::{IMAGE, IMAGE_BASE, ImagePlacement, PAGE, STACK};
 
-    let image = forged_elf_sized(IMAGE_BASE, elf::PF_R | elf::PF_X, IMAGE.bytes() + PAGE);
+    let image = forged_elf_sized(
+        IMAGE_BASE,
+        static_elf::PF_R | static_elf::PF_X,
+        IMAGE.bytes() + PAGE,
+    );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
@@ -116,12 +122,12 @@ fn an_image_too_large_for_its_band_is_refused_as_too_large() {
 /// would collide with at some later, unrelated address.
 #[test_case]
 fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
-    let image = forged_elf(0x40_0000, elf::PF_R | elf::PF_X);
+    let image = forged_elf(0x40_0000, static_elf::PF_R | static_elf::PF_X);
 
     assert_eq!(
         load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
-            address_space_map::ImagePlacement::OutsideBand {
+            address_space_layout::ImagePlacement::OutsideBand {
                 image_start: 0x40_0000,
                 image_end: 0x40_1000,
             }
@@ -133,10 +139,10 @@ fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
 /// into the stack, loads, and its last page is mapped where the image band says.
 #[test_case]
 fn an_image_past_the_old_ceiling_loads() {
-    use address_space_map::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE;
     const BYTES: u64 = 2 << 20;
 
-    let image = forged_elf_sized(IMAGE_BASE, elf::PF_R | elf::PF_X, BYTES);
+    let image = forged_elf_sized(IMAGE_BASE, static_elf::PF_R | static_elf::PF_X, BYTES);
     let (space, entry) = load(&image, 0, &[]).expect("a 2 MiB image did not load");
     assert_eq!(entry, IMAGE_BASE);
 
@@ -165,11 +171,12 @@ fn a_bad_binary_is_refused_rather_than_panicking() {
 #[test_case]
 fn the_initial_ramdisk_holds_a_native_executable() {
     let image = loader_subject_image();
-    let e = elf::Elf::parse(image).expect("the initial ramdisk is not a loadable native ELF");
+    let e =
+        static_elf::Elf::parse(image).expect("the initial ramdisk is not a loadable native ELF");
 
     assert_eq!(
         e.entry(),
-        address_space_map::IMAGE_BASE,
+        address_space_layout::IMAGE_BASE,
         "linked somewhere unexpected"
     );
 
@@ -229,7 +236,7 @@ fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
 /// test fail.
 #[test_case]
 fn the_loader_writes_the_startup_page_read_only() {
-    use address_space_map::IMAGE_BASE;
+    use address_space_layout::IMAGE_BASE;
     use startup_page_contract::{PAGE_VIRTUAL_ADDRESS, StartupPage, Window, WindowKind};
 
     let doorbell = Window {
@@ -237,7 +244,7 @@ fn the_loader_writes_the_startup_page_read_only() {
         virtual_address: 0x9c_0000,
         pages: 1,
     };
-    let image = forged_elf(IMAGE_BASE, elf::PF_R | elf::PF_X);
+    let image = forged_elf(IMAGE_BASE, static_elf::PF_R | static_elf::PF_X);
     let (space, _) = load(&image, 0, &[doorbell]).expect("a one-window spawn did not load");
     let (writable, listed, count) = space.while_installed(|| {
         let (phys, flags) =

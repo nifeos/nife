@@ -27,7 +27,7 @@
 #![no_main]
 
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, cycle_reading, destroy_memory_region, exit,
+    address_space_layout_into, capability_delete, cycle_reading, destroy_memory_region, exit,
     map_page_frame, now, receive, retype_into_kernel_object, retype_into_page_frame, send,
     split_memory_region, thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start, yield_now,
@@ -174,9 +174,9 @@ const CHILD_PAGES: u64 = 10; // the child's address space root + tables + one st
 // and top stack page (milestone 206 (a program image has under 896 KiB)). That keeps the page tables this benchmark pays for the shape
 // every real spawn pays for: one table for the code, one shared by the stack and the current-CPU
 // page, the same count as when both lived at `0x40_0000` and `0x50_0000`.
-const CHILD_CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const CHILD_STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
-const SPAWN_SCRATCH_VA: u64 = address_space_map::pair_page(0x0100_0000); // where we map the shared code frame to write the stub
+const CHILD_CODE_VA: u64 = address_space_layout::IMAGE_BASE;
+const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const SPAWN_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0100_0000); // where we map the shared code frame to write the stub
 const SPAWN_PAGE: u64 = 4096;
 
 /// **Spawn latency, measured from EL0 (the primitive suite).** lmbench's `lat_proc`: the cost to
@@ -230,14 +230,14 @@ fn spawn_one(code_frame: u64) {
     let child_ut = split_memory_region(SP_UNTYPED, CHILD_PAGES) as u64;
     let aspace = retype_into_kernel_object(child_ut, abi::object_type::ADDRESS_SPACE) as u64;
     // Alias the shared code frame as the child's code; a stack from the child's own region.
-    address_space_map_into(
+    address_space_layout_into(
         aspace,
         CHILD_CODE_VA,
         code_frame,
         abi::address_space::MAP_CODE,
     );
     let stack = retype_into_page_frame(child_ut) as u64;
-    address_space_map_into(
+    address_space_layout_into(
         aspace,
         CHILD_STACK_VA,
         stack,

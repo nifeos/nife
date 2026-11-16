@@ -12,7 +12,7 @@ rolls back packages itself, fetched by name. What is missing is in "Where this s
 DECISIONS §197 (a package is one archive file), in
 [its own file](../design/decisions/0197-a-package-is-one-archive-file.md), ruled the container: one archive file per package, identified by name and version, the shape
 `.deb`, `.apk` and `.hpkg` all use. It accepted a cost: a container is bytes a target must parse: *"the reader owes a fuzz target and the Kani treatment `crates/nifefs`
-and `crates/elf` already carry."*
+and `crates/static_elf` already carry."*
 
 DECISIONS §195 (a reviewed recipe vouches for a package), in
 [its own file](../design/decisions/0195-a-recipe-vouches-and-the-owner-may-overrule.md), ruled
@@ -276,11 +276,11 @@ removed) is met, and so is §219's gate D2. The boot prompt is the owner's conso
   (`ripgrep` is packaged in basalt)); the format marks none executable.
 - The `SYNC` before the reply is not falsified: QEMU keeps a killed guest's writes, so no gate
   here can lose an unsynced generation.
-- A note may declare only what an image request can carry (`grant_plan::image_can_carry`): no
+- A note may declare only what an image request can carry (`program_table::image_can_carry`): no
   file, directory, input, option or `std` runtime yet. Milestone 597's BUGS has the list.
 - Only a plain line runs an image. A path in a pipe or behind a redirection reaches the planner as
   a program name and is refused as "no such program", and `caps <path>` prints no `provenance:`
-  row. `crates/grant_plan/src/spawnproto.rs`'s `BUGS` has the full list.
+  row. `crates/program_table/src/spawnproto.rs`'s `BUGS` has the full list.
 - The package source is compiled into `jig`: the runners' peer at 10.0.2.9:8080
   (`socket_contract::fixture`). A booted system outside QEMU has no source to fetch from, and §195's
   per-source trust needs a way to name one.

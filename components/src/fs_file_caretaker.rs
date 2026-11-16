@@ -48,7 +48,7 @@ const EBADF: i32 = filesystem_contract::verb::file_grant::EBADF;
 /// The one page, shared with the FS server above and the client below. One frame for three parties
 /// is sound because every request on both hops is a blocking `CALL`: the client is parked inside its
 /// call for the whole time this process uses the page, so the two uses cannot interleave.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 
@@ -60,14 +60,14 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.w8(i as u64, b);
+        WINDOW.write_u8(i as u64, b);
     }
 }
 
 /// Read `out.len()` bytes out of the shared page.
 fn get(out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = WINDOW.r8(i as u64);
+        *b = WINDOW.read_u8(i as u64);
     }
 }
 

@@ -5,7 +5,7 @@
 //! up, records that it stopped gracefully, and exits: the cooperative tier of §24 (interrupting the
 //! foreground process) made visible. The flag is shared memory and not an endpoint because a
 //! running computation can neither poll an endpoint (there is no non-blocking receive) nor block on
-//! one without stalling its work. See `grant_plan::job_page_frame` and notes/grant-expression.md.
+//! one without stalling its work. See `program_table::job_page_frame` and notes/grant-expression.md.
 
 //! # What it holds
 //!
@@ -26,19 +26,19 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use grant_plan::job_page_frame;
+use program_table::job_page_frame;
 use user_mode_runtime::exit;
 use user_mode_runtime::mapped_window::{self, MappedWindow};
 
 /// Where init maps the shared job frame in the child's address space. Must match the shell/init
-/// wiring. A pair page on the address-space map (`crates/address_space_map`).
+/// wiring. A pair page on the address-space map (`crates/address_space_layout`).
 const JOB_PAGE_FRAME_VA: usize = 0x0030_0000;
 
 // SAFETY: init mapped one page read/write at JOB_PAGE_FRAME_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile pair below).
 const WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(JOB_PAGE_FRAME_VA as u64, mapped_window::PAGE) };
+    unsafe { MappedWindow::new(JOB_PAGE_FRAME_VA as u64, mapped_window::PAGE_BYTES) };
 
 fn load(off: usize) -> u64 {
     WINDOW.read(off as u64)

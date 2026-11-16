@@ -1,0 +1,17 @@
+[package]
+name = "address_space_layout"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The user address-space map (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): which band of a process's
+# low half holds what, so every loader, runtime, fixture and linker script that places a page
+# derives its address from one table instead of choosing a number beside the others. Pure
+# constants and const fns, no_std, dependency-free, because the kernel, the userspace loader, the
+# progenitor, every protocol crate that sites a page and every fixture depend on it.
+
+[lints]
+workspace = true
+
+[dependencies]

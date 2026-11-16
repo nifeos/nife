@@ -609,7 +609,7 @@ bench = false
 # person can type that needs randomness: before it, the entropy grant reached only what the system
 # spawned (`credentialer` at boot, `disk_partitioner` under the kernel's test harness), so a
 # program's dependence on unpredictable bytes was real and unreachable from a prompt. Its whole
-# authority is `grant_plan::Manifest::entropy`, which the progenitor endows and no token on the command line
+# authority is `grant_contract::Manifest::entropy`, which the progenitor endows and no token on the command line
 # can name. Portable, so both ISAs' archives carry it. **Provisional name.**
 [[bin]]
 name = "uuid"
@@ -653,7 +653,7 @@ workspace = true
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
 # Where each device-driver process finds its windows, and the spawn words each one receives: the
 # process layout around the device crates (`e1000e`, `designware_ethernet`,
 # `designware_mobile_storage`, `extensible_host_controller_interface`,
@@ -711,7 +711,9 @@ boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
 # (thin primitives or whole subsystems); default features off, so no `std`, no `alloc` and no time
 # zone database, only fixed offsets. See notes/calendar.md.
 jiff = { version = "0.2.43", default-features = false }
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # A program's manifest carried in its own bytes (milestone 597 (a program carries its manifest in an
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program
 # carries one with `capability_manifest_note::carry!`.
@@ -737,7 +739,7 @@ vmstat = { version = "0.1.0", path = "../crates/vmstat" }
 slabtop = { version = "0.1.0", path = "../crates/slabtop" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
 uptime = { version = "0.1.0", path = "../crates/uptime" }
-elf = { version = "0.1.0", path = "../crates/elf" }
+static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # The JH7110's clock and reset device table, walk and request dispatch, host-tested in its own
 # crate; jh7110_clock_and_reset.rs is the volatile shell of register stores over it.
@@ -747,7 +749,7 @@ jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_c
 designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/designware_inter_integrated_circuit" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
-jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06" }
+jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "497d3ec4f0b4d7fc36634dee47d1afd56eb22485" }
 # login's own measured-boot consultation before it will build a caretaker from an archive entry
 # (milestone 49's BUGS, resolved): the same crate `crates/system_initializer` already depends on.
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
@@ -767,7 +769,7 @@ non_volatile_memory_express = { version = "0.1.0-pre.1", git = "https://github.c
 e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", rev = "ef01cefa9a186db7f1c9802e78d8c6c1215db7ec" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
-designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet" }
+designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096" }
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
@@ -778,12 +780,16 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # the byte order, host-tested there because this program has no harness of its own.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 line_editor = { version = "0.1.0", path = "../crates/line_editor" }
+# The terminal contract's two halves: the wire words every terminal, client and driver speak, and
+# what `terminal_supervisor` routes to a `line_editor` it can replace.
+terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
+line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
 network_time_protocol = { version = "0.1.0", path = "../crates/network_time_protocol" }
 documentation = { version = "0.1.0", path = "../crates/documentation" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
 # The shell's own logic (milestone 70): the routing of a typed line, the pattern-versus-text
 # question, and every sentence the prompt prints. `components/src/swish/` is the same program it was and
-# keeps all the IO; what moved is what a host test can reach. `glob` left this manifest in the same
+# keeps all the IO; what moved is what a host test can reach. `byte_glob` left this manifest in the same
 # change, because `has_magic` was reached only from the function that moved.
 swish = { version = "0.1.0", path = "../crates/swish" }
 # The scheduler's decision half (milestone 129): the document, the four answers registration can

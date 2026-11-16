@@ -70,7 +70,7 @@ The loader's last act is the mode switch in `leave_long_mode.s`: load a GDT with
 descriptor, far-return into compatibility mode, reload the data selectors, clear `CR0.PG`, clear
 `LME`, and jump. It runs from a copy below 4 GiB in an `EfiLoaderCode` page, because paging is off
 for its second half and firmware marks data allocations non-executable. The loader reads the kernel's
-ELF itself rather than through `crates/elf`, because a boot loader places segments at `p_paddr` and
+ELF itself rather than through `crates/static_elf`, because a boot loader places segments at `p_paddr` and
 must reserve the `NOLOAD` ones. [`x86-uefi-boot/loader-design.md`](x86-uefi-boot/loader-design.md)
 has each step and why.
 
@@ -234,7 +234,7 @@ Two things are then worth doing, in this order, and neither is in this lane's sc
 1. Record the numbers, the way `notes/visionfive2.md` does for the VisionFive 2: the memory map
    the firmware reports, the ACPI tables it carries, the measured TSC rate against the PIT, and
    whether the DMAR is present so VT-d can come up. The TSC rate will *not* be QEMU's 1001 MHz; it
-   is an i5-7500T. So `user_mode_runtime::cntfrq`'s hardcoded constant will be wrong with no way for
+   is an i5-7500T. So `user_mode_runtime::counter_hertz`'s hardcoded constant will be wrong with no way for
    a caller to tell, which `notes/x86-port/user-mode-runtime.md` already records.
 2. Flip milestone 87's status and open the two follow-ups the bench will inevitably produce.
 

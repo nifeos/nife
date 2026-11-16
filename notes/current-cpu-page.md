@@ -6,7 +6,8 @@
 §204 (how userspace asks where a thread runs) decided the mechanism: observing another thread is a
 rendezvous selector, and a thread observing itself reads a per-thread page shaped like Linux's
 `rseq(2)` ([the decision](../design/decisions/0204-how-userspace-asks-where-a-thread-runs.md)).
-This note carries the crate's design; its doc comments link here.
+This note carries the crate's design; its doc comments link here. What the kernel's tests prove
+about the page is in [the current-CPU page and its tests](scheduler/the-current-cpu-page.md).
 
 ## Why a page, and why one crate
 
@@ -58,7 +59,7 @@ copy from the crate. Only the non-required `rg-threads` job runs a published one
 
 ## The address
 
-The page is `address_space_map::CURRENT_CPU_PAGE`, `0x7FFF_F000`, the last of the `PROCESS_PAGES`
+The page is `address_space_layout::CURRENT_CPU_PAGE`, `0x7FFF_F000`, the last of the `PROCESS_PAGES`
 band that the kernel maps into every process unasked
 ([notes/address-space-map.md](address-space-map.md)). It sits one page above the stack's top page,
 in the same 2 MiB, so it shares the stack's L1, L2 and L3 tables. The mapping buys no table, only
