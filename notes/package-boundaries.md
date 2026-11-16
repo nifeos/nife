@@ -106,13 +106,15 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `host-tools` | sdk | crates: `host_reordering_litmus`, `jh7110_entropy_board_check`, `stick_maker`, `walk_pricing`, `xtask`; programs: `host_reordering_litmus`, `jh7110_entropy_board_check`, `stick_maker`, `xtask` | `boot`, `display` | `host-tools` (provisional) |
 | `nife-libc` | sdk | crates: `c_library`, `c_library_errno`; paths: `vendor/relibc/` | interfaces only | `nife-libc` (provisional) |
 | `runtime` | sdk | crates: `allocation_cache*`, `entropy_backend*`, `hot_swap_server*`, `memory_region_heap*`, `process_builder*`, `talc*`, `user_mode_runtime*`; paths: `patches/`, `targets/`, `vendor/talc.divergence.patch`, `vendor/talc.pin` | interfaces only | `runtime` (provisional) |
+| `ext4-oracle` | test | crates: `ext4_oracle`; programs: `ext4_oracle` | interfaces only | undecided: it leaves with the ext4 server it judges, whose package is not yet named |
 | `fixtures` | test | crates: `c_seam`, `coremark`, `cryptography_exerciser`, `filesystem_fixture*`, `fixtures`, `fuzz`, `job_mix`, `loaded_image_check`, `pinned_tls_exerciser`, `soak_page`, `std_exerciser`; programs: 93, too many to list here; paths: `packages/greeting.recipe.toml`, `packages/greeting-riscv64.recipe.toml`, `packages/greeting-x86_64.recipe.toml`, `packages/greeting-0.2.0.recipe.toml`, `packages/greeting-0.2.0-riscv64.recipe.toml`, `packages/greeting-0.2.0-x86_64.recipe.toml`, `packages/seeker.recipe.toml`, `packages/seeker-riscv64.recipe.toml`, `packages/seeker-x86_64.recipe.toml`, `packages/seeker-0.2.0.recipe.toml`, `packages/seeker-0.2.0-riscv64.recipe.toml`, `packages/seeker-0.2.0-x86_64.recipe.toml`, `packages/noteless.recipe.toml`, `packages/noteless-riscv64.recipe.toml`, `packages/noteless-x86_64.recipe.toml`, `packages/duet.recipe.toml`, `packages/duet-riscv64.recipe.toml`, `packages/duet-x86_64.recipe.toml`, `packages/solo.recipe.toml`, `packages/solo-riscv64.recipe.toml`, `packages/solo-x86_64.recipe.toml`, `packages/dialer.recipe.toml`, `packages/servant.recipe.toml`, `packages/servant-riscv64.recipe.toml`, `packages/servant-x86_64.recipe.toml`, `packages/dialer-riscv64.recipe.toml`, `packages/dialer-x86_64.recipe.toml`, `packages/reach.recipe.toml`, `packages/reach-riscv64.recipe.toml`, `packages/reach-x86_64.recipe.toml` | `init`, `time`, `timetable`, `network`, `host-tools`, `redoxfs` | `fixtures` (provisional) |
 | `system-tests` | test | crates: `system_tests`; programs: `system_tests` | `kernel` | `system-tests` (provisional) |
 <!-- end of package table -->
 
-29 packages: 17 base, 5 optional, 5 sdk and 2 test by the table's count, `system-tests` having
-joined from milestone 609 (the system tests leave the kernel crate). None has an undecided home;
-all 29 carry a provisional one. On 2026-09-27, 1,718 of 2,678 tracked paths had an undecided
+29 packages: 17 base, 4 optional, 5 sdk and 3 test by the table's count, `system-tests` having
+joined from milestone 609 (the system tests leave the kernel crate). One has an undecided home,
+`ext4-oracle`, which leaves with the ext4 server of milestone 190 (ext4, read and write); the other
+28 carry a provisional one. On 2026-09-27, 1,718 of 2,678 tracked paths had an undecided
 home and 960 a provisional one; the weekly metrics page has the current count.
 
 ## How the packages were drawn
