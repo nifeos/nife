@@ -429,7 +429,7 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # is extreme: **two crates are half the job**, and a split by crate count would put one shard on a
 # coffee break while the other did everything.
 #
-# Seconds refreshed: 2026-11-15 (UTC), the median of 29 CI runs, 43642016303 to 43659021264, by helpers/verify_times.py refresh
+# Seconds refreshed: 2026-11-16 (UTC), the median of 20 CI runs, 43765376034 to 43816887584, by helpers/verify_times.py refresh
 #
 #                         the table until now     2026-10-07 (x86_64, 40-run median)
 #     glob                       15.0 min                11.8 min
@@ -486,54 +486,74 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # changed. `script/lint`'s `sh -n` check (added the same day) catches a regression here; this comment
 # is why a future editor should not just delete that check to add one back.
 CRATES="$(cat <<'TABLE'
-capability	9	the capability model
+capability	12	the capability model
 page_tables	4	the address arithmetic, and the page set for an IOMMU domain
-memory_regions	570	the untyped-region accounting, no double-free
-static_elf	59	the loader's front half, and the note walk, panic-free on hostile input
+memory_regions	578	the untyped-region accounting, no double-free
+static_elf	67	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	3	the physical frame allocator
 address_space_layout	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
-allocation_cache	4	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
-byte_sink_contract	6	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
+allocation_cache	1	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
+byte_sink_contract	10	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	0	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
-device_tree_blob	3	the device-tree parser's leaf readers
+device_tree_blob	206	the device-tree parser's leaf readers
 inter_process_communication	12	the rendezvous state machine
 intrusive_queue	9	the scheduler's queue structure
-address_space_identifier	1	the TLB tag allocator
-nifefs	1	the initial ramdisk parser the kernel runs on boot input
-memory_region_heap	3	the heap's growth arithmetic: a grow never commits past the cap, a grow at the cap is a refusal, and the bytes it asks for never overflow
+address_space_identifier	2	the TLB tag allocator
+nifefs	2	the initial ramdisk parser the kernel runs on boot input
+virtio	152	the block and net driver pure logic: the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
+memory_region_heap	2	the heap's growth arithmetic: a grow never commits past the cap, a grow at the cap is a refusal, and the bytes it asks for never overflow
 capability_manifest_note	106	a manifest note has one encoding, and decoding hostile bytes never panics
 interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile bytes never panics
 package_archive	5	a package file is refused or read entirely inside itself, on bytes the solver chose
-measured_boot	52	a digest text form reads back as itself, and nothing but a labeled sha256 parses
-sealed_pair	60	a digest is found in a kernel image exactly when it is there, at any offset
-pci_configuration_space	37	config-space decode on hostile-device input
+measured_boot	50	a digest text form reads back as itself, and nothing but a labeled sha256 parses
+sealed_pair	41	a digest is found in a kernel image exactly when it is there, at any offset
+pci_configuration_space	40	config-space decode on hostile-device input
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
-socket_contract	410	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
+socket_contract	406	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
 entropy_contract	32	a request word reads back as built, a copy writes only the delivered bytes, a fill succeeds only on full replies, and readiness needs one nonzero byte
-jh7110_clock_and_reset	58	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
-usb	110	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
-direct_memory_access_validator	126	the DMA-confinement validator, no descriptor escapes the grant
-network_time_protocol	19	the 1900-epoch era pivot, and no hostile packet moves the clock
-domain_name_system	33	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
-globally_unique_identifier_partition_table	59	the partition table's CRC-32, its round trips, and partitions that overlap
-byte_glob	543	matching is total, and a hostile pattern cannot be made to blow up
+jh7110_clock_and_reset	100	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
+usb	117	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
+direct_memory_access_validator	121	the DMA-confinement validator, no descriptor escapes the grant
+network_time_protocol	20	the 1900-epoch era pivot, and no hostile packet moves the clock
+domain_name_system	34	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
+globally_unique_identifier_partition_table	66	the partition table's CRC-32, its round trips, and partitions that overlap
+byte_glob	597	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	3	a directory capability's child never exceeds its parent, at any depth
-subtree_scope	227	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
+subtree_scope	235	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 counter_frequency_contract	2	the counter frequency page: a frame reads as unknown exactly when its magic differs, and a built page reads back its rate
 credential_contract	2	no request word reads outside the page; nothing but MATCH authenticates
 capability_plan	12	no wiring grants a right its declaration did not ask for
-periodic_deadline	5	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire
-timetable	40	the scheduler's calendar arithmetic: a time of day, a month day and a range
+periodic_deadline	4	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire
+timetable	43	the scheduler's calendar arithmetic: a time of day, a month day and a range
 driver_process_contract::designware_mobile_storage	1	no block the SD card server translates leaves the window the kernel chose
 driver_process_contract::e1000e	2	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
 driver_process_contract::extensible_host_controller_interface	17	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
-driver_process_contract::virtual_io	334	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
+driver_process_contract::virtual_io	350	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
 kernel	9	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
-components	9	the EL0 components: a bounded append that a configuration page this system did not write feeds
-machine_discovery	390	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
+components	10	the EL0 components: a bounded append that a configuration page this system did not write feeds
+machine_discovery	363	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
 TABLE
 )"
+
+# **Harnesses that prove apart from the rest of their row** (milestone 1117 (the prove shards fit
+# the hosted runner's memory); name provisional), one per line: the row, a tab, the harness's full
+# name. Such a row proves in two passes: every other harness first, at the usual width, then each
+# one listed here with nothing beside it. A harness goes here when it and another of its row, run
+# together, outgrow the hosted runner. On the runner, byte_glob's
+# `no_magic_means_the_pattern_is_its_own_only_match` held 7.1 to 8.5 GiB for its 551 seconds and
+# `a_negated_class_is_the_exact_complement_of_the_class` reached 7.6 GiB alone, and Kani starts the
+# two first at `-j 2`. Together they reached the memory fence's 14446 MiB cap (run 43782179924).
+# Unfenced, swap carried them on the hosts that have it, and they lost the runner on 4 of the 6
+# logged shard-2 jobs on hosts of image 20261111.82.6. A listed harness the row no longer has fails
+# the run, so this list cannot outlive the harness it names.
+KANI_APART="$(cat <<'APART'
+byte_glob	verification::a_negated_class_is_the_exact_complement_of_the_class
+APART
+)"
+# NIFE_KANI_APART, when set, replaces the table, and set empty it turns the table off. The selftests
+# that drive this script over a stub `cargo` turn it off, since a listed row makes two calls more.
+if [ "${NIFE_KANI_APART+set}" = set ]; then KANI_APART="$NIFE_KANI_APART"; fi
 
 # --parallel [N]: fork the shards and join their verdicts (see the flag's comment above).
 #
@@ -748,8 +768,37 @@ for c in $crates; do
     started="$(date +%s)"
     # Unquoted on purpose: `extra` is either empty or two flags, and quoting it would hand cargo one
     # argument that is the empty string.
-    # shellcheck disable=SC2086
-    kani -p "${c%%::*}" $extra "$@"
+    apart="$(printf '%s\n' "$KANI_APART" | awk -F'\t' -v c="$c" '$1 == c { print $2 }')"
+    case " $* " in *" --harness "*) apart="" ;; esac
+    if [ -n "$apart" ]; then
+        # The row's harnesses, from Kani itself, so a harness added later is in the first pass and
+        # never in neither. `cargo kani list` reads the package of the directory it runs in and
+        # writes kani-list.json there.
+        dir="$(cargo metadata --no-deps --format-version 1 \
+            | python3 -c 'import json, os, sys; m = json.load(sys.stdin); print(next(os.path.dirname(p["manifest_path"]) for p in m["packages"] if p["name"] == sys.argv[1]))' "$c")"
+        (cd "$dir" && kani list --format json >/dev/null) || exit 1
+        rest="$(python3 - "$dir/kani-list.json" "$apart" <<'PY'
+import json, sys
+listed = json.load(open(sys.argv[1]))["standard-harnesses"]
+names = sorted(h for hs in listed.values() for h in hs)
+apart = sys.argv[2].split()
+gone = [h for h in apart if h not in names]
+if gone:
+    sys.exit("script/verify: KANI_APART names harnesses this row no longer has: " + " ".join(gone))
+print(" ".join("--harness %s" % h for h in names if h not in apart))
+PY
+)" || { rm -f "$dir/kani-list.json"; exit 1; }
+        rm -f "$dir/kani-list.json"
+        # shellcheck disable=SC2086
+        kani -p "$c" $rest --exact "$@"
+        for h in $apart; do
+            echo "==> kani: $c, $h apart from the rest"
+            kani -p "$c" --harness "$h" --exact "$@"
+        done
+    else
+        # shellcheck disable=SC2086
+        kani -p "${c%%::*}" $extra "$@"
+    fi
     # One line per crate, the measurement the table above is refreshed from
     # (helpers/verify_times.py reads it out of CI logs). Wall clock, compile included.
     secs=$(( $(date +%s) - started ))

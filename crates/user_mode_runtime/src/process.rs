@@ -23,6 +23,9 @@ pub fn yield_now() {
 
 /// Terminate this process. The kernel reaps the thread and frees its whole address space. Never
 /// returns; the trailing spin is only there to satisfy the `-> !` type if the trap ever came back.
+///
+/// There is no `exit_thread` beside it: the std overlay and the system tests invoke
+/// `SYSCALL_EXIT_THREAD` directly, and no `no_std` program needs a wrapper.
 pub fn exit() -> ! {
     // SAFETY: the syscall never returns; the trailing spin only satisfies the `-> !` type.
     let _ = unsafe { trap6(abi::SYSCALL_EXIT, [0; 6]) };

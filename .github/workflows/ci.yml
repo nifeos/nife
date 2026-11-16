@@ -649,7 +649,9 @@ jobs:
   # the short build checks (fastpath footprint, boot file size, stack frames, image permissions,
   # reproducible build, interleavings, coverage, supply chain). The jobs that boot kernels under
   # QEMU, fuzz, bench and probe crates, and verify.yml's proofs, run in the merge group, on a push
-  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label. Each
+  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label.
+  # verify.yml's proofs also run on a pull request that adds or changes a Kani harness (ruled
+  # 2026-11-16 UTC; helpers/harness_change.py). Each
   # of those jobs ends its `if:` with the same clause: a merge group or a push runs it by event
   # name alone, and only a gate that answered `heavy=false` (helpers/full_ci.py) skips it. A job
   # skipped by its condition reports Success, so the required names hold on a pull request
