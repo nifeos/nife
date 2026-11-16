@@ -89,20 +89,20 @@ fn a_descriptor_one_byte_long_or_short_is_refused() {
 fn every_field_refuses_a_value_outside_its_range() {
     let base = encode(&Program::Uptime.manifest());
     for at in [
-        ARG,
-        MEM,
+        PROGRAM_ARGUMENT,
+        MEMORY_GRANT,
         FILE,
-        DIR,
+        DIRECTORY,
         OUTPUT,
         INPUT,
         REPORTS,
         INTERRUPTIBLE,
         CLOCK,
         DOMAIN,
-        CONFIG,
+        CONFIGURATION,
         ENTROPY,
         NETWORK,
-        RUNTIME,
+        STARTUP,
     ] {
         let mut d = base;
         d[at] = 0xff;
@@ -116,11 +116,11 @@ fn a_byte_the_layout_says_is_zero_is_refused() {
     // Uptime declares no memory, no input, no directory and no options, so all of these are
     // absent fields, and the three trailing bytes are always zero.
     for at in [
-        MEM_MINIMUM,
-        MEM_MAXIMUM + 7,
+        MEMORY_MINIMUM_PAGES,
+        MEMORY_MAXIMUM_PAGES + 7,
         WRITES_WHILE_READING,
         SUBTREE,
-        FLAG_LETTERS,
+        OPTION_LETTERS,
         TAIL,
         DESCRIPTOR_BYTES - 1,
     ] {
@@ -133,20 +133,20 @@ fn a_byte_the_layout_says_is_zero_is_refused() {
 #[test]
 fn options_are_distinct_letters_and_the_subtree_option_is_one_of_them() {
     let rm = encode(&Program::Rm.manifest());
-    assert_eq!(&rm[FLAG_LETTERS..FLAG_LETTERS + 3], b"rfv");
+    assert_eq!(&rm[OPTION_LETTERS..OPTION_LETTERS + 3], b"rfv");
     assert_eq!(rm[SUBTREE], b'r');
 
     let mut twice = rm;
-    twice[FLAG_LETTERS + 1] = b'r';
-    assert_eq!(decode(&twice), Err(Error::BadField(FLAG_LETTERS)));
+    twice[OPTION_LETTERS + 1] = b'r';
+    assert_eq!(decode(&twice), Err(Error::BadField(OPTION_LETTERS)));
 
     let mut undeclared = rm;
     undeclared[SUBTREE] = b'q';
     assert_eq!(decode(&undeclared), Err(Error::BadField(SUBTREE)));
 
     let mut too_many = rm;
-    too_many[FLAG_COUNT] = MAXIMUM_DECLARED_SHORT_OPTIONS as u8 + 1;
-    assert_eq!(decode(&too_many), Err(Error::BadField(FLAG_COUNT)));
+    too_many[OPTION_COUNT] = MAXIMUM_DECLARED_SHORT_OPTIONS as u8 + 1;
+    assert_eq!(decode(&too_many), Err(Error::BadField(OPTION_COUNT)));
 }
 
 #[test]
@@ -160,8 +160,8 @@ fn a_memory_range_upside_down_is_refused() {
     };
     let mut d = encode(&m);
     assert_eq!(decode(&d), Ok(m));
-    d[MEM_MINIMUM] = 9;
-    assert_eq!(decode(&d), Err(Error::BadField(MEM_MINIMUM)));
+    d[MEMORY_MINIMUM_PAGES] = 9;
+    assert_eq!(decode(&d), Err(Error::BadField(MEMORY_MINIMUM_PAGES)));
 }
 
 #[test]
@@ -186,19 +186,19 @@ fn base() -> Manifest {
 /// the descriptor would then be refused as malformed, and only for programs that use it.
 #[test]
 fn every_value_of_every_field_round_trips() {
-    let args = [
+    let program_arguments = [
         ProgramArgumentDeclaration::Forbidden,
         ProgramArgumentDeclaration::Required,
         ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
         ProgramArgumentDeclaration::Words(WordGrant::ReadWrite),
         ProgramArgumentDeclaration::Words(WordGrant::Create),
     ];
-    for arg in args {
+    for program_argument in program_arguments {
         let m = Manifest {
-            program_argument: arg,
+            program_argument,
             ..base()
         };
-        assert_eq!(decode(&encode(&m)), Ok(m), "{arg:?}");
+        assert_eq!(decode(&encode(&m)), Ok(m), "{program_argument:?}");
     }
     for file in [
         FileGrantDeclaration::Forbidden,
@@ -208,17 +208,17 @@ fn every_value_of_every_field_round_trips() {
         let m = Manifest { file, ..base() };
         assert_eq!(decode(&encode(&m)), Ok(m), "{file:?}");
     }
-    for dir in [
+    for directory in [
         DirectoryGrantDeclaration::Forbidden,
         DirectoryGrantDeclaration::Required {
             subtree_option: None,
         },
     ] {
         let m = Manifest {
-            directory: dir,
+            directory,
             ..base()
         };
-        assert_eq!(decode(&encode(&m)), Ok(m), "{dir:?}");
+        assert_eq!(decode(&encode(&m)), Ok(m), "{directory:?}");
     }
     for output in [
         OutputDeclaration::Silent,

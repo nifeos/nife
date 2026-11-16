@@ -25,6 +25,6 @@ diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_mani
          _ => return Err(Error::UnknownVersion),
      }
 -    let d = d.get(..DESCRIPTOR_BYTES).ok_or(Error::WrongLength)?;
-     let arg = decode_arg(d)?;
-     let mem = decode_mem(d)?;
+     let program_argument = decode_program_argument(d)?;
+     let memory_grant = decode_memory_grant(d)?;
      let file = decode_file(d)?;

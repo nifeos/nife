@@ -214,12 +214,12 @@ impl core::fmt::Display for Error {
 impl core::error::Error for Error {}
 
 // Offsets, named once so `encode` and `decode` cannot disagree about where a field is.
-const ARG: usize = 4;
-const MEM: usize = 5;
+const PROGRAM_ARGUMENT: usize = 4;
+const MEMORY_GRANT: usize = 5;
 const FILE: usize = 6;
-const DIR: usize = 7;
-const MEM_MINIMUM: usize = 8;
-const MEM_MAXIMUM: usize = 16;
+const DIRECTORY: usize = 7;
+const MEMORY_MINIMUM_PAGES: usize = 8;
+const MEMORY_MAXIMUM_PAGES: usize = 16;
 const OUTPUT: usize = 24;
 const INPUT: usize = 25;
 const WRITES_WHILE_READING: usize = 26;
@@ -228,13 +228,13 @@ const REPORTS: usize = 28;
 const INTERRUPTIBLE: usize = 29;
 const CLOCK: usize = 30;
 const DOMAIN: usize = 31;
-const CONFIG: usize = 32;
+const CONFIGURATION: usize = 32;
 const ENTROPY: usize = 33;
 const NETWORK: usize = 34;
-const RUNTIME: usize = 35;
-const FLAG_COUNT: usize = 36;
-const FLAG_LETTERS: usize = 37;
-const MACHINE: usize = FLAG_LETTERS + MAXIMUM_DECLARED_SHORT_OPTIONS;
+const STARTUP: usize = 35;
+const OPTION_COUNT: usize = 36;
+const OPTION_LETTERS: usize = 37;
+const MACHINE: usize = OPTION_LETTERS + MAXIMUM_DECLARED_SHORT_OPTIONS;
 const SHARE: usize = MACHINE + 1;
 const TAIL: usize = SHARE + 1;
 
@@ -308,7 +308,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
     out[1] = v[1];
     out[2] = v[2];
     out[3] = v[3];
-    out[ARG] = match m.program_argument {
+    out[PROGRAM_ARGUMENT] = match m.program_argument {
         ProgramArgumentDeclaration::Forbidden => 0,
         ProgramArgumentDeclaration::Required => 1,
         // A program whose line is its argv; see the module's "one encoding" paragraph.
@@ -321,9 +321,9 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
             minimum <= maximum,
             "a required memory grant has a minimum no greater than its maximum"
         );
-        out[MEM] = 1;
-        put8(&mut out, MEM_MINIMUM, minimum);
-        put8(&mut out, MEM_MAXIMUM, maximum);
+        out[MEMORY_GRANT] = 1;
+        put8(&mut out, MEMORY_MINIMUM_PAGES, minimum);
+        put8(&mut out, MEMORY_MAXIMUM_PAGES, maximum);
     }
     out[FILE] = match m.file {
         FileGrantDeclaration::Forbidden => 0,
@@ -332,7 +332,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
     };
     let letters = m.short_options.letters();
     if let DirectoryGrantDeclaration::Required { subtree_option } = m.directory {
-        out[DIR] = 1;
+        out[DIRECTORY] = 1;
         if let Some(letter) = subtree_option {
             let mut i = 0;
             let mut declared = false;
@@ -370,19 +370,19 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
     out[INTERRUPTIBLE] = m.interruptible as u8;
     out[CLOCK] = m.clock as u8;
     out[DOMAIN] = m.domain as u8;
-    out[CONFIG] = m.configuration as u8;
+    out[CONFIGURATION] = m.configuration as u8;
     out[ENTROPY] = m.entropy as u8;
     out[NETWORK] = m.network as u8;
     out[MACHINE] = m.machine as u8;
     out[SHARE] = m.share as u8;
-    out[RUNTIME] = match m.startup {
+    out[STARTUP] = match m.startup {
         StartupContract::Native => 0,
         StartupContract::Std => 1,
     };
-    out[FLAG_COUNT] = letters.len() as u8;
+    out[OPTION_COUNT] = letters.len() as u8;
     let mut i = 0;
     while i < letters.len() {
-        out[FLAG_LETTERS + i] = letters[i];
+        out[OPTION_LETTERS + i] = letters[i];
         i += 1;
     }
     out
@@ -450,30 +450,30 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         _ => return Err(Error::UnknownVersion),
     }
     let d = d.get(..DESCRIPTOR_BYTES).ok_or(Error::WrongLength)?;
-    let arg = decode_arg(d)?;
-    let mem = decode_mem(d)?;
+    let program_argument = decode_program_argument(d)?;
+    let memory_grant = decode_memory_grant(d)?;
     let file = decode_file(d)?;
-    let count = d[FLAG_COUNT] as usize;
+    let count = d[OPTION_COUNT] as usize;
     if count > MAXIMUM_DECLARED_SHORT_OPTIONS {
-        return Err(Error::BadField(FLAG_COUNT));
+        return Err(Error::BadField(OPTION_COUNT));
     }
-    let letters = &d[FLAG_LETTERS..FLAG_LETTERS + count];
-    let short_options = ShortOptions::try_new(letters).ok_or(Error::BadField(FLAG_LETTERS))?;
+    let letters = &d[OPTION_LETTERS..OPTION_LETTERS + count];
+    let short_options = ShortOptions::try_new(letters).ok_or(Error::BadField(OPTION_LETTERS))?;
     zero(
         d,
-        FLAG_LETTERS + count,
+        OPTION_LETTERS + count,
         MAXIMUM_DECLARED_SHORT_OPTIONS - count,
     )?;
-    let dir = decode_dir(d, letters)?;
+    let directory = decode_directory(d, letters)?;
     let output = decode_output(d)?;
     let input = decode_input(d)?;
-    let startup = decode_runtime(d)?;
+    let startup = decode_startup(d)?;
     zero(d, TAIL, DESCRIPTOR_BYTES - TAIL)?;
     Ok(Manifest {
-        program_argument: arg,
-        memory_grant: mem,
+        program_argument,
+        memory_grant,
         file,
-        directory: dir,
+        directory,
         short_options,
         output,
         input,
@@ -481,7 +481,7 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
         interruptible: flag(d, INTERRUPTIBLE)?,
         clock: flag(d, CLOCK)?,
         domain: flag(d, DOMAIN)?,
-        configuration: flag(d, CONFIG)?,
+        configuration: flag(d, CONFIGURATION)?,
         entropy: flag(d, ENTROPY)?,
         network: flag(d, NETWORK)?,
         machine: flag(d, MACHINE)?,
@@ -498,33 +498,33 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     })
 }
 
-/// The `arg` field.
-fn decode_arg(d: &[u8]) -> Result<ProgramArgumentDeclaration, Error> {
-    Ok(match d[ARG] {
+/// The `program_argument` field.
+fn decode_program_argument(d: &[u8]) -> Result<ProgramArgumentDeclaration, Error> {
+    Ok(match d[PROGRAM_ARGUMENT] {
         0 => ProgramArgumentDeclaration::Forbidden,
         1 => ProgramArgumentDeclaration::Required,
         2 => ProgramArgumentDeclaration::Words(WordGrant::ReadOnly),
         3 => ProgramArgumentDeclaration::Words(WordGrant::ReadWrite),
         4 => ProgramArgumentDeclaration::Words(WordGrant::Create),
-        _ => return Err(Error::BadField(ARG)),
+        _ => return Err(Error::BadField(PROGRAM_ARGUMENT)),
     })
 }
 
-/// The `mem` field and its bounds, which are zero when it is absent.
-fn decode_mem(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
-    Ok(match d[MEM] {
+/// The `memory_grant` field and its bounds, which are zero when it is absent.
+fn decode_memory_grant(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
+    Ok(match d[MEMORY_GRANT] {
         0 => {
-            zero(d, MEM_MINIMUM, 16)?;
+            zero(d, MEMORY_MINIMUM_PAGES, 16)?;
             MemoryGrantDeclaration::Forbidden
         }
         1 => {
-            let (minimum, maximum) = (get8(d, MEM_MINIMUM), get8(d, MEM_MAXIMUM));
+            let (minimum, maximum) = (get8(d, MEMORY_MINIMUM_PAGES), get8(d, MEMORY_MAXIMUM_PAGES));
             if minimum > maximum {
-                return Err(Error::BadField(MEM_MINIMUM));
+                return Err(Error::BadField(MEMORY_MINIMUM_PAGES));
             }
             MemoryGrantDeclaration::Required { minimum, maximum }
         }
-        _ => return Err(Error::BadField(MEM)),
+        _ => return Err(Error::BadField(MEMORY_GRANT)),
     })
 }
 
@@ -538,9 +538,9 @@ fn decode_file(d: &[u8]) -> Result<FileGrantDeclaration, Error> {
     })
 }
 
-/// The `dir` field and its subtree letter, which must be one of the declared `letters`.
-fn decode_dir(d: &[u8], letters: &[u8]) -> Result<DirectoryGrantDeclaration, Error> {
-    Ok(match d[DIR] {
+/// The `directory` field and its subtree letter, which must be one of the declared `letters`.
+fn decode_directory(d: &[u8], letters: &[u8]) -> Result<DirectoryGrantDeclaration, Error> {
+    Ok(match d[DIRECTORY] {
         0 => {
             zero(d, SUBTREE, 1)?;
             DirectoryGrantDeclaration::Forbidden
@@ -552,7 +552,7 @@ fn decode_dir(d: &[u8], letters: &[u8]) -> Result<DirectoryGrantDeclaration, Err
                 _ => return Err(Error::BadField(SUBTREE)),
             },
         },
-        _ => return Err(Error::BadField(DIR)),
+        _ => return Err(Error::BadField(DIRECTORY)),
     })
 }
 
@@ -584,11 +584,11 @@ fn decode_input(d: &[u8]) -> Result<InputDeclaration, Error> {
 }
 
 /// The `startup` field.
-fn decode_runtime(d: &[u8]) -> Result<StartupContract, Error> {
-    Ok(match d[RUNTIME] {
+fn decode_startup(d: &[u8]) -> Result<StartupContract, Error> {
+    Ok(match d[STARTUP] {
         0 => StartupContract::Native,
         1 => StartupContract::Std,
-        _ => return Err(Error::BadField(RUNTIME)),
+        _ => return Err(Error::BadField(STARTUP)),
     })
 }
 
