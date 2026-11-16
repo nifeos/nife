@@ -534,6 +534,21 @@ machine_discovery	390	the firmware tables and boot handoffs: ACPI, PVH, the scre
 TABLE
 )"
 
+# **Harnesses that prove apart from the rest of their row** (milestone 1117, provisional), one per
+# line: the row, a tab, the harness's full name. Such a row proves in two passes: every other
+# harness first, at the usual width, then each one listed here with nothing beside it. Two harnesses
+# go here when, run together, they outgrow the hosted runner. `byte_glob`'s are the case: on the
+# runner, `no_magic_means_the_pattern_is_its_own_only_match` held 7.1 to 8.5 GiB for its whole 551
+# seconds and `a_negated_class_is_the_exact_complement_of_the_class` reached 7.6 GiB alone, and
+# Kani starts those two first at `-j 2`. Together they reached the memory fence's 14446 MiB cap in
+# run 43782179924, and without the fence they lost the runner on every one of the swapless hosts
+# that drew them. Apart, the row costs about one more minute. A listed harness the row no longer
+# has fails the run, so this list cannot outlive the harness it names.
+KANI_APART="$(cat <<'APART'
+byte_glob	verification::a_negated_class_is_the_exact_complement_of_the_class
+APART
+)"
+
 # --parallel [N]: fork the shards and join their verdicts (see the flag's comment above).
 #
 # This sits after the table because the plan has to be checked against it, and before every other
@@ -747,8 +762,37 @@ for c in $crates; do
     started="$(date +%s)"
     # Unquoted on purpose: `extra` is either empty or two flags, and quoting it would hand cargo one
     # argument that is the empty string.
-    # shellcheck disable=SC2086
-    kani -p "${c%%::*}" $extra "$@"
+    apart="$(printf '%s\n' "$KANI_APART" | awk -F'\t' -v c="$c" '$1 == c { print $2 }')"
+    case " $* " in *" --harness "*) apart="" ;; esac
+    if [ -n "$apart" ]; then
+        # The row's harnesses, from Kani itself, so a harness added later is in the first pass and
+        # never in neither. `cargo kani list` reads the package of the directory it runs in and
+        # writes kani-list.json there.
+        dir="$(cargo metadata --no-deps --format-version 1 \
+            | python3 -c 'import json, os, sys; m = json.load(sys.stdin); print(next(os.path.dirname(p["manifest_path"]) for p in m["packages"] if p["name"] == sys.argv[1]))' "$c")"
+        (cd "$dir" && kani list --format json >/dev/null) || exit 1
+        rest="$(python3 - "$dir/kani-list.json" "$apart" <<'PY'
+import json, sys
+listed = json.load(open(sys.argv[1]))["standard-harnesses"]
+names = sorted(h for hs in listed.values() for h in hs)
+apart = sys.argv[2].split()
+gone = [h for h in apart if h not in names]
+if gone:
+    sys.exit("script/verify: KANI_APART names harnesses this row no longer has: " + " ".join(gone))
+print(" ".join("--harness %s" % h for h in names if h not in apart))
+PY
+)" || { rm -f "$dir/kani-list.json"; exit 1; }
+        rm -f "$dir/kani-list.json"
+        # shellcheck disable=SC2086
+        kani -p "$c" $rest --exact "$@"
+        for h in $apart; do
+            echo "==> kani: $c, $h apart from the rest"
+            kani -p "$c" --harness "$h" --exact "$@"
+        done
+    else
+        # shellcheck disable=SC2086
+        kani -p "${c%%::*}" $extra "$@"
+    fi
     # One line per crate, the measurement the table above is refreshed from
     # (helpers/verify_times.py reads it out of CI logs). Wall clock, compile included.
     secs=$(( $(date +%s) - started ))
