@@ -204,7 +204,6 @@ user_mode_heap	userspace	retired
 user_mode_runtime	userspace	c_library,components,cryptography_exerciser,fixtures,jig,mdr,pinned_tls_exerciser,redoxfs_server,std_exerciser
 user_rt	userspace	retired
 video_terminal	shared	components,fixtures,kernel
-virtio	userspace	components
 vmstat	userspace	components
 wake_handshake	kernel	retired
 walk_pricing	userspace	std_exerciser

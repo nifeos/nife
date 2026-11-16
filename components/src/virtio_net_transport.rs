@@ -19,8 +19,8 @@
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network
 //! card transport is `<device family>_transport`, as `e1000e_transport` beside it. Refused
 //! `net_transport` (right while it was the only one; beside a second card's transport it no longer
-//! says which), `vnet` (an abbreviation, milestone 63) and `virtio_net` (milestone 63: `crates/virtio`
-//! also drives net, so the device-class name alone would collide). This file is a single-consumer
+//! says which), `vnet` (an abbreviation, milestone 63) and `virtio_net` (milestone 63: the block driver's roles
+//! also drive net, so the device-class name alone would collide). This file is a single-consumer
 //! `#[path]` module rather than a `[[bin]]`, which is why rule 7's check leaves it alone.
 
 //! # BUGS
