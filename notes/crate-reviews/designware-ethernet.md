@@ -46,7 +46,10 @@ Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It r
 template's naming and prose gates.
 
 Names. Under Naming rules, below, with the template gates' 118 findings. The parameters carry
-spelled-out names, provisional.
+spelled-out names, provisional. `station_mac_address`, `physical_layer_device_bus_address`,
+`direct_memory_access_physical_address_bits` and the two `100BASE_TWISTED_PAIR` constants are
+ratified as built (2026-11-16 UTC; milestone 1074 (what an outside maintainer would fix before the
+move and the first tag), Decision 4).
 
 Outstanding before the move.
 
