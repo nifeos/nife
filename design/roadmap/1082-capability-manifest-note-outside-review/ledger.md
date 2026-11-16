@@ -4,12 +4,19 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
 
 | item | state |
 |---|---|
-| 1, 2, 8, 9, 14 | left: the move's (the scaffold, the README, the fuzz workspace and the manifest), or the template's |
-| 3 | (a) and (b) done: `write_zones` is one body for `encode_zoned` and `encode_serviced`, so both check each zone with `is_canonical_zone` (`the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell`, `the_serviced_encoder_refuses_a_zone_with_a_trailing_dot`), and `encode` asserts `minimum <= maximum` (`the_encoder_refuses_an_inverted_memory_grant`); the encoding-direction harness and its falsification patch are left, because it needs a symbolic `Manifest` built field by field |
-| 4 | left: the citation rewrite is M and waits for the README it feeds; one citation (the argv paragraph) is already plain |
-| 5 | partly done: `VERSION`, `Error::WrongLength` and the `verification.rs` header now say what the code does; the exact-offset wording, the cut version 3 descriptor and the stale BUGS line are left |
-| 6 | left: private renames, which wait for the next template release that runs the check |
-| 7 | left: the catalog round trip moves with `grant_plan`'s fate under milestone 1017 (the contract crates leave in this order) |
-| 10 | done: `Display`, `core::error::Error` and `Hash` for `Error` (`an_error_prints_and_is_an_error`) |
-| 11, 12, 13, 15 | left: additive methods and three more harnesses, each M or a new public name |
-| decisions | left: the owner literal, the `_LEN` family, `service` and `VERSION` are the architect's |
+| 1 | done: the manifest stands alone, with literal `license` and lint tables, `rust-version` 1.88, `description`, `repository`, `readme`, `keywords`, `categories`, a `version` on every dependency, a `publish` comment a stranger can act on, and the two license files |
+| 2 | done but for the stranger run: the README has the scaffold's sections; the run is recorded in `docs/stranger-test.md`, which the template's scaffold supplies, so it belongs to the move pull request |
+| 3 | done: `write_zones` is one body for `encode_zoned` and `encode_serviced`, so both check each zone with `is_canonical_zone`; `encode` asserts `minimum <= maximum`; the harness `an_encoded_manifest_decodes_to_itself` proves the encoding direction, with its falsification patch |
+| 4 | done: the source states each fact with no milestone, section, ruling, person or tree path; the doctests build their own manifests and verb table; test zones are example domains |
+| 5 | done: `BARE_VERSION`, `Error::WrongLength`, the exact offsets, the cut version 3 descriptor and the `verification.rs` header say what the code does |
+| 6 | done: the private offsets, decoders and bindings spell their fields out (`PROGRAM_ARGUMENT`, `MEMORY_MINIMUM_PAGES`, `OPTION_COUNT`, `STARTUP` and the rest) |
+| 7 | half done: the doctests no longer name a program of the catalog; the unit tests that walk `grant_plan::Program`, and `every_compiled_in_manifest_round_trips`, wait for milestone 1017 (the contract crates leave in this order) to settle where the catalog lives |
+| 8 | left: the fuzz workspace moves with the crate, in the move pull request |
+| 9 | decided: the weekly fuzz opt-in stays off, and the crate is fuzzed on the project's own host; the template's scan is not changed |
+| 10 | done: `Display`, `core::error::Error` and `Hash` for `Error` |
+| 11 | done: `Zones::len`, `ZonesIter` and `VerbsIter`, with `IntoIterator` for both views |
+| 12 | done: harnesses for the zone walk through a version 3 descriptor, the verb table and the subtree-grants note, each with a falsification patch |
+| 13 | done: `write_note` writes every note's header and copies the owner whatever its length |
+| 14 | done: every dependency has a `version`, and the README says the two crates share the note header |
+| 15 | done: `std` is named once, at the crate root, for tests |
+| decisions | the owner literal ruled 2026-11-14 (UTC); `asks_service` and `BARE_VERSION` decided by the maintainer, provisional; the `_BYTES` family applied as the units rule decides it, provisional names |
