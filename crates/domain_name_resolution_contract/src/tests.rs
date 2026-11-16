@@ -466,3 +466,14 @@ fn the_root_zone_is_spelled_empty_on_the_wire() {
     assert!(is_canonical_zone(ROOT_ZONE.as_bytes()));
     assert!(!is_canonical_zone(b"."));
 }
+
+/// **The grant table is the loose tier** (README, "Zone spelling"): it grants a zone a declaration
+/// may not spell, uppercase, `_` and a trailing dot included, and compares without regard to case.
+#[test]
+fn the_grant_table_takes_spellings_the_canonical_check_refuses() {
+    let zone = "Ex_ample.TEST.";
+    assert!(!is_canonical_zone(zone.as_bytes()));
+    let mut g = Grants::new();
+    assert_eq!(grant(&mut g, 1, zone), Control::Granted(0));
+    assert_eq!(g.check(1, &name("a.ex_ample.test")), Ok(0));
+}

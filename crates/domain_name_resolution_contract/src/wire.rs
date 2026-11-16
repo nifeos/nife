@@ -101,10 +101,11 @@ pub mod status {
     pub const BAD_REQUEST: u8 = 10;
 }
 
-/// Which step of the socket contract refused the resolver: [`status::NETWORK`]'s detail byte. Moved
-/// here from `name_resolver` on 2026-10-13 (UTC), values unchanged, so the std PAL can say which
-/// step failed instead of collapsing all four into `NetworkUnreachable` (the riscv-cpu-net-flake
-/// lane: one CI failure named no step). Name: provisional, that lane.
+/// Which step of the socket contract refused the resolver: [`status::NETWORK`]'s detail byte. In
+/// the client half, so a standard library can say which step failed instead of one error for all
+/// four.
+///
+/// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
 pub mod network_step {
     /// The resolver has no socket page to attach.
     pub const NO_SOCKET_PAGE: u8 = 1;

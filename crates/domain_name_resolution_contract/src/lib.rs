@@ -5,6 +5,13 @@
 //! `CALL`s [`OPERATION_RESOLVE`]; the resolver judges the name against its [`Grants`] before it
 //! sends anything. The README has the sequence and its diagram.
 //!
+//! The acronyms, once: the Domain Name System (DNS) maps names to Internet Protocol version 4
+//! (IPv4) addresses. A request for comments (RFC) is one of the standards that define it; RFC 1035
+//! is DNS itself. A name server answers over the User Datagram Protocol (UDP) or the Transmission
+//! Control Protocol (TCP). An answer carries a time to live (TTL), and NXDOMAIN ("non-existent
+//! domain") is a server's answer that a name does not exist. The Dynamic Host Configuration
+//! Protocol (DHCP) lease is where a spawner learns which name server to use.
+//!
 //! | bytes | field | written by |
 //! |---|---|---|
 //! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`MAXIMUM_NAME_FIELD_BYTES`] bytes, a trailing dot included | the client |
@@ -23,6 +30,11 @@
 //! (§154 (the acronym test)) and `domain_name_resolution_protocol` (the suffix is `_contract`).
 
 #![no_std]
+
+/// The README's example, compiled and run as a doctest so it cannot rot.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// The version of the name resolver protocol and its zone limits: 1. A break bumps it, with the
 /// dated ledger entry the interface-stability discipline owes; an addition an older peer ignores
@@ -51,7 +63,8 @@ mod control;
 pub use control::*;
 
 /// The resolver's own copy of the bound, checked against the parser's, because `wire` is copied
-/// into std's PAL where `domain_name_system` cannot be named.
+/// into a standard library's platform abstraction layer (PAL), where `domain_name_system` cannot
+/// be named.
 const _: () = assert!(MAXIMUM_IPV4_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
 
 // =================================================================================================
