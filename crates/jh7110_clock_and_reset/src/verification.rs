@@ -140,7 +140,7 @@ fn a_reset_line_is_one_bit_of_one_of_the_domains_own_words() {
 
 /// **Every fixed plan ungates its clocks before it releases a reset**: the TRNG's, both halves
 /// of the Ethernet controller's, the PMIC bus's and both SD/MMC slots' plans, and the v1.3B
-/// transmit parent walked before the Ethernet controller's AON half, hold only ids inside
+/// transmit parent walked before the Ethernet controller's always-on half, hold only ids inside
 /// their own domain, put every clock step ahead of every reset release, and choose a clock's
 /// parent before enabling that clock.
 /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.every_fixed_plan_ungates_its_clocks_before_releasing_a_reset.patch`
@@ -279,7 +279,9 @@ fn the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_relea
     let chip_register_property: [u8; 4] = kani::any();
     let clocks = Some(&clocks[..]);
     let resets = Some(&resets[..]);
-    let bus_register_property = Some(&bus_register_property[..]);
+    let bus_register_length: usize = kani::any();
+    kani::assume(bus_register_length <= 16);
+    let bus_register_property = Some(&bus_register_property[..bus_register_length]);
     let chip_register_property = Some(&chip_register_property[..]);
 
     if let Ok(bus) = PowerManagementChipBus::from_nodes(

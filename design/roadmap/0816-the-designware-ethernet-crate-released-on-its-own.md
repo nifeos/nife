@@ -210,8 +210,12 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
+- **Done.** The rename pass and the outside review's findings that precede the move
+  ([1074](1074-designware-ethernet-outside-review.md) says which). The crate passes the template's
+  naming and prose gates, bounds `receive` and `reclaim`, and its manifest points at its own
+  repository.
 - **Outstanding.** The move. `crates/designware_ethernet` is still in this tree and the crate
-  repository does not exist. What remains is the repository, the rename pass, the move, the tag
+  repository does not exist. What remains is the repository, the move, the tag
   `v0.1.0`, the soak's end conditions, the publication and nife consuming the release by semantic
   version. Checked by `ls crates/designware_ethernet` and by `gh api repos/nifeos/designware_ethernet`,
   which returns not found.

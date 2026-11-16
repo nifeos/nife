@@ -120,6 +120,7 @@ table and the reasoning.
 | `address_space_identifier` | 3 | ASID 0 is never allocated; live ASIDs are distinct | [core](verification/core-harnesses.md) |
 | `static_elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
+| `memory_region_heap` | 3 | the heap's growth arithmetic stays inside its cap, refuses at the cap, and never overflows | [core](verification/core-harnesses.md) |
 | `pci` | 4 | config-space decode is total on any device's answers | [parsers](verification/parser-harnesses.md) |
 | `direct_memory_access_validator` | 7 | no descriptor the device reads escapes the driver's grant | [DMA](verification/direct-memory-access-validator.md) |
 | `byte_glob` | 6 | the matcher is total on any pattern and name | [glob](verification/glob-proofs.md) |
@@ -167,7 +168,7 @@ script/verify
 
 It self-installs Kani on first run (its own nightly toolchain and a CBMC backend), then runs
 `cargo kani` over every package carrying harnesses. The harness count is generated weekly into
-`notes/project-metrics.md`; the harnesses sit across 42 packages <!--count:harness-crates-->. Not
+`notes/project-metrics.md`; the harnesses sit across 43 packages <!--count:harness-crates-->. Not
 every host compiles all of them: two in `kernel/src/arch/x86_64/interrupt_controller.rs` run only on
 an x86_64 host.
 

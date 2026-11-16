@@ -1,4 +1,4 @@
-//! **The Motorcomm YT8531, the PHY on both of radon's ports**, configured for the board it is on.
+//! **The Motorcomm `YT8531`, the physical layer device on both of the board's ports**, configured for the board it is on.
 //!
 //! The sequence is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and `ytphy_yt8521_update`
 //! (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`, ISC license, notice
@@ -11,7 +11,7 @@
 //! (`PHY_SLEEP_CONTROL1_REG` and `PHY_CLOCK_GATING_REG`, at `freebsd/freebsd-src@2ad32d3a6868`);
 //! the words "sleep control 1" and "clock gating" are FreeBSD's and Linux's. Each constant's
 //! documentation gives the OpenBSD, Linux and FreeBSD spellings. The one bit this driver clears in
-//! each, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the OUI and
+//! each, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the organizationally unique identifier (OUI) and
 //! model, not the whole identifier), are named by neither BSD source. They come from Linux's
 //! `drivers/net/phy/motorcomm.c` (at `torvalds/linux@fc697291ad0a`), read as facts about the part;
 //! why this driver writes them is at each. Every other register and bit here is OpenBSD's. Each
@@ -23,9 +23,10 @@
 //!
 //! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::management_data_input_output::{self, ManagementDataInputOutput};
+use crate::link::{Link, Speed};
+use crate::management_data_io::{self, ManagementDataIo};
 
-/// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`,
+/// **The `YT8531`'s physical layer device identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`,
 /// matched exactly there; OpenBSD matches the OUI and model.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -37,7 +38,7 @@ pub const MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID: u32 = 0x4f51_e91b;
 /// number here.
 #[doc(alias = "extended register address port")]
 #[doc(alias = "YT8511_REG_ADDR")]
-pub(crate) const EXTENDED_REGISTER_ADDRESS_PORT: u8 = 0x1e;
+pub(crate) const EXTENDED_REGISTER_BUS_ADDRESS_PORT: u8 = 0x1e;
 /// **Extended register data port** (`YT8511_REG_DATA`, `ytphy.c`): then read or write its value
 /// here.
 #[doc(alias = "extended register data port")]
@@ -55,7 +56,7 @@ pub const MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
 /// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
-/// software reset does not complete without a receive clock from the PHY (Linux's stmmac carries
+/// software reset does not complete without a receive clock from the physical layer device (Linux's stmmac carries
 /// `phylink_rx_clk_stop_block` for the same reason), and a board booted with its cable out must
 /// still reset cleanly rather than refuse.
 #[doc(alias = "receive clock enable")]
@@ -71,9 +72,9 @@ pub(crate) const CLOCK_GATING_RECEIVE_CLOCK_ENABLE: u16 = 1 << 12;
 #[doc(alias = "PHY_SLEEP_CONTROL1_REG")]
 pub const MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
-/// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
+/// physical layer device sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for
-/// [`CLOCK_GATING_RECEIVE_CLOCK_ENABLE`]'s reason. The cost is the PHY's idle power with no cable.
+/// [`CLOCK_GATING_RECEIVE_CLOCK_ENABLE`]'s reason. The cost is the physical layer device's idle power with no cable.
 #[doc(alias = "sleep switch")]
 #[doc(alias = "YT8521_ESC1R_SLEEP_SW")]
 pub(crate) const SLEEP_CONTROL_1_SLEEP_SWITCH: u16 = 1 << 15;
@@ -87,7 +88,7 @@ pub(crate) const EXTENDED_CHIP_CONFIGURATION_REGISTER: u16 = 0xa001;
 #[doc(alias = "YT8521_RXC_DLY_EN")]
 pub(crate) const RECEIVE_CLOCK_DELAY_ENABLE: u16 = 1 << 8;
 /// **Chip configuration, low-dropout regulator voltage field** (`YT8521_CFG_LDO_MASK`, `ytphy.c`).
-/// The RGMII I/O voltage the PHY's LDO is strapped to.
+/// The RGMII I/O voltage the physical layer device's low-dropout (LDO) regulator is strapped to.
 #[doc(alias = "chip configuration, low-dropout regulator voltage field")]
 #[doc(alias = "YT8521_CFG_LDO_MASK")]
 pub(crate) const LOW_DROPOUT_REGULATOR_VOLTAGE_MASK: u16 = 0x3 << 4;
@@ -137,7 +138,9 @@ pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
+#[allow(dead_code)]
+pub(crate) const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () =
+    assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
 #[doc(alias = "YT8521_EXT_SYNCE_CFG")]
@@ -149,45 +152,8 @@ pub(crate) const EXTENDED_SYNCHRONOUS_ETHERNET_CONFIGURATION_REGISTER: u16 = 0xa
 #[doc(alias = "YT8531_EN_SYNC_E")]
 pub(crate) const SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE: u16 = 1 << 6;
 
-/// A link speed.
-///
-/// Name: ratified 2026-11-03 (UTC), #3132.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Speed {
-    /// 10 Mbit/s.
-    Ten,
-    /// 100 Mbit/s.
-    Hundred,
-    /// 1000 Mbit/s.
-    Thousand,
-}
-
-impl Speed {
-    /// Megabits per second.
-    ///
-    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `mbps`, which abbreviated a unit.
-    pub const fn megabits_per_second(self) -> u32 {
-        match self {
-            Speed::Ten => 10,
-            Speed::Hundred => 100,
-            Speed::Thousand => 1000,
-        }
-    }
-}
-
-/// A resolved link.
-///
-/// Name: ratified 2026-11-03 (UTC), #3132.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Link {
-    /// The speed negotiated.
-    pub speed: Speed,
-    /// Full duplex when true.
-    pub full_duplex: bool,
-}
-
 /// **Decode the standard clause 22 registers into a link**, as OpenBSD's `ukphy_status`
-/// (`sys/dev/mii/ukphy_subr.c`) does. `None` when the link is down, the PHY is isolated, or
+/// (`sys/dev/mii/ukphy_subr.c`) does. `None` when the link is down, the physical layer device is isolated, or
 /// autonegotiation has not completed. After autonegotiation the speed and duplex are the highest
 /// ability the advertisement and the link partner's abilities share, 1000BASE-T first; a
 /// 100BASE-T4 partner reads as 100 Mbit/s half duplex. With autonegotiation off they are the
@@ -200,72 +166,57 @@ pub(crate) const fn link_from_registers(
     control_1000base_t: u16,
     status_1000base_t: u16,
 ) -> Option<Link> {
-    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS == 0
-        || basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE != 0
+    if basic_mode_status & management_data_io::BASIC_MODE_STATUS_LINK_STATUS == 0
+        || basic_mode_control & management_data_io::BASIC_MODE_CONTROL_ISOLATE != 0
     {
         return None;
     }
-    if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
-        == 0
-    {
-        let speed = if basic_mode_control
-            & management_data_input_output::BASIC_MODE_CONTROL_SPEED_1000
-            != 0
-        {
+    if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE == 0 {
+        let speed = if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_SPEED_1000 != 0 {
             Speed::Thousand
-        } else if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_SPEED_100
-            != 0
-        {
+        } else if basic_mode_control & management_data_io::BASIC_MODE_CONTROL_SPEED_100 != 0 {
             Speed::Hundred
         } else {
             Speed::Ten
         };
         return Some(Link {
             speed,
-            full_duplex: basic_mode_control
-                & management_data_input_output::BASIC_MODE_CONTROL_FULL_DUPLEX
+            full_duplex: basic_mode_control & management_data_io::BASIC_MODE_CONTROL_FULL_DUPLEX
                 != 0,
         });
     }
-    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
-        == 0
-    {
+    if basic_mode_status & management_data_io::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE == 0 {
         return None;
     }
     let common = autonegotiation_advertisement & link_partner_abilities;
     let (speed, full_duplex) = if control_1000base_t
-        & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
+        & management_data_io::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
         != 0
         && status_1000base_t
-            & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
+            & management_data_io::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
             != 0
     {
         (Speed::Thousand, true)
-    } else if control_1000base_t
-        & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
-        != 0
+    } else if control_1000base_t & management_data_io::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX != 0
         && status_1000base_t
-            & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
+            & management_data_io::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
             != 0
     {
         (Speed::Thousand, false)
     } else if common
-        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
+        & management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX
         != 0
     {
         (Speed::Hundred, true)
     } else if common
-        & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
-            | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX)
+        & (management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
+            | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR)
         != 0
     {
         (Speed::Hundred, false)
-    } else if common
-        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
-        != 0
-    {
+    } else if common & management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX != 0 {
         (Speed::Ten, true)
-    } else if common & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T != 0 {
+    } else if common & management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T != 0 {
         (Speed::Ten, false)
     } else {
         return None;
@@ -273,14 +224,15 @@ pub(crate) const fn link_from_registers(
     Some(Link { speed, full_duplex })
 }
 
-/// The 100BASE-T4 and 100BASE-TX partner abilities share no bit, so the one `|` in
+/// The 100BASE-T4 and `100BASE-TX` partner abilities share no bit, so the one `|` in
 /// `link_from_registers` is its `^`, which the compiler checks here; the mutation exclusion for
 /// `link_from_registers` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () = assert!(
-    management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
-        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+#[allow(dead_code)]
+pub(crate) const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () = assert!(
+    management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
+        & management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR
         == 0
 );
 
@@ -292,7 +244,7 @@ pub enum PadDriveStrength {
     /// The register code itself, 0 to 7 (the vendor tree's `rgmii_sw_dr*`).
     Code(u8),
     /// A current in microamps (mainline's `motorcomm,*-drv-microamp`), which means a different
-    /// code at each I/O voltage and so is converted only once the PHY has said which it runs at.
+    /// code at each I/O voltage and so is converted only once the physical layer device has said which it runs at.
     Microamps(u32),
 }
 
@@ -309,7 +261,7 @@ pub enum SettingsSource {
     Fallback,
 }
 
-/// **What the board wants of this PHY.**
+/// **What the board wants of this physical layer device.**
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -417,7 +369,7 @@ impl Settings {
         })
     }
 
-    /// **radon's `gmac0` (Gigabit MAC, GMAC).** Both trees give these values, so a tree that names
+    /// **the board's `gmac0` (Gigabit MAC, GMAC).** Both trees give these values, so a tree that names
     /// neither spelling still gets the board it is on, and says so.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -511,34 +463,37 @@ pub(crate) const fn strapped_voltage_millivolts(chip_configuration: u16) -> u32 
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn read_extended(
-    bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device_address: u8,
+    bus: &mut impl ManagementDataIo,
+    physical_layer_device_bus_address: u8,
     extended: u16,
-) -> Result<u16, management_data_input_output::Error> {
+) -> Result<u16, management_data_io::Error> {
     bus.write(
-        physical_layer_device_address,
-        EXTENDED_REGISTER_ADDRESS_PORT,
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_BUS_ADDRESS_PORT,
         extended,
     )?;
-    bus.read(physical_layer_device_address, EXTENDED_REGISTER_DATA_PORT)
+    bus.read(
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_DATA_PORT,
+    )
 }
 
 /// Write extended register `extended`.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn write_extended(
-    bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device_address: u8,
+    bus: &mut impl ManagementDataIo,
+    physical_layer_device_bus_address: u8,
     extended: u16,
     value: u16,
-) -> Result<(), management_data_input_output::Error> {
+) -> Result<(), management_data_io::Error> {
     bus.write(
-        physical_layer_device_address,
-        EXTENDED_REGISTER_ADDRESS_PORT,
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_BUS_ADDRESS_PORT,
         extended,
     )?;
     bus.write(
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         EXTENDED_REGISTER_DATA_PORT,
         value,
     )
@@ -546,14 +501,14 @@ pub fn write_extended(
 
 /// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
 fn modify_extended(
-    bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device_address: u8,
+    bus: &mut impl ManagementDataIo,
+    physical_layer_device_bus_address: u8,
     extended: u16,
     clear: u16,
     set: u16,
-) -> Result<u16, management_data_input_output::Error> {
-    let value = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;
-    write_extended(bus, physical_layer_device_address, extended, value)?;
+) -> Result<u16, management_data_io::Error> {
+    let value = (read_extended(bus, physical_layer_device_bus_address, extended)? & !clear) | set;
+    write_extended(bus, physical_layer_device_bus_address, extended, value)?;
     Ok(value)
 }
 
@@ -562,7 +517,7 @@ fn modify_extended(
 /// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Applied {
-    /// The I/O voltage the PHY is strapped to.
+    /// The I/O voltage the physical layer device is strapped to.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `voltage_mv`.
     pub voltage_millivolts: u32,
@@ -574,21 +529,21 @@ pub struct Applied {
     pub pad_drive: u16,
 }
 
-/// **Configure the PHY for the board**, OpenBSD's order: the receive delay enable, both delay
-/// selects, the drive strengths at the voltage the PHY reports, the clock output off; then this
+/// **Configure the physical layer device for the board**, OpenBSD's order: the receive delay enable, both delay
+/// selects, the drive strengths at the voltage the physical layer device reports, the clock output off; then this
 /// driver's two additions, the clocks kept running with no cable. The extended-address port is
 /// restored at the end, as OpenBSD does, so a firmware access interleaved before or after finds
 /// it where it left it.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn configure(
-    bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device_address: u8,
+    bus: &mut impl ManagementDataIo,
+    physical_layer_device_bus_address: u8,
     settings: &Settings,
-) -> Result<Applied, management_data_input_output::Error> {
+) -> Result<Applied, management_data_io::Error> {
     let saved = bus.read(
-        physical_layer_device_address,
-        EXTENDED_REGISTER_ADDRESS_PORT,
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_BUS_ADDRESS_PORT,
     )?;
     let delay_enable = if settings.receive_fixed_delay {
         RECEIVE_CLOCK_DELAY_ENABLE
@@ -597,7 +552,7 @@ pub fn configure(
     };
     let chip = modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         EXTENDED_CHIP_CONFIGURATION_REGISTER,
         RECEIVE_CLOCK_DELAY_ENABLE,
         delay_enable,
@@ -607,7 +562,7 @@ pub fn configure(
         | u16::from(settings.transmit_delay & 0xf) << TRANSMIT_DELAY_SELECT_SHIFT;
     let reduced_gigabit_media_independent_interface_configuration_1 = modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER,
         0xf << RECEIVE_DELAY_SELECT_SHIFT | 0xf << TRANSMIT_DELAY_SELECT_SHIFT,
         delays,
@@ -617,7 +572,7 @@ pub fn configure(
     let receive_data_code = u16::from(drive_code(voltage_millivolts, settings.receive_data_drive));
     let pad_drive = modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         EXTENDED_PAD_DRIVE_STRENGTH_REGISTER,
         0x7 << REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT
             | REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK,
@@ -628,28 +583,28 @@ pub fn configure(
     )?;
     modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         EXTENDED_SYNCHRONOUS_ETHERNET_CONFIGURATION_REGISTER,
         SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE,
         0,
     )?;
     modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
         CLOCK_GATING_RECEIVE_CLOCK_ENABLE,
         0,
     )?;
     modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
         SLEEP_CONTROL_1_SLEEP_SWITCH,
         0,
     )?;
     bus.write(
-        physical_layer_device_address,
-        EXTENDED_REGISTER_ADDRESS_PORT,
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_BUS_ADDRESS_PORT,
         saved,
     )?;
     Ok(Applied {
@@ -664,7 +619,8 @@ pub fn configure(
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (0xf << RECEIVE_DELAY_SELECT_SHIFT) & (0xf << TRANSMIT_DELAY_SELECT_SHIFT) == 0
         && (0x7 << REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT)
             & REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK
@@ -677,31 +633,31 @@ pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn apply_speed(
-    bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device_address: u8,
+    bus: &mut impl ManagementDataIo,
+    physical_layer_device_bus_address: u8,
     settings: &Settings,
     speed: Speed,
-) -> Result<u16, management_data_input_output::Error> {
+) -> Result<u16, management_data_io::Error> {
     let inverted = match speed {
         Speed::Ten => settings.transmit_clock_inverted[0],
         Speed::Hundred => settings.transmit_clock_inverted[1],
         Speed::Thousand => settings.transmit_clock_inverted[2],
     };
     let saved = bus.read(
-        physical_layer_device_address,
-        EXTENDED_REGISTER_ADDRESS_PORT,
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_BUS_ADDRESS_PORT,
     )?;
     let set = if inverted { TRANSMIT_CLOCK_SELECT } else { 0 };
     let value = modify_extended(
         bus,
-        physical_layer_device_address,
+        physical_layer_device_bus_address,
         EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER,
         TRANSMIT_CLOCK_SELECT,
         set,
     )?;
     bus.write(
-        physical_layer_device_address,
-        EXTENDED_REGISTER_ADDRESS_PORT,
+        physical_layer_device_bus_address,
+        EXTENDED_REGISTER_BUS_ADDRESS_PORT,
         saved,
     )?;
     Ok(value)
@@ -713,38 +669,27 @@ pub fn apply_speed(
 ///
 /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `link`: a verb phrase, since it reads the registers.
 pub fn read_link(
-    bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device_address: u8,
-) -> Result<Option<Link>, management_data_input_output::Error> {
-    let address = physical_layer_device_address;
-    let _ = bus.read(
-        address,
-        management_data_input_output::BASIC_MODE_STATUS_REGISTER,
-    )?;
-    let basic_mode_status = bus.read(
-        address,
-        management_data_input_output::BASIC_MODE_STATUS_REGISTER,
-    )?;
-    let basic_mode_control = bus.read(
-        address,
-        management_data_input_output::BASIC_MODE_CONTROL_REGISTER,
-    )?;
+    bus: &mut impl ManagementDataIo,
+    physical_layer_device_bus_address: u8,
+) -> Result<Option<Link>, management_data_io::Error> {
+    let bus_address = physical_layer_device_bus_address;
+    let _ = bus.read(bus_address, management_data_io::BASIC_MODE_STATUS_REGISTER)?;
+    let basic_mode_status =
+        bus.read(bus_address, management_data_io::BASIC_MODE_STATUS_REGISTER)?;
+    let basic_mode_control =
+        bus.read(bus_address, management_data_io::BASIC_MODE_CONTROL_REGISTER)?;
     let autonegotiation_advertisement = bus.read(
-        address,
-        management_data_input_output::AUTONEGOTIATION_ADVERTISEMENT_REGISTER,
+        bus_address,
+        management_data_io::AUTONEGOTIATION_ADVERTISEMENT_REGISTER,
     )?;
     let link_partner_abilities = bus.read(
-        address,
-        management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER,
+        bus_address,
+        management_data_io::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER,
     )?;
-    let control_1000base_t = bus.read(
-        address,
-        management_data_input_output::CONTROL_1000BASE_T_REGISTER,
-    )?;
-    let status_1000base_t = bus.read(
-        address,
-        management_data_input_output::STATUS_1000BASE_T_REGISTER,
-    )?;
+    let control_1000base_t =
+        bus.read(bus_address, management_data_io::CONTROL_1000BASE_T_REGISTER)?;
+    let status_1000base_t =
+        bus.read(bus_address, management_data_io::STATUS_1000BASE_T_REGISTER)?;
     Ok(link_from_registers(
         basic_mode_status,
         basic_mode_control,
@@ -761,7 +706,7 @@ mod tests {
     use crate::simulator::PhysicalLayerDevice;
 
     #[test]
-    fn the_two_trees_spell_the_same_registers_for_radons_gmac0() {
+    fn the_two_trees_spell_the_same_registers_for_the_boards_gmac0() {
         let mainline = Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]));
         let fallback = Settings::FALLBACK_GMAC0;
         assert_eq!(mainline.receive_delay, fallback.receive_delay);
@@ -799,10 +744,10 @@ mod tests {
 
     #[test]
     fn the_clause_22_registers_decode_every_speed_and_duplex() {
-        use management_data_input_output::*;
+        use management_data_io::*;
         let up = BASIC_MODE_STATUS_LINK_STATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE;
-        let advertise = AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
-            | AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+        let advertise = AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX
+            | AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR
             | AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
             | AUTONEGOTIATION_LINK_PARTNER_10BASE_T;
         let both =
@@ -827,11 +772,15 @@ mod tests {
             l(Speed::Thousand, false)
         );
         assert_eq!(
-            decode(up, AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX, 0),
+            decode(
+                up,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX,
+                0
+            ),
             l(Speed::Hundred, true)
         );
         assert_eq!(
-            decode(up, AUTONEGOTIATION_LINK_PARTNER_100BASE_TX, 0),
+            decode(up, AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR, 0),
             l(Speed::Hundred, false)
         );
         assert_eq!(
@@ -854,7 +803,7 @@ mod tests {
                 up,
                 BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 advertise,
-                AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX,
                 0,
                 STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
             ),
@@ -866,7 +815,7 @@ mod tests {
                 up,
                 BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 advertise,
-                AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX,
                 CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX,
                 STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
             ),
@@ -877,7 +826,7 @@ mod tests {
                 up,
                 BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 advertise,
-                AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX,
                 CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX,
                 STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
             ),
@@ -899,9 +848,9 @@ mod tests {
 
     #[test]
     fn a_link_that_is_down_or_still_negotiating_decodes_to_none() {
-        use management_data_input_output::*;
-        let all = AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
-            | AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+        use management_data_io::*;
+        let all = AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX
+            | AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR
             | AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
             | AUTONEGOTIATION_LINK_PARTNER_10BASE_T;
         let go = |basic_mode_status, basic_mode_control| {
@@ -934,7 +883,7 @@ mod tests {
 
     #[test]
     fn with_negotiation_off_the_forced_bits_decide() {
-        use management_data_input_output::*;
+        use management_data_io::*;
         let up = BASIC_MODE_STATUS_LINK_STATUS;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
         let go = |basic_mode_control| link_from_registers(up, basic_mode_control, 0, 0, 0, 0);
@@ -947,9 +896,9 @@ mod tests {
     }
 
     #[test]
-    fn configure_writes_radons_registers_and_restores_the_address_port() {
+    fn configure_writes_the_boards_registers_and_restores_the_bus_address_port() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
-        physical_layer_device.write_raw(EXTENDED_REGISTER_ADDRESS_PORT, 0x1234);
+        physical_layer_device.write_raw(EXTENDED_REGISTER_BUS_ADDRESS_PORT, 0x1234);
         let a = configure(&mut physical_layer_device, 0, &Settings::FALLBACK_GMAC0).unwrap();
         assert_eq!(a.voltage_millivolts, 1800);
         assert_eq!(
@@ -988,7 +937,7 @@ mod tests {
             0
         );
         assert_eq!(
-            physical_layer_device.raw(EXTENDED_REGISTER_ADDRESS_PORT),
+            physical_layer_device.raw(EXTENDED_REGISTER_BUS_ADDRESS_PORT),
             0x1234
         );
     }
@@ -1012,7 +961,7 @@ mod tests {
     fn the_link_reads_none_until_a_cable_resolves_it() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
         assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), None);
-        assert!(!management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
+        assert!(!management_data_io::is_link_up(&mut physical_layer_device, 0).unwrap());
         let gigabit = Link {
             speed: Speed::Thousand,
             full_duplex: true,
@@ -1022,7 +971,7 @@ mod tests {
             read_link(&mut physical_layer_device, 0).unwrap(),
             Some(gigabit)
         );
-        assert!(management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
+        assert!(management_data_io::is_link_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]
@@ -1047,7 +996,7 @@ mod tests {
             0
         );
     }
-    /// The extended registers' bits, written out: the simulated PHY reads the same names, so only a
+    /// The extended registers' bits, written out: the simulated physical layer device reads the same names, so only a
     /// literal tells a misplaced bit from a right one. The first two take Linux's `motorcomm.c`
     /// names and the other four OpenBSD's `ytphy.c` names, and every source that names a bit puts it
     /// here.

@@ -5,7 +5,7 @@
 //! 0 with [`POISON`] and **read it back** (so a write-back cache the device does not snoop holds
 //! the poison when the device writes), queue [`probe_frame`], poll receive descriptor 0 for up to
 //! [`WAIT_MICROSECONDS`], then read the channel status register. [`classify`] compares the two accounts; the
-//! status register is read over MMIO, which no cache stands in front of, so a non-coherent machine
+//! status register is read over memory-mapped input and output (MMIO), which no cache stands in front of, so a non-coherent machine
 //! fails in a way that names the direction.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3122.
@@ -21,7 +21,7 @@ use crate::{
 pub(crate) const PROBE_ETHERTYPE: u16 = 0x88b5;
 /// The probe frame's length, CRC excluded: comfortably more than one cache line, so a stale line
 /// anywhere in it is seen.
-pub(crate) const PROBE_LENGTH: usize = 128;
+pub(crate) const PROBE_FRAME_BYTES: usize = 128;
 /// What receive buffer 0 holds before the device writes it. Never a byte of [`probe_frame`]'s
 /// payload, so a buffer still holding it cannot be mistaken for a delivery.
 ///
@@ -34,15 +34,15 @@ pub const POISON: u8 = 0xa5;
 /// Name: ratified 2026-11-03 (UTC), #3122.
 pub const WAIT_MICROSECONDS: u64 = 100_000;
 
-/// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
+/// **The probe frame**: addressed from and to `station_mac_address` (so the packet filter passes it),
 /// the experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from
 /// zero.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
-    let mut frame = [0u8; PROBE_LENGTH];
-    frame[..6].copy_from_slice(&station_address);
-    frame[6..12].copy_from_slice(&station_address);
+pub fn probe_frame(station_mac_address: [u8; 6]) -> [u8; PROBE_FRAME_BYTES] {
+    let mut frame = [0u8; PROBE_FRAME_BYTES];
+    frame[..6].copy_from_slice(&station_mac_address);
+    frame[6..12].copy_from_slice(&station_mac_address);
     frame[12..14].copy_from_slice(&PROBE_ETHERTYPE.to_be_bytes());
     for (index, byte) in frame[14..].iter_mut().enumerate() {
         // 0x40 to 0x7f, repeating: never 0xa5 and never zero.
@@ -59,7 +59,8 @@ pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);
+#[allow(dead_code)]
+pub(crate) const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);
 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive
@@ -70,17 +71,17 @@ pub fn prepare(
     data_plane: &mut DataPlane,
     region: &mut impl DirectMemoryAccessRegion,
     tails: &mut impl Tails,
-    station_address: [u8; 6],
+    station_mac_address: [u8; 6],
 ) -> Result<(), TransmitError> {
     data_plane.start(region, tails);
-    let poison = [POISON; PROBE_LENGTH + CRC_BYTES];
+    let poison = [POISON; PROBE_FRAME_BYTES + CRC_BYTES];
     region.write_bytes(layout::receive_buffer(0), &poison);
     // A copy of the poison, so the read-back covers exactly the bytes poisoned: a second length
     // written out here could drift from the first, and `simulator::Memory`'s write-allocate cache would
     // hide a short one.
     let mut back = poison;
     region.read_bytes(layout::receive_buffer(0), &mut back);
-    data_plane.transmit(region, tails, &probe_frame(station_address))
+    data_plane.transmit(region, tails, &probe_frame(station_mac_address))
 }
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
@@ -126,16 +127,16 @@ pub struct Observation {
 /// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn observe(
     region: &impl DirectMemoryAccessRegion,
-    station_address: [u8; 6],
+    station_mac_address: [u8; 6],
     status: u32,
 ) -> Observation {
     let receive_descriptor_word_3 =
         (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32;
     let transmit_descriptor_word_3 =
         (region.read_u64(layout::transmit_descriptor(0) + 8) >> 32) as u32;
-    let mut got = [0u8; PROBE_LENGTH];
+    let mut got = [0u8; PROBE_FRAME_BYTES];
     region.read_bytes(layout::receive_buffer(0), &mut got);
-    let payload = if got == probe_frame(station_address) {
+    let payload = if got == probe_frame(station_mac_address) {
         Payload::Matches
     } else if got.iter().all(|&b| b == POISON) {
         Payload::Poison
@@ -191,9 +192,9 @@ pub fn classify(observation: &Observation) -> Verdict {
     if observation.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
         return match (
             observation.payload,
-            receive_verdict(observation.receive_descriptor_word_3, PROBE_LENGTH),
+            receive_verdict(observation.receive_descriptor_word_3, PROBE_FRAME_BYTES),
         ) {
-            (Payload::Matches, ReceiveVerdict::Frame(PROBE_LENGTH)) => Verdict::Coherent,
+            (Payload::Matches, ReceiveVerdict::Frame(PROBE_FRAME_BYTES)) => Verdict::Coherent,
             (Payload::Poison, _) => Verdict::ReceivedPayloadStale,
             _ => Verdict::TransmittedPayloadStale,
         };
@@ -227,7 +228,7 @@ pub const POSTED_RECEIVE_ENTRIES: u16 = RECEIVE_ENTRIES - 1;
 mod tests {
     use super::*;
     use crate::jh7110::BUS_CONFIGURATION;
-    use crate::motorcomm_physical_layer_device::{Link, Speed};
+    use crate::link::{Link, Speed};
     use crate::network_interface_controller::{self as controller, Identity};
     use crate::simulator::{Memory, NetworkInterfaceController};
     use crate::{
@@ -236,7 +237,7 @@ mod tests {
     };
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
-    const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
+    const STATION_MAC_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
     const GIGABIT: Link = Link {
         speed: Speed::Thousand,
         full_duplex: true,
@@ -256,13 +257,13 @@ mod tests {
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
-            STATION_ADDRESS,
+            STATION_MAC_ADDRESS,
         )
         .unwrap();
         controller::start(&mut network_interface_controller, GIGABIT, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
         network_interface_controller
-            .with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
+            .with(|r, t| prepare(&mut data_plane, r, t, STATION_MAC_ADDRESS))
             .unwrap();
         let mut waited = 0;
         while !network_interface_controller.with(|r, _| is_delivered(r))
@@ -272,7 +273,7 @@ mod tests {
             waited += 1000;
         }
         let status = network_interface_controller.read(registers::CHANNEL_STATUS_REGISTER);
-        let o = network_interface_controller.with(|r, _| observe(r, STATION_ADDRESS, status));
+        let o = network_interface_controller.with(|r, _| observe(r, STATION_MAC_ADDRESS, status));
         classify(&o)
     }
 
@@ -310,9 +311,9 @@ mod tests {
 
     #[test]
     fn the_probe_frame_is_never_mistaken_for_poison_or_silence() {
-        let f = probe_frame(STATION_ADDRESS);
+        let f = probe_frame(STATION_MAC_ADDRESS);
         assert!(f[14..].iter().all(|&b| b != POISON && b != 0));
-        assert_eq!(&f[..6], &STATION_ADDRESS);
+        assert_eq!(&f[..6], &STATION_MAC_ADDRESS);
         assert_eq!(u16::from_be_bytes([f[12], f[13]]), PROBE_ETHERTYPE);
     }
 
@@ -321,7 +322,7 @@ mod tests {
         let o = Observation {
             receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR
                 | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
-                | (PROBE_LENGTH + CRC_BYTES) as u32,
+                | (PROBE_FRAME_BYTES + CRC_BYTES) as u32,
             transmit_descriptor_word_3: 0,
             status: registers::CHANNEL_STATUS_RECEIVE_INTERRUPT
                 | registers::CHANNEL_STATUS_TRANSMIT_INTERRUPT,
@@ -359,7 +360,7 @@ mod tests {
     /// mistaken_for_poison_or_silence` relies on, pinned at both ends of a lap.
     #[test]
     fn the_payload_counts_from_0x40_and_wraps_at_0x7f() {
-        let f = probe_frame(STATION_ADDRESS);
+        let f = probe_frame(STATION_MAC_ADDRESS);
         assert_eq!(
             [f[14], f[15], f[14 + 63], f[14 + 64]],
             [0x40, 0x41, 0x7f, 0x40]
@@ -379,19 +380,23 @@ mod tests {
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
-            STATION_ADDRESS,
+            STATION_MAC_ADDRESS,
         )
         .unwrap();
         controller::start(&mut network_interface_controller, GIGABIT, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
         network_interface_controller
-            .with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
+            .with(|r, t| prepare(&mut data_plane, r, t, STATION_MAC_ADDRESS))
             .unwrap();
         network_interface_controller.with(|r, _| {
-            let mut b = [0u8; PROBE_LENGTH + CRC_BYTES + 1];
+            let mut b = [0u8; PROBE_FRAME_BYTES + CRC_BYTES + 1];
             r.read_bytes(layout::receive_buffer(0), &mut b);
-            assert!(b[..PROBE_LENGTH + CRC_BYTES].iter().all(|&x| x == POISON));
-            assert_eq!(b[PROBE_LENGTH + CRC_BYTES], 0);
+            assert!(
+                b[..PROBE_FRAME_BYTES + CRC_BYTES]
+                    .iter()
+                    .all(|&x| x == POISON)
+            );
+            assert_eq!(b[PROBE_FRAME_BYTES + CRC_BYTES], 0);
             assert!(!is_delivered(r));
         });
         assert_eq!(
@@ -413,24 +418,24 @@ mod tests {
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
-            STATION_ADDRESS,
+            STATION_MAC_ADDRESS,
         )
         .unwrap();
         controller::start(&mut network_interface_controller, GIGABIT, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
         network_interface_controller
-            .with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
+            .with(|r, t| prepare(&mut data_plane, r, t, STATION_MAC_ADDRESS))
             .unwrap();
         network_interface_controller.step();
         let o = network_interface_controller.with(|r, _| {
             assert!(is_delivered(r));
-            observe(r, STATION_ADDRESS, 0)
+            observe(r, STATION_MAC_ADDRESS, 0)
         });
         assert_eq!(
             o.transmit_descriptor_word_3,
             crate::TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
                 | crate::TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
-                | PROBE_LENGTH as u32
+                | PROBE_FRAME_BYTES as u32
         );
         assert!(is_transmit_complete(&o));
         assert_eq!(o.payload, Payload::Matches);
@@ -448,8 +453,8 @@ mod tests {
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let judged = |network_interface_controller: &mut NetworkInterfaceController, fill: u8| {
             network_interface_controller.with(|r, _| {
-                r.write_bytes(layout::receive_buffer(0), &[fill; PROBE_LENGTH]);
-                observe(r, STATION_ADDRESS, 0).payload
+                r.write_bytes(layout::receive_buffer(0), &[fill; PROBE_FRAME_BYTES]);
+                observe(r, STATION_MAC_ADDRESS, 0).payload
             })
         };
         assert_eq!(

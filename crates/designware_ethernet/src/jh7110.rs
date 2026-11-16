@@ -1,18 +1,18 @@
 //! **The JH7110 around the controller**: which node it is, what the board wired to it, and the
-//! one syscon field that tells the MAC it is talking RGMII.
+//! one syscon field that tells the MAC it is talking the reduced gigabit media-independent interface (RGMII).
 //!
 //! The shape is OpenBSD's `if_dwqe_fdt.c` (`dwqe_fdt_attach`, `dwqe_setup_jh7110`; ISC license,
 //! notice in the crate root): the controller's address picks the port, the `phy-mode` picks the
-//! interface select, the PHY's node supplies its delays. radon's U-Boot hands over **the vendor's
+//! interface select, the physical layer device's node supplies its delays. The board's U-Boot hands over **the vendor's
 //! own tree**, not mainline Linux's, and the two spell the controller differently (vendor
-//! compatible, PHY as register values, interface select in board code). Both are read here, and
+//! compatible, physical layer device as register values, interface select in board code). Both are read here, and
 //! their shared facts agree. A constant copied from a source spells out what the source abbreviates, and the source's
 //! spelling, `JH7110_` prefix included, is in its documentation and in a `#[doc(alias)]`.
 //!
 //! The crate reads no device tree. The caller finds the port's node (one of [`COMPATIBLES`]) and
-//! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle` for
+//! hands [`Discovered::from_node`] its properties; it reads the physical layer device's node through `phy-handle` for
 //! [`mainline_physical_layer_device`], or the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`] for
-//! [`vendor_physical_layer_device`]. The AON syscon is mainline's
+//! [`vendor_physical_layer_device`]. The always-on syscon is mainline's
 //! [`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`] node or the vendor's node named
 //! [`ALWAYS_ON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that
 //! names neither.
@@ -27,7 +27,7 @@ use crate::registers;
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-dwmac";
-/// The vendor U-Boot's compatible for both ports, the one radon's firmware serves.
+/// The vendor U-Boot's compatible for both ports, the one the board's firmware serves.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
@@ -48,7 +48,7 @@ pub const GMAC0_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1603_0000;
 /// acronym (#3094).
 pub const GMAC1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1604_0000;
 
-/// **radon's bus configuration**, identical in both trees: `snps,fixed-burst`,
+/// **the board's bus configuration**, identical in both trees: `snps,fixed-burst`,
 /// `snps,no-pbl-x8`, `snps,force_thresh_dma_mode`, `snps,txpbl = <16>`, `snps,rxpbl = <16>`, and
 /// the `stmmac-axi-config` node's `snps,blen = <256 128 64 32 0 0 0>` with both outstanding-request
 /// limits `0xf`. Carried as a constant rather than read, because the tree's spelling of it is the
@@ -57,14 +57,15 @@ pub const GMAC1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1604_0000;
 /// Name: ratified 2026-11-03 (UTC), #3133, renamed from `BUS`.
 pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
     fixed_burst: true,
-    channel_burst_length_times_8: false,
-    transmit_channel_burst_length: 16,
-    receive_channel_burst_length: 16,
+    channel_burst_beats_times_8: false,
+    transmit_channel_burst_beats: 16,
+    receive_channel_burst_beats: 16,
     threshold_mode: true,
-    bus_burst_lengths: registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
-        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
-        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
-        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED,
+    bus_burst_beats_permitted:
+        registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_256_BEATS_PERMITTED
+            | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_128_BEATS_PERMITTED
+            | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_64_BEATS_PERMITTED
+            | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_32_BEATS_PERMITTED,
     read_outstanding: 0xf,
     write_outstanding: 0xf,
 };
@@ -74,18 +75,19 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
 /// mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
-    registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
-        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
-        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
-        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED
-        == registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
-            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
-            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
-            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED
+#[allow(dead_code)]
+pub(crate) const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
+    registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_256_BEATS_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_128_BEATS_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_64_BEATS_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_32_BEATS_PERMITTED
+        == registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_256_BEATS_PERMITTED
+            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_128_BEATS_PERMITTED
+            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_64_BEATS_PERMITTED
+            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_32_BEATS_PERMITTED
 );
 
-/// The always-on (AON) system controller's window: mainline's `aon_syscon: syscon@17010000` and the
+/// The always-on system controller's window: mainline's `aon_syscon: syscon@17010000` and the
 /// vendor's `aon_syscon@17010000`, both `0x1000` long.
 pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS: u64 = 0x1701_0000;
 /// Its size.
@@ -100,24 +102,26 @@ pub const COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "aon")]
 pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
-/// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
-/// the vendor's `AON_SYSCFG_12`.
+/// The always-on system controller register holding `gmac0`'s interface select, at byte
+/// offset `0xc` of the controller: mainline's `<&aon_syscon 0xc 0x12>` second cell, the vendor's
+/// `AON_SYSCFG_12`.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const GMAC0_SYSTEM_CONTROLLER_OFFSET: u64 = 0xc;
+/// Name: ratified 2026-11-14 (UTC), #3569.
+#[doc(alias = "AON_SYSCFG_12")]
+pub const GMAC0_INTERFACE_SELECT_REGISTER: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
 pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
 /// The field is three bits wide (OpenBSD's `((1U << 3) - 1) << shift`; the vendor's mask
 /// `0x1c0000`).
 pub(crate) const SYSTEM_CONTROLLER_FIELD: u32 = 0x7;
-/// **JH7110 PHY interface select, RGMII** (`JH7110_PHY_INTF_RGMII`, `if_dwqe_fdt.c`); the
+/// **JH7110 physical layer device interface select, RGMII** (`JH7110_PHY_INTF_RGMII`, `if_dwqe_fdt.c`); the
 /// vendor's `BIT(SHIFT)` for 1000M.
 #[doc(alias = "rgmii interface select")]
 #[doc(alias = "JH7110_PHY_INTF_RGMII")]
 pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT: u32 = 1;
 
 /// **The syscon word with `gmac0`'s interface select set to RGMII**, the reduced gigabit
-/// media-independent interface (the MAC-to-PHY wiring both JH7110 boards use), every other field
+/// media-independent interface (the MAC-to-physical layer device wiring both JH7110 boards use), every other field
 /// kept.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -133,7 +137,8 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// exclusion of those mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
+#[allow(dead_code)]
+pub(crate) const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
     REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT & SYSTEM_CONTROLLER_FIELD
         == REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT
 );
@@ -162,20 +167,20 @@ pub struct Discovered {
     pub compatible: &'static [u8],
     /// Whether `status` is absent, `"okay"` or `"ok"`.
     pub status_okay: bool,
-    /// `local-mac-address`, which radon's U-Boot writes into the tree it hands over from the
+    /// `local-mac-address`, which the board's U-Boot writes into the tree it hands over from the
     /// EEPROM's address (its `fdt_fixup_ethernet`, through the `ethernet0` alias). `None` when the
     /// tree has none, and then the driver falls back to what the address registers hold.
     #[doc(alias = "mac_address")]
-    pub station_address: Option<[u8; 6]>,
+    pub station_mac_address: Option<[u8; 6]>,
     /// Whether `phy-mode` names an RGMII (reduced gigabit media-independent interface) variant.
     /// Both trees say `rgmii-id`; anything else is a board this driver has no interface select
     /// for.
     #[doc(alias = "rgmii")]
     pub reduced_gigabit_media_independent_interface: bool,
-    /// The PHY's MDIO address: its node's `reg`, else its unit address, else 0.
+    /// The physical layer device's MDIO address: its node's `reg`, else its unit address, else 0.
     #[doc(alias = "phy")]
-    pub physical_layer_device_address: u8,
-    /// The PHY's board settings, and which spelling they were read from.
+    pub physical_layer_device_bus_address: u8,
+    /// The physical layer device's board settings, and which spelling they were read from.
     #[doc(alias = "phy")]
     pub physical_layer_device: Settings,
 }
@@ -184,8 +189,8 @@ pub struct Discovered {
 /// other: OpenBSD's `1950`.
 const DEFAULT_DELAY_PICOSECONDS: u32 = 1950;
 
-/// `gmac0`'s PHY in the vendor tree: `gmac0`'s child, found by node name because the vendor tree
-/// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s PHY is
+/// `gmac0`'s physical layer device in the vendor tree: `gmac0`'s child, found by node name because the vendor tree
+/// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s physical layer device is
 /// `ethernet-phy@1`, so the first `ethernet-phy@0` is `gmac0`'s.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -222,27 +227,27 @@ impl Discovered {
     ) -> Result<Self, E> {
         let status_okay =
             property(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
-        let station_address = property(b"local-mac-address")?
+        let station_mac_address = property(b"local-mac-address")?
             .and_then(|b| b.get(..6))
             .and_then(|b| <[u8; 6]>::try_from(b).ok());
         let reduced_gigabit_media_independent_interface =
             property(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
-        let (physical_layer_device_address, physical_layer_device) = physical_layer_device;
+        let (physical_layer_device_bus_address, physical_layer_device) = physical_layer_device;
         Ok(Discovered {
             registers_physical_address,
             registers_size_bytes,
             interrupt: property(b"interrupts")?.and_then(first_cell),
             compatible,
             status_okay,
-            station_address,
+            station_mac_address,
             reduced_gigabit_media_independent_interface,
-            physical_layer_device_address,
+            physical_layer_device_bus_address,
             physical_layer_device,
         })
     }
 }
 
-/// **The PHY as mainline describes it**, in physical units: `property(name)` is the property `name`
+/// **The physical layer device as mainline describes it**, in physical units: `property(name)` is the property `name`
 /// of the node the port's `phy-handle` names. Gives the MDIO address (its `reg`, else 0) and the
 /// settings; a node with neither internal delay keeps [`Settings::FALLBACK_GMAC0`].
 ///
@@ -256,13 +261,13 @@ pub fn mainline_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
     let mut number = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
-    let address = number(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
+    let bus_address = number(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
     let (receive, transmit) = (
         number(b"rx-internal-delay-ps")?,
         number(b"tx-internal-delay-ps")?,
     );
     if receive.is_none() && transmit.is_none() {
-        return Ok((address, Settings::FALLBACK_GMAC0));
+        return Ok((bus_address, Settings::FALLBACK_GMAC0));
     }
     let receive_clock = number(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
     let receive_data = number(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
@@ -277,7 +282,7 @@ pub fn mainline_physical_layer_device<'t, E>(
         None
     };
     Ok((
-        address,
+        bus_address,
         Settings::from_mainline(
             receive.unwrap_or(DEFAULT_DELAY_PICOSECONDS),
             transmit.unwrap_or(DEFAULT_DELAY_PICOSECONDS),
@@ -288,7 +293,7 @@ pub fn mainline_physical_layer_device<'t, E>(
     ))
 }
 
-/// **The PHY as the vendor tree describes it**, in register values: `property(name)` is the
+/// **The physical layer device as the vendor tree describes it**, in register values: `property(name)` is the
 /// property `name` of the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`]. Any property it lacks keeps
 /// [`Settings::FALLBACK_GMAC0`]'s value, and a node without `rx_delay_sel` is the fallback whole.
 ///
@@ -329,7 +334,7 @@ pub fn vendor_physical_layer_device<'t, E>(
     ))
 }
 
-/// **Where the AON system controller is** (the device tree's `syscon` node), and whether the tree
+/// **Where the always-on system controller is** (the device tree's `syscon` node), and whether the tree
 /// said so.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -378,7 +383,7 @@ mod tests {
     const ONE: &[u8] = &[0, 0, 0, 1];
 
     #[test]
-    fn a_port_node_reads_its_status_address_mode_and_interrupt() {
+    fn a_port_node_reads_its_status_bus_address_mode_and_interrupt() {
         let table: &[(&[u8], &[u8])] = &[
             (b"status", b"okay\0"),
             (b"local-mac-address", &[0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c]),
@@ -408,19 +413,19 @@ mod tests {
         );
         assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
         assert_eq!(
-            d.station_address,
+            d.station_mac_address,
             Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
         );
         assert_eq!(d.interrupt, Some(7));
         assert_eq!(
-            (d.physical_layer_device_address, d.physical_layer_device),
+            (d.physical_layer_device_bus_address, d.physical_layer_device),
             physical_layer_device
         );
     }
 
     #[test]
-    fn a_bare_port_node_is_okay_with_no_address_and_no_reduced_gigabit_media_independent_interface()
-    {
+    fn a_bare_port_node_is_okay_with_no_bus_address_and_no_reduced_gigabit_media_independent_interface()
+     {
         let d = Discovered::from_node(
             1,
             2,
@@ -433,9 +438,9 @@ mod tests {
         assert!(!d.reduced_gigabit_media_independent_interface);
         assert_eq!(
             (
-                d.station_address,
+                d.station_mac_address,
                 d.interrupt,
-                d.physical_layer_device_address
+                d.physical_layer_device_bus_address
             ),
             (None, None, 3)
         );
@@ -453,7 +458,7 @@ mod tests {
         )
         .unwrap();
         assert!(!d.status_okay && !d.reduced_gigabit_media_independent_interface);
-        assert_eq!(d.station_address, None);
+        assert_eq!(d.station_mac_address, None);
         for okay in [&b"ok\0"[..], b"ok", b"okay"] {
             let table: &[(&[u8], &[u8])] = &[(b"status", okay)];
             let d = Discovered::from_node(
@@ -480,8 +485,8 @@ mod tests {
             (b"motorcomm,tx-clk-100-inverted", b""),
             (b"motorcomm,tx-clk-1000-inverted", b""),
         ];
-        let (address, s) = mainline_physical_layer_device(node(table)).unwrap();
-        assert_eq!(address, 3, "the address is five bits");
+        let (bus_address, s) = mainline_physical_layer_device(node(table)).unwrap();
+        assert_eq!(bus_address, 3, "the address is five bits");
         assert_eq!(
             s,
             Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]))
@@ -492,8 +497,8 @@ mod tests {
     #[test]
     fn a_mainline_physical_layer_device_with_one_delay_takes_the_default_for_the_other() {
         let table: &[(&[u8], &[u8])] = &[(b"rx-internal-delay-ps", &1500u32.to_be_bytes())];
-        let (address, s) = mainline_physical_layer_device(node(table)).unwrap();
-        assert_eq!(address, 0);
+        let (bus_address, s) = mainline_physical_layer_device(node(table)).unwrap();
+        assert_eq!(bus_address, 0);
         assert_eq!(
             s,
             Settings::from_mainline(1500, DEFAULT_DELAY_PICOSECONDS, 0, 0, None)
@@ -523,8 +528,8 @@ mod tests {
             (b"tx_inverted_100", ZERO),
         ];
         let f = Settings::FALLBACK_GMAC0;
-        let (address, s) = vendor_physical_layer_device(node(table)).unwrap();
-        assert_eq!(address, 3);
+        let (bus_address, s) = vendor_physical_layer_device(node(table)).unwrap();
+        assert_eq!(bus_address, 3);
         assert_eq!(
             (s.receive_delay, s.transmit_delay),
             (0xb, 0x5),
@@ -541,8 +546,8 @@ mod tests {
         );
         assert_eq!(s.source, SettingsSource::VendorTree);
         let table: &[(&[u8], &[u8])] = &[(b"rx_delay_sel", ZERO), (b"rxc_dly_en", ZERO)];
-        let (address, s) = vendor_physical_layer_device(node(table)).unwrap();
-        assert_eq!(address, 0);
+        let (bus_address, s) = vendor_physical_layer_device(node(table)).unwrap();
+        assert_eq!(bus_address, 0);
         assert!(!s.receive_fixed_delay);
         assert_eq!(
             (s.transmit_delay, s.receive_clock_drive),
@@ -610,7 +615,7 @@ mod tests {
 
     /// `snps,blen = <256 128 64 32 0 0 0>` is bits 7 to 4 of the bus mode, all four.
     #[test]
-    fn radons_bus_burst_lengths_are_all_four_bits() {
-        assert_eq!(BUS_CONFIGURATION.bus_burst_lengths, 0xf0);
+    fn the_boards_bus_burst_beats_permitted_are_all_four_bits() {
+        assert_eq!(BUS_CONFIGURATION.bus_burst_beats_permitted, 0xf0);
     }
 }

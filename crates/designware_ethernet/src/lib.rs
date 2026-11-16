@@ -1,8 +1,11 @@
 #![cfg_attr(not(test), no_std)]
-//! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: radon's network ports.
+//! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: the network ports of the `StarFive` `VisionFive` 2 board.
+//!
+//! The board is the `StarFive` `VisionFive` 2. It has two device trees, mainline Linux's and the
+//! vendor's own, which spell the controller differently; [`jh7110`] reads both.
 //!
 //! Everything the driver's two halves compute and nothing either touches. A kernel half brings the
-//! controller and its PHY (physical layer device) up, measures direct memory access (DMA) coherence
+//! controller and its physical layer device up, measures direct memory access (DMA) coherence
 //! and starts the DMA; a network-stack half fills descriptors and moves the tail pointers. Adapted
 //! from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`, `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`, whose
 //! JH7110 path reads `starfive,tx-use-rgmii-clk`) `ytphy` (`sys/dev/mii/ytphy.c`) and
@@ -85,8 +88,14 @@ extern crate std;
 pub mod bring_up;
 pub mod cache_coherence;
 pub mod jh7110;
+pub mod link;
+/// The README's example, compiled by `cargo test` so it cannot rot.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 #[doc(alias = "mdio")]
-pub mod management_data_input_output;
+pub mod management_data_io;
 pub mod motorcomm_physical_layer_device;
 pub mod network_interface_controller;
 pub mod registers;
@@ -94,7 +103,7 @@ pub mod registers;
 mod simulator;
 
 /// Offsets inside the DMA region, which the kernel half allocates contiguous: `e1000e`'s layout,
-/// because the two NICs' data planes have the same shape.
+/// because the two network interface controllers' data planes have the same shape.
 pub mod layout;
 
 #[cfg(test)]
@@ -112,10 +121,10 @@ pub use descriptor::{
     RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
     RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
     RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
-    RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK, RECEIVE_ENTRIES, ReceiveVerdict,
-    TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
+    RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_BYTES_MASK, RECEIVE_ENTRIES, ReceiveVerdict,
+    TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK,
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
-    TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT, TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK,
+    TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT, TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_BYTES_MASK,
     TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
     TRANSMIT_ENTRIES, receive_descriptor_words, receive_verdict, transmit_descriptor_words,
 };

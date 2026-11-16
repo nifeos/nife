@@ -37,7 +37,7 @@ use domain_name_resolution_contract::{
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
 use socket_contract as socket;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
     Delivered, call, call_receiving, capability_delete, map_page_frame, receive_request, reply,
     retype_into_page_frame, send_capability,
@@ -63,11 +63,11 @@ const SOCKET_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 const CLIENT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00B0_0000);
 /// The last window, checked against the map at compile time like the first.
 const _: u64 =
-    address_space_layout::pair_page(CLIENT_VA + (protocol::GRANTS_MAXIMUM as u64 - 1) * PAGE);
+    address_space_layout::pair_page(CLIENT_VA + (protocol::GRANTS_MAXIMUM as u64 - 1) * PAGE_BYTES);
 
 // SAFETY: `socket_page` maps one page read/write at SOCKET_VA before any accessor runs, and every
 // accessor is reached only after it succeeded (`socket_ready`).
-const SOCKET: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE) };
+const SOCKET: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE_BYTES) };
 
 /// How many UDP queries one resolve sends before it gives up, a fresh id each. Three, the number
 /// the network time client and the socket test client settled on for a lossy path. A truncated UDP
@@ -225,7 +225,7 @@ fn give_up_window(state: &mut State, window: usize) {
 }
 
 fn window_va(i: usize) -> u64 {
-    CLIENT_VA + i as u64 * PAGE
+    CLIENT_VA + i as u64 * PAGE_BYTES
 }
 
 /// One resolve, start to finish: the outcome word and the TTL.
@@ -239,7 +239,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     // SAFETY: `attach_client` mapped a page read/write at this window's address before setting
     // `attached`, and `give_up_window` clears `attached` in the same step it unmaps. One thread,
     // so nothing runs between the two.
-    let page = unsafe { MappedWindow::new(window_va(window), PAGE) };
+    let page = unsafe { MappedWindow::new(window_va(window), PAGE_BYTES) };
 
     // Copied out before it is read, so what is judged and what is asked are the same bytes.
     let len = len as usize;
@@ -248,7 +248,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     }
     let mut text = [0u8; NAME_TEXT_MAXIMUM + 1];
     for (i, b) in text[..len].iter_mut().enumerate() {
-        *b = page.r8((NAME_OFFSET_BYTES + i) as u64);
+        *b = page.read_u8((NAME_OFFSET_BYTES + i) as u64);
     }
     let Some(name) = core::str::from_utf8(&text[..len])
         .ok()
@@ -268,10 +268,10 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
         Err(Fail::Status(outcome)) => return (outcome, 0),
         Err(Fail::Rejected(reject)) => return (refused(reject), 0),
     };
-    let addresses = answer.addresses();
+    let addresses = answer.ipv4_addresses();
     for (k, a) in addresses.iter().enumerate().take(MAXIMUM_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
-            page.w8((ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
+            page.write_u8((ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
         }
     }
     (
@@ -289,9 +289,9 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
 fn refused(reject: Reject) -> Outcome {
     match reject {
         Reject::NoSuchName => Outcome::of(status::NO_SUCH_NAME),
-        Reject::ServerError(rcode) => Outcome {
+        Reject::ServerError(response_code) => Outcome {
             status: status::SERVER_ERROR,
-            detail: rcode,
+            detail: response_code,
             count: 0,
         },
         other => Outcome {
@@ -482,29 +482,29 @@ fn socket_page() -> Option<u64> {
 
 fn set_destination(server: &Server) {
     for (i, &b) in server.ip.iter().enumerate() {
-        SOCKET.w8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET.write_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET.w16(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
+    SOCKET.write_u16(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
 }
 
 /// The source of the datagram a UDP `RECEIVE` just delivered.
 fn source() -> ([u8; 4], u16) {
     let mut ip = [0u8; 4];
     for (i, b) in ip.iter_mut().enumerate() {
-        *b = SOCKET.r8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
     }
-    (ip, SOCKET.r16(socket::DESTINATION_PORT_OFFSET_BYTES))
+    (ip, SOCKET.read_u16(socket::DESTINATION_PORT_OFFSET_BYTES))
 }
 
 fn write_payload(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        SOCKET.w8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
+        SOCKET.write_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
 }
 
 fn read_payload(out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = SOCKET.r8(socket::PAYLOAD_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64);
     }
 }
 

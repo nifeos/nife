@@ -260,6 +260,17 @@ fn reset_device() {
     );
 }
 
+/// The high feature word the driver acknowledges, given the word the device offered: `VERSION_1`
+/// and, only if offered, `ACCESS_PLATFORM`. `None` when the device does not offer `VERSION_1`: the
+/// specification forbids a driver to accept a feature the device did not offer, and a device
+/// without it is not a modern device this driver can drive.
+fn acknowledged_high_features(device_high: u32) -> Option<u32> {
+    if device_high & F_VERSION_1_HI == 0 {
+        return None;
+    }
+    Some(F_VERSION_1_HI | (device_high & F_ACCESS_PLATFORM_HI))
+}
+
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
 /// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
@@ -274,6 +285,8 @@ fn initialize() {
 /// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
 /// bit was negotiated. See notes/virtio.md ("Feature negotiation").
 fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
+    // The driver checks the magic and not `Version`: the kernel offers only modern (version 2)
+    // devices on either bus, so a `Version` check here would test what the kernel already tested.
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
     reset_device();
@@ -291,14 +304,12 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
         driver_features_lo | if flush { F_FLUSH_LO } else { 0 },
     );
 
-    // The high word: VERSION_1 always, ACCESS_PLATFORM only if offered, so the ack stays a subset
-    // of the offer.
+    // The high word: VERSION_1 (refused when not offered), ACCESS_PLATFORM only if offered, so
+    // the ack stays a subset of the offer.
     mw(DEVICE_FEATURES_SEL, 1);
     let dev_hi = mr(DEVICE_FEATURES);
-    let mut ack_hi = F_VERSION_1_HI;
-    if dev_hi & F_ACCESS_PLATFORM_HI != 0 {
-        ack_hi |= F_ACCESS_PLATFORM_HI;
-    }
+    let ack_hi = acknowledged_high_features(dev_hi)
+        .expect("the device does not offer VIRTIO_F_VERSION_1, so it is not a modern device");
     mw(DRIVER_FEATURES_SEL, 1);
     mw(DRIVER_FEATURES, ack_hi);
 
@@ -855,10 +866,8 @@ fn initialize_net() {
     // conditional ack the disk driver makes so one binary works on the bare NIC and the confined one.
     mw(DEVICE_FEATURES_SEL, 1);
     let dev_hi = mr(DEVICE_FEATURES);
-    let mut ack_hi = F_VERSION_1_HI;
-    if dev_hi & F_ACCESS_PLATFORM_HI != 0 {
-        ack_hi |= F_ACCESS_PLATFORM_HI;
-    }
+    let ack_hi = acknowledged_high_features(dev_hi)
+        .expect("the device does not offer VIRTIO_F_VERSION_1, so it is not a modern device");
     mw(DRIVER_FEATURES_SEL, 1);
     mw(DRIVER_FEATURES, ack_hi);
 

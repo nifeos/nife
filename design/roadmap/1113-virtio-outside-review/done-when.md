@@ -13,7 +13,8 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 - A `blk::READ` or `WRITE` past the device's capacity answers an error through the Reply and the
   block server is still serving afterward, shown by a QEMU test.
 - The two volatile accessors check bounds and alignment, or are gone in favor of `MappedWindow`.
-- The handshake waits for `Status` to read 0 after reset and checks `Version`.
+- The handshake waits for `Status` to read 0 after reset. The driver does not check `Version`; the
+  kernel refuses a device whose `Version` is not 2 in every build (Decision 3).
 - One `submit` and one `complete` exist; the attackers and the flush build their chains through
   them.
 - The architect ratifies or renames the names in item 9, and `script/names` reports no public   item

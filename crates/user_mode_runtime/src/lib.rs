@@ -52,3 +52,9 @@ pub use inter_process_communication::*;
 pub use objects::*;
 pub use process::*;
 pub use syscall::*;
+
+#[cfg(test)]
+extern crate std;
+
+#[cfg(test)]
+mod linker_script;

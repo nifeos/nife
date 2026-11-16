@@ -1,8 +1,8 @@
-//! **A simulated controller, PHY and memory system**, for the host tests.
+//! **A simulated controller, physical layer device and memory system**, for the host tests.
 //!
 //! This is the crate's reading of the hardware, not the hardware: the descriptor and tail-pointer
 //! behavior follows OpenBSD's driver and the register header it is built on, and where the real
-//! controller does more (prefetching descriptors, the MTL FIFOs, timing) the simulation does the
+//! controller does more (prefetching descriptors, the transaction layer queue memories, timing) the simulation does the
 //! least that still lets a wrong driver fail. Its one unusual part is [`Memory`], which can model
 //! a CPU cache the device does not snoop, so the coherence probe can be shown to tell the
 //! directions apart.
@@ -14,15 +14,16 @@ use std::collections::BTreeMap;
 use std::vec;
 use std::vec::Vec;
 
-use crate::management_data_input_output::{self, ManagementDataInputOutput};
-use crate::motorcomm_physical_layer_device::{self, Link, Speed};
+use crate::link::{Link, Speed};
+use crate::management_data_io::{self, ManagementDataIo};
 use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
     RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
-    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
+    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK,
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
-    Tails, layout, registers,
+    Tails, layout, motorcomm_physical_layer_device, registers,
 };
 
 const LINE: u64 = 64;
@@ -183,7 +184,7 @@ impl Tails for TailRegisters<'_> {
     }
 }
 
-/// A YT8531 on the MDIO bus: clause 22 registers, the extended-register window, and a link.
+/// A `YT8531` on the MDIO bus: clause 22 registers, the extended-register window, and a link.
 pub(crate) struct PhysicalLayerDevice {
     registers: [u16; 32],
     extended: BTreeMap<u16, u16>,
@@ -191,14 +192,14 @@ pub(crate) struct PhysicalLayerDevice {
 }
 
 impl PhysicalLayerDevice {
-    /// A YT8531 strapped to 1.8 V I/O, with every bit this driver clears set, so a test sees
+    /// A `YT8531` strapped to 1.8 V I/O, with every bit this driver clears set, so a test sees
     /// each one cleared.
     pub(crate) fn yt8531_at_1800_millivolts() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
-        registers[management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_1_REGISTER as usize] =
+        registers[management_data_io::PHYSICAL_LAYER_DEVICE_ID_1_REGISTER as usize] =
             (motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16)
                 as u16;
-        registers[management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_2_REGISTER as usize] =
+        registers[management_data_io::PHYSICAL_LAYER_DEVICE_ID_2_REGISTER as usize] =
             motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
         let mut extended = BTreeMap::new();
         extended.insert(
@@ -221,8 +222,8 @@ impl PhysicalLayerDevice {
             motorcomm_physical_layer_device::EXTENDED_PAD_DRIVE_STRENGTH_REGISTER,
             0xffff,
         );
-        registers[management_data_input_output::BASIC_MODE_CONTROL_REGISTER as usize] =
-            management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE;
+        registers[management_data_io::BASIC_MODE_CONTROL_REGISTER as usize] =
+            management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE;
         PhysicalLayerDevice {
             registers,
             extended,
@@ -238,8 +239,8 @@ impl PhysicalLayerDevice {
         self.registers[register as usize]
     }
     /// An extended register's value.
-    pub(crate) fn extended(&self, address: u16) -> u16 {
-        self.extended.get(&address).copied().unwrap_or(0)
+    pub(crate) fn extended(&self, bus_address: u16) -> u16 {
+        self.extended.get(&bus_address).copied().unwrap_or(0)
     }
     /// Plug a cable in, or pull it out.
     pub(crate) fn set_link(&mut self, link: Option<Link>) {
@@ -247,51 +248,58 @@ impl PhysicalLayerDevice {
     }
 }
 
-impl ManagementDataInputOutput for PhysicalLayerDevice {
+impl ManagementDataIo for PhysicalLayerDevice {
     fn read(
         &mut self,
-        _physical_layer_device_address: u8,
+        _physical_layer_device_bus_address: u8,
         register: u8,
-    ) -> Result<u16, management_data_input_output::Error> {
+    ) -> Result<u16, management_data_io::Error> {
         let register = register & 0x1f;
         Ok(match register {
-            motorcomm_physical_layer_device::EXTENDED_REGISTER_DATA_PORT => {
-                self.extended(self.registers[motorcomm_physical_layer_device::EXTENDED_REGISTER_ADDRESS_PORT as usize])
-            }
-            management_data_input_output::BASIC_MODE_STATUS_REGISTER => {
+            motorcomm_physical_layer_device::EXTENDED_REGISTER_DATA_PORT => self.extended(
+                self.registers
+                    [motorcomm_physical_layer_device::EXTENDED_REGISTER_BUS_ADDRESS_PORT as usize],
+            ),
+            management_data_io::BASIC_MODE_STATUS_REGISTER => {
                 if self.link.is_some() {
-                    management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS
-                        | management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
+                    management_data_io::BASIC_MODE_STATUS_LINK_STATUS
+                        | management_data_io::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
                 } else {
                     0
                 }
             }
-            management_data_input_output::AUTONEGOTIATION_ADVERTISEMENT_REGISTER => {
-                management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
-                    | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
-                    | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
-                    | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T
+            management_data_io::AUTONEGOTIATION_ADVERTISEMENT_REGISTER => {
+                management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX
+                    | management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR
+                    | management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+                    | management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T
             }
-            management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER => self.link.map_or(0, |l| match l.speed {
-                Speed::Thousand => 0,
-                Speed::Hundred if l.full_duplex => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
-                Speed::Hundred => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX,
-                Speed::Ten if l.full_duplex => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX,
-                Speed::Ten => management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T,
-            }),
-            management_data_input_output::CONTROL_1000BASE_T_REGISTER => {
-                management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
-                    | management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
+            management_data_io::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER => {
+                self.link.map_or(0, |l| match l.speed {
+                    Speed::Thousand => 0,
+                    Speed::Hundred if l.full_duplex => {
+                        management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR_FULL_DUPLEX
+                    }
+                    Speed::Hundred => management_data_io::AUTONEGOTIATION_LINK_PARTNER_100BASE_TWISTED_PAIR,
+                    Speed::Ten if l.full_duplex => {
+                        management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+                    }
+                    Speed::Ten => management_data_io::AUTONEGOTIATION_LINK_PARTNER_10BASE_T,
+                })
             }
-            management_data_input_output::STATUS_1000BASE_T_REGISTER => match self.link {
+            management_data_io::CONTROL_1000BASE_T_REGISTER => {
+                management_data_io::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
+                    | management_data_io::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
+            }
+            management_data_io::STATUS_1000BASE_T_REGISTER => match self.link {
                 Some(Link {
                     speed: Speed::Thousand,
                     full_duplex: true,
-                }) => management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE,
+                }) => management_data_io::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE,
                 Some(Link {
                     speed: Speed::Thousand,
                     full_duplex: false,
-                }) => management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE,
+                }) => management_data_io::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE,
                 _ => 0,
             },
             r => self.registers[r as usize],
@@ -299,23 +307,24 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     }
     fn write(
         &mut self,
-        _physical_layer_device_address: u8,
+        _physical_layer_device_bus_address: u8,
         register: u8,
         value: u16,
-    ) -> Result<(), management_data_input_output::Error> {
+    ) -> Result<(), management_data_io::Error> {
         let register = register & 0x1f;
         match register {
             motorcomm_physical_layer_device::EXTENDED_REGISTER_DATA_PORT => {
                 self.extended.insert(
                     self.registers
-                        [motorcomm_physical_layer_device::EXTENDED_REGISTER_ADDRESS_PORT as usize],
+                        [motorcomm_physical_layer_device::EXTENDED_REGISTER_BUS_ADDRESS_PORT
+                            as usize],
                     value,
                 );
             }
-            management_data_input_output::BASIC_MODE_CONTROL_REGISTER => {
+            management_data_io::BASIC_MODE_CONTROL_REGISTER => {
                 self.registers[0] = value
-                    & !(management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART
-                        | management_data_input_output::BASIC_MODE_CONTROL_RESET);
+                    & !(management_data_io::BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART
+                        | management_data_io::BASIC_MODE_CONTROL_RESET);
             }
             r => self.registers[r as usize] = value,
         }
@@ -327,7 +336,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
 pub(crate) struct NetworkInterfaceController {
     registers: BTreeMap<u32, u32>,
     memory: Memory,
-    /// The PHY behind the MDIO pair.
+    /// The physical layer device behind the MDIO pair.
     pub physical_layer_device: PhysicalLayerDevice,
     reset_polls: u32,
     reset_left: Option<u32>,
@@ -343,7 +352,7 @@ pub(crate) struct NetworkInterfaceController {
 }
 
 const VERSION: u32 = 0x1052;
-/// 40-bit addressing, 2 KiB FIFOs each way.
+/// 40-bit addressing, 2 KiB queue memories each way.
 const HARDWARE_FEATURE_1: u32 = 1 << 14 | 4 << 6 | 4;
 
 impl NetworkInterfaceController {
@@ -389,7 +398,7 @@ impl NetworkInterfaceController {
     pub(crate) fn set_reset_polls(&mut self, n: u32) {
         self.reset_polls = n;
     }
-    /// The PHY stops driving the receive clock, and the software reset never completes.
+    /// The physical layer device stops driving the receive clock, and the software reset never completes.
     pub(crate) fn stop_receive_clock(&mut self) {
         self.receive_clock = false;
     }
@@ -501,7 +510,7 @@ impl NetworkInterfaceController {
         let (base, n) = self.ring(
             registers::CHANNEL_RECEIVE_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_LOW_REGISTER,
             registers::CHANNEL_RECEIVE_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_HIGH_REGISTER,
-            registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_REGISTER,
+            registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_IN_DESCRIPTORS_REGISTER,
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let mut i = self.receive_cursor;
@@ -534,7 +543,7 @@ impl NetworkInterfaceController {
         let (base, n) = self.ring(
             registers::CHANNEL_RECEIVE_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_LOW_REGISTER,
             registers::CHANNEL_RECEIVE_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_HIGH_REGISTER,
-            registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_REGISTER,
+            registers::CHANNEL_RECEIVE_DESCRIPTOR_RING_LENGTH_IN_DESCRIPTORS_REGISTER,
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let at = base + u64::from(self.receive_cursor) * 16;
@@ -594,7 +603,7 @@ impl NetworkInterfaceController {
         let (base, n) = self.ring(
             registers::CHANNEL_TRANSMIT_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_LOW_REGISTER,
             registers::CHANNEL_TRANSMIT_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_HIGH_REGISTER,
-            registers::CHANNEL_TRANSMIT_DESCRIPTOR_RING_LENGTH_REGISTER,
+            registers::CHANNEL_TRANSMIT_DESCRIPTOR_RING_LENGTH_IN_DESCRIPTORS_REGISTER,
         );
         loop {
             let tail = self.index_of_tail(
@@ -613,7 +622,7 @@ impl NetworkInterfaceController {
             }
             let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
             let mut frame =
-                vec![0u8; (d[2] & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK) as usize];
+                vec![0u8; (d[2] & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_BYTES_MASK) as usize];
             self.memory.device_read(buffer, &mut frame);
             self.set_descriptor(
                 at,
@@ -671,33 +680,32 @@ impl Hardware for NetworkInterfaceController {
                 self.registers.insert(offset, value);
                 self.reset_left = Some(self.reset_polls);
             }
-            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER
-                if value & management_data_input_output::COMMAND_BUSY != 0 =>
+            registers::MAC_MANAGEMENT_DATA_IO_BUS_ADDRESS_REGISTER
+                if value & management_data_io::COMMAND_BUSY != 0 =>
             {
                 let physical_layer_device = ((value
-                    >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
+                    >> management_data_io::PHYSICAL_LAYER_DEVICE_BUS_ADDRESS_SHIFT)
                     & 0x1f) as u8;
                 let register =
-                    ((value >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f) as u8;
-                if value & (0x3 << 2) == management_data_input_output::OPERATION_COMMAND_READ {
+                    ((value >> management_data_io::REGISTER_BUS_ADDRESS_SHIFT) & 0x1f) as u8;
+                if value & (0x3 << 2) == management_data_io::OPERATION_COMMAND_READ {
                     let r = self
                         .physical_layer_device
                         .read(physical_layer_device, register)
                         .unwrap();
                     self.registers.insert(
-                        registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+                        registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER,
                         u32::from(r),
                     );
                 } else {
-                    let data = self
-                        .register(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER)
-                        as u16;
+                    let data =
+                        self.register(registers::MAC_MANAGEMENT_DATA_IO_DATA_REGISTER) as u16;
                     self.physical_layer_device
                         .write(physical_layer_device, register, data)
                         .unwrap();
                 }
                 self.registers
-                    .insert(offset, value & !management_data_input_output::COMMAND_BUSY);
+                    .insert(offset, value & !management_data_io::COMMAND_BUSY);
             }
             registers::CHANNEL_STATUS_REGISTER => {
                 let s = self.register(offset) & !value;
@@ -731,11 +739,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn management_data_input_output_through_the_controller_reaches_the_physical_layer_device() {
+    fn management_data_io_through_the_controller_reaches_the_physical_layer_device() {
         let mut network_interface_controller =
             NetworkInterfaceController::new(0, Memory::coherent(0));
-        let id = management_data_input_output::physical_layer_device_id(
-            &mut management_data_input_output::Bus(&mut network_interface_controller),
+        let id = management_data_io::physical_layer_device_id(
+            &mut management_data_io::Bus(&mut network_interface_controller),
             0,
         )
         .unwrap();

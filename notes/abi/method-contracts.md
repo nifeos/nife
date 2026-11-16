@@ -47,7 +47,7 @@ the one-shot Reply has nowhere to go.
   one.
 - A §26 (the fault endpoint) death message read with `RECEIVE_CAPABILITY` loses the faulting `pc`. The kernel's five words are
   `(event, tid, pc, addr, 0)`, and `RECEIVE_CAPABILITY` returns `(event, NO_CAPABILITY, tid, addr, 0)`. Every
-  supervisor in the tree receives deaths with `RECEIVE`, through `user_mode_runtime::receive_fault`.
+  supervisor in the tree receives deaths with `RECEIVE`, through `user_mode_runtime::receive_message`.
 - A delegated capability passes the `NO_CAPABILITY` guard. Any client with `WRITE` on the endpoint and
   `GRANT` on a capability can `SEND_CAPABILITY` it to a `CALL` server. A server that invoked `REPLY` on it
   would run method `0` of whatever object it is. `REPLY_DELIVERED` in `x4` (§245 (a `CALL` server tells a Reply from a delegation)) is the test, and
@@ -182,7 +182,7 @@ afterwards. §276 has the whole contract.
 registers. The label in argument register 5 is §148's ruling R3 as amended on 2026-10-04. The kernel
 keeps the badge when `START` consumes the fault slot and writes it only on a death delivered to a
 plain `RECEIVE`, so ordinary IPC stores no extra word. A receiver that wants `0` to mean "not a
-kernel-stamped death" zeroes the register before the `RECEIVE`, as `user_mode_runtime::receive_fault`
+kernel-stamped death" zeroes the register before the `RECEIVE`, as `user_mode_runtime::receive_message`
 does. The child never holds a capability carrying its label, and a sender's badge arrives in `w3`, so
 a child can neither learn nor forge the label that names it.
 

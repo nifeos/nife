@@ -281,11 +281,16 @@ fn the_mainline_tree_names_the_same_controller_and_address() {
 }
 
 #[test]
-fn the_foreign_tree_names_neither() {
+fn the_foreign_tree_keeps_the_locations_it_states_while_the_plan_falls_back() {
+    // The bus and the chip state their `reg`, which describes the bus and not the plan, so the
+    // constant plan keeps both.
     let tree = tree(PMIC_BUS_FOREIGN);
     let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.controller_physical_window, None);
-    assert_eq!(bus.power_management_chip_bus_address, None);
+    assert_eq!(
+        bus.controller_physical_window,
+        Some((0x1205_0000, 0x1_0000))
+    );
+    assert_eq!(bus.power_management_chip_bus_address, Some(0x36));
 }
 
 #[test]

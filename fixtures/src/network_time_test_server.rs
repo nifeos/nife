@@ -75,7 +75,7 @@ const MEMORY_REGION: u64 = 2;
 const MINT: u64 = 3;
 
 /// This server saw its first request. `w1` is the request's transmit field (the nonce), `w2` is
-/// `(dst_port << 32) | (version << 8) | mode`.
+/// `(destination_port << 32) | (version << 8) | mode`.
 pub const RPT_SERVED: u64 = 7;
 
 /// Which reply this server sends.
@@ -162,12 +162,14 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
                 reply(to, REP_OK, 0);
                 if !reported {
                     reported = true;
-                    let dst_port = SHARED_FRAME.dst_port() as u64;
+                    let destination_port = SHARED_FRAME.destination_port() as u64;
                     send(
                         REPORT,
                         RPT_SERVED,
                         request.transmit.bits(),
-                        (dst_port << 32) | ((request.version as u64) << 8) | request.mode as u64,
+                        (destination_port << 32)
+                            | ((request.version as u64) << 8)
+                            | request.mode as u64,
                     );
                 }
             }

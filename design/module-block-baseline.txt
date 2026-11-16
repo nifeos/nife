@@ -1918,13 +1918,9 @@ crates/domain_name_system/src/lib.rs::CNAME
 
 crates/domain_name_system/src/lib.rs::Error
 
-crates/domain_name_system/src/lib.rs::FLAG_QR
 
-crates/domain_name_system/src/lib.rs::FLAG_RD
 
-crates/domain_name_system/src/lib.rs::FLAG_TC
 
-crates/domain_name_system/src/lib.rs::HEADER_LEN
 
 crates/domain_name_system/src/lib.rs::Header
 
@@ -1938,9 +1934,7 @@ crates/domain_name_system/src/lib.rs::Query
 
 crates/domain_name_system/src/lib.rs::Question
 
-crates/domain_name_system/src/lib.rs::RCODE_MASK
 
-crates/domain_name_system/src/lib.rs::RCODE_NAME_ERROR
 
 crates/domain_name_system/src/lib.rs::Reader
 
@@ -1954,7 +1948,6 @@ crates/domain_name_system/src/lib.rs::TcpReply
 
 crates/domain_name_system/src/lib.rs::accept
 
-crates/domain_name_system/src/lib.rs::addresses
 
 crates/domain_name_system/src/lib.rs::as_bytes
 
@@ -1988,7 +1981,6 @@ crates/domain_name_system/src/lib.rs::parse
 
 crates/domain_name_system/src/lib.rs::question
 
-crates/domain_name_system/src/lib.rs::rcode
 
 crates/domain_name_system/src/lib.rs::record
 
@@ -7341,17 +7333,11 @@ crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
-crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
 crates/user_mode_runtime/src/clock.rs::current_cpu
 
@@ -7388,7 +7374,6 @@ crates/user_mode_runtime/src/inter_process_communication.rs::decode
 
 crates/user_mode_runtime/src/inter_process_communication.rs::into_reply
 
-crates/user_mode_runtime/src/inter_process_communication.rs::list
 
 crates/user_mode_runtime/src/inter_process_communication.rs::notification_bind
 
@@ -7402,17 +7387,7 @@ crates/user_mode_runtime/src/inter_process_communication.rs::reap
 
 crates/user_mode_runtime/src/inter_process_communication.rs::receive
 
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_bound
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_fault
-
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_request
-
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_request_bound
 
 crates/user_mode_runtime/src/inter_process_communication.rs::reply
 
@@ -7436,27 +7411,18 @@ crates/user_mode_runtime/src/mapped_window.rs
 
 crates/user_mode_runtime/src/mapped_window.rs::MappedWindow
 
-crates/user_mode_runtime/src/mapped_window.rs::PAGE
 
 crates/user_mode_runtime/src/mapped_window.rs::new
 
-crates/user_mode_runtime/src/mapped_window.rs::r16
 
-crates/user_mode_runtime/src/mapped_window.rs::r32
 
-crates/user_mode_runtime/src/mapped_window.rs::r64
 
-crates/user_mode_runtime/src/mapped_window.rs::r8
 
 crates/user_mode_runtime/src/mapped_window.rs::read
 
-crates/user_mode_runtime/src/mapped_window.rs::w16
 
-crates/user_mode_runtime/src/mapped_window.rs::w32
 
-crates/user_mode_runtime/src/mapped_window.rs::w64
 
-crates/user_mode_runtime/src/mapped_window.rs::w8
 
 crates/user_mode_runtime/src/mapped_window.rs::write
 
@@ -7472,9 +7438,7 @@ crates/user_mode_runtime/src/process.rs::yield_now
 
 crates/user_mode_runtime/src/socket_frame.rs::Frame
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_ip
 
-crates/user_mode_runtime/src/socket_frame.rs::dst_port
 
 crates/user_mode_runtime/src/socket_frame.rs::new
 
@@ -7482,7 +7446,6 @@ crates/user_mode_runtime/src/socket_frame.rs::payload_read
 
 crates/user_mode_runtime/src/socket_frame.rs::payload_write
 
-crates/user_mode_runtime/src/socket_frame.rs::set_dst
 
 crates/user_mode_runtime/src/socket_frame.rs::set_len
 
