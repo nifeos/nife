@@ -5,7 +5,7 @@
 //! totality proof did not return (notes/verification.md). This reaches the unproved shell: the
 //! header-count and table-size arithmetic, the entry-point check, the overlap loop, and the
 //! `segments()` iterator. `EXPECTED_MACHINE` is a compile-time constant, so a host build accepts
-//! the host's machine only; `fuzz/seeds/elf_parse/` holds one seed per machine, and
+//! the host's machine only; `crates/static_elf/tests/fixtures/` holds one seed per machine, and
 //! `crates/static_elf/tests/fuzz_seed.rs` fails if none matches (notes/fuzzing/elf-seeds.md).
 
 #![no_main]
@@ -13,12 +13,17 @@
 use libfuzzer_sys::fuzz_target;
 use static_elf::Elf;
 
+/// The note the target looks up. Any owner and type would do: the walk refuses a malformed or
+/// duplicated note whatever it asks for, so the search exercises every segment either way.
+const NOTE_OWNER: &[u8] = b"GNU";
+const NOTE_TYPE: u32 = 1;
+
 fuzz_target!(|data: &[u8]| {
     // The shell's streaming note reader runs on bytes nobody has parsed as a program yet, so it is
     // fuzzed before `parse` gets a chance to refuse them (milestone 597 (a program carries its
     // manifest in an ELF note), provisional).
     if let Ok(segs) = static_elf::NoteSegments::from_head(data) {
-        let mut search = static_elf::NoteSearch::new(b"nife", 1);
+        let mut search = static_elf::NoteSearch::new(NOTE_OWNER, NOTE_TYPE);
         for seg in segs {
             let Ok(r) = seg.range(data.len()) else { break };
             if search.segment(&data[r], seg.p_align).is_err() {
@@ -37,7 +42,7 @@ fuzz_target!(|data: &[u8]| {
 
     // The note lookup the progenitor makes for a program's manifest (milestone 597, provisional):
     // every `PT_NOTE` walked in full, on the same hostile bytes the loader accepted.
-    let _ = elf.note(b"nife", 1);
+    let _ = elf.note(NOTE_OWNER, NOTE_TYPE);
     for seg in elf.segments() {
         let _ = seg.is_readable();
         let _ = seg.is_writable();

@@ -16,7 +16,7 @@ tree**, committed for their own reasons and tested by their own tests:
 | `device_tree_patch_initial_ramdisk` | `crates/device_tree_blob/tests/fixtures/`, and here | the same three device trees; and `no_root_node.dtb`, the input that found a tree accepted with no root node, which `crates/device_tree_patch/tests/fuzz_seed.rs` holds refused |
 | `machine_description_from_device_tree` | `crates/device_tree_blob/tests/fixtures/`, `crates/machine_discovery/tests/fixtures/` | the real and hand-built device trees the CPU, ISA, PLIC, interrupt and JH7110 tests read |
 | `acpi_firmware_tables` | here | eight table bodies, each behind a selector byte: four IVRS, a GTDT, an SPCR, and two FADT readings. `make-acpi-tables.py` beside the directory rebuilds them, and `crates/machine_discovery/tests/fuzz_seed.rs` holds each to decoding |
-| `elf_parse` | here | the three files below, because nothing else in the tree is a small ELF |
+| `elf_parse` | `crates/static_elf/tests/fixtures/` | the three files below, because nothing else in the tree is a small ELF; `crates/static_elf/tests/fuzz_seed.rs` holds each to parsing on its own machine |
 | `domain_name_system_reply` | `crates/domain_name_system/tests/fixtures/` | three real replies captured from 1.1.1.1: two A records, a CNAME chain with compression, and NXDOMAIN |
 | `http_response_feed` | here | two responses, a `200` with a body and a bare `404`; the first byte of each is the read size the target splits at |
 | `capability_manifest_note_decode` | here | fourteen descriptors the crate encodes: version 1, 2 and 3 manifests (up to eight zones, and the longest zone), a scope, and verb tables; `crates/capability_manifest_note/tests/fuzz_seed.rs` holds them to the encoders and regenerates them |
@@ -27,14 +27,14 @@ tree**, committed for their own reasons and tested by their own tests:
 `script/fuzz` passes those fixture directories to libFuzzer as read-only corpora. Copying them here
 would make a second copy of bytes that already have one, and a second copy drifts.
 
-## `elf_parse/minimal_rx_<machine>.elf`
+## `elf_parse`: `crates/static_elf/tests/fixtures/minimal_rx_<machine>.elf`
 
 120 bytes each: a 64-byte ELF64 header and one 56-byte `PT_LOAD` program header, read-execute, with
 the entry point inside the segment. It is the smallest thing `static_elf::Elf::parse` accepts, which is
 exactly what a seed should be: past every constant check and every validation refusal, so the
 fuzzer's mutations land on the arithmetic instead of on the magic number.
 
-**There is one per machine nife runs**, differing in the `e_machine` field at offset 18 and nowhere
+**There is one per machine the crate names**, differing in the `e_machine` field at offset 18 and nowhere
 else. All three numbers happen to be under 256, so in practice the files differ at exactly **one**
 byte, which `cmp` will confirm:
 
@@ -101,7 +101,7 @@ for arch, machine in [('aarch64', 183), ('riscv64', 243), ('x86_64', 62)]:
     struct.pack_into('<Q', p, 40, memsz)
     struct.pack_into('<Q', p, 48, 0x1000)  # p_align
 
-    path = f'fuzz/seeds/elf_parse/minimal_rx_{arch}.elf'
+    path = f'crates/static_elf/tests/fixtures/minimal_rx_{arch}.elf'
     open(path, 'wb').write(bytes(e + p))
 PY
 ```
