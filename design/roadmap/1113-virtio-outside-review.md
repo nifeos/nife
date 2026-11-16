@@ -11,7 +11,7 @@ needs_person: yes
 
 Raised by a read-only outside review of `crates/virtio`, read as a stranger to this tree would meet
 it. It changes nothing; it lists what the next lanes change, and it puts one question to the
-architect first, because every other item depends on its answer. The architect ruled it
+architect first, because every other item depends on its answer. The architect answered it
 (Decision 1).
 
 There is no review package for this crate in `notes/crate-reviews/`, no row in
@@ -105,9 +105,9 @@ queues up through the device registers. The other is a startup page that replace
 (1069). Meanwhile the tree holds six copies of the virtio-mmio handshake and ring constants, and
 none of them is in the crate named `virtio` as a shared thing.
 
-The rule in force, ruled 2026-11-16 (UTC). The crate does not leave this tree as a crate. Its
+The rule in force, from the architect on 2026-11-16 (UTC). The crate does not leave this tree as a crate. Its
 contents fold into the program that owns them, `components/src/block_driver.rs` (or a module beside
-it), and leave later with the drivers package. The ratified name `virtio` is held for a library,
+it), and leave later with the drivers package. The ratified name `virtio` stays reserved for a library,
 cut later, that holds what the six copies share. That means the register vocabulary at the
 transport seam, the status and feature bits, the handshake, the descriptor and ring accessors at
 the validator's fixed layout, the blk request chain and the net header. It has no test role and no
