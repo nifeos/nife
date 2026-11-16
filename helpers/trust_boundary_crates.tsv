@@ -54,7 +54,7 @@ credentialer	userspace	components
 crickerfs	shared	retired
 current_cpu_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 current_cpu_protocol	shared	retired
-designware_ethernet	shared	components,kernel,uefi_loader
+designware_ethernet	shared	retired
 designware_inter_integrated_circuit	shared	components,kernel
 designware_mobile_storage	shared	retired
 device_tree_blob	shared	components,kernel,uefi_loader

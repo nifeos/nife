@@ -25,7 +25,6 @@ cpu_set 19 0 0 1
 credential_contract 74 2 0 20
 credentialer 131 0 1 16
 current_cpu_contract 37 0 0 2
-designware_ethernet 642 64 14 16
 designware_mobile_storage 661 49 4 17
 device_tree_blob 389 1 29 25
 direct_memory_access_validator 79 0 0 6
