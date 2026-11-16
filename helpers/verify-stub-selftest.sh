@@ -14,8 +14,10 @@
 #      stubbed run waits for Kani units. A stubbed run with the pool left on is also run under the
 #      same deadline and must NOT finish, so the holder is proved to hold (a pass of stage 2 means
 #      something).
+#   3. a row in KANI_APART proves in two passes: `--exact` over every listed harness but the one held
+#      apart, then that one alone; and a held-apart name the row no longer has fails the run.
 #
-# Both stages use the scratch slot directory, so neither waits on, nor takes a unit of, a real job.
+# Every stage uses the scratch slot directory, so none waits on, nor takes a unit of, a real job.
 # Run by script/lint.
 set -eu
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -32,8 +34,17 @@ fail() { echo "verify-stub-selftest: $*" >&2; exit 1; }
 mkdir -p "$tmp/bin" "$tmp/slots"
 cat >"$tmp/bin/cargo" <<'STUB'
 #!/bin/sh
-# Stub: `cargo kani --version` succeeds; any other call is recorded.
+# Stub: `cargo kani --version` succeeds; any other call is recorded. For stage 3, `cargo metadata`
+# places byte_glob in a scratch directory and `cargo kani list` writes three harnesses there.
 [ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
+if [ "$1" = metadata ]; then
+	printf '{"packages": [{"name": "byte_glob", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR"
+	exit 0
+fi
+if [ "$1 $2" = "kani list" ]; then
+	echo '{"standard-harnesses": {"src/lib.rs": ["verification::c", "verification::a", "verification::b"]}}' >kani-list.json
+	exit 0
+fi
 printf '%s\n' "$*" >>"$VERIFY_STUB_LOG"
 STUB
 chmod +x "$tmp/bin/cargo"
@@ -96,3 +107,23 @@ if ! grep -q '^kani -p capability .*--harness lint_probe_harness' "$tmp/log" 2>/
 	exit 1
 fi
 echo "script/verify: extra arguments reach cargo kani, and a stubbed run takes no Kani unit"
+
+# 3. A row held apart. The pool is off; the table names a fixture row, so no real crate is read.
+mkdir -p "$tmp/row"
+apart() {
+	VERIFY_STUB_LOG="$tmp/log" VERIFY_STUB_DIR="$tmp" NIFE_KANI_POOL=off NIFE_KANI_APART="$1" \
+		script/verify --only byte_glob >"$tmp/apart.out" 2>&1
+}
+: >"$tmp/log"
+apart "$(printf 'byte_glob\tverification::b')" || { sed 's/^/  /' "$tmp/apart.out" >&2; fail "a row held apart failed"; }
+grep -q '^kani -p byte_glob --harness verification::a --harness verification::c --exact ' "$tmp/log" ||
+	{ sed 's/^/  /' "$tmp/log" >&2; fail "the first pass was not every other harness, --exact"; }
+grep -q '^kani -p byte_glob --harness verification::b --exact ' "$tmp/log" ||
+	{ sed 's/^/  /' "$tmp/log" >&2; fail "the held-apart harness did not prove alone"; }
+[ ! -e "$tmp/row/kani-list.json" ] || fail "the listing was left in the crate directory"
+: >"$tmp/log"
+if apart "$(printf 'byte_glob\tverification::gone')"; then fail "a stale held-apart name passed"; fi
+grep -q 'no longer has: verification::gone' "$tmp/apart.out" || fail "a stale held-apart name failed without naming it"
+grep -q '^kani -p byte_glob --harness' "$tmp/log" && fail "a stale held-apart name still ran a proof"
+[ ! -e "$tmp/row/kani-list.json" ] || fail "a failed listing was left in the crate directory"
+echo "script/verify: a row held apart proves the rest, then each held harness alone, and refuses a stale name"
