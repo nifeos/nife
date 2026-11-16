@@ -22,6 +22,9 @@
 
 #![cfg_attr(not(test), no_std)]
 
+#[cfg(not(target_has_atomic = "64"))]
+compile_error!("clock_contract needs 64-bit atomics: every word of the clock page is an AtomicU64");
+
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
 struct ReadmeExample;
@@ -97,6 +100,12 @@ pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u6
 
 /// The offset that makes `monotonic_nanoseconds` read as `wall_nanoseconds`: what the clock service writes
 /// when it learns the time. The inverse of [`wall_nanoseconds`].
+///
+/// A `monotonic_nanoseconds` past `wall_nanoseconds` saturates to an offset of zero, and
+/// [`wall_nanoseconds`] then reads as uptime since the epoch, which is the reading this crate
+/// exists to prevent. [`policy::is_plausible`] makes that unreachable for a proposal or an RTC
+/// reading, since a plausible wall time exceeds any uptime a machine has, but [`ClockPage::publish`]
+/// accepts any offset from a holder of the set authority, so such a caller owns the check.
 pub const fn offset_for(wall_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
     wall_nanoseconds.saturating_sub(monotonic_nanoseconds)
 }
@@ -107,7 +116,7 @@ pub const fn offset_for(wall_nanoseconds: u64, monotonic_nanoseconds: u64) -> u6
 
 /// **The states the wall clock can be in, and one of them is "I do not know".**
 ///
-/// This is the no-silent-degradation rule on a second axis. A machine with no real-time clock (RTC), or
+/// A clock that does not know the time must say so instead of guessing. A machine with no real-time clock (RTC), or
 /// with an RTC reporting something impossible, must say so; confidently reporting 1970 plus uptime
 /// is the failure, because the caller cannot tell it from a real answer.
 pub mod state {
@@ -155,10 +164,10 @@ pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 /// name every contract crate uses for its layout version.
 pub const VERSION: u32 = 1;
 
-/// This interface's identity in a program's `INTERFACES` note: 8, naming the clock page and its
-/// propose call. The number is this interface's for good: no other interface takes it, and a format
-/// change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
-/// program declares the pair of this id and [`VERSION`].
+/// This interface's identity: 8, naming the clock page and its propose call. The number is this
+/// interface's for good: no other interface takes it, and a format change is a new version, never a
+/// new number. A program declares the pair of this id and [`VERSION`]; the system that links the
+/// programs keeps the table of ids and holds it to that rule.
 ///
 /// Name: ratified 2026-11-14 (UTC, #3576), with its value 8: the identity freeze of that date. The
 /// name every contract crate uses for its interface identity.
@@ -247,7 +256,8 @@ unsafe impl Send for ClockPage {}
 unsafe impl Sync for ClockPage {}
 
 impl ClockPage {
-    /// Name the clock page mapped at `virtual_address`.
+    /// Name the clock page mapped at `virtual_address`. The parameter is an address, not a
+    /// pointer: it arrives as a `u64`, the way a loader hands a mapping to a program.
     ///
     /// # Safety
     ///
@@ -281,6 +291,10 @@ impl ClockPage {
     /// wait on forever. The caller is the only writer and the one before it has stopped, so this
     /// gives the claim back. A copy that writer half filled is the spare one, which no reader is
     /// using and the next publish fills whole.
+    ///
+    /// The caller hands it a zeroed frame: `initialize` writes the seven words and nothing else,
+    /// so the rest of the frame, which [`WORDS`] says is reserved and must read as zero, is whatever
+    /// the frame held.
     ///
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
@@ -460,16 +474,19 @@ impl ClockPage {
 /// network time client: a compromised one can lie inside [`policy`]'s bounds and can do nothing
 /// else at all.
 pub mod propose {
-    /// Where the opcode sits in the first `CALL` word: bits 63:56, the same position its sibling
-    /// message contracts use, so the contracts read alike.
+    /// Where the opcode sits in the first `CALL` word: bits 63:56: the opcode occupies the top
+    /// byte of the first word, and the low 56 bits are the request's to use.
     pub const OPERATION_SHIFT: u32 = 56;
 
-    /// Build a request's first word.
+    /// Build a request's first word. The opcode is one byte: a larger `operation` loses its high
+    /// bits, which a debug build refuses.
     pub const fn req(operation: u64) -> u64 {
+        debug_assert!(operation < 256);
         operation << OPERATION_SHIFT
     }
 
-    /// The opcode of a request word.
+    /// The opcode of a request word. The low 56 bits are the request's to use, and nothing says
+    /// they are zero, so this discards them.
     pub const fn operation(word: u64) -> u64 {
         word >> OPERATION_SHIFT
     }
@@ -666,14 +683,14 @@ pub mod real_time_clock {
     /// **The `x86_64` CMOS RTC**, a clock behind two fixed I/O ports, [`INDEX_PORT`] and
     /// [`DATA_PORT`], with no page. `PL031` and `GOLDFISH` name a register layout the clock
     /// service reads through a mapping it holds; this one names the two ports the service reads
-    /// through a `PortRange` capability over both, which the wiring grants with `WRITE` because
-    /// the I/O permission bitmap cannot permit `in` without `out`.
+    /// through one grant that covers both, which must allow writes because x86's I/O permission
+    /// bitmap cannot permit `in` without `out`.
     ///
     /// Name and value provisional.
     pub const CMOS: u64 = 3;
 
     /// The CMOS index port: write a register number here before reaching it at [`DATA_PORT`].
-    /// The lower of the two ports a [`CMOS`] binding's `PortRange` names.
+    /// The lower of the two ports a [`CMOS`] binding's grant covers.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
     /// milestone 1062 (the device control planes leave the kernel), step 6.

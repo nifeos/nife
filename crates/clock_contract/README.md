@@ -79,6 +79,9 @@ release that gives the claim back, which loom passes and the argument in the sou
 
 ## Building and testing
 
+The crate needs 64-bit atomics (`target_has_atomic = "64"`): every word of the page is an
+`AtomicU64`, so a target without them fails to build with a message that says so.
+
 ```sh
 cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
