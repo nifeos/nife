@@ -1,15 +1,11 @@
 # The merge queue, and the three things that watch it
 
-Three scripts, all maintainer tools rather than front doors. Two were born on 2026-08-04 out of the
-same evening's failures: `helpers/merge-drain.sh`, which landed what did not need an architect
-and since 2026-10-03 labels what a maintainer session must pick up, and `helpers/trunk-health.sh`,
-which says when `main` is red. `helpers/lane-claim-check.sh` joined them on
-2026-08-31 and watches one step earlier, for work that has not reached the queue at all. A fourth,
-`helpers/at-risk-check.sh`, joined on 2026-09-23 and watches earlier still, for uncommitted work
-sitting in a lane worktree. It was first called from `helpers/trunk-health.sh`'s loop, so "three
-things that watch" named the count of things that run unattended in this repository's automation.
-Since 2026-09-24 it runs from `launchd` on each developer's own machine instead (its section says
-why). Names are provisional.
+Four maintainer tools, none of them a front door. `helpers/merge-drain.sh` labels what a
+maintainer session must pick up, and `helpers/trunk-health.sh` says when `main` is red.
+`helpers/lane-claim-check.sh` watches for work that has not reached the queue at all. Those three
+run unattended in Actions, which is the count in the title. `helpers/at-risk-check.sh` watches for
+uncommitted work in a lane worktree, from `launchd` on each developer's own machine (its section
+says why). Names are provisional.
 
 The evidence and history behind each section are in [`merge-queue/`](merge-queue/README.md), and
 each section links the appendix it summarizes.
@@ -199,15 +195,10 @@ proves with Kani. So does one that took five minutes or more in the runs of 2026
 mutation gate stays on the pull request at about three, since a survivor is the lane's to triage.
 That much is provisional, ruled 2026-11-03 UTC.
 
-The rule in force since 2026-11-16 (UTC) adds one exception. verify.yml's Kani jobs (`verify
-scope`, the `prove` shards, the kernel proofs and `re-falsify`) also run on a pull request whose
-diff adds or changes a harness. A harness that outgrows the hosted runner then fails on its own
-pull request in minutes, and does not evict the entries queued behind it. `helpers/harness_change.py`
-decides, and its header has the rule: a `#[kani::proof]` function added, removed or edited (as
-tokens, so a comment inside one does not count), a file under a `falsifications/` directory, or
-`script/verify`, whose tables plan the shards. It fails toward running. Every other heavy gate
-stays in the queue, and the required names do not change: a pull request that touches no harness
-skips the proofs as before, and each skipped job reports Success.
+Since 2026-11-16 (UTC), verify.yml's Kani jobs also run on a pull request that adds or changes a
+harness, so a harness too large for the hosted runner fails before it reaches the queue.
+`helpers/harness_change.py` decides and fails toward running; its header has the rule. The
+required names do not change.
 
 | on a pull request | in the merge group only |
 |---|---|
@@ -215,7 +206,7 @@ skips the proofs as before, and each skipped job reports Success.
 | `test`, as `test-host`: the host crates alone | `swish-check`, `swish-check-x86_64`, `boot-check`, `base-image` |
 | `mutation gate` | `rg-threads`, `rg-threads-x86_64`, `cpu matrix`, `watchdog`, `fuzz-guests` |
 | fastpath footprint, boot file size, stack frames, image permissions | `fuzz` (both shards), `bench`, `crate probes` |
-| reproducible build, `interleavings`, `coverage`, `supply chain` | verify.yml: `verify scope`, the `prove` shards, the kernel proofs, `re-falsify` (on a pull request too when a harness changes) |
+| reproducible build, `interleavings`, `coverage`, `supply chain` | verify.yml: `verify scope`, the `prove` shards, the kernel proofs, `re-falsify` |
 | `architect hold`, `ready status`, `empty diff` | kernel mutants (diff-scoped) and CodeQL run on pushes to `main` |
 
 A lane that changes kernel logic, or a workflow that runs a heavy job, runs the heavy set before it

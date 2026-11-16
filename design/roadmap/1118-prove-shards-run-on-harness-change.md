@@ -19,7 +19,7 @@ edit from a code edit for `script/verify --affected-since`.
 
 ## What is in force
 
-- `helpers/harness_change.py decide` runs in verify.yml's draft gate and writes `harness=true` when
+- `helpers/harness_change.py decide` runs in verify.yml's draft gate. It writes `harness=true` when
   the diff from the merge base adds, removes or edits a `#[kani::proof]` or
   `#[kani::proof_for_contract]` function (its attributes and body, compared as tokens without
   comments), changes a file under a `falsifications/` directory, or changes `script/verify`. A base
@@ -39,4 +39,4 @@ edit from a code edit for `script/verify --affected-since`.
 
 ## Index row
 
-A pull request that adds or changes a Kani harness, a falsification patch or script/verify runs verify.yml's Kani jobs before it queues, so a harness too large for the hosted runner fails on its own pull request and not in the merge queue.
+A pull request that changes a Kani harness, a falsification patch or script/verify runs the Kani jobs before it queues, so a harness too large for the hosted runner fails on its own pull request.
