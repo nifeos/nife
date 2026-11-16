@@ -3,7 +3,7 @@ status: BUILT
 built: 2026-11-16
 raised: 2026-11-16
 ---
-# 1117. The harness-crates claims are floors, so two lanes adding proofs do not race
+# 1120. The harness-crates claims are floors, so two lanes adding proofs do not race
 
 The rule in force since 2026-11-16 (UTC): two prose sentences say how many workspace packages carry
 a Kani proof harness, in `notes/verification.md` and `notes/unsafe-obligations/kani-gate.md`. Both
