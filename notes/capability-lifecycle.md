@@ -11,7 +11,7 @@ is that a derivative's rights are a subset of the source's:
 
 ```rust
 // Capability::delegate, which CapabilityTable::derive calls: the one rule.
-if !self.rights.allows(GRANT) { return Err(NotDelegable); }       // may I pass it on at all?
+if !self.rights.allows(GRANT) { return Err(GrantRequired); }       // may I pass it on at all?
 if !rights.is_subset_of(self.rights) { return Err(CannotWiden); }  // only narrow
 ```
 

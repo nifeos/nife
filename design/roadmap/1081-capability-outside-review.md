@@ -112,7 +112,7 @@ The ledger of what landed and what is left is in [the appendix](1081-capability-
    lines 340 to 400; `kernel/src/syscall.rs` lines 196 to 214; `grep -rn '\.derive(' kernel/src`.
    Change: put the rule in the crate once, as a method on `Capability<O>`: `delegate(&self,
    rights: Rights) -> Result<Capability<O>, Error>` (name provisional), refusing without `GRANT`
-   and refusing a widening, with a new error variant for the first refusal (`NotDelegable`,
+   and refusing a widening, with a new error variant for the first refusal (`GrantRequired`,
    provisional). Have `Delegation::derive` and `CapabilityTable::derive` call it, so the kernel's
    lock discipline stays where it is and the rule has one body. Prove it: a harness over all 2^32
    source and requested rights that `Ok` implies `GRANT` held and the result's bits are within the
@@ -226,7 +226,7 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
 - **Outstanding.** Decision D1, the move's items 1 and 13, the `peak` cargo feature of item 11 (a
   published name; the `target_has_atomic` gate is in), item 16 and the syscall layer's two inline
-  `GRANT` tests of item 3. The names `delegate`, `NotDelegable`, `SlotOccupied`, `capacity` and `iter`
+  `GRANT` tests of item 3. The names `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
   are provisional, and each becomes a published name when the crate releases.
 
 ## BUGS

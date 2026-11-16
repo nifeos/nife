@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Obj {
+enum Object {
     Console,
     PageFrame(u64),
 }
@@ -13,17 +13,17 @@ enum Obj {
 #[test]
 fn the_occupied_mask_is_exactly_the_occupied_slots() {
     let capability = |n| Capability {
-        object: Obj::PageFrame(n),
+        object: Object::PageFrame(n),
         rights: Rights::ALL,
     };
-    let mut cs: CapabilityTable<Obj, 8> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 8> = CapabilityTable::new();
     assert_eq!(cs.occupied_mask(), 0);
     cs.insert_at(2, capability(1)).unwrap();
     cs.insert_at(5, capability(2)).unwrap();
     assert_eq!(cs.occupied_mask(), 0b0010_0100);
     cs.delete(2).unwrap();
     assert_eq!(cs.occupied_mask(), 0b0010_0000);
-    let mut full: CapabilityTable<Obj, 64> = CapabilityTable::new();
+    let mut full: CapabilityTable<Object, 64> = CapabilityTable::new();
     assert_eq!(full.occupied_mask(), 0);
     full.insert_at(63, capability(3)).unwrap();
     assert_eq!(full.occupied_mask(), 1 << 63);
@@ -32,7 +32,7 @@ fn the_occupied_mask_is_exactly_the_occupied_slots() {
 /// **A new process holds nothing.** The decision, as an assertion.
 #[test]
 fn a_new_capability_table_can_name_nothing() {
-    let cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let cs: CapabilityTable<Object, 16> = CapabilityTable::new();
 
     assert!(cs.is_empty());
     for slot in 0..cs.capacity() as u64 {
@@ -46,11 +46,11 @@ fn a_new_capability_table_can_name_nothing() {
 /// capability would be a denial of service wearing a security fix's clothes.
 #[test]
 fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     cs.put(
         0,
         Capability {
-            object: Obj::PageFrame(0x1000),
+            object: Object::PageFrame(0x1000),
             rights: Rights::READ,
         },
     )
@@ -58,7 +58,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     cs.put(
         1,
         Capability {
-            object: Obj::Console,
+            object: Object::Console,
             rights: Rights::WRITE,
         },
     )
@@ -66,37 +66,37 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     cs.put(
         15,
         Capability {
-            object: Obj::PageFrame(0x2000),
+            object: Object::PageFrame(0x2000),
             rights: Rights::ALL,
         },
     )
     .unwrap();
 
-    cs.delete_matching(|o| matches!(o, Obj::PageFrame(_)));
+    cs.delete_matching(|o| matches!(o, Object::PageFrame(_)));
 
     // Both frames are gone, wherever they sat, including the last slot.
     assert_eq!(cs.get(0).err(), Some(Error::NoSuchSlot));
     assert_eq!(cs.get(15).err(), Some(Error::NoSuchSlot));
     // The bystander keeps its object and its rights.
     let survivor = cs.get(1).unwrap();
-    assert_eq!(survivor.object, Obj::Console);
+    assert_eq!(survivor.object, Object::Console);
     assert_eq!(survivor.rights, Rights::WRITE);
 }
 
 /// You cannot fabricate a capability. There is nothing to guess.
 #[test]
 fn an_unheld_slot_is_not_permission_denied_it_is_nothing() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     cs.put(
         0,
         Capability {
-            object: Obj::Console,
+            object: Object::Console,
             rights: Rights::WRITE,
         },
     )
     .unwrap();
 
-    assert_eq!(cs.get(0).unwrap().object, Obj::Console);
+    assert_eq!(cs.get(0).unwrap().object, Object::Console);
 
     // Every other slot, and every slot past the end.
     assert_eq!(cs.get(1).err(), Some(Error::NoSuchSlot));
@@ -109,11 +109,11 @@ fn an_unheld_slot_is_not_permission_denied_it_is_nothing() {
 /// simply derive yourself a better capability from the one you have.
 #[test]
 fn derive_cannot_widen_rights() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     cs.put(
         0,
         Capability {
-            object: Obj::PageFrame(0x1000),
+            object: Object::PageFrame(0x1000),
             rights: Rights::READ.union(Rights::GRANT),
         },
     )
@@ -138,11 +138,11 @@ fn derive_cannot_widen_rights() {
 /// A narrowed capability names the **same object**. Delegation moves authority, not identity.
 #[test]
 fn a_derived_capability_names_the_same_object_with_less_authority() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     cs.put(
         0,
         Capability {
-            object: Obj::PageFrame(0x4000),
+            object: Object::PageFrame(0x4000),
             rights: Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
         },
     )
@@ -150,18 +150,18 @@ fn a_derived_capability_names_the_same_object_with_less_authority() {
 
     cs.derive(0, 5, Rights::READ).unwrap();
 
-    let orig = cs.get(0).unwrap();
+    let original = cs.get(0).unwrap();
     let copy = cs.get(5).unwrap();
 
-    assert_eq!(orig.object, copy.object, "not the same object");
-    assert!(orig.rights.allows(Rights::WRITE));
+    assert_eq!(original.object, copy.object, "not the same object");
+    assert!(original.rights.allows(Rights::WRITE));
     assert!(!copy.rights.allows(Rights::WRITE), "the copy kept WRITE");
 }
 
 /// Deriving from an empty slot fails. You cannot lend what you do not hold.
 #[test]
 fn you_cannot_delegate_what_you_do_not_hold() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     assert_eq!(cs.derive(3, 4, Rights::READ).err(), Some(Error::NoSuchSlot));
 }
 
@@ -169,25 +169,25 @@ fn you_cannot_delegate_what_you_do_not_hold() {
 /// its own answer, distinct from asking for more than is held, and a refused derive leaves the
 /// destination slot empty.
 #[test]
-fn a_capability_without_grant_is_not_delegable() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+fn a_capability_without_grant_cannot_be_passed_on() {
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     let source = Capability {
-        object: Obj::Console,
+        object: Object::Console,
         rights: Rights::READ.union(Rights::WRITE),
     };
     cs.put(0, source).unwrap();
 
     assert_eq!(
         source.delegate(Rights::READ).err(),
-        Some(Error::NotDelegable)
+        Some(Error::GrantRequired)
     );
     assert_eq!(
         source.delegate(Rights::NONE).err(),
-        Some(Error::NotDelegable)
+        Some(Error::GrantRequired)
     );
     assert_eq!(
         cs.derive(0, 1, Rights::READ).err(),
-        Some(Error::NotDelegable)
+        Some(Error::GrantRequired)
     );
     assert_eq!(cs.get(1).err(), Some(Error::NoSuchSlot));
 }
@@ -197,7 +197,7 @@ fn a_capability_without_grant_is_not_delegable() {
 #[test]
 fn delegate_narrows_to_what_was_asked_and_refuses_more() {
     let source = Capability {
-        object: Obj::PageFrame(0x8000),
+        object: Object::PageFrame(0x8000),
         rights: Rights::READ.union(Rights::GRANT),
     };
     let copy = source.delegate(Rights::READ).unwrap();
@@ -213,10 +213,10 @@ fn delegate_narrows_to_what_was_asked_and_refuses_more() {
 #[test]
 fn iter_walks_the_occupied_slots_in_order() {
     let capability = |n| Capability {
-        object: Obj::PageFrame(n),
+        object: Object::PageFrame(n),
         rights: Rights::READ,
     };
-    let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 64> = CapabilityTable::new();
     assert_eq!(cs.iter().count(), 0);
     cs.put(40, capability(4)).unwrap();
     cs.put(3, capability(1)).unwrap();
@@ -236,10 +236,10 @@ fn iter_walks_the_occupied_slots_in_order() {
 #[test]
 fn an_occupied_slot_is_not_a_full_table() {
     let capability = Capability {
-        object: Obj::Console,
+        object: Object::Console,
         rights: Rights::READ,
     };
-    let mut cs: CapabilityTable<Obj, 2> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 2> = CapabilityTable::new();
     cs.insert_at(0, capability).unwrap();
     assert_eq!(cs.insert_at(0, capability), Err(Error::SlotOccupied));
     cs.insert_at(1, capability).unwrap();
@@ -248,11 +248,11 @@ fn an_occupied_slot_is_not_a_full_table() {
 
 #[test]
 fn deleting_a_capability_makes_the_object_unnameable() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     cs.put(
         0,
         Capability {
-            object: Obj::Console,
+            object: Object::Console,
             rights: Rights::ALL,
         },
     )
@@ -309,11 +309,11 @@ fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
 #[test]
 fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
     let capability = Capability {
-        object: Obj::PageFrame(3),
+        object: Object::PageFrame(3),
         rights: Rights::READ,
     };
     // Full at sixty-four, the most a table may have (`MAXIMUM_SLOTS`).
-    let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 64> = CapabilityTable::new();
     for _ in 0..64 {
         cs.insert(capability)
             .expect("sixty-four slots hold sixty-four");
@@ -333,10 +333,10 @@ fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
 #[test]
 fn the_free_slot_word_fills_to_zero_and_hands_back_the_lowest_hole() {
     let capability = Capability {
-        object: Obj::PageFrame(1),
+        object: Object::PageFrame(1),
         rights: Rights::READ,
     };
-    let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 64> = CapabilityTable::new();
     assert_eq!(cs.free_mask(), u64::MAX);
     for want in 0..64u64 {
         assert_eq!(cs.insert(capability), Ok(want));
@@ -352,7 +352,7 @@ fn the_free_slot_word_fills_to_zero_and_hands_back_the_lowest_hole() {
     assert_eq!(cs.used(), 64);
 
     // A small table's bits above N stay clear, so full is still zero there too.
-    let mut small: CapabilityTable<Obj, 3> = CapabilityTable::new();
+    let mut small: CapabilityTable<Object, 3> = CapabilityTable::new();
     assert_eq!(small.free_mask(), 0b111);
     for _ in 0..3 {
         small.insert(capability).unwrap();
@@ -363,9 +363,9 @@ fn the_free_slot_word_fills_to_zero_and_hands_back_the_lowest_hole() {
 
 #[test]
 fn a_full_table_says_so() {
-    let mut cs: CapabilityTable<Obj, 2> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 2> = CapabilityTable::new();
     let capability = Capability {
-        object: Obj::Console,
+        object: Object::Console,
         rights: Rights::ALL,
     };
     assert_eq!(cs.insert(capability), Ok(0));
@@ -444,13 +444,13 @@ fn rights_bits_are_the_wire_format() {
 /// START).
 #[test]
 fn insert_at_fills_exactly_the_named_slot() {
-    let mut cs: CapabilityTable<Obj, 4> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 4> = CapabilityTable::new();
     let capability = Capability {
-        object: Obj::PageFrame(7),
+        object: Object::PageFrame(7),
         rights: Rights::READ,
     };
     assert_eq!(cs.insert_at(2, capability), Ok(2));
-    assert_eq!(cs.get(2).unwrap().object, Obj::PageFrame(7));
+    assert_eq!(cs.get(2).unwrap().object, Object::PageFrame(7));
     assert!(!cs.is_empty());
     // The other slots are still empty, so it did not spray.
     assert_eq!(cs.get(0).err(), Some(Error::NoSuchSlot));
@@ -471,10 +471,10 @@ fn insert_at_fills_exactly_the_named_slot() {
 #[test]
 fn the_peak_records_what_was_reached_and_never_what_is_left() {
     let capability = Capability {
-        object: Obj::PageFrame(1),
+        object: Object::PageFrame(1),
         rights: Rights::READ,
     };
-    let mut cs: CapabilityTable<Obj, 4> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 4> = CapabilityTable::new();
     assert_eq!((cs.used(), cs.peak()), (0, 0));
 
     assert_eq!(cs.insert(capability), Ok(0));
@@ -488,7 +488,7 @@ fn the_peak_records_what_was_reached_and_never_what_is_left() {
 
     // And emptying it does not lower the mark.
     cs.delete(0).expect("slot 0 is occupied");
-    cs.delete_matching(|o| matches!(o, Obj::PageFrame(_)));
+    cs.delete_matching(|o| matches!(o, Object::PageFrame(_)));
     assert_eq!((cs.used(), cs.peak()), (0, 3));
 
     // Refusals leave the count alone. Both of `insert_at`'s, and `delete`'s.
@@ -497,7 +497,7 @@ fn the_peak_records_what_was_reached_and_never_what_is_left() {
     assert_eq!((cs.used(), cs.peak()), (0, 3));
 
     // A full table refuses, and the mark is the capacity rather than one past it.
-    let mut full: CapabilityTable<Obj, 2> = CapabilityTable::new();
+    let mut full: CapabilityTable<Object, 2> = CapabilityTable::new();
     assert!(full.insert(capability).is_ok());
     assert!(full.insert(capability).is_ok());
     assert_eq!(full.insert(capability).err(), Some(Error::NoFreeSlot));
@@ -511,10 +511,10 @@ fn the_peak_records_what_was_reached_and_never_what_is_left() {
 #[test]
 fn the_global_high_water_mark_is_never_below_a_table_that_reached_it() {
     let capability = Capability {
-        object: Obj::PageFrame(2),
+        object: Object::PageFrame(2),
         rights: Rights::WRITE,
     };
-    let mut cs: CapabilityTable<Obj, 8> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 8> = CapabilityTable::new();
     for _ in 0..5 {
         cs.insert(capability).expect("eight slots hold five");
     }
@@ -534,11 +534,11 @@ fn the_global_high_water_mark_is_never_below_a_table_that_reached_it() {
 /// truncation would let `2^32 + k` name slot `k`.
 #[test]
 fn a_slot_past_the_width_of_usize_names_nothing() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     cs.put(
         0,
         Capability {
-            object: Obj::Console,
+            object: Object::Console,
             rights: Rights::READ,
         },
     )
@@ -547,7 +547,7 @@ fn a_slot_past_the_width_of_usize_names_nothing() {
         assert_eq!(cs.get(slot).err(), Some(Error::NoSuchSlot), "{slot:#x}");
         assert_eq!(cs.delete(slot).err(), Some(Error::NoSuchSlot), "{slot:#x}");
         let again = Capability {
-            object: Obj::Console,
+            object: Object::Console,
             rights: Rights::READ,
         };
         assert_eq!(
@@ -562,10 +562,10 @@ fn a_slot_past_the_width_of_usize_names_nothing() {
 /// A sweep may keep state between slots, which is why it takes `FnMut`, as `retain` does.
 #[test]
 fn a_sweep_may_count_what_it_deletes() {
-    let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
+    let mut cs: CapabilityTable<Object, 16> = CapabilityTable::new();
     for _ in 0..3 {
         cs.insert(Capability {
-            object: Obj::Console,
+            object: Object::Console,
             rights: Rights::READ,
         })
         .unwrap();

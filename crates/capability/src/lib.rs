@@ -135,13 +135,13 @@ impl<O: Copy> Capability<O> {
     /// [`CapabilityTable::derive`] files the result, and an owner that reads its source under a
     /// lock of its own calls this on what it read, so the rule has one body.
     ///
-    /// Without `GRANT` the answer is [`Error::NotDelegable`], whatever `rights` asks for. With it,
+    /// Without `GRANT` the answer is [`Error::GrantRequired`], whatever `rights` asks for. With it,
     /// asking for a right the source lacks is [`Error::CannotWiden`], not a silent clamp.
     ///
-    /// Name: provisional (`delegate`, `NotDelegable`).
+    /// Name: provisional (`delegate`, `GrantRequired`).
     pub fn delegate(&self, rights: Rights) -> Result<Capability<O>, Error> {
         if !self.rights.allows(Rights::GRANT) {
-            return Err(Error::NotDelegable);
+            return Err(Error::GrantRequired);
         }
         if !rights.is_subset_of(self.rights) {
             return Err(Error::CannotWiden);
@@ -225,7 +225,7 @@ pub enum Error {
     CannotWiden,
     /// **The capability may not be passed on.** Its holder lacks [`Rights::GRANT`]. Provisional
     /// name.
-    NotDelegable,
+    GrantRequired,
     /// The table is full.
     NoFreeSlot,
     /// **The slot asked for is already occupied.** Distinct from [`NoFreeSlot`](Self::NoFreeSlot),
@@ -238,7 +238,7 @@ impl core::fmt::Display for Error {
         f.write_str(match self {
             Error::NoSuchSlot => "the slot is empty or out of range",
             Error::CannotWiden => "the rights asked for are not all held",
-            Error::NotDelegable => "the capability may not be passed on",
+            Error::GrantRequired => "the capability may not be passed on",
             Error::NoFreeSlot => "the table is full",
             Error::SlotOccupied => "the slot is already occupied",
         })
@@ -486,7 +486,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// **Copy a capability into another slot, with rights that are no greater.**
     ///
     /// The only way authority moves between slots, by [`Capability::delegate`]: the source must
-    /// hold [`Rights::GRANT`] ([`Error::NotDelegable`]), and asking for rights it does not hold is
+    /// hold [`Rights::GRANT`] ([`Error::GrantRequired`]), and asking for rights it does not hold is
     /// [`Error::CannotWiden`], not a silent clamp: a loader that quietly grants less than was asked
     /// for is a loader nobody can reason about.
     pub fn derive(&mut self, from: u64, to: u64, rights: Rights) -> Result<(), Error> {
@@ -832,7 +832,7 @@ mod verification {
     /// Falsification: replayable `crates/capability/falsifications/verification.derive_never_widens_rights.patch`
     #[kani::proof]
     fn derive_never_widens_rights() {
-        let src_rights = Rights(kani::any());
+        let source_rights = Rights(kani::any());
         let requested = Rights(kani::any());
 
         let mut cs: CapabilityTable<u8, 2> = CapabilityTable::new();
@@ -840,7 +840,7 @@ mod verification {
             0,
             Capability {
                 object: 0u8,
-                rights: src_rights,
+                rights: source_rights,
             },
         )
         .unwrap();
@@ -852,12 +852,12 @@ mod verification {
             // In raw bits, not through `is_subset_of`: `derive` guards on that predicate, so a
             // claim phrased through it would hold for any consistently wrong `is_subset_of`.
             assert_eq!(
-                derived.rights.0 & !src_rights.0,
+                derived.rights.0 & !source_rights.0,
                 0,
                 "a derived capability holds a right the source did not",
             );
             assert_eq!(
-                requested.0 & !src_rights.0,
+                requested.0 & !source_rights.0,
                 0,
                 "a request wider than the source got past the guard",
             );
@@ -895,7 +895,7 @@ mod verification {
                 assert_eq!(copy.rights.0, requested.0);
                 assert_eq!(copy.object, 5u8);
             }
-            Err(Error::NotDelegable) => assert_eq!(source.rights.0 & GRANT_BIT, 0),
+            Err(Error::GrantRequired) => assert_eq!(source.rights.0 & GRANT_BIT, 0),
             Err(Error::CannotWiden) => {
                 assert_ne!(source.rights.0 & GRANT_BIT, 0);
                 assert_ne!(requested.0 & !source.rights.0, 0);

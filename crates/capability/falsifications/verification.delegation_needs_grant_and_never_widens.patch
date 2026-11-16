@@ -12,10 +12,10 @@ diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
 @@ -140,9 +140,6 @@
      ///
-     /// Name: provisional (`delegate`, `NotDelegable`).
+     /// Name: provisional (`delegate`, `GrantRequired`).
      pub fn delegate(&self, rights: Rights) -> Result<Capability<O>, Error> {
 -        if !self.rights.allows(Rights::GRANT) {
--            return Err(Error::NotDelegable);
+-            return Err(Error::GrantRequired);
 -        }
          if !rights.is_subset_of(self.rights) {
              return Err(Error::CannotWiden);
