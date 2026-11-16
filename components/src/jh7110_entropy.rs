@@ -204,6 +204,10 @@ fn generate() -> Option<[u8; 32]> {
                     break; // out of the poll loop; the outer loop's next iteration retries GENE_RANDNUM
                 }
                 GenerationOutcome::NotReady => continue,
+                // `STAT.R256` is clear, so the words hold a 128-bit answer that the crate refuses
+                // to serve. `initialize` set `MODE.R256` and nothing here clears it, so a reseed
+                // would not change the width: the device is reported as answering nothing.
+                GenerationOutcome::WrongOutputWidth => return None,
             }
         }
     }
@@ -236,7 +240,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Word 1 carries the byte count and, in its high half, the `STAT` seen right after
     // `initialize`, whose `R256` says whether the 32 bytes are all device output or only 16 of
     // them.
-    let bytes_in_hand = pool.remaining() as u64;
+    let bytes_in_hand = pool.remaining_bytes() as u64;
     send(
         READY,
         report,
@@ -274,13 +278,14 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this driver condemned at bring-up (see `_start`). It is
             // answered exactly the way a dry device is, because `NO_ENTROPY` already means the one
             // thing a client has to know: it is not getting randomness here.
-            // The crate's `take` answers a count and a little-endian word with zeros past the
-            // count; rebuilding the pair through the contract's `reply` makes that zero tail the
-            // contract's guarantee rather than the crate's.
+            // The crate's `take_into` fills the slice it is given and answers how much of it it
+            // filled, so the reply is built from those bytes through the contract's `reply`,
+            // which makes the zero tail past the count the contract's guarantee.
             proto::GET if !refuse && proto::request_is_well_formed(w0) => {
-                let (count, word) = pool.take(proto::requested_bytes(w0), &mut generate);
-                let count = count.min(proto::MAXIMUM_BYTES) as usize;
-                proto::reply(&word.to_le_bytes()[..count])
+                let mut bytes = [0u8; proto::MAXIMUM_BYTES as usize];
+                let wanted = proto::requested_bytes(w0).min(proto::MAXIMUM_BYTES) as usize;
+                let served = pool.take_into(&mut bytes[..wanted], &mut generate);
+                proto::reply(&bytes[..served])
             }
             _ => (proto::NO_ENTROPY, 0),
         };
