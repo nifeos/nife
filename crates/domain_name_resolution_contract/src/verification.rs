@@ -5,8 +5,9 @@
 //!
 //! Name: provisional, after the module every other crate's harnesses live in.
 
-use super::*;
 use domain_name_system::Name;
+
+use super::*;
 
 /// How many control messages a run holds. Four reach a fresh grant, a re-grant over it, a piece
 /// out of order and a forget, and each zone piece is eight bytes, so a zone of up to 32 bytes can
