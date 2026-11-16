@@ -679,12 +679,16 @@ fn a_return_keeps_every_run_inside_its_parents_spent_part() {
     if let Some(claim) = claim {
         table.return_to_parent(&claim);
     }
-    let snaps = names.map(|n| table.snapshot(n));
-    for s in snaps.into_iter().flatten() {
+    // Each region by name, never through `Iterator::flatten` over the three: the flatten's inner
+    // loop is one the model checker cannot bound, and unrolling it ran CBMC past a hosted
+    // runner's memory before the solver started.
+    let [root, child, grandchild] = names.map(|n| table.snapshot(n));
+    assert!(grandchild.is_none(), "the claimed grandchild still resolves");
+    let (root, child) = (root.expect("root"), child.expect("child"));
+    for s in [root, child] {
         assert!(s.retyped_to <= s.watermark, "retyped past the watermark");
         assert!(s.watermark <= s.pages, "watermark past the region");
     }
-    let (root, child) = (snaps[0].expect("root"), snaps[1].expect("child"));
     assert!(
         child.base_page >= root.base_page
             && child.base_page + child.pages <= root.base_page + root.watermark,
