@@ -1,60 +1,57 @@
 //! A program's manifest, as the bytes of an ELF note it carries: inside the executable behind a
-//! `PT_NOTE`, so it is in the bytes the progenitor hashes (§197 (a package is one archive file),
-//! calef's option M2, 2026-09-26 UTC). The wire format between [`carry!`] and the shell and
-//! progenitor that read it (AGENTS.md rule 7); `crates/static_elf` finds the note, and this crate starts
-//! at the descriptor: owner [`OWNER`], type [`MANIFEST`], version 1 ([`DESCRIPTOR_BYTES`] bytes) or
-//! [`ZONED_VERSION`] 2. One manifest has exactly one encoding: [`decode`] refuses anything
-//! [`encode`] would not write. The layouts are below; notes/capability-manifest-note.md has the
-//! reasons.
+//! `PT_NOTE`, so it is in the bytes a loader hashes, and changing what a program asks for changes
+//! its digest. The wire format between [`carry!`] and the loader and shell that read it; an ELF
+//! reader finds the note, and this crate starts at the descriptor: owner [`OWNER`], type
+//! [`MANIFEST`], version 1 ([`DESCRIPTOR_BYTES`] bytes), [`ZONED_VERSION`] 2 or
+//! [`SERVICED_VERSION`] 3. One manifest has exactly one encoding: [`decode`] refuses anything
+//! [`encode`] would not write. The layouts are below; the README has the reasons.
 
 //! # BUGS
 //!
 //! - A foreign build carries a note only by linking an object that holds one: `-Clink-arg=note.o`
 //!   works and `llvm-objcopy --add-section` makes no program header. [`Note::of`] gives the bytes
 //!   that object holds; writing the object is the build's own step.
-//! - Changing a manifest means relinking, and a new digest: M2's accepted cost.
+//! - Changing a manifest means relinking, and a new digest: the cost of keeping the request inside
+//!   the hashed bytes.
 //!
 
 //! # The descriptor, version 1
 //!
-//! A version word, then little-endian fields in a fixed order (the encoding calef ratified
-//! 2026-09-26). Every field is one of `grant_plan::Manifest`'s, in bytes; nothing here is a new
-//! authority.
+//! A version word, then little-endian fields in a fixed order. Every field is one of
+//! `grant_plan::Manifest`'s, in bytes; nothing here is a new authority.
 //!
 //! | offset | size | field | values |
 //! |---|---|---|---|
 //! | 0 | 4 | version | `1` |
-//! | 4 | 1 | `arg` | 0 forbidden, 1 required; hears words (milestone 205): 2 read-only, 3 read-write, 4 create |
-//! | 5 | 1 | `mem` | 0 forbidden, 1 required |
+//! | 4 | 1 | `program_argument` | 0 forbidden, 1 required; hears words: 2 read-only, 3 read-write, 4 create |
+//! | 5 | 1 | `memory_grant` | 0 forbidden, 1 required |
 //! | 6 | 1 | `file` | 0 forbidden, 1 read-only, 2 read-write |
-//! | 7 | 1 | `dir` | 0 forbidden, 1 required |
-//! | 8 | 8 | `mem` minimum pages | 0 unless `mem` is required |
-//! | 16 | 8 | `mem` maximum pages | 0 unless `mem` is required; at least the minimum |
+//! | 7 | 1 | `directory` | 0 forbidden, 1 required |
+//! | 8 | 8 | `memory_grant` minimum pages | 0 unless `memory_grant` is required |
+//! | 16 | 8 | `memory_grant` maximum pages | 0 unless `memory_grant` is required; at least the minimum |
 //! | 24 | 1 | `output` | 0 silent, 1 words, 2 bytes, 3 bytes and diagnostics (at `grant_plan::DIAGNOSTICS_SLOT`) |
 //! | 25 | 1 | `input` | 0 forbidden, 1 required |
 //! | 26 | 1 | `input` writes while reading | 0 or 1; 0 unless `input` is required |
-//! | 27 | 1 | `dir`'s subtree option | 0 for none, else one of the declared option letters; 0 unless `dir` is required |
+//! | 27 | 1 | `directory`'s subtree option | 0 for none, else one of the declared option letters; 0 unless `directory` is required |
 //! | 28 | 1 | `reports` | 0 or 1 |
 //! | 29 | 1 | `interruptible` | 0 or 1 |
 //! | 30 | 1 | `clock` | 0 or 1 |
 //! | 31 | 1 | `domain` | 0 or 1 |
-//! | 32 | 1 | `config` | 0 or 1 |
+//! | 32 | 1 | `configuration` | 0 or 1 |
 //! | 33 | 1 | `entropy` | 0 or 1 |
 //! | 34 | 1 | `network` | 0 or 1 |
 //! | 35 | 1 | `startup` | 0 native, 1 std |
 //! | 36 | 1 | option count | at most `grant_plan::MAXIMUM_DECLARED_SHORT_OPTIONS` (16) |
 //! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
-//! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
-//! | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
+//! | 53 | 1 | `machine` | 0 or 1, the machine statistics page |
+//! | 54 | 1 | `share` | 0 or 1, a view of the job budget |
 //! | 55 | 1 | zero | |
 //!
 //! Byte 55 is the last zero.
 
 //! # The descriptor, version 2: a manifest and the resolver zones it asks for
 //!
-//! calef, 2026-10-19 (UTC), on #2405 (milestone 892 (a std program at the prompt holds the network
-//! and a resolver)'s Q1, "approve version 2?"): "Yes". Version 1's 56 bytes at the same offsets,
-//! with `2` in the version word, then:
+//! Version 1's 56 bytes at the same offsets, with `2` in the version word, then:
 //!
 //! | offset | size | field | values |
 //! |---|---|---|---|
@@ -65,15 +62,14 @@
 //! The descriptor ends with the last zone, so `descsz` need not be a multiple of four; [`ZonedNote`]
 //! pads after it. **One request is still one encoding**: a manifest that asks for no zone is
 //! version 1, so a version 2 count of 0 is refused, and the zones are canonical ([`zones`] says
-//! how). Zones are what the program asks for; the owner grants them at install, and nothing here
-//! grants anything (§252 (a resolver grant is one zone per client badge)).
+//! how). Zones are what the program asks for; the owner grants them at install, one zone to each
+//! badge the resolver hands out, and nothing here grants anything.
 //!
 //! # The descriptor, version 3: the service ask
 //!
-//! Milestone 911 (scripted installs grant only what the owner's approval file allows) needs the
-//! ask the owner grants at install to be able to say "runs as a service" before milestone 910 (a
-//! package declares a service) builds the start. Version 3 is version 2's layout with the zone
-//! count allowed to be zero and one byte after the zones:
+//! The owner grants a program at install what its manifest asks for, and running as a service is
+//! one of those asks. Version 3 is version 2's layout with the zone count allowed to be zero and
+//! one byte after the zones:
 //!
 //! | offset | size | field | values |
 //! |---|---|---|---|
@@ -82,8 +78,7 @@
 //! | after | 1 | service | `0` or `1` |
 //!
 //! A manifest that asks for zones and no service stays version 2, so no existing digest changes;
-//! the service ask is the one thing only version 3 can say. Nothing starts a recorded service;
-//! that is milestone 910's.
+//! the service ask is the one thing only version 3 can say. Nothing here starts a service.
 //!
 //! Name: ratified 2026-10-18 (calef, "`capability_manifest_note`"). The descriptor is the capabilities
 //! a program requests ("manifest" in the Android sense), and "note" separates the ELF-note encoding
@@ -99,15 +94,15 @@ use grant_plan::{
     OutputDeclaration, ProgramArgumentDeclaration, ShortOptions, StartupContract, WordGrant,
 };
 
-/// The note's owner string, without its NUL: the project's name, lowercase as
-/// `design/naming.md` rules it spelled everywhere.
+/// The note's owner string, without its NUL: the name of the operating system that defines these
+/// notes, in lowercase, as `FreeBSD` and `GNU` name the owners of theirs.
 ///
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
 pub const OWNER: &[u8] = b"nife"; // wire literal
 
 /// The note type that carries a manifest: `1`, "manifest".
 ///
-/// Types are per owner, so `1` collides with nothing outside `nife`'s own notes.
+/// Types are per owner, so `1` collides with no other owner's notes.
 ///
 /// Name: ratified 2026-09-26 (calef, answering "Yes" to the maintainer, who relayed it to milestone 597's lane).
 pub const MANIFEST: u32 = 1;
@@ -130,9 +125,9 @@ pub const NOTE_SET_VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 7, naming the set of manifest note
 /// types and their descriptors. The number is this interface's for good: no other interface takes
-/// it, and a format change is a new version, never a new number. Milestone 956 (the linked
-/// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
-/// tree to it. A program declares the pair of this id and [`NOTE_SET_VERSION`].
+/// it, and a format change is a new version, never a new number. The project that links these
+/// crates keeps the table of numbers and holds it to that rule. A program declares the pair of
+/// this id and [`NOTE_SET_VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 7;
@@ -143,18 +138,16 @@ pub const INTERFACE_ID: u64 = 7;
 pub const DESCRIPTOR_BYTES: usize = 56;
 
 /// The descriptor version that carries resolver zones after version 1's fields (the module's
-/// version 2 table). Provisional name; the number and layout are
-/// calef's 2026-10-19 (UTC) ruling.
+/// version 2 table). The number and the layout are ratified; the name is provisional.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const ZONED_VERSION: u32 = 2;
 
-/// The descriptor version that carries the service ask after the zones (milestone 911 (scripted
-/// installs grant only what the owner's approval file allows)): version 2's layout with the zone
-/// count allowed to be zero, then one byte, `1` when the manifest asks to run as a service. A
-/// manifest that asks for zones and no service stays version 2, so no existing digest changes;
-/// the service ask is the one thing only version 3 can say. The starting is milestone 910 (a
-/// package declares a service)'s; this is the ask the owner grants at install.
+/// The descriptor version that carries the service ask after the zones: version 2's layout with
+/// the zone count allowed to be zero, then one byte, `1` when the manifest asks to run as a
+/// service. A manifest that asks for zones and no service stays version 2, so no existing digest
+/// changes; the service ask is the one thing only version 3 can say. This is the ask the owner
+/// grants at install; starting the service is the system's, not this crate's.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub const SERVICED_VERSION: u32 = 3;
@@ -300,17 +293,17 @@ const fn refuse_what_no_note_carries(m: &Manifest) {
         "a manifest note cannot carry `installer` or `catalog`: only the owner's console grants them, \
          and only to a program the image names"
     );
-    // Milestone 801 (packages over the internet): the index store likewise, for the same reason.
+    // The index store likewise, for the same reason.
     assert!(
         matches!(m.indexes, IndexStoreDeclaration::Forbidden),
         "a manifest note cannot carry `indexes`: only the owner's console grants the index store"
     );
-    // Milestone 809: and the activation directory.
+    // And the activation directory.
     assert!(
         !m.activation_directory,
         "a manifest note cannot carry `activation_directory`: only the owner's console grants it"
     );
-    // Milestone 892: and standard input from the console.
+    // And standard input from the console.
     assert!(
         !m.console_input,
         "a manifest note cannot carry `console_input`: only the owner's console grants it"
@@ -321,8 +314,8 @@ const fn refuse_what_no_note_carries(m: &Manifest) {
 /// from the constant its source declares ([`carry!`]). Panics, a compile error in a constant, on
 /// what the layout cannot spell: a second stream off `grant_plan::DIAGNOSTICS_SLOT`, a subtree
 /// option that is not a declared letter or lacks a directory grant, and `reboot`, `sync`,
-/// `installer` or `catalog`, which no image may be endowed (milestone 809 (the package client
-/// becomes a program)). See notes/capability-manifest-note.md.
+/// `installer` or `catalog`, which no image may be endowed, and the other grants only the owner's
+/// console gives (the README says why they have no byte).
 pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
     refuse_what_no_note_carries(m);
     let mut out = [0u8; DESCRIPTOR_BYTES];
@@ -449,7 +442,11 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// # Examples
 ///
 /// ```
-/// let m = grant_plan::Program::Uptime.manifest();
+/// const M: grant_plan::Manifest = grant_plan::Manifest {
+///     clock: true,
+///     ..grant_plan::NO_NOTE_MANIFEST
+/// };
+/// let m = M;
 /// let bytes = capability_manifest_note::encode(&m);
 /// assert_eq!(capability_manifest_note::decode(&bytes), Ok(m));
 ///
@@ -461,7 +458,7 @@ fn zero(d: &[u8], at: usize, len: usize) -> Result<(), Error> {
 /// A program carries its note with one line at module scope:
 ///
 /// ```ignore
-/// capability_manifest_note::carry!(grant_plan::Program::Uptime.manifest());
+/// capability_manifest_note::carry!(M);
 /// ```
 ///
 /// A version 2 or version 3 descriptor decodes to the manifest its first 56 bytes spell. Its zones
@@ -626,7 +623,7 @@ fn decode_startup(d: &[u8]) -> Result<StartupContract, Error> {
 }
 
 /// **A whole manifest note**, header and owner and descriptor, aligned as a note must be. What
-/// [`carry!`] places in the program's `.note.nife.manifest` section. Provisional name.
+/// [`carry!`] places in the program's note section. Provisional name.
 #[repr(C, align(4))]
 pub struct Note(pub [u8; NOTE_BYTES]);
 
@@ -658,12 +655,12 @@ pub const fn zoned_descriptor_bytes(zones: &[&str]) -> usize {
 /// `zones`, named by the caller's type, as [`encode_verbs`] does:
 ///
 /// ```
-/// const ZONES: &[&str] = &["", "basalt.nifeos.org"];
+/// const ZONES: &[&str] = &["", "example.net"];
 /// const M: grant_plan::Manifest = grant_plan::NO_NOTE_MANIFEST;
 /// const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)] = capability_manifest_note::encode_zoned(&M, ZONES);
 /// assert_eq!(capability_manifest_note::decode(&D), Ok(M));
 /// let zones = capability_manifest_note::zones(&D).unwrap();
-/// assert_eq!(zones.iter().collect::<Vec<_>>(), [b"".as_slice(), b"basalt.nifeos.org"]);
+/// assert_eq!(zones.iter().collect::<Vec<_>>(), [b"".as_slice(), b"example.net"]);
 /// ```
 ///
 /// It panics, a compile error in a constant, on everything [`zones`] refuses, and on no zones at
@@ -786,8 +783,8 @@ fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
     Ok(&d[DESCRIPTOR_BYTES..])
 }
 
-/// **Whether the manifest asks to run as a service**, the version 3 ask (milestone 911 (scripted
-/// installs grant only what the owner's approval file allows)), read from a checked descriptor.
+/// **Whether the manifest asks to run as a service**, the version 3 ask, read from a checked
+/// descriptor.
 /// `false` for version 1 and version 2, whose grammar cannot say it.
 ///
 /// Name: provisional. A question, so a caller's `if asks_service(d)? { ... }` reads as the
@@ -1032,11 +1029,12 @@ const _: () = assert!(OWNER.len() < NAME_FIELD_BYTES && NAME_FIELD_BYTES.is_mult
 
 /// Carry this manifest in the program's own bytes: one line at module scope, any constant
 /// `grant_plan::Manifest`, and optionally its resolver zones, sorted, `""` for the root
-/// ([`ZonedNote`]). It places one [`Note`] in `.note.nife.manifest`; used twice it is a duplicate
-/// symbol, and readers refuse a file with two notes (`static_elf::NoteError::Duplicate`).
+/// ([`ZonedNote`]). It places one [`Note`] in the program's note section, which the program's
+/// linker script must keep in a `PT_NOTE`; used twice it is a duplicate symbol, and a reader should
+/// refuse a file with two manifest notes.
 ///
 /// ```ignore
-/// capability_manifest_note::carry!(MANIFEST, zones = &["basalt.nifeos.org"]);
+/// capability_manifest_note::carry!(MANIFEST, zones = &["example.net"]);
 /// ```
 ///
 /// Name: provisional, milestone 597's lane, 2026-09-26.
@@ -1074,16 +1072,15 @@ macro_rules! carry {
 }
 
 // -------------------------------------------------------------------------------------------
-// The second note type: a file server that enforces subtree grants itself (milestone 606 (a
-// directory walk costs what it does on Linux), calef's ruling T1 of 2026-09-27, 15:22Z on #1413).
+// The second note type: a file server that enforces subtree grants itself.
 // -------------------------------------------------------------------------------------------
 
 /// **The note type that says a file server enforces subtree grants itself**: `2`. A server carries
 /// it when it resolves every path and every handle through a scope crate, and it is what the
-/// progenitor reads to choose a bound badge over a caretaker for that server's grants. Absent means
+/// loader reads to choose a bound badge over a caretaker for that server's grants. Absent means
 /// "give its clients a caretaker", which is every server but an eligible one.
 ///
-/// Name and number provisional (calef, 2026-09-27: "the note and field names stay provisional").
+/// Name and number provisional.
 pub const SUBTREE_GRANTS: u32 = 2;
 
 /// The version of the [`SUBTREE_GRANTS`] descriptor this crate writes and reads.
@@ -1098,7 +1095,7 @@ pub const SUBTREE_GRANTS_BYTES: usize = 8;
 /// a second rather than a flag that would need a second field.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Scope {
-    /// `crates/subtree_scope`, the one ruling D (2026-09-27) names.
+    /// The `subtree_scope` crate, the one scope crate there is.
     SubtreeScope,
 }
 
@@ -1110,7 +1107,7 @@ impl Scope {
     }
 
     /// The package declaration's spelling of this scope, the value of its `subtree_grants` field,
-    /// which `script/lint` checks against the note a server carries.
+    /// which a build can check against the note a server carries.
     pub const fn declared(self) -> &'static str {
         match self {
             Scope::SubtreeScope => "subtree_scope",
@@ -1159,9 +1156,9 @@ impl SubtreeGrantsNote {
 
 /// **Declare that this file server enforces subtree grants through `scope`.** One line at module
 /// scope in the server's root, beside nothing else: a server carries no [`Manifest`]. It places one
-/// [`SubtreeGrantsNote`] in `.note.nife.manifest`, the same section and `PT_NOTE` a manifest uses.
+/// [`SubtreeGrantsNote`] in the same note section and `PT_NOTE` a manifest uses.
 ///
-/// Carrying it is a claim the progenitor acts on, so `script/lint` holds it to account: the crate
+/// Carrying it is a claim the loader acts on, so a build should hold it to account: the crate
 /// must depend on `subtree_scope`, and its package declaration must say so too.
 ///
 /// Name: provisional, milestone 606's lane, 2026-09-27.
@@ -1176,24 +1173,21 @@ macro_rules! carry_subtree_grants {
 }
 
 // -------------------------------------------------------------------------------------------
-// The third note type: a program's verbs and what each is granted (milestone 809 (the package
-// client becomes a program), its option V2).
+// The third note type: a program's verbs and what each is granted.
 // -------------------------------------------------------------------------------------------
 
 /// The note type that carries a program's verb table: `3`. Each entry names one word a line may
-/// give after the program's name and which progenitor-endowed authorities that line is granted
-/// (`grant_plan::narrow_by_verb`); a word not in the table is granted none. Nothing in the image
-/// carries it yet, and the progenitor refuses installed bytes that do. See
-/// notes/capability-manifest-note.md.
+/// give after the program's name and which loader-endowed authorities that line is granted
+/// (`grant_plan::narrow_by_verb`); a word not in the table is granted none.
 ///
-/// Name and number provisional (milestone 809).
+/// Name and number provisional.
 pub const VERBS: u32 = 3;
 
 /// The version of the [`VERBS`] descriptor this crate writes and reads.
 pub const VERBS_VERSION: u32 = 1;
 
 /// The most verbs a [`VERBS`] descriptor may hold: 256. Room for a program the size of git
-/// (175 subcommands in git 2.56.0, calef's measure on #1903), and a bound on what a malformed count
+/// (175 subcommands in git 2.56.0), and a bound on what a malformed count
 /// can make a reader walk.
 ///
 /// Name: ratified 2026-10-27 (#2797).
@@ -1206,8 +1200,8 @@ pub const MAXIMUM_VERBS: usize = 256;
 pub const VERB_RECORD_BYTES: usize = grant_plan::MAXIMUM_VERB + 4;
 
 /// A [`VERBS`] descriptor's length for `count` verbs: the version word, the count word, and
-/// exactly `count` records. Variable, as calef ruled on #1903 (2026-10-10 (UTC)); one table still
-/// has one encoding, because the records are sorted and each verb appears once.
+/// exactly `count` records. Variable in length; one table still has one encoding, because the
+/// records are sorted and each verb appears once.
 ///
 /// Name: provisional. A length carries its unit (`design/naming.md`, units), and `descriptor`
 /// says which length, beside the whole note's.
@@ -1215,11 +1209,15 @@ pub const fn verbs_descriptor_bytes(count: usize) -> usize {
     8 + count * VERB_RECORD_BYTES
 }
 
-/// The bytes of a verb table (milestone 809). A `const fn`, so a program's table is computed by
-/// the compiler; `LEN` is [`verbs_descriptor_bytes`] of the table's length, named by the caller's type:
+/// The bytes of a verb table. A `const fn`, so a program's table is computed by the compiler;
+/// `LEN` is [`verbs_descriptor_bytes`] of the table's length, named by the caller's type:
 ///
 /// ```
-/// const TABLE: &[grant_plan::VerbGrant] = grant_plan::Program::Jig.verbs();
+/// use grant_plan::{ManifestAuthorities, VerbGrant};
+/// const TABLE: &[VerbGrant] = &[
+///     VerbGrant { verb: "fetch", authorities: ManifestAuthorities::NETWORK },
+///     VerbGrant { verb: "list", authorities: ManifestAuthorities::NONE },
+/// ];
 /// const BYTES: [u8; capability_manifest_note::verbs_descriptor_bytes(TABLE.len())] = capability_manifest_note::encode_verbs(TABLE);
 /// assert_eq!(capability_manifest_note::decode_verbs(&BYTES).unwrap().len(), TABLE.len());
 /// ```
@@ -1449,8 +1447,7 @@ mod verb_tests {
     const JIG: &[VerbGrant] = Program::Jig.verbs();
     const JIG_BYTES: [u8; verbs_descriptor_bytes(JIG.len())] = encode_verbs(JIG);
 
-    /// **`jig`'s verb table round-trips, and so does an empty one** (milestone 809, fork 2: a list
-    /// of (verb, grants) pairs). What a distribution writes is what the decoder reads back, entry
+    /// **A program's verb table round-trips, and so does an empty one**. What a distribution writes is what the decoder reads back, entry
     /// for entry, and the length is exactly the count's.
     #[test]
     fn a_verb_table_round_trips() {
@@ -1467,8 +1464,8 @@ mod verb_tests {
         assert!(decode_verbs(&empty).unwrap().is_empty());
     }
 
-    /// **A table the size of git's** (calef on #1903: "How many verbs does git have?"): 175 sorted
-    /// verbs encode, decode, and are each found; the cap holds at 256.
+    /// **A table the size of git's**: 175 sorted verbs encode, decode, and are each found; the cap
+    /// holds at 256.
     #[test]
     fn a_table_the_size_of_gits_round_trips() {
         let words: std::vec::Vec<std::string::String> =

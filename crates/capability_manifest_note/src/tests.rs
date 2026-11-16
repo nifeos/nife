@@ -7,8 +7,7 @@ use grant_plan::Program;
 
 use super::*;
 
-/// **The subtree-grants note round-trips, and one encoding is the only encoding** (milestone
-/// 606, ruling T1): the note's own descriptor decodes to its scope, and a wrong version, scope
+/// **The subtree-grants note round-trips, and one encoding is the only encoding**: the note's own descriptor decodes to its scope, and a wrong version, scope
 /// or length is refused rather than read as "eligible".
 #[test]
 fn a_subtree_grants_note_has_one_encoding() {
@@ -38,7 +37,7 @@ fn a_subtree_grants_note_has_one_encoding() {
 fn every_compiled_in_manifest_round_trips() {
     for p in Program::ALL {
         let m = p.manifest();
-        // The two manifests with no note, by design (milestones 805 and 809): see `encode`.
+        // The manifests with no note, by design: see `encode`.
         if m.reboot
             || m.sync
             || m.installer
@@ -52,7 +51,7 @@ fn every_compiled_in_manifest_round_trips() {
     }
     let m = grant_plan::UNVOUCHED_MANIFEST;
     assert_eq!(decode(&encode(&m)), Ok(m));
-    // Each word grant a program that hears words may declare (milestone 205).
+    // Each word grant a program that hears words may declare.
     for g in [WordGrant::ReadOnly, WordGrant::ReadWrite, WordGrant::Create] {
         let m = Manifest {
             program_argument: ProgramArgumentDeclaration::Words(g),
@@ -68,9 +67,8 @@ fn a_later_version_is_refused_rather_than_guessed_at() {
     d[0] = 9;
     assert_eq!(decode(&d), Err(Error::UnknownVersion));
     assert_eq!(decode(&d[..3]), Err(Error::NoVersion));
-    // Version 3 is known now (milestone 911 (scripted installs grant only what the owner's
-    // approval file allows)); a version 1 descriptor with 3 in its version word is a
-    // WrongLength, since 3's layout is longer.
+    // Version 3 is known; a version 1 descriptor with 3 in its version word is a WrongLength,
+    // since 3's layout is longer.
     let mut d = encode(&Program::Uptime.manifest());
     d[0] = 3;
     assert_eq!(decode(&d), Err(Error::WrongLength));
@@ -247,7 +245,7 @@ fn a_second_stream_at_any_other_slot_has_no_encoding() {
     let _ = encode(&m);
 }
 
-/// The reboot object has no spelling in a note (milestone 805): a program carrying one that
+/// The reboot object has no spelling in a note: a program carrying one that
 /// asked for it fails to build, rather than shipping a request no reader may grant.
 #[test]
 #[should_panic(expected = "cannot carry `reboot`")]
@@ -321,7 +319,7 @@ fn both_notes_state_their_owner_length_descriptor_length_and_type() {
 
 /// `put4` lays four bytes forward from `at`, in order, touching nothing else. The notes' own
 /// words are all under 256, so only a word with four different bytes tells `at + i` from
-/// `at - i`. Mutation survivor triage, milestone 326 (turn a mutation score upward), batch 3.
+/// `at - i`, which a mutation test found surviving.
 #[test]
 fn put4_writes_four_bytes_forward_and_nothing_else() {
     let mut out = [0u8; 12];
@@ -329,7 +327,7 @@ fn put4_writes_four_bytes_forward_and_nothing_else() {
     assert_eq!(out, [0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 0]);
 }
 
-/// **A version 2 descriptor has one reading** (calef's 2026-10-19 (UTC) ruling on #2405): it
+/// **A version 2 descriptor has one reading**: it
 /// decodes to the manifest its first 56 bytes spell, its zones come back in order, and each way
 /// a second spelling of the same ask could arise is refused: no zones (that is version 1),
 /// unsorted or repeated zones, uppercase, an end or doubled dot, more than eight, or a byte past
@@ -337,7 +335,7 @@ fn put4_writes_four_bytes_forward_and_nothing_else() {
 #[test]
 fn a_zoned_descriptor_has_one_encoding() {
     use std::vec::Vec;
-    const ZONES: &[&str] = &["", "basalt.nifeos.org", "example.net"];
+    const ZONES: &[&str] = &["", "alpha.example.org", "example.net"];
     const M: Manifest = Manifest {
         network: true,
         ..grant_plan::NO_NOTE_MANIFEST
@@ -348,7 +346,7 @@ fn a_zoned_descriptor_has_one_encoding() {
     assert!(z.has_root());
     assert_eq!(
         z.iter().collect::<Vec<_>>(),
-        [b"".as_slice(), b"basalt.nifeos.org", b"example.net"]
+        [b"".as_slice(), b"alpha.example.org", b"example.net"]
     );
     assert!(!z.is_empty());
     assert_eq!(z.len(), 3);
@@ -358,7 +356,7 @@ fn a_zoned_descriptor_has_one_encoding() {
         zones(&encode(&M)).unwrap().is_empty(),
         "version 1 asks none"
     );
-    const NO_ROOT: &[&str] = &["nife.test"];
+    const NO_ROOT: &[&str] = &["zone.test"];
     const D2: [u8; zoned_descriptor_bytes(NO_ROOT)] = encode_zoned(&M, NO_ROOT);
     assert!(!zones(&D2).unwrap().has_root());
     const EIGHT: &[&str] = &["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -385,10 +383,10 @@ fn a_zoned_descriptor_has_one_encoding() {
         }
         decode(&d)
     };
-    assert_eq!(respell(&[b"", b"basalt.nifeos.org", b"example.net"]), Ok(M));
+    assert_eq!(respell(&[b"", b"alpha.example.org", b"example.net"]), Ok(M));
     for bad in [
         &[][..],
-        &[b"example.net".as_slice(), b"basalt.nifeos.org"],
+        &[b"example.net".as_slice(), b"alpha.example.org"],
         &[b"example.net".as_slice(), b"example.net"],
         &[b"Example.net".as_slice()],
         &[b"example.net.".as_slice()],
@@ -411,7 +409,7 @@ fn a_zoned_descriptor_has_one_encoding() {
 /// descriptor's exact length, and the padding after it is zero.
 #[test]
 fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
-    const ZONES: &[&str] = &["nife.test"];
+    const ZONES: &[&str] = &["zone.test"];
     const NOTE: ZonedNote<{ zoned_note_bytes(ZONES) }> =
         ZonedNote::of::<{ zoned_descriptor_bytes(ZONES) }>(&grant_plan::NO_NOTE_MANIFEST, ZONES);
     let n = &NOTE.0;
@@ -428,7 +426,7 @@ fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
     let d = &n[HEADER_BYTES + NAME_FIELD_BYTES..HEADER_BYTES + NAME_FIELD_BYTES + descsz];
     assert_eq!(
         zones(d).unwrap().iter().next(),
-        Some(b"nife.test".as_slice())
+        Some(b"zone.test".as_slice())
     );
     assert!(
         n[HEADER_BYTES + NAME_FIELD_BYTES + descsz..]
@@ -437,18 +435,17 @@ fn a_zoned_note_names_its_exact_length_and_pads_to_four() {
     );
 }
 
-/// **The service ask is version 3's and only its** (milestone 911 (scripted installs grant
-/// only what the owner's approval file allows)): a manifest that asks to run as a service
+/// **The service ask is version 3's and only its**: a manifest that asks to run as a service
 /// encodes and reads back, with zones or without (which only version 3 can say), a version 1
 /// or 2 descriptor reads as asking none, and a byte this reader does not know, a missing
 /// service byte, or a trailing one is refused whole.
 #[test]
 fn the_service_ask_is_version_threes_and_only_its() {
-    const ZONES: &[&str] = &["nife.test"];
+    const ZONES: &[&str] = &["zone.test"];
     const D: [u8; serviced_descriptor_bytes(ZONES)] =
         encode_serviced(&grant_plan::NO_NOTE_MANIFEST, ZONES, true);
     assert_eq!(decode(&D), Ok(grant_plan::NO_NOTE_MANIFEST));
-    assert_eq!(zones(&D).unwrap().iter().next(), Some(&b"nife.test"[..]));
+    assert_eq!(zones(&D).unwrap().iter().next(), Some(&b"zone.test"[..]));
     assert_eq!(asks_service(&D), Ok(true));
 
     const NONE: [u8; serviced_descriptor_bytes(&[])] =
@@ -575,7 +572,7 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     nine[DESCRIPTOR_BYTES] = (MAXIMUM_ZONES + 1) as u8;
     assert_eq!(decode(&nine), Err(Error::BadField(DESCRIPTOR_BYTES)));
 
-    // **The walk reads every zone to its last byte** (milestone 911): an end computed one byte
+    // **The walk reads every zone to its last byte**: an end computed one byte
     // short lands on a zone whose last label is one character (`a.x` cut to `a.`), and one
     // computed two short lands on `ab.` from `ab.cd`. Both leave a trailing dot the contract
     // refuses, where a zone ending in a longer label would hide the same fault.
