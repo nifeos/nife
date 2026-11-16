@@ -9,14 +9,14 @@
 /// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
 /// 255-byte wire limit is 253 characters of dotted text.
 ///
-/// Name: provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone 1086's decision 1:
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
 /// a limit opens `MAXIMUM_` and ends with its unit.
 pub const MAXIMUM_NAME_TEXT_BYTES: usize = 253;
 
 /// How many IPv4 addresses one answer carries back, the same bound `domain_name_system::Answer`
 /// keeps.
 ///
-/// Name: provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone 1086's decision 1:
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
 /// an address that is not a memory location says which kind it is, as
 /// `domain_name_system::MAXIMUM_IPV4_ADDRESSES` does.
 pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
@@ -29,8 +29,8 @@ pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// name server gave them.
 ///
 /// Name: the `<FIELD>_OFFSET_BYTES` shape ratified 2026-11-14 (UTC) (#3571); the field's spelling
-/// `IPV4_ADDRESSES` is provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone
-/// 1086's decision 1.
+/// `IPV4_ADDRESSES` is provisional, decided by the maintainer on 2026-11-14 (UTC) at the
+/// crate's outside review.
 pub const IPV4_ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
 // The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
@@ -40,7 +40,7 @@ const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
 ///
-/// Name: provisional, the maintainer's decision of 2026-11-14 (UTC) in milestone 1086's decision 1:
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
 /// a count names the things, the limit word first.
 pub const MAXIMUM_GRANTS: usize = 8;
 
