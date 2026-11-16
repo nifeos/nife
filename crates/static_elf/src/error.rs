@@ -55,7 +55,7 @@ pub enum Error {
     NotLittleEndian,
     /// `e_version` is not 1.
     BadVersion,
-    /// `e_machine` is not this build's machine: a riscv binary handed to the `aarch64` kernel, say,
+    /// `e_machine` is not the machine asked for: a riscv binary handed to an `aarch64` loader, say,
     /// caught here rather than as an illegal-instruction fault when the program starts.
     WrongMachine,
     /// A PIE or shared object. It expects a dynamic linker to relocate it. We are not one.
@@ -69,13 +69,14 @@ pub enum Error {
     SegmentOutOfBounds,
     /// `p_memsz < p_filesz`: the segment claims to occupy less memory than it has bytes.
     SegmentTruncated,
-    /// A segment that is both writable and executable: the W^X rule `page_tables::Flags` holds by
-    /// having no `writable_and_executable()` constructor. See notes/elf/parser.md.
+    /// A segment that is both writable and executable. A page that is both is how a buffer
+    /// overflow becomes code execution, so a loader holding W^X refuses the file asking for one.
     WritableAndExecutable,
     /// A segment that is neither readable nor executable. Nothing can ever touch it.
     SegmentUnreachable,
-    /// Two segments want the same page. Legal ELF, refused because
-    /// `crates/user_mode_runtime/link.ld` page-aligns every segment. See notes/elf/parser.md.
+    /// Two segments want the same page. Legal ELF, and common when `.text` and `.rodata` share a
+    /// page, but refused: a loader that gives each segment its own permissions cannot give one page
+    /// two, so a linker script for this loader page-aligns every segment.
     SegmentsOverlap,
     /// The entry point is not inside any executable segment. The program cannot start.
     EntryNotExecutable,

@@ -3,8 +3,8 @@ extern crate std;
 use std::vec;
 use std::vec::Vec;
 
-/// Build an ELF64 image by hand, so the tests can lie about anything they like. See
-/// notes/elf/parser.md for why forging here beats booting a real one.
+/// Build an ELF64 image by hand, so the tests can lie about anything they like. A forged hostile
+/// file is a few lines here; one from a real toolchain would need that toolchain to cooperate.
 struct Builder {
     e_type: u16,
     e_machine: u16,
@@ -37,13 +37,13 @@ impl Builder {
     }
 
     /// A segment whose physical address equals its virtual one, which is what every real
-    /// program in this tree looks like. Use `seg_at_paddr` for the kernel-image shape.
+    /// user program looks like. Use `seg_at_paddr` for the kernel-image shape.
     fn seg(self, flags: u32, vaddr: u64, bytes: &[u8], memsz: u64) -> Self {
         self.seg_at_paddr(flags, vaddr, vaddr, bytes, memsz)
     }
 
-    /// A segment whose `p_paddr` and `p_vaddr` genuinely differ, the way the kernel image's
-    /// `.ap_trampoline` does.
+    /// A segment whose `p_paddr` and `p_vaddr` genuinely differ, the way a kernel image linked
+    /// high and loaded low does.
     fn seg_at_paddr(
         mut self,
         flags: u32,
@@ -147,9 +147,8 @@ fn bss_is_the_difference_between_memsz_and_filesz() {
 /// **W^X, refused at the door.**
 ///
 /// An ELF can simply *ask* for a page that is both writable and executable, and a loader
-/// that grants it has handed the program the thing every exploit wants. `page_tables::Flags` has
-/// no `writable_and_executable()` constructor for the same reason; this is the check that
-/// stops a file talking us into building one.
+/// that grants it has handed the program the thing every exploit wants. This is the check that
+/// stops a file talking a loader into building one.
 #[test]
 fn a_writable_executable_segment_is_refused() {
     let bytes = Builder::new()
@@ -235,8 +234,7 @@ fn a_named_machine_is_the_one_accepted() {
 
 /// `FOREIGN_MACHINES` is every known machine except this build's. The test above cannot say so,
 /// since every wrong number is refused: an array naming no architecture (`[0; _]`, `[1; _]`)
-/// survived it in a mutation run (milestone 326 (nobody has been assigned to turn a mutation score
-/// upward)).
+/// survived it in a mutation run.
 #[test]
 fn foreign_machines_is_every_known_machine_but_this_builds() {
     assert_eq!(FOREIGN_MACHINES.len(), KNOWN_MACHINES.len() - 1);
@@ -395,7 +393,7 @@ fn two_segments_in_the_same_page_are_refused() {
 #[test]
 fn a_segment_whose_address_range_overflows_is_refused() {
     // filesz small (passes the file-bounds check), memsz enormous (passes memsz >= filesz), so
-    // only the vaddr+memsz overflow guard stands between this and a kernel panic.
+    // only the vaddr+memsz overflow guard stands between this and a panic in the loader.
     let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], u64::MAX);
     b.entry = 0x40_0000;
     // Must return an Err, and crucially must NOT panic on the overflow.
@@ -428,7 +426,7 @@ fn junk_is_refused() {
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::NotLittleEndian));
 }
 
-/// A shell script, a JPEG, and the kernel's own flat image are all not-an-ELF.
+/// A shell script, a JPEG, and a flat kernel image are all not-an-ELF.
 #[test]
 fn a_file_that_is_not_an_elf_at_all_is_refused() {
     assert_eq!(
@@ -438,7 +436,7 @@ fn a_file_that_is_not_an_elf_at_all_is_refused() {
     );
 }
 
-/// The kernel image's own shape, and the reason this field exists at all: `p_paddr` and
+/// A kernel image's shape, and the reason this field exists at all: `p_paddr` and
 /// `p_vaddr` are separately readable, and neither is derived from the other. Every other test in
 /// this file has them equal, which is exactly the hazard the field's doc comment names.
 #[test]
@@ -456,7 +454,7 @@ fn a_physical_address_may_differ_from_the_virtual_one() {
 
 /// **Nothing validates `paddr`, on purpose.** Every check in `parse` (bounds, overlap, the entry
 /// point, the `vaddr + memsz` overflow guard) is about the virtual layout, because that is what
-/// this kernel's loader maps. A physical address that overlaps another segment's, or that is
+/// a loader that maps into a fresh address space reads. A physical address that overlaps another segment's, or that is
 /// zero because the file never set the field, is a fact about the file rather than an error, and
 /// a loader that places images physically owns that judgment.
 #[test]

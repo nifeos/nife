@@ -253,8 +253,8 @@ impl<'a> Elf<'a> {
 ///
 /// Returns the exclusive end offset of the segment's file data, so `[p_offset, end)` lies within a
 /// `file_len`-byte file, or the error the fields earn: `SegmentTruncated`, `SegmentOutOfBounds`,
-/// then `AddressOverflow`, in that order. See notes/elf/parser.md and
-/// notes/verification/elf-parser-wall.md.
+/// then `AddressOverflow`, in that order. Loopless so the proofs reach it, which the whole parse
+/// is not.
 pub(crate) fn check_segment_bounds(
     file_len: usize,
     p_offset: usize,
@@ -279,7 +279,7 @@ pub(crate) fn check_segment_bounds(
 
     // The virtual range must not overflow: `vaddr + memsz` feeds the entry check and `page_range`,
     // and a near-`u64::MAX` memsz would wrap them, a PANIC under the dev profile's overflow checks,
-    // i.e. a crafted binary halting the kernel.
+    // i.e. a crafted binary halting the loader that was handed it.
     vaddr.checked_add(memsz).ok_or(Error::AddressOverflow)?;
 
     Ok(end)

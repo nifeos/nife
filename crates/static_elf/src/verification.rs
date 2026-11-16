@@ -4,7 +4,7 @@ use super::*;
 /// hostile program header weaponizes (`offset + filesz`, `vaddr + memsz`). This proves it never
 /// panics or overflows, for any file length and any field values. This is the leaf of the
 /// parser's panic surface, factored out of the loop so bounded model checking can reach it (the
-/// whole-parse proof cannot; see notes/verification.md).
+/// whole-parse proof cannot).
 /// Falsification: replayable `crates/static_elf/falsifications/verification.check_segment_bounds_never_panics.patch`
 #[kani::proof]
 fn check_segment_bounds_never_panics() {

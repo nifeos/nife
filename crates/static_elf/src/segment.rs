@@ -23,12 +23,10 @@ pub struct Segment<'a> {
     /// `p_paddr`: where the segment wants to sit in physical memory, for a loader that places an
     /// image at fixed physical addresses (a firmware loader, a bootloader).
     ///
-    /// A loader mapping into a fresh address space, such as `kernel/src/user.rs`, wants
-    /// [`vaddr`](Self::vaddr) and never this. Every user program here has `paddr == vaddr`; the
-    /// kernel image does not, and no fixed offset relates the two (`kernel/link-x86_64.ld`). A
-    /// plain `u64` until milestone 200 (a virtual address and a physical address stop being the
-    /// same type). See notes/elf.md ("`p_paddr` is not `p_vaddr`, and the trap is that it usually
-    /// is").
+    /// A loader mapping into a fresh address space wants [`vaddr`](Self::vaddr) and never this.
+    /// Most linkers write `paddr == vaddr` for a user program, which is the trap: a loader that
+    /// reads the wrong one works until it meets a kernel image, whose segments are linked high and
+    /// loaded low with no fixed offset between the two. Nothing in the parse checks it.
     pub paddr: u64,
 
     /// How much **memory** it occupies. May exceed `data.len()`.
@@ -38,7 +36,7 @@ pub struct Segment<'a> {
     pub flags: u32,
 
     /// The bytes from the file. `data.len()` is `p_filesz`, which can be less than `memsz`; the
-    /// loader must zero the tail, which is `.bss`. See notes/elf.md.
+    /// loader must zero the tail, which is `.bss`.
     pub data: &'a [u8],
 }
 
