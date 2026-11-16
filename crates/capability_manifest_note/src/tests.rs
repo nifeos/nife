@@ -270,7 +270,6 @@ fn a_subtree_option_must_be_a_declared_letter_even_the_only_one() {
     assert_eq!(decode(&encode(&only)), Ok(only));
     let second = with(b"fr", b'r');
     assert_eq!(decode(&encode(&second)), Ok(second));
-    extern crate std;
     let undeclared = std::panic::catch_unwind(|| encode(&with(b"r", b'x')));
     assert!(undeclared.is_err());
 }
@@ -337,7 +336,6 @@ fn put4_writes_four_bytes_forward_and_nothing_else() {
 /// the last zone.
 #[test]
 fn a_zoned_descriptor_has_one_encoding() {
-    extern crate std;
     use std::vec::Vec;
     const ZONES: &[&str] = &["", "basalt.nifeos.org", "example.net"];
     const M: Manifest = Manifest {
@@ -655,7 +653,6 @@ fn the_encoder_refuses_an_inverted_memory_grant() {
 /// `Error` prints and boxes.
 #[test]
 fn an_error_prints_and_is_an_error() {
-    extern crate std;
     use std::string::ToString;
     let error: &dyn core::error::Error = &Error::BadField(57);
     assert!(error.to_string().contains("57"));

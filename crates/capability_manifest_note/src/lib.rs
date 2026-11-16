@@ -93,6 +93,11 @@
 
 #![no_std]
 
+// The tests and the verb tests use `std` (a panic caught, a table built at run time); one line here
+// puts it in scope for every test module.
+#[cfg(test)]
+extern crate std;
+
 use grant_plan::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
     InputDeclaration, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
@@ -1352,8 +1357,6 @@ mod verification;
 
 #[cfg(test)]
 mod verb_tests {
-    extern crate std;
-
     use grant_plan::{ManifestAuthorities, Program, VerbGrant};
 
     use super::*;
