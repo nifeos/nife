@@ -247,9 +247,9 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
   public item.
 - **Done.** Every item that needs no move: the citations, the seeds, the manifest, the page-size
   type, the program-header proof, the casts, `Display`, the D3 names, the README and its example,
-  and the entry-point refusal. The entry in the zero-filled tail is refused as
-  `EntryNotExecutable`, a maintainer ruling, provisional (2026-11-16 UTC): nothing is published, so
-  the refusal can still be dropped without breaking a file that passed.
+  and the entry-point refusal. The parse refuses an entry in the zero-filled tail as
+  `EntryNotExecutable`, a maintainer ruling, provisional (2026-11-16 UTC). The crate has no
+  release, so a later ruling can still drop the refusal without breaking a file that passed.
 - **Outstanding.** The move's own items (the scaffold's files, the fuzz target), the four mutation
   timeouts (the first weekly run in the new repository), the stranger test, and the shared test
   forge.

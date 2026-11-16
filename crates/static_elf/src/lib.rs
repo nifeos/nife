@@ -2,7 +2,7 @@
 //!
 //! Pure logic that builds for the host: it parses static, little-endian `ET_EXEC` binaries for
 //! this build's own machine and refuses everything else (no dynamic linking, relocations,
-//! interpreter or PIE).
+//! interpreter or position-independent executable).
 //!
 //! The README says what it refuses and why, and what it does not check.
 //!

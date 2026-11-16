@@ -1,7 +1,7 @@
 # static_elf
 
-The front half of a program loader: it parses a static, little-endian ELF64 executable (`ET_EXEC`)
-for one machine, checks everything a loader needs before it maps a page, and hands back the
+The front half of a program loader: it parses a static, little-endian, 64-bit ELF (Executable and
+Linkable Format) executable (`ET_EXEC`) for one machine, checks everything a loader needs before it maps a page, and hands back the
 segments to map. It reads program headers only, never section headers. It also finds one note in
 a `PT_NOTE` segment, over a whole image or one segment at a time. It is `no_std`, needs no
 allocator and has no dependencies.
@@ -45,6 +45,23 @@ A reader that holds one segment at a time feeds each `PT_NOTE` segment, in table
 `NoteSearch::segment`. `NoteSegments::from_head` lists those segments from the first bytes of a
 file.
 
+## What is proven
+
+Nine Kani harnesses. Five in `src/verification.rs` prove the per-segment bounds check panic-free,
+in bounds and free of address overflow, a program-header offset a whole header inside the table,
+and `Segment::page_range` panic-free and ordered for every power-of-two page size. Four in
+`src/note.rs` prove the note reader panic-free and in bounds. Totality of `Elf::parse` over every
+byte string is past bounded model checking. The tests cover the specific hostile files by example.
+
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`, which downloads a model checker. CI uses
+version 0.68.0, and another version may verify differently. `cargo kani` runs them all, and `cargo
+kani --harness <name>` runs one.
+
+Each harness has a falsification record at `falsifications/<module path>.<harness>.patch`.
+Applying it with `patch -p1 < <file>` from the crate root makes that harness fail at its own
+assertion, which shows the proof checks something. `patch -R -p1 < <file>` takes it out again.
+
 ## What it refuses, and why
 
 The parse refuses a malformed file: one that is too short or has the wrong magic, class, byte
@@ -67,8 +84,8 @@ turn one off:
 None of these fields is read. For a loader that copies file bytes into fresh pages, none matters.
 
 - `EI_OSABI` and `EI_ABIVERSION`: the operating system the file was built for.
-- `e_flags`, which on RISC-V carries the float ABI and whether compressed instructions are used.
-  A loader for one ABI checks it itself.
+- `e_flags`, which on RISC-V carries the floating-point calling convention and whether the code
+  uses compressed instructions. A loader for one calling convention checks it itself.
 - `e_ehsize`. The parse reads the fixed ELF64 header size.
 - `p_align` of a `PT_LOAD`, and the congruence `p_vaddr mod p_align == p_offset mod p_align`. A
   loader that maps file pages directly, rather than copying them, must check the congruence
@@ -84,28 +101,12 @@ a test that the seeds in `tests/fixtures/` still parse. The crate is `no_std`, s
 bare-metal targets `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` and
 `x86_64-unknown-none` once `rustup target add` has installed each one.
 
-### What is proven
-
-Nine Kani harnesses. Five in `src/verification.rs` prove the per-segment bounds check panic-free,
-in bounds and free of address overflow, a program-header offset a whole header inside the table,
-and `Segment::page_range` panic-free and ordered for every power-of-two page size. Four in
-`src/note.rs` prove the note reader panic-free and in bounds. Totality of `Elf::parse` over every
-byte string is past bounded model checking. The tests cover the specific hostile files by example.
-
-The proofs need Kani, which `rustup` does not install. Run `cargo install --locked kani-verifier`,
-then `cargo kani setup`, which downloads a model checker. `cargo kani` runs them all, and `cargo
-kani --harness <name>` runs one.
-
-Each harness has a falsification record at `falsifications/<module path>.<harness>.patch`.
-Applying it with `patch -p1 < <file>` from the crate root makes that harness fail at its own
-assertion, which shows the proof checks something. `patch -R -p1 < <file>` takes it out again.
-
 ## BUGS
 
 - `Elf::parse` checks overlap over `p_vaddr`, not `p_paddr`. A boot loader that places segments
   by physical address must check that their physical ranges are disjoint itself.
-- The note reader reads a `p_align` of 0 or 1 as 4-byte padding for any segment. LLVM's reader
-  accepts 0 only for an empty segment and refuses 1. No common producer writes either value.
+- The note reader reads a `p_align` of 0 or 1 as 4-byte padding for any segment. The reader in
+  the toolchain behind Clang accepts 0 only for an empty segment and refuses 1. No common producer writes either value.
 - The machine list is three machines: `aarch64`, `riscv64` and `x86_64`.
 - The API may still change before the first release.
 
