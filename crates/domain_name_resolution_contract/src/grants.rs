@@ -9,7 +9,7 @@
 use domain_name_system::Name;
 
 use crate::{
-    MAXIMUM_GRANTS, MAXIMUM_NAME_TEXT_BYTES, OPERATION_FORGET, OPERATION_GRANT, Outcome,
+    MAXIMUM_GRANTS, MAXIMUM_NAME_FIELD_BYTES, OPERATION_FORGET, OPERATION_GRANT, Outcome,
     control_fields, refusal, status,
 };
 
@@ -138,7 +138,7 @@ struct Entry {
     zone: Name,
     complete: bool,
     /// The zone's text so far, while the spawner's messages arrive.
-    text: [u8; MAXIMUM_NAME_TEXT_BYTES + 1],
+    text: [u8; MAXIMUM_NAME_FIELD_BYTES],
     text_bytes_received: u8,
     text_bytes_total: u8,
 }
@@ -148,7 +148,7 @@ impl Entry {
         badge: 0,
         zone: Name::root(),
         complete: false,
-        text: [0; MAXIMUM_NAME_TEXT_BYTES + 1],
+        text: [0; MAXIMUM_NAME_FIELD_BYTES],
         text_bytes_received: 0,
         text_bytes_total: 0,
     };
@@ -209,7 +209,7 @@ impl Grants {
         if badge == 0 {
             return Control::Refused(Refusal::BadgeZero);
         }
-        if total as usize > MAXIMUM_NAME_TEXT_BYTES + 1 {
+        if total as usize > MAXIMUM_NAME_FIELD_BYTES {
             return self.refuse(badge, Refusal::TooLong);
         }
         let at = match self.position(badge) {

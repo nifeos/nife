@@ -33,7 +33,7 @@
 use abi::rights;
 use domain_name_resolution_contract::{
     self as protocol, Grants, IPV4_ADDRESSES_OFFSET_BYTES, MAXIMUM_IPV4_ADDRESSES,
-    MAXIMUM_NAME_TEXT_BYTES, NAME_OFFSET_BYTES, Outcome, endowment, network_step, status,
+    MAXIMUM_NAME_FIELD_BYTES, NAME_OFFSET_BYTES, Outcome, endowment, network_step, status,
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
 use socket_contract as socket;
@@ -243,10 +243,10 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
 
     // Copied out before it is read, so what is judged and what is asked are the same bytes.
     let len = len as usize;
-    if len == 0 || len > MAXIMUM_NAME_TEXT_BYTES + 1 {
+    if len == 0 || len > MAXIMUM_NAME_FIELD_BYTES {
         return (Outcome::of(status::BAD_NAME), 0);
     }
-    let mut text = [0u8; MAXIMUM_NAME_TEXT_BYTES + 1];
+    let mut text = [0u8; MAXIMUM_NAME_FIELD_BYTES];
     for (i, b) in text[..len].iter_mut().enumerate() {
         *b = page.read_u8((NAME_OFFSET_BYTES + i) as u64);
     }

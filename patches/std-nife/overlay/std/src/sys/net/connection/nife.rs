@@ -1137,7 +1137,7 @@ impl Iterator for LookupHost {
 /// resolver.
 pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
     let name = host.as_bytes();
-    if name.is_empty() || name.len() > resolve::MAXIMUM_NAME_TEXT_BYTES {
+    if name.is_empty() || name.len() > resolve::MAXIMUM_NAME_FIELD_BYTES {
         return Err(io::const_error!(io::ErrorKind::InvalidInput, "not a host name"));
     }
     let held = resolver_lock();

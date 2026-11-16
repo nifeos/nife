@@ -13,6 +13,13 @@
 /// a limit opens `MAXIMUM_` and ends with its unit.
 pub const MAXIMUM_NAME_TEXT_BYTES: usize = 253;
 
+/// The most bytes the name field holds: a host name of [`MAXIMUM_NAME_TEXT_BYTES`] and the
+/// trailing dot a fully qualified name may end with. The one bound on a resolve's name length and
+/// on a grant's zone text, so the client, the resolver and the grant table read the same number.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1086-resolver-contract-outside-review-items.
+pub const MAXIMUM_NAME_FIELD_BYTES: usize = MAXIMUM_NAME_TEXT_BYTES + 1;
+
 /// How many IPv4 addresses one answer carries back, the same bound `domain_name_system::Answer`
 /// keeps.
 ///
@@ -33,9 +40,8 @@ pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// the field is spelled `IPV4_ADDRESSES` as `MAXIMUM_IPV4_ADDRESSES` is.
 pub const IPV4_ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
-// The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
-// addresses end inside the page.
-const _: () = assert!(NAME_OFFSET_BYTES + MAXIMUM_NAME_TEXT_BYTES < IPV4_ADDRESSES_OFFSET_BYTES);
+// The name field ends before the addresses begin, and the addresses end inside the page.
+const _: () = assert!(NAME_OFFSET_BYTES + MAXIMUM_NAME_FIELD_BYTES <= IPV4_ADDRESSES_OFFSET_BYTES);
 const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <= 4096);
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).

@@ -180,10 +180,10 @@ fn a_continuation_into_a_full_table_is_out_of_order_not_full() {
 fn the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not() {
     let label = "a".repeat(63);
     let dotted = std::format!("{}.{label}.{label}.{label}.", "b".repeat(61));
-    assert_eq!(dotted.len(), MAXIMUM_NAME_TEXT_BYTES + 1);
+    assert_eq!(dotted.len(), MAXIMUM_NAME_FIELD_BYTES);
     let mut g = Grants::new();
     assert_eq!(grant(&mut g, 3, &dotted), Control::Granted(0));
-    let total = (MAXIMUM_NAME_TEXT_BYTES + 2) as u8;
+    let total = (MAXIMUM_NAME_FIELD_BYTES + 1) as u8;
     assert_eq!(
         g.control(control_word(OPERATION_GRANT, 0, total, 4), 0),
         Control::Refused(Refusal::TooLong)
