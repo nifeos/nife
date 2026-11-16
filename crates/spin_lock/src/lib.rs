@@ -149,11 +149,10 @@ impl<T> SpinLock<T> {
         }
     }
 
-    /// The data, consuming the lock. Not available under `--cfg loom`.
+    /// The data, consuming the lock.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
     /// in the standard library's spelling and meaning (`Mutex::into_inner`).
-    #[cfg(not(loom))]
     pub fn into_inner(self) -> T {
         self.data.into_inner()
     }
@@ -209,8 +208,8 @@ impl<T: ?Sized> SpinLock<T> {
     }
 
     /// The data, through exclusive access to the lock. No flag is read, because `&mut self` already
-    /// means nobody else holds the lock. Not available under `--cfg loom`, whose cell has no such
-    /// accessor.
+    /// means nobody else holds the lock. Not available under `--cfg loom`, whose cell's `get_mut`
+    /// hands out a tracked pointer rather than a reference.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
     /// in the standard library's spelling and meaning (`Mutex::get_mut`).
