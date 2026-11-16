@@ -255,7 +255,7 @@ what it did, including the kernel's one wait point that made the first one hard,
   that ratio. Why each search limit above is drawn where it is, entry by entry, is in
   [documentation/search-limitations.md](documentation/search-limitations.md).
 - `mdr` reads the whole page before it writes, so a page is bounded by its heap. The heap is the
-  job's region, 384 pages (`grant_plan::STD_REGION_PAGES`), less `mdr`'s image, which loads 71 of
+  job's region, 384 pages (`program_table::STD_REGION_PAGES`), less `mdr`'s image, which loads 71 of
   them on aarch64. The store's largest page, about 18 KB, renders at the prompt
   (`script/swish-check`).
 - Table cells are truncated to their column width, so a wide table on an 80-column terminal

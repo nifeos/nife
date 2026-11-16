@@ -126,8 +126,7 @@ composition meanwhile. A file and an input together would need positional arity,
 `no_program_declares_both_a_file_and_an_input` holds every manifest to having at most one.
 
 `check_chain` lets an unredirected tail stage that writes while it reads go to the terminal's sink
-adapter. It trusts that `writes_while_reading` rides only on a byte-stream output. It does not
-re-check through `e.program.manifest()`, because a stage may have been planned against an explicit
-manifest that differs from its program's (`plan_against_with`). No shipped program declares
+adapter. It trusts that `writes_while_reading` rides only on a byte-stream output, and it does not
+re-check the output kind of the manifest the stage's endowment carries. No shipped program declares
 `writes_while_reading` at all, and a filter writes before it has read to the end, which presupposes
 the streaming sink contract.

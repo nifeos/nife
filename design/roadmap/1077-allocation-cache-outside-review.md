@@ -176,10 +176,10 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 
 ## Follow-on
 
-- **Outstanding.** Decisions 1 to 3, the move's items 1, 3, 10 and 11, the bounded model of item 8
-  and the `Drop` assertion of item 12. Checked against `crates/allocation_cache/src`: `Class`,
-  `MAXIMUM_CLASS_BYTES` and `push` do not exist, and no model of `put` and `take` is in
-  `verification.rs`.
+- **Outstanding.** Decision 1 and, behind it, the move's items 1 (the repository fields), 3, 10 and
+  11. Decisions 2 and 3 are built provisionally in the tree: `Class`, `MAXIMUM_CLASS_BYTES` and
+  `push` exist, and the crate has five harnesses, the three models of `push` and `pop` among them.
+  If decision 2 or 3 is ruled otherwise, items 7 and 4 are redone in one pass.
 
 ## BUGS
 
@@ -192,9 +192,9 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
   job will.
 - The review did not run Kani, a mutation census, the stranger test or the `std` farm after a
   simulated move. Item 3's failure mode comes from reading `copied.rs` and the runbook, not from a run.
-- `notes/project-metrics/mutation-rowless-survivors.csv` still lists `class, replace > with >=`
-  for this crate, a mutant the two boundary tests now kill according to the last two censuses; a
-  nife housekeeping row, not the crate's.
+- The renamed call sites in the `std` overlay (`entry.rs`, `thread_cache.rs`, `mod.rs` and the thread
+  block) were edited by hand and checked only by the host test and a read; the `std` build gates are
+  their first compile.
 - The tests assume `u128` is 16-byte aligned, which holds on current toolchains for the host; the
   tests do not run on the bare-metal targets.
 

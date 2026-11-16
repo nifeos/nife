@@ -4,7 +4,7 @@
 //! Name: provisional, minted 2026-11-14 (UTC) by lane program-region-size-check.
 //!
 //! The shell splits a fixed region off its budget for every native job
-//! (`grant_plan::job_region_pages`: `JOB_REGION_PAGES`, or `DIRECTORY_JOB_REGION_PAGES` behind a
+//! (`program_table::job_region_pages`: `JOB_REGION_PAGES`, or `DIRECTORY_JOB_REGION_PAGES` behind a
 //! directory grant), and the progenitor builds the program, its stack, its tables and its records
 //! out of that one carve. A program whose image grows past the carve fails at the first spawn with
 //! "could not spawn", which the prompt cannot tell from an empty pool, and only a QEMU suite
@@ -24,9 +24,10 @@
 
 use std::collections::BTreeMap;
 
-use grant_plan::{DirectoryGrantDeclaration, Program, StartupContract, job_region_pages};
+use grant_contract::{DirectoryGrantDeclaration, StartupContract};
 use object::Endianness;
 use object::read::elf::{ElfFile64, ProgramHeader};
+use program_table::{Program, job_region_pages};
 
 use crate::host::{flag_value, workspace_root};
 use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
@@ -110,7 +111,7 @@ fn fixed_pages(stack_pages: u64) -> u64 {
     stack_pages + TABLES_AND_RECORDS
 }
 
-/// Rows for every native program in `grant_plan::Program::ALL`, given each built program's loaded
+/// Rows for every native program in `program_table::Program::ALL`, given each built program's loaded
 /// pages by archive name. A program with no entry in `sizes` is reported as an error: the check
 /// would otherwise pass for a program it never saw.
 pub(crate) fn rows(

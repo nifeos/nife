@@ -14,12 +14,12 @@ use std::process::ExitCode;
 // Unvouched bytes are granted what §219 (how the shell names an installed program to the spawner)
 // and §170 say whatever this declares; it declares what is
 // true: it hears words, reads what they name, and runs on `std`.
-capability_manifest_note::carry!(grant_plan::Manifest {
-    program_argument: grant_plan::ProgramArgumentDeclaration::Words(
-        grant_plan::WordGrant::ReadOnly
+capability_manifest_note::carry!(grant_contract::Manifest {
+    program_argument: grant_contract::ProgramArgumentDeclaration::Words(
+        grant_contract::WordGrant::ReadOnly
     ),
-    startup: grant_plan::StartupContract::Std,
-    ..grant_plan::UNVOUCHED_MANIFEST
+    startup: grant_contract::StartupContract::Std,
+    ..program_table::UNVOUCHED_MANIFEST
 });
 
 fn main() -> ExitCode {
