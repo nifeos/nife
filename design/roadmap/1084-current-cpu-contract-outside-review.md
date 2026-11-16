@@ -223,8 +223,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 - Item 6 came from reading: no 32-bit build has run. The `rust-version` of 1.88 is checked by one
   build of the crate on that toolchain.
 - The farm check of item 12 is not built. The farm inlines a copied crate's `pub mod` files, so a
-  second source file does not by itself break the copy; a private `mod x;` or an `include!` would,
-  and a check for them must tell `cfg(test)` and `cfg(kani)` modules from real ones. Until it
+  second source file does not by itself break the copy.
+  A private `mod x;` or an `include!` would, and a check for them must tell `cfg(test)` and `cfg(kani)` modules from real ones. Until it
   exists, the crate's README and `BUGS` tell a stranger to keep one file.
 - The template's behavior on a crate with zero harnesses was not exercised; the sibling's package
   left the same question open.
