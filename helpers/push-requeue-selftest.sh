@@ -40,6 +40,10 @@ case "$*" in
 	;;
 "api repos/"*"/actions/runs?head_sha=g1"*) echo '{"workflow_runs":[{"id":7,"conclusion":"failure"},{"id":8,"conclusion":"success"}]}' ;;
 "run view 7 --log-failed") get runlog ;;
+"api repos/"*"/actions/runs/7/jobs"*)
+	f=.; prev=; for a in "$@"; do [ "$prev" = --jq ] && f=$a; prev=$a; done
+	get jobs | jq -r "$f" ;;
+"api repos/"*"/actions/jobs/9/logs") get joblog ;;
 *timelineItems*) get removal || echo ' ' ;;
 "api graphql"*)
 	[ -z "$STUB_GRAPHQL_FAIL" ] || exit 1
@@ -316,6 +320,18 @@ ARM_KNOWN_FLAKES="$tmp/flakes" run "failed head, no flake matches: refused" nonz
 check "no flake matches: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state false false "" false; removal "failed_checks g1 h1"; echo "the progenitor is out of memory" >"$tmp/runlog"
 ARM_KNOWN_FLAKES="$tmp/no-such-list" run "failed head, no list: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+# A job the runner killed has a cancelled step, so --log-failed prints nothing for it; the job's whole
+# log is read instead, led by the job name, and a signature scoped to the job name matches it.
+printf 'kani-shutdown\t^prove \\(shard [0-9]+/[0-9]+\\)[[:space:]].*##\\[error\\]The runner has received a shutdown signal\tnotes/swish-check-flake.md\n' >"$tmp/flakes-scoped"
+printf '{"jobs":[{"id":9,"name":"prove (shard 2/5)","conclusion":"failure","steps":[{"conclusion":"success"},{"conclusion":"cancelled"}]},{"id":10,"name":"verify (Kani proofs)","conclusion":"failure","steps":[{"conclusion":"failure"}]}]}' >"$tmp/jobs"
+printf '2026-11-15T23:48:37.1139356Z ##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped.\n' >"$tmp/joblog"
+state false false "" false; removal "failed_checks g1 h1"; : >"$tmp/runlog"
+ARM_KNOWN_FLAKES="$tmp/flakes-scoped" run "killed prove shard: armed" 0 "known flake kani-shutdown" -- "$root/helpers/arm.sh" 42
+check "killed prove shard: the job's whole log was read" logged "api repos/{owner}/{repo}/actions/jobs/9/logs"
+printf '{"jobs":[{"id":9,"name":"mutation shard","conclusion":"failure","steps":[{"conclusion":"cancelled"}]}]}' >"$tmp/jobs"
+state false false "" false; removal "failed_checks g1 h1"
+ARM_KNOWN_FLAKES="$tmp/flakes-scoped" run "killed job that is not a prove shard: refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+rm -f "$tmp/jobs" "$tmp/joblog"
 state true false "" false; removal "failed_checks g1 h1"; echo "an assertion failed in vm_test" >"$tmp/runlog"
 ARM_KNOWN_FLAKES="$tmp/flakes" run "requeue that leaves the failed head: not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
 check "every known flake names a record that exists" sh -c "grep '^[^#]' '$here/known-flakes.tsv' | while IFS='	' read -r n s r; do [ -n \"\$s\" ] && [ -e '$root/'\"\$r\" ] || { echo \"known-flakes.tsv: \$n: no signature, or no record at \$r\" >&2; exit 1; }; done"
