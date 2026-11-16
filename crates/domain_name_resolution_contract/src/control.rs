@@ -15,6 +15,13 @@ use super::wire::{Outcome, status};
 /// a count names the things, the limit word first.
 pub const MAXIMUM_GRANTS: usize = 8;
 
+/// **The root zone as the wire spells it**: the empty text, which grants every name. A
+/// configuration may spell it `.` for a reader (the installed-programs table does), and converts
+/// before it grants; [`is_canonical_zone`] accepts this spelling and refuses `.`.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1086-resolver-contract-outside-review-items.
+pub const ROOT_ZONE: &str = "";
+
 /// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a
 /// std program at the prompt holds the network and a resolver)): empty (the root zone, any name),
 /// or labels of one to 63 bytes of `a`-`z`, `0`-`9` and `-`, joined by single dots, with no dot at

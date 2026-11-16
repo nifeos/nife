@@ -58,7 +58,7 @@ fn a_badge_with_no_grant_and_the_spawners_own_badge_are_denied() {
 #[test]
 fn the_root_zone_is_every_name_and_one_host_name_is_exactly_itself() {
     let mut g = Grants::new();
-    assert_eq!(grant(&mut g, 1, ""), Control::Granted(0));
+    assert_eq!(grant(&mut g, 1, ROOT_ZONE), Control::Granted(0));
     assert_eq!(grant(&mut g, 2, "packages.nife.test."), Control::Granted(1));
     assert_eq!(g.check(1, &name("example.com")), Ok(0));
     assert_eq!(g.check(2, &name("packages.nife.test")), Ok(1));
@@ -453,4 +453,11 @@ fn a_grant_table_prints_each_zone_as_dotted_text() {
     let printed = std::format!("{g:?}");
     assert!(printed.contains("badge: 3"), "{printed}");
     assert!(printed.contains("example.test"), "{printed}");
+}
+
+/// **The root has one wire spelling**: empty. The dot a configuration may write is not it.
+#[test]
+fn the_root_zone_is_spelled_empty_on_the_wire() {
+    assert!(is_canonical_zone(ROOT_ZONE.as_bytes()));
+    assert!(!is_canonical_zone(b"."));
 }
