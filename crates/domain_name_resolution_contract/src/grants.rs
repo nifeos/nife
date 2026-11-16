@@ -246,6 +246,11 @@ impl Grants {
         } else if e.complete || offset != e.text_bytes_received || total != e.text_bytes_total {
             return self.refuse(badge, Refusal::OutOfOrder);
         }
+        // An entry's bytes received never pass its total: a fresh grant starts at 0, a later piece
+        // is taken only at exactly the count received so far, and a piece adds at most what is
+        // still due. So the subtraction never wraps, and `start + n` is at most the total, which
+        // the length check above holds to the buffer's size. The Kani harness in `verification`
+        // checks it.
         let bytes = second_word.to_le_bytes();
         let n = (e.text_bytes_total - e.text_bytes_received).min(8) as usize;
         let start = e.text_bytes_received as usize;

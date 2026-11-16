@@ -1,0 +1,19 @@
+Falsifies `domain_name_resolution_contract::verification::the_grant_table_grants_only_what_it_said`.
+
+The defect: a re-grant no longer withdraws the old zone at its first piece, so while the new zone's
+pieces arrive the badge stays in force under the old one, and a half-sent re-grant answers names.
+
+Expected to fail: `assert_eq!(after, None)` on `Control::Partial`, in a run that grants a badge a
+zone and then sends that badge the first piece of a zone longer than eight bytes.
+
+diff --git a/crates/domain_name_resolution_contract/src/grants.rs b/crates/domain_name_resolution_contract/src/grants.rs
+--- a/crates/domain_name_resolution_contract/src/grants.rs
++++ b/crates/domain_name_resolution_contract/src/grants.rs
+@@ -240,7 +240,6 @@ impl Grants {
+             // A fresh grant, or a re-grant: the old zone stops applying now, not when the new one
+             // completes, so there is never a moment where a half-sent zone is in force.
+             e.badge = badge;
+-            e.complete = false;
+             e.text_bytes_received = 0;
+             e.text_bytes_total = total;
+         } else if e.complete || offset != e.text_bytes_received || total != e.text_bytes_total {

@@ -102,8 +102,15 @@ assert_eq!(grants.check(8, &asked), Err(Denied::NoGrant));
 
 ## What is proven
 
+One Kani harness, `the_grant_table_grants_only_what_it_said` in `src/verification.rs`, takes the
+grant table from empty through any run of four control messages of free words. It proves that no
+run panics, that a badge is in force only once a message said `Granted`, that a re-grant withdraws
+the old zone at its first piece, that a badge's window never moves while it holds a grant, and that
+a message leaves every other badge as it was. Its falsification patch, in `falsifications/`, removes
+the withdrawal and must make it fail.
+
 The host tests check each piece of the grant protocol, each boundary of `is_canonical_zone`, the
-round trip of every word, and the table's size. There are no Kani harnesses.
+round trip of every word, and the table's size.
 
 ## Building and testing
 

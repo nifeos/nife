@@ -89,6 +89,9 @@ pub use grants::*;
 #[cfg(test)]
 mod tests;
 
+#[cfg(kani)]
+mod verification;
+
 mod messages;
 
 pub use messages::{forget_message, grant_messages, reject_code};
