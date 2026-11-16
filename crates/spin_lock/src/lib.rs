@@ -37,9 +37,9 @@
 //!
 //! Name: ratified 2026-10-26 (UTC), on #2760, as it stood. Considered: `kernel_lock` (names the
 //! user, not the thing) and `test_and_set_lock` (exact, longer than the field's word). The
-//! repository name `spin_lock` is provisional (milestone 1109's recommendation): crates.io reads
-//! `spin_lock` as the `spin-lock` another crate holds, so no publication name is chosen while the
-//! publication hold stands. Considered for a publication: `test_and_set_lock`, `checked_spin_lock`
+//! repository name `spin_lock` is provisional, as milestone 1109 (what an outside maintainer would
+//! fix before it leaves) recommends: crates.io reads `spin_lock` as the `spin-lock` another crate
+//! holds, so no publication name is chosen while the publication hold stands. Considered for a publication: `test_and_set_lock`, `checked_spin_lock`
 //! and `model_checked_spin_lock` (name the verification, not the lock).
 
 #![cfg_attr(not(test), no_std)]
