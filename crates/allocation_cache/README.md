@@ -2,7 +2,7 @@
 
 A bounded stash of freed small blocks in front of a shared heap, so most allocations and frees
 never take the heap's lock. It is the per-owner cache every fast allocator has (glibc's `tcache`,
-jemalloc's `tcache`, TCMalloc's thread cache), written as a `no_std` library with no dependencies:
+jemalloc's `tcache`, the thread cache of Thread-Caching Malloc (TCMalloc)), written as a `no_std` library with no dependencies:
 the algorithm only. It never locks, maps or reads an owner's identity. The owner decides who
 touches a `Cache`, and the heap is whatever the owner allocates from.
 
@@ -12,20 +12,6 @@ both without a lock. When a class is empty the owner refills it with a batch of 
 heap, and when it is full the owner spills eight back, each batch under one acquisition of the
 heap's lock. Blocks of one class are fungible, because the heap sees the same layout
 (`class_layout`) at both ends.
-
-## What the owner promises
-
-1. One owner at a time. A `Cache` is neither `Send` nor `Sync`.
-2. `refill` and `spill` run under whatever excludes the other users of the heap.
-3. Every block a `spill` or `give_back_all` hands back goes to the heap under
-   `class_layout(class)`, and every block the heap hands to `refill` was allocated under it.
-
-The heap also sees `heap_layout` on the path that never touches a cache, because a block may be
-allocated before its owner has a cache and freed into one afterward. A heap that rounds or tags its
-own way would otherwise have given a shorter block to the shorter request.
-
-An all-zero `Cache` is empty, so one may live in memory a runtime zeroes. A `Class` is a one-byte
-newtype that only `class` makes, so no method takes an index past the last class.
 
 ## EXAMPLES
 
@@ -99,6 +85,20 @@ a bounded model of `push` and `pop` over a fixed arena. The host test walks a ca
 twice and that every byte coalesces after the cache is emptied. The harnesses prove the properties
 of the code they model; the heap walk tests the cache against a real allocator, which no harness
 models.
+
+## What the owner promises
+
+1. One owner at a time. A `Cache` is neither `Send` nor `Sync`.
+2. `refill` and `spill` run under whatever excludes the other users of the heap.
+3. Every block a `spill` or `give_back_all` hands back goes to the heap under
+   `class_layout(class)`, and every block the heap hands to `refill` was allocated under it.
+
+The heap also sees `heap_layout` on the path that never touches a cache, because a block may be
+allocated before its owner has a cache and freed into one afterward. A heap that rounds or tags its
+own way would otherwise have given a shorter block to the shorter request.
+
+An all-zero `Cache` is empty, so one may live in memory a runtime zeroes. A `Class` is a one-byte
+newtype that only `class` makes, so no method takes an index past the last class.
 
 ## Building and testing
 
