@@ -7,7 +7,7 @@
 //! proves the name decoder, the header codec and the TCP reassembly, and this crate's `fuzz/`
 //! target covers the rest), and
 //! [`Query::accept`] believes as little as it can: [`Reject`] lists its nine refusals, in check
-//! order. Only A records owned by the end of the CNAME chain from our name are taken, so a reply
+//! order. Only A records owned by the end of the canonical name chain from our name are taken, so a reply
 //! about `example.com` cannot plant an address for `bank.test`; authority and additional go unread.
 
 //! # BUGS
@@ -71,8 +71,11 @@ pub const HEADER_BYTES: usize = 12;
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
 #[doc(alias = "QR")]
 pub const FLAG_RESPONSE: u16 = 0x8000;
-/// The opcode field. A standard query is opcode 0.
-pub const OPCODE_MASK: u16 = 0x7800;
+/// The operation code field. A standard query has operation code 0.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+#[doc(alias = "OPCODE")]
+pub const OPERATION_CODE_MASK: u16 = 0x7800;
 /// Truncated: the server had more to say than the transport carried.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
@@ -100,19 +103,25 @@ pub const RESPONSE_CODE_NAME_ERROR: u8 = 3;
 /// Record types this crate reads.
 pub mod record_type {
     /// An address record, whose data is one IPv4 address.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    #[doc(alias = "A")]
     #[doc(alias = "address record")]
-    pub const A: u16 = 1;
+    pub const IPV4_ADDRESS: u16 = 1;
     /// A canonical name record: the owner is an alias, and the record's data is the
     /// canonical name.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
     #[doc(alias = "canonical name record")]
-    pub const CNAME: u16 = 5;
+    #[doc(alias = "CNAME")]
+    pub const CANONICAL_NAME: u16 = 5;
 }
 
 /// The Internet class, the only one a host-name lookup uses.
 #[doc(alias = "Internet class")]
 pub const CLASS_IN: u16 = 1;
 
-/// How many CNAME links [`Query::accept`] follows before giving up. Real chains are one or two
+/// How many canonical name links [`Query::accept`] follows before giving up. Real chains are one or two
 /// links (a CDN alias, sometimes a second); eight leaves room for that and stops a reply that chains
 /// a name through itself from costing more than eight scans of its own answer section.
 ///
@@ -152,7 +161,7 @@ pub enum Error {
     /// the decoder terminate on a pointer loop.
     PointerForward,
     /// A record's data is the wrong shape for its type: an A record that is not four bytes, or a
-    /// CNAME whose name runs past its own record.
+    /// canonical name whose name runs past its own record.
     BadRecordData,
     /// The output buffer is too small, or a TCP reply declares more than its buffer holds.
     Overflow,
@@ -504,9 +513,9 @@ pub struct Question {
     pub class: u16,
 }
 
-/// A decoded resource record: its fixed fields and its raw data. Data that holds a name (a CNAME's)
-/// may be compressed against the whole message (a CNAME's is; an A record's is four plain bytes),
-/// so [`cname_target`] takes the message too, and `data_offset` says where the data sits in it.
+/// A decoded resource record: its fixed fields and its raw data. Data that holds a name (a canonical name's)
+/// may be compressed against the whole message (a canonical name's is; an A record's is four plain bytes),
+/// so [`canonical_name_target`] takes the message too, and `data_offset` says where the data sits in it.
 #[derive(Debug, Clone, Copy)]
 pub struct Record<'a> {
     /// The record's owner.
@@ -518,8 +527,11 @@ pub struct Record<'a> {
     #[doc(alias = "CLASS")]
     pub class: u16,
     /// The time to live: seconds a cache may keep the record.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    #[doc(alias = "TTL")]
     #[doc(alias = "time to live")]
-    pub ttl: u32,
+    pub ttl_seconds: u32,
     /// The record data, raw.
     #[doc(alias = "RDATA")]
     pub data: &'a [u8],
@@ -584,7 +596,7 @@ impl<'a> Reader<'a> {
             name,
             record_type,
             class,
-            ttl: (ttl_hi << 16) | ttl_lo,
+            ttl_seconds: (ttl_hi << 16) | ttl_lo,
             data,
             data_offset,
         })
@@ -593,8 +605,11 @@ impl<'a> Reader<'a> {
 
 /// A canonical name record's canonical name, decompressed against the whole message. The name must end
 /// inside the record's own data, though its pointers may reach back anywhere earlier.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
 #[doc(alias = "canonical name")]
-pub fn cname_target(msg: &[u8], record: &Record<'_>) -> Result<Name> {
+#[doc(alias = "CNAME")]
+pub fn canonical_name_target(msg: &[u8], record: &Record<'_>) -> Result<Name> {
     let (name, end) = decode_name(msg, record.data_offset)?;
     if end != record.data_offset + record.data.len() {
         return Err(Error::BadRecordData);
@@ -637,7 +652,7 @@ pub enum Reject {
     NoSuchName,
     /// Any other nonzero response code, carried so a caller can report it.
     ServerError(u8),
-    /// The CNAME chain, followed only from our name, is longer than [`MAXIMUM_CHAIN`] links, or
+    /// The canonical name chain, followed only from our name, is longer than [`MAXIMUM_CHAIN`] links, or
     /// loops.
     ChainTooLong,
     /// The name exists and has no A record, or the answer holds addresses only for other names.
@@ -659,7 +674,7 @@ fn believable_time_to_live(time_to_live: u32) -> u32 {
 pub struct Answer {
     ipv4_addresses: [[u8; 4]; MAXIMUM_IPV4_ADDRESSES],
     count: u8,
-    ttl: u32,
+    ttl_seconds: u32,
     canonical: Name,
 }
 
@@ -674,11 +689,15 @@ impl Answer {
     /// The smallest TTL along the chain: how long the whole answer may be believed, in seconds.
     /// A record whose TTL has its most significant bit set counts as zero, as RFC 2181 section 8
     /// directs, so an answer carrying one is good for no time.
-    pub fn ttl(&self) -> u32 {
-        self.ttl
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    #[doc(alias = "TTL")]
+    #[doc(alias = "time to live")]
+    pub fn ttl_seconds(&self) -> u32 {
+        self.ttl_seconds
     }
 
-    /// The name the addresses belong to: ours, or the end of the CNAME chain from it.
+    /// The name the addresses belong to: ours, or the end of the canonical name chain from it.
     pub fn canonical(&self) -> &Name {
         &self.canonical
     }
@@ -727,7 +746,7 @@ impl Query {
         .write(out)?;
         let (q, tail) = out[HEADER_BYTES..].split_at_mut(name.len());
         q.copy_from_slice(name);
-        tail[..2].copy_from_slice(&record_type::A.to_be_bytes());
+        tail[..2].copy_from_slice(&record_type::IPV4_ADDRESS.to_be_bytes());
         tail[2..].copy_from_slice(&CLASS_IN.to_be_bytes());
         Ok(len)
     }
@@ -768,7 +787,7 @@ impl Query {
     ///
     /// let answer = query.accept(&reply).unwrap();
     /// assert_eq!(answer.ipv4_addresses(), &[[10, 0, 2, 9]]);
-    /// assert_eq!(answer.ttl(), 300);
+    /// assert_eq!(answer.ttl_seconds(), 300);
     ///
     /// // The same bytes under somebody else's transaction id are not an answer to us.
     /// reply[1] ^= 1;
@@ -777,7 +796,7 @@ impl Query {
     pub fn accept(&self, reply: &[u8]) -> core::result::Result<Answer, Reject> {
         let mut reader = Reader::new(reply).map_err(Reject::Malformed)?;
         let h = reader.header;
-        if h.flags & FLAG_RESPONSE == 0 || h.flags & OPCODE_MASK != 0 {
+        if h.flags & FLAG_RESPONSE == 0 || h.flags & OPERATION_CODE_MASK != 0 {
             return Err(Reject::NotAResponse);
         }
         if h.id != self.id {
@@ -796,7 +815,7 @@ impl Query {
         }
         let question = reader.question().map_err(Reject::Malformed)?;
         if question.name != self.name
-            || question.record_type != record_type::A
+            || question.record_type != record_type::IPV4_ADDRESS
             || question.class != CLASS_IN
         {
             return Err(Reject::QuestionMismatch);
@@ -815,11 +834,11 @@ impl Query {
                 continue;
             }
             match record.record_type {
-                record_type::A if record.data.len() != 4 => {
+                record_type::IPV4_ADDRESS if record.data.len() != 4 => {
                     return Err(Reject::Malformed(Error::BadRecordData));
                 }
-                record_type::CNAME => {
-                    cname_target(reply, &record).map_err(Reject::Malformed)?;
+                record_type::CANONICAL_NAME => {
+                    canonical_name_target(reply, &record).map_err(Reject::Malformed)?;
                 }
                 _ => {}
             }
@@ -827,7 +846,7 @@ impl Query {
 
         // Follow the chain from our name. Every record was read above, so these rescans cannot fail.
         let mut owner = self.name;
-        let mut ttl = u32::MAX;
+        let mut ttl_seconds = u32::MAX;
         // A bounded loop rather than a counter beside an endless one: `links` is how many links
         // were followed before this pass, and no pass after the last can start, so a reply that
         // chains in a circle ends here however the count is kept.
@@ -836,14 +855,14 @@ impl Query {
             for _ in 0..h.answer_count {
                 let Ok(record) = scan.record() else { break };
                 if record.class == CLASS_IN
-                    && record.record_type == record_type::CNAME
+                    && record.record_type == record_type::CANONICAL_NAME
                     && record.name == owner
                 {
                     if links == MAXIMUM_CHAIN {
                         return Err(Reject::ChainTooLong);
                     }
-                    ttl = ttl.min(believable_time_to_live(record.ttl));
-                    owner = cname_target(reply, &record).map_err(Reject::Malformed)?;
+                    ttl_seconds = ttl_seconds.min(believable_time_to_live(record.ttl_seconds));
+                    owner = canonical_name_target(reply, &record).map_err(Reject::Malformed)?;
                     continue 'chain;
                 }
             }
@@ -853,19 +872,21 @@ impl Query {
         let mut answer = Answer {
             ipv4_addresses: [[0; 4]; MAXIMUM_IPV4_ADDRESSES],
             count: 0,
-            ttl,
+            ttl_seconds,
             canonical: owner,
         };
         let mut scan = answers;
         for _ in 0..h.answer_count {
             let Ok(record) = scan.record() else { break };
             if record.class != CLASS_IN
-                || record.record_type != record_type::A
+                || record.record_type != record_type::IPV4_ADDRESS
                 || record.name != owner
             {
                 continue;
             }
-            answer.ttl = answer.ttl.min(believable_time_to_live(record.ttl));
+            answer.ttl_seconds = answer
+                .ttl_seconds
+                .min(believable_time_to_live(record.ttl_seconds));
             if let (Some(slot), Ok(address)) = (
                 answer.ipv4_addresses.get_mut(answer.count as usize),
                 <[u8; 4]>::try_from(record.data),
