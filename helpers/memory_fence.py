@@ -11,8 +11,9 @@ What it is for. A hosted runner has about 16 GB and no limit of its own below th
 processes of a prove shard grow past it, the kernel's out-of-memory killer takes whatever it picks,
 the runner's own agent included, and GitHub reports "The runner has received a shutdown signal".
 The job then sits until its 25-minute limit and is cancelled about five minutes after that, with no
-memory record, because the step that printed one never ran. Milestone 1117 found 51 merge-group
-shard jobs lost that way between 2026-11-14 and 2026-11-16 (UTC).
+memory record, because the step that printed one never ran. Milestone 1117 (the prove shards fit
+the hosted runner's memory) found 51 merge-group shard jobs lost that way between 2026-11-14 and
+2026-11-16 (UTC).
 
 This puts the command in its own cgroup, capped at the host's MemTotal less a reserve (1536 MiB by
 default) with no swap. A command that grows past the cap loses its largest process, which is a CBMC
