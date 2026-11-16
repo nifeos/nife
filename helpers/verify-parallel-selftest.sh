@@ -60,6 +60,10 @@ unset LINT_NO_CARGO
 # counts on a small pool; this file tests the shards, so the pool is off here.
 NIFE_KANI_POOL=off
 export NIFE_KANI_POOL
+# script/verify's KANI_APART table would split byte_glob's row into a listing call and two proofs;
+# this file counts calls of its own, so the table is off here (helpers/verify-stub-selftest.sh tests it).
+NIFE_KANI_APART=
+export NIFE_KANI_APART
 
 log="$tmp/cargo.log"
 export NIFE_SELFTEST_LOG="$log"

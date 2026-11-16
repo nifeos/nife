@@ -258,6 +258,10 @@ helpers/kani-pool-selftest.sh >/dev/null
 # script/kani-install repairs a dangling toolchain link and refuses a private RUSTUP_HOME, and the
 # toolchain prune keeps Kani's own, all in a temporary HOME (helpers/kani-install-selftest.sh).
 helpers/kani-install-selftest.sh >/dev/null
+# The prove shards' memory fence (helpers/memory_fence.py) reads a harness from a goto file's name,
+# keeps the command's exit status, counts an out-of-memory kill as a failure and removes its cgroup,
+# all over a plain directory standing in for the cgroup, so it needs no sudo.
+python3 helpers/memory_fence.py --selftest >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
 # lint-scope: code
