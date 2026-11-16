@@ -226,9 +226,9 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 - **Done.** Items 1 to 6 and 10 to 15, the wire literal marker, and the three names the
   maintainer or the units rule decides; [the ledger](1082-capability-manifest-note-outside-review/ledger.md)
   says what each became.
-- **Left.** The stranger run of item 2 and the fuzz workspace of item 8, both in the move pull
-  request; the unit tests of item 7 that walk the program catalog, after milestone 1017 settles
-  where it lives; and the rename of the two statics in BUGS.
+- **Outstanding.** The stranger run of item 2 and the fuzz workspace of item 8 belong to the move
+  pull request. The unit tests of item 7 that walk the program catalog wait for milestone 1017 to
+  settle where it lives. The two statics in BUGS want a rename lane.
 
 ## BUGS
 
