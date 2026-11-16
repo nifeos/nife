@@ -608,7 +608,7 @@ fn the_interfaces_note_shares_the_manifest_notes_header() {
 #[should_panic(expected = "lowercase dotted ASCII")]
 fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
     let _ = encode_serviced::<{ serviced_len(&["Example.NET"]) }>(
-        &grant_plan::NO_NOTE_MANIFEST,
+        &program_table::NO_NOTE_MANIFEST,
         &["Example.NET"],
         true,
     );
@@ -618,7 +618,7 @@ fn the_serviced_encoder_refuses_a_zone_the_resolver_would_not_spell() {
 #[should_panic(expected = "lowercase dotted ASCII")]
 fn the_serviced_encoder_refuses_a_zone_with_a_trailing_dot() {
     let _ = encode_serviced::<{ serviced_len(&["example.net."]) }>(
-        &grant_plan::NO_NOTE_MANIFEST,
+        &program_table::NO_NOTE_MANIFEST,
         &["example.net."],
         false,
     );
@@ -634,7 +634,7 @@ fn the_encoder_refuses_an_inverted_memory_grant() {
             minimum: 8,
             maximum: 4,
         },
-        ..grant_plan::NO_NOTE_MANIFEST
+        ..program_table::NO_NOTE_MANIFEST
     });
 }
 
