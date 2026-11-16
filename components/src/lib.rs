@@ -3,7 +3,7 @@
 // takes the kernel's way out: a runner that has nothing to run, because the host tests are gated off.
 #![cfg_attr(all(test, target_os = "none"), no_main)]
 #![cfg_attr(all(test, target_os = "none"), feature(custom_test_frameworks))]
-#![cfg_attr(all(test, target_os = "none"), test_runner(bare_metal_runner))]
+#![cfg_attr(all(test, target_os = "none"), test_runner(crate::bare_metal_test_build::bare_metal_runner))]
 #![cfg_attr(all(test, target_os = "none"), reexport_test_harness_main = "test_main")]
 //! The one library target of the `components` package: the logic of programs that has host tests
 //! and proofs, kept out of the program's own binary because a binary of this package builds with
@@ -13,15 +13,5 @@
 
 pub mod block_driver_roles;
 
-/// The test runner of a bare-metal build: the host tests are gated off there, so it runs nothing.
 #[cfg(all(test, target_os = "none"))]
-fn bare_metal_runner(_tests: &[&dyn Fn()]) {}
-
-/// A bare-metal test build links no panic runtime, so it carries the one handler the build needs.
-#[cfg(all(test, target_os = "none"))]
-#[panic_handler]
-fn bare_metal_panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {
-        core::hint::spin_loop();
-    }
-}
+mod bare_metal_test_build;
