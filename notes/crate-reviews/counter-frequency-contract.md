@@ -109,10 +109,10 @@ is not a word.
 ## The template's gates over the staged copy
 
 `script/crate-move --dry-run` stages the crate with the pinned template `v7` and runs its checks.
-Over the crate's own files it reports nothing: the copy, the two patches applying exactly, the
-build on 1.88 for the host and the three bare-metal targets, the standalone check, the prose caps,
-the file and comment ratchets, orphan modules, markdown links and the falsification records all
-pass.
+Over the crate's own files it reports nothing. The copy passes, the two patches apply exactly, and
+the crate builds on 1.88 for the host and the three bare-metal targets. The standalone check, the
+prose caps, the file and comment ratchets, orphan modules, markdown links and the falsification
+records pass too.
 
 The template head runs more than `v7`. Over the same staged copy, every check of the head's
 standalone job passes. Those are the vocabulary, passive voice (none in 578 README words), history
