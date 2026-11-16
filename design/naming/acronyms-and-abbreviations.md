@@ -46,7 +46,12 @@ Every name this tree authors spells these out, function parameters included.
 ## Short forms that stay
 
 - Earned, because nobody says the expansion: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`,
-  `bios`, `efi`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
+  `bios`, `efi`, `tcp`, `udp`, `ipv4`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
+- `tcp`, `udp` and `ipv4` stay, because nobody says transmission control protocol, user datagram
+  protocol or internet protocol version 4 aloud. Rust casing applies: `TcpStream`, `UdpSocket`,
+  `Ipv4Address` in CamelCase, `tcp_close`, `ipv4_addresses` in snake case, `OPERATION_OPEN_TCP`,
+  `MAXIMUM_IPV4_ADDRESSES` in constants. The first doc comment expands each once, as "Transmission
+  Control Protocol (TCP)".
 - `crc` stays, because nobody says cyclic redundancy check: `has_crc`, `CRC_BYTES`, `crc32`. Every
   name spells it `crc`, and prose expands it at first use, as "cyclic redundancy check (CRC)".
 - `id` and `Id` stay, as std writes `ThreadId`, `TypeId` and `process::id`: `device_id`,
