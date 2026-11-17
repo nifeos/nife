@@ -54,7 +54,7 @@ Argued here, by shape:
 | shape | mutants | where |
 |---|---|---|
 | `\|` as `^` on disjoint bits | 14 | `byte_sink_protocol::req`, `credential_protocol::req` (2), `generational_table::name`, `graphics_protocol` `pixel` (2), `req`, `rect` (3), `network_time_protocol` `from_unix`, the low-bit randomizer, `to_bytes` (2) |
-| `1 << 0` as `1 >> 0` | 3 | `abi::rights::READ`, `c_seam::checks`, `capability::Rights::READ` |
+| `1 << 0` as `1 >> 0` | 3 | `abi::rights::READ`, `c_seam::checks`, `capability_table::Rights::READ` |
 | a boundary both arms answer the same | 9 | `block_roster::capacity_of`, `byte_sink_protocol::pack`, `calendar::UtcOffset::from_hm` (2), `calendar::Writer::offset` (only called for a non-zero offset), `page_frames` `alloc`'s hint and `largest_free_run`, `coremark::list_work`'s tie-break (equal values), `board_console::BootProgress::reach` (argued in its own comment) |
 | a check repeated downstream | 1 | `calendar::DateTime::parse_rfc3339_bytes`'s `i + 6`: `number()` and `expect()` bound the same bytes and give the same `Syntax` |
 | truncation | 2 | `coremark::fsm_work` (each count is at most 256, so both shifts give 0 as `u16`), `network_time_protocol::from_unix` (`%` as `+` before an `as u32`) |
@@ -62,7 +62,7 @@ Argued here, by shape:
 
 Argued in earlier appendices, and still reported by this re-run (39):
 
-- [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md): `capability::note_peak` and
+- [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md): `capability_table::note_peak` and
   `device_tree_blob::cells`.
 - [regressions-2026-09-14-clock-contract-swish-filesystem-contract](regressions-2026-09-14-clock-contract-swish-filesystem-contract.md):
   `clock_protocol`'s three. `script/interleaving-check` kills `publish`.

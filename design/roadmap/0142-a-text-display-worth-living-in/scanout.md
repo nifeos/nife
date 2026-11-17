@@ -31,7 +31,7 @@ satisfies both `const` assertions `gfx_proto` carries: it is far above 16 a side
 reachable. At minting it was decided and nobody was building it. A `PageFrame` naming a run turns
 900 capabilities and 900 `MAP` calls into one of each. Without it the sixteen-slot capability table
 refuses the surface outright. `Object::PageFrame` was then still `PageFrame(u64)` in
-`crates/capability/src/lib.rs`, one page and no count.
+`crates/capability_table/src/lib.rs`, one page and no count.
 
 That was worth flagging, because the milestone that motivated §102 no longer needed it. §102 was
 raised to unblock milestone 29 (a display terminal)'s font increment at 800x608 for gohufont-14 at

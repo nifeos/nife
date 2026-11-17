@@ -135,7 +135,7 @@ harness's own specification. Nothing a shipped harness states has afterwards tur
 which is either a strong result or an unfalsifiable one. The reverse pass tells them apart:
 
 - The harnesses that could not have failed are stated over a single operator or expression:
-  `capability::subset_is_reflexive` is a tautology of `&` and `!`. The ones that could fail are
+  `capability_table::subset_is_reflexive` is a tautology of `&` and `!`. The ones that could fail are
   stated over a composition, such as a table, a walk, a round trip or a second implementation.
 - The 145 count over-represents distinct properties by about twelve, through per-ISA parity.
 - What separates a load-bearing harness is a recorded falsification, and only a minority of the 145

@@ -38,6 +38,11 @@ use user_mode_runtime::{
 /// The page size the loader maps in.
 pub const PAGE: u64 = 4096;
 
+/// [`PAGE`] as the page size `static_elf` rounds segments to.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+pub const PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(PAGE).unwrap();
+
 /// **The builder's scratch window**: where a builder maps each frame it fills for a child, and each
 /// frame of somebody else's it reads (the image request of DECISIONS §219 (how the shell names an
 /// installed program to the spawner)). 64 MiB, 16,384 pages, from the bottom of the map's runtime
@@ -49,9 +54,17 @@ pub const PAGE: u64 = 4096;
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
 pub const SCRATCH_WINDOW: address_space_layout::Band = address_space_layout::Band {
-    start: address_space_layout::runtime_window(0x1000_0000),
-    end: address_space_layout::runtime_window(0x1400_0000),
+    start: address_space_layout::window(
+        address_space_layout::RUNTIME_WINDOWS,
+        0x1000_0000,
+        SCRATCH_WINDOW_BYTES,
+    ),
+    end: 0x1000_0000 + SCRATCH_WINDOW_BYTES,
 };
+
+/// [`SCRATCH_WINDOW`]'s width: 64 MiB, which `address_space_layout::window` checks lies wholly in
+/// the runtime windows.
+const SCRATCH_WINDOW_BYTES: u64 = 64 << 20;
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
 /// `supervision_contract` with the split, and calef names it.
@@ -240,7 +253,7 @@ pub fn build_child_space(
     // here, cleanly, rather than half-built at the first stack page it would have collided with.
     let (mut lo, mut hi) = (u64::MAX, 0);
     for seg in elf.segments() {
-        let (start, end) = seg.page_range(PAGE);
+        let (start, end) = seg.page_range(PAGE_BYTES);
         lo = lo.min(start);
         hi = hi.max(end);
     }
@@ -284,11 +297,11 @@ fn lay_out_child(
         } else {
             abi::address_space::MAP_READ_ONLY
         };
-        let (start, end) = seg.page_range(PAGE);
+        let (start, end) = seg.page_range(PAGE_BYTES);
         let mut va = start;
         while va < end {
-            let file_lo = seg.vaddr;
-            let file_hi = seg.vaddr + seg.data.len() as u64;
+            let file_lo = seg.virtual_address;
+            let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
             let hi = (va + PAGE).min(file_hi);
             let src = if lo < hi {

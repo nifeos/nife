@@ -77,9 +77,9 @@ fn forged_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; EHDR + PHDR + 16] {
 fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
     let image = forged_two_segments(
         address_space_layout::IMAGE_BASE,
-        static_elf::PF_R | static_elf::PF_X,
+        static_elf::READABLE | static_elf::EXECUTABLE,
         address_space_layout::IMAGE_BASE + 0x2000,
-        static_elf::PF_R | static_elf::PF_W | static_elf::PF_X,
+        static_elf::READABLE | static_elf::WRITABLE | static_elf::EXECUTABLE,
     );
 
     assert_eq!(
@@ -106,9 +106,9 @@ fn a_benign_first_segment_does_not_smuggle_a_writable_executable_second() {
 fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
     let image = forged_two_segments(
         address_space_layout::IMAGE_BASE,
-        static_elf::PF_R | static_elf::PF_X,
+        static_elf::READABLE | static_elf::EXECUTABLE,
         mmu::KERNEL_VA_BASE,
-        static_elf::PF_R | static_elf::PF_X,
+        static_elf::READABLE | static_elf::EXECUTABLE,
     );
 
     let outcome = load(&image, 0, &[]).map(|(_space, entry)| entry);
@@ -139,7 +139,7 @@ fn a_segment_whose_address_range_wraps_is_refused() {
     let vaddr = u64::MAX - page_frames::FRAME_SIZE + 1; // the last page of the space
     let image = forged_sized(
         vaddr,
-        static_elf::PF_R | static_elf::PF_X,
+        static_elf::READABLE | static_elf::EXECUTABLE,
         4 * page_frames::FRAME_SIZE,
     );
 

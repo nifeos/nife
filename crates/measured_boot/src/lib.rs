@@ -1036,7 +1036,7 @@ mod tests {
 
         let ph = &mut out[EHDR..EHDR + PHDR];
         ph[0..4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
-        ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
+        ph[4..8].copy_from_slice(&(static_elf::READABLE | static_elf::EXECUTABLE).to_le_bytes());
         ph[8..16].copy_from_slice(&((EHDR + PHDR) as u64).to_le_bytes()); // p_offset
         ph[16..24].copy_from_slice(&entry.to_le_bytes()); // p_vaddr
         ph[24..32].copy_from_slice(&entry.to_le_bytes()); // p_paddr

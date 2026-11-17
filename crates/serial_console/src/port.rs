@@ -489,7 +489,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             session.progress.reached(),
-            crate::progress::Stage::Tour,
+            crate::progress::Stage::CoreRuns,
             "the descriptor `open` returned is the one the capture is in"
         );
         std::fs::remove_file(&path).ok();

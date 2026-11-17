@@ -486,22 +486,23 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # changed. `script/lint`'s `sh -n` check (added the same day) catches a regression here; this comment
 # is why a future editor should not just delete that check to add one back.
 CRATES="$(cat <<'TABLE'
-capability	12	the capability model
+capability_table	12	the capability model
 page_tables	4	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	578	the untyped-region accounting, no double-free
 static_elf	67	the loader's front half, and the note walk, panic-free on hostile input
+boot_ladder	260	the verdict reader: a count never overflows and a name list holds only plain names
 page_frames	3	the physical frame allocator
 address_space_layout	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 allocation_cache	1	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 byte_sink_contract	10	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	0	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
 domain_name_resolution_contract	120	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
+program_argument_contract	60	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
 device_tree_blob	206	the device-tree parser's leaf readers
 inter_process_communication	12	the rendezvous state machine
 intrusive_queue	9	the scheduler's queue structure
 address_space_identifier	2	the TLB tag allocator
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
-virtio	152	the block and net driver pure logic: the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
 memory_region_heap	2	the heap's growth arithmetic: a grow never commits past the cap, a grow at the cap is a refusal, and the bytes it asks for never overflow
 capability_manifest_note	106	a manifest note has one encoding, and decoding hostile bytes never panics
 interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile bytes never panics
@@ -510,7 +511,6 @@ measured_boot	50	a digest text form reads back as itself, and nothing but a labe
 sealed_pair	41	a digest is found in a kernel image exactly when it is there, at any offset
 pci_configuration_space	40	config-space decode on hostile-device input
 socket_contract	406	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
-entropy_contract	32	a request word reads back as built, a copy writes only the delivered bytes, a fill succeeds only on full replies, and readiness needs one nonzero byte
 jh7110_clock_and_reset	100	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	117	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 direct_memory_access_validator	121	the DMA-confinement validator, no descriptor escapes the grant
@@ -532,7 +532,7 @@ driver_process_contract::extensible_host_controller_interface	17	the xHCI driver
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
 driver_process_contract::virtual_io	350	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
 kernel	9	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
-components	10	the EL0 components: a bounded append that a configuration page this system did not write feeds
+components	162	the EL0 components: a bounded append that a configuration page this system did not write feeds, and the block driver's pure logic (the library's block_driver_roles): the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
 machine_discovery	363	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
 TABLE
 )"
@@ -753,9 +753,12 @@ for c in $crates; do
         # row with none fails the way this comment describes. See notes/user-proofs.md's BUGS for
         # what that costs: a harness added to a fixture runs nowhere until somebody adds the row.
         components)
+                # The package's one library target (`components/src/lib.rs`, with its modules) is
+                # proved with `--lib`, never with a `--bin` of its own name.
                 extra="$(git grep -lF '#[kani::proof]' -- 'components/src/*.rs' \
                     | sed 's|components/src/||; s|\.rs$||' \
-                    | sed 's|^|--bin |' | tr '\n' ' ')" ;;
+                    | grep -v '^block_driver_roles$' \
+                    | sed 's|^|--bin |' | tr '\n' ' ') --lib" ;;
         # **A row named `<crate>::<module>` proves one module's harnesses** (2026-10-26 UTC):
         # `driver_process_contract` is one crate with a module per driver, so each driver's proofs
         # get their own seconds and their own description. Kani's `--harness` matches a substring

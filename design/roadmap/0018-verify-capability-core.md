@@ -13,7 +13,7 @@ Green-lit and started; see DECISIONS §14 and notes/verification.md. This is the
 thesis as an actual work item rather than an aspiration.
 
 Deliverable. Machine-checked proofs (Kani) of the security-critical logic, spreading inward from
-the capability core. `crates/capability` is proved already: five harnesses covering "`derive` never widens
+the capability core. `crates/capability_table` is proved already: five harnesses covering "`derive` never widens
 rights," "userspace cannot forge a right," and the subset order's reflexivity and transitivity, each
 for *every* input rather than sampled cases (`script/verify`). Next, in order, IPC (the rendezvous
 and the one-shot reply) and the MMU isolation invariants.

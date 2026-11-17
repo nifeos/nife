@@ -110,7 +110,7 @@ fn destroy_never_frees_a_child_to_the_allocator() {
 
 /// **Reclaiming holes never lowers the watermark under anything still held, and never raises
 /// it.** Under it stay the region's own retypes and every live child; an in-flight sibling
-/// (not quiescent) leaves it where the LIFO rule put it. Together with
+/// (not quiescent) leaves it where the last-in-first-out rule put it. Together with
 /// `split_stays_within_budget_and_progresses`, that is why a page carved after a reclaim is one
 /// nothing else holds.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.coalescing_never_reclaims_a_held_page.patch`
@@ -152,29 +152,20 @@ use crate::table::RegionSnapshot;
 /// The regions the subtree-ceiling harnesses drive: a root, a child and a grandchild.
 const REGIONS: usize = 3;
 /// Every counted kind, in [`Ceilings`] order.
-const KINDS: [Counted; 8] = [
-    Counted::Object(ObjectKind::Rendezvous),
-    Counted::Object(ObjectKind::AddressSpace),
-    Counted::Object(ObjectKind::Thread),
-    Counted::Object(ObjectKind::KernelPool),
-    Counted::Object(ObjectKind::Notification),
-    Counted::Object(ObjectKind::Timer),
-    Counted::Object(ObjectKind::Process),
-    Counted::Region,
-];
+const KINDS: [Counted; 8] = {
+    let mut kinds = [Counted::Region; 8];
+    let mut i = 0;
+    while i < ObjectKind::ALL.len() {
+        kinds[i] = Counted::Object(ObjectKind::ALL[i]);
+        i += 1;
+    }
+    kinds
+};
 /// Where [`Counted::Region`] sits in [`KINDS`].
 const REGION_COUNT: usize = 7;
 
 fn any_object_kind() -> ObjectKind {
-    match kani::any::<u8>() % 7 {
-        0 => ObjectKind::Rendezvous,
-        1 => ObjectKind::AddressSpace,
-        2 => ObjectKind::Thread,
-        3 => ObjectKind::KernelPool,
-        4 => ObjectKind::Notification,
-        5 => ObjectKind::Timer,
-        _ => ObjectKind::Process,
-    }
+    ObjectKind::ALL[(kani::any::<u8>() % ObjectKind::ALL.len() as u8) as usize]
 }
 
 /// The ceilings region `r` of a tree lives under, when its root's are `root`: the root's own, or a
@@ -196,7 +187,7 @@ fn same_ceilings(a: Ceilings, b: Ceilings) -> bool {
     KINDS.into_iter().all(|c| a.get(c) == b.get(c))
 }
 
-fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
+fn is_same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
     match (a, b) {
         (None, None) => true,
         (Some(a), Some(b)) => {
@@ -338,9 +329,9 @@ impl Run {
     }
 
     /// Whether every region's snapshot is the one in `before`.
-    fn unmoved_since(&self, before: [Option<RegionSnapshot>; REGIONS]) -> bool {
+    fn is_unmoved_since(&self, before: [Option<RegionSnapshot>; REGIONS]) -> bool {
         let now = self.snapshots();
-        (0..REGIONS).all(|r| same_snapshot(now[r], before[r]))
+        (0..REGIONS).all(|r| is_same_snapshot(now[r], before[r]))
     }
 
     /// Which parts of the invariant every live region of the tree holds.
@@ -429,7 +420,7 @@ fn a_refused_carve_moves_nothing() {
         let kind = any_object_kind();
         let refused = run.carve(r, kind);
         if refused {
-            assert!(run.unmoved_since(before), "a refusal moved something");
+            assert!(run.is_unmoved_since(before), "a refusal moved something");
             assert!(run.table.len() == regions, "a refusal left a region");
         }
         let own = before[r].expect("a region of the tree");
@@ -457,7 +448,7 @@ fn a_refused_split_moves_nothing() {
         let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
         let refused = run.split(r).is_none();
         if refused {
-            assert!(run.unmoved_since(before), "a refusal moved something");
+            assert!(run.is_unmoved_since(before), "a refusal moved something");
             assert!(run.table.len() == regions, "a refusal left a region");
         }
         let own = before[r].expect("a region of the tree");
@@ -488,7 +479,7 @@ fn a_split_refused_for_a_full_table_moves_nothing() {
         let regions = run.table.len();
         let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
         assert!(run.split(r).is_none(), "a full table took a child");
-        assert!(run.unmoved_since(before), "a refusal moved something");
+        assert!(run.is_unmoved_since(before), "a refusal moved something");
         assert!(run.table.len() == regions, "a refusal left a region");
         let own = before[r].expect("a region of the tree");
         let counted = Counted::Region;
@@ -609,12 +600,102 @@ fn a_release_of_nothing_held_moves_nothing() {
     let released = run.table.release_object(run.name(0), kind);
     assert!(!released, "a release of nothing held was taken");
     assert!(
-        run.unmoved_since(before),
+        run.is_unmoved_since(before),
         "a refused release moved something"
     );
     kani::cover!(
         root.live.get(Counted::Object(kind)) > 0,
         "the child holds an object of the kind"
+    );
+}
+
+/// **A return keeps every region's run where the table's discipline puts it**: from any state of
+/// a root, a child and a grandchild, claiming the grandchild and giving its pages back leaves every
+/// live region with `retyped_to <= watermark <= pages`, and the child's run inside the part of the
+/// root's pages already spent. Every other harness assumes these as its start state; this is the one
+/// that checks the table keeps them across a claim and a return.
+///
+/// **One assumption, stated.** `Run::any` leaves a parent's retyped pages free to overlap a live
+/// child's run, which no sequence of the table's calls produces (a retype lands above every child
+/// that exists, and a split above every retype before it). The harness assumes the states without
+/// that overlap. Building the start state from real calls instead runs CBMC out of memory, so the
+/// reachability evidence is a host test, `no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages`,
+/// which replays every call sequence of up to five calls and checks the same rule after each call.
+/// The covers below keep the assumption from emptying the proof: a state with retyped pages below
+/// a live grandchild and one with them above it both reach the claim.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_return_keeps_every_run_inside_its_parents_spent_part.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_return_keeps_every_run_inside_its_parents_spent_part() {
+    // A root, a child and a grandchild in any state, built without `Run::any`'s counts and
+    // ceilings, which this proof never reads and which make it far slower than the shard allows.
+    // Each region sits inside its parent's spent part, retyped pages end by its watermark, and
+    // the two parents hold at least the one child they have.
+    let mut table = RegionTable::<4>::new();
+    let mut names = [0u64; 3];
+    let mut parent = NO_PARENT;
+    let (mut spent_from, mut spent_to) = (0u64, u64::MAX);
+    for (r, name) in names.iter_mut().enumerate() {
+        let base_page: u64 = kani::any();
+        let pages: u64 = kani::any();
+        let watermark: u64 = kani::any();
+        let retyped_to: u64 = kani::any();
+        kani::assume(retyped_to <= watermark && watermark <= pages);
+        kani::assume(spent_from <= base_page && base_page <= spent_to);
+        kani::assume(pages <= spent_to - base_page);
+        let children: u32 = if r < 2 { kani::any() } else { 0 };
+        kani::assume(r == 2 || (1..=2).contains(&children));
+        *name = table
+            .insert_in_any_state(
+                parent,
+                (base_page, pages, watermark, retyped_to),
+                false,
+                children,
+                (Ceilings::UNLIMITED, Ceilings::from_counts([0; 8]), [0; 7]),
+            )
+            .expect("the table has room for the tree");
+        parent = *name;
+        (spent_from, spent_to) = (base_page, base_page + watermark);
+    }
+    let before = names.map(|n| table.snapshot(n));
+    for (parent, child) in [(0, 1), (1, 2)] {
+        if let (Some(p), Some(c)) = (before[parent], before[child]) {
+            let start = c.base_page - p.base_page;
+            kani::assume(p.retyped_to <= start || p.retyped_to > start + c.pages);
+        }
+    }
+    let claim = table.claim_for_destroy(names[2]);
+    kani::cover!(
+        claim.is_some() && before[1].is_some_and(|c| c.retyped_to > 0),
+        "the grandchild is claimed under a child with retyped pages"
+    );
+    kani::cover!(
+        claim.is_some()
+            && before[1]
+                .zip(before[2])
+                .is_some_and(|(c, g)| c.retyped_to > g.base_page - c.base_page + g.pages),
+        "the child retyped pages after its grandchild was split"
+    );
+    if let Some(claim) = claim {
+        table.return_to_parent(&claim);
+    }
+    // Each region by name, never through `Iterator::flatten` over the three: the flatten's inner
+    // loop is one the model checker cannot bound, and unrolling it ran CBMC past a hosted
+    // runner's memory before the solver started.
+    let [root, child, grandchild] = names.map(|n| table.snapshot(n));
+    assert!(
+        grandchild.is_none(),
+        "the claimed grandchild still resolves"
+    );
+    let (root, child) = (root.expect("root"), child.expect("child"));
+    for s in [root, child] {
+        assert!(s.retyped_to <= s.watermark, "retyped past the watermark");
+        assert!(s.watermark <= s.pages, "watermark past the region");
+    }
+    assert!(
+        child.base_page >= root.base_page
+            && child.base_page + child.pages <= root.base_page + root.watermark,
+        "a child's run left its parent's spent part"
     );
 }
 

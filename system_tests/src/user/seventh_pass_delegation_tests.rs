@@ -2,7 +2,7 @@
 //! capability (milestone 903 (a seventh outsider pass attacks the confinement claim), fatal risk
 //! 7's confinement claim, claims 1 and 2).
 //!
-//! The host crate proves both claims (`capability::derive_never_widens_rights`,
+//! The host crate proves both claims (`capability_table::derive_never_widens_rights`,
 //! `from_bits_cannot_forge_a_right`), and `confinement_attack_tests` drives neither case; this
 //! drives `SEND_CAPABILITY`'s `a1` rights register through `syscall::invoke`. `inter_process_communication_send_capability_from` refuses
 //! before touching the rendezvous, so a refusal parks nothing, and a regression parks the test

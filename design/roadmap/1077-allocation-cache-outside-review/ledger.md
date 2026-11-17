@@ -6,7 +6,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 |---|---|
 | 1 | done in the tree, as the sibling crates are: a README with both examples checked as doctests, the two license files, `license`, `rust-version`, `description`, `readme`, `keywords` and `categories`, an inline `[lints]` table, and a `publish = false` comment a stranger can act on. The move still strips the `Name:` blocks, and the repository's own `repository` and `documentation` fields are the move's |
 | 2 | done: the root documentation, the manifest and the crate's tests name no consumer, no generator, no note and no tree path; the talc example is the README's |
-| 3 | left: the move's, and decision 1 may close the move |
+| 3 | left: the `runtime` package's move, since decision 1 is ruled |
 | 4 | done: `class` compares before it rounds (`a_size_near_the_top_of_usize_has_no_class`), and decision 3 is built provisionally: `class` returns `Option<Class>` and every method that takes a class takes `Class`, so no index can pass the last class and `class_bytes` cannot overflow |
 | 5 | done: the sentence on `Cache` and `an_all_zero_cache_is_empty` |
 | 6 | done: `Cache`, `push`, `spill` and `give_back_all` state the owner's rule |

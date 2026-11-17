@@ -31,7 +31,7 @@ test kernel::user::survey_tests::a_dead_child_is_still_in_the_domain_until_it_is
 The child died. Its kill message is in the transcript three lines above the panic, at the fault
 address `FAULT_STUB` is written to produce. What did not happen is the corpse parking on its
 supervision rendezvous's sender queue, where a survey can see it before anyone has collected it.
-That is DECISIONS §26's property and `capability::survey_includes`' proved one.
+That is DECISIONS §26's property and `capability_table::survey_includes`' proved one.
 
 Transcript: `bench/xenon-2026-09-17/nvme-attempt-2-no-controller-found.log`.
 

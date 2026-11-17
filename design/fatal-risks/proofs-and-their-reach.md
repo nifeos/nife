@@ -70,7 +70,7 @@ milestone 6 (threads, the context switch, and preemption), 100 Hz configured and
   any published figure should be in code lines rather than raw ones. 19 `kani::cover!` vacuity
   guards exist, in 4 of 24 harness crates. And a vacuous harness reports `SUCCESSFUL`.
 - The reverse pass found real chaff, which is what makes the green half credible:
-  `capability::subset_is_reflexive` proves `a & !a == 0`, a tautology no plausible implementation
+  `capability_table::subset_is_reflexive` proves `a & !a == 0`, a tautology no plausible implementation
   error breaks. And twelve of the 26 `paging` harnesses are per-ISA restatements of six properties.
 
 ### What it changes

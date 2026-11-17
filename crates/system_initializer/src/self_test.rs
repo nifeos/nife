@@ -142,7 +142,7 @@ fn run_measured(
     let own_pages = elf
         .segments()
         .map(|s| {
-            let (start, end) = s.page_range(process_builder::PAGE);
+            let (start, end) = s.page_range(process_builder::PAGE_BYTES);
             (end - start) / process_builder::PAGE
         })
         .sum::<u64>();

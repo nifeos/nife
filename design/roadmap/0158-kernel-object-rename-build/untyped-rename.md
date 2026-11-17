@@ -77,7 +77,7 @@ The same four ways as `Endpoint` and `Tcb`:
 - the full host test suite green, including doctests;
 - both kernel targets build clean;
 - `user`/`redoxfs_server`/`xtask` build clean;
-- `crates/inter_process_communication` (6 harnesses) and `crates/capability` (12 harnesses) both
+- `crates/inter_process_communication` (6 harnesses) and `crates/capability_table` (12 harnesses) both
   re-verify under Kani post-rename.
 
 Also `script/lint` clean, and full `script/test` green on both ISAs. The lint pass included two

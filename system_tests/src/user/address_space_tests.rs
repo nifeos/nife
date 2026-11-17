@@ -312,7 +312,8 @@ fn a_read_only_segment_is_mapped_read_only() {
 
     // Install it so we can ask the CPU's own tables, rather than our record of them.
     space.while_installed(|| {
-        let (_, flags) = mmu::translate_user(rodata.vaddr).expect(".rodata is not mapped at all");
+        let (_, flags) =
+            mmu::translate_user(rodata.virtual_address).expect(".rodata is not mapped at all");
 
         assert!(
             flags.is_user_accessible(),

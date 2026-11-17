@@ -160,6 +160,7 @@ for target in $targets; do
         machine_description_from_device_tree)
             set -- "$@" crates/device_tree_blob/tests/fixtures crates/machine_discovery/tests/fixtures ;;
         domain_name_system_reply) set -- "$@" crates/domain_name_system/tests/fixtures ;;
+        elf_parse) set -- "$@" crates/static_elf/tests/fixtures ;;
     esac
 
     # A dictionary where the format has one. It is the cheap half of a grammar: without it the

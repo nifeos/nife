@@ -21,6 +21,12 @@ pub const USER_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 pub const USER_STACK_TOP: u64 = address_space_layout::STACK_TOP;
 const _: () = assert!(USER_STACK_TOP == USER_STACK_VA + FRAME_SIZE);
 
+/// The frame size as the page size `static_elf` rounds segments to, so the loader's page ranges are
+/// the frames it maps.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_SIZE).unwrap();
+
 // Every type and function of `user` lives in a child named for it, and this file is the index (§281
 // (the kernel's user-mode file splits into child modules of `user`)). Each child takes `use
 // super::*` and is re-exported at its items' visibility, so every `user::` path resolves.

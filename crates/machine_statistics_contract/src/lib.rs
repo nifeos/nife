@@ -24,10 +24,24 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-/// The bound on CPU ids, re-exported from the current-CPU page. This page's layout depends on it
-/// (see [`WORDS`]), so its identity follows the same rule as that page's: any change to the value
-/// re-mints [`MAGIC`] and bumps [`VERSION`] in the same change.
-pub use current_cpu_contract::CPU_ID_BOUND;
+/// The number of processor lines after the header line: one per possible processor, eight today.
+/// This page's layout depends on it (see [`WORDS`]), so it is this crate's own constant and part
+/// of the page's identity, frozen with [`MAGIC`], [`VERSION`] and [`INTERFACE_ID`].
+///
+/// It must equal `current_cpu_contract::CPU_ID_BOUND`, and a compile-time assertion below holds the
+/// two together. The rule: a change to that bound fails this crate's build until this page's
+/// [`MAGIC`] digit and [`VERSION`] move in the same change, and only then does this constant
+/// follow. A kernel and a reader that agree on the identity values therefore cannot disagree on the
+/// layout, because the bound moves only together with the version a reader checks.
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1099-statistics-identity-frozen,
+/// following design/naming.md (a name says what the thing is, and a count says what it counts).
+pub const PROCESSOR_LINES: usize = 8;
+
+const _: () = assert!(
+    PROCESSOR_LINES == current_cpu_contract::CPU_ID_BOUND,
+    "the processor-line count moved with the CPU id bound: bump VERSION and re-mint MAGIC first"
+);
 
 /// The page's first word: what tells a prepared page from a frame nobody has written.
 pub const MAGIC: [u8; 8] = *b"MACHSTA1";
@@ -51,7 +65,7 @@ pub const VERSION: u32 = 1;
 pub const INTERFACE_ID: u64 = 4;
 
 /// The words the page carries: one header line, then one line per possible core.
-pub const WORDS: usize = word::LINE * (1 + CPU_ID_BOUND);
+pub const WORDS: usize = word::LINE * (1 + PROCESSOR_LINES);
 
 /// The page's size in bytes. Far under one frame, which is the unit it is mapped as.
 pub const PAGE_BYTES: usize = WORDS * 8;
@@ -177,7 +191,7 @@ pub struct Snapshot {
     /// Frames free.
     pub free_frames: u64,
     /// Every possible core's line, indexed by cpu id.
-    pub cpus: [Cpu; CPU_ID_BOUND],
+    pub cpus: [Cpu; PROCESSOR_LINES],
 }
 
 impl Snapshot {
@@ -221,7 +235,7 @@ impl Snapshot {
         if words[word::VERSION] != u64::from(VERSION) {
             return None;
         }
-        let mut cpus = [Cpu::default(); CPU_ID_BOUND];
+        let mut cpus = [Cpu::default(); PROCESSOR_LINES];
         for (id, c) in cpus.iter_mut().enumerate() {
             let at = |offset: usize| words[word::cpu(id) + offset];
             *c = Cpu {
@@ -321,10 +335,16 @@ mod tests {
         w
     }
 
+    /// Falsification: replayable `crates/machine_statistics_contract/falsifications/tests.the_processor_line_count_equals_the_cpu_id_bound.patch`
+    #[test]
+    fn the_processor_line_count_equals_the_cpu_id_bound() {
+        assert_eq!(PROCESSOR_LINES, current_cpu_contract::CPU_ID_BOUND);
+    }
+
     #[test]
     fn every_line_is_its_own_cache_line() {
         assert_eq!(word::cpu(0), 8);
-        assert_eq!(word::cpu(CPU_ID_BOUND - 1) + word::LINE, WORDS);
+        assert_eq!(word::cpu(PROCESSOR_LINES - 1) + word::LINE, WORDS);
     }
 
     #[test]
