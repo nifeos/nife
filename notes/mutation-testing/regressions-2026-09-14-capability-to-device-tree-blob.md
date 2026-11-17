@@ -214,7 +214,7 @@ the equivalence.
 
 The one equivalent is `cells`'s `value = (value << 32) | be32(..)` under `^`. The shift clears the
 low thirty-two bits, and a `be32` cannot reach the high ones. So the operands are disjoint, and `|`
-and `^` are the same function on them: the argument for `capability::note_peak` above.
+and `^` are the same function on them: the argument for `capability_table::note_peak` above.
 
 The 29 timeouts are hangs: the baseline's `dtb` row, grown with the walkers. All 29 are `at += 4`
 under `-=`, `at += align4(..)` under `-=`, or `at = value_at + align4(len)` under `-`, spread over

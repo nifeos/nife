@@ -107,9 +107,9 @@ nothing in this tree answers it for userspace today; see [limitations.md](limita
 
 ## Membership is the relationship, and it is proved
 
-The kernel walks its thread table and reports an entry when `capability::survey_includes(fault_ep,
+The kernel walks its thread table and reports an entry when `capability_table::survey_includes(fault_ep,
 invoked_ep)` says so, which is `matches!(fault_ep, Some(ep) if ep == invoked_ep)` and nothing else.
-Three Kani harnesses in `crates/capability`:
+Three Kani harnesses in `crates/capability_table`:
 
 - inclusion holds if and only if the thread's recorded endpoint is the invoked one. Both
   directions matter here, unlike for the reap: one is confinement (a stranger is never shown) and the

@@ -1,18 +1,31 @@
-# Name: provisional, minted by milestone 268's lane on 2026-09-14. The provenance block, with the
-# refusals, lives in src/lib.rs, which is where the naming gate reads it and where a reader meets
-# the crate.
 [package]
 name = "boot_ladder"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The fixed heads of the lines a kernel and its shell print while booting, and the self-test verdict they share, as code both the printer and the reader use"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "boot", "console", "serial"]
+categories = ["no-std", "embedded"]
+publish = false     # set to `true` only in the release that publishes
 
-# The rungs of the boot ladder, as the exact bytes that appear on a console.
-#
-# A crate rather than a constant in each place, because anything two binaries must agree on is
-# code both use. The kernel prints these, a console reader matches them, and the shell prints the
-# last one. No dependencies, and `no_std`, so the kernel can always compile it.
+# The lines a boot prints on a console, as the exact bytes: each head is a system's name followed
+# by a fixed shape. The program that prints a line and the programs that read it share this crate,
+# so they cannot disagree. `no_std`, no dependencies, so a kernel can always compile it.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]

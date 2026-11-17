@@ -1,6 +1,6 @@
 # The entropy contract's readiness rule, and its two fill loops
 
-`crates/entropy_contract` defines the request and reply that carry random bytes out of the entropy
+`entropy_contract` (the repository `nifeos/entropy_contract`) defines the request and reply that carry random bytes out of the entropy
 service, under §44 (entropy is a capability). [entropy.md](../entropy.md) has the shape, why the
 bytes ride in the reply, and why one number cannot collide. This page holds the reasons behind the
 readiness rule and the two ways a client fills a buffer, which the crate's doc comments link.

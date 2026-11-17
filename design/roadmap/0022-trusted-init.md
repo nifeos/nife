@@ -67,7 +67,7 @@ Deliverable, three parts.
    construction budget because it is *also* the builder, which shows the bundling was two things and
    only one of them was the reap. `REAP` refuses a live thread on purpose, so a **hung** child still
    cannot be restarted; that is the watchdog case and it belongs to 23. Two Kani harnesses in
-   `crates/capability` cover the authorization invariant. See notes/supervision.md.
+   `crates/capability_table` cover the authorization invariant. See notes/supervision.md.
 3. **Supervise, don't relaunch-in-kernel.** What happens when init (or any server) *fails*, as
    distinct from being corrupted. The failure of init degrades to a **halt, never a breach**
    (the kernel's guarantees hold regardless), so the only open question is availability: halt, or

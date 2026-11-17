@@ -87,7 +87,7 @@ pub fn checked_asked_grants_of<'b>(
     for seg in static_elf::NoteSegments::from_head(bytes).map_err(UnreadableNote::Elf)? {
         let range = seg.range(bytes.len()).map_err(UnreadableNote::Elf)?;
         if let Some(d) = search
-            .segment(&bytes[range], seg.p_align)
+            .segment(&bytes[range], seg.alignment)
             .map_err(UnreadableNote::Elf)?
         {
             note = Some(d);

@@ -6,7 +6,7 @@ authority is copied, how it narrows, and, at the end, how it is revoked.
 
 ## Authority moves by copy-with-narrowing, never by widening
 
-A `Capability<O>` is `Copy` (`crates/capability`). Authority spreads by deriving a copy, and the one rule
+A `Capability<O>` is `Copy` (`crates/capability_table`). Authority spreads by deriving a copy, and the one rule
 is that a derivative's rights are a subset of the source's:
 
 ```rust
@@ -24,7 +24,7 @@ It arrived on 2026-08-17 with milestone 126 (the `procps` package), this line st
 2026-08-17 documentation sweep is what found it. It is the right to learn what exists, as distinct
 from acting on it, the kernel-level twin of `filesystem_contract`'s directory `ENUMERATE`, and
 `endpoint::SURVEY` is its only consumer today. The argument for a right of its own rather than a
-corner of `READ` is on `capability::Rights::ENUMERATE`, where a reader meets it. `READ` on a
+corner of `READ` is on `capability_table::Rights::ENUMERATE`, where a reader meets it. `READ` on a
 supervision endpoint is what `RECEIVE` and `REAP` take, so a `ps` granted `READ` could reap a child,
 and a domain names its members rather than acting on them.
 

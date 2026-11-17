@@ -1,16 +1,18 @@
 //! Finding one ELF note by owner and type, through the program headers alone.
 //!
-//! Milestone 597 (a program carries its manifest in an ELF note), DECISIONS §197 (a package is one
-//! archive file)'s option M2, ruled by calef on 2026-09-26 (UTC). Every public name here is
-//! provisional; calef names public items.
+//! The reader goes through the program headers, not the section headers, so a binary stripped of
+//! its section headers (`strip --strip-section-headers`, `sstrip`) keeps its notes. A program that
+//! carries a description of itself in a note, for a launcher to read before it runs the program, is
+//! the case it was built for. Every public name here is provisional.
 //!
-//! Nothing here runs inside [`Elf::parse`], and the kernel never calls [`Elf::note`]. A whole-image
-//! reader uses [`Elf::note`]; a streaming reader uses [`NoteSegments::from_head`] and feeds each
-//! segment to one [`NoteSearch`]. Both refuse a malformed note and a duplicate the same way. See
-//! notes/elf/parser.md ("Finding a note") for the format, the padding rule and the hostile cases.
+//! Nothing here runs inside [`Elf::parse`]. A whole-image reader uses [`Elf::note`]; a streaming
+//! reader uses [`NoteSegments::from_head`] and feeds each segment to one [`NoteSearch`]. Both
+//! refuse a malformed note and a duplicate the same way. The README has the format, the padding
+//! rule and the hostile cases.
 
 use super::{
-    EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAXIMUM_PHNUM, PHDR_SIZE, u16le, u32le, u64le,
+    EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAXIMUM_PHNUM, PHDR_SIZE,
+    program_header_offset, u16le, u32le, u64le,
 };
 
 /// `p_type` for a segment of notes.
@@ -53,11 +55,18 @@ impl core::error::Error for NoteError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoteSegment {
     /// `p_offset`: where the segment's bytes start in the file.
+    #[doc(alias = "p_offset")]
     pub offset: u64,
     /// `p_filesz`: how many bytes it has.
-    pub size: u64,
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_filesz")]
+    pub bytes: u64,
     /// `p_align`, which says how the notes inside are padded.
-    pub p_align: u64,
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    #[doc(alias = "p_align")]
+    pub alignment: u64,
 }
 
 impl NoteSegment {
@@ -65,7 +74,7 @@ impl NoteSegment {
     /// [`NoteError::SegmentOutOfBounds`] if any of it lies past the end.
     pub fn range(&self, file_len: usize) -> Result<core::ops::Range<usize>, NoteError> {
         let start = usize::try_from(self.offset).map_err(|_| NoteError::SegmentOutOfBounds)?;
-        let size = usize::try_from(self.size).map_err(|_| NoteError::SegmentOutOfBounds)?;
+        let size = usize::try_from(self.bytes).map_err(|_| NoteError::SegmentOutOfBounds)?;
         let end = start
             .checked_add(size)
             .ok_or(NoteError::SegmentOutOfBounds)?;
@@ -128,13 +137,14 @@ impl Iterator for NoteSegments<'_> {
 
     fn next(&mut self) -> Option<NoteSegment> {
         while self.next < self.phnum {
-            let ph = &self.table[self.next * self.phentsize..][..PHDR_SIZE];
+            let off = program_header_offset(0, self.next, self.phentsize, self.table.len())?;
+            let ph = &self.table[off..off + PHDR_SIZE];
             self.next += 1;
             if u32le(ph, 0) == PT_NOTE {
                 return Some(NoteSegment {
                     offset: u64le(ph, 8),
-                    size: u64le(ph, 32),
-                    p_align: u64le(ph, 48),
+                    bytes: u64le(ph, 32),
+                    alignment: u64le(ph, 48),
                 });
             }
         }
@@ -246,9 +256,9 @@ fn find_in_segment<'a>(
 
 /// **One lookup, fed a segment at a time.** Provisional name.
 ///
-/// What [`Elf::note`] does over a whole image, for a reader that holds one segment at a time (the
-/// shell). Every segment must be fed, in table order, for "the same note twice" to be caught; a
-/// caller that stops at the first match has read a different rule.
+/// What [`Elf::note`] does over a whole image, for a reader that holds one segment at a time, such
+/// as one streaming a file a page at a time. Every segment must be fed, in table order, for "the
+/// same note twice" to be caught; a caller that stops at the first match has read a different rule.
 pub struct NoteSearch<'o> {
     owner: &'o [u8],
     kind: u32,
@@ -256,7 +266,7 @@ pub struct NoteSearch<'o> {
 }
 
 impl<'o> NoteSearch<'o> {
-    /// A search for the note owned by `owner` (without its NUL, `b"nife"`) with type `kind`.
+    /// A search for the note owned by `owner` (without its NUL, `b"GNU"`) with type `kind`.
     pub fn new(owner: &'o [u8], kind: u32) -> Self {
         Self {
             owner,
@@ -265,15 +275,15 @@ impl<'o> NoteSearch<'o> {
         }
     }
 
-    /// Walk one whole segment, whose header said `p_align`. The descriptor if this segment holds
-    /// the note, `None` if it does not, and a refusal if the segment is malformed or holds a second
-    /// copy of a note already found, here or in an earlier segment.
+    /// Walk one whole segment, whose header gave `alignment` as its `p_align`. The descriptor if
+    /// this segment holds the note, `None` if it does not, and a refusal if the segment is
+    /// malformed or holds a second copy of a note already found, here or in an earlier segment.
     pub fn segment<'s>(
         &mut self,
         seg: &'s [u8],
-        p_align: u64,
+        alignment: u64,
     ) -> Result<Option<&'s [u8]>, NoteError> {
-        let found = find_in_segment(seg, padding(p_align)?, self.owner, self.kind, self.seen)?;
+        let found = find_in_segment(seg, padding(alignment)?, self.owner, self.kind, self.seen)?;
         self.seen |= found.is_some();
         Ok(found)
     }
@@ -283,16 +293,17 @@ impl<'a> Elf<'a> {
     /// **The descriptor of the one note owned by `owner` with type `kind`**, or `None` if the file
     /// has no such note. Provisional name.
     ///
-    /// `owner` is the name without its NUL (`b"nife"`). Every `PT_NOTE` segment is walked in full,
+    /// `owner` is the name without its NUL (`b"GNU"`). Every `PT_NOTE` segment is walked in full,
     /// so a malformed note anywhere refuses the lookup, and so does a second copy of the one asked
-    /// for; notes/elf/parser.md says why both are refusals rather than tolerances.
+    /// for. Two readers of one file that took different copies would disagree about what the file
+    /// says, so the ambiguity is refused rather than resolved.
     pub fn note(&self, owner: &[u8], kind: u32) -> Result<Option<&'a [u8]>, NoteError> {
         let bytes: &'a [u8] = self.bytes;
         let mut search = NoteSearch::new(owner, kind);
         let mut found = None;
         for seg in NoteSegments::from_head(bytes)? {
             let range = seg.range(bytes.len())?;
-            if let Some(desc) = search.segment(&bytes[range], seg.p_align)? {
+            if let Some(desc) = search.segment(&bytes[range], seg.alignment)? {
                 found = Some(desc);
             }
         }
@@ -336,7 +347,7 @@ mod verification {
     }
 
     /// **Finding the note headers in a file's first bytes never panics, and every segment it
-    /// yields was read from inside them.** The head is hostile (the shell reads it from a file
+    /// yields was read from inside them.** The head is hostile (a streaming reader takes it from a file
     /// anyone may have written), and `phoff` places the table at a symbolic position. 176 bytes is
     /// the header plus two program headers, so at most three entries of the smallest size fit; the
     /// unwind bound covers that and the four-byte magic comparison.
@@ -367,7 +378,7 @@ mod verification {
         const LEN: usize = 40;
         let seg: [u8; LEN] = kani::any();
         let align: usize = if kani::any() { 4 } else { 8 };
-        if let Ok(Some(desc)) = find_in_segment(&seg, align, b"nife", kani::any(), false) {
+        if let Ok(Some(desc)) = find_in_segment(&seg, align, b"GNU", kani::any(), false) {
             let start = desc.as_ptr() as usize - seg.as_ptr() as usize;
             assert!(start + desc.len() <= LEN);
         }
@@ -377,7 +388,7 @@ mod verification {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{NATIVE_MACHINE, PF_R, PF_X};
+    use crate::{EXECUTABLE, NATIVE_MACHINE, READABLE};
     extern crate std;
     use std::vec;
     use std::vec::Vec;
@@ -419,7 +430,7 @@ mod tests {
         let code = [0xaau8; 16];
         let mut ph = vec![0u8; 56];
         ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&(PF_R | PF_X).to_le_bytes());
+        ph[4..8].copy_from_slice(&(READABLE | EXECUTABLE).to_le_bytes());
         ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
         ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
         ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -432,7 +443,7 @@ mod tests {
         for (align, bytes) in notes {
             let mut ph = vec![0u8; 56];
             ph[0..4].copy_from_slice(&PT_NOTE.to_le_bytes());
-            ph[4..8].copy_from_slice(&PF_R.to_le_bytes());
+            ph[4..8].copy_from_slice(&READABLE.to_le_bytes());
             ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
             ph[32..40].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
             ph[40..48].copy_from_slice(&(bytes.len() as u64).to_le_bytes());
@@ -448,24 +459,24 @@ mod tests {
     #[test]
     fn a_note_is_found_among_others() {
         let mut seg = note(b"GNU", 3, &[1; 20]);
-        seg.extend(note(b"nife", 1, b"manifest bytes"));
-        seg.extend(note(b"nife", 2, b"other type"));
+        seg.extend(note(b"Test", 1, b"manifest bytes"));
+        seg.extend(note(b"Test", 2, b"other type"));
         let bytes = image(&[(4, seg)]);
         let elf = Elf::parse(&bytes).expect("a PT_NOTE does not disturb the loader");
-        assert_eq!(elf.note(b"nife", 1), Ok(Some(&b"manifest bytes"[..])));
-        assert_eq!(elf.note(b"nife", 9), Ok(None));
+        assert_eq!(elf.note(b"Test", 1), Ok(Some(&b"manifest bytes"[..])));
+        assert_eq!(elf.note(b"Test", 9), Ok(None));
         assert_eq!(elf.segments().count(), 1, "PT_NOTE is not a load segment");
     }
 
-    /// The shell's path: the headers from the first bytes, each segment read on its own, one
+    /// The streaming path: the headers from the first bytes, each segment read on its own, one
     /// search across them. It must answer what [`Elf::note`] answers, including the refusal.
     fn streamed(bytes: &[u8]) -> Result<Option<Vec<u8>>, NoteError> {
-        let mut search = NoteSearch::new(b"nife", 1);
+        let mut search = NoteSearch::new(b"Test", 1);
         let mut found = None;
         for seg in NoteSegments::from_head(bytes)? {
             let r = seg.range(bytes.len())?;
             let copy = bytes[r].to_vec();
-            if let Some(d) = search.segment(&copy, seg.p_align)? {
+            if let Some(d) = search.segment(&copy, seg.alignment)? {
                 found = Some(d.to_vec());
             }
         }
@@ -475,16 +486,16 @@ mod tests {
     #[test]
     fn the_streaming_reader_agrees_with_the_whole_image_reader() {
         let cases = [
-            image(&[(4, note(b"nife", 1, b"manifest bytes"))]),
+            image(&[(4, note(b"Test", 1, b"manifest bytes"))]),
             image(&[(4, note(b"GNU", 3, b"x"))]),
-            image(&[(4, note(b"nife", 1, b"a")), (4, note(b"nife", 1, b"b"))]),
-            image(&[(16, note(b"nife", 1, b"a"))]),
-            image(&[(4, note(b"GNU", 3, b"x")), (4, note(b"nife", 1, b"second"))]),
+            image(&[(4, note(b"Test", 1, b"a")), (4, note(b"Test", 1, b"b"))]),
+            image(&[(16, note(b"Test", 1, b"a"))]),
+            image(&[(4, note(b"GNU", 3, b"x")), (4, note(b"Test", 1, b"second"))]),
         ];
         for bytes in cases {
             let whole = Elf::parse(&bytes)
                 .unwrap()
-                .note(b"nife", 1)
+                .note(b"Test", 1)
                 .map(|d| d.map(|d| d.to_vec()));
             assert_eq!(streamed(&bytes), whole);
         }
@@ -492,7 +503,7 @@ mod tests {
 
     #[test]
     fn a_head_that_does_not_hold_the_header_table_is_not_readable() {
-        let bytes = image(&[(4, note(b"nife", 1, b"a"))]);
+        let bytes = image(&[(4, note(b"Test", 1, b"a"))]);
         let table_end = 64 + 2 * 56;
         assert!(NoteSegments::from_head(&bytes[..table_end]).is_ok());
         assert_eq!(
@@ -509,56 +520,56 @@ mod tests {
 
     #[test]
     fn an_owner_that_is_a_prefix_is_not_a_match() {
-        let bytes = image(&[(4, note(b"nife0", 1, b"x"))]);
-        assert_eq!(Elf::parse(&bytes).unwrap().note(b"nife", 1), Ok(None));
+        let bytes = image(&[(4, note(b"Test0", 1, b"x"))]);
+        assert_eq!(Elf::parse(&bytes).unwrap().note(b"Test", 1), Ok(None));
     }
 
     #[test]
     fn the_same_note_twice_is_refused_within_and_across_segments() {
-        let mut seg = note(b"nife", 1, b"a");
-        seg.extend(note(b"nife", 1, b"b"));
+        let mut seg = note(b"Test", 1, b"a");
+        seg.extend(note(b"Test", 1, b"b"));
         let bytes = image(&[(4, seg)]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::Duplicate)
         );
 
-        let bytes = image(&[(4, note(b"nife", 1, b"a")), (4, note(b"nife", 1, b"b"))]);
+        let bytes = image(&[(4, note(b"Test", 1, b"a")), (4, note(b"Test", 1, b"b"))]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::Duplicate)
         );
     }
 
     #[test]
     fn a_descriptor_that_runs_past_its_segment_is_refused() {
-        let mut seg = note(b"nife", 1, b"abcd");
+        let mut seg = note(b"Test", 1, b"abcd");
         seg[4..8].copy_from_slice(&u32::MAX.to_le_bytes());
         let bytes = image(&[(4, seg)]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::Truncated)
         );
     }
 
     #[test]
     fn a_missing_final_pad_is_refused() {
-        let mut seg = note(b"nife", 1, b"abc"); // descriptor 3 bytes, padded to 4
+        let mut seg = note(b"Test", 1, b"abc"); // descriptor 3 bytes, padded to 4
         seg.pop();
         let bytes = image(&[(4, seg)]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::Truncated)
         );
     }
 
     #[test]
     fn a_header_cut_short_is_refused() {
-        let mut seg = note(b"nife", 1, b"abcd");
+        let mut seg = note(b"Test", 1, b"abcd");
         seg.extend_from_slice(&[0; 8]);
         let bytes = image(&[(4, seg)]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::Truncated)
         );
     }
@@ -571,37 +582,37 @@ mod tests {
         seg.extend_from_slice(&5u32.to_le_bytes());
         seg.extend_from_slice(&3u32.to_le_bytes());
         seg.extend_from_slice(&1u32.to_le_bytes());
-        seg.extend_from_slice(b"nife\0\0\0\0\0\0\0\0"); // 12 + 5 pads to 24 under 8, to 20 under 4
+        seg.extend_from_slice(b"Test\0\0\0\0\0\0\0\0"); // 12 + 5 pads to 24 under 8, to 20 under 4
         seg.extend_from_slice(b"abc\0\0\0\0\0");
         let bytes = image(&[(8, seg.clone())]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Ok(Some(&b"abc"[..]))
         );
         // Read with 4-byte padding, the same bytes put the descriptor at 20 and read the padding.
         let bytes = image(&[(4, seg)]);
         assert_ne!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Ok(Some(&b"abc"[..]))
         );
     }
 
     #[test]
     fn an_alignment_that_is_not_four_or_eight_is_refused() {
-        let bytes = image(&[(16, note(b"nife", 1, b"a"))]);
+        let bytes = image(&[(16, note(b"Test", 1, b"a"))]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::BadAlignment)
         );
     }
 
     #[test]
     fn a_note_segment_outside_the_file_is_refused() {
-        let mut bytes = image(&[(4, note(b"nife", 1, b"a"))]);
+        let mut bytes = image(&[(4, note(b"Test", 1, b"a"))]);
         let ph = 64 + 56;
         bytes[ph + 8..ph + 16].copy_from_slice(&(u64::MAX - 2).to_le_bytes());
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Err(NoteError::SegmentOutOfBounds)
         );
     }
@@ -609,7 +620,7 @@ mod tests {
     #[test]
     fn an_empty_note_segment_has_no_note() {
         let bytes = image(&[(4, Vec::new())]);
-        assert_eq!(Elf::parse(&bytes).unwrap().note(b"nife", 1), Ok(None));
+        assert_eq!(Elf::parse(&bytes).unwrap().note(b"Test", 1), Ok(None));
     }
 
     /// A bare ELF header (64 bytes) that claims `phnum` program headers of `phentsize` bytes at
@@ -702,14 +713,14 @@ mod tests {
             "one byte short of the header"
         );
         let bytes = image(&[(4, vec![0u8; 12])]);
-        assert_eq!(Elf::parse(&bytes).unwrap().note(b"nife", 1), Ok(None));
+        assert_eq!(Elf::parse(&bytes).unwrap().note(b"Test", 1), Ok(None));
     }
 
     #[test]
     fn an_empty_descriptor_is_found_and_empty() {
-        let bytes = image(&[(4, note(b"nife", 1, b""))]);
+        let bytes = image(&[(4, note(b"Test", 1, b""))]);
         assert_eq!(
-            Elf::parse(&bytes).unwrap().note(b"nife", 1),
+            Elf::parse(&bytes).unwrap().note(b"Test", 1),
             Ok(Some(&b""[..]))
         );
     }

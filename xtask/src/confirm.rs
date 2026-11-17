@@ -47,13 +47,15 @@ use crate::rollback::{
 
 /// What boot 2's transcript must contain: the chooser's two lines, the confirmation, and a shell
 /// that read a file off the installed disk.
-const BOOT_TWO_WANTS: [&str; 5] = [
-    "uefi_loader: starting boot slot 1",
-    "uefi_loader: started from boot slot 1",
-    "slot 1 confirmed",
-    "nife capability shell.",
-    "1 10 57",
-];
+fn boot_two_wants() -> [&'static str; 5] {
+    [
+        "uefi_loader: starting boot slot 1",
+        "uefi_loader: started from boot slot 1",
+        "slot 1 confirmed",
+        install::SHELL_UP.as_str(),
+        "1 10 57",
+    ]
+}
 
 /// And boot 3's: the same slot chosen with no tries left, and no second write to the table.
 const BOOT_THREE_WANTS: [&str; 3] = [
@@ -143,7 +145,7 @@ pub(crate) fn confirm_an_upgrade(gate: &str, upgrade: impl FnOnce() -> Option<Up
     };
 
     let mut ok = true;
-    for wanted in BOOT_TWO_WANTS {
+    for wanted in boot_two_wants() {
         if !trial.contains(wanted) {
             eprintln!("{gate}: boot 2's transcript is missing {wanted:?}");
             ok = false;

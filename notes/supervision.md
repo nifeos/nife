@@ -177,7 +177,7 @@ This is the part worth reading, because it says what §32 did and did not buy.
   demonstrates. Keeping them fused in the spike stays deliberate: the requirement is visible in one
   program rather than hidden behind an IPC hop.
 
-The authorization invariant is machine-checked, not only tested: two Kani harnesses in `crates/capability`
+The authorization invariant is machine-checked, not only tested: two Kani harnesses in `crates/capability_table`
 cover it, which is the right instrument for "a capability that cannot build cannot be made to build via
 reap" because it quantifies over rights combinations rather than sampling them.
 

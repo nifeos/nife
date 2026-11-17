@@ -5,11 +5,11 @@ milestone_dependencies: 1034
 decision_dependencies: 151, 305
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
-# 1081. `capability`: what an outside maintainer would fix before it leaves
+# 1081. `capability_table`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only outside review of `crates/capability`, met as a stranger to this tree would
+Raised by a read-only outside review of `crates/capability_table`, met as a stranger to this tree would
 meet it on the day it becomes `nifeos/<crate>`. The review changed nothing; it lists what the move
 lane and the lanes after it change.
 
@@ -17,7 +17,7 @@ The crate has no review package under `notes/crate-reviews/` and no row in
 [`notes/crate-reviews.md`](../../notes/crate-reviews.md), so this review has no settled baseline to
 inherit. Whether a package is in flight on a branch is unverified. The review treats as settled anyway
 whatever a ruling in the tree already covers. That is the crate name as ratified against `caps`
-and `cap_space` (reopened below for one reason only, item D1), `CapabilityTable` as the exported
+and `cap_space` (reopened below for one reason only, item D1, ruled `capability_table`), `CapabilityTable` as the exported
 type and `MAXIMUM_SLOTS` as ratified. It also covers the five right bits and their positions (the
 syscall wire format, pinned by `abi::rights` and asserted equal in
 `kernel/src/capability_object.rs`), the set-means-free word, the 64-slot ceiling and the
@@ -67,7 +67,7 @@ The ledger of what landed and what is left is in [the appendix](1081-capability-
    `check-cfg = ['cfg(kani)']` line lives in the workspace's lints. The move tool's `add_repository`
    inserts `repository` after a `license =` line and finds none in this manifest, so the staged
    manifest has no `repository` while the tool reports the step as done (see item 6).
-   Evidence: `crates/capability/Cargo.toml` lines 5 to 9; `helpers/standalone.py` on the staged
+   Evidence: `crates/capability_table/Cargo.toml` lines 5 to 9; `helpers/standalone.py` on the staged
    tree: 10 lines; `crate-workflows/sample/Cargo.toml` for the shape.
    Change: `license = "MIT OR Apache-2.0"`, `rust-version = "1.85"` (edition 2024 needs it; the
    tests pass there), `description`, `repository`, an own `[lints.rust]` block with `missing_docs`,
@@ -183,40 +183,38 @@ The P2 items are in [the appendix](1081-capability-outside-review/later-items.md
 
 ## Decisions for the architect
 
-One one-way door is open. Everything else above is two-way until the first release, and the review records it as provisional.
+No decision is open. Everything else above is two-way until the first release, and the review records it as provisional.
 
-### D1. The crate's name is taken on crates.io
+### D1. The crate's name is `capability_table`
 
-Background. Ratification chose the name `capability` over `caps` and `cap_space`. On crates.io
-the name `capability` belongs to an unrelated published crate (a skill-tree library for games,
-version 0.1.0, about 520 downloads all time, last updated more than a year before this review). The
-move creates `nifeos/<name>`, the kernel's manifest pins that repository by `rev`, and every later
-document names it. A crate repository exists to release on its own (§151 (the goal of the repository split is independent release and third-party programs)). The publishing hold is a hold, not a decision never to publish. If the move creates the repository as `nifeos/capability` and a later rename lets the crate publish, the rename is a second move: a new repository, a new pin, and
-a dead name in every record between.
+Ruled 2026-11-16 (UTC), option A. The crate carries the name `capability_table` from before the move. The name
+`capability` belongs on crates.io to an unrelated published crate (a skill-tree library for games,
+version 0.1.0, about 520 downloads all time, last updated more than a year before this review).
+A repository named `nifeos/capability` could never publish under its own name. A rename after the move
+would be a second move: a new repository, a new pin, and a dead name in every record between.
 
-Recommendation first: rename before the move, to `capability_table`. It is free on crates.io, it
-names the thing the crate is (a table of capabilities with their rights), it reads at the use site
-(`capability_table::CapabilityTable`, `capability_table::Rights`), and it keeps `capability` as the
-word the type names carry. The earlier refusal of `cap_space` was that it named one of five exports
-and stuttered; `capability_table` names the central export, and the stutter is the one `slotmap::
-SlotMap`, `slab::Slab` and `generational_table::Table` all accept. Also free at the time of the
-review: `capability_rights`, `capability_space`, `capability_model`, `capability_slots`,
-`rights_table`. Refused in this review: a `nife_` prefix (a crate that leaves does not mention
-nife), and keeping `capability` as a repository name that can never publish (it closes the door
-§151 opens).
+The name is free on crates.io, it names the thing the crate is (a table of capabilities with their
+rights), it reads at the use site (`capability_table::CapabilityTable`, `capability_table::Rights`),
+and it keeps `capability` as the word the type names carry. The earlier refusal of `cap_space` was
+that it named one of five exports and stuttered; `capability_table` names the central export, and the
+stutter is the one `slotmap::SlotMap`, `slab::Slab` and `generational_table::Table` all accept.
+The review refuses a `nife_` prefix, because a crate that leaves does not mention nife. It also
+refuses `capability` as a repository name that can never publish, because that name closes the door
+§151 (the goal of the repository split is independent release) opens. There is no
+`#[doc(alias = "capability")]` on the crate: no old nife name carries an alias before the first
+release.
 
 Prior art. Fuchsia publishes its handle and rights types as `fuchsia-zircon`, a name for the system and not for "handle". seL4's term is `CSpace`, which this review already refused. The Rust crates for a slot structure take the structure's name (`slab`, `slotmap`, `thunderdome`, `generational_table`).
 Rust's convention for a taken name is a qualifier, not a prefix (`cap-std`, `cap-primitives`).
 
-Concrete example. After the rename the kernel's line is `capability_table = { version = "0.1.0",
-git = "https://github.com/nifeos/capability_table", rev = "<tag commit>" }` and the two kernel files
-that say `capability::` (`kernel/src/capability_object.rs` and `kernel/src/sched/region_reaping.rs`,
-17 lines) say `capability_table::`; `capability_object.rs` keeps its alias `pub(crate) type
-CapabilityTable = capability_table::CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>`. Effort: S in
-nife (one dependency line, two source files, the workspace member list, the notes and roadmap pages
-that name the crate), before the dry run.
+Concrete example. The kernel's line is `capability_table = { version = "0.1.0",
+git = "https://github.com/nifeos/capability_table", rev = "<tag commit>" }` once the repository
+exists, and the two kernel files that name the crate (`kernel/src/capability_object.rs` and
+`kernel/src/sched/region_reaping.rs`, 17 lines) say `capability_table::`; `capability_object.rs` keeps
+its alias `pub(crate) type CapabilityTable = capability_table::CapabilityTable<Object,
+CAPABILITY_TABLE_SLOTS>`.
 
-Door: one-way (a repository name and a published crate name). This review rechecks the name under the rule that a later fact reopens a ratified name at the release review. The later fact is the collision, which the original ruling could not have weighed if the name was free then (nothing confirms that).
+Door: one-way (a repository name and a published crate name), and the ruling closes it.
 
 ## Done when
 
@@ -224,7 +222,7 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Decision D1, the move's items 1 and 13, the `peak` cargo feature of item 11 (a
+- **Outstanding.** The move's items 1 and 13, the `peak` cargo feature of item 11 (a
   published name; the `target_has_atomic` gate is in), item 16 and the syscall layer's two inline
   `GRANT` tests of item 3. The names `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
   are provisional, and each becomes a published name when the crate releases.
@@ -241,13 +239,10 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 - The review did not look for a review package on any branch; if one exists, its rulings win over
   the provisional names here.
 - Item 16 is optional, and the review measured it only on a 64-bit host.
-- Nothing confirms the claim in D1 that the name was free when ratified: crates.io's API gives the
-  other crate's creation date and the review did not compare it.
-
 - Item 3's kernel half and item 12's three kernel walks were checked with `cargo check` for the three
   kernel targets and `--features system_tests`, and the crate's tests and Kani harnesses ran; the
   kernel's QEMU suite is left to the queue.
 
 ## Index row
 
-An outside review of `capability` before it leaves. Two items block the move (a manifest that leans on the workspace and a README that does not exist; text that cites nife on 69 lines). Five land before the first green pull request. Three are the proved `derive`, which is not the delegation the kernel runs, a 32-bit slot truncation, and `len` that means capacity. The other two are two defects in the move tool that corrupt all fourteen patches and skip the manifest step, and two mutators outside every harness. Nine items are for later. One one-way door remains: another crate already holds the name `capability` on crates.io.
+An outside review of `capability_table` before it leaves. Two items block the move (a manifest that leans on the workspace and a README that does not exist; text that cites nife on 69 lines). Five land before the first green pull request. Three are the proved `derive`, which is not the delegation the kernel runs, a 32-bit slot truncation, and `len` that means capacity. The other two are two defects in the move tool that corrupt all fourteen patches and skip the manifest step, and two mutators outside every harness. Nine items are for later. The crate is named `capability_table`, because another crate already holds the name `capability` on crates.io.

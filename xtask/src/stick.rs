@@ -414,13 +414,21 @@ fn booted() -> [String; 3] {
     ]
 }
 
-/// The self-test verdict line's `FAILED:` list, if this transcript has a red one.
-fn verdict_failed(transcript: &str) -> Option<&str> {
+/// The names on the self-test verdict line's `FAILED:` list, if this transcript has a red one. A
+/// verdict line that is not the shared grammar but says `FAILED:` is red too, as printed.
+fn verdict_failed(transcript: &str) -> Option<String> {
     let line = transcript
         .lines()
         .find(|l| serial_console::HEADS.self_test().is_in(l))?;
-    let at = line.find(boot_ladder::SELF_TEST_FAILED)?;
-    Some(line[at..].trim_end())
+    match boot_ladder::verdict::ParsedVerdict::in_line(serial_console::HEADS, line) {
+        Some(verdict) => verdict
+            .is_red()
+            .then(|| verdict.failed_names().collect::<Vec<_>>().join(" ")),
+        None => {
+            let at = line.find(boot_ladder::SELF_TEST_FAILED)?;
+            Some(line[at..].trim_end().to_string())
+        }
+    }
 }
 
 /// **The aarch64 stick, booted with ACPI and no device tree** (milestone 578 (an ACPI discovery

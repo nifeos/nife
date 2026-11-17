@@ -17,7 +17,7 @@ the time of the review:
 
 | crate | downloads | what it is | relation to this crate |
 |---|---|---|---|
-| `capability` 0.1.0 | 29 / 522 | a skill-tree library for games | **holds the name** this crate would publish under (item D1) |
+| `capability` 0.1.0 | 29 / 522 | a skill-tree library for games | **holds the name** `capability`, which is why this crate is `capability_table` (item D1) |
 | `cap-std` 4.0 | 16.3M / 32.5M | a capability-based `std` (filesystem, network) | a user-space discipline over OS handles, not a kernel table |
 | `caps` 0.5 | 5.9M / 27.6M | Linux `capabilities(7)` bindings | a different meaning of the word; a reader searching for "capability" meets it first |
 | `bitflags` 2 | 581M / 2.2G | bit-set types with the or and and operators and `contains` | what `Rights` is by hand; this crate deliberately exposes only `union`, `intersect`, `allows`, `is_subset_of`, so no operator can widen |

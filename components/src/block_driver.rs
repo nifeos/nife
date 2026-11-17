@@ -1,6 +1,6 @@
 //! The virtio-blk driver as its own binary (parity C).
 //!
-//! The driver logic is the shared `virtio` module; this file is only the skeleton a dedicated
+//! The driver logic is the `block_driver_roles` module of this package's library; this file is only the skeleton a dedicated
 //! binary needs (`_start` dispatching the role, a panic handler, runtime re-exports). Every
 //! architecture spawns it with the same role numbers and capability slots. The roles are the honest
 //! driver, the block server, the net driver, the write path, and the two attackers the
@@ -24,7 +24,8 @@
 #![no_main]
 
 // The runtime re-exports the calls this skeleton's own code once spelled `crate::`'s; since 291
-// the driver logic is the `virtio` crate and takes `user_mode_runtime` itself.
+// the driver logic is the library's `block_driver_roles` and takes `user_mode_runtime` itself.
+use components::block_driver_roles as roles;
 pub use user_mode_runtime::{invoke, send};
 
 /// Role numbers, matching `kernel/src/user/virtio_service.rs`. This binary is the only thing that
@@ -43,18 +44,18 @@ user_mode_runtime::program_entry!(start);
 fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // A direct grant's three words are its handoff, and the role travels in it; a mediated
     // grant's first word is the role and its second the DMA page's physical base.
-    let (role, direct_memory_access_phys) = match virtio::direct::take([arg0, arg1, arg2]) {
+    let (role, direct_memory_access_phys) = match roles::direct::take([arg0, arg1, arg2]) {
         Some(granted) => (granted.role, granted.physical_address),
         None => (arg0, arg1),
     };
     match role {
-        VIRTIO_BLK => virtio::run(direct_memory_access_phys),
-        VIRTIO_ATTACK => virtio::run_attack(direct_memory_access_phys),
-        VIRTIO_ATTACK_INDIRECT => virtio::run_attack_indirect(direct_memory_access_phys),
-        VIRTIO_BLK_WRITE => virtio::run_write(direct_memory_access_phys),
-        VIRTIO_BLK_WRITE_ABANDON => virtio::run_write_abandon(direct_memory_access_phys),
-        VIRTIO_NET => virtio::run_net(direct_memory_access_phys),
-        VIRTIO_BLK_SERVER => virtio::run_blk_server(direct_memory_access_phys),
+        VIRTIO_BLK => roles::run(direct_memory_access_phys),
+        VIRTIO_ATTACK => roles::run_attack(direct_memory_access_phys),
+        VIRTIO_ATTACK_INDIRECT => roles::run_attack_indirect(direct_memory_access_phys),
+        VIRTIO_BLK_WRITE => roles::run_write(direct_memory_access_phys),
+        VIRTIO_BLK_WRITE_ABANDON => roles::run_write_abandon(direct_memory_access_phys),
+        VIRTIO_NET => roles::run_net(direct_memory_access_phys),
+        VIRTIO_BLK_SERVER => roles::run_blk_server(direct_memory_access_phys),
         _ => panic!(),
     }
 }

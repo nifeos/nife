@@ -208,7 +208,7 @@ pub(super) fn join(region: u64, process_slot: u64, index: u64, stack: u64) -> (u
     let page = page.expect("CONFIGURE refused to join a thread to its process");
     assert!(
         current_cpu_contract::THREAD_PAGE_SLOTS
-            .gt(&((current_cpu_contract::PAGE_VA - page as u64) as usize / 4096)),
+            .gt(&((current_cpu_contract::PAGE_VIRTUAL_ADDRESS - page as u64) as usize / 4096)),
         "a joined thread's current-CPU page {page:#x} is outside the thread page window",
     );
     (tid, tcb)
@@ -448,13 +448,13 @@ fn each_member_of_a_process_has_its_own_current_cpu_page() {
     let region = crate::memory_region::create(64).expect("no region");
     let (space, _) = lay_out(region, &[SPINNER, THREAD_EXITER]);
     let (process, _) = create_process(region, space);
-    let below = current_cpu_contract::PAGE_VA - page_frames::FRAME_SIZE;
+    let below = current_cpu_contract::PAGE_VIRTUAL_ADDRESS - page_frames::FRAME_SIZE;
 
     let (a, a_tcb, a_page) = try_join(region, process, 0, STACK_VA);
     let (b, b_tcb, b_page) = try_join(region, process, 0, STACK_B_VA);
     assert_eq!(
         a_page,
-        Ok(current_cpu_contract::PAGE_VA as i64),
+        Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
         "the first member's page"
     );
     assert_eq!(
@@ -467,7 +467,7 @@ fn each_member_of_a_process_has_its_own_current_cpu_page() {
 
     let online = crate::smp::online_harts_mask();
     let ((a_phys, a_view), (b_phys, b_view)) = (
-        page_of(space, current_cpu_contract::PAGE_VA),
+        page_of(space, current_cpu_contract::PAGE_VIRTUAL_ADDRESS),
         page_of(space, below),
     );
     assert_ne!(a_phys, b_phys, "two members read one current-CPU page");

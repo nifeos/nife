@@ -177,19 +177,23 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 
 ## Follow-on
 
-- **Done.** The crate's own name, `address_space_layout`.
-- **Outstanding.** The three decisions, items 15 and 17, and the move's items 2, 3, 5, 11 and 13,
-  which an architect rules or the move lane does. Checked against `crates/address_space_layout`: the
-  crate has no README, `Band::new` or `window`, and still inherits its manifest from the workspace.
+- **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,
+  and the README of item 5, are done in this tree: the crate has `window` (provisional) and a
+  manifest that stands alone.
+- **Outstanding.** Decision 2 and with it item 7; items 15 and 17, each a new public name; and the
+  move's items 2, 5 (the rest of the scaffold), 11 and 13, with item 18 left to block 1017.
 
 ## BUGS
 
+- `Band::new` (item 15) and a public `LOW_HALF_SPLIT_SHIFTS` (item 17) wait for an architect to name
+  them; nothing here builds either.
 - Item 13 is the template's to fix, and until it lands the crate's `check / standalone` is red on
   the first run for a reason no change here removes.
-- The 1.87 floor is from the 1.85 failure and memory of the stabilization release; no 1.86 or 1.87
-  toolchain was on the review machine, and the template's `msrv` job is the check.
-- The review did not run the template's prose, README or history gates, because there is no README
-  yet; the scaffolded README meets them in its own pull request.
+- The 1.88 floor is the lowest installed toolchain that builds the crate (1.85 fails on
+  `is_multiple_of`); no 1.86 or 1.87 toolchain was installed, and the template's `msrv` job is the
+  check.
+- The template's prose, README and history gates have not run on the crate's README, because they
+  run in the crate's own repository; the move runs them.
 - This review did not verify whether `cargo xtask std-src` resolves a git dependency. The move lane runs it before the pull request.
 
 ## Index row

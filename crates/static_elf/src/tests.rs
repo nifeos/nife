@@ -3,8 +3,8 @@ extern crate std;
 use std::vec;
 use std::vec::Vec;
 
-/// Build an ELF64 image by hand, so the tests can lie about anything they like. See
-/// notes/elf/parser.md for why forging here beats booting a real one.
+/// Build an ELF64 image by hand, so the tests can lie about anything they like. A forged hostile
+/// file is a few lines here; one from a real toolchain would need that toolchain to cooperate.
 struct Builder {
     e_type: u16,
     e_machine: u16,
@@ -37,13 +37,13 @@ impl Builder {
     }
 
     /// A segment whose physical address equals its virtual one, which is what every real
-    /// program in this tree looks like. Use `seg_at_paddr` for the kernel-image shape.
+    /// user program looks like. Use `seg_at_paddr` for the kernel-image shape.
     fn seg(self, flags: u32, vaddr: u64, bytes: &[u8], memsz: u64) -> Self {
         self.seg_at_paddr(flags, vaddr, vaddr, bytes, memsz)
     }
 
-    /// A segment whose `p_paddr` and `p_vaddr` genuinely differ, the way the kernel image's
-    /// `.ap_trampoline` does.
+    /// A segment whose `p_paddr` and `p_vaddr` genuinely differ, the way a kernel image linked
+    /// high and loaded low does.
     fn seg_at_paddr(
         mut self,
         flags: u32,
@@ -102,8 +102,8 @@ impl Builder {
 /// The happy path: two segments, code and data, and the entry point lands in the code.
 fn good() -> Vec<u8> {
     Builder::new()
-        .seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16)
-        .seg(PF_R | PF_W, 0x41_0000, &[0xbb; 8], 4096) // memsz > filesz: .bss
+        .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
+        .seg(READABLE | WRITABLE, 0x41_0000, &[0xbb; 8], 4096) // memsz > filesz: .bss
         .build()
 }
 
@@ -117,8 +117,8 @@ fn a_good_binary_parses() {
     let segs: Vec<_> = elf.segments().collect();
     assert_eq!(segs.len(), 2);
 
-    assert_eq!(segs[0].vaddr, 0x40_0000);
-    assert_eq!(segs[0].paddr, 0x40_0000);
+    assert_eq!(segs[0].virtual_address, 0x40_0000);
+    assert_eq!(segs[0].physical_address, 0x40_0000);
     assert!(segs[0].is_executable() && !segs[0].is_writable());
     assert_eq!(segs[0].data, &[0xaa; 16]);
 
@@ -136,24 +136,23 @@ fn bss_is_the_difference_between_memsz_and_filesz() {
     let data = elf.segments().nth(1).unwrap();
 
     assert_eq!(data.data.len(), 8, "filesz");
-    assert_eq!(data.memsz, 4096, "memsz");
+    assert_eq!(data.memory_bytes, 4096, "memsz");
     assert!(
-        data.memsz as usize > data.data.len(),
+        data.memory_bytes as usize > data.data.len(),
         "the loader must zero {} bytes the file does not contain",
-        data.memsz as usize - data.data.len(),
+        data.memory_bytes as usize - data.data.len(),
     );
 }
 
 /// **W^X, refused at the door.**
 ///
 /// An ELF can simply *ask* for a page that is both writable and executable, and a loader
-/// that grants it has handed the program the thing every exploit wants. `page_tables::Flags` has
-/// no `writable_and_executable()` constructor for the same reason; this is the check that
-/// stops a file talking us into building one.
+/// that grants it has handed the program the thing every exploit wants. This is the check that
+/// stops a file talking a loader into building one.
 #[test]
 fn a_writable_executable_segment_is_refused() {
     let bytes = Builder::new()
-        .seg(PF_R | PF_W | PF_X, 0x40_0000, &[0xaa; 16], 16)
+        .seg(READABLE | WRITABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
         .build();
 
     assert_eq!(Elf::parse(&bytes).err(), Some(Error::WritableAndExecutable),);
@@ -167,7 +166,7 @@ fn a_writable_executable_segment_is_refused() {
 fn a_segment_that_runs_off_the_end_is_refused() {
     // memsz is a match for the lie, so `SegmentTruncated` does not fire first and we
     // genuinely exercise the bounds check on the FILE.
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 0x1000_0000);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 0x1000_0000);
     b.lie_about_filesz = Some(0x1000_0000);
     assert_eq!(
         Elf::parse(&b.build()).err(),
@@ -177,7 +176,7 @@ fn a_segment_that_runs_off_the_end_is_refused() {
 
 #[test]
 fn an_offset_that_overflows_is_refused() {
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.lie_about_offset = Some(u64::MAX - 3); // p_offset + p_filesz wraps
     assert_eq!(
         Elf::parse(&b.build()).err(),
@@ -188,37 +187,54 @@ fn an_offset_that_overflows_is_refused() {
 #[test]
 fn memsz_smaller_than_filesz_is_refused() {
     let bytes = Builder::new()
-        .seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 4) // memsz 4 < filesz 16
+        .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 4) // memsz 4 < filesz 16
         .build();
     assert_eq!(Elf::parse(&bytes).err(), Some(Error::SegmentTruncated));
 }
 
-/// A binary for a machine nife does not run at all is refused. SPARC (2) goes through
-/// [`machine_no_nife_build_accepts`] in a `const`, so if it ever joins `KNOWN_MACHINES` this fails
-/// to compile instead of asserting something false.
+/// A binary for a machine the crate does not name at all is refused. SPARC (2) goes through
+/// [`unknown_machine`] in a `const`, so if it ever joins `KNOWN_MACHINES` this fails to compile
+/// instead of asserting something false.
 #[test]
 fn a_binary_for_another_machine_is_refused() {
-    const EM_SPARC: u16 = machine_no_nife_build_accepts(2);
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    const EM_SPARC: u16 = unknown_machine(2);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.e_machine = EM_SPARC;
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::WrongMachine));
 }
 
-/// A binary for either of the other nife architectures is refused: the check is symmetric.
+/// A binary for either of the other named architectures is refused: the check is symmetric.
 /// [`FOREIGN_MACHINES`] rather than a written-out pair, which would be true only on one host.
 #[test]
 fn a_binary_for_the_other_supported_machine_is_refused() {
     for machine in FOREIGN_MACHINES {
-        let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+        let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
         b.e_machine = machine;
         assert_eq!(Elf::parse(&b.build()).err(), Some(Error::WrongMachine));
     }
 }
 
+/// `parse_for_machine` accepts the machine it is given and refuses every other, this build's own
+/// included, so a tool on one machine validates a program for another with the same checks.
+#[test]
+fn a_named_machine_is_the_one_accepted() {
+    for machine in KNOWN_MACHINES {
+        let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
+        b.e_machine = machine;
+        let bytes = b.build();
+        for asked in KNOWN_MACHINES {
+            assert_eq!(
+                Elf::parse_for_machine(&bytes, asked).is_ok(),
+                asked == machine,
+                "file for {machine}, asked for {asked}"
+            );
+        }
+    }
+}
+
 /// `FOREIGN_MACHINES` is every known machine except this build's. The test above cannot say so,
 /// since every wrong number is refused: an array naming no architecture (`[0; _]`, `[1; _]`)
-/// survived it in a mutation run (milestone 326 (nobody has been assigned to turn a mutation score
-/// upward)).
+/// survived it in a mutation run.
 #[test]
 fn foreign_machines_is_every_known_machine_but_this_builds() {
     assert_eq!(FOREIGN_MACHINES.len(), KNOWN_MACHINES.len() - 1);
@@ -245,24 +261,24 @@ fn foreign_machines_derives_the_same_list_at_runtime() {
 /// return survives every other test, because every number it could return is foreign too.
 #[test]
 fn a_machine_no_build_accepts_is_handed_back_unchanged() {
-    const EM_SPARC: u16 = machine_no_nife_build_accepts(2);
+    const EM_SPARC: u16 = unknown_machine(2);
     assert_eq!(EM_SPARC, 2);
-    assert_eq!(machine_no_nife_build_accepts(0x3fff), 0x3fff);
+    assert_eq!(unknown_machine(0x3fff), 0x3fff);
 }
 
-/// The guard refuses a machine nife runs. Without a runtime rejection, a loop bound mutated so the
+/// The guard refuses a machine the crate names. Without a runtime rejection, a loop bound mutated so the
 /// loop never runs (`i < len` as `==` or `>`) checks nothing and no test sees it.
 #[test]
 #[should_panic(expected = "some build accepts it")]
 fn a_machine_this_tree_runs_on_is_refused_by_the_guard() {
-    let _ = machine_no_nife_build_accepts(core::hint::black_box(NATIVE_MACHINE));
+    let _ = unknown_machine(core::hint::black_box(NATIVE_MACHINE));
 }
 
 /// A PIE expects a dynamic linker to relocate it. We are not one, and loading it as if we
 /// were means jumping to an address that means nothing.
 #[test]
 fn a_position_independent_executable_is_refused() {
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.e_type = ET_DYN;
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::NeedsRelocation));
 }
@@ -270,7 +286,7 @@ fn a_position_independent_executable_is_refused() {
 /// The entry point must be somewhere we can actually execute.
 #[test]
 fn an_entry_point_outside_every_executable_segment_is_refused() {
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.entry = 0x41_0000; // not in the code segment
     assert_eq!(
         Elf::parse(&b.build()).err(),
@@ -278,10 +294,24 @@ fn an_entry_point_outside_every_executable_segment_is_refused() {
     );
 }
 
+/// An entry point past the file bytes of its code segment, in the zero-filled tail, would start
+/// the program on zeros. The last file byte is still a valid entry.
+#[test]
+fn an_entry_point_in_the_zero_filled_tail_is_refused() {
+    let tail = |entry| {
+        let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 0x1000);
+        b.entry = entry;
+        Elf::parse(&b.build()).err()
+    };
+    assert_eq!(tail(0x40_0010), Some(Error::EntryNotExecutable));
+    assert_eq!(tail(0x40_0fff), Some(Error::EntryNotExecutable));
+    assert_eq!(tail(0x40_000f), None);
+}
+
 /// An entry point inside a segment that is readable but NOT executable.
 #[test]
 fn an_entry_point_in_a_data_segment_is_refused() {
-    let mut b = Builder::new().seg(PF_R | PF_W, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | WRITABLE, 0x40_0000, &[0xaa; 16], 16);
     b.entry = 0x40_0000;
     assert_eq!(
         Elf::parse(&b.build()).err(),
@@ -290,13 +320,15 @@ fn an_entry_point_in_a_data_segment_is_refused() {
 }
 
 /// **Execute-only code is legal, and its flags read back exactly.** Every other fixture sets
-/// `PF_R`, so this is the only place the readable bit is ever *clear*: it proves the
+/// `READABLE`, so this is the only place the readable bit is ever *clear*: it proves the
 /// unreachable check keys on "neither readable nor executable" rather than on readability
 /// alone, and that `is_readable` tests its own bit (a mask read as `|` or `^` reports a
-/// PF_X-only segment readable; both are wrong the same way, visible only here).
+/// EXECUTABLE-only segment readable; both are wrong the same way, visible only here).
 #[test]
 fn an_execute_only_segment_is_accepted_and_is_not_readable() {
-    let bytes = Builder::new().seg(PF_X, 0x40_0000, &[0xaa; 16], 16).build();
+    let bytes = Builder::new()
+        .seg(EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
+        .build();
     let elf = Elf::parse(&bytes).expect("execute-only code is reachable");
     let seg = elf.segments().next().unwrap();
     assert!(seg.is_executable());
@@ -320,7 +352,7 @@ fn exactly_the_maximum_header_count_is_accepted() {
     let mut b = Builder::new();
     for i in 0..64u64 {
         // Distinct pages, so the overlap check stays quiet; the first segment holds the entry.
-        b = b.seg(PF_R | PF_X, 0x40_0000 + i * 0x1000, &[0xaa; 8], 8);
+        b = b.seg(READABLE | EXECUTABLE, 0x40_0000 + i * 0x1000, &[0xaa; 8], 8);
     }
     let bytes = b.build();
     let elf = Elf::parse(&bytes).expect("64 headers is within the cap");
@@ -331,7 +363,7 @@ fn exactly_the_maximum_header_count_is_accepted() {
 /// byte of the segment, which is not a place execution can begin.
 #[test]
 fn an_entry_one_past_the_code_segment_is_refused() {
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.entry = 0x40_0010; // vaddr + memsz, the first address outside
     assert_eq!(
         Elf::parse(&b.build()).err(),
@@ -345,16 +377,49 @@ fn an_entry_one_past_the_code_segment_is_refused() {
 #[test]
 fn segments_in_adjacent_pages_are_accepted() {
     let ascending = Builder::new()
-        .seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16)
-        .seg(PF_R | PF_W, 0x40_1000, &[0xbb; 16], 16)
+        .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
+        .seg(READABLE | WRITABLE, 0x40_1000, &[0xbb; 16], 16)
         .build();
     Elf::parse(&ascending).expect("adjacent pages, code first");
 
     let descending = Builder::new()
-        .seg(PF_R | PF_W, 0x40_1000, &[0xbb; 16], 16)
-        .seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16)
+        .seg(READABLE | WRITABLE, 0x40_1000, &[0xbb; 16], 16)
+        .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
         .build();
     Elf::parse(&descending).expect("adjacent pages, code second");
+}
+
+/// Two segments one 4 KiB page apart share a 16 KiB page. `parse` accepts them, and a parse told
+/// the loader maps 16 KiB pages refuses them, so the overlap check follows the page size given.
+#[test]
+fn the_overlap_check_follows_the_page_size_given() {
+    let bytes = Builder::new()
+        .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
+        .seg(READABLE | WRITABLE, 0x40_1000, &[0xbb; 16], 16)
+        .build();
+    Elf::parse(&bytes).expect("different 4 KiB pages");
+    let sixteen = PageBytes::new(0x4000).unwrap();
+    assert_eq!(
+        Elf::parse_with(&bytes, NATIVE_MACHINE, sixteen).err(),
+        Some(Error::SegmentsOverlap)
+    );
+    Elf::parse_with(&bytes, NATIVE_MACHINE, PageBytes::FOUR_KIBIBYTES).expect("as parse");
+}
+
+/// A header offset is returned only when the whole 56-byte header ends inside the table, and an
+/// index or entry size large enough to wrap is `None` rather than a panic.
+#[test]
+fn a_program_header_offset_holds_a_whole_header() {
+    assert_eq!(program_header_offset(64, 0, 56, 120), Some(64));
+    assert_eq!(program_header_offset(64, 1, 56, 176), Some(120));
+    assert_eq!(
+        program_header_offset(64, 1, 56, 175),
+        None,
+        "one byte short"
+    );
+    assert_eq!(program_header_offset(0, 0, 56, 55), None);
+    assert_eq!(program_header_offset(0, usize::MAX, 56, usize::MAX), None);
+    assert_eq!(program_header_offset(usize::MAX, 0, 56, usize::MAX), None);
 }
 
 /// Pins the byte order of the field reader with a value whose two bytes differ. Every field
@@ -368,8 +433,8 @@ fn u16le_reads_the_two_bytes_in_little_endian_order() {
 #[test]
 fn two_segments_in_the_same_page_are_refused() {
     let bytes = Builder::new()
-        .seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16)
-        .seg(PF_R | PF_W, 0x40_0800, &[0xbb; 16], 16) // same 4 KiB page
+        .seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16)
+        .seg(READABLE | WRITABLE, 0x40_0800, &[0xbb; 16], 16) // same 4 KiB page
         .build();
     assert_eq!(Elf::parse(&bytes).err(), Some(Error::SegmentsOverlap));
 }
@@ -377,8 +442,8 @@ fn two_segments_in_the_same_page_are_refused() {
 #[test]
 fn a_segment_whose_address_range_overflows_is_refused() {
     // filesz small (passes the file-bounds check), memsz enormous (passes memsz >= filesz), so
-    // only the vaddr+memsz overflow guard stands between this and a kernel panic.
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], u64::MAX);
+    // only the vaddr+memsz overflow guard stands between this and a panic in the loader.
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], u64::MAX);
     b.entry = 0x40_0000;
     // Must return an Err, and crucially must NOT panic on the overflow.
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::AddressOverflow));
@@ -388,7 +453,7 @@ fn a_segment_whose_address_range_overflows_is_refused() {
 fn too_many_program_headers_are_refused() {
     let mut b = Builder::new();
     for _ in 0..65 {
-        b = b.seg(PF_R | PF_X, 0x40_0000, &[0xaa; 8], 8);
+        b = b.seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 8], 8);
     }
     assert_eq!(
         Elf::parse(&b.build()).err(),
@@ -401,16 +466,16 @@ fn junk_is_refused() {
     assert_eq!(Elf::parse(&[]).err(), Some(Error::TooSmall));
     assert_eq!(Elf::parse(&[0u8; 64]).err(), Some(Error::BadMagic));
 
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.class = 1; // ELFCLASS32
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::Not64Bit));
 
-    let mut b = Builder::new().seg(PF_R | PF_X, 0x40_0000, &[0xaa; 16], 16);
+    let mut b = Builder::new().seg(READABLE | EXECUTABLE, 0x40_0000, &[0xaa; 16], 16);
     b.data = 2; // ELFDATA2MSB
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::NotLittleEndian));
 }
 
-/// A shell script, a JPEG, and the kernel's own flat image are all not-an-ELF.
+/// A shell script, a JPEG, and a flat kernel image are all not-an-ELF.
 #[test]
 fn a_file_that_is_not_an_elf_at_all_is_refused() {
     assert_eq!(
@@ -420,53 +485,78 @@ fn a_file_that_is_not_an_elf_at_all_is_refused() {
     );
 }
 
-/// The kernel image's own shape, and the reason this field exists at all: `p_paddr` and
+/// A kernel image's shape, and the reason this field exists at all: `p_paddr` and
 /// `p_vaddr` are separately readable, and neither is derived from the other. Every other test in
 /// this file has them equal, which is exactly the hazard the field's doc comment names.
 #[test]
 fn a_physical_address_may_differ_from_the_virtual_one() {
     let bytes = Builder::new()
-        .seg_at_paddr(PF_R | PF_X, 0x40_0000, 0x40_0000, &[0xaa; 16], 16)
-        .seg_at_paddr(PF_R | PF_W, 0x16_5000, 0x8000, &[0xbb; 8], 4096)
+        .seg_at_paddr(READABLE | EXECUTABLE, 0x40_0000, 0x40_0000, &[0xaa; 16], 16)
+        .seg_at_paddr(READABLE | WRITABLE, 0x16_5000, 0x8000, &[0xbb; 8], 4096)
         .build();
     let elf = Elf::parse(&bytes).expect("should parse");
     let segs: Vec<_> = elf.segments().collect();
 
-    assert_eq!(segs[1].vaddr, 0x16_5000);
-    assert_eq!(segs[1].paddr, 0x8000);
+    assert_eq!(segs[1].virtual_address, 0x16_5000);
+    assert_eq!(segs[1].physical_address, 0x8000);
 }
 
-/// **Nothing validates `paddr`, on purpose.** Every check in `parse` (bounds, overlap, the entry
-/// point, the `vaddr + memsz` overflow guard) is about the virtual layout, because that is what
-/// this kernel's loader maps. A physical address that overlaps another segment's, or that is
-/// zero because the file never set the field, is a fact about the file rather than an error, and
-/// a loader that places images physically owns that judgment.
+/// **Nothing validates `physical_address`, on purpose.** Every check in `parse` (bounds, overlap,
+/// the entry point, the `p_vaddr + p_memsz` overflow guard) is about the virtual layout, because
+/// that is what a loader that maps into a fresh address space reads. A physical address that
+/// overlaps another segment's, or that is zero because the file never set the field, is a fact
+/// about the file rather than an error, and a loader that places images physically owns that
+/// judgment.
 #[test]
 fn a_nonsense_physical_address_is_not_a_parse_error() {
     let bytes = Builder::new()
-        .seg_at_paddr(PF_R | PF_X, 0x40_0000, u64::MAX, &[0xaa; 16], 16)
-        .seg_at_paddr(PF_R | PF_W, 0x41_0000, 0, &[0xbb; 8], 8)
+        .seg_at_paddr(READABLE | EXECUTABLE, 0x40_0000, u64::MAX, &[0xaa; 16], 16)
+        .seg_at_paddr(READABLE | WRITABLE, 0x41_0000, 0, &[0xbb; 8], 8)
         .build();
     let elf = Elf::parse(&bytes).expect("paddr is carried, not judged");
     let segs: Vec<_> = elf.segments().collect();
 
-    assert_eq!(segs[0].paddr, u64::MAX);
-    assert_eq!(segs[1].paddr, 0);
+    assert_eq!(segs[0].physical_address, u64::MAX);
+    assert_eq!(segs[1].physical_address, 0);
     // And `page_range` is the *virtual* range, which is the other half of the same trap.
-    assert_eq!(segs[0].page_range(4096), (0x40_0000, 0x40_1000));
+    assert_eq!(
+        segs[0].page_range(PageBytes::FOUR_KIBIBYTES),
+        (0x40_0000, 0x40_1000)
+    );
 }
 
 #[test]
 fn page_range_covers_the_whole_segment() {
     let seg = Segment {
-        vaddr: 0x40_0800,
-        paddr: 0x40_0800,
-        memsz: 0x900,
-        flags: PF_R,
+        virtual_address: 0x40_0800,
+        physical_address: 0x40_0800,
+        memory_bytes: 0x900,
+        flags: READABLE,
         data: &[],
     };
     // 0x400800..0x401100 spans two pages: 0x400000 and 0x401000.
-    assert_eq!(seg.page_range(4096), (0x40_0000, 0x40_2000));
+    assert_eq!(
+        seg.page_range(PageBytes::FOUR_KIBIBYTES),
+        (0x40_0000, 0x40_2000)
+    );
+}
+
+/// The same segment rounds to the page size it is given: one 16 KiB page holds what took two
+/// 4 KiB pages.
+#[test]
+fn page_range_rounds_to_the_page_size_given() {
+    let seg = Segment {
+        virtual_address: 0x40_0800,
+        physical_address: 0x40_0800,
+        memory_bytes: 0x900,
+        flags: READABLE,
+        data: &[],
+    };
+    let sixteen = PageBytes::new(0x4000).unwrap();
+    assert_eq!(seg.page_range(sixteen), (0x40_0000, 0x40_4000));
+    assert_eq!(PageBytes::FOUR_KIBIBYTES.get(), 4096);
+    assert_eq!(PageBytes::new(1 << 63).map(PageBytes::get), Some(1 << 63));
+    assert_eq!(PageBytes::new(0x3000), None);
 }
 
 /// A 64-bit offset or size the target cannot hold is refused as out of bounds, never truncated
