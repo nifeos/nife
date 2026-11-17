@@ -1441,9 +1441,7 @@ crates/current_cpu_contract/src/lib.rs::CurrentCpuPage
 
 crates/current_cpu_contract/src/lib.rs::MAGIC
 
-crates/current_cpu_contract/src/lib.rs::PAGE_BYTES
 
-crates/current_cpu_contract/src/lib.rs::PAGE_VA
 
 crates/current_cpu_contract/src/lib.rs::THREAD_PAGE_SLOTS
 
@@ -1453,15 +1451,11 @@ crates/current_cpu_contract/src/lib.rs::allowance
 
 crates/current_cpu_contract/src/lib.rs::build_page
 
-crates/current_cpu_contract/src/lib.rs::build_page_allowing
 
 crates/current_cpu_contract/src/lib.rs::cpu
 
-crates/current_cpu_contract/src/lib.rs::new
 
-crates/current_cpu_contract/src/lib.rs::publish
 
-crates/current_cpu_contract/src/lib.rs::thread_page_va
 
 
 
