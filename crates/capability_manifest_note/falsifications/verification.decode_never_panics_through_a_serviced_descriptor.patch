@@ -1,0 +1,21 @@
+Falsifies `capability_manifest_note::verification::decode_never_panics_through_a_serviced_descriptor`.
+
+The defect: `check_serviced` takes a zone's bytes by indexing rather than by `get`, trusting the
+length byte. A note's descriptor is a file anyone could have written, so a zone whose length byte
+runs past the end of the descriptor reads out of bounds.
+
+Expected to fail: an index out of bounds in `check_serviced`.
+
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+index b61755828..3b0e56a45 100644
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -766,7 +766,7 @@ fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
+     let mut previous: Option<&[u8]> = None;
+     for _ in 0..count {
+         let len = *d.get(at).ok_or(Error::WrongLength)? as usize;
+-        let zone = d.get(at + 1..at + 1 + len).ok_or(Error::WrongLength)?;
++        let zone = &d[at + 1..at + 1 + len];
+         if !domain_name_resolution_contract::is_canonical_zone(zone)
+             || previous.is_some_and(|p| !before(p, zone))
+         {

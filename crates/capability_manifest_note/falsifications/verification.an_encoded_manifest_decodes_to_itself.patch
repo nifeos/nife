@@ -1,0 +1,20 @@
+Falsifies `capability_manifest_note::verification::an_encoded_manifest_decodes_to_itself`.
+
+The defect: `encode` forgets the byte that says whether a program writes while it reads its
+input. The descriptor still decodes, to a manifest that differs from the one the program declared,
+so the reader would grant something other than what was asked.
+
+Expected to fail: the assertion that `decode` of the encoded manifest is the manifest again.
+
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+index b61755828..e30a81925 100644
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -387,7 +387,6 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
+     } = m.input
+     {
+         out[INPUT] = 1;
+-        out[WRITES_WHILE_READING] = writes_while_reading as u8;
+     }
+     out[REPORTS] = m.reports as u8;
+     out[INTERRUPTIBLE] = m.interruptible as u8;
