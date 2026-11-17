@@ -59,5 +59,5 @@ each goes red under its patch.
 
 ## Index row
 
-Every attested architecture-specific falsification carries a patch and is replayed weekly where it
-compiles.
+Every attested architecture-specific falsification carries a patch, and a weekly job replays it
+where it compiles.

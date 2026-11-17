@@ -23,8 +23,8 @@ Name: provisional. Every new file name below is the lane's, not a ruling.
 `.kani-version` pins the `kani-verifier` wrapper crate. `cargo kani setup` then downloads
 `kani-<version>-<target>.tar.gz` from the model-checking/kani GitHub release and unpacks it with no
 digest or signature check. That bundle is the Kani compiler, CBMC and its solvers: everything that
-decides whether a proof holds. Both releases the tree uses report `immutable: false`, so an asset can
-be replaced under its name, and nothing records which bytes a run used.
+decides whether a proof holds. Both releases the tree uses report `immutable: false`, so the
+publisher can replace an asset under its name, and nothing records which bytes a run used.
 
 `script/verify-riscv64` fetches its 0.67.0 bundle the same way, and builds its patched Kani from
 `git clone --depth 1 --branch kani-0.67.0`, a tag, with no commit check. It deletes `.git` after
@@ -53,7 +53,7 @@ queue's full re-falsification on every bump stays the check on that.
 
 ## Done when
 
-- A bundle whose digest differs from the pin fails `script/kani-install` before anything is unpacked,
+- A bundle whose digest differs from the pin fails `script/kani-install` before `tar` unpacks it,
   shown by a test that feeds it a modified tarball.
 - The riscv64 row refuses a source whose commit differs from the pin.
 - A bump pull request changes the version and the digests together, and `script/lint` refuses one
@@ -61,4 +61,4 @@ queue's full re-falsification on every bump stays the check on that.
 
 ## Index row
 
-The Kani bundle and the riscv64 Kani source are checked against pinned digests before they run.
+Every Kani install checks the bundle, and the riscv64 build checks its source, against a pin before either runs.

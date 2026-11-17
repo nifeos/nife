@@ -134,8 +134,8 @@ Proposed as [the prover's bundle is checked against a pinned digest](../roadmap/
 
 ### 2. MINTED: the bump pull request says it is proved where it is not
 
-The `propose-kani` job's commit message and pull request body, its comment, and milestone 795's
-block all say the pull request's own `verify` run is the proof on the new Kani. A probe commit that
+The `propose-kani` job's commit message and pull request body, its comment, and the block of milestone 795
+(pin stock Kani to a version, bumped deliberately like the nightly) all say the pull request's own `verify` run is the proof on the new Kani. A probe commit that
 changes only `.kani-version` gives `harness=false` from `helpers/harness_change.py`, the PR-side
 prove shards skip, and the proof runs only in the merge queue, as the 2026-11-16 ruling on heavy
 gates intends. The protection holds (see what came back clean); the text tells a person reading the
