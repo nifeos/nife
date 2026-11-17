@@ -48,7 +48,7 @@ PASS
 Exit status 0. The judge reads only the banner and the `true_random_number_generator` lines. It
 shows that the crate version and commit the board printed are the ones the tag and the lockfile
 name, and that two boots that each started at the firmware banner drew different bytes. Two draws are two measurements; they do not
-show that the output is unpredictable (milestone 1049's logs hold the statistics). Nothing in the logs
+show that the output is unpredictable (the logs of milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings) hold the statistics). Nothing in the logs
 records that the board was powered off for ten seconds between the boots (step 5); the two
 captures were saved two minutes apart, and the `[drive: ...]` lines are the bench driver's own
 notes, not the board's.

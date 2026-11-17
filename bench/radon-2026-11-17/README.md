@@ -1,9 +1,11 @@
 # radon, 2026-11-17 (UTC): the 1062 and storage bench session
 
 One session at radon (the VisionFive 2), confirming steps 2, 3 and 5 of milestone 1062 (the
-DesignWare Ethernet control plane and the JH7110 power-management-chip route, issues #3498 and
-#3499), milestone 53's storage bench (#3488) and milestone 1035 (a crate names the version
-that ran on hardware; its record is [README-1035.md](README-1035.md)). Issue #3509 tracks the session. Every boot printed
+device control planes leave the kernel; issues #3498 and #3499 cover the Ethernet control plane
+and the JH7110 power-management-chip route), the storage bench of milestone 53 (the board's own
+peripherals: network and storage on real silicon; issue #3488) and milestone 1035 (a crate names
+the version that ran on hardware), whose record is [README-1035.md](README-1035.md). Issue #3509
+tracks the session. Every boot printed
 `nife: payload came from net`; `<host>` below is the TFTP host's LAN address, which the logs print.
 
 ## What the logs are
@@ -48,9 +50,9 @@ autoboot` note, no board output) is not committed.
 - Each row is one run on one board and one card. Nothing here is a comparison between builds or
   an estimate of variance.
 
-## Network bench (milestone 494, `network-bench-494.log`)
+## Network bench (`network-bench-494.log`)
 
-Built from `dd47a83e88`. The build flags were not saved with this set. By the precedent in
+Milestone 494 (a driver for the network card a PC actually has) names this bench. Built from `dd47a83e88`. The build flags were not saved with this set. By the precedent in
 `bench/radon-2026-10-22/README-53.md` the build is
 `script/board-image --tftp --server <host> --extra-features network_bench`; I have not verified
 that this is what ran. The peer was `<host>:9494`.
