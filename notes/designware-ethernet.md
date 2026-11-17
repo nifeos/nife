@@ -147,12 +147,11 @@ The U-Boot banner does not say which jack that is; on a boot where U-Boot report
 wrong jack and this boot will end `FAILED: no link`. `nife: payload came from net` near the top
 says the new image was served.
 
-radon's card carries a boot script written 2026-09-16 that asks for a server address that is not the
-serving Mac's, and for the archive under the name `nife-initrd.img`, where `script/board-image`
-writes `nife-initial-ramdisk.img`. Until the card is rewritten, press a key at the autoboot
-countdown, type `setenv nife_boot_server <the serving Mac's address>` and `boot`, and serve a copy
-of the archive under the old name beside the new one in `target/board`. Then put the ordinary image
-back for everyone else's bench work: `script/board-image --tftp` and one more power cycle.
+A card whose boot script fetches the archive itself, rather than the served boot script, names the
+build it was written with and refuses every later one at `MEASURED BOOT REFUSED`.
+`script/card-check <card>` says whether radon's card is one; if it is, rewrite it once with
+`script/board-image --tftp --card <card>` before this step. Then put the ordinary image back for
+everyone else's bench work: `script/board-image --tftp` and one more power cycle.
 
 Success looks like this (values vary; the shape does not):
 
