@@ -161,8 +161,8 @@ source = "git+https://github.com/nifeos/designware_ethernet?rev=ba75ceba7bb7e277
 
 [[package]]
 name = "designware_mobile_storage"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b#4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b"
 
 [[package]]
 name = "device_tree_blob"
