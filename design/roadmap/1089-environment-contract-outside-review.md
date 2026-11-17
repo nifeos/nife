@@ -174,6 +174,8 @@ The [ledger](1089-environment-contract-outside-review/ledger.md) lists each item
 
 ## Follow-on
 
+- **Done.** The identity freeze: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, with the
+  terminal type field widened from 24 to 32 bytes, so the page is 107 bytes. Pull request #3585.
 - **Outstanding.** Item 5's two wider harnesses and items 3, 4, 6, 7 and 11: public names, the identity freeze, the move commit's
   standalone files and a safe reader constructor. Each waits on a ruling or on the move, as the
   ledger above says. Checked by reading the ledger rows against the crate after the commit that
@@ -252,15 +254,6 @@ in the same change. Item 4 is the work.
 ## Done when
 
 The checks are in [the appendix](1089-environment-contract-outside-review/done-when.md).
-
-## Follow-on
-
-- **Done.** The identity freeze: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, with the
-  terminal type field widened from 24 to 32 bytes, so the page is 107 bytes. Pull request #3585,
-  on branch `milestone/1089-environment-widen-terminal-type`.
-- **Outstanding.** The review's other items, each to be checked against `crates/environment_contract`
-  at this branch's head before the move.
-
 
 ## BUGS
 

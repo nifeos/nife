@@ -106,6 +106,9 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
+- **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
+  page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
+  `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582.
 - **Outstanding.** Items 1, 2, 6, 9, 12 and 13. They are the ratification table, the move
   commit's manifest, licenses and README, and the line count (Decision 1). The rest are the header
   and line namespaces, the dry run against the standalone check and the README's end-to-end note.
@@ -186,16 +189,6 @@ old spellings. Ratifying the table stays the architect's.
 ## Done when
 
 The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). [The ledger](1099-machine-statistics-contract-outside-review/ledger.md) says, item by item, what this block finished and what waits.
-
-## Follow-on
-
-- **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
-  page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
-  `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582, on branch
-  `milestone/1099-statistics-identity-frozen`.
-- **Outstanding.** The review's other items, each to be checked against `crates/machine_statistics_contract`
-  at this branch's head before the move.
-
 
 ## BUGS
 
