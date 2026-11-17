@@ -356,8 +356,14 @@ for cells in table(lines, BASE_HDR, index_path):
     if bad:
         problems.append(f"baseline {date} ({kind}): {bad} are neither integers nor '-'")
         continue
+    counts = {k: (None if n == "-" else int(n)) for k, n in zip(COUNTS, nums)}
+    # Two audits of one kind may run on one day. The tripwire reads only the newest audit of each
+    # kind, so they can share a baseline row's key as long as they record the same tree.
+    if (date, kind) in baselines and baselines[(date, kind)] != counts:
+        problems.append(f"baseline {date} ({kind}): two audits share a date and a kind but record "
+                        f"different counts, so the tripwire cannot tell which tree it measures")
     base_order.append((date, kind))
-    baselines[(date, kind)] = {k: (None if n == "-" else int(n)) for k, n in zip(COUNTS, nums)}
+    baselines[(date, kind)] = counts
 
 # The two tables are one record split for two readers, so the check that keeps them one record is
 # that they list exactly the same audits, in the same order. Without this, a lane can add a row to
@@ -377,8 +383,6 @@ if index_order != base_order:
         problems.append("the two tables list the same audits in different orders; keep both "
                         "oldest-first so the newest row is the last one in each")
 
-if len(set(index_order)) != len(index_order):
-    problems.append("two audits share a date and a kind; one of them cannot be found")
 if index_order != sorted(index_order):
     problems.append("the audits are not in date order, and the newest row is what the tripwire "
                     "reads")
