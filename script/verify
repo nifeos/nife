@@ -731,6 +731,9 @@ for c in $crates; do
     desc="$(printf '%s\n' "$CRATES" | awk -F'\t' -v c="$c" '$1 == c { print $3 }')"
     case "$c" in
         kernel) extra="-Z unstable-options --ignore-global-asm -Z stubbing" ;;
+        # The bookkeeping harness stubs the zone parse (`#[kani::stub]`), which needs the flag on the
+        # command line; the crate-level Cargo.toml setting did not reach this path in CI.
+        domain_name_resolution_contract) extra="-Z stubbing" ;;
         # `components` is many `[[bin]]` targets and one package, so a bare `cargo kani -p components`
         # compiles all of them. Kani refuses every `#![no_std]` crate root that does not mention it
         # ("Failed to detect Kani functions"), so that run fails on the first binary carrying no

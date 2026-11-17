@@ -36,6 +36,3 @@ doc_markdown = "warn"
 # `version`.
 domain_name_system = { version = "0.1.0", path = "../domain_name_system" }
 
-# The bookkeeping proof in `src/verification.rs` stands in for the zone parse (`#[kani::stub]`).
-[package.metadata.kani.unstable]
-stubbing = true

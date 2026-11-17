@@ -724,6 +724,11 @@ def kernel_tests(pkgs=None):
     return out
 
 
+# Packages whose harnesses use `#[kani::stub]`, which Kani refuses without `-Z stubbing`.
+# `script/verify` passes the same flag for the same package.
+PACKAGES_THAT_STUB = {"domain_name_resolution_contract"}
+
+
 class Harness:
     # What replays this record, which is the only thing `KernelTest` changes. Named rather than
     # tested with `isinstance`, because it is printed in the table and in the sweep's own output.
@@ -842,6 +847,8 @@ class Harness:
         argv = ["cargo", "kani", "-p", self.package]
         if self.pkg.has_global_asm:
             argv += ["-Z", "unstable-options", "--ignore-global-asm", "-Z", "stubbing"]
+        if self.package in PACKAGES_THAT_STUB:
+            argv += ["-Z", "stubbing"]
         if self.target is not None and self.target[1] == "bin" and len(self.pkg.bins) > 1:
             argv += ["--bin", self.target[0]]
         elif self.target is not None and self.target[1] == "lib" and self.pkg.bins:
