@@ -69,8 +69,18 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   the single point of failure there rather than the first of two. A validator bypass is the
   highest-value finding in this file. The board's own SD/MMC and Ethernet servers are outside the
   validator: each holds a register page that names DMA addresses, so each is confined by its own
-  code (notes/designware-mobile-storage.md, notes/designware-ethernet.md), and the booted system
-  starts neither until a bench boot proves it.
+  code (notes/designware-mobile-storage.md, notes/designware-ethernet.md). The booted system
+  starts neither: the Ethernet processes wait for a bench boot to prove them, and the SD/MMC server,
+  which a bench boot has proved, has no caller there.
+
+  Two processes the booted system does start on that board hold authority over the whole machine,
+  and each is confined by its own code alone. The clock and reset server holds the one page of
+  each of three clock and reset domains, which also holds the CPU cores' resets, the DRAM
+  controller's, the watchdog's, the real-time clock's and the power management unit's; the kernel
+  is its only client (notes/jh7110-clock-and-reset.md). The PMIC route holds the I2C controller
+  of the bus the board's power controller sits on, so it could write any register of any chip on
+  that bus; the program that declares `reboot` can ask it for one thing, the reset
+  (notes/board-reboot.md).
 - **IPC.** Anything that lets a message reach an endpoint the sender cannot name, a reply
   capability be used twice or by the wrong thread, or a server be confused about which client it is
   answering (DECISIONS §12 (Call/Reply IPC), §26 (the fault endpoint);

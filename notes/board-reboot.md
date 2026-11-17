@@ -137,6 +137,11 @@ Its limits, which its `BUGS` lists one line each:
 - The aarch64 `smc` conduit has never executed. QEMU's PSCI answers on `hvc`. `smc` is argon's.
 - A memory-space FADT reset register is not attempted. No machine here uses one.
 - Nothing has run on any board.
+- **The PMIC route holds the whole I2C controller.** Its page lets it address any chip on the
+  power controller's bus, and any register of the power controller, not only the reset bit. Its
+  code narrows that to the one register and bit the kernel packs in its spawn word, and its wire
+  answers `RESET` alone. Its input is one word from the program that declares `reboot`, which
+  that program could use only to reset the board.
 
 ## Each board's first bench step
 

@@ -235,6 +235,15 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
 
 ## BUGS
 
+- **The server holds the whole of three domains.** A page is the smallest unit the MMU grants,
+  and each domain's every clock and reset word sits in its first page, so the server can gate or
+  hold anything in SYS, AON and STG: the CPU cores' resets, the DRAM controller's, the watchdog's
+  clocks and resets, the real-time clock and the power management unit, beside the five devices
+  it serves. Only its code narrows that to a device's own bits, and
+  `one_device_never_touches_another_devices_bits` checks it for bring up alone. Its input is
+  small: the kernel is its only client, the kernel stamps the badge, and a request is two words.
+  A milestone that hands a badge on its endpoint to a userspace driver widens that input to the
+  driver.
 - None of this has run on hardware. Every register offset, bit position and identifier is
   transcribed from published source; the only thing proven is that the two published trees agree
   with each other and that the arithmetic is right. An emulator cannot do better here, because
