@@ -25,8 +25,8 @@ a request for one device from changing another's bits.
 
 `one_device_never_touches_another_devices_bits` checks that for `Device::bring_up`, for each of the
 five devices, from one starting state of the windows. It does not reach `answer`, which is what a
-request runs; `SET_RATE`, which writes a clock word with a new divider; a refused or malformed
-request; or a starting state other than the fake's.
+request runs, or `SET_RATE`, which writes a clock word with a new divider. Nor does it cover a
+refused or malformed request, or a starting state other than the fake's.
 
 ## The work
 
@@ -44,4 +44,4 @@ entry in notes/jh7110-clock-and-reset.md about the server holding three domains 
 
 ## Index row
 
-The clock and reset server is checked to change only its device's bits, for every request.
+A check shows that the clock and reset server changes only its device's bits, for every request.

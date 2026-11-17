@@ -21,7 +21,7 @@ Reuse: the refusal `entropy_contract` makes for its own reserved bits, ruled 202
 request word 0 and the route ignores the other 56 bits and all of word 1. A `RESET` with any
 reserved bit set resets the board. The only sender, `components/src/reboot.rs`, sets none, so
 nothing misbehaves today. A later operation that takes an argument would be misread by a route
-built before it, and the clock and reset wire (§320) and the entropy wire already refuse reserved
+built before it, and the clock and reset wire (§320 (the JH7110 clock and reset wire)) and the entropy wire already refuse reserved
 bits before they act.
 
 ## The work
@@ -33,7 +33,7 @@ bits before they act.
 
 ## Done when
 
-A `RESET` with a reserved bit set is refused, and the board does not reset.
+The route refuses a `RESET` with a reserved bit set, and the board does not reset.
 
 ## Index row
 
