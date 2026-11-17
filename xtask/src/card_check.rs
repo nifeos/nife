@@ -7,6 +7,16 @@
 //! The comparison is `sealed_pair`'s and is documented there: the SHA-256 of each archive entry the
 //! kernel may enter, looked for in the kernel image's compiled-in trust root. This file finds the
 //! two files and says what to do about the answer before a person walks to the board.
+//!
+//! # The words the boot script hands over
+//!
+//! The kernel also holds the archive to the loader's two digest words, and on radon the loader's
+//! words are whatever the boot script's `setenv bootargs` line says. So the words judged are read
+//! out of the scripts themselves, `boot.scr.uimg` and, in a served directory, the served script,
+//! rather than out of the `.loader-digests` file they were written from: a card carries no such
+//! file, and a script that disagrees with its archive is the thing that halts the board. A card
+//! script that takes the archive over the network is refused outright, because it carries digests
+//! for whatever the network serves and goes stale on the next build (#3690).
 
 //! # Which half is stale
 //!
@@ -43,9 +53,20 @@ struct Pair {
     kernel_path: Option<PathBuf>,
     /// The file on disk holding the archive, on the same terms.
     archive_path: Option<PathBuf>,
-    /// The loader's two digest words, from the file beside the archive on a card. A stick has none:
-    /// its loader checks them when it is built.
-    words: Option<String>,
+    /// The loader's two digest words, each with where it was read: every `setenv bootargs` in the
+    /// boot scripts beside the pair, or the `.loader-digests` file when there is no script. Empty
+    /// for a stick, whose loader checks them when it is built.
+    words: Vec<Words>,
+    /// What is wrong with the boot scripts themselves, each a refusal on its own.
+    script_refusals: Vec<String>,
+}
+
+/// One set of the loader's words and the file they came from.
+struct Words {
+    label: String,
+    words: String,
+    /// Whether they came from the served script, which a rebuild rewrites, rather than from a card.
+    served: bool,
 }
 
 /// **The command.** Exit codes are the contract, because this is meant to be run from a script and
@@ -69,24 +90,7 @@ pub(crate) fn card_check(arg: Option<String>) -> std::process::ExitCode {
 
     let mut refused = false;
     for pair in &pairs {
-        let seal = match sealed_pair::inspect_with_words(
-            &pair.kernel,
-            &pair.archive,
-            pair.words.as_deref(),
-        ) {
-            Ok(seal) => seal,
-            Err(why) => {
-                println!("UNREADABLE: {} {why}", pair.archive_label);
-                refused = true;
-                continue;
-            }
-        };
-        println!("{}", seal.explain(&pair.kernel_label, &pair.archive_label));
-        if !seal.is_sealed() {
-            refused = true;
-            print_the_fix(pair);
-            println!("\n{}", sealed_pair::AUTHORITY_NOTICE);
-        }
+        refused |= judge(pair);
     }
 
     if refused {
@@ -94,6 +98,55 @@ pub(crate) fn card_check(arg: Option<String>) -> std::process::ExitCode {
     } else {
         std::process::ExitCode::SUCCESS
     }
+}
+
+/// Judge one pair, against every set of words its boot scripts hand over, print the verdict and
+/// the fix, and say whether anything was refused.
+fn judge(pair: &Pair) -> bool {
+    let mut refused = false;
+    let judged: Vec<Option<&Words>> = if pair.words.is_empty() {
+        vec![None]
+    } else {
+        pair.words.iter().map(Some).collect()
+    };
+    for words in judged {
+        let seal = match sealed_pair::inspect_with_words(
+            &pair.kernel,
+            &pair.archive,
+            words.map(|w| w.words.as_str()),
+        ) {
+            Ok(seal) => seal,
+            Err(why) => {
+                println!("UNREADABLE: {} {why}", pair.archive_label);
+                refused = true;
+                break;
+            }
+        };
+        let explained = seal.explain(&pair.kernel_label, &pair.archive_label);
+        match words {
+            Some(w) => println!(
+                "{}\n  (the loader's words judged are the ones in {})",
+                explained.trim_end(),
+                w.label
+            ),
+            None => println!("{explained}"),
+        }
+        if !seal.is_sealed() {
+            refused = true;
+            match words {
+                Some(w) if !seal.kernel_refuses() && !seal.progenitor_refuses() => {
+                    print_the_words_fix(pair, w);
+                }
+                _ => print_the_fix(pair),
+            }
+            println!("\n{}", sealed_pair::AUTHORITY_NOTICE);
+        }
+    }
+    for why in &pair.script_refusals {
+        println!("NOT SEALED: {why}");
+        refused = true;
+    }
+    refused
 }
 
 /// Everything at `root` that is a kernel-and-archive pair: a card's two files, a stick's boot files,
@@ -114,6 +167,7 @@ fn collect(root: &Path) -> Result<Vec<Pair>, String> {
     let kernel = root.join(CARD_KERNEL);
     let archive = root.join(CARD_ARCHIVE);
     if kernel.is_file() && archive.is_file() {
+        let (words, script_refusals) = boot_script_words(root);
         pairs.push(Pair {
             kernel_label: kernel.display().to_string(),
             archive_label: archive.display().to_string(),
@@ -121,7 +175,8 @@ fn collect(root: &Path) -> Result<Vec<Pair>, String> {
             archive: read(&archive)?,
             kernel_path: Some(kernel),
             archive_path: Some(archive),
-            words: std::fs::read_to_string(root.join(CARD_WORDS)).ok(),
+            words,
+            script_refusals,
         });
     } else if kernel.is_file() || archive.is_file() {
         // Half a pair is the failure milestone 217 (the card carries a kernel and an archive
@@ -196,8 +251,101 @@ fn embedded(path: &Path) -> Result<Pair, String> {
         archive,
         kernel_path: None,
         archive_path: None,
-        words: None,
+        words: Vec::new(),
+        script_refusals: Vec::new(),
     })
+}
+
+/// **The words the boot scripts at `root` hand the kernel**, and what is wrong with the scripts.
+///
+/// The card's script is always read when it is there; the served script only in a directory that
+/// has one, which is `target/board` after a `--tftp` build. With neither, the `.loader-digests`
+/// file beside the archive stands in, so a directory of loose files is still judged.
+fn boot_script_words(root: &Path) -> (Vec<Words>, Vec<String>) {
+    let mut words = Vec::new();
+    let mut refusals = Vec::new();
+    for (name, served) in [
+        (crate::board::BOARD_CARD_SCRIPT, false),
+        (crate::board::BOARD_SERVED_SCRIPT, true),
+    ] {
+        let path = root.join(name);
+        if !path.is_file() {
+            continue;
+        }
+        let label = path.display().to_string();
+        let text = match std::fs::read(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|image| crate::board::uboot_script_text(&image))
+        {
+            Ok(text) => text,
+            Err(why) => {
+                refusals.push(format!(
+                    "{label} cannot be read as U-Boot will read it ({why})."
+                ));
+                continue;
+            }
+        };
+        let found = crate::board::script_bootargs(&text);
+        if found.is_empty() {
+            refusals.push(format!(
+                "{label} sets no `bootargs`, so the kernel is handed no digest words and halts at \
+                 MEASURED BOOT REFUSED."
+            ));
+        }
+        for value in found {
+            words.push(Words {
+                label: label.clone(),
+                words: value.to_string(),
+                served,
+            });
+        }
+        if !served && crate::board::card_script_fetches_the_archive(&text) {
+            refusals.push(format!(
+                "{label} takes the archive over the network but carries its own digest words, so \
+                 it names the build it was written with and refuses every later one. Rewrite it \
+                 once with a card script that fetches the served script instead:\n  \
+                 script/board-image --tftp --card {}",
+                root.display()
+            ));
+        }
+    }
+    if words.is_empty()
+        && refusals.is_empty()
+        && let Ok(file) = std::fs::read_to_string(root.join(CARD_WORDS))
+    {
+        words.push(Words {
+            label: root.join(CARD_WORDS).display().to_string(),
+            words: file,
+            served: false,
+        });
+    }
+    (words, refusals)
+}
+
+/// **The fix when only the words are wrong**: the kernel and the archive are one pair, and the
+/// script that hands the kernel their digests names another build.
+fn print_the_words_fix(pair: &Pair, words: &Words) {
+    let dir = pair
+        .archive_path
+        .as_deref()
+        .and_then(Path::parent)
+        .unwrap_or(Path::new("."))
+        .display()
+        .to_string();
+    if words.served {
+        println!(
+            "  The served script {} names another build's archive. Build again, which writes the \
+             served script beside the archive it names:\n    script/board-image --tftp",
+            words.label
+        );
+    } else {
+        println!(
+            "  {} names another build's archive than the one beside it. Copy the set, script \
+             and all (add --tftp for a card that fetches over the network):\n    \
+             script/board-image --card {dir}",
+            words.label
+        );
+    }
 }
 
 fn read(path: &Path) -> Result<Vec<u8>, String> {
@@ -260,4 +408,115 @@ fn same_file(a: &Path, b: &Path) -> Option<bool> {
     let want = std::fs::read(b).ok()?;
     let have = std::fs::read(a).ok()?;
     Some(want == have)
+}
+
+#[cfg(test)]
+mod tests {
+    use sealed_pair::test_support;
+
+    use super::*;
+    use crate::board::{
+        BOARD_BOOT_SCRIPT_NAME, BOARD_CARD_SCRIPT, BOARD_SERVED_SCRIPT, board_network_boot_script,
+        board_served_boot_script, uboot_script_image,
+    };
+
+    /// A card directory in a scratch place, holding one build's kernel and archive.
+    struct Card(PathBuf);
+
+    impl Card {
+        fn new(what: &str) -> Self {
+            let dir =
+                std::env::temp_dir().join(format!("nife-card-check-{what}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).expect("scratch card");
+            let (kernel, archive) = test_support::matched_pair();
+            std::fs::write(dir.join(CARD_KERNEL), kernel).expect("kernel");
+            std::fs::write(dir.join(CARD_ARCHIVE), archive).expect("archive");
+            Card(dir)
+        }
+
+        fn script(&self, name: &str, text: &str) {
+            std::fs::write(
+                self.0.join(name),
+                uboot_script_image(BOARD_BOOT_SCRIPT_NAME, text),
+            )
+            .expect("script");
+        }
+
+        fn refused(&self) -> bool {
+            collect(&self.0).expect("a pair").iter().any(judge)
+        }
+    }
+
+    impl Drop for Card {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn words(pair: (Vec<u8>, Vec<u8>)) -> String {
+        test_support::words_for(&pair.1)
+    }
+
+    /// **A card whose script names its own archive passes; one whose script names another
+    /// build's is refused**, read out of the script image itself, which is what U-Boot hands the
+    /// kernel. No `.loader-digests` file is on either card, as none is on a real one.
+    #[test]
+    fn the_words_judged_are_the_card_scripts() {
+        let good = Card::new("good");
+        good.script(
+            BOARD_CARD_SCRIPT,
+            &board_network_boot_script("10.1.2.3", &words(test_support::matched_pair())),
+        );
+        assert!(!good.refused());
+
+        let stale = Card::new("stale");
+        stale.script(
+            BOARD_CARD_SCRIPT,
+            &board_network_boot_script("10.1.2.3", &words(test_support::other_pair())),
+        );
+        assert!(stale.refused());
+    }
+
+    /// **The served script is judged too**, so a served directory whose script names another
+    /// build's archive fails `script/board-image`'s own check before any board asks for it.
+    #[test]
+    fn a_served_script_naming_another_build_is_refused() {
+        let served = Card::new("served");
+        let mine = words(test_support::matched_pair());
+        served.script(
+            BOARD_CARD_SCRIPT,
+            &board_network_boot_script("10.1.2.3", &mine),
+        );
+        served.script(BOARD_SERVED_SCRIPT, &board_served_boot_script(&mine));
+        assert!(!served.refused());
+        served.script(
+            BOARD_SERVED_SCRIPT,
+            &board_served_boot_script(&words(test_support::other_pair())),
+        );
+        assert!(served.refused());
+    }
+
+    /// **The shape #3690 found on a card is refused even when its words agree today**: a card
+    /// script that takes the archive over the network names one build and goes stale on the next.
+    #[test]
+    fn a_card_script_that_fetches_the_archive_is_refused() {
+        let old = Card::new("old-shape");
+        let mine = words(test_support::matched_pair());
+        old.script(BOARD_CARD_SCRIPT, &board_served_boot_script(&mine));
+        assert!(old.refused());
+    }
+
+    /// A script that is not a script image, or hands the kernel nothing, is a refusal, never a
+    /// silent pass for want of words to judge.
+    #[test]
+    fn an_unreadable_or_wordless_script_is_refused() {
+        let garbage = Card::new("garbage");
+        std::fs::write(garbage.0.join(BOARD_CARD_SCRIPT), b"not an image").expect("write");
+        assert!(garbage.refused());
+
+        let wordless = Card::new("wordless");
+        wordless.script(BOARD_CARD_SCRIPT, "echo nothing\n");
+        assert!(wordless.refused());
+    }
 }
