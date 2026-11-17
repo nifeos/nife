@@ -51,6 +51,10 @@ pub const fn region_pages(scratchpads: u16) -> u64 {
     WORK_PAGES + scratchpads as u64
 }
 
+/// The bytes of the operational registers that precede the first port's status set (xHCI 1.2
+/// section 5.4).
+const OPERATIONAL_REGISTER_BYTES: u64 = 0x400;
+
 /// The bytes of one interrupter register set (xHCI 1.2 section 5.5.2).
 const INTERRUPTER_BYTES: u64 = 0x20;
 
@@ -58,11 +62,15 @@ const INTERRUPTER_BYTES: u64 = 0x20;
 /// through the last port's status set, interrupter 0, and every slot's doorbell. What
 /// [`register_window`] checks the mapped pages against.
 const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
+    // A controller with no ports has no status set to reach, so the first range stops at the end
+    // of the operational registers that precede the port sets.
+    let last_register_byte = match capabilities.port_status_and_control(capabilities.maximum_ports)
+    {
+        Some(last_status_set) => last_status_set + 0x0f,
+        None => capabilities.operational + OPERATIONAL_REGISTER_BYTES - 1,
+    };
     [
-        (
-            0,
-            capabilities.port_status_and_control(capabilities.maximum_ports) + 0x0f,
-        ),
+        (0, last_register_byte),
         (
             capabilities.interrupter(0),
             capabilities.interrupter(0) + INTERRUPTER_BYTES - 1,
@@ -487,6 +495,15 @@ mod tests {
             needed_ranges(&capabilities),
             [(0, 0x47f), (0x1020, 0x103f), (0x2000, 0x2103)]
         );
+    }
+
+    /// A controller with no ports has no status set to reach, so the first range ends at the last
+    /// byte of the operational registers: the 0x40-byte capability registers plus the 0x400 bytes
+    /// that precede the port sets, less one.
+    #[test]
+    fn a_controller_with_no_ports_ends_its_first_range_at_the_operational_registers() {
+        let capabilities = Capabilities::decode(0x0100_0040, 0x0000_0840, 0, 0, 0x2000, 0x1000);
+        assert_eq!(needed_ranges(&capabilities)[0], (0, 0x43f));
     }
 
     /// **The layout both ends rely on**: every work page is used once and lies inside the work

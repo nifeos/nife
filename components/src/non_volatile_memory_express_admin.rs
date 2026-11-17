@@ -199,7 +199,7 @@ impl Controller {
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
         // naming the controller, not in a process that cannot reach its doorbells.
         if capabilities.maximum_queue_entries() < ENTRIES as u32
-            || capabilities.minimum_page_size() > PAGE_BYTES
+            || capabilities.minimum_page_size_bytes() > PAGE_BYTES
             || capabilities.doorbell_stride() > MAXIMUM_DOORBELL_STRIDE
         {
             return Err(BringUpError::UnsupportedController);
@@ -231,10 +231,12 @@ impl Controller {
             registers::ADMIN_COMPLETION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
             self.dma + ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE_BYTES,
         );
-        self.wr32(
-            registers::CONTROLLER_CONFIGURATION_REGISTER,
-            non_volatile_memory_express::enabled_controller_configuration(),
-        );
+        // `PAGE_BYTES` was checked against the controller's range above, so this refuses only a page
+        // size the configuration cannot name.
+        let configuration =
+            non_volatile_memory_express::enabled_controller_configuration(PAGE_BYTES)
+                .ok_or(BringUpError::UnsupportedController)?;
+        self.wr32(registers::CONTROLLER_CONFIGURATION_REGISTER, configuration);
         self.wait_ready(true)?;
 
         // IDENTIFY the namespace: its block count and LBA format are the two facts the block
@@ -249,10 +251,8 @@ impl Controller {
         let mut data = [0u8; IDENTIFY_BYTES];
         mapped(&ADMIN_QUEUES).copy_to_slice(IDENTIFY_PAGE * PAGE_BYTES, &mut data);
         let refused = BringUpError::UnsupportedNamespace {
-            logical_block_size_shift: non_volatile_memory_express::logical_block_format_size_shift(
-                &data,
-            )
-            .unwrap_or(0),
+            logical_block_size_shift: non_volatile_memory_express::logical_block_size_shift(&data)
+                .unwrap_or(0),
             blocks: u64::from_le_bytes(data[0..8].try_into().unwrap_or([0; 8])),
         };
         let namespace =
