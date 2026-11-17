@@ -2,20 +2,41 @@
 name = "current_cpu_contract"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The current-CPU page: where a thread is running, its core allowance and the scheduler tick, read from a read-only page with no system call"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "scheduler", "shared-page"]
+categories = ["no-std", "embedded", "os"]
+publish = false     # stays false until the release that publishes this crate
 
-# A thread's own CPU, as a page rather than a crossing (calef's 2026-09-21 ruling on how
-# userspace asks where a thread runs, whose decision section is on another branch): one
-# definition of the read-only page the kernel writes the running core's id into at every
-# switch-in, so the kernel (the one writer) and `user_mode_runtime::current_cpu` (every reader)
-# cannot drift on the layout or the fixed virtual address. The same shape
+# A thread's own CPU, as a page rather than a crossing: one definition of the read-only page the
+# kernel writes the running core's id into at every switch-in, so the kernel (the one writer) and
+# each reader in a process cannot drift on the layout or the fixed virtual address. The same shape
 # `counter_frequency_contract` uses for the counter frequency, with one difference that is the
 # whole point: this page's word changes while the process runs.
 
-[lints]
-workspace = true
+[package.metadata.docs.rs]
+targets = [
+    "x86_64-unknown-none",
+    "aarch64-unknown-none-softfloat",
+    "riscv64imac-unknown-none-elf",
+]
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
-# Where the page goes (milestone 206 (a program image has under 896 KiB)): `PAGE_VA` is the map's `CURRENT_CPU_PAGE`.
+# Where the page goes: `PAGE_VIRTUAL_ADDRESS` is the address-space map's current-CPU page.
 address_space_layout = { version = "0.1.0", path = "../address_space_layout" }

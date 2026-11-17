@@ -80,7 +80,7 @@ gets the same constant and maps nothing.
 ## Threads, and the shape that gets no page
 
 A process has at most `THREAD_PAGE_SLOTS` thread pages (§269 (how threads share a process) fork 6),
-one page apart below `PAGE_VA`. Slot 0 is `PAGE_VA` itself, so a process's first thread reads where
+one page apart below `PAGE_VIRTUAL_ADDRESS`. Slot 0 is `PAGE_VIRTUAL_ADDRESS` itself, so a process's first thread reads where
 every thread always has. Other threads read the address `CONFIGURE` answered, which `std` keeps in
 thread-local storage.
 

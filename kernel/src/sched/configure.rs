@@ -108,7 +108,7 @@ pub fn configure_thread_control_block_with_thread_pointer(
     let mut page = 0;
     crate::user::bind_user_address_space(aspace_name, |bound| {
         if bound.has_current_cpu_page() {
-            page = current_cpu_contract::PAGE_VA;
+            page = current_cpu_contract::PAGE_VIRTUAL_ADDRESS;
         }
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
