@@ -1461,7 +1461,7 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
     /// The shape this tree wrote onto cards before the served script, a card script that takes
     /// the archive over the network, is what `card-check` refuses, in either spelling of the line.
     #[test]
-    fn a_card_script_that_fetches_the_archive_is_recognised() {
+    fn a_card_script_that_fetches_the_archive_is_recognized() {
         assert!(card_script_fetches_the_archive(
             "if tftpboot 0x90000000 nife-initial-ramdisk.img; then\nfi\n"
         ));
