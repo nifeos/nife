@@ -157,8 +157,7 @@ ruled this on 2026-11-01 (UTC) in
 [`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md),
 which also lists the milestones that build it. The filer is `fuzz-filer` in
 [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host); it runs as the fuzz account and files from a
-one-hour token that a root timer mints. It is built and not yet installed, so until a person installs
-it, nothing files an advisory.
+one-hour token that a root timer mints. Its binary is installed, but it files only while `fuzz-filer.timer` is enabled, and the heartbeat fails when it is not.
 
 With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
 UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD
@@ -185,8 +184,9 @@ cannot push to main; the script calls only `gh release create`.
 
 `.github/workflows/fuzz-heartbeat.yml` runs daily at 17:00 UTC on a GitHub-hosted runner and runs
 `helpers/fuzz-heartbeat.py`. It reads the releases of the last two UTC days and opens one issue
-with the label `fuzz-loop-broken` when no release exists, when the report shows no `ok` window, or when
-`infrastructure` windows are half or more of all windows. The issue names the check and the day, and
+with the label `fuzz-loop-broken` when no release exists, when the report shows no `ok` window, when
+`infrastructure` windows are half or more of all windows, or when the filer looks dead
+([what it proves about the filer](the-filer-heartbeat.md)). The issue names the check and the day, and
 no second one opens while one is open. It repairs nothing. A lane fixes anything in the tree; a repair
 of the host is a written spec the architect hands to the homelab agent. While no `fuzz-*` release has
 ever existed the workflow passes quietly, and it switches on by itself at the first release. The
