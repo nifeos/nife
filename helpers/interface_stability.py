@@ -1077,8 +1077,7 @@ def render_appendix(rows, crates, week, events, rev, package_lines=()):
     #
     # At most EVENTS_LISTED_PER_CRATE lines per crate, then one line saying how many more. A crate
     # split or rename (grant_plan's, 2026W47, was 490 lines) is one fact, and the page is held to
-    # 3,000 words (§212, a prose budget: 3,000 words of main body, with appendices under the same
-    # cap), so a week with one such event used to fail the weekly metrics lint. The counts of every
+    # 3,000 words by helpers/prose_ratchet.py, so a week with one such event used to fail the weekly metrics lint. The counts of every
     # change stay in interface-stability-crates.csv.
     shown = {}
     held_back = {}
