@@ -18,9 +18,9 @@ log every store.
 
 ## The problem
 
-The clock and reset server holds the first page of the SYS, AON and STG domains, and that page
-holds every clock and reset word of its domain: the CPU cores, the DRAM controller, the watchdog,
-the real-time clock and the power management unit among them. Nothing but the server's code keeps
+The clock and reset server holds the first page of the SYS, AON and STG domains. Each page holds
+every clock and reset word of its domain, the CPU cores, the DRAM controller, the watchdog, the
+real-time clock and the power management unit among them. Nothing but the server's code keeps
 a request for one device from changing another's bits.
 
 `one_device_never_touches_another_devices_bits` checks that for `Device::bring_up`, for each of the
@@ -39,7 +39,7 @@ refused or malformed request, or a starting state other than the fake's.
 
 ## Done when
 
-The check runs in `script/test`'s host tests and names `answer` as what it covers, and the BUGS
+The check runs in `script/test`'s host tests and names `answer` as what it covers. The `BUGS`
 entry in notes/jh7110-clock-and-reset.md about the server holding three domains names the check.
 
 ## Index row
