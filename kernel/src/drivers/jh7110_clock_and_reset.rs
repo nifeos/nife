@@ -93,10 +93,12 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpRe
                 let before = unsafe { core::ptr::read_volatile(assert) };
                 // SAFETY: as above. A read-modify-write, and it must be one: this word holds up
                 // to 32 resets and clobbering it would release or hold every other line in the
-                // domain. Nothing else in this kernel writes it (the only caller is the
-                // boot/test thread that wires the service, the same single-writer argument
-                // `entropy_service::WIRED` makes for its plain atomics), so the read and the
-                // write cannot be separated by another writer.
+                // domain. Two programs write it: this walk, whose only caller is the soak's
+                // watchdog on the boot thread, and the clock and reset server, which stores only
+                // while it answers a call and whose every caller is a starter on that same boot
+                // thread (`user::jh7110_clock_and_reset_service`). The boot thread is in one of
+                // the two at a time, so the read and the write cannot be separated by another
+                // writer.
                 unsafe { core::ptr::write_volatile(assert, before & !bit.mask) };
                 let mut polls = 0;
                 let mut seen;

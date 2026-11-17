@@ -235,6 +235,10 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
 
 ## BUGS
 
+- **The server holds all of three domains.** The MMU grants no less than a page, and that page
+  holds every word of its domain. So the server could gate or hold the CPU cores, DRAM, the
+  watchdog, the real-time clock and the power management unit. Only its code narrows a request to
+  one device, and a test checks that for bring up alone. The kernel is its only client.
 - None of this has run on hardware. Every register offset, bit position and identifier is
   transcribed from published source; the only thing proven is that the two published trees agree
   with each other and that the arithmetic is right. An emulator cannot do better here, because
