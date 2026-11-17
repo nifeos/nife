@@ -19,10 +19,10 @@ printed into the log.
 
 `script/board-console` sends exactly one byte, in `--stop`, and says it is not a keyboard on
 purpose. Step 5 of milestone 1062 (the device control planes leave the kernel) needs `reboot`
-typed at the shell prompt of a booted board, twice. The bench session did it with a small script
-that is not in the tree, so the procedure cannot be repeated from the tree, and a hand-rolled
-sender is the hazard the narrowness exists to prevent: a byte sent while U-Boot's autoboot
-countdown is still running stops the boot.
+typed at the shell prompt of a booted board, twice. The bench session used a small script
+outside the tree, so nobody can repeat the procedure from the tree, and a hand-rolled
+sender risks the hazard the narrowness exists to prevent. A byte sent during U-Boot's autoboot
+countdown stops the boot.
 
 ## The work
 
@@ -30,9 +30,9 @@ countdown is still running stops the boot.
   prompt, sends the command and a newline, and logs every byte it sent, as `--stop` does.
 - It refuses to send before the prompt has been seen, so the autoboot countdown is never hit, and
   it refuses a command containing a control character.
-- The ruling of milestone 324 part 4 (the capture shows every byte sent) holds, and the header's
-  "this is not a keyboard" sentence is reworded to say what the modes send. That wording is the
-  architect's to approve, since it changes a stated invariant.
+- The standing rule that the capture shows every byte sent holds (milestone 324 (the bench console
+  cannot speak to any of the three boards), part 4). The header's "this is not a keyboard" sentence
+  then says what each mode sends. That wording changes a stated invariant, so an architect approves it.
 - A host test over a recorded capture and a simulated port, in the style of the existing replay
   tests.
 

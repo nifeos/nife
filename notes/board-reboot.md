@@ -145,23 +145,22 @@ Its limits, which its `BUGS` lists one line each:
 
 ## Bench: reboot with the route withheld
 
-To see `reboot` fall back to the reboot object on a board, build an image whose archive carries no
-route program. The way that works is `[package.metadata.nife] packaged_only =
-["power_management_chip_route"]` in `components/Cargo.toml`. `xtask/src/archive.rs`
-(`declared_programs`) builds the one list every boot archive packs from the `[[bin]]` blocks of
-`components/Cargo.toml` and `fixtures/Cargo.toml`, less each manifest's `packaged_only` names, so the
-route is then in none of them. Removing the name from `programs` in `packages/drivers.package.toml`
-does not do it, because that list is the package's, and the archive does not read it. A program the
-shell or the boot needs cannot be listed, and the builder refuses a name no `[[bin]]` builds.
+To see `reboot` fall back to the reboot object, build an image whose archive carries no route
+program. Add `[package.metadata.nife] packaged_only = ["power_management_chip_route"]` to
+`components/Cargo.toml`. `declared_programs` in `xtask/src/archive.rs` builds the one list every boot
+archive packs from the `[[bin]]` blocks of `components/Cargo.toml` and `fixtures/Cargo.toml`, less
+each manifest's `packaged_only` names. Dropping the name from `programs` in
+`packages/drivers.package.toml` does nothing, because the archive never reads that list. The builder
+refuses a name that no `[[bin]]` builds, and a name the shell or the boot needs.
 
-The boot then prints `no PMIC route: this archive carries no route program`, and `reboot` prints
-`the kernel was asked to restart the machine` before the firmware attempt.
+The boot then prints `no PMIC route: this archive carries no route program`. `reboot` prints `the
+kernel was asked to restart the machine` and tries SBI SRST.
 
-On radon that attempt does not return. SBI SRST hangs there (milestone 249 (the boot lottery is sampled by a person walking to the board) and milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) record it): the
-console shows ten `i2c read` lines and `cannot read pmic power register`, with no firmware banner,
-and the board stays hung until its power is cycled. So the expected result of this step on radon is
-a hang, which is the baseline, and the board does not boot back by itself. The route is what makes
-`reboot` work on radon.
+On radon that attempt hangs. Milestone 249 (the boot lottery is sampled by a person walking to the
+board) and milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) record it. The console
+shows ten `i2c read` lines and `cannot read pmic power register`, then no firmware banner, and the
+board stays hung until somebody cycles its power. The expected result of this step on radon is that
+hang. The board does not boot back, and the route is the only working `reboot` there.
 
 ## Each board's first bench step
 
