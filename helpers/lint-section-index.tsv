@@ -143,3 +143,4 @@ shellcheck	1	-	-	0	-	code	shellcheck
 -	1	-	-	0	-	code	script/verify passes extra arguments through to cargo kani
 -	1	-	-	0	-	both	every kani-verifier install reads .kani-version
 -	1	-	-	0	-	code	script/kani-install: an installed pin is not reinstalled
+-	1	-	-	0	-	code	script/catch-up reads the milestone blocks and refuses to report zero from a broken reader

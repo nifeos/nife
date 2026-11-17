@@ -169,7 +169,7 @@ print(f"          to   {head_sha[:9]} on {head_branch}: {head_subject[:56]}")
 # carried no status column at all. All four are recognised, and the last is reported as a gap
 # rather than as an empty result.
 #
-# **The index is still read where it exists**, rather than reading blocks everywhere. A revision's
+# **The index is still read where it holds rows**, rather than reading blocks everywhere. A revision's
 # report should say what that revision said, and between a merge and an integrator's regeneration
 # the committed table lagged the blocks; re-deriving an old week from its blocks would report
 # transitions on days nobody saw them.
@@ -184,6 +184,11 @@ print(f"          to   {head_sha[:9]} on {head_branch}: {head_subject[:56]}")
 def split_cells(line):
     # `\|` inside a cell is an escaped pipe, not a separator: milestone titles use it.
     return [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
+
+
+def die(message):
+    print(f"catch-up: {message}", file=sys.stderr)
+    sys.exit(1)
 
 
 def parse_blocks(rev):
@@ -216,6 +221,11 @@ def parse_blocks(rev):
         title = lines[0][2:].strip() if lines and lines[0].startswith("# ") else name
         title = re.sub(r"^\d+[a-z]?\. ", "", title)
         rows[int(name.split("-", 1)[0])] = (status, title, built)
+    if not rows:
+        # Blocks exist and none yields a status: the reader is broken, not the roadmap empty.
+        # Printing zero here is the silent failure this check exists to prevent.
+        die(f"design/roadmap/ holds {len(blocks)} milestone block files at {rev[:9]} and none "
+            f"yielded a status, so the block reader is broken; refusing to report zero")
     return rows, "design/roadmap/", 0
 
 
@@ -250,7 +260,10 @@ def parse_roadmap(rev):
                 statusless += 1
             title = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", title)
             rows[int(cells[0])] = (status, title, built)
-        return rows, path, statusless
+        # An index file that holds no row (design/roadmap/README.md is prose now) is not a
+        # roadmap: fall through to the next source rather than return an empty table.
+        if rows:
+            return rows, path, statusless
     return parse_blocks(rev)
 
 
@@ -258,10 +271,9 @@ old_rows, old_path, old_statusless = parse_roadmap(base)
 new_rows, new_path, _ = parse_roadmap(head_sha)
 
 if new_rows is None:
-    gaps.append("no roadmap at HEAD (design/roadmap/ holds no milestone block, and neither "
-                "design/roadmap/README.md nor design/roadmap.md is there): milestone status "
-                "cannot be reported at all")
-    old_rows = new_rows = {}
+    die("no roadmap at HEAD (design/roadmap/ holds no milestone block, and neither "
+        "design/roadmap/README.md nor design/roadmap.md holds a milestone row): milestone "
+        "status cannot be reported, and a report of zero would be false")
 elif old_rows is None:
     gaps.append(f"no roadmap existed at {base_short}, so every milestone in this report reads as newly "
                 f"minted rather than as a transition")
