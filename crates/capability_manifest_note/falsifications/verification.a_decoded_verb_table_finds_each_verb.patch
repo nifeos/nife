@@ -1,0 +1,22 @@
+Falsifies `capability_manifest_note::verification::a_decoded_verb_table_finds_each_verb`.
+
+The defect: `decode_verbs` stops checking that each verb sorts strictly after the one before. A
+table out of order then decodes, and `grants_for`'s binary search misses a verb the table holds,
+so a line naming that verb is granted nothing while the iterator lists its grants.
+
+Expected to fail: the assertion that `grants_for` finds each decoded verb.
+
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+index 2924ed822..330f4e33d 100644
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -1421,9 +1421,6 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
+         {
+             return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB + 2));
+         }
+-        if previous.is_some_and(|p| !before(p, &word[..len])) {
+-            return Err(Error::BadField(at));
+-        }
+         previous = Some(&word[..len]);
+     }
+     Ok(Verbs { records: &d[8..] })
