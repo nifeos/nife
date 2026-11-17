@@ -12,8 +12,7 @@ needs_person: no
 Raised by lane `maintainer/radon-bench-2026-11-17-tree-findings`, from the 2026-11-17 (UTC) radon
 bench session on nifeos/nife#3509. Name: provisional.
 
-Reuse: `--stop`, the one named mode that already sends a byte, and its rule that every byte sent is
-printed into the log.
+Reuse: `--stop`, the one named mode that already sends a byte, and its rule that the log shows every byte sent.
 
 ## The problem
 
@@ -28,7 +27,7 @@ countdown stops the boot.
 
 - A named mode, for example `--type <command>`, that waits until the kernel has printed its shell
   prompt, sends the command and a newline, and logs every byte it sent, as `--stop` does.
-- It refuses to send before the prompt has been seen, so the autoboot countdown is never hit, and
+- It refuses to send before it sees the prompt, so the autoboot countdown is never hit, and
   it refuses a command containing a control character.
 - The standing rule that the capture shows every byte sent holds (milestone 324 (the bench console
   cannot speak to any of the three boards), part 4). The header's "this is not a keyboard" sentence

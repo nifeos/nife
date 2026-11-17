@@ -153,8 +153,8 @@ each manifest's `packaged_only` names. Dropping the name from `programs` in
 `packages/drivers.package.toml` does nothing, because the archive never reads that list. The builder
 refuses a name that no `[[bin]]` builds, and a name the shell or the boot needs.
 
-The boot then prints `no PMIC route: this archive carries no route program`. `reboot` prints `the
-kernel was asked to restart the machine` and tries SBI SRST.
+The boot then prints `no PMIC route: this archive carries no route program`. `reboot` prints the kernel's
+restart notice and tries SBI SRST.
 
 On radon that attempt hangs. Milestone 249 (the boot lottery is sampled by a person walking to the
 board) and milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) record it. The console
