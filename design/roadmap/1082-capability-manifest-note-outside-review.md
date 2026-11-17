@@ -223,15 +223,12 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Follow-on
 
-- **Done.** Items 1 to 6, 10, 11 and 13 to 15, the wire literal marker, and the three names the
+- **Done.** Items 1 to 6 and 10 to 15, the wire literal marker, and the three names the
   maintainer or the units rule decides; [the ledger](1082-capability-manifest-note-outside-review/ledger.md)
   says what each became.
 - **Outstanding.** The stranger run of item 2 and the fuzz workspace of item 8 belong to the move
   pull request. The unit tests of item 7 that walk the program catalog wait for milestone 1017 to
   settle where it lives. The two statics in BUGS want a rename lane.
-- **Outstanding.** Item 12 has two harnesses that do not finish under a 12 GiB cap, and each is to
-  be narrowed and measured: `decode_never_panics_through_a_serviced_descriptor` runs CBMC out of
-  memory, and `a_decoded_verb_table_finds_each_verb` passes a 15-minute limit.
 
 ## BUGS
 
