@@ -6257,13 +6257,10 @@ crates/socket_contract/src/lib.rs::word_ipv4
 
 crates/static_elf/src/error.rs::Error
 
-crates/static_elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/static_elf/src/machine.rs::KNOWN_MACHINES
 
 crates/static_elf/src/machine.rs::NATIVE_MACHINE
 
-crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
 
 crates/static_elf/src/note.rs
 
@@ -6292,12 +6289,6 @@ crates/static_elf/src/parse.rs::entry
 crates/static_elf/src/parse.rs::parse
 
 crates/static_elf/src/parse.rs::segments
-
-crates/static_elf/src/segment.rs::PF_R
-
-crates/static_elf/src/segment.rs::PF_W
-
-crates/static_elf/src/segment.rs::PF_X
 
 crates/static_elf/src/segment.rs::Segment
 

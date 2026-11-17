@@ -26,6 +26,11 @@ use crate::arch::sync_icache;
 #[allow(unused_imports)]
 use crate::memory;
 
+/// The frame size as the page size `static_elf` rounds segments to, as the kernel's loader uses it.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_SIZE).unwrap();
+
 /// **Whether the x86_64 runner was told to attach a device** (milestone 420 (x86_64 has one fixture
 /// of five and no NIC, GPU, keyboard or RNG)), baked in by `build.rs` because the guest cannot read
 /// the host's environment. `cargo xtask test` exports `NIFE_RNG` and `NIFE_NET` on every x86_64 leg,
