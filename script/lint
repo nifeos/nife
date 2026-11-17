@@ -3232,9 +3232,14 @@ echo "==> every Kani harness carries a falsification record"
 "$(dirname "$0")/falsifications" --selftest
 "$(dirname "$0")/falsifications" --check
 
+echo "==> the audit index's selftest (fixture indexes: duplicates, triples, missing rows)"
+# lint-scope: record
+# Fixtures first, for the reason `falsifications --selftest` runs first: a green `--check` looks the
+# same whether the check works or accepts everything.
+"$(dirname "$0")/audits" --selftest
+
 echo "==> the audit index"
 # lint-scope: record
-"$(dirname "$0")/audits" --selftest
 "$(dirname "$0")/audits" --check
 
 #    **And the stranger test's run record, for the same reason and with the same split**

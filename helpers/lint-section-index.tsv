@@ -77,6 +77,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	both	proof-only modules: crate::arch is the host's
 -	1	-	-	0	-	both	names meet the current naming rules
 -	1	-	-	0	-	code	every Kani harness carries a falsification record
+-	1	-	-	0	-	record	the audit index's selftest (fixture indexes: duplicates, triples, missing rows)
 -	1	-	-	0	-	record	the audit index
 -	1	-	-	0	-	record	the stranger test's run record
 -	1	-	-	0	-	both	environment names in prose
