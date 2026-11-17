@@ -1098,7 +1098,6 @@ crates/clock_contract/src/lib.rs::REFUSED_TOO_FAR_BACKWARD
 
 crates/clock_contract/src/lib.rs::REFUSED_TOO_FAR_FORWARD
 
-crates/clock_contract/src/lib.rs::RTC
 
 crates/clock_contract/src/lib.rs::Reading
 
@@ -1106,7 +1105,6 @@ crates/clock_contract/src/lib.rs::SET
 
 crates/clock_contract/src/lib.rs::STATE
 
-crates/clock_contract/src/lib.rs::SYNCED
 
 crates/clock_contract/src/lib.rs::UNKNOWN
 

@@ -180,7 +180,7 @@ garbage on the first real board.
 ## The x86 CMOS RTC, read by the clock service
 
 x86's real-time clock is the CMOS RTC behind two fixed I/O ports, `0x70` (index) and `0x71`
-(data), `clock_contract::rtc::INDEX_PORT` and `DATA_PORT`. There is no page to map, so
+(data), `clock_contract::real_time_clock::INDEX_PORT` and `DATA_PORT`. There is no page to map, so
 the kernel grants the clock service a `PortRange` capability over both ports (§121 (x86 port I/O)),
 with `WRITE` because the TSS I/O permission bitmap cannot permit `in` without `out`. The service's
 `cmos` module reads the device itself, as its PL031 and Goldfish drivers read theirs, and the

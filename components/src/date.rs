@@ -150,8 +150,9 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
 
     // Nanoseconds to seconds, truncating towards zero, which is exact here: the wall clock is a
     // `u64` count of nanoseconds since 1970 and every format here prints whole seconds.
-    let unix_seconds = (clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
-        / clock_contract::NS_PER_SECOND) as i64;
+    let unix_seconds =
+        (clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
+            / clock_contract::NS_PER_SECOND) as i64;
 
     // Out of range is not reachable from a clock the service believed (its sanity window is 2026 to
     // 2100 and the printable one is 0000 to 9999), and it is still an answer rather than a panic,
@@ -363,9 +364,9 @@ fn source_line(slot: u64, st: u64, generation: u64) {
         &mut buf,
         &mut n,
         match st {
-            state::RTC => b"rtc" as &[u8],
+            state::REAL_TIME_CLOCK => b"rtc" as &[u8],
             state::SET => b"set",
-            state::SYNCED => b"synced",
+            state::SYNCHRONIZED => b"synced",
             _ => b"unknown",
         },
     );

@@ -178,10 +178,11 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
   item 12 of [later items](1083-clock-contract-outside-review/later-items.md), and Decisions 1 and
   2: pull request #3576, on branch `milestone/1083-clock-page-two-copies`.
 - **Done.** Item 6 before the tag: pull request #3559, carried onto the two-copy layout by #3576.
-- **Outstanding.** Items 1 to 4 and 7 to 9 before the tag, and items 10, 11 and 13 to 15 for later,
-  each checked against `crates/clock_contract` at #3576's head and still true there.
-- **Outstanding.** Decision 3, the public names: decided by the maintainer, provisionally, in
-  #3589; item 1 is the work.
+- **Done.** Items 2 and 4 to 15 except item 3, and every Decision 3 name except the two named
+  next: pull request #3640, on branch `milestone/1083-clock-contract-names-and-docs`.
+- **Outstanding.** Item 1's two renames, `NS_PER_SECOND` to `NANOSECONDS_PER_SECOND` and
+  `propose::req` to `request`, which edit files that #3567 also changes and wait for it to land.
+  Item 3 is the move's first mutation run.
 
 ## BUGS
 
