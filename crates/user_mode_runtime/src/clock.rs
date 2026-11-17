@@ -297,10 +297,10 @@ pub fn current_cpu() -> Option<usize> {
 
 /// This thread's first current-CPU page, which [`current_cpu`] and [`tick_hertz`] read.
 fn own_current_cpu_page() -> current_cpu_contract::CurrentCpuPage {
-    // SAFETY: the kernel maps a page it owns, read-only, at `current_cpu_contract::PAGE_VA` into
+    // SAFETY: the kernel maps a page it owns, read-only, at `current_cpu_contract::PAGE_VIRTUAL_ADDRESS` into
     // every address space that a TCB binds, before that thread's first instruction runs. See
     // `current_cpu`'s BUGS section for the one shape that has no page.
-    unsafe { current_cpu_contract::CurrentCpuPage::new(current_cpu_contract::PAGE_VA) }
+    unsafe { current_cpu_contract::CurrentCpuPage::new(current_cpu_contract::PAGE_VIRTUAL_ADDRESS) }
 }
 
 /// **The scheduler tick's rate in Hz**, the resolution of every timed wait, from this thread's

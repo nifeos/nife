@@ -45,7 +45,7 @@ a repository); everything else is two-way and the maintainer decides it.
 
 ### P0: blocks the move
 
-1. The crate cannot leave before the two crates it builds on. LEFT: no change here; the order is Decision A's.
+1. The crate cannot leave before the two crates it builds on. LEFT: no change here; Decision A rules the order.
    Finding: both dependencies are path dependencies on sibling crates that have no repository of
    their own (`nifefs`, `measured_boot`). The ruling of milestone 1017 (the contract crates leave in this order) is that a crate leaves
    bottom-up and nothing that has left depends on a path or a pin into this tree. `measured_boot`
@@ -55,8 +55,8 @@ a repository); everything else is two-way and the maintainer decides it.
    Evidence: `crates/sealed_pair/Cargo.toml` lines 13 to 19; `notes/releasable-crates-2026-10-07/inventory.md`
    row `sealed_pair` (class C, graph `measured_boot, nifefs`); the second direction in
    `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`.
-   Change: none in this crate. Record the order: `nifefs` and `measured_boot` first, then this
-   crate with or after `uefi_loader` (decision A).
+   Change: none in this crate. Decision A rules the order: `nifefs` and `measured_boot` first,
+   then this crate with or after `uefi_loader`. It gets no repository now.
    Door: one-way (a repository). Effort: none here.
 
 ### P1: before the move, and one before the next bench evening
@@ -109,7 +109,7 @@ a repository); everything else is two-way and the maintainer decides it.
    One test with one bad line beside a good console line, asserting that the console is not named.
    Door: two-way. Effort: S.
 
-4. The crate does not stand alone, in the ten ways the template's checker lists. LEFT: move preparation waits on Decision A.
+4. The crate does not stand alone, in the ten ways the template's checker lists. LEFT: move preparation waits for the move, which Decision A orders after `nifefs`, `measured_boot` and `uefi_loader`.
    Finding: `standalone.py` reports no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, a license
    field inherited from the workspace, and no `rust-version`. It also reports `publish = false` with
    a comment that points at `crates/publish-allowlist.txt`, `lints.workspace = true`, five lines
@@ -194,12 +194,11 @@ a repository); everything else is two-way and the maintainer decides it.
 
 The P2 items are in [the appendix](1107-sealed-pair-outside-review/later-items.md).
 
-## Decisions for the architect
+## Decisions
 
-The one-way doors, each with the background first and a recommendation, and the two names of B,
-which the maintainer decides provisionally.
+The architect ruled A. The maintainer decided B's two names provisionally.
 
-### A. Whether `sealed_pair` leaves at all, and in whose company
+### A. When `sealed_pair` leaves, and in whose company
 
 Background. The crate is class C in the inventory: bound to this tree's formats. Its two
 dependencies are the kernel's archive format and the kernel's measured-boot primitive, neither of
@@ -207,13 +206,13 @@ which has a repository. Its two readers are `xtask` (the card checker) and `uefi
 script. Its vocabulary is this tree's: the progenitor, the console, `MEASURED BOOT REFUSED`. The
 standing rule is that a crate gets a repository of its own when it is publishable or used by more
 than one repository, and otherwise stays with the package that uses it. Whether more
-than one repository uses it depends on where `uefi_loader` and `xtask` end up, which is not yet ruled.
+than one repository uses it depends on how many kernels there are.
 
-Recommendation. Do not create a repository for `sealed_pair` now. Record that it leaves after
-`nifefs` and `measured_boot`, with or after `uefi_loader`, and only if `uefi_loader` and the card
-checker land in different repositories. If they land together, it moves into that repository as a
-module and never publishes. Nothing in the crate needs a repository to get fixed; items 2 to 10
-land here.
+Ruled 2026-11-16 (UTC). `sealed_pair` gets no repository now. It leaves after `nifefs`
+and `measured_boot`, with or after `uefi_loader`. With more than one kernel, the expectation is that
+it becomes a crate of its own, used by several repositories. If only one repository ends up using
+it, it moves into that repository as a module and never publishes. Nothing in the crate needs a
+repository to get fixed; items 2 to 10 land here.
 
 Prior art. systemd keeps `systemd-measure` inside the systemd repository beside `ukify`, the tool
 that builds what it measures; Android keeps `avbtool` in the `avb` repository with the library it
@@ -266,10 +265,10 @@ The checks are in [the appendix](1107-sealed-pair-outside-review/done-when.md).
 
 ## Follow-on
 
-What is left of this review: Decision A waits on the architect, the maintainer has decided
-Decision B, provisionally, and the items marked LEFT in the appendices wait on them or on a lane of their own.
+What is left of this review: the architect has ruled Decision A, the maintainer has decided Decision B,
+provisionally, and the items marked LEFT in the appendices wait on the move or on a lane of their own.
 
-- **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 wait on Decision A.
+- **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 follow the order Decision A rules.
 - **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
 - **Done.** Items 6, 9, 13 and 14: `AUTHORITY_NOTICE` and `build` are the provisional names of
   Decision B, a measurement shows `contains` is fast enough, and one proof covers it.

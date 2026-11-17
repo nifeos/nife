@@ -182,15 +182,15 @@ and priced it is notes/redoxfs-audit.md).
   `script/vendor-verify` asks the different question those cannot: not "does it still build" but
   "is this tree what we say it is".
 
-## crate-workflows, at upstream commit 5d028d54f2da
+## crate-workflows, at upstream commit cf2e8e6b4464
 
 The naming gates every repository shares, from `nifeos/crate-workflows`, the template that crate
 and package repositories call. A gate that is not specific to nife lives once, there; nife carries
 a pinned copy so it runs the same words as the crates do, and the two cannot drift.
 
-- **Source:** GitHub's archive of upstream commit `5d028d54f2da8df1ac1950656a8a8d73cd4e7b4c` (main). The
+- **Source:** GitHub's archive of upstream commit `cf2e8e6b4464d80a727223f0cfb5dcb8589c7b0d` (main). The
   pin's sha256 is of the archive's uncompressed tar stream,
-  `3194977606fe8859d2c051ec494e61cc039cce6bf49d12a096a7c37344990101`.
+  `71a12969468b941783e417e7891cddf2b4c909d646cd3890c68e236cde996b6f`.
 - **What is vendored:** only the pin's `include` list: `helpers/naming_words.toml` (the words),
   `helpers/rust_names.py` (the Rust lexer), the checks `helpers/spelled_out.py`,
   `helpers/unit_symbols.py`, `helpers/british_spelling.py`, `helpers/service_model.py`,

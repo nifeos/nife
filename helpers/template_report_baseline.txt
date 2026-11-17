@@ -37,7 +37,7 @@ capability_manifest_note register_names 5
 capability_plan abbreviations 35
 capability_plan prose_acronyms 4
 capability_plan register_names 1
-capability_table abbreviations 6
+capability_table abbreviations 3
 capability_table prose_acronyms 2
 capability_witness_contract prose_acronyms 2
 clock_contract abbreviations 15
@@ -85,10 +85,10 @@ domain_name_resolution_contract abbreviations 7
 domain_name_resolution_contract prose_acronyms 10
 domain_name_resolution_contract readme_acronyms 1
 domain_name_resolution_contract register_names 4
-domain_name_system abbreviations 30
-domain_name_system prose_acronyms 16
-domain_name_system readme_acronyms 8
-domain_name_system register_names 6
+domain_name_system abbreviations 29
+domain_name_system prose_acronyms 13
+domain_name_system readme_acronyms 4
+domain_name_system register_names 1
 driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
@@ -147,9 +147,7 @@ intrusive_queue abbreviations 6
 intrusive_queue prose_acronyms 1
 intrusive_queue readme_acronyms 1
 intrusive_queue register_names 1
-jh7110_clock_and_reset abbreviations 59
-jh7110_clock_and_reset prose_acronyms 28
-jh7110_clock_and_reset register_names 5
+jh7110_clock_and_reset abbreviations 56
 jh7110_clock_and_reset_contract abbreviations 1
 jh7110_clock_and_reset_devices abbreviations 1
 jh7110_watchdog abbreviations 15
@@ -183,7 +181,7 @@ measured_boot prose_acronyms 7
 measured_boot readme_acronyms 1
 measured_boot register_names 3
 memory_corruption_canary_gate abbreviations 2
-memory_region_heap abbreviations 4
+memory_region_heap abbreviations 2
 memory_region_heap prose_acronyms 1
 memory_region_heap readme_acronyms 1
 memory_regions abbreviations 25
@@ -317,9 +315,8 @@ video_terminal prose_acronyms 17
 video_terminal readme_acronyms 4
 video_terminal register_names 3
 virtio abbreviations 98
-virtio prose_acronyms 17
-virtio readme_acronyms 2
-virtio register_names 6
+virtio prose_acronyms 15
+virtio register_names 5
 vmstat abbreviations 5
 walk_pricing abbreviations 17
 walk_pricing prose_acronyms 1
