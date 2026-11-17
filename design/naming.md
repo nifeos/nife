@@ -96,8 +96,8 @@ megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbo
   `_DO_NOT_OVERLAP` (no leading `THE_`). A limit opens `MAXIMUM_` or `MINIMUM_` and ends with its
   unit.
 - An address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location.
-  An IPv4 or IPv6 address is qualified by its protocol (`IPV4_ADDRESS`, `ipv6_address`), and the
-  `register_names` gate accepts that qualifier; a bare `ADDRESS` is still refused. Ruled 2026-11-16 (UTC).
+  An IPv4 or IPv6 address carries its protocol as the qualifier (`IPV4_ADDRESS`, `ipv6_address`), and
+  the `register_names` gate accepts that; a bare `ADDRESS` still fails. Calef ruled this 2026-11-16 (UTC).
 
 ## Vocabulary
 
