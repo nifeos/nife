@@ -133,7 +133,7 @@ shell has allocated nothing, so the slot holds exactly what its builder placed t
 a frame or a region this shell retyped could have landed in it. The shell probes it instead of
 taking it as an argument, because role, directory rights and clock slot already use `x0` to `x2`. A
 named slot is how this tree already places an authority a program looks for
-(`grant_plan::NETWORK_SLOT`). Holding it changes one thing: an image request claims it and sends one
+(`grant_contract::NETWORK_SLOT`). Holding it changes one thing: an image request claims it and sends one
 message on it, so a digest miss runs with only what the line granted instead of ending in a refusal.
 It carries no `GRANT`, so the shell cannot hand it on.
 

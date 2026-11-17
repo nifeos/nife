@@ -55,7 +55,7 @@ report from `0x3f` into `0x3d`.
 
 ## The shell expands before it plans, and that changed `plan_against`
 
-The shell expands first, as Unix does. The consequence is structural: `grant_plan::plan` must see the expanded set rather than the pattern,
+The shell expands first, as Unix does. The consequence is structural: `program_table::plan` must see the expanded set rather than the pattern,
 since the endowment is the set.
 
 `plan_against` used to fill its slots by splitting a slice of tokens. It now fills them by index,

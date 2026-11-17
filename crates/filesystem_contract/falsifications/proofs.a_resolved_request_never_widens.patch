@@ -2,7 +2,7 @@ Falsifies `filesystem_contract::proofs::a_resolved_request_never_widens`.
 
 The defect: `Rights::resolve` answers every right for the sentinel instead of the parent's own.
 
-Expected to fail: `assert!(child.bits() & !parent.bits() == 0)` for a parent that lacks a right.
+Expected to fail: `assert!(parent.resolve(dir::PARENT_RIGHTS) == parent.bits())`, since the sentinel answers every right and not the parent's own. The first assertion cannot see this defect, because `attenuate` masks the answer.
 
 diff --git a/crates/filesystem_contract/src/dir.rs b/crates/filesystem_contract/src/dir.rs
 --- a/crates/filesystem_contract/src/dir.rs

@@ -55,7 +55,7 @@ pub struct Block {
 }
 
 // A block's own free must not land in the cache it holds (`free_own_block`).
-const _: () = assert!(size_of::<Block>() > crate::sys::alloc::nife::allocation_cache::LARGEST);
+const _: () = assert!(size_of::<Block>() > crate::sys::alloc::nife::allocation_cache::MAXIMUM_CLASS_BYTES);
 
 fn layout() -> Layout {
     Layout::new::<Block>()

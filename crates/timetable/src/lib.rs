@@ -1,6 +1,6 @@
 //! **`timetable`: a cron whose every entry is a grant** (milestone 129).
 //!
-//! An entry is a schedule plus a grant expression, checked at registration by [`grant_plan::plan`]
+//! An entry is a schedule plus a grant expression, checked at registration by [`program_table::plan`]
 //! as the shell checks a prompt line, into the [`Endowment`](grant_plan::Endowment) its child will
 //! hold, printable before anything fires. Registration answers with an [`Admission`]: it fires, its
 //! program's manifest refuses it, or this scheduler holds nothing to back it, which is fixed at the

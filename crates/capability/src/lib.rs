@@ -129,6 +129,30 @@ pub struct Capability<O> {
     pub rights: Rights,
 }
 
+impl<O: Copy> Capability<O> {
+    /// **Pass this capability on with `rights`, or refuse.** The one delegation rule: the holder
+    /// must hold [`Rights::GRANT`], and the copy may only narrow. The copy names the same object.
+    /// [`CapabilityTable::derive`] files the result, and an owner that reads its source under a
+    /// lock of its own calls this on what it read, so the rule has one body.
+    ///
+    /// Without `GRANT` the answer is [`Error::GrantRequired`], whatever `rights` asks for. With it,
+    /// asking for a right the source lacks is [`Error::CannotWiden`], not a silent clamp.
+    ///
+    /// Name: provisional (`delegate`, `GrantRequired`).
+    pub fn delegate(&self, rights: Rights) -> Result<Capability<O>, Error> {
+        if !self.rights.allows(Rights::GRANT) {
+            return Err(Error::GrantRequired);
+        }
+        if !rights.is_subset_of(self.rights) {
+            return Err(Error::CannotWiden);
+        }
+        Ok(Capability {
+            object: self.object,
+            rights,
+        })
+    }
+}
+
 impl<O> Capability<O> {
     /// **Mint a fresh capability to `object` with exactly this one's rights.** The mint site for
     /// authority created outside [`CapabilityTable::derive`], such as carving a child budget out of
@@ -199,8 +223,14 @@ pub enum Error {
     NoSuchSlot,
     /// You asked to derive a capability with rights you do not hold.
     CannotWiden,
+    /// **The capability may not be passed on.** Its holder lacks [`Rights::GRANT`]. Provisional
+    /// name.
+    GrantRequired,
     /// The table is full.
     NoFreeSlot,
+    /// **The slot asked for is already occupied.** Distinct from [`NoFreeSlot`](Self::NoFreeSlot),
+    /// which says the whole table is full. Provisional name.
+    SlotOccupied,
 }
 
 impl core::fmt::Display for Error {
@@ -208,7 +238,9 @@ impl core::fmt::Display for Error {
         f.write_str(match self {
             Error::NoSuchSlot => "the slot is empty or out of range",
             Error::CannotWiden => "the rights asked for are not all held",
+            Error::GrantRequired => "the capability may not be passed on",
             Error::NoFreeSlot => "the table is full",
+            Error::SlotOccupied => "the slot is already occupied",
         })
     }
 }
@@ -381,8 +413,11 @@ impl<O: Copy, const N: usize> Default for CapabilityTable<O, N> {
 }
 
 impl<O: Copy, const N: usize> CapabilityTable<O, N> {
-    /// The table's fixed capacity, `N`. Never changes; a capability table's size is part of its type.
-    pub const fn len(&self) -> usize {
+    /// The table's fixed capacity, `N`: how many slots it has, occupied or not. Never changes; a
+    /// capability table's size is part of its type. [`used`](Self::used) counts the occupied ones.
+    ///
+    /// Name: provisional, from `len`, which in std counts the elements held.
+    pub const fn capacity(&self) -> usize {
         N
     }
 
@@ -397,19 +432,6 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
         // `2^32 + k` name slot `k` where `usize` is 32 bits.
         let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
         self.slot(slot).ok_or(Error::NoSuchSlot)
-    }
-
-    /// Look up a slot and require rights.
-    ///
-    /// Returns [`Error::NoSuchSlot`] for an empty slot even when the caller wanted rights, which
-    /// is deliberate: **"you may not" and "there is nothing there" are different answers**, and
-    /// the second one leaks less.
-    pub fn get_with(&self, slot: u64, needed: Rights) -> Result<Capability<O>, Error> {
-        let capability = self.get(slot)?;
-        if !capability.rights.allows(needed) {
-            return Err(Error::CannotWiden);
-        }
-        Ok(capability)
     }
 
     /// Put a capability in the first free slot. Used at spawn, to hand a process its world, and
@@ -446,13 +468,15 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
             return Err(Error::NoSuchSlot);
         }
         if self.slot(slot as usize).is_some() {
-            return Err(Error::NoFreeSlot);
+            return Err(Error::SlotOccupied);
         }
         self.fill(slot as usize, capability);
         Ok(slot)
     }
 
-    /// Put a capability in a specific slot, replacing whatever was there.
+    /// Put a capability in a specific slot, replacing whatever was there. This is the door for
+    /// building a table to a known shape (a loader, the proof builder); it consults no rights, so
+    /// authority moves through [`derive`](Self::derive) and not through this.
     pub fn put(&mut self, slot: u64, capability: Capability<O>) -> Result<(), Error> {
         let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
         self.fill(slot, capability).ok_or(Error::NoSuchSlot)?;
@@ -461,23 +485,13 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 
     /// **Copy a capability into another slot, with rights that are no greater.**
     ///
-    /// The only way authority moves. Asking for rights the source slot does not hold is
+    /// The only way authority moves between slots, by [`Capability::delegate`]: the source must
+    /// hold [`Rights::GRANT`] ([`Error::GrantRequired`]), and asking for rights it does not hold is
     /// [`Error::CannotWiden`], not a silent clamp: a loader that quietly grants less than was asked
     /// for is a loader nobody can reason about.
     pub fn derive(&mut self, from: u64, to: u64, rights: Rights) -> Result<(), Error> {
-        let source = self.get(from)?;
-
-        if !rights.is_subset_of(source.rights) {
-            return Err(Error::CannotWiden);
-        }
-
-        self.put(
-            to,
-            Capability {
-                object: source.object,
-                rights,
-            },
-        )
+        let copy = self.get(from)?.delegate(rights)?;
+        self.put(to, copy)
     }
 
     /// Drop a capability. The object may still exist; **we simply can no longer name it.**
@@ -485,6 +499,25 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
         let slot = usize::try_from(slot).map_err(|_| Error::NoSuchSlot)?;
         self.empty(slot).ok_or(Error::NoSuchSlot)?;
         Ok(())
+    }
+
+    /// **The occupied slots, lowest first, as `(slot, capability)`**: a read-only walk that costs a
+    /// table's occupancy and not its capacity, because it follows the occupied mask as
+    /// [`delete_matching`](Self::delete_matching) does.
+    ///
+    /// Name: provisional.
+    pub fn iter(&self) -> impl Iterator<Item = (u64, Capability<O>)> + '_ {
+        let mut occupied = self.occupied_mask();
+        core::iter::from_fn(move || {
+            while occupied != 0 {
+                let slot = occupied.trailing_zeros() as usize;
+                occupied &= occupied - 1; // clear the lowest set bit; each slot visited once
+                if let Some(capability) = self.slot(slot) {
+                    return Some((slot as u64, capability));
+                }
+            }
+            None
+        })
     }
 
     /// Delete every occupied slot whose object satisfies `matches`, in place: the revocation
@@ -799,7 +832,7 @@ mod verification {
     /// Falsification: replayable `crates/capability/falsifications/verification.derive_never_widens_rights.patch`
     #[kani::proof]
     fn derive_never_widens_rights() {
-        let src_rights = Rights(kani::any());
+        let source_rights = Rights(kani::any());
         let requested = Rights(kani::any());
 
         let mut cs: CapabilityTable<u8, 2> = CapabilityTable::new();
@@ -807,7 +840,7 @@ mod verification {
             0,
             Capability {
                 object: 0u8,
-                rights: src_rights,
+                rights: source_rights,
             },
         )
         .unwrap();
@@ -819,12 +852,12 @@ mod verification {
             // In raw bits, not through `is_subset_of`: `derive` guards on that predicate, so a
             // claim phrased through it would hold for any consistently wrong `is_subset_of`.
             assert_eq!(
-                derived.rights.0 & !src_rights.0,
+                derived.rights.0 & !source_rights.0,
                 0,
                 "a derived capability holds a right the source did not",
             );
             assert_eq!(
-                requested.0 & !src_rights.0,
+                requested.0 & !source_rights.0,
                 0,
                 "a request wider than the source got past the guard",
             );
@@ -832,6 +865,42 @@ mod verification {
             // less. Field equality, so no predicate stands between the claim and the bits.
             assert_eq!(derived.rights.0, requested.0);
             assert_eq!(derived.object, 0u8);
+        }
+    }
+
+    /// **Delegation needs `GRANT`, and never widens.** For every one of the 2^32 source rights and
+    /// every request, `delegate` succeeds only when the source held the `GRANT` bit and the copy's
+    /// bits sit inside the source's, and the copy holds exactly what was asked. The other way too:
+    /// a source with `GRANT` and a request inside it is never refused. Stated in raw bits, as
+    /// `derive_never_widens_rights` is, so no predicate of the crate stands between the claim and
+    /// the bits.
+    /// Falsification: replayable `crates/capability/falsifications/verification.delegation_needs_grant_and_never_widens.patch`
+    #[kani::proof]
+    fn delegation_needs_grant_and_never_widens() {
+        const GRANT_BIT: u32 = 1 << 2;
+        let source = Capability {
+            object: 5u8,
+            rights: Rights(kani::any()),
+        };
+        let requested = Rights(kani::any());
+
+        match source.delegate(requested) {
+            Ok(copy) => {
+                assert_ne!(
+                    source.rights.0 & GRANT_BIT,
+                    0,
+                    "a capability without GRANT was passed on"
+                );
+                assert_eq!(copy.rights.0 & !source.rights.0, 0);
+                assert_eq!(copy.rights.0, requested.0);
+                assert_eq!(copy.object, 5u8);
+            }
+            Err(Error::GrantRequired) => assert_eq!(source.rights.0 & GRANT_BIT, 0),
+            Err(Error::CannotWiden) => {
+                assert_ne!(source.rights.0 & GRANT_BIT, 0);
+                assert_ne!(requested.0 & !source.rights.0, 0);
+            }
+            Err(_) => panic!("delegate gave an answer it has no reason for"),
         }
     }
 

@@ -71,7 +71,8 @@ globally_unique_identifier_partition_table = { path = "../crates/globally_unique
 http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
-grant_plan = { path = "../crates/grant_plan" }
+grant_contract = { path = "../crates/grant_contract" }
+program_table = { path = "../crates/program_table" }
 domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
 package_index = { path = "../crates/package_index" }
 video_terminal = { path = "../crates/video_terminal" }

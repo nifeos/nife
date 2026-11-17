@@ -97,4 +97,7 @@ fn a_resolved_request_never_widens() {
     let requested: u64 = kani::any();
     let child = parent.attenuate(parent.resolve(requested));
     assert!(child.bits() & !parent.bits() == 0);
+    // `attenuate` masks whatever `resolve` answers, so the line above alone cannot see `resolve`
+    // widen. The sentinel is the one word `resolve` rewrites, and it must become the parent's own.
+    assert!(parent.resolve(dir::PARENT_RIGHTS) == parent.bits());
 }

@@ -6,7 +6,7 @@ also edits `before-the-tag.md`, so the rows for items 5 to 14 live here and not 
 
 | item | state | where |
 |---|---|---|
-| 1 split the catalog from the planner | LEFT | the first decision, where the crate boundary falls |
+| 1 split the catalog from the planner | DONE | `grant_contract` and `program_table` leave `grant_plan`, built by lane milestone/1094-grant-plan-split |
 | 2 documentation builds | DONE | `pack_name` is plain code in `ASK_NETWORK`'s doc, and `cargo doc` runs clean; the repository's documentation gate flag belongs to the move |
 | 3 manifest and repository root | LEFT | follows the boundary: the description and the dev-dependency change with the split |
 | 4 tokenizer drops a token | DONE | pull request 3559 |

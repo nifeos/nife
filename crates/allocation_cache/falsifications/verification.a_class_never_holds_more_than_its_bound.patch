@@ -1,0 +1,20 @@
+Falsifies `allocation_cache::verification::a_class_never_holds_more_than_its_bound`.
+
+The defect: `push` refuses a block only past the bound, not at it, so a class holds one block more
+than `BLOCKS_PER_CLASS`.
+
+Expected to fail: the harness's claim that the push after the bound is refused and handed back.
+
+diff --git a/crates/allocation_cache/src/lib.rs b/crates/allocation_cache/src/lib.rs
+index 5558eb4ef..b1f47d9ea 100644
+--- a/crates/allocation_cache/src/lib.rs
++++ b/crates/allocation_cache/src/lib.rs
+@@ -284,7 +284,7 @@ impl Cache {
+     /// crate documentation says so.
+     #[doc(alias = "tcache_put")]
+     pub unsafe fn push(&mut self, class: Class, block: NonNull<u8>) -> Result<(), NonNull<u8>> {
+-        if self.count(class) >= BLOCKS_PER_CLASS {
++        if self.count(class) > BLOCKS_PER_CLASS {
+             return Err(block);
+         }
+         // The caller promises `GRID_BYTES` alignment, which is at least a `Free`'s.

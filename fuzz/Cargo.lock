@@ -97,7 +97,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -253,7 +253,7 @@ dependencies = [
  "domain_name_system",
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
- "grant_plan",
+ "grant_contract",
  "http_response",
  "libfuzzer-sys",
  "line_editor",
@@ -261,6 +261,7 @@ dependencies = [
  "nifefs",
  "package_archive",
  "package_index",
+ "program_table",
  "redoxfs",
  "redoxfs_server",
  "static_elf",
@@ -302,10 +303,18 @@ name = "glyph_atlas"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
@@ -350,8 +359,8 @@ version = "0.1.0"
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.2.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
+version = "0.3.0-pre.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
 
 [[package]]
 name = "jobserver"
@@ -495,6 +504,14 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "quote"
