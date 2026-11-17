@@ -9,12 +9,13 @@ use domain_name_system::Name;
 
 use super::*;
 
-/// How many control messages a run holds. Four reach a fresh grant, a re-grant over it, a piece
-/// out of order and a forget, and each zone piece is eight bytes, so a zone of up to 32 bytes can
-/// complete.
-const STEPS: usize = 4;
+/// How many control messages a run holds. Two reach a fresh grant, a re-grant over it, a piece out
+/// of order after a first piece, and a forget after a grant, and each zone piece is eight bytes, so
+/// a zone of up to 32 bytes can complete. A third message made the proof outrun its twenty-minute
+/// shard, so the run stays at two.
+const STEPS: usize = 2;
 
-/// **Any run of up to four control messages, from an empty table, never panics, and the table
+/// **Any run of up to two control messages, from an empty table, never panics, and the table
 /// grants only what it said it granted.** Each message is two free words, so its operation, offset,
 /// total and badge are all free. After each one:
 ///
