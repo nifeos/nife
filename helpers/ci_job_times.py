@@ -88,7 +88,9 @@ per-build row. The fold is idempotent, since a row that is already folded passes
 
 For each job, the newest `HISTORY` merge-group runs that ran it. When the newest is at or past
 `WARN_FRACTION` of the job's budget and no issue is open for the job, it opens one, labeled `LABEL`.
-While one is open it rewrites the issue's body on every pass with the recent runs, so the same issue
+An open issue is found by the marker in its body, never by the label, because an issue the App opens
+can come out unlabelled; a job with two open issues keeps the newest and closes the rest with a
+comment naming it. While one is open it rewrites the issue's body on every pass with the recent runs, so the same issue
 is updated rather than a second opened. It closes the issue when the newest `CLOSE_AFTER` runs are
 all under the line. While an issue is open, it appends one row a week to week-notes.csv, which
 `script/metrics` draws as a bullet under `ci-jobs.svg` (milestone 623 (bullet under the chart
@@ -831,15 +833,35 @@ def fold(argv):
     return 0
 
 
-def open_budget_issues():
-    """{job: issue number} for the open issues carrying LABEL and this script's marker."""
-    data = gh_json("repos/%s/issues?labels=%s&state=open&per_page=100" % (REPO, LABEL))
-    out = {}
-    for issue in data:
+def group_budget_issues(issues):
+    """({job: surviving issue number}, [(job, older duplicate, survivor)]) from open issues.
+
+    An issue counts when its body carries this script's marker and it is not a pull request. The
+    label is not part of the test: an issue opened by the App can come out without it (a token
+    without triage rights has its labels dropped), and a pass that filtered on the label then
+    opened a second issue for the same job. When one job has several, the newest survives."""
+    found = {}
+    for issue in issues:
         m = re.search(r"<!-- ci-job-times:job=([A-Za-z0-9_-]+) -->", issue.get("body") or "")
         if m and "pull_request" not in issue:
-            out[m.group(1)] = issue["number"]
-    return out
+            found.setdefault(m.group(1), []).append(issue["number"])
+    survivors, duplicates = {}, []
+    for job, numbers in found.items():
+        numbers.sort()
+        survivors[job] = numbers[-1]
+        duplicates += [(job, n, numbers[-1]) for n in numbers[:-1]]
+    return survivors, sorted(duplicates)
+
+
+def open_budget_issues():
+    """What group_budget_issues makes of every open issue, read page by page."""
+    issues, page = [], 1
+    while True:
+        data = gh_json("repos/%s/issues?state=open&per_page=100&page=%d" % (REPO, page))
+        issues += data
+        if len(data) < 100:
+            return group_budget_issues(issues)
+        page += 1
 
 
 def sync(argv):
@@ -857,7 +879,14 @@ def sync(argv):
                     reverse=True)
     for share, key in shares[:5]:
         print("ci_job_times: %s's newest merge-group run took %.0f%% of its budget" % (key, share * 100))
-    issues = open_budget_issues()
+    issues, duplicates = open_budget_issues()
+    for job, older, survivor in duplicates:
+        if dry:
+            print("ci_job_times: (dry run) would close duplicate #%d for %s" % (older, job))
+            continue
+        gh("issue", "close", str(older), "--repo", REPO, "--comment",
+           "Closed by `helpers/ci_job_times.py sync`: a duplicate for `%s`. #%d is the one kept." % (job, survivor))
+        print("ci_job_times: CLOSED duplicate #%d for %s, kept #%d" % (older, job, survivor))
     week = week_of(datetime.datetime.now(datetime.timezone.utc).date())
     notes = open(WEEK_NOTES).read() if os.path.exists(WEEK_NOTES) else ""
     for action, key, detail in decide(hist, issues, budgets):
@@ -1001,6 +1030,12 @@ def selftest():
            [("update", "test", 77)])
     expect("three runs under close", decide(runs_at([16, 15, 16.5, 18]), {"test": 77}, {}),
            [("close", "test", 77)])
+    marked = lambda n, job, **kw: dict({"number": n, "body": MARKER % job + "\ntext"}, **kw)
+    expect("an unlabelled marked issue is found, and the newer duplicate survives",
+           group_budget_issues([marked(3681, "swish-check"), marked(3651, "swish-check"),
+                                marked(5, "prove"), {"number": 6, "body": "no marker"},
+                                marked(7, "prove", pull_request={})]),
+           ({"swish-check": 3681, "prove": 5}, [("swish-check", 3651, 3681)]))
     expect("a raised budget moves the line", decide(runs_at([18, 16, 15]), {}, {"test": 24}), [])
 
     body = issue_body("test", runs_at([18, 16])["test"], {}, [("Run script/ci-build test", 600.0)])
