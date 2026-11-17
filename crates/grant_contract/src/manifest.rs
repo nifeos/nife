@@ -449,7 +449,7 @@ pub enum DirectoryGrantDeclaration {
 
 impl Manifest {
     /// Whether the manifest agrees with itself. Today that is one rule: a directory grant that
-    /// names a widening option declares that option, since [`plan`](crate::plan) reads an
+    /// names a widening option declares that option, since `grant_plan::plan` reads an
     /// undeclared one as "no widening" and says nothing. A manifest that fails here is a bug in
     /// whoever wrote it, and a caller that builds manifests checks this before planning.
     ///
