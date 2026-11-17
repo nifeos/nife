@@ -93,8 +93,8 @@ The P1 items are in [the appendix](1077-allocation-cache-outside-review/before-t
 
 ## Decisions for the architect
 
-Each is plain background first, the recommendation, then prior art and one example. Decision 1 is
-ruled. Decisions 2 and 3 are two-way before the first tag, and the maintainer has decided them,
+Each is plain background first, the recommendation, then prior art and one example. The architect
+ruled decision 1. Decisions 2 and 3 are two-way before the first tag, and the maintainer has decided them,
 provisionally.
 
 ### Decision 1: Whether the crate gets a repository of its own
@@ -181,13 +181,13 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The move's items 1 (the repository fields), 3, 10 and 11, which wait for the
-  `runtime` package's move, since decision 1 is ruled. Decisions 2 and 3 are built provisionally in the tree: `Class`, `MAXIMUM_CLASS_BYTES` and
+  `runtime` package's move, since the architect ruled decision 1. Decisions 2 and 3 are built provisionally in the tree: `Class`, `MAXIMUM_CLASS_BYTES` and
   `push` exist, and the crate has five harnesses, the three models of `push` and `pop` among them.
   If decision 2 or 3 is ruled otherwise, items 7 and 4 are redone in one pass.
 
 ## BUGS
 
-- Decision 1 is ruled: the crate stays with its package, so items 3, 10 and 11 apply to the
+- The architect ruled decision 1: the crate stays with its package, so items 3, 10 and 11 apply to the
   `runtime` package's repository when it leaves, and items 1, 2 and 4 to 9 land in this tree.
 - The prior-art table's bin counts and depths come from memory, unverified. The shapes (a cache per owner, a batch under the lock, a flush at the owner's end) are the point, and one sitting
   with each source settles the figures.
@@ -206,5 +206,5 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 
 An outside review of `allocation_cache` before any move. Three items would turn the new
 repository's first pull request red or stop the `std` farm, six land before the first tag, and six
-follow later. The six cover three arithmetic edges on bare `usize` indices and a zeroed-is-empty contract the consumer relies on. They also cover the owner's obligations `put` leaves unstated, five constant names without units or things, the absence of any proof, and an alignment the code relies on without asserting. Decision 1 is ruled (the crate moves with the `runtime` package, not on its own). Decisions 2 and 3, the
+follow later. The six cover three arithmetic edges on bare `usize` indices and a zeroed-is-empty contract the consumer relies on. They also cover the owner's obligations `put` leaves unstated, five constant names without units or things, the absence of any proof, and an alignment the code relies on without asserting. The architect ruled decision 1 (the crate moves with the `runtime` package, not on its own). Decisions 2 and 3, the
 crate and constant names and a `Class` newtype in the public signatures, are provisional maintainer calls.
