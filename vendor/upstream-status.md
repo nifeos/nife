@@ -17,11 +17,11 @@ the pins in this directory were taken deliberately. What to do about a gap is in
 
 ## crate-workflows
 
-Pinned at upstream git commit `5d028d54f2da`; no registry carries it.
+Pinned at upstream git commit `cf2e8e6b4464`; no registry carries it.
 
 **Upstream git: 15 non-merge commits** since the pinned sha (plus 4 merge commits, dropped), head `4d9eea223eda`.
 
-Full comparison: https://github.com/nifeos/crate-workflows/compare/5d028d54f2da8df1ac1950656a8a8d73cd4e7b4c...main
+Full comparison: https://github.com/nifeos/crate-workflows/compare/cf2e8e6b4464d80a727223f0cfb5dcb8589c7b0d...main
 
 - 2026-11-14 `10602beb00a` Add crate_info, the one place that says what a crate is
 - 2026-11-14 `8bf6516991b` Name the semver baseline from the crate's own release tags
