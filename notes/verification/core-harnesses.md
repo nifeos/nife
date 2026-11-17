@@ -29,7 +29,7 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Twelve in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Thirteen in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
 longer live; the table names those two and the eight that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
@@ -96,7 +96,7 @@ the host and kernel tests.
 
 ## `crates/page_frames`
 
-Six in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the physical frame allocator:
+Nine in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the physical frame allocator:
 
 | Harness | Property |
 |---|---|

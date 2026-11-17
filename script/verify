@@ -496,6 +496,7 @@ address_space_layout	3	the user address-space map: every address in exactly one 
 allocation_cache	1	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 byte_sink_contract	10	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	0	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
+program_argument_contract	60	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
 device_tree_blob	206	the device-tree parser's leaf readers
 inter_process_communication	12	the rendezvous state machine
 intrusive_queue	9	the scheduler's queue structure

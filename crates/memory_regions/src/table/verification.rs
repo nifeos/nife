@@ -13,6 +13,9 @@ use super::{COUNTED_KINDS, Ceilings, ObjectKind, Region, RegionTable, Spent, ent
 /// What the subtree-ceiling harnesses in `proofs.rs` compare before and after a refusal.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct RegionSnapshot {
+    pub(crate) base_page: u64,
+    pub(crate) pages: u64,
+    pub(crate) retyped_to: u64,
     pub(crate) watermark: u64,
     pub(crate) pinned: bool,
     pub(crate) children: u32,
@@ -25,6 +28,9 @@ impl<const N: usize> RegionTable<N> {
     /// Every field a charge, a split or a carve could move, for a live name.
     pub(crate) fn snapshot(&self, name: u64) -> Option<RegionSnapshot> {
         self.table.get(entry(name)).map(|r| RegionSnapshot {
+            base_page: r.base_page,
+            pages: r.pages,
+            retyped_to: r.retyped_to,
             watermark: r.watermark,
             pinned: r.pinned,
             children: r.children,

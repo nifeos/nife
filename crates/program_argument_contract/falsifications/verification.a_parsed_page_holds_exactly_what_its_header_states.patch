@@ -1,0 +1,20 @@
+Falsifies `program_argument_contract::verification::a_parsed_page_holds_exactly_what_its_header_states`.
+
+The defect: the record walk reads to the end of the page instead of to the `total` the header
+states, so bytes after the records count as records whenever they happen to parse.
+
+Expected to fail: the harness's `assert_eq!(sum, total)`, on a page whose trailing bytes form
+whole records beyond `total`.
+
+diff --git a/crates/program_argument_contract/src/lib.rs b/crates/program_argument_contract/src/lib.rs
+--- a/crates/program_argument_contract/src/lib.rs
++++ b/crates/program_argument_contract/src/lib.rs
+@@ -186,7 +186,7 @@
+         if total > room {
+             return None;
+         }
+-        let records = &page[HEADER_BYTES..HEADER_BYTES + total];
++        let records = &page[HEADER_BYTES..];
+         // Walk every record now, so the iterator below can never meet a length that overruns. The
+         // walk runs until the records are used up, so its bound is the slice (each record takes at
+         // least four bytes) and not a count the page chose, and the number walked must then equal
