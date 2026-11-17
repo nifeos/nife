@@ -649,7 +649,9 @@ jobs:
   # the short build checks (fastpath footprint, boot file size, stack frames, image permissions,
   # reproducible build, interleavings, coverage, supply chain). The jobs that boot kernels under
   # QEMU, fuzz, bench and probe crates, and verify.yml's proofs, run in the merge group, on a push
-  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label. Each
+  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label.
+  # verify.yml's proofs also run on a pull request that adds or changes a Kani harness (ruled
+  # 2026-11-16 UTC; helpers/harness_change.py). Each
   # of those jobs ends its `if:` with the same clause: a merge group or a push runs it by event
   # name alone, and only a gate that answered `heavy=false` (helpers/full_ci.py) skips it. A job
   # skipped by its condition reports Success, so the required names hold on a pull request
@@ -1984,6 +1986,71 @@ jobs:
       # the pre-#316 double free, so a green run also proves the search can still see a bug.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         run: script/interleaving-check
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
+  # Milestone 190 (ext4, read and write) phase 1: what `rsext4` reads from each generated image,
+  # against what `debugfs` reads, held to tools/ext4_oracle/expected.txt. The tool and its pinned
+  # `rsext4` are a workspace of their own, host-only (ruled on #3639, 2026-11-16 UTC). Measured at
+  # 25 seconds for the corpus and the fourteen comparisons on a developer machine, plus the build.
+  # It runs in every merge group and on `main`, and on a pull request only when the pull request
+  # touches the oracle itself, so an unrelated pull request pays nothing for it.
+  ext4-read-oracle:
+    name: ext4 read oracle (rsext4 against debugfs, over the generated corpus)
+    runs-on: ubuntu-26.04
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    timeout-minutes: 25
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
+      - name: On a pull request, does it touch the oracle?
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ] &&
+              git diff --quiet "$BASE_SHA" HEAD -- tools/ext4_oracle .github/workflows/ci.yml; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "ext4-read-oracle: this pull request does not touch tools/ext4_oracle; the merge group runs it"
+          fi
+      - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
+        name: Install the pinned toolchain
+        run: helpers/rustup-retry.sh toolchain install
+      # The corpus needs e2fsprogs 1.47 or later (tools/ext4_oracle/corpus/make-corpus.sh).
+      - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
+        name: Show the e2fsprogs the corpus is built with
+        run: mke2fs -V
+      - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
+        name: Lint and test the reader
+        run: |
+          cargo clippy --locked --manifest-path tools/ext4_oracle/Cargo.toml --all-targets -- -D warnings
+          cargo test --locked --manifest-path tools/ext4_oracle/Cargo.toml
+          cargo build --locked --release --manifest-path tools/ext4_oracle/Cargo.toml
+      - if: steps.merge-group-gate.outputs.skip != 'true' && steps.scope.outputs.skip != 'true'
+        name: Compare the reader with debugfs over the corpus
+        run: |
+          helpers/hang_evidence.py run -- python3 -I tools/ext4_oracle/compare.py \
+              tools/ext4_oracle/target/release/ext4_oracle "$RUNNER_TEMP/ext4-oracle"
+      # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
+      - name: Upload the hang evidence
+        if: always() && hashFiles('target/hang-evidence/**') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hang-evidence-${{ github.job }}-${{ strategy.job-index }}
+          path: target/hang-evidence/
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"

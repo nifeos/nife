@@ -118,8 +118,8 @@ are in [2026W40](swish-check-flake-2026w40.md).
 
 **The progenitor OOM (signature of #1444).** The shell prints the sentence when the progenitor
 answers with the `SPAWN_FAILED` sentinel (components/src/swish/running.rs; the sentinel is
-`u64::MAX`, crates/grant_plan/src/spawnproto.rs). A `std` program needs one contiguous
-384-page region (`STD_REGION_PAGES`, crates/grant_plan/src/manifest.rs) carved from a job pool of
+`u64::MAX`, crates/program_table/src/spawnproto.rs). A `std` program needs one contiguous
+384-page region (`STD_REGION_PAGES`, crates/program_table/src/budgets.rs) carved from a job pool of
 exactly six native regions plus one std region (`system_initializer::JOBS_BUDGET_PAGES`).
 `split_job` waits for an in-flight reap by yielding 1024 times, and its own doc calls that
 "kept on effort, and a foot gun", recording the same CI failure on 2026-09-27 (its doc in

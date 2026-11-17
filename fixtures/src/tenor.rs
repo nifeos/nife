@@ -42,7 +42,7 @@ const OUT: u64 = 0;
 const CLOCK: u64 = 1;
 
 /// **What this program asks for**: `uptime`'s output and nothing else.
-const MANIFEST: grant_plan::Manifest = grant_plan::Program::Uptime.manifest();
+const MANIFEST: grant_contract::Manifest = program_table::Program::Uptime.manifest();
 
 capability_manifest_note::carry!(MANIFEST);
 

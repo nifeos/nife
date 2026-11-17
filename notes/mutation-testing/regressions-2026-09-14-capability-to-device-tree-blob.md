@@ -174,7 +174,7 @@ The twelve real survivors sat in the parser, the admission check and the plan wr
   default `false`. A scheduler that holds a directory would have reported every `rm` line as
   unbackable. Closed by `a_designation_is_backed_by_the_directory_the_scheduler_holds`.
 - Both `!` in `unbacked`'s `!held.dir` tests (2), which have a finding under them. They survived
-  because `admit` cannot reach either branch. It hands `grant_plan::plan` the same `dir` bit that
+  because `admit` cannot reach either branch. It hands `program_table::plan` the same `dir` bit that
   `unbacked` then re-tests. So a plan needing a directory the scheduler lacks is refused during
   planning, and never reaches the check that would name it unbacked. `Unbacked::File` has a second
   reason: no shipped program declares a `FileSpec::Required`, so `Endowment::file` is `None` for

@@ -959,10 +959,8 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
         if t.used() == 0 {
             return;
         }
-        for slot in 0..t.len() as u64 {
-            if let Ok(c) = t.get(slot)
-                && let crate::capability_object::Object::Reply(caller) = c.object
-            {
+        for (_, c) in t.iter() {
+            if let crate::capability_object::Object::Reply(caller) = c.object {
                 victims[found] = caller;
                 found += 1;
             }

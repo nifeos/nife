@@ -127,9 +127,9 @@ These are code in the progenitor, and would be built as soon as both answers are
   `take_never_hands_out_a_bound_window` fails if it does.
 
 
-## The window pool: `grant_plan::job_windows`
+## The window pool: `program_table::job_windows`
 
-The pool's bookkeeping is pure logic in `crates/grant_plan/src/job_windows.rs`, so its rule is
+The pool's bookkeeping is pure logic in `crates/program_table/src/job_windows.rs`, so its rule is
 tested on the host. The progenitor holds the capabilities and does the binding.
 
 A window shared by two live jobs is the shared-channel race the pool exists to close. It is worse

@@ -14,6 +14,9 @@ workspace = true
 # implementation that could drift. `version` is required beside `path`: cargo-deny reads a
 # path-only dependency as a wildcard, and `user` depends on this crate.
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
+# The manifests an entry is planned against, and the program table a named entry resolves in.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+program_table = { version = "0.1.0", path = "../program_table" }
 # Civil-date arithmetic for calendar entries (G5): a day number to a year, month and day, and a
 # month's length. `jiff` with default features off, which needs neither std nor an allocator; the
 # dependency was ruled 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems), and
