@@ -1027,6 +1027,10 @@ def render_crate_rows(crates):
     return '\n'.join(out) + '\n'
 
 
+# How many removed or changed items one crate lists in the appendix's weekly section.
+EVENTS_LISTED_PER_CRATE = 10
+
+
 def render_appendix(rows, crates, week, events, rev, package_lines=()):
     """The per-crate appendix beside the metrics page: generated, never edited by hand."""
     weeks = sorted(rows)
@@ -1070,8 +1074,22 @@ def render_appendix(rows, crates, week, events, rev, package_lines=()):
     # so a name the American-spelling sweep has since retired (2026-10-06, helpers/house_style.py)
     # appears here spelled the only way an honest record can spell it, and a quotation keeps its
     # source's words.
+    #
+    # At most EVENTS_LISTED_PER_CRATE lines per crate, then one line saying how many more. A crate
+    # split or rename (grant_plan's, 2026W47, was 490 lines) is one fact, and the page is held to
+    # 3,000 words by helpers/prose_ratchet.py, so a week with one such event used to fail the weekly metrics lint. The counts of every
+    # change stay in interface-stability-crates.csv.
+    shown = {}
+    held_back = {}
     for crate, what, path in events:
-        out.append('> - `%s`: %s `%s`' % (crate, what, path))
+        shown[crate] = shown.get(crate, 0) + 1
+        if shown[crate] <= EVENTS_LISTED_PER_CRATE:
+            out.append('> - `%s`: %s `%s`' % (crate, what, path))
+        else:
+            held_back[crate] = held_back.get(crate, 0) + 1
+    for crate, more in held_back.items():
+        out.append('> - `%s`: and %d more removed or changed items, counted in '
+                   '[interface-stability-crates.csv](interface-stability-crates.csv)' % (crate, more))
     out += list(package_lines)
     return '\n'.join(out) + '\n'
 
@@ -1410,6 +1428,11 @@ def selftest():
          render_appendix({'2026W39': {}}, {'2026W39': {}}, '2026W39',
                          [('c', 'removed', 'X')], 'f' * 40)
          .count('> - `c`: removed `X`'), 1),
+        ('a crate that lists more than the cap says how many it left out',
+         render_appendix({'2026W39': {}}, {'2026W39': {}}, '2026W39',
+                         [('c', 'removed', 'X%d' % n) for n in range(EVENTS_LISTED_PER_CRATE + 3)],
+                         'f' * 40).count('> - `c`'),
+         EVENTS_LISTED_PER_CRATE + 1),
         ('the std abi list comes from the copy',
          std_abi_crates('root.join("crates/abi/src/lib.rs"),\nroot.join("crates/abi/src/lib.rs"),'
                         ' root.join("crates/clock_contract/src/lib.rs")'),
