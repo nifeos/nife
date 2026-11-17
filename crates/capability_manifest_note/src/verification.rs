@@ -70,6 +70,9 @@ fn decode_never_panics_through_a_serviced_descriptor() {
 /// One case of `decode_never_panics_through_a_serviced_descriptor`: a zone count of `count` and
 /// the zones' length bytes `lengths`, each placed where the walk will read it (one that falls past
 /// the last byte is left out), at every length from the fixed part to [`SERVICED_BYTES`].
+// Byte by byte on purpose: Kani keeps bytes written by index concrete, and a `copy_from_slice`
+// or `fill` makes them all symbolic.
+#[allow(clippy::needless_range_loop)]
 fn zone_walk_never_panics(count: u8, lengths: &[u8]) {
     let mut d = PLAIN_SERVICED;
     d[0] = kani::any();
@@ -109,6 +112,8 @@ fn zone_walk_never_panics(count: u8, lengths: &[u8]) {
 /// Falsification: replayable `crates/capability_manifest_note/falsifications/verification.a_decoded_verb_table_finds_each_verb.patch`
 #[kani::proof]
 #[kani::unwind(18)]
+// The version bytes are copied by index for the same reason as in `zone_walk_never_panics`.
+#[allow(clippy::manual_memcpy, clippy::needless_range_loop)]
 fn a_decoded_verb_table_finds_each_verb() {
     let mut d = [0u8; verbs_descriptor_bytes(2)];
     let version = VERBS_VERSION.to_le_bytes();
