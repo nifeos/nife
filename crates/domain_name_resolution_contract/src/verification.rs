@@ -20,12 +20,14 @@ const STEPS: usize = 2;
 /// The grant table's bookkeeping (which badge holds which window, the byte counts) does not depend
 /// on the zone's bytes, only on whether the parse said yes or no, which the stand-in for
 /// `Name::from_dotted` leaves free.
+#[allow(dead_code)] // named only by `#[kani::stub]`, which the lint pass's shim ignores
 fn text_without_validation(_bytes: &[u8]) -> Result<&str, core::str::Utf8Error> {
     Ok("")
 }
 
 /// The stand-in for `Name::from_dotted` in the bookkeeping proof: either a zone or a refusal, free.
 /// The real parse is `the_one_message_zone_parses_or_is_refused` (and the name crate's own tests).
+#[allow(dead_code)] // as above
 fn zone_without_parsing(_text: &str) -> Result<Name, domain_name_system::Error> {
     if kani::any() {
         Ok(Name::root())
