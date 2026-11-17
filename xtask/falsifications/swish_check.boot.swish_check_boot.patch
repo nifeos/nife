@@ -25,26 +25,24 @@ allowed to ask).
 Expected to fail: the `installed/unvouched` line wants `domain: refused (no capability at slot 7)`
 and `slots held: 0 1 2\n`, and the child reports `domain: REACHED` and `slots held: 0 1 2 7`.
 
-Re-cut 2026-10-15 (UTC) by the lane proving milestone 898 (`swish_check_boot` is decomposed into
-its phases): the sweep found this patch no longer compiled, because the vouch decision moved out
-of `spawn_service` into `resolve`, and `Wants::of` had no `unvouched` in scope to believe. The
-same defect, threaded through today's shape: `resolve` carries `unvouched` on `Resolved`,
-`spawn_job` passes it, and an unvouched image's domain request is believed exactly as before. Red
-again at `installed/unvouched` on aarch64, same sentence. The hunk's context cites §92 (a caretaker is supervised by the client it serves), the supervision
-the region split serves.
+The defect is threaded through today's shape: `resolve` carries `unvouched` on `Resolved`,
+`spawn_job` passes it to `Wants::of`, and an unvouched image's domain request is believed exactly as
+the manifest's own. The hunk's context cites §92 (a caretaker is supervised by the client it
+serves), the supervision the region split serves.
 
 diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initializer/src/spawn_loop.rs
+index 529530461..32e5c0148 100644
 --- a/crates/system_initializer/src/spawn_loop.rs
 +++ b/crates/system_initializer/src/spawn_loop.rs
-@@ -298,6 +298,7 @@
+@@ -302,6 +302,7 @@ struct Resolved {
+     /// grant only what the owner's approval file allows)), as the line's `--within <name>` said.
      within: [u8; 32],
      within_len: Option<usize>,
- }
 +    unvouched: bool,
+ }
  
  impl Resolved {
-     /// The verb the line's argv carried, if it carried one.
-@@ -325,9 +326,9 @@
+@@ -330,9 +331,9 @@ impl Wants {
      /// Read each declaration from the program's own manifest, never from the request: a person
      /// designates none of these, so no bit on the wire carries them. See
      /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
@@ -56,15 +54,15 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
          let wants_config = manifest.is_some_and(|m| m.configuration);
          let wants_entropy = manifest.is_some_and(|m| m.entropy);
          let wants_network = manifest.is_some_and(|m| m.network);
-@@ -805,6 +806,7 @@
+@@ -812,6 +813,7 @@ impl Service<'_> {
+             verb_len,
+             within,
              within_len,
++            unvouched,
          }
      }
-+            unvouched,
  
-     /// Build and start an interruptible job from the shell's own job untyped, and answer it.
-     fn spawn_interruptible(&self, req: &Request, elf: Option<&static_elf::Elf>, failure: u64) {
-@@ -875,8 +877,8 @@
+@@ -888,7 +890,7 @@ impl Service<'_> {
      ) {
          let own_ut = self.c.own_ut;
          let manifest = job.manifest;
@@ -73,4 +71,3 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
          // The region comes before any grant: a directory grant's caretaker is built from the same
          // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
          let std_layout =
-             manifest.is_some_and(|m| m.startup == grant_contract::StartupContract::Std);
