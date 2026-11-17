@@ -1,0 +1,23 @@
+Falsifies `capability_manifest_note::verification::an_inverted_memory_grant_does_not_encode`.
+
+The defect: `encode` stops asserting that a required memory grant's minimum is no greater than its
+maximum. A program could then build a note from such a manifest, and the reader would refuse that
+note at run time, with nothing said at build time.
+
+Expected to fail: the harness expects a panic and none comes.
+
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+index b61755828..eca04bc2d 100644
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -340,10 +340,6 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_BYTES] {
+         ProgramArgumentDeclaration::Words(WordGrant::Create) => 4,
+     };
+     if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
+-        assert!(
+-            minimum <= maximum,
+-            "a required memory grant has a minimum no greater than its maximum"
+-        );
+         out[MEMORY_GRANT] = 1;
+         put8(&mut out, MEMORY_MINIMUM_PAGES, minimum);
+         put8(&mut out, MEMORY_MAXIMUM_PAGES, maximum);

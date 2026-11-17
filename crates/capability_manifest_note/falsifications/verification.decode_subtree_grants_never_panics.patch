@@ -1,0 +1,21 @@
+Falsifies `capability_manifest_note::verification::decode_subtree_grants_never_panics`.
+
+The defect: `decode_subtree_grants` reads the version and then trusts the length, so a descriptor
+of four to seven bytes that names the right version is read past its end.
+
+Expected to fail: an index out of bounds in `decode_subtree_grants`.
+
+diff --git a/crates/capability_manifest_note/src/lib.rs b/crates/capability_manifest_note/src/lib.rs
+index b61755828..33b9050bb 100644
+--- a/crates/capability_manifest_note/src/lib.rs
++++ b/crates/capability_manifest_note/src/lib.rs
+@@ -1127,9 +1127,6 @@ pub fn decode_subtree_grants(d: &[u8]) -> Result<Scope, Error> {
+     {
+         return Err(Error::UnknownVersion);
+     }
+-    if d.len() != SUBTREE_GRANTS_BYTES {
+-        return Err(Error::WrongLength);
+-    }
+     match u32::from_le_bytes([d[4], d[5], d[6], d[7]]) {
+         1 => Ok(Scope::SubtreeScope),
+         _ => Err(Error::BadField(4)),

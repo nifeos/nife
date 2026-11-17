@@ -17,15 +17,13 @@
 //! that order. The id stays 8 for good. A layout break ships as a new magic and a new version
 //! together, never a new id, and a retired value is never reused.
 //!
-//! # BUGS
-//!
-//! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`, kept for
-//!   a standard-library overlay, which reads them by those names. Use the newer spellings.
-//!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `clock`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
 
 #![cfg_attr(not(test), no_std)]
+
+#[cfg(not(target_has_atomic = "64"))]
+compile_error!("clock_contract needs 64-bit atomics: every word of the clock page is an AtomicU64");
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
@@ -70,8 +68,9 @@ pub const NS_PER_SECOND: u64 = 1_000_000_000;
 /// Saturating rather than wrapping: an implausible offset should read as an implausible time, not
 /// as a plausible one on the other side of the wrap.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane/unit-symbols-sweep-1: `wall_nanos` under the
-/// unit-symbol ruling of that date.
+/// Name: provisional, minted 2026-10-27 (UTC) by lane/unit-symbols-sweep-1: `wall_nanoseconds` spells
+/// out the unit that `wall_nanos` abbreviated. 1083 Decision 3 (provisional) deleted the `wall_nanos`
+/// spelling the overlay read.
 ///
 /// # Examples
 ///
@@ -99,27 +98,14 @@ pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u6
     offset_nanoseconds.saturating_add(monotonic_nanoseconds)
 }
 
-/// (`NANOS_PER_SEC`, a standard-library overlay, which reads this name from its generated copy
-/// of this file.)
-/// The spelling of [`NS_PER_SECOND`] that the overlay reads.
-///
-/// Name: provisional. Kept for that reader; the crate's own spelling is `NS_PER_SECOND`, and the
-/// overlay moves to it with its next edit.
-#[doc(alias = "nanoseconds per second, overlay spelling")]
-pub const NANOS_PER_SEC: u64 = NS_PER_SECOND;
-
-/// (`wall_nanos`, a standard-library overlay, which reads this name from its generated copy of
-/// this file.)
-/// The spelling of [`wall_nanoseconds`] that the overlay reads; see [`NANOS_PER_SEC`].
-///
-/// Name: provisional. Kept for the overlay, as [`NANOS_PER_SEC`] is.
-#[doc(alias = "wall clock nanoseconds, overlay spelling")]
-pub const fn wall_nanos(offset_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
-    wall_nanoseconds(offset_nanoseconds, monotonic_nanoseconds)
-}
-
 /// The offset that makes `monotonic_nanoseconds` read as `wall_nanoseconds`: what the clock service writes
 /// when it learns the time. The inverse of [`wall_nanoseconds`].
+///
+/// A `monotonic_nanoseconds` past `wall_nanoseconds` saturates to an offset of zero, and
+/// [`wall_nanoseconds`] then reads as uptime since the epoch, which is the reading this crate
+/// exists to prevent. [`policy::is_plausible`] makes that unreachable for a proposal or an RTC
+/// reading, since a plausible wall time exceeds any uptime a machine has, but [`ClockPage::publish`]
+/// accepts any offset from a holder of the set authority, so such a caller owns the check.
 pub const fn offset_for(wall_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
     wall_nanoseconds.saturating_sub(monotonic_nanoseconds)
 }
@@ -130,7 +116,7 @@ pub const fn offset_for(wall_nanoseconds: u64, monotonic_nanoseconds: u64) -> u6
 
 /// **The states the wall clock can be in, and one of them is "I do not know".**
 ///
-/// This is the no-silent-degradation rule on a second axis. A machine with no RTC, or
+/// A clock that does not know the time must say so instead of guessing. A machine with no real-time clock (RTC), or
 /// with an RTC reporting something impossible, must say so; confidently reporting 1970 plus uptime
 /// is the failure, because the caller cannot tell it from a real answer.
 pub mod state {
@@ -139,9 +125,13 @@ pub mod state {
     /// not be used. This is also what a zeroed page reads as, so a page nobody has published to is
     /// honest by default rather than by initialization.
     pub const UNKNOWN: u64 = 0;
-    /// Set once at startup from the hardware RTC. As good as the battery-backed clock on the board,
+    /// Set once at startup from the hardware real-time clock (RTC). As good as the battery-backed clock on the board,
     /// which on QEMU is the host's clock and on a real board is whatever the coin cell managed.
-    pub const RTC: u64 = 1;
+    ///
+    /// Name: provisional. Spelled out under 1083 Decision 3, which replaced `RTC` and keeps it as a
+    /// doc alias.
+    #[doc(alias = "RTC")]
+    pub const REAL_TIME_CLOCK: u64 = 1;
     /// Set outright by an authority holding the page read/write: an operator, or the service's own
     /// startup on a machine where that is the only source.
     pub const SET: u64 = 2;
@@ -149,7 +139,9 @@ pub mod state {
     /// lands. Distinguished from [`SET`] because "an external source I bounded" and "a human told
     /// me" are different provenance, and the difference is exactly what a caller deciding whether
     /// to trust a certificate expiry wants.
-    pub const SYNCED: u64 = 3;
+    ///
+    /// Name: provisional. Spelled out under 1083 Decision 3, which replaced `SYNCED`.
+    pub const SYNCHRONIZED: u64 = 3;
 
     /// Whether a state means the machine actually knows the time.
     pub const fn is_known(state: u64) -> bool {
@@ -177,10 +169,10 @@ pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 /// name every contract crate uses for its layout version.
 pub const VERSION: u32 = 1;
 
-/// This interface's identity in a program's `INTERFACES` note: 8, naming the clock page and its
-/// propose call. The number is this interface's for good: no other interface takes it, and a format
-/// change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
-/// program declares the pair of this id and [`VERSION`].
+/// This interface's identity: 8, naming the clock page and its propose call. The number is this
+/// interface's for good: no other interface takes it, and a format change is a new version, never a
+/// new number. A program declares the pair of this id and [`VERSION`]; the system that links the
+/// programs keeps the table of ids and holds it to that rule.
 ///
 /// Name: ratified 2026-11-14 (UTC, #3576), with its value 8: the identity freeze of that date. The
 /// name every contract crate uses for its interface identity.
@@ -215,11 +207,11 @@ const fn copy_for(generation: u64) -> usize {
 pub struct Reading {
     /// One of [`state`]'s values.
     pub state: u64,
-    /// (`offset_nanos`, a standard-library overlay, which reads this field from its generated
+    /// (`offset_nanoseconds`, a standard-library overlay, which reads this field from its generated
     /// copy of this file.)
     /// Wall-clock nanoseconds at monotonic zero. Meaningless unless [`state::is_known`].
     #[doc(alias = "offset in nanoseconds")]
-    pub offset_nanos: u64,
+    pub offset_nanoseconds: u64,
     /// How many times the page has been published to: the publish count this reading came with. A
     /// reader that cares whether the clock stepped under it (a log, a cache with an expiry)
     /// compares this across two readings instead of comparing timestamps and guessing.
@@ -269,20 +261,21 @@ unsafe impl Send for ClockPage {}
 unsafe impl Sync for ClockPage {}
 
 impl ClockPage {
-    /// Name the clock page mapped at `va`.
+    /// Name the clock page mapped at `virtual_address`. The parameter is an address, not a
+    /// pointer: it arrives as a `u64`, the way a loader hands a mapping to a program.
     ///
     /// # Safety
     ///
-    /// `va` must be a mapped, 8-byte-aligned frame that is the clock page (or, for a writer about
+    /// `virtual_address` must be a mapped, 8-byte-aligned frame that is the clock page (or, for a writer about
     /// to call [`initialize`](Self::initialize), a zeroed frame that is about to become one), and
     /// it must stay mapped for as long as this value is used. Read-only is enough for
     /// [`read`](Self::read); [`publish`](Self::publish) and [`initialize`](Self::initialize) need
     /// it mapped read/write, and calling them on a read-only mapping faults the caller, which is
     /// the correct outcome: a process without the set authority cannot set the clock, and finds out
     /// immediately.
-    pub const unsafe fn new(va: u64) -> Self {
+    pub const unsafe fn new(virtual_address: u64) -> Self {
         ClockPage {
-            base: va as *const AtomicU64,
+            base: virtual_address as *const AtomicU64,
         }
     }
 
@@ -303,6 +296,10 @@ impl ClockPage {
     /// wait on forever. The caller is the only writer and the one before it has stopped, so this
     /// gives the claim back. A copy that writer half filled is the spare one, which no reader is
     /// using and the next publish fills whole.
+    ///
+    /// The caller hands it a zeroed frame: `initialize` writes the seven words and nothing else,
+    /// so the rest of the frame, which [`WORDS`] says is reserved and must read as zero, is whatever
+    /// the frame held.
     ///
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
@@ -350,7 +347,7 @@ impl ClockPage {
     pub fn read(&self) -> Reading {
         const UNKNOWN: Reading = Reading {
             state: state::UNKNOWN,
-            offset_nanos: 0,
+            offset_nanoseconds: 0,
             generation: 0,
         };
         // Acquire: pairs with the release store of the magic in `initialize`.
@@ -390,7 +387,7 @@ impl ClockPage {
         // across two publishes see that it did.
         (self.word(PUBLISH_WORD_INDEX).load(Ordering::Relaxed) == generation).then_some(Reading {
             state: st,
-            offset_nanos: off,
+            offset_nanoseconds: off,
             generation,
         })
     }
@@ -482,22 +479,25 @@ impl ClockPage {
 /// network time client: a compromised one can lie inside [`policy`]'s bounds and can do nothing
 /// else at all.
 pub mod propose {
-    /// Where the opcode sits in the first `CALL` word: bits 63:56, the same position its sibling
-    /// message contracts use, so the contracts read alike.
+    /// Where the opcode sits in the first `CALL` word: bits 63:56: the opcode occupies the top
+    /// byte of the first word, and the low 56 bits are the request's to use.
     pub const OPERATION_SHIFT: u32 = 56;
 
-    /// Build a request's first word.
+    /// Build a request's first word. The opcode is one byte: a larger `operation` loses its high
+    /// bits, which a debug build refuses.
     pub const fn req(operation: u64) -> u64 {
+        debug_assert!(operation < 256);
         operation << OPERATION_SHIFT
     }
 
-    /// The opcode of a request word.
-    pub const fn operation(w0: u64) -> u64 {
-        w0 >> OPERATION_SHIFT
+    /// The opcode of a request word. The low 56 bits are the request's to use, and nothing says
+    /// they are zero, so this discards them.
+    pub const fn operation(word: u64) -> u64 {
+        word >> OPERATION_SHIFT
     }
 
-    /// `CALL(req(PROPOSE), proposed_unix_nanos)`. Ask the service to move the wall clock to
-    /// `proposed_unix_nanos`. Reply `r0` is one of the `status` codes and `r1` is
+    /// `CALL(req(PROPOSE), proposed_unix_nanoseconds)`. Ask the service to move the wall clock to
+    /// `proposed_unix_nanoseconds`. Reply `r0` is one of the `status` codes and `r1` is
     /// the wall-clock nanoseconds in force afterwards (0 when the state is unknown), so a proposer
     /// learns what happened without needing a read mapping.
     pub const PROPOSE: u64 = 1;
@@ -514,7 +514,7 @@ pub mod propose {
 /// The reply's first word for a [`propose::PROPOSE`]. Not an errno space: this contract has no
 /// POSIX behind it, and every refusal here is a policy answer rather than a failure.
 pub mod status {
-    /// The proposal was applied. The clock is now [`super::state::SYNCED`].
+    /// The proposal was applied. The clock is now [`super::state::SYNCHRONIZED`].
     pub const ACCEPTED: u64 = 0;
     /// Outside the sanity window entirely: [`super::policy::is_plausible`] says no machine running
     /// this code is at that instant. A proposal of 1970, or of 2038, lands here.
@@ -614,18 +614,18 @@ pub mod policy {
     /// let now = 1_800_000_000 * NS_PER_SECOND;
     ///
     /// // A small correction, in either direction, is what a time client is for.
-    /// assert_eq!(policy::decide(state::SYNCED, now, now + NS_PER_SECOND / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + NS_PER_SECOND / 2), status::ACCEPTED);
     ///
     /// // Walking the clock past a certificate expiry in one step is the classic attack.
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOSECONDS),
+    ///     policy::decide(state::SYNCHRONIZED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOSECONDS),
     ///     status::REFUSED_TOO_FAR_FORWARD,
     /// );
     ///
     /// // And the tighter half: a second forward is fine, a second and a half backward is not.
-    /// assert_eq!(policy::decide(state::SYNCED, now, now + 3 * NS_PER_SECOND / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + 3 * NS_PER_SECOND / 2), status::ACCEPTED);
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now - 3 * NS_PER_SECOND / 2),
+    ///     policy::decide(state::SYNCHRONIZED, now, now - 3 * NS_PER_SECOND / 2),
     ///     status::REFUSED_TOO_FAR_BACKWARD,
     /// );
     ///
@@ -671,7 +671,8 @@ pub mod policy {
 /// clean and read garbage on the first real board. The binding is what the driver actually knows
 /// how to drive, so the binding is what it is told. `CMOS` names a register map behind two I/O
 /// ports rather than behind a page, and the service reads it the same way it reads the other two.
-pub mod rtc {
+#[doc(alias = "RTC")]
+pub mod real_time_clock {
     /// No RTC in the device tree. The clock service still runs and still serves proposals; it just
     /// starts out not knowing what time it is, which is a state the contract has.
     pub const NONE: u64 = 0;
@@ -687,14 +688,14 @@ pub mod rtc {
     /// **The `x86_64` CMOS RTC**, a clock behind two fixed I/O ports, [`INDEX_PORT`] and
     /// [`DATA_PORT`], with no page. `PL031` and `GOLDFISH` name a register layout the clock
     /// service reads through a mapping it holds; this one names the two ports the service reads
-    /// through a `PortRange` capability over both, which the wiring grants with `WRITE` because
-    /// the I/O permission bitmap cannot permit `in` without `out`.
+    /// through one grant that covers both, which must allow writes because x86's I/O permission
+    /// bitmap cannot permit `in` without `out`.
     ///
     /// Name and value provisional.
     pub const CMOS: u64 = 3;
 
     /// The CMOS index port: write a register number here before reaching it at [`DATA_PORT`].
-    /// The lower of the two ports a [`CMOS`] binding's `PortRange` names.
+    /// The lower of the two ports a [`CMOS`] binding's grant covers.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
     /// milestone 1062 (the device control planes leave the kernel), step 6.
@@ -706,6 +707,10 @@ pub mod rtc {
     /// milestone 1062 (the device control planes leave the kernel), step 6.
     pub const DATA_PORT: u16 = 0x71;
 }
+
+// The Kani proofs, compiled only by `cargo kani`.
+#[cfg(kani)]
+mod verification;
 
 #[cfg(all(test, not(loom)))]
 mod tests {
@@ -754,7 +759,7 @@ mod tests {
 
     #[test]
     fn a_known_clock_is_stepped_only_within_the_bounds() {
-        let known = state::RTC;
+        let known = state::REAL_TIME_CLOCK;
         for (delta, want) in [
             (0i64, status::ACCEPTED),
             (
@@ -783,19 +788,9 @@ mod tests {
         }
     }
 
-    /// The std overlay reads the older spellings; they must stay the same value and the same sum.
-    #[test]
-    fn the_overlay_spellings_agree_with_the_ruled_ones() {
-        assert_eq!(NANOS_PER_SEC, NS_PER_SECOND);
-        assert_eq!(wall_nanos(40, 2), wall_nanoseconds(40, 2));
-        assert_eq!(wall_nanos(u64::MAX, 1), u64::MAX);
-    }
-
-    /// The asymmetry is a decision, not an accident, so it gets a test that fails if someone
-    /// "tidies" the two constants into one.
     #[test]
     fn backwards_is_held_far_tighter_than_forwards() {
-        let known = state::SYNCED;
+        let known = state::SYNCHRONIZED;
         let ten_minutes = 600 * NS_PER_SECOND;
         assert_eq!(
             policy::decide(known, NOW, NOW + ten_minutes),
@@ -834,7 +829,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::UNKNOWN,
-                    offset_nanos: 0,
+                    offset_nanoseconds: 0,
                     generation: 0,
                 }
             );
@@ -850,8 +845,8 @@ mod tests {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
-            page.publish(state::RTC, 7);
-            let second = page.publish(state::SYNCED, 9);
+            page.publish(state::REAL_TIME_CLOCK, 7);
+            let second = page.publish(state::SYNCHRONIZED, 9);
             let before = page.read();
             assert_eq!(before.generation, second);
             let words: [u64; WORDS] = core::array::from_fn(|i| frame[i].load(Ordering::Relaxed));
@@ -865,7 +860,7 @@ mod tests {
             );
             assert_eq!(page.read(), before, "a restart leaves the page as it was");
             assert_eq!(
-                page.publish(state::RTC, 11),
+                page.publish(state::REAL_TIME_CLOCK, 11),
                 second + 1,
                 "and the count carries on from where it was"
             );
@@ -881,11 +876,11 @@ mod tests {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
-            let first = page.publish(state::RTC, 7);
+            let first = page.publish(state::REAL_TIME_CLOCK, 7);
             let before = page.read();
             // The stopped writer: it took the claim and filled the spare copy, and never flipped.
             assert!(page.try_claim());
-            page.fill(state::SYNCED, 9);
+            page.fill(state::SYNCHRONIZED, 9);
 
             page.initialize();
             assert_eq!(frame[CLAIM_WORD_INDEX].load(Ordering::Relaxed), CLAIM_FREE);
@@ -895,12 +890,12 @@ mod tests {
                 before,
                 "the restart showed a reader the half-filled copy"
             );
-            assert_eq!(page.publish(state::SYNCED, 11), first + 1);
+            assert_eq!(page.publish(state::SYNCHRONIZED, 11), first + 1);
             assert_eq!(
                 page.read(),
                 Reading {
-                    state: state::SYNCED,
-                    offset_nanos: 11,
+                    state: state::SYNCHRONIZED,
+                    offset_nanoseconds: 11,
                     generation: first + 1,
                 }
             );
@@ -918,17 +913,17 @@ mod tests {
                 "init is honest, not 1970"
             );
 
-            assert_eq!(page.publish(state::RTC, 7), 1);
+            assert_eq!(page.publish(state::REAL_TIME_CLOCK, 7), 1);
             assert_eq!(
                 page.read(),
                 Reading {
-                    state: state::RTC,
-                    offset_nanos: 7,
+                    state: state::REAL_TIME_CLOCK,
+                    offset_nanoseconds: 7,
                     generation: 1,
                 }
             );
 
-            assert_eq!(page.publish(state::SYNCED, 9), 2);
+            assert_eq!(page.publish(state::SYNCHRONIZED, 9), 2);
             assert_eq!(
                 page.read().generation,
                 2,
@@ -945,12 +940,12 @@ mod tests {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
             page.initialize();
-            page.publish(state::RTC, 7);
+            page.publish(state::REAL_TIME_CLOCK, 7);
             let before = page.read();
 
             // A writer takes the claim and fills the other copy, then stops for good.
             page.claim();
-            assert_eq!(page.fill(state::SYNCED, 11), 2);
+            assert_eq!(page.fill(state::SYNCHRONIZED, 11), 2);
             assert_eq!(
                 page.read_once(),
                 Some(before),
@@ -967,8 +962,8 @@ mod tests {
             assert_eq!(
                 page.read(),
                 Reading {
-                    state: state::SYNCED,
-                    offset_nanos: 11,
+                    state: state::SYNCHRONIZED,
+                    offset_nanoseconds: 11,
                     generation: 2,
                 }
             );
@@ -1017,13 +1012,13 @@ mod tests {
         let page = leaked_page();
         let (first, second) = finishes_promptly("two publishes and a read", move || {
             page.initialize();
-            page.publish(state::RTC, 7);
-            page.publish(state::SYNCED, 11);
+            page.publish(state::REAL_TIME_CLOCK, 7);
+            page.publish(state::SYNCHRONIZED, 11);
             (page.read_once(), page.read())
         });
         let want = Reading {
-            state: state::SYNCED,
-            offset_nanos: 11,
+            state: state::SYNCHRONIZED,
+            offset_nanoseconds: 11,
             generation: 2,
         };
         assert_eq!(first, Some(want), "a look with no publish running is whole");
@@ -1036,10 +1031,10 @@ mod tests {
         let page = leaked_page();
         finishes_promptly("the first publish", move || {
             page.initialize();
-            page.publish(state::RTC, 7);
+            page.publish(state::REAL_TIME_CLOCK, 7);
         });
         assert!(page.try_claim(), "the first publish gave the claim back");
-        let waiting = std::thread::spawn(move || page.publish(state::SYNCED, 11));
+        let waiting = std::thread::spawn(move || page.publish(state::SYNCHRONIZED, 11));
         std::thread::sleep(std::time::Duration::from_millis(100));
         assert_eq!(
             page.read().generation,
@@ -1063,10 +1058,21 @@ mod tests {
         with_page(&frame, |page| {
             page.initialize();
             assert_eq!(words(), [MAGIC, 0, 0, 0, 0, 0, 0]);
-            page.publish(state::RTC, 7);
-            assert_eq!(words(), [MAGIC, 1, 0, 0, 0, state::RTC, 7]);
-            page.publish(state::SYNCED, 9);
-            assert_eq!(words(), [MAGIC, 2, 0, state::SYNCED, 9, state::RTC, 7]);
+            page.publish(state::REAL_TIME_CLOCK, 7);
+            assert_eq!(words(), [MAGIC, 1, 0, 0, 0, state::REAL_TIME_CLOCK, 7]);
+            page.publish(state::SYNCHRONIZED, 9);
+            assert_eq!(
+                words(),
+                [
+                    MAGIC,
+                    2,
+                    0,
+                    state::SYNCHRONIZED,
+                    9,
+                    state::REAL_TIME_CLOCK,
+                    7
+                ]
+            );
         });
         assert_eq!(WORDS, 7);
     }
@@ -1204,7 +1210,7 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let restarted = {
                 let p = page;
@@ -1213,8 +1219,8 @@ mod interleavings {
 
             let r = page.read();
             assert_eq!(
-                (r.state, r.offset_nanos, r.generation),
-                (state::RTC, 1_000, 1),
+                (r.state, r.offset_nanoseconds, r.generation),
+                (state::REAL_TIME_CLOCK, 1_000, 1),
                 "a reader saw the page reset by a restart"
             );
 
@@ -1237,13 +1243,13 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let restarted = {
                 let p = page;
                 thread::spawn(move || {
                     p.claim();
-                    let generation = p.fill(state::SYNCED, 2_000);
+                    let generation = p.fill(state::SYNCHRONIZED, 2_000);
                     p.flip(generation);
                     // Stopped here, holding the claim; the restart gives it back.
                     p.initialize();
@@ -1252,7 +1258,7 @@ mod interleavings {
             };
             let other = {
                 let p = page;
-                thread::spawn(move || p.publish(state::RTC, 3_000))
+                thread::spawn(move || p.publish(state::REAL_TIME_CLOCK, 3_000))
             };
 
             let stopped = restarted.join().unwrap();
@@ -1272,7 +1278,7 @@ mod interleavings {
 
     /// **A reader never sees half a publish.**
     ///
-    /// The state and the offset are a matched pair (a state of `SYNCED` with the offset from
+    /// The state and the offset are a matched pair (a state of `SYNCHRONIZED` with the offset from
     /// before the sync is a wrong wall clock, not a crash, which is the worst kind of bug to leave
     /// possible). A reader that races a publish gets the publish before it or the publish itself,
     /// never a blend.
@@ -1284,17 +1290,17 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let writer = {
                 let p = page;
-                thread::spawn(move || p.publish(state::SYNCED, 2_000))
+                thread::spawn(move || p.publish(state::SYNCHRONIZED, 2_000))
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
-            match (r.state, r.offset_nanos) {
-                (state::RTC, 1_000) => SAW_THE_OLD.mark(),
-                (state::SYNCED, 2_000) => SAW_THE_NEW.mark(),
+            match (r.state, r.offset_nanoseconds) {
+                (state::REAL_TIME_CLOCK, 1_000) => SAW_THE_OLD.mark(),
+                (state::SYNCHRONIZED, 2_000) => SAW_THE_NEW.mark(),
                 other => panic!("a torn reading: {other:?} is neither publish"),
             }
 
@@ -1320,12 +1326,12 @@ mod interleavings {
         loom::model(|| {
             let page = page();
             page.initialize();
-            page.publish(state::RTC, 1_000);
+            page.publish(state::REAL_TIME_CLOCK, 1_000);
 
             let writer = {
                 let p = page;
                 thread::spawn(move || {
-                    p.publish(state::SYNCED, 2_000);
+                    p.publish(state::SYNCHRONIZED, 2_000);
                     p.publish(state::SET, 3_000);
                 })
             };
@@ -1340,8 +1346,8 @@ mod interleavings {
             })
             .join()
             .unwrap();
-            match (r.state, r.offset_nanos, r.generation) {
-                (state::RTC, 1_000, 1) | (state::SYNCED, 2_000, 2) => {}
+            match (r.state, r.offset_nanoseconds, r.generation) {
+                (state::REAL_TIME_CLOCK, 1_000, 1) | (state::SYNCHRONIZED, 2_000, 2) => {}
                 (state::SET, 3_000, 3) => SAW_THE_LAST.mark(),
                 other => panic!("a torn reading across two publishes: {other:?}"),
             }
@@ -1366,7 +1372,7 @@ mod interleavings {
 
             let writer = {
                 let p = page;
-                thread::spawn(move || p.publish(state::RTC, 1_000))
+                thread::spawn(move || p.publish(state::REAL_TIME_CLOCK, 1_000))
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
@@ -1388,7 +1394,7 @@ mod interleavings {
     /// count would fill the same copy and publish the same generation; "would corrupt silently" is
     /// a claim about interleavings, which only a model checker can check.
     #[test]
-    fn two_writers_serialise_rather_than_corrupt_the_page() {
+    fn two_writers_serialize_rather_than_corrupt_the_page() {
         static BOTH_LANDED: Reached = Reached::new();
 
         loom::model(|| {
@@ -1397,11 +1403,11 @@ mod interleavings {
 
             let first = {
                 let p = page;
-                thread::spawn(move || p.publish(state::RTC, 1_000))
+                thread::spawn(move || p.publish(state::REAL_TIME_CLOCK, 1_000))
             };
             let second = {
                 let p = page;
-                thread::spawn(move || p.publish(state::SYNCED, 2_000))
+                thread::spawn(move || p.publish(state::SYNCHRONIZED, 2_000))
             };
 
             let g1 = first.join().unwrap();
@@ -1414,12 +1420,12 @@ mod interleavings {
                 "two publishes did not advance the page twice"
             );
             let last = if g1 == 2 {
-                (state::RTC, 1_000)
+                (state::REAL_TIME_CLOCK, 1_000)
             } else {
-                (state::SYNCED, 2_000)
+                (state::SYNCHRONIZED, 2_000)
             };
             assert_eq!(
-                (r.state, r.offset_nanos),
+                (r.state, r.offset_nanoseconds),
                 last,
                 "the page does not hold the pair of the writer that published last: {r:?}"
             );
@@ -1459,7 +1465,7 @@ mod interleavings {
             loom::model(move || {
                 let page = page();
                 page.initialize();
-                page.publish(state::RTC, 1_000);
+                page.publish(state::REAL_TIME_CLOCK, 1_000);
                 let before = page.read();
 
                 let writer = {
@@ -1469,7 +1475,7 @@ mod interleavings {
                         if stops_after == StopsAfter::Claiming {
                             return;
                         }
-                        let generation = p.fill(state::SYNCED, 2_000);
+                        let generation = p.fill(state::SYNCHRONIZED, 2_000);
                         if stops_after == StopsAfter::Filling {
                             return;
                         }
@@ -1480,9 +1486,9 @@ mod interleavings {
 
                 if stops_after == StopsAfter::Flipping {
                     let r = spawn_reader(page, |p| p.read()).join().unwrap();
-                    match (r.state, r.offset_nanos, r.generation) {
-                        (state::RTC, 1_000, 1) => {}
-                        (state::SYNCED, 2_000, 2) => SAW_THE_NEW.mark(),
+                    match (r.state, r.offset_nanoseconds, r.generation) {
+                        (state::REAL_TIME_CLOCK, 1_000, 1) => {}
+                        (state::SYNCHRONIZED, 2_000, 2) => SAW_THE_NEW.mark(),
                         other => panic!("a torn reading beside a stopped writer: {other:?}"),
                     }
                 } else {
@@ -1511,9 +1517,9 @@ mod interleavings {
     /// about a frame nobody has published to) or a fully initialized one. Never a recognized page
     /// with garbage in it. The release is the whole mechanism, and this harness checks it.
     #[test]
-    fn a_racing_reader_sees_an_unrecognised_page_or_a_whole_one() {
-        static SAW_UNRECOGNISED: Reached = Reached::new();
-        static SAW_INITIALISED: Reached = Reached::new();
+    fn a_racing_reader_sees_an_unrecognized_page_or_a_whole_one() {
+        static SAW_UNRECOGNIZED: Reached = Reached::new();
+        static SAW_INITIALIZED: Reached = Reached::new();
 
         loom::model(|| {
             let page = page();
@@ -1522,21 +1528,21 @@ mod interleavings {
                 let p = page;
                 thread::spawn(move || {
                     p.initialize();
-                    p.publish(state::RTC, 1_000);
+                    p.publish(state::REAL_TIME_CLOCK, 1_000);
                 })
             };
 
             let r = spawn_reader(page, |p| p.read()).join().unwrap();
-            match (r.state, r.offset_nanos) {
-                (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
-                (state::RTC, 1_000) => SAW_INITIALISED.mark(),
+            match (r.state, r.offset_nanoseconds) {
+                (state::UNKNOWN, 0) => SAW_UNRECOGNIZED.mark(),
+                (state::REAL_TIME_CLOCK, 1_000) => SAW_INITIALIZED.mark(),
                 other => panic!("a reader saw a recognized page with garbage in it: {other:?}"),
             }
 
             writer.join().unwrap();
         });
 
-        SAW_UNRECOGNISED.assert("an execution where the reader arrives before the magic lands");
-        SAW_INITIALISED.assert("an execution where the reader arrives after the publish");
+        SAW_UNRECOGNIZED.assert("an execution where the reader arrives before the magic lands");
+        SAW_INITIALIZED.assert("an execution where the reader arrives after the publish");
     }
 }
