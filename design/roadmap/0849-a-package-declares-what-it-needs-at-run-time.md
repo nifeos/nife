@@ -34,7 +34,7 @@ A package has one relationship to another today: linking.
 
 What a program needs at run time is declared, but per program and in code, never per package:
 
-- `grant_plan::Manifest` (`crates/grant_plan/src/manifest.rs`) has a field per service a program may
+- `grant_plan::Manifest` (`crates/grant_contract/src/manifest.rs`) has a field per service a program may
   be endowed with: `clock`, `domain`, `config`, `entropy` (`:1836`), `network` (`:1857`), `machine`
   and `share`. Its `runtime` field (`:1888`) says whether capabilities land in native order or at
   `std`'s fixed slots. An archive program's manifest is a `match` arm. A foreign program's travels

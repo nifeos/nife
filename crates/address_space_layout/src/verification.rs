@@ -73,7 +73,7 @@ fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
 /// picture of the address space.
 /// Falsification: replayable `crates/address_space_layout/falsifications/verification.the_bands_are_listed_in_address_order.patch`
 #[kani::proof]
-#[kani::unwind(9)]
+#[kani::unwind(10)]
 fn the_bands_are_listed_in_address_order() {
     let low: u64 = kani::any();
     let high: u64 = kani::any();

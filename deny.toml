@@ -215,6 +215,10 @@ allow-wildcard-paths = true
 deny = [
     { crate = "rayon", wrappers = ["std_exerciser"], reason = "ruled for std_exerciser only (#1892)" },
     { crate = "rayon-core", wrappers = ["rayon"], reason = "reached only through rayon (#1892)" },
+    # `rsext4` is ruled for one host tool: `ext4_oracle`, the read oracle of milestone 190 (ext4,
+    # read and write), in a workspace of its own, pinned exactly (pull request #3639, 2026-11-16
+    # UTC). That is not the §46 ruling on whether nife ships it, so nothing else may take it yet.
+    { crate = "rsext4", wrappers = ["ext4_oracle"], reason = "host-only oracle dependency (#3639); not the §46 adoption ruling" },
     # `lamfat` (rust-fatfs's main line, republished) is the test oracle of
     # `nifeos/file_allocation_table`, a dev-dependency there, ruled 2026-10-25 (UTC) for milestone
     # 813 (a proven FAT crate, released on its own). Nothing in this tree takes it, and a git

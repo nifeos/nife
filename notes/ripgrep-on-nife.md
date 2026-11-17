@@ -266,7 +266,7 @@ sh bench/host/run_linux_rg.sh         # needs rustup target add aarch64-unknown-
   where the kernel's count can be read.
 - **Threaded memory grows with cores.** About 51 heap pages a worker, and `ripgrep` takes up to 12
   workers, so on a twelve-core machine the default line would want about 680 pages. The prompt's
-  `std` region is 384 (`grant_plan::STD_REGION_PAGES`). Unmeasured above four cores.
+  `std` region is 384 (`program_table::STD_REGION_PAGES`). Unmeasured above four cores.
 - **One version, one program.** `ripgrep` 14.1.1 is evidence about this platform, not a survey of
   crates.io.
 - **The harness's `rg` is not installed by `jig`.** The kernel harness and the by-path lines run the
