@@ -11,7 +11,7 @@ keywords = ["no-std", "elf", "manifest", "capability", "kani"]
 categories = ["no-std", "no-std::no-alloc", "parsing"]
 publish = false     # held until the maintainers decide the first release
 
-# no_std and no allocation. A program states what it needs as a `grant_plan::Manifest` constant;
+# no_std and no allocation. A program states what it needs as a `grant_contract::Manifest` constant;
 # `carry!` has the compiler encode it into an ELF note in the program's own bytes, and a loader or a
 # shell decodes that note, refusing any spelling but the one encoding.
 
@@ -30,9 +30,9 @@ manual_let_else = "warn"
 doc_markdown = "warn"
 
 [dependencies]
-# The type a note carries. The note is `grant_plan::Manifest` in bytes, so the vocabulary is the one
+# The type a note carries. The note is `grant_contract::Manifest` in bytes, so the vocabulary is the one
 # the shell already binds lines against and the loader already endows from.
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
 # The zone limits and spelling, which are the resolver's: a manifest asks for what a badge can carry.
 domain_name_resolution_contract = { version = "0.1.0", path = "../domain_name_resolution_contract" }
 
@@ -40,3 +40,6 @@ domain_name_resolution_contract = { version = "0.1.0", path = "../domain_name_re
 # Only to hold its note header to this crate's: that crate repeats the owner string so it can
 # depend on nothing, and a test here is what notices if the two drift.
 interfaces_note = { version = "0.1.0", path = "../interfaces_note" }
+# The shipped programs' manifests, which the tests encode and decode; the library never names a
+# program.
+program_table = { version = "0.1.0", path = "../program_table" }

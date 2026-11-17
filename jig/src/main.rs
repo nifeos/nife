@@ -33,21 +33,21 @@
 //! Documented and stable: `0` the verb succeeded; `1` it was refused or failed, and said why;
 //! `2` the line was not a spelling of the verbs above.
 
-//! Name: ratified 2026-10-06 (calef). See `grant_plan::Program::Jig`.
+//! Name: ratified 2026-10-06 (calef). See `program_table::Program::Jig`.
 
 use std::io::{ErrorKind, Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream, ToSocketAddrs};
 use std::process::ExitCode;
 
 use entropy_backend as _;
-use grant_plan::spawnproto::{self, Activation, ActivationStatus as S};
-use grant_plan::{CATALOG_SLOT, INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT};
+use grant_contract::{CATALOG_SLOT, INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT};
 use package_index::{
     Configured, Entry, IMAGE_INDEX_COPY, Index, Miss, PATH_MAXIMUM, Root, STAND_IN_INDEX_FILE,
     Source, Sources,
 };
 use pinned_tls_client::listed::{self, root_der};
 use pinned_tls_client::{PinnedPeer, Session};
+use program_table::spawnproto::{self, Activation, ActivationStatus as S};
 use socket_contract::fixture::{PACKAGE_PEER_HOST, PACKAGE_PEER_IP, PACKAGE_PEER_PORT};
 use user_mode_runtime as rt;
 
@@ -57,14 +57,14 @@ use user_mode_runtime as rt;
 // from a file is, and it finds no installer endpoint and says so, which is how `script/swish-check`
 // shows a program without the grant is refused. The note cannot carry `installer` or `catalog`
 // (`capability_manifest_note::encode` refuses both at compile time), and a `std` image cannot carry the network.
-capability_manifest_note::carry!(grant_plan::Manifest {
+capability_manifest_note::carry!(grant_contract::Manifest {
     network: false,
     installer: false,
     catalog: false,
-    indexes: grant_plan::IndexStoreDeclaration::Forbidden,
+    indexes: grant_contract::IndexStoreDeclaration::Forbidden,
     activation_directory: false,
     console_input: false,
-    ..grant_plan::Program::Jig.manifest()
+    ..program_table::Program::Jig.manifest()
 });
 
 /// **Where the staging run is mapped**: one package, read here and handed on a page at a time. A

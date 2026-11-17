@@ -6,23 +6,54 @@
 //!
 //! Name: provisional (milestone 842, 2026-10-11).
 
+use program_table::Program;
+
 use crate::expand::Expansion;
 use crate::*;
+
+/// **A line planned against nife's program table**, the way `program_table::plan_stage` plans it:
+/// the two answers that come before a name, then the row the first word names, then this crate's
+/// planner against that row's manifest. Spelled here rather than called there because
+/// `program_table` links the library build of this crate, whose `Endowment` is not this test
+/// build's; only the row's `Manifest`, which is `grant_contract`'s, crosses.
+pub(crate) fn plan_named_stage(
+    run: &ParsedInvocation<'_>,
+    holds: Holdings,
+    expanded: Expansion,
+    streams: Streams,
+) -> Result<Endowment, Refusal> {
+    if let Some(r) = run.misquoted {
+        return Err(r);
+    }
+    if run.program == ISOLATION_WORD {
+        return Err(Refusal::IsolationNotBuilt);
+    }
+    let program = Program::from_name(run.program).ok_or(Refusal::NoSuchProgram)?;
+    plan_against_with(run, program.manifest(), holds, expanded, streams)
+}
+
+/// [`plan_named_stage`] with no operators on the line.
+pub(crate) fn plan_named(
+    run: &ParsedInvocation<'_>,
+    holds: Holdings,
+    expanded: Expansion,
+) -> Result<Endowment, Refusal> {
+    plan_named_stage(run, holds, expanded, Streams::default())
+}
 
 /// Plan a line with **nothing expanded**, which is every line that has no pattern on it. The two
 /// shims shadow the real functions so the tests below read as they did before the globbing lane,
 /// and the tests that *do* expand pass an [`Expansion`] explicitly and are grouped at the end.
 pub(crate) fn plan(run: &ParsedInvocation<'_>, holds: Holdings) -> Result<Endowment, Refusal> {
-    super::plan(run, holds, Expansion::none())
+    plan_named(run, holds, Expansion::none())
 }
 
 pub(crate) fn plan_against(
     run: &ParsedInvocation<'_>,
-    prog: Program,
     m: Manifest,
     holds: Holdings,
 ) -> Result<Endowment, Refusal> {
-    super::plan_against(run, prog, m, holds, Expansion::none())
+    crate::plan_against(run, m, holds, Expansion::none())
 }
 
 /// A manifest no shipped program declares yet: one endowed a readable file. Checked through
@@ -91,7 +122,7 @@ pub(crate) fn plan_streams(
     holds: Holdings,
     streams: Streams,
 ) -> Result<Endowment, Refusal> {
-    super::plan_stage(run, holds, Expansion::none(), streams)
+    plan_named_stage(run, holds, Expansion::none(), streams)
 }
 
 /// Parse a whole line and plan every stage of it, which is what the shell does. Returns the

@@ -252,8 +252,8 @@ that ever held the device, and a wakeup can be spurious, coalesced, or left pend
 operator. A driver that died mid-write leaves its completion interrupt pending, and the next
 driver's first WAIT would consume it before its own request is on the used ring. So every wait
 loops: WAIT, quiet the device, re-enable the line, and let `used.idx` decide. Every real
-completion raises the line, so the loop cannot outlast the device. The net driver does the same
-across its two queues, whose completions share one line.
+completion raises the line, so the loop cannot outlast the device. `complete` runs that loop for
+every queue, and the net driver's two share one line.
 
 The block server waits on the interrupt too rather than polling the used ring. A WAIT per read fits
 inside the test watchdog on both ISAs at the 4-core boot, because each request moves whole

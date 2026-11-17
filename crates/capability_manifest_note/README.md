@@ -13,7 +13,7 @@ In a capability system a program starts with nothing, and something has to decid
 it: a memory grant, a file, a directory, the clock, the network. A manifest note is the program's
 own statement of what it needs, kept inside the executable behind a `PT_NOTE` program header. It
 sits in the bytes a loader hashes, so the request cannot change without the digest changing. The
-program states its needs as a constant `grant_plan::Manifest`. The `carry!` macro has the compiler
+program states its needs as a constant `grant_contract::Manifest`. The `carry!` macro has the compiler
 encode that constant into the note, and a loader or a shell decodes the note before it grants
 anything. Nothing in a note grants authority: it is a request, and the reader decides.
 
@@ -45,7 +45,7 @@ request the reader would grant wrongly.
 ### The manifest descriptor, three versions
 
 Version 1 (`BARE_VERSION`) is exactly `DESCRIPTOR_BYTES` (56) bytes: the version word, then one
-byte or one 8-byte word per field of `grant_plan::Manifest`, at fixed offsets. The table in the
+byte or one 8-byte word per field of `grant_contract::Manifest`, at fixed offsets. The table in the
 crate documentation (`cargo doc --open`) gives every offset and value.
 
 Version 2 (`ZONED_VERSION`) is version 1's 56 bytes with `2` in the version word, then the
@@ -83,7 +83,8 @@ use capability_manifest_note::{
     DESCRIPTOR_BYTES, Error, asks_service, decode, encode, encode_zoned, zoned_descriptor_bytes,
     zones,
 };
-use grant_plan::{Manifest, MemoryGrantDeclaration, NO_NOTE_MANIFEST};
+use grant_contract::{Manifest, MemoryGrantDeclaration};
+use program_table::NO_NOTE_MANIFEST;
 
 // What the program asks for: between 4 and 64 pages of memory, and the clock.
 const ASKS: Manifest = Manifest {

@@ -64,8 +64,6 @@ credentialer prose_acronyms 8
 credentialer readme_acronyms 2
 credentialer register_names 4
 current_cpu_contract abbreviations 6
-designware_ethernet abbreviations 25
-designware_ethernet prose_acronyms 1
 designware_inter_integrated_circuit abbreviations 2
 device_tree_blob abbreviations 12
 device_tree_blob prose_acronyms 7
@@ -90,7 +88,7 @@ domain_name_resolution_contract register_names 4
 domain_name_system abbreviations 30
 domain_name_system prose_acronyms 16
 domain_name_system readme_acronyms 8
-domain_name_system register_names 5
+domain_name_system register_names 6
 driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
@@ -113,9 +111,12 @@ globally_unique_identifier_partition_table prose_acronyms 19
 globally_unique_identifier_partition_table register_names 10
 glyph_atlas abbreviations 16
 glyph_atlas prose_acronyms 1
-grant_plan abbreviations 233
-grant_plan prose_acronyms 23
-grant_plan register_names 4
+grant_contract abbreviations 11
+grant_contract prose_acronyms 1
+grant_contract register_names 1
+grant_plan abbreviations 155
+grant_plan prose_acronyms 6
+grant_plan register_names 2
 graphics_contract abbreviations 9
 graphics_contract prose_acronyms 7
 graphics_contract readme_acronyms 2
@@ -232,6 +233,9 @@ program_argument_contract prose_acronyms 2
 program_argument_contract readme_acronyms 1
 program_asks abbreviations 8
 program_asks prose_acronyms 2
+program_table abbreviations 63
+program_table prose_acronyms 16
+program_table register_names 1
 ps abbreviations 12
 ps prose_acronyms 1
 screen_console abbreviations 37
