@@ -54,9 +54,17 @@ pub const PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(PAGE).u
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
 pub const SCRATCH_WINDOW: address_space_layout::Band = address_space_layout::Band {
-    start: address_space_layout::runtime_window(0x1000_0000),
-    end: address_space_layout::runtime_window(0x1400_0000),
+    start: address_space_layout::window(
+        address_space_layout::RUNTIME_WINDOWS,
+        0x1000_0000,
+        SCRATCH_WINDOW_BYTES,
+    ),
+    end: 0x1000_0000 + SCRATCH_WINDOW_BYTES,
 };
+
+/// [`SCRATCH_WINDOW`]'s width: 64 MiB, which `address_space_layout::window` checks lies wholly in
+/// the runtime windows.
+const SCRATCH_WINDOW_BYTES: u64 = 64 << 20;
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
 /// `supervision_contract` with the split, and calef names it.

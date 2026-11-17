@@ -1,21 +1,19 @@
 Falsifies `address_space_layout::verification::service_window_accepts_every_page_of_its_band`.
 
-The defect: `service_window` checks the wrong band, `HEAP`, the copy-and-paste slip three
-near-identical functions invite.
+The defect: `service_window` checks against `HEAP`, so every page of `SERVICE_WINDOWS` is refused.
 
-Expected to fail: the harness's claim that no allowed address reaches `service_window`'s asserts;
-Kani reports "a service window must lie in SERVICE_WINDOWS" reachable.
+Expected to fail: Kani reports "a window must lie wholly inside its band" reachable for a page of `SERVICE_WINDOWS`.
 
 diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
-index 0eba0def7..f2393e8b9 100644
+index cb71c3977..a87d1948f 100644
 --- a/crates/address_space_layout/src/lib.rs
 +++ b/crates/address_space_layout/src/lib.rs
-@@ -181,7 +181,7 @@ pub const fn service_window(virtual_address: u64) -> u64 {
-         "a service window must be page aligned"
-     );
-     assert!(
--        SERVICE_WINDOWS.contains(virtual_address),
-+        HEAP.contains(virtual_address),
-         "a service window must lie in SERVICE_WINDOWS (address_space_layout)"
-     );
-     virtual_address
+@@ -270,7 +270,7 @@ pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
+ /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
+ /// [`SERVICE_WINDOWS`].
+ pub const fn service_window(virtual_address: u64) -> u64 {
+-    window(SERVICE_WINDOWS, virtual_address, PAGE)
++    window(HEAP, virtual_address, PAGE)
+ }
+ 
+ /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
