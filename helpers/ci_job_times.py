@@ -89,7 +89,7 @@ per-build row. The fold is idempotent, since a row that is already folded passes
 For each job, the newest `HISTORY` merge-group runs that ran it. When the newest is at or past
 `WARN_FRACTION` of the job's budget and no issue is open for the job, it opens one, labeled `LABEL`.
 An open issue is found by the marker in its body, never by the label, because an issue the App opens
-can come out unlabelled, and a job whose issue a person closed is not opened again for a run that
+can come out unlabeled, and a job whose issue a person closed is not opened again for a run that
 started before the closure; a job with two open issues keeps the newest and closes the rest with a
 comment naming it. While one is open it rewrites the issue's body on every pass with the recent runs, so the same issue
 is updated rather than a second opened. It closes the issue when the newest `CLOSE_AFTER` runs are
@@ -1054,7 +1054,7 @@ def selftest():
     expect("three runs under close", decide(runs_at([16, 15, 16.5, 18]), {"test": 77}, {}),
            [("close", "test", 77)])
     marked = lambda n, job, **kw: dict({"number": n, "body": MARKER % job + "\ntext"}, **kw)
-    expect("an unlabelled marked issue is found, and the newer duplicate survives",
+    expect("an unlabeled marked issue is found, and the newer duplicate survives",
            group_budget_issues([marked(3681, "swish-check"), marked(3651, "swish-check"),
                                 marked(5, "prove"), {"number": 6, "body": "no marker"},
                                 marked(7, "prove", pull_request={})]),
