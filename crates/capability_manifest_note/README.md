@@ -138,9 +138,10 @@ Kani, a model checker for Rust, proves these over every input in its bound:
   manifest.
 - `encode` refuses a memory grant whose minimum is above its maximum.
 - `decode` never panics on any input up to one byte past version 1's length, nor `decode`, `zones`
-  and `asks_service` through a version 3 descriptor with one zone, at any length up to its 62 bytes.
-- `decode_verbs` never panics on a table of up to two verbs, and `grants_for` finds every verb it
-  decoded with the grants the table gives it.
+  and `asks_service` through a version 2 or 3 descriptor of six zone layouts, at every length up to
+  62 bytes.
+- `grants_for` finds every verb `decode_verbs` accepts in a table of one or two verbs of one or two
+  bytes, with the grants the table gives it.
 - `decode_subtree_grants` never panics on any input up to one byte past its 8 bytes.
 
 Every harness carries a falsification patch in `falsifications/`, a small defect that turns the

@@ -1,6 +1,7 @@
 //! **Machine-checked proofs (Kani) of the manifest descriptor**: whatever `decode` accepts,
 //! `encode` spells back byte for byte; whatever `encode` builds, `decode` reads back as the same
-//! manifest; and `decode`, `decode_verbs` and `decode_subtree_grants` never panic. Behind
+//! manifest; `decode` and `decode_subtree_grants` never panic; and `grants_for` finds each verb
+//! `decode_verbs` accepts. Behind
 //! `#[cfg(kani)]`, so only `cargo kani` compiles them.
 //!
 //! Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats,
@@ -36,36 +37,109 @@ fn decode_never_panics() {
     let _ = decode(&d[..len]);
 }
 
-/// **`decode` never panics through a version 3 descriptor with one three-byte zone**, at any
-/// length up to its 62 bytes, and neither do `zones` and `asks_service` after it. That length walks
-/// both zone checks, the service byte and the exact-length check, which the 57-byte harness above
-/// stops short of.
+/// **`decode` never panics through a version 2 or 3 descriptor, and neither do `zones` and
+/// `asks_service` after it**, at every length from the 56-byte fixed part to 62 bytes, for six zone
+/// layouts: no zone; one zone of one byte; one zone whose length byte runs past every length; the
+/// root zone, then a zone of one byte; a zone of one byte, then one of two; and a zone count past
+/// [`MAXIMUM_ZONES`]. Across those lengths the walk meets a length byte that fits and one that runs
+/// past the end, a service byte and an end where the service byte should be, so it reaches both
+/// zone checks (canonical, and sorted after the zone before), the service byte and the exact-length
+/// check, which the 57-byte harness above stops short of.
+///
+/// The solver chooses the version word, the zones' letters and the service byte. The zone count,
+/// the length bytes and the length are each case's own, and the rest of the fixed part is a plain
+/// manifest's, because `decode_never_panics` and `a_decoded_manifest_encodes_back_to_its_bytes`
+/// already choose every byte of it, and the zone walk reads none of it. Below 56 bytes there is
+/// nothing more to see: `zones` and `asks_service` call `decode` first, which refuses a descriptor
+/// shorter than its fixed part. With the count, a length byte or the length chosen by the solver
+/// instead, every variant measured ran out of memory under a 12 GiB cap: the walk is then unrolled
+/// for every count and every length at once.
 ///
 /// Falsification: replayable `crates/capability_manifest_note/falsifications/verification.decode_never_panics_through_a_serviced_descriptor.patch`
 #[kani::proof]
 #[kani::unwind(18)]
 fn decode_never_panics_through_a_serviced_descriptor() {
-    let d: [u8; DESCRIPTOR_BYTES + 1 + 1 + 3 + 1] = kani::any();
-    let len: usize = kani::any();
-    kani::assume(len <= d.len());
-    let d = &d[..len];
-    let _ = decode(d);
-    let _ = zones(d);
-    let _ = asks_service(d);
+    zone_walk_never_panics(0, &[]);
+    zone_walk_never_panics(1, &[1]);
+    zone_walk_never_panics(1, &[5]);
+    zone_walk_never_panics(2, &[0, 1]);
+    zone_walk_never_panics(2, &[1, 2]);
+    zone_walk_never_panics(MAXIMUM_ZONES as u8 + 1, &[]);
 }
 
-/// **`decode_verbs` never panics on a table of up to two verbs, and `grants_for` finds every verb
-/// it decoded** with the grants the iterator gives. The binary search is correct only on a table
-/// sorted strictly, which is what `decode_verbs` refuses to let through otherwise.
+/// One case of `decode_never_panics_through_a_serviced_descriptor`: a zone count of `count` and
+/// the zones' length bytes `lengths`, each placed where the walk will read it (one that falls past
+/// the last byte is left out), at every length from the fixed part to [`SERVICED_BYTES`].
+fn zone_walk_never_panics(count: u8, lengths: &[u8]) {
+    let mut d = PLAIN_SERVICED;
+    d[0] = kani::any();
+    d[1] = kani::any();
+    d[2] = kani::any();
+    d[3] = kani::any();
+    for i in DESCRIPTOR_BYTES + 1..SERVICED_BYTES {
+        d[i] = kani::any();
+    }
+    d[DESCRIPTOR_BYTES] = count;
+    let mut at = DESCRIPTOR_BYTES + 1;
+    for &length in lengths {
+        if at < SERVICED_BYTES {
+            d[at] = length;
+        }
+        at += 1 + length as usize;
+    }
+    for len in DESCRIPTOR_BYTES..=SERVICED_BYTES {
+        let _ = zones(&d[..len]);
+        let _ = asks_service(&d[..len]);
+    }
+}
+
+/// **`grants_for` finds every verb `decode_verbs` accepts in a table of one or two verbs**, with
+/// the grants the iterator gives. The search is correct only on a table sorted strictly, which is
+/// what `decode_verbs` refuses to let through otherwise.
+///
+/// The solver chooses each record's grant bits, padding and first two word bytes, and the rest of
+/// each word is zero, so a verb is one or two bytes long. Two verbs of one or two bytes reach every
+/// order the sort check and the search compare: the first byte decides, the second does, or one
+/// word is a prefix of the other. The table is whole, with a version word of [`VERBS_VERSION`] and
+/// a count that matches its length, since `decode_verbs` refuses anything else before it reads a
+/// record; an empty table has no verb to find. The search runs on the view `decode_verbs` returns
+/// when it accepts, built here over the same records, because through `decode_verbs`'s own result
+/// Kani cannot see that the table's length is fixed, and the run did not finish in 15 minutes.
 ///
 /// Falsification: replayable `crates/capability_manifest_note/falsifications/verification.a_decoded_verb_table_finds_each_verb.patch`
 #[kani::proof]
 #[kani::unwind(18)]
 fn a_decoded_verb_table_finds_each_verb() {
-    let d: [u8; verbs_descriptor_bytes(2)] = kani::any();
-    let len: usize = kani::any();
-    kani::assume(len <= d.len());
-    if let Ok(verbs) = decode_verbs(&d[..len]) {
+    let mut d = [0u8; verbs_descriptor_bytes(2)];
+    let version = VERBS_VERSION.to_le_bytes();
+    for i in 0..4 {
+        d[i] = version[i];
+    }
+    d[4] = 2;
+    for record in 0..2 {
+        let at = 8 + record * VERB_RECORD_BYTES;
+        for i in [
+            0,
+            1,
+            grant_contract::MAXIMUM_VERB,
+            grant_contract::MAXIMUM_VERB + 1,
+            grant_contract::MAXIMUM_VERB + 2,
+            grant_contract::MAXIMUM_VERB + 3,
+        ] {
+            d[at + i] = kani::any();
+        }
+    }
+    finds_each_verb(&d);
+    let mut one = d;
+    one[4] = 1;
+    finds_each_verb(&one[..verbs_descriptor_bytes(1)]);
+}
+
+/// One table of `a_decoded_verb_table_finds_each_verb`: if `decode_verbs` accepts `d`, the search
+/// finds each verb of it with the iterator's grants.
+fn finds_each_verb(d: &[u8]) {
+    if decode_verbs(d).is_ok() {
+        let verbs = Verbs { records: &d[8..] };
         for (word, grants) in verbs.iter() {
             assert!(verbs.grants_for(word) == Some(grants));
         }
@@ -203,6 +277,22 @@ fn an_inverted_memory_grant_does_not_encode() {
     };
     let _ = encode(&m);
 }
+
+/// How long `decode_never_panics_through_a_serviced_descriptor`'s descriptors run: the fixed
+/// part, a zone count, one length byte and three letters, and a service byte.
+const SERVICED_BYTES: usize = DESCRIPTOR_BYTES + 1 + 1 + 3 + 1;
+
+/// [`PLAIN`]'s fixed part, then zeros to [`SERVICED_BYTES`].
+const PLAIN_SERVICED: [u8; SERVICED_BYTES] = {
+    let fixed = encode(&PLAIN);
+    let mut out = [0; SERVICED_BYTES];
+    let mut i = 0;
+    while i < DESCRIPTOR_BYTES {
+        out[i] = fixed[i];
+        i += 1;
+    }
+    out
+};
 
 /// A manifest that asks for nothing, written out so the harness depends on no program's.
 const PLAIN: Manifest = Manifest {

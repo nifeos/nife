@@ -1300,19 +1300,30 @@ impl<'a> Verbs<'a> {
     }
 
     /// What `verb` is granted, or `None` for a word that is no verb in the table. A binary search,
-    /// since the records are sorted.
+    /// since the records are sorted: it halves the run left to search until one record is left,
+    /// and then asks whether that record is `verb`. How many times it halves depends on the table's
+    /// length alone, not on the words, as in `slice::binary_search`, which is what lets the Kani
+    /// proof that it finds each verb finish in a minute; the count is a bound, not a condition, so
+    /// no change to it can loop forever.
     pub fn grants_for(&self, verb: &[u8]) -> Option<grant_contract::ManifestAuthorities> {
-        let (mut lo, mut hi) = (0, self.len());
-        while lo < hi {
-            let mid = lo + (hi - lo) / 2;
-            let (word, grants) = self.record(mid);
-            match word.cmp(verb) {
-                core::cmp::Ordering::Equal => return Some(grants),
-                core::cmp::Ordering::Less => lo = mid + 1,
-                core::cmp::Ordering::Greater => hi = mid,
-            }
+        let mut size = self.len();
+        if size == 0 {
+            return None;
         }
-        None
+        let mut base = 0;
+        // Each halving leaves `size - size / 2` records, so `ilog2 + 1` of them reach one; a
+        // halving of one record is none.
+        for _ in 0..size.ilog2() + 1 {
+            let half = size / 2;
+            if !before(verb, self.record(base + half).0) {
+                base += half;
+            }
+            size -= half;
+        }
+        // The record left is the last one at or before `verb`, or the first one when `verb` sorts
+        // before them all; it is `verb` when neither sorts before the other.
+        let (word, grants) = self.record(base);
+        (!before(word, verb) && !before(verb, word)).then_some(grants)
     }
 
     /// The verbs, in their sorted order, with their grants. The items borrow the descriptor, not
@@ -1490,8 +1501,21 @@ mod verb_tests {
         }
         let v = decode_verbs(&d).unwrap();
         assert_eq!(v.len(), 175);
-        assert_eq!(v.grants_for(b"verb174"), Some(ManifestAuthorities::CATALOG));
+        // Every verb is found, and no word between, before or after them is: the first, the last
+        // and each run the search halves to.
+        for w in &words {
+            assert_eq!(v.grants_for(w.as_bytes()), Some(ManifestAuthorities::CATALOG));
+            assert_eq!(v.grants_for(std::format!("{w}a").as_bytes()), None);
+            assert_eq!(v.grants_for(&w.as_bytes()[..6]), None);
+        }
+        assert_eq!(v.grants_for(b"a"), None);
         assert_eq!(v.grants_for(b"verb175"), None);
+        assert_eq!(v.grants_for(b"z"), None);
+        let one = Verbs { records: &d[8..8 + VERB_RECORD_BYTES] };
+        assert_eq!(one.grants_for(b"verb000"), Some(ManifestAuthorities::CATALOG));
+        assert_eq!(one.grants_for(b"verb001"), None);
+        assert_eq!(one.grants_for(b"a"), None);
+        assert_eq!(Verbs { records: &[] }.grants_for(b"verb000"), None);
         let mut over = d.clone();
         over[4..8].copy_from_slice(&257u32.to_le_bytes());
         assert_eq!(decode_verbs(&over), Err(Error::BadField(4)));
