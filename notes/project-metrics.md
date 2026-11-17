@@ -119,6 +119,7 @@ Queue began 2026-08-15; W31 and W32 predate it.
 - 2026W45: CI job prove ran at 94% of its budget on its newest merge-group run; tracking issue #3350
 - 2026W46: CI job prove ran at 96% of its budget on its newest merge-group run; tracking issue #3546
 - 2026W47: CI job swish-check ran at 87% of its budget on its newest merge-group run; tracking issue #3651
+- 2026W47: CI job swish-check ran at 87% of its budget on its newest merge-group run; tracking issue #3681
 <!-- /week-notes -->
 
 ![Where a merge-group build's time goes](project-metrics/ci-critical-path.svg)
@@ -220,7 +221,7 @@ accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10
 save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W47, `main` at `5f7642455`: unexplained past 5%: aarch64 `spawn_el0` +8.03%, riscv64 `spawn_el0` +7.32%.
+2026W47, `main` at `bc8259160`: nothing unexplained past 5%; the largest, aarch64 `map_el0` +1.55%, riscv64 `sink_throughput` +1.45%, x86_64 `map_new` +1.58%.
 <!-- /baseline-drift -->
 
 ## Interface stability
@@ -232,7 +233,7 @@ and wire-format value changes. [definitions](interface-stability.md),
 [per crate and package](project-metrics/interface-stability.md).
 
 <!-- interface-stability: script/metrics writes this -->
-interface, 2026W44 to 2026W47: 22 breaking changes (24 additions); 0 syscall numbers changed, 1 format bumps; 61% co-change, 48% across packages.
+interface, 2026W44 to 2026W47: 22 breaking changes (24 additions); 0 syscall numbers changed, 1 format bumps; 55% co-change, 48% across packages.
 <!-- /interface-stability -->
 
 ## The crates 857 releases
