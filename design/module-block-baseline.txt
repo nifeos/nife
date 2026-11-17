@@ -2175,7 +2175,6 @@ crates/domain_name_system/src/proofs.rs
 
 crates/environment_contract/src/lib.rs::ConfigPage
 
-crates/environment_contract/src/lib.rs::MAGIC
 
 crates/environment_contract/src/lib.rs::PAGE_BYTES
 
