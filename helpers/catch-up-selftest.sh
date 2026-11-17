@@ -39,7 +39,7 @@ block() { # number slug status
 commit() { git add -A && git commit -q -m "$1" --date "$2 12:00:00 +0000"; }
 export GIT_COMMITTER_DATE
 
-# Index era: a README table naming milestones 1 and 2.
+# Index era: a README table naming two milestones, numbered one and two.
 cat >design/roadmap/README.md <<'R'
 | 1 | PROPOSED | [One](0001-one.md) | why | |
 | 2 | BUILT | [Two](0002-two.md) | why | 2026-08-01 |
@@ -47,13 +47,13 @@ R
 GIT_COMMITTER_DATE="2026-09-01T12:00:00" commit index 2026-09-01
 index_era=$(git rev-parse HEAD)
 
-# Block era: the table is prose, milestone 1 is now BUILT, 2 unchanged, 3 is new.
+# Block era: the table is prose, the first is now BUILT, the second unchanged, a third is new.
 printf 'Prose only, no table.\n' >design/roadmap/README.md
 block 0001 one BUILT; block 0002 two BUILT; block 0003 three PROPOSED
 GIT_COMMITTER_DATE="2026-10-01T12:00:00" commit blocks 2026-10-01
 block_era=$(git rev-parse HEAD)
 
-# A later block era: 4 is new, 3 changed.
+# A later block era: a fourth is new, the third changed.
 block 0003 three BUILT; block 0004 four PROPOSED
 GIT_COMMITTER_DATE="2026-11-01T12:00:00" commit later 2026-11-01
 later=$(git rev-parse HEAD)
