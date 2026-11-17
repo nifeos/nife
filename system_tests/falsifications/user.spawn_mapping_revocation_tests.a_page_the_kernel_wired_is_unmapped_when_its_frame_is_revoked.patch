@@ -8,14 +8,15 @@ files no record, so the mapping is in no space's mapping log, and every unmap sw
 `x86_64` timebase page were therefore invisible to `PageFrame::REVOKE`, `DeviceFrame::REVOKE` and
 `MemoryRegion::DESTROY` alike: the capability went and the mapping stayed.
 
-**The patch is larger than the fix, and every extra hunk exists to keep the tree honest rather than
-to widen the defect.** The fix moved the record from `user_address_space_map` into `map_physical`,
-so simply deleting it from `map_physical` would take the `MAP_INTO` path's record with it, which is
-a second and different defect (`user::live_swap_tests` catches that one within a minute, on its
-`LOG_REVOKE_ENFORCED` assertion, which is worth knowing). So this patch puts that record back where
-it was, and restores the explicit `record_mapping` calls that `crate::revoke`'s own suite used to
-carry beside each `map_physical`. What is left is exactly one difference from the fixed tree: the
-kernel-wiring callers record nothing.
+**The patch is larger than the revert of the fix, on purpose.** The fix moved the record from
+`user_address_space_map` into `map_physical_held`, which `AddressSpace::map_physical` and the
+`MAP_INTO` path both reach, and which also refuses a page writable here and executable there. So
+simply deleting the record from `map_physical_held` would take the `MAP_INTO` path's record with it,
+which is a second and different defect (`user::live_swap_tests` catches that one within a minute, on
+its `LOG_REVOKE_ENFORCED` assertion, which is worth knowing). So this patch makes `map_physical`
+alone skip the record, and puts the record back in `user_address_space_map`, where the recorded half
+of this test's spaces is built. What is left is exactly one difference from the fixed tree: the
+kernel-wiring callers of `map_physical` record nothing.
 
 It was found by asking the question risk 7's adversarial pass left open, which recorded this in
 `map_physical`'s own `BUGS` as latent. It is not latent, and the reachable path is in the test
@@ -40,161 +41,8 @@ the mapping log, the sweeps and `map_physical` are portable kernel code. The rec
 because that is where it was replayed, not because the defect is; the test passes on aarch64,
 riscv64 and x86_64.
 
-**Re-cut 2026-10-04 (UTC) by the map-revocation-window lane**, when the record moved into
-`revoke::MappingHold` and `MAP_INTO` stopped going through `user_address_space_map`. The extra
-hunks now call `hold().record_mapping` where they called the free `record_mapping`, and `MAP_INTO`
-needs no hunk: it records through `map_physical_held`, which this patch leaves alone. The one
-difference from the fixed tree is unchanged. Replayed red on aarch64 the same day at
-`spawn_mapping_revocation_tests.rs:145`, the headline.
-
-The `MAP_INTO` engine's context once carried a comment citing milestone 19 (run a real workload),
-whose `d` phase is where the I-cache sync beside it came from; the gloss stays because a patch's
-context lines are the tree's text and the citation gate reads them.
-
-**Re-cut 2026-10-11 (UTC) by milestone 872 (the kernel's user-mode file is split along its seams)**,
-when `impl AddressSpace` moved to `kernel/src/user/address_space.rs`. Regenerated from a tree with
-this patch applied, so every hunk now sits at its real line; the registry hunk had applied only
-by offset since milestone 812 (`std::thread::spawn` runs real threads in one address space) moved
-it. The one difference from the fixed tree is unchanged.
-
-diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
---- a/kernel/src/revoke.rs
-+++ b/kernel/src/revoke.rs
-@@ -847,6 +847,10 @@ mod tests {
-                 PageMapSource::Capability(run[0]),
-             )
-             .expect("map A");
-+            assert!(
-+                hold().record_mapping(*phys, a.root(), va, PageMapSource::Capability(run[0])),
-+                "record A",
-+            );
-         }
-         b.map_physical(
-             va_b,
-@@ -855,6 +859,10 @@ mod tests {
-             PageMapSource::Capability(run[0]),
-         )
-         .expect("map B");
-+        assert!(
-+            hold().record_mapping(run[2], b.root(), va_b, PageMapSource::Capability(run[0])),
-+            "record B",
-+        );
- 
-         let slot = crate::sched::grant(page_frame_run_capability(
-             run[0],
-@@ -919,6 +927,15 @@ mod tests {
-                 PageMapSource::Capability(run[0]),
-             )
-             .expect("map driver");
-+        assert!(
-+            hold().record_mapping(
-+                run[1],
-+                driver.root(),
-+                va_driver,
-+                PageMapSource::Capability(run[0]),
-+            ),
-+            "record driver",
-+        );
-         client
-             .map_physical(
-                 va_client,
-@@ -927,6 +944,15 @@ mod tests {
-                 PageMapSource::Capability(run[1]),
-             )
-             .expect("map client");
-+        assert!(
-+            hold().record_mapping(
-+                run[1],
-+                client.root(),
-+                va_client,
-+                PageMapSource::Capability(run[1]),
-+            ),
-+            "record client",
-+        );
- 
-         // The client hands its surface back.
-         revoke_page_frame_run(run[1], 3);
-@@ -974,6 +1000,15 @@ mod tests {
-                 PageMapSource::Capability(run[0]),
-             )
-             .expect("map keeper");
-+        assert!(
-+            hold().record_mapping(
-+                shared,
-+                keeper.root(),
-+                va_keeper,
-+                PageMapSource::Capability(run[0]),
-+            ),
-+            "record keeper",
-+        );
-         loser
-             .map_physical(
-                 va_loser,
-@@ -982,6 +1017,15 @@ mod tests {
-                 PageMapSource::Capability(shared),
-             )
-             .expect("map loser");
-+        assert!(
-+            hold().record_mapping(
-+                shared,
-+                loser.root(),
-+                va_loser,
-+                PageMapSource::Capability(shared),
-+            ),
-+            "record loser",
-+        );
- 
-         unmap_everywhere(shared, keeper.root());
- 
-@@ -1017,6 +1061,10 @@ mod tests {
-                 PageMapSource::Capability(run[0]),
-             )
-             .expect("map");
-+        assert!(
-+            hold().record_mapping(run[0], space.root(), va, PageMapSource::Capability(run[0])),
-+            "record",
-+        );
- 
-         let run_slot = crate::sched::grant(page_frame_run_capability(
-             run[0],
-@@ -1069,6 +1117,14 @@ mod tests {
-             PageMapSource::NoCapability,
-         )
-         .expect("map B");
-+        assert!(
-+            hold().record_mapping(shared, a.root(), va_a, PageMapSource::NoCapability),
-+            "record A",
-+        );
-+        assert!(
-+            hold().record_mapping(shared, b.root(), va_b, PageMapSource::NoCapability),
-+            "record B",
-+        );
- 
-         assert!(
-             mmu::translate_at(a.root(), va_a).is_some(),
-@@ -1104,6 +1160,10 @@ mod tests {
-         space
-             .map_physical(va, phys, Flags::user_data(), PageMapSource::NoCapability)
-             .expect("map");
-+        assert!(
-+            hold().record_mapping(phys, space.root(), va, PageMapSource::NoCapability),
-+            "record",
-+        );
-         assert!(
-             mmu::translate_at(space.root(), va).is_some(),
-             "the page was not mapped"
-@@ -1150,6 +1210,10 @@ mod tests {
-                 refused = true;
-                 break;
-             }
-+            if !hold().record_mapping(shared, space.root(), va, PageMapSource::NoCapability) {
-+                refused = true;
-+                break;
-+            }
-         }
-         assert!(
-             refused,
 diff --git a/kernel/src/user/address_space.rs b/kernel/src/user/address_space.rs
+index 657684240..a9f4f012b 100644
 --- a/kernel/src/user/address_space.rs
 +++ b/kernel/src/user/address_space.rs
 @@ -261,7 +261,8 @@ impl AddressSpace {
@@ -208,15 +56,18 @@ diff --git a/kernel/src/user/address_space.rs b/kernel/src/user/address_space.rs
  
      /// [`Self::map_physical`] under a [`MappingHold`](crate::revoke::MappingHold) the caller already
 diff --git a/kernel/src/user/address_space_registry.rs b/kernel/src/user/address_space_registry.rs
+index f70f5484b..b69878d5a 100644
 --- a/kernel/src/user/address_space_registry.rs
 +++ b/kernel/src/user/address_space_registry.rs
-@@ -205,6 +205,10 @@ pub fn user_address_space_map(
+@@ -216,6 +216,12 @@ pub fn user_address_space_map(
          .space;
  
      space.map_physical(va, phys, flags, under)?;
-+    if !crate::revoke::hold().record_mapping(phys, space.root(), va, under) {
++    if let Err(refused) =
++        crate::revoke::hold().record_mapping(phys, space.root(), va, flags, under)
++    {
 +        mmu::unmap_user_at(space.root(), va);
-+        return Err(MapError::OutOfPageFrames);
++        return Err(refused);
 +    }
      // The I-cache is not coherent with the D-cache on aarch64, so a code page a loader filled with
      // data writes is synced through its direct-map VA (caches are PIPT to the point of

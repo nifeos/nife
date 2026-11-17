@@ -38,12 +38,12 @@ diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thr
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
 -    let child_slot = sched::thread_control_block_delegate_capability(
-+    let child_slot = sched::thread_control_block_insert_cap(
++    let child_slot = sched::thread_control_block_insert_capability(
          tid,
 -        sched::Delegation {
 -            slot: src_slot,
 -            rights: Rights::from_bits(rights as u32),
-+        crate::capability_object::Cap {
++        crate::capability_object::Capability {
 +            object: src.object,
 +            rights: narrowed,
          },

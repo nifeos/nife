@@ -34,7 +34,7 @@ diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
      }
      // The source is read, checked and copied inside `sched`, under the hold that files the
      // copy, so no revocation sweep falls between the read and the filing (`sched::Delegation`).
-+    let src = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
++    let src = sched::current_capability(slot).map_err(|_| Error::NoSuchSlot)?;
 +    if !src.rights.allows(Rights::GRANT) {
 +        return Err(Error::NotPermitted);
 +    }
@@ -45,13 +45,13 @@ diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
 -    sched::inter_process_communication_delegate_capability(
-+    sched::ipc_send_cap(
++    sched::inter_process_communication_send_capability(
          ep,
          word,
 -        sched::Delegation {
 -            slot,
 -            rights: Rights::from_bits(narrow as u32),
-+        crate::capability_object::Cap {
++        crate::capability_object::Capability {
 +            object: src.object,
 +            rights: narrowed,
          },
