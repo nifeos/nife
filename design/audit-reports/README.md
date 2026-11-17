@@ -152,6 +152,7 @@ malformed it.
 | 2026-10-27 | documentation | A subsystem rewritten inside its existing crate: `file_allocation_table`, which gained a reader in the window, read from the notes that describe it and its two writers from the outside, passage by passage against the code, with the installer's and the boot stick's spawn and report words swept for contracts stated only in prose | fixed 6, minted 4, accepted 4 | [The FAT crate, read from the outside](2026-10-27-the-fat-crate-read-from-the-outside.md) |
 | 2026-11-03 | documentation | Names the window moved, read from the prose that still uses them: the four spelled-out capability names, the four crates that left the tree or took a new name, and the removed `rmle`, each followed to every current document, script and comment that names it | fixed 4, minted 0, accepted 1 | [Names the window moved](2026-11-03-names-the-window-moved.md) |
 | 2026-11-03 | security | From the package to the grant, as a hostile package and a confined process trying to widen: the approval file, a program's asks, the `INTERFACES` note, the system manifest and the base digest page, then the runtime halves split out of the supervision and hot-swap contracts, the survey `PROCESS` record, the device-tree patcher and the eight new fixtures | fixed 2, minted 4, accepted 4 | [From the package to the grant](2026-11-03-from-the-package-to-the-grant.md) |
+| 2026-11-17 | documentation | The newcomer path, run rather than read: every command the README's Try it block, `CONTRIBUTING.md` and `AGENTS.md` tell a reader to run, followed to the scripts and notes they send that reader to next, with each claim checked against the tree | fixed 0, minted 9, accepted 1 | [The newcomer path](2026-11-17-the-newcomer-path.md) |
 
 ## What the tree looked like when each ran
 
@@ -198,6 +199,7 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-10-27 | documentation | 488 | 235 | 97 | 201 |
 | 2026-11-03 | documentation | 489 | 252 | 99 | 199 |
 | 2026-11-03 | security | 489 | 252 | 99 | 199 |
+| 2026-11-17 | documentation | 510 | 253 | 99 | 209 |
 
 The two `-` cells are honest rather than lazy: the roadmap was a single file with no status column
 until milestone 76 (split the roadmap: `design/roadmap/README.md` as index, one file per milestone) split it into `design/roadmap/` on 2026-08-03, and milestones 1 to 11 were
