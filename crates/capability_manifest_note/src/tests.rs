@@ -145,6 +145,13 @@ fn options_are_distinct_letters_and_the_subtree_option_is_one_of_them() {
     let mut too_many = rm;
     too_many[OPTION_COUNT] = MAXIMUM_DECLARED_SHORT_OPTIONS as u8 + 1;
     assert_eq!(decode(&too_many), Err(Error::BadField(OPTION_COUNT)));
+
+    // Every unused letter slot, up to the last, must be zero.
+    for at in OPTION_LETTERS + 3..OPTION_LETTERS + MAXIMUM_DECLARED_SHORT_OPTIONS {
+        let mut padded = rm;
+        padded[at] = b'z';
+        assert_eq!(decode(&padded), Err(Error::BadField(at)), "offset {at}");
+    }
 }
 
 #[test]
