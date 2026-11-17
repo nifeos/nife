@@ -172,7 +172,7 @@ fn each_thread_reads_through_its_own_thread_pointer() {
                 [CODE_VA, STACK_VA + page_frames::FRAME_SIZE, given],
                 first,
             ),
-            Ok(current_cpu_contract::PAGE_VA as i64),
+            Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
             "CONFIGURE refused spinner {i}'s thread pointer {first:#x}",
         );
         let (slot_arg, value_arg) = if self_setter {
@@ -299,7 +299,7 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
     );
     assert_eq!(
         configure(VA),
-        Ok(current_cpu_contract::PAGE_VA as i64),
+        Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
         "a refused CONFIGURE left the embryo unable to be configured",
     );
     assert_eq!(
