@@ -152,6 +152,7 @@ malformed it.
 | 2026-10-27 | documentation | A subsystem rewritten inside its existing crate: `file_allocation_table`, which gained a reader in the window, read from the notes that describe it and its two writers from the outside, passage by passage against the code, with the installer's and the boot stick's spawn and report words swept for contracts stated only in prose | fixed 6, minted 4, accepted 4 | [The FAT crate, read from the outside](2026-10-27-the-fat-crate-read-from-the-outside.md) |
 | 2026-11-03 | documentation | Names the window moved, read from the prose that still uses them: the four spelled-out capability names, the four crates that left the tree or took a new name, and the removed `rmle`, each followed to every current document, script and comment that names it | fixed 4, minted 0, accepted 1 | [Names the window moved](2026-11-03-names-the-window-moved.md) |
 | 2026-11-03 | security | From the package to the grant, as a hostile package and a confined process trying to widen: the approval file, a program's asks, the `INTERFACES` note, the system manifest and the base digest page, then the runtime halves split out of the supervision and hot-swap contracts, the survey `PROCESS` record, the device-tree patcher and the eight new fixtures | fixed 2, minted 4, accepted 4 | [From the package to the grant](2026-11-03-from-the-package-to-the-grant.md) |
+| 2026-11-17 | documentation | The newcomer path, run rather than read: every command the README's Try it block, `CONTRIBUTING.md` and `AGENTS.md` tell a reader to run, followed to the scripts and notes they send that reader to next, with each claim checked against the tree | fixed 0, minted 9, accepted 1 | [The newcomer path](2026-11-17-the-newcomer-path.md) |
 | 2026-11-17 | security | The verifier, as code that runs with authority nobody reviewed: the stock Kani `.kani-version` pins and the bundle `cargo kani setup` fetches behind it, the daily bump job, the patched riscv64 Kani and the falsification records, then the window's ten new external packages followed to the graph each reaches | fixed 0, minted 3, accepted 2 | [The verifier](2026-11-17-the-verifier.md) |
 | 2026-11-17 | security | radon's device authority, read as a holder turned hostile: the clock and reset server, the GMAC's control process and the PMIC route, each page followed to what it reaches beyond its device, who can send to it and what it trusts | fixed 3, minted 3, accepted 2 | [radon's device authority](2026-11-17-radon-device-authority.md) |
 
@@ -200,6 +201,7 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-10-27 | documentation | 488 | 235 | 97 | 201 |
 | 2026-11-03 | documentation | 489 | 252 | 99 | 199 |
 | 2026-11-03 | security | 489 | 252 | 99 | 199 |
+| 2026-11-17 | documentation | 510 | 253 | 99 | 209 |
 | 2026-11-17 | security | 510 | 253 | 99 | 209 |
 | 2026-11-17 | security | 510 | 253 | 99 | 209 |
 
