@@ -11,7 +11,8 @@ use super::*;
 
 /// How many control messages a run holds. Two reach a fresh grant, a re-grant over it, a piece out
 /// of order after a first piece, and a forget after a grant, and each zone piece is eight bytes, so
-/// a zone of up to 32 bytes can complete. A third message made the proof outrun its twenty-minute
+/// a zone of up to 16 bytes can complete (the harness caps the total there). A third message, and a
+/// parse of a 32-byte zone, each made the proof outrun its twenty-minute
 /// shard, so the run stays at two.
 const STEPS: usize = 2;
 
@@ -32,14 +33,18 @@ const STEPS: usize = 2;
 /// inside the run, so a wrap or an index past the buffer fails the proof.
 /// Falsification: replayable `crates/domain_name_resolution_contract/falsifications/verification.the_grant_table_grants_only_what_it_said.patch`
 #[kani::proof]
-#[kani::unwind(34)]
+#[kani::unwind(18)]
 fn the_grant_table_grants_only_what_it_said() {
     let mut grants = Grants::new();
     let mut badges = [0u32; STEPS];
     for step in 0..STEPS {
         let first_word: u64 = kani::any();
         let second_word: u64 = kani::any();
-        let (_, _, _, badge) = control_fields(first_word);
+        let (_, _, total, badge) = control_fields(first_word);
+        // Two messages carry at most 16 bytes of zone, so a longer total can only ever be a
+        // partial or a refusal, and the parse of up to 32 bytes outran the shard. The cap keeps
+        // the parse inside what two pieces can complete.
+        kani::assume(total <= 16);
         let before = grants.granted(badge);
         let mut others_before = [None; STEPS];
         for earlier in 0..step {
