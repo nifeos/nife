@@ -79,7 +79,7 @@ of two answers and is silently wrong when a third exists.
   thread stack would have been mapped at the kernel image's own base, over `.text`. It is now each
   `arch::mmu::THREAD_STACK_AREA`, and x86's is Linux's `VMALLOC_START`. Found by reading; it would
   have surfaced as `kmem: no memory to wire one`, arbitrarily far from the cause.
-- `crates/elf`'s `EXPECTED_MACHINE`. `#[cfg(not(target_arch = "riscv64"))] EM_AARCH64`, and
+- `crates/static_elf`'s `EXPECTED_MACHINE`. `#[cfg(not(target_arch = "riscv64"))] EM_AARCH64`, and
   `not(riscv64)` catches x86_64: the x86 kernel was compiled to accept aarch64 binaries and refuse
   its own. Now a three-arm `cfg`.
 - `xtask`'s `ArchLegs`. `fn aarch64(self) { self != Riscv64 }`, which answers `true` for every

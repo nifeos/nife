@@ -1,13 +1,13 @@
 //! **The kernel's half of the self-test, as the page the kernel hands the progenitor**
-//! (milestone 1063 (the boot self-test's spawning checks run from userspace)). The kernel runs the
+//! The kernel runs the
 //! checks of its own internals, prints their lines and writes this page; the progenitor maps it,
 //! read-only, into `boot_self_test`, which runs the checks that need a user program and prints the
 //! one verdict.
 //!
 //! The page carries the kernel's tally, the facts the moved checks need and cannot learn at user
 //! level (a kernel address to fault on, what the JH7110 bring-up answered), and whether the build
-//! injects a failure. Two programs agree on it, so it is code here and not prose (§311 (a contract
-//! is code, not prose)). See notes/self-test-checks.md, "The two halves".
+//! injects a failure. Two programs agree on it, so it is code here and not prose (a contract
+//! two programs agree on is code, not prose).
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for whose half the page carries.
@@ -17,7 +17,7 @@ use crate::verdict::Tally;
 /// The page's first word: `NIFESTK1` as little-endian bytes. A page without it is not this page.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).
-pub const MAGIC: u64 = u64::from_le_bytes(*b"NIFESTK1");
+pub const MAGIC: u64 = u64::from_le_bytes(*b"NIFESTK1"); // wire literal
 
 /// **Where each fact sits in the page**, in 64-bit words from its start.
 ///
@@ -42,15 +42,15 @@ pub mod word {
     /// The register window of the JH7110 true random number generator (TRNG), physical.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_REGISTERS: usize = 6;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_REGISTERS: usize = 6;
     /// The TRNG service's three-word readiness report (`entropy_contract`).
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_REPORT: usize = 7;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_REPORT: usize = 7;
     /// Counter ticks from the start of the TRNG's bring-up to its readiness report.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS: usize = 10;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS: usize = 10;
     /// The JH7110 clock-and-reset window, physical.
     ///
     /// Name: provisional.
@@ -84,23 +84,23 @@ pub mod flag {
     /// The device tree names a JH7110 TRNG.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_FOUND: u64 = 1 << 1;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_FOUND: u64 = 1 << 1;
     /// The tree marks that TRNG `okay`.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_STATUS_OKAY: u64 = 1 << 2;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_STATUS_OKAY: u64 = 1 << 2;
     /// The archive had no `jh7110_entropy` program, so nothing was wired.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING: u64 = 1 << 3;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING: u64 = 1 << 3;
     /// The TRNG service was wired; the progenitor holds its request endpoint.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_WIRED: u64 = 1 << 4;
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_WIRED: u64 = 1 << 4;
     /// The service sent its readiness report before the kernel's deadline.
     ///
-    /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_ANSWERED: u64 = 1 << 5;
+    /// Name: ratified 2026-11-14 (UTC), block 1078.
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED: u64 = 1 << 5;
     /// The bring-up had a clock-and-reset window to work on, so [`super::word::CLOCK_BEFORE`] and
     /// the words after it mean something.
     ///
@@ -125,12 +125,12 @@ pub mod flag {
     /// The TRNG's status register says it gives 256-bit answers.
     ///
     /// Name: provisional.
-    pub const RANDOM_NUMBER_GENERATOR_256_BIT: u64 = 1 << 11;
-    /// The progenitor holds disk 0's virtio-mmio trio for the `blockdev` check.
+    pub const TRUE_RANDOM_NUMBER_GENERATOR_256_BIT: u64 = 1 << 11;
+    /// The progenitor holds disk 0's virtio-mmio trio for the `block_device` check.
     ///
     /// Name: provisional.
     pub const DISK_MEMORY_MAPPED: u64 = 1 << 12;
-    /// The progenitor holds disk 0's virtio-pci trio for the `blockdev` check.
+    /// The progenitor holds disk 0's virtio-pci trio for the `block_device` check.
     ///
     /// Name: provisional.
     pub const DISK_PCI: u64 = 1 << 13;
@@ -202,17 +202,17 @@ mod tests {
     fn each_flag_is_its_own_bit() {
         let flags = [
             flag::INJECT,
-            flag::RANDOM_NUMBER_GENERATOR_FOUND,
-            flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY,
-            flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING,
-            flag::RANDOM_NUMBER_GENERATOR_WIRED,
-            flag::RANDOM_NUMBER_GENERATOR_ANSWERED,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_FOUND,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_STATUS_OKAY,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_WIRED,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_ANSWERED,
             flag::CLOCK_REPORTED,
             flag::CLOCK_RUNNING,
             flag::CLOCK_RELEASED,
             flag::CLOCK_ALREADY_UP,
             flag::CLOCK_FROM_TREE,
-            flag::RANDOM_NUMBER_GENERATOR_256_BIT,
+            flag::TRUE_RANDOM_NUMBER_GENERATOR_256_BIT,
             flag::DISK_MEMORY_MAPPED,
             flag::DISK_PCI,
         ];

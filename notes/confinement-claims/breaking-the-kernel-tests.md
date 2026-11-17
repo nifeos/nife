@@ -65,7 +65,7 @@ crossed. It proves the test is wired to the real root handle; it does not demons
 ## Row 21's "on every ISA" is not evidenced the same way on every ISA
 
 The aarch64 falsifications map the kernel's own memory EL0-readable, one flag at one call site, and
-the tests watch the hardware refuse. That defect cannot be booted on RISC-V. `crates/paging`'s Sv39
+the tests watch the hardware refuse. That defect cannot be booted on RISC-V. `crates/page_tables`'s Sv39
 encoder turns `ACCESS_USER` into the `U` bit. S-mode access to a `U` page faults unless `sstatus.SUM` is
 set, which this kernel sets only inside a test helper. A kernel that marked its own `.rodata`
 user-readable there would not be a kernel userspace can read. It would be a kernel that cannot read
@@ -100,8 +100,8 @@ assertion under
 
 Row 23 is falsified in the kernel rather than in the fixture, by making `CapabilityTable::delete`
 not take the capability out of the slot. That is the right place, because the claim is the kernel's.
-But rows 4 and 5 are `capability::a_deleted_capability_stays_deleted` and
-`capability::delete_touches_only_its_slot`, both already `replayable`, and both catch that same
+But rows 4 and 5 are `capability_table::a_deleted_capability_stays_deleted` and
+`capability_table::delete_touches_only_its_slot`, both already `replayable`, and both catch that same
 defect. So the honest reading is narrower. It proves row 23's kernel test is wired to the kernel's
 own delete, not that row 23's test is the only thing watching it. Rows 21, 24, 25 and 26 have no
 such overlap.

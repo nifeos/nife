@@ -396,9 +396,9 @@ fn feed_lines(
 /// Whether the board has been silent past `quiet_after` at a stage where silence is a hang.
 ///
 /// A board inside its settle window is quiet because we asked it to be. The exempt stages are the
-/// correct end states, named rather than `< Tour` so that a soak or a sweep, under contract to keep
-/// speaking, is not exempt: [`Stage::Tour`] and [`Stage::SweepDone`] because the kernel halts in
-/// `wfi`, and [`Stage::Prompt`] because `swish` is waiting for somebody to type. A sweep's timer
+/// correct end states, named rather than `< CoreRuns` so that a soak or a sweep, under contract to keep
+/// speaking, is not exempt: [`Stage::CoreRuns`] and [`Stage::SweepDone`] because the kernel halts in
+/// `wfi`, and [`Stage::ShellBanner`] because `swish` is waiting for somebody to type. A sweep's timer
 /// must still exceed its slowest subrun (see [`Stage::Sweep`]).
 fn went_quiet(
     policy: &Policy,
@@ -412,7 +412,7 @@ fn went_quiet(
     settling.is_none()
         && !matches!(
             progress.reached(),
-            Stage::Tour | Stage::Prompt | Stage::SweepDone
+            Stage::CoreRuns | Stage::ShellBanner | Stage::SweepDone
         )
         && last.elapsed() >= limit
 }
@@ -604,7 +604,7 @@ mod tests {
             ..Policy::default()
         };
         let session = watch(&log[..], &mut sink, &policy, false).unwrap();
-        assert_eq!(session.outcome, Outcome::Reached(Stage::Tour));
+        assert_eq!(session.outcome, Outcome::Reached(Stage::CoreRuns));
         assert_eq!(session.exit_code(), 0);
         assert!(!sink.is_empty());
         // The tally is the byte count, not merely "some bytes arrived": every byte that reaches
@@ -701,7 +701,7 @@ mod tests {
         let log = include_bytes!("../tests/fixtures/captured/vf2-2026-09-01-manual-boot.log");
         let mut sink = Vec::new();
         let policy = Policy {
-            until: Some(Stage::Tour),
+            until: Some(Stage::CoreRuns),
             ..Policy::default()
         };
         // Truncated just after the handoff, which is the shape of a capture that was stopped
@@ -761,7 +761,7 @@ mod tests {
         let session = watch(SpeaksThenStops::new(full), &mut sink, &policy, true).unwrap();
         assert_eq!(session.outcome, Outcome::RanOut);
         assert_eq!(session.exit_code(), 0, "a good boot must not exit 2");
-        assert_eq!(session.progress.reached(), Stage::Tour);
+        assert_eq!(session.progress.reached(), Stage::CoreRuns);
         assert!(session.progress.userspace_ran());
     }
 
@@ -770,8 +770,8 @@ mod tests {
     /// its second heartbeat, so what is being asserted is that reaching [`Stage::Soak`] re-arms
     /// the quiet check the completed boot tour in the same log had just suppressed.
     ///
-    /// This is the test the exemption's shape would otherwise get wrong: the log reaches `Tour`
-    /// (its last tour line is in there) and then reaches `Soak`, and a `< Stage::Tour` guard would
+    /// This is the test the exemption's shape would otherwise get wrong: the log reaches `CoreRuns`
+    /// (its last tour line is in there) and then reaches `Soak`, and a `< Stage::CoreRuns` guard would
     /// have called the silence a normal halt.
     #[test]
     fn a_soak_that_goes_quiet_is_a_hang_even_though_the_tour_completed() {
@@ -789,7 +789,7 @@ mod tests {
         assert_eq!(session.exit_code(), 2, "a stalled soak must exit 2");
         assert_eq!(session.progress.reached(), Stage::Soak);
         assert!(
-            session.progress.reached() > Stage::Tour,
+            session.progress.reached() > Stage::CoreRuns,
             "the tour completing must not exempt a soak from the quiet check"
         );
     }
@@ -843,7 +843,7 @@ mod tests {
         let mut sink = Vec::new();
         let policy = Policy {
             total: Duration::from_secs(10),
-            until: Some(Stage::Tour),
+            until: Some(Stage::CoreRuns),
             quiet_after: Some(Duration::from_millis(200)),
             settle: Duration::from_millis(10),
             board: &board::RADON,

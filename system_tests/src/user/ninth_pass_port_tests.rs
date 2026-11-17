@@ -39,8 +39,8 @@ const PORT_SLOT_NO_WAKE: u64 = 1;
 /// Where the child's code and stack live: the image and stack bands, offset four 2 MiB windows in
 /// from `x86_port_tests` and `supervision_tests` so no stray global makes one test's leftovers look
 /// like another's.
-const CODE_VA: u64 = address_space_map::IMAGE_BASE + 0x80_0000;
-const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE - 0x80_0000;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE + 0x80_0000;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE - 0x80_0000;
 
 /// Build a ring-3 child from `stub`, one of `x86_programs`' architect-ratified stub builders (this
 /// module mints no ring-3 machine code), holding `PortRange(COM1)` with `rights`, supervised

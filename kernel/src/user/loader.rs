@@ -11,7 +11,7 @@ use super::*;
 // page's own crate, which knows nothing of the map; each architecture's build checks its own
 // address.
 const _: () = assert!(
-    counter_frequency_contract::PAGE_VIRTUAL_ADDRESS >= address_space_map::CODE_MODEL_CEILING
+    counter_frequency_contract::PAGE_VIRTUAL_ADDRESS >= address_space_layout::CODE_MODEL_CEILING
 );
 
 /// Why a binary was refused.
@@ -20,8 +20,8 @@ const _: () = assert!(
 /// simply *say*, and the answer is to decline and kill the thread, not to take the machine down.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoadError {
-    /// The file is not an aarch64 static ELF we are willing to run. See `elf::Error`.
-    NotLoadable(elf::Error),
+    /// The file is not an aarch64 static ELF we are willing to run. See `static_elf::Error`.
+    NotLoadable(static_elf::Error),
 
     /// It asked to be loaded somewhere it may not go.
     ///
@@ -35,7 +35,7 @@ pub enum LoadError {
     /// end and the stack's base, or linked somewhere else entirely (milestone 206, DECISIONS §171
     /// (where a program image starts) option A). Refused before a page is mapped. Its `Display` is
     /// the sentence the boot prints.
-    Misplaced(address_space_map::ImagePlacement),
+    Misplaced(address_space_layout::ImagePlacement),
 
     /// **The spawner's window list cannot be written as a startup page**: a duplicate kind, a
     /// malformed window or too many of them. A spawner bug rather than a bad file, refused before
@@ -63,14 +63,14 @@ fn check_image_band(elf: &Elf) -> Result<(), LoadError> {
     let mut lo = u64::MAX;
     let mut hi = 0;
     for seg in elf.segments() {
-        let (start, end) = seg.page_range(FRAME_SIZE);
+        let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
         lo = lo.min(start);
         hi = hi.max(end);
     }
     if lo == u64::MAX || mmu::KERNEL_VA_BASE <= lo {
         return Ok(());
     }
-    address_space_map::check_image(lo, hi).map_err(LoadError::Misplaced)
+    address_space_layout::check_image(lo, hi).map_err(LoadError::Misplaced)
 }
 
 /// Parse an ELF, build an address space, and put it in memory. Do **not** run it.
@@ -89,7 +89,8 @@ pub fn load(
     windowed: u64,
     windows: &[startup_page_contract::Window],
 ) -> Result<(AddressSpace, u64), LoadError> {
-    let elf = Elf::parse(image).map_err(LoadError::NotLoadable)?;
+    let elf = Elf::parse_with(image, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        .map_err(LoadError::NotLoadable)?;
     check_image_band(&elf)?;
 
     // Counted from the file before anything is carved: a binary that lies about its size exhausts
@@ -97,7 +98,7 @@ pub fn load(
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (start, end) = seg.page_range(FRAME_SIZE);
+            let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
             (end - start) / FRAME_SIZE
         })
         .sum::<u64>()
@@ -224,15 +225,15 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
             Flags::user_rodata()
         };
 
-        let (start, end) = seg.page_range(FRAME_SIZE);
+        let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
         let mut va = start;
         while va < end {
             let page = space.map_new(va, flags).map_err(LoadError::Unmappable)?;
 
             // Which of the file's bytes land in this page? An intersection, because `p_vaddr`
             // need not be page-aligned.
-            let file_lo = seg.vaddr;
-            let file_hi = seg.vaddr + seg.data.len() as u64;
+            let file_lo = seg.virtual_address;
+            let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
             let hi = (va + FRAME_SIZE).min(file_hi);
             if lo < hi {
@@ -290,8 +291,6 @@ pub fn program(name: &str) -> Option<&'static [u8]> {
 /// (milestone 19d): the progenitor reads the ELF to parse it here. A runtime window on the
 /// address-space map (milestone 206 (a program image has under 896 KiB)): the kernel places it for
 /// a program that did not choose the address.
-///
-/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
-/// `INITIAL_RAMDISK_VA`: `va` is ruled to expand.
-#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // becomes the boot path at 19d.2; test-driven until then
-pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = address_space_map::runtime_window(0x2000_0000);
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(unused_imports))]
+// becomes the boot path at 19d.2; test-driven until then
+pub use address_space_layout::INITIAL_RAMDISK_VIRTUAL_ADDRESS;

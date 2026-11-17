@@ -40,9 +40,9 @@ use filesystem_contract::blk;
 use non_volatile_memory_express::{
     Command, Completion, CompletionQueue, Direction, Doorbell, Namespace, SubmissionQueue,
 };
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
-    address_space_map_into, exit, receive, receive_capability, receive_request, reply, send,
+    address_space_layout_into, exit, receive, receive_capability, receive_request, reply, send,
 };
 
 use crate::{IO_QID, NSID, SPIN_BOUND, barrier};
@@ -68,9 +68,9 @@ const TRANSFER_BLOCKS: usize = blk::TRANSFER_BLOCKS;
 
 /// The data plane's layout, in byte offsets from the start of its run, as the contract crate
 /// lays the pages out.
-const IO_SQ_OFF: u64 = IO_SUBMISSION_QUEUE_PAGE * PAGE;
-const IO_CQ_OFF: u64 = IO_COMPLETION_QUEUE_PAGE * PAGE;
-const TRANSFER_OFF: u64 = FIRST_TRANSFER_PAGE * PAGE;
+const IO_SQ_OFF: u64 = IO_SUBMISSION_QUEUE_PAGE * PAGE_BYTES;
+const IO_CQ_OFF: u64 = IO_COMPLETION_QUEUE_PAGE * PAGE_BYTES;
+const TRANSFER_OFF: u64 = FIRST_TRANSFER_PAGE * PAGE_BYTES;
 
 /// Where the spawner says to map the two grants: the data-plane run (two rings and one transfer
 /// window per client, window `w` at `TRANSFER_OFF + w * TRANSFER_BLOCKS` pages) and the doorbell
@@ -86,8 +86,9 @@ struct Placement {
 impl Placement {
     /// The two addresses, if each is a nonzero page boundary and the two do not overlap.
     fn new(data: u64, doorbell: u64) -> Option<Self> {
-        let page_aligned = |va: u64| va != 0 && va.is_multiple_of(PAGE);
-        let apart = data + DATA_PLANE_PAGES * PAGE <= doorbell || doorbell + PAGE <= data;
+        let page_aligned = |va: u64| va != 0 && va.is_multiple_of(PAGE_BYTES);
+        let apart =
+            data + DATA_PLANE_PAGES * PAGE_BYTES <= doorbell || doorbell + PAGE_BYTES <= data;
         (page_aligned(data) && page_aligned(doorbell) && apart).then_some(Self { data, doorbell })
     }
 }
@@ -139,12 +140,12 @@ impl Plane {
         self.data.write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
         // Publish the command before the doorbell: the controller is another observer.
         barrier();
-        self.bells.w32(
+        self.bells.write_u32(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::SubmissionTail,
                 self.handoff.dstrd,
-            ) - PAGE,
+            ) - PAGE_BYTES,
             self.sq.tail() as u32,
         );
 
@@ -169,12 +170,12 @@ impl Plane {
         let c = done.ok_or(u16::MAX)?;
 
         let new_head = self.cq.pop();
-        self.bells.w32(
+        self.bells.write_u32(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::CompletionHead,
                 self.handoff.dstrd,
-            ) - PAGE,
+            ) - PAGE_BYTES,
             new_head as u32,
         );
         // A head the controller cannot have reached is the same protocol violation as a wrong
@@ -205,7 +206,7 @@ impl Plane {
         write: bool,
     ) -> Result<(), u16> {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
-        let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE;
+        let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE_BYTES;
         let cid = self.next_cid();
         // `None` from either call means the block is outside the namespace or the arithmetic would
         // not close; either way it is the caller's request that is wrong, and the crate refused to
@@ -213,11 +214,11 @@ impl Plane {
         let direction = if write { Direction::Write } else { Direction::Read };
         let cmd = Namespace::new(
             self.handoff.size_bytes,
-            PAGE,
+            PAGE_BYTES,
             self.handoff.blocks_per_transfer,
         )
         .and_then(|namespace| {
-            namespace.transfer_command(cid, NSID, block, data_phys, PAGE, direction)
+            namespace.transfer_command(cid, NSID, block, data_phys, PAGE_BYTES, direction)
         })
         .ok_or(u16::MAX)?;
         self.transact(cmd)
@@ -243,7 +244,7 @@ fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWin
             }
             _ => return None,
         };
-        if address_space_map_into(
+        if address_space_layout_into(
             data_plane_slots::OWN_SPACE,
             va,
             slot,
@@ -257,8 +258,8 @@ fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWin
     // returned 0, for the life of the process: nothing here unmaps them.
     let windows = unsafe {
         (
-            MappedWindow::new(placement.data, DATA_PLANE_PAGES * PAGE),
-            MappedWindow::new(placement.doorbell, PAGE),
+            MappedWindow::new(placement.data, DATA_PLANE_PAGES * PAGE_BYTES),
+            MappedWindow::new(placement.doorbell, PAGE_BYTES),
         )
     };
     Some((handoff, windows.0, windows.1))
@@ -292,10 +293,10 @@ pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
     // zeroed. Read before the readiness transfer, which reuses transfer page 0. See
     // notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
-    if plane.data.r64(TRANSFER_OFF)
+    if plane.data.read_u64(TRANSFER_OFF)
         == driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC
     {
-        let victim = plane.data.r64(TRANSFER_OFF + 8);
+        let victim = plane.data.read_u64(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }
 

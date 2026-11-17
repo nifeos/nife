@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -62,15 +62,15 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    `virtual_address` (the spelled-out rule covers parameters), and the review's flags beside the
    names they concern. Items 9 and 10 add names; the same pull request carries them so the table is
    ratified once.
-   Door: one-way after the move (every name goes public); the ratification is the architect's by
-   rule. Effort: S for the lane.
+   Door: two-way before the first tag; the maintainer decides the names, provisionally, under "The
+   ratification table of item 1", and the ratification is the architect's by rule. Effort: S for the lane.
 
 2. The manifest and the files a stranger needs.
    Finding: `license.workspace = true` and `[lints] workspace = true` come from the workspace; there is no
    `rust-version`, `description`, `readme`, `keywords` or `categories`; no README, `LICENSE-MIT`
    or `LICENSE-APACHE`; and the `publish = false` comment cites `crates/publish-allowlist.txt`, a
    file the new repository will not hold. The dry run's build fails at `cargo generate-lockfile`
-   on the inherited `license`. The two dependencies are path dependencies on `current_cpu_contract` and `address_space_map`, which leave at step 3 of milestone 1017 (the contract crates leave in this order). This crate is at step 6, so the order already holds. The move manifest pins both by `rev` on their `nifeos` repositories, which the standing approval for own-crate dependencies covers.
+   on the inherited `license`. The two dependencies are path dependencies on `current_cpu_contract` and `address_space_layout`, which leave at step 3 of milestone 1017 (the contract crates leave in this order). This crate is at step 6, so the order already holds. The move manifest pins both by `rev` on their `nifeos` repositories, which the standing approval for own-crate dependencies covers.
    Evidence: `crates/machine_statistics_contract/Cargo.toml` lines 5, 6, 13 to 18;
    `script/crate-standalone` output, nine manifest and file failures; the dry run's `build` line.
    Change: write the manifest in `block_roster_contract`'s shape (`rust-version = "1.88"`, the literal license, the literal lint tables, a one-sentence `description`, `readme`, `keywords` and `categories`). Add the two license texts. Write the README from the scaffold's `README-crate.md`
@@ -106,11 +106,19 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Decisions for the architect
 
-One one-way door is open. The ratification table of item 1 is the architect's by the naming rule
+One one-way door was open, and Decision 1 below carries its ruling. The ratification table of item 1 is the architect's by the naming rule
 and sits after it with the review's flags; it is not a decision in the sense of this section.
 Everything else above is two-way and the maintainer decides it.
 
 ### Decision 1: Freeze the contract's identity before it leaves, with the line count inside it
+
+Ruling of 2026-11-14 (UTC), option A. The rule in force: the identity stays as built. `MAGIC` is
+`MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VA` is the fixed pair page. The page
+holds one header line of eight words plus one eight-word line per processor, 576 bytes, and header
+words 6 and 7 stay reserved and read zero. The processor-line count belongs to this crate as its
+own constant, `PROCESSOR_LINES` (name provisional), and replaces the re-export of
+`current_cpu_contract::CPU_ID_BOUND`. A compile-time assertion keeps it equal to that bound, so a
+change to the bound fails this crate's build until this page's magic and version move too.
 
 Background. Three programs under `components/src/` declare this interface by the pair (`INTERFACE_ID`, `VERSION`) in their `INTERFACES` note. The kernel and the spawn service compile in the fixed address. Every reader compares `MAGIC` and the version word. The kernel and every reader compute the layout from `word::LINE` and `CPU_ID_BOUND`. Once a pin outside nife builds one of those programs, a change to any of these values has to move every pin in one image. Milestone 1017 (the contract crates leave in this order) measured that cost from two reverts. The identity
 set here has one member the sibling page crates do not have: the number of cpu lines, which today
@@ -159,9 +167,26 @@ might misread, it says so here; the lane carries these beside the rows.
   `TICK_HERTZ`, `TOTAL_FRAMES`, `FREE_FRAMES`, `BUSY_TICKS`, `IDLE_TICKS`, `CONTEXT_SWITCHES`,
   `INTERRUPTS`, `RUNNABLE`, `cpu`: units spelled out, std spellings where std has one, no flag.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. The names the table carries into item 1's pull request are these.
+`PAGE_CONTENT_BYTES` and `PAGE_VIRTUAL_ADDRESS`, with the parameters `page_va` and `va` as
+`virtual_address`. `PAGE_WORDS` and `word::LINE_WORDS`. `Snapshot` stays, and a lane rewords the module
+sentence. `counter` becomes `atomic_word`. The rest stay as written. There is no alias of the
+old spellings. Ratifying the table stays the architect's.
+
 ## Done when
 
 The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
+  page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
+  `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582, on branch
+  `milestone/1099-statistics-identity-frozen`.
+- **Outstanding.** The review's other items, each to be checked against `crates/machine_statistics_contract`
+  at this branch's head before the move.
+
 
 ## BUGS
 
@@ -169,10 +194,10 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
   did not do what a package does: enumerate every public item with its signature for the
   architect's reading, or run `script/crate-review-packet`. A package lane can still write one
   before the architect reads the crate.
-- `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_map` (an unused
+- `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_layout` (an unused
   `LOW_HALF_SPLIT_SHIFTS`), which this crate links. In the crate's own repository a git dependency
-  is not linted, so this does not block here; it is `address_space_map`'s finding, for that
-  crate's review. The same build prints a future-incompatibility notice for `address_space_map`,
+  is not linted, so this does not block here; it is `address_space_layout`'s finding, for that
+  crate's review. The same build prints a future-incompatibility notice for `address_space_layout`,
   which the review did not chase.
 - The dry run never reported the two path dependencies because its build stopped earlier (item
   12). The move lane reads `script/crate-standalone` as well as the dry run.

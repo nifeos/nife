@@ -55,7 +55,7 @@ const MARKER: &str = "reboot:";
 fn start() -> Option<crate::sched::RendezvousId> {
     let (_sys, bus) = crate::memory::jh7110_pmic_bus()?;
     let (controller, _size) = bus.controller_physical_window?;
-    let address = u8::try_from(bus.power_management_chip_address?).ok()?;
+    let address = u8::try_from(bus.power_management_chip_bus_address?).ok()?;
     let brought_up = super::jh7110_clock_and_reset_service::bring_up(controller);
     if !brought_up.is_some_and(|b| b.is_up()) {
         println!(

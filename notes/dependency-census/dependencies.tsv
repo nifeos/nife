@@ -452,7 +452,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 73	77	context	at-creation	2026-08-03	2026-08-03	format. It is real, but it is not a rename, and M-77 carries it now. The short reason is that
 73	1	context	at-creation	2026-08-03	2026-08-03	used since M-1, and `kernel/build.rs`'s own table shows why it is tempting, because the second
 73	69	context	at-creation	2026-08-03	2026-08-03	**Renames only. No behaviour, no content edits.** The proof obligation is the one M-69 met:
-73	77	context	later	2026-09-03	2026-08-03	- **M-77.** `crates/paging/src/aarch64.rs`, which left this milestone the day it was raised.
+73	77	context	later	2026-09-03	2026-08-03	- **M-77.** `crates/page_tables/src/aarch64.rs`, which left this milestone the day it was raised.
 73	77	context	later	2026-09-14	2026-08-03	M-77
 74	16	prerequisite	later	2026-09-03	2026-08-03	**Status: PARTIAL.** Raised 2026-08-03, from an audit of what M-16a actually needs. Its
 74	353	context	later	2026-09-19	2026-08-03	(`design/roadmap/0353-the-aarch64-half-of-74.md`).
@@ -501,7 +501,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 77	60	context	at-creation	2026-08-03	2026-08-03	riscv64/mod.rs pub struct Sv39; (and Sv48, M-60)
 77	24	context	at-creation	2026-08-03	2026-08-03	best guess (M-24's Virtualization.framework board would meet it), but a VA-width change
 77	60	context	at-creation	2026-08-03	2026-08-03	CLAUDE.md's rule applies directly, and M-60's entry states it for this exact situation: **do
-77	69	context	at-creation	2026-08-03	2026-08-03	`crates/paging/tests/mapping.rs`. No behaviour change, and M-69's proof obligation applies.
+77	69	context	at-creation	2026-08-03	2026-08-03	`crates/page_tables/tests/mapping.rs`. No behaviour change, and M-69's proof obligation applies.
 78	72	context	later	2026-08-17	2026-08-03	failed on pull requests that changed no executable code, two of them documentation only. M-72
 78	62	context	later	2026-08-18	2026-08-03	**A fourth claim was added on 2026-08-18** by M-62, and it corrects this block rather than
 78	72	context	at-creation	2026-08-03	2026-08-03	M-72's own postscript is the clearest instance: removing a destructive probe changed which
@@ -989,7 +989,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 179	180	context	at-creation	2026-08-26	2026-08-26	Text selection in the terminal (drag to select, the mechanism M-180's clipboard would need a
 179	142	context	at-creation	2026-08-26	2026-08-26	RECLASSIFIED-NEGATION: interaction. Independent of M-142's type-and-scanout work: a pointer needs no font decision
 138	37	context	later	2026-08-22	2026-08-18	- **`CachedDisk`'s 64 slots were sized against a small test fixture and M-37's crash-test
-179	29	context	UNKNOWN	83	2026-08-26	PCI device id as M-29's keyboard (`crates/pci::VIRTIO_INPUT_MODERN`), so device discovery
+179	29	context	UNKNOWN	83	2026-08-26	PCI device id as M-29's keyboard (`crates/pci_configuration_space::VIRTIO_INPUT_MODERN`), so device discovery
 180	179	context	at-creation	2026-08-26	2026-08-26	named limitation the way mouse support is (see M-179). This file is that gap's first record.
 180	179	context	at-creation	2026-08-26	2026-08-26	**Gate: DECISION.** Not a driver or a wiring question like M-179's: a clipboard is shared,
 138	37	context	later	2026-09-03	2026-08-18	  sized against a small test fixture and M-37's crash-test heap budget, not against a real
@@ -1376,7 +1376,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 161	16	context	at-creation	2026-08-23	2026-08-23	role the VisionFive 2 played for RISC-V (M-16). QEMU's `q35` machine emulates the same
 161	87	context	at-creation	2026-08-23	2026-08-23	box. See M-87 for the machine's own status.
 161	87	context	at-creation	2026-08-23	2026-08-23	   `in`/`out` half. One driver, two address spaces, which is also what M-87's real machine
-161	20	context	at-creation	2026-08-23	2026-08-23	4. **The page-table format**, behind M-20's existing seam: `crates/paging/src/x86_64.rs`,
+161	20	context	at-creation	2026-08-23	2026-08-23	4. **The page-table format**, behind M-20's existing seam: `crates/page_tables/src/x86_64.rs`,
 208	196	context	UNKNOWN	178	2026-08-31	Found by M-196's lane while trying to delete a duplicate ELF parser: `link-x86_64.ld`
 161	71	context	at-creation	2026-08-24	2026-08-23	    M-71 established both other architectures need. Neither could have been caught before
 210	202	context	at-creation	2026-08-31	2026-08-31	**Status: BUILT** (2026-08-31). Minted 2026-08-31 from M-202's (falsify the confinement claims)
@@ -2191,7 +2191,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 312	216	context	at-creation	2026-09-17	2026-09-17	describes**: a hand-kept `--exclude` list, `crates/board_console` (M-216) arriving as a host
 313	311	context	at-creation	2026-09-17	2026-09-17	**Status: BUILT 2026-09-17.** Minted by the maintainer from M-311's proposal
 313	307	context	at-creation	2026-09-17	2026-09-17	M-307 marked as quotable-but-unreachable, asked what they actually guarantee; and the two
-313	307	context	at-creation	2026-09-17	2026-09-17	`crates/paging`'s decoder reported every user page as not kernel-executable and M-307 wrote
+313	307	context	at-creation	2026-09-17	2026-09-17	`crates/page_tables`'s decoder reported every user page as not kernel-executable and M-307 wrote
 313	307	context	at-creation	2026-09-17	2026-09-17	the six claims M-307 marked unreachable, and the two boards that booted real silicon. It found
 314	205	context	at-creation	2026-09-17	2026-09-17	`script/test --arch x86_64` boots three times: once on SeaBIOS and twice under OVMF (M-205's
 314	205	context	at-creation	2026-09-17	2026-09-17	`0xe0000000`, so the misleading line has been firing on every real-firmware run since M-205
@@ -2858,7 +2858,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 418	307	context	at-creation	2026-09-19	2026-09-19	its survivor list against M-307's per-row verdicts, because a census asks whether a change
 418	307	context	later	2026-09-16	2026-09-19	M-307 found that row 12's proof stated all three of its assertions, and its `kani::assume`,
 418	307	context	later	2026-09-16	2026-09-19	per-row verdicts M-307 recorded in `notes/confinement-claims.md`. The two instruments measure
-418	307	context	at-creation	2026-09-19	2026-09-19	M-307 found that `paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` stated all three of
+418	307	context	at-creation	2026-09-19	2026-09-19	M-307 found that `page_tables::x86_64::no_vtd_entry_ever_sets_a_reserved_bit` stated all three of
 418	307	context	at-creation	2026-09-19	2026-09-19	measure different things, the census over the crates carrying rows 1 to 18 against M-307's
 419	168	context	at-creation	2026-09-19	2026-09-19	**Status: BUILT** 2026-09-19, by M-168's own lane, in a different session and on the same
 419	168	context	at-creation	2026-09-19	2026-09-19	the whole sweep, and M-168 is still `PARTIAL` for the reason this block names: its status

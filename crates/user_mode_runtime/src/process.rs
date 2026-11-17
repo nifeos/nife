@@ -23,6 +23,9 @@ pub fn yield_now() {
 
 /// Terminate this process. The kernel reaps the thread and frees its whole address space. Never
 /// returns; the trailing spin is only there to satisfy the `-> !` type if the trap ever came back.
+///
+/// There is no `exit_thread` beside it: the std overlay and the system tests invoke
+/// `SYSCALL_EXIT_THREAD` directly, and no `no_std` program needs a wrapper.
 pub fn exit() -> ! {
     // SAFETY: the syscall never returns; the trailing spin only satisfies the `-> !` type.
     let _ = unsafe { trap6(abi::SYSCALL_EXIT, [0; 6]) };
@@ -86,9 +89,11 @@ pub fn trap() -> ! {
 /// mistake into an undetected one, so this [`trap`]s at the call.
 ///
 /// # Examples
-/// ```ignore
+/// ```no_run
+/// use user_mode_runtime::require;
+/// # let (reply, frame) = (0u64, 0u64);
 /// require(reply == 0);
-/// require(frame >= 0);
+/// require(frame < 4096);
 /// ```
 ///
 /// Name: provisional, minted by milestone 408 (one home for `fn check(ok: bool)`) on
@@ -112,6 +117,9 @@ pub fn require(ok: bool) {
 /// every binary that links the library; a macro defines nothing until a binary asks.
 ///
 /// # Examples
+///
+/// Not compiled as a test: a doctest links a host executable, and this one defines its own entry
+/// point and panic handler.
 ///
 /// ```ignore
 /// #![no_std]
@@ -156,6 +164,8 @@ macro_rules! panic_handler {
 /// notes/user-mode-runtime.md, "Entering a process".
 ///
 /// # Examples
+///
+/// Not compiled as a test, for the reason [`panic_handler!`] gives.
 ///
 /// ```ignore
 /// user_mode_runtime::program_entry!(start);

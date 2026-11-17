@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 1034
 decision_dependencies: 16, 113
@@ -113,8 +113,9 @@ The P1 items are in [the appendix](1101-memory-regions-outside-review/before-the
 
 ## Decisions for the architect
 
-Four one-way doors, each with a recommendation first. Everything else above is two-way and the
-maintainer decides it. The names in item 9 wait for a naming pass.
+Four decisions, each with a recommendation first. Decisions 2, 3 and 4 are decided, provisionally,
+below. Everything else above is two-way and the maintainer decides it. The names in item 9 wait for
+a naming pass.
 
 ### Decision 1: Whether `memory_regions` leaves nife now, and in what shape
 
@@ -148,7 +149,7 @@ crate. With kinds generic it calls `retype_object_page(name, MyKind::Vcpu)`.
 
 Background. The dependency's whole point, in its own words, is that a name carries its table's entry
 type so no caller can hand a name from one table to another. This crate undoes that at its own
-boundary: every public method takes and returns `u64`, and `entry()` at `src/table.rs` lines 325 to 331 calls
+boundary: every public method takes and returns `u64`, and `entry()` at `src/table.rs` lines 331 to 337 calls
 itself "a temporary adapter" that "goes when those methods take `EntryName<Region>` themselves".
 `Region` is private, so that cannot happen as written. The crate needs a public opaque marker. A
 method signature is one-way once published.
@@ -165,6 +166,13 @@ Prior art. `slotmap` keys are a type per map (`new_key_type!`), `thunderdome::In
 
 Example. `table.unpin(claim.pages())` compiles today, though a name belongs where the page count
 sits. With a typed name it does not.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
+with the kernel, which the architect may revisit. Region names cross the crate's boundary as a typed
+name. A public marker type lets `EntryName<...>` appear in the signatures, as the generational
+table's entry names are a type and not a bare `u64`. The kernel converts once at its syscall
+boundary, and `entry()` goes. The names of the marker and the alias are provisional and go through
+item 9's naming pass.
 
 ### Decision 3: Whether "zero pages means one" is the crate's contract or the kernel's
 
@@ -183,6 +191,13 @@ POSIX `read` with a zero count returns zero and moves nothing (both unverified i
 
 Example. `for n in 0..3 { table.retype_run(name, n); }` retypes four pages today (one for the zero)
 and three under the recommendation.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
+with the kernel, which the architect may revisit. The syscall behaves as ruled; only the place of the
+rule moves. The crate refuses zero everywhere, as `split` does (`src/table.rs` line 433).
+`retype_pages` (`src/watermark.rs` line 40) leaves the crate, and the kernel maps the syscall
+word's zero to one before it calls (`kernel/src/memory_region.rs` line 262). Under a stricter rule
+first, a crate that later accepts zero stays compatible.
 
 ### Decision 4: Whether a child's share of its root's ceilings is the crate's constant
 
@@ -203,15 +218,35 @@ description has a check).
 Example. A root with a thread ceiling of 15 can give one child 8 and another 7 under the
 recommendation; today both children get 0.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
+with the kernel, which the architect may revisit. This differs from the recommendation above, which
+assumed a published crate. `CHILD_SHARE_OF_ROOT` stays private (`src/table.rs` line 143) while the
+kernel is the crate's only user, and item 10's limit becomes a `BUGS` line in the crate. If the
+crate is ever offered for publication, the share as a field of the root's `Ceilings` is a
+precondition of that offer.
+
 ## Done when
 
 The checks are in [the appendix](1101-memory-regions-outside-review/done-when.md).
+
+## Ledger
+
+The ledger of each item is in [the appendix](1101-memory-regions-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** Items 2, 5, 6(a), 6(d), 6(e), 8's repository fields and 9 wait on Decision 1 (whether the crate leaves) and on the naming pass. Checked against `crates/memory_regions` and the ledger above.
+- **Outstanding.** Item 3's overflow harness, item 11's per-parent page count, item 14's recorded times and item 16's `Drop` panic are open one-way or measurement work. Checked against `crates/memory_regions/src/proofs.rs`.
 
 ## BUGS
 
 - Items 2, 5, 6 and 8 describe what the template's gates report from the helpers run by hand at the
   template's head and from a `--no-build` dry run of the move. No workflow ran. A lane checks each
   against a built staged tree before acting.
+- The Kani harness `a_return_keeps_every_run_inside_its_parents_spent_part` assumes that a parent's
+  retyped pages never overlap a live child's run. Building the start state from the table's real
+  calls runs CBMC out of memory. A host test replays every sequence of up to five calls instead and
+  checks that rule after each one. Neither covers a longer sequence or a table past four regions.
 - The prior-art rows and the decisions' prior art are from memory where marked unverified; a lane
   confirms the sources before a decision cites them.
 - This review reads item 3's release-profile consequence from the workspace manifest and has not
@@ -229,5 +264,5 @@ An outside review of `memory_regions` before any move. Two items block a publish
 for a full table that leaves a phantom child, and a crate that cannot stand alone. Seven land before
 a first release. Among them are a panic on a root at the top of the page-number space, a double
 release that loosens a ceiling for good, six loom harnesses with no runner after the move, and gates
-the template refuses. Seven follow later. Four one-way doors are open, the first being whether the
-crate leaves at all.
+the template refuses. Seven follow later. Four decisions follow, the first being whether the crate
+leaves at all; the other three are decided, provisionally.

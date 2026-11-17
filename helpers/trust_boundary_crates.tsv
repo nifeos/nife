@@ -5,10 +5,10 @@
 # longer in the tree. --write keeps a retired row with the side it last derived, so script/metrics
 # can still place that crate's unsafe in the historical weeks that held it.
 crate	bucket	linked_by
-abi	shared	components,fixtures,jig,kernel,redoxfs_server,std
+abi	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 activation_set	shared	retired
 address_space_identifier	kernel	kernel
-address_space_map	shared	components,fixtures,jig,kernel,redoxfs_server,std
+address_space_layout	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 allocation_cache	userspace	std
 approval_file	userspace	jig
 argument_protocol	shared	retired
@@ -19,6 +19,7 @@ bitmap_font	shared	components,kernel,uefi_loader
 block_roster_contract	shared	retired
 boot_ladder	shared	components,fixtures,kernel
 boot_slot	shared	components,kernel,uefi_loader
+byte_glob	shared	components,fixtures,jig,kernel,std_exerciser
 byte_sink_contract	shared	components,fixtures,kernel,std
 byte_sink_proto	shared	retired
 byte_sink_protocol	shared	retired
@@ -27,13 +28,13 @@ c_program_fixture	host	-
 c_seam	userspace	fixtures
 calendar	userspace	retired
 canary_gate	kernel	retired
-capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
-capability_plan	shared	components,fixtures,kernel
+capability_plan	userspace	components,fixtures
+capability_table	kernel	kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
-clock_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
+clock_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 clock_proto	shared	retired
 clock_protocol	shared	retired
 component_plan	shared	retired
@@ -41,7 +42,7 @@ compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
 confined_syscall_fuzzer_contract	userspace	fixtures
 coremark	shared	fixtures,kernel
-counter_frequency_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
+counter_frequency_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 counter_frequency_protocol	shared	retired
 cpu_set	kernel	kernel
 cred	userspace	retired
@@ -51,9 +52,9 @@ credential_proto	shared	retired
 credential_protocol	shared	retired
 credentialer	userspace	components
 crickerfs	shared	retired
-current_cpu_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
+current_cpu_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 current_cpu_protocol	shared	retired
-designware_ethernet	shared	components,kernel,uefi_loader
+designware_ethernet	shared	retired
 designware_inter_integrated_circuit	shared	components,kernel
 designware_mobile_storage	shared	retired
 device_tree_blob	shared	components,kernel,uefi_loader
@@ -67,8 +68,7 @@ domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exer
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	retired
-elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
-entropy_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
+entropy_contract	shared	retired
 entropy_proto	shared	retired
 entropy_protocol	shared	retired
 environment_contract	shared	components,kernel,std
@@ -87,11 +87,12 @@ free	userspace	components
 fs_proto	shared	retired
 generational_table	kernel	retired
 gfx_proto	shared	retired
-glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+glob	shared	retired
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader
 glyph_atlas	shared	components,fixtures,kernel
 gpt	userspace	retired
-grant_plan	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+grant_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+grant_plan	shared	components,fixtures,jig,kernel,std_exerciser
 graphics_contract	shared	components,fixtures,kernel
 graphics_proto	shared	retired
 graphics_protocol	shared	retired
@@ -116,7 +117,8 @@ jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
 job_mix	shared	fixtures,kernel
-line_editor	shared	components,fixtures,kernel
+line_editor	userspace	components
+line_editor_component	userspace	components,fixtures
 loaded_image_check	userspace	fixtures
 login_contract	shared	components,fixtures,kernel
 login_proto	shared	retired
@@ -144,8 +146,8 @@ nvme	kernel	retired
 package_archive	userspace	components,fixtures,jig,pinned_tls_client,pinned_tls_exerciser
 package_index	userspace	components,fixtures,jig,pinned_tls_client,pinned_tls_exerciser
 page_frames	kernel	kernel
-paging	kernel	kernel
-pci	shared	components,kernel
+page_tables	kernel	kernel
+pci_configuration_space	shared	components,kernel
 periodic_deadline	shared	components,fixtures,kernel
 pgrep	userspace	components
 pmap	userspace	components
@@ -154,6 +156,7 @@ primitive_benchmark_contract	shared	fixtures,kernel
 process_builder	userspace	components,fixtures
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 program_asks	userspace	components,fixtures
+program_table	shared	components,fixtures,jig,kernel,std_exerciser
 ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader
@@ -165,11 +168,12 @@ slabtop	userspace	components
 slots	kernel	retired
 smb_proto	userspace	retired
 soak_page	shared	fixtures,kernel
-socket_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
+socket_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
 spin_lock	kernel	kernel
 startup_page_contract	shared	components,fixtures,kernel
+static_elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 std_runtime_contract	shared	components,fixtures,jig,kernel,std
 std_runtime_protocol	shared	retired
 steal_request	kernel	retired
@@ -186,6 +190,7 @@ system_log	userspace	components
 system_log_contract	shared	components,kernel
 system_log_protocol	shared	retired
 system_manifest	host	-
+terminal_contract	shared	components,fixtures,kernel
 test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel
 timebase_proto	shared	retired
@@ -198,10 +203,9 @@ usb	userspace	components
 usb_keyboard_report	shared	retired
 user_heap	userspace	retired
 user_mode_heap	userspace	retired
-user_mode_runtime	userspace	components,fixtures,jig,redoxfs_server
+user_mode_runtime	userspace	c_library,components,cryptography_exerciser,fixtures,jig,mdr,pinned_tls_exerciser,redoxfs_server,std_exerciser
 user_rt	userspace	retired
 video_terminal	shared	components,fixtures,kernel
-virtio	userspace	components
 vmstat	userspace	components
 wake_handshake	kernel	retired
 walk_pricing	userspace	std_exerciser

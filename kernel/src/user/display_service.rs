@@ -439,8 +439,8 @@ struct SpawnedTerminal {
 
 /// Where `framebuffer_driver` finds the covered part of the aperture, a service window on the
 /// address-space map. Must match `components/src/framebuffer_driver.rs`'s `APERTURE_VA`.
-const SCREEN_APERTURE_VA: u64 = address_space_map::service_window(0x5800_0000);
-const _: () = assert!(address_space_map::SERVICE_WINDOWS.holds(
+const SCREEN_APERTURE_VA: u64 = address_space_layout::service_window(0x5800_0000);
+const _: () = assert!(address_space_layout::SERVICE_WINDOWS.holds(
     SCREEN_APERTURE_VA,
     SCREEN_APERTURE_VA + MAXIMUM_APERTURE_PAGES * page_frames::FRAME_SIZE
 ));
@@ -558,7 +558,7 @@ pub fn start_screen_terminal(
         phys: screen.base - offset,
         pages,
         // A framebuffer, written and never read (`Aperture::copy_wide` reads the surface, in
-        // RAM): the mapping `paging::Flags::user_write_combining` exists for.
+        // RAM): the mapping `page_tables::Flags::user_write_combining` exists for.
         write_combining: true,
     };
     let driver_tid = crate::sched::spawn(move || {
@@ -635,8 +635,7 @@ impl TerminalWiring {
             for (k, &b) in chunk.iter().enumerate() {
                 w1 |= (b as u64) << (8 * k);
             }
-            let w0 =
-                line_editor::proto::req(line_editor::proto::OPERATION_BYTES, chunk.len() as u64);
+            let w0 = terminal_contract::req(terminal_contract::OPERATION_BYTES, chunk.len() as u64);
             assert_eq!(
                 crate::sched::ipc_call(self.term, [w0, w1])[0],
                 0,

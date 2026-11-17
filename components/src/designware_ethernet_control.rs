@@ -38,21 +38,21 @@ use driver_process_contract::designware_ethernet::{
     control_inputs,
 };
 use startup_page_contract::StartupWindow;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES, doorbell_barrier};
 
 // SAFETY: the spawner (`kernel/src/user/designware_ethernet_service.rs`) lists all three windows
 // on the startup page and maps them before `_start` runs, for the life of the process: the
 // registers and the syscon page device-typed, the region read/write normal memory.
 static REGISTERS: StartupWindow =
-    unsafe { StartupWindow::new(CONTROL_REGISTER_KIND, CONTROL_REGISTER_PAGES * PAGE) };
+    unsafe { StartupWindow::new(CONTROL_REGISTER_KIND, CONTROL_REGISTER_PAGES * PAGE_BYTES) };
 // SAFETY: as above.
 static SYSTEM_CONTROLLER: StartupWindow =
-    unsafe { StartupWindow::new(ALWAYS_ON_SYSTEM_CONTROLLER_KIND, PAGE) };
+    unsafe { StartupWindow::new(ALWAYS_ON_SYSTEM_CONTROLLER_KIND, PAGE_BYTES) };
 // SAFETY: as above.
 static REGION: StartupWindow = unsafe {
     StartupWindow::new(
         DATA_PLANE_KIND,
-        layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE,
+        layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE_BYTES,
     )
 };
 
@@ -68,10 +68,10 @@ struct Controller;
 
 impl Hardware for Controller {
     fn read(&mut self, off: u32) -> u32 {
-        mapped(&REGISTERS).r32(u64::from(off))
+        mapped(&REGISTERS).read_u32(u64::from(off))
     }
     fn write(&mut self, off: u32, v: u32) {
-        mapped(&REGISTERS).w32(u64::from(off), v);
+        mapped(&REGISTERS).write_u32(u64::from(off), v);
     }
     fn delay_microseconds(&mut self, microseconds: u64) {
         let until = now_microseconds() + microseconds;
@@ -86,10 +86,10 @@ struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        mapped(&REGION).r64(off)
+        mapped(&REGION).read_u64(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        mapped(&REGION).w64(off, v);
+        mapped(&REGION).write_u64(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
         mapped(&REGION).copy_to_slice(off, out);
@@ -138,13 +138,13 @@ fn now_microseconds() -> u64 {
 /// Select RGMII for `gmac0`: a read-modify-write of its three bits, the word's other bits kept.
 fn select_interface() -> (u32, u32) {
     let syscon = mapped(&SYSTEM_CONTROLLER);
-    let offset = jh7110::GMAC0_SYSTEM_CONTROLLER_OFFSET;
-    let before = syscon.r32(offset);
-    syscon.w32(
+    let offset = jh7110::GMAC0_INTERFACE_SELECT_REGISTER;
+    let before = syscon.read_u32(offset);
+    syscon.write_u32(
         offset,
         jh7110::select_reduced_gigabit_media_independent_interface(before),
     );
-    (before, syscon.r32(offset))
+    (before, syscon.read_u32(offset))
 }
 
 /// Send `report` in its parts, then `outcome`, to the spawner.

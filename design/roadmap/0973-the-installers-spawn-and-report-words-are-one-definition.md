@@ -69,7 +69,7 @@ pub mod slot {
 }
 
 /// Where the kernel maps the boot file, read-only, for `Role::Install`.
-pub const BOOT_FILE_VA: u64 = address_space_map::runtime_window(0x1000_0000);
+pub const BOOT_FILE_VA: u64 = address_space_layout::runtime_window(0x1000_0000);
 
 /// The report's first word, one variant per verdict, with the words after it.
 pub enum Verdict {

@@ -19,10 +19,12 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-# The parser, the manifests and the planner. Everything this crate renders is one of `grant_plan`'s
-# values (`Refusal`, `Endowment`, `Line`), which is why the split lands here: `grant_plan` decides
-# what a line means and this decides what the user is told about it.
+# The parser and the planner, the manifests, and the program table. Everything this crate renders is
+# one of `grant_plan`'s values (`Refusal`, `Endowment`, `Line`), which is why the split lands here:
+# `grant_plan` decides what a line means and this decides what the user is told about it.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
+program_table = { version = "0.1.0", path = "../program_table" }
 
 # The slot a `std` program finds each authority in (milestone 595 (provisional)), so `caps` names
 # the slots the progenitor will actually use for one rather than the native positions. Constants
@@ -48,7 +50,7 @@ filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # `has_magic`, and only that. Whether an arbitrary word is a pattern at all is asked before anything
 # treats it as a path, so `echo a:b` prints text instead of being refused as a name. Expansion itself
 # is `grant_plan::expand`; this crate moved the dependency off `user`, which no longer uses it.
-glob = { version = "0.1.0", path = "../glob" }
+byte_glob = { version = "0.1.0", path = "../byte_glob" }
 
 # `index::Ranked` and `index::Found`, so `apropos`'s answer is rendered here with everything else
 # the user reads (milestone 40 phase 2). The *reading* of a shard is `manual`'s and needs a

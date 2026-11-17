@@ -50,7 +50,7 @@ says what it builds. What follows is why each step comes where it does.
    channel and the supervision endpoint would raise the early peak.
 6. `build_shell` builds the shell but does not start it, and deletes the shell's budget copy and
    window-0 slice at once. It places the configuration page at
-   `grant_plan::SHELL_CONFIGURATION_SLOT` after the build, because the build list's slots move with
+   `grant_contract::SHELL_CONFIGURATION_SLOT` after the build, because the build list's slots move with
    what the boot granted, and before the start, because the shell's `_start` probes that slot.
    `finish_shell_endowment` hands the shell the machine statistics page before the login block and
    keeps no copy, because a page held across that block would raise the highest peak.
@@ -78,7 +78,7 @@ overflowed when the boot held more locals. So every step is `#[inline(never)]`, 
 are gone before the spawn service starts.
 
 `graphical_terminal_grants` measures the graphical stack's three programs out of line, not in the
-measured pass, for the same reason: three more `elf::Elf`s in `boot`'s frame overflowed it under
+measured pass, for the same reason: three more `static_elf::Elf`s in `boot`'s frame overflowed it under
 `package install`. `build_grant` is out of line for the spawn service's frame: an install runs
 `package_archive`'s parser beneath it.
 

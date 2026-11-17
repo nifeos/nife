@@ -1,0 +1,16 @@
+Falsifies `usb::verification::two_reports_produce_their_events_in_order`.
+
+The defect: `changes` reports the modifier bits from the highest to the lowest, so a chord that
+flips Left Control and Right Alt together arrives in the other order. Every event is still
+present, still says the right thing, and the count is unchanged, so the bound harness stays green.
+
+Expected to fail: the harness's "modifiers first" assertion.
+
+diff --git a/crates/usb/src/boot_keyboard.rs b/crates/usb/src/boot_keyboard.rs
+--- a/crates/usb/src/boot_keyboard.rs
++++ b/crates/usb/src/boot_keyboard.rs
+@@ -310,3 +310,3 @@
+     let flipped = before.modifiers ^ after.modifiers;
+-    for (bit, &code) in MODIFIER_CODES.iter().enumerate() {
++    for (bit, &code) in MODIFIER_CODES.iter().enumerate().rev() {
+         if flipped & (1 << bit) != 0 {

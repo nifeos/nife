@@ -4,7 +4,7 @@
 //! Opens a TCP connection to the QEMU runners' echo peer (`socket_contract::fixture::ECHO_PEER_IP`,
 //! port `ECHO_PEER_PORT`), sends [`MSG`], and prints what comes back. The real progenitor spawns it
 //! through the real spawn service, holding exactly what its manifest
-//! (`grant_plan::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
+//! (`program_table::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
 //! green `script/swish-check` line for it is the claim about the system a person boots. A fixture
 //! and not a tool, because its peer exists only inside a QEMU runner.
 
@@ -19,7 +19,7 @@
 //!
 //! - slot 0: its output, the sink contract (`crates/byte_sink_contract`).
 //! - slot 1: the `--mem` budget, which pays for its socket page (the network grant has no memory).
-//! - slot 10 ([`grant_plan::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
+//! - slot 10 ([`grant_contract::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
 //!   manifest declares `network`; empty when the progenitor built no stack (`x86_64`, or `NIFE_NET`
 //!   unset), and then this prints why and sends nothing.
 //! - while it runs, the capability of the socket it opened (from `OPEN_TCP`), which reaches that
@@ -35,7 +35,7 @@
 use abi::rights;
 use socket_contract::fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 use socket_contract::*;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
     call, call_receiving, capability_delete, exit, is_granted, map_page_frame,
     retype_into_page_frame, send, send_capability,
@@ -46,15 +46,15 @@ const OUT: u64 = 0;
 /// The `--mem` budget.
 const MEMORY_REGION: u64 = 1;
 /// The stack's endpoint, where the manifest's declaration puts it.
-const STACK: u64 = grant_plan::NETWORK_SLOT;
+const STACK: u64 = grant_contract::NETWORK_SLOT;
 
 /// Where this program maps the page it shares with the stack. Any address its own image does not
 /// use; `socket_test_client`'s choice, because that one is known to be clear of a small program.
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 // SAFETY: `PAGE_FRAME_VA` is mapped read/write for one page before any access through this window
 // (`attach`), and nothing else in this program touches that range.
-static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE) };
+static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE_BYTES) };
 
 /// The line sent, and the line that must come back. `socket_test_client`'s own, so the peer sees
 /// the same bytes from the prompt that it sees from the harness.
@@ -74,7 +74,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             let mut got = [0u8; 64];
             let n = n.min(got.len());
             for (i, b) in got[..n].iter_mut().enumerate() {
-                *b = WINDOW.r8(OFF_PAYLOAD + i as u64);
+                *b = WINDOW.read_u8(PAYLOAD_OFFSET_BYTES + i as u64);
             }
             let mut addr = [0u8; 24];
             let a = render_peer(&mut addr);
@@ -118,14 +118,14 @@ fn converse(socket: u64, frame: u64) -> Result<usize, &'static [u8]> {
         return Err(b"handing the stack the shared page");
     }
     for (i, &b) in ECHO_PEER_IP.iter().enumerate() {
-        WINDOW.w8(OFF_DST_IP + i as u64, b);
+        WINDOW.write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    WINDOW.w16(OFF_DST_PORT, ECHO_PEER_PORT);
+    WINDOW.write_u16(DESTINATION_PORT_OFFSET_BYTES, ECHO_PEER_PORT);
     if call(socket, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return Err(b"connecting");
     }
     for (i, &b) in MSG.iter().enumerate() {
-        WINDOW.w8(OFF_PAYLOAD + i as u64, b);
+        WINDOW.write_u8(PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, OPERATION_SEND, MSG.len() as u64).0 != MSG.len() as u64 {
         return Err(b"sending");

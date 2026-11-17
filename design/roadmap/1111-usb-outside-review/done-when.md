@@ -20,7 +20,6 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
 - A short interface or endpoint descriptor is `Malformed { at }`; a duplicated usage releases once;
   `endpoint` carries only number and direction.
 - Two fuzz targets build and run in the weekly job with the test configurations as seeds.
-- The architect rules on Decisions 2 and 3 before the tag. The crate then builds them, or
-  records the ruling against.
+- The crate builds Decisions 2 and 3 as decided before the tag.
 - `cargo test`, `cargo kani`, `cargo mutants` (none missed) and both fuzz targets are green at the
   commit the release tags.

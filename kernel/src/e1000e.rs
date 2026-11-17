@@ -329,7 +329,7 @@ fn region_for(rid: u32) -> Result<u64, crate::iommu::AttachError> {
     if crate::iommu::is_active() {
         let confined = crate::iommu::confine(
             rid,
-            &[paging::domain::DmaRegion {
+            &[page_tables::domain::DmaRegion {
                 base,
                 size: layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * page_frames::FRAME_SIZE,
                 writable: true,

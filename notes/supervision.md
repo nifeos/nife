@@ -63,7 +63,7 @@ A sixth word, the child's label, arrives in argument register 5 (`x5`, `a5`, `r9
 its builder put on the supervision capability with `rendezvous::BADGE` before inserting it, kept by
 the kernel at `START` (milestone 105 (the two forks), §148 (resolves by asking the kernel)). The kernel
 writes it only on a death delivered to a plain `RECEIVE`, so the mailbox stays five words. A
-receiver zeroes the register first, as `receive_fault` does, so `0` means unbadged or not a death.
+receiver zeroes the register first, as `receive_message` does, so `0` means unbadged or not a death.
 The child holds no capability carrying its label, and a sender's badge arrives in `w3`, so a label
 can be neither learned nor forged. `RECEIVE_CAPABILITY` and in-kernel receives do not get it.
 `sub_server_supervisor` uses it to tell two children apart.
@@ -177,7 +177,7 @@ This is the part worth reading, because it says what §32 did and did not buy.
   demonstrates. Keeping them fused in the spike stays deliberate: the requirement is visible in one
   program rather than hidden behind an IPC hop.
 
-The authorization invariant is machine-checked, not only tested: two Kani harnesses in `crates/capability`
+The authorization invariant is machine-checked, not only tested: two Kani harnesses in `crates/capability_table`
 cover it, which is the right instrument for "a capability that cannot build cannot be made to build via
 reap" because it quantifies over rights combinations rather than sampling them.
 

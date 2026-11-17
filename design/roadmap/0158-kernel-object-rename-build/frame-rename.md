@@ -52,7 +52,7 @@ These renamed once the four collisions above were excluded.
     `page_frame_map`/`page_frame_revoke`;
   - `is_frame_used`/`bring_up_frames`/`free_frames` -> their `page_frame` equivalents;
   - `map_current_user_frame` (all three architectures) -> `map_current_user_page_frame`;
-  - `OutOfFrames` -> `OutOfPageFrames` (`crates/paging`);
+  - `OutOfFrames` -> `OutOfPageFrames` (`crates/page_tables`);
   - `zeroed_frame` -> `zeroed_page_frame`, in three IOMMU files plus `compositor_service.rs`'s own,
     unrelated to that file's screen-frame prose;
   - the `FRAME_REPORT_MIN`/`SUITE_FRAME_BUDGET`/`rank::FRAMES` test-ledger and lock-rank constants;
@@ -80,7 +80,7 @@ those are citations of the type that did rename.
 
 - `script/lint` clean.
 - The full host test suite (`script/test`, all three architectures: aarch64, riscv64, x86_64) green.
-- Both Kani-proof-bearing crates that reference the renamed type (`crates/capability` and
+- Both Kani-proof-bearing crates that reference the renamed type (`crates/capability_table` and
   `crates/page_frames`) verify successfully post-rename, satisfying the proof obligation of milestone 69 (split `kernel/src/user.rs` by service).
 
 `notes/frames.md` was rewritten with a provenance note for a reader who remembers `Frame`, following

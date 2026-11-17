@@ -1,21 +1,36 @@
-//! **The rungs of the boot ladder, as the exact bytes that appear on a console** (milestone 268).
+//! **The fixed heads of the lines a kernel and its shell print while booting, and the list of
+//! self-test check names.**
 //!
-//! Each rung's line is a contract between the program that prints it and the programs that read it,
-//! on a bench, in CI or in a photograph of a monitor. The kernel prints [`BANNER`] and [`MACHINE`];
-//! `boot_self_test` prints [`SELF_TEST`]; `swish` prints [`PROMPT`]; `serial_console` matches all
-//! of them (rule 7 of `AGENTS.md`). Every constant is the stable head of a line whose tail carries
-//! numbers: a matcher keys on the head, which never changes, and the tail is free to improve. Each
-//! carries its own trailing space or punctuation, so a match is on a boundary. See
-//! notes/boot-ladder.md.
-
+//! Each line is a contract between the program that prints it and the programs that read it, on a
+//! bench, in CI or in a photograph of a monitor. Each head is the system's name followed by a
+//! fixed shape: a system builds its [`Heads`] from its name, the kernel prints
+//! [`banner`](Heads::banner) and [`machine`](Heads::machine), the self-test program prints
+//! [`self_test`](Heads::self_test), the shell prints [`shell_banner`](Heads::shell_banner), and a
+//! console reader matches all of them through the same [`Heads`]. A tail that carries numbers
+//! follows its head: a matcher keys on the head, which never changes, and the tail is free to
+//! improve.
+//!
+//! # The matching rule
+//!
+//! A head begins a line, but a serial link may put bytes in front of it, so a reader finds the head
+//! anywhere in a line and takes the tail from there ([`Head::find_in`]). Every head but the shell
+//! banner ends in a space or punctuation, so a match is on a boundary; the shell banner is matched
+//! whole, and the shell prints a period after it that is not part of the head. The architecture
+//! after the banner is free text: a reader takes it from the tail of
+//! [`machine`](Heads::machine).
+//!
+//! The self-test verdict has a grammar of its own, which [`verdict::Verdict`] prints and
+//! [`verdict::ParsedVerdict`] reads, so the writer and every reader share one definition.
+//!
 //! # BUGS
 //!
-//! - Nothing gates that a new rung is added here rather than as a fresh literal; review does. The
-//!   kernel uses these constants, so its own output cannot drift from them.
-//! - [`PROMPT`] is `swish`'s banner, not its `$ ` prompt, which is too weak to key on in a log;
-//!   whether the prompt came out is `cargo xtask swish-check`'s question.
-//! - The wordings are provisional (milestone 268 (every architecture boots the same way)): they
-//!   are contracts, so they are an architect's.
+//! - Nothing gates that a new rung is added here rather than as a fresh literal in a program; review
+//!   does. The kernel prints through [`Heads`], so its own output cannot drift from them.
+//! - [`shell_banner`](Heads::shell_banner) is the shell's banner, not its `$ ` prompt, which is too
+//!   weak to key on in a log; a reader that needs the prompt waits for the banner and then looks for
+//!   `$ `.
+//! - Nothing here checks that every program of one system builds its [`Heads`] from the same name;
+//!   each passes its own, and a reader of that system's logs finds a mismatch as a missing rung.
 //!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist). A noun for the ladder a boot
 //! climbs, coined rather than standard. `AGENTS.md` spends *ladder* on its mechanism-strength
@@ -27,9 +42,11 @@
 
 #![no_std]
 
+mod heads;
 pub mod kernel_half;
 mod rungs;
 pub mod self_test_program;
 pub mod verdict;
 
+pub use heads::{Head, Heads};
 pub use rungs::*;

@@ -25,7 +25,7 @@ use user_mode_runtime::{exit, map_page_frame, require, retype_into_page_frame, s
 
 const MEMORY_REGION: u64 = 0; // retype the frame and draw page tables from here
 const CHANNEL: u64 = 1; // delegate the frame to the consumer over here
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 user_mode_runtime::program_entry!(start);
 

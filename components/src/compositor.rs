@@ -48,10 +48,10 @@ const INPUT: u64 = 5;
 /// booted with (1280x720) needed. `SCREEN_VA` itself stays 2 MiB-aligned, so the run spans exactly
 /// two page-table windows (`compositor_service`'s own `MAP_BUDGET_PAGES` comment has the
 /// arithmetic).
-const SCREEN_VA: u64 = address_space_map::pair_page(0x0000_0000_0080_0000);
-const WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
-const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0c01_0000);
-const CLIENT_BASE: u64 = address_space_map::pair_page(0x0000_0000_0e00_0000);
+const SCREEN_VA: u64 = address_space_layout::pair_page(0x0000_0000_0080_0000);
+const WLIST_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c00_0000);
+const RING_VA: u64 = address_space_layout::pair_page(0x0000_0000_0c01_0000);
+const CLIENT_BASE: u64 = address_space_layout::pair_page(0x0000_0000_0e00_0000);
 const CLIENT_STRIDE: u64 = 0x0000_0000_0010_0000;
 
 /// Bring-up failures, reported in a `0xDEAD_...` word so a failure names its step instead of hanging.
@@ -163,7 +163,7 @@ fn flush(damage: Rect) {
 /// over the shared doorbell.
 ///
 /// `FOCUS_NEXT` moves focus, which is the compositor's decision and nobody else's. Every other byte
-/// goes to the focused client as `line_editor::proto::OPERATION_BYTES`, the terminal contract's driver half
+/// goes to the focused client as `terminal_contract::OPERATION_BYTES`, the terminal contract's driver half
 /// verbatim, so a terminal is a client of this compositor without either contract changing.
 fn drain_input(focusable: usize, focus: &mut u32) {
     let mut head = rd32(RING_VA + ring::HEAD);
@@ -197,7 +197,7 @@ fn drain_input(focusable: usize, focus: &mut u32) {
             // client answers, and the answer is the flow control that keeps a fast source from
             // outrunning a slow client. It also means a focused client that stops answering stalls
             // this loop, which is the honest cost of one wait point (see the module note).
-            let w0 = line_editor::proto::req(line_editor::proto::OPERATION_BYTES, 1);
+            let w0 = terminal_contract::req(terminal_contract::OPERATION_BYTES, 1);
             let _ = call(INPUT + *focus as u64, w0, byte as u64);
         }
         // A byte with no focusable client to receive it is dropped. Not silently: there is nobody

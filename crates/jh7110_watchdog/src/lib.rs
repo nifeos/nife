@@ -296,9 +296,9 @@ pub fn discover(
             size: reg[0].size,
             compatible,
             clocks_and_resets: DevicePlan::from_specifiers(
-                tree.node_prop_compatible(compatible, b"clocks")?,
-                tree.node_prop_compatible(compatible, b"resets")?,
-                |phandle, name| tree.phandle_prop(phandle, name),
+                tree.node_property_compatible(compatible, b"clocks")?,
+                tree.node_property_compatible(compatible, b"resets")?,
+                |phandle, name| tree.phandle_property(phandle, name),
             )?,
         }));
     }

@@ -139,7 +139,7 @@ budget for the progenitor` today; it is quoted here as it read on the day.)
 
 So `has_initial_ramdisk_aarch64` (`mkinitrd` before 2026-08-27) now strips each ELF
 (`llvm-objcopy --strip-debug`) before packing, and the archive is **4.3 MB**. Nothing lost
-anything. `crates/elf` parses program headers only and has no section-header code at all, so no
+anything. `crates/static_elf` parses program headers only and has no section-header code at all, so no
 loader on either side of the boundary could ever see a debug section. The kernel prints a raw `pc`
 on a fault, and symbolizing it is done offline against the unstripped binary still sitting in
 `target/`.
@@ -240,7 +240,7 @@ kernel has one way in rather than two.
 doc comments link here.
 
 The scratch window is where a builder maps each frame it fills for a child: 64 MiB, 16,384 pages, at
-the bottom of `address_space_map::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
+the bottom of `address_space_layout::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
 window. `std_runtime_contract`'s three pages sit inside it, but only in a `std` program's space, and
 no `std` program builds children. A window rather than a cursor that only climbs, because the kernel
 takes scratch pages back for the builder. A scratch page maps a frame retyped from the child's

@@ -50,13 +50,13 @@ pub(super) fn window_zero(fs: Fs) -> Option<Fs> {
 }
 
 /// **The pool of windows directory-granted jobs get**: windows `1..login_contract::DURABLE_WINDOW`,
-/// each held by its job until its reap takes the grant back ([`unbind`]); `grant_plan::job_windows`
+/// each held by its job until its reap takes the grant back ([`unbind`]); `program_table::job_windows`
 /// refuses a still-bound window, so no binding outlives its job (confinement claim 24 in
 /// `notes/confinement-claims.md`). Window 0 is [`window_zero`]'s, the last `login`'s.
 ///
 /// # BUGS
 ///
-/// - A window whose job is never reaped is never free again (`grant_plan::job_windows`).
+/// - A window whose job is never reaped is never free again (`program_table::job_windows`).
 /// - A caretaker on a once-bound window (the fallback after a failed `BIND`) gets `EBADF`
 ///   throughout, since `UNBIND` leaves the badge revoked: the grant fails closed.
 pub(super) const fn job_windows() -> Windows {
@@ -71,7 +71,7 @@ pub(super) const fn mounted_job_windows() -> Windows {
 }
 
 /// **A directory grant in the second mounted tree, as the disk tree will see it**: the caretaker's
-/// words with `disk/` taken off the name (`grant_plan::spawnproto::in_mounted_tree`), or `None` for
+/// words with `disk/` taken off the name (`program_table::spawnproto::in_mounted_tree`), or `None` for
 /// a grant in the first tree.
 pub(super) fn mounted_grant((lo, hi, spec): (u64, u64, u64)) -> Option<(u64, u64, u64)> {
     use filesystem_contract::grant;
@@ -112,7 +112,7 @@ pub(super) fn mounted_job_channel(tree: Fs, w: u64, own_ut: u64, mapped: &mut bo
 /// **Whether a file server's image says it enforces subtree grants itself** (milestone 606, ruling
 /// T1): it carries a `capability_manifest_note::SUBTREE_GRANTS` note naming the one scope crate there is. No
 /// image, no note, or a note that does not decode all answer `false`.
-pub(super) fn subtree_grants(server: Option<&elf::Elf<'_>>) -> bool {
+pub(super) fn subtree_grants(server: Option<&static_elf::Elf<'_>>) -> bool {
     let Some(server) = server else {
         return false;
     };
@@ -244,7 +244,7 @@ pub(super) fn bound_index_store(
                 fs_operation::OPENDIR,
                 fs_operation::ROOT,
                 installed_programs::DIRECTORY,
-                grant_plan::WordGrant::ReadOnly.rights(),
+                grant_contract::WordGrant::ReadOnly.rights(),
             );
             return bind_window(fs, &files, (windows, w), handle);
         }

@@ -8,12 +8,12 @@ use super::*;
 
 /// **Whether this token is a designation to resolve rather than a word to print.**
 ///
-/// `glob::has_magic` first, deliberately: an [`echo`] word is arbitrary text (`a:b` is not a path
+/// `byte_glob::has_magic` first, deliberately: an [`echo`] word is arbitrary text (`a:b` is not a path
 /// and must not be refused as one), so nothing asks whether a token is a *nameable* path until it is
 /// established that it is a pattern at all. Once it is, a pattern anywhere but the last component is
 /// refused, because selecting directories to walk is an authority question (notes/glob.md).
 pub fn is_pattern(token: &[u8]) -> Result<bool, Refusal> {
-    if !glob::has_magic(token) {
+    if !byte_glob::has_magic(token) {
         return Ok(false);
     }
     grant_plan::expand::magic_component(token)
@@ -57,12 +57,12 @@ pub fn expansion(
 /// Every word the program hears is asked: an option-shaped word, an absolute path or one
 /// starting with `..` designates nothing; `.` designates this directory (calef's N1 ruling,
 /// 2026-09-27T06:27Z); otherwise the first component is looked up with `resolve`, and a name not
-/// here is inert bytes unless the program may create ([`grant_plan::WordGrant::Create`]). A word
+/// here is inert bytes unless the program may create ([`grant_contract::WordGrant::Create`]). A word
 /// grants its whole first component (milestone 205's BUGS). See notes/shell/the-swish-crate.md,
 /// "What a word designates".
 pub fn designation(
     line: &[u8],
-    grant: grant_plan::WordGrant,
+    grant: grant_contract::WordGrant,
     resolve: &mut dyn FnMut(&[u8]) -> Result<NameSet, Say>,
 ) -> Result<Expansion, Say> {
     let mut d = grant_plan::expand::Designation::none();
@@ -83,7 +83,10 @@ pub fn designation(
         let name = rest.split(|&b| b == b'/').next().unwrap_or(rest);
         // A quoted word with a glob byte in it is bytes the program hears, never a pattern this
         // shell expands: asking the directory for it would designate whatever it matched.
-        if rest.first() == Some(&b'/') || name == b".." || name.is_empty() || glob::has_magic(name)
+        if rest.first() == Some(&b'/')
+            || name == b".."
+            || name.is_empty()
+            || byte_glob::has_magic(name)
         {
             return Ok(());
         }
@@ -92,7 +95,7 @@ pub fn designation(
                 Some((found, is_dir)) => d.name(found, is_dir),
                 None => Ok(()),
             },
-            Err(Say::Cannot(Refusal::NoMatch)) if grant == grant_plan::WordGrant::Create => {
+            Err(Say::Cannot(Refusal::NoMatch)) if grant == grant_contract::WordGrant::Create => {
                 d.name(name, false)
             }
             Err(Say::NoDirectory) => {

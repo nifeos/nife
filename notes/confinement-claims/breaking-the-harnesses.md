@@ -44,7 +44,7 @@ missing death report means.
 `rights()` that adds `GRANT` to everything satisfies it. Only the explicit
 `& abi::rights::GRANT == 0` beside it caught the defect. That is the same shape milestone 194 (the
 falsification record, its lint, and the sweep that replays it) measured in
-`capability::derive_never_widens_rights`, one crate over. It was the argument for keeping an
+`capability_table::derive_never_widens_rights`, one crate over. It was the argument for keeping an
 assertion that looks redundant.
 
 Milestone 307 (which assertion actually fires when a confinement claim is broken) found that this

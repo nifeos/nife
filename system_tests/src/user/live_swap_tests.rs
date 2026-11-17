@@ -80,7 +80,7 @@ const WEDGE_SEQ: u64 = 24;
 
 /// The device's virtual address in every component, matching `swap::DEV_VA`. The test asserts
 /// the kernel's reported fault address against this, which is why both sides name one constant.
-const DEV_VA: u64 = address_space_map::pair_page(0x0310_0000);
+const DEV_VA: u64 = address_space_layout::pair_page(0x0310_0000);
 
 /// The console UART's physical address, matching `crate::console`: the device the operator lends,
 /// takes back, and lends again. Taken from `user::UART_PHYS` (milestone 161 (the x86_64 kernel
@@ -507,7 +507,7 @@ fn a_confined_client_drives_the_server_to_write_past_its_log() {
     // `log_put` writes at `LOG_VA + log_base + arg`; with `log_base = 0` this offset lands at
     // `DEV_VA`, the first register of the device page. Mirrored arithmetic rather than a
     // `hot_swap_contract` dependency, the convention every constant in this file follows.
-    const DEPUTY_PROBE: u64 = DEV_VA - address_space_map::pair_page(0x0300_0000);
+    const DEPUTY_PROBE: u64 = DEV_VA - address_space_layout::pair_page(0x0300_0000);
 
     let (msgs, n) = run_swap(ROLE_DEPUTY);
     let attack = of_kind(&msgs[..n], RPT_ATTACK)

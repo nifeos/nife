@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -79,6 +79,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+
+[[package]]
 name = "byte_sink_contract"
 version = "0.1.0"
 
@@ -93,7 +97,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -153,11 +157,12 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096#ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096"
 
 [[package]]
 name = "designware_mobile_storage"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b#4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b"
 
 [[package]]
 name = "device_tree_blob"
@@ -190,10 +195,6 @@ dependencies = [
 
 [[package]]
 name = "domain_name_system"
-version = "0.1.0"
-
-[[package]]
-name = "elf"
 version = "0.1.0"
 
 [[package]]
@@ -250,18 +251,19 @@ dependencies = [
  "device_tree_patch",
  "domain_name_resolution_contract",
  "domain_name_system",
- "elf",
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
- "grant_plan",
+ "grant_contract",
  "http_response",
  "libfuzzer-sys",
  "machine_discovery",
  "nifefs",
  "package_archive",
  "package_index",
+ "program_table",
  "redoxfs",
  "redoxfs_server",
+ "static_elf",
  "system_log",
  "system_log_contract",
  "video_terminal",
@@ -289,10 +291,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -304,10 +302,18 @@ name = "glyph_atlas"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
- "glob",
+ "byte_glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
@@ -352,8 +358,8 @@ version = "0.1.0"
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.2.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
+version = "0.3.0-pre.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
 
 [[package]]
 name = "jobserver"
@@ -435,7 +441,7 @@ dependencies = [
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
- "elf",
+ "static_elf",
 ]
 
 [[package]]
@@ -493,6 +499,14 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "quote"
@@ -572,7 +586,7 @@ dependencies = [
 name = "redoxfs_server"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "capability_manifest_note",
  "filesystem_contract",
  "filesystem_fixture",
@@ -635,6 +649,10 @@ name = "smallvec"
 version = "1.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
+
+[[package]]
+name = "static_elf"
+version = "0.1.0"
 
 [[package]]
 name = "subtle"
@@ -704,9 +722,9 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "uuid"
-version = "1.29.0"
+version = "1.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
+checksum = "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c"
 dependencies = [
  "getrandom",
 ]
@@ -721,7 +739,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 name = "video_terminal"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "glyph_atlas",
 ]
 

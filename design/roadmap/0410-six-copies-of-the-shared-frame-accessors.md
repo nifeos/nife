@@ -51,8 +51,8 @@ duplicate the base `MappedWindow` already carries.
 ## Follow-on
 
 - **Recorded.** The virtio pair's shared fact, the kernel's ring layout spelled as literals in
-  `components/src/entropy.rs` and `components/src/virtio_net_transport.rs` (and in `crates/virtio`'s
-  own net driver), is recorded as a `BUGS` entry on `components/src/virtio_net_transport.rs`,
+  `components/src/entropy.rs` and `components/src/virtio_net_transport.rs` (and in the net driver of
+  `components/src/block_driver_roles.rs`), is recorded as a `BUGS` entry on `components/src/virtio_net_transport.rs`,
   beside its own copy of the layout.
 
 ## What is duplicated
@@ -65,8 +65,8 @@ fn r8(va: u64) -> u8        { WINDOW.r8(va - PAGE_FRAME_VA) }
 fn w8(va: u64, v: u8)       { WINDOW.w8(va - PAGE_FRAME_VA, v); }
 fn r16le(va: u64) -> u16    { WINDOW.r16(va - PAGE_FRAME_VA) }
 fn w16le(va: u64, v: u16)   { WINDOW.w16(va - PAGE_FRAME_VA, v); }
-fn write_payload(bytes: &[u8]) { ... OFF_PAYLOAD ... }
-fn read_payload(n: usize, out: &mut [u8]) -> usize { ... OFF_PAYLOAD ... }
+fn write_payload(bytes: &[u8]) { ... PAYLOAD_OFFSET_BYTES ... }
+fn read_payload(n: usize, out: &mut [u8]) -> usize { ... PAYLOAD_OFFSET_BYTES ... }
 ```
 
 | program | where | what the page is |

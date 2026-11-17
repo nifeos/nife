@@ -8,7 +8,7 @@ not "was that bug fixed" but "how many more of its siblings are there?"
 
 ## Why this is the code that needs auditing by hand
 
-The Kani proofs cover the pure-logic crates: `paging`, `page_frames`, `elf`, `capability`, the
+The Kani proofs cover the pure-logic crates: `page_tables`, `page_frames`, `static_elf`, `capability`, the
 allocators, the ring validators. That is deliberate and it is most of the interesting logic. But it
 leaves the hand-written architecture assembly as the least-verified code in the trusted computing
 base, and milestone 20 (design/roadmap/0020-portable-hal.md) says so out loud. There is no tool in this project that

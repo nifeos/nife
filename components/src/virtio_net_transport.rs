@@ -19,8 +19,8 @@
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network
 //! card transport is `<device family>_transport`, as `e1000e_transport` beside it. Refused
 //! `net_transport` (right while it was the only one; beside a second card's transport it no longer
-//! says which), `vnet` (an abbreviation, milestone 63) and `virtio_net` (milestone 63: `crates/virtio`
-//! also drives net, so the device-class name alone would collide). This file is a single-consumer
+//! says which), `vnet` (an abbreviation, milestone 63) and `virtio_net` (milestone 63: the block driver's roles
+//! also drive net, so the device-class name alone would collide). This file is a single-consumer
 //! `#[path]` module rather than a `[[bin]]`, which is why rule 7's check leaves it alone.
 
 //! # BUGS
@@ -33,17 +33,17 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use user_mode_runtime::interrupt_acknowledge;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 
 /// The DMA page's virtual address, matching the kernel's `net_server` mapping.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 // SAFETY: the spawn service maps one page read/write at DMA_VA before this program runs
 // (milestone 139; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled
 // r8/r16/r32/w8/w16 and `write_desc` below -- including the stray comment milestone 112 found
 // pasted onto one of them, describing `invoke` and capability validation over a plain DMA write).
-const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
+const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 
 /// Capability slots the kernel granted, by convention.
 #[doc(alias = "irq")]
@@ -109,19 +109,19 @@ fn transmit_buf(i: usize) -> u64 {
 // Bounds-checked against the page by `WINDOW` (milestone 139 (drive the unsafe count down))
 // instead of trusted by hand at every call site.
 fn r8(off: u64) -> u8 {
-    WINDOW.r8(off)
+    WINDOW.read_u8(off)
 }
 fn r16(off: u64) -> u16 {
-    WINDOW.r16(off)
+    WINDOW.read_u16(off)
 }
 fn r32(off: u64) -> u32 {
-    WINDOW.r32(off)
+    WINDOW.read_u32(off)
 }
 fn w8(off: u64, v: u8) {
-    WINDOW.w8(off, v);
+    WINDOW.write_u8(off, v);
 }
 fn w16(off: u64, v: u16) {
-    WINDOW.w16(off, v);
+    WINDOW.write_u16(off, v);
 }
 
 fn mr(off: u64) -> u32 {

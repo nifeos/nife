@@ -92,7 +92,7 @@ fn declared_programs() -> Result<&'static [String], String> {
                     "`{name}` is packaged_only and no [[bin]] builds it"
                 ));
             }
-            if grant_plan::Program::ALL.iter().any(|p| p.name() == name)
+            if program_table::Program::ALL.iter().any(|p| p.name() == name)
                 || boot_programs().contains(&name.as_str())
             {
                 return Err(format!(
@@ -291,12 +291,13 @@ const BUILT_ELSEWHERE: [&str; 16] = [
 ];
 
 /// **A `std` program the shell can spawn, built by its own workspace rather than a `[[bin]]`**
-/// (milestone 595 (provisional)). `grant_plan::Program::StdExerciser` is the first: it is compiled with
+/// (milestone 595 (provisional)). `program_table::Program::StdExerciser` is the first: it is compiled with
 /// `-Zbuild-std` against the patched std farm (`cargo xtask std-exerciser`) and packed iff that
 /// ran, so the `[[bin]]` rule cannot apply to it. Both halves are required, so a native `Program`
 /// with no binary still fails, and so does a `std` one nothing here packs.
-fn is_std_built_elsewhere(p: grant_plan::Program) -> bool {
-    p.manifest().startup == grant_plan::StartupContract::Std && BUILT_ELSEWHERE.contains(&p.name())
+fn is_std_built_elsewhere(p: program_table::Program) -> bool {
+    p.manifest().startup == grant_contract::StartupContract::Std
+        && BUILT_ELSEWHERE.contains(&p.name())
 }
 
 /// **What the declared list must agree with, checked every time an archive is packed.**
@@ -322,7 +323,7 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
     if let Some(w) = sorted.windows(2).find(|w| w[0] == w[1]) {
         return Err(format!("`{}` is declared by two [[bin]] blocks", w[0]));
     }
-    for p in grant_plan::Program::ALL {
+    for p in program_table::Program::ALL {
         if !has(p.name()) && !is_std_built_elsewhere(*p) {
             return Err(format!(
                 "grant_plan declares `{}` spawnable from the shell, and no [[bin]] in {} builds it",
@@ -400,7 +401,7 @@ pub(crate) fn has_initial_ramdisk_riscv() -> bool {
 
 /// Where the `x86_64` initial ramdisk archive is written (milestone 161 (the x86_64 kernel port)).
 /// Separate from the other two because it holds `x86_64` ELFs, and the kernel's loader refuses
-/// anything whose `e_machine` is not its own (`crates/elf`'s `EXPECTED_MACHINE`).
+/// anything whose `e_machine` is not its own (`crates/static_elf`'s `EXPECTED_MACHINE`).
 pub(crate) fn x86_initial_ramdisk_path() -> String {
     workspace_root()
         .join("target/initial-ramdisk-x86_64.img")
@@ -762,7 +763,7 @@ mod tests {
         // A floor, not a pin: a reader that silently stopped at the first package would still
         // find `progenitor`, and would pack a third of the system.
         assert!(names.len() > 60, "only {} programs declared", names.len());
-        for p in grant_plan::Program::ALL {
+        for p in program_table::Program::ALL {
             assert!(
                 names.iter().any(|n| n == p.name()) || is_std_built_elsewhere(*p),
                 "{}",

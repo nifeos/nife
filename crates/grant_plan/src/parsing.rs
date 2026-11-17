@@ -8,19 +8,27 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    Command, MAXIMUM_SHORT_OPTIONS, Refusal, TouchOperands, parse_u64, split_first_word, trim, word,
+    Command, MAXIMUM_SHORT_OPTIONS, MAXIMUM_VERB, Refusal, TouchOperands, parse_u64,
+    split_first_word, trim, verb_key, word,
 };
 
 /// Split a command line into whitespace-separated tokens, writing them into `out` and returning
 /// the filled prefix. A tiny `no_std` tokenizer: no allocation, bounded by `out.len()`. Tokens
-/// past `out.len()` are dropped (a command line with more than a handful of tokens is a mistake,
-/// not a workload).
+/// past `out.len()` are not returned; [`parse_run`], which gives it sixteen slots, refuses the
+/// first of them rather than losing it, so a caller that needs every token reads a line it knows
+/// to be short, or walks it one token at a time as `each_word` does.
 ///
 /// **Whitespace inside quotes is not a separator** (milestone 67). The quotes stay on the token,
 /// because this function's job is where a token ends and [`word::read`]'s is what it means; a
 /// caller that wants the name rather than the spelling asks for it. That split is what lets
 /// [`parse_run`] refuse `a"b"` in one place instead of every scanner having to.
 pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8]] {
+    split_tokens(line, out).0
+}
+
+/// [`tokenize`], and also the part of `line` it did not reach because `out` was full: empty when
+/// every token fit, and otherwise a slice that starts at or before the first token left over.
+fn split_tokens<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> (&'b [&'a [u8]], &'a [u8]) {
     let mut n = 0;
     let mut i = 0;
     let mut c = word::Cursor::new();
@@ -40,7 +48,7 @@ pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8
             n += 1;
         }
     }
-    &out[..n]
+    (&out[..n], &line[i..])
 }
 
 /// **Assemble the argv of a program that hears words** (milestone 205 (how a foreign program is
@@ -99,7 +107,7 @@ pub fn each_word(
         let end = token.as_ptr() as usize - rest.as_ptr() as usize + token.len();
         rest = &rest[end..];
         let w = word::read(token)?;
-        if !w.quoted && glob::has_magic(w.text) {
+        if !w.quoted && byte_glob::has_magic(w.text) {
             return Err(Refusal::PatternInArguments);
         }
         f(w.text)?;
@@ -121,7 +129,7 @@ pub const BUILTINS: &[&[u8]] = &[
 /// The first token selects the command, and one that is not a builtin is a **program name**.
 /// `echo` keeps the rest of the line verbatim; the prefix words (`caps`, `time`, `xargs`) keep it
 /// unsplit, since their operand is a command line; everything else works on tokens. Builtins win
-/// over programs, so [`Program::from_name`](crate::Program::from_name) must never learn a name
+/// over programs, so the shell's program table must never learn a name
 /// that is also a builtin.
 pub fn parse(line: &[u8]) -> Command<'_> {
     let trimmed = trim(line);
@@ -307,7 +315,7 @@ pub fn vouched_name(path: &[u8]) -> Option<&[u8]> {
 /// capability transfer.
 pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
     let mut toks: [&[u8]; 16] = [b""; 16];
-    let toks = tokenize(line, &mut toks);
+    let (toks, left_over) = split_tokens(line, &mut toks);
 
     let mut memory_grant = None;
     let mut program: &[u8] = b"";
@@ -375,6 +383,14 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
         i += 1;
     }
 
+    // A token the buffer had no room for is one nothing can place, the same as one past
+    // `MAXIMUM_POSITIONALS`: dropping it would lose authority the person typed. The first
+    // unplaceable token in line order is the one named, so a flag earlier on the line wins.
+    if unexpected.is_none() {
+        let mut one = [&b""[..]; 1];
+        unexpected = tokenize(left_over, &mut one).first().copied();
+    }
+
     ParsedInvocation {
         program,
         line,
@@ -396,7 +412,7 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_POSITIONALS: usize = 4;
 
-/// The parsed form of a program invocation, before the manifest check. [`plan`](crate::plan) turns it into an
+/// The parsed form of a program invocation, before the manifest check. [`plan_against`](crate::plan_against) turns it into an
 /// [`Endowment`](crate::Endowment) or a [`Refusal`].
 ///
 /// **The positional tokens are deliberately unclassified here.** The parser knows the shape of a
@@ -476,3 +492,28 @@ impl<'a> ParsedInvocation<'a> {
 
 #[cfg(test)]
 mod tests;
+
+/// **The line's verb**: its second word, quotes off, as the program will hear it as `argv[1]`
+/// (`each_word`'s reading, which `grant_plan::argv` assembles the page from), followed by a
+/// space and the third word when both fit in [`MAXIMUM_VERB`] bytes, which is the key a verb with
+/// an option has (`list -u`). `None` when there is no second word, when it is longer than
+/// [`MAXIMUM_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
+/// into `out`, because a quoted word's text is a temporary.
+///
+/// Name: provisional.
+pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
+    let mut seen = 0usize;
+    let mut held = [[0u8; MAXIMUM_VERB]; 2];
+    let mut lens = [None; 2];
+    let _ = each_word(line, &mut |w| {
+        seen += 1;
+        if (2..=3).contains(&seen) && w.len() <= MAXIMUM_VERB {
+            held[seen - 2][..w.len()].copy_from_slice(w);
+            lens[seen - 2] = Some(w.len());
+        }
+        Ok(())
+    });
+    let verb = &held[0][..lens[0]?];
+    let option = lens[1].map(|n| &held[1][..n]);
+    verb_key(verb, option, out)
+}

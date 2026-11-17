@@ -38,7 +38,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    Evidence: every source file; `src/virtio.rs` line 72; `notes/user-mode-runtime.md` and
    `notes/user-mode-runtime/time.md`.
    Change: rewrite each doc comment to state the rule rather than cite the ruling: "the sixth word
-   goes in as zero so `receive_fault` reads 0 unless the kernel stamped a label" needs no section
+   goes in as zero so `receive_message` reads 0 unless the kernel stamped a label" needs no section
    number. Move the two notes into the repository's `docs/`, trimmed of tree paths, and point the
    crate root at them. Keep the kernel-side facts a reader needs (which register the kernel
    writes, what maps the timebase page) as statements, not as paths. Delete the one line naming
@@ -63,15 +63,15 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
 
 10. `Frame::payload_read` trusts a reply length against the page, and `Frame` cannot read the
     length field it can write.
-    Finding: `payload_read(n, out)` clamps `n` to `out.len()` and then copies from `OFF_PAYLOAD`;
+    Finding: `payload_read(n, out)` clamps `n` to `out.len()` and then copies from `PAYLOAD_OFFSET_BYTES`;
     an `n` above `DATA_MAXIMUM` with a buffer that large panics at the window's bounds check. The
     doc says "a peer's idea of a length is data", and the clamp is "the bounds check's first
     line", but it does not clamp to what the frame can hold. After #3517, `RECEIVE` is the only
-    writer of `OFF_LEN` and its doc says a client "clears it before a `RECEIVE` to watch for the
+    writer of `LENGTH_OFFSET_BYTES` and its doc says a client "clears it before a `RECEIVE` to watch for the
     reply"; `Frame` has `set_len` and no `len`, so the client it describes cannot watch.
     Evidence: `src/socket_frame.rs` lines 92 to 110; #3517's change to the `set_len` doc.
     Change: `let n = n.min(out.len()).min(DATA_MAXIMUM);` and `pub fn len(&self) -> u16` reading
-    `OFF_LEN`. `len` is the standard library's spelling for a length, which the naming rules
+    `LENGTH_OFFSET_BYTES`. `len` is the standard library's spelling for a length, which the naming rules
     prefer. The peer-word ruling (`ACCEPT`'s second reply word carries the peer's address and
     port) rides in the reply word, not the frame, so `Frame` gains no field for it. A decoder for
     that word belongs in `socket_contract`, where the host tests are. The doc of
@@ -81,11 +81,11 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
 11. `INITIAL_RAMDISK_VIRTUAL_ADDRESS` is a literal here and a derived value in the kernel, and
     nothing checks they agree.
     Finding: this crate says `0x2000_0000`; the kernel says
-    `address_space_map::runtime_window(0x2000_0000)`. The doc says "must match" and no test
+    `address_space_layout::runtime_window(0x2000_0000)`. The doc says "must match" and no test
     asserts it (none found by search; unverified beyond that). After the move the two live in
     different repositories.
     Evidence: `src/initial_ramdisk.rs` line 34; `kernel/src/user/loader.rs` line 297.
-    Change: `address_space_map` leaves before this crate (milestone 1017 (the contract crates leave in this order), step 3), so depend on it
+    Change: `address_space_layout` leaves before this crate (milestone 1017 (the contract crates leave in this order), step 3), so depend on it
     and define the constant as the kernel does, from one source; or have the kernel import this
     crate's constant. One of the two, not both.
     Door: two-way (both sides are nife's). Effort: XS.

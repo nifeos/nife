@@ -1,0 +1,19 @@
+Falsifies `address_space_layout::verification::pair_page_accepts_every_page_of_its_band`.
+
+The defect: `pair_page` asks `window` for two pages, so the last page of `PAIR_PAGES` is refused.
+
+Expected to fail: Kani reports "a window must lie wholly inside its band" reachable at `virtual_address = 0x0FFF_F000`.
+
+diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
+index cb71c3977..8a92a28e4 100644
+--- a/crates/address_space_layout/src/lib.rs
++++ b/crates/address_space_layout/src/lib.rs
+@@ -249,7 +249,7 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
+ /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
+ /// aligned, stops the build instead of colliding with a runtime page at run time.
+ pub const fn pair_page(virtual_address: u64) -> u64 {
+-    window(PAIR_PAGES, virtual_address, PAGE)
++    window(PAIR_PAGES, virtual_address, 2 * PAGE)
+ }
+ 
+ /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for

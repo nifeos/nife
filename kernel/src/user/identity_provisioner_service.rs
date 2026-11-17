@@ -4,13 +4,13 @@ use crate::sched::RendezvousId;
 
 /// Where the tool expects the caller to have staged the identity and secret, in
 /// `credential_contract::place`'s layout. Must match `components/src/identity_provisioner.rs`'s own `REQ_VA`.
-const REQ_VA: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
+const REQ_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e4_0000);
 /// The page shared with the credential service. Must match the same file's `PROV_VA`, and
 /// `components/src/credentialer.rs`'s own `PROV_VA` (the physical frame behind both must be the one
 /// `credential_service::Wiring::provision_page_frame` names).
-const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
+const PROV_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e0_0000);
 /// The page shared with the file service. Must match the same file's `FS_VA`.
-const FS_VA: u64 = address_space_map::pair_page(0x0000_0000_00e5_0000);
+const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e5_0000);
 
 /// Report words `components/src/identity_provisioner.rs` sends; must match the same file.
 pub const RPT_OK: u64 = 1;

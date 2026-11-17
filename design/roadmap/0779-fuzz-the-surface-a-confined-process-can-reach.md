@@ -123,7 +123,7 @@ The census, run on `1a145fcaa`:
 - Three decoders are partly proven. `credential_protocol::read` has 3 Kani harnesses (it stays in
   the page). `network_time_protocol::Packet::parse` has 7 (parse is total). `filesystem_protocol`'s
   3 cover rights attenuation, not decoding.
-- On the syscall side, `crates/capability` carries 14 Kani harnesses and
+- On the syscall side, `crates/capability_table` carries 14 Kani harnesses and
   `crates/inter_process_communication` 14 (the endpoint, notification and timer state machines).
   `kernel/src/syscall.rs` and `kernel/src/sched.rs`, which join them to threads and mailboxes, carry
   none that reach the dispatcher.

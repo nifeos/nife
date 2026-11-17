@@ -37,11 +37,11 @@ request the session makes, vouched or not, because the shell cannot know the ver
 miss gets what the line granted, plus the clock and configuration pages. Without the capability the
 miss is refused with its own word, `swish::UNVOUCHED_SENTENCE`.
 
-The line is bound against the manifest the file carries, or against `grant_plan::NO_NOTE_MANIFEST`
+The line is bound against the manifest the file carries, or against `program_table::NO_NOTE_MANIFEST`
 when it carries none. So an argument the note does not declare is refused at the prompt, exactly as
 `uptime 3` is. A note that cannot be read, or that asks for what an image cannot be given, is refused
 with nothing sent. Whether the note is honored is still the progenitor's call, on its own copy
-(`grant_plan::image_manifest`).
+(`program_table::image_manifest`).
 
 ## The image window's page tables
 
@@ -113,7 +113,7 @@ reach this path on: `Words` output refuses `>` and a pipe's left side, and
 ## The screen-narrowed tail
 
 The kernel's exit delivery is the completion signal for a tail stage narrowed to the screen.
-`receive_fault` blocks until the child is dead and unreaped, which is stronger than "it painted its
+`receive_message` blocks until the child is dead and unreaped, which is stronger than "it painted its
 last line". A dead thread cannot enqueue another `SEND`, so the child cannot still be mid-write.
 What can still be in flight is `terminal_sink_caretaker`'s trailing `CALL` to `line_editor`. That is
 the caretaker-hop display race §106 (an unredirected tail stage's output goes to the screen)

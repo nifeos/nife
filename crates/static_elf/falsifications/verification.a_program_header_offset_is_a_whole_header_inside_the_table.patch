@@ -1,0 +1,23 @@
+Falsifies `static_elf::verification::a_program_header_offset_is_a_whole_header_inside_the_table`.
+
+The defect: the bound compares where the header starts with the table's end, not where it ends.
+It reads as the natural check, an offset inside the table, and every index the parse produces
+passes it, because the parse bounded the whole table first. Only the header's last 56 bytes are
+unguarded.
+
+Expected to fail: the claim that a passing offset leaves room for a whole header, at an offset
+within 56 bytes of the table's end. The slice a caller takes there runs past the table.
+
+diff --git a/crates/static_elf/src/parse.rs b/crates/static_elf/src/parse.rs
+index dc4f9e59b..5ddce337a 100644
+--- a/crates/static_elf/src/parse.rs
++++ b/crates/static_elf/src/parse.rs
+@@ -279,7 +279,7 @@ pub(crate) fn program_header_offset(
+     table_end: usize,
+ ) -> Option<usize> {
+     let off = i.checked_mul(phentsize)?.checked_add(phoff)?;
+-    if off.checked_add(PHDR_SIZE)? <= table_end {
++    if off <= table_end {
+         Some(off)
+     } else {
+         None

@@ -10,7 +10,7 @@
 # Why this exists. notes/verification.md has said "falsify a property before believing it" since
 # milestone 35, and milestone 191 measured what that produced: 141 harnesses and **not one of them
 # recording what was done to falsify it**. The rule was rung four, honoured by whoever remembered,
-# and the reverse pass found the predictable result. `capability::subset_is_reflexive` proves
+# and the reverse pass found the predictable result. `capability_table::subset_is_reflexive` proves
 # `a & !a == 0`, a tautology no plausible implementation error breaks, and twelve of the 26 `paging`
 # harnesses restate six properties once per ISA.
 #
@@ -104,7 +104,7 @@
 #
 # The block, which is all the lint checks:
 #
-#   /// Falsification: replayable `crates/capability/falsifications/verification.subset_is_transitive.patch`
+#   /// Falsification: replayable `crates/capability_table/falsifications/verification.subset_is_transitive.patch`
 #   /// Falsification: attested 2026-08-30. Flipped the mask; the subset assertion failed.
 #   /// Falsification: unfalsified. Nobody has proposed a defect this would catch.
 #   /// Falsification: unfalsifiable. <at least 200 characters: what the operation can and cannot
@@ -225,7 +225,7 @@
 #   (`Architecture: aarch64, riscv64, x86_64`): each leg is its own boot and each must come back red,
 #   so one patch carries a hunk per ISA's own file and a hunk for an ISA not being booted is dead text
 #   to that boot. It stays one record per test because the patch path is the test's name. A defect is
-#   not always expressible on every ISA: `crates/paging`'s `U` bit marks a page user-accessible on
+#   not always expressible on every ISA: `crates/page_tables`'s `U` bit marks a page user-accessible on
 #   RISC-V, and a kernel page marked `U` faults the kernel itself with `sstatus.SUM` clear, so "the
 #   kernel maps its own memory user-readable" cannot be booted there at all, and the record for that
 #   claim names two legs and not three. DECISIONS §19 (architectural parity is a tenet) makes parity
@@ -443,14 +443,14 @@ class Package:
 
     The targets are what make the module path right for a package of binaries. `user` is 68
     `[[bin]]` targets sharing one `src/` directory, so `components/src/printenv.rs` is a CRATE ROOT and
-    contributes no module segment, where `crates/paging/src/sv39.rs` sits below a `lib` root and
+    contributes no module segment, where `crates/page_tables/src/sv39.rs` sits below a `lib` root and
     contributes `sv39`. The old derivation read the path (`parts[2] == "src"`) and would have
     called the first one `printenv::proofs::...`, which is not a path Kani would answer to.
     """
 
     def __init__(self, name, reldir, targets, has_global_asm):
         self.name = name
-        self.reldir = reldir            # "crates/paging", "kernel", "user"
+        self.reldir = reldir            # "crates/page_tables", "kernel", "user"
         self.prefix = reldir + "/"
         self.targets = targets          # [(target_name, kind, rel_src_path), ...]
         self.has_global_asm = has_global_asm
@@ -475,7 +475,7 @@ class Package:
     def file_mods(self, rel):
         """The module segments a FILE contributes, from the crate root down.
 
-        `crates/paging/src/sv39.rs` under a `lib.rs` root is `["sv39"]`; `components/src/printenv.rs`,
+        `crates/page_tables/src/sv39.rs` under a `lib.rs` root is `["sv39"]`; `components/src/printenv.rs`,
         which IS a root, is `[]`. The rest of a harness's path comes from the inline `mod X {`
         blocks, which is where `verification` and `proofs` come from.
         """
@@ -844,6 +844,9 @@ class Harness:
             argv += ["-Z", "unstable-options", "--ignore-global-asm", "-Z", "stubbing"]
         if self.target is not None and self.target[1] == "bin" and len(self.pkg.bins) > 1:
             argv += ["--bin", self.target[0]]
+        elif self.target is not None and self.target[1] == "lib" and self.pkg.bins:
+            # A package of binaries that also has a library (`components`): the library alone.
+            argv += ["--lib"]
         return argv + ["--harness", self.qualified, "--exact", "--output-format=terse"]
 
 
@@ -952,7 +955,7 @@ class HostTest(Harness):
         # §134's `<package>/falsifications/<module.path>.<fn>.patch`. An integration test file is
         # its own crate root, so it contributes no module segment, and two files in `tests/` could
         # then define the same name; the target name goes first to keep the path unique. That is
-        # the spelling #1596 used for `crates/paging/tests/nth_allocation.rs`.
+        # the spelling #1596 used for `crates/page_tables/tests/nth_allocation.rs`.
         lead = [self.target[0]] if self.target is not None and self.target[1] == "test" else []
         return "%s/falsifications/%s.patch" % (self.pkg.reldir, ".".join(lead + self.mods + [self.name]))
 

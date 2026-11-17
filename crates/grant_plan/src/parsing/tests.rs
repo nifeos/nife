@@ -328,6 +328,38 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
     }
 }
 
+/// **The verb is the second word, with the third beside it when both fit** ([`verb_of`]): `None`
+/// for a bare program name, the second word alone when no third follows or the third would not
+/// fit, both joined by one space when they fit, and `None` when the second word is longer than
+/// [`MAXIMUM_VERB`] or, quoted, holds a space itself.
+#[test]
+fn the_verb_is_the_second_word_and_the_third_when_both_fit() {
+    let verb = |line: &[u8]| {
+        let mut out = [0u8; MAXIMUM_VERB];
+        verb_of(line, &mut out).map(<[u8]>::to_vec)
+    };
+    assert_eq!(verb(b"jig"), None);
+    assert_eq!(verb(b"jig list").as_deref(), Some(&b"list"[..]));
+    assert_eq!(verb(b"jig list -u").as_deref(), Some(&b"list -u"[..]));
+    assert_eq!(
+        verb(b"jig 'install' greeting").as_deref(),
+        Some(&b"install greeting"[..])
+    );
+    assert_eq!(verb(b"jig list -u extra").as_deref(), Some(&b"list -u"[..]));
+    // A third word that does not fit beside the second leaves the second alone.
+    assert_eq!(
+        verb(b"jig list seventeen-bytes-x").as_deref(),
+        Some(&b"list"[..])
+    );
+    // A second word one byte past the bound is no verb; one at the bound is.
+    assert_eq!(verb(b"jig abcdefghijklmnopq"), None);
+    assert_eq!(
+        verb(b"jig abcdefghijklmnop").as_deref(),
+        Some(&b"abcdefghijklmnop"[..])
+    );
+    assert_eq!(verb(b"jig 'list -u'"), None);
+}
+
 #[test]
 fn echo_keeps_internal_spacing() {
     assert_eq!(parse(b"echo hello world"), Command::Echo(b"hello world"));
@@ -517,4 +549,44 @@ fn a_job_operand_is_two_decimal_digits_at_most() {
 fn kill_reads_dash_nine_only_as_its_own_word() {
     assert_eq!(kill_operands(b"-9 %1"), Ok((true, 1)));
     assert_eq!(kill_operands(b"-9%1"), Err(()));
+}
+
+/// A line with more tokens than `parse_run` has room for is refused, not shortened. The seventeenth
+/// token used to vanish without a trace, so `a b` after seven `--mem 1` pairs planned `a` and lost
+/// `b`, which is a word the person typed and never had read.
+#[test]
+fn a_seventeenth_token_is_refused_and_never_dropped() {
+    // Each `--mem 1` spends two tokens, so the program name and seven pairs are fifteen.
+    let fifteen = b"p --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1";
+    let line = |tail: &[u8]| {
+        let mut v = fifteen.to_vec();
+        v.extend_from_slice(tail);
+        v
+    };
+
+    // Sixteen tokens fill the buffer and leave nothing over: nothing to refuse.
+    let sixteen = line(b" a");
+    let parsed = parse_run(&sixteen);
+    assert_eq!(parsed.unexpected, None);
+    assert_eq!(parsed.positionals(), [&b"a"[..]]);
+
+    // One token past the sixteenth is named as the token nothing can place.
+    let seventeen = line(b" a b");
+    assert_eq!(parse_run(&seventeen).unexpected, Some(&b"b"[..]));
+
+    // The first dropped token is the one named, however many follow it.
+    let more = line(b" a b c");
+    assert_eq!(parse_run(&more).unexpected, Some(&b"b"[..]));
+
+    // Trailing whitespace after the sixteenth token is not a seventeenth token.
+    let padded = line(b" a   ");
+    assert_eq!(parse_run(&padded).unexpected, None);
+}
+
+/// An unplaceable token earlier on the line is the one named, not a later one that no room was
+/// left for.
+#[test]
+fn the_earliest_token_nothing_can_place_is_named_when_the_line_is_also_too_long() {
+    let parsed = parse_run(b"p -9 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 a b");
+    assert_eq!(parsed.unexpected, Some(&b"-9"[..]));
 }

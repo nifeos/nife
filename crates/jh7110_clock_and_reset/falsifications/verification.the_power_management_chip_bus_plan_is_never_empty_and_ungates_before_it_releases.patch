@@ -6,15 +6,15 @@ unusable is reported as `from_tree` with an empty plan and the PMIC bus is never
 Expected to fail: the harness's `assert!(!bus.plan().is_empty())`.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
-index e840194c9..a6b65aa49 100644
+index e4483d25e..a7343d74c 100644
 --- a/crates/jh7110_clock_and_reset/src/lib.rs
 +++ b/crates/jh7110_clock_and_reset/src/lib.rs
-@@ -665,7 +665,7 @@
-         bus.len = collected.len;
+@@ -832,7 +832,7 @@ impl PowerManagementChipBus {
+         bus.step_entries = collected.step_entries;
          bus.skipped = collected.skipped;
          bus.truncated = collected.truncated;
--        if bus.len == 0 {
+-        if bus.step_entries == 0 {
 +        if false {
-             return Ok(PowerManagementChipBus::fallback(
-                 Some(power_management_chip),
-                 bus.skipped,
+             // Only foreign specifiers: the constant plan, and the locations the tree did state.
+             let mut fallback =
+                 PowerManagementChipBus::fallback(Some(power_management_chip), bus.skipped);

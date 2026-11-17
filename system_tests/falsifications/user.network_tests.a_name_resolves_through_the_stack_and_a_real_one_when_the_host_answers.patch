@@ -3,7 +3,7 @@ Falsifies `system_tests::user::tests::a_name_resolves_through_the_stack_and_a_re
 Architecture: aarch64
 
 The defect: `Query::accept` takes every class-IN A record in the answer, not only those owned by
-the end of the CNAME chain from the name asked. That is cache poisoning in one line: a reply about
+the end of the canonical name chain from the name asked. That is cache poisoning in one line: a reply about
 one name plants an address the server gave for another.
 
 Expected to fail: the gating assertion, with client code `0xe14f` (case 4, `poisoned.nife.test`,
@@ -12,12 +12,13 @@ a wrong verdict). Measured 2026-10-04 (UTC) on aarch64: red with exactly that co
 diff --git a/crates/domain_name_system/src/lib.rs b/crates/domain_name_system/src/lib.rs
 --- a/crates/domain_name_system/src/lib.rs
 +++ b/crates/domain_name_system/src/lib.rs
-@@ -796,7 +796,7 @@
-         let mut scan = answers;
-         for _ in 0..h.ancount {
+@@ -866,8 +866,7 @@
              let Ok(record) = scan.record() else { break };
--            if record.class != CLASS_IN || record.rtype != record_type::A || record.name != owner {
-+            if record.class != CLASS_IN || record.rtype != record_type::A {
+             if record.class != CLASS_IN
+                 || record.record_type != record_type::IPV4_ADDRESS
+-                || record.name != owner
+             {
                  continue;
              }
-             answer.ttl = answer.ttl.min(record.ttl);
+             answer.ttl_seconds = answer
+                 .ttl_seconds

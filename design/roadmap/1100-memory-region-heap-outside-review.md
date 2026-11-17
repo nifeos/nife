@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -66,7 +66,7 @@ dependency). Everything else is two-way and the maintainer decides it.
    only in the root workspace, so a repository of the crate's own, and every workspace that consumes
    it without the patch, silently builds the unpatched package. The pull request has been open for
    seven weeks at the time of the review with no maintainer comment, which is a reliability signal
-   for the upstream. `abi`, `address_space_map` and `user_mode_runtime` are path dependencies. The
+   for the upstream. `abi`, `address_space_layout` and `user_mode_runtime` are path dependencies. The
    order of milestone 1017 moves them at steps 2 and 3, before this crate at step 9, so their
    repositories will exist, and the lines become `git` and `rev` pins with `version` beside them.
    Evidence: `crates/memory_region_heap/Cargo.toml` lines 19 to 28. `vendor/talc.pin`.
@@ -116,41 +116,44 @@ The P1 items are in [the appendix](1100-memory-region-heap-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's.
+Two one-way doors. Everything else above is the maintainer's. Decisions A and B are ruled and in force.
 
-### A. The seven public names, and the shape of `commit_all`
+### A. The seven public names, and the shape of `commit_all` (ruled 2026-11-14 UTC)
 
-Background. A crate that leaves carries no `Name:` blocks, so the architect must ratify every name a
-stranger meets before the move commit. Five of the six public items have no block. The crate name
-and `initialize` are provisional. The template's `question_shape` helper refuses `commit_all`
-because it returns `bool` through a shared reference, and the template has no baseline. The naming
-rules exempt "a function that acts and reports whether it worked", which `commit_all` is, but the
-helper cannot see that through `&self` (its header calls this a known false stop), and the kept form
-it offers is for names another project owns.
+The rule in force, option A (block 1100 decision A):
 
-Recommendation first. Ratify `memory_region_heap`, `MemoryRegionHeap`, `initialize`,
-`committed_bytes` and `new` as they stand. Rename `DEFAULT_BASE` to `DEFAULT_BASE_VIRTUAL_ADDRESS`
-under the rule that an address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location. Keep
-the name `commit_all` and change what it returns: `Result<(), Short>` where `Short` carries the
-bytes that the heap could not commit. The helper does not judge a `Result`, the shape honors the
-rule's exemption, and the one caller (`components/src/swish/heap.rs`) discards the value today, so
-no call site changes meaning. Item 13's two accessors, `maximum_bytes` and `base_virtual_address`,
-ride in the same table.
+- `memory_region_heap`, `MemoryRegionHeap`, `initialize`, `committed_bytes` and `new` are ratified
+  as they stand. Each public item carries a `Name:` block that reads ratified.
+- `DEFAULT_BASE` is `DEFAULT_BASE_VIRTUAL_ADDRESS`, under the rule that an address is
+  `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location.
+- `commit_all` keeps its name and returns `Result<(), Short>`, where `Short` carries the bytes the
+  heap could not commit. `Short` is provisional. The one caller, the shell's `initialize_heap`,
+  discards the value with `let _ =`.
+- `maximum_bytes` and `base_virtual_address` are the two accessors of item 13. Both are
+  provisional.
+- The local binding `va` is `virtual_address` (item 4).
 
-Prior art. `Vec::try_reserve` returns `Result<(), TryReserveError>` for exactly this shape: act, and
-say how it failed. `std_runtime_contract::HEAP_BASE` is the same value as `DEFAULT_BASE` under
-another spelling. The move is the moment to make the two agree or to make one defer to the other.
-`address_space_map::HEAP.start` is where both come from.
+Prior art. `Vec::try_reserve` returns `Result<(), TryReserveError>` for exactly this shape: act,
+and say how it failed. `std_runtime_contract::HEAP_BASE` is the same value as the heap's default
+base under another spelling; the move is the moment to make the two agree or to make one defer to
+the other. `address_space_layout::HEAP.start` is where both come from.
 
-Concrete example. After the ruling, swish's `initialize_heap` reads
-`HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE_VIRTUAL_ADDRESS,
-swish::HEAP_MAXIMUM_BYTES); let _ = HEAP.commit_all();` and the template's name checks pass at a
-ceiling of zero.
+### B. Which `talc` the crate builds against outside nife (ruled 2026-11-14 UTC)
 
-Not taken. `commit_all` returning the committed byte count (a `u64` the caller must compare against
-a cap it has to know), and `is_fully_committed` (a question, but the function acts).
+The rule in force, option A (block 1100 decision B):
 
-### B. Which `talc` the crate builds against outside nife
+- Outside nife the crate depends on crates.io `talc = "5.1.1"`, unpatched.
+- The crate's README, written by the move lane, states what the unpatched package lacks (upstream
+  pull request 57's two fit-check overflow fixes) and why a 64-bit process does not reach it.
+- nife's root `[patch.crates-io]` keeps applying to nife's whole graph, this crate included.
+- `redoxfs` carries its own patch file, as the step 9 appendix of milestone 1017 rules.
+- When a `talc` release carries the fix, the crate bumps and the README sentence goes.
+- If upstream stays silent past the next monthly `script/vendor-watch` report, the question
+  returns as a request to fork. A fork under `nifeos` needs its own approval.
+
+Evidence the architect saw: `talc` 5.1.1 was released 2026-09-09 and has 2.6 million downloads. One
+maintainer wrote most of its commits. Pull request 57 has been open since 2026-09-24 with no
+comments.
 
 Background. nife builds `talc` from `vendor/talc`, the crates.io 5.1.1 package plus upstream pull
 request 57, through `[patch.crates-io]` in each workspace root. A `[patch]` table does not travel
@@ -188,6 +191,29 @@ Not taken. A git pin on upstream at a revision carrying the fix (there is none; 
 not merged). A fork under `nifeos` (refused in the step 9 appendix as needing its own approval). A
 `[patch]` instruction in the README for consumers (an instruction a build cannot check).
 
+## Follow-on
+
+- **Done.** The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on
+  decision A: the names, the rename, the `Result` return, the two accessors and the local binding.
+  Decision B stands as the rule in force.
+- **Done.** The branch `lane/1100-outside-review-fixes` built the code items.
+  - A `PageSource` seam, 16 host tests and three Kani harnesses with falsification patches (item 8).
+  - A second `initialize` refused (item 5) and a zero grow refused (item 6).
+  - A refusal other than `OutOfMemory` stops growth and `last_refusal` reports it (item 7).
+  - Crate docs that gloss "untyped", state the minimum first heap (pinned at 1,575 bytes) and name
+    the spinlock (items 9 and 14).
+  - `PAGE_BYTES` (item 10), the reading of the panic handler (item 11), the never-shrinks paragraph
+    (item 12) and the two accessors (item 13).
+- **Outstanding.** The move lane does the items that need the new repository. The manifest keeps its
+  path dependencies and its `talc` line as they stand. The move lane also writes the README
+  and license files (items 2, 3 and the README sentence of item 12, to the rule of decision B). Item 4's
+  coverage-exemption half belongs to the move lane, now that a host test exists. Two code items
+  wait for a host-buildable path: generating the policy into std through `cargo xtask std-src`, and
+  `second_mount` consuming the crate with a host page source in place of its drifted copy. The fuzz
+  crate's copy of the policy may later take the seam. `script/crate-standalone` step 0 still needs
+  the move lane to strip the blocks. `Short`, `maximum_bytes` and `base_virtual_address` stay
+  provisional until a name review.
+
 ## Done when
 
 The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md).
@@ -211,9 +237,10 @@ The checks are in [the appendix](1100-memory-region-heap-outside-review/done-whe
 
 ## Index row
 
-An outside review of `memory_region_heap` before it leaves. Four items block the move: seven
-unratified names, a `talc` dependency that loses its patch at the boundary, a manifest without a
-README or licenses, and two template name checks that go red. Five items come before the first tag.
+An outside review of `memory_region_heap` before it leaves. The code items are built: a page-source seam, host tests,
+three Kani harnesses, a refused second wiring and a readable refusal. What remains blocks on the
+move: path dependencies that become pins, a README and licenses, and the policy copies in std and
+`second_mount`.
 They are a re-callable `initialize` that can make talc span unmapped memory, a zero-byte grow that
 reports success, and every kernel refusal read as "budget spent". The other two are a growth policy
 with no host test and three copies, and documentation that assumes nife. Five items are for later.

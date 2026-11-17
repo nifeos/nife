@@ -3,7 +3,7 @@
 An appendix to [the milestone](../1108-socket-contract-outside-review.md).
 
 - Every `OPERATION_` constant's documentation names its argument word and its reply words. The
-  layout note says who writes `OFF_LEN` and when. A test or doc test in the crate exercises a send
+  layout note says who writes `LENGTH_OFFSET_BYTES` and when. A test or doc test in the crate exercises a send
   that passes its length as the argument. The README's "Replies" bullet agrees.
 - The manifest's `publish` line carries a comment that stands alone. The caller passes
   `allow-unpublished` until the release. The `repository` field has a value.

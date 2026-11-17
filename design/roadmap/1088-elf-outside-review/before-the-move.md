@@ -4,7 +4,7 @@ An appendix to [the milestone](../1088-elf-outside-review.md).
 
 ### Shipped text cites this tree's paths, milestones, sections and the architect
 
-Finding: `src/error.rs` lines 70 to 71 explains `WritableAndExecutable` by `paging::Flags` and
+Finding: `src/error.rs` lines 70 to 71 explains `WritableAndExecutable` by `page_tables::Flags` and
 `notes/elf/parser.md`. `src/error.rs` lines 75 to 76 explains `SegmentsOverlap` by
 `crates/user_mode_runtime/link.ld`. `src/segment.rs` lines 26 to 31 sends the reader to `kernel/src/user.rs`,
 `kernel/link-x86_64.ld`, milestone 200 (A virtual address and a physical address stop being the same type) and `notes/elf.md`. `src/lib.rs` lines 7 and 19 to 25 cite two notes, §14 (the project's direction: a verified-Rust capability microkernel that runs real workloads)
@@ -64,8 +64,8 @@ because `tests/fuzz_seed.rs` and `system_tests` iterate them (`KNOWN_MACHINES` 3
 no project, and a published crate that lists "the machines some build accepts" lists one
 organization's targets.
 
-Change: the shape is decision D1's. Whatever D1 rules, `machine_no_nife_build_accepts` leaves the
-public surface before the move (it has two callers, both tests in this crate), and the three
-constants either move behind `cfg(test)` and into `system_tests`' own forgery helper, or stay public
-under D1's vocabulary. Door: one-way at release, two-way now. Effort: S for the function, M with the
+Change: the shape decision D1 decides, provisionally. `machine_no_nife_build_accepts` leaves the
+public surface before the move (it has two callers, both tests in this crate). The three constants
+move behind `cfg(test)`, and `system_tests`' forgeries take the machine from the three public
+machine constants D1 adds. Door: two-way before the first tag. Effort: S for the function, M with the
 callers if the constants move.

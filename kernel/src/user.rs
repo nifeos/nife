@@ -4,9 +4,9 @@
 //! a forged [`TrapFrame`] falls into `exception_restore`. See notes/userspace.md, and
 //! notes/kernel-wired-services.md for the services.
 
-use elf::Elf;
 use page_frames::{FRAME_SIZE, PageFrame};
-use paging::{Flags, Half, MapError, Mapper};
+use page_tables::{Flags, Half, MapError, Mapper};
+use static_elf::Elf;
 
 use crate::arch::exceptions::{TrapFrame, enter_user};
 use crate::arch::mmu::{self, phys_to_ptr};
@@ -14,12 +14,18 @@ use crate::arch::sync_icache;
 use crate::memory;
 
 /// Where a user program's stack goes: one page, with `sp` at its top; a program given a deeper
-/// stack gets the rest mapped below it, a page at a time. Derived from `address_space_map`'s stack
+/// stack gets the rest mapped below it, a page at a time. Derived from `address_space_layout`'s stack
 /// band. A program names its own load address in its ELF header, which [`load`] checks against the
 /// map's image band.
-pub const USER_STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
-pub const USER_STACK_TOP: u64 = address_space_map::STACK_TOP;
+pub const USER_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+pub const USER_STACK_TOP: u64 = address_space_layout::STACK_TOP;
 const _: () = assert!(USER_STACK_TOP == USER_STACK_VA + FRAME_SIZE);
+
+/// The frame size as the page size `static_elf` rounds segments to, so the loader's page ranges are
+/// the frames it maps.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_SIZE).unwrap();
 
 // Every type and function of `user` lives in a child named for it, and this file is the index (§281
 // (the kernel's user-mode file splits into child modules of `user`)). Each child takes `use

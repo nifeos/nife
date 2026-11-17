@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 857
 decision_dependencies: none
@@ -62,7 +62,7 @@ comment and `publish = false` in the release that publishes. The template's READ
 device_tree_blob`, `## EXAMPLES`, `## What is proven`, `## BUGS`, `## Minimum Rust version`, `##
 License`) is the README's shape. Effort S. Two-way.
 
-**P0-2. The documentation cites nife, and once quotes the architect.** `src/lib.rs` lines 1 to 32 (the
+**P0-2. The documentation cites nife, and once quotes the architect.** DONE, except the `Name:` blocks, which the move commit strips. `src/lib.rs` lines 1 to 32 (the
 crate's opening paragraph points at `notes/boot-protocol.md`, `notes/device-tree.md` and a decision
 section, then carries a 22-line name-provenance block naming the architect three times).
 `src/lib.rs` lines 1020 to 1022 (a quotation of the architect's ruling, which no record may carry).
@@ -78,7 +78,7 @@ standing for. The 2 MiB ceiling is Linux's `MAX_FDT_SIZE`. The saturating `end` 
 `of_n_addr_cells`. Then move the provenance to the move commit's message, and delete the quotation.
 Effort M. Two-way.
 
-**P0-3. The naming gates refuse 29 names.** `spelled_out.py` refuses the binding `dtb` 28 times:
+**P0-3. The naming gates refuse 29 names.** DONE (the binding is `tree`, and "honor" is spelled the American way). `spelled_out.py` refuses the binding `dtb` 28 times:
 `src/lib.rs` line 181 and 27 bindings across the three test files (the table replaces `dtb` with
 `device_tree_blob`; `tree` or `blob` reads better at a binding). `british_spelling.py` refuses
 `tests/hostile.rs` line 825 (the British form of "honors"). Both gates run at a ceiling of zero in the template. Effort S.
@@ -87,7 +87,7 @@ Two-way.
 ### P1: land before the tag
 
 **P1-1. `node_reg` does not stop at the first match; its documentation and its siblings say it
-does.** `src/lib.rs` lines 320 to 327 says "the `reg` regions of the first node whose name starts with
+does.** DONE (`node_reg_stops_at_the_first_matching_node_even_without_a_reg`). `src/lib.rs` lines 320 to 327 says "the `reg` regions of the first node whose name starts with
 `prefix`", and the comment at `:369-376` says "either way, stop looking", but the code clears
 `target_at` and keeps matching. Probe: a root with `uart@1` (no `reg`) then `uart@2` (`reg`) gives
 `node_reg(b"uart@")` one region, `uart@2`'s, while `node_prop(b"uart@", b"reg")` on the same blob
@@ -99,7 +99,7 @@ pass `plic@`, `serial@10000000` and `smmuv3@`. On every fixture the first match 
 the shape above. Effort S. Two-way.
 
 **P1-2. `reserved_memory_regions` matches a `reserved-memory` node at any depth and decodes its
-children with the root's widths.** `src/lib.rs` line 952 matches the name wherever it first appears;
+children with the root's widths.** DONE (`a_reserved_memory_node_below_the_root_is_not_the_reservation_list`). `src/lib.rs` line 952 matches the name wherever it first appears;
 `:973-982` reads cell counts at depth 1 only, and `:932` documents "each depth-3 child's `reg`".
 Probe: a root declaring 1/1 with `/soc` declaring 2/2 and `/soc/reserved-memory/fw@80000000`
 carrying a 2/2 `reg` yields two regions, `{0, 2 GiB}` and `{0, 256 KiB}`, neither of which the tree
@@ -108,7 +108,7 @@ RAM the machine never gets. Linux resolves the path `/reserved-memory` and reads
 (the memory scan it shares the file with reads root children only, which this review verified; the reserved-memory scan stays unverified). The fix: match at depth 2 only, as `memory_regions` and
 `initial_ramdisk` do, and a hostile test of the nested shape. Effort S. Two-way.
 
-**P1-3. Offset arithmetic has no check on a target whose `usize` is 32 bits.** Every walker adds a
+**P1-3. Offset arithmetic has no check on a target whose `usize` is 32 bits.** DONE (the first of the two fixes: every cursor step is checked; `a_property_length_past_the_blob_is_truncated_in_every_lookup`, the helper tests in `src/lib.rs`, and the `skip_padded_never_wraps` harness with its falsification patch). The wrap itself needs a 32-bit `usize`, so no blob test on a 64-bit host fails before the fix. Every walker adds a
 blob-supplied `u32` to a cursor without a check. The sums are `at + align4(len)` (`src/lib.rs` line 285,
 `:382`, `:481`, `:604`, `:670`, `:756`, `:820`, `:906`, `:969`, `:1056`, `:1127`). Next come
 `self.off_strings + name_off` (`:287`, `:384`, `:483`, `:606`, `:672`, `:758`, `:823`, `:909`,
@@ -126,7 +126,7 @@ compile_error!(...)` and say so in the README. The first is the honest one for a
 `no_std`. The second is cheaper and closes the door on 32-bit users. Effort M for the first, S for
 the second. Two-way.
 
-**P1-4. The walk is never confined to the structure block.** `from_bytes` (`src/lib.rs` lines 162 to 193)
+**P1-4. The walk is never confined to the structure block.** DONE (`a_structure_block_without_its_end_token_is_truncated_not_read_into_the_strings`, `the_declared_structure_size_bounds_the_walk`, `a_blob_older_than_version_17_ends_its_structure_at_the_strings`). `from_bytes` (`src/lib.rs` lines 162 to 193)
 reads the magic, `totalsize`, `last_comp_version` and three offsets, and never reads `version`
 (offset 20), `size_dt_strings` (32) or `size_dt_struct` (36). A walker runs from `off_struct` until
 `FDT_END`, an unknown token or the end of the blob. A structure block that lacks `FDT_END` is
@@ -155,9 +155,9 @@ The P2 items are in [the appendix](1085-device-tree-blob-outside-review/later-it
 
 ## Decisions for the architect
 
-Only one-way doors: names and a surface the move publishes. Each states the background first, then
-a recommendation, prior art, and an example. The names are the architect's; the lane that performs
-the move ships them provisional and the recording lane carries the rulings.
+Names and a surface the move publishes. Each states the background first, then a recommendation,
+prior art, and an example. All six are two-way doors while the crate is unreleased, and the
+maintainer has decided them, provisionally; the decision follows the six.
 
 D1. `prop` in six public names. Background: `node_prop`, `node_props`, `node_prop_compatible`,
 `parent_prop_compatible`, `node_prop_inherited` and `phandle_prop` abbreviate "property", which is a
@@ -216,9 +216,34 @@ place that knows how to trust a firmware pointer should be the parser. Prior art
 crate. Example: `unsafe { DeviceTreeBlob::from_ptr(pointer) }?` stays the kernel's one line. Effort
 none if kept.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: two-way doors while the crate is
+unreleased, which the architect may revisit. The path ruled for `dtoolkit` makes it likely that
+this crate is replaced after an upstream release and never published. D1: `node_property`,
+`node_properties`, `node_property_compatible`, `parent_property_compatible`,
+`node_property_inherited` and `phandle_property`, with no alias for the old spelling. D2: the
+parameter `compat` becomes `compatible`. D3: `reg` and `phandle` keep their spelling as the
+specification's terms; each doc comment opens with the expansion, and `node_reg` and
+`node_reg_compatible` carry `#[doc(alias = "register regions")]`. D4: `MAXIMUM_TOTALSIZE` becomes
+`MAXIMUM_TOTALSIZE_BYTES`, with `#[doc(alias = "MAX_FDT_SIZE")]`. D5: `reserved_regions` becomes
+`memory_reservations`; `reserved_memory_regions` keeps its name. D6: `from_ptr` stays as the crate's
+one `unsafe` function, and the public weekly fuzz opt-in stays off. The count in D6 is low: at
+HEAD, 16 call sites outside the crate name `DeviceTreeBlob::from_ptr`, 9 in `kernel/`, 4 in
+`uefi_loader/`, 2 in `machine_discovery` and 1 in a board-check tool. The renames are one lane, with
+the eight packages that depend on the crate; done-when's last line is the check.
+
 ## Done when
 
 The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** P0-2, P0-3, P1-1 to P1-4 and P2-1 to P2-14 (P2-9's documentation half), carried by
+  pull request #3612 and the lanes before it, with the tests and harnesses each item names.
+- **Outstanding.** P0-1, P1-5 and the README half of P2-9, which wait for the move. Checked by
+  reading `crates/device_tree_blob`: its manifest still inherits the workspace's license and lints
+  and reads `publish = false`, and it holds no README, no license files and no `fuzz/` directory.
+- **Recorded.** Three findings with no other home, in this file's BUGS
+  (`design/roadmap/1085-device-tree-blob-outside-review.md`).
 
 ## BUGS
 
@@ -230,8 +255,12 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 - The review ran the template's helpers from a checkout of the template, not from a crate
   repository with its own ceilings. A repository created from the scaffold starts at a ceiling of
   zero, which is what the counts above assume.
-- If the ruling to take `dtoolkit` lands before this crate moves, P0 and D1 to D6 lapse. P1-1 to
-  P1-4 and P2-2, P2-3 and P2-6 still describe the parser the kernel boots with until then.
+- If the ruling to take `dtoolkit` lands before this crate moves, P0-1, P1-5 and the README half
+  of P2-9 lapse.
+- `register_names.py` still reports the public field `Region::size` (a length with no unit), a
+  rename for the move's naming review; `abbreviations.py` reports `formatter`, `core::fmt`'s word.
+- Milestone 239 (radon's device tree does not describe the TRNG) still gives the depth bound as a
+  `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64.
 
 ## Index row
 

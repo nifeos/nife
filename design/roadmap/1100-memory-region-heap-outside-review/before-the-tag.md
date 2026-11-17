@@ -5,7 +5,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 ## P1: before the first tag
 
 5. `initialize` is safe, takes no state into account, and a caller can call it again after
-   allocations.
+   allocations. DONE (`initialize` returns `Result<(), WiringRefusal>`, is `#[must_use]`, refuses a second call, a misaligned base, a cap under one page and a range that overflows; every caller wraps it in `user_mode_runtime::require`; `a_second_initialize_changes_nothing`).
    Finding: a second call resets `committed` to zero and sets a new `base`, but leaves talc's
    `heap_end` as it was. The next `grow` maps pages at the new base and calls `talc::extend(end, run
    + bytes)`, which registers one free gap from the old heap's top to the new run's end, across the
@@ -22,7 +22,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    Door: two-way until the tag (a signature change on a public method is one-way after it). Effort:
    XS.
 
-6. `grow` reports success for a request of zero bytes after mapping nothing, so `alloc` can spin.
+6. `grow` reports success for a request of zero bytes after mapping nothing, so `alloc` can spin. DONE (the success test is the pure `run_succeeded`, `got > 0 && got >= need_pages`; the Kani harness `a_grow_at_the_maximum_is_a_refusal` and the host test `a_grow_of_nothing_at_the_maximum_is_a_refusal` cover it, and an allocation at the cap returns null).
    Finding: when `shortfall` returns 0 and the heap has hit the cap, `grow` computes `need_pages =
    0`, `want_pages = 0`, maps nothing and returns `got >= need_pages`, which is `0 >= 0`. `alloc`'s
    loop then calls `try_allocate` again with the same heap and the same answer, forever. Today the
@@ -38,7 +38,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    Door: two-way. Effort: XS.
 
 7. The crate reads every nonzero kernel result as "budget spent", and some of them cost a page each
-   time.
+   time. DONE (`Refusal` carries the kernel's code; anything but `OutOfMemory` stops growth for good; `last_refusal` reads it; a spent budget is retried).
    Finding: `grow` breaks on any nonzero return with the comment "budget spent (OutOfMemory)". The
    kernel also returns `BadPointer` for a misaligned, non-user or already-mapped address and
    `NotPermitted` for a slot without `WRITE`, and an already-mapped address spends a page of the
@@ -53,7 +53,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    `base.is_multiple_of(PAGE_BYTES)` and refuses otherwise (item 5's return type carries it).
    Door: two-way until the tag. Effort: S.
 
-8. The growth policy has no host test, no proof, and exists three times.
+8. The growth policy has no host test, no proof, and exists three times. PARTIAL (the seam, 16 host tests and three Kani harnesses with falsification patches are done; std's overlay and `second_mount` still hold their copies, for want of a host-buildable path).
    Finding: `[lib] test = false`. The only test is the QEMU exerciser, which reports one integer
    (committed bytes) and asserts it is positive, page-aligned and under the cap. There is no Kani
    harness. The std overlay restates the policy line for line
@@ -80,7 +80,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    something.
    Door: two-way until the tag. The generic parameter is public API after it. Effort: M.
 
-9. The documentation does not survive a reader who has not read nife.
+9. The documentation does not survive a reader who has not read nife. PARTIAL (the crate docs gloss "untyped", state the minimum cap, pin 1,575 bytes in `the_first_heap_fits_in_one_page`, and name the spinlock; the README belongs to the move lane).
    Finding: the crate says "untyped" (lines 1, 42, 94 and the module docs) and "memory region" (the
    crate name, the slot's name, the `abi` module) for one thing, and defines neither. The only
    example carries `ignore` and never compiles. Nothing states the minimum useful cap. talc's first

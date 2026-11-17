@@ -30,7 +30,7 @@ without `xargs`:
 - `components/src/swish/running.rs`, `dir_grant`: `g.names.only()` is `None` for a set, and the shell answers
   "a set of names is delivered by a nameset caretaker, and the progenitor builds the subtree one;
   name a single file".
-- `crates/grant_plan/src/spawnproto.rs`: `DIRECTORY_GRANT_BIT` announces two more `SEND`s carrying the caretaker's
+- `crates/program_table/src/spawnproto.rs`: `DIRECTORY_GRANT_BIT` announces two more `SEND`s carrying the caretaker's
   and the child's three start words. A single name fits in two words. A set does not, and no bit
   says one follows.
 - The set caretaker exists and is proven (`components/src/fs_nameset_caretaker.rs`,

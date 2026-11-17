@@ -20,7 +20,7 @@ the reboot object at slot 31 (milestone 805 (`reboot` at the prompt)), so add tw
 
 There was no trace path in the tree, so the instrument is a patch kept beside this note rather than
 a feature in the build: [instrument.patch](capability-peak-trace/instrument.patch). It hooks the
-capability table's two mutation doors (`fill` and `empty` in `crates/capability`). It records every
+capability table's two mutation doors (`fill` and `empty` in `crates/capability_table`). It records every
 change to the progenitor's table into a kernel ring, with the syscall's user PC and a frame-pointer
 backtrace. The idle loop drains the ring through semihosting to `target/cap-trace/boot-<time>.txt`,
 one file per boot, so the console transcript `script/swish-check` reads is untouched. It also
@@ -154,7 +154,7 @@ the costs and the seven questions for each option are there.
 
 Done by milestone 754 (the capability table grows to 64 slots), calef's ruling A on 2026-10-04 UTC.
 
-The free-slot word went from `u32` to `u64`, and `capability::MAXIMUM_SLOTS` from 32 to 64. The
+The free-slot word went from `u32` to `u64`, and `capability_table::MAXIMUM_SLOTS` from 32 to 64. The
 table is 64 slots of 32 bytes plus the word and two `u16` counts, so 2,064 bytes against 1,032:
 **1,032 more per thread, not 1,024**, because the wider word is eight bytes. The table lives inside
 the thread's TCB page with the FP register file, so it is no new memory. Before the change, a

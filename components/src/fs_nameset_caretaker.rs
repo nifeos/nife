@@ -38,12 +38,12 @@ const REPORT: u64 = 2;
 
 /// The one page, shared with the FS server above and the client below, for `fs_file_caretaker`'s
 /// reason: every request on both hops is a blocking `CALL`.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// The read-only page the encoded name set arrives in. A second frame, and the only place in the
 /// grant machinery that needs one: a set is the first thing a grant carries that registers cannot.
 /// It is copied into a local at startup and never read again, so nothing that happens to this page
 /// afterwards can widen the namespace.
-const SET_VA: u64 = address_space_map::pair_page(0x0000_0000_0070_0000);
+const SET_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
 /// The shared page's size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 
@@ -76,14 +76,14 @@ fn put_at(off: usize, bytes: &[u8]) {
         if off + i >= PAGE {
             return;
         }
-        WINDOW.w8((off + i) as u64, b);
+        WINDOW.write_u8((off + i) as u64, b);
     }
 }
 
 /// Read `out.len()` bytes out of the shared page starting at `off`.
 fn get_at(off: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = WINDOW.r8((off + i) as u64);
+        *b = WINDOW.read_u8((off + i) as u64);
     }
 }
 
@@ -302,7 +302,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // stack of `CARETAKER_STACK_PAGES`.
     let mut set = [0u8; nameset::BYTES];
     for (i, b) in set.iter_mut().enumerate() {
-        *b = SET_WINDOW.r8(i as u64);
+        *b = SET_WINDOW.read_u8(i as u64);
     }
 
     let mut buf = [0u8; grant::WORDS_NAME];

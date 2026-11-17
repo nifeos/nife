@@ -11,30 +11,58 @@
 //! Bare-metal only, like the rest of this crate, so the first example is `no_run`.
 //!
 //! ```no_run
-//! use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+//! use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 //!
 //! // Constructed once, at the top of the file, the same VA and length every copy hard-coded.
 //! const DMA_VA: u64 = 0x0000_0000_0090_0000;
 //! // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs.
-//! const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
+//! const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 //!
-//! // Every access below is safe: bounds-checked against `PAGE`, no unsafe at the call site.
-//! WINDOW.w16(0x080, 7);
-//! assert_eq!(WINDOW.r16(0x080), 7);
+//! // Every access below is safe: bounds-checked against `PAGE_BYTES`, no unsafe at the call site.
+//! WINDOW.write_u16(0x080, 7);
+//! assert_eq!(WINDOW.read_u16(0x080), 7);
 //! ```
 
 //! An offset that would read or write past the window panics instead of touching memory outside
 //! it:
 //!
 //! ```should_panic
-//! # use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
-//! # const WINDOW: MappedWindow = unsafe { MappedWindow::new(0x0090_0000, PAGE) };
-//! WINDOW.r32(PAGE); // one past the last valid u32, deliberately
+//! # use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
+//! # const WINDOW: MappedWindow = unsafe { MappedWindow::new(0x0090_0000, PAGE_BYTES) };
+//! WINDOW.read_u32(PAGE_BYTES); // one past the last valid u32, deliberately
 //! ```
 
 /// The page size every migrated caller was already assuming (each one's own comment said "one
 /// page" or "single-page DMA region"; none of them checked it).
-pub const PAGE: u64 = 4096;
+///
+/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+pub const PAGE_BYTES: u64 = 4096;
+
+mod sealed {
+    /// The seal: only this crate names it, so only this crate implements `WindowInteger`.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+    pub trait Sealed {}
+    impl Sealed for u8 {}
+    impl Sealed for u16 {}
+    impl Sealed for u32 {}
+    impl Sealed for u64 {}
+    impl<T: Sealed, const N: usize> Sealed for [T; N] {}
+}
+
+/// **A plain integer a window can carry**: every bit pattern is a valid value, so a read of bytes a
+/// device or peer wrote cannot produce an invalid one. Sealed: only the unsigned integers up to
+/// 64 bits and arrays of them implement it, and nothing outside this crate can.
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes; `Word`
+/// and `Integer` were considered.
+pub trait WindowInteger: sealed::Sealed + Copy {}
+impl WindowInteger for u8 {}
+impl WindowInteger for u16 {}
+impl WindowInteger for u32 {}
+impl WindowInteger for u64 {}
+/// An array of integers is as plain as one integer, and a device command is 64 bytes of them.
+impl<T: WindowInteger, const N: usize> WindowInteger for [T; N] {}
 
 /// A caller-owned window onto one page this process was handed at a fixed virtual address: a DMA
 /// page a driver's wiring mapped before `_start` ran, or a shared IPC frame the program mapped
@@ -63,7 +91,7 @@ impl MappedWindow {
     /// **The `len` bytes at `off`**, a window inside this one. Panics if they would run past it.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
-    pub fn sub(&self, off: u64, len: u64) -> MappedWindow {
+    pub fn window(&self, off: u64, len: u64) -> MappedWindow {
         self.check(off, len);
         Self {
             base: self.base + off,
@@ -80,9 +108,21 @@ impl MappedWindow {
         );
     }
 
+    /// Panics if the address `off` bytes into the window is not a multiple of `align`.
+    fn check_aligned(&self, off: u64, align: u64) {
+        assert!(
+            self.base.wrapping_add(off).is_multiple_of(align),
+            "MappedWindow: offset {off:#x} is not {align}-byte aligned"
+        );
+    }
+
     /// Read a plain integer `T` at byte offset `off`, bounds-checked against the window.
-    pub fn read<T: Copy>(&self, off: u64) -> T {
+    ///
+    /// # Panics
+    /// If the access runs past the window, or `off` is not a multiple of `T`'s alignment.
+    pub fn read<T: WindowInteger>(&self, off: u64) -> T {
         self.check(off, core::mem::size_of::<T>() as u64);
+        self.check_aligned(off, core::mem::align_of::<T>() as u64);
         // SAFETY: `self.base + off .. + size_of::<T>()` is inside the range `new`'s caller
         // promised was mapped, and the bounds check above keeps it inside `self.len`. Volatile:
         // a peer process or a device may write the same memory out from under an ordinary read.
@@ -90,48 +130,66 @@ impl MappedWindow {
     }
 
     /// Write a plain integer `T` at byte offset `off`, bounds-checked against the window.
-    pub fn write<T>(&self, off: u64, val: T) {
+    ///
+    /// # Panics
+    /// As [`read`](Self::read).
+    pub fn write<T: WindowInteger>(&self, off: u64, value: T) {
         self.check(off, core::mem::size_of::<T>() as u64);
+        self.check_aligned(off, core::mem::align_of::<T>() as u64);
         // SAFETY: as `read`'s.
-        unsafe { core::ptr::write_volatile((self.base + off) as *mut T, val) }
+        unsafe { core::ptr::write_volatile((self.base + off) as *mut T, value) }
     }
 
     /// Read one byte at `off`.
-    pub fn r8(&self, off: u64) -> u8 {
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn read_u8(&self, off: u64) -> u8 {
         self.read(off)
     }
     /// Write one byte at `off`.
-    pub fn w8(&self, off: u64, v: u8) {
-        self.write(off, v);
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn write_u8(&self, off: u64, value: u8) {
+        self.write(off, value);
     }
     /// Read a `u16` at `off`.
-    pub fn r16(&self, off: u64) -> u16 {
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn read_u16(&self, off: u64) -> u16 {
         self.read(off)
     }
     /// Write a `u16` at `off`.
-    pub fn w16(&self, off: u64, v: u16) {
-        self.write(off, v);
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn write_u16(&self, off: u64, value: u16) {
+        self.write(off, value);
     }
     /// Read a `u32` at `off`.
-    pub fn r32(&self, off: u64) -> u32 {
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn read_u32(&self, off: u64) -> u32 {
         self.read(off)
     }
     /// Write a `u32` at `off`.
-    pub fn w32(&self, off: u64, v: u32) {
-        self.write(off, v);
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn write_u32(&self, off: u64, value: u32) {
+        self.write(off, value);
     }
-    /// Read a `u64` at `off`. The caller keeps the offset 8-aligned: this is a volatile read of a
-    /// pointer whose alignment the type does not check, and the bulk-copy caller (the framebuffer's
-    /// flush) arranges alignment by construction instead.
-    pub fn r64(&self, off: u64) -> u64 {
+    /// Read a `u64` at `off`. Panics unless the address is 8-aligned.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn read_u64(&self, off: u64) -> u64 {
         self.read(off)
     }
-    /// Write a `u64` at `off`. See [`r64`](Self::r64) for the alignment the caller owes.
-    pub fn w64(&self, off: u64, v: u64) {
-        self.write(off, v);
+    /// Write a `u64` at `off`. Panics unless the address is 8-aligned.
+    ///
+    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn write_u64(&self, off: u64, value: u64) {
+        self.write(off, value);
     }
 
-    /// **Move `len` bytes from offset `src` to offset `dst` inside the window**, the ranges allowed
+    /// **Move `bytes` bytes from offset `source` to offset `destination` inside the window**, the ranges allowed
     /// to overlap, as [`slice::copy_within`] does. Both ranges are bounds-checked once, not per
     /// word, which is what makes a scroll of the terminal's own pixels cheap.
     ///
@@ -142,16 +200,16 @@ impl MappedWindow {
     ///
     /// Name: provisional, minted 2026-10-20 (UTC) by lane/2451-cpu-matrix-rv64-budget, for
     /// [`slice::copy_within`], whose argument order it keeps.
-    pub fn copy_within(&self, src: u64, dst: u64, len: u64) {
-        self.check(src, len);
-        self.check(dst, len);
+    pub fn copy_within(&self, source: u64, destination: u64, bytes: u64) {
+        self.check(source, bytes);
+        self.check(destination, bytes);
         // SAFETY: both ranges are inside the window (checked above), which `new`'s caller promised
         // is mapped read/write; `ptr::copy` is the overlap-safe move.
         unsafe {
             core::ptr::copy(
-                (self.base + src) as *const u8,
-                (self.base + dst) as *mut u8,
-                len as usize,
+                (self.base + source) as *const u8,
+                (self.base + destination) as *mut u8,
+                bytes as usize,
             );
         }
     }
@@ -279,4 +337,74 @@ pub fn doorbell_barrier() {
         "doorbell_barrier(): this architecture has no ordering named here. A ring publish must be \
          visible before the doorbell that announces it; name the instruction that does that."
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MappedWindow;
+
+    /// Eight aligned words of ordinary memory, and a window over them.
+    fn window(storage: &mut [u64; 8]) -> MappedWindow {
+        // SAFETY: `storage` is live for the test and is 64 bytes of writable memory.
+        unsafe { MappedWindow::new(storage.as_mut_ptr() as u64, 64) }
+    }
+
+    #[test]
+    fn integers_round_trip_at_every_width() {
+        let mut storage = [0u64; 8];
+        let w = window(&mut storage);
+        w.write_u8(1, 0xAB);
+        w.write_u16(2, 0xBEEF);
+        w.write_u32(4, 0xDEAD_BEEF);
+        w.write_u64(8, 0x0123_4567_89AB_CDEF);
+        assert_eq!(w.read_u8(1), 0xAB);
+        assert_eq!(w.read_u16(2), 0xBEEF);
+        assert_eq!(w.read_u32(4), 0xDEAD_BEEF);
+        assert_eq!(w.read_u64(8), 0x0123_4567_89AB_CDEF);
+        w.write(16, [1u32, 2, 3, 4]);
+        assert_eq!(w.read::<[u32; 4]>(16), [1, 2, 3, 4]);
+    }
+
+    #[test]
+    #[should_panic(expected = "outside the 64-byte window")]
+    fn an_access_past_the_end_panics() {
+        let mut storage = [0u64; 8];
+        window(&mut storage).read_u64(60);
+    }
+
+    #[test]
+    #[should_panic(expected = "outside the 64-byte window")]
+    fn an_offset_that_wraps_panics() {
+        let mut storage = [0u64; 8];
+        window(&mut storage).read_u8(u64::MAX);
+    }
+
+    #[test]
+    #[should_panic(expected = "not 4-byte aligned")]
+    fn a_misaligned_access_panics() {
+        let mut storage = [0u64; 8];
+        window(&mut storage).read_u32(2);
+    }
+
+    #[test]
+    fn a_sub_window_is_checked_against_its_own_length() {
+        let mut storage = [0u64; 8];
+        let w = window(&mut storage);
+        let inner = w.window(16, 8);
+        inner.write_u64(0, 7);
+        assert_eq!(w.read_u64(16), 7);
+        let caught = std::panic::catch_unwind(|| inner.read_u8(8));
+        assert!(caught.is_err());
+    }
+
+    #[test]
+    fn copies_move_bytes_and_allow_overlap() {
+        let mut storage = [0u64; 8];
+        let w = window(&mut storage);
+        w.copy_from_slice(0, &[1, 2, 3, 4, 5, 6, 7, 8]);
+        w.copy_within(0, 2, 6);
+        let mut out = [0u8; 8];
+        w.copy_to_slice(0, &mut out);
+        assert_eq!(out, [1, 2, 1, 2, 3, 4, 5, 6]);
+    }
 }

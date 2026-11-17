@@ -38,7 +38,7 @@ use non_volatile_memory_express::{
     SubmissionQueue, registers,
 };
 use startup_page_contract::StartupWindow;
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{exit, receive_request, reply, send, send_capability};
 
 use crate::{IO_QID, NSID, SPIN_BOUND, barrier};
@@ -63,12 +63,12 @@ const ENTRIES: u16 = 16;
 // SAFETY: the spawner (`kernel/src/user/non_volatile_memory_express_service.rs`'s `start_admin`)
 // lists this window on the startup page and maps all of it device-typed before `_start` runs.
 static REGISTERS: StartupWindow =
-    unsafe { StartupWindow::new(REGISTER_KIND, REGISTER_PAGES * PAGE) };
+    unsafe { StartupWindow::new(REGISTER_KIND, REGISTER_PAGES * PAGE_BYTES) };
 
 /// The admin submission ring, the admin completion ring and the IDENTIFY page.
 // SAFETY: as [`REGISTERS`], mapped read/write normal memory.
 static ADMIN_QUEUES: StartupWindow =
-    unsafe { StartupWindow::new(ADMINISTRATION_QUEUE_KIND, ADMINISTRATION_PAGES * PAGE) };
+    unsafe { StartupWindow::new(ADMINISTRATION_QUEUE_KIND, ADMINISTRATION_PAGES * PAGE_BYTES) };
 
 /// How many bytes of the IDENTIFY namespace structure the parse reads: through the LBA format
 /// table, which ends at byte 384.
@@ -89,11 +89,11 @@ struct Controller {
 
 impl Controller {
     fn reg32(&self, off: u64) -> u32 {
-        mapped(&REGISTERS).r32(off)
+        mapped(&REGISTERS).read_u32(off)
     }
 
     fn wr32(&self, off: u64, v: u32) {
-        mapped(&REGISTERS).w32(off, v);
+        mapped(&REGISTERS).write_u32(off, v);
     }
 
     /// The spec allows 64-bit registers to be accessed as aligned 32-bit halves (NVMe 1.4 §3.1),
@@ -139,7 +139,7 @@ impl Controller {
             .push()
             .expect("one command in flight per queue, so the admin ring cannot be full");
         queues.write(
-            ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE + slot as u64 * 64,
+            ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE_BYTES + slot as u64 * 64,
             cmd.0,
         );
         // The entry before the doorbell that announces it; the same barrier orders the poll
@@ -150,7 +150,8 @@ impl Controller {
             self.admin_sq.tail() as u32,
         );
 
-        let cqe = ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE + self.admin_cq.head() as u64 * 16;
+        let cqe =
+            ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE_BYTES + self.admin_cq.head() as u64 * 16;
         let mut done: Option<Completion> = None;
         for _ in 0..SPIN_BOUND {
             // The barrier inside orders the phase read before the rest of the entry and the
@@ -198,7 +199,7 @@ impl Controller {
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
         // naming the controller, not in a process that cannot reach its doorbells.
         if capabilities.maximum_queue_entries() < ENTRIES as u32
-            || capabilities.minimum_page_size_bytes() > PAGE
+            || capabilities.minimum_page_size_bytes() > PAGE_BYTES
             || capabilities.doorbell_stride() > MAXIMUM_DOORBELL_STRIDE
         {
             return Err(BringUpError::UnsupportedController);
@@ -224,15 +225,15 @@ impl Controller {
         );
         self.wr64(
             registers::ADMIN_SUBMISSION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
-            self.dma + ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE,
+            self.dma + ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE_BYTES,
         );
         self.wr64(
             registers::ADMIN_COMPLETION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
-            self.dma + ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE,
+            self.dma + ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE_BYTES,
         );
-        // `PAGE` was checked against the controller's range above, so this refuses only a page
+        // `PAGE_BYTES` was checked against the controller's range above, so this refuses only a page
         // size the configuration cannot name.
-        let configuration = non_volatile_memory_express::enabled_controller_configuration(PAGE)
+        let configuration = non_volatile_memory_express::enabled_controller_configuration(PAGE_BYTES)
             .ok_or(BringUpError::UnsupportedController)?;
         self.wr32(
             registers::CONTROLLER_CONFIGURATION_REGISTER,
@@ -247,10 +248,10 @@ impl Controller {
             cid,
             non_volatile_memory_express::CONTROLLER_OR_NAMESPACE_STRUCTURE_NAMESPACE,
             NSID,
-            self.dma + IDENTIFY_PAGE * PAGE,
+            self.dma + IDENTIFY_PAGE * PAGE_BYTES,
         ))?;
         let mut data = [0u8; IDENTIFY_BYTES];
-        mapped(&ADMIN_QUEUES).copy_to_slice(IDENTIFY_PAGE * PAGE, &mut data);
+        mapped(&ADMIN_QUEUES).copy_to_slice(IDENTIFY_PAGE * PAGE_BYTES, &mut data);
         let refused = BringUpError::UnsupportedNamespace {
             logical_block_size_shift: non_volatile_memory_express::logical_block_size_shift(
                 &data,
@@ -266,13 +267,13 @@ impl Controller {
 
         // Completion queue first: the submission queue names it, so the other order is an Invalid
         // Queue Identifier. Both rings sit in the data plane's pages.
-        let data_plane = self.dma + ADMINISTRATION_PAGES * PAGE;
+        let data_plane = self.dma + ADMINISTRATION_PAGES * PAGE_BYTES;
         let cid = self.next_cid();
         self.transact(Command::create_io_completion_queue(
             cid,
             IO_QID,
             ENTRIES,
-            data_plane + IO_COMPLETION_QUEUE_PAGE * PAGE,
+            data_plane + IO_COMPLETION_QUEUE_PAGE * PAGE_BYTES,
         ))?;
         let cid = self.next_cid();
         self.transact(Command::create_io_submission_queue(
@@ -280,7 +281,7 @@ impl Controller {
             IO_QID,
             ENTRIES,
             IO_QID,
-            data_plane + IO_SUBMISSION_QUEUE_PAGE * PAGE,
+            data_plane + IO_SUBMISSION_QUEUE_PAGE * PAGE_BYTES,
         ))?;
         Ok(namespace)
     }
@@ -326,7 +327,7 @@ pub(crate) fn run(dma: u64) -> ! {
         dstrd: controller.dstrd,
         blocks_per_transfer,
         entries: ENTRIES,
-        data_plane_physical_address: dma + ADMINISTRATION_PAGES * PAGE,
+        data_plane_physical_address: dma + ADMINISTRATION_PAGES * PAGE_BYTES,
         size_bytes: namespace.capacity_bytes(),
     };
     let [w0, w1, w2] = handoff.pack();

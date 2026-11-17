@@ -1462,9 +1462,9 @@ programs = ["progenitor", "swish", "jig"]
     }
 
     fn network_note() -> Vec<u8> {
-        let manifest = grant_plan::Manifest {
+        let manifest = grant_contract::Manifest {
             network: true,
-            ..grant_plan::Program::Uptime.manifest()
+            ..program_table::Program::Uptime.manifest()
         };
         capability_manifest_note::Note::of(&manifest).0.to_vec()
     }
@@ -1795,8 +1795,8 @@ programs = ["progenitor", "swish", "jig"]
             definition
         );
         let test = with_test_programs(definition, true).unwrap();
-        assert!(test.programs.contains(&"progenitor".to_string()));
-        assert!(test.programs.contains(&"kernel_test_subject".to_string()));
+        assert!(test.programs.iter().any(|p| p == "progenitor"));
+        assert!(test.programs.iter().any(|p| p == "kernel_test_subject"));
     }
 
     #[test]

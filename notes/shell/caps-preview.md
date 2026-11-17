@@ -37,7 +37,7 @@ The shell computes every input from the bytes it read and the installed-programs
 The digest is the file's SHA-256 in its text form, `sha256:<hex>`. The vouch is the live generation
 that lists that digest, and whether its entry is the owner's own vouch (§221 (the boot prompt is
 the owner's console)). The rows are the endowment the progenitor would build, decided by the same
-`grant_plan::image_manifest` it calls. A vouched file gets its own manifest, or
+`program_table::image_manifest` it calls. A vouched file gets its own manifest, or
 `NO_NOTE_MANIFEST`'s when it carries none. Unvouched bytes get `UNVOUCHED_MANIFEST`'s three slots,
 or a refusal.
 
@@ -59,9 +59,9 @@ A `std` program's slots are fixed by its runtime, not by the order they are list
 else, and slot 0 is not even the same kind of object. A preview that printed the native positions
 for one would describe a child the progenitor does not build.
 
-Every row is printed from the manifest the progenitor endows from, `m`, never from
-`e.program.manifest()`. For an image run from a file, `e.program` is a placeholder row and `m` is
-what its note declared. Reading the placeholder under-reported a packaged `free` as holding neither
+Every row is printed from the manifest the progenitor endows from, `m`, never from the row's
+`program.manifest()`. For an image run from a file, the row is the placeholder
+`program_table::IMAGE_ROW` and `m` is what its note declared. Reading the placeholder under-reported a packaged `free` as holding neither
 machine row (the 2026-10-03 security audit's follow-up, item (d)).
 
 - A file reads as one line naming the file and the direction, because that is the whole
@@ -154,7 +154,7 @@ file name for a declared input or file, so a manifest shape nothing has used yet
 The counts are gates on purpose. Exactly three programs declare entropy: `uuid`, `std_exerciser`
 (whose two draws from `std::random::SystemRng` must differ) and `jig`, whose TLS handshake draws
 its key share and nonces. Only `jig`'s verbs that reach the index hold it (`update`, `install`),
-by `grant_plan::verbs`. A `std` program that does not declare entropy still runs: its `SystemRng`
+by `grant_contract::verbs`. A `std` program that does not declare entropy still runs: its `SystemRng`
 panics rather than inventing bytes, and its `HashMap` seeds best-effort. Exactly two reach the
 network: `network_echo_client` and `jig`, which fetches packages itself so the progenitor parses no
 network input. Only `jig` resolves names (calef's Q5 on #1884). A new program declaring any of

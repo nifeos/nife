@@ -70,6 +70,9 @@ const CHILD_PAGES: u64 = 720;
 const PAGE: u64 = 4096;
 const EHDR: usize = 64;
 const PHDR: usize = 56;
+/// The code segment's file bytes. `static_elf` refuses an entry point with none under it, since a
+/// program that starts in the zero-filled tail executes zeros.
+const BODY: usize = 4;
 
 /// Scratch pages one build uses: every image page, and on `x86_64` and `riscv64` the timebase
 /// page `build_child_space` fills for every child.
@@ -84,17 +87,17 @@ const fn scratch_pages_per_build() -> u64 {
 const _: () = assert!(BUILDS * IMAGE_PAGES > 24_048);
 const _: () = assert!(BUILDS * IMAGE_PAGES > SCRATCH_WINDOW_PAGES * 3 / 2);
 
-/// An ELF header and two `PT_LOAD` headers, no file bytes: a one-page code segment holding the entry
-/// point, and `IMAGE_PAGES - 1` pages of writable memory after it. Just enough for `elf::Elf::parse`,
+/// An ELF header, two `PT_LOAD` headers and `BODY` bytes of code: a one-page code segment holding
+/// the entry point, and `IMAGE_PAGES - 1` pages of writable memory after it. Just enough for `static_elf::Elf::parse`,
 /// which is all the loader needs.
-fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
-    let base = address_space_map::IMAGE_BASE;
+fn forge(out: &mut [u8; EHDR + 2 * PHDR + BODY]) {
+    let base = address_space_layout::IMAGE_BASE;
     out[0..4].copy_from_slice(b"\x7fELF");
     out[4] = 2; // 64-bit
     out[5] = 1; // little-endian
     out[6] = 1; // version
     out[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
-    out[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+    out[18..20].copy_from_slice(&static_elf::NATIVE_MACHINE.to_le_bytes());
     out[20..24].copy_from_slice(&1u32.to_le_bytes());
     out[24..32].copy_from_slice(&base.to_le_bytes()); // entry
     out[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // phoff
@@ -102,15 +105,29 @@ fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
     out[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes());
     out[56..58].copy_from_slice(&2u16.to_le_bytes()); // phnum
     let segments = [
-        (elf::PF_R | elf::PF_X, base, PAGE),
-        (elf::PF_R | elf::PF_W, base + PAGE, (IMAGE_PAGES - 1) * PAGE),
+        (
+            static_elf::READABLE | static_elf::EXECUTABLE,
+            base,
+            BODY,
+            PAGE,
+        ),
+        (
+            static_elf::READABLE | static_elf::WRITABLE,
+            base + PAGE,
+            0,
+            (IMAGE_PAGES - 1) * PAGE,
+        ),
     ];
-    for (i, (flags, vaddr, memsz)) in segments.into_iter().enumerate() {
+    for (i, (flags, vaddr, filesz, memsz)) in segments.into_iter().enumerate() {
         let ph = &mut out[EHDR + i * PHDR..EHDR + (i + 1) * PHDR];
         ph[0..4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
         ph[4..8].copy_from_slice(&flags.to_le_bytes());
         ph[16..24].copy_from_slice(&vaddr.to_le_bytes());
         ph[24..32].copy_from_slice(&vaddr.to_le_bytes());
+        if filesz > 0 {
+            ph[8..16].copy_from_slice(&((EHDR + 2 * PHDR) as u64).to_le_bytes()); // p_offset
+        }
+        ph[32..40].copy_from_slice(&(filesz as u64).to_le_bytes()); // p_filesz
         ph[40..48].copy_from_slice(&memsz.to_le_bytes());
         ph[48..56].copy_from_slice(&PAGE.to_le_bytes());
     }
@@ -132,7 +149,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         if frame < 0
             || !user_mode_runtime::map_page_frame(
                 frame as u64,
-                address_space_map::STACK_TOP_PAGE - k * PAGE,
+                address_space_layout::STACK_TOP_PAGE - k * PAGE,
                 true,
                 MEMORY_REGION,
             )
@@ -146,9 +163,9 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 
 #[inline(never)]
 fn build_until_done() -> ! {
-    let mut bytes = [0u8; EHDR + 2 * PHDR];
+    let mut bytes = [0u8; EHDR + 2 * PHDR + BODY];
     forge(&mut bytes);
-    let Ok(image) = elf::Elf::parse(&bytes) else {
+    let Ok(image) = static_elf::Elf::parse(&bytes) else {
         user_mode_runtime::trap()
     };
 

@@ -5,13 +5,12 @@
 # Measured on an x86_64 Linux host.
 row	path	tree	kani	peak_mib
 address_space_identifier	crates/address_space_identifier	e110da1b5c95d704cdd55118ae0101db8c1bec59	0.68.0	93
-address_space_map	crates/address_space_map	6cc7dd3e042d38083e9cc90f69c9e0d24f7a717e	0.68.0	131
-capability	crates/capability	55f611a3fa1cde9bcc47d961e103aee8fc74ba47	0.68.0	571
+address_space_layout	crates/address_space_layout	6cc7dd3e042d38083e9cc90f69c9e0d24f7a717e	0.68.0	131
+capability_table	crates/capability_table	55f611a3fa1cde9bcc47d961e103aee8fc74ba47	0.68.0	571
 capability_manifest_note	crates/capability_manifest_note	7c62f31595d50906f1b35a8731d508198907c8ad	0.68.0	3682
 capability_plan	crates/capability_plan	2159c2c58dba89a325c1b34f686b41d859cc9edf	0.68.0	721
 components	components	16bdb1917af0e555c786117a28c93959f8737d43	0.68.0	1014
 credential_contract	crates/credential_contract	8a83c22893edcf2478852cc60b3bfa71cb189872	0.68.0	178
-designware_ethernet	crates/designware_ethernet	cc21b3367a7f59d36450c44f9ecf7a99e728ca5f	0.68.0	88
 device_tree_blob	crates/device_tree_blob	aa6c2d942687d68d74d298583f1e4f05ef1d1f17	0.68.0	548
 direct_memory_access_validator	crates/direct_memory_access_validator	2ba51ec920017bf3f81a669a7fd5a3b1733f2ca1	0.68.0	779
 domain_name_system	crates/domain_name_system	3396867ae4c51735e014752157aeac6799023bdd	0.68.0	1760
@@ -19,9 +18,9 @@ driver_process_contract::designware_mobile_storage	crates/driver_process_contrac
 driver_process_contract::e1000e	crates/driver_process_contract	c4abd3c29f139896895874d82ce3a7c1d7647748	0.68.0	189
 driver_process_contract::extensible_host_controller_interface	crates/driver_process_contract	c4abd3c29f139896895874d82ce3a7c1d7647748	0.68.0	764
 driver_process_contract::non_volatile_memory_express	crates/driver_process_contract	c4abd3c29f139896895874d82ce3a7c1d7647748	0.68.0	86
-elf	crates/elf	4870292a3ba3fca14938ba9a8663d439d08d76c6	0.68.0	3538
+static_elf	crates/static_elf	4870292a3ba3fca14938ba9a8663d439d08d76c6	0.68.0	3538
 filesystem_contract	crates/filesystem_contract	d1e1b1fa1c085d74325db15ca3781319091c2ed1	0.68.0	302
-glob	crates/glob	d39522e750da80f714cf30128a9522d2d0333c05	0.68.0	8574
+byte_glob	crates/byte_glob	d39522e750da80f714cf30128a9522d2d0333c05	0.68.0	8574
 globally_unique_identifier_partition_table	crates/globally_unique_identifier_partition_table	6ccccda31b1a14942579043a18f3d5b2f79cd8d8	0.68.0	1686
 inter_process_communication	crates/inter_process_communication	da7bec9bf7829b7ed84d6a43c430772577625a50	0.68.0	331
 interfaces_note	crates/interfaces_note	6809dcb3d541607faa6a9810a306e2d0f028e643	0.68.0	1448
@@ -34,8 +33,8 @@ network_time_protocol	crates/network_time_protocol	42991bd0c9578685b69bb6851f0cb
 nifefs	crates/nifefs	a7038e8018ae2d1f802c8065ce8a80b14654d248	0.68.0	390
 package_archive	crates/package_archive	226714b9f133d678297b1dd4d759897edb047476	0.68.0	381
 page_frames	crates/page_frames	f11347388d22c03da514ee9f2bdf64f0839fe4ac	0.68.0	305
-paging	crates/paging	6a9384aa9ac33a8f3dbe6c5abe64a6139d4e5b1b	0.68.0	104
-pci	crates/pci	0ec368d5b5b7357f0a9a213388a4a6e030b78683	0.68.0	630
+page_tables	crates/page_tables	6a9384aa9ac33a8f3dbe6c5abe64a6139d4e5b1b	0.68.0	104
+pci_configuration_space	crates/pci_configuration_space	0ec368d5b5b7357f0a9a213388a4a6e030b78683	0.68.0	630
 periodic_deadline	crates/periodic_deadline	3847c01544341364e3e8bc6edd44f5c703dbb5dd	0.68.0	191
 subtree_scope	crates/subtree_scope	e4683040334bd8f920db2f51a2e4e9e6a4ada7f4	0.68.0	5943
 timetable	crates/timetable	d6fe2168f801fd1479e80ffdca95664b63fe0a83	0.68.0	410

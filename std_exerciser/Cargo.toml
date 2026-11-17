@@ -29,6 +29,10 @@ publish = false
 # `no_std` and dependency-free, and the demo touches only its `fixture` module: it does NOT speak
 # the wire protocol, because that is `std::fs`'s job now (the whole point of this milestone).
 [dependencies]
+# Delivers `link.ld` (the image layout every program links with), through its build script. Linked
+# for that and nothing else, so no source line names it.
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
+
 filesystem_contract = { path = "../crates/filesystem_contract" }
 filesystem_fixture = { path = "../crates/filesystem_fixture" }
 
@@ -46,8 +50,10 @@ walk_pricing = { path = "../crates/walk_pricing" }
 
 # `std_echo`'s manifest note (milestone 205 (how a foreign program is told what to do)): the note's
 # encoding and the manifest it encodes, both no_std, so a `std` program carries one the same way a
-# native program does.
-grant_plan = { path = "../crates/grant_plan" }
+# native program does. The manifests start from the progenitor's unvouched one, which is nife's
+# program table's; neither links the planner.
+grant_contract = { path = "../crates/grant_contract" }
+program_table = { path = "../crates/program_table" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 
 # `std_resolve`'s names (milestone 801 (packages over the internet)): the resolver test's cases, so

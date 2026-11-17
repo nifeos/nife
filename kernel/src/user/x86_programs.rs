@@ -155,12 +155,12 @@ pub const fn port_out_then_exit(port: u16, val: u8) -> [u32; 4] {
 }
 
 /// The address of the current-CPU word a ring-3 thread reads its own core from:
-/// `current_cpu_contract::CPU_WORD_OFFSET` into that crate's page. It is under 2 GiB
-/// (`address_space_map::CODE_MODEL_CEILING`), so the 32-bit absolute form of `mov` below
+/// `current_cpu_contract::CPU_OFFSET_BYTES` into that crate's page. It is under 2 GiB
+/// (`address_space_layout::CODE_MODEL_CEILING`), so the 32-bit absolute form of `mov` below
 /// addresses it with no sign-extension surprise.
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 const CURRENT_CPU_WORD: u32 =
-    (current_cpu_contract::PAGE_VA + current_cpu_contract::CPU_WORD_OFFSET) as u32;
+    (current_cpu_contract::PAGE_VIRTUAL_ADDRESS + current_cpu_contract::CPU_OFFSET_BYTES) as u32;
 
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
 packer!(pack_12, 48, 12);
@@ -208,7 +208,7 @@ pub const fn port_out_reporting_cpu(port: u16, val: u8, word: u32) -> [u32; 12] 
 /// otherwise faults somewhere else on purpose: the hand-off test's second child.
 ///
 /// On core `cpu` it is [`port_out_then_exit`], so a wrongly permitted `out` arrives as `EVENT_EXIT`.
-/// On any other core it loads from address 0, which `address_space_map::NULL_GUARD` keeps unmapped,
+/// On any other core it loads from address 0, which `address_space_layout::NULL_GUARD` keeps unmapped,
 /// and faults at [`PORT_OUT_ON_CPU_WRONG_CPU_PC_OFFSET`]. The pc tells "landed on the wrong core"
 /// apart from "the `out` faulted".
 ///

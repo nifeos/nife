@@ -18,7 +18,7 @@ The port is worth doing precisely because it finds where the abstraction leaked.
    names no register. RISC-V implements the same two constructors with its own set (`s0`..`s11` + `ra`,
    `a0`/`a1` for args) and `thread.rs` does not change.
 
-2. The `paging` crate encoded the aarch64 descriptor format. Closed (the trait option, calef's
+2. The `page_tables` crate encoded the aarch64 descriptor format. Closed (the trait option, calef's
    call; DECISIONS §17 (second architecture)). `Flags` was aarch64 descriptor bits (`AF`, `SH`, `AP_*`, `PXN`, `UXN`, `NG`,
    MAIR index) and the walk assumed 4 levels. Now `Flags` is a format-neutral capability set (same
    constructor/predicate API). A `PageFormat` trait captures the seam (`LEVELS`, the half split, and

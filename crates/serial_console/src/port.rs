@@ -414,7 +414,7 @@ mod tests {
             "115200", "cs8", "-cstopb", "-parenb", "-crtscts", "-icanon", "-echo", "-icrnl",
             "-ixon", "-opost", "min", "0", "time", "1",
         ] {
-            assert!(args.contains(&wanted.to_string()), "missing {wanted}");
+            assert!(args.iter().any(|a| a == wanted), "missing {wanted}");
         }
     }
 
@@ -489,7 +489,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             session.progress.reached(),
-            crate::progress::Stage::Tour,
+            crate::progress::Stage::CoreRuns,
             "the descriptor `open` returned is the one the capture is in"
         );
         std::fs::remove_file(&path).ok();

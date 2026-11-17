@@ -21,7 +21,7 @@ pub(crate) fn place_kernel(
     table: &SystemTable,
     services: &BootServices,
 ) -> Result<Placed, &'static str> {
-    // `elf::Elf::parse` validates everything before this loader moves a byte: bounds, overlap,
+    // `static_elf::Elf::parse` validates everything before this loader moves a byte: bounds, overlap,
     // W^X, the entry point inside an executable segment.
     let kernel = image::parse(embedded::KERNEL)?;
     let (start, end) = image::physical_span(kernel.segments(), PAGE)
@@ -58,7 +58,7 @@ pub(crate) fn place_kernel(
         unsafe {
             ptr::copy_nonoverlapping(
                 segment.data.as_ptr(),
-                segment.paddr as *mut u8,
+                segment.physical_address as *mut u8,
                 segment.data.len(),
             );
         }

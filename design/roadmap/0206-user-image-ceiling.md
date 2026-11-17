@@ -9,7 +9,7 @@ Built, under DECISIONS §171 (where a program image starts, and where the stack 
 on 2026-09-26: option D, with option A inside it. Milestone 121 (`ripgrep`: enumeration as a
 capability) is the program that needs it.
 
-**What was built.** The user address-space map, as a crate: `crates/address_space_map` (name
+**What was built.** The user address-space map, as a crate: `crates/address_space_layout` (name
 provisional). Eight bands tile the first 2 GiB of every process. Every constant several programs
 agree on derives from them or is checked against them at compile time. The loaders refuse an image
 that does not fit, with a sentence that says why. [notes/address-space-map.md](../../notes/address-space-map.md)
@@ -79,7 +79,7 @@ for 190 of it.
   (its page tables first, before the initrd window): milestone 604 (the builder's scratch cursor is
   bounded) made it wrap inside a fixed window.
 - **Recorded.** Band checks see membership, not collisions within one program; two protocol crates
-  restate their numbers: `crates/address_space_map/src/lib.rs`.
+  restate their numbers: `crates/address_space_layout/src/lib.rs`.
 - **Recorded.** The userspace loader refuses a too-large image as `Err(())`, with no reason:
   `crates/supervision_contract/src/lib.rs`.
 
@@ -94,4 +94,4 @@ for 190 of it.
 
 ## Index row
 
-Built 2026-09-26 as DECISIONS §171 option D: `crates/address_space_map` (provisional) draws eight bands over the first 2 GiB, the image at `0x6000_0000` and the stack directly above it, so an image may be 496 MiB instead of 896 KiB. Both loaders refuse an image that does not fit, by size, before mapping anything; the linker base is checked against the map; 188 fixed windows are band-checked at compile time; ripgrep's relink is gone.
+Built 2026-09-26 as DECISIONS §171 option D: `crates/address_space_layout` (provisional) draws eight bands over the first 2 GiB, the image at `0x6000_0000` and the stack directly above it, so an image may be 496 MiB instead of 896 KiB. Both loaders refuse an image that does not fit, by size, before mapping anything; the linker base is checked against the map; 188 fixed windows are band-checked at compile time; ripgrep's relink is gone.

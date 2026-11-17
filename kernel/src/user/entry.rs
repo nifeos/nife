@@ -141,7 +141,8 @@ pub fn spawn_elf_child_builder(
     .expect("no building budget for the builder");
 
     let tid = crate::sched::spawn(move || {
-        let elf = match Elf::parse(builder_bytes) {
+        let elf = match Elf::parse_with(builder_bytes, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        {
             Ok(e) => e,
             Err(e) => {
                 crate::println!("  the {entry} image is not loadable: {e:?}");
@@ -152,7 +153,7 @@ pub fn spawn_elf_child_builder(
         let content: u64 = elf
             .segments()
             .map(|seg| {
-                let (start, end) = seg.page_range(FRAME_SIZE);
+                let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
                 (end - start) / FRAME_SIZE
             })
             .sum::<u64>()
@@ -247,7 +248,7 @@ pub(crate) struct DeviceRun {
     /// How many pages. The intermediate page tables come out of the address space's own
     /// `AS_OVERHEAD`, so a caller bounds this (`display_service`'s `MAXIMUM_APERTURE_PAGES`).
     pub pages: u64,
-    /// **Map it write-combining** (`paging::Flags::user_write_combining`) rather than as
+    /// **Map it write-combining** (`page_tables::Flags::user_write_combining`) rather than as
     /// registers. True only for memory the process writes and never reads, which on this tree is
     /// one framebuffer aperture: a register window combined would lose the order of its stores.
     /// A required field with no default, so a second caller has to say which it is. Name:

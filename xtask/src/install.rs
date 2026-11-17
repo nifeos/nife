@@ -79,7 +79,18 @@ pub(crate) fn vars_path() -> PathBuf {
 /// **`ls`, typed at the shell's first prompt**: the banner, then the `$ ` after it. The banner comes
 /// first so that `$ ` is read only once the shell exists; a send's marker is looked for after the
 /// previous one's, and an empty send types nothing.
-pub(crate) const LS_AT_THE_PROMPT: [(&str, &str); 2] = [(boot_ladder::PROMPT, ""), ("$ ", "ls\r")];
+pub(crate) fn ls_at_the_prompt() -> [(&'static str, &'static str); 2] {
+    [(&SHELL_BANNER, ""), ("$ ", "ls\r")]
+}
+
+/// The shell's banner as text, the first marker [`ls_at_the_prompt`] waits for.
+pub(crate) static SHELL_BANNER: std::sync::LazyLock<String> =
+    std::sync::LazyLock::new(|| serial_console::HEADS.shell_banner().to_string());
+
+/// **The shell's banner with the period the shell prints after it**: the line a transcript holds
+/// once the shell is up. The head is the crate's; the period is the shell's own tail.
+pub(crate) static SHELL_UP: std::sync::LazyLock<String> =
+    std::sync::LazyLock::new(|| format!("{}.", serial_console::HEADS.shell_banner()));
 
 /// **The gate.** `true` only if both boots did what they were supposed to.
 pub(crate) fn install_boot() -> bool {
@@ -96,8 +107,8 @@ pub(crate) fn install_boot() -> bool {
         &empty_esp_dir(),
         true,
         &[
-            LS_AT_THE_PROMPT[0],
-            LS_AT_THE_PROMPT[1],
+            ls_at_the_prompt()[0],
+            ls_at_the_prompt()[1],
             // And then read the file back, which is what makes this an install rather than a boot.
             ("made-on-target", "wc made-on-target\r"),
             // **The disk tree, beside the filesystem on the same disk** (milestone 834 (ioping on nife and Linux)): the
@@ -127,7 +138,7 @@ pub(crate) fn install_boot() -> bool {
         "uefi_loader: started from boot slot 0",
         "nife: handing the system to the userspace progenitor.",
         // A prompt.
-        "nife capability shell.",
+        SHELL_UP.as_str(),
         // The file `mkfs` wrote before the reboot, listed and then read.
         "made-on-target",
         // `wc`'s answer for `filesystem_fixture::blank::MADE_BODY`: one line, ten words,
@@ -181,8 +192,8 @@ fn stick_on_the_installed_machine() -> bool {
         &install_esp_dir(),
         false,
         // `ls` asks for the filesystem, which is what a person at a live stick does first.
-        &LS_AT_THE_PROMPT,
-        "nife capability shell.",
+        &ls_at_the_prompt(),
+        &SHELL_UP,
         300,
         // A few seconds after the prompt, so a write the mount or `ls` started has landed.
         5,

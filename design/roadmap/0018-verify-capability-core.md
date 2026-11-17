@@ -13,7 +13,7 @@ Green-lit and started; see DECISIONS §14 and notes/verification.md. This is the
 thesis as an actual work item rather than an aspiration.
 
 Deliverable. Machine-checked proofs (Kani) of the security-critical logic, spreading inward from
-the capability core. `crates/capability` is proved already: five harnesses covering "`derive` never widens
+the capability core. `crates/capability_table` is proved already: five harnesses covering "`derive` never widens
 rights," "userspace cannot forge a right," and the subset order's reflexivity and transitivity, each
 for *every* input rather than sampled cases (`script/verify`). Next, in order, IPC (the rendezvous
 and the one-shot reply) and the MMU isolation invariants.
@@ -33,7 +33,7 @@ They cover `capability`, `ipc` (rendezvous, one-shot reply, the collected-sender
 codec on *both* formats (`paging`: VMSAv8-64 and Sv39, level-walk and leaf permission separation).
 Then generational names (`slots`: a removed name never resolves again), frame allocation, region
 split/destroy arithmetic, ELF parsing, the device-tree reader, ASID allocation, PCI decode. Then the
-DMA-confinement validator (`dma_validator`) and the IOMMU domain's page set (`paging::domain`), both
+DMA-confinement validator (`dma_validator`) and the IOMMU domain's page set (`page_tables::domain`), both
 milestone 35. An audit against the TCB (prompted by asking "what should we prove that we haven't")
 found the boundaries proved with **one glaring exception: the DMA-confinement validator was
 attacker-tested, never proved.** Milestone 35 closed it. The validator is extracted and proved for

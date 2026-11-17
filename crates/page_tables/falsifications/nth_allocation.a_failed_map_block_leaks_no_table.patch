@@ -1,0 +1,46 @@
+Falsifies `page_tables::nth_allocation::a_failed_map_block_leaks_no_table`.
+
+The defect: an "atomic" `map_block`. On `OutOfPageFrames` it clears the first table entry this
+call installed, so nothing it built stays reachable. That reads as cleanup and is a leak: the mapper
+does not own frames and cannot free them, so the tables below the cleared entry are handed out and
+reachable from nothing, and teardown (which frees what the tables reach) never sees them. It is the
+most likely shape of a future "make a failed map leave no trace" change.
+
+Expected to fail: assertion (1), "table frame(s) handed out and unreachable from the root", first at
+`map_block(Size2MiB)` with allocation 1 failed on aarch64 (the table at level 1 is orphaned).
+
+`script/falsifications --sweep page_tables` replays it, weekly and per pull request, since milestone
+742 (every test is falsified as routine). By hand, the same thing is:
+
+    git apply crates/page_tables/falsifications/nth_allocation.a_failed_map_block_leaks_no_table.patch
+    cargo test -p page_tables --test nth_allocation a_failed_map_block_leaks_no_table        # must fail
+    git apply -R crates/page_tables/falsifications/nth_allocation.a_failed_map_block_leaks_no_table.patch
+
+Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
+
+diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
+--- a/crates/page_tables/src/mapper.rs
++++ b/crates/page_tables/src/mapper.rs
+@@ -255,13 +255,21 @@ where
+         let leaf_level = F::LEVELS - 1 - size.levels_above_bottom();
+ 
+         let mut table_pa = self.root;
++        let mut first: Option<*mut u64> = None;
+         for level in 0..leaf_level {
+             let i = F::index(va, level);
+             // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
+             let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+             if !F::is_present(*entry) {
+-                let new = self.fresh_table()?;
++                let Ok(new) = self.fresh_table() else {
++                    // "Atomic" map: take back what this call installed. Unlinks, never frees.
++                    if let Some(e) = first {
++                        unsafe { *e = 0 };
++                    }
++                    return Err(MapError::OutOfPageFrames);
++                };
+                 *entry = F::table_entry(new, level);
++                first.get_or_insert(entry as *mut u64);
+             } else if F::is_block(*entry) {
+                 return Err(MapError::AlreadyMapped);
+             }

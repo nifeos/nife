@@ -6,8 +6,8 @@ use crate::sched::RendezvousId;
 ///
 /// `CLOCK_VA` is public because the set authority lives there, and the NTP tests aim a write at it
 /// from a process that holds no such mapping.
-pub const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
-const RTC_VA: u64 = address_space_map::pair_page(0x00d0_0000);
+pub const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
+const RTC_VA: u64 = address_space_layout::pair_page(0x00d0_0000);
 
 /// What the clock service was wired with, so a test (or a real progenitor) can play its clients.
 pub struct Wiring {
@@ -18,14 +18,14 @@ pub struct Wiring {
     /// The clock page's physical frame, so a reader can be given a read-only mapping of it
     /// (and so the kernel's own tests can read it through the direct map).
     pub page_phys: u64,
-    /// Which RTC the machine turned out to have, one of `clock_contract::rtc`.
+    /// Which RTC the machine turned out to have, one of `clock_contract::real_time_clock`.
     pub kind: u64,
 }
 
 /// Does this machine have an RTC at all?
 ///
 /// Elsewhere the device tree answers (`memory::rtc_region()`). On `x86_64` the answer is always
-/// yes: every PC-compatible machine has the CMOS at `clock_contract::rtc::INDEX_PORT`, and the
+/// yes: every PC-compatible machine has the CMOS at `clock_contract::real_time_clock::INDEX_PORT`, and the
 /// kernel no longer reads it, so it cannot tell a dead battery from a live clock. A test asks
 /// before [`start`], so a skip leaves no service's frames charged to it.
 ///
@@ -90,9 +90,9 @@ fn spawn_with(
     // the `PortRange` granted below (§130 (how the userspace clock service reads the x86 CMOS RTC));
     // elsewhere the device tree names a page.
     #[cfg(target_arch = "x86_64")]
-    let kind = clock_contract::rtc::CMOS;
+    let kind = clock_contract::real_time_clock::CMOS;
     #[cfg(not(target_arch = "x86_64"))]
-    let kind = rtc.map_or(clock_contract::rtc::NONE, |(_, _, k)| k);
+    let kind = rtc.map_or(clock_contract::real_time_clock::NONE, |(_, _, k)| k);
 
     // The RTC page is mapped with no `DeviceFrame` capability, as the console's UART is: the
     // service never delegates it, and §41 (a device is revoked by taking it back)'s revocation
@@ -124,8 +124,10 @@ fn spawn_with(
         // permit `in` without `out`; no `GRANT`, since the service never lends them on.
         #[cfg(target_arch = "x86_64")]
         crate::capability_object::port_range_capability(
-            clock_contract::rtc::INDEX_PORT,
-            clock_contract::rtc::DATA_PORT - clock_contract::rtc::INDEX_PORT + 1,
+            clock_contract::real_time_clock::INDEX_PORT,
+            clock_contract::real_time_clock::DATA_PORT
+                - clock_contract::real_time_clock::INDEX_PORT
+                + 1,
             Rights::WRITE,
         ),
     ];
@@ -158,8 +160,8 @@ fn spawn_with(
 
 impl Wiring {
     /// The clock page as the kernel sees it, through the direct map. A reader process would
-    /// hold a read-only mapping instead; the seqlock and the layout are the same either way,
-    /// because they come from the one contract crate.
+    /// hold a read-only mapping instead; the publish protocol and the layout are the same either
+    /// way, because they come from the one contract crate.
     pub fn page(&self) -> clock_contract::ClockPage {
         // SAFETY: a frame this module allocated and still owns, named through the direct map.
         unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(self.page_phys)) }
@@ -170,7 +172,7 @@ impl Wiring {
     pub fn wall_nanoseconds(&self) -> u64 {
         let r = self.page().read();
         if clock_contract::state::is_known(r.state) {
-            clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
+            clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
         } else {
             0
         }

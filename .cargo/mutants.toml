@@ -129,7 +129,7 @@ exclude_globs = [
     # The boot self-tests (milestone 268 (every architecture boots the same way)). `cfg(not(any(test, feature = "system_tests", feature =
     # "bench")))` compiles them into a production boot and into no test image, so a mutant there
     # is unreachable in both tiers: the group above, worn from the other side. Their checker is
-    # the boot ladder verdict (`boot_ladder::SELF_TEST`), which a program reads, and
+    # the boot ladder verdict (`boot_ladder::Heads::self_test`), which a program reads, and
     # notes/self-test-checks.md holds the checks.
     "kernel/src/self_test.rs",
 
@@ -190,100 +190,18 @@ exclude_re = [
     # uses.
     "tests::",
 
-    # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954 (a survivor
-    # accepted once is not accepted forever), 2026-10-28 UTC).
-    #
-    # A `|` over operands that share no bit equals a `^` over them, and a shift by zero equals the
-    # reverse shift, so no test can kill those mutants. Each entry's argument is a named
-    # `THE_*_SHARE_NO_BIT` constant beside the code, which fails the build if the operands ever
-    # come to share a bit, and helpers/mutation_exclusion_check.py fails an entry whose named
-    # constant is gone; for a shift by a literal, the argument is the identity itself. One
-    # function per entry (one file, for a constant with no enclosing function), never the crate;
-    # the shape is pinned so an entry cannot reach a different mutation. Each entry's limit, which
-    # the assertion narrows but does not close: a future `|` or shift added inside the excluded
-    # scope generates no mutant for it, and where a function's other mutants of the same shape are
-    # already killed, the entry stops running them too, while the tests that killed them stay.
-    # The register bits are `1 << n`; the survivors are the `1 << 0` bits, where the shift is the
-    # identity (`1 << 0 == 1 >> 0`). Every constant with `n > 0` has its value pinned
-    # literal-for-literal by registers::tests::the_bits_are_where_dwqereg_puts_them, which stays.
-    "^crates/designware_ethernet/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
-    # The clause 22 constants are `1 << n` the same way; the survivor is GB, `1 << 0`, the
-    # identity. Every other constant's value is pinned by
-    # management_data_input_output::tests::the_clause_22_bits_are_the_standards, which stays.
-    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace << with >>$",
-    # BUS's four burst-length bits are asserted pairwise disjoint by
-    # BURST_LENGTH_BITS_DO_NOT_OVERLAP, beside BUS.
-    "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^$",
-    # RGMII_RXD_DS_MASK's two fields are asserted disjoint by
-    # RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP, beside the mask.
-    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^$",
-    # RSF against the threshold field, and the two flow-control threshold fields against each
-    # other, are asserted disjoint by RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside
-    # receive_queue_mode.
-    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
-    # TSF against the threshold field, asserted disjoint by
-    # TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside transmit_queue_mode.
-    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
-    # CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP, beside configure, asserts its fields pairwise
-    # disjoint; field values reach their `|` through their own mask or a word the line above
-    # cleared, and the configure tests hold the rest (they kill the swaps at the two words read
-    # unmasked).
-    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
-    # MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP, beside mac_configuration, asserts the cleared
-    # speed, duplex and loopback bits and the final chain's five bits each pairwise disjoint; the
-    # chain's first swap toggles `conf` itself and the_mac_word_from_zero_and_from_all_ones kills
-    # it.
-    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
-    # REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP,
-    # beside configure, asserts the delay and drive fields pairwise disjoint.
-    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
-    # ANLPAR_T4 and ANLPAR_TX are asserted disjoint by
-    # PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP, beside link_from_registers.
-    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
-    # The transmit delay select is zero (REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP
-    # asserts it), so those two shifts are the identity; the same entry covers the function's
-    # shift-by-nonzero sites, which
-    # motorcomm_physical_layer_device::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
-    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace << with >> in configure$",
-    # The command word's five field masks are asserted pairwise disjoint by
-    # COMMAND_WORD_FIELDS_DO_NOT_OVERLAP, beside command_word; every operand enters through its own
-    # field's mask.
-    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command_word$",
-    # The high half is shifted above the low half's whole width;
-    # PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP, beside the function, asserts it for the
-    # widest values either can hold.
-    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in physical_layer_device_id$",
-    # ANENABLE and ANRESTART are asserted disjoint by
-    # AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP, beside the function; the swap
-    # against bmcr is killed by
-    # mdio::tests::restarting_a_negotiation_already_running_keeps_it_running.
-    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in restart_autonegotiation$",
-    # The payload's set bit and its six-bit counter are asserted disjoint by
-    # PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP, beside probe_frame.
-    "^crates/designware_ethernet/src/cache_coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
-    # OWN, IC and BUF1V are asserted pairwise disjoint by
-    # RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP, beside the function.
-    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_words$",
-    # TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP, beside the function, asserts word 2's field and
-    # bit disjoint, word 3's three set bits pairwise disjoint and outside the length field, and
-    # the two words a whole word apart.
-    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_descriptor_words$",
-    # FD and LD are asserted distinct single bits by FIRST_AND_LAST_BITS_DO_NOT_OVERLAP, beside
-    # receive_verdict.
-    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_verdict$",
-    # The interface value fits the field the function just cleared;
-    # INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP asserts that, which makes the `|` and the
-    # `^` agree for every word.
-    "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^ in select_reduced_gigabit_media_independent_interface$",
-
     # **Milestone 954 (a survivor accepted once is not accepted forever), part 4, the remaining
-    # crates' noise** (2026-10-28 UTC): the same shape as the two blocks above, one entry per
-    # function (per file, for a constant with no enclosing function), each naming the
+    # crates' noise** (2026-10-28 UTC). A `|` over operands that share no bit equals a `^` over
+    # them, and a shift by zero equals the reverse shift, so no test can kill those mutants. One
+    # entry per function (per file, for a constant with no enclosing function), each naming the
     # THE_*_SHARE_NO_BIT constant beside the code whose assert! lets the compiler check the
-    # disjointness; a shift entry's argument is the identity. The census keys these survivors
-    # under names a rename has since moved (the carried rowless list's `cc_enabled`,
-    # `create_io_cq`, `create_io_sq`, the crate that held each Handoff); the entries spell the
-    # names as the tree has them now, which is what the next census will match.
+    # disjointness, and helpers/mutation_exclusion_check.py fails an entry whose named constant is
+    # gone; a shift entry's argument is the identity. Each entry's limit, which the assertion
+    # narrows but does not close: a future `|` or shift added inside the excluded scope generates
+    # no mutant for it. The census keys these survivors under names a rename has since moved (the
+    # carried rowless list's `cc_enabled`, `create_io_cq`, `create_io_sq`, the crate that held
+    # each Handoff); the entries spell the names as the tree has them now, which is what the next
+    # census will match.
     #
     # The handoff word's three fields (dstrd above bit 32, blocks_per_transfer at 16:31, entries
     # below), per THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT, beside Handoff.
@@ -302,13 +220,13 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
     # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
     # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
-    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
-    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
+    "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
+    "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
     # The const-level shift survivors are command.rs's RECURSIVE and verbs.rs's CLOCK, both
     # `1 << 0`, the identity; the rest of each file's constant shifts are pinned by existing
     # tests, which stay.
     "^crates/grant_plan/src/command\\.rs:\\d+:\\d+: replace << with >>$",
-    "^crates/grant_plan/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/grant_contract/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
     # serial_console: decode_exact's three pixel channels, each a byte shifted to its own third
     # of the word, per THE_PIXEL_CHANNELS_SHARE_NO_BIT, beside the function.
     "^crates/serial_console/src/screen\\.rs:\\d+:\\d+: replace \\| with \\^ in decode_exact$",
@@ -325,7 +243,7 @@ exclude_re = [
     "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*control::word$",
     "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*kernel_ring::meta$",
 
-    # **paging's descriptor words** (milestone 954 (a survivor accepted once is not accepted
+    # **page_tables descriptor words** (milestone 954 (a survivor accepted once is not accepted
     # forever), part 4, 2026-10-31 UTC). One entry per function whose OR-to-XOR swaps are no-ops
     # because the operands share no bit, each naming the `const` beside the code whose assertions
     # make the compiler check that (`THE_*_SHARE_NO_BIT`, built on share_no_bit.rs's `assert_share_no_bit!`),
@@ -336,54 +254,54 @@ exclude_re = [
     #
     # aarch64: the descriptor's address field, the valid and table-or-page bits, and every field
     # `attrs` writes, per THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT.
-    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::table_entry$",
-    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::leaf_entry$",
-    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::block_entry$",
+    "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::table_entry$",
+    "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::leaf_entry$",
+    "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::block_entry$",
     # The shifts are `VALID = 1 << 0` and `AP_RW_EL1 = 0b00 << 6`: a shift of one by zero and of
     # zero by six, equal to their reverse shifts for every value.
-    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace << with >>$",
     # Flags: the seven access bits are distinct single bits, per THE_ACCESS_BITS_SHARE_NO_BIT.
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::kernel_code$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::kernel_data$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::device$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::write_combining$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_code$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_data$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_device$",
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_write_combining$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::kernel_code$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::kernel_data$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::device$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::write_combining$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_code$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_data$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_device$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_write_combining$",
     # ACCESS_WRITE is `1 << 0`, the identity.
-    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/page_tables/src/flags\\.rs:\\d+:\\d+: replace << with >>$",
     # sv39: the PTE's PPN field, V, R, W, X, U, G, A, D and the software device bit, per
     # THE_PAGE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT; and the memory-type bits against each other and
     # against everything below bit 54, per THE_MEMORY_TYPE_BITS_SHARE_NO_BIT.
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39::attrs$",
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::table_entry$",
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::leaf_entry$",
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::is_block$",
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39Mae::memory_type$",
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39Mae>::leaf_entry$",
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39Mae>::block_entry$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39::attrs$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::table_entry$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::leaf_entry$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::is_block$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39Mae::memory_type$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39Mae>::leaf_entry$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39Mae>::block_entry$",
     # V is `1 << 0`, the identity.
-    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace << with >>$",
     # x86_64: Ia32e's address field, P, RW, US, PWT, PCD, A, D, PS, G, the two software bits and
     # XD, per THE_ENTRY_FIELDS_SHARE_NO_BIT; Vtd's address field, R and W, per
     # THE_VTD_ENTRY_FIELDS_SHARE_NO_BIT; AmdVi's page entry fields, per
     # THE_AMD_VI_ENTRY_FIELDS_SHARE_NO_BIT; and the device table entry's first qword, per
     # THE_DEVICE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT (the root is held inside the address mask by the
     # `None` guard above the `|`).
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in Ia32e::attrs$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::table_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::leaf_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::block_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::is_present$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::table_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::leaf_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for AmdVi>::table_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for AmdVi>::leaf_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in AmdVi::device_table_entry$",
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in AmdVi::blocked_device_table_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in Ia32e::attrs$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::table_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::leaf_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::block_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::is_present$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::table_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::leaf_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for AmdVi>::table_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for AmdVi>::leaf_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in AmdVi::device_table_entry$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in AmdVi::blocked_device_table_entry$",
     # P, VTD_R, AMD_VI_PR and DTE_V are each `1 << 0`, the identity. (`pat::VALUE`'s one
     # constant-level `|` is not excluded: its argument is a cleared byte, which an assertion
     # cannot state without a `!` the tool would also mutate, so its row stays, as algebraic.)
-    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace << with >>$",
 ]

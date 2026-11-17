@@ -52,11 +52,11 @@ struct Page(MappedWindow);
 
 impl Registers for Page {
     fn read(&mut self, offset: u32) -> u32 {
-        self.0.r32(u64::from(offset))
+        self.0.read_u32(u64::from(offset))
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        self.0.w32(u64::from(offset), value);
+        self.0.write_u32(u64::from(offset), value);
     }
 }
 
@@ -88,7 +88,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let window = page
         .window(CONTROLLER_KIND)
         .expect("the spawner lists the controller page");
-    assert!(u64::from(window.pages) * address_space_map::PAGE >= USED_BYTES);
+    assert!(u64::from(window.pages) * address_space_layout::PAGE >= USED_BYTES);
     // SAFETY: the spawner maps the controller page device-typed for the life of the process, and
     // nothing else in this address space touches it.
     let registers = Page(unsafe { MappedWindow::new(window.virtual_address, USED_BYTES) });

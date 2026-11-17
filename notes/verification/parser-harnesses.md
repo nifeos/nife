@@ -6,16 +6,18 @@ An appendix to [notes/verification.md](../verification.md). These three crates p
 kernel did not write: a binary, a boot archive, and a PCI function's answers. Why whole-parse
 totality was out of reach is in [elf-parser-wall.md](elf-parser-wall.md).
 
-## `crates/elf`
+## `crates/static_elf`
 
-Four in `crates/elf/src/lib.rs`:
+Five in `crates/static_elf/src/verification.rs`, and four more over the note reader in
+`crates/static_elf/src/note.rs`:
 
 | Harness | Property |
 |---|---|
 | `check_segment_bounds_never_panics` | the per-segment bounds/overflow arithmetic never panics, for any file length and any hostile field values |
 | `a_passing_check_yields_an_in_bounds_range` | if the check passes, `p_offset <= end <= file_len`, so the segment's data slice is in bounds (what the whole-parse totality proof was really reaching for) |
 | `a_passing_check_has_no_address_overflow` | if the check passes, `vaddr + memsz` did not wrap, so `validate`'s later unchecked add cannot panic |
-| `page_range_is_panic_free_and_ordered` | for any `vaddr`/`memsz`, the saturating page arithmetic neither panics nor returns an inverted range (a `pub` helper that must be safe on its own) |
+| `page_range_is_panic_free_and_ordered` | for any `vaddr`/`memsz` and every power-of-two page size a `PageBytes` holds, the saturating page arithmetic neither panics nor returns an inverted range (a `pub` helper that must be safe on its own) |
+| `a_program_header_offset_is_a_whole_header_inside_the_table` | if `program_header_offset` passes, the whole 56-byte header ends inside the table, so the slice `segment_at` and the note walk take is in bounds |
 
 ## `crates/nifefs`
 
@@ -32,9 +34,9 @@ Whole-parse totality hit the same wall as ELF and `device_tree_blob`: a one-bloc
 CBMC past 20 CPU-minutes. It was decomposed the same way. The module comment records what is
 deliberately unproved, and why it is sound anyway.
 
-## `crates/pci`
+## `crates/pci_configuration_space`
 
-Four in `crates/pci/src/lib.rs`, the config-space decode the kernel runs on device input. A hostile
+Four in `crates/pci_configuration_space/src/lib.rs`, the config-space decode the kernel runs on device input. A hostile
 or broken PCI function can answer the closures with anything.
 
 | Harness | Property |

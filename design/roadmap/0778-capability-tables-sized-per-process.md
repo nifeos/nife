@@ -23,7 +23,7 @@ for that process, and grow when it needs to?
 ## What this tree does today
 
 A flat array of `CAPABILITY_TABLE_SLOTS` entries inside the thread's TCB page, 32 bytes a slot,
-indexed directly by the slot number a syscall names. `crates/capability`'s own doc calls it "an fd
+indexed directly by the slot number a syscall names. `crates/capability_table`'s own doc calls it "an fd
 table with a type tag on each entry" and refuses seL4's tree "because it costs a great deal of
 explanation". Each raise so far (16, 17, 24, 32, and 64 in milestone 754 (the capability table grows
 to 64 slots)) was one number, paid in every thread's TCB.

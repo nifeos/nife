@@ -15,6 +15,7 @@
 //! 265 (`_proto` is a truncation)). The program `ntp` is `network_time_client` and its siblings.
 
 #![no_std]
+#![forbid(unsafe_code)]
 
 /// The UDP port NTP runs on. Here for the client that will eventually open the socket; this crate
 /// never opens one.
@@ -75,6 +76,8 @@ pub const UNIX_LIMIT: u64 = (TICKS_PER_SECOND - UNIX_DELTA) + (1 << 31);
 pub const MAXIMUM_STRATUM: u8 = 15;
 
 /// The root distance we refuse outright, in [`Short`] units: 16 seconds, RFC 5905's `MAXDISP`.
+/// A reply whose root distance is this or more is refused, as the RFC's reference `packet()`
+/// routine refuses `rootdelay / 2 + rootdisp >= MAXDISP`.
 ///
 /// This is deliberately far looser than the RFC's `MAXDIST` selection threshold (1 s by default).
 /// The distinction is whose job it is: **this crate rejects the impossible, the clock service
@@ -161,7 +164,10 @@ impl Timestamp {
     }
 
     /// The fraction field, in units of 2<sup>-32</sup> s.
-    pub(crate) const fn fraction(self) -> u32 {
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane (the accessor
+    /// already existed and was `pub(crate)`).
+    pub const fn fraction(self) -> u32 {
         self.0 as u32
     }
 
@@ -324,14 +330,17 @@ impl Interval {
     }
 
     /// The interval in nanoseconds, truncated toward zero. This is the form the clock service wants:
-    /// it holds an offset it can add to a monotonic reading.
+    /// it holds an offset it can add to a monotonic reading. Total over every `i128`: a tick count
+    /// whose product with 10<sup>9</sup> would overflow saturates before the division, so an
+    /// interval no exchange can produce (above about 1.7 x 10<sup>29</sup> ticks) reads as the
+    /// largest value rather than panicking or wrapping.
     pub const fn nanoseconds(self) -> i128 {
-        (self.0 * NS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
+        self.0.saturating_mul(NS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
     }
 
     /// The interval in microseconds, truncated toward zero. For logging, where nanoseconds are noise.
     pub const fn microseconds(self) -> i128 {
-        (self.0 * 1_000_000) / TICKS_PER_SECOND as i128
+        self.0.saturating_mul(1_000_000) / TICKS_PER_SECOND as i128
     }
 
     /// Is this interval negative?
@@ -475,7 +484,8 @@ const fn be64(w: &[u8], at: usize) -> u64 {
 ///
 /// # Examples
 ///
-/// The nonce check runs before any of the packet is believed, so an off-path flood of well-formed
+/// The nonce check runs before anything in the packet beyond its two framing fields (version and
+/// mode) is believed, so an off-path flood of well-formed
 /// replies gets nowhere:
 ///
 /// ```
@@ -537,8 +547,15 @@ pub enum Reject {
     /// The round trip took less time than the server spent thinking, so the delay is negative and
     /// the offset computed from it is meaningless.
     NegativeDelay,
-    /// The server's own claimed distance from a reference clock exceeds [`MAXIMUM_ROOT_DISTANCE`].
+    /// The server's own claimed distance from a reference clock reaches [`MAXIMUM_ROOT_DISTANCE`].
     RootDistance,
+    /// The server's reference timestamp is later than its transmit timestamp: it claims to have
+    /// last synchronized after it sent this reply, which RFC 5905's reference `packet()` routine
+    /// refuses. A zero reference timestamp, which says only that the server never synchronized, is
+    /// not judged here.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    ReferenceAfterTransmit,
 }
 
 /// **One accepted sample**: the two numbers the protocol exists to produce, and the packet they came
@@ -678,17 +695,23 @@ impl Query {
         .to_bytes()
     }
 
-    /// **Check a reply and compute the sample.** `dest` is T4: the local time the reply arrived,
+    /// **Check a reply and compute the sample.** `destination` is T4: the local time the reply arrived,
     /// read as close to the receive as the caller can manage.
     ///
     /// Refuses, in this order: a length other than 48; a version other than 4 or a mode other than
     /// server; an origin that is not our nonce, checked before anything else is believed; a
     /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronised leap indicator; a
     /// zero transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no
-    /// shorter than the turnaround); a root distance past [`MAXIMUM_ROOT_DISTANCE`]. Each is its
-    /// [`Reject`] variant. None authenticates: an on-path attacker sees the nonce. See
-    /// notes/ntp.md.
-    pub fn accept(&self, wire: &[u8], dest: Timestamp) -> Result<Sample, Reject> {
+    /// shorter than the turnaround); a root distance of [`MAXIMUM_ROOT_DISTANCE`] or more; a
+    /// non-zero reference timestamp later than the transmit timestamp. Each is its [`Reject`]
+    /// variant. None authenticates: an on-path attacker sees the nonce. See notes/ntp.md.
+    ///
+    /// **A `Query` is for one request, and the replay test is the caller's.** RFC 5905 drops a
+    /// packet whose transmit timestamp equals the last one accepted; this crate keeps no state, so
+    /// it cannot. A reply to an earlier `Query` fails the origin check because each carries its own
+    /// nonce. A caller that keeps one nonce across requests must refuse a repeated transmit
+    /// timestamp itself.
+    pub fn accept(&self, wire: &[u8], destination: Timestamp) -> Result<Sample, Reject> {
         let p = Packet::parse(wire)?;
 
         if p.version != VERSION {
@@ -713,8 +736,12 @@ impl Query {
         if p.transmit.is_zero() {
             return Err(Reject::TransmitZero);
         }
-        if p.root_distance() > MAXIMUM_ROOT_DISTANCE {
+        if p.root_distance() >= MAXIMUM_ROOT_DISTANCE {
             return Err(Reject::RootDistance);
+        }
+        // Modular, like every comparison of two timestamps here.
+        if !p.reference.is_zero() && p.transmit.since(p.reference).is_negative() {
+            return Err(Reject::ReferenceAfterTransmit);
         }
 
         // Modular differences throughout (Timestamp::since), so an exchange across the 2036
@@ -723,7 +750,7 @@ impl Query {
         if server.is_negative() {
             return Err(Reject::ServerOrderReversed);
         }
-        let round = dest.since(self.sent); // T4 - T1
+        let round = destination.since(self.sent); // T4 - T1
         if round.is_negative() {
             return Err(Reject::ClientOrderReversed);
         }
@@ -732,7 +759,7 @@ impl Query {
             return Err(Reject::NegativeDelay);
         }
 
-        let offset = Interval((p.receive.since(self.sent).0 + p.transmit.since(dest).0) / 2);
+        let offset = Interval((p.receive.since(self.sent).0 + p.transmit.since(destination).0) / 2);
 
         Ok(Sample {
             offset,
@@ -1077,13 +1104,57 @@ mod tests {
         });
         assert_eq!(query().accept(&w, T4), Err(Reject::RootDistance));
         assert_eq!(Packet::parse(&w).unwrap().root_distance(), Short(u32::MAX));
-        // 16 seconds exactly is inside; a tick past it is not.
+        // RFC 5905 refuses `>= MAXDISP`: a tick under 16 seconds is inside, 16 exactly is not.
         let mut p = Packet::parse(&REPLY).unwrap();
         p.root_delay = Short(0);
-        p.root_dispersion = MAXIMUM_ROOT_DISTANCE;
+        p.root_dispersion = Short(MAXIMUM_ROOT_DISTANCE.0 - 1);
         assert!(query().accept(&p.to_bytes(), T4).is_ok());
+        p.root_dispersion = MAXIMUM_ROOT_DISTANCE;
+        assert_eq!(query().accept(&p.to_bytes(), T4), Err(Reject::RootDistance));
         p.root_dispersion = Short(MAXIMUM_ROOT_DISTANCE.0 + 1);
         assert_eq!(query().accept(&p.to_bytes(), T4), Err(Reject::RootDistance));
+    }
+
+    #[test]
+    fn a_reference_timestamp_after_the_transmit_timestamp_is_refused() {
+        let mut p = Packet::parse(&REPLY).unwrap();
+        // Equal is fine, one tick later is not.
+        p.reference = p.transmit;
+        assert!(query().accept(&p.to_bytes(), T4).is_ok());
+        p.reference = Timestamp::from_bits(p.transmit.bits() + 1);
+        assert_eq!(
+            query().accept(&p.to_bytes(), T4),
+            Err(Reject::ReferenceAfterTransmit)
+        );
+        // Modular, so a reference just before the 2036 rollover is earlier than a transmit just
+        // after it.
+        p.reference = Timestamp::from_bits(0xFFFF_FFFF_0000_0000);
+        p.transmit = Timestamp::from_bits(0x0000_0001_0000_0000);
+        let q = Query::with_nonce(Timestamp::from_bits(0xFFFF_FFFE_0000_0000), p.origin);
+        let dest = Timestamp::from_bits(0x0000_0002_0000_0000);
+        p.receive = Timestamp::from_bits(0xFFFF_FFFF_8000_0000);
+        assert!(q.accept(&p.to_bytes(), dest).is_ok());
+        // A zero reference says only "never synchronized" and is not judged.
+        p.reference = Timestamp::ZERO;
+        assert!(q.accept(&p.to_bytes(), dest).is_ok());
+    }
+
+    #[test]
+    fn an_interval_no_exchange_could_make_still_reads_without_a_panic() {
+        let huge = Interval::from_ticks(i128::MAX);
+        assert_eq!(huge.nanoseconds(), i128::MAX / TICKS_PER_SECOND as i128);
+        assert_eq!(huge.microseconds(), i128::MAX / TICKS_PER_SECOND as i128);
+        let tiny = Interval::from_ticks(i128::MIN);
+        assert!(tiny.nanoseconds() < 0 && tiny.microseconds() < 0);
+        assert_eq!(Interval::from_ticks(1 << 32).nanoseconds(), 1_000_000_000);
+    }
+
+    #[test]
+    fn the_fraction_field_is_readable() {
+        assert_eq!(
+            Timestamp::from_bits(0x0000_0001_8000_0000).fraction(),
+            1 << 31
+        );
     }
 
     /// Extension fields and a MAC make a longer packet. This crate implements neither, and quietly

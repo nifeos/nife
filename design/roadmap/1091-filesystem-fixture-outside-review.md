@@ -77,17 +77,17 @@ decides it. Line numbers are in `crates/filesystem_fixture/src/lib.rs` unless a 
    Finding: `README.md` line 56 and the crate root `BUGS` (lines 11 to 12) say the fixture and the
    contract leave together; 1017's step 2 row says the same, citing a dev-dependency that commit
    `ce4ea2015` removed. The contract links nothing and leaves first; the fixture follows and pins it.
-   The reverse coupling is `glob`, which dev-depends on the fixture and leaves in step 5, which the
-   bottom-up rule allows. The sibling review of `glob` proposes moving `crates/glob/tests/
-   fixture_agreement.rs` into `crates/filesystem_fixture/tests/` with `glob` as a dev-dependency.
+   The reverse coupling is `byte_glob`, which dev-depends on the fixture and leaves in step 5, which the
+   bottom-up rule allows. The sibling review of `byte_glob` proposes moving `crates/byte_glob/tests/
+   fixture_agreement.rs` into `crates/filesystem_fixture/tests/` with `byte_glob` as a dev-dependency.
    That would make this crate link a crate that leaves three steps later and block step 2 until
-   `glob` has left, which is the pairing problem reintroduced the other way round.
-   Evidence: `README.md` lines 55 to 56; lines 11 to 12; 1017 step 2 row; `crates/glob/Cargo.toml`
-   dev-dependencies; `crates/glob/tests/fixture_agreement.rs` header.
+   `byte_glob` has left, which is the pairing problem reintroduced the other way round.
+   Evidence: `README.md` lines 55 to 56; lines 11 to 12; 1017 step 2 row; `crates/byte_glob/Cargo.toml`
+   dev-dependencies; `crates/byte_glob/tests/fixture_agreement.rs` header.
    Change: restate both `BUGS` entries as "depends on `filesystem_contract` by path until that crate
    has left; then by `git` and `rev`"; the recording lane corrects 1017's row. For the glob test,
-   `crates/grant_plan/tests/` (which already depends on `glob` and leaves in step 6, after both) or
-   leaving it in `glob` keeps the order; this crate must not gain a dev-dependency on `glob`.
+   `crates/grant_plan/tests/` (which already depends on `byte_glob` and leaves in step 6, after both) or
+   leaving it in `byte_glob` keeps the order; this crate must not gain a dev-dependency on `byte_glob`.
    Door: two-way. Effort: XS.
 
 3. Two template gates at ceiling 0 are red on the shipped text.
@@ -118,10 +118,9 @@ decides it. Line numbers are in `crates/filesystem_fixture/src/lib.rs` unless a 
    ripgrep spellings a reader types. They keep their owner's form with a `#[doc(alias)]`.
    Evidence: the helper outputs; `design/naming.md`, sections "Units", "Shapes" and "Acronyms and
    abbreviations".
-   Change: the architect rules the names (Decision 2 below). One rename lane applies them with the
+   Change: the names Decision 2 decides, provisionally. One rename lane applies them with the
    consumers, since every rename crosses nine manifests.
-   Door: the names become identifiers other repositories pin after the move; before the move they
-   are two-way. Effort: S after the ruling.
+   Door: two-way before the first tag; every repository that pins them is a nifeos one. Effort: S after the ruling.
 
 5. The crate's names are not ratified and no review package exists.
    Finding: `script/crate-standalone` step 0 fails on the crate name (provisional) and on 244
@@ -145,7 +144,8 @@ The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's.
+Decision 1 is a one-way door. Decision 2 is decided, provisionally. Everything else above is the
+maintainer's.
 
 ### Decision 1: the repository `nifeos/filesystem_fixture` is created, after `filesystem_contract` has left
 
@@ -229,6 +229,12 @@ Prior art: Linux's `fs/` spells `dentry` and `inode` because those are terms of 
 `set_modified`, `read_dir` and `remove_dir` (Unix's words kept, its own words whole). The concrete
 example is `TOUCH_MTIME_ADVANCED`. The template's gate names the fix (`modification_time`), and the
 tree already spells `set_modified` on the std side of the same wire.
+
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
+which the architect may revisit. Every pinner is a nifeos repository and the rename is one lane, so
+the door is two-way. The three tables hold as written, with no alias of the old spellings. The
+command names a reader types (`rm`, `RMDIR_*`, `PWD_*`, `RG_*` and the rest of the last row) keep
+their spelling, each with `#[doc(alias)]` and a doc line naming the command. Item 4 is the work.
 
 ## Done when
 

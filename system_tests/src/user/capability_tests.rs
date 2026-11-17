@@ -23,7 +23,7 @@ use crate::sched;
 fn a_user_client_moves_data_through_shared_memory() {
     // What the client prints first. Must match fixtures/src/console_test_client.rs.
     const FIRST_LINE: &[u8] = b"      hello from EL0, printed by a driver that also runs at EL0.\n";
-    const SHARED_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+    const SHARED_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 
     static CAPTURED: AtomicBool = AtomicBool::new(false);
     static LEN: AtomicU64 = AtomicU64::new(0);
@@ -124,8 +124,8 @@ fn a_user_client_moves_data_through_shared_memory() {
 /// the permissions asked for and no more. The mechanism a driver leaves the kernel on.
 #[test_case]
 fn map_physical_maps_a_shared_frame_and_a_device_page() {
-    const DATA_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
-    const DEV_VA: u64 = address_space_map::pair_page(0x0000_0000_0070_0000);
+    const DATA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
+    const DEV_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
     // A real device's MMIO on this machine, whichever machine it is: the virtio-mmio bus base.
     // It was the PL011's `0x0900_0000`, which is an aarch64 `virt` fact; the point of the test
     // is that a device-typed mapping lands where it was asked to, and either address serves it.

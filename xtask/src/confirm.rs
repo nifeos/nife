@@ -47,13 +47,15 @@ use crate::rollback::{
 
 /// What boot 2's transcript must contain: the chooser's two lines, the confirmation, and a shell
 /// that read a file off the installed disk.
-const BOOT_TWO_WANTS: [&str; 5] = [
-    "uefi_loader: starting boot slot 1",
-    "uefi_loader: started from boot slot 1",
-    "slot 1 confirmed",
-    "nife capability shell.",
-    "1 10 57",
-];
+fn boot_two_wants() -> [&'static str; 5] {
+    [
+        "uefi_loader: starting boot slot 1",
+        "uefi_loader: started from boot slot 1",
+        "slot 1 confirmed",
+        install::SHELL_UP.as_str(),
+        "1 10 57",
+    ]
+}
 
 /// And boot 3's: the same slot chosen with no tries left, and no second write to the table.
 const BOOT_THREE_WANTS: [&str; 3] = [
@@ -65,22 +67,21 @@ const BOOT_THREE_WANTS: [&str; 3] = [
 /// What a shell is asked to do on a boot that is allowed to come all the way up, and the marker
 /// each answer is keyed on. `rollback`'s boot 3 does the same thing for the same reason: reaching a
 /// prompt is the claim, and reading a file `mkfs` wrote is what makes it one.
-const AT_THE_PROMPT: [(&str, &str); 3] = [
-    install::LS_AT_THE_PROMPT[0],
-    install::LS_AT_THE_PROMPT[1],
-    ("made-on-target", "wc made-on-target\r"),
-];
+fn the_prompt_answers() -> [(&'static str, &'static str); 3] {
+    let [banner, ls] = install::ls_at_the_prompt();
+    [banner, ls, ("made-on-target", "wc made-on-target\r")]
+}
 
-/// [`AT_THE_PROMPT`], with `jig list` typed between the two when there is a catalog to read. The
+/// [`the_prompt_answers`], with `jig list` typed between the two when there is a catalog to read. The
 /// `wc` waits for the catalog's last line, so it is typed after `jig` has finished and not into a
 /// program still running.
 fn at_the_prompt(catalog_lines: &[String]) -> Vec<(&str, &str)> {
     let Some(last) = catalog_lines.last() else {
-        return AT_THE_PROMPT.to_vec();
+        return the_prompt_answers().to_vec();
     };
     vec![
-        AT_THE_PROMPT[0],
-        AT_THE_PROMPT[1],
+        the_prompt_answers()[0],
+        the_prompt_answers()[1],
         ("made-on-target", "jig list\r"),
         (last.as_str(), "wc made-on-target\r"),
     ]
@@ -144,7 +145,7 @@ pub(crate) fn confirm_an_upgrade(gate: &str, upgrade: impl FnOnce() -> Option<Up
     };
 
     let mut ok = true;
-    for wanted in BOOT_TWO_WANTS {
+    for wanted in boot_two_wants() {
         if !trial.contains(wanted) {
             eprintln!("{gate}: boot 2's transcript is missing {wanted:?}");
             ok = false;
@@ -175,7 +176,7 @@ pub(crate) fn confirm_an_upgrade(gate: &str, upgrade: impl FnOnce() -> Option<Up
     let Some(kept) = install::boot(
         &install::empty_esp_dir(),
         true,
-        &AT_THE_PROMPT,
+        &the_prompt_answers(),
         "1 10 57",
         300,
     ) else {

@@ -75,7 +75,7 @@ const MEMORY_REGION: u64 = 2;
 const MINT: u64 = 3;
 
 /// This server saw its first request. `w1` is the request's transmit field (the nonce), `w2` is
-/// `(dst_port << 32) | (version << 8) | mode`.
+/// `(destination_port << 32) | (version << 8) | mode`.
 pub const RPT_SERVED: u64 = 7;
 
 /// Which reply this server sends.
@@ -99,7 +99,7 @@ const SERVER_TURNAROUND_NANOSECONDS: u64 = 1_000;
 /// Where this server maps the client's shared frame in its own address space. The client picks its
 /// own, and the two do not have to agree: what they share is the frame's *layout*, which is
 /// `socket_contract`'s.
-const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
+const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
 // SAFETY: the `OPERATION_ATTACH_PAGE_FRAME` arm below maps one page read/write at PAGE_FRAME_VA, and it is
 // the first request the client makes, before any access through `SHARED_FRAME` (milestone 139 (drive the unsafe count down)).
@@ -162,12 +162,14 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
                 reply(to, REP_OK, 0);
                 if !reported {
                     reported = true;
-                    let dst_port = SHARED_FRAME.dst_port() as u64;
+                    let destination_port = SHARED_FRAME.destination_port() as u64;
                     send(
                         REPORT,
                         RPT_SERVED,
                         request.transmit.bits(),
-                        (dst_port << 32) | ((request.version as u64) << 8) | request.mode as u64,
+                        (destination_port << 32)
+                            | ((request.version as u64) << 8)
+                            | request.mode as u64,
                     );
                 }
             }

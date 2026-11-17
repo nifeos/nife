@@ -284,7 +284,7 @@ pub mod read {
     /// The window's size: one page.
     pub const WINDOW_BYTES: usize = 4096;
     /// Where the service maps window 0; window *n* is [`WINDOW_BYTES`] times *n* above it. A
-    /// pair-page address (`address_space_map::pair_page`), agreed between the service and the
+    /// pair-page address (`address_space_layout::pair_page`), agreed between the service and the
     /// spawner that maps the same frames into its readers.
     pub const WINDOW_VA: u64 = 0x0060_0000;
     /// How many reader windows the service maps, and so how many readers it can answer.
@@ -365,7 +365,7 @@ pub mod kernel_ring {
     /// How many records the ring holds. The first slot's worth of words is the header.
     pub const SLOTS: u64 = (WORDS / SLOT_WORDS - 1) as u64;
     /// The header's first word once the kernel has formatted the ring.
-    pub const MAGIC: u64 = u64::from_le_bytes(*b"nifeklog");
+    pub const MAGIC: u64 = u64::from_le_bytes(*b"nifeklog"); // wire literal
     /// A slot's sequence word while the kernel is writing it.
     pub const BUSY: u64 = u64::MAX;
     /// A slot's sequence word before anything was written to it.

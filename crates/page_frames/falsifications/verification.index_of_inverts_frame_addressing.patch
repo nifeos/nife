@@ -12,7 +12,7 @@ a frame is filed under somebody else's bit.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -337,3 +337,3 @@ impl<'a> PageFrameAllocator<'a> {
+@@ -357,3 +357,3 @@
          }
 -        let i = ((addr - self.base) / FRAME_SIZE) as usize;
 +        let i = (addr / FRAME_SIZE) as usize;

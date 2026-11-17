@@ -88,7 +88,7 @@ impl PlicContexts {
         // machine carries each one.
         let mut entries = None;
         for compat in COMPATIBLES {
-            if let Some(found) = dt.node_prop_compatible(compat, b"interrupts-extended")? {
+            if let Some(found) = dt.node_property_compatible(compat, b"interrupts-extended")? {
                 entries = Some(found);
                 break;
             }
@@ -104,8 +104,8 @@ impl PlicContexts {
         let cpus = CpuList::from_device_tree(dt)?;
         let mut phandles = [None; MAXIMUM_CONTEXT_HARTS];
         let mut compats = [None; MAXIMUM_CONTEXT_HARTS];
-        dt.node_props(b"interrupt-controller", b"phandle", &mut phandles)?;
-        dt.node_props(b"interrupt-controller", b"compatible", &mut compats)?;
+        dt.node_properties(b"interrupt-controller", b"phandle", &mut phandles)?;
+        dt.node_properties(b"interrupt-controller", b"compatible", &mut compats)?;
 
         // hart_of[i]: the hart id whose intc carries phandle intc_phandle[i], for the i-th
         // `riscv,cpu-intc` seen. The i-th such intc belongs to the i-th `cpu@` node (see module

@@ -48,7 +48,7 @@ one line.
   when calef ruled that a domain names its members and does not act on them. There was no second
   decision to wait for, and the deferral was buying nothing.
 
-  The fix is `capability::Rights::ENUMERATE`, the kernel-level twin of `filesystem_contract`'s directory
+  The fix is `capability_table::Rights::ENUMERATE`, the kernel-level twin of `filesystem_contract`'s directory
   `ENUMERATE`, and it is the same argument one layer down. `SURVEY` takes it; `RECEIVE` and `REAP`
   still take `READ`; `system_initializer` grants a viewer `ENUMERATE` alone. So a `ps` does not
   get refused a reap, it cannot name one, which is the ladder's top rung in place of an argument
@@ -165,7 +165,7 @@ one line.
   into ranges, which would need an ordering guarantee this log does not make.
 
 - `pmap` cannot tell a device mapping from ordinary read/write memory. `kind` is derived from
-  `paging::Flags`, which carries no bit for "this is device memory" as far as the syscall handler
+  `page_tables::Flags`, which carries no bit for "this is device memory" as far as the syscall handler
   can see, so a `DeviceFrame` mapping (always read/write, never executable) reads as `rw-`,
   indistinguishable from a heap page.
 

@@ -14,7 +14,7 @@ use super::*;
 /// `UNMAP` straight after.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3102.
-const BASE_DIGEST_PEEK_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f60_0000);
+const BASE_DIGEST_PEEK_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0f60_0000);
 
 /// **Why the progenitor refused the measurement table.** Each names a different fault, and
 /// [`reason`](BaseRefused::reason) is the line the console shows.

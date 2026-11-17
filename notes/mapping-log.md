@@ -121,7 +121,7 @@ the retype fails, or after the link, when the record finds the table.
 `MappingHold::record_mapping` holds claim 11 of `notes/confinement-claims.md`. Before it files a
 writable or executable mapping, it scans the space's log for records of the same frame and reads
 each one's leaf with `mmu::translate_at`, because the log stores no permissions. If any leaf and the
-new flags make the pair (`paging::Flags::makes_writable_executable_pair`), it refuses with
+new flags make the pair (`page_tables::Flags::makes_writable_executable_pair`), it refuses with
 `MapError::WritableAndExecutable`, which `MAP_INTO` and `PageFrame::MAP` answer as `NotPermitted`.
 A read-only mapping cannot complete the pair and skips the scan. Because the record goes in before
 the leaf, under the hold, no path installs a recorded leaf the check has not seen, and no other core

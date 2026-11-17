@@ -43,7 +43,7 @@ const REPORT: u64 = 2;
 /// The one page, shared with the FS server above and the client below. Sound because every request
 /// on both hops is a blocking `CALL`, so the client is parked in its own call while this process
 /// uses the page.
-const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
 
@@ -72,7 +72,7 @@ const EBADF: i32 = 9;
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.w8(i as u64, b);
+        WINDOW.write_u8(i as u64, b);
     }
 }
 

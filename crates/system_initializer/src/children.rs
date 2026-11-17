@@ -27,10 +27,10 @@ pub(super) fn build_grant(
     care: &Caretakers,
     care_words: (u64, u64, u64),
     set_seen: Option<u64>,
-    manifest: Option<grant_plan::Manifest>,
+    manifest: Option<grant_contract::Manifest>,
 ) -> Option<u64> {
     let words = match manifest.map(|m| m.program_argument) {
-        Some(grant_plan::ProgramArgumentDeclaration::Words(g)) => {
+        Some(grant_contract::ProgramArgumentDeclaration::Words(g)) => {
             use filesystem_contract::grant as gr;
             let rights = gr::spec_rights(care_words.2) & g.rights();
             (
@@ -70,7 +70,7 @@ pub(super) fn build_grant(
 pub(super) fn build_caretaker(
     own_ut: u64,
     region: u64,
-    care: &elf::Elf,
+    care: &static_elf::Elf,
     fs: Fs,
     care_words: (u64, u64, u64),
     set: Option<u64>,
@@ -158,7 +158,11 @@ const RECLAIM_ATTEMPTS: usize = 64;
 /// `kernel::user::virtio_service::wire_net_server`'s, slot for slot, with
 /// `socket_contract::NO_LISTEN_GRANT`. The caller deletes the trio; this deletes everything else it
 /// made but the endpoint. Failures trap: one means the boot's arithmetic is wrong.
-pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) -> (u64, u64, u64) {
+pub(super) fn build_net_stack(
+    ut: u64,
+    program: &static_elf::Elf,
+    g: &BootEndowment,
+) -> (u64, u64, u64) {
     let mapped = map_page_frame(g.virtio_net_dma, NET_DMA_PEEK_VA, true, ut);
     must_ok(mapped);
     // SAFETY: just mapped read/write, one page; the offset is inside it and outside
@@ -289,7 +293,7 @@ pub(super) fn announce_network(term_ep: u64, network: Option<(u64, u64, u64)>, r
 /// [`build_net_stack`]'s reason.
 pub(super) fn build_domain_name_resolver(
     ut: u64,
-    program: &elf::Elf,
+    program: &static_elf::Elf,
     stack: u64,
     entropy: u64,
     server: [u8; 4],
@@ -380,16 +384,16 @@ pub(super) struct GraphicalTerminalCapabilities {
     pub(super) gpu: [u64; 4],
     /// The keyboard's three, likewise. Meaningful only when `keyboard`.
     pub(super) kbd: [u64; 3],
-    driver: Option<elf::Elf<'static>>,
-    terminal: Option<elf::Elf<'static>>,
-    kbd_driver: Option<elf::Elf<'static>>,
+    driver: Option<static_elf::Elf<'static>>,
+    terminal: Option<static_elf::Elf<'static>>,
+    kbd_driver: Option<static_elf::Elf<'static>>,
 }
 
 /// The session's line discipline, which is the boot's own pair of programs: the supervisor that
 /// builds `line_editor`, and the measured `line_editor` bytes it is handed as a blob. A session's
 /// discipline is the boot's discipline, built twice from one measurement.
 pub(super) struct SessionDiscipline {
-    pub(super) supervisor: elf::Elf<'static>,
+    pub(super) supervisor: static_elf::Elf<'static>,
     pub(super) discipline: &'static [u8],
 }
 
@@ -401,7 +405,7 @@ const GRAPHICAL_MAP_BUDGET_PAGES: u64 = 24;
 
 /// Where `keyboard_driver` finds its DMA page. Must match `components/src/keyboard_driver.rs`'s
 /// `DMA_VA`, the same kernel-and-spawner convention [`RNG_DMA_VA`] is.
-const KBD_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const KBD_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `keyboard_driver.rs`'s own `MODE_DIRECT`: a fixed `CALL` to the terminal endpoint instead of a
 /// compositor's ring and doorbell (milestone 177). [`RNG_MODE_VIRTIO`]'s reasoning.
@@ -410,8 +414,8 @@ const KBD_MODE_DIRECT: u64 = 1;
 /// Where a `graphical_terminal` session's program writes its screen text and reads its lines.
 /// `components/src/graphical_terminal.rs`'s own constants; the same band the boot's shell writes into, so a
 /// reader of the wiring meets one convention per role rather than one per program.
-const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
-const SCREEN_IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
+const SCREEN_OUT_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a0_0000);
+const SCREEN_IN_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a1_0000);
 
 /// **One `graphical_terminal` session's region, in pages**: everything the session is made of, so
 /// the session job's one reap ends the drivers with it. Measured on aarch64 and riscv64 under
@@ -452,7 +456,7 @@ pub(super) struct GraphicalTerminalLaunch<'a> {
     /// The keyboard's three, when this boot has one; lent likewise.
     pub(super) kbd: Option<&'a [u64; 3]>,
     /// The `graphical_terminal` program itself, measured.
-    pub(super) program: &'a elf::Elf<'a>,
+    pub(super) program: &'a static_elf::Elf<'a>,
 }
 
 /// **Build a whole `graphical_terminal` session and start it**: `gpu_driver` and
@@ -523,7 +527,10 @@ type SessionArm = (u64, u64, u64, Option<u64>, u64);
 /// Build and start `gpu_driver` from the session's region, on `components/src/gpu_driver.rs`'s
 /// slots 0 to 5, and wait for its `UP`. On success the display endpoint and the driver's report
 /// endpoint, which the terminal phase needs next.
-fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Result<(u64, u64), ()> {
+fn start_gpu_driver(
+    l: &GraphicalTerminalLaunch,
+    gpu_program: &static_elf::Elf,
+) -> Result<(u64, u64), ()> {
     let GraphicalTerminalLaunch {
         own_ut,
         region,
@@ -585,7 +592,7 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
 /// endpoints; on success the terminal's endpoint and write page.
 fn start_display_terminal(
     l: &GraphicalTerminalLaunch,
-    disp_program: &elf::Elf,
+    disp_program: &static_elf::Elf,
     display: u64,
     driver_report: u64,
 ) -> Result<(u64, u64), ()> {
@@ -660,7 +667,7 @@ fn start_display_terminal(
 /// and `out` are dropped with everything made here.
 fn start_keyboard_arm(
     l: &GraphicalTerminalLaunch,
-    kbd_driver: &Option<elf::Elf<'static>>,
+    kbd_driver: &Option<static_elf::Elf<'static>>,
     d: &SessionDiscipline,
     k: &[u64; 3],
     (term, out): (u64, u64),
@@ -819,7 +826,7 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 }
 
 /// **Build the terminal: `terminal_supervisor`, which builds `line_editor` from `td_bytes`.**
-/// `capabilities` is in `line_editor::component::supervisor`'s slot order after its budget (the terminal
+/// `capabilities` is in `line_editor_component::supervisor`'s slot order after its budget (the terminal
 /// endpoint with every right, the output sink, the three pages, and the console's reply endpoint in
 /// console mode), and is copied, not moved. `ut` is where the loader's tables come from and
 /// `budget` is the region the supervisor is made of: the same root at boot, `own_ut` and the job
@@ -829,12 +836,12 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 pub(super) fn build_terminal(
     ut: u64,
     budget: u64,
-    ts_elf: &elf::Elf,
+    ts_elf: &static_elf::Elf,
     td_bytes: &[u8],
     mode: u64,
     capabilities: &[(u64, u64)],
 ) {
-    use line_editor::component::supervisor as s;
+    use line_editor_component::supervisor as s;
     let budget_pages = must(memory_region_split(budget, s::BUDGET_PAGES));
     let mut all = [(0u64, 0u64); 8];
     all[0] = (budget_pages, abi::rights::ALL);

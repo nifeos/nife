@@ -127,8 +127,8 @@ pub(crate) fn rollback_boot() -> bool {
         &install::empty_esp_dir(),
         true,
         &[
-            install::LS_AT_THE_PROMPT[0],
-            install::LS_AT_THE_PROMPT[1],
+            install::ls_at_the_prompt()[0],
+            install::ls_at_the_prompt()[1],
             ("made-on-target", "wc made-on-target\r"),
         ],
         "1 10 57",
@@ -142,7 +142,7 @@ pub(crate) fn rollback_boot() -> bool {
         "uefi_loader: starting boot slot 0",
         "uefi_loader: started from boot slot 0",
         // And what it fell back to is a working machine rather than a different line of output.
-        "nife capability shell.",
+        crate::install::SHELL_UP.as_str(),
         "1 10 57",
     ] {
         if !back.contains(wanted) {

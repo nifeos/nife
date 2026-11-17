@@ -44,7 +44,7 @@ fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
     assert_ne!(asid_a, 0, "a user space got the kernel's ASID 0");
     assert_ne!(asid_b, 0, "a user space got the kernel's ASID 0");
 
-    const VA: u64 = address_space_map::pair_page(0x40_0000);
+    const VA: u64 = address_space_layout::pair_page(0x40_0000);
     a.map_new(VA, Flags::user_data()).expect("map A")[0] = 0xAA;
     b.map_new(VA, Flags::user_data()).expect("map B")[0] = 0xBB;
 
@@ -91,7 +91,7 @@ fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
 /// - A remote core that never services the shootdown fails as a handshake timeout (`gave_up`).
 #[test_case]
 fn an_asid_flush_reaches_the_other_cpus() {
-    const VA: u64 = address_space_map::pair_page(0x40_0000);
+    const VA: u64 = address_space_layout::pair_page(0x40_0000);
     const OLD: u8 = 0xAA;
     const NEW: u8 = 0xBB;
 
@@ -304,7 +304,7 @@ fn a_read_only_segment_is_mapped_read_only() {
     let image = loader_subject_image();
     let (space, _) = load(image, 0, &[]).expect("the initial ramdisk did not load");
 
-    let rodata = elf::Elf::parse(image)
+    let rodata = static_elf::Elf::parse(image)
         .unwrap()
         .segments()
         .find(|s| s.is_readable() && !s.is_writable() && !s.is_executable())
@@ -312,7 +312,8 @@ fn a_read_only_segment_is_mapped_read_only() {
 
     // Install it so we can ask the CPU's own tables, rather than our record of them.
     space.while_installed(|| {
-        let (_, flags) = mmu::translate_user(rodata.vaddr).expect(".rodata is not mapped at all");
+        let (_, flags) =
+            mmu::translate_user(rodata.virtual_address).expect(".rodata is not mapped at all");
 
         assert!(
             flags.is_user_accessible(),
@@ -341,7 +342,7 @@ fn a_read_only_segment_is_mapped_read_only() {
 /// Falsification: replayable `system_tests/falsifications/user.address_space_tests.an_installed_space_stays_installed_across_a_timer_tick.patch`
 #[test_case]
 fn an_installed_space_stays_installed_across_a_timer_tick() {
-    const VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
+    const VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
     // Windows tried before the test gives up on its precondition. One is enough in every run seen;
     // a window can open without a queued competitor only if a steal raced the repair below.
     const ATTEMPTS: usize = 3;

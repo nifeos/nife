@@ -1,0 +1,41 @@
+Falsifies `page_tables::nth_allocation::a_failed_map_span_maps_a_prefix`.
+
+The defect: a "best effort" `map_span`. A leaf whose tables cannot be allocated is skipped, the
+rest of the span is mapped, and the first error is returned at the end. The caller sees
+`OutOfPageFrames` and unwinds what it believes is the mapped prefix, and the leaves past the gap stay
+mapped with nobody recording them: a half-installed grant.
+
+Expected to fail: assertion (2), "what is left mapped is not a prefix of the request", at
+`map_span` with allocation 0 failed (the 4 KiB head is skipped and every block after it is mapped).
+
+`script/falsifications --sweep page_tables` replays it, weekly and per pull request, since milestone
+742 (every test is falsified as routine). By hand, the same thing is:
+
+    git apply crates/page_tables/falsifications/nth_allocation.a_failed_map_span_maps_a_prefix.patch
+    cargo test -p page_tables --test nth_allocation a_failed_map_span_maps_a_prefix        # must fail
+    git apply -R crates/page_tables/falsifications/nth_allocation.a_failed_map_span_maps_a_prefix.patch
+
+Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
+
+diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
+--- a/crates/page_tables/src/mapper.rs
++++ b/crates/page_tables/src/mapper.rs
+@@ -303,12 +303,16 @@ where
+             return Err(MapError::BadRegion);
+         }
+         let mut done = 0;
++        let mut failed = None;
+         while done < len {
+             let size = PageSize::largest_fitting(va + done, pa + done, len - done, largest);
+-            self.map_block(va + done, pa + done, size, flags)?;
++            // Best effort: map what can be mapped and report the first failure.
++            if let Err(e) = self.map_block(va + done, pa + done, size, flags) {
++                failed.get_or_insert(e);
++            }
+             done += size.bytes();
+         }
+-        Ok(())
++        failed.map_or(Ok(()), Err)
+     }
+ 
+     /// Map `count` consecutive pages. A run whose end passes `u64::MAX` in either address space is

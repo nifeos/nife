@@ -23,7 +23,7 @@ use supervision_contract::{
     Retention,
 };
 use user_mode_runtime::{
-    address_space_map_into, capability_delete, destroy_memory_region, invoke,
+    address_space_layout_into, capability_delete, destroy_memory_region, invoke,
     retype_into_kernel_object, retype_into_page_frame, send_capability, split_memory_region,
     thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start,
@@ -38,6 +38,11 @@ use user_mode_runtime::{
 /// The page size the loader maps in.
 pub const PAGE: u64 = 4096;
 
+/// [`PAGE`] as the page size `static_elf` rounds segments to.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+pub const PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(PAGE).unwrap();
+
 /// **The builder's scratch window**: where a builder maps each frame it fills for a child, and each
 /// frame of somebody else's it reads (the image request of DECISIONS §219 (how the shell names an
 /// installed program to the spawner)). 64 MiB, 16,384 pages, from the bottom of the map's runtime
@@ -48,10 +53,18 @@ pub const PAGE: u64 = 4096;
 /// checks its size against its own budgets at compile time. See notes/progenitor-and-loading.md.
 ///
 /// Name: provisional (milestone 604, 2026-09-26).
-pub const SCRATCH_WINDOW: address_space_map::Band = address_space_map::Band {
-    start: address_space_map::runtime_window(0x1000_0000),
-    end: address_space_map::runtime_window(0x1400_0000),
+pub const SCRATCH_WINDOW: address_space_layout::Band = address_space_layout::Band {
+    start: address_space_layout::window(
+        address_space_layout::RUNTIME_WINDOWS,
+        0x1000_0000,
+        SCRATCH_WINDOW_BYTES,
+    ),
+    end: 0x1000_0000 + SCRATCH_WINDOW_BYTES,
 };
+
+/// [`SCRATCH_WINDOW`]'s width: 64 MiB, which `address_space_layout::window` checks lies wholly in
+/// the runtime windows.
+const SCRATCH_WINDOW_BYTES: u64 = 64 << 20;
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
 /// `supervision_contract` with the split, and calef names it.
@@ -180,7 +193,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// ```no_run
 /// # use supervision_contract::{ChildEndowment, Retention};
 /// # use process_builder::{build_child, start_child};
-/// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
+/// # fn demo(own: u64, per_child: u64, elf: &static_elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 ///
 /// // `own` pays for OUR scratch mappings; `per_child` is what the child is made of. Passing a
@@ -194,7 +207,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 pub fn build_child(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
 ) -> Result<Child, ()> {
     let (child, aspace) = build_child_space(own_ut, build_ut, elf, endow)?;
@@ -231,7 +244,7 @@ pub fn build_child(
 pub fn build_child_space(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
 ) -> Result<(Child, u64), ()> {
     // The map's image band, checked before anything is retyped, the same check `kernel::user::load`
@@ -240,12 +253,12 @@ pub fn build_child_space(
     // here, cleanly, rather than half-built at the first stack page it would have collided with.
     let (mut lo, mut hi) = (u64::MAX, 0);
     for seg in elf.segments() {
-        let (start, end) = seg.page_range(PAGE);
+        let (start, end) = seg.page_range(PAGE_BYTES);
         lo = lo.min(start);
         hi = hi.max(end);
     }
-    if address_space_map::check_image(lo, hi).is_err()
-        || endow.stack_pages > address_space_map::MAXIMUM_STACK_PAGES
+    if address_space_layout::check_image(lo, hi).is_err()
+        || endow.stack_pages > address_space_layout::MAXIMUM_STACK_PAGES
     {
         return Err(());
     }
@@ -272,7 +285,7 @@ pub fn build_child_space(
 fn lay_out_child(
     own_ut: u64,
     build_ut: u64,
-    elf: &elf::Elf,
+    elf: &static_elf::Elf,
     endow: &ChildEndowment,
     aspace: u64,
 ) -> Result<u64, ()> {
@@ -284,11 +297,11 @@ fn lay_out_child(
         } else {
             abi::address_space::MAP_READ_ONLY
         };
-        let (start, end) = seg.page_range(PAGE);
+        let (start, end) = seg.page_range(PAGE_BYTES);
         let mut va = start;
         while va < end {
-            let file_lo = seg.vaddr;
-            let file_hi = seg.vaddr + seg.data.len() as u64;
+            let file_lo = seg.virtual_address;
+            let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
             let hi = (va + PAGE).min(file_hi);
             let src = if lo < hi {
@@ -307,7 +320,8 @@ fn lay_out_child(
     for k in 0..endow.stack_pages {
         let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
+        if address_space_layout_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE)
+            != 0
         {
             capability_delete(stack_frame);
             return Err(());
@@ -333,7 +347,8 @@ fn lay_out_child(
     // numbers). See notes/progenitor-and-loading.md.
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
     {
-        let page = user_mode_runtime::cntfrq_checked().map(counter_frequency_contract::build_page);
+        let page =
+            user_mode_runtime::counter_hertz_checked().map(counter_frequency_contract::build_page);
         fill_and_map(
             own_ut,
             build_ut,
@@ -364,7 +379,7 @@ fn lay_out_child(
     }
 
     for &(va, our_slot, mode) in endow.maps {
-        if address_space_map_into(aspace, va, our_slot, mode) != 0 {
+        if address_space_layout_into(aspace, va, our_slot, mode) != 0 {
             return Err(());
         }
     }
@@ -494,7 +509,7 @@ fn fill_and_map(
     let dst = unsafe { core::slice::from_raw_parts_mut(scratch as *mut u8, PAGE as usize) };
     dst.fill(0);
     let filled = fill(dst);
-    let mapped = filled.is_ok() && address_space_map_into(aspace, va, frame, mode) == 0;
+    let mapped = filled.is_ok() && address_space_layout_into(aspace, va, frame, mode) == 0;
     capability_delete(frame);
     // The page is written and in the child (or the build failed): either way this builder is done
     // with its own window onto it. Given up here, one page at a time, rather than after the child
@@ -567,7 +582,7 @@ pub fn memory_region_destroy(ut: u64) -> bool {
 /// ```no_run
 /// # use supervision_contract::{ChildEndowment, Retention};
 /// # use process_builder::{build_child, start_child};
-/// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
+/// # fn demo(own: u64, per_child: u64, elf: &static_elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 /// let child = build_child(own, per_child, elf, &endow)?;
 /// // The capability is gone after this line, because the endowment said so.

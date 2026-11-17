@@ -9,7 +9,7 @@ use crate::user::holding::Holding;
 /// Where the driver expects its DMA page. Must match `DMA_VA` in crates/virtio/src/lib.rs. The
 /// driver holds no device registers: it drives the device through a `Virtio` capability, so it
 /// cannot point the device outside this DMA region.
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 const ROLE_VIRTIO_BLK: u64 = 3;
 /// The write-path roles (milestone 32 (a real filesystem) phase 1); must match `block_driver.rs`.
@@ -326,7 +326,7 @@ pub fn start_net_stack(
 /// `components/src/socket_test_client.rs`'s `CATALOGUE_VA`. The one blob is the image's package
 /// catalogue (`package_archive::CATALOG`), handed over as the progenitor's `ChildEndowment::blobs`
 /// does for `login`.
-const NET_CLIENT_CATALOGUE_VA: u64 = address_space_map::pair_page(0x0000_0000_00C0_0000);
+const NET_CLIENT_CATALOGUE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00C0_0000);
 
 /// Spawn the net server and a client that fetches a package over plain HTTP from the runners'
 /// package peer, checks it against `catalogue` (mapped into the client read-only), then fetches the
@@ -641,7 +641,7 @@ fn wire_mediated_pci(
 fn wire_direct(
     image: &'static [u8],
     d: &crate::pci::PciVirtioDevice,
-    window: &driver_process_contract::virtual_input_output::RegisterWindow,
+    window: &driver_process_contract::virtual_io::RegisterWindow,
     role: u64,
 ) -> Option<RendezvousId> {
     let direct = super::virtio_grant::carve(d, window, role as u16, 1)?;

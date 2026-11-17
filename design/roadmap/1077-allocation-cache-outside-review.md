@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -46,6 +46,8 @@ outside the repository acts on it after the first tag (a public name, a publishe
 release, so a public rename is one-way only from the tag on; the items say "one-way at the tag"
 for those.
 
+The ledger of what landed and what is left is in [the appendix](1077-allocation-cache-outside-review/ledger.md).
+
 ### P0: blocks the move
 
 1. The manifest and the files do not stand alone.
@@ -91,8 +93,9 @@ The P1 items are in [the appendix](1077-allocation-cache-outside-review/before-t
 
 ## Decisions for the architect
 
-Only one-way doors. Each is plain background first, the recommendation, then prior art and one
-example.
+Each is plain background first, the recommendation, then prior art and one example. The architect
+ruled decision 1. Decisions 2 and 3 are two-way before the first tag, and the maintainer has decided them,
+provisionally.
 
 ### Decision 1: Whether the crate gets a repository of its own
 
@@ -101,9 +104,12 @@ one consumer, the `std` overlay in the `runtime` package, reached by a generated
 dependency. On merits: the survey behind it found no pure-Rust `no_std` per-thread cache on
 crates.io, so the crate fills a gap, and it is 150 lines with no dependency. Against: its parameters follow one consumer's choices (item 13). Its documentation addresses that consumer (item 2). It has no proof (item 8). No allocator in the prior-art table publishes its thread cache as a library.
 
-Recommendation: the crate moves with the `runtime` package's repository when that package leaves,
-not on its own now. Items 1 to 9 still land, because strangers read the crate wherever it lives,
-and a later split then costs one afternoon. The alternative, a repository now, is defensible if the architect judges the crates.io gap worth filling ahead of a second consumer. Then the rest of this block is the move's worklist, and item 3 becomes the first thing the move pull request does.
+Ruled 2026-11-16 (UTC): the crate gets no repository of its own now. It moves with the `runtime`
+package's repository when that package leaves. Items 1 to 9 still land in this tree, because
+strangers read the crate wherever it lives, and a later split then costs one afternoon. The basis is
+one consumer reached by a generated copy, parameters and documentation tied to that consumer, and no
+proof yet. Splitting later is the easy direction, and the rule for crates that leave only if useful or
+shared applies.
 
 Example: `nifeos/runtime` holds `allocation_cache/` beside `user_mode_runtime/` in one workspace;
 nife's `xtask` depends on it by `git` and `rev` on that repository, and `cargo xtask std-src` reads
@@ -133,6 +139,12 @@ Example: `let class = class(48, 8).unwrap(); cache.push(class, block)?; let agai
 cache.pop(class);` and `const _: () = assert!(size_of::<Block>() > MAXIMUM_CLASS_BYTES);` in the
 consumer's thread block.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The crate keeps the name `allocation_cache`. `GRID` becomes `GRID_BYTES`, `LARGEST`
+`MAXIMUM_CLASS_BYTES`, `DEPTH` `BLOCKS_PER_CLASS`, `BATCH` `BATCH_BLOCKS` and `MOST_CACHED_BYTES`
+`MAXIMUM_CACHED_BYTES`; `CLASSES` stays. `put` becomes `push` and `take` becomes `pop`. `drain`
+takes a closure today, so it becomes `give_back_all`, unless the rename lane makes it return an
+iterator, in which case it keeps `drain` with std's meaning. Item 7 is the work.
+
 ### Decision 3: A `Class` newtype in the public signatures
 
 Background: item 4. Every method takes the class as a bare `usize` that the caller got from
@@ -152,6 +164,10 @@ Example: `pub struct Class(u8); pub const fn class(size: usize, align: usize) ->
 pub fn pop(&mut self, class: Class) -> Option<NonNull<u8>>; pub const fn class_bytes(class: Class)
 -> usize;`
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `class` returns `Option<Class>`, where `Class` is a `#[repr(transparent)]` newtype over
+`u8` with a private field, and `class_bytes`, `class_layout`, `count`, `pop`, `push`, `spill` and
+`refill` take it. The name `Class` ships provisional. Item 4 is the work.
+
 ### Not brought
 
 Items 5, 6, 8, 9 and 12 change no public name and carry a recommendation; the maintainer decides
@@ -162,10 +178,17 @@ consumer.
 
 The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.md).
 
+## Follow-on
+
+- **Outstanding.** The move's items 1 (the repository fields), 3, 10 and 11, which wait for the
+  `runtime` package's move, since the architect ruled decision 1. Decisions 2 and 3 are built provisionally in the tree: `Class`, `MAXIMUM_CLASS_BYTES` and
+  `push` exist, and the crate has five harnesses, the three models of `push` and `pop` among them.
+  If decision 2 or 3 is ruled otherwise, items 7 and 4 are redone in one pass.
+
 ## BUGS
 
-- Decision 1 may close this block early: if the crate stays with its package, items 1, 2 and 4 to 9
-  still apply where it lives, and item 3 does not.
+- The architect ruled decision 1: the crate stays with its package, so items 3, 10 and 11 apply to the
+  `runtime` package's repository when it leaves, and items 1, 2 and 4 to 9 land in this tree.
 - The prior-art table's bin counts and depths come from memory, unverified. The shapes (a cache per owner, a batch under the lock, a flush at the owner's end) are the point, and one sitting
   with each source settles the figures.
 - Item 10 did not reproduce the undefined behavior `vendor/README.md` records on the unpatched talc.
@@ -173,9 +196,9 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
   job will.
 - The review did not run Kani, a mutation census, the stranger test or the `std` farm after a
   simulated move. Item 3's failure mode comes from reading `copied.rs` and the runbook, not from a run.
-- `notes/project-metrics/mutation-rowless-survivors.csv` still lists `class, replace > with >=`
-  for this crate, a mutant the two boundary tests now kill according to the last two censuses; a
-  nife housekeeping row, not the crate's.
+- The renamed call sites in the `std` overlay (`entry.rs`, `thread_cache.rs`, `mod.rs` and the thread
+  block) were edited by hand and checked only by the host test and a read; the `std` build gates are
+  their first compile.
 - The tests assume `u128` is 16-byte aligned, which holds on current toolchains for the host; the
   tests do not run on the bare-metal targets.
 
@@ -183,5 +206,5 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 
 An outside review of `allocation_cache` before any move. Three items would turn the new
 repository's first pull request red or stop the `std` farm, six land before the first tag, and six
-follow later. The six cover three arithmetic edges on bare `usize` indices and a zeroed-is-empty contract the consumer relies on. They also cover the owner's obligations `put` leaves unstated, five constant names without units or things, the absence of any proof, and an alignment the code relies on without asserting. Three decisions wait for the architect: whether the crate leaves on its own at all, the
-crate and constant names, and a `Class` newtype in the public signatures.
+follow later. The six cover three arithmetic edges on bare `usize` indices and a zeroed-is-empty contract the consumer relies on. They also cover the owner's obligations `put` leaves unstated, five constant names without units or things, the absence of any proof, and an alignment the code relies on without asserting. The architect ruled decision 1 (the crate moves with the `runtime` package, not on its own). Decisions 2 and 3, the
+crate and constant names and a `Class` newtype in the public signatures, are provisional maintainer calls.

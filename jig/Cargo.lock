@@ -7,7 +7,7 @@ name = "abi"
 version = "0.1.0"
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -90,11 +90,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte_glob"
+version = "0.1.0"
+
+[[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -263,7 +267,7 @@ dependencies = [
 name = "current_cpu_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -362,10 +366,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "elf"
-version = "0.1.0"
-
-[[package]]
 name = "elliptic-curve"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -397,6 +397,7 @@ dependencies = [
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "ff"
@@ -472,14 +473,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
+name = "grant_contract"
 version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
 
 [[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
- "glob",
+ "byte_glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
@@ -558,20 +563,21 @@ name = "jig"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "approval_file",
  "capability_manifest_note",
- "elf",
  "entropy_backend",
  "filesystem_contract",
- "grant_plan",
+ "grant_contract",
  "http_response",
  "installed_programs",
  "measured_boot",
  "package_archive",
  "package_index",
  "pinned_tls_client",
+ "program_table",
  "socket_contract",
+ "static_elf",
  "std_runtime_contract",
  "user_mode_runtime",
 ]
@@ -596,9 +602,9 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "loom"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "419e0dc8046cb947daa77eb95ae174acfbddb7673b4151f56d1eed8e93fbfaca"
+checksum = "f1611ddbf89dc6ae42cfbd51fc207836140130257646eab8d6d2fb16577db2d2"
 dependencies = [
  "cfg-if",
  "generator",
@@ -620,7 +626,7 @@ dependencies = [
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
- "elf",
+ "static_elf",
 ]
 
 [[package]]
@@ -798,6 +804,14 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "quote"
@@ -1050,6 +1064,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "static_elf"
+version = "0.1.0"
+
+[[package]]
 name = "std_runtime_contract"
 version = "0.1.0"
 
@@ -1172,6 +1190,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
+ "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",

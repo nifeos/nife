@@ -1,7 +1,7 @@
-# The ELF parser: what `crates/elf` accepts, and why
+# The ELF parser: what `crates/static_elf` accepts, and why
 
 [`notes/elf.md`](../elf.md) carries the format and how the kernel loads a program. This page
-carries the design of the parser crate itself, `crates/elf`, which reads untrusted images: what it
+carries the design of the parser crate itself, `crates/static_elf`, which reads untrusted images: what it
 refuses, how it decides which machine a file may be for, and how it finds a note.
 
 ## The scope it parses
@@ -50,7 +50,7 @@ note reader walks the same bound.
 ## What it refuses that a general loader would not
 
 - **Writable and executable together.** A page that is both is how a buffer overflow becomes code
-  execution, and an ELF can simply ask for one. `paging::Flags` has no
+  execution, and an ELF can simply ask for one. `page_tables::Flags` has no
   `writable_and_executable()` constructor for the same reason; this check stops a file talking the
   loader into building one.
 - **Two segments on one page.** A general loader handles this. It is legal, and common when
@@ -96,7 +96,7 @@ derived from it. Adding an architecture is one edit there and one arm of `EXPECT
   machine fails on every host, including the one where the mistake is made. A gate that fires only
   where nobody is standing is not a gate.
 - `KNOWN_MACHINES` is exported for callers with a per-machine obligation of their own.
-  `crates/elf/tests/fuzz_seed.rs` is one: the fuzz corpus needs a seed for every machine some build
+  `crates/static_elf/tests/fuzz_seed.rs` is one: the fuzz corpus needs a seed for every machine some build
   accepts.
 
 ## The fuzz seeds
@@ -104,12 +104,12 @@ derived from it. Adding an architecture is one edit there and one arm of `EXPECT
 `fuzz/fuzz_targets/elf_parse` returns at once on anything `Elf::parse` rejects. If this build's
 seed stopped parsing, the fuzzer would start from an empty corpus and have to rediscover five
 constants and a program-header table before reaching an interesting branch, while still reporting
-"no crashes". `crates/elf/tests/fuzz_seed.rs` makes that loud for a millisecond. The other fuzz
+"no crashes". `crates/static_elf/tests/fuzz_seed.rs` makes that loud for a millisecond. The other fuzz
 targets seed from fixtures that already have tests of their own
 (`crates/device_tree_blob/tests/qemu_aarch64_virt.rs`,
 `crates/globally_unique_identifier_partition_table/tests/real_disks.rs`).
 
-There is one seed per machine nife runs, in `fuzz/seeds/elf_parse/`. They differ at exactly one
+There is one seed per machine nife runs, in `crates/static_elf/tests/fixtures/`, which `script/fuzz` passes to the target as a corpus. They differ at exactly one
 byte, offset 18, `e_machine`. A build's fuzzer spends one rejected input on each seed for another
 machine. The test picks this build's seed by the machine number in its header, not by `cfg`, so the
 choice cannot disagree with the bytes and no default arm naming one architecture comes back. It

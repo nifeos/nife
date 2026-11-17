@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1034
 decision_dependencies: none
@@ -116,8 +116,8 @@ The P1 items are in [the appendix](1103-page-frames-outside-review/before-the-ta
 
 ## Decisions for the architect
 
-Two one-way doors, each with a recommendation first. Everything else above is two-way and the
-maintainer decides it. The names in items 8, 9 and 14 ship provisional and wait for a naming pass.
+Two decisions, each with a recommendation first. Decision 2 is decided, provisionally, below.
+Everything else above is two-way and the maintainer decides it. The names in items 8, 9 and 14 ship provisional and wait for a naming pass.
 
 ### Decision 1: Whether `FRAME_SIZE` becomes `FRAME_BYTES` before the first release
 
@@ -148,7 +148,7 @@ Background. `PageFrame` has three methods: `from_addr`, `containing` and `addr`.
 carry `addr`, an abbreviation [design/naming.md](../naming.md) counts among those that need a
 decoder, and the template's abbreviations report names it five times in this crate. The list of
 words the gate refuses outright does not include `addr` yet, so nothing mechanical fails. The one
-sibling accessor with the same meaning spells `address` (`crates/paging/src/tlb_flush.rs` line 41). The
+sibling accessor with the same meaning spells `address` (`crates/page_tables/src/tlb_flush.rs` line 41). The
 kernel calls `from_addr` at about a dozen sites and `addr()` at more. Both are public methods, so
 after 0.1.0 the names are a one-way door.
 
@@ -164,9 +164,27 @@ Example. `kernel/src/memory.rs` line 569 reads `.is_used(PageFrame::from_addr(pa
 and would read `.is_used(PageFrame::containing(physical_address))` after the rename lane also
 takes the chance to use the method the crate already has for that rounding.
 
+Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, since the crate stays
+with the kernel and is unpublished, which the architect may revisit. The names go one step past the
+recommendation: `physical_address` and `from_physical_address` (`src/lib.rs` lines 48 and 62),
+because [design/naming.md](../naming.md) asks every address to say which kind it is. The std rule
+does not bind here: std's pointer `addr` returns a pointer's integer without its provenance, a
+different meaning. `containing` (line 57) stays. The kernel and `system_tests` call `from_addr` and
+`addr()` at 191 sites, all renamed in item 8's lane, with no alias of the old spelling. Ratifying
+the names stays the architect's.
+
 ## Done when
 
 The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
+
+## Ledger
+
+The ledger of each item is in [the appendix](1103-page-frames-outside-review/ledger.md).
+
+## Follow-on
+
+- **Outstanding.** Items 1, 2, 3 (the remaining citations) and 17 are the move's, and item 8 waits on Decisions 1 and 2. Checked against `crates/page_frames` and the ledger above.
+- **Outstanding.** Item 12 (a `free` for a run) has no caller switched, and item 10's regeneration fault is in the move tooling.
 
 ## BUGS
 

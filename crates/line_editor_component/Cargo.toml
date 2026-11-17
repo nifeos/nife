@@ -1,0 +1,15 @@
+[package]
+name = "line_editor_component"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The capability half of the terminal contract (milestone 23 (a capability-routed component OS with
+# live replacement)): what a supervisor must route to a `line_editor` it can replace, beside the wire
+# half in `terminal_contract`, where `hot_swap_contract` keeps its own.
+capability_plan = { version = "0.1.0", path = "../capability_plan" }

@@ -15,9 +15,8 @@ use capability_manifest_note::{
     Scope, SubtreeGrantsNote, decode, decode_subtree_grants, decode_verbs, encode, encode_serviced,
     encode_verbs, encode_zoned, service, serviced_len, verbs_len, zoned_len, zones,
 };
-use grant_plan::{
-    ManifestAuthorities, NO_NOTE_MANIFEST, Program, UNVOUCHED_STD_MANIFEST, VerbGrant,
-};
+use grant_contract::{ManifestAuthorities, VerbGrant};
+use program_table::{NO_NOTE_MANIFEST, Program, UNVOUCHED_STD_MANIFEST};
 
 /// The longest zone a descriptor may hold: 63 + 1 + 63 + 1 + 63 + 1 + 61 = 253 bytes.
 const LONGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.\

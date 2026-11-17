@@ -7,7 +7,7 @@ name = "abi"
 version = "0.1.0"
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -87,7 +87,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -150,7 +150,7 @@ dependencies = [
 name = "current_cpu_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -184,6 +184,7 @@ checksum = "f8f59926911ef34d1efb9ea1ee8ca78385df62ce700ccf2bcb149011bd226888"
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "env_filter"
@@ -259,10 +260,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -270,10 +267,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "grant_plan"
+name = "grant_contract"
 version = "0.1.0"
 dependencies = [
- "glob",
  "program_argument_contract",
 ]
 
@@ -379,7 +375,7 @@ name = "memory_region_heap"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "talc",
  "user_mode_runtime",
 ]
@@ -514,7 +510,7 @@ dependencies = [
 name = "redoxfs_server"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "capability_manifest_note",
  "filesystem_contract",
  "filesystem_fixture",
@@ -722,6 +718,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
+ "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
@@ -731,9 +728,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.29.0"
+version = "1.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
+checksum = "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c"
 dependencies = [
  "getrandom",
 ]

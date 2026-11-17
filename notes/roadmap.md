@@ -55,8 +55,8 @@ You are a lane given milestone `N`, and you want it on the roadmap.
    The heading keeps its name although the index is gone (`script/audits` and
    `script/fatal-risks` still read it); renaming it is an architect's call.
 3. Name what you considered taking, in a `Reuse:` line or a `## Reuse` section, or write
-   `none exists` and where you searched. §46 (thin primitives or whole subsystems) makes taking the
-   default outside the kernel and the crates Kani proves; `--check` requires this from 2026-10-05.
+   `none exists` and where you searched. §46 (thin primitives or whole subsystems) makes taking a
+   crate that meets its bar the default in every layer; `--check` requires this from 2026-10-05.
 4. That is the whole procedure: no table to update, no regeneration to wait for.
 
 ### EXAMPLES

@@ -1,0 +1,341 @@
+//! **The parse**: the ELF64 header and program-header table, checked before anything is loaded,
+//! and the little-endian reads it is built from.
+//!
+//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+
+use super::*;
+
+/// `\x7fELF`.
+pub(crate) const MAGIC: [u8; 4] = [0x7f, b'E', b'L', b'F'];
+
+pub(crate) const ELFCLASS64: u8 = 2;
+
+pub(crate) const ELFDATA2LSB: u8 = 1;
+
+pub(crate) const EV_CURRENT: u8 = 1;
+
+/// `e_type`. We accept only this one: a **static executable**, loaded where it says.
+pub(crate) const ET_EXEC: u16 = 2;
+
+/// `e_type` for a PIE / shared object. Needs relocation, which we do not do.
+pub(crate) const ET_DYN: u16 = 3;
+
+/// 64 bytes of ELF64 header, then program headers of 56 bytes each.
+pub(crate) const EHDR_SIZE: usize = 64;
+
+pub(crate) const PHDR_SIZE: usize = 56;
+
+/// The most program headers a file may have. Bounds the header count before the O(n^2) overlap
+/// check: a legitimate static executable has a few `PT_LOAD` segments, and 65535 headers exist only
+/// to make validation stall. The note reader walks the same bound.
+pub(crate) const MAXIMUM_PHNUM: usize = 64;
+
+/// A parsed, **fully validated** ELF64 executable.
+///
+/// Everything is checked in [`Elf::parse`], not lazily: a loader that validates as it maps has
+/// mapped half a bad program by the time it finds out.
+///
+/// # Examples
+///
+/// ```
+/// use static_elf::{Elf, NATIVE_MACHINE, READABLE, EXECUTABLE, PageBytes};
+/// fn image(flags: u32, entry: u64) -> Vec<u8> {
+///     const EHDR: usize = 64; const PHDR: usize = 56;
+///     let mut v = vec![0u8; EHDR + PHDR + 16]; // 16 bytes of segment body
+///     v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
+///     v[4] = 2; v[5] = 1; v[6] = 1; // ELFCLASS64, ELFDATA2LSB, EV_CURRENT
+///     v[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
+///     v[18..20].copy_from_slice(&NATIVE_MACHINE.to_le_bytes());
+///     v[24..32].copy_from_slice(&entry.to_le_bytes()); // e_entry
+///     v[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // e_phoff
+///     v[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes()); // e_phentsize
+///     v[56..58].copy_from_slice(&1u16.to_le_bytes()); // e_phnum
+///     let p = EHDR;
+///     v[p..p + 4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
+///     v[p + 4..p + 8].copy_from_slice(&flags.to_le_bytes());
+///     v[p + 8..p + 16].copy_from_slice(&((EHDR + PHDR) as u64).to_le_bytes()); // p_offset
+///     v[p + 16..p + 24].copy_from_slice(&0x40_0000u64.to_le_bytes()); // p_vaddr
+///     v[p + 24..p + 32].copy_from_slice(&0x40_0000u64.to_le_bytes()); // p_paddr, equal here
+///     v[p + 32..p + 48].copy_from_slice(&[16u64.to_le_bytes(), 4096u64.to_le_bytes()].concat());
+///     v
+/// }
+///
+/// let bytes = image(READABLE | EXECUTABLE, 0x40_0000);
+/// let elf = Elf::parse(&bytes).unwrap();
+/// assert_eq!(elf.entry(), 0x40_0000);
+/// let seg = elf.segments().next().unwrap();
+/// assert!(seg.is_readable() && seg.is_executable() && !seg.is_writable());
+/// assert_eq!(seg.page_range(PageBytes::FOUR_KIBIBYTES), (0x40_0000, 0x40_1000));
+///
+/// // Equal here; a program loader maps at the virtual one, a boot loader places at the other.
+/// assert_eq!(seg.physical_address, seg.virtual_address);
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Elf<'a> {
+    pub(crate) bytes: &'a [u8],
+    entry: u64,
+    phoff: usize,
+    phnum: usize,
+    phentsize: usize,
+    table_end: usize,
+}
+
+impl<'a> Elf<'a> {
+    /// Validate the whole file up front: header, program header table bounds, and every segment's
+    /// bounds, permissions and address arithmetic. A `Ok(Elf)` has nothing left to check; every
+    /// later accessor and [`segments`](Self::segments) iteration step trusts this pass completely.
+    ///
+    /// The file must be for this build's own machine, [`NATIVE_MACHINE`]; a file for any other
+    /// machine is [`Error::WrongMachine`]. [`parse_for_machine`](Self::parse_for_machine) names the
+    /// machine instead. No two segments may share a 4 KiB page;
+    /// [`parse_with`](Self::parse_with) names the page size as well.
+    pub fn parse(bytes: &'a [u8]) -> Result<Self, Error> {
+        Self::parse_with(bytes, EXPECTED_MACHINE, PageBytes::FOUR_KIBIBYTES)
+    }
+
+    /// [`parse`](Self::parse), for a file built for `machine` rather than for this build's own.
+    ///
+    /// `machine` is an `e_machine` value, normally one of [`MACHINE_AARCH64`], [`MACHINE_RISCV`] and
+    /// [`MACHINE_X86_64`]. A tool on one machine that checks a program for another (a packager
+    /// validating every member of an aarch64 package on an `x86_64` build host) calls this. Every
+    /// other check is the same as `parse`'s.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    pub fn parse_for_machine(bytes: &'a [u8], machine: u16) -> Result<Self, Error> {
+        Self::parse_with(bytes, machine, PageBytes::FOUR_KIBIBYTES)
+    }
+
+    /// [`parse_for_machine`](Self::parse_for_machine), refusing two segments that share a page of
+    /// `page_bytes` rather than of 4 KiB.
+    ///
+    /// A loader that maps in pages larger than 4 KiB passes its own page size. Two segments in
+    /// different 4 KiB pages of one 16 KiB page pass `parse`, and a loader mapping 16 KiB pages
+    /// then meets a page it has already mapped, after part of the program is in place.
+    ///
+    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    pub fn parse_with(bytes: &'a [u8], machine: u16, page_bytes: PageBytes) -> Result<Self, Error> {
+        if bytes.len() < EHDR_SIZE {
+            return Err(Error::TooSmall);
+        }
+
+        if bytes[0..4] != MAGIC {
+            return Err(Error::BadMagic);
+        }
+        if bytes[4] != ELFCLASS64 {
+            return Err(Error::Not64Bit);
+        }
+        if bytes[5] != ELFDATA2LSB {
+            return Err(Error::NotLittleEndian);
+        }
+        if bytes[6] != EV_CURRENT {
+            return Err(Error::BadVersion);
+        }
+
+        let e_type = u16le(bytes, 16);
+        let e_machine = u16le(bytes, 18);
+
+        if e_machine != machine {
+            return Err(Error::WrongMachine);
+        }
+        match e_type {
+            ET_EXEC => {}
+            ET_DYN => return Err(Error::NeedsRelocation),
+            _ => return Err(Error::NotExecutable),
+        }
+
+        let entry = u64le(bytes, 24);
+        // A 64-bit offset the target cannot hold names nothing, rather than truncating onto
+        // other bytes on a target whose `usize` is narrower.
+        let phoff = usize::try_from(u64le(bytes, 32)).map_err(|_| Error::BadProgramHeaders)?;
+        let phentsize = u16le(bytes, 54) as usize;
+        let phnum = u16le(bytes, 56) as usize;
+
+        if phentsize < PHDR_SIZE {
+            return Err(Error::BadProgramHeaders);
+        }
+        if phnum > MAXIMUM_PHNUM {
+            return Err(Error::TooManyProgramHeaders);
+        }
+
+        // The bounds check on the program header table itself. `phoff` and `phnum` come out of
+        // the file, so they are hostile input, and `phoff + phnum * phentsize` is exactly the
+        // kind of arithmetic that wraps.
+        let table_len = phnum
+            .checked_mul(phentsize)
+            .ok_or(Error::BadProgramHeaders)?;
+        let table_end = phoff
+            .checked_add(table_len)
+            .ok_or(Error::BadProgramHeaders)?;
+        if table_end > bytes.len() {
+            return Err(Error::BadProgramHeaders);
+        }
+
+        let elf = Elf {
+            bytes,
+            entry,
+            phoff,
+            phnum,
+            phentsize,
+            table_end,
+        };
+
+        elf.validate(page_bytes)?;
+        Ok(elf)
+    }
+
+    /// Every check, before the caller maps a single page.
+    fn validate(&self, page_bytes: PageBytes) -> Result<(), Error> {
+        let mut entry_ok = false;
+
+        for i in 0..self.phnum {
+            let Some(seg) = self.segment_at(i)? else {
+                continue;
+            };
+
+            if seg.is_writable() && seg.is_executable() {
+                return Err(Error::WritableAndExecutable);
+            }
+            if !seg.is_readable() && !seg.is_executable() {
+                return Err(Error::SegmentUnreachable);
+            }
+
+            // The file's bytes, not `memory_bytes`: past them is the zero-filled tail, and a
+            // program that starts there executes zeros. See `Error::EntryNotExecutable`.
+            if seg.is_executable()
+                && (self.entry >= seg.virtual_address
+                    && self.entry - seg.virtual_address < seg.data.len() as u64)
+            {
+                entry_ok = true;
+            }
+
+            // No two segments may claim the same page. See `Error::SegmentsOverlap`.
+            for j in 0..i {
+                if let Some(other) = self.segment_at(j)? {
+                    let (a0, a1) = seg.page_range(page_bytes);
+                    let (b0, b1) = other.page_range(page_bytes);
+                    if a0 < b1 && b0 < a1 {
+                        return Err(Error::SegmentsOverlap);
+                    }
+                }
+            }
+        }
+
+        if !entry_ok {
+            return Err(Error::EntryNotExecutable);
+        }
+        Ok(())
+    }
+
+    /// The `i`th program header, if it is a `PT_LOAD`.
+    fn segment_at(&self, i: usize) -> Result<Option<Segment<'a>>, Error> {
+        let off = program_header_offset(self.phoff, i, self.phentsize, self.table_end)
+            .ok_or(Error::BadProgramHeaders)?;
+        let ph = &self.bytes[off..off + PHDR_SIZE];
+
+        if u32le(ph, 0) != PT_LOAD {
+            return Ok(None);
+        }
+
+        let flags = u32le(ph, 4);
+        let p_offset = usize::try_from(u64le(ph, 8)).map_err(|_| Error::SegmentOutOfBounds)?;
+        let vaddr = u64le(ph, 16);
+        let paddr = u64le(ph, 24);
+        let filesz = usize::try_from(u64le(ph, 32)).map_err(|_| Error::SegmentOutOfBounds)?;
+        let memsz = u64le(ph, 40);
+
+        // Every check on the hostile fields; the slice below relies on its `end`.
+        let end = check_segment_bounds(self.bytes.len(), p_offset, filesz, vaddr, memsz)?;
+
+        Ok(Some(Segment {
+            virtual_address: vaddr,
+            physical_address: paddr,
+            memory_bytes: memsz,
+            flags,
+            data: &self.bytes[p_offset..end],
+        }))
+    }
+
+    /// Where execution begins. Validated to be inside an executable segment.
+    pub fn entry(&self) -> u64 {
+        self.entry
+    }
+
+    /// The segments to map, in file order.
+    pub fn segments(&self) -> impl Iterator<Item = Segment<'a>> + '_ {
+        // `parse` validated every header, so `segment_at` has no error to discard here; a check
+        // dropped from `validate` would make a segment vanish from this iterator, which the tests
+        // that count segments catch.
+        (0..self.phnum).filter_map(|i| self.segment_at(i).ok().flatten())
+    }
+}
+
+/// Where the `i`th program header starts, `phoff + i * phentsize`, when all `PHDR_SIZE` bytes of it
+/// end at or before `table_end`; otherwise `None`.
+///
+/// `parse` bounds the whole table before any header is read, so a valid index always fits. This
+/// checks it again, as loopless arithmetic the proofs reach, so the slice each caller takes is in
+/// bounds whatever the index and the fields. Both the parse and the note walk call it.
+pub(crate) fn program_header_offset(
+    phoff: usize,
+    i: usize,
+    phentsize: usize,
+    table_end: usize,
+) -> Option<usize> {
+    let off = i.checked_mul(phentsize)?.checked_add(phoff)?;
+    if off.checked_add(PHDR_SIZE)? <= table_end {
+        Some(off)
+    } else {
+        None
+    }
+}
+
+/// The per-segment bounds and overflow checks, as pure loopless arithmetic over a program header's
+/// raw fields and the file length, so Kani proves it panic-free and in bounds for every input.
+///
+/// Returns the exclusive end offset of the segment's file data, so `[p_offset, end)` lies within a
+/// `file_len`-byte file, or the error the fields earn: `SegmentTruncated`, `SegmentOutOfBounds`,
+/// then `AddressOverflow`, in that order. Loopless so the proofs reach it, which the whole parse
+/// is not.
+pub(crate) fn check_segment_bounds(
+    file_len: usize,
+    p_offset: usize,
+    filesz: usize,
+    vaddr: u64,
+    memsz: u64,
+) -> Result<usize, Error> {
+    // The segment cannot claim less memory than it has bytes on disk.
+    // A `memsz` too large for the target is larger than any `filesz` that fits it.
+    if usize::try_from(memsz).is_ok_and(|memsz| memsz < filesz) {
+        return Err(Error::SegmentTruncated);
+    }
+
+    // The file range must lie within the file. `p_offset` and `filesz` are hostile, so the add is
+    // checked rather than trusted.
+    let end = p_offset
+        .checked_add(filesz)
+        .ok_or(Error::SegmentOutOfBounds)?;
+    if end > file_len {
+        return Err(Error::SegmentOutOfBounds);
+    }
+
+    // The virtual range must not overflow: `vaddr + memsz` feeds the entry check and `page_range`,
+    // and a near-`u64::MAX` memsz would wrap them, a PANIC under the dev profile's overflow checks,
+    // i.e. a crafted binary halting the loader that was handed it.
+    vaddr.checked_add(memsz).ok_or(Error::AddressOverflow)?;
+
+    Ok(end)
+}
+
+pub(crate) fn u16le(b: &[u8], at: usize) -> u16 {
+    u16::from_le_bytes([b[at], b[at + 1]])
+}
+
+pub(crate) fn u32le(b: &[u8], at: usize) -> u32 {
+    u32::from_le_bytes([b[at], b[at + 1], b[at + 2], b[at + 3]])
+}
+
+pub(crate) fn u64le(b: &[u8], at: usize) -> u64 {
+    let mut v = [0u8; 8];
+    v.copy_from_slice(&b[at..at + 8]);
+    u64::from_le_bytes(v)
+}

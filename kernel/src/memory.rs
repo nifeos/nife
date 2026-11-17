@@ -69,7 +69,7 @@ fn initialize_from_device_tree() {
 
     let mut reserved = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let reserved_count = dtb
-        .reserved_regions(&mut reserved)
+        .memory_reservations(&mut reserved)
         .expect("cannot read the memory reservations");
     let reserved = &reserved[..reserved_count];
 
@@ -194,8 +194,11 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     {
         let mut rtc = [Region { start: 0, size: 0 }; 1];
         for (compat, kind) in [
-            (&b"arm,pl031"[..], clock_contract::rtc::PL031),
-            (&b"google,goldfish-rtc"[..], clock_contract::rtc::GOLDFISH),
+            (&b"arm,pl031"[..], clock_contract::real_time_clock::PL031),
+            (
+                &b"google,goldfish-rtc"[..],
+                clock_contract::real_time_clock::GOLDFISH,
+            ),
         ] {
             if let Ok(n) = dtb.node_reg_compatible(compat, &mut rtc)
                 && n >= 1
@@ -216,14 +219,15 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     }
 
     // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
-    // non-prefetchable `ranges` entry the BAR window (`pci::mem32_window`). It must come from the
+    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::mem32_window`). It must come from the
     // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
         if let Ok(n) = dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut ecam)
             && n >= 1
-            && let Ok(Some(ranges)) = dtb.node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
-            && let Some(mem32) = ::pci::mem32_window(ranges)
+            && let Ok(Some(ranges)) =
+                dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
+            && let Some(mem32) = ::pci_configuration_space::mem32_window(ranges)
         {
             *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size), mem32));
         }
@@ -358,8 +362,8 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
         .chain(forbidden.iter().map(|r| r.end()))
         .max()
         .unwrap();
-    // Round up: a `forbidden` region need not be frame-aligned, and `page_frames_in` truncates.
-    let total_frames = PageFrameAllocator::page_frames_in(top.next_multiple_of(FRAME_SIZE) - base);
+    // A `forbidden` region need not be frame-aligned, so the span rounds up to cover its last frame.
+    let total_frames = PageFrameAllocator::page_frames_covering(top - base);
 
     // --- the bootstrap problem ---
     //

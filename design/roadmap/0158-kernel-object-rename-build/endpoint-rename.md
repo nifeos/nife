@@ -49,7 +49,7 @@ untouched. It is a real in-tree homonym, not a hit.
   `riscv64imac-unknown-none-elf`.
 - `user`, `fs_server` and `xtask` build clean.
 - The two Kani-proof-bearing crates that reference the renamed type both verify successfully
-  post-rename: `crates/inter_process_communication` (6 harnesses) and `crates/capability` (12
+  post-rename: `crates/inter_process_communication` (6 harnesses) and `crates/capability_table` (12
   harnesses). That satisfies the proof obligation of milestone 69 (split `kernel/src/user.rs` by service).
 
 `notes/ipc-naming.md` was updated to describe `Rendezvous` as the current name, with a provenance

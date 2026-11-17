@@ -27,7 +27,7 @@ pub const PROGENITOR_ENTRY: &str = measured_boot::PROGENITOR;
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_STACK_PAGES`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const PROGENITOR_STACK_PAGES: u64 = 14;
-const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAXIMUM_STACK_PAGES);
+const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_layout::MAXIMUM_STACK_PAGES);
 
 /// **Boot the system: load the progenitor and start it as the first process, on every
 /// architecture.**
@@ -166,7 +166,12 @@ fn measured_progenitor(archive: &'static [u8]) -> Result<Elf<'static>, LoadError
     // And the table it measures every program it loads against (milestone 104 (the measurement
     // continues past init)).
     crate::trust::require_program_measurements(&fs);
-    Elf::parse(progenitor_bytes).map_err(LoadError::NotLoadable)
+    Elf::parse_with(
+        progenitor_bytes,
+        static_elf::NATIVE_MACHINE,
+        FRAME_PAGE_BYTES,
+    )
+    .map_err(LoadError::NotLoadable)
 }
 
 /// Build the progenitor's address space (segments, stack, timebase page, initial ramdisk) and
@@ -181,7 +186,7 @@ fn progenitor_address_space(
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (s, e) = seg.page_range(FRAME_SIZE);
+            let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
             (e - s) / FRAME_SIZE
         })
         .sum::<u64>()

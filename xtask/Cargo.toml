@@ -17,7 +17,7 @@ workspace = true
 [dependencies]
 nifefs = { version = "0.1.0", path = "../crates/nifefs" }
 # The address-space map, milestone 206 (a program image has under 896 KiB): every archived program is checked against its image band.
-address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+address_space_layout = { version = "0.1.0", path = "../crates/address_space_layout" }
 # The documentation store (milestone 40). The index is built HERE, on a host with a heap and no
 # constraints, because the guest has neither: there is no directory iteration in this system, so
 # "what pages exist" cannot be discovered at runtime and has to be computed at image time. Only the
@@ -62,7 +62,7 @@ sealed_pair = { version = "0.1.0", path = "../crates/sealed_pair" }
 # ruled by calef on 2026-10-21 (UTC): "B". MIT OR Apache-2.0. Default features off and only the
 # four the conversion reads and writes, which brings `crc32fast` and `foldhash` new to the tree;
 # `memchr`, `hashbrown` and `indexmap` were already here.
-object = { version = "0.40.0", default-features = false, features = ["read_core", "elf", "write_core", "pe"] }
+object = { version = "0.41.0", default-features = false, features = ["read_core", "elf", "write_core", "pe"] }
 # The framebuffer contract (milestone 29): the host-side scanout check compares QEMU's screendump
 # against the same pattern the guest painted, from the same definition, so the two cannot drift.
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
@@ -93,9 +93,10 @@ glyph_atlas = { version = "0.1.0", path = "../crates/glyph_atlas" }
 # `display_service::start_screen_terminal` drew it at, from the same function.
 screen_console = { version = "0.1.0", path = "../crates/screen_console" }
 # The programs the shell can spawn (milestone 150): the packer refuses to build an archive missing
-# one, because a `Prog` whose binary is not packed compiles, passes every host test and cannot be
-# spawned. `no_std` with one in-tree dependency (`glob`), so it costs the host build nothing.
-grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+# one, because a `Program` whose binary is not packed compiles, passes every host test and cannot be
+# spawned. Both `no_std`, so they cost the host build nothing.
+grant_contract = { version = "0.1.0", path = "../crates/grant_contract" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # To find a program's manifest note on the host and stage a copy of it that cannot be read
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for
 # `script/swish-check`'s malformed-note line.

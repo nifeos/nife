@@ -11,7 +11,7 @@ name = "address_space_identifier"
 version = "0.1.0"
 
 [[package]]
-name = "address_space_map"
+name = "address_space_layout"
 version = "0.1.0"
 
 [[package]]
@@ -117,11 +117,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "byte_sink_contract"
+name = "byte_glob"
 version = "0.1.0"
 dependencies = [
- "abi",
+ "filesystem_contract",
+ "filesystem_fixture",
 ]
+
+[[package]]
+name = "byte_sink_contract"
+version = "0.1.0"
 
 [[package]]
 name = "byteorder"
@@ -141,20 +146,17 @@ version = "0.1.0"
 name = "c_seam"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
-
-[[package]]
-name = "capability"
-version = "0.1.0"
 
 [[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
  "interfaces_note",
+ "program_table",
 ]
 
 [[package]]
@@ -165,10 +167,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "capability_table"
+version = "0.1.0"
+
+[[package]]
 name = "capability_witness_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "startup_page_contract",
 ]
 
@@ -206,7 +212,7 @@ name = "components"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "block_roster_contract",
  "boot_ladder",
  "boot_slot",
@@ -228,7 +234,6 @@ dependencies = [
  "domain_name_system",
  "driver_process_contract",
  "e1000e",
- "elf",
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
@@ -237,6 +242,7 @@ dependencies = [
  "filesystem_fixture",
  "free",
  "globally_unique_identifier_partition_table",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
@@ -247,6 +253,7 @@ dependencies = [
  "jh7110_entropy",
  "jiff",
  "line_editor",
+ "line_editor_component",
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
@@ -258,17 +265,20 @@ dependencies = [
  "pmap",
  "process_builder",
  "program_argument_contract",
+ "program_table",
  "ps",
  "screen_console",
  "slabtop",
  "smoltcp",
  "socket_contract",
  "startup_page_contract",
+ "static_elf",
  "supervision_contract",
  "swish",
  "system_initializer",
  "system_log",
  "system_log_contract",
+ "terminal_contract",
  "timetable",
  "timetable_store",
  "tock-registers",
@@ -278,7 +288,6 @@ dependencies = [
  "user_mode_runtime",
  "uuid",
  "video_terminal",
- "virtio",
  "vmstat",
 ]
 
@@ -294,7 +303,7 @@ name = "confined_syscall_fuzzer_contract"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -361,7 +370,7 @@ dependencies = [
 name = "current_cpu_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -398,6 +407,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096#ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -464,14 +474,14 @@ version = "0.1.0"
 name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "designware_ethernet",
  "designware_inter_integrated_circuit",
  "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
- "pci",
+ "pci_configuration_space",
  "startup_page_contract",
 ]
 
@@ -481,12 +491,9 @@ version = "0.1.0-pre.2"
 source = "git+https://github.com/nifeos/e1000e?rev=68ed5202b1df8c5de1ee365c9b9337f731ed7a0c#68ed5202b1df8c5de1ee365c9b9337f731ed7a0c"
 
 [[package]]
-name = "elf"
-version = "0.1.0"
-
-[[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "environment_contract"
@@ -537,7 +544,7 @@ name = "fixtures"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "byte_sink_contract",
  "c_seam",
  "capability_manifest_note",
@@ -550,16 +557,15 @@ dependencies = [
  "credential_contract",
  "current_cpu_contract",
  "domain_name_resolution_contract",
- "elf",
  "entropy_contract",
  "filesystem_contract",
  "filesystem_fixture",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
  "hot_swap_server",
  "job_mix",
- "line_editor",
  "loaded_image_check",
  "login_contract",
  "memory_region_heap",
@@ -567,11 +573,14 @@ dependencies = [
  "nifefs",
  "primitive_benchmark_contract",
  "process_builder",
+ "program_table",
  "soak_page",
  "socket_contract",
  "startup_page_contract",
+ "static_elf",
  "supervision_contract",
  "system_initializer",
+ "terminal_contract",
  "timetable",
  "timetable_store",
  "user_mode_runtime",
@@ -587,7 +596,7 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 name = "free"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "machine_statistics_contract",
  "number_writer",
 ]
@@ -613,14 +622,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.1.0"
-dependencies = [
- "filesystem_contract",
- "filesystem_fixture",
-]
-
-[[package]]
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
@@ -632,13 +633,22 @@ name = "glyph_atlas"
 version = "0.1.0"
 
 [[package]]
-name = "grant_plan"
+name = "grant_contract"
 version = "0.1.0"
 dependencies = [
  "filesystem_contract",
- "glob",
- "primitive_benchmark_contract",
  "program_argument_contract",
+]
+
+[[package]]
+name = "grant_plan"
+version = "0.1.0"
+dependencies = [
+ "byte_glob",
+ "filesystem_contract",
+ "grant_contract",
+ "program_argument_contract",
+ "program_table",
 ]
 
 [[package]]
@@ -677,7 +687,7 @@ dependencies = [
 name = "hot_swap_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "capability_plan",
 ]
 
@@ -725,7 +735,7 @@ dependencies = [
 name = "initial_ramdisk_writer"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "measured_boot",
  "nifefs",
  "package_archive",
@@ -773,8 +783,8 @@ dependencies = [
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.2.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
+version = "0.3.0-pre.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -827,13 +837,13 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_identifier",
- "address_space_map",
+ "address_space_layout",
  "base_digest_contract",
  "block_roster_contract",
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "capability",
+ "capability_table",
  "clock_contract",
  "compositor",
  "coremark",
@@ -847,7 +857,6 @@ dependencies = [
  "direct_memory_access_validator",
  "driver_process_contract",
  "e1000e",
- "elf",
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
@@ -865,7 +874,6 @@ dependencies = [
  "jh7110_entropy",
  "jh7110_watchdog",
  "job_mix",
- "line_editor",
  "login_contract",
  "machine_discovery",
  "machine_statistics_contract",
@@ -875,17 +883,20 @@ dependencies = [
  "minicov",
  "nifefs",
  "page_frames",
- "paging",
- "pci",
+ "page_tables",
+ "pci_configuration_space",
  "periodic_deadline",
  "primitive_benchmark_contract",
+ "program_table",
  "screen_console",
  "soak_page",
  "socket_contract",
  "spin_lock",
  "startup_page_contract",
+ "static_elf",
  "std_runtime_contract",
  "system_log_contract",
+ "terminal_contract",
  "test_times",
  "thread_wake_handshake",
  "video_terminal",
@@ -906,6 +917,10 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
 name = "line_editor"
+version = "0.1.0"
+
+[[package]]
+name = "line_editor_component"
 version = "0.1.0"
 dependencies = [
  "capability_plan",
@@ -940,9 +955,9 @@ dependencies = [
 
 [[package]]
 name = "loom"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "419e0dc8046cb947daa77eb95ae174acfbddb7673b4151f56d1eed8e93fbfaca"
+checksum = "f1611ddbf89dc6ae42cfbd51fc207836140130257646eab8d6d2fb16577db2d2"
 dependencies = [
  "cfg-if",
  "generator",
@@ -966,7 +981,7 @@ dependencies = [
 name = "machine_statistics_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "current_cpu_contract",
 ]
 
@@ -989,7 +1004,7 @@ dependencies = [
 name = "measured_boot"
 version = "0.1.0"
 dependencies = [
- "elf",
+ "static_elf",
 ]
 
 [[package]]
@@ -1010,7 +1025,7 @@ name = "memory_region_heap"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "talc",
  "user_mode_runtime",
 ]
@@ -1064,9 +1079,9 @@ version = "0.1.0"
 
 [[package]]
 name = "object"
-version = "0.40.0"
+version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
+checksum = "11dbdb66876026054e4ffc8d757d862bdf5df5aebd5c0b95a41f17832a94f7d2"
 dependencies = [
  "crc32fast",
  "hashbrown",
@@ -1100,11 +1115,11 @@ name = "page_frames"
 version = "0.1.0"
 
 [[package]]
-name = "paging"
+name = "page_tables"
 version = "0.1.0"
 
 [[package]]
-name = "pci"
+name = "pci_configuration_space"
 version = "0.1.0"
 dependencies = [
  "device_tree_blob",
@@ -1119,7 +1134,7 @@ name = "pgrep"
 version = "0.1.0"
 dependencies = [
  "abi",
- "glob",
+ "byte_glob",
  "ps",
 ]
 
@@ -1172,10 +1187,10 @@ name = "process_builder"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "counter_frequency_contract",
- "elf",
  "startup_page_contract",
+ "static_elf",
  "supervision_contract",
  "user_mode_runtime",
 ]
@@ -1189,10 +1204,22 @@ name = "program_asks"
 version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
- "elf",
- "grant_plan",
+ "grant_contract",
  "installed_programs",
  "package_archive",
+ "program_table",
+ "static_elf",
+]
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "grant_contract",
+ "grant_plan",
+ "primitive_benchmark_contract",
+ "program_argument_contract",
 ]
 
 [[package]]
@@ -1224,9 +1251,9 @@ dependencies = [
 
 [[package]]
 name = "r-efi"
-version = "7.1.0"
+version = "7.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0ff379dd174eec5b2cab797063a2e7592dfcf0bf0323a50eeee724ee3537f13"
+checksum = "985ede7b27e96936c369ba18787c9178af0ef38d130792fc88e936242a7071c4"
 
 [[package]]
 name = "regex-automata"
@@ -1350,7 +1377,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 name = "slabtop"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "number_writer",
 ]
 
@@ -1378,7 +1405,7 @@ dependencies = [
 name = "soak_page"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
 
 [[package]]
@@ -1402,15 +1429,19 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 name = "startup_page_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
 ]
+
+[[package]]
+name = "static_elf"
+version = "0.1.0"
 
 [[package]]
 name = "std_runtime_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
- "line_editor",
+ "address_space_layout",
+ "terminal_contract",
 ]
 
 [[package]]
@@ -1437,7 +1468,7 @@ dependencies = [
 name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "startup_page_contract",
 ]
 
@@ -1445,12 +1476,14 @@ dependencies = [
 name = "swish"
 version = "0.1.0"
 dependencies = [
+ "byte_glob",
  "documentation",
  "environment_contract",
  "filesystem_contract",
- "glob",
+ "grant_contract",
  "grant_plan",
  "installed_programs",
+ "program_table",
  "std_runtime_contract",
 ]
 
@@ -1481,21 +1514,20 @@ name = "system_initializer"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "base_digest_contract",
  "boot_ladder",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",
  "domain_name_resolution_contract",
- "elf",
  "entropy_contract",
  "filesystem_contract",
- "grant_plan",
+ "grant_contract",
  "graphics_contract",
  "installed_programs",
  "interfaces_note",
- "line_editor",
+ "line_editor_component",
  "login_contract",
  "machine_statistics_contract",
  "measured_boot",
@@ -1504,9 +1536,12 @@ dependencies = [
  "package_index",
  "process_builder",
  "program_asks",
+ "program_table",
  "socket_contract",
+ "static_elf",
  "std_runtime_contract",
  "supervision_contract",
+ "terminal_contract",
  "user_mode_runtime",
  "video_terminal",
 ]
@@ -1536,7 +1571,7 @@ name = "system_tests"
 version = "0.1.0"
 dependencies = [
  "abi",
- "address_space_map",
+ "address_space_layout",
  "block_roster_contract",
  "byte_sink_contract",
  "c_program_fixture",
@@ -1551,16 +1586,16 @@ dependencies = [
  "domain_name_resolution_contract",
  "domain_name_system",
  "e1000e",
- "elf",
  "entropy_contract",
  "environment_contract",
  "filesystem_contract",
  "filesystem_fixture",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "jiff",
  "kernel",
- "line_editor",
+ "line_editor_component",
  "login_contract",
  "machine_discovery",
  "machine_statistics_contract",
@@ -1570,15 +1605,18 @@ dependencies = [
  "package_archive",
  "package_index",
  "page_frames",
- "paging",
+ "page_tables",
  "pgrep",
  "pmap",
+ "program_table",
  "ps",
  "socket_contract",
  "spin_lock",
  "startup_page_contract",
+ "static_elf",
  "std_runtime_contract",
  "system_log_contract",
+ "terminal_contract",
  "timetable",
  "timetable_store",
  "video_terminal",
@@ -1591,6 +1629,10 @@ dependencies = [
  "allocator-api2",
  "lock_api",
 ]
+
+[[package]]
+name = "terminal_contract"
+version = "0.1.0"
 
 [[package]]
 name = "test_times"
@@ -1637,9 +1679,11 @@ name = "timetable"
 version = "0.1.0"
 dependencies = [
  "clock_contract",
+ "grant_contract",
  "grant_plan",
  "jiff",
  "periodic_deadline",
+ "program_table",
 ]
 
 [[package]]
@@ -1786,7 +1830,6 @@ dependencies = [
  "boot_slot",
  "device_tree_blob",
  "device_tree_patch",
- "elf",
  "globally_unique_identifier_partition_table",
  "machine_discovery",
  "measured_boot",
@@ -1794,6 +1837,7 @@ dependencies = [
  "r-efi",
  "screen_console",
  "sealed_pair",
+ "static_elf",
  "uefi_loader",
  "uuid",
 ]
@@ -1826,6 +1870,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
+ "address_space_layout",
  "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
@@ -1835,9 +1880,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.29.0"
+version = "1.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
+checksum = "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c"
 
 [[package]]
 name = "valuable"
@@ -1849,21 +1894,9 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 name = "video_terminal"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "glyph_atlas",
  "line_editor",
-]
-
-[[package]]
-name = "virtio"
-version = "0.1.0"
-dependencies = [
- "address_space_map",
- "driver_process_contract",
- "filesystem_contract",
- "nifefs",
- "startup_page_contract",
- "user_mode_runtime",
 ]
 
 [[package]]
@@ -1942,7 +1975,7 @@ dependencies = [
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "address_space_map",
+ "address_space_layout",
  "approval_file",
  "boot_ladder",
  "boot_slot",
@@ -1954,7 +1987,7 @@ dependencies = [
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
  "glyph_atlas",
- "grant_plan",
+ "grant_contract",
  "graphics_contract",
  "initial_ramdisk_writer",
  "installed_programs",
@@ -1964,6 +1997,7 @@ dependencies = [
  "package_archive",
  "package_index",
  "program_asks",
+ "program_table",
  "screen_console",
  "sealed_pair",
  "serial_console",

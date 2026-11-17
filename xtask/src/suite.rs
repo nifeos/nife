@@ -491,6 +491,21 @@ fn host_tests() -> bool {
         return false;
     }
 
+    // `user_mode_runtime` is in the excluded set (its syscalls fault without a kernel) and has a
+    // host test target all the same: its tests cover the pure logic (bounds checks, the frame
+    // layout, the tick conversion, the linker script's base) and never execute a syscall.
+    if !cargo(&["test", "-p", "user_mode_runtime"]) {
+        return false;
+    }
+
+    // `components` is excluded for the same reason, and its one library target
+    // (`block_driver_roles`) has host tests all the same: they cover the checks the driver makes on
+    // a window, a ring or a directory and never touch a device. Its binaries build with
+    // `test = false`, so `--lib` is the whole of what runs.
+    if !cargo(&["test", "-p", "components", "--lib"]) {
+        return false;
+    }
+
     // The vendored RedoxFS pin (vendor/redoxfs, milestone 32), both halves of vendor/README.md's
     // promise, by --manifest-path because the engine and the host tool are their own workspaces,
     // outside our clippy/fmt gates. The host tool's round trip (mkfs, put, ls, cat) runs against

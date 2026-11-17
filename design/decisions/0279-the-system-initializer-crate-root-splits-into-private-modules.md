@@ -180,7 +180,7 @@ Prior art:
 | milestone 840, §271 | `IpcTables` and the lock's state; `PRINT_CAP` | shared state stayed in the parent; a constant with one user moved with it (`PRINT_CAP` to `canary.rs`) |
 | milestone 842, §272 | region page counts, the program table's `const fn` checks | moved beside their one user (`manifest.rs`, `program.rs`) |
 | this crate, today | the graphical terminal's addresses, `ACTIVATION_FS_VA`, `IMAGE_STAGING_VA` | already beside their users, outside the block |
-| `crates/address_space_map` | the bands every address space shares | one crate, one map, checked by `const` assertions |
+| `crates/address_space_layout` | the bands every address space shares | one crate, one map, checked by `const` assertions |
 | Linux, `Documentation/arch/x86/x86_64/mm.rst` (from memory, not read) | the kernel's virtual layout | one table in one place |
 
 The alternatives:

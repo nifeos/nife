@@ -19,7 +19,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::proto;
+use terminal_contract as proto;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait};
 
 // Unused on x86_64: there is no page for it to name (`user::UART_PHYS` is zero, DECISIONS §121),
@@ -27,7 +27,7 @@ use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait};
 // address is the wiring's fact, agreed with the progenitor, and hiding it on one architecture would make the
 // two sides of that agreement look like two different constants.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
-const UART_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
+const UART_VA: u64 = address_space_layout::pair_page(0x0000_0000_00a0_0000);
 
 const TERM: u64 = 0; // CALL: forward raw wire bytes to the line discipline
 #[doc(alias = "irq")]

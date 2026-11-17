@@ -13,5 +13,5 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
 - nife pins the crate by `rev` in every manifest in one pull request, with a `[workspace.dependencies]` entry. `cargo xtask std-src` still generates `memory_region_heap`'s core.
 - `.github/mutants-exempts` carries the one equivalent mutant. The first full `mutation` run on
   `main` is green.
-- `crates/paging` asserts its split shifts against the crate's. The declarations check reads the
+- `crates/page_tables` asserts its split shifts against the crate's. The declarations check reads the
   pinned checkout for interface id 2.

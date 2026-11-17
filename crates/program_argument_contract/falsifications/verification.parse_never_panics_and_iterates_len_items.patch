@@ -1,0 +1,20 @@
+Falsifies `program_argument_contract::verification::parse_never_panics_and_iterates_len_items`.
+
+The defect: `is_empty` answers true for one argument as well as for none, the off-by-one a
+rewrite of the comparison as "at most one" would make.
+
+Expected to fail: the harness's `assert_eq!(args.is_empty(), args.len() == 0)`, on any page with
+exactly one argument.
+
+diff --git a/crates/program_argument_contract/src/lib.rs b/crates/program_argument_contract/src/lib.rs
+--- a/crates/program_argument_contract/src/lib.rs
++++ b/crates/program_argument_contract/src/lib.rs
+@@ -219,7 +219,7 @@
+ 
+     /// Whether there are none.
+     pub const fn is_empty(&self) -> bool {
+-        self.count == 0
++        self.count <= 1
+     }
+ 
+     /// The arguments, in order.

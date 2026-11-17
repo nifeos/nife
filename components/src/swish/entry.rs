@@ -40,6 +40,12 @@ pub(super) const ROLE_TWO_TREES: u64 = 6;
 
 user_mode_runtime::program_entry!(start);
 
+/// **The heads of this system's boot lines**, of which the shell prints the banner; the kernel and
+/// `serial_console` build the same heads from the same name.
+///
+/// Name: provisional.
+const HEADS: boot_ladder::Heads<'static> = boot_ladder::Heads::new("nife");
+
 /// **What `arg1` carries into every role that holds a directory**: the `filesystem_contract::dir`
 /// rights that capability was granted, 0 for none. Told rather than asked, because nothing on that
 /// wire reports what a handle carries and `OPENDIR` refuses a request wider than the parent, so a
@@ -55,7 +61,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_CONFIG.store(
-        user_mode_runtime::is_granted(grant_plan::SHELL_CONFIGURATION_SLOT),
+        user_mode_runtime::is_granted(grant_contract::SHELL_CONFIGURATION_SLOT),
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_MOUNTED_TREE.store(
@@ -94,7 +100,9 @@ pub(super) fn interactive(rights: u64) -> ! {
     // watcher reads to learn that the boot finished. Its head comes from `crates/boot_ladder`
     // rather than from a literal here, because `crates/serial_console` matches it and AGENTS.md
     // rule 7 says two binaries agreeing on a string means a crate.
-    print(boot_ladder::PROMPT.as_bytes());
+    for part in HEADS.shell_banner().parts() {
+        print(part.as_bytes());
+    }
     print(b". naming a resource in a command IS granting it.\n");
     print(b"commands: help, echo <text>, caps [command], time <command>, xargs <command>,\n");
     print(b"          cd, pwd, ls, mkdir, touch, apropos <word>, rm, wc, mdr, <prog> [--mem N] [arg]\n");
