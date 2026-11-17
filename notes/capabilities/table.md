@@ -1,4 +1,4 @@
-# The capability table crate: `crates/capability`
+# The capability table crate: `crates/capability_table`
 
 An appendix to [`notes/capabilities.md`](../capabilities.md), which says what a capability is and
 why the kernel has no `open()`. This page carries the design of the crate that holds the table, the

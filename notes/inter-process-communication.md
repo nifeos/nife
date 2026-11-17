@@ -187,7 +187,7 @@ bound after a sender queued.
 - The collected-sender harness is the rendezvous half of the one-shot Reply of §12 (Call/Reply
   IPC). A caller queues as a sender and blocks, and a receive that collects it pops it, so the
   rendezvous holds no name for it afterwards. The kernel-minted Reply capability is then the only
-  name for the caller, and `crates/capability` proves that name is consumed on use. A blocked
+  name for the caller, and `crates/capability_table` proves that name is consumed on use. A blocked
   thread cannot run, so it cannot queue itself twice. The harness states this through emptiness,
   since a membership scan would hand the solver an unbounded loop.
 

@@ -29,7 +29,7 @@ Deliverable.
    calling the proved logic; the extraction must not change behavior, held against the green
    attacker suite.
 2. The `Untyped::SPLIT` rights harness. SPLIT mints a child budget at `untyped_cap_rights`, a
-   fresh-mint site *outside* `capability::derive`, so the existing "derive never widens rights" proof
+   fresh-mint site *outside* `capability_table::derive`, so the existing "derive never widens rights" proof
    does not reach it. It is currently pinned by one kernel test (added with milestone 31's
    rights-inheritance fix). Add the companion harness, "split never widens rights", beside the
    existing one, so the "authority never widens" story is proved at *every* mint site.
@@ -52,7 +52,7 @@ what-is-proved-and-what-is-not map.
    (DMA-escape and indirect-escape, both ISAs, both transports) is unchanged and green, so the
    extraction is faithful. The ring layout constants moved *into* the crate with the kernel aliasing
    them, because a proof about a copy of the layout proves nothing about the layout that runs.
-2. `split_never_widens_rights` in `crates/capability` proves the `Untyped::SPLIT` mint (routed through
+2. `split_never_widens_rights` in `crates/capability_table` proves the `Untyped::SPLIT` mint (routed through
    `Cap::mint_child`) gives the child **exactly** the parent's rights. §16's amendment (SPLIT grants
    `GRANT` so a budget is delegable) makes the loose phrasing wrong, so the property is stated and
    proved as equality. `mint_child` takes no rights argument, delegability is a property of the *root's*

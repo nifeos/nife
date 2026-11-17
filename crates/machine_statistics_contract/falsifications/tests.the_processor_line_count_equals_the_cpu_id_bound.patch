@@ -1,0 +1,27 @@
+Falsifies `machine_statistics_contract::tests::the_processor_line_count_equals_the_cpu_id_bound`.
+
+The defect: the processor-line count moves to nine while `current_cpu_contract::CPU_ID_BOUND`
+stays at eight, and the compile-time assertion that ties them is gone. With the assertion in
+place the same change to the constant fails this crate's build, which a test sweep cannot replay
+(it counts a build failure as no result), so the patch removes the assertion to let the test
+itself run. The page then has a line count its writer and readers could disagree on.
+
+Expected to fail: the test's `assert_eq!(PROCESSOR_LINES, current_cpu_contract::CPU_ID_BOUND)`.
+
+diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+--- a/crates/machine_statistics_contract/src/lib.rs
++++ b/crates/machine_statistics_contract/src/lib.rs
+@@ -36,12 +36,7 @@
+ ///
+ /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1099-statistics-identity-frozen,
+ /// following design/naming.md (a name says what the thing is, and a count says what it counts).
+-pub const PROCESSOR_LINES: usize = 8;
+-
+-const _: () = assert!(
+-    PROCESSOR_LINES == current_cpu_contract::CPU_ID_BOUND,
+-    "the processor-line count moved with the CPU id bound: bump VERSION and re-mint MAGIC first"
+-);
++pub const PROCESSOR_LINES: usize = 9;
+ 
+ /// The page's first word: what tells a prepared page from a frame nobody has written.
+ pub const MAGIC: [u8; 8] = *b"MACHSTA1";

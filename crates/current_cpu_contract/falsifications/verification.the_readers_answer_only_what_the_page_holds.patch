@@ -1,0 +1,20 @@
+Falsifies `current_cpu_contract::verification::the_readers_answer_only_what_the_page_holds`.
+
+The defect: the reader's bound check is off by one, so an id equal to `CPU_ID_BOUND` is handed back
+and indexes one past the end of a per-core array.
+
+Expected to fail: the harness's `assert_eq!(page.cpu(), None)`, on a word equal to `CPU_ID_BOUND`.
+
+diff --git a/crates/current_cpu_contract/src/lib.rs b/crates/current_cpu_contract/src/lib.rs
+index 8db0fc66b..874fcb977 100644
+--- a/crates/current_cpu_contract/src/lib.rs
++++ b/crates/current_cpu_contract/src/lib.rs
+@@ -328,7 +328,7 @@ impl CurrentCpuPage {
+     pub fn cpu(&self) -> Option<usize> {
+         match self.word(CPU_OFFSET)? {
+             UNSCHEDULED => None,
+-            cpu if cpu >= CPU_ID_BOUND as u64 => None,
++            cpu if cpu > CPU_ID_BOUND as u64 => None,
+             cpu => Some(cpu as usize),
+         }
+     }

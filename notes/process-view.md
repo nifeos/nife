@@ -54,7 +54,7 @@ invoke(cap, SURVEY, cursor, record, 0) -> (next_cursor, tid, word)
 - A negative first word is an `abi::Error`.
 - Needs `ENUMERATE`, and pointedly not `READ`. `READ` on a supervision endpoint is what `RECEIVE`
   and `endpoint::REAP` take, so a viewer holding it could reap a child; a domain names its members
-  and does not act on them (calef, 2026-08-17). See `capability::Rights::ENUMERATE` and the first
+  and does not act on them (calef, 2026-08-17). See `capability_table::Rights::ENUMERATE` and the first
   `BUGS` entry in [process-view/limitations.md](process-view/limitations.md), which is the finding
   this right came from.
 

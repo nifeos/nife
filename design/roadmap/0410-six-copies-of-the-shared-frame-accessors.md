@@ -51,8 +51,8 @@ duplicate the base `MappedWindow` already carries.
 ## Follow-on
 
 - **Recorded.** The virtio pair's shared fact, the kernel's ring layout spelled as literals in
-  `components/src/entropy.rs` and `components/src/virtio_net_transport.rs` (and in `crates/virtio`'s
-  own net driver), is recorded as a `BUGS` entry on `components/src/virtio_net_transport.rs`,
+  `components/src/entropy.rs` and `components/src/virtio_net_transport.rs` (and in the net driver of
+  `components/src/block_driver_roles.rs`), is recorded as a `BUGS` entry on `components/src/virtio_net_transport.rs`,
   beside its own copy of the layout.
 
 ## What is duplicated

@@ -629,8 +629,8 @@ fn parse_stage(
         // about the machine rather than only that the console works.
         "machine" => Some(Some(Stage::Machine)),
         "selftest" => Some(Some(Stage::SelfTest)),
-        "tour" => Some(Some(Stage::Tour)),
-        "prompt" => Some(Some(Stage::Prompt)),
+        "tour" => Some(Some(Stage::CoreRuns)),
+        "prompt" => Some(Some(Stage::ShellBanner)),
         // Milestone 219. Useful at a bench as `--until soak`: stop as soon as the workload has
         // announced itself, which answers "did this build actually start soaking" in seconds
         // rather than making the operator watch a beat go by.

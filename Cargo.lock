@@ -150,10 +150,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "capability"
-version = "0.1.0"
-
-[[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
@@ -169,6 +165,10 @@ version = "0.1.0"
 dependencies = [
  "abi",
 ]
+
+[[package]]
+name = "capability_table"
+version = "0.1.0"
 
 [[package]]
 name = "capability_witness_contract"
@@ -288,7 +288,6 @@ dependencies = [
  "user_mode_runtime",
  "uuid",
  "video_terminal",
- "virtio",
  "vmstat",
 ]
 
@@ -494,6 +493,7 @@ source = "git+https://github.com/nifeos/e1000e?rev=ef01cefa9a186db7f1c9802e78d8c
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "environment_contract"
@@ -843,7 +843,7 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "capability",
+ "capability_table",
  "clock_contract",
  "compositor",
  "coremark",
@@ -1897,18 +1897,6 @@ dependencies = [
  "address_space_layout",
  "glyph_atlas",
  "line_editor",
-]
-
-[[package]]
-name = "virtio"
-version = "0.1.0"
-dependencies = [
- "address_space_layout",
- "driver_process_contract",
- "filesystem_contract",
- "nifefs",
- "startup_page_contract",
- "user_mode_runtime",
 ]
 
 [[package]]

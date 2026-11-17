@@ -171,7 +171,7 @@ on x86_64 unless someone argues it out.
 
 ### Capability slots at peak
 
-17 of 24, read by a temporary instrument (a kernel loop printing `capability::highest_seen()`
+17 of 24, read by a temporary instrument (a kernel loop printing `capability_table::highest_seen()`
 whenever it rose, not committed). That is five below aarch64 and riscv64's 22, consistent with the
 three virtio-rng slots x86_64 does not grant and the entropy endowment it does not build. Not tighter.
 

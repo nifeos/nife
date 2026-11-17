@@ -465,16 +465,7 @@ mod verification {
         let pa: u64 = kani::any();
         kani::assume(pa & !0x00ff_ffff_ffff_f000 == 0);
 
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 
@@ -497,16 +488,7 @@ mod verification {
         } else {
             (PageSize::Size1GiB, 0x00ff_ffff_c000_0000u64)
         };
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
@@ -522,7 +504,7 @@ mod verification {
             "R, W or X must be set, or this is a pointer"
         );
         assert!(Sv39::is_block(block));
-        assert_eq!(Sv39::leaf_flags(block), flags);
+        assert_eq!(Sv39::leaf_flags(block), flags.without_write_combining());
     }
 
     /// **No pointer PTE ever reads as a leaf**, for every address.
@@ -541,16 +523,7 @@ mod verification {
         let pa: u64 = kani::any();
         kani::assume(pa & !(PPN_MASK << 12) == 0);
 
-        let all = [
-            Flags::kernel_code(),
-            Flags::kernel_rodata(),
-            Flags::kernel_data(),
-            Flags::device(),
-            Flags::user_code(),
-            Flags::user_rodata(),
-            Flags::user_data(),
-            Flags::user_device(),
-        ];
+        let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
@@ -573,6 +546,7 @@ mod verification {
         );
         assert_eq!(leaf & 1, 1, "a leaf must have the valid bit set");
         assert_eq!(Sv39::entry_pa(leaf), pa);
-        assert_eq!(Sv39::leaf_flags(leaf), flags);
+        // Write-combining is encoded as plain device memory here, so it decodes as device.
+        assert_eq!(Sv39::leaf_flags(leaf), flags.without_write_combining());
     }
 }

@@ -16,6 +16,6 @@ An appendix to [the milestone](../1105-pci-outside-review.md).
   `#![forbid(unsafe_code)]` and no `allow(missing_docs)`.
 - The architect has ratified one spelling for each name in items 5 and 6. The rename has landed in
   the crate, the kernel and `driver_process_contract` in one pull request.
-- Nine harnesses (the eight plus `the_msi_walk_terminates_on_any_device`), each with a
+- Nine harnesses (the eight plus `the_message_signaled_interrupt_walk_terminates_on_any_device`), each with a
   falsification patch the template's `falsify` replays red.
 - The package name has a ruling and the repository, when created, carries it.

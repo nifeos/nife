@@ -12,6 +12,10 @@ architecture rather than running. Linux does not check this either (recalled). O
 it as `EntryNotExecutable`. Door: one-way at release (a refusal is a published behavior; adding one
 later breaks a file that passed, so it is now or never). Effort: XS.
 
+Decided by the maintainer on 2026-11-16 (UTC), provisional: refused. Before a release no file
+depends on the old answer, and a refusal can still be dropped later without breaking a file that
+passed, so refusing now is the step that stays reversible. The architect may revisit it.
+
 #### What the parser ignores is written nowhere a stranger looks
 
 Finding: `EI_OSABI`, `EI_ABIVERSION`, `e_flags` (which on RISC-V carries the float ABI and

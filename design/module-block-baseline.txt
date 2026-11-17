@@ -101,6 +101,20 @@ c_library/src/start.rs::CMain
 
 c_library/src/start.rs::run
 
+components/src/block_driver_roles.rs::run
+
+components/src/block_driver_roles.rs::run_attack
+
+components/src/block_driver_roles.rs::run_attack_indirect
+
+components/src/block_driver_roles.rs::run_blk_server
+
+components/src/block_driver_roles.rs::run_net
+
+components/src/block_driver_roles.rs::run_write
+
+components/src/block_driver_roles.rs::run_write_abandon
+
 components/src/credentialer.rs::RPT_READY
 
 components/src/designware_ethernet_transport.rs::bring_up
@@ -866,75 +880,7 @@ crates/c_seam/src/lib.rs::pattern_ro
 
 
 
-crates/capability/src/lib.rs::ALL
 
-crates/capability/src/lib.rs::BIND
-
-crates/capability/src/lib.rs::CapabilityTable
-
-crates/capability/src/lib.rs::ENUMERATE
-
-crates/capability/src/lib.rs::Error
-
-crates/capability/src/lib.rs::GRANT
-
-crates/capability/src/lib.rs::NONE
-
-crates/capability/src/lib.rs::READ
-
-crates/capability/src/lib.rs::Reap
-
-crates/capability/src/lib.rs::Rights
-
-crates/capability/src/lib.rs::WRITE
-
-crates/capability/src/lib.rs::allows
-
-crates/capability/src/lib.rs::bits
-
-crates/capability/src/lib.rs::delete
-
-crates/capability/src/lib.rs::delete_matching
-
-crates/capability/src/lib.rs::derive
-
-crates/capability/src/lib.rs::from_bits
-
-crates/capability/src/lib.rs::get
-
-
-crates/capability/src/lib.rs::highest_seen
-
-crates/capability/src/lib.rs::insert
-
-crates/capability/src/lib.rs::insert_at
-
-crates/capability/src/lib.rs::insert_at_or_above
-
-crates/capability/src/lib.rs::intersect
-
-crates/capability/src/lib.rs::is_empty
-
-crates/capability/src/lib.rs::is_subset_of
-
-
-crates/capability/src/lib.rs::mint_child
-
-crates/capability/src/lib.rs::new
-
-crates/capability/src/lib.rs::peak
-
-crates/capability/src/lib.rs::put
-
-crates/capability/src/lib.rs::reap_decision
-
-crates/capability/src/lib.rs::survey_includes
-
-crates/capability/src/lib.rs::union
-
-crates/capability/src/lib.rs::used
-
-crates/capability/src/tests.rs
 
 
 crates/capability_manifest_note/src/lib.rs::Error
@@ -1032,6 +978,74 @@ crates/capability_plan/src/lib.rs::rights
 crates/capability_plan/src/lib.rs::slot_for
 
 crates/capability_plan/src/lib.rs::slot_of
+
+crates/capability_table/src/lib.rs::ALL
+
+crates/capability_table/src/lib.rs::BIND
+
+crates/capability_table/src/lib.rs::CapabilityTable
+
+crates/capability_table/src/lib.rs::ENUMERATE
+
+crates/capability_table/src/lib.rs::Error
+
+crates/capability_table/src/lib.rs::GRANT
+
+crates/capability_table/src/lib.rs::NONE
+
+crates/capability_table/src/lib.rs::READ
+
+crates/capability_table/src/lib.rs::Reap
+
+crates/capability_table/src/lib.rs::Rights
+
+crates/capability_table/src/lib.rs::WRITE
+
+crates/capability_table/src/lib.rs::allows
+
+crates/capability_table/src/lib.rs::bits
+
+crates/capability_table/src/lib.rs::delete
+
+crates/capability_table/src/lib.rs::delete_matching
+
+crates/capability_table/src/lib.rs::derive
+
+crates/capability_table/src/lib.rs::from_bits
+
+crates/capability_table/src/lib.rs::get
+
+crates/capability_table/src/lib.rs::highest_seen
+
+crates/capability_table/src/lib.rs::insert
+
+crates/capability_table/src/lib.rs::insert_at
+
+crates/capability_table/src/lib.rs::insert_at_or_above
+
+crates/capability_table/src/lib.rs::intersect
+
+crates/capability_table/src/lib.rs::is_empty
+
+crates/capability_table/src/lib.rs::is_subset_of
+
+crates/capability_table/src/lib.rs::mint_child
+
+crates/capability_table/src/lib.rs::new
+
+crates/capability_table/src/lib.rs::peak
+
+crates/capability_table/src/lib.rs::put
+
+crates/capability_table/src/lib.rs::reap_decision
+
+crates/capability_table/src/lib.rs::survey_includes
+
+crates/capability_table/src/lib.rs::union
+
+crates/capability_table/src/lib.rs::used
+
+crates/capability_table/src/tests.rs
 
 crates/capability_witness_contract/src/lib.rs::CHILD_ANSWERED
 
@@ -1434,9 +1448,7 @@ crates/current_cpu_contract/src/lib.rs::CurrentCpuPage
 
 crates/current_cpu_contract/src/lib.rs::MAGIC
 
-crates/current_cpu_contract/src/lib.rs::PAGE_BYTES
 
-crates/current_cpu_contract/src/lib.rs::PAGE_VA
 
 crates/current_cpu_contract/src/lib.rs::THREAD_PAGE_SLOTS
 
@@ -1446,15 +1458,11 @@ crates/current_cpu_contract/src/lib.rs::allowance
 
 crates/current_cpu_contract/src/lib.rs::build_page
 
-crates/current_cpu_contract/src/lib.rs::build_page_allowing
 
 crates/current_cpu_contract/src/lib.rs::cpu
 
-crates/current_cpu_contract/src/lib.rs::new
 
-crates/current_cpu_contract/src/lib.rs::publish
 
-crates/current_cpu_contract/src/lib.rs::thread_page_va
 
 
 
@@ -2160,7 +2168,6 @@ crates/domain_name_system/src/proofs.rs
 
 crates/environment_contract/src/lib.rs::ConfigPage
 
-crates/environment_contract/src/lib.rs::MAGIC
 
 crates/environment_contract/src/lib.rs::PAGE_BYTES
 
@@ -6242,13 +6249,10 @@ crates/socket_contract/src/lib.rs::word_ipv4
 
 crates/static_elf/src/error.rs::Error
 
-crates/static_elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/static_elf/src/machine.rs::KNOWN_MACHINES
 
 crates/static_elf/src/machine.rs::NATIVE_MACHINE
 
-crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
 
 crates/static_elf/src/note.rs
 
@@ -6277,12 +6281,6 @@ crates/static_elf/src/parse.rs::entry
 crates/static_elf/src/parse.rs::parse
 
 crates/static_elf/src/parse.rs::segments
-
-crates/static_elf/src/segment.rs::PF_R
-
-crates/static_elf/src/segment.rs::PF_W
-
-crates/static_elf/src/segment.rs::PF_X
 
 crates/static_elf/src/segment.rs::Segment
 
@@ -7677,19 +7675,12 @@ crates/video_terminal/src/vt.rs::width
 
 crates/video_terminal/src/vt/tests.rs
 
-crates/virtio/src/lib.rs::run
 
-crates/virtio/src/lib.rs::run_attack
 
-crates/virtio/src/lib.rs::run_attack_indirect
 
-crates/virtio/src/lib.rs::run_blk_server
 
-crates/virtio/src/lib.rs::run_net
 
-crates/virtio/src/lib.rs::run_write
 
-crates/virtio/src/lib.rs::run_write_abandon
 
 crates/vmstat/src/lib.rs::write_diagnostics
 

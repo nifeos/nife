@@ -204,21 +204,23 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   caller, and nife passes `nife`, so every byte stays the same.
 - **Done.** The two check names: `block_device` and `true_random_number_generator`, with the slot
   and flag that name the generator, and the other thirteen marked ratified.
-- **Outstanding.** The other items of this review, listed above and in its appendices.
-- **Outstanding.** The three renames among the ten public names, which the maintainer has decided,
-  provisionally.
-- **Outstanding.** Eight constants in `boot_ladder::kernel_half` still begin
-  `RANDOM_NUMBER_GENERATOR_` (`FOUND`, `STATUS_OKAY`, `PROGRAM_MISSING`, `WIRED`, `256_BIT`,
-  `REGISTERS`, `REPORT`, `BRING_UP_TICKS`). The check-names ruling named only the slot and the
-  answered flag; aligning these is a two-way door for the maintainer.
+- **Done.** Items 1, 3, 4, 6, 8 (the three renames, provisionally), 9, 10, 11 and 13, and the rest
+  of item 2 except the move's scaffold; the ledger has each.
+- **Done.** The constants in `boot_ladder::kernel_half` that named the generator begin
+  `TRUE_RANDOM_NUMBER_GENERATOR_`, so the check-names ruling holds across the crate.
+- **Outstanding.** Item 7's `script/lint` gate for head literals. It is a new lint section, so a
+  reviewed interface.
+- **Outstanding.** Item 12, which waits on milestone 972 (the boot stick's shared names are code).
+- **Outstanding.** The pass over the `self_test_program` names, listed in the ledger.
+- **Outstanding.** The move's own files: `CHANGELOG.md`, `_typos.toml` and `docs/stranger-test.md`.
 
 ## BUGS
 
 - The prior-art rows come from memory and say so. A lane that writes the README should read each source before citing it.
-- Item 7's gate is nife's, not the crate's. After the move the crate cannot know that a consumer
+- Item 7's gate is nife's, not the crate's, and is not written yet. After the move the crate cannot know that a consumer
   spelled a head by hand; only the consumer's own lint can.
-- Item 11 adds no checkable version. A tenth rung that printed one would itself be a wording to
-  freeze, and this review found no reader that needs it yet.
+- The version policy adds no checkable version. A tenth rung that printed one would itself be a
+  wording to freeze, and this review found no reader that needs it yet.
 - The review did not run the template's name-check helpers over the crate; `script/names` and
   `helpers/name_release.py` in nife cover the same ten names, and the printed check names are
   string literals no helper reads.
@@ -228,4 +230,4 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 ## Index row
 
-An outside review of `boot_ladder` before it leaves found three manifest and file items that block the move. It found six to land before the first tag. They are a shared `Verdict` type so the printer and its three readers agree by construction, `const` invariants on the check list, real tests, eight hand-spelled literals in `xtask`, ten names to ratify, and a false boundary claim. It found four items for later. Two rulings hold. The heads are fixed shapes after a system name the caller supplies, ratified as printed. Two check names become `block_device` and `true_random_number_generator`, and the other thirteen stand as printed. One ruling remains for the architect: three renames among the ten public names.
+An outside review of `boot_ladder` before it leaves found three manifest and file items that block the move. It found six to land before the first tag. They are a shared `Verdict` type so the printer and its three readers agree by construction, `const` invariants on the check list, real tests, eight hand-spelled literals in `xtask`, ten names to ratify, and a false boundary claim. It found four items for later. Two rulings hold. The heads are fixed shapes after a system name the caller supplies, ratified as printed. Two check names become `block_device` and `true_random_number_generator`, and the other thirteen stand as printed. The maintainer applied the three renames among the ten public names, provisionally, and the crate carries the shared verdict reader, tests, a proof and its README.

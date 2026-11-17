@@ -68,7 +68,7 @@ every job, because §26 (the fault endpoint) made the endpoint one per superviso
 calef's 2026-09-26 ruling that the process view is the supervision domain fixes the scope. Its
 section is on `maintainer/126-followups` (pull request #1359), not yet numbered on `main`. A viewer
 with `ENUMERATE` on an endpoint sees the threads that endpoint directly supervises, and nothing
-else. Membership is `capability::survey_includes`, and a Kani proof holds the view and `REAP` to one
+else. Membership is `capability_table::survey_includes`, and a Kani proof holds the view and `REAP` to one
 scope.
 
 §142 named the supervision endpoint (its R1) as the likely successor for authority over a live

@@ -1,0 +1,17 @@
+Falsifies `page_frames::verification::mark_used_claims_exactly_the_frames_the_range_touches`.
+
+The defect: `mark_used` rounds the end of the range down, `/` where the rule is `div_ceil`. It reads
+as a harmless simplification of the arithmetic next to it, and it is exactly the rounding
+`mark_free` needs, so the two functions look alike.
+
+Expected to fail: the harness's `assert_eq!(fa.get(i), touched)`, on a range that ends mid-frame.
+In the kernel that hands out the tail of the image, the frame its last byte shares with free memory.
+
+diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
+--- a/crates/page_frames/src/lib.rs
++++ b/crates/page_frames/src/lib.rs
+@@ -397,3 +397,3 @@
+         let lo = (first / FRAME_SIZE) as usize;
+-        let hi = (last.div_ceil(FRAME_SIZE) as usize).min(self.total);
++        let hi = ((last / FRAME_SIZE) as usize).min(self.total);
+ 

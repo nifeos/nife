@@ -54,7 +54,7 @@ bypass. `crates/inter_process_communication` carries six `#[kani::proof]` harnes
 - that a collected sender is forgotten by the rendezvous, which is the rendezvous half of the
   one-shot Reply guarantee.
 
-`crates/capability` carries twelve more. `script/verify` runs them.
+`crates/capability_table` carries twelve more. `script/verify` runs them.
 
 None of them prove anything about `kernel/src/sched.rs`. They prove the pure decision core that
 `sched` calls into. A hand-written fastpath has two possible relationships to that, and choosing
@@ -75,7 +75,7 @@ The invariants both paths must hold, stated so a phase-4 lane can turn each into
 A message is delivered to exactly one receiver or to none. A capability is never widened. A Reply is
 consumed on first use. A blocked thread appears on at most one queue. A thread's mailbox is written
 only while it is parked in a role that expects that write. The first four already have harnesses in
-`crates/inter_process_communication` or `crates/capability`. The fifth is `ipc_reply`'s
+`crates/inter_process_communication` or `crates/capability_table`. The fifth is `ipc_reply`'s
 `WaitRole::Reply` guard and is currently held by a comment and a runtime check.
 
 ## How the two paths stay in agreement

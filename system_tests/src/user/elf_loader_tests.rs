@@ -61,7 +61,10 @@ fn forged_elf_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; 136] {
 /// Falsification: replayable `system_tests/falsifications/user.elf_loader_tests.an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused.patch`
 #[test_case]
 fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
-    let image = forged_elf(mmu::KERNEL_VA_BASE, static_elf::PF_R | static_elf::PF_X);
+    let image = forged_elf(
+        mmu::KERNEL_VA_BASE,
+        static_elf::READABLE | static_elf::EXECUTABLE,
+    );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
@@ -80,7 +83,7 @@ fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
 fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
     let image = forged_elf(
         address_space_layout::IMAGE_BASE,
-        static_elf::PF_R | static_elf::PF_W | static_elf::PF_X,
+        static_elf::READABLE | static_elf::WRITABLE | static_elf::EXECUTABLE,
     );
 
     assert_eq!(
@@ -105,7 +108,7 @@ fn an_image_too_large_for_its_band_is_refused_as_too_large() {
 
     let image = forged_elf_sized(
         IMAGE_BASE,
-        static_elf::PF_R | static_elf::PF_X,
+        static_elf::READABLE | static_elf::EXECUTABLE,
         IMAGE.bytes() + PAGE,
     );
 
@@ -122,7 +125,7 @@ fn an_image_too_large_for_its_band_is_refused_as_too_large() {
 /// would collide with at some later, unrelated address.
 #[test_case]
 fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
-    let image = forged_elf(0x40_0000, static_elf::PF_R | static_elf::PF_X);
+    let image = forged_elf(0x40_0000, static_elf::READABLE | static_elf::EXECUTABLE);
 
     assert_eq!(
         load(&image, 0, &[]).err(),
@@ -142,7 +145,11 @@ fn an_image_past_the_old_ceiling_loads() {
     use address_space_layout::IMAGE_BASE;
     const BYTES: u64 = 2 << 20;
 
-    let image = forged_elf_sized(IMAGE_BASE, static_elf::PF_R | static_elf::PF_X, BYTES);
+    let image = forged_elf_sized(
+        IMAGE_BASE,
+        static_elf::READABLE | static_elf::EXECUTABLE,
+        BYTES,
+    );
     let (space, entry) = load(&image, 0, &[]).expect("a 2 MiB image did not load");
     assert_eq!(entry, IMAGE_BASE);
 
@@ -192,7 +199,7 @@ fn the_initial_ramdisk_holds_a_native_executable() {
     // And one of them has a .bss: memsz > filesz. If this is not true, the test below is
     // vacuous, and we would never know.
     assert!(
-        e.segments().any(|s| s.memsz as usize > s.data.len()),
+        e.segments().any(|s| s.memory_bytes as usize > s.data.len()),
         "no segment has a .bss, so the zero-fill is untested",
     );
 }
@@ -244,7 +251,7 @@ fn the_loader_writes_the_startup_page_read_only() {
         virtual_address: 0x9c_0000,
         pages: 1,
     };
-    let image = forged_elf(IMAGE_BASE, static_elf::PF_R | static_elf::PF_X);
+    let image = forged_elf(IMAGE_BASE, static_elf::READABLE | static_elf::EXECUTABLE);
     let (space, _) = load(&image, 0, &[doorbell]).expect("a one-window spawn did not load");
     let (writable, listed, count) = space.while_installed(|| {
         let (phys, flags) =

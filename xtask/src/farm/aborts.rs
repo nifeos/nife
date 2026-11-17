@@ -287,6 +287,12 @@ pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
         "the clock contract's own host-side test assertions, generated verbatim from \
          crates/clock_contract and unreachable in a target build",
     ),
+    (
+        "sys/pal/nife/addressmap.rs",
+        "a window must not wrap past the top of the address space",
+        "the layout crate's `window`, generated verbatim: a `const fn` the layout's constants call, \
+         so a window that wraps is a compile error in the constant and no running process meets it",
+    ),
 ];
 
 /// Every `library/std/src/**` source cargo recorded as an input to this target's builds.

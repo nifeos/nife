@@ -58,7 +58,7 @@ pub(crate) fn place_kernel(
         unsafe {
             ptr::copy_nonoverlapping(
                 segment.data.as_ptr(),
-                segment.paddr as *mut u8,
+                segment.physical_address as *mut u8,
                 segment.data.len(),
             );
         }
