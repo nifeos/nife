@@ -511,7 +511,7 @@ fn without_symbols(path: &std::path::Path, architecture: &str) -> Result<Vec<u8>
 fn with_note_version(bytes: &[u8], version: u32) -> Result<Vec<u8>, String> {
     let mut head = Vec::new();
     head.extend_from_slice(&((capability_manifest_note::OWNER.len() + 1) as u32).to_le_bytes());
-    head.extend_from_slice(&(capability_manifest_note::DESCRIPTOR_LEN as u32).to_le_bytes());
+    head.extend_from_slice(&(capability_manifest_note::DESCRIPTOR_BYTES as u32).to_le_bytes());
     head.extend_from_slice(&capability_manifest_note::MANIFEST.to_le_bytes());
     head.extend_from_slice(b"nife\0\0\0\0");
     let at: Vec<usize> = bytes

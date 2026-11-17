@@ -859,7 +859,7 @@ fn publish_at(t: &Spawned, set: bool, wall: u64) -> u64 {
     let state = if set {
         clock_contract::state::SET
     } else {
-        clock_contract::state::SYNCED
+        clock_contract::state::SYNCHRONIZED
     };
     // SAFETY: the frame `spawn_timetable_with` allocated for this test, through the direct map.
     let page = unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) };

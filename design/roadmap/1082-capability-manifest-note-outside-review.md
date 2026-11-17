@@ -173,6 +173,10 @@ Example: a stranger reading `const D: [u8; capability_manifest_note::zoned_len(Z
 open the function to learn that the number is bytes of descriptor, not zones; `zoned_descriptor_bytes(ZONES)`
 says it at the call.
 
+Applied, provisional: the units rule decides the `_BYTES` suffix, and the eleven names above,
+`descriptor` in the middle included, are the crate's names. Their `Name:` blocks stay provisional
+until the crate's name review.
+
 ### `service` as the name of a yes-or-no function
 
 Background: `pub fn service(d: &[u8]) -> Result<bool, Error>` answers whether the manifest asks to
@@ -219,11 +223,12 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Follow-on
 
-- **Outstanding.** The four decisions, the move's items, the encoding-direction harness of item 3,
-  the citation rewrite of item 4 and items 5 to 7 and 11 to 15. Checked against
-  `crates/capability_manifest_note/src/lib.rs`: `DESCRIPTOR_LEN`, `service` and `VERSION` keep their
-  names, and `decode_never_panics` still stops at one byte past version 1.
-- **Done.** The wire literal marker: the lint and the move check accept `// wire literal`.
+- **Done.** Items 1 to 6 and 10 to 15, the wire literal marker, and the three names the
+  maintainer or the units rule decides; [the ledger](1082-capability-manifest-note-outside-review/ledger.md)
+  says what each became.
+- **Outstanding.** The stranger run of item 2 and the fuzz workspace of item 8 belong to the move
+  pull request. The unit tests of item 7 that walk the program catalog wait for milestone 1017 to
+  settle where it lives. The two statics in BUGS want a rename lane.
 
 ## BUGS
 
@@ -233,11 +238,12 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
   rename lane before its crate leaves; the lint counts them until then.
 - The review inferred item 8's failure of `tests/fuzz_seed.rs` in the staged repository. The dry run's build step stopped at the manifest before any test ran. The fix is right whether or not the
   inference is.
-- Item 9's recommendation leaves the version 2 and 3 zone walk fuzzed only on nife's private
-  host. If that host stops running the target, the walk's coverage past 57 bytes is the
-  hand-written tests and the seeds alone until item 12 lands.
+- With item 9's opt-in off, the version 2 and 3 zone walk is fuzzed only on the project's own
+  host. Kani covers a version 3 descriptor with one zone; past that, if the host stops running the
+  target, the walk's coverage is the hand-written tests and the seeds alone.
 - The prior-art rows marked unverified (GNU property alignment and ordering, the OpenBSD, NetBSD
-  and Go type numbers) are from memory, and the lane should check them against the specifications before the README cites them.
+  and Go type numbers) are from memory. The README cites only the owners `FreeBSD`, `GNU` and
+  `FDO`, and none of those rows.
 - This block does not review `grant_plan::Manifest`, whose fields the layout spells. If someone adds a field there without a byte here, `every_compiled_in_manifest_round_trips` refuses it at compile time. That holds only while that test lives in a tree that holds both crates (item 7 moves it to `grant_plan`'s).
 
 ## Index row
