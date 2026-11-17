@@ -26,7 +26,8 @@ pub(crate) const PROVEN_ON_SILICON: bool = true;
 /// Extra stack pages for the server, below the single page `run` maps. The write path's programmed
 /// transfer runs deeper than one page: the 2026-11-17 (UTC) write bench's server faulted with `sp`
 /// 0x20 bytes into the unmapped page below the stack's top page, while the read-only build, which
-/// never runs that path, stayed inside it. Four leaves 16 KiB of headroom.
+/// never runs that path, stayed inside it. The depth is inferred from that `sp`, not measured. Four
+/// leaves 16 KiB of headroom (#3694).
 const EXTRA_STACK_PAGES: usize = 4;
 
 /// The mappings for [`EXTRA_STACK_PAGES`] pages, the first directly below `USER_STACK_VA`.
