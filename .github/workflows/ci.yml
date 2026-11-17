@@ -750,16 +750,38 @@ jobs:
             exit 1
           fi
 
-  swish-check:
-    # **The job keeps its name, "three architectures", while it runs two**, because the name is a
-    # required check in the merge queue ruleset and renaming one is an admin act (the header's
-    # 2026-09-30 paragraph). The third leg is `swish-check-x86_64` below since milestone 628
-    # (provisional). The ruleset names that job too (read 2026-10-08 UTC, ruleset 19596094), so
-    # all three legs hold a merge.
-    name: swish-check (the interactive shell, three architectures)
+  # **Two shards and an aggregate, because one runner ran out of budget** (lane
+  # maintainer/swish-check-budget, #3651; the job id and shard names are provisional). The single
+  # job ran 16.5 to 17.7 minutes against its 20 on merge-group runs (run 43882370391: 17.4, with
+  # `script/ci-build swish-check-aarch64-riscv64` at 13.2 minutes and the basalt build at 3.5). Its
+  # time was serial: the build of basalt's programs for both architectures, the builds, then the
+  # boots one after another under TCG, about 9.7 minutes of them. No step regressed and nothing in
+  # it was cheap to remove: the legs share fixture disks and a package source under `target/`, and
+  # the harness holds each line to a latency limit against a baseline, so running boots side by
+  # side in one job would change what is measured. The seam is the architecture, the one the
+  # `test` and `swish-check-x86_64` splits were cut along. Each shard runs one board's region
+  # check and boots, builds basalt's programs for that board alone, and still runs the std
+  # exerciser for every target, because `std_aborts` sweeps a union over them and the row stays
+  # the same command. Every command the single job ran is in exactly one shard, and the
+  # `--input-race` boot stays with aarch64, where it ran (script/ci-build's table has the rows).
+  # The shards pay setup twice, about two runner-minutes a run.
+  #
+  # The required check keeps its name on the aggregate below, as `test` does.
+  swish-check-shard:
+    name: swish-check shard (${{ matrix.arch }})
     runs-on: ubuntu-26.04-arm
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
+    strategy:
+      # Both shards finish, so a red one says which architecture failed and the other still
+      # reports.
+      fail-fast: false
+      matrix:
+        include:
+          - check: swish-check-aarch64
+            arch: aarch64
+          - check: swish-check-riscv64
+            arch: riscv64
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. The bound is a hang detector, not a budget, so it sits well above an
     # honest run. Derivation, from when this job carried x86_64's leg: that leg alone was about 17
@@ -881,11 +903,11 @@ jobs:
       # the rest.
       - if: steps.merge-group-gate.outputs.skip != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push')
         name: Build basalt's delivered programs from this tree
-        run: cargo xtask basalt-build aarch64 riscv64 && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
+        run: cargo xtask basalt-build ${{ matrix.arch }} && echo "NIFE_BASALT_REPOSITORY=$GITHUB_WORKSPACE/target/basalt-built" >> "$GITHUB_ENV"
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
       - if: steps.merge-group-gate.outputs.skip != 'true'
-        run: helpers/hang_evidence.py run -- script/ci-build swish-check-aarch64-riscv64
+        run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
         env:
           NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
       - name: Summarize where the time went
@@ -895,7 +917,7 @@ jobs:
         if: always() && hashFiles('target/time-record.tsv') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: time-record-swish-check
+          name: time-record-swish-check-shard-${{ matrix.check }}
           path: target/time-record.tsv
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
@@ -907,6 +929,47 @@ jobs:
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
+  # **The name the ruleset requires, kept stable over the shards**, as `test` does. It keeps the
+  # name "three architectures" because the name is a required check in the merge queue ruleset
+  # and renaming one is an admin act (the header's 2026-09-30 paragraph); the third leg is
+  # `swish-check-x86_64` below since milestone 628 (provisional), and the ruleset names that job
+  # too (read 2026-10-08 UTC, ruleset 19596094), so all three legs hold a merge. It reads one
+  # result and boots nothing, so it runs on the x86_64 pool and has no checkout. See the BUGS
+  # paragraph above `test` for what the aggregate costs in queue time.
+  swish-check:
+    name: swish-check (the interactive shell, three architectures)
+    runs-on: ubuntu-26.04
+    needs: [gate, swish-check-shard]
+    # The shards' own condition, so a draft or a prose-only change skips this by condition (which
+    # reports Success) rather than leaving the required check unreported.
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    timeout-minutes: 5
+    steps:
+      # Whether the shards were meant to run is the shards' own condition, never their result: a
+      # pull request without `full-ci` skips them by design and that passes, while a skip in a
+      # merge group or a push, or any result but success where they were meant to run, fails.
+      - name: Report the shards' combined result
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAVY: ${{ needs.gate.outputs.heavy }}
+          RESULT: ${{ needs['swish-check-shard'].result }}
+        run: |
+          if [ "$EVENT_NAME" != merge_group ] && [ "$EVENT_NAME" != push ] && [ "$HEAVY" = false ]; then
+            if [ "$RESULT" = skipped ]; then
+              echo "==> swish-check shards: skipped by design (the legs run in the merge queue)"
+            else
+              echo "==> swish-check shards: $RESULT, though they were not meant to run here"
+              exit 1
+            fi
+          elif [ "$RESULT" = success ]; then
+            echo "==> swish-check shards: the aarch64 and riscv64 legs passed"
+          else
+            # script/ci-log-baseline attributes this job by its last `==>` line; the failing
+            # shard's own job names the leg.
+            echo "==> swish-check shards: $RESULT (the failing shard's job names the leg)"
+            exit 1
+          fi
 
   # **The x86_64 leg of the interactive-shell check, on an x86_64 runner, under KVM** (milestone
   # 628 (provisional); the job id and name are provisional). On the arm64 runner this leg ran the

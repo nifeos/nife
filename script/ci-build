@@ -116,11 +116,11 @@ cd "$(dirname "$0")/.."
 # same way. calef, 2026-10-13 (UTC): "1 is preferable because that tests jig and basalt's delivery
 # mechanism as well."
 #
-# **CI runs `swish-check` as the two `ci` rows after it** (milestone 628 (provisional); the row
-# names are provisional): the aarch64 and riscv64 legs on the arm64 runner, whose weakly ordered
-# host is why they stay there, and the x86_64 leg on an x86_64 runner, where it boots under KVM.
-# Together they are exactly the `local` row, which is what a developer runs. ci.yml's
-# `swish-check-x86_64` job has the measurement. The `local` row and the aarch64 row end with the
+# **CI runs `swish-check` as the three `ci` rows after it** (milestone 628 (provisional); the row
+# names are provisional): the aarch64 and riscv64 legs each on an arm64 runner, whose weakly
+# ordered host is why they stay there, and the x86_64 leg on an x86_64 runner, where it boots under
+# KVM. Together they are exactly the `local` row, which is what a developer runs. ci.yml's
+# `swish-check-x86_64` and `swish-check-shard` jobs have the measurements. The `local` row and the aarch64 row end with the
 # `--input-race` boot, the input driver's red test (notes/swish-check-flake-2026w42.md). It comes
 # last because its program feature rebuilds `components`, which the plain legs must not boot.
 #
@@ -150,7 +150,8 @@ test-aarch64-riscv64|ci|script/test --arch aarch64,riscv64
 test-x86_64|ci|script/test --arch x86_64 --no-host
 test-host|ci|cargo xtask test --host-only
 swish-check|local|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check && script/swish-check --arch aarch64 --input-race
-swish-check-aarch64-riscv64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/region-check --arch aarch64 && script/region-check --arch riscv64 && script/swish-check --arch aarch64 && script/swish-check --arch riscv64 && script/swish-check --arch aarch64 --input-race
+swish-check-aarch64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/region-check --arch aarch64 && script/swish-check --arch aarch64 && script/swish-check --arch aarch64 --input-race
+swish-check-riscv64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/region-check --arch riscv64 && script/swish-check --arch riscv64
 swish-check-x86_64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/region-check --arch x86_64 && script/swish-check --arch x86_64
 rg-threads-aarch64-riscv64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 cargo test -p walk_pricing && NIFE_RIPGREP_REQUIRED=1 NIFE_SMP=4 script/test --arch aarch64,riscv64 --test ripgrep && NIFE_IOPING_REQUIRED=1 NIFE_HACKBENCH_REQUIRED=1 NIFE_SPEEDTEST1_REQUIRED=1 script/test --arch aarch64,riscv64 --test unmodified_
 rg-threads-x86_64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 NIFE_SMP=4 script/test --arch x86_64 --test ripgrep && NIFE_IOPING_REQUIRED=1 NIFE_HACKBENCH_REQUIRED=1 NIFE_SPEEDTEST1_REQUIRED=1 script/test --arch x86_64 --test unmodified_
