@@ -43,7 +43,7 @@ architecture.
 | `boot_usb_keyboard` | `boot_progenitor`; starter in `user/device_starters.rs` | `usb_keyboard_driver` | all | an `Interrupt`, about a dozen xHCI register pages and eleven DMA pages as mappings |
 | `boot_screen_terminal` | `boot_progenitor`; starter in `user/device_starters.rs` | `framebuffer_driver`, `display_terminal` | all, UEFI boots only | the firmware screen's aperture |
 | `boot_e1000e_network` | `boot_progenitor`; starter in `user/device_starters.rs` | `net_stack` over an `e1000e` | all (a PCIe part; exercised on `x86_64`) | BAR0's two queue pages and an 18-page DMA region as mappings |
-| `boot_designware_network` | `boot_progenitor`; starter in `user/device_starters.rs` | `net_stack` over radon's GMAC | riscv64 | nothing until `PROVEN_ON_SILICON` |
+| `boot_designware_network` | `boot_progenitor`; starter in `user/device_starters.rs` | `net_stack` over radon's GMAC | riscv64 | nothing; `PROVEN_ON_SILICON` is `true` |
 | `install_service::confirm` | `boot_progenitor`; in `user/install_service.rs` | `system_installer` (confirm role) | `x86_64` | one disk's NVMe endpoint |
 
 ### Started by the kernel on a real boot, outside `boot_progenitor`
@@ -122,7 +122,7 @@ window into a restarted driver.
    (the device control planes leave the kernel) builds.
 5. `entropy` in instruction mode: the fact travels in the inert-configuration page (§111 (inert
    configuration is a read-only page)), and the kernel stops building the service.
-6. `net_stack` over `e1000e`, then over the GMAC once `PROVEN_ON_SILICON` is true.
+6. `net_stack` over `e1000e`, then over the GMAC, whose `PROVEN_ON_SILICON` is `true`.
 7. The screen terminal.
 8. The xHCI keyboard, last, because it needs the multi-page device window.
 9. `install_service::offer` into the progenitor, and the tour behind a non-default `tour` feature

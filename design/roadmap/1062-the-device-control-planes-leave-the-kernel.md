@@ -278,7 +278,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
 - **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
-- **Outstanding.** Step 3: `PROVEN_ON_SILICON` is `false` until radon boots #3498.
+- **Done.** Step 3: radon booted it on 2026-11-17 UTC (main `cfe18db337`, `LEASED-AND-MEASURED`, `coherence : Coherent`) and `PROVEN_ON_SILICON` is `true`.
 - **Done.** Step 5 in #3499: `components/src/power_management_chip_route.rs`.
 - **Outstanding.** A timeout on `reboot`'s call to the route waits on a timed call.
 - **Outstanding.** Step 7: the measurement; "Cost and effort" still reads not measured.

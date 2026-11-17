@@ -179,7 +179,7 @@ Each way it can end, by the last lines:
 
 | what the log shows | meaning | next |
 |---|---|---|
-| `verdict LEASED-AND-MEASURED` with `coherence : Coherent` | the driver works, and radon's DMA is coherent by measurement | fill the Results row; a lane flips `PROVEN_ON_SILICON` citing it, and records the coherence result in 655 |
+| `verdict LEASED-AND-MEASURED` with `coherence : Coherent` | the driver works, and radon's DMA is coherent by measurement | fill the Results row; a lane flips `PROVEN_ON_SILICON` citing it (done 2026-11-17 UTC), and records the coherence result in 655 |
 | `INCONCLUSIVE-COHERENCE` | it leased, so DMA works in practice, but the loopback never ran | record it; the probe needs a second method (PHY loopback), a lane |
 | `refused at bring-up: Port(NotCoherent(..))` | radon is not coherent, in the direction named | stop: 655's proposal above applies, and this is a finding for fatal risk 6 |
 | `refused at bring-up: ClocksNotRunning` or `ResetsHeld` | the clock words did not read back | the `clocks` and `resets` lines say which; a lane |
@@ -200,8 +200,17 @@ Each way it can end, by the last lines:
 | 2026-10-20 | `290d3ba8b` | `Coherent` | 1000 Mbit/s full duplex, 2830 ms | 192.168.8.200 | 104,857,600 in 362.965 s | 2.311 Mbit/s | `LEASED-AND-MEASURED` |
 | 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.542 s | 14.329 Mbit/s | `LEASED-AND-MEASURED` |
 | 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.606 s | 14.313 Mbit/s | `LEASED-AND-MEASURED` |
+| 2026-11-17 | `cfe18db337` | `Coherent` | 1000 Mbit/s full duplex, 2851 ms | leased | 104,857,600 in 6.017 s | 139.399 Mbit/s | `LEASED-AND-MEASURED` |
 
-Every row predates the control process. The first row is
+The 2026-11-17 UTC row is a boot of main `cfe18db337` with the image's `network_bench` feature,
+through the control process and the clock and reset server's bring-up order: `clocks 6/6 running,
+resets 2/2 released`, `syscon` already RGMII, `mac core : version 0x00004152, 40-bit DMA`, `phy :
+id 0x4f51e91b` with settings from `Fallback`, `coherence : Coherent` (payload `Matches`), and a
+link after 2851 ms. Its rate is one run to a laptop peer over a USB Ethernet adapter: it shows the
+path works and is not a link ceiling. That boot set `PROVEN_ON_SILICON`. The earlier boot of the
+control process (`dd47a83e88`) ran the code as merged at #3498. The log is held with the bench
+session's logs and its committed path is added when it lands. The first three rows predate the
+control process. The first row is
 `bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
 the boots were run, and why the console was not `script/board-console`. Its two earlier boots had
 the cable in `ethernet@16040000`'s jack and ended `FAILED: no link` after 5003 ms, which is the
@@ -230,13 +239,12 @@ Mbit/s, how QEMU reproduces it, the fix, and what the later rows measured of it.
   radon, empties its buffer one 4,088-byte call at a time through byte loops.
   [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the QEMU reproduction, the
   fix and the bench step that measures it on radon; no radon boot has run it yet.
-- **One board.** The Results rows are three boots, on one board, with one cable. Every other test
+- **One board.** The Results rows are four boots, on one board, with one cable. Every other test
   runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
   header, not the device; QEMU has no model of this controller.
-- **The booted system leaves the port alone**
-  (`designware_ethernet_service::PROVEN_ON_SILICON` is `false`), because the control process has
-  not run on silicon. A bench boot that ends `LEASED-AND-MEASURED` with `coherence : Coherent` is
-  what sets it `true`; with no cable in the jack it then costs the five-second link wait.
+- **The booted system brings the port up**
+  (`designware_ethernet_service::PROVEN_ON_SILICON` is `true`), so with no cable in the jack every
+  boot costs the five-second link wait.
 - **`gmac0` only.** `gmac1`'s clocks all live in the SYS domain and no plan for them exists; the
   milestone proposed in pull request #2470 is that work.
 - The PHY's delays and drive strengths come from `Settings::FALLBACK_GMAC0` on radon, because
