@@ -1329,8 +1329,10 @@ impl<'a> Verbs<'a> {
         let r = &self.records[i * VERB_RECORD_BYTES..(i + 1) * VERB_RECORD_BYTES];
         let word = &r[..grant_contract::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
-        let bits =
-            u16::from_le_bytes([r[grant_contract::MAXIMUM_VERB], r[grant_contract::MAXIMUM_VERB + 1]]);
+        let bits = u16::from_le_bytes([
+            r[grant_contract::MAXIMUM_VERB],
+            r[grant_contract::MAXIMUM_VERB + 1],
+        ]);
         (
             &word[..len],
             grant_contract::ManifestAuthorities::from_bits(bits)
@@ -1414,7 +1416,9 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
         if grant_contract::ManifestAuthorities::from_bits(bits).is_none() {
             return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB));
         }
-        if record[grant_contract::MAXIMUM_VERB + 2] != 0 || record[grant_contract::MAXIMUM_VERB + 3] != 0 {
+        if record[grant_contract::MAXIMUM_VERB + 2] != 0
+            || record[grant_contract::MAXIMUM_VERB + 3] != 0
+        {
             return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB + 2));
         }
         if previous.is_some_and(|p| !before(p, &word[..len])) {
