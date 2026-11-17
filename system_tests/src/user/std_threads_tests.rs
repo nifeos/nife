@@ -83,7 +83,7 @@ pub(super) fn run_as_process_with(
         .expect("the program's first thread could not join its process");
     assert_eq!(
         page,
-        current_cpu_contract::PAGE_VA,
+        current_cpu_contract::PAGE_VIRTUAL_ADDRESS,
         "a process's first member reads the page every thread read before"
     );
 

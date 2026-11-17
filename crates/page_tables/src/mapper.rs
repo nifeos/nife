@@ -31,10 +31,10 @@ pub enum MapError {
     /// The format has no leaf of the size asked for ([`PageFormat::block_entry`] declined). Name
     /// provisional.
     UnsupportedSize,
-    /// **A region that is not a region**: its `base + size` wraps `u64`, so it has no end. Only
-    /// [`domain::grant_pages`] raises this, and only for an input no caller can construct today; it
-    /// exists because refusing such a region is what stops the page enumeration from wrapping into
-    /// addresses *outside* the grant. See notes/paging.md, "DMA domains".
+    /// **A region that is not a region**: its `base + size` wraps `u64`, so it has no end.
+    /// [`domain::grant_pages`] raises this, and so do [`Mapper::map_range`] and
+    /// [`Mapper::map_span`] for a run whose end passes `u64::MAX`; refusing such a region is what
+    /// stops the page enumeration from wrapping into addresses *outside* the grant. See notes/paging.md, "DMA domains".
     BadRegion,
     /// **The address space already maps this frame with flags that, beside these, would make the
     /// page writable through one mapping and executable through the other**
@@ -46,6 +46,26 @@ pub enum MapError {
     /// milestone/969-no-frame-is-writable-and-executable-in-one-space.
     WritableAndExecutable,
 }
+
+impl core::fmt::Display for MapError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            MapError::OutOfPageFrames => "the allocator has no page frame for a table",
+            MapError::Misaligned => "an address or frame is not aligned as the mapping needs",
+            MapError::AlreadyMapped => "something is already mapped here",
+            MapError::WrongHalf => "the address belongs to the other half of the address space",
+            MapError::NotMapped => "nothing is mapped at this address",
+            MapError::InsideBlock => "the page is part of a block and cannot be unmapped alone",
+            MapError::UnsupportedSize => "the format has no leaf of that size",
+            MapError::BadRegion => "the region has no end inside the address space",
+            MapError::WritableAndExecutable => {
+                "the mapping would make a frame writable and executable in one space"
+            }
+        })
+    }
+}
+
+impl core::error::Error for MapError {}
 
 /// Builds page tables, for any [`PageFormat`].
 ///
@@ -77,6 +97,13 @@ where
     /// # Safety
     /// `root` must be a zeroed, page-aligned frame, and `phys_to_ptr` must satisfy the contract in
     /// the type's docs.
+    ///
+    /// Every frame `alloc_page_frame` returns must also be page-aligned, owned exclusively by this
+    /// mapper from the moment it is returned (no live leaf maps it, and nothing else holds a
+    /// reference into it), and reachable through `phys_to_ptr`. The safe methods zero each such
+    /// frame through that pointer, so a frame that breaks any of these makes safe code reach
+    /// undefined behavior. A misaligned frame is refused with [`MapError::Misaligned`] before it is
+    /// touched; the rest the mapper cannot check.
     pub unsafe fn new(root: u64, half: Half, alloc_page_frame: A, phys_to_ptr: P) -> Self {
         Self {
             root,
@@ -85,6 +112,22 @@ where
             phys_to_ptr,
             _fmt: PhantomData,
         }
+    }
+
+    /// Take a frame from the allocator and zero it, before it becomes reachable by the hardware, or
+    /// the walk reads whatever garbage was in RAM and follows it. A misaligned frame is refused
+    /// before it is written through.
+    fn fresh_table(&mut self) -> Result<u64, MapError> {
+        let new = (self.alloc_page_frame)().ok_or(MapError::OutOfPageFrames)?;
+        if !new.is_multiple_of(PAGE_SIZE) {
+            return Err(MapError::Misaligned);
+        }
+        // SAFETY: a fresh, page-aligned frame the allocator gave up exclusively, reachable through
+        // `phys_to_ptr`, per `new`'s contract.
+        unsafe {
+            (*(self.phys_to_ptr)(new)).entries = [0; ENTRIES];
+        }
+        Ok(new)
     }
 
     /// The physical address of the top-level table.
@@ -156,13 +199,7 @@ where
             let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
 
             if !F::is_present(*entry) {
-                let new = (self.alloc_page_frame)().ok_or(MapError::OutOfPageFrames)?;
-
-                // SAFETY: a fresh frame from the allocator. Zero it before it becomes reachable by
-                // the hardware, or the walk reads whatever garbage was in RAM and follows it.
-                unsafe {
-                    (*(self.phys_to_ptr)(new)).entries = [0; ENTRIES];
-                }
+                let new = self.fresh_table()?;
 
                 *entry = F::table_entry(new, level);
             } else if F::is_block(*entry) {
@@ -223,11 +260,7 @@ where
             // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
             let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
             if !F::is_present(*entry) {
-                let new = (self.alloc_page_frame)().ok_or(MapError::OutOfPageFrames)?;
-                // SAFETY: a fresh frame, zeroed before it becomes reachable (see `map`).
-                unsafe {
-                    (*(self.phys_to_ptr)(new)).entries = [0; ENTRIES];
-                }
+                let new = self.fresh_table()?;
                 *entry = F::table_entry(new, level);
             } else if F::is_block(*entry) {
                 return Err(MapError::AlreadyMapped);
@@ -264,6 +297,11 @@ where
         if !len.is_multiple_of(PAGE_SIZE) {
             return Err(MapError::Misaligned);
         }
+        // A span that runs past the top of the address space has no end: refuse it whole, before
+        // anything is mapped, so no address below wraps.
+        if va.checked_add(len).is_none() || pa.checked_add(len).is_none() {
+            return Err(MapError::BadRegion);
+        }
         let mut done = 0;
         while done < len {
             let size = PageSize::largest_fitting(va + done, pa + done, len - done, largest);
@@ -273,7 +311,8 @@ where
         Ok(())
     }
 
-    /// Map `count` consecutive pages.
+    /// Map `count` consecutive pages. A run whose end passes `u64::MAX` in either address space is
+    /// refused whole with [`MapError::BadRegion`], before anything is mapped.
     pub fn map_range(
         &mut self,
         va: u64,
@@ -281,6 +320,10 @@ where
         count: u64,
         flags: Flags,
     ) -> Result<(), MapError> {
+        let span = count.checked_mul(PAGE_SIZE).ok_or(MapError::BadRegion)?;
+        if va.checked_add(span).is_none() || pa.checked_add(span).is_none() {
+            return Err(MapError::BadRegion);
+        }
         for i in 0..count {
             self.map(va + i * PAGE_SIZE, pa + i * PAGE_SIZE, flags)?;
         }
@@ -449,6 +492,7 @@ where
     ///
     /// Name: provisional (lane `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
     pub fn walk(&self, va: u64, readable: impl Fn(u64) -> bool) -> Walk {
+        const { assert!(F::LEVELS <= MAXIMUM_WALK) };
         let mut walk = Walk {
             steps: [WalkStep::default(); MAXIMUM_WALK],
             len: 0,
@@ -458,7 +502,7 @@ where
             return walk;
         }
         let mut table = self.root;
-        for level in 0..F::LEVELS.min(MAXIMUM_WALK) {
+        for level in 0..F::LEVELS {
             if !readable(table) {
                 walk.end = WalkEnd::Unreadable(table);
                 return walk;

@@ -24,7 +24,7 @@ accounting is not worth a new program and protocol. Milestone 753 records that r
 ## What it would do
 
 - `kernel::cap::CAPABILITY_TABLE_SLOTS` and `abi::CAPABILITY_TABLE_SLOTS` go from 32 to 64.
-- The table's free-slot word widens from `u32` to `u64`, and `capability::MAX_SLOTS` follows it.
+- The table's free-slot word widens from `u32` to `u64`, and `capability_table::MAX_SLOTS` follows it.
   Every proof and test that checks the word against the array runs at the new width.
 - `abi::fault::FAULT_EP_SLOT` is `CAPABILITY_TABLE_SLOTS - 1`, so it moves from 31 to 63. Every
   supervisor and every child agrees on that number, and they are all rebuilt from this tree.
@@ -109,7 +109,7 @@ answer that question with a measurement rather than at the next wall.
   measured and recorded in this block and in `notes/capability-peak-trace.md`.
 - **Done.** The Kani harnesses that range over slots now cover 64 values: all five verify, in 0.03
   to 3.1 s, no slower than at 32 (`notes/process-view/the-machine-and-your-share.md` has the table).
-  Two `crates/capability` falsification patches were re-cut for the `u64` word and replayed.
+  Two `crates/capability_table` falsification patches were re-cut for the `u64` word and replayed.
 - **Recorded.** riscv64 `ipc_send_receive` is at +4.4% of its 5% band and x86_64's is at the same
   figure, so the next change to the fastpath meets the budget: the table in
   `design/roadmap/0754-the-capability-table-grows-to-64-slots.md`.

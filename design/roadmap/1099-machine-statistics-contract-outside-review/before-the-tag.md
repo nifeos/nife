@@ -41,12 +41,12 @@ An appendix to [the milestone](../1099-machine-statistics-contract-outside-revie
    two cannot drift, but across two pinned repositories they can.
    Evidence: `crates/machine_statistics_contract/src/lib.rs` lines 27 and 51;
    `kernel/src/cpu.rs` line 28.
-   Change: this is Decision 1. Under the recommendation, the crate carries its own
-   `CPU_LINES: usize = 8` (name provisional) and a `const` assertion that it equals
+   Change: this is Decision 1, ruled 2026-11-14 (UTC), option A. The crate carries its own
+   `PROCESSOR_LINES: usize = 8` (name provisional) and a `const` assertion that it equals
    `current_cpu_contract::CPU_ID_BOUND`, so a bound change fails this crate's build and forces a
-   version decision here instead of moving the layout silently. The re-export stays for callers
-   that size arrays by it. One sentence at `VERSION` says the line count is part of what the
-   version names.
+   version decision here instead of moving the layout silently. The re-export of `CPU_ID_BOUND`
+   is gone, and every user of it names `PROCESSOR_LINES`. The doc comment at `PROCESSOR_LINES`
+   states that the line count is part of what the version names.
    Door: one-way (layout). Effort: S.
 
 7. Nothing is machine-checked, and the README's "What is proven" section will have nothing to say.

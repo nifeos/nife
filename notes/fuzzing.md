@@ -151,7 +151,7 @@ in `crates/device_tree_blob/tests/fixtures/`, `script/fuzz` passes that director
 extra corpus; a copy under `fuzz/` would drift from it. [fuzz/seeds/README.md](../fuzz/seeds/README.md)
 lists each target's seeds.
 
-The ELF seeds, `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, are 120 bytes each, because nothing
+The ELF seeds, `crates/static_elf/tests/fixtures/minimal_rx_<machine>.elf`, are 120 bytes each, because nothing
 else in the tree is a small ELF (our real binaries are over a megabyte). They are hand-assembled,
 and [fuzz/seeds/README.md](../fuzz/seeds/README.md) carries the generator that produces them.
 

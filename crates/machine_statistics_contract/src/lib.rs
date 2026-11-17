@@ -29,7 +29,7 @@
 //! - Busy time is not split into user and system time.
 //! - A sample's age is bounded by the writer's tick and not by the page: a counter the writer
 //!   publishes once per tick is up to one tick old, and a parked cpu keeps its last sample.
-//! - The line count is fixed at [`CPU_ID_BOUND`]; a machine with more cpus does not fit.
+//! - The line count is fixed at [`PROCESSOR_LINES`]; a machine with more cpus does not fit.
 //! - There is no swap, page-cache or block I/O counter.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table), for the crate and for "the machine statistics
@@ -40,10 +40,24 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-/// The bound on cpu ids, re-exported from the current-cpu page. This page's layout depends on it
-/// (see [`WORDS`]), so its identity follows the same rule as that page's: any change to the value
-/// re-mints [`MAGIC`] and bumps [`VERSION`] in the same change.
-pub use current_cpu_contract::CPU_ID_BOUND;
+/// The number of processor lines after the header line: one per possible processor, eight today.
+/// This page's layout depends on it (see [`WORDS`]), so it is this crate's own constant and part
+/// of the page's identity, frozen with [`MAGIC`], [`VERSION`] and [`INTERFACE_ID`].
+///
+/// It must equal `current_cpu_contract::CPU_ID_BOUND`, and a compile-time assertion below holds the
+/// two together. The rule: a change to that bound fails this crate's build until this page's
+/// [`MAGIC`] digit and [`VERSION`] move in the same change, and only then does this constant
+/// follow. A kernel and a reader that agree on the identity values therefore cannot disagree on the
+/// layout, because the bound moves only together with the version a reader checks.
+///
+/// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1099-statistics-identity-frozen,
+/// following design/naming.md (a name says what the thing is, and a count says what it counts).
+pub const PROCESSOR_LINES: usize = 8;
+
+const _: () = assert!(
+    PROCESSOR_LINES == current_cpu_contract::CPU_ID_BOUND,
+    "the processor-line count moved with the CPU id bound: bump VERSION and re-mint MAGIC first"
+);
 
 /// The page's first word: what tells a prepared page from a frame nobody has written.
 pub const MAGIC: [u8; 8] = *b"MACHSTA1";
@@ -51,7 +65,7 @@ pub const MAGIC: [u8; 8] = *b"MACHSTA1";
 /// The page layout's version, written into the header line at [`word::VERSION`] and checked by
 /// every reader before it trusts any other word. A break bumps this and re-mints [`MAGIC`]'s digit
 /// in the same change; a shared page serves one generation, so one word carries it whole. The
-/// line count ([`CPU_ID_BOUND`]) is part of what the version names.
+/// line count ([`PROCESSOR_LINES`]) is part of what the version names.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -64,7 +78,7 @@ pub const VERSION: u32 = 1;
 pub const INTERFACE_ID: u64 = 4;
 
 /// The words the page carries: one header line, then one line per possible cpu.
-pub const WORDS: usize = word::LINE * (1 + CPU_ID_BOUND);
+pub const WORDS: usize = word::LINE * (1 + PROCESSOR_LINES);
 
 /// The page's size in bytes. Far under one frame, which is the unit it is mapped as.
 pub const PAGE_BYTES: usize = WORDS * 8;
@@ -201,7 +215,7 @@ pub struct Snapshot {
     /// Frames free.
     pub free_frames: u64,
     /// Every possible cpu's line, indexed by cpu id.
-    pub cpus: [Cpu; CPU_ID_BOUND],
+    pub cpus: [Cpu; PROCESSOR_LINES],
 }
 
 impl Snapshot {
@@ -244,7 +258,7 @@ impl Snapshot {
         if words[word::VERSION] != u64::from(VERSION) {
             return None;
         }
-        let mut cpus = [Cpu::default(); CPU_ID_BOUND];
+        let mut cpus = [Cpu::default(); PROCESSOR_LINES];
         for (id, c) in cpus.iter_mut().enumerate() {
             let at = |offset: usize| words[word::cpu(id) + offset];
             *c = Cpu {
@@ -434,10 +448,16 @@ mod tests {
         w
     }
 
+    /// Falsification: replayable `crates/machine_statistics_contract/falsifications/tests.the_processor_line_count_equals_the_cpu_id_bound.patch`
+    #[test]
+    fn the_processor_line_count_equals_the_cpu_id_bound() {
+        assert_eq!(PROCESSOR_LINES, current_cpu_contract::CPU_ID_BOUND);
+    }
+
     #[test]
     fn every_line_is_its_own_cache_line() {
         assert_eq!(word::cpu(0), 8);
-        assert_eq!(word::cpu(CPU_ID_BOUND - 1) + word::LINE, WORDS);
+        assert_eq!(word::cpu(PROCESSOR_LINES - 1) + word::LINE, WORDS);
     }
 
     #[test]
@@ -518,13 +538,13 @@ mod tests {
         let mut w = prepared();
         w[word::TOTAL_FRAMES] = u64::MAX;
         w[word::FREE_FRAMES] = u64::MAX;
-        for id in 0..CPU_ID_BOUND {
+        for id in 0..PROCESSOR_LINES {
             for offset in 0..=word::RUNNABLE {
                 w[word::cpu(id) + offset] = u64::MAX;
             }
         }
         let s = Snapshot::from_words(&w).unwrap();
-        assert_eq!(s.online_cpus(), CPU_ID_BOUND);
+        assert_eq!(s.online_cpus(), PROCESSOR_LINES);
         assert_eq!(s.total_bytes(), u64::MAX);
         assert_eq!(s.free_bytes(), u64::MAX);
         assert_eq!(s.busy_ticks(), u64::MAX);

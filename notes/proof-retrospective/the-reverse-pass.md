@@ -47,7 +47,7 @@ Which harnesses prove a property that could plausibly have been false?
 
 Judgment, harness by harness, on the ones that look weakest.
 
-`capability::subset_is_reflexive` is the clearest case. It proves `a.is_subset_of(a)` for every
+`capability_table::subset_is_reflexive` is the clearest case. It proves `a.is_subset_of(a)` for every
 `a`, and `is_subset_of` is `self.0 & !other.0 == 0`. Reflexivity is then `a & !a == 0`, a tautology of
 the two operators. Work through the plausible ways to get `is_subset_of` wrong and none of them
 break it: reversing the operands passes, writing it as `self.0 & other.0 == self.0` passes, using the

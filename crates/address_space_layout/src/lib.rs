@@ -31,7 +31,8 @@
 //!
 //! Then write it with the band's function, so the compiler checks it: [`pair_page`],
 //! [`runtime_window`] and [`service_window`] return their argument unchanged and stop the build if
-//! it is outside the band or not page aligned.
+//! it is outside the band or not page aligned. A window of many pages goes through [`window`],
+//! which checks the whole of it against the band.
 
 //! # Why these numbers
 //!
@@ -50,8 +51,11 @@
 //!
 //! - Pair pages are checked for membership, not for collisions within one process; a program with
 //!   several windows asserts their disjointness itself.
-//! - A band function checks one page. A window of many pages whose first page sits near a band's
-//!   top runs into the next band unseen; [`Band::holds`] is the whole-range check.
+//! - [`pair_page`], [`runtime_window`] and [`service_window`] check one page. A window of many
+//!   pages is written with [`window`]; one written with a band function alone can run into the next
+//!   band unseen.
+//! - [`window`] checks a window against its band, not against another window in the same band;
+//!   disjoint windows are asserted by the crate that places them.
 //! - Other crates restate some of these numbers, pinned by their own tests.
 //! - A loader that reports a too-large image as "could not spawn" hides [`check_image`]'s reason.
 //! - **The layout is fixed.** Every band and every fixed window sits at one address in every
@@ -203,34 +207,55 @@ pub const MAXIMUM_STACK_PAGES: u64 = STACK.bytes() / PAGE - 1;
 /// of [`PROCESS_PAGES`], in the same 2 MiB page-table window as [`STACK_TOP_PAGE`].
 pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
 
+/// **A window's address, checked against its band at compile time, for the whole window.** Use it
+/// in a `const`: `const BLOCK_CHANNEL: u64 = window(SERVICE_WINDOWS, 0x5000_0000, 8 << 20);`. It
+/// returns `start_virtual_address` unchanged, and it stops the build unless the start and the
+/// length are page aligned, the length is not zero, and all of `[start_virtual_address,
+/// start_virtual_address + bytes)` lies inside `band`. [`pair_page`], [`runtime_window`] and
+/// [`service_window`] are this for one page of their bands.
+///
+/// Name: provisional, ruled provisionally by the maintainer on 2026-11-14 (UTC) (block 1076
+/// decision 3); the architect may revisit it before the first tag.
+///
+/// # Examples
+///
+/// ```
+/// use address_space_layout::{window, SERVICE_WINDOWS};
+///
+/// const BLOCK_CHANNEL: u64 = window(SERVICE_WINDOWS, 0x5000_0000, 8 << 20);
+/// assert_eq!(BLOCK_CHANNEL, 0x5000_0000);
+/// ```
+pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
+    assert!(
+        start_virtual_address.is_multiple_of(PAGE),
+        "a window must start on a page"
+    );
+    assert!(
+        bytes.is_multiple_of(PAGE),
+        "a window must be a whole number of pages"
+    );
+    let Some(end_virtual_address) = start_virtual_address.checked_add(bytes) else {
+        panic!("a window must not wrap past the top of the address space");
+    };
+    assert!(
+        band.holds(start_virtual_address, end_virtual_address),
+        "a window must lie wholly inside its band"
+    );
+    start_virtual_address
+}
+
 /// **A pair page's address, checked against the map at compile time.** Use it in a `const`:
 /// `const CTL_VA: u64 = pair_page(0x60_0000);`. The value is unchanged, so the address still reads
 /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
 /// aligned, stops the build instead of colliding with a runtime page at run time.
 pub const fn pair_page(virtual_address: u64) -> u64 {
-    assert!(
-        virtual_address.is_multiple_of(PAGE),
-        "a pair page must be page aligned"
-    );
-    assert!(
-        PAIR_PAGES.contains(virtual_address),
-        "a pair page must lie in PAIR_PAGES (address_space_layout)"
-    );
-    virtual_address
+    window(PAIR_PAGES, virtual_address, PAGE)
 }
 
 /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`RUNTIME_WINDOWS`].
 pub const fn runtime_window(virtual_address: u64) -> u64 {
-    assert!(
-        virtual_address.is_multiple_of(PAGE),
-        "a runtime window must be page aligned"
-    );
-    assert!(
-        RUNTIME_WINDOWS.contains(virtual_address),
-        "a runtime window must lie in RUNTIME_WINDOWS (address_space_layout)"
-    );
-    virtual_address
+    window(RUNTIME_WINDOWS, virtual_address, PAGE)
 }
 
 /// **Where the initial ramdisk archive is mapped**, read-only, before a program's `_start` runs: a
@@ -239,21 +264,13 @@ pub const fn runtime_window(virtual_address: u64) -> u64 {
 ///
 /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
 /// `INITIAL_RAMDISK_VA`: `va` is ruled to expand. Moved here from the kernel's and the runtime's
-/// two copies of it (milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves), item 11).
+/// two copies of it.
 pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
 
 /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
 /// [`SERVICE_WINDOWS`].
 pub const fn service_window(virtual_address: u64) -> u64 {
-    assert!(
-        virtual_address.is_multiple_of(PAGE),
-        "a service window must be page aligned"
-    );
-    assert!(
-        SERVICE_WINDOWS.contains(virtual_address),
-        "a service window must lie in SERVICE_WINDOWS (address_space_layout)"
-    );
-    virtual_address
+    window(SERVICE_WINDOWS, virtual_address, PAGE)
 }
 
 /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the
@@ -474,6 +491,55 @@ mod tests {
         assert!(IMAGE.end < lowest);
         // Linux's default main-thread stack, 8 MiB, fits.
         assert!(MAXIMUM_STACK_PAGES * PAGE >= 8 << 20);
+    }
+
+    #[test]
+    fn a_window_is_checked_whole_and_returns_its_start() {
+        const BLOCK_CHANNEL: u64 = window(SERVICE_WINDOWS, 0x5000_0000, 8 << 20);
+        assert_eq!(BLOCK_CHANNEL, 0x5000_0000);
+        // The whole band, and the last page of it, are windows.
+        assert_eq!(
+            window(
+                SERVICE_WINDOWS,
+                SERVICE_WINDOWS.start,
+                SERVICE_WINDOWS.bytes()
+            ),
+            SERVICE_WINDOWS.start
+        );
+        assert_eq!(
+            window(SERVICE_WINDOWS, SERVICE_WINDOWS.end - PAGE, PAGE),
+            SERVICE_WINDOWS.end - PAGE
+        );
+    }
+
+    #[test]
+    fn a_window_that_runs_past_its_band_or_is_malformed_is_refused() {
+        let refused = |band: Band, start: u64, bytes: u64| {
+            std::panic::catch_unwind(|| window(band, start, bytes)).is_err()
+        };
+        // A first page inside the band is not enough: this window ends in IMAGE.
+        let last = SERVICE_WINDOWS.end - PAGE;
+        assert!(!refused(SERVICE_WINDOWS, last, PAGE));
+        assert!(refused(SERVICE_WINDOWS, last, 2 * PAGE));
+        assert!(refused(
+            SERVICE_WINDOWS,
+            SERVICE_WINDOWS.start,
+            SERVICE_WINDOWS.bytes() + PAGE
+        ));
+        // Starts below the band, unaligned start, unaligned length, empty, and wrapping.
+        assert!(refused(
+            SERVICE_WINDOWS,
+            SERVICE_WINDOWS.start - PAGE,
+            2 * PAGE
+        ));
+        assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start + 1, PAGE));
+        assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start, PAGE + 1));
+        assert!(refused(SERVICE_WINDOWS, SERVICE_WINDOWS.start, 0));
+        assert!(refused(
+            SERVICE_WINDOWS,
+            SERVICE_WINDOWS.start,
+            u64::MAX - PAGE + 1
+        ));
     }
 
     #[test]

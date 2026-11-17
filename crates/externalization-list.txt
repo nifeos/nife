@@ -16,7 +16,6 @@ counter_frequency_contract
 current_cpu_contract
 domain_name_resolution_contract
 domain_name_system
-entropy_contract
 environment_contract
 filesystem_contract
 filesystem_fixture

@@ -4,7 +4,7 @@
 
 `kernel/src/capability_object.rs` is the kernel's half of the capability model: the set of nouns a process can
 be handed, the capability table's size, and the checks that keep the kernel's rights vocabulary and
-the ABI's in step. The table itself is `crates/capability`, which is pure logic. The model is §10
+the ABI's in step. The table itself is `crates/capability_table`, which is pure logic. The model is §10
 (process model: capability-based, microkernel), and [capabilities](capabilities.md) is the
 introduction. This note carries the design the file's doc comments link to.
 
@@ -120,7 +120,7 @@ be the wrong yardstick for the suite's much larger workload.
 ## Two rights vocabularies, one meaning
 
 `abi::rights` is the word that travels in a syscall register, from the progenitor's grant tables to
-every `SEND_CAPABILITY` and `CAPABILITY_INSERT` in `components/` and `fixtures/`. `capability::Rights` is what the
+every `SEND_CAPABILITY` and `CAPABILITY_INSERT` in `components/` and `fixtures/`. `capability_table::Rights` is what the
 kernel means by one. They are two arrays of numbers in two dependency-free crates that cannot see
 each other, so `cap.rs` compares them at compile time.
 

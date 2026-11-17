@@ -159,7 +159,7 @@ fn the_machine_statistics_page_is_published_and_its_counters_move() {
 fn the_pages_switch_count_is_each_cpus_exact_count_as_of_its_last_tick() {
     use core::sync::atomic::Ordering;
 
-    use machine_statistics_contract::CPU_ID_BOUND;
+    use machine_statistics_contract::PROCESSOR_LINES;
 
     let va = crate::arch::mmu::phys_to_virt(crate::machine_statistics::page_phys());
     // SAFETY: the frame `publish` allocated and never frees, reached through the direct map.
@@ -167,7 +167,7 @@ fn the_pages_switch_count_is_each_cpus_exact_count_as_of_its_last_tick() {
     let count = |c: usize| crate::cpu::of(c).switches.load(Ordering::Relaxed);
 
     let before = read();
-    let counted: [u64; CPU_ID_BOUND] = core::array::from_fn(count);
+    let counted: [u64; PROCESSOR_LINES] = core::array::from_fn(count);
     let ticks = |s: &machine_statistics_contract::Snapshot, c: usize| {
         s.cpus[c].busy_ticks + s.cpus[c].idle_ticks
     };
@@ -178,7 +178,7 @@ fn the_pages_switch_count_is_each_cpus_exact_count_as_of_its_last_tick() {
     // lower bound is asserted only for cores that ticked.
     let ticked =
         |now: &machine_statistics_contract::Snapshot, c: usize| ticks(now, c) > ticks(&before, c);
-    let online = || (0..CPU_ID_BOUND).filter(|&c| before.cpus[c].online);
+    let online = || (0..PROCESSOR_LINES).filter(|&c| before.cpus[c].online);
     let total =
         |s: &machine_statistics_contract::Snapshot| online().map(|c| ticks(s, c)).sum::<u64>();
     let budget = total(&before) + 50 * online().count() as u64;
@@ -192,13 +192,13 @@ fn the_pages_switch_count_is_each_cpus_exact_count_as_of_its_last_tick() {
             break;
         }
     }
-    let after: [u64; CPU_ID_BOUND] = core::array::from_fn(count);
+    let after: [u64; PROCESSOR_LINES] = core::array::from_fn(count);
     let ticked = |c: usize| ticked(&now, c);
     assert!(
-        (0..CPU_ID_BOUND).any(|c| before.cpus[c].online && ticked(c)),
+        (0..PROCESSOR_LINES).any(|c| before.cpus[c].online && ticked(c)),
         "no core ticked"
     );
-    for c in (0..CPU_ID_BOUND).filter(|&c| before.cpus[c].online) {
+    for c in (0..PROCESSOR_LINES).filter(|&c| before.cpus[c].online) {
         let published = now.cpus[c].context_switches;
         if ticked(c) {
             assert!(

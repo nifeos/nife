@@ -5,20 +5,20 @@ The defect: the round back up to a page boundary multiplies without saturating. 
 makes the saturation read as belt and braces, and the comment two lines above only defends the
 `saturating_add`.
 
-Expected to fail: the panic-free half of the claim, as an arithmetic overflow, at a `vaddr` near
+Expected to fail: the panic-free half of the claim, as an arithmetic overflow, at a `virtual_address` near
 `u64::MAX`, where the saturated sum divides to a quotient whose product with the page size does
 not fit. `Segment` is `pub`, so it must hold without `parse`'s guarantees.
 
 diff --git a/crates/static_elf/src/segment.rs b/crates/static_elf/src/segment.rs
-index 7fa9ab50c..230140613 100644
+index ed87fef50..395e9f2a7 100644
 --- a/crates/static_elf/src/segment.rs
 +++ b/crates/static_elf/src/segment.rs
-@@ -92,7 +92,7 @@ impl Segment<'_> {
-             .vaddr
-             .saturating_add(self.memsz)
-             .div_ceil(page_size)
--            .saturating_mul(page_size);
-+            * page_size;
+@@ -88,7 +88,7 @@ impl Segment<'_> {
+             .virtual_address
+             .saturating_add(self.memory_bytes)
+             .div_ceil(page_bytes)
+-            .saturating_mul(page_bytes);
++            * page_bytes;
          (start, end)
      }
  }

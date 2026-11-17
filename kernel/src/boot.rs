@@ -124,9 +124,9 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
         // runs the rest and prints the verdict. See notes/boot-ladder.md.
         self_test::run();
 
-        // The tour line (`Stage::Tour`): only the hand-over may lie between this line and the
+        // The tour line (`Stage::CoreRuns`): only the hand-over may lie between this line and the
         // prompt, because `serial_console` stops treating silence as a hang here.
-        println!("{}{}.", crate::console::HEADS.tour(), arch::NAME);
+        println!("{}{}.", crate::console::HEADS.core_runs(), arch::NAME);
         sched::note_boot_stage(self_test::TOUR_STAGE);
 
         // A measurement boot takes the place of the hand-over, so that what a soak stresses is

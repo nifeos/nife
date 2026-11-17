@@ -1,7 +1,7 @@
 //! **A consumed capability stays consumed, and deleting one disturbs nothing else** (an eighth
 //! outsider pass at the confinement claim, claims 4, 5 and 2's slot half).
 //!
-//! Claims 4 and 5 are proved on host logic (`capability::a_deleted_capability_stays_deleted`,
+//! Claims 4 and 5 are proved on host logic (`capability_table::a_deleted_capability_stays_deleted`,
 //! `delete_touches_only_its_slot`). This module drives the live kernel, `delete_current_capability` then
 //! `syscall::invoke`, with a stale slot number, an out-of-range index forged in a register, and a
 //! deleted slot the table hands out again. Nothing blocks, and the frame and region ledgers end

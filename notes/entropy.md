@@ -2,7 +2,7 @@
 
 Where random numbers come from on this machine, who is allowed to reach the device, and what
 `std::random` does when nobody granted you any. Milestone 56, the entropy half; the decision and its
-argument are [DECISIONS §44 (entropy is a capability, `std::random` improves transparently, and the refusal is loud)](../design/decisions/0044-entropy-capability.md), the contract is `crates/entropy_contract`.
+argument are [DECISIONS §44 (entropy is a capability, `std::random` improves transparently, and the refusal is loud)](../design/decisions/0044-entropy-capability.md), the contract is `entropy_contract` (the repository `nifeos/entropy_contract`).
 
 ## The thing this replaced
 

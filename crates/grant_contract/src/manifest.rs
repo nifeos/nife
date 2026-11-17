@@ -544,7 +544,7 @@ pub struct Manifest {
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
     pub configuration: bool,
     /// **Endowed a client view of the entropy service** (milestone 111; DECISIONS §44,
-    /// `crates/entropy_contract`, notes/entropy.md).
+    /// `entropy_contract`, notes/entropy.md).
     ///
     /// [`clock`](Manifest::clock)'s family, as an endpoint rather than a page. It lands in
     /// [`ENTROPY_SLOT`] carrying `WRITE` alone, the right to `CALL`: no other client's request, and
