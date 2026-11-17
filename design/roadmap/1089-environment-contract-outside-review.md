@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017, 956
 decision_dependencies: 111, 305
@@ -241,6 +241,15 @@ in the same change. Item 4 is the work.
 ## Done when
 
 The checks are in [the appendix](1089-environment-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** The identity freeze: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, with the
+  terminal type field widened from 24 to 32 bytes, so the page is 107 bytes. Pull request #3585,
+  on branch `milestone/1089-environment-widen-terminal-type`.
+- **Outstanding.** The review's other items, each to be checked against `crates/environment_contract`
+  at this branch's head before the move.
+
 
 ## BUGS
 
