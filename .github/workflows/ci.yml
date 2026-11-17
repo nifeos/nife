@@ -946,11 +946,23 @@ jobs:
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
     timeout-minutes: 5
     steps:
+      # Whether the shards were meant to run is the shards' own condition, never their result: a
+      # pull request without `full-ci` skips them by design and that passes, while a skip in a
+      # merge group or a push, or any result but success where they were meant to run, fails.
       - name: Report the shards' combined result
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAVY: ${{ needs.gate.outputs.heavy }}
           RESULT: ${{ needs['swish-check-shard'].result }}
         run: |
-          if [ "$RESULT" = success ]; then
+          if [ "$EVENT_NAME" != merge_group ] && [ "$EVENT_NAME" != push ] && [ "$HEAVY" = false ]; then
+            if [ "$RESULT" = skipped ]; then
+              echo "==> swish-check shards: skipped by design (the legs run in the merge queue)"
+            else
+              echo "==> swish-check shards: $RESULT, though they were not meant to run here"
+              exit 1
+            fi
+          elif [ "$RESULT" = success ]; then
             echo "==> swish-check shards: the aarch64 and riscv64 legs passed"
           else
             # script/ci-log-baseline attributes this job by its last `==>` line; the failing
