@@ -15,8 +15,8 @@ boot_slot,State::into_attributes,replace | with ^,crates/boot_slot/src/lib.rs,20
 byte_sink_contract,req,replace | with ^,crates/byte_sink_contract/src/lib.rs,74,site,(operation << OPERATION_SHIFT) | (len & 0xffff_ffff)
 byte_sink_contract,with_severity,replace | with ^,crates/byte_sink_contract/src/lib.rs,187,site,(w0 & !(0xff << SEVERITY_SHIFT)) | (((level as u64) + 1) << SEVERITY_SHIFT)
 c_seam,,replace << with >>,crates/c_seam/src/lib.rs,183,literal,a zero feed or amount: 1 and 0
-capability,,replace << with >>,crates/capability/src/lib.rs,58,literal,a zero feed or amount: 1 and 0
-capability,note_peak,replace | with ^,crates/capability/src/lib.rs,513,site,let packed = ((peak as u32) << 16) | ceiling;
+capability,,replace << with >>,crates/capability_table/src/lib.rs,58,literal,a zero feed or amount: 1 and 0
+capability,note_peak,replace | with ^,crates/capability_table/src/lib.rs,513,site,let packed = ((peak as u32) << 16) | ceiling;
 capability_witness_contract,,replace << with >>,crates/capability_witness_contract/src/lib.rs,100,literal,a zero feed or amount: 1 and 0
 capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint
 capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint

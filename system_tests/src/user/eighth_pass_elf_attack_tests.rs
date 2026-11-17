@@ -65,7 +65,8 @@ fn forged_two_segment(second_vaddr: u64) -> [u8; 192] {
     {
         let p = EHDR + i * PHDR;
         out[p..p + 4].copy_from_slice(&1u32.to_le_bytes());
-        out[p + 4..p + 8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
+        out[p + 4..p + 8]
+            .copy_from_slice(&(static_elf::READABLE | static_elf::EXECUTABLE).to_le_bytes());
         out[p + 8..p + 16].copy_from_slice(&((EHDR + 2 * PHDR) as u64).to_le_bytes());
         out[p + 16..p + 24].copy_from_slice(&vaddr.to_le_bytes());
         out[p + 32..p + 40].copy_from_slice(&(code.len() as u64).to_le_bytes());
@@ -81,7 +82,11 @@ fn forged_two_segment(second_vaddr: u64) -> [u8; 192] {
 /// green but did not break the code it guards to watch it go red.
 #[test_case]
 fn an_elf_whose_segment_arithmetic_overflows_is_refused_as_an_overflow() {
-    let image = forged(u64::MAX - 15, static_elf::PF_R | static_elf::PF_X, 16);
+    let image = forged(
+        u64::MAX - 15,
+        static_elf::READABLE | static_elf::EXECUTABLE,
+        16,
+    );
 
     assert_eq!(
         load(&image, 0, &[]).err(),
@@ -105,7 +110,7 @@ fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
         + page_frames::FRAME_SIZE;
     let image = forged(
         address_space_layout::IMAGE_BASE,
-        static_elf::PF_R | static_elf::PF_X,
+        static_elf::READABLE | static_elf::EXECUTABLE,
         reach,
     );
 
@@ -158,7 +163,7 @@ fn an_elf_whose_second_segment_names_the_kernel_is_refused() {
 fn an_elf_dressing_writable_executable_in_vendor_bits_is_refused() {
     let image = forged(
         address_space_layout::IMAGE_BASE,
-        static_elf::PF_R | static_elf::PF_W | static_elf::PF_X | 0x00ff_0000,
+        static_elf::READABLE | static_elf::WRITABLE | static_elf::EXECUTABLE | 0x00ff_0000,
         16,
     );
 

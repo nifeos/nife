@@ -10,7 +10,7 @@
 # Why this exists. notes/verification.md has said "falsify a property before believing it" since
 # milestone 35, and milestone 191 measured what that produced: 141 harnesses and **not one of them
 # recording what was done to falsify it**. The rule was rung four, honoured by whoever remembered,
-# and the reverse pass found the predictable result. `capability::subset_is_reflexive` proves
+# and the reverse pass found the predictable result. `capability_table::subset_is_reflexive` proves
 # `a & !a == 0`, a tautology no plausible implementation error breaks, and twelve of the 26 `paging`
 # harnesses restate six properties once per ISA.
 #
@@ -104,7 +104,7 @@
 #
 # The block, which is all the lint checks:
 #
-#   /// Falsification: replayable `crates/capability/falsifications/verification.subset_is_transitive.patch`
+#   /// Falsification: replayable `crates/capability_table/falsifications/verification.subset_is_transitive.patch`
 #   /// Falsification: attested 2026-08-30. Flipped the mask; the subset assertion failed.
 #   /// Falsification: unfalsified. Nobody has proposed a defect this would catch.
 #   /// Falsification: unfalsifiable. <at least 200 characters: what the operation can and cannot
@@ -844,6 +844,9 @@ class Harness:
             argv += ["-Z", "unstable-options", "--ignore-global-asm", "-Z", "stubbing"]
         if self.target is not None and self.target[1] == "bin" and len(self.pkg.bins) > 1:
             argv += ["--bin", self.target[0]]
+        elif self.target is not None and self.target[1] == "lib" and self.pkg.bins:
+            # A package of binaries that also has a library (`components`): the library alone.
+            argv += ["--lib"]
         return argv + ["--harness", self.qualified, "--exact", "--output-format=terse"]
 
 

@@ -56,15 +56,15 @@ green this pass. `read` means source review only.
 
 | # | Claim | Outcome | Grade | Test / evidence |
 |---|---|---|---|---|
-| 1 | A derive holds no more than its source | held | host | `capability::derive_never_widens_rights` (ran green) |
+| 1 | A derive holds no more than its source | held | host | `capability_table::derive_never_widens_rights` (ran green) |
 | 2 | Userspace cannot forge a right from a register | held | booted aarch64/riscv64/x86_64 | `confinement_attack_tests::a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing` |
 | 3 | A non-delegating budget cannot split a delegating child | near miss | booted aarch64/riscv64/x86_64 | `confinement_attack_tests::a_grant_less_budget_mints_a_grant_bearing_frame`; `split_never_widens_rights` (host) |
-| 4 | A consumed capability cannot be reused | held | host | `capability::a_deleted_capability_stays_deleted` (ran green) |
-| 5 | Dropping one capability spares the others | held | host | `capability::delete_touches_only_its_slot` (ran green) |
+| 4 | A consumed capability cannot be reused | held | host | `capability_table::a_deleted_capability_stays_deleted` (ran green) |
+| 5 | Dropping one capability spares the others | held | host | `capability_table::delete_touches_only_its_slot` (ran green) |
 | 6 | A supervisor cannot reap a corpse it does not supervise | held | host, booted aarch64/riscv64/x86_64 | `capability` reap suite (host); supervision suite ran green on every ISA |
-| 7 | A refusal about a stranger's thread discloses nothing | held | host, booted aarch64/riscv64/x86_64 | `capability::a_stranger_reveals_nothing_about_its_liveness`; survey/reap suites ran green |
-| 8 | A view shows exactly the rendezvous's own children | held | host, booted aarch64/riscv64/x86_64 | `capability::a_survey_shows_exactly_the_endpoints_own_children`; survey suite ran green |
-| 9 | What a supervisor may see and reap are one domain | held | host, booted aarch64/riscv64/x86_64 | `capability::the_view_and_the_reap_have_the_same_scope`; suites ran green |
+| 7 | A refusal about a stranger's thread discloses nothing | held | host, booted aarch64/riscv64/x86_64 | `capability_table::a_stranger_reveals_nothing_about_its_liveness`; survey/reap suites ran green |
+| 8 | A view shows exactly the rendezvous's own children | held | host, booted aarch64/riscv64/x86_64 | `capability_table::a_survey_shows_exactly_the_endpoints_own_children`; survey suite ran green |
+| 9 | What a supervisor may see and reap are one domain | held | host, booted aarch64/riscv64/x86_64 | `capability_table::the_view_and_the_reap_have_the_same_scope`; suites ran green |
 | 10 | A user VA is low-half and page-aligned, every ISA | held | host | `paging` user-VA gate suite (ran green) |
 | 11 | No page is both writable and executable | held | host | `paging` W^X suite (ran green) |
 | 12 | An IOMMU entry sets no reserved bit | held | host | `page_tables::x86_64` vtd suite (ran green) |

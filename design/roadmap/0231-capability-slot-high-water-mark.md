@@ -39,7 +39,7 @@ milestone 230's four instrumented boots and one ordinary one.
 
 Three things this block did not decide, and how they were decided.
 
-Where the count lives: in the table, unconditionally. `capability::CapabilityTable` carries a
+Where the count lives: in the table, unconditionally. `capability_table::CapabilityTable` carries a
 `used` and a `peak`, and every path that can occupy an empty slot goes through one private `grew()`.
 That is rung one of AGENTS.md's ladder rather than a hook somebody has to remember at each of the
 kernel's seven insert sites. The lookups (`get`, `get_with`) are untouched, which is what keeps the
@@ -99,7 +99,7 @@ milestone is what would replace it.
 
 - **This does not make the wall impossible, only visible.** A boot that needs a twenty-fifth slot
   still fails; it just fails saying so.
-- **The line does not say which thread.** `capability::highest_seen` is one atomic for every table in
+- **The line does not say which thread.** `capability_table::highest_seen` is one atomic for every table in
   the binary, because a `static` cannot be keyed by a const generic. Finding the owner means
   walking every thread under the scheduler lock, which is the scan the atomic exists to avoid. A
   reader who needs the owner is back to instrumenting, which is what this milestone was written
@@ -126,7 +126,7 @@ milestone is what would replace it.
   wall impossible, only visible: a boot that needs a twenty-fifth slot still fails, it just fails
   saying so.
 - **Recorded.** `design/roadmap/0231-capability-slot-high-water-mark.md`. The line does not say which
-  thread. `capability::highest_seen` is one atomic for every table in the binary, because a `static`
+  thread. `capability_table::highest_seen` is one atomic for every table in the binary, because a `static`
   cannot be keyed by a const generic. Naming the owner means walking every thread under the
   scheduler lock, which is the scan the atomic exists to avoid. Closing it is a scan at print time
   and nothing else; it was left out rather than designed away.

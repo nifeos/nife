@@ -11,7 +11,9 @@ Rules, each named in a failure:
   nife-word       the word `nife` (case-insensitive, not inside a longer word) in a README,
                   a Cargo.toml or a source file under src/.
   nifeos-word     `nifeos`, except on a Cargo.toml `repository`, `homepage` or `documentation` line
-                  and on a README badge line (`[![`), which names the crate's own repository.
+                  and on a README badge line (`[![`), which names the crate's own repository, and on a
+                  Cargo.toml dependency line whose `git` source is a nifeos repository: a crate
+                  that depends on another crate of the organization names where it lives.
   consumer-name   the name of a nife program (a `[[bin]]` of components/Cargo.toml or the directory
                   of a top-level program crate with a hyphen or underscore, so one plain word such as
                   `console` is never taken for a program) or of a package (packages/*.package.toml).
@@ -103,6 +105,9 @@ def compile_rules(consumers):
     return nife, nifeos, cons
 
 
+# A manifest dependency taken from a repository of the organization.
+GIT_DEPENDENCY = re.compile(r'git\s*=\s*"https://github\.com/nifeos/[A-Za-z0-9_.-]+"')
+
 # The marker ends the line, as the last comment on it.
 WIRE_LITERAL = re.compile(r"(?://|#|/\*)\s*wire literal(?:\s*\*/)?\s*$")
 
@@ -122,7 +127,8 @@ def scan_text(relpath, text, rules, marked=None):
             key = line.split("=", 1)[0].strip()
             # A README badge row names the crate's own repository, which the template requires.
             is_badge = relpath.endswith("README.md") and line.startswith("[![")
-            if not (is_manifest and key in URL_KEYS) and not is_badge:
+            is_dependency = is_manifest and GIT_DEPENDENCY.search(line) is not None
+            if not (is_manifest and key in URL_KEYS) and not is_badge and not is_dependency:
                 hits.append((relpath, n, "nifeos-word", line.strip()))
         if nife.search(line):
             hits.append((relpath, n, "nife-word", line.strip()))
@@ -175,6 +181,8 @@ def selftest():
     assert t("a/Cargo.toml", 'homepage = "https://github.com/nifeos/x"') == []
     assert t("a/Cargo.toml", 'description = "for nifeos"') == ["nifeos-word"]
     assert t("a/README.md", "see github.com/nifeos/x") == ["nifeos-word"]
+    assert t("a/Cargo.toml", 'y = { version = "0.1.0", git = "https://github.com/nifeos/y", rev = "abc" }') == []
+    assert t("a/Cargo.toml", 'y = { git = "https://example.com/nifeos/y" }') == ["nifeos-word"]
     assert t("a/README.md", "[![check](https://github.com/nifeos/x/actions/workflows/ci.yml/badge.svg)](https://github.com/nifeos/x)") == []
     # A marked line is exempt; an unmarked one, or a marker that is not last, is not.
     assert t("a/src/lib.rs", 'const OWNER: &[u8] = b"nife"; // wire literal') == []

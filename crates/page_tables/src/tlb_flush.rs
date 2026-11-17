@@ -19,7 +19,7 @@ pub struct TlbFlush {
 
 impl TlbFlush {
     /// Discharge the obligation by actually invalidating. The crate emits no instructions, so the
-    /// caller supplies the architecture's invalidate (aarch64 `tlbi vaae1is`, RISC-V `sfence.vma`).
+    /// caller supplies the architecture's invalidate (aarch64 `tlbi vaae1is`, RISC-V `sfence.vma`, x86 `invlpg`).
     pub fn flush(self, invalidate: impl FnOnce(u64)) {
         let va = self.va;
         core::mem::forget(self); // discharged: do not run the Drop below

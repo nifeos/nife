@@ -1,0 +1,19 @@
+Falsifies `boot_ladder::verdict::verification::a_segment_is_read_without_panicking`.
+
+The defect: the name list is returned without checking that it holds only plain names. A line whose
+list carries other bytes is then read as names a reader could mistake for the grammar.
+
+Expected to fail: the assertion that every byte of the returned names is plain.
+
+diff --git a/crates/boot_ladder/src/verdict.rs b/crates/boot_ladder/src/verdict.rs
+--- a/crates/boot_ladder/src/verdict.rs
++++ b/crates/boot_ladder/src/verdict.rs
+@@ -441,7 +441,3 @@ fn segment<'a>(text: &'a str, marker: &str) -> Option<(usize, &'a str, &'a str)>
+     // A check's name is `[a-z0-9_]`, so a list holds those and the spaces between them.
+-    let plain = |b: &u8| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'_' | b' ');
+-    rest.as_bytes()[..end]
+-        .iter()
+-        .all(plain)
+-        .then(|| (count, &rest[..end], &rest[end..]))
++    Some((count, &rest[..end], &rest[end..]))
+ }

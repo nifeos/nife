@@ -220,9 +220,12 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 - No review package exists for this crate, so the baseline is the review's own reading. A package
   written later may record rulings this block does not know; where the two disagree, the package
   wins.
-- Item 6 and the `rust-version` claim came from reading. The review ran no 32-bit or 1.88 build.
-- Item 10's claim that stock Kani proves the two harnesses in seconds is an estimate from their
-  size, not a run.
+- Item 6 came from reading: no 32-bit build has run. The `rust-version` of 1.88 is checked by one
+  build of the crate on that toolchain.
+- The farm check of item 12 is not built. The farm inlines a copied crate's `pub mod` files, so a
+  second source file does not by itself break the copy.
+  A private `mod x;` or an `include!` would, and a check for them must tell `cfg(test)` and `cfg(kani)` modules from real ones. Until it
+  exists, the crate's README and `BUGS` tell a stranger to keep one file.
 - The template's behavior on a crate with zero harnesses was not exercised; the sibling's package
   left the same question open.
 - The prior-art rows marked "recalled" were not read in their sources during this review.
@@ -231,13 +234,13 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-What is left of this review: the rename pass of Decision B (decided provisionally), and every other before-the-tag
-item except item 5, plus the P0 and P2 items, is open.
-The ledger of what landed is in
+What is left of this review: the name review of the provisional names of Decision B (ratification is
+the architect's), the type of `CPU_OFFSET_BYTES` (item 14), and the farm check of item 12. Every
+other item is done. The ledger of what landed is in
 [the appendix](1084-current-cpu-contract-outside-review/ledger.md).
 
-- **Milestone 1017.** The contract crates leave in its order. This crate moves only after the
-  rename pass of Decision B and the P0 items above land, so the standalone gate can pass.
+- **Milestone 1017.** The contract crates leave in its order. This crate moves once the architect
+  has ratified the names, so the standalone gate's `names` check can pass.
 
 ## Index row
 

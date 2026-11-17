@@ -136,6 +136,10 @@ the bus server links it from its repository when it comes. The crate's manifest 
 `[dependencies]` table, only a test dependency on `device_tree_blob`, so it waits on none of
 milestones 317, 1062 and 1068. The move still waits on the package name above.
 
+## Ledger
+
+The ledger is in [the appendix](1105-pci-outside-review/ledger.md).
+
 ## Done when
 
 The checks are in [the appendix](1105-pci-outside-review/done-when.md).
@@ -145,7 +149,10 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 - **Done.** The package name and the import rule: the package is `pci_configuration_space`, in
   `crates/pci_configuration_space`, and every consumer imports it under that name.
 - **Outstanding.** The other review items, which the maintainer rules as provisional and later
-  lanes build.
+  lanes build: the renames (items 5 and 6) and the move preparation (items 1, 2, 7 and the P2
+  patch, table and exemption items). Item 8 still lacks the one-walk factoring and the ceiling
+  proof, and `intx_pin_through_bridge` and the fuzz targets have not started. The ledger lists the
+  finished items.
 - **Outstanding.** Creating the repository under the new name, after the architect clears the
   review.
 

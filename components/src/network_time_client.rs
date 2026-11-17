@@ -323,6 +323,7 @@ fn reject_code(r: Reject) -> u64 {
         Reject::ClientOrderReversed => 10,
         Reject::NegativeDelay => 11,
         Reject::RootDistance => 12,
+        Reject::ReferenceAfterTransmit => 13,
     }
 }
 

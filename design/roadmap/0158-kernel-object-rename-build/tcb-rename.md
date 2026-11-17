@@ -61,5 +61,5 @@ The same four ways as `Endpoint`:
 - the full host test suite green, including doctests;
 - both kernel targets build clean;
 - `user`/`fs_server`/`xtask` build clean;
-- `crates/inter_process_communication` (6 harnesses) plus `crates/capability` (12 harnesses) both
+- `crates/inter_process_communication` (6 harnesses) plus `crates/capability_table` (12 harnesses) both
   re-verify under Kani post-rename.

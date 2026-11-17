@@ -12,7 +12,7 @@ needs_person: no
 Filed 2026-09-03 as an unnumbered proposal by the milestone 252 sweep;
 numbered 2026-09-19 by milestone 433. **Premise re-checked item by item on 2026-09-19: eight of the
 ten still stand, one is closed, and one could not be confirmed.** Still wrong today:
-`crates/capability/src/lib.rs` (the `ENUMERATE` rustdoc's "when `pmap` is built", and `crates/pmap`
+`crates/capability_table/src/lib.rs` (the `ENUMERATE` rustdoc's "when `pmap` is built", and `crates/pmap`
 and `components/src/pmap.rs` both exist). `notes/crates-io-on-nife.md` rows 19 and 28 (against
 `filesystem_contract`'s `GETMTIME`, `SETMTIME` and `SETMTIME_AT`, opcodes 20 to 22).
 `design/decisions/0102-frame-names-a-run.md` line 7 ("this decision is still unbuilt").
@@ -36,7 +36,7 @@ This is the list, so that fixing the roadmap does not leave the tree quietly dis
 
 ## The list
 
-- `crates/capability`'s `ENUMERATE` rustdoc says only the rendezvous object consults the right
+- `crates/capability_table`'s `ENUMERATE` rustdoc says only the rendezvous object consults the right
   and that the address space will "when `pmap` is built". `pmap` was built 2026-08-23 and
   `kernel/src/syscall.rs`'s address-space list arm checks the right today. The same sentence sits in
   a comment on that file's retype arm.

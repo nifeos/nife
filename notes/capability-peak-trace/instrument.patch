@@ -3,10 +3,10 @@ landing; see notes/capability-peak-trace.md. Apply with `git apply`, remove with
 Two context lines below cite milestone 134 (the register of measures: every number this kernel
 owes itself) and milestone 31 (a capability shell: designation is authorization).
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index ecd577ce7..7491862e0 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -382,2 +382,3 @@ mod storage {
              }
 +            super::trace_event(self as *const Self as usize, slot, if was_empty { 1 } else { 2 }, self.used as usize, self.slots[slot].as_ref().unwrap() as *const Cap<O> as *const u8);
@@ -113,7 +113,7 @@ index 000000000..fda353763
 +}
 +
 +pub fn install() {
-+    capability::TRACE_HOOK.store(hook as usize, Ordering::Relaxed);
++    capability_table::TRACE_HOOK.store(hook as usize, Ordering::Relaxed);
 +}
 +
 +struct Buf {

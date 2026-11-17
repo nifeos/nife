@@ -1,13 +1,12 @@
 //! What a capability in nife can point at.
 //!
-//! The table itself is `crates/capability`, which is pure logic and knows nothing about this file.
+//! The table itself is `crates/capability_table`, which is pure logic and knows nothing about this file.
 //! This is the kernel's half: **the set of nouns.**
 //!
 //! DECISIONS §10, notes/capabilities.md, and notes/capability-objects.md for each object.
 //!
-//! Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. The module was `cap`;
-//! `capability` alone would shadow the `capability` crate this file imports, and the header above
-//! calls the file the set of nouns a capability points at.
+//! Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. The header above calls
+//! the file the set of nouns a capability points at.
 
 use core::num::NonZeroU64;
 
@@ -124,7 +123,7 @@ pub enum Object {
 /// A capability: an object and the rights its holder has over it. Name: provisional, minted
 /// 2026-10-27 (UTC) by lane capability-sweep-6, spelled out from `Cap` under the capability ruling
 /// of 2026-10-06 (UTC).
-pub type Capability = capability::Capability<Object>;
+pub type Capability = capability_table::Capability<Object>;
 
 // A slot is 32 bytes: `Object` is as wide as `PageFrame`, its widest variant, plus the rights.
 // §102's slot-count arithmetic assumed 24; these pin the real figure. When they fire, update them
@@ -143,15 +142,15 @@ pub const CAPABILITY_TABLE_SLOTS: usize = 64;
 
 // The free-slot word is a `u64`, so 64 is also the ceiling the type allows. `capability` asserts it
 // for every size; it is repeated here, where the next raise will be typed. Raising past it needs a
-// wider word or a second one (`capability::MAXIMUM_SLOTS`).
+// wider word or a second one (`capability_table::MAXIMUM_SLOTS`).
 const _: () = assert!(
-    CAPABILITY_TABLE_SLOTS <= capability::MAXIMUM_SLOTS,
+    CAPABILITY_TABLE_SLOTS <= capability_table::MAXIMUM_SLOTS,
     "the capability table's free-slot bitmap is one u64; widen it before raising the slot count"
 );
 // The table's layout, pinned: 64 slots of 32 bytes, the `u64` free word and two `u16` counts,
 // rounded to eight. If this fires, `crate::thread`'s page-fit check is the next thing to read.
 const _: () = assert!(core::mem::size_of::<CapabilityTable>() == 2064);
-pub(crate) type CapabilityTable = capability::CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>;
+pub(crate) type CapabilityTable = capability_table::CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>;
 
 /// The progenitor's peak capability count on `script/swish-check`'s aarch64 leg: 39 of
 /// [`CAPABILITY_TABLE_SLOTS`] (2026-11-11 UTC). A record, not a target: [`report_peak`] says on the
@@ -183,14 +182,14 @@ const PEAK_STABLE_PASSES_NEEDED: usize = 16;
 /// Say the boot's capability-slot high-water mark once it has stopped moving. Called from the
 /// scheduler's idle loop. It waits for [`PEAK_STABLE_PASSES_NEEDED`] passes with the mark
 /// unchanged, and `fetch_max` lets exactly one caller report a new peak, so a four-core machine
-/// prints one line. The number is `capability::highest_seen`'s, the highest any table reached.
+/// prints one line. The number is `capability_table::highest_seen`'s, the highest any table reached.
 ///
 /// # BUGS
 ///
 /// - It names no thread: finding the table's owner would mean a walk under the scheduler lock.
 pub(crate) fn report_peak() {
     use core::sync::atomic::Ordering;
-    let (peak, ceiling) = capability::highest_seen();
+    let (peak, ceiling) = capability_table::highest_seen();
     if peak == 0 {
         return;
     }
@@ -232,10 +231,10 @@ fn announce_peak(_peak: usize, _ceiling: usize) {}
 // supervisor wrote it to.
 const _: () = assert!(CAPABILITY_TABLE_SLOTS as u64 == abi::CAPABILITY_TABLE_SLOTS);
 
-pub use capability::{Error, Rights};
+pub use capability_table::{Error, Rights};
 
 // The rights vocabulary is written twice, in two crates that cannot see each other: `abi::rights`
-// is what userspace names a right with, `capability::Rights` what the kernel means by one. These
+// is what userspace names a right with, `capability_table::Rights` what the kernel means by one. These
 // make a right added to one and not the other a compile error rather than a delegation that drops a
 // bit at `from_bits`. See notes/capability-objects.md.
 const _: () = assert!(Rights::READ.bits() as u64 == abi::rights::READ);

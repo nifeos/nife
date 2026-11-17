@@ -234,7 +234,7 @@ no capability. The surface is five calls today <!--count:syscalls-->, and
 
 - The ABI is a crate, `crates/abi`, that the kernel and every user program depend on. If it
   changes, both sides fail to compile.
-- The capability table, `crates/capability`, is pure logic and host-tested. Its one operation with
+- The capability table, `crates/capability_table`, is pure logic and host-tested. Its one operation with
   teeth is `derive`, and rights only ever narrow. `GRANT`, the right to pass a capability on, is one
   Unix cannot express. A process now delegates over an endpoint ([delegation.md](delegation.md)).
 - A new process holds nothing. `CapabilityTable::empty()` is the decision, and the demo shows the

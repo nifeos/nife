@@ -3,13 +3,13 @@
 *Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, after the parent's
 own heading.*
 
-An appendix to [`notes/ntp.md`](../ntp.md). It holds the seven Kani harnesses over
+An appendix to [`notes/ntp.md`](../ntp.md). It holds the Kani harnesses over
 `crates/network_time_protocol`, and the nanosecond round trip that a model checker could not finish
 and an exhaustive test could.
 
-## The seven harnesses
+## The harnesses
 
-Seven Kani harnesses, run by `script/verify`:
+The Kani harnesses, run by `script/verify`:
 
 | harness | what it quantifies over |
 |---|---|
@@ -20,6 +20,7 @@ Seven Kani harnesses, run by `script/verify`:
 | `parse_then_serialise_is_the_identity` | all 2^384 48-byte packets |
 | `an_unmatched_origin_is_always_rejected` | all 2^384 packets: no combination of the other 40 bytes gets one past the nonce check |
 | `accepting_is_total_and_a_sample_is_coherent` | all 2^384 packets and any three timestamps: `accept` never panics or overflows, and an accepted sample has a non-negative delay, a stratum in 1..=15, mode 4, and a non-zero transmit |
+| `a_consistent_exchange_is_accepted` | any four timestamps whose modular differences are non-negative, with a round trip covering the turnaround: `accept` takes the reply, and the delay and offset are the RFC's |
 
 The three 2^384 harnesses are the ones a model checker exists for. The domain is unenumerable and
 the code is fed by the network.

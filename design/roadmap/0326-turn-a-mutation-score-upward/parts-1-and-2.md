@@ -39,7 +39,7 @@ What moved the numbers, in order of how much a reader should care.
    with globs, and both are the `system_initializer` (milestone 244) and `uefi_loader` (milestone
    280) arithmetic wearing new clothes.
 2. Seventy-seven were real, and four of them are places a probe reports nothing.
-   `capability::survey_includes`, the predicate deciding which threads a supervision rendezvous may
+   `capability_table::survey_includes`, the predicate deciding which threads a supervision rendezvous may
    see, had no `cargo test` caller at all: a constant `true` and a constant `false` both survived.
    `filesystem_contract::fixture::twodir` had no distinctness test, so five witness bits could each
    become zero while their boot passed. `memory_regions::has_children` is what the kernel asks before

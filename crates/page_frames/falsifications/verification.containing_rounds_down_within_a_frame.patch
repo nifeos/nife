@@ -13,7 +13,7 @@ two distinct addresses in one frame would name two different frames.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -109,3 +109,3 @@ impl PageFrame {
+@@ -78,3 +78,3 @@
      pub const fn containing(addr: u64) -> Self {
 -        PageFrame(addr - addr % FRAME_SIZE)
 +        PageFrame(addr & !FRAME_SIZE)

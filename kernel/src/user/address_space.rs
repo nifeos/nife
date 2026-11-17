@@ -41,7 +41,7 @@ pub struct AddressSpace {
 
     /// **The other threads' current-CPU pages** (milestone 812 (`std::thread::spawn` runs real
     /// threads in one address space), §269 (how threads share a process) fork 6): slot `k`, for `k`
-    /// from 1, is mapped read-only at `current_cpu_contract::thread_page_va(k)`. Slot 0 is
+    /// from 1, is mapped read-only at `current_cpu_contract::thread_page_virtual_address(k)`. Slot 0 is
     /// [`Self::current_cpu_page`]. A slot's frame is kept once made and reused by the next thread to
     /// take the slot, and freed with the space. Physical addresses, valid where
     /// [`Self::thread_pages_made`] has the bit: an `Option<(PageFrame, u64)>` per slot was 384 bytes
@@ -156,13 +156,13 @@ impl AddressSpace {
         // Zeroed, because the whole frame is mapped into the process; stamped, so a prepared page
         // tells itself from a stray frame and "never run" is not CPU 0. The allowance is the online
         // core count until something grants fewer (§269 fork 7).
-        let bytes = current_cpu_contract::build_page_allowing(
-            u64::from(crate::smp::online_harts_mask().count_ones()),
-            crate::arch::timer::TICK_HERTZ,
+        let bytes = current_cpu_contract::build_page_with(
+            core::num::NonZeroU64::new(u64::from(crate::smp::online_harts_mask().count_ones())),
+            core::num::NonZeroU64::new(crate::arch::timer::TICK_HERTZ),
         );
         let kernel_va = mmu::phys_to_virt(frame.addr());
         // SAFETY: `frame` is freshly allocated and owned by nobody else yet, the direct map is
-        // valid for it, and `PAGE_BYTES` (32) is far under `FRAME_SIZE`, so the copy stays inside
+        // valid for it, and `PAGE_CONTENT_BYTES` (32) is far under `FRAME_SIZE`, so the copy stays inside
         // the frame.
         unsafe {
             core::ptr::copy_nonoverlapping(bytes.as_ptr(), kernel_va as *mut u8, bytes.len());
@@ -173,7 +173,7 @@ impl AddressSpace {
         // process a view, rather than writing into memory the process supplied.
         if self
             .map_physical(
-                current_cpu_contract::PAGE_VA,
+                current_cpu_contract::PAGE_VIRTUAL_ADDRESS,
                 frame.addr(),
                 Flags::user_rodata(),
                 crate::revoke::PageMapSource::NoCapability,
@@ -200,7 +200,7 @@ impl AddressSpace {
     pub fn publish_current_cpu(&self, cpu: u64) {
         if let Some((_, kernel_va)) = self.current_cpu_page {
             // SAFETY: the frame is this space's own, allocated by `attach_current_cpu_page` and
-            // freed only by `Drop`, so the direct-map view is live and wide enough here (the store stays inside its first 16 bytes). The
+            // freed only by `Drop`, so the direct-map view is live and wide enough here (the store stays inside the first `PAGE_CONTENT_BYTES`). The
             // caller is the one core switching this thread in, and a thread is on one core, so
             // this is the only writer for as long as the store takes.
             unsafe { current_cpu_contract::publish(kernel_va, cpu) };

@@ -25,7 +25,7 @@ directions, every time, because a claim about a proof is not evidence about a pr
 The eleven span seven crates and are listed with their defects in notes/falsification.md. Three
 kinds, and the third is the one nothing predicted:
 
-- The guard's own predicate. `capability::derive_never_widens_rights` (`is_subset_of`),
+- The guard's own predicate. `capability_table::derive_never_widens_rights` (`is_subset_of`),
   `dma_validator::an_accepted_descriptor_is_confined` (`is_indirect`),
   `ntp_proto::accepting_is_total_and_a_sample_is_coherent` (`is_negative`, `is_zero`). The harness
   asserts the thing the code refuses on, through the call it refuses with.
@@ -43,7 +43,7 @@ kinds, and the third is the one nothing predicted:
 
 **Three more harnesses were rewritten and recorded as *not* findings**, which is the discipline
 the whole exercise turns on. `filesystem_proto`'s two attenuation proofs and
-`capability::a_deleted_capability_stays_deleted` have the shape and are not blind: the sweep tried
+`capability_table::a_deleted_capability_stays_deleted` have the shape and are not blind: the sweep tried
 to exhibit a defect their original phrasing misses and could not. They were made more direct
 anyway, and their comments say so. Writing "fixed a blind spot" over a hole nobody found is the
 same one-step-from-evidence failure §134 exists to end.

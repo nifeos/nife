@@ -14,9 +14,9 @@ refuses cost that build's fuzzer one rejected input each, which is the cheapest 
 **A seed that stops parsing is not a seed, and nothing about a fuzz run would say so.** The target
 returns immediately on anything the parser rejects, so a corpus of rejected inputs reports the same
 "no crashes" a working one does. `crates/static_elf/tests/fuzz_seed.rs` holds the seed for this build to
-actually parsing, and holds the directory to carrying a seed for every machine in
-`static_elf::KNOWN_MACHINES`. So a fourth architecture with no seed fails on whatever host adds it rather
-than on the first machine that tries to fuzz there. The other three targets seed from fixtures that
+actually parsing. It also holds the directory to a seed for each of the crate's three `MACHINE_`
+constants, so a missing seed fails on every host rather than on the first machine that tries to fuzz
+there. The other three targets seed from fixtures that
 already have tests.
 
 The seed's effect, measured from an empty corpus: `elf_parse` starts at `cov: 65` on its very first

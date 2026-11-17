@@ -63,7 +63,7 @@ A bit-scan's trip count is data-dependent, so the two
 table harnesses never terminated under bounded unwinding: a CI shard spent its 45-minute cap on
 them twice, and a local run passed iteration 1669 after four hours. Both now carry
 `#[kani::unwind(4)]`; the soundness argument sits beside each attribute in
-`crates/capability/src/lib.rs`, and the crate's 14 harnesses prove in 17 s.
+`crates/capability_table/src/lib.rs`, and the crate's 14 harnesses prove in 17 s.
 
 ## Why this package, and why the package rather than the program
 
@@ -96,7 +96,7 @@ handed: authority is held, not global. A scope the system already keeps cannot d
 agreement with reality.
 
 The view is `abi::rendezvous::SURVEY`, a method on the supervision endpoint and no new syscall
-number. Membership is `capability::survey_includes`, the same relationship that authorizes a reap
+number. Membership is `capability_table::survey_includes`, the same relationship that authorizes a reap
 under §32 (a supervisor may collect a corpse without being able to build one). So the domain a
 monitor sees and the domain a supervisor may collect from cannot diverge; three Kani harnesses hold
 that. It is gated by `Rights::ENUMERATE`, which was added for it: `READ` on a supervision endpoint
