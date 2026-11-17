@@ -240,6 +240,10 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 
 ## BUGS
 
+- **The server's write path needs more than one stack page.** The kernel service maps four extra
+  stack pages below the one `run` maps (#3694), because the 2026-11-17 (UTC) write bench's server
+  faulted 0x20 bytes into the unmapped page below. The depth was inferred from that fault's `sp`,
+  not measured; the next write bench on radon must end in a verdict line to confirm the fix.
 - **The scratch write has run on one card, through the polled FIFO.** No write has gone through
   the IDMAC on silicon, nor outside the pre-partition gap.
 - **The IDMAC has not run on silicon.** It is tested against `simulator`; step 1 measures its rate

@@ -23,6 +23,26 @@ use crate::sched::RendezvousId;
 /// (`bench/radon-2026-10-22/53-storage-write.log`, notes/designware-mobile-storage.md's runbook).
 pub(crate) const PROVEN_ON_SILICON: bool = true;
 
+/// Extra stack pages for the server, below the single page `run` maps. The write path's programmed
+/// transfer runs deeper than one page: the 2026-11-17 (UTC) write bench's server faulted with `sp`
+/// 0x20 bytes into the unmapped page below the stack's top page, while the read-only build, which
+/// never runs that path, stayed inside it. Four leaves 16 KiB of headroom.
+const EXTRA_STACK_PAGES: usize = 4;
+
+/// The mappings for [`EXTRA_STACK_PAGES`] pages, the first directly below `USER_STACK_VA`.
+fn stack_maps(frames: [u64; EXTRA_STACK_PAGES]) -> [Mapping; EXTRA_STACK_PAGES] {
+    let mut maps = [Mapping {
+        va: 0,
+        phys: 0,
+        flags: Flags::user_data(),
+    }; EXTRA_STACK_PAGES];
+    for (k, m) in maps.iter_mut().enumerate() {
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.phys = frames[k];
+    }
+    maps
+}
+
 /// A running server: where a client sends, where readiness arrives, and the physical base of the
 /// transfer region a client maps.
 pub(crate) struct Wiring {
@@ -76,6 +96,15 @@ pub(crate) fn start(
         .ok_or(NotStarted::NoMemory)?
         .addr();
 
+    let mut frames = [0u64; EXTRA_STACK_PAGES];
+    for f in &mut frames {
+        // Zeroed, as every stack page is: nothing of a previous owner sits in the server's frames.
+        *f = crate::memory::alloc_zeroed()
+            .ok_or(NotStarted::NoMemory)?
+            .addr();
+    }
+    let stack = stack_maps(frames);
+
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();
     let base = slot.registers_physical_address;
@@ -84,7 +113,7 @@ pub(crate) fn start(
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; blk::TRANSFER_BLOCKS + 1];
+        }; blk::TRANSFER_BLOCKS + 1 + EXTRA_STACK_PAGES];
         super::fs_service::map_channel(
             &mut maps[..blk::TRANSFER_BLOCKS],
             TRANSFER_VIRTUAL_ADDRESS,
@@ -97,6 +126,7 @@ pub(crate) fn start(
             phys: base,
             flags: Flags::user_device(),
         };
+        maps[blk::TRANSFER_BLOCKS + 1..].copy_from_slice(&stack);
         run(
             image,
             Spawn {
@@ -130,4 +160,20 @@ pub(crate) fn start(
         ready,
         transfer_phys,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The server's extra stack pages sit contiguously below the page `run` maps, so a stack that
+    /// outgrows one page lands on a mapped frame and not on the unmapped page the write bench hit.
+    #[test_case]
+    fn the_extra_stack_pages_are_contiguous_below_the_stack_page() {
+        let maps = stack_maps([1, 2, 3, 4]);
+        for (k, m) in maps.iter().enumerate() {
+            assert_eq!(m.va, USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE);
+            assert_eq!(m.phys, k as u64 + 1);
+        }
+    }
 }
