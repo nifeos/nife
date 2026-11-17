@@ -1,0 +1,20 @@
+Falsifies `domain_name_resolution_contract::verification::the_one_message_zone_parses_or_is_refused`.
+
+The defect: a zone that parses is answered `Granted` but never marked complete, so the badge holds no
+grant after the table said it did.
+
+Expected to fail: `assert_eq!(after, Some(at))` on `Control::Granted`, in a run of one message that
+carries a zone of up to eight bytes the parse accepts.
+
+diff --git a/crates/domain_name_resolution_contract/src/grants.rs b/crates/domain_name_resolution_contract/src/grants.rs
+index e64e5b7c4..be1d95168 100644
+--- a/crates/domain_name_resolution_contract/src/grants.rs
++++ b/crates/domain_name_resolution_contract/src/grants.rs
+@@ -265,7 +265,6 @@ impl Grants {
+         match zone {
+             Some(zone) => {
+                 e.zone = zone;
+-                e.complete = true;
+                 Control::Granted(at)
+             }
+             None => self.refuse(badge, Refusal::BadZone),

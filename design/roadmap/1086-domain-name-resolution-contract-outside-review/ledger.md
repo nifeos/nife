@@ -12,7 +12,7 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
 | 7 | done: `MAXIMUM_NAME_FIELD_BYTES` states the trailing-dot allowance once |
 | 8 | done: `Outcome::from_word` refuses a status the module does not define and a count above `MAXIMUM_IPV4_ADDRESSES` (`an_outcome_word_the_resolver_cannot_send_is_refused`) |
 | 9 | done: a README in the template's section order, with the diagram, an example that runs as a doctest, and the acronyms expanded; `RFC`, `TTL`, `NXDOMAIN` and `OK` stay in the prose gate's count, since no correct expansion of the first three passes it and `OK` belongs in the accepted words |
-| 10 | done for the proof: `the_grant_table_grants_only_what_it_said`, with its falsification patch; the fuzz target is left for the crate's own repository, where the `libfuzzer-sys` standing approval applies |
+| 10 | done for the proof: `the_grant_table_grants_only_what_it_said` (the parse stubbed) and `the_one_message_zone_parses_or_is_refused` (the real parse), each with its falsification patch; the fuzz target is left for the crate's own repository, where the `libfuzzer-sys` standing approval applies |
 | 11 | left: the move's mutation exemptions, after a census |
 | 12 | done: the spawner's control words are in `control`, and `wire` is the client half a standard library copies |
 | 13 | done: `ROOT_ZONE`, provisional |
