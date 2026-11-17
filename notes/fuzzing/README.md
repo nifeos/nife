@@ -20,6 +20,8 @@ These files carry the evidence its prose budget has no room for.
   the two in-guest drivers' rates at 1 to 16 guests under full emulation, and a host target's rate.
 - [`continuous-host.md`](continuous-host.md): the always-on x86_64 host, what it keeps and what it
   publishes.
+- [`the-filer-heartbeat.md`](the-filer-heartbeat.md): the report's `Filer:` line and what the daily
+  heartbeat proves about the filer.
 - [`the-fuzz-app.md`](the-fuzz-app.md): the runbook for the person who creates the host's GitHub App
   and places its key, and what that key can do.
 - [`finishing-the-setup.md`](finishing-the-setup.md): what runs on the host, what remains to build
