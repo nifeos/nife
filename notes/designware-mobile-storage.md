@@ -254,8 +254,8 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 - Every other test is against `simulator`, which models the contract as the databook and OpenBSD
   describe it.
 - **The booted system has no disk on radon yet.** The EL0 block server exists and the bench boot
-  calls it. `PROVEN_ON_SILICON` keeps the booted system from starting it, and which part of the
-  card nife's filesystem would live on is an architect's call (the 53 block).
+  calls it. No booted path calls the service's `start`, and which part of the card nife's filesystem would live on
+  is an architect's call (the 53 block).
 - The EL0 server holds the controller's DMA registers, which share its one page. The JH7110 has
   no IOMMU, so the server is as confined as its own code. That is milestone 261 (the NVMe driver
   leaves the kernel)'s position for a machine with no IOMMU. The server does no DMA: it moves its

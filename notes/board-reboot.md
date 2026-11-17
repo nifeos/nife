@@ -80,7 +80,7 @@ the kernel spawns `components/src/power_management_chip_route.rs` once per boot
 (`kernel/src/user/power_management_chip_route_service.rs`). The starter asks the clock and reset
 server to bring I2C5 up, derives the standard-mode timing from the SYS CRG and syscon words, and
 hands the route the controller's first page and one endpoint. The progenitor holds the endpoint at
-slot 35. It endows `WRITE` at `grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
+slot 41. It endows `WRITE` at `grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
 that declares reboot, and to nothing else. The route answers one request, `RESET`: it reads register
 `0x32`, writes it back with bit 6 set and every other bit as found, and waits two seconds. A reset
 the PMIC honors never answers. `reboot` prints any answer, then asks the reboot object.
@@ -137,6 +137,11 @@ Its limits, which its `BUGS` lists one line each:
 - The aarch64 `smc` conduit has never executed. QEMU's PSCI answers on `hvc`. `smc` is argon's.
 - A memory-space FADT reset register is not attempted. No machine here uses one.
 - Nothing has run on any board.
+- **The PMIC route holds the whole I2C controller.** Its page lets it address any chip on the
+  power controller's bus, and any register of the power controller, not only the reset bit. Its
+  code narrows that to the one register and bit the kernel packs in its spawn word, and its wire
+  answers `RESET` alone. Its input is one word from the program that declares `reboot`, which
+  that program could use only to reset the board.
 
 ## Each board's first bench step
 
