@@ -27,8 +27,8 @@ files. The same happens at both ends of the window, so every milestone section p
 Run on `main` at `a4faa4614` with the default window (since 2026-11-10), the script prints
 `MILESTONES THAT CHANGED STATUS (0)` and `MILESTONES NEWLY MINTED (0)`. A count over the block
 files with `helpers/roadmap_block.status_and_built`, for the same two commits, gives 26 status
-changes and 60 new blocks. A window that reaches back before the generated index was retired (for example
-`--since 2026-09-01`) instead reports 208 `MILESTONE ROWS THAT DISAPPEARED`, because the old end
+changes and 60 new blocks. A window that reaches back before the tree retired the generated index (for
+example `--since 2026-09-01`) instead reports 208 `MILESTONE ROWS THAT DISAPPEARED`, because the old end
 still has the table and the new end has none.
 
 ## The work

@@ -26,10 +26,11 @@ read forward, one rewritten crate and the window's renames were all read, not ru
 ### The two judgment questions, answered
 
 Has a subsystem been rewritten inside its existing crate since the last sweep? **No crate was
-rewritten in place.** The window's large move was milestone 1094's split of `grant_plan` into the
-planner, `grant_contract` and `program_table`, which the component count sees. It left one note
-half moved: `notes/adding-a-program.md` names `grant_contract` correctly and still sends the
-reader to `program_table`'s parent file for the rows (finding 3).
+rewritten in place.** The window's large move was the split of `grant_plan` into the planner,
+`grant_contract` and `program_table`, under milestone 1094 (`grant_plan`: what an outside
+maintainer would fix before it leaves). The component count sees it. It left one note half moved:
+`notes/adding-a-program.md` names `grant_contract` correctly and still sends the reader to
+`program_table`'s parent file for the rows (finding 3).
 
 Has a decision superseded a plan that a note still prescribes? **One.** §322 (the QEMU bootstrap is
 the one QEMU check) made the pinned build from `script/ci-qemu` the only QEMU, and `AGENTS.md`'s
@@ -120,16 +121,18 @@ item 6.
 
 ### 8. MINTED: two decided sections still carry their merge caveat
 
-§321 and §322 are `status: DECIDED` and still say their number and title are provisional until
-the merge lands them. Severity low. Minted as item 7.
+§321 (reclaiming a whole region subtree) and §322 are `status: DECIDED` and still say their
+number and title are provisional until the merge lands them. Severity low. Minted as item 7.
 
 ### 9. MINTED: narration on the newcomer path
 
-§298 and §267 hold documents and comments to the rule in force. The front pages and the scripts
-they name carry history in six places: `script/setup`'s comments on the toolchain date,
-`script/apropos`'s dated header, `CONTRIBUTING.md`'s `BUGS` opening, `AGENTS.md`'s "As of
-2026-08-30" and "(corrected 2026-10-06, #1739)", and `notes/adding-a-program.md`'s lines on when
-`user/` split and what the page said before §89. Severity low. Minted as item 8.
+§298 (a document states what is in force now) and §267 (a comment states the constraint as it
+is now) hold documents and comments to the rule in force. The front pages and the scripts they
+name carry history in six places. Two are `script/setup`'s comments on the toolchain date and
+`script/apropos`'s dated header. One is `CONTRIBUTING.md`'s `BUGS` opening, and two are
+`AGENTS.md`'s "As of 2026-08-30" and "(corrected 2026-10-06, #1739)". The last is
+`notes/adding-a-program.md`'s lines on when `user/` split and what the page said before §89
+(`provisional` becomes the fourth provenance state). Severity low. Minted as item 8.
 
 ### 10. ACCEPTED: the walk table in `notes/adding-a-program.md`
 
