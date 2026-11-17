@@ -17,7 +17,7 @@ only. It gives:
 - the unfiled causes: those the rules do not park and no advisory covers yet. A budget or hang cause
   that the rules park does not count.
 - the newest timestamp in the filer's ledger.
-- whether `fuzz-filer.timer` is enabled, and when it last ran.
+- whether `fuzz-filer.timer` has its enable switch on, and when it last ran.
 
 The counts come from the closing tally of `fuzz-filer run --dry-run`, which reads no token and sends
 nothing. The script keeps that tally and copies no cause line. When the host cannot read a value, the
@@ -30,7 +30,7 @@ line says `unknown`. The line holds counts and timestamps only, and nothing read
 - a report from 2026-11-19 on has no `Filer:` line. A release from before that day has none and passes.
 - the tally says `unknown`.
 - a cause waits for an advisory.
-- `fuzz-filer.timer` is disabled.
+- `fuzz-filer.timer` has its enable switch off.
 - the timer last ran more than two UTC days before the report's day, or never ran.
 
 A green heartbeat therefore proves a recent release, an ok window, a bounded infrastructure share, an

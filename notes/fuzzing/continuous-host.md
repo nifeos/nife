@@ -157,7 +157,7 @@ ruled this on 2026-11-01 (UTC) in
 [`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md),
 which also lists the milestones that build it. The filer is `fuzz-filer` in
 [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host); it runs as the fuzz account and files from a
-one-hour token that a root timer mints. Its binary is installed, but it files only while `fuzz-filer.timer` is enabled, and the heartbeat fails when it is not.
+one-hour token that a root timer mints. Its binary is installed. It files only while `fuzz-filer.timer` runs, and the heartbeat fails when it does not.
 
 With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
 UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD
