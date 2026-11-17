@@ -11,7 +11,7 @@ needs_person: no
 
 Raised by the documentation audit of 2026-11-17 (UTC),
 [the newcomer path](../../audit-reports/2026-11-17-the-newcomer-path.md), findings 2 to 9. Each item
-below is a claim that a command on `main` at `a4faa4614` showed false, and the report gives the
+below is a claim that a command on `main` at `9e8c189c0` showed false, and the report gives the
 command. Severity is medium for items 1 to 3 and low for the rest.
 
 Reuse: every item edits a file that exists, so there is nothing to search for. No new dependency.

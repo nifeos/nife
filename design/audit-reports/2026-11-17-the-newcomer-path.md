@@ -13,7 +13,7 @@ blocks](../roadmap/proposals/catch-up-reads-the-milestone-blocks.md).
 
 ## Why this lens
 
-`script/audits` on `main` at `a4faa4614` reported documentation DUE on milestones built 489 to 510
+`script/audits` on `main` at `9e8c189c0` reported documentation DUE on milestones built 489 to 510
 (+21, fires at 15) and external packages 199 to 209 (+10, fires at 10). The security audits run the
 same day take the verifier and radon's device authority; this sweep reads the documents.
 
@@ -44,8 +44,9 @@ compared with what the page that names it says.
 - The Try it block. `script/ci-qemu` found the pinned QEMU 11.1.2 with every device the suite needs.
   `cargo xtask build` exited 0. `script/console`, bounded with `helpers/qemu-bounded.sh`, reached
   the prompt in about 60 seconds, and the three commands the README suggests (`help`,
-  `echo hello`, `least_authority_demo 7`) each answered as the README says. `script/test` ran to the
-  end (see below). `script/catch-up` ran with its default window and with `--since 2026-09-01`.
+  `echo hello`, `least_authority_demo 7`) each answered as the README says. `script/test` passed on all three
+  architectures in 32 minutes of wall time. `script/catch-up` ran with its default window and
+  with `--since 2026-09-01`.
 - Start here. `script/roadmap --ready` lists ready blocks; `script/apropos syscall` was run as
   `CONTRIBUTING.md` and the script's header suggest; `helpers/agents-index-check.py` passed, and
   both skill link directories hold all seven links.

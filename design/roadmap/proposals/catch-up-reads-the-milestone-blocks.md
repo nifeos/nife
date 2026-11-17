@@ -24,7 +24,7 @@ rows it finds there. That file still exists, but it is prose and holds no `| N |
 function returns an empty table and never reaches `parse_blocks`, the reader written for the block
 files. The same happens at both ends of the window, so every milestone section prints as empty.
 
-Run on `main` at `a4faa4614` with the default window (since 2026-11-10), the script prints
+Run on `main` at `9e8c189c0` with the default window (since 2026-11-10), the script prints
 `MILESTONES THAT CHANGED STATUS (0)` and `MILESTONES NEWLY MINTED (0)`. A count over the block
 files with `helpers/roadmap_block.status_and_built`, for the same two commits, gives 26 status
 changes and 60 new blocks. A window that reaches back before the tree retired the generated index (for
