@@ -1,11 +1,14 @@
 # radon, 2026-11-17 (UTC): the 1062 and storage bench session
 
-One session at radon (the VisionFive 2), confirming steps 2, 3 and 5 of milestone 1062 (the
-device control planes leave the kernel; issues #3498 and #3499 cover the Ethernet control plane
-and the JH7110 power-management-chip route), the storage bench of milestone 53 (the board's own
-peripherals: network and storage on real silicon; issue #3488) and milestone 1035 (a crate names
-the version that ran on hardware), whose record is [README-1035.md](README-1035.md). Issue #3509
-tracks the session. Every boot printed
+One session at radon (the VisionFive 2). Issue #3509 tracks it. It covered four things:
+
+- milestone 1062 (the device control planes leave the kernel), steps 2, 3 and 5: the Ethernet
+  control plane (#3498) and the JH7110 power-management-chip route (#3499);
+- the storage bench (#3488) of milestone 53 (the board's own peripherals: network and storage on real silicon);
+- milestone 1035 (a crate names the version that ran on hardware), recorded in
+  [README-1035.md](README-1035.md).
+
+Every boot printed
 `nife: payload came from net`; `<host>` below is the TFTP host's LAN address, which the logs print.
 
 ## What the logs are
