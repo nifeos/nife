@@ -108,8 +108,7 @@ the doc comment on `ENDPOINT_CONTEXT_FIELDS_DO_NOT_OVERLAP` says "kind at 3:10".
 masks its speed in the same file, so the asymmetry is an oversight.
 
 Ruled 2026-11-09. `context::endpoint` takes an `EndpointType` enum in place of the `u8`, and keeps
-the mask. The lane mints the variant names provisionally from the specification's spellings, and
-the release review ratifies them with the names of P1-8 and P1-12. The harness asserts that bits 6 to 15 of dword 1 are
+the mask. The variant names come from the specification's spellings and stand as built (2026-11-16 UTC). The harness asserts that bits 6 to 15 of dword 1 are
 zero and that the type reads back as the variant's code, and the falsification patch drops the
 mask. One-way (public signature). XS.
 
@@ -146,7 +145,7 @@ them. The harness assumptions and the fuzz range narrow to match. One-way (publi
 own driver never does; a stranger's may. The only statement of the rule is a
 comment in the host test `a_simulated_controller_runs_exactly_what_was_produced_across_laps`.
 
-Change: `ProducerRing::capacity() -> u16` (`entries - 1`, name provisional), a sentence on
+Change: `ProducerRing::capacity() -> u16` (`entries - 1`), a sentence on
 `enqueue` stating the caller's rule, and a README `BUGS` line. P1-13 adds the refusing variant.
 Two-way. XS.
 
@@ -158,7 +157,7 @@ kibibyte boundary, which Linux splits a TD at and the reviewer recalls as a spec
 The crate's own layout never crosses one; a stranger's might.
 
 Change: read the rule, state it on both builders and in the README `BUGS`, and add
-`fits_one_transfer_request_block(buffer, len) -> bool` (name provisional). Two-way. XS.
+`fits_one_transfer_request_block(buffer, len) -> bool`. Two-way. XS.
 
 #### P1-8. The codes the crate hands back have no public names
 
@@ -174,8 +173,7 @@ meets Babble, Stopped or Command Aborted gets a number it cannot name.
 Ruled 2026-11-09. These names land before any tag. The existing type codes, speed ids and change
 bits become public. The crate adds the missing completion codes with spelled-out names and the
 specification's name as `doc(alias)`. `completion::name(code) -> &'static str` sits beside
-`port::speed_name`. Every new name is provisional until the release review ratifies them together.
-One-way (names). S.
+`port::speed_name`. The new names stand as built (2026-11-16 UTC). One-way (names). S.
 
 #### P1-9. The crate holds no `unsafe` and does not say so
 
@@ -216,8 +214,7 @@ host. A reader needs the doc comment to decode each.
 
 Ruled 2026-11-09. Two enums replace them before any tag: a debounce verdict with `Pending`,
 `Settled` and `TimedOut`, and a transfer type with `NoDataStage`, `HostToDevice` and
-`DeviceToHost`. The enum and variant names are provisional until the release review ratifies them
-with P1-3 and P1-8. One-way (names and shapes). XS.
+`DeviceToHost`. The enum and variant names stand as built (2026-11-16 UTC). One-way (names and shapes). XS.
 
 #### P1-13. A fake controller a stranger can run, and a ring that refuses when full
 
@@ -228,8 +225,8 @@ is private to the tests. No `examples/` directory exists.
 Ruled 2026-11-09. Before any tag, `ProducerRing` gains `try_enqueue`, which refuses when the ring
 is full, and `complete(transfer_request_block_physical_address)`, which the caller reports each
 completion event to. `examples/fake_controller.rs` builds the rings, enqueues a control transfer,
-consumes it as the controller would and decodes the events it writes. The names are provisional
-until the release review. One-way (names). M.
+consumes it as the controller would and decodes the events it writes. The names stand as built
+(2026-11-16 UTC). One-way (names). M.
 
 #### P1-14. The Event Data bit is ignored
 
@@ -246,15 +243,14 @@ with a builder for Event Data TRBs. Two-way (documentation). XS.
 Ruled, and closed here (decisions 1 to 4 on 2026-11-09, decision 5 on 2026-11-10):
 
 1. `context::endpoint` takes an `EndpointType` enum and keeps the mask; a lane mints the variant
-   names provisionally from the specification's spellings, and the release review ratifies them
-   with the names of decision 3 (P1-3).
+   names come from the specification's spellings and stand as built (2026-11-16 UTC).
 2. `EventRing::new` and `ProducerRing::new` refuse sizes outside the specification's bounds, read
    from its text first, with `MINIMUM_SEGMENT_ENTRIES` and `MAXIMUM_SEGMENT_ENTRIES`; the harness
    assumptions and the fuzz range narrow to match (P1-5).
 3. New public names land before any tag (P1-8, P1-12, P1-13). They are the type codes, speed ids
    and change bits made public, the missing completion codes with aliases, `completion::name`, the
-   two enums, `try_enqueue` and `complete`, with the fake controller example. Every name stays
-   provisional until the release review ratifies them together.
+   two enums, `try_enqueue` and `complete`, with the fake controller example. Every name stands
+   as built (2026-11-16 UTC).
 4. `Capabilities::port_status_and_control` returns `Option<u64>`, `None` for port 0 or past
    `maximum_ports`, and the fuzz target asserts `None` (P1-11).
 5. `Event::Transfer` grows no `event_data` field until a builder for Event Data TRBs arrives; its
@@ -262,9 +258,14 @@ Ruled, and closed here (decisions 1 to 4 on 2026-11-09, decision 5 on 2026-11-10
 
 For the architect, one-way, not yet ruled: any tag, asked separately when the weekly gates pass.
 
-The maintainers' provisional calls: every two-way item above and in the appendix, and the names a
-lane mints for them (`capacity`, `fits_one_transfer_request_block` and the rest), which go through
-the naming review before any tag.
+Ruled 2026-11-16 (UTC): the names of P1-3, P1-5 to P1-9, P1-12 and P1-13 stand as built. They
+are `EndpointType` and its variants; `MINIMUM_SEGMENT_ENTRIES` and `MAXIMUM_SEGMENT_ENTRIES`;
+`ProducerRing::capacity`; `fits_one_transfer_request_block`; the public type codes, speed ids,
+change bits and completion codes with `completion::name`; `DebounceVerdict` (`Pending`, `Settled`,
+`TimedOut`); `TransferType` (`NoDataStage`, `HostToDevice`, `DeviceToHost`); `try_enqueue`;
+`complete`; and `examples/fake_controller.rs`. Tag and publish stay separate asks.
+
+The maintainers' provisional calls: every other two-way item above and in the appendix.
 
 The publishing hold stands.
 
@@ -310,8 +311,7 @@ Checked 2026-11-14 (UTC) against `nifeos/extensible_host_controller_interface`. 
 - **Outstanding.** P2-3 and P2-10 in part: no module says when to reach for it, and the repository
   description and topics are still the scaffold's. Neither is a BUGS entry or an issue.
 - **Outstanding.** Kani and fuzz at a tagged commit: the last fuzz run, at `bea0257`, predates the
-  tag, and this check read no Kani run at `2394d80`. The provisional names of P1-3, P1-8, P1-12 and
-  P1-13 wait for the release review.
+  tag, and this check read no Kani run at `2394d80`.
 
 ## Index row
 

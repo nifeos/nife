@@ -7,7 +7,7 @@ use super::*;
 #[inline]
 pub unsafe fn alloc(layout: Layout) -> *mut u8 {
     if let Some((cache, c)) = cache_for(layout) {
-        if let Some(p) = cache.take(c) {
+        if let Some(p) = cache.pop(c) {
             return p.as_ptr();
         }
         return refill_and_take(cache, c);
@@ -35,15 +35,15 @@ pub unsafe fn dealloc(ptr: *mut u8, layout: Layout) {
     if let Some((cache, c)) = cache_for(layout) {
         // SAFETY: `p` came from `alloc(layout)`, so it is `class_bytes(c)` grid-aligned bytes
         // of the heap's (a cached block is fungible within its class), and it is ours now.
-        if let Err(p) = unsafe { cache.put(c, p) } {
+        if let Err(p) = unsafe { cache.push(c, p) } {
             {
                 let mut g = lock();
                 let inner = g.inner();
                 // SAFETY: as `spill_thread_cache`.
                 cache.spill(c, |b| unsafe { inner.heap.deallocate(b.as_ptr(), class_layout(c)) });
             }
-            // SAFETY: as the first `put`; the spill made room.
-            let kept = unsafe { cache.put(c, p) };
+            // SAFETY: as the first `push`; the spill made room.
+            let kept = unsafe { cache.push(c, p) };
             debug_assert!(kept.is_ok());
         }
         return;

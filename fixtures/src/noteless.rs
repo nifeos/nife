@@ -6,7 +6,7 @@
 //! `script/swish-check` proves the installed path and the no-note default with this program. Like
 //! `greeting` it is listed in `fixtures`' `packaged_only`, so no archive packs it and only its
 //! package (`packages/noteless.recipe.toml`) puts it on a machine; unlike `greeting` it carries no
-//! ELF note, so a vouched copy is bound and endowed as `grant_plan::NO_NOTE_MANIFEST`, its output
+//! ELF note, so a vouched copy is bound and endowed as `program_table::NO_NOTE_MANIFEST`, its output
 //! alone.
 
 //! # EXAMPLES

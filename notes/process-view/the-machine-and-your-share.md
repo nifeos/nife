@@ -59,7 +59,7 @@ so a number that moves at rebase needs no second ratification; the table holds w
 | the page's name and layout | `machine_statistics_contract`, magic `MACHSTA1`, a 64-byte header, one line per core | |
 | where a child sees it | `0x005F_F000`, a pair page | the address-space map of milestone 206 (a program image has under 896 KiB) keeps images and stacks away from it; nothing collides with it |
 | the progenitor's boot slot | 23 | the GPU and keyboard of milestone 600 (the graphical terminal stack is built in userspace) hold 17 to 22; the table has 32 slots (calef) so a slot free on every boot exists |
-| the session's slot | 20 | `grant_plan::SHELL_CONFIGURATION_SLOT` holds 21 (milestone 47 (navigation and naming)) |
+| the session's slot | 20 | `grant_contract::SHELL_CONFIGURATION_SLOT` holds 21 (milestone 47 (navigation and naming)) |
 | the spawn wire | `MACHINE_BIT`, bit 44 | `PROGRAM_ARGUMENTS_BIT` is 42 (milestone 205 (how a foreign program is told what to do)) and `NAMESET_BIT` is 43 |
 | the child's slots | `MACHINE_SLOT` 11, `SHARE_SLOT` 12 | |
 | the owner's switch | `GRANT_MACHINE_PAGE`, default `true` | |
@@ -203,7 +203,7 @@ milestone is `design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is
 progenitor's job pool, which the rest of this paragraph describes.
 
 `Yours:` for a stage is the machine's whole job pool, not one prompt's. The share view the progenitor places at
-`grant_plan::SHARE_SLOT` is `jobs_ut` (`crates/system_initializer`), the single region every job
+`grant_contract::SHARE_SLOT` is `jobs_ut` (`crates/system_initializer`), the single region every job
 and every graphical terminal session is split from, and `USAGE`'s subtree records sum all of them.
 So `free` and `slabtop` in one session see pages another session spent. That is a counting channel
 of the kind the 2026-08-17 security audit accepted for `SURVEY`: a number, never a name, and nothing

@@ -146,10 +146,10 @@ fn every_program_the_progenitor_loads_is_vouched_for_by_the_measurement_table() 
         );
         checked += 1;
     }
-    // The spawnable half, taken from the same enum the progenitor indexes (`grant_plan::Program`),
+    // The spawnable half, taken from the same enum the progenitor indexes (`program_table::Program`),
     // so a program added to the prompt is covered here without anyone remembering to add it.
-    for id in 0..grant_plan::PROGRAM_COUNT {
-        let Some(name) = grant_plan::Program::from_id(id as u64).map(|p| p.name()) else {
+    for id in 0..program_table::PROGRAM_COUNT {
+        let Some(name) = program_table::Program::from_id(id as u64).map(|p| p.name()) else {
             continue;
         };
         let Some(bytes) = program(name) else { continue };

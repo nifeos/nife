@@ -1,0 +1,14 @@
+default-1k	512	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+default-1k	4096	refused	Ext4Error { kind: Io, context: None }
+default-2k	512	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+default-2k	4096	refused	Ext4Error { kind: Io, context: None }
+default-4k	512	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+default-4k	4096	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+inline-data-4k	512	refused	Ext4Error { kind: UnsupportedFeature, context: Some(Feature { set: Incompatible, bits: 32768 }) }
+inline-data-4k	4096	refused	Ext4Error { kind: UnsupportedFeature, context: Some(Feature { set: Incompatible, bits: 32768 }) }
+no-metadata-csum-1k	512	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+no-metadata-csum-1k	4096	refused	Ext4Error { kind: Io, context: None }
+no-metadata-csum-4k	512	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+no-metadata-csum-4k	4096	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+no-orphan-file-4k	512	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth
+no-orphan-file-4k	4096	differs	/timestamps/after-2106:modification,birth /timestamps/before-1970:access,modification /timestamps/nanoseconds:access,modification,birth

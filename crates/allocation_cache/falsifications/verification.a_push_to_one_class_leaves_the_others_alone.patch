@@ -1,0 +1,19 @@
+Falsifies `allocation_cache::verification::a_push_to_one_class_leaves_the_others_alone`.
+
+The defect: `push` counts every block against the first class, whatever class it was pushed to.
+
+Expected to fail: the harness's claim that the class pushed to holds exactly one block.
+
+diff --git a/crates/allocation_cache/src/lib.rs b/crates/allocation_cache/src/lib.rs
+index 5558eb4ef..12e91f375 100644
+--- a/crates/allocation_cache/src/lib.rs
++++ b/crates/allocation_cache/src/lib.rs
+@@ -297,7 +297,7 @@ impl Cache {
+             });
+         };
+         self.heads[class.index()] = node;
+-        self.counts[class.index()] += 1;
++        self.counts[0] += 1;
+         Ok(())
+     }
+ 

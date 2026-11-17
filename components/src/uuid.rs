@@ -2,7 +2,7 @@
 //! service for sixteen bytes, stamp the six bits RFC 9562 reserves
 //! (`uuid::Builder::from_random_bytes`), print the canonical form in RFC order, uppercase.
 //! It is `disk_partitioner`'s draw with the disk taken away, and `date`'s shape one manifest field
-//! over ([`grant_plan::Manifest::entropy`] rather than `Manifest::clock`): the part of randomness a
+//! over ([`grant_contract::Manifest::entropy`] rather than `Manifest::clock`): the part of randomness a
 //! person at the prompt can reach. It takes no arguments; there is no argv on this ABI
 //! (notes/abi.md).
 
@@ -61,12 +61,12 @@ const REPORT: u64 = 0;
 /// Slot 8: the declared second stream (DECISIONS §67 (a program's second stream is a declaration,
 /// not a number)). The refusal goes here so a `>` on the line cannot swallow it into a file that
 /// then looks like a successful run.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Slot 9: the entropy service, `WRITE`. Its *presence* is what the draw finds out about, and it
 /// finds out by asking rather than by probing: a `CALL` on an empty slot answers
 /// `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes` separates from every real count.
-const ENTROPY_SLOT: u64 = grant_plan::ENTROPY_SLOT;
+const ENTROPY_SLOT: u64 = grant_contract::ENTROPY_SLOT;
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
@@ -101,8 +101,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,

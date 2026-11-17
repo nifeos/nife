@@ -252,6 +252,14 @@ refusal in full.
 - Counts that span the tree are still the integrator's at merge (AGENTS.md). Two lanes can each
   mark a number correctly for their own branch and disagree after the merge. The gate turns that from
   a silent wrong number into a failing group build, which is the improvement rather than a cure.
+  So an equality marker goes only on a count that moves at the pace of a decision (`syscalls`,
+  `rights-bits`, `security-audits`). It also suits one whose every change edits the same lines
+  anyway, such as a crate's own harness count beside that crate's harnesses. A count that unrelated
+  lanes move takes a floor or a ceiling with headroom. `harness-crates` is that case: a new crate
+  with a proof moves it, and so does a crate that leaves for its own repository. Its equality
+  markers ejected 16 of 97 merge-queue attempts measured on 2026-11-15 (UTC), each time two correct
+  pull requests racing for one number. Its floors sit at 30, since the count ranged from 36 to 43
+  over the month to that day.
 
 - `AGENTS.md`'s method figures are unmarked, including a Kani harness count that was wrong on the
   day it was tested. A lane may not edit that file, so the first tranche could not reach it. Marking

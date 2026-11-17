@@ -39,7 +39,7 @@ pub fn write_holdings(
             // 2026-09-26), and this table is the one place that says it.
             out(b"    cap 4  endpoint  directory  the files it can narrow into per-file grants\n");
             out(b"    cap ");
-            write_num(grant_plan::spawnproto::MOUNTED_TREE_SLOT, out);
+            write_num(program_table::spawnproto::MOUNTED_TREE_SLOT, out);
             out(b" endpoint  directory  a second tree, mounted at ");
             let mut buf = [0u8; nav::RENDER_MAXIMUM];
             let n = sd.mount().render(&mut buf);
@@ -83,7 +83,7 @@ pub fn write_holdings(
     // configuration is a validated page)), and no row when absent.
     if let Some(page) = config {
         out(b"    cap ");
-        write_num(grant_plan::SHELL_CONFIGURATION_SLOT, out);
+        write_num(grant_contract::SHELL_CONFIGURATION_SLOT, out);
         out(b" frame     config     READ only, NOT delegable: the page a child declaring\n");
         out(b"                                  config is endowed with, so 'caps' can show its values\n");
         write_config_values(&page, b"                                  ", out);
