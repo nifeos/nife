@@ -68,7 +68,7 @@ domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exer
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	retired
-entropy_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+entropy_contract	shared	retired
 entropy_proto	shared	retired
 entropy_protocol	shared	retired
 environment_contract	shared	components,kernel,std
