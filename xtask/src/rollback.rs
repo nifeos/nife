@@ -142,7 +142,7 @@ pub(crate) fn rollback_boot() -> bool {
         "uefi_loader: starting boot slot 0",
         "uefi_loader: started from boot slot 0",
         // And what it fell back to is a working machine rather than a different line of output.
-        "nife capability shell.",
+        crate::install::SHELL_UP.as_str(),
         "1 10 57",
     ] {
         if !back.contains(wanted) {

@@ -48,8 +48,7 @@ const MODES: [Mode; 2] = [
     },
 ];
 
-/// The shell's banner, printed once the progenitor has the console: the handover is over.
-const SHELL_UP: &str = "nife capability shell.";
+use crate::install::SHELL_UP;
 
 /// How long one mode may take to reach the shell. A release boot under TCG reaches it in well
 /// under this; the bound is for a hang, which a panic is not (the panic line ends the wait).
@@ -72,7 +71,7 @@ fn mode_hands_the_screen_over(esp: &std::path::Path, mode: &Mode) -> bool {
         return false;
     };
     let mut ok = true;
-    for wanted in mode.wanted.iter().chain([&SHELL_UP]) {
+    for wanted in mode.wanted.iter().chain([&SHELL_UP.as_str()]) {
         if !transcript.contains(wanted) {
             eprintln!("uefi-boot: at {name} the boot transcript is missing {wanted:?}");
             ok = false;
@@ -137,7 +136,7 @@ fn boot_until_the_shell(esp: &std::path::Path, mode: &Mode) -> Option<String> {
                 .and_then(|()| serial.flush())
                 .is_ok();
         }
-        if text.contains(SHELL_UP) || text.contains("[PANIC]") {
+        if text.contains(SHELL_UP.as_str()) || text.contains("[PANIC]") {
             break;
         }
         std::thread::sleep(Duration::from_millis(250));

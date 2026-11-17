@@ -788,7 +788,7 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         }
         return;
     }
-    if !half.has(flag::RANDOM_NUMBER_GENERATOR_FOUND) {
+    if !half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_FOUND) {
         let why = "this machine's tree names no JH7110 TRNG (neither starfive,jh7110-trng nor the vendor U-Boot's starfive,trng)";
         r.absent(
             check!("clock"),
@@ -800,10 +800,10 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         );
         return;
     }
-    let registers = half.word(word::RANDOM_NUMBER_GENERATOR_REGISTERS);
-    let refusal = if half.has(flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING) {
+    let registers = half.word(word::TRUE_RANDOM_NUMBER_GENERATOR_REGISTERS);
+    let refusal = if half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING) {
         Some("the archive has no jh7110_entropy program")
-    } else if !half.has(flag::RANDOM_NUMBER_GENERATOR_WIRED) {
+    } else if !half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_WIRED) {
         Some("its service would not wire")
     } else {
         None
@@ -827,8 +827,8 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         );
         return;
     }
-    let report = half.word(word::RANDOM_NUMBER_GENERATOR_REPORT);
-    let status = (half.word(word::RANDOM_NUMBER_GENERATOR_REPORT + 1) >> 32) as u32;
+    let report = half.word(word::TRUE_RANDOM_NUMBER_GENERATOR_REPORT);
+    let status = (half.word(word::TRUE_RANDOM_NUMBER_GENERATOR_REPORT + 1) >> 32) as u32;
     let d = draw_twice(slot::TRUE_RANDOM_NUMBER_GENERATOR);
     let bytes = d.first + d.second;
     r.record(
@@ -836,8 +836,8 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         report == entropy_contract::READY && d.is_good(),
         format_args!(
             "JH7110 TRNG at {registers:#x} (tree says {}): report {report:#x}, STAT {status:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {bytes} bytes in {} us ({} bytes/s); crate jh7110_entropy {} at {}",
-            if half.has(flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY) { "okay" } else { "disabled" },
-            mode_note(status, half.has(flag::RANDOM_NUMBER_GENERATOR_256_BIT)),
+            if half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_STATUS_OKAY) { "okay" } else { "disabled" },
+            mode_note(status, half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_256_BIT)),
             d.first,
             d.second,
             d.head[0],
@@ -845,7 +845,7 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
             d.head[2],
             d.head[3],
             d.differ,
-            microseconds(half.word(word::RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS)),
+            microseconds(half.word(word::TRUE_RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS)),
             microseconds(d.ticks),
             (bytes as u64).saturating_mul(frequency()).checked_div(d.ticks).unwrap_or(0),
             env!("NIFE_JH7110_ENTROPY_VERSION"),
@@ -940,7 +940,7 @@ fn draw_twice(service: u64) -> Draw {
 /// progenitor's service draws from: the CPU's seed instruction (`RDSEED`, `RNDRRS`) or a virtio-rng
 /// device. Two 32-byte draws that differ. A machine with no source reports this check absent.
 fn entropy(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants) {
-    let (service, source) = if half.has(flag::RANDOM_NUMBER_GENERATOR_FOUND) {
+    let (service, source) = if half.has(flag::TRUE_RANDOM_NUMBER_GENERATOR_FOUND) {
         if !g.true_random_number_generator {
             r.record(
                 check!("entropy"),
