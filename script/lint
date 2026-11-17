@@ -3234,6 +3234,7 @@ echo "==> every Kani harness carries a falsification record"
 
 echo "==> the audit index"
 # lint-scope: record
+"$(dirname "$0")/audits" --selftest
 "$(dirname "$0")/audits" --check
 
 #    **And the stranger test's run record, for the same reason and with the same split**
