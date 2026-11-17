@@ -32,7 +32,7 @@ diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
 -    let slot = sched::grant_derived(slot, |src| {
-+    let copy = (|src: crate::capability_object::Cap| {
++    let copy = (|src: crate::capability_object::Capability| {
          let Object::PageFrame(phys, count) = src.object else {
              return Err(Error::WrongObject);
          };
