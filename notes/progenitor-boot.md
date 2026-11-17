@@ -189,8 +189,8 @@ starts a driver itself only where the progenitor could not build it as well.
   gate has driven is left alone, and so is a NIC with no link, since a stack waiting for DHCP would
   hold the prompt back forever.
 - radon's Ethernet stack (milestone 53 (the board's own peripherals)) is the `e1000e` path's twin on riscv64. While
-  `designware_ethernet_service::PROVEN_ON_SILICON` is `true`, so radon's boot brings the port up
-  and starts `net_stack` on it; with no cable it waits out the five-second link wait and says `NONE`.
+  `designware_ethernet_service::PROVEN_ON_SILICON` is `true`: radon's boot starts `net_stack` on
+  it, and with no cable waits five seconds, then says `NONE`.
 - The instruction entropy service (milestone 595 (the shell runs a `std` program)) serves the CPU's seed instruction (`RDSEED`,
   `RNDRRS`) when there is no virtio-rng. The kernel confirms the instruction exists for three
   reasons. First, it is what the tree already does. `entropy_service::is_instruction_backend_available`
