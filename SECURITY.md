@@ -176,7 +176,7 @@ took, its findings by disposition, and a link to the report. `script/audits` say
 is due, from the triggers `design/decisions/0074-audit-cadence.md` decided, and a weekly workflow asks
 the same question so that auditing does not depend on anyone remembering to.
 
-**Fourteen** <!--count:security-audits--> security audits are on the record, and reading them first will
+**Fifteen** <!--count:security-audits--> security audits are on the record, and reading them first will
 save you time. Each took a lens the previous one did not, deliberately, because the value of an audit
 is the lens the last one lacked. (Documentation audits are in the same index and are not listed here;
 they read the tree for claims that had gone false, which is worth knowing if you find prose and code
@@ -261,6 +261,10 @@ disagreeing.)
   system manifest, the base digest page) and the runtime crates split out beside it. No input
   reaches a grant wider than the owner approved. A delegated install writes the package's bytes
   before the approval check refuses it; proposed.
+- **design/audit-reports/2026-11-17-the-verifier.md**: the stock Kani pin, the bundle `cargo kani
+  setup` fetches behind it, the bump job and the patched riscv64 Kani. The prover's bytes run with
+  no digest check, from a mutable release; proposed. Five architecture-specific falsification
+  records carry no patch, so nothing replays them; proposed.
 - **design/audit-reports/2026-11-17-radon-device-authority.md**: the clock and reset server, the
   GMAC's control process and the PMIC route on radon, read as hostile holders. The server's page
   holds every clock and reset of three domains, CPU cores and DRAM included; accepted, with its

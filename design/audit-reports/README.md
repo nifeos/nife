@@ -152,6 +152,7 @@ malformed it.
 | 2026-10-27 | documentation | A subsystem rewritten inside its existing crate: `file_allocation_table`, which gained a reader in the window, read from the notes that describe it and its two writers from the outside, passage by passage against the code, with the installer's and the boot stick's spawn and report words swept for contracts stated only in prose | fixed 6, minted 4, accepted 4 | [The FAT crate, read from the outside](2026-10-27-the-fat-crate-read-from-the-outside.md) |
 | 2026-11-03 | documentation | Names the window moved, read from the prose that still uses them: the four spelled-out capability names, the four crates that left the tree or took a new name, and the removed `rmle`, each followed to every current document, script and comment that names it | fixed 4, minted 0, accepted 1 | [Names the window moved](2026-11-03-names-the-window-moved.md) |
 | 2026-11-03 | security | From the package to the grant, as a hostile package and a confined process trying to widen: the approval file, a program's asks, the `INTERFACES` note, the system manifest and the base digest page, then the runtime halves split out of the supervision and hot-swap contracts, the survey `PROCESS` record, the device-tree patcher and the eight new fixtures | fixed 2, minted 4, accepted 4 | [From the package to the grant](2026-11-03-from-the-package-to-the-grant.md) |
+| 2026-11-17 | security | The verifier, as code that runs with authority nobody reviewed: the stock Kani `.kani-version` pins and the bundle `cargo kani setup` fetches behind it, the daily bump job, the patched riscv64 Kani and the falsification records, then the window's ten new external packages followed to the graph each reaches | fixed 0, minted 3, accepted 2 | [The verifier](2026-11-17-the-verifier.md) |
 | 2026-11-17 | security | radon's device authority, read as a holder turned hostile: the clock and reset server, the GMAC's control process and the PMIC route, each page followed to what it reaches beyond its device, who can send to it and what it trusts | fixed 3, minted 3, accepted 2 | [radon's device authority](2026-11-17-radon-device-authority.md) |
 
 ## What the tree looked like when each ran
@@ -200,6 +201,7 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-11-03 | documentation | 489 | 252 | 99 | 199 |
 | 2026-11-03 | security | 489 | 252 | 99 | 199 |
 | 2026-11-17 | security | 510 | 253 | 99 | 209 |
+| 2026-11-17 | security | 510 | 253 | 99 | 209 |
 
 The two `-` cells are honest rather than lazy: the roadmap was a single file with no status column
 until milestone 76 (split the roadmap: `design/roadmap/README.md` as index, one file per milestone) split it into `design/roadmap/` on 2026-08-03, and milestones 1 to 11 were
@@ -240,8 +242,7 @@ index that took every file called an audit would report a coverage it does not h
 1. **Pick the lens the last audit lacked.** That is milestone 43's insight and it is the whole
    reason the `Lens` column exists: read the rows above and ask what they did not look at.
    Candidates not yet taken: the graphical drivers' parsers (milestone 600 (the graphical terminal
-   stack is built in userspace)), and the verifier's own pin (Kani, `.kani-version` and the job that
-   bumps it).
+   stack is built in userspace)).
 
    **For a `documentation` sweep the lens question has a starting answer rather than a blank**, and
    it is `script/audits --worklist`: it ranks every document by how many of the files it cites have
