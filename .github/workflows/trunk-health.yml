@@ -90,6 +90,13 @@ jobs:
       # runs through `gh`. Nothing here walks another branch, which is what makes it cheaper than
       # the drain's checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
 
       # **Says so when the merge queue ejects more than a fifth of what enters it** (milestone 724
       # (the merge queue reports its ejection share and its time to merge), provisional), for the

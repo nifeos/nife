@@ -73,6 +73,7 @@ jobs:
       # The image, from inside: the stage 1 jobs need a Rust toolchain, an apt that uses the proxy
       # and a pip that reaches its index. A FINDING here fails this job, which cannot fail the
       # queue; it is what a maintainer reads before flipping NIFE_RUNNER_OWNED (notes/owned-runners.md).
+      # checkout-retry: exempt, this job measures the owned runner's own checkout, and a retry would hide a stall it exists to show
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install the pinned toolchain
         shell: bash
@@ -159,6 +160,7 @@ jobs:
     continue-on-error: true  # outcome: exception, the dry run reports on the image and must never block the queue
     timeout-minutes: 25
     steps:
+      # checkout-retry: exempt, this job measures the owned runner's own checkout, and a retry would hide a stall it exists to show
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install the pinned toolchain (crate-probes)
         shell: bash

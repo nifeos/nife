@@ -386,6 +386,15 @@ jobs:
           exit 0
       # The prose-only rule: see the comment above this job. Only asked when something would run.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           fetch-depth: 0
       - name: Is this change prose that no build or test reads?
@@ -482,6 +491,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # The `test` job's key, path and build step.
       - name: Does main hold QEMU for this .qemu-version?
         id: qemu
@@ -562,9 +578,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -671,6 +696,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       - name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
@@ -808,9 +840,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -1004,9 +1045,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -1124,6 +1174,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -1180,6 +1237,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -1241,9 +1305,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -1381,9 +1454,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -1507,9 +1589,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -1632,6 +1723,15 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
@@ -1728,6 +1828,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -1785,12 +1892,21 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # `script/lint` runs `script/roadmap --check`, whose merged-branch check reads
           # `git log --merges`. At the default depth 1 that returns nothing, so the check passed
           # vacuously here for as long as it has existed; milestone 247 merged with a stale status
           # and no pull request went red. The check now refuses an empty history too, so this and
           # that refusal are belt and braces.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       - name: A draft runs no lint
         if: needs.gate.outputs.draft == 'true'
@@ -1949,6 +2065,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -1990,6 +2113,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -2032,6 +2162,15 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
@@ -2069,6 +2208,15 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
@@ -2133,6 +2281,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -2177,6 +2332,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -2228,6 +2390,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -2291,6 +2460,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -2341,9 +2517,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -2463,6 +2648,13 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
       - name: In a merge group, is this change prose that no build or test reads?
@@ -2546,9 +2738,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
@@ -2687,6 +2888,15 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
@@ -2741,9 +2951,18 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         with:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
+        with:
           fetch-depth: 0
       # A merge group runs no draft gate job, so this job asks the gate's prose question
       # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).

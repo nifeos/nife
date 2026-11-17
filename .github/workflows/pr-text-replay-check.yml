@@ -53,6 +53,18 @@ jobs:
     steps:
       # The base branch's copy of the helper, and only that file. No credentials are kept.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          sparse-checkout: helpers/replay-line-check.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           sparse-checkout: helpers/replay-line-check.sh
