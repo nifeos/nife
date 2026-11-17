@@ -6,7 +6,7 @@
 //! which owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
 //!
 //! The CMOS RTC crosses no seam: it is two fixed I/O ports, not a page, so `memory::RTC_REGION`
-//! stays empty here and the clock service holds a `PortRange` over `clock_contract::rtc::CMOS`'s
+//! stays empty here and the clock service holds a `PortRange` over `clock_contract::real_time_clock::CMOS`'s
 //! ports instead.
 
 use machine_discovery::framebuffer::Framebuffer;

@@ -46,7 +46,7 @@ fn now() -> Duration {
 /// Monotonic nanoseconds since boot, the input to the wall-clock sum.
 fn monotonic_nanos() -> u64 {
     let d = now();
-    d.as_secs() * clockproto::NANOS_PER_SEC + d.subsec_nanos() as u64
+    d.as_secs() * clockproto::NS_PER_SECOND + d.subsec_nanos() as u64
 }
 
 /// Whether a clock page was granted: 0 = not yet asked, 1 = granted, 2 = not granted.
@@ -136,10 +136,10 @@ impl SystemTime {
                  be the lie this refusal exists to replace (DECISIONS §42, §43)."
             );
         }
-        let nanos = clockproto::wall_nanos(r.offset_nanos, monotonic_nanos());
+        let nanos = clockproto::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanos());
         SystemTime(Duration::new(
-            nanos / clockproto::NANOS_PER_SEC,
-            (nanos % clockproto::NANOS_PER_SEC) as u32,
+            nanos / clockproto::NS_PER_SECOND,
+            (nanos % clockproto::NS_PER_SECOND) as u32,
         ))
     }
 
