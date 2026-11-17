@@ -678,6 +678,17 @@ mod tests {
         }
     }
 
+    /// A number needs a digit: text with none yields nothing, and a number stops at its first
+    /// non-digit.
+    #[test]
+    fn a_number_needs_a_digit_and_stops_at_a_non_digit() {
+        assert_eq!(leading_number(b""), None);
+        assert_eq!(leading_number(b"x1"), None);
+        assert_eq!(leading_number(b"42, 7"), Some((42, 2)));
+        assert_eq!(digits("x"), None);
+        assert_eq!(digits("5 passed"), Some((5, " passed")));
+    }
+
     /// The reader finds the head after bytes a serial link corrupted, ignores trailing white
     /// space, and takes an older kernel's total as printed.
     #[test]
