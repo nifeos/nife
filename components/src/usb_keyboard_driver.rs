@@ -48,7 +48,7 @@ use driver_process_contract::extensible_host_controller_interface::{
 };
 use extensible_host_controller_interface::{
     Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
-    TransferRequestBlockPlacement, completion, context, direct_memory_access, port, registers,
+    TransferRequestBlockPlacement, TransferType, completion, context, direct_memory_access, port, registers,
 };
 use line_editor::proto;
 use startup_page_contract::StartupWindow;
@@ -292,10 +292,14 @@ impl Host {
     fn transfer(&mut self, slot: u8, setup: SetupPacket) -> Result<usize, Fail> {
         let len = setup.length.min(PAGE_BYTES as u16);
         let inbound = setup.is_device_to_host();
-        let data_in = (len > 0).then_some(inbound);
+        let transfer_type = match (len > 0, inbound) {
+            (false, _) => TransferType::NoDataStage,
+            (true, true) => TransferType::DeviceToHost,
+            (true, false) => TransferType::HostToDevice,
+        };
         let p = self
             .control
-            .enqueue(TransferRequestBlock::setup(setup.to_u64(), data_in));
+            .enqueue(TransferRequestBlock::setup(setup.to_u64(), transfer_type));
         Host::put(direct_memory_access::CONTROL_RING, p);
         let mut data_at = None;
         if len > 0 {
@@ -369,7 +373,10 @@ impl Host {
 
     /// **Bring one connected root port's device up to a served keyboard**, or say why not.
     fn attach(&mut self, port_number: u8) -> Result<Attached, Fail> {
-        let portsc = self.capabilities.port_status_and_control(port_number);
+        let Some(portsc) = self.capabilities.port_status_and_control(port_number) else {
+            // No such port, so its status reads as all zeros: not enabled.
+            return Err((BringUpStep::PortNotEnabled, 0));
+        };
         let sc = self.reg(portsc);
         // Acknowledge every change pending, so a stale connect change does not bring us back.
         self.set_reg(portsc, port::write_value(sc, sc & port::CHANGES));
@@ -518,7 +525,7 @@ impl Host {
         self.input_context(
             dci + 1,
             context::endpoint(
-                context::INTERRUPT_IN,
+                context::EndpointType::InterruptIn,
                 keyboard.max_packet,
                 extensible_host_controller_interface::interrupt_interval(speed, keyboard.interval),
                 self.interrupt.dequeue_pointer(),
@@ -743,12 +750,12 @@ impl Host {
     /// Power every port that is not powered (only on a controller with port power control).
     fn power_ports(&self) {
         for n in 1..=self.capabilities.maximum_ports {
-            let sc = self.reg(self.capabilities.port_status_and_control(n));
+            let Some(at) = self.capabilities.port_status_and_control(n) else {
+                continue;
+            };
+            let sc = self.reg(at);
             if sc & port::POWER == 0 {
-                self.set_reg(
-                    self.capabilities.port_status_and_control(n),
-                    port::write_value(sc, port::POWER),
-                );
+                self.set_reg(at, port::write_value(sc, port::POWER));
             }
         }
     }
@@ -768,13 +775,12 @@ impl Host {
     fn debounce(&self, n: u8) -> bool {
         let only = |h: &Host| {
             let mut bits = [0u32; 8];
-            if h.reg(h.capabilities.port_status_and_control(n)) & port::CONNECTED != 0 {
+            if h.port_status(n) & port::CONNECTED != 0 {
                 bits[usize::from(n / 32)] = 1 << (n % 32);
             }
             bits
         };
-        self.hold_still(&only)
-            && self.reg(self.capabilities.port_status_and_control(n)) & port::CONNECTED != 0
+        self.hold_still(&only) && self.port_status(n) & port::CONNECTED != 0
     }
 
     /// Read `read` every [`port::DEBOUNCE_STEP_MILLISECONDS`] until [`port::PortDebounce`] says it held still
@@ -789,20 +795,30 @@ impl Host {
             while !past(end) {
                 core::hint::spin_loop();
             }
-            if let Some(settled) = settle.sample(
+            match settle.sample(
                 monotonic_nanoseconds() / NANOSECONDS_PER_MILLISECOND,
                 read(self),
             ) {
-                return settled;
+                port::DebounceVerdict::Pending => {}
+                port::DebounceVerdict::Settled => return true,
+                port::DebounceVerdict::TimedOut => return false,
             }
         }
+    }
+
+    /// Port `n`'s status and control register, or 0 for a port the controller does not have (so it
+    /// reads as not connected and with no change pending).
+    fn port_status(&self, n: u8) -> u32 {
+        self.capabilities
+            .port_status_and_control(n)
+            .map_or(0, |at| self.reg(at))
     }
 
     /// Every root port's `CCS`, one bit per port.
     fn connections(&self) -> port::Connections {
         let mut bits = [0u32; 8];
         for n in 1..=self.capabilities.maximum_ports {
-            if self.reg(self.capabilities.port_status_and_control(n)) & port::CONNECTED != 0 {
+            if self.port_status(n) & port::CONNECTED != 0 {
                 bits[usize::from(n / 32)] |= 1 << (n % 32);
             }
         }
@@ -814,7 +830,7 @@ impl Host {
         let mut connected = 0;
         let mut refused = 0;
         for n in 1..=self.capabilities.maximum_ports {
-            if self.reg(self.capabilities.port_status_and_control(n)) & port::CONNECTED == 0 {
+            if self.port_status(n) & port::CONNECTED == 0 {
                 continue;
             }
             connected += 1;
@@ -833,7 +849,9 @@ impl Host {
     /// gained a device when nothing is being served.
     fn service_ports(&mut self) {
         for n in 1..=self.capabilities.maximum_ports {
-            let at = self.capabilities.port_status_and_control(n);
+            let Some(at) = self.capabilities.port_status_and_control(n) else {
+                continue;
+            };
             let sc = self.reg(at);
             let changed = sc & port::CHANGES;
             if changed != 0 {

@@ -241,13 +241,15 @@ fn survey() -> ! {
     // One count per kind and no total: `SEND` carries three words, and the kernel side compares
     // their sum with what it wrote, so an entry of a kind this program does not count still shows.
     let (roster_ok, mmio, pci, nvme) = match Roster::read(roster_page()) {
-        Some(r) => (
+        Ok(r) => (
             F_ROSTER,
             r.count_by_transport(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO) as u64,
             r.count_by_transport(TRANSPORT_VIRTIO_PCI) as u64,
             r.count_by_transport(TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS) as u64,
         ),
-        None => (0, 0, 0, 0),
+        // Whichever way the read refuses (a short mapping, another kind of page, a broken
+        // writer), the report is the same: no roster, no counts.
+        Err(_) => (0, 0, 0, 0),
     };
     send(REPORT, mmio, pci, nvme);
 
