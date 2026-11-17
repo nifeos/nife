@@ -233,12 +233,10 @@ impl Controller {
         );
         // `PAGE_BYTES` was checked against the controller's range above, so this refuses only a page
         // size the configuration cannot name.
-        let configuration = non_volatile_memory_express::enabled_controller_configuration(PAGE_BYTES)
-            .ok_or(BringUpError::UnsupportedController)?;
-        self.wr32(
-            registers::CONTROLLER_CONFIGURATION_REGISTER,
-            configuration,
-        );
+        let configuration =
+            non_volatile_memory_express::enabled_controller_configuration(PAGE_BYTES)
+                .ok_or(BringUpError::UnsupportedController)?;
+        self.wr32(registers::CONTROLLER_CONFIGURATION_REGISTER, configuration);
         self.wait_ready(true)?;
 
         // IDENTIFY the namespace: its block count and LBA format are the two facts the block
@@ -253,10 +251,8 @@ impl Controller {
         let mut data = [0u8; IDENTIFY_BYTES];
         mapped(&ADMIN_QUEUES).copy_to_slice(IDENTIFY_PAGE * PAGE_BYTES, &mut data);
         let refused = BringUpError::UnsupportedNamespace {
-            logical_block_size_shift: non_volatile_memory_express::logical_block_size_shift(
-                &data,
-            )
-            .unwrap_or(0),
+            logical_block_size_shift: non_volatile_memory_express::logical_block_size_shift(&data)
+                .unwrap_or(0),
             blocks: u64::from_le_bytes(data[0..8].try_into().unwrap_or([0; 8])),
         };
         let namespace =

@@ -48,7 +48,8 @@ use driver_process_contract::extensible_host_controller_interface::{
 };
 use extensible_host_controller_interface::{
     Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
-    TransferRequestBlockPlacement, TransferType, completion, context, direct_memory_access, port, registers,
+    TransferRequestBlockPlacement, TransferType, completion, context, direct_memory_access, port,
+    registers,
 };
 use startup_page_contract::StartupWindow;
 use terminal_contract as proto;

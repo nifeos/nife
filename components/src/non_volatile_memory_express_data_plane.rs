@@ -211,7 +211,11 @@ impl Plane {
         // `None` from either call means the block is outside the namespace or the arithmetic would
         // not close; either way it is the caller's request that is wrong, and the crate refused to
         // build a command rather than let the controller answer for it.
-        let direction = if write { Direction::Write } else { Direction::Read };
+        let direction = if write {
+            Direction::Write
+        } else {
+            Direction::Read
+        };
         let cmd = Namespace::new(
             self.handoff.size_bytes,
             PAGE_BYTES,
