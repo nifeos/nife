@@ -89,7 +89,8 @@ per-build row. The fold is idempotent, since a row that is already folded passes
 For each job, the newest `HISTORY` merge-group runs that ran it. When the newest is at or past
 `WARN_FRACTION` of the job's budget and no issue is open for the job, it opens one, labeled `LABEL`.
 An open issue is found by the marker in its body, never by the label, because an issue the App opens
-can come out unlabelled; a job with two open issues keeps the newest and closes the rest with a
+can come out unlabelled, and a job whose issue a person closed is not opened again for a run that
+started before the closure; a job with two open issues keeps the newest and closes the rest with a
 comment naming it. While one is open it rewrites the issue's body on every pass with the recent runs, so the same issue
 is updated rather than a second opened. It closes the issue when the newest `CLOSE_AFTER` runs are
 all under the line. While an issue is open, it appends one row a week to week-notes.csv, which
@@ -864,6 +865,25 @@ def open_budget_issues():
         page += 1
 
 
+def jobs_closed_since(created_at):
+    """The jobs whose marked issue was closed after `created_at`, an ISO timestamp.
+
+    A person closes a near-budget issue when no work remains. A pass that opened a new issue
+    for the same run would reopen the matter they just settled, so a run that started before the
+    closure is not grounds to open again; only a later run is. `since` filters on the update
+    time, which a close moves."""
+    out, page = set(), 1
+    while True:
+        data = gh_json("repos/%s/issues?state=closed&since=%s&per_page=100&page=%d" % (REPO, created_at, page))
+        for issue in data:
+            m = re.search(r"<!-- ci-job-times:job=([A-Za-z0-9_-]+) -->", issue.get("body") or "")
+            if m and "pull_request" not in issue and (issue.get("closed_at") or "") > created_at:
+                out.add(m.group(1))
+        if len(data) < 100:
+            return out
+        page += 1
+
+
 def sync(argv):
     dry = "--dry-run" in argv
     budgets = ratchet()
@@ -900,6 +920,9 @@ def sync(argv):
         share = runs[0][2] / (jb.budget_for(key, budgets) * 60.0) if runs else 0.0
         if dry:
             print("ci_job_times: (dry run) would %s for %s (%s)" % (action, key, detail))
+            continue
+        if action == "open" and key in jobs_closed_since(runs[0][1]):
+            print("ci_job_times: not opening for %s, its issue was closed after the newest run started" % key)
             continue
         if action == "open":
             url = gh("issue", "create", "--repo", REPO, "--title", issue_title(key), "--label", LABEL,
@@ -1036,6 +1059,16 @@ def selftest():
                                 marked(5, "prove"), {"number": 6, "body": "no marker"},
                                 marked(7, "prove", pull_request={})]),
            ({"swish-check": 3681, "prove": 5}, [("swish-check", 3651, 3681)]))
+    real_gh_json = globals()["gh_json"]
+    globals()["gh_json"] = lambda path, tries=3: [
+        marked(3651, "swish-check", closed_at="2026-11-17T16:10:00Z"),
+        marked(9, "prove", closed_at="2026-11-17T10:00:00Z"),
+        marked(10, "bench", closed_at="2026-11-17T16:20:00Z", pull_request={})]
+    try:
+        expect("a hand-closed issue holds off a new one until a later run",
+               jobs_closed_since("2026-11-17T14:59:00Z"), {"swish-check"})
+    finally:
+        globals()["gh_json"] = real_gh_json
     expect("a raised budget moves the line", decide(runs_at([18, 16, 15]), {}, {"test": 24}), [])
 
     body = issue_body("test", runs_at([18, 16])["test"], {}, [("Run script/ci-build test", 600.0)])
