@@ -80,7 +80,7 @@ those are citations of the type that did rename.
 
 - `script/lint` clean.
 - The full host test suite (`script/test`, all three architectures: aarch64, riscv64, x86_64) green.
-- Both Kani-proof-bearing crates that reference the renamed type (`crates/capability` and
+- Both Kani-proof-bearing crates that reference the renamed type (`crates/capability_table` and
   `crates/page_frames`) verify successfully post-rename, satisfying the proof obligation of milestone 69 (split `kernel/src/user.rs` by service).
 
 `notes/frames.md` was rewritten with a provenance note for a reader who remembers `Frame`, following

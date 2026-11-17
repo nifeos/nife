@@ -83,7 +83,7 @@ patagonia (2026-09-27, one sample each, seconds):
 | `a_plan_never_grants_a_right_the_declaration_did_not_ask_for` | 3.09 | 1.98 | 1.99 |
 
 No change the noise can tell apart; a first 32-slot run read 8.5 s on the second harness and the
-next read 2.5, which is the size of that noise. `crates/capability`'s harnesses fix their own small
+next read 2.5, which is the size of that noise. `crates/capability_table`'s harnesses fix their own small
 table sizes (2, 3, 4, 8, 16, 32) and do not read the constant, so the raise does not reach them. The 64-slot column was measured by milestone 754 (the capability table grows to 64 slots), on the same harnesses and one sample each; no change the noise can tell apart.
 
 ## What 32 slots cost the fastpath, and how it was paid
@@ -94,7 +94,7 @@ kernel threads in place and needed no ruling. Fastpath footprint: `CapabilityTab
 its slot with a scan LLVM unrolled once per slot, so the Reply mint on every `CALL` grew with `N`.
 calef chose a free-slot bitmap on #1360 (2026-09-27, UTC): `insert` is now one `trailing_zeros`,
 and the slots sit behind a private module whose only writers keep the word in step, proved by
-`capability::the_free_mask_is_the_empty_slots`.
+`capability_table::the_free_mask_is_the_empty_slots`.
 
 `ipc_call_reply` in bytes, measured on `nightly-2026-09-27` against `main` at `bc943534f`:
 

@@ -14,6 +14,6 @@ An appendix to [the milestone](../1081-capability-outside-review.md).
 - `insert_at_or_above` and a second `put` appear in the two state harnesses, and a harness states
   that the mark never falls.
 - The three known survivors are in `mutants-exempts` with their reasons before the first weekly run.
-- The architect rules the crate's name (D1) before anyone creates the repository.
+- The crate carries the name `capability_table` (D1) before anyone creates the repository.
 - `cargo test`, `cargo kani`, the template's `check` and `proofs` workflows, and `cargo mutants`
   (none missed beyond the three exempted) are green at the commit the move pins.

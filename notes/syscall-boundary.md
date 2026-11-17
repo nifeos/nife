@@ -168,7 +168,7 @@ unmap sweep is blind to which object made a mapping.
 
 `RETYPE`, `RETYPE_OBJECT` and `SPLIT` mint through `Cap::mint_child`, which gives the new capability
 the budget's rights and no others (milestone 824 (a retype mints no right its budget lacks)).
-`split_never_widens_rights` in `crates/capability` proves the mint never widens. The root budget is
+`split_never_widens_rights` in `crates/capability_table` proves the mint never widens. The root budget is
 `Rights::ALL`, so the progenitor gets every right on what it makes, and a right added later reaches
 it without a hand-kept list. `GRANT` is delegated down the budget tree and never minted at a leaf.
 

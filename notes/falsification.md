@@ -31,7 +31,7 @@ attributes. At the thing, never in a registry, which is milestone 115's argument
 a new one: two lanes touching two crates cannot collide, and a computed report cannot drift from the
 tree.
 
-`crates/capability/src/lib.rs` `from_bits_cannot_forge_a_right` is the worked example: its doc
+`crates/capability_table/src/lib.rs` `from_bits_cannot_forge_a_right` is the worked example: its doc
 comment states the property and ends `Falsification: replayable` with the backticked patch path.
 
 Four states, and the unknown one is first-class, for exactly the reason `script/names` insists
@@ -46,7 +46,7 @@ job is saying what is known.
 | `unfalsified` | nobody has | counts it, and this is the claim's honest denominator |
 
 A patch lives at `<package>/falsifications/<module.path>.<harness_fn_name>.patch`
-(`crates/capability/falsifications/verification.subset_is_reflexive.patch`,
+(`crates/capability_table/falsifications/verification.subset_is_reflexive.patch`,
 `kernel/falsifications/syscall.proofs.the_run_end_is_exact_and_refuses_exactly_what_does_not_fit.patch`).
 Backtick the path in the record: `script/lint`'s kani-shim pass compiles these `#[cfg(kani)]`
 modules with `-D warnings`, where `clippy::doc_markdown` rejects a bare dotted path in a `///`

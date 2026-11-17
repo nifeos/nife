@@ -155,7 +155,7 @@ enough to confirm that there is no excuse for leaving one unconfirmed.
   so the field's spelling is an architect's.
 - **Milestone 418.**
   Point `script/mutation` at `crates/page_tables`, `crates/dma_validator`, `crates/component_plan` and
-  `crates/capability`, and compare its verdict against this milestone's. Risk 3's census measures whether a change to the code is
+  `crates/capability_table`, and compare its verdict against this milestone's. Risk 3's census measures whether a change to the code is
   caught; this milestone measured whether a specific assertion can catch anything. Row 12's tautology
   is exactly the shape a mutation of `VTD_ADDR_MASK` would have surfaced as a survivor, in a crate
   the census already covers, which makes "did the census already know" a question worth an answer

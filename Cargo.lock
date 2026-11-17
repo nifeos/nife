@@ -150,10 +150,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "capability"
-version = "0.1.0"
-
-[[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
@@ -169,6 +165,10 @@ version = "0.1.0"
 dependencies = [
  "abi",
 ]
+
+[[package]]
+name = "capability_table"
+version = "0.1.0"
 
 [[package]]
 name = "capability_witness_contract"
@@ -843,7 +843,7 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "capability",
+ "capability_table",
  "clock_contract",
  "compositor",
  "coremark",

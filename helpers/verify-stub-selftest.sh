@@ -7,7 +7,7 @@
 # for as long as another lane's real proof holds the pool. This file is that section and its
 # regression test at once:
 #
-#   1. extra arguments: `script/verify --only capability --harness X` hands `--harness X` to
+#   1. extra arguments: `script/verify --only capability_table --harness X` hands `--harness X` to
 #      `cargo kani` (once dropped by an option-parsing `set --`, found 2026-10-05).
 #   2. the pool is held in full by a fake holder, taken with the tool's own mechanism in a scratch
 #      NIFE_HEAVY_SLOT_DIR, and the stubbed run still finishes under a deadline. Fails if the
@@ -86,7 +86,7 @@ bounded() {
 }
 
 stubbed_verify() {
-	VERIFY_STUB_LOG="$tmp/log" script/verify --only capability --harness lint_probe_harness >/dev/null 2>&1
+	VERIFY_STUB_LOG="$tmp/log" script/verify --only capability_table --harness lint_probe_harness >/dev/null 2>&1
 }
 
 # The control: with the pool left on, the same run waits behind the holder. If this finished, the
@@ -101,8 +101,8 @@ bounded 3 stubbed_verify || rc=$?
 rc=0
 NIFE_KANI_POOL=off bounded 60 stubbed_verify || rc=$?
 [ "$rc" -ne 124 ] || fail "a stubbed run with the pool off waited for the held Kani pool"
-if ! grep -q '^kani -p capability .*--harness lint_probe_harness' "$tmp/log" 2>/dev/null; then
-	echo "verify-stub-selftest: script/verify --only capability --harness X did not hand --harness X to cargo kani:" >&2
+if ! grep -q '^kani -p capability_table .*--harness lint_probe_harness' "$tmp/log" 2>/dev/null; then
+	echo "verify-stub-selftest: script/verify --only capability_table --harness X did not hand --harness X to cargo kani:" >&2
 	sed 's/^/  /' "$tmp/log" >&2 2>/dev/null || echo "  (stub cargo was never called)" >&2
 	exit 1
 fi

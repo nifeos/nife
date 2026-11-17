@@ -1,4 +1,4 @@
-Falsifies `capability::the_view_and_the_reap_have_the_same_scope`.
+Falsifies `capability_table::the_view_and_the_reap_have_the_same_scope`.
 
 The defect: a live child of this very rendezvous is answered `NotSupervised`
 instead of `StillAlive`, by folding the liveness test into the match guard. It
@@ -25,10 +25,10 @@ untouched). So this patch is evidence that the assertion is wired to the
 predicate, and it is not evidence that the harness discriminates: a recorded
 falsification proves the harness catches THAT defect and not the class.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index a5b8f24b3..00c665b60 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -171,13 +171,7 @@ pub const fn reap_decision(
      dead: bool,
  ) -> Reap {

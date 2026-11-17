@@ -19,13 +19,13 @@ c_seam,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
 calendar,DateTime::parse_rfc3339_bytes,replace + with -,1,arithmetic,none,,unrowed,
 calendar,UtcOffset::from_hm,replace < with <=,2,comparison,none,,unrowed,
 calendar,Writer::offset,replace < with <=,1,comparison,none,,unrowed,
-capability,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
-capability,note_peak,replace | with ^,1,or_xor,equivalent,unclassified,noise_unargued,
-capability,"storage::CapabilityTable<O, N>::fill",replace > with >=,1,comparison,equivalent,unclassified,algebraic,
 capability_manifest_note,Scope::word,replace Scope::word -> u32 with 1,1,other,equivalent,unclassified,algebraic,
 capability_manifest_note,before,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
 capability_manifest_note,decode,replace - with /,1,arithmetic,equivalent,unclassified,algebraic,
 capability_plan,Requirements::problem,replace < with <=,2,comparison,equivalent,unclassified,algebraic,
+capability_table,,replace << with >>,1,shift,equivalent,unclassified,noise,yes
+capability_table,note_peak,replace | with ^,1,or_xor,equivalent,unclassified,noise_unargued,
+capability_table,"storage::CapabilityTable<O, N>::fill",replace > with >=,1,comparison,equivalent,unclassified,algebraic,
 capability_witness_contract,,replace << with >>,1,shift,equivalent,unclassified,noise,
 capability_witness_contract,,replace | with ^,5,or_xor,equivalent,unclassified,noise,
 clock_contract,ClockPage::publish,replace + with *,1,arithmetic,equivalent,unclassified,algebraic,

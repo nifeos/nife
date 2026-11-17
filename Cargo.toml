@@ -17,7 +17,7 @@ members = [
     "crates/boot_slot",
     "crates/test_times",
     "crates/memory_corruption_canary_gate",
-    "crates/capability",
+    "crates/capability_table",
     "crates/capability_plan",
     "crates/capability_witness_contract",
     "crates/compositor",

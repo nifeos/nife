@@ -1,4 +1,4 @@
-Falsifies `capability::subset_is_reflexive`.
+Falsifies `capability_table::subset_is_reflexive`.
 
 The defect: the negation dropped from `is_subset_of`, `self.0 & other.0` instead of
 `self.0 & !other.0`. A missing `!` is an ordinary typo and the compiler cannot see it,
@@ -15,10 +15,10 @@ subset_matches_allows.patch, which this harness survives). A harness whose falsi
 set is a strict subset of another's adds no discrimination to the suite. Nothing here
 proposes deleting it; the record is what lets somebody argue about that with evidence.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index 33b5819a..27660f5e 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -140,7 +140,7 @@ impl Rights {
  
      /// Is `self` no more than `other`? The subset test that [`CapabilityTable::derive`] turns on.

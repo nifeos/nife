@@ -1,4 +1,4 @@
-Falsifies `capability::a_stranger_reveals_nothing_about_its_liveness`.
+Falsifies `capability_table::a_stranger_reveals_nothing_about_its_liveness`.
 
 The defect: `reap_decision` tests liveness before supervision, so a live thread
 answers `StillAlive` whoever asks. Nothing is authorized that was not authorized
@@ -16,10 +16,10 @@ Some(invoked))`. The second assertion in the harness,
 holds under this defect, because the `dead` path is untouched; it is the first
 assertion, the one comparing the two liveness values, that catches it.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index a5b8f24b3..eb5cd9e0c 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -170,14 +170,11 @@ pub const fn reap_decision(
      invoked_rendezvous: u64,
      dead: bool,

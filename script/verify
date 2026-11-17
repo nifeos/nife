@@ -486,7 +486,7 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # changed. `script/lint`'s `sh -n` check (added the same day) catches a regression here; this comment
 # is why a future editor should not just delete that check to add one back.
 CRATES="$(cat <<'TABLE'
-capability	12	the capability model
+capability_table	12	the capability model
 page_tables	4	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	578	the untyped-region accounting, no double-free
 static_elf	67	the loader's front half, and the note walk, panic-free on hostile input

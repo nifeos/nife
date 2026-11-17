@@ -133,7 +133,7 @@ implied.
   `crates/device_tree_blob` already records for its own structure-block token loop and `crates/elf` records for the
   loader. Their leaf decoders (`be32_word`, `hwid_from_reg`, `cells_to_u64`, `is_okay`) are written
   with `get`, `>=` guards and `checked_mul` already, so a totality harness over any of them is
-  `capability::subset_is_reflexive`'s cousin: true of every plausible implementation, and evidence of
+  `capability_table::subset_is_reflexive`'s cousin: true of every plausible implementation, and evidence of
   nothing. They are not proved and this is why.
 - `Cpu::startable` is three booleans and a `matches!`. A harness over it would restate its own
   body. The property that matters about it is about `supervisor_mode_claim`, which is proved.
@@ -220,7 +220,7 @@ second half of the work rather than an afterthought.
 ## Names
 
 Every harness name here is **provisional**, along with the four `verification` module names. calef
-names things. The module name follows `crates/device_tree_blob`'s and `crates/capability`'s existing spelling so
+names things. The module name follows `crates/device_tree_blob`'s and `crates/capability_table`'s existing spelling so
 the `<module.path>.<harness>.patch` convention in DECISIONS §134 needs no special case.
 
 ## Follow-on

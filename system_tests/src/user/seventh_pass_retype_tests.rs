@@ -3,7 +3,7 @@
 //! claim 3).
 //!
 //! Claim 3 ("a budget that cannot delegate cannot split itself a child that can") is proved on its
-//! SPLIT side by `capability::split_never_widens_rights` and on its retype side by
+//! SPLIT side by `capability_table::split_never_widens_rights` and on its retype side by
 //! `confinement_attack_tests::a_retype_mints_no_right_its_budget_lacks`. This module puts the two
 //! side by side in one boot through `syscall::invoke`: the same WRITE-only budget shape is SPLIT
 //! and RETYPEd, and both come back WRITE-only. One body serves every ISA (DECISIONS §19

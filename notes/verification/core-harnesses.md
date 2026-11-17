@@ -7,9 +7,9 @@ file holds the harness tables and the reasoning for the capability core, the unt
 accounting, the paging arithmetic, the frame allocator, the device-tree leaves, the IPC rendezvous,
 the generational table, the intrusive queue and the ASID allocator.
 
-## `crates/capability`
+## `crates/capability_table`
 
-16 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
+16 harnesses in `crates/capability_table/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-table-harnesses-->;
 the table names the eight this appendix adjudicated:
 
 | Harness | Property |
@@ -182,7 +182,7 @@ legs. It is worth recording which kind of evidence each one rests on.
    name for the blocked caller anywhere in the system. (The caller is never in the receiver queue:
    `ipc_call` does not `receive`, and a blocked thread cannot run to enqueue itself again.)
 2. Consume-on-use is final: `a_deleted_capability_stays_deleted` and `delete_touches_only_its_slot`
-   in `crates/capability`. The syscall layer deletes the Reply capability the instant it is invoked.
+   in `crates/capability_table`. The syscall layer deletes the Reply capability the instant it is invoked.
    The proofs say no table state exists in which the consumed slot can be invoked again, and that
    consuming one caller's Reply cannot disturb another's.
 3. The capability cannot be duplicated or delegated. This leg is structural, not a harness. There is
@@ -193,7 +193,7 @@ legs. It is worth recording which kind of evidence each one rests on.
    call server invokes its Reply twice and the kernel refuses the second (`fixtures/src/hello.rs`,
    `call_server`).
 
-There was no rewire, because `capability::CapabilityTable` and
+There was no rewire, because `capability_table::CapabilityTable` and
 `inter_process_communication::Rendezvous` already *are* the kernel's capability table and endpoint
 state. The proofs landed on code the kernel was running all along.
 

@@ -351,7 +351,7 @@ pub fn reclaim_region(region: u64) -> Result<(), ()> {
 /// corpse without being able to build one), `rendezvous::REAP`).
 ///
 /// `ep` is the invoked rendezvous and `tid` the id on the death message. Authorized when the
-/// thread's `fault_ep` is `ep` (`capability::reap_decision`), it reclaims the region the TCB came
+/// thread's `fault_ep` is `ep` (`capability_table::reap_decision`), it reclaims the region the TCB came
 /// from. Returns `NotSupervised`, `StillAlive`, or `NotPermitted` when the reclaim refuses. See
 /// notes/region-reaping.md ("The supervised reap").
 ///
@@ -364,10 +364,10 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
         let t = sched.threads.get(tid);
         let fault_ep = t.and_then(|t| t.fault_ep);
         let dead = t.is_some_and(|t| t.handshake.state == State::Dead);
-        match capability::reap_decision(fault_ep, ep, dead) {
-            capability::Reap::NotSupervised => return Err(abi::Error::NotSupervised),
-            capability::Reap::StillAlive => return Err(abi::Error::StillAlive),
-            capability::Reap::Permitted => {}
+        match capability_table::reap_decision(fault_ep, ep, dead) {
+            capability_table::Reap::NotSupervised => return Err(abi::Error::NotSupervised),
+            capability_table::Reap::StillAlive => return Err(abi::Error::StillAlive),
+            capability_table::Reap::Permitted => {}
         }
         // A corpse whose core still stands on its stack clears at that core's next
         // `finish_switch`; refusing would reach userspace as `NotPermitted`. Yield the lock and
@@ -391,7 +391,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
 /// `ep` is the invoked rendezvous, `cursor` the value the last call returned (0 to start) and
 /// `record` an `abi::survey::record` selector. Returns `(next_cursor, tid, word)`, where `word` is
 /// the selected fact; a `next_cursor` of `abi::survey::DONE` ends the walk and the other words are
-/// 0. A thread is in the domain when its `fault_ep` is `ep` (`capability::survey_includes`). An
+/// 0. A thread is in the domain when its `fault_ep` is `ep` (`capability_table::survey_includes`). An
 /// unknown `record` is `BadMethod`, before the walk. See notes/process-view.md and
 /// notes/region-reaping.md ("The survey").
 ///
@@ -413,7 +413,7 @@ pub fn survey_supervised(
     // A cursor past the table is empty, not an error (`iter_from`'s contract).
     let from = usize::try_from(cursor).unwrap_or(usize::MAX);
     for (slot, t) in sched.threads.iter_from(from) {
-        if capability::survey_includes(t.fault_ep, ep) {
+        if capability_table::survey_includes(t.fault_ep, ep) {
             let word = match record {
                 abi::survey::record::STATE => survey_state(t.handshake.state),
                 abi::survey::record::PLACEMENT => survey_placement(t.placement),
@@ -467,14 +467,16 @@ fn survey_process(threads: &Threads, ep: RendezvousId, of: &Thread) -> u64 {
     let target = process_key(of);
     let mut ordinal = 0u64;
     for (slot, t) in threads.iter_from(0) {
-        if !capability::survey_includes(t.fault_ep, ep) {
+        if !capability_table::survey_includes(t.fault_ep, ep) {
             continue;
         }
         let key = process_key(t);
         let seen_before = threads
             .iter_from(0)
             .take_while(|&(earlier, _)| earlier < slot)
-            .any(|(_, e)| capability::survey_includes(e.fault_ep, ep) && process_key(e) == key);
+            .any(|(_, e)| {
+                capability_table::survey_includes(e.fault_ep, ep) && process_key(e) == key
+            });
         if seen_before {
             continue;
         }

@@ -9,7 +9,7 @@ kind = "base"
 home = { repo = "kernel", status = "provisional" }
 crates = [
     "kernel",
-    "capability",
+    "capability_table",
     "page_tables",
     "page_frames",
     "address_space_identifier",

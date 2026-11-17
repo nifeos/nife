@@ -115,6 +115,6 @@ The same way `Endpoint` was:
   a real kernel test leg;
 - `cargo xtask swish-check` green on both aarch64 and riscv64;
 - the two Kani-proof-bearing crates that touch the renamed `abi::address_space` module both verify
-  successfully post-rename: `crates/capability` (12 harnesses) and `crates/component_plan` (5
+  successfully post-rename: `crates/capability_table` (12 harnesses) and `crates/component_plan` (5
   harnesses);
 - the full `script/test` suite green on aarch64, riscv64 and x86_64.

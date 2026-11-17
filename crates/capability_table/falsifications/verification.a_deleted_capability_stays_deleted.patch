@@ -1,4 +1,4 @@
-Falsifies `capability::a_deleted_capability_stays_deleted`.
+Falsifies `capability_table::a_deleted_capability_stays_deleted`.
 
 The defect: `delete` reports success without clearing the slot: it asks `slot`
 whether anything is there instead of calling `empty`. It still refuses an
@@ -13,10 +13,10 @@ harness's three assertions, on any table state whose named slot was occupied. Th
 two `get`/`delete` lines below it state the same break through the accessors and
 are not reached, because the first panics.
 
-diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 index a5b8f24b3..5a28e3cf5 100644
---- a/crates/capability/src/lib.rs
-+++ b/crates/capability/src/lib.rs
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
 @@ -483,7 +483,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
      /// Drop a capability. The object may still exist; **we simply can no longer name it.**
      pub fn delete(&mut self, slot: u64) -> Result<(), Error> {

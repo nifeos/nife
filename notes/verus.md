@@ -249,7 +249,7 @@ axiom (`seam.rs`, the worked example above) passing green.
   above say it is more likely to be low than high. Treat it as an order of magnitude that says "not
   this project at this size", which is all it can support.
 - **Verus was run on scratch files, never on a nife crate.** Not one line of this tree was put
-  through it. Whether `crates/capability` or `kernel/src/syscall.rs` would even parse under Verus's
+  through it. Whether `crates/capability_table` or `kernel/src/syscall.rs` would even parse under Verus's
   Rust subset is unknown: the subset's boundaries (traits, generics, closures, `dyn`, lifetime
   shapes) were not tested here at all, and this tree leans hard on all of them.
 - **The build story after verification is quoted, not observed.** KISV '23 describes two passes (*"The
