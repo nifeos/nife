@@ -30,9 +30,9 @@ refused or malformed request, or a starting state other than the fake's.
 
 ## The work
 
-- A host test, or a Kani harness where the state space allows, over `answer`: every badge in
-  `DEVICES` plus one outside it, every operation in the wire plus one past it, request words with
-  reserved bits set, and windows whose words start from arbitrary values. For each request, every
+- A host test over `answer`, or a Kani harness where the state space allows. It drives every
+  badge in `DEVICES` plus one outside it, and every operation in the wire plus one past it. Its
+  requests set reserved bits, and its windows start from arbitrary words. For each request, every
   bit any store changes belongs to the badge's own device: a clock word its plan or rated clock
   names, or a reset bit its plan names. A refused request stores nothing.
 - The falsification record for the check: a planted store to another device's word fails it.
