@@ -497,6 +497,15 @@ mod tests {
         );
     }
 
+    /// A controller with no ports has no status set to reach, so the first range ends at the last
+    /// byte of the operational registers: the 0x40-byte capability registers plus the 0x400 bytes
+    /// that precede the port sets, less one.
+    #[test]
+    fn a_controller_with_no_ports_ends_its_first_range_at_the_operational_registers() {
+        let capabilities = Capabilities::decode(0x0100_0040, 0x0000_0840, 0, 0, 0x2000, 0x1000);
+        assert_eq!(needed_ranges(&capabilities)[0], (0, 0x43f));
+    }
+
     /// **The layout both ends rely on**: every work page is used once and lies inside the work
     /// window the driver is mapped, and the scratchpad pages begin exactly where it ends, so the
     /// controller's private memory never overlaps a page the driver writes. A page constant moved
