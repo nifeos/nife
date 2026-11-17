@@ -4,7 +4,7 @@
 //! `--extern kani=` pointing here, so `#[cfg(kani)]` code meets clippy at all: `cargo kani` drives
 //! a rustc, where no `clippy::` lint can fire. **It is not Kani, and a clean lint pass is not a
 //! proof.** It covers the six items the harnesses use ([`any`], [`assume`], `cover!`, `proof`,
-//! `should_panic`, `unwind`) with the semantics deleted, and its `any` takes any `T` where Kani's
+//! `should_panic`, `stub`, `unwind`) with the semantics deleted, and its `any` takes any `T` where Kani's
 //! requires `T: Arbitrary`, because a lint gate must never reject code the model checker accepts.
 //! notes/unsafe-obligations/kani-gate.md has the measurement and the reasons.
 
@@ -19,7 +19,7 @@
 
 #![no_std]
 
-pub use kani_attributes::{proof, should_panic, unwind};
+pub use kani_attributes::{proof, should_panic, stub, unwind};
 
 /// A symbolic value. Under Kani this is the whole point; here it only has to type-check.
 ///
