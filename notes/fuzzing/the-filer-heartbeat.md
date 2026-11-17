@@ -29,8 +29,8 @@ line says `unknown`. The line holds counts and timestamps only, and nothing read
 
 - a report from 2026-11-19 on has no `Filer:` line. A release from before that day has none and passes.
 - the tally says `unknown`.
-- any cause stays unfiled.
-- `fuzz-filer.timer` is off.
+- a cause waits for an advisory.
+- `fuzz-filer.timer` is disabled.
 - the timer last ran more than two UTC days before the report's day, or never ran.
 
 A green heartbeat therefore proves a recent release, an ok window, a bounded infrastructure share, an

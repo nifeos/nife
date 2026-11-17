@@ -185,7 +185,7 @@ cannot push to main; the script calls only `gh release create`.
 `.github/workflows/fuzz-heartbeat.yml` runs daily at 17:00 UTC on a GitHub-hosted runner and runs
 `helpers/fuzz-heartbeat.py`. It reads the releases of the last two UTC days and opens one issue
 with the label `fuzz-loop-broken` when no release exists, when the report shows no `ok` window, or when
-`infrastructure` windows are half or more of all windows. It also opens one when the filer looks dead
+`infrastructure` windows are half or more of all windows. It opens one when the filer looks dead
 ([what it proves about the filer](the-filer-heartbeat.md)). The issue names the check and the day, and
 no second one opens while one is open. It repairs nothing. A lane fixes anything in the tree; a repair
 of the host is a written spec the architect hands to the homelab agent. While no `fuzz-*` release has
