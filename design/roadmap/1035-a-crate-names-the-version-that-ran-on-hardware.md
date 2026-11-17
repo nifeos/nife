@@ -194,9 +194,9 @@ claim, so loosening it later breaks nobody.
 
 - **Outstanding.** Step 1's record. The bench run is done: two cold boots of nife `9c394ab715a7`
   on a VisionFive 2 on 2026-11-17 (UTC), recorded in nifeos/nife#3509, with
-  `helpers/crate_hardware_run.py judge` printing `PASS` on every check (both boots name
-  `jh7110_entropy` 0.3.0-pre.1 at `497d3ec`, each `true_random_number_generator` line is `ok` with two differing
-  32-byte draws in 256-bit mode, and the first draws, `625b4bc8` and `7bb8b233`, differ). The
+  `helpers/crate_hardware_run.py judge` printing `PASS` on every check. Both boots name
+  `jh7110_entropy` 0.3.0-pre.1 at `497d3ec`. Each `true_random_number_generator` line is `ok` with two
+  differing 32-byte draws in 256-bit mode. The first draws, `625b4bc8` and `7bb8b233`, differ. The
   transcripts are not on `main` yet, so this block holds the first boot's line below and names the second
   boot's first draw above; the transcript path joins the block when they land. Checked against the
   tree: `main` pins `jh7110_entropy` at `497d3ec`, the commit of tag `v0.3.0-pre.1`.
