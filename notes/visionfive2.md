@@ -290,9 +290,9 @@ The bench history, boot by boot, is in
   never reaches the trap handler after the THRE fix. The PLIC/hart affinity path is the next place
   to look, not the UART; start by printing `crate::cpu::id()` and the assigned context inside
   `arch::interrupt_controller::target_context` on the board.
-- The shell path's userspace input driver (`components/src/input.rs`) still reads the UART at
-  QEMU's byte stride, so on the board the shell's input reads garbage. It bites at the shell
-  milestone.
+- The shell path's userspace input driver (`components/src/input.rs`) reads the UART at the
+  register shape the kernel passes it (`abi::uart`). A bench session typed `reboot` at the shell prompt
+  and the shell read it. The input read garbage only while the driver assumed QEMU's byte stride.
 - The `#[test_case]` suite assumes QEMU's synthetic devices. The `skip!()` of milestone 145 (a test that needs hardware the boot doesn't have can say so) covers the
   tests found so far; more may surface.
 - That a keystroke at the board's prompt reaches the UART driver on source 32 is not yet observed.
