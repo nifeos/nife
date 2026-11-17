@@ -1504,15 +1504,23 @@ mod verb_tests {
         // Every verb is found, and no word between, before or after them is: the first, the last
         // and each run the search halves to.
         for w in &words {
-            assert_eq!(v.grants_for(w.as_bytes()), Some(ManifestAuthorities::CATALOG));
+            assert_eq!(
+                v.grants_for(w.as_bytes()),
+                Some(ManifestAuthorities::CATALOG)
+            );
             assert_eq!(v.grants_for(std::format!("{w}a").as_bytes()), None);
             assert_eq!(v.grants_for(&w.as_bytes()[..6]), None);
         }
         assert_eq!(v.grants_for(b"a"), None);
         assert_eq!(v.grants_for(b"verb175"), None);
         assert_eq!(v.grants_for(b"z"), None);
-        let one = Verbs { records: &d[8..8 + VERB_RECORD_BYTES] };
-        assert_eq!(one.grants_for(b"verb000"), Some(ManifestAuthorities::CATALOG));
+        let one = Verbs {
+            records: &d[8..8 + VERB_RECORD_BYTES],
+        };
+        assert_eq!(
+            one.grants_for(b"verb000"),
+            Some(ManifestAuthorities::CATALOG)
+        );
         assert_eq!(one.grants_for(b"verb001"), None);
         assert_eq!(one.grants_for(b"a"), None);
         assert_eq!(Verbs { records: &[] }.grants_for(b"verb000"), None);
