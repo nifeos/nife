@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -177,6 +177,16 @@ old spellings. Ratifying the table stays the architect's.
 ## Done when
 
 The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md).
+
+## Follow-on
+
+- **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
+  page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
+  `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582, on branch
+  `milestone/1099-statistics-identity-frozen`.
+- **Outstanding.** The review's other items, each to be checked against `crates/machine_statistics_contract`
+  at this branch's head before the move.
+
 
 ## BUGS
 
