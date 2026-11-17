@@ -4860,3 +4860,11 @@ if ! grep -q '^kani --version$' "$kstub/second" 2>/dev/null || grep -v '^kani --
 fi
 rm -rf "$kstub"
 echo "script/kani-install: an installed pin is left alone"
+
+echo "==> script/catch-up reads the milestone blocks and refuses to report zero from a broken reader"
+# lint-scope: code
+# The script read the retired index, found no row and printed zero changes for every window since
+# 2026-09-21 (the 2026-11-17 documentation audit, the newcomer path, finding 1). The selftest builds
+# a scratch repository with an index era and block eras and checks the counts, then plants blocks
+# with no status and an empty roadmap and requires a non-zero exit with a message.
+helpers/catch-up-selftest.sh >/dev/null
