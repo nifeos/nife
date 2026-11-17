@@ -148,7 +148,7 @@ wrong jack and this boot will end `FAILED: no link`. `nife: payload came from ne
 says the new image was served.
 
 A card whose boot script fetches the archive itself, rather than the served boot script, names the
-build it was written with and refuses every later one at `MEASURED BOOT REFUSED`.
+build that wrote it and refuses every later one at `MEASURED BOOT REFUSED`.
 `script/card-check <card>` says whether radon's card is one; if it is, rewrite it once with
 `script/board-image --tftp --card <card>` before this step. Then put the ordinary image back for
 everyone else's bench work: `script/board-image --tftp` and one more power cycle.

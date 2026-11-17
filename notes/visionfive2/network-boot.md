@@ -34,7 +34,7 @@ archive falls all the way back, and takes *both* from the card. Half a pair halt
 
 The kernel holds the progenitor and its measurement table to the loader's two digest words,
 `nife.progenitor` and `nife.base` (milestone 695 (the kernel trusts two digests handed to it by the
-loader)), and on this board the loader's words are a `setenv bootargs` line in a boot script. A
+loader)). On this board the loader's words are a `setenv bootargs` line in a boot script. A
 script on the card that named the served archive's digests would name one build and refuse every
 later one. So `script/board-image --tftp` writes two scripts, each carrying the digests of the pair
 it loads:
@@ -58,8 +58,8 @@ device tree moves to 0x8600_0000, `kernel_comp_addr_r` is 0x8800_0000 and the ar
 the prompt still reruns the card's script.
 
 `script/card-check` reads the words out of each script image rather than out of the
-`.loader-digests` file they were written from, because the script is what the board hands the
-kernel. It refuses a script whose words disagree with the archive beside it, a script that sets no
+`.loader-digests` file `script/board-image` wrote them from, because the script is what the board
+hands the kernel. It refuses a script whose words disagree with the archive beside it, a script that sets no
 `bootargs`, and a card script that fetches the archive itself, the shape that goes stale.
 `script/board-image` runs it on `target/board` and on every card it writes.
 
