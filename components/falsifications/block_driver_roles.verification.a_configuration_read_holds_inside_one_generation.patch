@@ -1,4 +1,4 @@
-Falsifies `virtio::verification::a_configuration_read_holds_inside_one_generation`.
+Falsifies `block_driver_roles::verification::a_configuration_read_holds_inside_one_generation`.
 
 The defect: the generation is read again after the value but never compared, so the first read is
 returned whatever the device did between the two generation reads. A resize between the two halves
@@ -7,9 +7,9 @@ of the capacity would pair one capacity's low half with another's high half.
 Expected to fail: the harness's `assert_eq!(generations[0], generations[1])`, on a run whose two
 generation reads differ.
 
-diff --git a/crates/virtio/src/lib.rs b/crates/virtio/src/lib.rs
---- a/crates/virtio/src/lib.rs
-+++ b/crates/virtio/src/lib.rs
+diff --git a/components/src/block_driver_roles.rs b/components/src/block_driver_roles.rs
+--- a/components/src/block_driver_roles.rs
++++ b/components/src/block_driver_roles.rs
 @@ -1335,3 +1335,3 @@ fn consistent_read(
          let value = read();
 -        (generation() == before).then_some(value)

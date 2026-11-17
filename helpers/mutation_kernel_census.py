@@ -63,7 +63,7 @@ THE SLICE LIST is the block's order, "in order of what a wrong line costs": the 
 first, then `arch/` per architecture, then the programs' wiring, then `components` against the
 system tests. Two slices sit past it and complete the coverage the block's "every kernel module"
 demands: `kernel-rest` (every kernel file the named slices do not name) and `kernel-needing-crates`
-(the crates the host census cannot reach: system_initializer, virtio, user_mode_runtime and the
+(the crates the host census cannot reach: system_initializer, user_mode_runtime and the
 contract trio). Both are provisional, like every name this lane mints.
 
 THE RECORD is notes/project-metrics/kernel-mutation-census.csv, one row per slice a night worked,
@@ -148,7 +148,7 @@ SLICES = (
     # crates the host census cannot reach. Both provisional.
     Slice("kernel-rest", ("kernel/src/**",), "aarch64", "kernel"),
     Slice("kernel-needing-crates",
-          ("crates/system_initializer/**", "crates/virtio/**", "crates/user_mode_runtime/**",
+          ("crates/system_initializer/**", "crates/user_mode_runtime/**",
            "crates/hot_swap_contract/**", "crates/hot_swap_server/**", "crates/process_builder/**",
            "crates/memory_region_heap/**"),
           "aarch64", "system"),
@@ -158,7 +158,7 @@ SLICE_TABLE = {s.name: s for s in SLICES}
 
 # The packages the corpus keeps, which the proposal's own census priced: 18,518 mutants. A path
 # under none of these roots is dropped before the slices are consulted.
-ROOTS = ("kernel", "components", "crates/system_initializer", "crates/virtio",
+ROOTS = ("kernel", "components", "crates/system_initializer",
          "crates/user_mode_runtime", "crates/hot_swap_contract", "crates/hot_swap_server",
          "crates/process_builder", "crates/memory_region_heap")
 
@@ -625,7 +625,7 @@ def selftest():
         assert slice_of("components/src/init.rs") == "components"
         assert slice_of("kernel/src/kmem.rs") == "kernel-rest"      # the catch-all
         assert slice_of("kernel/src/drivers/foo.rs") == "kernel-rest"
-        assert slice_of("crates/virtio/src/queue.rs") == "kernel-needing-crates"
+        assert slice_of("crates/system_initializer/src/queue.rs") == "kernel-needing-crates"
         assert slice_of("crates/calendar/src/lib.rs") is None       # a host crate: no slice
         for s in SLICES:
             assert s.arch in ARCH_ROUTE, s
@@ -653,7 +653,7 @@ def selftest():
             ("kernel/src/glob.rs", 2, "replace == with != in tests::helper"),       # regex drops
             ("kernel/src/kmem.rs", 4, "replace == with != in Kmem::pool"),
             ("components/src/init.rs", 6, "replace == with != in Init::start"),
-            ("crates/virtio/src/queue.rs", 8, "replace == with != in Queue::kick"),
+            ("crates/system_initializer/src/queue.rs", 8, "replace == with != in Queue::kick"),
             ("crates/calendar/src/lib.rs", 3, "replace == with != in f"),           # outside roots
         ) + big)
 

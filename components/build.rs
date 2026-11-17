@@ -21,10 +21,10 @@ fn main() {
 /// The thing that would actually hurt to duplicate, the layout, is the one file both name, and
 /// `user_mode_runtime`'s build script puts it on the search path.
 fn link_el0() {
-    println!("cargo::rustc-link-arg=-Tlink.ld");
+    println!("cargo::rustc-link-arg-bins=-Tlink.ld");
 
     // Keep the ELF an ELF. The kernel's loader wants program headers, not a flat blob.
-    println!("cargo::rustc-link-arg=--build-id=none");
+    println!("cargo::rustc-link-arg-bins=--build-id=none");
 }
 
 /// Carry the `jh7110_entropy` version and commit that `Cargo.lock` resolved into this package's

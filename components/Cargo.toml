@@ -16,6 +16,14 @@ version = "0.1.0"
 edition = "2024"
 license.workspace = true
 
+# The package's one library: the logic that carries host tests and proofs, which a binary here
+# (`test = false`) cannot. `block_driver` calls it. Its tests run through `cargo test -p components
+# --lib` and its proofs through the `components::block_driver_roles` row of script/verify.
+[lib]
+name = "components"
+path = "src/lib.rs"
+bench = false
+
 [features]
 # **The attacker roles the confinement tests spawn, compiled in only for a test boot** (milestone 261
 # (the NVMe driver leaves the kernel)'s DMA-escape test). Off in every shipped image: a production
@@ -95,9 +103,9 @@ path = "src/boot_self_test.rs"
 test = false
 bench = false
 
-# The virtio-blk driver as its own binary (parity C): the shared `virtio` module (the same file
-# hello's aarch64 roles compile) behind a dedicated-binary skeleton, so riscv runs the identical
-# driver, attacker included, without porting the PL011-wired hello multiplexer.
+# The virtio-blk driver as its own binary (parity C): the `block_driver_roles` module of this
+# package's library behind a dedicated-binary skeleton, so riscv runs the identical driver,
+# attacker included, without porting the PL011-wired hello multiplexer.
 [[bin]]
 name = "block_driver"
 path = "src/block_driver.rs"
@@ -687,7 +695,6 @@ system_initializer = { version = "0.1.0", path = "../crates/system_initializer" 
 # own slot numbers from the declarations they are built against.
 capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
-virtio = { version = "0.1.0", path = "../crates/virtio" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 # Rung 3a's package fetch (milestone 198), in `net_stack`'s socket-contract client.
 http_response = { version = "0.1.0", path = "../crates/http_response" }

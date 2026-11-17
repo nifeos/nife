@@ -1,4 +1,4 @@
-Falsifies `virtio::verification::a_header_carrying_its_checksum_sums_to_zero`.
+Falsifies `block_driver_roles::verification::a_header_carrying_its_checksum_sums_to_zero`.
 
 The defect: the folded sum loses its complement, `sum as u16` in place of `!(sum as u16)`. The
 function still folds the carries and returns a plausible sixteen-bit word, so the line reads as
@@ -6,9 +6,9 @@ correct at a glance, but every header the driver sends carries a checksum a rece
 
 Expected to fail: the harness's `assert_eq!(ip_checksum(&header), 0)`, for nearly any header.
 
-diff --git a/crates/virtio/src/lib.rs b/crates/virtio/src/lib.rs
---- a/crates/virtio/src/lib.rs
-+++ b/crates/virtio/src/lib.rs
+diff --git a/components/src/block_driver_roles.rs b/components/src/block_driver_roles.rs
+--- a/components/src/block_driver_roles.rs
++++ b/components/src/block_driver_roles.rs
 @@ -819,3 +819,3 @@ fn ip_checksum(header: &[u8]) -> u16 {
      }
 -    !(sum as u16)

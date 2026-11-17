@@ -288,7 +288,6 @@ dependencies = [
  "user_mode_runtime",
  "uuid",
  "video_terminal",
- "virtio",
  "vmstat",
 ]
 
@@ -1897,18 +1896,6 @@ dependencies = [
  "address_space_layout",
  "glyph_atlas",
  "line_editor",
-]
-
-[[package]]
-name = "virtio"
-version = "0.1.0"
-dependencies = [
- "address_space_layout",
- "driver_process_contract",
- "filesystem_contract",
- "nifefs",
- "startup_page_contract",
- "user_mode_runtime",
 ]
 
 [[package]]

@@ -500,7 +500,6 @@ inter_process_communication	12	the rendezvous state machine
 intrusive_queue	9	the scheduler's queue structure
 address_space_identifier	2	the TLB tag allocator
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
-virtio	152	the block and net driver pure logic: the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
 memory_region_heap	2	the heap's growth arithmetic: a grow never commits past the cap, a grow at the cap is a refusal, and the bytes it asks for never overflow
 capability_manifest_note	106	a manifest note has one encoding, and decoding hostile bytes never panics
 interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile bytes never panics
@@ -531,7 +530,7 @@ driver_process_contract::extensible_host_controller_interface	17	the xHCI driver
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
 driver_process_contract::virtual_io	350	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
 kernel	9	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
-components	10	the EL0 components: a bounded append that a configuration page this system did not write feeds
+components	162	the EL0 components: a bounded append that a configuration page this system did not write feeds, and the block driver's pure logic (the library's block_driver_roles): the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
 machine_discovery	363	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
 TABLE
 )"
@@ -752,9 +751,12 @@ for c in $crates; do
         # row with none fails the way this comment describes. See notes/user-proofs.md's BUGS for
         # what that costs: a harness added to a fixture runs nowhere until somebody adds the row.
         components)
+                # The package's one library target (`components/src/lib.rs`, with its modules) is
+                # proved with `--lib`, never with a `--bin` of its own name.
                 extra="$(git grep -lF '#[kani::proof]' -- 'components/src/*.rs' \
                     | sed 's|components/src/||; s|\.rs$||' \
-                    | sed 's|^|--bin |' | tr '\n' ' ')" ;;
+                    | grep -v '^block_driver_roles$' \
+                    | sed 's|^|--bin |' | tr '\n' ' ') --lib" ;;
         # **A row named `<crate>::<module>` proves one module's harnesses** (2026-10-26 UTC):
         # `driver_process_contract` is one crate with a module per driver, so each driver's proofs
         # get their own seconds and their own description. Kani's `--harness` matches a substring

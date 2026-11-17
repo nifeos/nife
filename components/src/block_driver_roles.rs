@@ -1,4 +1,3 @@
-#![no_std]
 //! The roles of one virtio driver program, which runs at EL0 (exception level 0, user mode) and
 //! drives one virtio-blk or virtio-net device. It is not a general-purpose library: each entry
 //! point takes the DMA (direct memory access) page's physical address from a `_start`, drives the
@@ -35,11 +34,9 @@
 //! `direct_memory_access_validator`, so no driver can aim device DMA. See
 //! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
 //!
-//! Name: ratified 2026-09-14 (calef, working the unratified worklist), as a proper name rather than
-//! on the acronym test: `virtio` is the specification's own name (virtio 1.x, OASIS), the string in
-//! every QEMU flag and device tree node, so expanding it would rename a standard. That is the `elf`
-//! and `pci` ground. It names the whole device family (milestone 63 (directory and package names)
-//! refused `virtio_net` for the transport adapter because this crate also drives net).
+//! Name: provisional. The module holds the one program's roles, so it takes the program's name
+//! (`block_driver`) and says what it holds. The name `virtio` stays reserved for a library cut later
+//! from what the six copies of the virtio-mmio handshake share.
 
 use filesystem_contract::blk;
 use user_mode_runtime::virtio::{read_register, virtio_ring_barrier, write_register};
@@ -1400,7 +1397,9 @@ fn disk_size_bytes(capacity_sectors: u64) -> i64 {
         .min(i64::MAX as u64) as i64
 }
 
-#[cfg(test)]
+// The host tests run on the host only: the bare-metal targets the package also builds for have no
+// libtest, and `--all-targets` would otherwise try to build the harness for them.
+#[cfg(all(test, not(target_os = "none")))]
 mod tests;
 
 /// **Proofs of the pure logic the driver runs on bytes a device or a disk image wrote**: the
@@ -1420,7 +1419,7 @@ mod verification {
     /// **The directory lookup is total**: for any directory bytes up to two entries long, cut at
     /// any length, and any name up to one byte longer than the name field, `find_file` returns
     /// without a panic or an out-of-bounds read, whatever count the header claims.
-    /// Falsification: replayable `crates/virtio/falsifications/verification.the_directory_lookup_is_total.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.the_directory_lookup_is_total.patch`
     #[kani::proof]
     #[kani::unwind(36)]
     fn the_directory_lookup_is_total() {
@@ -1437,7 +1436,7 @@ mod verification {
     /// returns that entry's start block: for one entry of any bytes and any name of up to four
     /// bytes, a hit means the field opens with the name and the next byte is padding, and a miss
     /// means it does not.
-    /// Falsification: replayable `crates/virtio/falsifications/verification.the_lookup_matches_a_whole_name_only.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.the_lookup_matches_a_whole_name_only.patch`
     #[kani::proof]
     #[kani::unwind(36)]
     fn the_lookup_matches_a_whole_name_only() {
@@ -1463,7 +1462,7 @@ mod verification {
     /// **A header carrying its own checksum sums to zero**: for any 20-byte header, writing the
     /// checksum computed over it (with the checksum field zero) into that field makes the checksum
     /// of the result zero, the check a receiver makes.
-    /// Falsification: replayable `crates/virtio/falsifications/verification.a_header_carrying_its_checksum_sums_to_zero.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.a_header_carrying_its_checksum_sums_to_zero.patch`
     #[kani::proof]
     #[kani::unwind(11)]
     fn a_header_carrying_its_checksum_sums_to_zero() {
@@ -1478,7 +1477,7 @@ mod verification {
     /// **A bounded completion wait takes at most its bound of wakeups**, returns true exactly when
     /// one of them saw the used index move, and takes all of them when none did: for any bound up
     /// to four and any sequence of used indices.
-    /// Falsification: replayable `crates/virtio/falsifications/verification.a_bounded_wait_stops_at_its_bound.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.a_bounded_wait_stops_at_its_bound.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn a_bounded_wait_stops_at_its_bound() {
@@ -1503,7 +1502,7 @@ mod verification {
     /// **A bracketed configuration read returns only a value read inside one generation**: for
     /// any generation and value sequences, a returned value is one whose read had the same
     /// generation before and after it.
-    /// Falsification: replayable `crates/virtio/falsifications/verification.a_configuration_read_holds_inside_one_generation.patch`
+    /// Falsification: replayable `components/falsifications/block_driver_roles.verification.a_configuration_read_holds_inside_one_generation.patch`
     #[kani::proof]
     #[kani::unwind(18)]
     fn a_configuration_read_holds_inside_one_generation() {
