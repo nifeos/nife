@@ -28,7 +28,7 @@ pub(crate) mod fsproto;
 #[allow(dead_code)]
 pub(crate) mod clockproto;
 // The entropy contract (DECISIONS §44): the request packing and the reply's byte count, generated
-// verbatim from `crates/entropy_contract/src/lib.rs` by the same xtask step. The random PAL
+// verbatim from `src/lib.rs` of the `entropy_contract` package by the same xtask step. The random PAL
 // (`sys/random`) is a client of it; `READY` belongs to the service and its spawner, hence the allow.
 #[allow(dead_code)]
 pub(crate) mod entropyproto;

@@ -118,7 +118,7 @@ pub const KEPT_PHASE: u8 = 0x80;
 /// is in the printed plan, which travels in the same page.
 pub fn verdict(admission: &Admission, kept: bool) -> u8 {
     let base = match admission {
-        Admission::Fires(_) => KIND_FIRES,
+        Admission::Fires(..) => KIND_FIRES,
         Admission::Refused(_) => KIND_REFUSED,
         Admission::Unbacked(u) => KIND_UNBACKED | (unbacked_code(*u) << 2),
     };

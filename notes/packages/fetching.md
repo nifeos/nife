@@ -19,7 +19,7 @@ $ packages/greeting/0.1.0/greeting
 ## How `jig` fetches
 
 `jig` asks its copy of the image's catalog first (`package_archive::cataloged_stem`, on the page
-`grant_plan::Manifest::catalog` maps). A name the image vouches for nothing by costs no network.
+`grant_contract::Manifest::catalog` maps). A name the image vouches for nothing by costs no network.
 Then it opens a `std::net::TcpStream` to the package source (`socket_contract::fixture`), sends
 `GET /<stem>.nifepkg` and reads the reply with `http_response`. The body goes into one run of
 `jig`'s own pages, sized from the declared length.
@@ -46,7 +46,7 @@ progenitor's only network-shaped input is a package's bytes, judged by digest as
 `packaged_only`, which `xtask`'s `declared_programs` reads. So it is built with every fixture and
 packed by no archive, and `packages/greeting*.recipe.toml` package it for all three architectures.
 
-The prompt cannot show its absence. It is no `grant_plan::Program`, so before it is installed its
+The prompt cannot show its absence. It is no `program_table::Program`, so before it is installed its
 bare name is refused either way, and after, the live generation answers for it (DECISIONS §229 (how
 a bare name at the prompt reaches an installed program), B2). `script/swish-check` reads the archive
 on the host before the boot instead, and stops if the archive has it.

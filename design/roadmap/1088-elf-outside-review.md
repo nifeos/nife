@@ -136,6 +136,14 @@ as `#[doc(alias)]`. The constructor's and the constants' names stay provisional.
 which is the part a release would close. The before-the-move item on the machine surface is the
 work.
 
+As built, `NATIVE_MACHINE` stays public, the one part of the ruling's list the lane did not apply.
+It names no organization's targets. It states the machine `Elf::parse` accepts in this build, the
+same fact as the `cfg` arms behind it. Nine files outside the crate (14 uses, in `system_tests`,
+`fixtures`, `measured_boot`, `system_initializer`, `program_asks` and `uefi_loader`) forge a header
+to test what follows the machine check. Without the constant, each would copy the three-arm
+`cfg(target_arch)` table. `KNOWN_MACHINES`, `FOREIGN_MACHINES` and the guard (now
+`unknown_machine`) are test-only. The architect may still remove `NATIVE_MACHINE` before the tag.
+
 ### D2. Whether the loader's policy stays inside the parser
 
 Background. Five of the eighteen refusals are not the ELF format's rules but this loader's. They are
@@ -237,9 +245,14 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 - **Done.** The rename to `static_elf`: the directory, the package, every dependent, the lock
   files, the tables and baselines, and the notes that name the crate. It changes no behavior and no
   public item.
-- **Outstanding.** Decisions D1 to D3, the move's items, the page-size type, the entry-point
-  refusal, the README and the vocabulary sweep. Checked against `crates/static_elf/src`: `vaddr`, `paddr`
-  and `memsz` keep their names and `Segment::page_range` still takes a bare `u64`.
+- **Done.** Every item that needs no move: the citations, the seeds, the manifest, the page-size
+  type, the program-header proof, the casts, `Display`, the D3 names, the README and its example,
+  and the entry-point refusal. The parse refuses an entry in the zero-filled tail as
+  `EntryNotExecutable`, a maintainer ruling, provisional (2026-11-16 UTC). The crate has no
+  release, so a later ruling can still drop the refusal without breaking a file that passed.
+- **Outstanding.** The move's own items (the scaffold's files, the fuzz target), the four mutation
+  timeouts (the first weekly run in the new repository), the stranger test, and the shared test
+  forge.
 
 ## BUGS
 

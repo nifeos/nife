@@ -296,10 +296,10 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
     let mut spaces = USER_SPACES.lock();
     let space = &mut spaces.get_mut(space_entry(name))?.space;
     let k = (!space.thread_pages_in_use).trailing_zeros() as usize;
-    let va = current_cpu_contract::thread_page_va(k)?;
-    let bytes = current_cpu_contract::build_page_allowing(
-        u64::from(crate::smp::online_harts_mask().count_ones()),
-        crate::arch::timer::TICK_HERTZ,
+    let va = current_cpu_contract::thread_page_virtual_address(k)?;
+    let bytes = current_cpu_contract::build_page_with(
+        core::num::NonZeroU64::new(u64::from(crate::smp::online_harts_mask().count_ones())),
+        core::num::NonZeroU64::new(crate::arch::timer::TICK_HERTZ),
     );
     let kernel_va = if k == 0 {
         space.attach_current_cpu_page();
@@ -326,7 +326,7 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
         kernel_va
     };
     // SAFETY: the slot's own frame, owned by this space and not read by any thread while the slot
-    // is free; `PAGE_BYTES` is far under a frame.
+    // is free; `PAGE_CONTENT_BYTES` is far under a frame.
     unsafe {
         core::ptr::copy_nonoverlapping(bytes.as_ptr(), kernel_va as *mut u8, bytes.len());
     }

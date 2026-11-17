@@ -31,9 +31,7 @@ crates/confined_syscall_fuzzer_contract/src/lib.rs::PLAYGROUND_VA spelled-out
 
 crates/confined_syscall_fuzzer_contract/src/lib.rs::REPORT_VA spelled-out
 
-crates/current_cpu_contract/src/lib.rs::PAGE_VA spelled-out
 
-crates/current_cpu_contract/src/lib.rs::thread_page_va spelled-out
 
 
 
@@ -83,7 +81,6 @@ crates/firmware_configuration/src/lib.rs::DmaCommand spelled-out
 
 crates/grant_plan/src/nav.rs::pos spelled-out
 
-crates/grant_plan/src/spawnproto.rs::prog_id spelled-out
 
 crates/grant_plan/src/word.rs::span question-shape
 
@@ -147,6 +144,8 @@ crates/pci_configuration_space/src/lib.rs::mem32_window spelled-out
 crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 
 crates/program_argument_contract/src/lib.rs::from_va spelled-out
+
+crates/program_table/src/spawnproto.rs::prog_id spelled-out
 
 crates/screen_console/src/lib.rs::copy question-shape
 

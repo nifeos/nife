@@ -83,7 +83,7 @@ A proof can be blind to the predicate it is stated in, and it happened twice.
 `component_plan::a_plan_never_grants_a_right_the_declaration_did_not_ask_for` asserts equality
 against `direction.rights()`, so a `rights()` that adds `GRANT` to everything satisfies it; only the
 explicit `& GRANT == 0` beside it catches the defect. That is the shape milestone 194 measured in
-`capability::derive_never_widens_rights`, one crate over, and it is the argument for keeping an
+`capability_table::derive_never_widens_rights`, one crate over, and it is the argument for keeping an
 assertion that looks redundant.
 
 One prediction was measured false and the record says so. The

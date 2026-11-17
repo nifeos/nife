@@ -63,7 +63,7 @@ fn check_image_band(elf: &Elf) -> Result<(), LoadError> {
     let mut lo = u64::MAX;
     let mut hi = 0;
     for seg in elf.segments() {
-        let (start, end) = seg.page_range(FRAME_SIZE);
+        let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
         lo = lo.min(start);
         hi = hi.max(end);
     }
@@ -89,7 +89,8 @@ pub fn load(
     windowed: u64,
     windows: &[startup_page_contract::Window],
 ) -> Result<(AddressSpace, u64), LoadError> {
-    let elf = Elf::parse(image).map_err(LoadError::NotLoadable)?;
+    let elf = Elf::parse_with(image, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        .map_err(LoadError::NotLoadable)?;
     check_image_band(&elf)?;
 
     // Counted from the file before anything is carved: a binary that lies about its size exhausts
@@ -97,7 +98,7 @@ pub fn load(
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (start, end) = seg.page_range(FRAME_SIZE);
+            let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
             (end - start) / FRAME_SIZE
         })
         .sum::<u64>()
@@ -224,15 +225,15 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
             Flags::user_rodata()
         };
 
-        let (start, end) = seg.page_range(FRAME_SIZE);
+        let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
         let mut va = start;
         while va < end {
             let page = space.map_new(va, flags).map_err(LoadError::Unmappable)?;
 
             // Which of the file's bytes land in this page? An intersection, because `p_vaddr`
             // need not be page-aligned.
-            let file_lo = seg.vaddr;
-            let file_hi = seg.vaddr + seg.data.len() as u64;
+            let file_lo = seg.virtual_address;
+            let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
             let hi = (va + FRAME_SIZE).min(file_hi);
             if lo < hi {

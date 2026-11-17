@@ -38,7 +38,7 @@ use driver_process_contract::non_volatile_memory_express::{
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
+    Command, Completion, CompletionQueue, Direction, Doorbell, Namespace, SubmissionQueue,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
@@ -208,13 +208,23 @@ impl Plane {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
         let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE_BYTES;
         let cid = self.next_cid();
-        let namespace = Namespace::new(self.handoff.size_bytes, self.handoff.blocks_per_transfer);
-        let cmd = namespace
-            .transfer_command(cid, NSID, block, PAGE_BYTES, data_phys, PAGE_BYTES, write)
-            // `None` means the block is outside the namespace or the arithmetic would not close;
-            // either way it is the caller's request that is wrong, and the crate refused to build
-            // a command rather than let the controller answer for it.
-            .ok_or(u16::MAX)?;
+        // `None` from either call means the block is outside the namespace or the arithmetic would
+        // not close; either way it is the caller's request that is wrong, and the crate refused to
+        // build a command rather than let the controller answer for it.
+        let direction = if write {
+            Direction::Write
+        } else {
+            Direction::Read
+        };
+        let cmd = Namespace::new(
+            self.handoff.size_bytes,
+            PAGE_BYTES,
+            self.handoff.blocks_per_transfer,
+        )
+        .and_then(|namespace| {
+            namespace.transfer_command(cid, NSID, block, data_phys, PAGE_BYTES, direction)
+        })
+        .ok_or(u16::MAX)?;
         self.transact(cmd)
     }
 }

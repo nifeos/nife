@@ -69,7 +69,7 @@ yields it, and drops one in a file that an open pull request carrying `architect
    constant or the same numbers and layout words do not fire: an identifier renamed in the
    sentence, a constant moved to another crate, `pub(crate)` widened to `pub`.
 4. **spawnproto**: a `pub const` changed in a file named `spawnproto.rs` (the wire layout
-   `crates/grant_plan/src/spawnproto.rs` documents; matched by filename rather than the one path in
+   `crates/program_table/src/spawnproto.rs` documents; matched by filename rather than the one path in
    the tree today, so a second one elsewhere is still caught). Same-value renames pair off as in
    rule 1.
 5. **decisions**: `CLAUDE.md` changed at all, or a `design/decisions/*.md` file (excluding
@@ -250,7 +250,8 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
   carries a ruled hunk and edits the same file elsewhere fires on that file again.
 - **format-crate's layout-comment test is a regex.** A layout described in a comment without a
   table row, offset, width, bit number or `N..M` range (say, a prose paragraph that moves a field)
-  is missed unless a constant moves with it. Residual and unmeasured: the table-row form is the one
+  is missed unless a constant moves with it. A comment line with no digit and no table bar is
+  prose and never counts, so a sentence that says "offset" fires nothing (#3640). Residual and unmeasured: the table-row form is the one
   this tree's layouts use (#1402); revisit if a layout change slips by.
 """
 import re
@@ -902,7 +903,7 @@ def rule_format_crate_diff(files, out, ctx):
                                        bool(VERSION_OR_MAGIC_CONST_RE.match(line)), line])
         for prefix, line in changed_lines_outside_tests(fd):
             if (prefix == '-' and is_comment_only(line) and is_doc_or_block_comment(line)
-                    and LAYOUT_COMMENT_RE.search(line)):
+                    and states_layout(line)):
                 removed_layout.append([layout_signature(_apply_renames_to_words(line, renames)),
                                        fd['path'], False, line])
 
@@ -926,7 +927,7 @@ def rule_format_crate_diff(files, out, ctx):
                     fired = fired or line
         for prefix, line in changed_lines_outside_tests(fd):
             if (prefix == '+' and is_comment_only(line) and is_doc_or_block_comment(line)
-                    and LAYOUT_COMMENT_RE.search(line)):
+                    and states_layout(line)):
                 if not take(removed_layout, layout_signature(line), fd['path']):
                     fired = fired or line
         if fired:
@@ -941,6 +942,12 @@ def rule_format_crate_diff(files, out, ctx):
                 fired = fired or entry[3]
         if fired:
             out.append(('format-crate', fd['path'], fired.strip()))
+
+
+def states_layout(line):
+    """A doc or block comment line that states a layout. A line with no digit and no table bar is
+    prose (`... saturates to an offset of zero`): a sentence moves no byte of any format."""
+    return bool(re.search(r'[\d|]', line)) and bool(LAYOUT_COMMENT_RE.search(line))
 
 
 def layout_signature(line):
@@ -1663,6 +1670,41 @@ diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 +//! Completion needs the command namespace.
  pub const MAGIC: [u8; 8] = *b"CRKR0002";
 """, None),
+
+    ("format-crate: an offset sentence in a doc comment beside a code change stays quiet", """\
+diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
+--- a/crates/nifefs/src/lib.rs
++++ b/crates/nifefs/src/lib.rs
+@@ -1,4 +1,4 @@
+-/// A reading past the start saturates to zero, and
++/// A reading past the start saturates to an offset of zero, and
+ pub const MAGIC: [u8; 8] = *b"CRKR0002";
+-fn clamp(a: u64) -> u64 { a }
++fn clamp(a: u64) -> u64 { a.min(9) }
+""", None),
+
+    ("format-crate: a constant value change beside a prose edit (a mixed hunk) fires", """\
+diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
+--- a/crates/nifefs/src/lib.rs
++++ b/crates/nifefs/src/lib.rs
+@@ -1,3 +1,3 @@
+-/// The offset of the page.
++/// The offset of the clock page.
+-pub const VERSION: u32 = 1;
++pub const VERSION: u32 = 2;
+""", 'format-crate'),
+
+    ("format-crate: a struct field change beside a numbered offset comment fires", """\
+diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
+--- a/crates/nifefs/src/lib.rs
++++ b/crates/nifefs/src/lib.rs
+@@ -1,5 +1,5 @@
+ pub const MAGIC: [u8; 8] = *b"CRKR0002";
+-/// offset 8: length
++/// offset 8: length, offset 12: flags
+-pub struct Header { len: u32 }
++pub struct Header { len: u32, flags: u32 }
+""", 'format-crate'),
 
     ("format-crate: a diagram edited inside a comment stays quiet", """\
 diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs

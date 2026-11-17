@@ -11,7 +11,8 @@ needs_person: yes
 
 Raised by a read-only outside review of `crates/virtio`, read as a stranger to this tree would meet
 it. It changes nothing; it lists what the next lanes change, and it puts one question to the
-architect first, because every other item depends on its answer.
+architect first, because every other item depends on its answer. The architect answered it
+(Decision 1).
 
 There is no review package for this crate in `notes/crate-reviews/`, no row in
 `notes/crate-reviews.md`, and no step for it in journey 5. So this review has no settled baseline
@@ -63,7 +64,7 @@ crate would be a repository nobody outside could use and that pins the SDK back 
 fix: see Decision 1. Effort: S to fold the roles into the program, L to re-cut a library. One-way:
 a repository and a published name.
 
-**2. No test can run anywhere but under QEMU, and no proof exists.** The crate has zero unit
+**2. No test can run anywhere but under QEMU, and no proof exists.** DONE (the pure logic takes slices or closures, with host tests in `tests.rs` and Kani harnesses in `verification`). The crate has zero unit
 tests, no Kani harness, and one `no_run` doctest (`:192-197`). Its pure logic is `find_file`
 (`:399-421`), `pattern_byte` (`:232-239`), `ip_checksum` (`:606-617`), `build_dhcp_discover`
 (`:723-796`) and `parse_dhcp_offer` (`:821-865`). Each reads or writes the fixed `DMA_VA` through
@@ -104,15 +105,16 @@ queues up through the device registers. The other is a startup page that replace
 (1069). Meanwhile the tree holds six copies of the virtio-mmio handshake and ring constants, and
 none of them is in the crate named `virtio` as a shared thing.
 
-Recommendation. The crate does not leave as a crate. Its contents fold into the program that owns
-them, `components/src/block_driver.rs` (or a module beside it), and leave with the drivers
-package. The ratified name `virtio` stays for a library, cut later, that holds what the six copies
-share. That means the register vocabulary at the transport seam, the status and feature bits, the
-handshake, the descriptor and ring accessors at the validator's fixed layout, the blk request chain
-and the net header. It has no test role and no slot convention in it. Whether to cut that
-library, and when, is a second question that waits for 1062 step 7, because the direct grant
-changes what the shared handshake does. Recommending the fold first is about the rules, not the
-effort: it is also the smaller change, and that is not why it is right.
+The rule in force, from the architect on 2026-11-16 (UTC). The crate does not leave this tree as a crate. Its
+contents fold into the program that owns them, `components/src/block_driver.rs` (or a module beside
+it), and leave later with the drivers package. The ratified name `virtio` stays reserved for a library,
+cut later, that holds what the six copies share. That means the register vocabulary at the
+transport seam, the status and feature bits, the handshake, the descriptor and ring accessors at
+the validator's fixed layout, the blk request chain and the net header. It has no test role and no
+slot convention in it. Whether to cut that library, and when, waits for 1062 step 7, because the
+direct grant changes what the shared handshake does. The rules favor the fold (a crate gets
+its own repository only when it would publish on its merits or when more than one repository
+consumes it), and the fold would win at equal effort.
 
 Prior art. Linux (`drivers/virtio/virtio_ring.c` shared by every class driver), OpenBSD
 (`sys/dev/pv/virtio.c` under `vioblk` and `vio`) and Redox (`virtio-core` under `virtio-blkd`,
@@ -213,8 +215,8 @@ The checks are in [the appendix](1113-virtio-outside-review/done-when.md).
   entry points and from `notes/virtio.md`, and did not observe it.
 - Items 6 and 13 cite specification requirements from memory; nobody has verified the section
   numbers,   and the recording lane should confirm them against virtio 1.2 before the text lands.
-- Item 14 states a performance shape and no figure. A figure needs `script/bench` on a machine
-  with the storage rows, which the review did not run.
+- Item 14's figure is the storage benchmark already recorded in `notes/benchmarks.md`; nobody ran
+  `script/bench` for this milestone.
 - The crates.io figures are one API call each at the time of the review; the `virtio` name's
   availability on crates.io rests on a single not-found response.
 - The six-copy count of the handshake constants comes from a `grep` for the magic value and

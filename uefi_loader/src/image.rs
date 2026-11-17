@@ -3,11 +3,11 @@
 //!
 //! The kernel is linked high with `AT()`, so `p_vaddr` and `p_paddr` are unrelated even within one
 //! file (`.text` at `p_vaddr` `0xffffffff8010a000` and `p_paddr` `0x10a000`, `.ap_trampoline` at
-//! `0x8000` and `0x166000`). The headers are read by `static_elf::Elf::parse`, with `static_elf::Segment::paddr`
-//! (milestone 196 (a physical address on `elf::Segment`)), which validates as it reads: bounds,
-//! overlap, W^X, and the entry inside an executable segment. So a kernel that regressed to an `RWX`
-//! segment fails to boot on real firmware with a printed reason, a second mechanism behind
-//! `script/image-permissions`. See notes/x86-uefi-boot/loader-design.md.
+//! `0x8000` and `0x166000`). The headers are read by `static_elf::Elf::parse`, with
+//! `static_elf::Segment::physical_address` (milestone 196 (a physical address on `elf::Segment`)),
+//! which validates as it reads: bounds, overlap, W^X, and the entry inside an executable segment.
+//! So a kernel that regressed to an `RWX` segment fails to boot on real firmware with a printed
+//! reason, a second mechanism behind `script/image-permissions`. See notes/x86-uefi-boot/loader-design.md.
 
 //! # BUGS
 //!
@@ -26,9 +26,9 @@ use static_elf::{Elf, Segment};
 ///
 /// The firmware is asked for it in one `AllocatePages(AllocateAddress)` call: the segments are
 /// contiguous by construction (one linker script), and one call is one failure to report instead
-/// of thirteen. **Over `paddr`, not `vaddr`**: a program loader maps at `p_vaddr` and a firmware
-/// loader places at `p_paddr`, and on this image they are unrelated (`static_elf::Segment::paddr`). `None`
-/// when there is no `PT_LOAD`, which `Elf::parse` cannot produce; a return value rather than an
+/// of thirteen. **Over `p_paddr`, not `p_vaddr`**: a program loader maps at `p_vaddr` and a firmware
+/// loader places at `p_paddr`, and on this image they are unrelated
+/// (`static_elf::Segment::physical_address`). `None` when there is no `PT_LOAD`, which `Elf::parse` cannot produce; a return value rather than an
 /// `unwrap`, because this function is public and must be panic-free on its own terms.
 pub fn physical_span<'a>(
     segments: impl Iterator<Item = Segment<'a>>,
@@ -39,8 +39,12 @@ pub fn physical_span<'a>(
     let mut any = false;
     for segment in segments {
         any = true;
-        first = first.min(segment.paddr);
-        last = last.max(segment.paddr.saturating_add(segment.memsz));
+        first = first.min(segment.physical_address);
+        last = last.max(
+            segment
+                .physical_address
+                .saturating_add(segment.memory_bytes),
+        );
     }
     if !any {
         return None;
@@ -63,8 +67,8 @@ pub fn physical_span<'a>(
 /// (`EntryNotExecutable`); a return value rather than a panic for [`physical_span`]'s reason.
 pub fn physical_entry<'a>(entry: u64, segments: impl Iterator<Item = Segment<'a>>) -> Option<u64> {
     segments
-        .filter(|s| entry >= s.vaddr && entry - s.vaddr < s.memsz)
-        .map(|s| s.paddr + (entry - s.vaddr))
+        .filter(|s| entry >= s.virtual_address && entry - s.virtual_address < s.memory_bytes)
+        .map(|s| s.physical_address + (entry - s.virtual_address))
         .next()
 }
 
@@ -161,19 +165,19 @@ pub fn parse(bytes: &[u8]) -> Result<Elf<'_>, &'static str> {
 
 #[cfg(test)]
 mod tests {
-    use static_elf::{NATIVE_MACHINE, PF_R, PF_W, PF_X};
+    use static_elf::{EXECUTABLE, NATIVE_MACHINE, READABLE, WRITABLE};
 
     use super::*;
 
     /// `Segment`'s fields are all public, so the span can be tested against hand-built segments
     /// rather than against a forged ELF. The forging belongs to `crates/static_elf`'s own tests, which is
-    /// where `Elf::parse` is proved; what is under test here is the arithmetic over `paddr`.
+    /// where `Elf::parse` is proved; what is under test here is the arithmetic over `p_paddr`.
     fn seg(paddr: u64, memsz: u64) -> Segment<'static> {
         Segment {
-            vaddr: paddr + 0xffff_ffff_8000_0000,
-            paddr,
-            memsz,
-            flags: PF_R | PF_X,
+            virtual_address: paddr + 0xffff_ffff_8000_0000,
+            physical_address: paddr,
+            memory_bytes: memsz,
+            flags: READABLE | EXECUTABLE,
             data: &[],
         }
     }
@@ -182,10 +186,10 @@ mod tests {
     fn a_high_half_entry_is_entered_where_its_bytes_are() {
         // aarch64's shape: `_start` at 0xffff_0000_4008_0000, loaded at 0x4008_0000.
         let text = Segment {
-            vaddr: 0xffff_0000_4008_0000,
-            paddr: 0x4008_0000,
-            memsz: 0x2_0000,
-            flags: PF_R | PF_X,
+            virtual_address: 0xffff_0000_4008_0000,
+            physical_address: 0x4008_0000,
+            memory_bytes: 0x2_0000,
+            flags: READABLE | EXECUTABLE,
             data: &[],
         };
         assert_eq!(
@@ -194,10 +198,10 @@ mod tests {
         );
         // x86_64's shape: `.boot` is linked where it loads, so the translation is the identity.
         let boot = Segment {
-            vaddr: 0x200_0000,
-            paddr: 0x200_0000,
-            memsz: 0x1000,
-            flags: PF_R | PF_X,
+            virtual_address: 0x200_0000,
+            physical_address: 0x200_0000,
+            memory_bytes: 0x1000,
+            flags: READABLE | EXECUTABLE,
             data: &[],
         };
         assert_eq!(
@@ -213,17 +217,17 @@ mod tests {
     #[test]
     fn an_entry_at_a_segments_end_belongs_to_the_next_segment() {
         let first = Segment {
-            vaddr: 0xffff_0000_4008_0000,
-            paddr: 0x4008_0000,
-            memsz: 0x1000,
-            flags: PF_R | PF_X,
+            virtual_address: 0xffff_0000_4008_0000,
+            physical_address: 0x4008_0000,
+            memory_bytes: 0x1000,
+            flags: READABLE | EXECUTABLE,
             data: &[],
         };
         let second = Segment {
-            vaddr: 0xffff_0000_4008_1000,
-            paddr: 0x5000_0000,
-            memsz: 0x1000,
-            flags: PF_R | PF_X,
+            virtual_address: 0xffff_0000_4008_1000,
+            physical_address: 0x5000_0000,
+            memory_bytes: 0x1000,
+            flags: READABLE | EXECUTABLE,
             data: &[],
         };
         assert_eq!(
@@ -263,15 +267,15 @@ mod tests {
     }
 
     /// The trampoline's shape: its `p_vaddr` is *below* every other segment's while its `p_paddr`
-    /// is in the middle of the image. A span taken over `vaddr` would start at 0x8000 and ask the
+    /// is in the middle of the image. A span taken over `p_vaddr` would start at 0x8000 and ask the
     /// firmware for a megabyte of real-mode memory it does not own.
     #[test]
     fn a_segment_that_ships_high_and_runs_low_is_spanned_where_it_ships() {
         let trampoline = Segment {
-            vaddr: 0x8000,
-            paddr: 0x16_6000,
-            memsz: 0xe0,
-            flags: PF_R | PF_X,
+            virtual_address: 0x8000,
+            physical_address: 0x16_6000,
+            memory_bytes: 0xe0,
+            flags: READABLE | EXECUTABLE,
             data: &[],
         };
         assert_eq!(
@@ -343,10 +347,10 @@ mod tests {
     fn a_writable_executable_segment_is_named_by_the_file_that_causes_it() {
         assert!(refusal(static_elf::Error::WritableAndExecutable).contains("link-x86_64.ld"));
         let s = Segment {
-            vaddr: 0x1000,
-            paddr: 0x1000,
-            memsz: 0x1000,
-            flags: PF_R | PF_W | PF_X,
+            virtual_address: 0x1000,
+            physical_address: 0x1000,
+            memory_bytes: 0x1000,
+            flags: READABLE | WRITABLE | EXECUTABLE,
             data: &[],
         };
         assert!(s.is_writable() && s.is_executable());
@@ -397,7 +401,7 @@ mod tests {
     /// than boot a machine into a kernel with no segments.
     #[test]
     fn an_accepted_image_arrives_with_its_segments_and_its_entry() {
-        let bytes = forge(PF_R | PF_X, 0x10_2000);
+        let bytes = forge(READABLE | EXECUTABLE, 0x10_2000);
         let elf = match parse(&bytes) {
             Ok(elf) => elf,
             Err(why) => panic!("a well-formed executable was refused: {why}"),
@@ -405,8 +409,8 @@ mod tests {
         assert_eq!(elf.entry(), 0x10_2000 + 0xffff_ffff_8000_0000);
         let segments: Vec<_> = elf.segments().collect();
         assert_eq!(segments.len(), 1);
-        assert_eq!(segments[0].paddr, 0x10_2000);
-        assert_eq!(segments[0].memsz, 0x20);
+        assert_eq!(segments[0].physical_address, 0x10_2000);
+        assert_eq!(segments[0].memory_bytes, 0x20);
         assert_eq!(
             physical_span(elf.segments(), 4096),
             Some((0x10_2000, 0x10_3000))
@@ -419,10 +423,9 @@ mod tests {
     /// implementation detail.
     #[test]
     fn a_refused_image_arrives_as_this_loaders_sentence() {
-        let bytes = forge(PF_R | PF_W | PF_X, 0x10_2000);
-        // Matched rather than unwrapped: `static_elf::Elf` is deliberately neither `Debug` nor
-        // `PartialEq`, since it is a validated token rather than a value, and every `Result`
-        // helper that reports a failure wants to print the `Ok` side.
+        let bytes = forge(READABLE | WRITABLE | EXECUTABLE, 0x10_2000);
+        // Matched rather than unwrapped, so an image accepted by mistake fails with a sentence
+        // that says so rather than with a printed `Elf`.
         let sentence = |bytes: &[u8]| match parse(bytes) {
             Ok(_) => panic!("accepted an image that must be refused"),
             Err(why) => why,

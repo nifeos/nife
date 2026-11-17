@@ -258,6 +258,10 @@ helpers/kani-pool-selftest.sh >/dev/null
 # script/kani-install repairs a dangling toolchain link and refuses a private RUSTUP_HOME, and the
 # toolchain prune keeps Kani's own, all in a temporary HOME (helpers/kani-install-selftest.sh).
 helpers/kani-install-selftest.sh >/dev/null
+# The prove shards' memory fence (helpers/memory_fence.py) reads a harness from a goto file's name,
+# keeps the command's exit status, counts an out-of-memory kill as a failure and removes its cgroup,
+# all over a plain directory standing in for the cgroup, so it needs no sudo.
+python3 helpers/memory_fence.py --selftest >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
 # lint-scope: code
@@ -2502,9 +2506,9 @@ def _abi_syscalls():
 
 
 def _rights_bits():
-    """Named single-bit rights in crates/capability: how many rights a capability can carry.
+    """Named single-bit rights in crates/capability_table: how many rights a capability can carry.
 
-    Counted from `capability::Rights` rather than from `abi::rights` because the prose that states
+    Counted from `capability_table::Rights` rather than from `abi::rights` because the prose that states
     this number is about `Rights`, and the abi module documents itself as *matching* it. Only the
     single-bit constants count: `NONE` is `Rights(0)` and `ALL` is a mask of the others, so the
     shape assumed is `pub const NAME: Rights = Rights(1 << N);` and neither aggregate matches it.
@@ -2513,7 +2517,7 @@ def _rights_bits():
     rather than here (`rights_are_distinct_single_bits`, `rights_bits_are_the_wire_format`). This
     counts; those compare.
     """
-    text = pathlib.Path('crates/capability/src/lib.rs').read_text(errors='replace')
+    text = pathlib.Path('crates/capability_table/src/lib.rs').read_text(errors='replace')
     return len(re.findall(r'^[ \t]*pub const [A-Z_0-9]+: Rights = Rights\(1 << \d', text, re.M))
 
 
@@ -2642,9 +2646,9 @@ REGISTRY = {
     # had already cost two sweeps their re-derivation. A lane landing a harness in one of these
     # crates bumps the number beside the marker in the same commit, which is the forcing function
     # the total `kani-harnesses` marker already exercises.
-    'capability-harnesses': (
-        'how many Kani proof harnesses crates/capability carries',
-        lambda: _harness_hits().get('capability', 0),
+    'capability-table-harnesses': (
+        'how many Kani proof harnesses crates/capability_table carries',
+        lambda: _harness_hits().get('capability_table', 0),
     ),
     'memory-regions-harnesses': (
         'how many Kani proof harnesses crates/memory_regions carries',
@@ -2693,7 +2697,7 @@ REGISTRY = {
         _abi_syscalls,
     ),
     'rights-bits': (
-        'how many named single-bit rights a capability can carry (capability::Rights)',
+        'how many named single-bit rights a capability can carry (capability_table::Rights)',
         _rights_bits,
     ),
     'loom-harnesses': (
@@ -3996,6 +4000,12 @@ helpers/scope-merge-base-selftest.sh >/dev/null
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
 # lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
+# The Kani proofs also run on a pull request that adds or changes a harness (ruled 2026-11-16 UTC):
+# verify.yml's draft gate asks helpers/harness_change.py, whose rule is fixtures here over a
+# throwaway repository.
+echo "==> a pull request proves when it changes a Kani harness"
+# lint-scope: code
+python3 helpers/harness_change.py --selftest >/dev/null
 # A draft's `lint` fails and a ready one's runs the real lint: the draft gate's state step under a
 # stub gh, and the lint job's own conditions evaluated for each event (helpers/draft-lint-selftest.sh).
 helpers/draft-lint-selftest.sh >/dev/null
@@ -4284,6 +4294,8 @@ PINNED = {
     # region is pinned, childless or claimable. The two enums are its selector.
     ("-", "ObjectKind", "enum"),
     ("-", "PageUse", "enum"),
+    # A constant list of the kinds: it names no region, so nothing can be held past its truth.
+    ("-", "ALL", "const"),
     ("RegionTable", "spent", "&self"),
     ("RegionTable", "insert_root", "&mut self"),
     ("RegionTable", "split", "&mut self"),

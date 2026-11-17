@@ -23,7 +23,7 @@ proof is not evidence about a proof.
 
 | harness | stated through | the defect it could not see |
 |---|---|---|
-| `capability::derive_never_widens_rights` | `Rights::is_subset_of`, which `derive` guards on | the predicate's two operands swapped |
+| `capability_table::derive_never_widens_rights` | `Rights::is_subset_of`, which `derive` guards on | the predicate's two operands swapped |
 | `component_plan::a_plan_never_grants_a_right_the_declaration_did_not_ask_for` | `Direction::rights`, which `plan` fills the word from | `Use` routed `READ`, so a client can receive on its server's rendezvous |
 | `component_plan::the_device_split_partitions_the_mappings` | `PageKind::mode`, which `plan` fills the word from | device registers mapped `MAP_RW` |
 | `component_plan::dependents_finds_exactly_the_non_target_instances_that_declared_it` | `str_eq`, which `dependents` decides membership with | `str_eq` true for strings of different lengths |
@@ -44,7 +44,7 @@ merged figure rather than either branch's.
 
 **Three more were rewritten and are recorded as *not* findings**, which is the half worth being
 strict about. `filesystem_contract`'s two attenuation harnesses state their property through
-`allows`, and `capability::a_deleted_capability_stays_deleted` states it through `get`. Each
+`allows`, and `capability_table::a_deleted_capability_stays_deleted` states it through `get`. Each
 looks like the class and is not: the sweep tried to exhibit a defect their original phrasing
 misses and could not. `attenuate` does not call `allows`, and a widening `attenuate` shows up on
 some input under every wrong `allows` tried; `delete` does not call `get`. They were made more
@@ -88,7 +88,7 @@ risk wants the pattern rather than 135 rows:
 - Two independent implementations are compared on purpose.
   `globally_unique_identifier_partition_table::crc32_matches_its_bitwise_definition` is the
   clearest: a table-driven CRC against the bitwise definition, where a self-consistent wrong table
-  is the exact defect it exists to catch. `capability::subset_matches_allows` and
+  is the exact defect it exists to catch. `capability_table::subset_matches_allows` and
   `calendar::the_calendar_algorithms_are_mutual_inverses` are the same move.
 - The harness carries its own model. `intrusive_queue` records push order in a local array and
   compares the queue against it; `generational_table` counts against a counter the walk does not

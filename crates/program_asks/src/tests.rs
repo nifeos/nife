@@ -15,13 +15,13 @@ use super::*;
 
 /// The manifest every fixture program carries, with the asks a test adds on top. Two consts,
 /// because the note constructors are `const fn` and their bindings' types pin the notes' lengths.
-const MANIFEST_NETWORK: grant_plan::Manifest = grant_plan::Manifest {
+const MANIFEST_NETWORK: grant_contract::Manifest = grant_contract::Manifest {
     network: true,
-    ..grant_plan::Program::Uptime.manifest()
+    ..program_table::Program::Uptime.manifest()
 };
-const MANIFEST_PLAIN: grant_plan::Manifest = grant_plan::Manifest {
+const MANIFEST_PLAIN: grant_contract::Manifest = grant_contract::Manifest {
     network: false,
-    ..grant_plan::Program::Uptime.manifest()
+    ..program_table::Program::Uptime.manifest()
 };
 
 /// A one-`PT_LOAD` ELF whose one `PT_NOTE` segment carries `whole_note`: the bytes
@@ -45,7 +45,7 @@ fn elf_image(whole_note: &[u8]) -> Vec<u8> {
     let code = [0xaau8; 16];
     let mut ph = vec![0u8; 56];
     ph[0..4].copy_from_slice(&1u32.to_le_bytes());
-    ph[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
+    ph[4..8].copy_from_slice(&(static_elf::READABLE | static_elf::EXECUTABLE).to_le_bytes());
     ph[8..16].copy_from_slice(&(body_off as u64).to_le_bytes());
     ph[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
     ph[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -80,9 +80,9 @@ fn program(bytes: &[u8]) -> package_archive::Program<'_> {
 fn a_note_asking_the_network_and_one_zone_yields_both_in_record_order() {
     const ZONES: &[&str] = &["nife.test"];
     const DESC: capability_manifest_note::ServicedNote<
-        { capability_manifest_note::serviced_note_len(ZONES) },
+        { capability_manifest_note::serviced_note_bytes(ZONES) },
     > = capability_manifest_note::ServicedNote::of::<
-        { capability_manifest_note::serviced_len(ZONES) },
+        { capability_manifest_note::serviced_descriptor_bytes(ZONES) },
     >(&MANIFEST_NETWORK, ZONES, false);
     let image = elf_image(&DESC.0);
     let p = program(&image);
@@ -102,12 +102,10 @@ fn a_note_asking_the_network_and_one_zone_yields_both_in_record_order() {
 #[test]
 fn a_service_ask_yields_the_service_grant() {
     const DESC: capability_manifest_note::ServicedNote<
-        { capability_manifest_note::serviced_note_len(&[]) },
-    > = capability_manifest_note::ServicedNote::of::<{ capability_manifest_note::serviced_len(&[]) }>(
-        &MANIFEST_PLAIN,
-        &[],
-        true,
-    );
+        { capability_manifest_note::serviced_note_bytes(&[]) },
+    > = capability_manifest_note::ServicedNote::of::<
+        { capability_manifest_note::serviced_descriptor_bytes(&[]) },
+    >(&MANIFEST_PLAIN, &[], true);
     let image = elf_image(&DESC.0);
     let p = program(&image);
     let asks: Vec<Granted<'_>> = asked_grants_of(&p).collect();
@@ -118,9 +116,9 @@ fn a_service_ask_yields_the_service_grant() {
 fn a_serviced_note_yields_the_network_the_service_and_each_zone() {
     const ZONES: &[&str] = &["a.test", "b.c.test"];
     const DESC: capability_manifest_note::ServicedNote<
-        { capability_manifest_note::serviced_note_len(ZONES) },
+        { capability_manifest_note::serviced_note_bytes(ZONES) },
     > = capability_manifest_note::ServicedNote::of::<
-        { capability_manifest_note::serviced_len(ZONES) },
+        { capability_manifest_note::serviced_descriptor_bytes(ZONES) },
     >(&MANIFEST_NETWORK, ZONES, true);
     let image = elf_image(&DESC.0);
     let p = program(&image);
@@ -159,14 +157,16 @@ fn a_program_without_a_readable_note_asks_for_nothing() {
 #[test]
 fn a_program_built_for_another_machine_still_has_its_note_read() {
     const DESC: capability_manifest_note::ServicedNote<
-        { capability_manifest_note::serviced_note_len(&[]) },
-    > = capability_manifest_note::ServicedNote::of::<{ capability_manifest_note::serviced_len(&[]) }>(
-        &MANIFEST_NETWORK,
-        &[],
-        false,
-    );
+        { capability_manifest_note::serviced_note_bytes(&[]) },
+    > = capability_manifest_note::ServicedNote::of::<
+        { capability_manifest_note::serviced_descriptor_bytes(&[]) },
+    >(&MANIFEST_NETWORK, &[], false);
     let mut bytes = elf_image(&DESC.0);
-    let foreign = static_elf::FOREIGN_MACHINES[0];
+    let foreign = if static_elf::NATIVE_MACHINE == static_elf::MACHINE_X86_64 {
+        static_elf::MACHINE_AARCH64
+    } else {
+        static_elf::MACHINE_X86_64
+    };
     bytes[18..20].copy_from_slice(&foreign.to_le_bytes());
     assert_eq!(
         static_elf::Elf::parse(&bytes).err(),

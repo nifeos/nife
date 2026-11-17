@@ -70,11 +70,11 @@ pub(super) const NO_RESOLVERS: Resolvers = [None; std_runtime_contract::RESOLVER
 // first slot std makes its own capabilities in.
 const _: () = {
     let theirs = [
-        grant_plan::INSTALLER_SLOT,
-        grant_plan::INSTALLER_REPLY_SLOT,
-        grant_plan::CATALOG_SLOT,
-        grant_plan::INDEX_SOURCES_SLOT,
-        grant_plan::SHELL_CONFIGURATION_SLOT,
+        grant_contract::INSTALLER_SLOT,
+        grant_contract::INSTALLER_REPLY_SLOT,
+        grant_contract::CATALOG_SLOT,
+        grant_contract::INDEX_SOURCES_SLOT,
+        grant_contract::SHELL_CONFIGURATION_SLOT,
     ];
     let mut i = 0;
     while i < theirs.len() {
@@ -139,8 +139,8 @@ impl StdLayout {
             l.place(rt::NET_MEMORY_REGION_SLOT, region, abi::rights::ALL);
         }
         if let Some((endpoint, reply)) = installer {
-            l.place(grant_plan::INSTALLER_SLOT, endpoint, WRITE);
-            l.place(grant_plan::INSTALLER_REPLY_SLOT, reply, READ);
+            l.place(grant_contract::INSTALLER_SLOT, endpoint, WRITE);
+            l.place(grant_contract::INSTALLER_REPLY_SLOT, reply, READ);
         }
         if let Some(endpoint) = stdin {
             l.place(rt::STDIN_SLOT, endpoint, WRITE);
@@ -153,10 +153,10 @@ impl StdLayout {
                 l.place(slot, endpoint, WRITE);
             }
         }
-        l.page(catalog, grant_plan::CATALOG_SLOT, rt::CATALOG_PAGE);
+        l.page(catalog, grant_contract::CATALOG_SLOT, rt::CATALOG_PAGE);
         l.page(
             index_sources,
-            grant_plan::INDEX_SOURCES_SLOT,
+            grant_contract::INDEX_SOURCES_SLOT,
             rt::INDEX_SOURCES_PAGE,
         );
         // Its own process with `BIND`, its first thread for the thread pointer, and its space with

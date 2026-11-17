@@ -2,9 +2,9 @@
 //!
 //! Pure logic that builds for the host: it parses static, little-endian `ET_EXEC` binaries for
 //! this build's own machine and refuses everything else (no dynamic linking, relocations,
-//! interpreter or PIE).
+//! interpreter or position-independent executable).
 //!
-//! See notes/elf.md and notes/elf/parser.md.
+//! The README says what it refuses and why, and what it does not check.
 //!
 //! Name: ratified 2026-11-14 (UTC) (block 1088, option A): `static_elf`, the one kind of file the
 //! crate accepts. The crates.io name `elf` belongs to a different, widely used parser, so the
@@ -16,13 +16,14 @@
 mod note;
 pub use note::{NoteError, NoteSearch, NoteSegment, NoteSegments};
 
-/// Machine-checked proofs of the loader's front half (§14 (the project's direction), milestone 18
-/// (verify the capability core, then spread inward)).
+/// Machine-checked proofs of the loader's front half.
 ///
-/// They prove the per-segment bounds check panic-free and in bounds. Totality of `Elf::parse` over
-/// every byte string is past bounded model checking at a useful input size; the tests cover the
-/// specific hostile files by example. See notes/verification/elf-parser-wall.md and
-/// notes/elf/parser.md.
+/// They prove the per-segment bounds check and the program-header offset panic-free and in bounds,
+/// and `Segment::page_range` panic-free and ordered for every page size. Totality of `Elf::parse`
+/// over every byte string is past bounded model checking at a useful input size: the overlap check
+/// is a loop over the headers inside a loop over the same, and the header table sits at a symbolic
+/// offset in a symbolic file. So the arithmetic a hostile header can weaponize is factored into
+/// loopless functions the proofs reach, and the tests cover the specific hostile files by example.
 #[cfg(kani)]
 mod verification;
 
@@ -36,10 +37,8 @@ mod segment;
 
 pub use error::Error;
 use machine::*;
-pub use machine::{
-    FOREIGN_MACHINES, KNOWN_MACHINES, NATIVE_MACHINE, machine_no_nife_build_accepts,
-};
+pub use machine::{MACHINE_AARCH64, MACHINE_RISCV, MACHINE_X86_64, NATIVE_MACHINE};
 pub use parse::Elf;
 use parse::*;
 use segment::*;
-pub use segment::{PF_R, PF_W, PF_X, Segment};
+pub use segment::{EXECUTABLE, PageBytes, READABLE, Segment, WRITABLE};

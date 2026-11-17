@@ -32,7 +32,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use clock_contract::{ClockPage, policy, propose, rtc, state, status};
+use clock_contract::{ClockPage, policy, propose, real_time_clock, state, status};
 use user_mode_runtime::{counter_hertz, now, receive_request, reply, send};
 
 /// The propose endpoint (slot 0): the service receives proposals on it. Everything that arrives here
@@ -45,7 +45,7 @@ const REPORT: u64 = 1;
 /// The clock page, mapped **read/write**: this process is a setter.
 const CLOCK_VA: u64 = address_space_layout::pair_page(0x00c0_0000);
 /// The RTC's registers, device-typed. Only mapped when the machine has an RTC we can drive; `a0`
-/// says which, and [`rtc::NONE`] means this address is not mapped and must not be touched.
+/// says which, and [`real_time_clock::NONE`] means this address is not mapped and must not be touched.
 const RTC_VA: u64 = address_space_layout::pair_page(0x00d0_0000);
 
 /// The startup report's first word, so a reader of the endpoint knows this is the clock speaking.
@@ -67,7 +67,7 @@ fn start(rtc_kind: u64, _a1: u64, _a2: u64) -> ! {
         && policy::is_plausible(unix_nanoseconds)
     {
         page.publish(
-            state::RTC,
+            state::REAL_TIME_CLOCK,
             clock_contract::offset_for(unix_nanoseconds, monotonic_nanoseconds()),
         );
     }
@@ -96,10 +96,10 @@ fn serve(page: ClockPage) -> ! {
                 let current = wall_now(&page);
                 let verdict = policy::decide(r.state, current, w1);
                 if verdict == status::ACCEPTED {
-                    // SYNCED rather than SET: this came from a source the service bounded, and the
+                    // SYNCHRONIZED rather than SET: this came from a source the service bounded, and the
                     // provenance is what a caller weighing a certificate expiry actually wants.
                     page.publish(
-                        state::SYNCED,
+                        state::SYNCHRONIZED,
                         clock_contract::offset_for(w1, monotonic_nanoseconds()),
                     );
                 }
@@ -120,7 +120,7 @@ fn serve(page: ClockPage) -> ! {
 fn wall_now(page: &ClockPage) -> u64 {
     let r = page.read();
     if state::is_known(r.state) {
-        clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
+        clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
     } else {
         0
     }
@@ -146,14 +146,14 @@ fn monotonic_nanoseconds() -> u64 {
 /// `goldfish_unix_nanoseconds` is behind a `cfg(target_arch)`, because the device is a fact about the
 /// board and not about the instruction set: the VisionFive 2 is riscv64 and has neither of these.
 /// Keying the layout off the ISA would compile clean and read garbage on the first real board,
-/// which is precisely the failure rule 5 exists to catch. `rtc::CMOS` is the exception the ISA
+/// which is precisely the failure rule 5 exists to catch. `real_time_clock::CMOS` is the exception the ISA
 /// does force: port I/O exists only on `x86_64`, so the `cmos` module compiles only there.
 fn read_rtc(kind: u64) -> Option<u64> {
     match kind {
-        rtc::PL031 => Some(pl031_unix_nanoseconds(RTC_VA)),
-        rtc::GOLDFISH => Some(goldfish_unix_nanoseconds(RTC_VA)),
+        real_time_clock::PL031 => Some(pl031_unix_nanoseconds(RTC_VA)),
+        real_time_clock::GOLDFISH => Some(goldfish_unix_nanoseconds(RTC_VA)),
         #[cfg(target_arch = "x86_64")]
-        rtc::CMOS => cmos::read_unix_nanoseconds(),
+        real_time_clock::CMOS => cmos::read_unix_nanoseconds(),
         _ => None,
     }
 }
@@ -194,7 +194,7 @@ fn goldfish_unix_nanoseconds(base: u64) -> u64 {
 }
 
 /// **The CMOS RTC driver** (`x86_64`): an MC146818-compatible clock behind
-/// [`rtc::INDEX_PORT`] and [`rtc::DATA_PORT`], reached through the `PortRange` the
+/// [`real_time_clock::INDEX_PORT`] and [`real_time_clock::DATA_PORT`], reached through the `PortRange` the
 /// wiring grants in slot 2. See notes/clock.md for the register map, tearing and the century.
 ///
 /// # BUGS
@@ -207,7 +207,7 @@ fn goldfish_unix_nanoseconds(base: u64) -> u64 {
 /// `pl031_unix_nanoseconds` and `goldfish_unix_nanoseconds` carry theirs.
 #[cfg(target_arch = "x86_64")]
 mod cmos {
-    use clock_contract::rtc::{DATA_PORT, INDEX_PORT};
+    use clock_contract::real_time_clock::{DATA_PORT, INDEX_PORT};
     use user_mode_runtime::{inb, outb};
 
     const REGISTER_SECONDS: u8 = 0x00;

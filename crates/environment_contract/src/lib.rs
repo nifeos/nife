@@ -107,13 +107,15 @@ pub mod domain {
 /// The page's first eight bytes, so a reader can tell an assembled config page from a zeroed
 /// frame or from somebody else's page. ASCII, ends unpadded at 8 bytes so the ASCII reads
 /// straight in a hex dump the way `clock_contract::MAGIC` does.
+///
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
 /// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
 /// interface-stability discipline owes.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 13, naming the inert-configuration
@@ -122,7 +124,7 @@ pub const VERSION: u32 = 1;
 /// versions) holds the table of numbers, and `script/lint` holds the tree to it. A program declares
 /// the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const INTERFACE_ID: u64 = 13;
 
 /// The most bytes a `TZ` value may occupy. Longer than every entry in [`domain::KNOWN_TIME_ZONES`]
@@ -142,11 +144,12 @@ pub const MAXIMUM_TIME_ZONE_BYTES: usize = 40;
 pub const MAXIMUM_LOCALE_BYTES: usize = 24;
 
 /// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERMINAL_TYPES`]
-/// (`screen-256color` is the longest at 15) with headroom to grow.
+/// (`screen-256color` is the longest at 15) and the longer common terminfo names (such as
+/// `screen.xterm-256color`, 21 bytes) with headroom to grow.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "TERM")]
-pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 24;
+pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 32;
 
 const MAGIC_OFFSET_BYTES: usize = 0;
 const TIME_ZONE_LENGTH_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
@@ -156,8 +159,8 @@ const LOCALE_OFFSET_BYTES: usize = LOCALE_LENGTH_OFFSET_BYTES + 1;
 const TERMINAL_TYPE_LENGTH_OFFSET_BYTES: usize = LOCALE_OFFSET_BYTES + MAXIMUM_LOCALE_BYTES;
 const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 
-/// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
-/// under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
+/// The whole page's size in bytes: magic, then one length-prefixed field per declared key, 8 + 1 +
+/// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
 pub const PAGE_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
@@ -681,5 +684,19 @@ mod tests {
             TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES
         );
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
+    }
+
+    /// The frozen identity and widths, as literals: a change to any of them is a new version of
+    /// the interface, so it must fail here first.
+    #[test]
+    fn the_frozen_identity_and_widths_are_pinned() {
+        assert_eq!(&MAGIC, b"ENVCONF1");
+        assert_eq!(VERSION, 1);
+        assert_eq!(INTERFACE_ID, 13);
+        assert_eq!(MAXIMUM_TIME_ZONE_BYTES, 40);
+        assert_eq!(MAXIMUM_LOCALE_BYTES, 24);
+        assert_eq!(MAXIMUM_TERMINAL_TYPE_BYTES, 32);
+        assert_eq!(PAGE_BYTES, 107);
+        assert_eq!(MAGIC[7], b'0' + VERSION as u8);
     }
 }

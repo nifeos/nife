@@ -5,7 +5,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 | Where | Gap | Proposed milestone | Size |
 |---|---|---|---|
 |  0525-...:134 and design/roadmap/0554-a-good-upgrade-sticks.md | chooser's table write goes primary-first (window with no parseable copy, no journal) and nothing reads the backup table when the primary fails | Chooser table write is backup-first and readers fall back to the backup | M  |
-|  components/src/entropy.rs, crates/entropy_contract/src/lib.rs | nothing checks a byte after bring-up; continuous TRNG health test is decision 0137 (decided 2026-10-28 UTC) with no milestone | Continuous entropy health tests (decision 0137) | M  |
+|  components/src/entropy.rs, entropy_contract `src/lib.rs` | nothing checks a byte after bring-up; continuous TRNG health test is decision 0137 (decided 2026-10-28 UTC) with no milestone | Continuous entropy health tests (decision 0137) | M  |
 |  components/src/jh7110_entropy.rs | POLL_TRIES and LOCKUP_RETRIES unmeasured; MODE.R256 never read back on radon | jh7110_entropy: bench-read R256 and size the poll bounds | S  |
 |  components/src/system_installer.rs | disks under ~700 MiB refused but untested; clone keeps source disk/partition GUIDs; no firmware boot entry written | system_installer: small-disk test, re-draw GUIDs on clone | S  |
 |  components/src/usb_keyboard_driver.rs, nifeos/extensible_host_controller_interface/src/lib.rs | root ports only (no hubs), no key repeat/lock keys/LEDs, events dropped during stall recovery; 0242 lists them as limits, 0618 excludes hubs | USB keyboard: hubs, key repeat, lock LEDs | L  |
@@ -51,7 +51,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/non-volatile-memory-express.md | one command per fs block, no PRP lists, one command in flight, one namespace (milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS) it names is REMOVED) | NVMe PRP lists and real queue depth | M  |
 |  notes/serial-less-output.md (4 GiB bullet) | `uefi_loader::find_screen` never checks the framebuffer base is below 4 GiB; a high aperture would go unnoticed | Loader refuses (or maps) a framebuffer base above 4 GiB | S  |
 |  notes/timer-capability.md (EL0 comparator, xenon HPET bullets) | The cheap EL0 `CNTP_CVAL_EL0` experiment never ran; xenon's HPET is unconfirmed | Run the EL0 comparator probe; read xenon's ACPI table list for HPET | S  |
-|  notes/two-trees.md | `grant_plan::plan` and its callees take a ~1 KiB `Holdings` by value; passing `&Holdings` is the stated fix | Pass `Holdings` by reference in the grant planner | S  |
+|  notes/two-trees.md | `program_table::plan` and its callees take a ~1 KiB `Holdings` by value; passing `&Holdings` is the stated fix | Pass `Holdings` by reference in the grant planner | S  |
 |  notes/usb.md | a device refused after boot is refused silently (one message on the report endpoint) | Report a post-boot USB refusal on the console | S  |
 |  notes/usb.md | driver is mapped USBLEGSUP/USBLEGCTLSTS; a compromised driver can hand the controller back to SMI. milestone 960 (the xHCI driver is not mapped the USB Legacy Support capability) exists but is NOT-STARTED, `design/roadmap/0960-the-xhci-driver-is-not-mapped-the-legacy-support-capability.md` | Withhold the xHCI legacy-support capability from the driver | S  |
 |  notes/visionfive2.md | `an_interrupt_that_arrives_before_the_wait_is_not_lost` fails on the board; PLIC/hart affinity path suspected | Fix the lost-interrupt test failure on the VisionFive 2 | M  |

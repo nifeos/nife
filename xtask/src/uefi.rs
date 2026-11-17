@@ -621,7 +621,7 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
 /// `boot_self_test` prints it after the hand-over, once the screen is the shell's terminal, so it
 /// is read off the terminal ([`ScreenReadings::verdict`]). See
 /// notes/x86-uefi-boot/running-under-firmware.md.
-const UEFI_SCREEN_MARKER: boot_ladder::Head<'static> = serial_console::HEADS.tour();
+const UEFI_SCREEN_MARKER: boot_ladder::Head<'static> = serial_console::HEADS.core_runs();
 
 /// **The tour's first line, reported when the screen was tall enough to still be holding it.**
 ///

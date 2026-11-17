@@ -130,7 +130,7 @@ pub(super) struct SpawnEndpoint {
     /// so the request unwinds instead of waiting for frames nobody will send.
     pub(super) abandoned: bool,
     /// The endpoint each live installer holder's answers go back on, by its job's label
-    /// (`grant_plan::INSTALLER_REPLY_SLOT`). Ours is `WRITE`; the holder's is `READ`. Deleted at
+    /// (`grant_contract::INSTALLER_REPLY_SLOT`). Ours is `WRITE`; the holder's is `READ`. Deleted at
     /// the holder's reap.
     replies: [Option<(u64, u64, &'static str)>; INSTALLER_HOLDERS],
     /// The label the next job's supervision capability carries (DECISIONS §148 (resolves by asking
@@ -656,7 +656,7 @@ pub(super) fn staged_image(len: u64) -> &'static [u8] {
 
 /// **Is this image vouched for, and was it granted the network?** Its SHA-256, looked up in the
 /// live generation of the activation set (`installed_programs`), with that generation's `grant`
-/// lines. [`grant_plan::Vouch::Unvouched`] on a miss and on every failure to read the table, which
+/// lines. [`program_table::Vouch::Unvouched`] on a miss and on every failure to read the table, which
 /// then vouches for nothing. The digest comes back too, for [`granted_zones`]. The page used is
 /// window 0, the shell's, sound because the shell is parked on the result endpoint for the whole
 /// of a spawn.
@@ -665,8 +665,8 @@ pub(super) fn vouched(
     fs: Option<Fs>,
     own_ut: u64,
     fs_mapped: &mut bool,
-) -> (grant_plan::Vouch, measured_boot::Digest) {
-    use grant_plan::Vouch;
+) -> (program_table::Vouch, measured_boot::Digest) {
+    use program_table::Vouch;
     let digest = measured_boot::sha256(bytes);
     let vouch = with_live_table(fs, own_ut, fs_mapped, |table| {
         match installed_programs::lookup_digest(table, &digest) {
@@ -755,16 +755,16 @@ fn serves_declared_abi(elf: &static_elf::Elf<'_>) -> bool {
 /// **The manifest a file's bytes are endowed with, or `None` to refuse them.** Their note is read
 /// with `static_elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
-/// endow a program with a manifest it did not declare. `grant_plan::image_manifest` then applies
+/// endow a program with a manifest it did not declare. `program_table::image_manifest` then applies
 /// the vouch (the shell's `caps` calls the same function to preview it), and the request's own
 /// words must fit what results.
 pub(super) fn endowed_image(
     elf: &static_elf::Elf<'_>,
-    vouch: grant_plan::Vouch,
+    vouch: program_table::Vouch,
     arg: u64,
     mem_pages: u64,
     words: bool,
-) -> Option<grant_plan::Manifest> {
+) -> Option<grant_contract::Manifest> {
     let declared = match elf.note(
         capability_manifest_note::OWNER,
         capability_manifest_note::MANIFEST,
@@ -787,8 +787,8 @@ pub(super) fn endowed_image(
     ) {
         return None;
     }
-    let m = grant_plan::image_manifest(declared, vouch).ok()?;
-    grant_plan::image_request_fits(&m, arg, mem_pages, words).then_some(m)
+    let m = program_table::image_manifest(declared, vouch).ok()?;
+    program_table::image_request_fits(&m, arg, mem_pages, words).then_some(m)
 }
 
 #[cfg(test)]
@@ -816,7 +816,7 @@ mod tests {
         v[56..58].copy_from_slice(&2u16.to_le_bytes());
         let mut load = vec![0u8; 56];
         load[0..4].copy_from_slice(&1u32.to_le_bytes());
-        load[4..8].copy_from_slice(&(static_elf::PF_R | static_elf::PF_X).to_le_bytes());
+        load[4..8].copy_from_slice(&(static_elf::READABLE | static_elf::EXECUTABLE).to_le_bytes());
         load[8..16].copy_from_slice(&(body as u64).to_le_bytes());
         load[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
         load[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
@@ -825,7 +825,7 @@ mod tests {
         v.extend_from_slice(&load);
         let mut ph = vec![0u8; 56];
         ph[0..4].copy_from_slice(&4u32.to_le_bytes());
-        ph[4..8].copy_from_slice(&static_elf::PF_R.to_le_bytes());
+        ph[4..8].copy_from_slice(&static_elf::READABLE.to_le_bytes());
         ph[8..16].copy_from_slice(&((body + 16) as u64).to_le_bytes());
         ph[32..40].copy_from_slice(&(note.len() as u64).to_le_bytes());
         ph[40..48].copy_from_slice(&(note.len() as u64).to_le_bytes());

@@ -133,6 +133,8 @@ def address_findings(definition, parts, words):
         before = parts[k - 1] if k else None
         if before in qualifiers:
             continue
+        if k > 1 and parts[k - 2] + parts[k - 1] in qualifiers:
+            continue  # `IPV4_ADDRESS`: the splitter reads `IPV4` as `ipv` and `4`
         if k > 1 and parts[k - 2] in qualifiers - {'virtual', 'physical'}:
             continue  # `RELATIVE_CARD_ADDRESS`: the card's relative address
         if before in verb_before:
@@ -249,6 +251,8 @@ pub const STATUS_MASK_BITS: u32 = 0x3;
 pub const FRAME_PHYSICAL_ADDRESS: u64 = 0;
 pub const BASE_ADDRESS: u64 = 0;
 pub const GATEWAY_IP_ADDRESS: u32 = 0;
+pub const IPV4_ADDRESS: u32 = 0;
+pub const ADDRESS: u32 = 0;
 pub const BUFFER_SIZE: usize = 4096;
 pub const BUFFER_SIZE_BYTES: usize = 4096;
 pub const PAGE_SIZE_SHIFT: u32 = 12;
@@ -270,7 +274,7 @@ pub fn count(len: usize) -> usize { let size = len; size }
     bad = judge('x.rs', found, words)
     got = sorted({line.split(': ')[1] for line in bad})
     want = sorted(['const STATUS', 'const DATA_OFFSET', 'const MASK_STATUS', 'const STATUS_MASK_BITS',
-                   'const BASE_ADDRESS', 'const BUFFER_SIZE', 'field len', 'field dest_addr',
+                   'const BASE_ADDRESS', 'const ADDRESS', 'const BUFFER_SIZE', 'field len', 'field dest_addr',
                    'const CAP', 'const CONTROLLER_CAPABILITIES_MASK', 'const PAGE_SIZE'])
     failed = 0
     if got != want:

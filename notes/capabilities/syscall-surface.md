@@ -44,7 +44,7 @@ two files that "agree" by having been edited to match are exactly that.
 
 ## A capability is a file descriptor that can point at anything
 
-`crates/capability` is the table, and it is pure logic, so it is host-tested in milliseconds. The
+`crates/capability_table` is the table, and it is pure logic, so it is host-tested in milliseconds. The
 mechanism is deliberately boring: a `Vec<Option<Cap>>`, indexed by a small integer, living in
 kernel memory. Userspace sees the integer. You cannot forge slot 7 for the same reason you
 cannot forge `fd 7`: the table is not yours to write. No cryptography. A bounds check.

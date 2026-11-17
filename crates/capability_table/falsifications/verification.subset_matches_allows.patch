@@ -1,0 +1,31 @@
+Falsifies `capability_table::subset_matches_allows`.
+
+The defect: `is_subset_of` with its operands the wrong way round, `other.0 & !self.0`
+instead of `self.0 & !other.0`. This is the most plausible single defect the function
+has, because "is self no more than other" and "does other hold at least self" are the
+same sentence read in two directions and the body is four tokens long.
+
+Expected to fail: the `assert_eq!(a.is_subset_of(b), b.allows(a))` in
+`subset_matches_allows`. That harness exists precisely to pin the two directions
+together, and this is the defect it was written against, so it is the one that must go
+red.
+
+**What this record is worth reading for.** Applied to the whole crate, this defect turns
+only 2 of the 12 capability harnesses red: this one and
+`from_bits_cannot_forge_a_right`. `subset_is_reflexive`, `subset_is_transitive` and
+`derive_never_widens_rights` all stay green, the last of them because it states the
+property THROUGH the predicate being broken and so cannot see the break.
+
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
+index 33b5819a..21614dfe 100644
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
+@@ -140,7 +140,7 @@ impl Rights {
+ 
+     /// Is `self` no more than `other`? The subset test that [`CapabilityTable::derive`] turns on.
+     pub const fn is_subset_of(self, other: Rights) -> bool {
+-        self.0 & !other.0 == 0
++        other.0 & !self.0 == 0
+     }
+ }
+ 

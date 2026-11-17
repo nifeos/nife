@@ -1,0 +1,19 @@
+Falsifies `clock_contract::verification::the_request_word_and_the_offset_round_trip`.
+
+The defect: `propose::operation` shifts one bit too few, so the opcode comes back doubled.
+
+Expected to fail: the harness's `assert!(propose::operation(propose::req(opcode)) == opcode)`.
+
+diff --git a/crates/clock_contract/src/lib.rs b/crates/clock_contract/src/lib.rs
+index fd158fdfd..a17e2d51d 100644
+--- a/crates/clock_contract/src/lib.rs
++++ b/crates/clock_contract/src/lib.rs
+@@ -493,7 +493,7 @@ pub mod propose {
+     /// The opcode of a request word. The low 56 bits are the request's to use, and nothing says
+     /// they are zero, so this discards them.
+     pub const fn operation(word: u64) -> u64 {
+-        word >> OPERATION_SHIFT
++        word >> (OPERATION_SHIFT - 1)
+     }
+ 
+     /// `CALL(req(PROPOSE), proposed_unix_nanoseconds)`. Ask the service to move the wall clock to

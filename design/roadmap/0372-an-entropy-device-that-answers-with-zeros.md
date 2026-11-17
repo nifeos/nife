@@ -23,7 +23,7 @@ already has the check, and the only new thinking is how a wiring names *which* v
 
 **What the work is.** `entropy_contract::readiness` decides the readiness word from the first bufferful,
 and refuses `READY` when every byte of it is zero (milestone 159's block, "Fixed 2026-09-04"). That
-decision is host-tested in `crates/entropy_contract`, and the drivers' three calls to it are not tested
+decision is host-tested in `entropy_contract` (the repository `nifeos/entropy_contract`), and the drivers' three calls to it are not tested
 anywhere: no machine this repository boots can produce a device that answers with zeros. The one that
 did was radon, whose TRNG has a gated clock, and it is not a machine CI can run.
 

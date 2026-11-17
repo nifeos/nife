@@ -6,12 +6,13 @@ authority is copied, how it narrows, and, at the end, how it is revoked.
 
 ## Authority moves by copy-with-narrowing, never by widening
 
-A `Capability<O>` is `Copy` (`crates/capability`). Authority spreads by deriving a copy, and the one rule
+A `Capability<O>` is `Copy` (`crates/capability_table`). Authority spreads by deriving a copy, and the one rule
 is that a derivative's rights are a subset of the source's:
 
 ```rust
-// CapabilityTable::derive: "copy a capability into another slot, with rights that are no greater."
-if !rights.is_subset_of(src.rights) { return Err(CannotWiden); }
+// Capability::delegate, which CapabilityTable::derive calls: the one rule.
+if !self.rights.allows(GRANT) { return Err(GrantRequired); }       // may I pass it on at all?
+if !rights.is_subset_of(self.rights) { return Err(CannotWiden); }  // only narrow
 ```
 
 `Rights` are five bits <!--count:rights-bits-->: `READ`, `WRITE`, `GRANT`, `ENUMERATE` and `BIND`.
@@ -23,7 +24,7 @@ It arrived on 2026-08-17 with milestone 126 (the `procps` package), this line st
 2026-08-17 documentation sweep is what found it. It is the right to learn what exists, as distinct
 from acting on it, the kernel-level twin of `filesystem_contract`'s directory `ENUMERATE`, and
 `endpoint::SURVEY` is its only consumer today. The argument for a right of its own rather than a
-corner of `READ` is on `capability::Rights::ENUMERATE`, where a reader meets it. `READ` on a
+corner of `READ` is on `capability_table::Rights::ENUMERATE`, where a reader meets it. `READ` on a
 supervision endpoint is what `RECEIVE` and `REAP` take, so a `ps` granted `READ` could reap a child,
 and a domain names its members rather than acting on them.
 
@@ -35,9 +36,7 @@ sender's cap and delivers a *new* one to the receiver:
 ```rust
 // sched::Delegation::derive, run under the IPC_TABLES hold that also files the copy
 let src = table.get(self.slot)?;            // read; the sender's slot is NOT emptied
-if !src.rights.allows(GRANT) { return NotPermitted; }   // may I pass it on at all?
-if !self.rights.is_subset_of(src.rights) { return NotPermitted; }  // only narrow
-Ok(Capability { object: src.object, rights: self.rights })
+src.delegate(self.rights).map_err(|_| NotPermitted)  // the crate's rule: GRANT held, only narrow
 ```
 
 **The read and the filing are one critical section, and that is a revocation property, not a

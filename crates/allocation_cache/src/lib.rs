@@ -1,11 +1,12 @@
 //! **`allocation_cache`**: a bounded stash of freed blocks in front of a shared heap, so most
-//! allocations never take the heap's lock. The algorithm only: it never locks, maps or reads a CPU
-//! id, and its owner decides who touches it.
+//! allocations and frees never take the heap's lock. The algorithm only: it never locks, maps or
+//! reads an owner's identity, and the owner decides who touches it.
 //!
-//! A class is a block size on a 16-byte grid ([`GRID`]) up to [`LARGEST`], under one heap layout,
-//! [`class_layout`]. A [`Cache`] holds a stack of freed blocks per class. Blocks of one class are
-//! fungible: the heap sees the same layout at both ends, so any cached block can answer any
-//! request of its class.
+//! A [`Class`] is a block size on a 16-byte grid ([`GRID_BYTES`]) up to [`MAXIMUM_CLASS_BYTES`],
+//! under one heap layout, [`class_layout`]. Only [`class`] makes one, so every method that takes a
+//! class takes a valid one. A [`Cache`] holds a stack of freed blocks per class. Blocks of one
+//! class are fungible: the heap sees the same layout at both ends, so any cached block can answer
+//! any request of its class.
 
 //! # What the owner promises
 //!
@@ -13,11 +14,11 @@
 //!    one thread reaches it.
 //! 2. **[`refill`](Cache::refill) and [`spill`](Cache::spill) run under whatever excludes the other
 //!    users of the heap**, once per batch, so the heap's lock is taken once for several blocks.
-//! 3. **Every block a [`spill`](Cache::spill) or [`drain`](Cache::drain) hands back goes to the
-//!    heap under [`class_layout`]`(class)`**, and every block the heap hands to
+//! 3. **Every block a [`spill`](Cache::spill) or [`give_back_all`](Cache::give_back_all) hands back
+//!    goes to the heap under [`class_layout`]`(class)`**, and every block the heap hands to
 //!    [`refill`](Cache::refill) was allocated under it. A block that only meets
-//!    [`put`](Cache::put)'s contract (a slice of a stack array, as the example uses) must never be
-//!    handed on to a heap.
+//!    [`push`](Cache::push)'s contract (a slice of a stack array, as the example uses) must never
+//!    be handed on to a heap.
 //!
 //! The heap also has to see [`heap_layout`] on the path that never touches a cache. A block may be
 //! allocated before its owner has a cache and freed into one afterward, and the cache then treats
@@ -25,6 +26,9 @@
 //! block to the shorter request.
 //!
 //! An all-zero [`Cache`] is empty, so one may live in memory a runtime zeroes.
+//!
+//! The names [`push`](Cache::push) and [`pop`](Cache::pop) are what glibc calls `tcache_put` and
+//! `tcache_get`.
 
 //! # Examples
 //!
@@ -38,91 +42,132 @@
 //! let mut block = [0u128; 3]; // 48 grid-aligned bytes, as the heap would hand out
 //! let p = NonNull::from(&mut block).cast::<u8>();
 //! // SAFETY: `p` is 48 writable, grid-aligned bytes nobody else uses while the cache holds them.
-//! assert!(unsafe { cache.put(c, p) }.is_ok());
-//! assert_eq!((cache.take(c), cache.take(c)), (Some(p), None)); // then the caller goes to the heap
+//! assert!(unsafe { cache.push(c, p) }.is_ok());
+//! assert_eq!((cache.pop(c), cache.pop(c)), (Some(p), None)); // then the caller goes to the heap
 //! ```
 
 //! # BUGS
 //!
-//! - A cached block cannot coalesce until it is spilled: up to [`MOST_CACHED_BYTES`] (34,816) per
-//!   cache. The owner spills at its end with [`drain`](Cache::drain); a [`Cache`] dropped while it
-//!   holds blocks leaks them, because it cannot free.
-//! - [`DEPTH`] (glibc's `tcache` count) and [`LARGEST`] are chosen, not measured per workload, and
-//!   they do not move: they are constants, not parameters of [`Cache`].
+//! - A cached block cannot coalesce until it is spilled: up to [`MAXIMUM_CACHED_BYTES`] (34,816)
+//!   per cache. The owner empties the cache with [`give_back_all`](Cache::give_back_all) at its
+//!   end. A [`Cache`] dropped while it holds blocks leaks them, because it cannot free; a debug
+//!   build panics in that drop.
+//! - [`BLOCKS_PER_CLASS`] (glibc's `tcache` count) and [`MAXIMUM_CLASS_BYTES`] are chosen, not
+//!   measured per workload, and they do not move: they are constants, not parameters of [`Cache`].
 //! - A block freed by an owner other than the one that allocated it lands in the freeing owner's
-//!   cache, bounded by [`DEPTH`] and spilled at the bound.
-//! - [`class`] and [`class_bytes`] take bare `usize`. An index that did not come from [`class`]
-//!   panics in [`Cache`]'s methods, or overflows in [`class_bytes`].
+//!   cache, bounded by [`BLOCKS_PER_CLASS`] and spilled at the bound.
 //!
-//! Name: provisional, minted 2026-10-10 (UTC) by the lane for milestone 561 (a per-CPU
-//! allocator is what the current-CPU page was for), for what it holds rather than its owner.
-//! calef has not ruled on it.
+//! Name: provisional, minted 2026-10-10 (UTC), for what the crate holds rather than its owner. No
+//! architect has ruled on it; the maintainer kept it 2026-11-14 (UTC), provisionally.
 
 #![no_std]
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 use core::alloc::Layout;
 use core::ptr::NonNull;
 
 /// The size step between classes, and the most alignment a cached request may ask for.
-pub const GRID: usize = 16;
+///
+/// Name: provisional, spelled with its unit 2026-11-16 (UTC) as the maintainer's provisional ruling
+/// of 2026-11-14 on decision 2 of the outside review.
+pub const GRID_BYTES: usize = 16;
 
 /// The largest effective size a cache holds.
-pub const LARGEST: usize = 256;
+///
+/// Name: provisional, as [`GRID_BYTES`].
+pub const MAXIMUM_CLASS_BYTES: usize = 256;
 
-/// How many size classes there are: one per grid step up to [`LARGEST`].
-pub const CLASSES: usize = LARGEST / GRID;
+/// How many size classes there are: one per grid step up to [`MAXIMUM_CLASS_BYTES`].
+pub const CLASSES: usize = MAXIMUM_CLASS_BYTES / GRID_BYTES;
 
 /// How many blocks of one class a cache holds before a free spills.
-pub const DEPTH: usize = 16;
+///
+/// Name: provisional, as [`GRID_BYTES`].
+pub const BLOCKS_PER_CLASS: usize = 16;
 
 /// How many blocks a refill takes from the heap, and a spill gives back, under one acquisition of
-/// its lock: half the depth, so a thread that only allocates or only frees takes the lock once per
-/// eight blocks, and one that alternates at the boundary does not take it on every call.
-pub const BATCH: usize = DEPTH / 2;
+/// its lock: half of [`BLOCKS_PER_CLASS`], so an owner that only allocates or only frees takes the
+/// lock once per eight blocks, and one that alternates at the boundary does not take it on every
+/// call.
+///
+/// Name: provisional, as [`GRID_BYTES`].
+pub const BATCH_BLOCKS: usize = BLOCKS_PER_CLASS / 2;
 
 /// The most memory one full cache keeps out of the heap.
-pub const MOST_CACHED_BYTES: usize = DEPTH * GRID * CLASSES * (CLASSES + 1) / 2;
+///
+/// Name: provisional, as [`GRID_BYTES`].
+pub const MAXIMUM_CACHED_BYTES: usize = BLOCKS_PER_CLASS * GRID_BYTES * CLASSES * (CLASSES + 1) / 2;
+
+// A class is a byte, so the class count must fit one.
+const _: () = assert!(CLASSES <= 256);
+
+/// **A size class**: a block size on the grid, from one [`GRID_BYTES`] step to
+/// [`MAXIMUM_CLASS_BYTES`]. Only [`class`] makes one, so a method that takes a `Class` cannot be
+/// handed an index past the last class.
+///
+/// Name: provisional, minted 2026-11-16 (UTC) as the maintainer's provisional ruling of 2026-11-14
+/// on decision 3 of the outside review.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Class(u8);
+
+impl Class {
+    /// The class at `index`, which is under [`CLASSES`].
+    const fn at(index: usize) -> Self {
+        debug_assert!(index < CLASSES);
+        // `CLASSES` fits a byte (asserted above), and `index` is under it.
+        #[allow(clippy::cast_possible_truncation)]
+        Self(index as u8)
+    }
+
+    const fn index(self) -> usize {
+        self.0 as usize
+    }
+}
 
 /// The class of a request of `size` bytes aligned to `align`, or `None` when it is not cached.
-pub const fn class(size: usize, align: usize) -> Option<usize> {
-    if align > GRID {
+pub const fn class(size: usize, align: usize) -> Option<Class> {
+    if align > GRID_BYTES {
         return None;
     }
     // Compare before rounding: `next_multiple_of` wraps near `usize::MAX`, which would pass the bound.
-    if size > LARGEST {
+    if size > MAXIMUM_CLASS_BYTES {
         return None;
     }
     let effective = if size == 0 {
-        GRID
+        GRID_BYTES
     } else {
-        size.next_multiple_of(GRID)
+        size.next_multiple_of(GRID_BYTES)
     };
-    Some(effective / GRID - 1)
+    Some(Class::at(effective / GRID_BYTES - 1))
 }
 
 /// The effective size of a class's blocks.
-pub const fn class_bytes(class: usize) -> usize {
-    (class + 1) * GRID
+pub const fn class_bytes(class: Class) -> usize {
+    (class.index() + 1) * GRID_BYTES
 }
 
 /// The layout every block of `class` is allocated from, and freed to, the heap under.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by lane/784-talc, the name std's thread cache gave it.
-pub const fn class_layout(class: usize) -> Layout {
-    // SAFETY: a nonzero multiple of `GRID`, a power of two, aligned to `GRID`.
-    unsafe { Layout::from_size_align_unchecked(class_bytes(class), GRID) }
+/// Name: provisional, minted 2026-10-21 (UTC).
+pub const fn class_layout(class: Class) -> Layout {
+    // SAFETY: a nonzero multiple of `GRID_BYTES`, a power of two, aligned to `GRID_BYTES`.
+    unsafe { Layout::from_size_align_unchecked(class_bytes(class), GRID_BYTES) }
 }
 
 /// **The layout to give the heap for `layout`**, at both ends of an allocation: its class's when it
 /// has one, whether or not a cache is there to serve it, and otherwise `layout` itself, made at
 /// least one byte, since a heap may refuse an empty layout.
 ///
-/// A block can be allocated before its thread has a cache and freed into one afterward, and the
-/// cache then treats it as [`class_bytes`] long. A heap that rounds sizes its own way (`talc` adds a
-/// tag and a 32-byte chunk) would have given a 17-byte request fewer bytes than its class's 32, so
-/// the uncached path has to ask for the class's layout too.
+/// A block can be allocated before its owner has a cache and freed into one afterward, and the
+/// cache then treats it as [`class_bytes`] long. A heap that rounds sizes its own way, or tags
+/// each block, would have given a 17-byte request fewer bytes than its class's 32, so the uncached
+/// path has to ask for the class's layout too.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by lane/784-talc.
+/// Name: provisional, minted 2026-10-21 (UTC).
 pub const fn heap_layout(layout: Layout) -> Layout {
     match class(layout.size(), layout.align()) {
         Some(c) => class_layout(c),
@@ -142,19 +187,21 @@ struct Free {
     next: *mut Free,
 }
 
-const _: () = assert!(core::mem::size_of::<Free>() <= GRID);
-// `put` casts a `GRID`-aligned block to a `Free`, so the grid must satisfy its alignment.
-const _: () = assert!(core::mem::align_of::<Free>() <= GRID);
+const _: () = assert!(core::mem::size_of::<Free>() <= GRID_BYTES);
+// `push` casts a `GRID_BYTES`-aligned block to a `Free`, so the grid must satisfy its alignment.
+const _: () = assert!(core::mem::align_of::<Free>() <= GRID_BYTES);
 
-/// **One owner's stash**: a stack of freed blocks per class, each at most [`DEPTH`] deep.
+/// **One owner's stash**: a stack of freed blocks per class, each at most [`BLOCKS_PER_CLASS`]
+/// deep.
 ///
 /// The owner's rules are in the crate documentation: one owner at a time, batches under the
 /// heap's exclusion, and every block handed back goes to the heap under [`class_layout`]. An
 /// all-zero `Cache` is empty, so it can live in memory a runtime zeroes.
 ///
-/// `const` so it can sit inside a statically made structure (`std`'s per-thread block). It holds raw
-/// pointers into memory it does not own, so it is neither `Send` nor `Sync`: its owner keeps it
-/// where one thread reaches it, and `std` keeps it in that thread's own block.
+/// `const` so it can sit inside a statically made structure. It holds raw pointers into memory it
+/// does not own, so it is neither `Send` nor `Sync`: its owner keeps it where one thread reaches
+/// it. The owner empties it with [`give_back_all`](Self::give_back_all) before it drops: a cache
+/// dropped while it holds blocks leaks them, and a debug build panics in that drop.
 pub struct Cache {
     heads: [*mut Free; CLASSES],
     counts: [u8; CLASSES],
@@ -176,6 +223,18 @@ impl Default for Cache {
     }
 }
 
+/// A cache that still holds blocks when it drops leaks them, because it cannot free. A debug build
+/// says so, which catches the owner that forgot [`give_back_all`](Cache::give_back_all); a release
+/// build does nothing.
+impl Drop for Cache {
+    fn drop(&mut self) {
+        debug_assert!(
+            self.cached_bytes() == 0,
+            "a Cache dropped while it holds blocks leaks them; call give_back_all first"
+        );
+    }
+}
+
 impl Cache {
     /// An empty cache.
     pub const fn new() -> Self {
@@ -186,80 +245,97 @@ impl Cache {
     }
 
     /// How many blocks of `class` the cache holds.
-    pub fn count(&self, class: usize) -> usize {
-        usize::from(self.counts[class])
+    pub fn count(&self, class: Class) -> usize {
+        usize::from(self.counts[class.index()])
     }
 
     /// The bytes the cache is keeping out of the heap.
     pub fn cached_bytes(&self) -> usize {
-        (0..CLASSES).map(|c| self.count(c) * class_bytes(c)).sum()
+        (0..CLASSES)
+            .map(|c| {
+                let c = Class::at(c);
+                self.count(c) * class_bytes(c)
+            })
+            .sum()
     }
 
     /// A cached block of `class`, or `None` when there is none and the caller must go to the heap.
-    pub fn take(&mut self, class: usize) -> Option<NonNull<u8>> {
-        let head = NonNull::new(self.heads[class])?;
-        // SAFETY: `head` is a block this cache holds (`put`'s contract), whose first word `put`
+    /// The glibc spelling is `tcache_get`.
+    ///
+    /// Name: provisional, per the maintainer's provisional ruling of 2026-11-14 on decision 2 of
+    /// the outside review: `std` and `heapless` spell a bounded stack's `pop` this way.
+    #[doc(alias = "tcache_get")]
+    pub fn pop(&mut self, class: Class) -> Option<NonNull<u8>> {
+        let head = NonNull::new(self.heads[class.index()])?;
+        // SAFETY: `head` is a block this cache holds (`push`'s contract), whose first word `push`
         // wrote as a `Free`.
-        self.heads[class] = unsafe { (*head.as_ptr()).next };
-        self.counts[class] -= 1;
+        self.heads[class.index()] = unsafe { (*head.as_ptr()).next };
+        self.counts[class.index()] -= 1;
         Some(head.cast())
     }
 
     /// Keep `block` as a free block of `class`. Hands it back as `Err` when the class is full, and
-    /// the caller should [`spill`](Self::spill) and try again, or free it to the heap.
+    /// the caller should [`spill`](Self::spill) and try again, or free it to the heap. The glibc
+    /// spelling is `tcache_put`.
+    ///
+    /// Name: provisional, as [`pop`](Self::pop): `std` and `heapless` spell a bounded stack's
+    /// `push` this way, with the same `Result<(), T>` on a full container.
     ///
     /// # Safety
     ///
-    /// `block` is [`class_bytes`]`(class)` bytes, writable, aligned to [`GRID`], and from now on
-    /// used by nothing but this cache, until [`take`](Self::take) or a spill hands it back. A block
-    /// the owner means to [`spill`](Self::spill) or [`drain`](Self::drain) into a heap also has to
-    /// be one that heap accepts under [`class_layout`]`(class)`; the crate documentation says so.
-    pub unsafe fn put(&mut self, class: usize, block: NonNull<u8>) -> Result<(), NonNull<u8>> {
-        if self.count(class) >= DEPTH {
+    /// `block` is [`class_bytes`]`(class)` bytes, writable, aligned to [`GRID_BYTES`], and from now
+    /// on used by nothing but this cache, until [`pop`](Self::pop) or a spill hands it back. A
+    /// block the owner means to [`spill`](Self::spill) or [`give_back_all`](Self::give_back_all)
+    /// into a heap also has to be one that heap accepts under [`class_layout`]`(class)`; the
+    /// crate documentation says so.
+    #[doc(alias = "tcache_put")]
+    pub unsafe fn push(&mut self, class: Class, block: NonNull<u8>) -> Result<(), NonNull<u8>> {
+        if self.count(class) >= BLOCKS_PER_CLASS {
             return Err(block);
         }
-        // The caller promises `GRID` alignment, which is at least a `Free`'s.
+        // The caller promises `GRID_BYTES` alignment, which is at least a `Free`'s.
         #[allow(clippy::cast_ptr_alignment)]
         let node = block.as_ptr().cast::<Free>();
         // SAFETY: the caller's contract: the block is ours, writable and big and aligned enough.
         unsafe {
             node.write(Free {
-                next: self.heads[class],
+                next: self.heads[class.index()],
             });
         };
-        self.heads[class] = node;
-        self.counts[class] += 1;
+        self.heads[class.index()] = node;
+        self.counts[class.index()] += 1;
         Ok(())
     }
 
-    /// Hand up to [`BATCH`] blocks of `class` to `give`, which returns them to the heap. It hands
-    /// back only blocks that [`put`](Self::put) or [`refill`](Self::refill) took. Call it
+    /// Hand up to [`BATCH_BLOCKS`] blocks of `class` to `give`, which returns them to the heap. It
+    /// hands back only blocks that [`push`](Self::push) or [`refill`](Self::refill) took. Call it
     /// holding the heap's lock, once, rather than locking per block.
-    pub fn spill(&mut self, class: usize, mut give: impl FnMut(NonNull<u8>)) {
-        for _ in 0..BATCH {
-            match self.take(class) {
+    pub fn spill(&mut self, class: Class, mut give: impl FnMut(NonNull<u8>)) {
+        for _ in 0..BATCH_BLOCKS {
+            match self.pop(class) {
                 Some(b) => give(b),
                 None => break,
             }
         }
     }
 
-    /// Fill `class` with up to [`BATCH`] blocks from `get`, which allocates them from the heap and
-    /// answers `None` when it has none. Call it holding the heap's lock. Returns how many it took.
+    /// Fill `class` with up to [`BATCH_BLOCKS`] blocks from `get`, which allocates them from the
+    /// heap and answers `None` when it has none. Call it holding the heap's lock. Returns how many
+    /// it took.
     ///
     /// # Safety
     ///
-    /// Every block `get` answers meets [`put`](Self::put)'s contract for `class`.
+    /// Every block `get` answers meets [`push`](Self::push)'s contract for `class`.
     pub unsafe fn refill(
         &mut self,
-        class: usize,
+        class: Class,
         mut get: impl FnMut() -> Option<NonNull<u8>>,
     ) -> usize {
         let mut taken = 0;
-        while taken < BATCH && self.count(class) < DEPTH {
+        while taken < BATCH_BLOCKS && self.count(class) < BLOCKS_PER_CLASS {
             let Some(b) = get() else { break };
             // SAFETY: the caller's contract for what `get` answers; the class has room (checked).
-            let kept = unsafe { self.put(class, b) };
+            let kept = unsafe { self.push(class, b) };
             debug_assert!(kept.is_ok());
             taken += 1;
         }
@@ -267,10 +343,15 @@ impl Cache {
     }
 
     /// Hand every block to `give` with its class, leaving the cache empty: an owner's end. It
-    /// hands back only blocks that [`put`](Self::put) or [`refill`](Self::refill) took.
-    pub fn drain(&mut self, mut give: impl FnMut(usize, NonNull<u8>)) {
-        for c in 0..CLASSES {
-            while let Some(b) = self.take(c) {
+    /// hands back only blocks that [`push`](Self::push) or [`refill`](Self::refill) took.
+    ///
+    /// Name: provisional, per the maintainer's provisional ruling of 2026-11-14 on decision 2 of
+    /// the outside review: `drain` takes a closure here, where `std`'s `drain` returns an
+    /// iterator.
+    pub fn give_back_all(&mut self, mut give: impl FnMut(Class, NonNull<u8>)) {
+        for index in 0..CLASSES {
+            let c = Class::at(index);
+            while let Some(b) = self.pop(c) {
                 give(c, b);
             }
         }
@@ -292,27 +373,28 @@ mod tests {
 
     #[test]
     fn the_bound_is_what_a_full_cache_holds() {
-        let mut arena: Vec<u128> = std::vec![0; MOST_CACHED_BYTES / GRID];
+        let mut arena: Vec<u128> = std::vec![0; MAXIMUM_CACHED_BYTES / GRID_BYTES];
         let base = arena.as_mut_ptr().cast::<u8>();
         let mut cache = Cache::new();
         let mut off = 0;
-        for c in 0..CLASSES {
-            for _ in 0..DEPTH {
+        for index in 0..CLASSES {
+            let c = Class::at(index);
+            for _ in 0..BLOCKS_PER_CLASS {
                 // SAFETY: disjoint, grid-aligned slices of `arena`, which outlives `cache`.
                 let b = unsafe { NonNull::new_unchecked(base.add(off)) };
                 // SAFETY: as above; each slice is handed to the cache once.
-                assert!(unsafe { cache.put(c, b) }.is_ok());
+                assert!(unsafe { cache.push(c, b) }.is_ok());
                 off += class_bytes(c);
             }
             let spare = NonNull::new(base).unwrap();
             // SAFETY: refused before the block is touched, so aliasing it is harmless.
-            assert_eq!(unsafe { cache.put(c, spare) }, Err(spare));
+            assert_eq!(unsafe { cache.push(c, spare) }, Err(spare));
         }
-        assert_eq!(off, MOST_CACHED_BYTES);
-        assert_eq!(cache.cached_bytes(), MOST_CACHED_BYTES);
+        assert_eq!(off, MAXIMUM_CACHED_BYTES);
+        assert_eq!(cache.cached_bytes(), MAXIMUM_CACHED_BYTES);
         let mut n = 0;
-        cache.drain(|_, _| n += 1);
-        assert_eq!(n, CLASSES * DEPTH);
+        cache.give_back_all(|_, _| n += 1);
+        assert_eq!(n, CLASSES * BLOCKS_PER_CLASS);
         assert_eq!(cache.cached_bytes(), 0);
     }
 
@@ -321,32 +403,39 @@ mod tests {
     /// over-aligned past the grid, which becomes one byte, since talc refuses an empty one.
     #[test]
     fn a_request_without_a_class_reaches_the_heap_as_asked_unless_empty() {
-        for (size, align) in [(LARGEST + 1, 8), (4096, 4096), (1, 2 * GRID)] {
+        for (size, align) in [
+            (MAXIMUM_CLASS_BYTES + 1, 8),
+            (4096, 4096),
+            (1, 2 * GRID_BYTES),
+        ] {
             let l = Layout::from_size_align(size, align).unwrap();
             assert_eq!(heap_layout(l), l);
         }
-        let empty = Layout::from_size_align(0, 2 * GRID).unwrap();
+        let empty = Layout::from_size_align(0, 2 * GRID_BYTES).unwrap();
         assert_eq!(
             heap_layout(empty),
-            Layout::from_size_align(1, 2 * GRID).unwrap()
+            Layout::from_size_align(1, 2 * GRID_BYTES).unwrap()
         );
     }
 
-    /// The classes stop exactly at [`LARGEST`]: its class is the last one, so no class is sized
+    /// The classes stop exactly at [`MAXIMUM_CLASS_BYTES`]: its class is the last one, so no class is sized
     /// past what [`class`] can ever answer.
     #[test]
     fn the_last_class_is_the_largest_size() {
-        assert_eq!(class(LARGEST, 1), Some(CLASSES - 1));
-        assert_eq!(class_bytes(CLASSES - 1), LARGEST);
+        assert_eq!(class(MAXIMUM_CLASS_BYTES, 1), Some(Class::at(CLASSES - 1)));
+        assert_eq!(class_bytes(Class::at(CLASSES - 1)), MAXIMUM_CLASS_BYTES);
     }
 
     /// An alignment equal to the grid is inside [`class`], and the first refusal is one past it:
     /// both ends of the comparison are the constants, so the boundary is asserted, not hoped for.
     #[test]
     fn an_alignment_equal_to_the_grid_is_a_class_and_one_past_is_not() {
-        assert_eq!(class(1, GRID), Some(0));
-        assert_eq!(class(LARGEST, GRID), Some(CLASSES - 1));
-        assert_eq!(class(1, GRID + 1), None);
+        assert_eq!(class(1, GRID_BYTES), Some(Class::at(0)));
+        assert_eq!(
+            class(MAXIMUM_CLASS_BYTES, GRID_BYTES),
+            Some(Class::at(CLASSES - 1))
+        );
+        assert_eq!(class(1, GRID_BYTES + 1), None);
     }
 
     /// A cache prints its counts, not its pointers.
@@ -355,10 +444,29 @@ mod tests {
         let mut block = [0u128; 1];
         let mut cache = Cache::new();
         // SAFETY: 16 writable, grid-aligned bytes nobody else uses while the cache holds them.
-        assert!(unsafe { cache.put(0, NonNull::from(&mut block).cast()) }.is_ok());
+        assert!(unsafe { cache.push(Class::at(0), NonNull::from(&mut block).cast()) }.is_ok());
         let text = std::format!("{cache:?}");
         assert!(text.contains("cached_bytes: 16"), "{text}");
         assert!(!text.contains("0x"), "{text}");
+        cache.give_back_all(|_, _| {});
+    }
+
+    /// A debug build notices an owner that drops a cache still holding a block, which would leak it.
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "leaks them")]
+    fn a_cache_dropped_while_it_holds_a_block_is_noticed() {
+        let mut block = [0u128; 1];
+        let mut cache = Cache::new();
+        // SAFETY: 16 writable, grid-aligned bytes nobody else uses while the cache holds them.
+        assert!(unsafe { cache.push(Class::at(0), NonNull::from(&mut block).cast()) }.is_ok());
+    }
+
+    /// A class is one byte wide, so a `Class` costs what the index it replaces cost.
+    #[test]
+    fn a_class_is_one_byte() {
+        assert_eq!(core::mem::size_of::<Class>(), 1);
+        assert_eq!(core::mem::size_of::<Option<Class>>(), 2);
     }
 
     /// A size no `Layout` reaches is refused, not wrapped: rounding `usize::MAX` up to the grid
@@ -366,61 +474,65 @@ mod tests {
     #[test]
     fn a_size_near_the_top_of_usize_has_no_class() {
         assert_eq!(class(usize::MAX, 8), None);
-        assert_eq!(class(usize::MAX - GRID + 1, 8), None);
-        assert_eq!(class(LARGEST + 1, 8), None);
-        assert_eq!(class(LARGEST, 8), Some(CLASSES - 1));
-        assert_eq!(class(0, 1), Some(0));
+        assert_eq!(class(usize::MAX - GRID_BYTES + 1, 8), None);
+        assert_eq!(class(MAXIMUM_CLASS_BYTES + 1, 8), None);
+        assert_eq!(class(MAXIMUM_CLASS_BYTES, 8), Some(Class::at(CLASSES - 1)));
+        assert_eq!(class(0, 1), Some(Class::at(0)));
     }
 
-    /// An all-zero cache is empty, which the std overlay relies on when it zeroes a thread block.
+    /// An all-zero cache is empty, which a runtime that zeroes the memory it holds a cache in relies on.
     #[test]
     fn an_all_zero_cache_is_empty() {
         // SAFETY: `Cache` holds null raw pointers and byte counters, valid when all-zero.
         let zeroed: Cache = unsafe { core::mem::zeroed() };
         assert_eq!(zeroed.cached_bytes(), 0);
-        for c in 0..CLASSES {
-            assert_eq!(zeroed.count(c), 0);
+        for index in 0..CLASSES {
+            assert_eq!(zeroed.count(Class::at(index)), 0);
         }
         let mut zeroed = zeroed;
-        assert_eq!(zeroed.take(0), None);
+        assert_eq!(zeroed.pop(Class::at(0)), None);
     }
 
     /// A spill gives back half a full class and a refill into an empty one takes half a class, so
-    /// a thread that only frees, or only allocates, takes the heap's lock once per eight blocks.
+    /// an owner that only frees, or only allocates, takes the heap's lock once per eight blocks.
     #[test]
     fn a_spill_and_a_refill_each_move_half_a_class() {
-        let mut arena: Vec<u128> = std::vec![0; DEPTH];
+        let mut arena: Vec<u128> = std::vec![0; BLOCKS_PER_CLASS];
         let base = arena.as_mut_ptr().cast::<u8>();
+        let c0 = Class::at(0);
         let mut cache = Cache::new();
-        for i in 0..DEPTH {
+        for i in 0..BLOCKS_PER_CLASS {
             // SAFETY: disjoint 16-byte, grid-aligned slices of `arena`, which outlives `cache`.
-            let b = unsafe { NonNull::new_unchecked(base.add(i * GRID)) };
+            let b = unsafe { NonNull::new_unchecked(base.add(i * GRID_BYTES)) };
             // SAFETY: as above; each slice is handed to the cache once.
-            assert!(unsafe { cache.put(0, b) }.is_ok());
+            assert!(unsafe { cache.push(c0, b) }.is_ok());
         }
         let mut given = 0;
-        cache.spill(0, |_| given += 1);
-        assert_eq!(given, DEPTH / 2);
-        assert_eq!(cache.count(0), DEPTH / 2);
+        cache.spill(c0, |_| given += 1);
+        assert_eq!(given, BLOCKS_PER_CLASS / 2);
+        assert_eq!(cache.count(c0), BLOCKS_PER_CLASS / 2);
 
         let mut empty = Cache::new();
         let mut next = 0;
         // SAFETY: the same disjoint slices, now owned by `empty` alone (`cache` is not used again).
         let taken = unsafe {
-            empty.refill(0, || {
+            empty.refill(c0, || {
                 next += 1;
-                NonNull::new(base.wrapping_add((next - 1) * GRID))
+                NonNull::new(base.wrapping_add((next - 1) * GRID_BYTES))
             })
         };
-        assert_eq!(taken, DEPTH / 2);
-        assert_eq!(empty.count(0), DEPTH / 2);
+        assert_eq!(taken, BLOCKS_PER_CLASS / 2);
+        assert_eq!(empty.count(c0), BLOCKS_PER_CLASS / 2);
+        // The two caches now name the same blocks, which belong to `arena`, so neither frees them.
+        core::mem::forget(cache);
+        core::mem::forget(empty);
     }
 
-    /// The test that matters: a cache in front of the heap std really uses, `talc`, driven by a
+    /// The test that matters: a cache in front of a real heap, `talc`, driven by a
     /// random mix of allocations and frees with refills and spills, never hands out a block twice,
     /// never hands one out shorter than its class, and gives every byte back, coalesced, at the end.
     ///
-    /// One allocation in four goes to the heap directly under [`heap_layout`], as a thread without
+    /// One allocation in four goes to the heap directly under [`heap_layout`], as an owner without
     /// a cache does, and every free goes through the cache. That is the case a heap that rounds its
     /// own way breaks: a block allocated under its own layout, then cached as its class's size.
     /// The heap is claimed in two runs, as the runtime grows it, so `extend` is walked too.
@@ -431,7 +543,7 @@ mod tests {
         use talc::source::Manual;
 
         const ARENA: usize = 64 * 1024;
-        let mut arena: Vec<u128> = std::vec![0; ARENA / GRID];
+        let mut arena: Vec<u128> = std::vec![0; ARENA / GRID_BYTES];
         let base = arena.as_mut_ptr().cast::<u8>();
         let mut heap = Talc::<Manual, DefaultBinning>::new(Manual);
         // SAFETY: `arena` is ours and outlives `heap`, and the second run continues the first.
@@ -455,7 +567,7 @@ mod tests {
         for _ in 0..steps {
             let r = next();
             if r % 3 != 0 || live.is_empty() {
-                let size = (r >> 8) as usize % (LARGEST + 1);
+                let size = (r >> 8) as usize % (MAXIMUM_CLASS_BYTES + 1);
                 let l = Layout::from_size_align(size, 8).unwrap();
                 let c = class(size, 8).unwrap();
                 let p = if r % 4 == 1 {
@@ -465,14 +577,14 @@ mod tests {
                         None => continue, // the arena is full; fine
                     }
                 } else {
-                    match cache.take(c) {
+                    match cache.pop(c) {
                         Some(p) => p,
                         None => {
                             // SAFETY: each block is the heap's, allocated under its class's layout.
                             unsafe {
                                 cache.refill(c, || heap.try_allocate(class_layout(c)));
                             }
-                            match cache.take(c) {
+                            match cache.pop(c) {
                                 Some(p) => p,
                                 None => continue,
                             }
@@ -490,13 +602,13 @@ mod tests {
                 seen.remove(&p);
                 let c = class(l.size(), l.align()).unwrap();
                 // SAFETY: `p` is live, ours, of class `c`.
-                if let Err(p) = unsafe { cache.put(c, p) } {
+                if let Err(p) = unsafe { cache.push(c, p) } {
                     // SAFETY: each spilled block came from the heap under `class_layout(c)`.
                     cache.spill(c, |b| unsafe {
                         heap.deallocate(b.as_ptr(), class_layout(c));
                     });
                     // SAFETY: as the first `put`; the spill made room.
-                    assert!(unsafe { cache.put(c, p) }.is_ok());
+                    assert!(unsafe { cache.push(c, p) }.is_ok());
                 }
             }
         }
@@ -505,7 +617,7 @@ mod tests {
             unsafe { heap.deallocate(p.as_ptr(), heap_layout(l)) };
         }
         // SAFETY: as above, with the class layout every cached block was allocated under.
-        cache.drain(|c, b| unsafe { heap.deallocate(b.as_ptr(), class_layout(c)) });
+        cache.give_back_all(|c, b| unsafe { heap.deallocate(b.as_ptr(), class_layout(c)) });
         let counters = heap.counters();
         assert_eq!(counters.allocation_count, 0);
         assert_eq!(

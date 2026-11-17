@@ -174,7 +174,7 @@ about *which* pending message the terminal shows first when more than one is in 
 **Not cheap, and not because the wiring is large.** Per the *move fast on what can be undone* tenet,
 this falls on the expensive side for two independent reasons:
 
-- **It is a spawn-protocol decision**, which `crates/grant_plan/src/spawnproto.rs` calls out as
+- **It is a spawn-protocol decision**, which `crates/program_table/src/spawnproto.rs` calls out as
   "anything two binaries must agree on". Both inits (`fixtures/src/hello.rs` for aarch64,
   `crates/system_initializer` for riscv64, unified since milestone 96 (one init: the spawn service written twice)) would carry the new
   convention, and so would every program's manifest. §67 set the precedent for how cheaply this
@@ -215,7 +215,7 @@ milestone 33's compositor) regardless of how this fork resolves.
 
 Take it. The fork looks like a syscall-adjacent, two-programs-must-agree wire decision on the
 expensive side of *move fast on what can be undone*, and the code says it is not. `SINK_BIT`'s own
-contract (`crates/grant_plan/src/spawnproto.rs`) already makes the child's output
+contract (`crates/program_table/src/spawnproto.rs`) already makes the child's output
 slot opaque to the program: "the shell delegates an endpoint and the progenitor puts it where the result
 endpoint would have gone, so the child writes to a pipe or a file sink without knowing which."
 Nothing about what a program declares changes; no manifest is touched, because the primary output

@@ -14,7 +14,7 @@ rests on.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -247,3 +247,3 @@ impl<'a> PageFrameAllocator<'a> {
+@@ -257,3 +257,3 @@
  
 -        self.set(i, true);
 +        self.set(i, false);

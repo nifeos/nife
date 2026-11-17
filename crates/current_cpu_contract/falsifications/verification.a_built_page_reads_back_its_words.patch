@@ -1,0 +1,22 @@
+Falsifies `current_cpu_contract::verification::a_built_page_reads_back_its_words`.
+
+The defect: the writer stores the tick big-endian while the reader decodes little-endian, the
+byte-order slip a writer makes when it copies a network-order habit. Every tick that is not a
+byte-palindrome reads back as another number.
+
+Expected to fail: the harness's `assert_eq!(page.tick_hertz(), tick)`, on any tick whose bytes
+differ from their reversal.
+
+diff --git a/crates/current_cpu_contract/src/lib.rs b/crates/current_cpu_contract/src/lib.rs
+index 8db0fc66b..fab5aee91 100644
+--- a/crates/current_cpu_contract/src/lib.rs
++++ b/crates/current_cpu_contract/src/lib.rs
+@@ -192,7 +192,7 @@ pub fn build_page_with(
+     page[ALLOWANCE_OFFSET_BYTES..ALLOWANCE_OFFSET_BYTES + 8]
+         .copy_from_slice(&allowance.map_or(0, NonZeroU64::get).to_le_bytes());
+     page[TICK_HERTZ_OFFSET_BYTES..TICK_HERTZ_OFFSET_BYTES + 8]
+-        .copy_from_slice(&tick_hertz.map_or(0, NonZeroU64::get).to_le_bytes());
++        .copy_from_slice(&tick_hertz.map_or(0, NonZeroU64::get).to_be_bytes());
+     page
+ }
+ 

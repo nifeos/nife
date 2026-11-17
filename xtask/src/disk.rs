@@ -327,7 +327,7 @@ pub(crate) const INSTALLED_MALFORMED_NOTE: &str = "installed/malformed-note";
 /// its lines otherwise, as it skips `std_exerciser`'s. Provisional.
 pub(crate) const INSTALLED_STD_ECHO: &str = "installed/std-echo";
 /// **A copy of `jig`, unvouched** (milestone 809 (the package client becomes a program)): the same
-/// bytes the image runs as `grant_plan::Program::Jig`, run by path, so endowed from the note they
+/// bytes the image runs as `program_table::Program::Jig`, run by path, so endowed from the note they
 /// carry under §219's unvouched rule and holding no installer endpoint. `script/swish-check` runs
 /// it to show a program without the installer grant is refused. Written whenever `jig` was built,
 /// which the gate requires. Provisional.
@@ -511,7 +511,7 @@ fn without_symbols(path: &std::path::Path, architecture: &str) -> Result<Vec<u8>
 fn with_note_version(bytes: &[u8], version: u32) -> Result<Vec<u8>, String> {
     let mut head = Vec::new();
     head.extend_from_slice(&((capability_manifest_note::OWNER.len() + 1) as u32).to_le_bytes());
-    head.extend_from_slice(&(capability_manifest_note::DESCRIPTOR_LEN as u32).to_le_bytes());
+    head.extend_from_slice(&(capability_manifest_note::DESCRIPTOR_BYTES as u32).to_le_bytes());
     head.extend_from_slice(&capability_manifest_note::MANIFEST.to_le_bytes());
     head.extend_from_slice(b"nife\0\0\0\0");
     let at: Vec<usize> = bytes
@@ -735,7 +735,7 @@ fn genuine_and_tampered(root: &std::path::Path, stem: &str) -> Result<(Vec<u8>, 
 /// `greeting`, `noteless`, and `duet`'s `alto` and `tenor` (milestone 919).
 ///
 /// The claim the prompt cannot check: the image does not carry them. None is a
-/// `grant_plan::Program`, so the progenitor's image-name refusal (§229) cannot see them either way,
+/// `program_table::Program`, so the progenitor's image-name refusal (§229) cannot see them either way,
 /// and only the archive can say. Read the archive this leg boots and refuse to seed if it has
 /// any of them, since every line about them after that would prove nothing. Returns the
 /// archive's path and bytes.

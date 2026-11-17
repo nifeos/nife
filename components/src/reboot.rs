@@ -39,10 +39,10 @@
 use user_mode_runtime::{call, exit, is_granted, send};
 
 const REPORT: u64 = 0;
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
-const REBOOT_SLOT: u64 = grant_plan::REBOOT_SLOT;
-const SYNC_SLOT: u64 = grant_plan::SYNC_SLOT;
-const ROUTE_SLOT: u64 = grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
+const REBOOT_SLOT: u64 = grant_contract::REBOOT_SLOT;
+const SYNC_SLOT: u64 = grant_contract::SYNC_SLOT;
+const ROUTE_SLOT: u64 = grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT;
 
 /// `EOPNOTSUPP`: the device offers no flush, which `fs::SYNC` passes through on purpose.
 const EOPNOTSUPP: i64 = 95;

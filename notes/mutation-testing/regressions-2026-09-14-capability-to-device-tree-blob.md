@@ -174,7 +174,7 @@ The twelve real survivors sat in the parser, the admission check and the plan wr
   default `false`. A scheduler that holds a directory would have reported every `rm` line as
   unbackable. Closed by `a_designation_is_backed_by_the_directory_the_scheduler_holds`.
 - Both `!` in `unbacked`'s `!held.dir` tests (2), which have a finding under them. They survived
-  because `admit` cannot reach either branch. It hands `grant_plan::plan` the same `dir` bit that
+  because `admit` cannot reach either branch. It hands `program_table::plan` the same `dir` bit that
   `unbacked` then re-tests. So a plan needing a directory the scheduler lacks is refused during
   planning, and never reaches the check that would name it unbacked. `Unbacked::File` has a second
   reason: no shipped program declares a `FileSpec::Required`, so `Endowment::file` is `None` for
@@ -214,7 +214,7 @@ the equivalence.
 
 The one equivalent is `cells`'s `value = (value << 32) | be32(..)` under `^`. The shift clears the
 low thirty-two bits, and a `be32` cannot reach the high ones. So the operands are disjoint, and `|`
-and `^` are the same function on them: the argument for `capability::note_peak` above.
+and `^` are the same function on them: the argument for `capability_table::note_peak` above.
 
 The 29 timeouts are hangs: the baseline's `dtb` row, grown with the walkers. All 29 are `at += 4`
 under `-=`, `at += align4(..)` under `-=`, or `at = value_at + align4(len)` under `-`, spread over

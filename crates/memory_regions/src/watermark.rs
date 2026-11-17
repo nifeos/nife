@@ -52,7 +52,7 @@ pub fn retype_new_watermark(pages: u64, watermark: u64, requested: u64) -> Optio
 }
 
 /// **The parent's watermark after a child's return, holes reclaimed** (2026-10-03, UTC; name
-/// provisional). `watermark` is the parent's after the LIFO un-bump, `retyped_to` how far its own
+/// provisional). `watermark` is the parent's after the last-in-first-out un-bump, `retyped_to` how far its own
 /// retypes reached, `live_to` where its highest live child ends (`0` for none), and `quiescent`
 /// whether every child the parent counts is live, so none is claimed and still being revoked.
 ///

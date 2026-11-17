@@ -79,7 +79,7 @@ capability lookup, the rights check, the one-shot Reply mint of DECISIONS §12 (
 capability), the `WaitRole::Reply` guard, and generational thread-id revalidation. Eliding any of
 those turns a fastpath into a hole.
 
-The Kani harnesses in `crates/inter_process_communication` and `crates/capability` prove the pure
+The Kani harnesses in `crates/inter_process_communication` and `crates/capability_table` prove the pure
 decision core, not `kernel/src/sched.rs`. That leaves phase 4 two options:
 
 1. The fastpath calls the proved `Rendezvous` methods too, and skips only the scheduler and the

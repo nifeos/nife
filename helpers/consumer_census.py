@@ -25,7 +25,7 @@ work built with no reason, so a finding is a question for a person.
   and is reported apart, since an image, not a dependent, consumes it.
 - Base-image programs: `packages/base-image.toml`. A program is *named* when code outside its
   own files spells it as a string literal (`"name"`, `b"name"`, `"name ` or `"name-`) or as
-  `Program::Variant` from `crates/grant_plan/src/program/catalog.rs`. It is *reached* when code
+  `Program::Variant` from `crates/program_table/src/program/catalog.rs`. It is *reached* when code
   that is neither a program nor a test names it, or when a reached program does. A reference under
   a test directory, `xtask/src/swish_check/`, `script/`, `fuzz/` or `.github/` is a test's. Declarations do not count: Cargo files, `packages/`, the catalog and its manifests,
   markdown and bench logs. A program a person types at the prompt has no starter by design, so a
@@ -166,14 +166,14 @@ def crates():
 
 # ---- base-image programs -------------------------------------------------------------------------
 TESTISH = ("system_tests/", "xtask/src/swish_check/", "script/", "fuzz/", ".github/", "fixtures/")
-DECLARES = ("packages/", "crates/grant_plan/src/program/", "bench/", "design/", "notes/",
+DECLARES = ("packages/", "crates/program_table/src/program/", "bench/", "design/", "notes/",
             "vendor/", "patches/")
 
 
 def programs():
     image = tomllib.load(open(os.path.join(ROOT, "packages", "base-image.toml"), "rb"))
     names = image["programs"]
-    catalog = open(os.path.join(ROOT, "crates/grant_plan/src/program/catalog.rs")).read()
+    catalog = open(os.path.join(ROOT, "crates/program_table/src/program/catalog.rs")).read()
     variant = {name: v for v, name in re.findall(r"(\w+) \{ id: \d+, name: \"(\w+)\" \}", catalog)}
     files = [p for p in git_files("*.rs", "*.py", "*.sh", "*.yml", "*.conf", "script/*")
              if not p.startswith(DECLARES) and not p.endswith((".md", "Cargo.toml", "Cargo.lock"))]

@@ -129,7 +129,7 @@ it is a week deleted rather than deferred.
 A Kani harness in a tree where the property holds is silent by construction. Separating "went red
 because a lane broke the property" from "went red because §134's replay patch was applied" is the
 only way to tell a proof that guards something from a proof that restates a tautology, and §134's
-own reverse pass already found one of the latter: `capability::subset_is_reflexive` proves
+own reverse pass already found one of the latter: `capability_table::subset_is_reflexive` proves
 `a & !a == 0`, which no plausible implementation error breaks.
 
 ### Rows 7 and 8 have no measure, and inventing one would be worse

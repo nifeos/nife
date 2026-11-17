@@ -98,7 +98,7 @@ name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
 ]
 
 [[package]]
@@ -397,6 +397,7 @@ dependencies = [
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "ff"
@@ -472,10 +473,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
+ "grant_contract",
  "program_argument_contract",
 ]
 
@@ -559,13 +568,14 @@ dependencies = [
  "capability_manifest_note",
  "entropy_backend",
  "filesystem_contract",
- "grant_plan",
+ "grant_contract",
  "http_response",
  "installed_programs",
  "measured_boot",
  "package_archive",
  "package_index",
  "pinned_tls_client",
+ "program_table",
  "socket_contract",
  "static_elf",
  "std_runtime_contract",
@@ -794,6 +804,14 @@ dependencies = [
 [[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "grant_contract",
+ "grant_plan",
+]
 
 [[package]]
 name = "quote"

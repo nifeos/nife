@@ -46,7 +46,7 @@ const CLOCK_SLOT: u64 = 1;
 /// answer. "The time is unknown" is a statement about the run, not the time, so it stays out of a
 /// redirected file. The slot is the one `grant_plan`'s manifest declares: a program that declares
 /// none has no second stream, and `2>` aimed at it is refused at the prompt.
-const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
+const DIAG_SLOT: u64 = grant_contract::DIAGNOSTICS_SLOT;
 
 /// Where the wiring maps the clock page, read-only. Must match `kernel/src/user.rs`'s
 /// `date_tests::CLOCK_VA`.
@@ -93,8 +93,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: grant_plan::INTERFACE_ID,
-        version: grant_plan::VERSION
+        id: grant_contract::INTERFACE_ID,
+        version: grant_contract::VERSION
     },
     interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,
@@ -150,8 +150,9 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
 
     // Nanoseconds to seconds, truncating towards zero, which is exact here: the wall clock is a
     // `u64` count of nanoseconds since 1970 and every format here prints whole seconds.
-    let unix_seconds = (clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
-        / clock_contract::NS_PER_SECOND) as i64;
+    let unix_seconds =
+        (clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
+            / clock_contract::NS_PER_SECOND) as i64;
 
     // Out of range is not reachable from a clock the service believed (its sanity window is 2026 to
     // 2100 and the printable one is 0000 to 9999), and it is still an answer rather than a panic,
@@ -363,9 +364,9 @@ fn source_line(slot: u64, st: u64, generation: u64) {
         &mut buf,
         &mut n,
         match st {
-            state::RTC => b"rtc" as &[u8],
+            state::REAL_TIME_CLOCK => b"rtc" as &[u8],
             state::SET => b"set",
-            state::SYNCED => b"synced",
+            state::SYNCHRONIZED => b"synced",
             _ => b"unknown",
         },
     );
