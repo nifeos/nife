@@ -2,8 +2,8 @@
 
 One session at radon (the VisionFive 2), confirming steps 2, 3 and 5 of milestone 1062 (the
 DesignWare Ethernet control plane and the JH7110 power-management-chip route, issues #3498 and
-#3499), milestone 53's storage bench (#3488) and milestone 1035 (its record is
-[README-1035.md](README-1035.md)). Issue #3509 tracks the session. Every boot printed
+#3499), milestone 53's storage bench (#3488) and milestone 1035 (a crate names the version
+that ran on hardware; its record is [README-1035.md](README-1035.md)). Issue #3509 tracks the session. Every boot printed
 `nife: payload came from net`; `<host>` below is the TFTP host's LAN address, which the logs print.
 
 ## What the logs are
