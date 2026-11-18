@@ -192,16 +192,16 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
 ## Where this stands
 
 Finished: decisions 1 to 5 and the `io` spellings (#3572), and items 1 to 4 and 6 to 14 (#3625).
-The review is cleared and the repository is approved; the crate is still in this tree at
-`crates/jh7110_clock_and_reset`, and nifeos/jh7110_clock_and_reset does not exist.
+The review has its clearance and the repository its approval; the crate is still in this tree
+at `crates/jh7110_clock_and_reset`, and nifeos/jh7110_clock_and_reset does not exist.
 
-- Item 5: the mutation census has not been rerun, and
+- Item 5: no lane has rerun the mutation census, and
   `notes/project-metrics/mutation-triage.csv` still lists the stale rows. Blocker: other, a lane
   in the heavy-run window.
 - The move to nifeos/jh7110_clock_and_reset. Blocker: other, a lane.
 - The server applies the v1.3B transmit parent on every board. Choosing it per board needs the
-  startup page or the server's wire to carry the parent, and no change is written. Blocker:
-  decision for calef.
+  startup page or the server's wire to carry the parent, and no lane has written that change.
+  Blocker: decision for calef.
 - A board run of the power chip's I2C reset after the move. Blocker: bench.
 - The `v0.1.0-pre.1` tag after the move, under the pre-release-tag rule. Blocker: release step.
 - Publishing. Blocker: publishing hold.

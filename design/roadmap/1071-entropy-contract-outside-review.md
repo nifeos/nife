@@ -128,7 +128,7 @@ out-of-range operation or step in release builds.
 - `jh7110_entropy`'s `Pool::take` still builds its word by hand rather than through the contract.
   Blocker: other, a pull request in nifeos/jh7110_entropy.
 - The repository's weekly job fails on its main. Blocker: other, a lane.
-- A pre-release tag. The review was cleared without one, and the pre-release-tag ruling names
+- A pre-release tag. The review's clearance named no tag, and the pre-release-tag ruling names
   other crates. Blocker: decision for calef.
 - Publishing. Blocker: publishing hold.
 
