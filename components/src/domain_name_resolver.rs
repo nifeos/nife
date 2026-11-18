@@ -331,7 +331,7 @@ fn transaction_id() -> Result<u16, Fail> {
     let no_entropy = Fail::Status(Outcome::of(status::NO_ENTROPY));
     let (r0, r1) = call(
         ENTROPY,
-        entropy_contract::request(entropy_contract::GET, 2),
+        entropy_contract::request(entropy_contract::GET, 2).expect("GET is a defined operation"),
         0,
     );
     let n = entropy_contract::delivered_bytes(r0).ok_or(no_entropy)?;
