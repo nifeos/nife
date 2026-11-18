@@ -254,7 +254,12 @@ impl Grants {
         let bytes = second_word.to_le_bytes();
         let n = (e.text_bytes_total - e.text_bytes_received).min(8) as usize;
         let start = e.text_bytes_received as usize;
-        e.text[start..start + n].copy_from_slice(&bytes[..n]);
+        // A byte at a time rather than `copy_from_slice`: Kani models a copy of a length it does
+        // not know as one copy into the whole table, and that ran past the proof's memory fence
+        // even for a single message, where this loop proves in under a minute.
+        for (i, &byte) in bytes[..n].iter().enumerate() {
+            e.text[start + i] = byte;
+        }
         e.text_bytes_received += n as u8;
         if e.text_bytes_received < e.text_bytes_total {
             return Control::Partial;

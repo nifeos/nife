@@ -10,7 +10,7 @@ diff --git a/crates/domain_name_resolution_contract/src/grants.rs b/crates/domai
 index e64e5b7c4..be1d95168 100644
 --- a/crates/domain_name_resolution_contract/src/grants.rs
 +++ b/crates/domain_name_resolution_contract/src/grants.rs
-@@ -265,7 +265,6 @@ impl Grants {
+@@ -270,7 +270,6 @@ impl Grants {
          match zone {
              Some(zone) => {
                  e.zone = zone;

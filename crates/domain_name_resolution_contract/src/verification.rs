@@ -13,7 +13,8 @@ use super::*;
 /// it, a piece out of order after a first piece, and a forget after a grant. A third message, and
 /// the parse of a zone inside the run, each made the proof outrun its twenty-minute shard (the
 /// parse of up to 32 free bytes, over a table of 256-byte names, passed the memory fence), so the
-/// run stays at two and the parse is stubbed here and proved in its own harness below.
+/// run stays at two and the parse is stubbed here and proved in its own harness below. Two
+/// messages prove in about eleven minutes and 7.4 GB.
 const STEPS: usize = 2;
 
 /// The stand-in for `core::str::from_utf8` in the bookkeeping proof: the text is accepted whole.
@@ -53,7 +54,9 @@ fn zone_without_parsing(_text: &str) -> Result<Name, domain_name_system::Error> 
 /// inside the run, so a wrap or an index past the buffer fails the proof.
 /// Falsification: replayable `crates/domain_name_resolution_contract/falsifications/verification.the_grant_table_grants_only_what_it_said.patch`
 #[kani::proof]
-#[kani::unwind(34)]
+// Ten covers every loop the run reaches: the eight entries a search walks, plus its end, and the
+// eight bytes a piece copies. Kani's unwinding checks fail the proof if any loop needs more.
+#[kani::unwind(10)]
 #[kani::stub(core::str::from_utf8, text_without_validation)]
 #[kani::stub(domain_name_system::Name::from_dotted, zone_without_parsing)]
 fn the_grant_table_grants_only_what_it_said() {
