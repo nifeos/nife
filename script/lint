@@ -3408,8 +3408,11 @@ python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 
 # 12c2. **The fuzz heartbeat** (helpers/fuzz-heartbeat.py, name provisional). Its selftest runs the
 #     checks over fixture reports with no network: missing release, no ok window, infrastructure
-#     share above the bound, a late release tolerated, an open issue not duplicated, and the quiet
-#     pass before the first release. The workflow that calls it keeps to what was ruled 2026-11-01
+#     share above the bound, a late release tolerated, an open issue not duplicated, the quiet
+#     pass before the first release, and the filer checks (an unfiled cause, a filer silent for
+#     more than two days or never run, a disabled timer, an unreadable tally, a missing Filer line
+#     in a new report, and an old release without one passing). helpers/fuzz-daily-publish-selftest.sh
+#     holds the report side of the same line. The workflow that calls it keeps to what was ruled 2026-11-01
 #     (UTC): GitHub-hosted runner, `contents: read` and `issues: write`, no secrets, and only the
 #     schedule and manual triggers.
 echo "==> the fuzz heartbeat (selftest, and the workflow keeps to its limits)"
