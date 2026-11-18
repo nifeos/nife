@@ -8,7 +8,7 @@
 |---|---:|---:|---:|---:|---:|---:|
 | `grant_plan` | 524 | 76 | 805 | 1189 | 275 | 213 (77%) |
 | `calendar` | 118 | 6 | 118 | 6 | 11 | 11 (100%) |
-| `line_editor` | 75 | 4 | 92 | 146 | 71 | 58 (82%) |
+| `line_editor` | 75 | 4 | 92 | 146 | 75 | 58 (77%) |
 | `capability_manifest_note` | 68 | 79 | 72 | 157 | 76 | 40 (53%) |
 | `block_roster_contract` | 48 | 11 | 48 | 11 | 18 | 12 (67%) |
 | `entropy_contract` | 38 | 20 | 42 | 38 | 59 | 41 (69%) |
@@ -19,12 +19,12 @@
 | `filesystem_contract` | 16 | 25 | 306 | 487 | 157 | 135 (86%) |
 | `static_elf` | 15 | 26 | 15 | 26 | 16 | 7 (44%) |
 | `hot_swap_contract` | 14 | 0 | 38 | 126 | 74 | 67 (91%) |
-| `environment_contract` | 9 | 7 | 11 | 51 | 30 | 23 (77%) |
+| `environment_contract` | 9 | 9 | 11 | 53 | 30 | 23 (77%) |
 | `current_cpu_contract` | 8 | 7 | 14 | 26 | 31 | 17 (55%) |
+| `globally_unique_identifier_partition_table` | 7 | 13 | 107 | 294 | 64 | 50 (78%) |
 | `counter_frequency_contract` | 7 | 8 | 9 | 23 | 39 | 30 (77%) |
 | `socket_contract` | 6 | 9 | 26 | 89 | 71 | 55 (77%) |
-| `machine_statistics_contract` | 4 | 6 | 4 | 6 | 6 | 4 (67%) |
-| `globally_unique_identifier_partition_table` | 3 | 5 | 103 | 286 | 64 | 50 (78%) |
+| `machine_statistics_contract` | 5 | 6 | 5 | 6 | 6 | 4 (67%) |
 | `credential_contract` | 3 | 3 | 39 | 73 | 51 | 43 (84%) |
 | `boot_slot` | 3 | 3 | 3 | 55 | 26 | 20 (77%) |
 | `login_contract` | 2 | 2 | 32 | 93 | 51 | 49 (96%) |
@@ -51,7 +51,7 @@ Sorted by breaking changes in the last four weeks (2026W44 to 2026W47), then by 
 
 ## What broke in 2026W47
 
-Read at `bc8259160b56` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `589e7fe65ed8` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: removed `DESCRIPTOR_LEN`
 > - `capability_manifest_note`: removed `NOTE_LEN`
@@ -93,6 +93,10 @@ Read at `bc8259160b56` against the week before. Each line is one removed or chan
 > - `environment_contract`: changed `MAXIMUM_TERMINAL_TYPE_BYTES`
 > - `environment_contract`: changed `PAGE_BYTES`
 > - `environment_contract`: changed `PageBuilder::build`
+> - `globally_unique_identifier_partition_table`: changed `BackupMismatch`
+> - `globally_unique_identifier_partition_table`: changed `Error`
+> - `globally_unique_identifier_partition_table`: changed `GloballyUniqueIdentifierPartitionTable: impl Debug`
+> - `globally_unique_identifier_partition_table`: changed `MbrProblem`
 > - `grant_plan`: removed `CATALOG_SLOT`
 > - `grant_plan`: removed `DIAGNOSTICS_SLOT`
 > - `grant_plan`: removed `DIRECTORY_JOB_REGION_PAGES`
@@ -104,6 +108,7 @@ Read at `bc8259160b56` against the week before. Each line is one removed or chan
 > - `grant_plan`: removed `DirectoryGrantDeclaration: impl Eq`
 > - `grant_plan`: removed `DirectoryGrantDeclaration: impl PartialEq`
 > - `machine_statistics_contract`: removed `CPU_ID_BOUND`
+> - `machine_statistics_contract`: changed `counter`
 > - `static_elf`: removed `FOREIGN_MACHINES`
 > - `static_elf`: removed `KNOWN_MACHINES`
 > - `static_elf`: changed `NoteSegment`
@@ -126,20 +131,20 @@ Every package in `packages/`, 2026W29 to 2026W47, by the method of the contracts
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 2416 | 1310 (54%) | 1034 (43%) | 49% | `contracts` (408) |
-| `contracts` | 1559 | 1018 (65%) | 914 (59%) | 60% | `kernel` (408) |
-| `host-tools` | 998 | 698 (70%) | 580 (58%) | 65% | `kernel` (260) |
-| `system-tests` | 638 | 402 (63%) | 387 (61%) | 55% | `kernel` (166) |
-| `init` | 613 | 526 (86%) | 509 (83%) | 81% | `contracts` (186) |
-| `fixtures` | 490 | 398 (81%) | 376 (77%) | 73% | `contracts` (102) |
+| `kernel` | 2426 | 1313 (54%) | 1037 (43%) | 49% | `contracts` (409) |
+| `contracts` | 1584 | 1025 (65%) | 918 (58%) | 59% | `kernel` (409) |
+| `host-tools` | 1002 | 699 (70%) | 580 (58%) | 64% | `kernel` (260) |
+| `system-tests` | 640 | 403 (63%) | 388 (61%) | 55% | `kernel` (166) |
+| `init` | 614 | 526 (86%) | 509 (83%) | 81% | `contracts` (186) |
+| `fixtures` | 498 | 400 (80%) | 378 (76%) | 71% | `contracts` (103) |
 | `runtime` | 354 | 286 (81%) | 260 (73%) | 73% | `contracts` (73) |
 | `boot` | 274 | 192 (70%) | 174 (64%) | 60% | `host-tools` (63) |
 | `display` | 258 | 179 (69%) | 167 (65%) | 58% | `kernel` (48) |
 | `swish` | 181 | 162 (90%) | 156 (86%) | 85% | `contracts` (66) |
+| `terminal` | 156 | 130 (83%) | 126 (81%) | 74% | `init` (35) |
 | `network` | 154 | 123 (80%) | 120 (78%) | 72% | `init` (32) |
 | `redoxfs` | 153 | 115 (75%) | 109 (71%) | 58% | `contracts` (22) |
-| `drivers` | 148 | 139 (94%) | 134 (91%) | 92% | `kernel` (48) |
-| `terminal` | 145 | 125 (86%) | 122 (84%) | 76% | `init` (35) |
+| `drivers` | 149 | 139 (93%) | 134 (90%) | 91% | `kernel` (48) |
 | `login` | 133 | 112 (84%) | 110 (83%) | 66% | `contracts` (18) |
 | `timetable` | 121 | 91 (75%) | 87 (72%) | 57% | `init` (17) |
 | `process-tools` | 118 | 96 (81%) | 92 (78%) | 65% | `init` (13) |
