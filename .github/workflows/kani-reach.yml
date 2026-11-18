@@ -46,6 +46,13 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       - name: Install the pinned toolchain
         run: rustup show active-toolchain || rustup toolchain install
       - name: Read the pinned cargo-mutants version
@@ -114,6 +121,13 @@ jobs:
       matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: Install Kani
         run: script/kani-install
@@ -139,6 +153,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: in

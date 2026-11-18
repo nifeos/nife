@@ -52,7 +52,8 @@ def gate_outputs(event, draft):
 
 def evaluate(expr, ctx, always_ok):
     """GitHub's expression subset this job uses: ==, !=, &&, ||, !, parentheses, string literals,
-    needs.gate.outputs.*, github.event_name, steps.*.outputs.* (empty here), and the status
+    needs.gate.outputs.*, github.event_name, steps.*.outputs.* (empty here), steps.*.outcome (always
+    success: a bounded checkout's first attempt), and the status
     functions. `always_ok` is whether a status function would be true (always() is; success() is
     not after a failed step)."""
     if expr is None:
@@ -67,6 +68,9 @@ def evaluate(expr, ctx, always_ok):
     e = re.sub(r"needs\.gate\.outputs\.(\w+)", lambda m: repr(ctx["gate"].get(m.group(1), "")), e)
     e = e.replace("github.event_name", repr(ctx["event"]))
     e = re.sub(r"steps\.[\w-]+\.outputs\.\w+", "''", e)
+    # A bounded checkout's first attempt succeeds here, so its retry step (which tests that
+    # outcome) is skipped.
+    e = re.sub(r"steps\.[\w-]+\.outcome", "'success'", e)
     e = e.replace("&&", " and ").replace("||", " or ")
     e = re.sub(r"!(?!=)", " not ", e)
     if ("success()" not in expr and "always()" not in expr and "failure()" not in expr

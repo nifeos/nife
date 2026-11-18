@@ -199,8 +199,11 @@ Each way it can end, by the last lines:
 | 2026-10-20 | `290d3ba8b` | `Coherent` | 1000 Mbit/s full duplex, 2830 ms | 192.168.8.200 | 104,857,600 in 362.965 s | 2.311 Mbit/s | `LEASED-AND-MEASURED` |
 | 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.542 s | 14.329 Mbit/s | `LEASED-AND-MEASURED` |
 | 2026-10-22 | `699fcf61a` | `Coherent` | 1000 Mbit/s full duplex, 2880 ms | 192.168.8.200 | 104,857,600 in 58.606 s | 14.313 Mbit/s | `LEASED-AND-MEASURED` |
+| 2026-11-17 | `cfe18db337` | `Coherent` | 1000 Mbit/s full duplex, 2851 ms | leased | 104,857,600 in 6.017 s | 139.399 Mbit/s | `LEASED-AND-MEASURED` |
 
-Every row predates the control process. The first row is
+The 2026-11-17 UTC row ran main's control process; the boot of `dd47a83e88` ran #3498's. Its rate
+is one run to a laptop peer over a USB Ethernet adapter, not a link ceiling. `bench/radon-2026-11-17/network-bench-main-3699.log` is the log, and that
+directory's `README.md` describes the boot. The first three rows predate the control process. The first row is
 `bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
 the boots were run, and why the console was not `script/board-console`. Its two earlier boots had
 the cable in `ethernet@16040000`'s jack and ended `FAILED: no link` after 5003 ms, which is the
@@ -224,18 +227,14 @@ Mbit/s, how QEMU reproduces it, the fix, and what the later rows measured of it.
 
 ## BUGS
 
-- **14.3 Mbit/s on a gigabit link, measured before the copies were bulk.** radon advertises 4 to
-  5 KiB of its 16 KiB receive window at a 2 ms round trip, because `net_stack`, a debug build on
-  radon, empties its buffer one 4,088-byte call at a time through byte loops.
-  [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the QEMU reproduction, the
-  fix and the bench step that measures it on radon; no radon boot has run it yet.
-- **One board.** The Results rows are three boots, on one board, with one cable. Every other test
+- **14.3 Mbit/s on a gigabit link, before the copies were bulk.** radon advertised 4 to 5 KiB of its
+  16 KiB receive window because `net_stack` emptied its buffer through byte loops
+  ([`the-receive-rate.md`](designware-ethernet/the-receive-rate.md)).
+- **One board.** The Results rows are four boots, on one board, with one cable. Every other test
   runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
   header, not the device; QEMU has no model of this controller.
-- **The booted system leaves the port alone**
-  (`designware_ethernet_service::PROVEN_ON_SILICON` is `false`), because the control process has
-  not run on silicon. A bench boot that ends `LEASED-AND-MEASURED` with `coherence : Coherent` is
-  what sets it `true`; with no cable in the jack it then costs the five-second link wait.
+- **No cable, five seconds.** `PROVEN_ON_SILICON` is `true`, so a boot with the jack empty waits out
+  the link wait.
 - **`gmac0` only.** `gmac1`'s clocks all live in the SYS domain and no plan for them exists; the
   milestone proposed in pull request #2470 is that work.
 - The PHY's delays and drive strengths come from `Settings::FALLBACK_GMAC0` on radon, because

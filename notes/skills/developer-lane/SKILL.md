@@ -27,7 +27,9 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   2026-10-25 UTC). Names anything new provisionally and says so. A
   developer never polls CI. It ends its turn with `WAITING [<owner>/<repo>:]<run_id>... on <what>` and the
   maintainer resumes it once the runs finish. A run in a repository other than nifeos/nife
-  carries it, `WAITING nifeos/basalt:<run_id> on <what>`; a bare id is a nife run. The report comes after the gate, and nothing about a
+  carries it, `WAITING nifeos/basalt:<run_id> on <what>`; a bare id is a nife run. A lane whose pull request is held writes `Held on #N` in the body
+  (notes/idle-pull-requests.md), and never ends its last turn leaving the pull request a draft and unowned without naming
+  the next step in its report. The report comes after the gate, and nothing about a
   gate is finished until you have read its exit. A lane continues until it needs a human or it is
   done (calef, 2026-08-26): finishing one item on a milestone's own list is not a stopping
   condition when the list has more on it. The one genuine stop is hitting something that is an
