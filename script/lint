@@ -3232,6 +3232,12 @@ echo "==> every Kani harness carries a falsification record"
 "$(dirname "$0")/falsifications" --selftest
 "$(dirname "$0")/falsifications" --check
 
+echo "==> the audit index's selftest (fixture indexes: duplicates, triples, missing rows)"
+# lint-scope: record
+# Fixtures first, for the reason `falsifications --selftest` runs first: a green `--check` looks the
+# same whether the check works or accepts everything.
+"$(dirname "$0")/audits" --selftest
+
 echo "==> the audit index"
 # lint-scope: record
 "$(dirname "$0")/audits" --check
@@ -3402,8 +3408,11 @@ python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 
 # 12c2. **The fuzz heartbeat** (helpers/fuzz-heartbeat.py, name provisional). Its selftest runs the
 #     checks over fixture reports with no network: missing release, no ok window, infrastructure
-#     share above the bound, a late release tolerated, an open issue not duplicated, and the quiet
-#     pass before the first release. The workflow that calls it keeps to what was ruled 2026-11-01
+#     share above the bound, a late release tolerated, an open issue not duplicated, the quiet
+#     pass before the first release, and the filer checks (an unfiled cause, a filer silent for
+#     more than two days or never run, a disabled timer, an unreadable tally, a missing Filer line
+#     in a new report, and an old release without one passing). helpers/fuzz-daily-publish-selftest.sh
+#     holds the report side of the same line. The workflow that calls it keeps to what was ruled 2026-11-01
 #     (UTC): GitHub-hosted runner, `contents: read` and `issues: write`, no secrets, and only the
 #     schedule and manual triggers.
 echo "==> the fuzz heartbeat (selftest, and the workflow keeps to its limits)"
@@ -4860,3 +4869,11 @@ if ! grep -q '^kani --version$' "$kstub/second" 2>/dev/null || grep -v '^kani --
 fi
 rm -rf "$kstub"
 echo "script/kani-install: an installed pin is left alone"
+
+echo "==> script/catch-up reads the milestone blocks and refuses to report zero from a broken reader"
+# lint-scope: code
+# The script read the retired index, found no row and printed zero changes for every window since
+# 2026-09-21 (the 2026-11-17 documentation audit, the newcomer path, finding 1). The selftest builds
+# a scratch repository with an index era and block eras and checks the counts, then plants blocks
+# with no status and an empty roadmap and requires a non-zero exit with a message.
+helpers/catch-up-selftest.sh >/dev/null

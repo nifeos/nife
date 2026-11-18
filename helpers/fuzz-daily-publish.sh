@@ -7,7 +7,8 @@
 # `$NIFE_FUZZ_HOME/out/<utc date>/`:
 #
 #   report.md      counter totals: windows, seeds run by driver, windows by status, the newest
-#                  window's time, and the count and age in days of held findings
+#                  window's time, the count and age in days of held findings, and one `Filer:` line
+#                  (below)
 #   clean-ranges.tsv   driver, first seed, seeds run, commit, for every clean window. A seed replays
 #                  the same calls, so a clean range is its own corpus
 #
@@ -21,6 +22,16 @@
 # (design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md). A held window is
 # any window whose status is neither `ok` nor `infrastructure`, so a status this script does not
 # know withholds its slot too. The seed totals in report.md still count every clean window.
+#
+# **The Filer line.** The filer (`fuzz-filer` in nifeos/fuzz-host) is a separate service, and a
+# disabled timer once left every other check green. The line gives host-local counts and times only:
+# held logs, causes, filed, parked, unfiled (causes that are not parked budget or hang causes and
+# have no advisory yet), the filer ledger's newest timestamp, whether fuzz-filer.timer is enabled and
+# when it last ran. The counts come from `fuzz-filer run --dry-run`, which reads no token and sends
+# nothing; only its closing tally is kept, and no other line of its output is copied. A value the host
+# cannot read is `unknown`, which helpers/fuzz-heartbeat.py fails on. NIFE_FUZZ_FILER,
+# NIFE_FUZZ_FILER_LEDGER and NIFE_FUZZ_SYSTEMCTL replace the program, the ledger path and systemctl
+# for the selftest.
 #
 # BUGS: nothing brings a withheld slot's ranges back. A person publishes a finding's advisory and the
 # host is not told (design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md,
@@ -72,6 +83,53 @@ if [ -d "$state/held" ]; then
     fi
 fi
 
+filer_bin="${NIFE_FUZZ_FILER:-/usr/local/bin/fuzz-filer}"
+filer_ledger="${NIFE_FUZZ_FILER_LEDGER:-/var/lib/fuzz-filer/ledger.tsv}"
+systemctl_bin="${NIFE_FUZZ_SYSTEMCTL:-systemctl}"
+
+# The filer's closing tally, "N held logs, N causes, N filed before, N parked, ..., none to file" or
+# ", N to file". Everything else the dry run prints names causes and is dropped here.
+tally="$("$filer_bin" run --dry-run 2>&1 | grep -E '^fuzz-filer: [0-9]+ held logs, ' | tail -1 || true)"
+f_held=unknown f_causes=unknown f_filed=unknown f_parked=unknown f_unfiled=unknown
+case "$tally" in
+    *"held logs, "*" causes, "*" filed before, "*" parked, "*)
+        counts="$(printf '%s\n' "$tally" | sed -E 's/^fuzz-filer: ([0-9]+) held logs, ([0-9]+) causes, ([0-9]+) filed before, ([0-9]+) parked, .*/\1 \2 \3 \4/')"
+        # Not `set --`: the script's own arguments are read again below.
+        IFS=' ' read -r a b c d extra <<COUNTS
+$counts
+COUNTS
+        if [ -n "$d" ] && [ -z "$extra" ]; then
+            f_held=$a f_causes=$b f_filed=$c f_parked=$d
+            case "$tally" in
+                *", none to file"*) f_unfiled=0 ;;
+                *) n="$(printf '%s\n' "$tally" | sed -nE 's/.*, ([0-9]+) to file.*/\1/p')"
+                   [ -n "$n" ] && f_unfiled=$n ;;
+            esac
+        fi
+        ;;
+esac
+
+# Newest ledger line's timestamp, the first field of the last line that is not a comment.
+f_ledger=none
+if [ -e "$filer_ledger" ]; then
+    f_ledger=unknown
+    if [ -r "$filer_ledger" ]; then
+        f_ledger="$(awk -F'\t' '/^#/ || NF == 0 { next } { t = $1 } END { print t }' "$filer_ledger")"
+        [ -n "$f_ledger" ] || f_ledger=none
+    fi
+fi
+
+# The timer's state and last start, from systemd. GNU date reads systemd's UTC timestamp.
+f_enabled="$("$systemctl_bin" is-enabled fuzz-filer.timer 2>/dev/null || true)"
+case "$f_enabled" in enabled) f_enabled=yes ;; "") f_enabled=unknown ;; *) f_enabled=no ;; esac
+f_last="$("$systemctl_bin" show fuzz-filer.timer --property=LastTriggerUSec --timestamp=utc 2>/dev/null \
+    | sed -n 's/^LastTriggerUSec=//p' || true)"
+case "$f_last" in
+    "" ) f_last=unknown ;;
+    n/a|0) f_last=never ;;
+    *) f_last="$(date -u -d "$f_last" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)" ;;
+esac
+
 {
     echo "# Continuous fuzzing, daily report for $today (UTC)"
     echo
@@ -90,6 +148,8 @@ fi
     echo "Newest window: $(tail -1 "$windows" | cut -f1)"
     echo
     echo "Held findings: $held_count, oldest $oldest_days days. Their inputs are not published until the fix merges."
+    echo
+    echo "Filer: held=$f_held causes=$f_causes filed=$f_filed parked=$f_parked unfiled=$f_unfiled ledger-newest=$f_ledger timer-enabled=$f_enabled timer-last-run=$f_last"
 } > "$out/report.md"
 
 echo "fuzz-daily-publish: wrote $out"
