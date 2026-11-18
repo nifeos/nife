@@ -6,7 +6,7 @@ milestone_dependencies: 159, 818, 857
 decision_dependencies: none
 machine_requirements: riscv64 silicon, a StarFive VisionFive 2 (JH7110)
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1035. A crate names the version that ran on hardware
 
@@ -161,7 +161,7 @@ Today's claims under it:
 
 ## The work
 
-1. **Needs a person; nobody is assigned.** nife's `main` pins the tag `v0.3.0-pre.1` already. Run
+1. **Done; it needed a person.** nife's `main` pins the tag `v0.3.0-pre.1` already. Run
    [`bench-steps.md`](1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md) on a
    VisionFive 2, commit the transcripts under `bench/`, and record each boot's `true_random_number_generator` line, the nife
    commit and the crate version in this block.
@@ -172,8 +172,8 @@ Today's claims under it:
    ran, or it becomes a limitation.
 
 Steps 2 to 4 need no board. Step 2 waits for step 1, because the README names a version only once
-that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is the only step with
-`needs_person: yes`, and the milestone stays PARTIAL until a person runs the board.
+that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is the only step that needed a
+person, and it is done. The milestone stays PARTIAL until step 2 merges.
 
 ## Done when
 
@@ -192,20 +192,19 @@ claim, so loosening it later breaks nobody.
 
 ## Follow-on
 
-- **Outstanding.** Step 1's record. The bench run is done: two cold boots of nife `9c394ab715a7`
-  on a VisionFive 2 on 2026-11-17 (UTC), recorded in nifeos/nife#3509, with
-  `helpers/crate_hardware_run.py judge` printing `PASS` on every check. Both boots name
-  `jh7110_entropy` 0.3.0-pre.1 at `497d3ec`. Each `true_random_number_generator` line is `ok` with two
-  differing 32-byte draws in 256-bit mode. The first draws, `625b4bc8` and `7bb8b233`, differ. The
-  transcripts are not on `main` yet, so this block holds the first boot's line below and names the second
-  boot's first draw above; the transcript path joins the block when they land. Checked against the
-  tree: `main` pins `jh7110_entropy` at `497d3ec`, the commit of tag `v0.3.0-pre.1`.
+- **Done.** Step 1: two cold boots of nife `9c394ab715a7` on a VisionFive 2 ran 0.3.0-pre.1 at
+  `497d3ec`, and `helpers/crate_hardware_run.py judge` printed `PASS` on every check. The transcripts
+  are `bench/radon-2026-11-17/1035-boot-1.log` and `1035-boot-2.log`; `bench/radon-2026-11-17/README-1035.md`
+  holds the image hashes and the judge's output. Each `true_random_number_generator` line is `ok` with
+  two differing 32-byte draws in 256-bit mode, and the first draws, `625b4bc8` and `7bb8b233`, differ.
+  The tree's `main` pins `jh7110_entropy` at `497d3ec`, the commit of tag `v0.3.0-pre.1`.
 
   ```
   self-test       : true_random_number_generator ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 625b4bc8.., differ true; bring-up 1637 us, 64 bytes in 102 us (627450 bytes/s); crate jh7110_entropy 0.3.0-pre.1 at 497d3ec4f0b4d7fc36634dee47d1afd56eb22485
+  self-test       : true_random_number_generator ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 7bb8b233.., differ true; bring-up 1629 us, 64 bytes in 103 us (616867 bytes/s); crate jh7110_entropy 0.3.0-pre.1 at 497d3ec4f0b4d7fc36634dee47d1afd56eb22485
   ```
-- **Outstanding.** Step 2, the README sentence in `nifeos/jh7110_entropy`. Its draft pull request
-  waits for step 1, since the README names a version only once that version has run.
+- **Outstanding.** Step 2, the README sentence in `nifeos/jh7110_entropy`, in its pull request
+  nifeos/jh7110_entropy#25. Step 1 is done, so it may merge.
 - **Done.** Step 3: the rule is in milestone 857's extraction checklist,
   `design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md`.
 - **Done.** Step 4: the `e1000e` I219 sentence becomes a limitation, in its own repository's pull
