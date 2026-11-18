@@ -23,6 +23,16 @@ puts this crate last in its step and says it leaves like any leaf.
 Reuse: `script/crate-move`, the template `nifeos/crate-workflows` and its scaffold, Kani,
 cargo-mutants, cargo-fuzz. No new tool.
 
+## Where this stands
+
+Finished: decision 1 (the owner string and section keep their bytes behind a `// wire literal` marker) and decision 3 (the crate name) are ruled and built in #3575. Items 6, 7, 8, 9's private part, 12, 13 and 14 landed in #3566.
+
+- Items 9 public part and 10 (four renames): ruled provisionally as decision 2, not built; a lane.
+- Ratifying the twenty public names: open; decision for calef, which `script/crate-standalone` step 0 needs.
+- Item 4 (prose naming nife): ruled; the rewording lands with item 3 in the move.
+- Items 1, 2, 3, 5, 11, 15 (manifest, README and licenses, citations and passives, fuzz opt-in, mutation exemptions): the move. It waits on the renames, the ratification, review clearance from calef, and the three crates ahead of it in step 3 of milestone 1017.
+- The `NIFE_INTERFACES_NOTE` static (BUGS): two-way; a lane, nobody has built it.
+
 ## Goal
 
 A stranger who opens `nifeos/interfaces_note` can tell in one screen what the note is, place one in
@@ -210,7 +220,7 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 
 ## Follow-on
 
-- **Outstanding.** The three decisions above (the owner string, the public names, the crate name), which the architect rules. Checked: ledger rows 4, 9 (public lengths) and 10.
+- **Outstanding.** The public names: decision 2's renames, not yet built, and the ratification of the twenty public names, which the architect rules. Checked: ledger rows 9 (public lengths) and 10.
 - **Outstanding.** The move's own work: manifest rows, README and license files, the citation rewrite with the passive-voice pass, the fuzz opt-in and the carried mutation exemptions (items 1, 2, 3, 5, 11, 15). Checked: each needs the moved repository or the template's gates.
 
 [The ledger](1096-interfaces-note-outside-review/ledger.md) lists each item with its state.
