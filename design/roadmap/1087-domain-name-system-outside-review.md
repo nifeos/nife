@@ -278,6 +278,8 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
   (`notes/crate-move.md`, steps 4 and 5).
 - **Outstanding.** `mutation / mutation` has no green full run on `main` yet. It first runs in the new
   repository.
+- **Outstanding.** Items 5, 7 and 9 and the move are not built. Each waits on the move or on a
+  design no ruling has written. Checked by reading the ledger rows against the crate.
 
 ## BUGS
 
