@@ -1,4 +1,4 @@
-//! **The filesystem wire protocols**: the block protocol ([`blk`]) and the file protocol ([`fs`]),
+//! **The filesystem wire protocols**: the block protocol ([`block`]) and the file protocol ([`fs`]),
 //! in one crate so the block server, the filesystem server, the client and the kernel-side tests
 //! share one definition. The kernel routes these words as any inter-process communication and never
 //! reads an opcode, so a new verb changes this crate and its note, not the syscall surface.

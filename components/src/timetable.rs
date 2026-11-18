@@ -962,7 +962,7 @@ fn collect(exits: &mut u64, faults: &mut u64) {
 }
 
 /// Write bytes down the output endpoint, `byte_sink_contract`-framed. Nothing, with a registration
-/// page: see [`PAGE_BYTES`].
+/// page: see [`PAGE`].
 fn say(bytes: &[u8]) {
     if PAGE.load(core::sync::atomic::Ordering::Relaxed) != 0 {
         return;

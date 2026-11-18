@@ -3,7 +3,7 @@
 /// `user.com.apple.metadata:_kMDItemUserTags` are both well inside it, and a limit that refused
 /// a real client's name would be discovered on the board rather than here. It is also exactly
 /// what one length byte holds, which is what makes [`list`]'s records a byte cheaper than
-/// [`super::dirent`]'s.
+/// [`super::directory_entry`]'s.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAME_BYTES: usize = 255;
@@ -146,7 +146,7 @@ pub const fn is_valid_name(name: &[u8]) -> bool {
 /// record header to save a round trip nobody has asked for.
 ///
 /// The reply's `r0` is how many bytes were filled, so a client iterates until it has consumed
-/// exactly that many, exactly as [`super::dirent`] works.
+/// exactly that many, exactly as [`super::directory_entry`] works.
 pub mod list {
     /// Bytes one record takes: one for the length, plus the name.
     pub const fn record_len(name_len: usize) -> usize {

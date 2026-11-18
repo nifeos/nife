@@ -42,7 +42,7 @@ pub struct Verb {
     /// Whether a successful reply is a **new handle**, which a proxy that renumbers handles must
     /// install in its own table before handing back.
     pub mints_handle: bool,
-    /// The [`dir`] rights the server demands, **all of them**. Zero where the verb needs none
+    /// The [`directory`] rights the server demands, **all of them**. Zero where the verb needs none
     /// ([`fs::CLOSE`], [`fs::FSTAT`]) or where the requirement is "any of" rather than "all of"
     /// (see [`Verb::needs_any`]).
     pub needs_all: u64,

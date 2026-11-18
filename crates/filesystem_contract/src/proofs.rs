@@ -1,5 +1,5 @@
 //! **Machine-checked proofs (Kani) of the packers and decoders**, beside the rights proofs in
-//! [`dir`]: every field a word carries comes back out unchanged, no field bleeds into another, and
+//! [`directory`]: every field a word carries comes back out unchanged, no field bleeds into another, and
 //! the verb table is total over the opcode space. Behind `#[cfg(kani)]`, so only `cargo kani`
 //! (`script/verify`) compiles them. See notes/verification.md.
 //!
@@ -89,7 +89,7 @@ fn the_verb_table_is_total() {
 
 /// **The server's path never widens: whatever a request says, including the sentinel that means
 /// "the parent's own rights", the child is a subset of the parent.** `attenuate_never_widens` in
-/// [`dir`] covers `attenuate`; this adds [`directory::Rights::resolve`] in front of it.
+/// [`directory`] covers `attenuate`; this adds [`directory::Rights::resolve`] in front of it.
 /// Falsification: replayable `crates/filesystem_contract/falsifications/proofs.a_resolved_request_never_widens.patch`
 #[kani::proof]
 fn a_resolved_request_never_widens() {

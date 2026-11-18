@@ -58,7 +58,7 @@ const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 const WINDOW: MappedWindow =
     unsafe { MappedWindow::new(PAGE_VA, filesystem_contract::PAGE_BYTES as u64) };
 
-/// `ENOENT`. Not in [`dir`]'s list because it is POSIX's oldest number and this contract answers it
+/// `ENOENT`. Not in [`directory`]'s list because it is POSIX's oldest number and this contract answers it
 /// from three different rungs; `-f` cares about exactly one of them (see [`remove`]).
 const ENOENT: i32 = 2;
 /// `ELOOP`, borrowed for a tree deeper than this program can walk. It is **this program's refusal

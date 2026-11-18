@@ -55,7 +55,7 @@ pub const CREATE: u64 = 6;
 /// `std::fs::write` relies on, since it truncates unconditionally.
 pub const TRUNCATE: u64 = 7;
 /// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
-/// and hand back a handle to the child directory. `w1` is the requested [`super::dir`] mask, or
+/// and hand back a handle to the child directory. `w1` is the requested [`super::directory`] mask, or
 /// [`super::directory::PARENT_RIGHTS`] for "the parent's rights, whatever they are", which a client
 /// that cannot read its own capability asks for when it holds the directory for later use.
 /// Reply `r0` = the new directory handle, or an error.
@@ -68,7 +68,7 @@ pub const TRUNCATE: u64 = 7;
 pub const OPENDIR: u64 = 8;
 /// **Enumerate a directory handle.** [`req_handle`] is the directory and `w1` a cursor, the index
 /// of the first entry to return. Reply `r0` = bytes written into the shared page as
-/// [`super::dirent`] records; 0 means the cursor is past the end. [`req_len`] is ignored.
+/// [`super::directory_entry`] records; 0 means the cursor is past the end. [`req_len`] is ignored.
 ///
 /// Needs [`super::directory::ENUMERATE`]; its absence is [`super::directory::EPERM`], not an empty listing
 /// (a filesystem declares what it offers and must be truthful). Entries are sorted
@@ -115,7 +115,7 @@ pub const RMDIR: u64 = 13;
 /// [`super::extended_attribute::reply`], packing the value's type code and length, with the value in the shared
 /// page; `ENODATA` if it is not set.
 ///
-/// Needs [`super::directory::READ`] on the handle, else `EBADF`, as [`READ`] does. See [`super::xattr`]
+/// Needs [`super::directory::READ`] on the handle, else `EBADF`, as [`READ`] does. See [`super::extended_attribute`]
 /// for why there is no attribute right.
 pub const GETXATTR: u64 = 14;
 /// **Set one extended attribute on the node a handle names.** The name is [`req_len`] bytes at the
@@ -151,7 +151,7 @@ pub const REMOVEXATTR: u64 = 17;
 /// **How much room the store behind this capability has**: POSIX `statfs`, cut to three numbers.
 /// [`req_len`] and `w1` are 0; [`req_handle`] is any handle this server minted, [`ROOT`] included,
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
-/// shared page filled ([`super::statfs::LEN`]) with the [`super::statfs`] record, or an error;
+/// shared page filled ([`super::statfs::RECORD_BYTES`]) with the [`super::statfs`] record, or an error;
 /// `EBADF` for a handle the server did not mint.
 ///
 /// # BUGS
@@ -213,7 +213,7 @@ pub const SET_MODIFICATION_TIME: u64 = 21;
 /// Name: provisional (2026-08-24); an architect's to ratify.
 pub const SET_MODIFICATION_TIME_AT: u64 = 22;
 /// **Narrow a directory handle you already hold**: [`req_handle`] is the directory and `w1` the
-/// requested [`super::dir`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
+/// requested [`super::directory`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
 /// directory handle, or an error. The handle in [`req_handle`] stays open and unchanged.
 ///
 /// The new handle's rights are [`super::directory::Rights::attenuate`] of the held handle's, the same
