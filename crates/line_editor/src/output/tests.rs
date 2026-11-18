@@ -27,9 +27,9 @@ fn output_expansion_never_puts_an_empty_slice() {
             self.0.push(b.to_vec());
         }
     }
-    for src in [&b""[..], b"\n", b"a\n", b"\nb", b"\n\n"] {
+    for input in [&b""[..], b"\n", b"a\n", b"\nb", b"\n\n"] {
         let mut out = Puts(Vec::new());
-        expand_output(src, &mut out);
-        assert!(out.0.iter().all(|put| !put.is_empty()), "{src:?}");
+        expand_output(input, &mut out);
+        assert!(out.0.iter().all(|put| !put.is_empty()), "{input:?}");
     }
 }
