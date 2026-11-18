@@ -1,0 +1,31 @@
+Falsifies `capability_table::the_count_is_the_slots`.
+
+The defect: `empty`, the one door that frees a slot, sets the slot's free bit and
+does not decrement `used`. There is no separate call to forget,
+because both freeing paths go through `empty`, so the mistake is at the door
+itself. It is still the plausible one: `empty` now keeps two records (the free-slot
+word and the count), and updating one of a pair is how a pair drifts.
+
+The cost is not authority: every capability really is gone and the word says so,
+so `insert` reuses the slot correctly. What breaks is the *record*. `used` stays
+permanently above the truth, the high-water mark with it, and the number a boot
+prints as `capability slots: N of M at peak` becomes an overstatement that nothing
+else in the tree can contradict.
+
+Expected to fail: the second assertion, `assert_eq!(cs.used(), occupied(&cs),
+"delete left the count behind")`, on any table state where the deleted slot was
+occupied. The first passes, because `put` goes through `fill`, which this edit does
+not touch.
+
+diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
+index 6bf16a921..f99f1ebec 100644
+--- a/crates/capability_table/src/lib.rs
++++ b/crates/capability_table/src/lib.rs
+@@ -401,7 +401,6 @@ mod storage {
+         pub(super) fn empty(&mut self, slot: usize) -> Option<Capability<O>> {
+             let capability = self.slots.get_mut(slot)?.take()?;
+             self.free |= 1u64 << slot;
+-            self.used -= 1;
+             Some(capability)
+         }
+ 

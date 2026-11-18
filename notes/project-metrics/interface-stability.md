@@ -6,344 +6,155 @@
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
+| `grant_plan` | 524 | 76 | 805 | 1189 | 275 | 213 (77%) |
 | `calendar` | 118 | 6 | 118 | 6 | 11 | 11 (100%) |
-| `line_editor` | 77 | 27 | 92 | 146 | 71 | 58 (82%) |
-| `installed_programs` | 69 | 103 | 78 | 175 | 45 | 34 (76%) |
-| `capability_manifest_note` | 48 | 74 | 51 | 132 | 53 | 37 (70%) |
+| `line_editor` | 75 | 4 | 92 | 146 | 71 | 58 (82%) |
+| `capability_manifest_note` | 68 | 79 | 72 | 157 | 76 | 40 (53%) |
 | `block_roster_contract` | 48 | 11 | 48 | 11 | 18 | 12 (67%) |
-| `grant_plan` | 44 | 105 | 315 | 1187 | 275 | 213 (77%) |
-| `filesystem_contract` | 22 | 28 | 306 | 487 | 157 | 135 (86%) |
-| `abi` | 22 | 38 | 63 | 208 | 161 | 144 (89%) |
+| `entropy_contract` | 38 | 20 | 42 | 38 | 59 | 41 (69%) |
+| `clock_contract` | 23 | 24 | 29 | 78 | 76 | 56 (74%) |
+| `abi` | 22 | 25 | 63 | 208 | 161 | 144 (89%) |
 | `supervision_contract` | 22 | 2 | 22 | 2 | 12 | 12 (100%) |
-| `hot_swap_contract` | 19 | 0 | 38 | 126 | 74 | 67 (91%) |
-| `capability_plan` | 18 | 15 | 18 | 15 | 17 | 16 (94%) |
-| `globally_unique_identifier_partition_table` | 12 | 5 | 103 | 286 | 64 | 50 (78%) |
-| `clock_contract` | 11 | 15 | 17 | 69 | 66 | 52 (79%) |
-| `entropy_contract` | 8 | 20 | 12 | 38 | 59 | 41 (69%) |
-| `compositor` | 7 | 2 | 21 | 101 | 52 | 44 (85%) |
-| `graphics_contract` | 7 | 0 | 19 | 33 | 39 | 38 (97%) |
-| `counter_frequency_contract` | 7 | 8 | 9 | 23 | 37 | 30 (81%) |
-| `socket_contract` | 6 | 19 | 26 | 89 | 71 | 55 (77%) |
-| `environment_contract` | 6 | 7 | 8 | 51 | 30 | 23 (77%) |
-| `current_cpu_contract` | 4 | 4 | 7 | 21 | 29 | 16 (55%) |
+| `capability_plan` | 17 | 15 | 18 | 15 | 17 | 16 (94%) |
+| `filesystem_contract` | 16 | 25 | 306 | 487 | 157 | 135 (86%) |
+| `static_elf` | 15 | 26 | 15 | 26 | 16 | 7 (44%) |
+| `hot_swap_contract` | 14 | 0 | 38 | 126 | 74 | 67 (91%) |
+| `environment_contract` | 9 | 7 | 11 | 51 | 30 | 23 (77%) |
+| `current_cpu_contract` | 8 | 7 | 14 | 26 | 31 | 17 (55%) |
+| `counter_frequency_contract` | 7 | 8 | 9 | 23 | 39 | 30 (77%) |
+| `socket_contract` | 6 | 9 | 26 | 89 | 71 | 55 (77%) |
+| `machine_statistics_contract` | 4 | 6 | 4 | 6 | 6 | 4 (67%) |
+| `globally_unique_identifier_partition_table` | 3 | 5 | 103 | 286 | 64 | 50 (78%) |
 | `credential_contract` | 3 | 3 | 39 | 73 | 51 | 43 (84%) |
 | `boot_slot` | 3 | 3 | 3 | 55 | 26 | 20 (77%) |
-| `machine_statistics_contract` | 3 | 5 | 3 | 5 | 6 | 4 (67%) |
 | `login_contract` | 2 | 2 | 32 | 93 | 51 | 49 (96%) |
-| `std_runtime_contract` | 2 | 5 | 4 | 29 | 31 | 28 (90%) |
+| `compositor` | 2 | 2 | 21 | 101 | 52 | 44 (85%) |
+| `installed_programs` | 1 | 81 | 78 | 175 | 45 | 34 (76%) |
 | `package_archive` | 1 | 1 | 20 | 130 | 37 | 28 (76%) |
 | `nifefs` | 1 | 1 | 10 | 42 | 58 | 45 (78%) |
 | `byte_sink_contract` | 1 | 2 | 8 | 50 | 43 | 42 (98%) |
-| `measured_boot` | 1 | 35 | 3 | 100 | 36 | 27 (75%) |
+| `std_runtime_contract` | 1 | 1 | 4 | 29 | 31 | 28 (90%) |
+| `measured_boot` | 1 | 35 | 3 | 100 | 37 | 28 (76%) |
 | `address_space_layout` | 1 | 3 | 1 | 45 | 0 | 0 |
 | `byte_glob` | 1 | 0 | 1 | 0 | 1 | 1 (100%) |
-| `static_elf` | 1 | 0 | 1 | 0 | 1 | 1 (100%) |
 | `supervision_protocol` | 0 | 0 | 22 | 70 | 65 | 56 (86%) |
+| `graphics_contract` | 0 | 0 | 19 | 33 | 39 | 38 (97%) |
 | `component_plan` | 0 | 0 | 16 | 138 | 36 | 30 (83%) |
 | `elf` | 0 | 0 | 3 | 82 | 53 | 42 (79%) |
 | `capability_witness_contract` | 0 | 1 | 1 | 15 | 24 | 20 (83%) |
 | `program_argument_contract` | 0 | 1 | 1 | 30 | 0 | 0 |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
-| `allocation_cache` | 0 | 2 | 0 | 20 | 0 | 0 |
+| `allocation_cache` | 0 | 0 | 0 | 20 | 0 | 0 |
 | `glob` | 0 | 2 | 0 | 2 | 2 | 2 (100%) |
 
-Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
+Sorted by breaking changes in the last four weeks (2026W44 to 2026W47), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
 
-## What broke in 2026W46
+## What broke in 2026W47
 
-Read at `ed4d01870d60` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `bc8259160b56` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
-> - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_CAPABILITY_DELETE` `SYS_CAPABILITY_DELETE`
-> - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_EXIT` `SYS_EXIT`
-> - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_EXIT_THREAD` `SYS_EXIT_THREAD`
-> - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_INVOKE` `SYS_INVOKE`
-> - `abi`: syscall renamed, number kept (method or encoding), now `SYSCALL_YIELD` `SYS_YIELD`
-> - `abi`: syscall renamed, number kept (method or encoding), now `address_space::MAP_READ_ONLY` `address_space::MAP_RO`
-> - `abi`: syscall renamed, number kept (method or encoding), now `address_space::MAP_READ_WRITE` `address_space::MAP_RW`
-> - `abi`: syscall renamed, number kept (method or encoding), now `fault::FAULT_RENDEZVOUS_SLOT` `fault::FAULT_EP_SLOT`
-> - `abi`: syscall renamed, number kept (method or encoding), now `interrupt::ACKNOWLEDGE` `interrupt::ACK`
-> - `abi`: syscall renamed, number kept (method or encoding), now `memory_region::RETYPE_OBJECT` `memory_region::RETYPE_OBJ`
-> - `abi`: syscall renamed, number kept (method or encoding), now `object_type::ADDRESS_SPACE` `objtype::ADDRESS_SPACE`
-> - `abi`: syscall renamed, number kept (method or encoding), now `object_type::NOTIFICATION` `objtype::NOTIFICATION`
-> - `abi`: syscall renamed, number kept (method or encoding), now `object_type::PROCESS` `objtype::PROCESS`
-> - `abi`: syscall renamed, number kept (method or encoding), now `object_type::RENDEZVOUS` `objtype::RENDEZVOUS`
-> - `abi`: syscall renamed, number kept (method or encoding), now `object_type::THREAD_CONTROL_BLOCK` `objtype::THREAD_CONTROL_BLOCK`
-> - `abi`: syscall renamed, number kept (method or encoding), now `object_type::TIMER` `objtype::TIMER`
-> - `block_roster_contract`: removed `Device`
-> - `block_roster_contract`: removed `Device: impl Clone`
-> - `block_roster_contract`: removed `Device: impl Copy`
-> - `block_roster_contract`: removed `Device: impl Debug`
-> - `block_roster_contract`: removed `Device: impl Eq`
-> - `block_roster_contract`: removed `Device: impl PartialEq`
-> - `block_roster_contract`: removed `Device: impl StructuralPartialEq`
-> - `block_roster_contract`: removed `Device::ordinal`
-> - `block_roster_contract`: removed `Device::transport`
-> - `block_roster_contract`: removed `Device::transport_name`
-> - `block_roster_contract`: removed `ENTRY_BYTES`
-> - `block_roster_contract`: removed `HEADER_BYTES`
-> - `block_roster_contract`: removed `INTERFACE_ID`
-> - `block_roster_contract`: removed `MAGIC`
-> - `block_roster_contract`: removed `Roster`
-> - `block_roster_contract`: removed `Roster: impl Clone`
-> - `block_roster_contract`: removed `Roster: impl Copy`
-> - `block_roster_contract`: removed `Roster: impl Debug`
-> - `block_roster_contract`: removed `Roster::count_by_transport`
-> - `block_roster_contract`: removed `Roster::devices`
-> - `block_roster_contract`: removed `Roster::get`
-> - `block_roster_contract`: removed `Roster::is_empty`
-> - `block_roster_contract`: removed `Roster::len`
-> - `block_roster_contract`: removed `Roster::read`
-> - `block_roster_contract`: removed `TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS`
-> - `block_roster_contract`: removed `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO`
-> - `block_roster_contract`: removed `TRANSPORT_VIRTIO_PCI`
-> - `block_roster_contract`: removed `TooManyDevices`
-> - `block_roster_contract`: removed `TooManyDevices: impl Clone`
-> - `block_roster_contract`: removed `TooManyDevices: impl Copy`
-> - `block_roster_contract`: removed `TooManyDevices: impl Debug`
-> - `block_roster_contract`: removed `TooManyDevices: impl Eq`
-> - `block_roster_contract`: removed `TooManyDevices: impl PartialEq`
-> - `block_roster_contract`: removed `TooManyDevices: impl StructuralPartialEq`
-> - `block_roster_contract`: removed `VERSION`
-> - `block_roster_contract`: removed `capacity_of`
-> - `block_roster_contract`: removed `write`
-> - `byte_glob`: crate renamed `glob -> byte_glob`
-> - `calendar`: removed `Civil`
-> - `calendar`: removed `Civil: impl Clone`
-> - `calendar`: removed `Civil: impl Copy`
-> - `calendar`: removed `Civil: impl Debug`
-> - `calendar`: removed `Civil: impl Eq`
-> - `calendar`: removed `Civil: impl Ord`
-> - `calendar`: removed `Civil: impl PartialEq`
-> - `calendar`: removed `Civil: impl PartialOrd`
-> - `calendar`: removed `Civil: impl StructuralPartialEq`
-> - `calendar`: removed `Civil::day`
-> - `calendar`: removed `Civil::day_of_year`
-> - `calendar`: removed `Civil::days_since_epoch`
-> - `calendar`: removed `Civil::format`
-> - `calendar`: removed `Civil::from_unix`
-> - `calendar`: removed `Civil::hour`
-> - `calendar`: removed `Civil::minute`
-> - `calendar`: removed `Civil::month`
-> - `calendar`: removed `Civil::new`
-> - `calendar`: removed `Civil::second`
-> - `calendar`: removed `Civil::to_unix`
-> - `calendar`: removed `Civil::weekday`
-> - `calendar`: removed `Civil::year`
-> - `calendar`: removed `DateTime`
-> - `calendar`: removed `DateTime: impl Clone`
-> - `calendar`: removed `DateTime: impl Copy`
-> - `calendar`: removed `DateTime: impl Debug`
-> - `calendar`: removed `DateTime: impl Eq`
-> - `calendar`: removed `DateTime: impl PartialEq`
-> - `calendar`: removed `DateTime: impl StructuralPartialEq`
-> - `calendar`: removed `DateTime::civil`
-> - `calendar`: removed `DateTime::format`
-> - `calendar`: removed `DateTime::from_unix`
-> - `calendar`: removed `DateTime::new`
-> - `calendar`: removed `DateTime::offset`
-> - `calendar`: removed `DateTime::parse_rfc3339`
-> - `calendar`: removed `DateTime::parse_rfc3339_bytes`
-> - `calendar`: removed `DateTime::to_unix`
-> - `calendar`: removed `Error`
-> - `calendar`: removed `Error: impl Clone`
-> - `calendar`: removed `Error: impl Copy`
-> - `calendar`: removed `Error: impl Debug`
-> - `calendar`: removed `Error: impl Eq`
-> - `calendar`: removed `Error: impl PartialEq`
-> - `calendar`: removed `Error: impl StructuralPartialEq`
-> - `calendar`: removed `Error::BadDay`
-> - `calendar`: removed `Error::BadHour`
-> - `calendar`: removed `Error::BadMinute`
-> - `calendar`: removed `Error::BadMonth`
-> - `calendar`: removed `Error::BadOffset`
-> - `calendar`: removed `Error::BadSecond`
-> - `calendar`: removed `Error::LeapSecond`
-> - `calendar`: removed `Error::OutOfRange`
-> - `calendar`: removed `Error::Syntax`
-> - `calendar`: removed `Error::as_str`
-> - `calendar`: removed `Format`
-> - `calendar`: removed `Format: impl Clone`
-> - `calendar`: removed `Format: impl Copy`
-> - `calendar`: removed `Format: impl Debug`
-> - `calendar`: removed `Format: impl Eq`
-> - `calendar`: removed `Format: impl PartialEq`
-> - `calendar`: removed `Format: impl StructuralPartialEq`
-> - `calendar`: removed `Format::Date`
-> - `calendar`: removed `Format::Human`
-> - `calendar`: removed `Format::Rfc3339`
-> - `calendar`: removed `Format::Time`
-> - `calendar`: removed `Format::Unix`
-> - `calendar`: removed `Formatted`
-> - `calendar`: removed `Formatted: impl AsRef{"angle_bracketed":{"args":[{"type":{"primitive":"str"}}],"constraints":[]}}`
-> - `calendar`: removed `Formatted: impl Clone`
-> - `calendar`: removed `Formatted: impl Copy`
-> - `calendar`: removed `Formatted: impl Debug`
-> - `calendar`: removed `Formatted: impl Display`
-> - `calendar`: removed `Formatted::as_bytes`
-> - `calendar`: removed `Formatted::as_str`
-> - `calendar`: removed `MAXIMUM_TIMESTAMP`
-> - `calendar`: removed `MAXIMUM_YEAR`
-> - `calendar`: removed `MINIMUM_TIMESTAMP`
-> - `calendar`: removed `MINIMUM_YEAR`
-> - `calendar`: removed `SECONDS_PER_DAY`
-> - `calendar`: removed `UtcOffset`
-> - `calendar`: removed `UtcOffset: impl Clone`
-> - `calendar`: removed `UtcOffset: impl Copy`
-> - `calendar`: removed `UtcOffset: impl Debug`
-> - `calendar`: removed `UtcOffset: impl Eq`
-> - `calendar`: removed `UtcOffset: impl Ord`
-> - `calendar`: removed `UtcOffset: impl PartialEq`
-> - `calendar`: removed `UtcOffset: impl PartialOrd`
-> - `calendar`: removed `UtcOffset: impl StructuralPartialEq`
-> - `calendar`: removed `UtcOffset::UTC`
-> - `calendar`: removed `UtcOffset::from_hm`
-> - `calendar`: removed `UtcOffset::from_minutes`
-> - `calendar`: removed `UtcOffset::minutes`
-> - `calendar`: removed `UtcOffset::seconds`
-> - `calendar`: removed `VERSION`
-> - `calendar`: removed `Weekday`
-> - `calendar`: removed `Weekday: impl Clone`
-> - `calendar`: removed `Weekday: impl Copy`
-> - `calendar`: removed `Weekday: impl Debug`
-> - `calendar`: removed `Weekday: impl Eq`
-> - `calendar`: removed `Weekday: impl PartialEq`
-> - `calendar`: removed `Weekday: impl StructuralPartialEq`
-> - `calendar`: removed `Weekday::Friday`
-> - `calendar`: removed `Weekday::Monday`
-> - `calendar`: removed `Weekday::Saturday`
-> - `calendar`: removed `Weekday::Sunday`
-> - `calendar`: removed `Weekday::Thursday`
-> - `calendar`: removed `Weekday::Tuesday`
-> - `calendar`: removed `Weekday::Wednesday`
-> - `calendar`: removed `Weekday::abbrev`
-> - `calendar`: removed `Weekday::iso_number`
-> - `calendar`: removed `Weekday::name`
-> - `calendar`: removed `days_in_month`
-> - `calendar`: removed `is_leap_year`
-> - `clock_contract`: changed `WORDS`
-> - `entropy_contract`: removed `DEAD`
-> - `entropy_contract`: removed `bringup_failure`
-> - `entropy_contract`: removed `delivered`
-> - `entropy_contract`: changed `fill_with`
-> - `entropy_contract`: removed `req`
-> - `entropy_contract`: removed `take`
-> - `entropy_contract`: removed `want`
-> - `filesystem_contract`: changed `xattr::STORE_DIR`
-> - `grant_plan`: changed `JOB_POOL_PAGES`
-> - `grant_plan`: changed `JOB_REGION_PAGES`
-> - `grant_plan`: changed `spawnproto::SHELL_BUDGET_PAGES`
-> - `line_editor`: removed `component::CONSOLE`
-> - `line_editor`: removed `component::DISPLAY`
-> - `line_editor`: removed `component::HANDOFF_PAGES`
-> - `line_editor`: removed `component::HANDOFF_VA`
-> - `line_editor`: removed `component::INSTANCE_PAGES`
-> - `line_editor`: removed `component::STACK_PAGES`
-> - `line_editor`: removed `component::supervisor::BUDGET`
-> - `line_editor`: removed `component::supervisor::BUDGET_PAGES`
-> - `line_editor`: removed `component::supervisor::CHILD_DISPLAY_TERMINAL`
-> - `line_editor`: removed `component::supervisor::CHILD_LINE_EDITOR`
-> - `line_editor`: removed `component::supervisor::CLIENT_IN`
-> - `line_editor`: removed `component::supervisor::CLIENT_OUT`
-> - `line_editor`: removed `component::supervisor::DISPLAY_IMAGE_ADDRESS`
-> - `line_editor`: removed `component::supervisor::ELF_VA`
-> - `line_editor`: removed `component::supervisor::IN_RESERVE`
-> - `line_editor`: removed `component::supervisor::LEND`
-> - `line_editor`: removed `component::supervisor::NEEDS_RESERVE`
-> - `line_editor`: removed `component::supervisor::OWN_IMAGE_ADDRESS`
-> - `line_editor`: removed `component::supervisor::PRESENT`
-> - `line_editor`: removed `component::supervisor::QUIESCE_BOUND_MILLISECONDS`
-> - `line_editor`: removed `component::supervisor::REPLACED_HUNG`
-> - `line_editor`: removed `component::supervisor::ROLLED_BACK`
-> - `line_editor`: removed `component::supervisor::SINK`
-> - `line_editor`: removed `component::supervisor::SINK_PAGE`
-> - `line_editor`: removed `component::supervisor::SINK_REPLY`
-> - `line_editor`: removed `component::supervisor::STAND_IN_PAGES`
-> - `line_editor`: removed `component::supervisor::STOP`
-> - `line_editor`: removed `component::supervisor::STOPPED`
-> - `line_editor`: removed `component::supervisor::SURFACE`
-> - `line_editor`: removed `component::supervisor::SWAP`
-> - `line_editor`: removed `component::supervisor::SWAPPED`
-> - `line_editor`: removed `component::supervisor::SWAPPING_BUDGET_PAGES`
-> - `line_editor`: removed `component::supervisor::SWAP_RESERVE_PAGES`
-> - `line_editor`: removed `component::supervisor::TERMINAL`
-> - `line_editor`: removed `component::supervisor::image_lengths`
-> - `line_editor`: removed `component::supervisor::unpack_image_lengths`
-> - `line_editor`: removed `proto::BAD_REQUEST`
-> - `line_editor`: removed `proto::CTL_HANDOFF`
-> - `line_editor`: removed `proto::CTL_QUIT`
-> - `line_editor`: removed `proto::CTL_RESUME`
-> - `line_editor`: removed `proto::FLAG_EOF`
-> - `line_editor`: removed `proto::FLAG_INTERRUPTED`
-> - `line_editor`: removed `proto::FLAG_RETRY`
-> - `line_editor`: removed `proto::NOTE_ABSORBED`
-> - `line_editor`: removed `proto::NOTE_NOT_ABSORBED`
-> - `line_editor`: removed `proto::NOTE_NOT_WRITTEN`
-> - `line_editor`: removed `proto::NOTE_WRITTEN`
-> - `line_editor`: removed `proto::OPERATION_BYTES`
-> - `line_editor`: removed `proto::OPERATION_INTRCOUNT`
-> - `line_editor`: removed `proto::OPERATION_PRINT`
-> - `line_editor`: removed `proto::OPERATION_QUIESCE`
-> - `line_editor`: removed `proto::OPERATION_RAWMODE`
-> - `line_editor`: removed `proto::OPERATION_READLINE`
-> - `line_editor`: removed `proto::OPERATION_READRAW`
-> - `line_editor`: removed `proto::OPERATION_READ_LINE_BYTES`
-> - `line_editor`: removed `proto::OPERATION_SHIFT`
-> - `line_editor`: removed `proto::OPERATION_SUSPEND_COUNT`
-> - `line_editor`: removed `proto::OPERATION_WRITE`
-> - `line_editor`: removed `proto::QUIESCED`
-> - `line_editor`: removed `proto::RAW_ONLY_BADGE`
-> - `line_editor`: removed `proto::START_ABSORB`
-> - `line_editor`: removed `proto::START_HANDOFF`
-> - `line_editor`: removed `proto::STDIN_BADGE`
-> - `line_editor`: removed `proto::SUPERVISOR_BADGE`
-> - `line_editor`: removed `proto::admits`
-> - `line_editor`: removed `proto::is_retry`
-> - `line_editor`: removed `proto::len`
-> - `line_editor`: removed `proto::operation`
-> - `line_editor`: removed `proto::req`
-> - `measured_boot`: changed `Verdict::elf`
-> - `socket_contract`: removed `OFF_DST_IP`
-> - `socket_contract`: removed `OFF_DST_PORT`
-> - `socket_contract`: removed `OFF_LEN`
-> - `socket_contract`: removed `OFF_PAYLOAD`
-> - `socket_contract`: changed `ephemeral::Ports::next`
-> - `static_elf`: crate renamed `elf -> static_elf`
-> - `supervision_contract`: changed `ChildEndowment`
+> - `capability_manifest_note`: removed `DESCRIPTOR_LEN`
+> - `capability_manifest_note`: removed `NOTE_LEN`
+> - `capability_manifest_note`: removed `SUBTREE_GRANTS_LEN`
+> - `capability_manifest_note`: removed `SUBTREE_GRANTS_NOTE_LEN`
+> - `capability_manifest_note`: removed `VERB_RECORD`
+> - `capability_manifest_note`: removed `VERSION`
+> - `capability_manifest_note`: changed `Verbs::grants_for`
+> - `capability_manifest_note`: changed `Verbs::iter`
+> - `capability_manifest_note`: removed `ZONE_MAXIMUM`
+> - `capability_manifest_note`: changed `Zones::iter`
+> - `clock_contract`: removed `NANOS_PER_SEC`
+> - `clock_contract`: changed `Reading`
+> - `clock_contract`: removed `Reading::offset_nanos`
+> - `clock_contract`: removed `rtc::CMOS`
+> - `clock_contract`: removed `rtc::DATA_PORT`
+> - `clock_contract`: removed `rtc::GOLDFISH`
+> - `clock_contract`: removed `rtc::INDEX_PORT`
+> - `clock_contract`: removed `rtc::NONE`
+> - `clock_contract`: removed `rtc::PL031`
+> - `clock_contract`: removed `state::RTC`
+> - `current_cpu_contract`: removed `CPU_WORD_OFFSET`
+> - `current_cpu_contract`: changed `CurrentCpuPage::allowance`
+> - `current_cpu_contract`: changed `CurrentCpuPage::tick_hertz`
+> - `current_cpu_contract`: removed `PAGE_BYTES`
+> - `current_cpu_contract`: removed `PAGE_VA`
+> - `current_cpu_contract`: removed `build_page_allowing`
+> - `current_cpu_contract`: removed `thread_page_va`
+> - `entropy_contract`: removed `BRING_UP_FAILED`
+> - `entropy_contract`: removed `GET`
+> - `entropy_contract`: removed `INTERFACE_ID`
+> - `entropy_contract`: removed `MAXIMUM_BYTES`
+> - `entropy_contract`: removed `NO_ENTROPY`
+> - `entropy_contract`: removed `OPERATION_SHIFT`
+> - `entropy_contract`: removed `READY`
+> - `entropy_contract`: removed `Refusal`
+> - `entropy_contract`: removed `Refusal: impl Clone`
+> - `entropy_contract`: removed `Refusal: impl Copy`
+> - `environment_contract`: changed `MAXIMUM_TERMINAL_TYPE_BYTES`
+> - `environment_contract`: changed `PAGE_BYTES`
+> - `environment_contract`: changed `PageBuilder::build`
+> - `grant_plan`: removed `CATALOG_SLOT`
+> - `grant_plan`: removed `DIAGNOSTICS_SLOT`
+> - `grant_plan`: removed `DIRECTORY_JOB_REGION_PAGES`
+> - `grant_plan`: removed `DOMAIN_SLOT`
+> - `grant_plan`: removed `DirectoryGrantDeclaration`
+> - `grant_plan`: removed `DirectoryGrantDeclaration: impl Clone`
+> - `grant_plan`: removed `DirectoryGrantDeclaration: impl Copy`
+> - `grant_plan`: removed `DirectoryGrantDeclaration: impl Debug`
+> - `grant_plan`: removed `DirectoryGrantDeclaration: impl Eq`
+> - `grant_plan`: removed `DirectoryGrantDeclaration: impl PartialEq`
+> - `machine_statistics_contract`: removed `CPU_ID_BOUND`
+> - `static_elf`: removed `FOREIGN_MACHINES`
+> - `static_elf`: removed `KNOWN_MACHINES`
+> - `static_elf`: changed `NoteSegment`
+> - `static_elf`: removed `NoteSegment::p_align`
+> - `static_elf`: removed `NoteSegment::size`
+> - `static_elf`: removed `PF_R`
+> - `static_elf`: removed `PF_W`
+> - `static_elf`: removed `PF_X`
+> - `static_elf`: changed `Segment`
+> - `static_elf`: removed `Segment::memsz`
+> - `capability_manifest_note`: and 11 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
+> - `clock_contract`: and 2 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
+> - `entropy_contract`: and 20 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
+> - `grant_plan`: and 480 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
+> - `static_elf`: and 4 more removed or changed items, counted in [interface-stability-crates.csv](interface-stability-crates.csv)
 
 ## Co-change per package
 
-Every package in `packages/`, 2026W29 to 2026W46, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one, since a home is sized by what changes together.
+Every package in `packages/`, 2026W29 to 2026W47, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one, since a home is sized by what changes together.
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 2352 | 1280 (54%) | 1019 (43%) | 50% | `contracts` (392) |
-| `contracts` | 1450 | 974 (67%) | 886 (61%) | 61% | `kernel` (392) |
-| `host-tools` | 981 | 684 (70%) | 567 (58%) | 64% | `kernel` (258) |
-| `system-tests` | 615 | 379 (62%) | 365 (59%) | 54% | `kernel` (158) |
-| `init` | 587 | 507 (86%) | 493 (84%) | 82% | `contracts` (182) |
-| `fixtures` | 466 | 375 (80%) | 354 (76%) | 71% | `contracts` (96) |
-| `runtime` | 326 | 267 (82%) | 245 (75%) | 74% | `contracts` (69) |
-| `boot` | 271 | 189 (70%) | 171 (63%) | 60% | `host-tools` (62) |
-| `drivers` | 267 | 214 (80%) | 196 (73%) | 74% | `kernel` (81) |
-| `display` | 246 | 174 (71%) | 162 (66%) | 60% | `kernel` (47) |
-| `swish` | 177 | 158 (89%) | 152 (86%) | 85% | `contracts` (66) |
-| `redoxfs` | 147 | 109 (74%) | 103 (70%) | 56% | `contracts` (21) |
-| `network` | 140 | 115 (82%) | 112 (80%) | 74% | `init` (31) |
-| `terminal` | 140 | 120 (86%) | 117 (84%) | 76% | `init` (34) |
-| `login` | 128 | 107 (84%) | 105 (82%) | 65% | `contracts` (18) |
-| `timetable` | 118 | 88 (75%) | 84 (71%) | 55% | `init` (16) |
-| `process-tools` | 114 | 92 (81%) | 88 (77%) | 65% | `init` (13) |
-| `time` | 85 | 81 (95%) | 79 (93%) | 90% | `init` (11) |
-| `core-tools` | 65 | 59 (91%) | 59 (91%) | 79% | `process-tools` (11) |
-| `filesystem` | 56 | 51 (91%) | 50 (89%) | 82% | `contracts` (12) |
-| `jig` | 42 | 37 (88%) | 37 (88%) | 74% | `contracts` (9) |
-| `entropy` | 39 | 38 (97%) | 38 (97%) | 93% | `drivers` (8) |
-| `nife-libc` | 35 | 23 (66%) | 19 (54%) | 55% | `system-tests` (5) |
-| `disk-tools` | 34 | 34 (100%) | 34 (100%) | 100% | `core-tools` (8) |
+| `kernel` | 2416 | 1310 (54%) | 1034 (43%) | 49% | `contracts` (408) |
+| `contracts` | 1559 | 1018 (65%) | 914 (59%) | 60% | `kernel` (408) |
+| `host-tools` | 998 | 698 (70%) | 580 (58%) | 65% | `kernel` (260) |
+| `system-tests` | 638 | 402 (63%) | 387 (61%) | 55% | `kernel` (166) |
+| `init` | 613 | 526 (86%) | 509 (83%) | 81% | `contracts` (186) |
+| `fixtures` | 490 | 398 (81%) | 376 (77%) | 73% | `contracts` (102) |
+| `runtime` | 354 | 286 (81%) | 260 (73%) | 73% | `contracts` (73) |
+| `boot` | 274 | 192 (70%) | 174 (64%) | 60% | `host-tools` (63) |
+| `display` | 258 | 179 (69%) | 167 (65%) | 58% | `kernel` (48) |
+| `swish` | 181 | 162 (90%) | 156 (86%) | 85% | `contracts` (66) |
+| `network` | 154 | 123 (80%) | 120 (78%) | 72% | `init` (32) |
+| `redoxfs` | 153 | 115 (75%) | 109 (71%) | 58% | `contracts` (22) |
+| `drivers` | 148 | 139 (94%) | 134 (91%) | 92% | `kernel` (48) |
+| `terminal` | 145 | 125 (86%) | 122 (84%) | 76% | `init` (35) |
+| `login` | 133 | 112 (84%) | 110 (83%) | 66% | `contracts` (18) |
+| `timetable` | 121 | 91 (75%) | 87 (72%) | 57% | `init` (17) |
+| `process-tools` | 118 | 96 (81%) | 92 (78%) | 65% | `init` (13) |
+| `time` | 96 | 89 (93%) | 87 (91%) | 85% | `kernel` (14) |
+| `core-tools` | 70 | 64 (91%) | 64 (91%) | 81% | `process-tools` (11) |
+| `filesystem` | 58 | 53 (91%) | 52 (90%) | 82% | `contracts` (12) |
+| `jig` | 48 | 43 (90%) | 43 (90%) | 77% | `contracts` (10) |
+| `entropy` | 42 | 41 (98%) | 41 (98%) | 93% | `display` (7) |
+| `nife-libc` | 37 | 25 (68%) | 21 (57%) | 57% | `system-tests` (5) |
+| `disk-tools` | 36 | 36 (100%) | 36 (100%) | 100% | `core-tools` (8) |
 | `cryptography` | 29 | 27 (93%) | 25 (86%) | 87% | `fixtures` (8) |
-| `system_installer` | 25 | 25 (100%) | 25 (100%) | 100% | `host-tools` (4) |
-| `demos` | 14 | 13 (93%) | 13 (93%) | 67% | `fixtures` (2) |
-| `mdr` | 6 | 6 (100%) | 5 (83%) | 100% | `contracts` (2) |
+| `system_installer` | 26 | 26 (100%) | 26 (100%) | 100% | `host-tools` (4) |
+| `demos` | 16 | 15 (94%) | 15 (94%) | 67% | `fixtures` (2) |
+| `mdr` | 10 | 10 (100%) | 9 (90%) | 100% | `contracts` (2) |
+| `ext4-oracle` | 7 | 4 (57%) | 0 (0%) | 57% | none |
 
 ## Co-change per release-track crate
 
@@ -351,8 +162,8 @@ Each crate a per-crate release milestone names (`helpers/crate_release.py`), on 
 
 | crate | commits | crossing | touching another | crossing, mass excluded |
 |---|---:|---:|---:|---:|
-| `designware_ethernet` | 92 | 55 (60%) | 44 (48%) | 55% |
-| `jh7110_clock_and_reset` | 83 | 56 (67%) | 47 (57%) | 59% |
+| `jh7110_clock_and_reset` | 85 | 57 (67%) | 44 (52%) | 59% |
+| `designware_ethernet` | 0 | 0 (0%) | 0 (0%) | none |
 | `designware_mobile_storage` | 0 | 0 (0%) | 0 (0%) | none |
 | `e1000e` | 0 | 0 (0%) | 0 (0%) | none |
 | `extensible_host_controller_interface` | 0 | 0 (0%) | 0 (0%) | none |

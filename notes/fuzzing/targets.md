@@ -88,8 +88,8 @@ sixty-second smoke run left versions 2 and 3 past the count byte in its corpus.
 
 ## `domain_name_system_reply`
 
-The real captures in `crates/domain_name_system/tests/fixtures` seed the target unmodified, and
-`script/fuzz` passes that directory read-only, as it passes every seed directory.
+The real captures in `tests/fixtures` seed the target unmodified, and the fuzz run passes that
+directory read-only, as it passes every seed directory.
 
 ## `http_response_feed`
 
@@ -135,6 +135,21 @@ small hand-written streams (colors, cursor movement, alternate screen, scroll re
 sequences, ripgrep-style colored output), and the output halves of two recordings in
 `crates/video_terminal/recordings`. The tree holds no captured ripgrep output, so that seed copies
 the shape ripgrep prints.
+
+## `line_editor_feed` and `line_editor_handoff`
+
+The line editor reads a serial console byte by byte, and what arrives there is escape sequences cut
+anywhere, mouse reports and bytes above ASCII. `line_editor_feed` reads its input as a stream of
+keystrokes with five calls mixed in (`start_line`, `resume_line`, `repaint`, `abandon` and
+`insert_text`, each introduced by a byte from `0xf0` to `0xf4`). After every byte the cursor must lie
+inside the line and the line inside `LINE_MAXIMUM`, and no echo write is empty or longer than a
+prompt and a line. Two Kani harnesses cover the escape parser and the range delete for every input;
+this target covers the whole state machine, history and yank included.
+
+`line_editor_handoff` hands arbitrary bytes to the replacement editor's reader. The reader refuses a
+blob or restores a state whose cursor is inside its line, and that state saves and restores again
+to the same line. A restored raw queue never drains more than it holds. The target has no seeds yet: the
+two layouts are short, and the header check passes within a few thousand inputs.
 
 ## `nifefs_roundtrip` and `package_archive_roundtrip`
 

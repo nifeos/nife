@@ -121,7 +121,9 @@ fn a_bound_rendezvous_never_yields_a_sender() {
 
     // One symbolic step between the bind and the receive: a send (refused), a signal, a receive.
     match kani::any::<u8>() {
-        0 => assert!(matches!(e.send(other), Send::Refused(_))),
+        0 => {
+            assert!(matches!(e.send(other), Send::Refused(_)));
+        }
         1 => {
             let _ = e.signal();
         }
@@ -158,7 +160,9 @@ fn send_rendezvous_iff_a_receiver_waited() {
                 "rendezvoused with a thread nobody queued"
             );
         }
-        Send::Blocked => assert!(!had_receiver && !bound),
+        Send::Blocked => {
+            assert!(!had_receiver && !bound);
+        }
         // Refused, and nothing touched: not the waiting driver popped, not the sender parked
         // where the driver's next receive would find it, not the pending interrupt count.
         Send::Refused(_) => {

@@ -72,6 +72,60 @@ firsts="$(cut -f2 "$ranges" | sort -n | tr '\n' ' ')"
 [ "$firsts" = "1000000 1000501 1001001 3000000 7776000 " ] \
     || fail "published first seeds are '$firsts', want all of slot 1's and the ranges of slots 0 and 2 before their held windows, and none of slot 3 (held-budget-expired is held like the rest)"
 
+# The Filer line: host-local counts and times, read from a stub filer, a stub systemctl and a stub
+# ledger. Only the filer's closing tally is kept: the cause lines it prints must not reach the report.
+cat > "$work/bin-filer" <<'STUB'
+#!/bin/sh
+echo "fuzz-filer: cause abcdef123456 (budget): 9000 held logs, parked: a budget is filed only when a rule says file"
+echo "fuzz-filer: $FILER_TALLY"
+STUB
+cat > "$work/bin-systemctl" <<'STUB'
+#!/bin/sh
+case "$1" in
+    is-enabled) [ -n "$TIMER_STATE" ] && echo "$TIMER_STATE"; [ "$TIMER_STATE" = enabled ] ;;
+    show) echo "LastTriggerUSec=$TIMER_LAST" ;;
+esac
+STUB
+chmod +x "$work/bin-filer" "$work/bin-systemctl"
+printf '# comment\n2026-11-07T12:00:00Z\tabcdef0123456789\tfiled\tGHSA-xxxx-xxxx-xxxx\n2026-11-07T12:05:00Z\tfedcba\tcause\tGHSA-xxxx\t3\tabc\n' > "$work/ledger.tsv"
+
+filer_line() { # name, want (the whole line), then environment assignments for env(1)
+    name="$1"; want="$2"; shift 2
+    rm -rf "$work/fl"; mkdir -p "$work/fl"
+    env NIFE_FUZZ_HOME="$work/fl" NIFE_FUZZ_FILER="$work/bin-filer" NIFE_FUZZ_SYSTEMCTL="$work/bin-systemctl" \
+        NIFE_FUZZ_FILER_LEDGER="$work/ledger.tsv" "$@" "$here/fuzz-daily-publish.sh" --dry-run >/dev/null 2>&1 \
+        || fail "$name: the dry run exited non-zero"
+    got="$(grep '^Filer:' "$work/fl/out/$today/report.md")"
+    [ "$got" = "Filer: $want" ] || fail "$name: line is '$got', want 'Filer: $want'"
+    [ "$(grep -c '^Filer:' "$work/fl/out/$today/report.md")" = 1 ] || fail "$name: not exactly one Filer line"
+    ! grep -q 'abcdef123456\|9000' "$work/fl/out/$today/report.md" || fail "$name: a cause line leaked into the report"
+}
+
+ok_tally='17 held logs, 17 causes, 1 filed before, 16 parked, 0 suppressed, 0 refused, none to file'
+filer_line "healthy" \
+    "held=17 causes=17 filed=1 parked=16 unfiled=0 ledger-newest=2026-11-07T12:05:00Z timer-enabled=yes timer-last-run=2026-11-17T09:30:00Z" \
+    FILER_TALLY="$ok_tally" TIMER_STATE=enabled TIMER_LAST="Tue 2026-11-17 09:30:00 UTC"
+filer_line "causes to file" \
+    "held=20 causes=19 filed=1 parked=16 unfiled=2 ledger-newest=2026-11-07T12:05:00Z timer-enabled=yes timer-last-run=2026-11-17T09:30:00Z" \
+    FILER_TALLY='20 held logs, 19 causes, 1 filed before, 16 parked, 0 suppressed, 0 refused, 2 to file; the dry run sent nothing and wrote nothing' \
+    TIMER_STATE=enabled TIMER_LAST="Tue 2026-11-17 09:30:00 UTC"
+filer_line "timer disabled and never run" \
+    "held=17 causes=17 filed=1 parked=16 unfiled=0 ledger-newest=2026-11-07T12:05:00Z timer-enabled=no timer-last-run=never" \
+    FILER_TALLY="$ok_tally" TIMER_STATE=disabled TIMER_LAST=n/a
+filer_line "systemctl silent" \
+    "held=17 causes=17 filed=1 parked=16 unfiled=0 ledger-newest=2026-11-07T12:05:00Z timer-enabled=unknown timer-last-run=unknown" \
+    FILER_TALLY="$ok_tally" TIMER_STATE= TIMER_LAST=
+filer_line "no tally" \
+    "held=unknown causes=unknown filed=unknown parked=unknown unfiled=unknown ledger-newest=2026-11-07T12:05:00Z timer-enabled=yes timer-last-run=2026-11-17T09:30:00Z" \
+    FILER_TALLY='the token is refused' TIMER_STATE=enabled TIMER_LAST="Tue 2026-11-17 09:30:00 UTC"
+filer_line "no ledger" \
+    "held=17 causes=17 filed=1 parked=16 unfiled=0 ledger-newest=none timer-enabled=yes timer-last-run=2026-11-17T09:30:00Z" \
+    FILER_TALLY="$ok_tally" TIMER_STATE=enabled TIMER_LAST="Tue 2026-11-17 09:30:00 UTC" \
+    NIFE_FUZZ_FILER_LEDGER="$work/absent.tsv"
+filer_line "no filer installed" \
+    "held=unknown causes=unknown filed=unknown parked=unknown unfiled=unknown ledger-newest=2026-11-07T12:05:00Z timer-enabled=yes timer-last-run=2026-11-17T09:30:00Z" \
+    NIFE_FUZZ_FILER="$work/absent-filer" TIMER_STATE=enabled TIMER_LAST="Tue 2026-11-17 09:30:00 UTC"
+
 # The publish path refuses a missing or stale token by name, before any gh call. A stub gh on PATH
 # records each call; every refusal must exit non-zero, name its cause in one line, print no token,
 # and call nothing. The last case, a token with an hour left, must reach the stub exactly once.

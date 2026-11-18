@@ -22,15 +22,15 @@ confinement_attackers = []
 # Each window is a pair page, checked at compile time against the address-space map.
 address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The JH7110 Ethernet control process's handoff and report carry the driver crate's types.
-designware_ethernet = { version = "0.1.0", path = "../designware_ethernet" }
+designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096" }
 # The xHCI register window is drawn from the controller's decoded capability registers.
-extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
+extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "a2189a4e8a795d6201cce3075b07216b6b405a7c" }
 # The PMIC route's spawn words carry the I2C master's standard-mode timing.
 designware_inter_integrated_circuit = { version = "0.1.0", path = "../designware_inter_integrated_circuit" }
 # The block server answers `blk`, and its block size sets how many card sectors a block is.
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
-non_volatile_memory_express = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "27aa19c957a340b720b8b7ce44de32a8405d6950" }
+non_volatile_memory_express = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "73b335cd973cc63f9039fbbc8894af7c72d3a344" }
 # The virtio window is drawn from the function's capability list, which `pci` walks.
 pci_configuration_space = { version = "0.1.0", path = "../pci_configuration_space" }
 # Each window's kind is a startup page entry kind.

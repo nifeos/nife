@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 886, 956, 1017
 decision_dependencies: 151, 305
@@ -141,6 +141,17 @@ The P2 items are in [the appendix](1091-filesystem-fixture-outside-review/later-
 ### P1: before the tag
 
 The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before-the-tag.md).
+
+## Ledger
+
+The [ledger](1091-filesystem-fixture-outside-review/ledger.md) lists each item as done or left, with the test and the reason.
+
+## Follow-on
+
+- **Outstanding.** Items 1, 4, 5, 6, 11, 15, 16, 17 and 18 and the rest of items 2 and 3. They
+  wait on template work, the architect's naming rulings (Decision 2), the move commit and a
+  documentation rewrite. The ledger names each with its reason. Checked by reading the ledger rows
+  against the crate.
 
 ## Decisions for the architect
 

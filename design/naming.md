@@ -46,7 +46,7 @@ against three failure modes:
   `[spelled_out]` list in `vendor/crate-workflows/helpers/naming_words.toml`, the template's, and
   `script/lint` fails when this paragraph and that list disagree.
 - These stay: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`, `bios`, `id`, `efi`, `crc`,
-  QEMU, `MAC`, `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
+  `tcp`, `udp`, `ipv4`, QEMU, `MAC`, `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
   acronym (`address_space_identifier`). `io` stays whole inside an expansion too: SDIO becomes `SD_IO`,
   `mdio` becomes `management_data_io` and `virtio` becomes `virtual_io`.
 - A name that arrives across another project's interface keeps its owner's spelling, and only the
@@ -96,6 +96,8 @@ megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbo
   `_DO_NOT_OVERLAP` (no leading `THE_`). A limit opens `MAXIMUM_` or `MINIMUM_` and ends with its
   unit.
 - An address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location.
+  An IPv4 or IPv6 address carries its protocol as the qualifier (`IPV4_ADDRESS`, `ipv6_address`), and
+  the `register_names` gate accepts that; a bare `ADDRESS` still fails. Calef ruled this 2026-11-16 (UTC).
 
 ## Vocabulary
 

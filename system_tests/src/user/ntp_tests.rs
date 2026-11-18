@@ -215,7 +215,7 @@ fn an_ntp_exchange_reaches_the_clock_as_a_proposal() {
     let after = clock.page().read();
     assert_eq!(
         after.state,
-        state::SYNCED,
+        state::SYNCHRONIZED,
         "the clock is {} rather than SYNCED: an accepted proposal is not a SET, and only the \
          service can publish this",
         after.state,

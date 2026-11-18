@@ -26,7 +26,7 @@ Nothing was built, nothing hung. The contract was checked where you could still 
 
 ## The format
 
-A manifest declares what a program expects to be handed (`grant_plan::Manifest`):
+A manifest declares what a program expects to be handed (`grant_contract::Manifest`):
 
 ```rust
 struct Manifest {
@@ -44,13 +44,13 @@ struct Manifest {
     domain:        bool,        // may it name the processes in its supervision domain?
     config:        bool,        // may it read TZ/LANG/TERM off the inert config page?
     entropy:       bool,        // may it ask the entropy service for random bytes?
-    // ... network, machine, share, runtime: see grant_plan::Manifest
+    // ... network, machine, share, runtime: see grant_contract::Manifest
     reboot:        bool,        // may it restart the machine (milestone 805, DECISIONS §251)?
     sync:          bool,        // may it ask the file server for SYNC and nothing else?
 }
 ```
 
-**The struct in `crates/grant_plan/src/manifest.rs` is the authority, not this page.** This list said
+**The struct in `crates/grant_contract/src/manifest.rs` is the authority, not this page.** This list said
 five fields against the code's ten from some point before 2026-08-14, when milestone 117's first
 stranger run found it and reported that following the note produces a struct that does not compile.
 It then carried `reports` and `interruptible` twice, and was missing `domain`, `config` and
@@ -62,7 +62,7 @@ about something the command line can designate. These four are about authority n
 there is nothing to type and nothing to refuse. What they do is tell The progenitor which children to
 endow, and tell a person reading `caps <program>` that the authority exists at all. `clock` and
 `config` are read-only page mappings; `domain` and `entropy` are endpoints placed at named slots
-(`grant_plan::DOMAIN_SLOT`, `ENTROPY_SLOT`), narrowed to `ENUMERATE` and `WRITE` respectively.
+(`grant_contract::DOMAIN_SLOT`, `ENTROPY_SLOT`), narrowed to `ENUMERATE` and `WRITE` respectively.
 
 `entropy` is the one worth pausing on, because randomness is the authority whose use leaves no trace:
 a process that draws a key and a process that hardcodes one make the same syscalls and produce
@@ -112,7 +112,7 @@ refusal), with an upper bound the shell's own budget can actually back.
 
 ## The check, and its order
 
-`grant_plan::plan` resolves a parsed invocation against the manifest and yields either an `Endowment`
+`program_table::plan` resolves a parsed invocation against the manifest and yields either an `Endowment`
 (exactly what to grant) or a typed `Refusal`. The order starts with the program name. A name that
 resolves to nothing is a fact about the system, and everything after it is a fact about a program
 that exists. Then a flag nothing knows, then the positional tokens placed into the slots the manifest
@@ -146,7 +146,7 @@ composition, not at runtime.
 
 ## What the line cannot name: authorities a manifest declares
 
-Most of `grant_plan::Manifest` is about what a command line designates. The rest is about what it
+Most of `grant_contract::Manifest` is about what a command line designates. The rest is about what it
 cannot: the clock, the process domain, the configuration page, entropy, the network, the machine
 page, the job budget's view, the reboot object, the sync capability, and the package manager's
 endpoints and directories. None of these is a name a person types, so there is no token to place and
@@ -206,7 +206,7 @@ prompt alone holds (DECISIONS §221 (the boot prompt is the owner's console)):
   owner's to show.
 
 `console_input`, the console's input, goes only to a program in the table. No image may declare
-`console_input`, the three above, `reboot` or `sync` (`grant_plan::image_can_carry`), so "only one
+`console_input`, the three above, `reboot` or `sync` (`program_table::image_can_carry`), so "only one
 program can restart the machine" is a fact about the table rather than about what somebody
 installed.
 

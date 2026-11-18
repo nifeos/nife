@@ -102,8 +102,8 @@ dependencies = [
 
 [[package]]
 name = "block_roster_contract"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/block_roster_contract?rev=62630199281cbd294d6621cc35f31f81933e6be2#62630199281cbd294d6621cc35f31f81933e6be2"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/block_roster_contract?rev=72f531ccf75c873614fb580e07af24d86f313f23#72f531ccf75c873614fb580e07af24d86f313f23"
 
 [[package]]
 name = "boot_ladder"
@@ -119,10 +119,6 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-dependencies = [
- "filesystem_contract",
- "filesystem_fixture",
-]
 
 [[package]]
 name = "byte_sink_contract"
@@ -150,16 +146,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "capability"
-version = "0.1.0"
-
-[[package]]
 name = "capability_manifest_note"
 version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
- "grant_plan",
+ "grant_contract",
  "interfaces_note",
+ "program_table",
 ]
 
 [[package]]
@@ -168,6 +161,10 @@ version = "0.1.0"
 dependencies = [
  "abi",
 ]
+
+[[package]]
+name = "capability_table"
+version = "0.1.0"
 
 [[package]]
 name = "capability_witness_contract"
@@ -241,6 +238,7 @@ dependencies = [
  "filesystem_fixture",
  "free",
  "globally_unique_identifier_partition_table",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
@@ -263,6 +261,7 @@ dependencies = [
  "pmap",
  "process_builder",
  "program_argument_contract",
+ "program_table",
  "ps",
  "screen_console",
  "slabtop",
@@ -285,7 +284,6 @@ dependencies = [
  "user_mode_runtime",
  "uuid",
  "video_terminal",
- "virtio",
  "vmstat",
 ]
 
@@ -405,6 +403,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096#ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -412,8 +411,8 @@ version = "0.1.0"
 
 [[package]]
 name = "designware_mobile_storage"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb#473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b#4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b"
 
 [[package]]
 name = "device_tree_blob"
@@ -484,12 +483,13 @@ dependencies = [
 
 [[package]]
 name = "e1000e"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/e1000e?rev=ef01cefa9a186db7f1c9802e78d8c6c1215db7ec#ef01cefa9a186db7f1c9802e78d8c6c1215db7ec"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/e1000e?rev=68ed5202b1df8c5de1ee365c9b9337f731ed7a0c#68ed5202b1df8c5de1ee365c9b9337f731ed7a0c"
 
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
 
 [[package]]
 name = "environment_contract"
@@ -503,13 +503,13 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "extensible_host_controller_interface"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=2394d80d83ca59d1aadf925274b34a30bfbd92b2#2394d80d83ca59d1aadf925274b34a30bfbd92b2"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=a2189a4e8a795d6201cce3075b07216b6b405a7c#a2189a4e8a795d6201cce3075b07216b6b405a7c"
 
 [[package]]
 name = "file_allocation_table"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/file_allocation_table?rev=9b3eac1cdbb19cc6668e3346296c8cee87e32214#9b3eac1cdbb19cc6668e3346296c8cee87e32214"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/file_allocation_table?rev=6f8aa1df729d4d437d11b8305fadbafa07c93251#6f8aa1df729d4d437d11b8305fadbafa07c93251"
 
 [[package]]
 name = "filesystem_contract"
@@ -556,6 +556,7 @@ dependencies = [
  "entropy_contract",
  "filesystem_contract",
  "filesystem_fixture",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
@@ -568,6 +569,7 @@ dependencies = [
  "nifefs",
  "primitive_benchmark_contract",
  "process_builder",
+ "program_table",
  "soak_page",
  "socket_contract",
  "startup_page_contract",
@@ -627,13 +629,23 @@ name = "glyph_atlas"
 version = "0.1.0"
 
 [[package]]
+name = "grant_contract"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "program_argument_contract",
+]
+
+[[package]]
 name = "grant_plan"
 version = "0.1.0"
 dependencies = [
  "byte_glob",
  "filesystem_contract",
- "primitive_benchmark_contract",
+ "filesystem_fixture",
+ "grant_contract",
  "program_argument_contract",
+ "program_table",
 ]
 
 [[package]]
@@ -768,8 +780,8 @@ dependencies = [
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.2.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06#cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06"
+version = "0.3.0-pre.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -828,7 +840,7 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "capability",
+ "capability_table",
  "clock_contract",
  "compositor",
  "coremark",
@@ -872,6 +884,7 @@ dependencies = [
  "pci_configuration_space",
  "periodic_deadline",
  "primitive_benchmark_contract",
+ "program_table",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -1045,8 +1058,8 @@ version = "0.1.0"
 
 [[package]]
 name = "non_volatile_memory_express"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=27aa19c957a340b720b8b7ce44de32a8405d6950#27aa19c957a340b720b8b7ce44de32a8405d6950"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=73b335cd973cc63f9039fbbc8894af7c72d3a344#73b335cd973cc63f9039fbbc8894af7c72d3a344"
 
 [[package]]
 name = "nu-ansi-term"
@@ -1188,10 +1201,22 @@ name = "program_asks"
 version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
- "grant_plan",
+ "grant_contract",
  "installed_programs",
  "package_archive",
+ "program_table",
  "static_elf",
+]
+
+[[package]]
+name = "program_table"
+version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "grant_contract",
+ "grant_plan",
+ "primitive_benchmark_contract",
+ "program_argument_contract",
 ]
 
 [[package]]
@@ -1223,9 +1248,9 @@ dependencies = [
 
 [[package]]
 name = "r-efi"
-version = "7.1.0"
+version = "7.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0ff379dd174eec5b2cab797063a2e7592dfcf0bf0323a50eeee724ee3537f13"
+checksum = "985ede7b27e96936c369ba18787c9178af0ef38d130792fc88e936242a7071c4"
 
 [[package]]
 name = "regex-automata"
@@ -1452,8 +1477,10 @@ dependencies = [
  "documentation",
  "environment_contract",
  "filesystem_contract",
+ "grant_contract",
  "grant_plan",
  "installed_programs",
+ "program_table",
  "std_runtime_contract",
 ]
 
@@ -1493,7 +1520,7 @@ dependencies = [
  "domain_name_resolution_contract",
  "entropy_contract",
  "filesystem_contract",
- "grant_plan",
+ "grant_contract",
  "graphics_contract",
  "installed_programs",
  "interfaces_note",
@@ -1506,6 +1533,7 @@ dependencies = [
  "package_index",
  "process_builder",
  "program_asks",
+ "program_table",
  "socket_contract",
  "static_elf",
  "std_runtime_contract",
@@ -1559,6 +1587,7 @@ dependencies = [
  "environment_contract",
  "filesystem_contract",
  "filesystem_fixture",
+ "grant_contract",
  "grant_plan",
  "graphics_contract",
  "jiff",
@@ -1576,6 +1605,7 @@ dependencies = [
  "page_tables",
  "pgrep",
  "pmap",
+ "program_table",
  "ps",
  "socket_contract",
  "spin_lock",
@@ -1646,9 +1676,11 @@ name = "timetable"
 version = "0.1.0"
 dependencies = [
  "clock_contract",
+ "grant_contract",
  "grant_plan",
  "jiff",
  "periodic_deadline",
+ "program_table",
 ]
 
 [[package]]
@@ -1865,18 +1897,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "virtio"
-version = "0.1.0"
-dependencies = [
- "address_space_layout",
- "driver_process_contract",
- "filesystem_contract",
- "nifefs",
- "startup_page_contract",
- "user_mode_runtime",
-]
-
-[[package]]
 name = "vmstat"
 version = "0.1.0"
 dependencies = [
@@ -1964,7 +1984,7 @@ dependencies = [
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
  "glyph_atlas",
- "grant_plan",
+ "grant_contract",
  "graphics_contract",
  "initial_ramdisk_writer",
  "installed_programs",
@@ -1974,6 +1994,7 @@ dependencies = [
  "package_archive",
  "package_index",
  "program_asks",
+ "program_table",
  "screen_console",
  "sealed_pair",
  "serial_console",

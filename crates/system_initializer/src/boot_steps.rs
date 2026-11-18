@@ -81,11 +81,11 @@ pub(super) struct LoginPrograms {
 
 /// The programs the shell can spawn, and the names the measurement refused among them.
 pub(super) struct Spawnable {
-    pub(super) progs: [Option<static_elf::Elf<'static>>; grant_plan::PROGRAM_COUNT],
+    pub(super) progs: [Option<static_elf::Elf<'static>>; program_table::PROGRAM_COUNT],
     /// Which programs this initial ramdisk has no entry for, so a spawn of one is answered
-    /// [`grant_plan::spawnproto::SPAWN_NOT_IN_IMAGE`] rather than as a build failure.
-    pub(super) absent: [bool; grant_plan::PROGRAM_COUNT],
-    pub(super) refused: [&'static str; grant_plan::PROGRAM_COUNT],
+    /// [`program_table::spawnproto::SPAWN_NOT_IN_IMAGE`] rather than as a build failure.
+    pub(super) absent: [bool; program_table::PROGRAM_COUNT],
+    pub(super) refused: [&'static str; program_table::PROGRAM_COUNT],
     pub(super) refused_n: usize,
 }
 
@@ -282,11 +282,11 @@ pub(super) fn read_boot_programs(fs: &nifefs::Fs<'static>, table: &str) -> BootP
 /// names the table refused; an entry the archive lacks is never a refusal.
 #[inline(never)]
 pub(super) fn measure_spawnable(fs: &nifefs::Fs<'static>, table: &str) -> Spawnable {
-    let mut progs: [Option<static_elf::Elf>; grant_plan::PROGRAM_COUNT] =
+    let mut progs: [Option<static_elf::Elf>; program_table::PROGRAM_COUNT] =
         core::array::from_fn(|_| None);
-    let mut refused = [""; grant_plan::PROGRAM_COUNT];
+    let mut refused = [""; program_table::PROGRAM_COUNT];
     let mut refused_n = 0usize;
-    let mut absent = [false; grant_plan::PROGRAM_COUNT];
+    let mut absent = [false; program_table::PROGRAM_COUNT];
     for (id, slot) in progs.iter_mut().enumerate() {
         let Some(name) = Program::from_id(id as u64).and_then(archive_name) else {
             continue;
@@ -348,7 +348,7 @@ pub(super) fn start_device_services(
 /// Build the entropy service on a virtio-rng device, or take the one the kernel built on the
 /// CPU's seed instruction. Neither is a failure when absent. Returns whether entropy is ready,
 /// whether it came from the instruction, and the request endpoint, which is kept for the life of
-/// the boot: `credentialer` and every child declaring [`grant_plan::Manifest::entropy`] get a view
+/// the boot: `credentialer` and every child declaring [`grant_contract::Manifest::entropy`] get a view
 /// of it. See notes/system-initializer/the-boot-order.md, "The device services".
 #[inline(never)]
 fn start_entropy(
@@ -844,7 +844,7 @@ pub(super) fn retype_spawn_channel(ut: u64) -> SpawnChannel {
 /// and configuration page. The file service is slot 4 when the boot has one; the clock is last, so
 /// the shell is told its slot. Clock and configuration are `READ` without `GRANT` (§43 (reading the
 /// clock is a page, setting it is a page you may write)), and the configuration page is placed at
-/// [`grant_plan::SHELL_CONFIGURATION_SLOT`] after the build. Returns the child and the clock's
+/// [`grant_contract::SHELL_CONFIGURATION_SLOT`] after the build. Returns the child and the clock's
 /// slot. See notes/system-initializer/the-boot-order.md, "The terminal stack and the shell".
 #[inline(never)]
 pub(super) fn build_shell(
@@ -893,7 +893,7 @@ pub(super) fn build_shell(
     // Mapped for `capabilities` to read; its capability goes at a named slot after the build, because the
     // list's slots move with what the boot granted.
     sh_maps[n_maps] = (
-        grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
+        grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
         g.config_page,
         abi::address_space::MAP_READ_ONLY,
     );
@@ -921,7 +921,7 @@ pub(super) fn build_shell(
         shell.tcb,
         g.config_page,
         abi::rights::READ,
-        grant_plan::SHELL_CONFIGURATION_SLOT,
+        grant_contract::SHELL_CONFIGURATION_SLOT,
     ));
     (shell, sh_clock_slot)
 }

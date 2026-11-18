@@ -23,45 +23,45 @@
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">80</text>
 <line x1="64" y1="257.5" x2="650.0" y2="257.5" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
-<path class="seg s0" d="M71.7,324.0 V227.3 Q71.7,223.3 75.7,223.3 H97.4 Q101.4,223.3 101.4,227.3 V324.0 Z"><title>2026W34, ejected share: 30.3</title></path>
-<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="fg val" x="86.5" y="218.3" font-size="10" text-anchor="middle">30.3</text>
-<path class="seg s0" d="M116.7,324.0 V105.9 Q116.7,101.9 120.7,101.9 H142.5 Q146.5,101.9 146.5,105.9 V324.0 Z"><title>2026W35, ejected share: 66.8</title></path>
-<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="131.6" y="96.9" font-size="10" text-anchor="middle">66.8</text>
-<path class="seg s0" d="M161.8,324.0 V255.8 Q161.8,251.8 165.8,251.8 H187.6 Q191.6,251.8 191.6,255.8 V324.0 Z"><title>2026W36, ejected share: 21.7</title></path>
-<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="176.7" y="246.8" font-size="10" text-anchor="middle">21.7</text>
-<path class="seg s0" d="M206.9,324.0 V299.7 Q206.9,295.7 210.9,295.7 H232.6 Q236.6,295.7 236.6,299.7 V324.0 Z"><title>2026W37, ejected share: 8.5</title></path>
-<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="221.8" y="290.7" font-size="10" text-anchor="middle">8.5</text>
-<path class="seg s0" d="M252.0,324.0 V274.5 Q252.0,270.5 256.0,270.5 H277.7 Q281.7,270.5 281.7,274.5 V324.0 Z"><title>2026W38, ejected share: 16.1</title></path>
-<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="266.8" y="265.5" font-size="10" text-anchor="middle">16.1</text>
-<path class="seg s0" d="M297.0,324.0 V193.3 Q297.0,189.3 301.0,189.3 H322.8 Q326.8,189.3 326.8,193.3 V324.0 Z"><title>2026W39, ejected share: 40.5</title></path>
-<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="311.9" y="184.3" font-size="10" text-anchor="middle">40.5</text>
-<path class="seg s0" d="M342.1,324.0 V224.3 Q342.1,220.3 346.1,220.3 H367.9 Q371.9,220.3 371.9,224.3 V324.0 Z"><title>2026W40, ejected share: 31.2</title></path>
-<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="357.0" y="215.3" font-size="10" text-anchor="middle">31.2</text>
-<path class="seg s0" d="M387.2,324.0 V265.8 Q387.2,261.8 391.2,261.8 H413.0 Q417.0,261.8 417.0,265.8 V324.0 Z"><title>2026W41, ejected share: 18.7</title></path>
-<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="402.1" y="256.8" font-size="10" text-anchor="middle">18.7</text>
-<path class="seg s0" d="M432.3,324.0 V276.8 Q432.3,272.8 436.3,272.8 H458.0 Q462.0,272.8 462.0,276.8 V324.0 Z"><title>2026W42, ejected share: 15.4</title></path>
-<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="447.2" y="267.8" font-size="10" text-anchor="middle">15.4</text>
-<path class="seg s0" d="M477.4,324.0 V232.6 Q477.4,228.6 481.4,228.6 H503.1 Q507.1,228.6 507.1,232.6 V324.0 Z"><title>2026W43, ejected share: 28.7</title></path>
-<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="492.2" y="223.6" font-size="10" text-anchor="middle">28.7</text>
-<path class="seg s0" d="M522.4,324.0 V265.2 Q522.4,261.2 526.4,261.2 H548.2 Q552.2,261.2 552.2,265.2 V324.0 Z"><title>2026W44, ejected share: 18.9</title></path>
-<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="537.3" y="256.2" font-size="10" text-anchor="middle">18.9</text>
-<path class="seg s0" d="M567.5,324.0 V193.0 Q567.5,189.0 571.5,189.0 H593.3 Q597.3,189.0 597.3,193.0 V324.0 Z"><title>2026W45, ejected share: 40.6</title></path>
-<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="582.4" y="184.0" font-size="10" text-anchor="middle">40.6</text>
-<path class="seg s0" d="M612.6,324.0 V243.9 Q612.6,239.9 616.6,239.9 H638.3 Q642.3,239.9 642.3,243.9 V324.0 Z"><title>2026W46, ejected share: 25.3</title></path>
-<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
-<text class="fg val" x="627.5" y="234.9" font-size="10" text-anchor="middle">25.3</text>
+<path class="seg s0" d="M71.7,324.0 V105.9 Q71.7,101.9 75.7,101.9 H97.4 Q101.4,101.9 101.4,105.9 V324.0 Z"><title>2026W35, ejected share: 66.8</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="86.5" y="96.9" font-size="10" text-anchor="middle">66.8</text>
+<path class="seg s0" d="M116.7,324.0 V255.8 Q116.7,251.8 120.7,251.8 H142.5 Q146.5,251.8 146.5,255.8 V324.0 Z"><title>2026W36, ejected share: 21.7</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="131.6" y="246.8" font-size="10" text-anchor="middle">21.7</text>
+<path class="seg s0" d="M161.8,324.0 V299.7 Q161.8,295.7 165.8,295.7 H187.6 Q191.6,295.7 191.6,299.7 V324.0 Z"><title>2026W37, ejected share: 8.5</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="176.7" y="290.7" font-size="10" text-anchor="middle">8.5</text>
+<path class="seg s0" d="M206.9,324.0 V274.5 Q206.9,270.5 210.9,270.5 H232.6 Q236.6,270.5 236.6,274.5 V324.0 Z"><title>2026W38, ejected share: 16.1</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="221.8" y="265.5" font-size="10" text-anchor="middle">16.1</text>
+<path class="seg s0" d="M252.0,324.0 V193.3 Q252.0,189.3 256.0,189.3 H277.7 Q281.7,189.3 281.7,193.3 V324.0 Z"><title>2026W39, ejected share: 40.5</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="266.8" y="184.3" font-size="10" text-anchor="middle">40.5</text>
+<path class="seg s0" d="M297.0,324.0 V224.3 Q297.0,220.3 301.0,220.3 H322.8 Q326.8,220.3 326.8,224.3 V324.0 Z"><title>2026W40, ejected share: 31.2</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="311.9" y="215.3" font-size="10" text-anchor="middle">31.2</text>
+<path class="seg s0" d="M342.1,324.0 V265.8 Q342.1,261.8 346.1,261.8 H367.9 Q371.9,261.8 371.9,265.8 V324.0 Z"><title>2026W41, ejected share: 18.7</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="357.0" y="256.8" font-size="10" text-anchor="middle">18.7</text>
+<path class="seg s0" d="M387.2,324.0 V276.8 Q387.2,272.8 391.2,272.8 H413.0 Q417.0,272.8 417.0,276.8 V324.0 Z"><title>2026W42, ejected share: 15.4</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="402.1" y="267.8" font-size="10" text-anchor="middle">15.4</text>
+<path class="seg s0" d="M432.3,324.0 V232.6 Q432.3,228.6 436.3,228.6 H458.0 Q462.0,228.6 462.0,232.6 V324.0 Z"><title>2026W43, ejected share: 28.7</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="447.2" y="223.6" font-size="10" text-anchor="middle">28.7</text>
+<path class="seg s0" d="M477.4,324.0 V265.2 Q477.4,261.2 481.4,261.2 H503.1 Q507.1,261.2 507.1,265.2 V324.0 Z"><title>2026W44, ejected share: 18.9</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="492.2" y="256.2" font-size="10" text-anchor="middle">18.9</text>
+<path class="seg s0" d="M522.4,324.0 V193.0 Q522.4,189.0 526.4,189.0 H548.2 Q552.2,189.0 552.2,193.0 V324.0 Z"><title>2026W45, ejected share: 40.6</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="537.3" y="184.0" font-size="10" text-anchor="middle">40.6</text>
+<path class="seg s0" d="M567.5,324.0 V216.3 Q567.5,212.3 571.5,212.3 H593.3 Q597.3,212.3 597.3,216.3 V324.0 Z"><title>2026W46, ejected share: 33.6</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W46</text>
+<text class="fg val" x="582.4" y="207.3" font-size="10" text-anchor="middle">33.6</text>
+<path class="seg s0" d="M612.6,324.0 V265.5 Q612.6,261.5 616.6,261.5 H638.3 Q642.3,261.5 642.3,265.5 V324.0 Z"><title>2026W47, ejected share: 18.8</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W47</text>
+<text class="fg val" x="627.5" y="256.5" font-size="10" text-anchor="middle">18.8</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">ejected share</tspan></text>
 <line x1="672" y1="88" x2="683" y2="88" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>

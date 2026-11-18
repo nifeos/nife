@@ -91,7 +91,7 @@ refuse a grant or an allocation. Line numbers are at base `1a145fcaa`.
 | 2 | `crates/page_tables/src/mapper.rs` (`unmap`) | `unmap` finds no leaf | a revoke that believes it unmapped |
 | 3 | `crates/page_tables/src/mapper.rs` (`unmap`) | `unmap` on the wrong half | same, by address |
 | 4 | `crates/page_tables/src/mapper.rs` (`unmap`) | `unmap` misaligned | same, by alignment |
-| 5 | `crates/capability/src/lib.rs` (`empty`) | `empty`, slot out of range (first `?`) | the one door a capability leaves a table through |
+| 5 | `crates/capability_table/src/lib.rs` (`empty`) | `empty`, slot out of range (first `?`) | the one door a capability leaves a table through |
 | 6 | `nifeos/generational_table` `src/lib.rs` (`remove`) | `remove` of a stale name | the kernel's table: a stale name removing a live entry |
 | 7 | `nifeos/generational_table` `src/lib.rs` (`remove`) | `remove` of an empty slot | `live` miscounted |
 | 8 | `crates/page_tables/src/mapper.rs` (`map_span`) | `map_span` fails after `done` bytes are mapped | a half-mapped span, with no unwind in the crate |
@@ -102,8 +102,8 @@ refuse a grant or an allocation. Line numbers are at base `1a145fcaa`.
 | 13 | `crates/page_tables/src/domain.rs` (`grant_pages`) | DMA grant misaligned | a device granted a page it should not reach |
 | 14 | `crates/page_tables/src/domain.rs` (`grant_pages`) | DMA grant region malformed | the same |
 | 15 | `crates/page_tables/src/domain.rs` (`build_identity_domain`) | `grant_page` past the count | proved unreachable by Kani; the branch stays |
-| 16 | `crates/capability/src/lib.rs` (`put`) | `put` to a slot out of range | a grant into nowhere |
-| 17 | `crates/capability/src/lib.rs` (`fill`) | `fill` out of range | the same door, one level down |
+| 16 | `crates/capability_table/src/lib.rs` (`put`) | `put` to a slot out of range | a grant into nowhere |
+| 17 | `crates/capability_table/src/lib.rs` (`fill`) | `fill` out of range | the same door, one level down |
 | 18 | `crates/memory_regions/src/table.rs` (`split`) | `split` past the watermark | refused before any mutation |
 | 19 | `crates/page_frames/src/lib.rs` (`alloc_contiguous`) | `alloc_contiguous` of zero or too many | a DMA ring allocation refused |
 | 20 | `crates/page_tables/src/mapper.rs` (`map_block`) | `map_block` on the wrong half | a user mapping into the kernel half |

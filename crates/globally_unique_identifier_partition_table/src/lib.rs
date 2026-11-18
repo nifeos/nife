@@ -8,6 +8,11 @@
 //! judges one block, [`entry::Entry::decode`] judges nothing,
 //! [`GloballyUniqueIdentifierPartitionTable::parse`] holds every geometry rule, `check_backup`
 //! compares the two copies, and every failure is an error. [`span`] says where to read.
+//!
+//! The reader enforces the header's reserved tail (a non-zero byte after the header refuses the
+//! table) and tolerates a non-zero tail on an entry and non-zero reserved attribute bits, though
+//! UEFI says those "must be zero" too: the header's tail protects the meaning of its CRC, and
+//! nothing this crate reads depends on the others.
 
 //! Name: ratified 2026-09-18 (calef, `design/decisions/` §154 (the acronym test is whether the
 //! phrase is spoken)): "GUID partition table" and "globally unique identifier" are both spoken, so
@@ -16,9 +21,7 @@
 //! find this identifier. UEFI's own vocabulary (`GPT`, the GPT header) keeps its spelling.
 
 #![no_std]
-// The documentation lint is on everywhere else; this crate opts out until its 23 undocumented
-// items are documented.
-#![allow(missing_docs)]
+#![forbid(unsafe_code)]
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
@@ -33,6 +36,7 @@ pub mod span;
 use crc::crc32;
 pub use entry::Entry;
 pub use header::Header;
+pub use uuid;
 use uuid::Uuid;
 
 /// The smallest logical block a GPT disk can have, and what almost every disk reports.

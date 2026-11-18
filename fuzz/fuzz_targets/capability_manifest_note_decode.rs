@@ -10,7 +10,7 @@
 //!
 //! What this adds over the proofs. Kani proves `decode` total and proves `a_decoded_manifest_
 //! encodes_back_to_its_bytes`, but only up to 57 bytes, which ends at the zone count byte. The
-//! version 2 and 3 walk (`check_zones`, `check_serviced`, then `zones` and `service`) is past that
+//! version 2 and 3 walk (`check_zones`, `check_serviced`, then `zones` and `asks_service`) is past that
 //! bound, and `decode_subtree_grants` and `decode_verbs` have no harness. The committed seeds are
 //! encoded valid manifests of every version, and the mutator below builds more, so the fuzzer
 //! starts inside the zone walk rather than hoping to guess a version word and 56 canonical bytes.
@@ -21,7 +21,7 @@
 //!    (and, for version 2 and 3, the zones and the service byte the accessors report) written back
 //!    gives the input byte for byte, and decoding that gives the same manifest. The same for a
 //!    scope and a verb table.
-//! 2. **A refusal is whole.** When `decode` refuses, `zones` and `service` refuse too.
+//! 2. **A refusal is whole.** When `decode` refuses, `zones` and `asks_service` refuse too.
 //! 3. **Nothing rides on a note that the owner has not granted.** An accepted manifest never holds
 //!    `reboot`, `sync`, `installer`, `catalog`, `indexes`, `activation_directory` or
 //!    `console_input`: no note can ask for them.
@@ -35,11 +35,11 @@
 #![no_main]
 
 use capability_manifest_note::{
-    MAXIMUM_VERBS, MAXIMUM_ZONES, SERVICED_VERSION, SUBTREE_GRANTS_LEN, SubtreeGrantsNote,
-    VERB_RECORD, VERBS_VERSION, ZONED_VERSION, decode, decode_subtree_grants, decode_verbs, encode,
-    service, zones,
+    MAXIMUM_VERBS, MAXIMUM_ZONES, SERVICED_VERSION, SUBTREE_GRANTS_BYTES, SubtreeGrantsNote,
+    VERB_RECORD_BYTES, VERBS_VERSION, ZONED_VERSION, asks_service, decode, decode_subtree_grants,
+    decode_verbs, encode, zones,
 };
-use grant_plan::{IndexStoreDeclaration, MAXIMUM_VERB, ManifestAuthorities};
+use grant_contract::{IndexStoreDeclaration, MAXIMUM_VERB, ManifestAuthorities};
 use libfuzzer_sys::{fuzz_mutator, fuzz_target};
 
 fuzz_target!(|data: &[u8]| {
@@ -56,7 +56,7 @@ fn manifest(d: &[u8]) {
     let Ok(m) = decode(d) else {
         // The accessors check the descriptor whole, as `decode` does.
         assert!(zones(d).is_err());
-        assert!(service(d).is_err());
+        assert!(asks_service(d).is_err());
         return;
     };
     // What no note carries (property 3).
@@ -68,7 +68,7 @@ fn manifest(d: &[u8]) {
     let mut again = encode(&m).to_vec();
     let version = word(d);
     let zs: Vec<&[u8]> = zones(d).expect("decode accepted").iter().collect();
-    let served = service(d).expect("decode accepted");
+    let served = asks_service(d).expect("decode accepted");
     match version {
         1 => {
             assert!(zs.is_empty() && !served);
@@ -107,7 +107,7 @@ fn subtree_grants(d: &[u8]) {
         return;
     };
     let note = SubtreeGrantsNote::of(scope);
-    assert_eq!(&note.0[note.0.len() - SUBTREE_GRANTS_LEN..], d);
+    assert_eq!(&note.0[note.0.len() - SUBTREE_GRANTS_BYTES..], d);
     assert!(decode_subtree_grants(&d[..d.len() - 1]).is_err());
 }
 
@@ -129,7 +129,7 @@ fn verbs(d: &[u8]) {
         assert!(previous.is_none_or(|p| p < verb), "verbs ascend, each once");
         previous = Some(verb);
         assert_eq!(table.grants_for(verb), Some(grants));
-        let mut record = [0u8; VERB_RECORD];
+        let mut record = [0u8; VERB_RECORD_BYTES];
         record[..verb.len()].copy_from_slice(verb);
         record[MAXIMUM_VERB..MAXIMUM_VERB + 2].copy_from_slice(&grants.bits().to_le_bytes());
         again.extend_from_slice(&record);
@@ -199,7 +199,7 @@ fn build_zoned(base: &[u8], random: &mut Random) -> Vec<u8> {
     let mut out = if base.len() >= 56 {
         base[..56].to_vec()
     } else {
-        encode(&grant_plan::NO_NOTE_MANIFEST).to_vec()
+        encode(&program_table::NO_NOTE_MANIFEST).to_vec()
     };
     let mut picks: Vec<&str> = (0..random.below(MAXIMUM_ZONES + 1))
         .map(|_| ZONE_POOL[random.below(ZONE_POOL.len())])
@@ -233,7 +233,7 @@ fn build_verbs(random: &mut Random) -> Vec<u8> {
     out.extend_from_slice(&VERBS_VERSION.to_le_bytes());
     out.extend_from_slice(&(picks.len() as u32).to_le_bytes());
     for verb in picks {
-        let mut record = [0u8; VERB_RECORD];
+        let mut record = [0u8; VERB_RECORD_BYTES];
         record[..verb.len()].copy_from_slice(verb);
         let bits = (random.next() as u16) & ManifestAuthorities::ALL.bits();
         record[MAXIMUM_VERB..MAXIMUM_VERB + 2].copy_from_slice(&bits.to_le_bytes());

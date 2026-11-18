@@ -1,7 +1,7 @@
 //! **A foreign endpoint cannot reap or survey a child it does not supervise** (a ninth outsider
 //! pass at the confinement claim, claims 6, 7, 8 and 9).
 //!
-//! The suite proves these with pure logic (`capability::reap_decision`, `survey_includes`) and
+//! The suite proves these with pure logic (`capability_table::reap_decision`, `survey_includes`) and
 //! drives `REAP`/`SURVEY` refusals for a `WRITE`-only holder of the right endpoint
 //! (`confinement_attack_tests`). This boots a holder of the wrong endpoint: a supervisor of its own
 //! children acting on a child that reports elsewhere, the adversary a `ps`-like tool becomes if the

@@ -31,7 +31,7 @@ pub const INTERFACE_ID: u64 = 15;
 /// [`super::dir::EPERM`], and an empty step, `.` or `..` is `EINVAL`.
 pub const OPEN: u64 = 1;
 /// Read up to [`req_len`] bytes from the handle ([`req_handle`]) at offset `w1` into the shared
-/// page. Reply `r0` = bytes read (≥ 0, 0 at EOF) into the shared page, or an error.
+/// page. Reply `r0` = bytes read (≥ 0, 0 at end of file) into the shared page, or an error.
 pub const READ: u64 = 2;
 /// Write [`req_len`] bytes from the shared page to the handle at offset `w1`. Reply `r0` = bytes
 /// written (≥ 0), or an error.
@@ -221,7 +221,7 @@ pub const SETMTIME_AT: u64 = 22;
 /// lacks. A short intersection is [`super::dir::EPERM`], as for [`OPENDIR`]: no silent
 /// degradation. A file handle is [`super::dir::ENOTDIR`]. It needs no right, because narrowing
 /// cannot widen, and that is what lets the holder of [`ROOT`] attenuate the directory it is bound
-/// to when no name leads down to it. Decided on 2026-10-27 (UTC).
+/// to when no name leads down to it.
 ///
 /// Name: provisional (2026-10-27 UTC); an architect's to ratify. The number is verb 23.
 pub const NARROW: u64 = 23;
@@ -301,15 +301,16 @@ pub const TRANSFER_MAXIMUM: usize = TRANSFER_PAGES * super::PAGE;
 /// capacity decision not yet made.
 pub const CLIENT_WINDOWS: usize = 8;
 
-/// The largest length or offset that fits the packing below (40 bits). Far above
-/// [`TRANSFER_MAXIMUM`], so the bit-packing has never been what bounds a transfer; the bound only
-/// guards the packing itself, and [`TRANSFER_MAXIMUM`] is what bounds a payload.
+/// The largest length that fits the packing below (40 bits). An offset carries no such bound: it
+/// rides whole in the second word. The bound is far above [`TRANSFER_MAXIMUM`], so the
+/// bit-packing has never been what bounds a transfer; the bound only guards the packing itself,
+/// and [`TRANSFER_MAXIMUM`] is what bounds a payload.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_LENGTH_OR_OFFSET: u64 = (1 << 40) - 1;
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, because a test does
-/// not run in the EL0 build and a build is the only artifact that can be wrong about this.
+/// not run in the EL0 (unprivileged) build and a build is the only artifact that can be wrong about this.
 ///
 /// Both halves have a failure mode worth naming. A channel that is not a whole number of pages
 /// cannot be wired at all, since a mapping is per page. And a length the packing truncates would
@@ -319,6 +320,9 @@ const _: () = {
     assert!(TRANSFER_PAGES >= 1);
     assert!(TRANSFER_MAXIMUM == TRANSFER_PAGES * super::PAGE);
     assert!(TRANSFER_MAXIMUM as u64 <= MAXIMUM_LENGTH_OR_OFFSET);
+    // A length decodes through a `usize`; on a narrower target the cast would drop its high bits and
+    // a long transfer would read as a short successful one, so such a target does not build.
+    assert!(usize::BITS >= 40);
 };
 /// The largest handle the packing can carry (16 bits). The server's table is far smaller.
 ///

@@ -54,6 +54,19 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          sparse-checkout: |
+            helpers/ask-section-check.sh
+            helpers/open-question.jq
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           sparse-checkout: |
             helpers/ask-section-check.sh

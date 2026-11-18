@@ -52,7 +52,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Thirteen parser targets, deliberately fewer than one per crate; the FAT crate fuzzes its own in its
+Fifteen parser targets, fewer than one per crate; the FAT crate fuzzes its own in its
 repository, `nifeos/file_allocation_table`. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
@@ -72,6 +72,8 @@ implies coverage the project does not have.
 | `acpi_firmware_tables` | firmware (ACPI) | IOMMU identity mappings stay whole pages |
 | `machine_description_from_device_tree` | firmware (device tree) | readers no proof reaches |
 | `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
+| `line_editor_feed` | serial console | cursor stays inside |
+| `line_editor_handoff` | handoff frame | restores whole or refuses |
 
 ### And the ones deliberately not fuzzed
 
@@ -149,7 +151,7 @@ in `crates/device_tree_blob/tests/fixtures/`, `script/fuzz` passes that director
 extra corpus; a copy under `fuzz/` would drift from it. [fuzz/seeds/README.md](../fuzz/seeds/README.md)
 lists each target's seeds.
 
-The ELF seeds, `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, are 120 bytes each, because nothing
+The ELF seeds, `crates/static_elf/tests/fixtures/minimal_rx_<machine>.elf`, are 120 bytes each, because nothing
 else in the tree is a small ELF (our real binaries are over a megabyte). They are hand-assembled,
 and [fuzz/seeds/README.md](../fuzz/seeds/README.md) carries the generator that produces them.
 

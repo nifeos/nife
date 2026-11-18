@@ -21,9 +21,11 @@ boot_ladder = { version = "0.1.0", path = "../boot_ladder" }
 machine_statistics_contract = { version = "0.1.0", path = "../machine_statistics_contract" }
 nifefs = { version = "0.1.0", path = "../nifefs" }
 static_elf = { version = "0.1.0", path = "../static_elf" }
-# The grant expression and its wire form: what the shell resolved a typed line into, and the
-# protocol init decodes on the other side of the spawn channel. This crate is that other side.
-grant_plan = { version = "0.1.0", path = "../grant_plan" }
+# The manifests and slot numbers a child is endowed by, and the spawn protocol's wire form with the
+# program table it names: the protocol init decodes on the other side of the spawn channel. This
+# crate is that other side, and it plans no line, so it does not link the planner.
+grant_contract = { version = "0.1.0", path = "../grant_contract" }
+program_table = { version = "0.1.0", path = "../program_table" }
 # The wire format of a manifest a program carries in its own bytes (milestone 597 (a program carries
 # its manifest in an ELF note), provisional): the progenitor endows a file's bytes from the note
 # they carry.
@@ -92,7 +94,7 @@ login_contract = { version = "0.1.0", path = "../login_contract" }
 # The entropy contract (DECISIONS §120's 2026-08-26 amendment), for the one message this crate
 # reads: the readiness sentinel an entropy service answers once it has drawn its first bufferful
 # from a real device. Pure logic, no non-dev dependencies of its own.
-entropy_contract = { version = "0.1.0", path = "../entropy_contract" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
 # The socket contract (milestone 590 (the booted system starts its network stack)), for exactly one
 # word: the inbound authority this
 # crate hands the `net_stack` it builds (`NO_LISTEN_GRANT`). Pure logic, no dependencies of its own.

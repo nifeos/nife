@@ -31,7 +31,7 @@ pub(crate) mod allocation_cache;
 #[allow(unsafe_op_in_unsafe_fn, dead_code)]
 mod talc;
 
-use allocation_cache::{Cache, class, class_layout, heap_layout};
+use allocation_cache::{Cache, Class, class, class_layout, heap_layout};
 
 mod heap;
 mod thread_cache;

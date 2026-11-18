@@ -156,5 +156,8 @@ pub const DESCENT_REFUSED: u64 = 0xF5_0DEAD5;
 /// What the `rm` program reports, and how a diagnostic is told from the verdict.
 pub mod rm;
 
+#[cfg(kani)]
+mod proofs;
+
 #[cfg(test)]
 mod tests;

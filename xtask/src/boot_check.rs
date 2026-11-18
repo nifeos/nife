@@ -22,7 +22,7 @@ use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
 ///
 /// # BUGS
 ///
-/// - `quiet_after` is off from `Stage::Tour` up, below the prompt on riscv64, so a wedge there
+/// - `quiet_after` is off from `Stage::CoreRuns` up, below the prompt on riscv64, so a wedge there
 ///   waits for the 180-second cap.
 /// - The prompt rung is the shell's banner, not `$ ` (`boot_ladder`'s `BUGS`): it proves
 ///   `swish` started, not that it takes input; `swish-check` types.
@@ -284,7 +284,7 @@ fn boot_check_policy() -> serial_console::watch::Policy {
         total: std::time::Duration::from_secs(180),
         // **The top rung, on every architecture** (2026-09-19). `Stage::SelfTest` until then,
         // because `x86_64` could reach no prompt; see this module's "The top rung".
-        until: Some(Stage::Prompt),
+        until: Some(Stage::ShellBanner),
         // Each rung follows the one below it within milliseconds up to the verdict, and the
         // hand-over then loads and measures every program the progenitor builds, which is the one
         // gap in the ladder with real work in it. Half a minute of silence is a wedge rather than
@@ -340,12 +340,12 @@ fn boot_check_verdict(
         Outcome::Announced(Failure::SelfTestFailed(names))
             if INJECTED_CHECKS.iter().all(|check| names.split_whitespace().any(|n| n == *check))
     );
-    // `>= Stage::Prompt` rather than `== `: the rungs are ordered, so a boot that went further
+    // `>= Stage::ShellBanner` rather than `== `: the rungs are ordered, so a boot that went further
     // still climbed past this one, and an architecture that grows a rung above the prompt should
     // not turn this gate red on the day it lands. The verdict prints after the tour, from the
     // hand-over, so reaching the prompt does not say it printed; its line is required by name.
     let green = matches!(session.outcome, Outcome::Reached(_))
-        && session.progress.reached() >= Stage::Prompt
+        && session.progress.reached() >= Stage::ShellBanner
         && session.progress.self_test_line().is_some()
         && session.progress.failure().is_none();
 

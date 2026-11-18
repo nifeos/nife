@@ -116,7 +116,7 @@ pub const LAST: u64 = fs::NARROW;
 /// **Every verb the file-service contract carries, in opcode order.**
 ///
 /// The rights column is the server's, copied from the doc comment on each opcode in [`fs`] and
-/// checked against the server's behaviour by `redoxfs_server`'s own tests. It is here because a proxy
+/// checked against the server's behavior by `redoxfs_server`'s own tests. It is here because a proxy
 /// that knows a verb mutates can refuse it without having to know what mutating means.
 pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     // OPEN's requirement is "READ or WRITE", the one any-of in the contract, so it is the one
@@ -316,6 +316,9 @@ const _: () = assert!(
 /// Does `table` hold one row per opcode from [`FIRST`], in order? A function rather than a loop
 /// inside the `const` above, because a check that only ever meets a good table cannot show it
 /// would refuse a bad one, and this one is fed a bad one in `tests.rs`.
+// The `const` assertion above is the only use outside the tests, and the minimum Rust version's
+// dead-code pass does not count a use inside a `const _`.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) const fn in_opcode_order(table: &[Verb]) -> bool {
     let mut i = 0;
     while i < table.len() {
@@ -365,11 +368,9 @@ pub mod file_grant {
     /// # BUGS
     ///
     /// Every directory verb answers `ENOTDIR`, the same statement `CREATE` makes: a file
-    /// capability is not a directory, so the request does not mean anything here. They
-    /// answered `EBADF` until 2026-08-01, inherited from the catch-all this table replaced,
-    /// which shared one arm with "you named a handle I never minted". Writing the rows down is
-    /// what made the conflation visible, and the fix is that the two words now mean one thing
-    /// each: `EBADF` is about the caller's handle, `ENOTDIR` is about the request.
+    /// capability is not a directory, so the request does not mean anything here. The two words
+    /// mean one thing each: `EBADF` is about the caller's handle (a handle this program never
+    /// minted), `ENOTDIR` is about the request.
     pub const POLICY: [Policy; super::TABLE.len()] = [
         Policy::Local,                   // OPEN: the one granted name, anything else ENOENT.
         Policy::Forward,                 // READ
@@ -414,7 +415,7 @@ pub mod file_grant {
         Policy::Refused(grant::ENOTDIR), // NARROW
     ];
 
-    /// `EBADF`: no such handle, and only that since 2026-08-01 (see [`POLICY`]'s BUGS).
+    /// `EBADF`: no such handle, and only that (see [`POLICY`]'s BUGS).
     pub const EBADF: i32 = 9;
 
     /// The policy for an opcode, or `None` for an opcode the contract does not carry.

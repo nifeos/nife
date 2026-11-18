@@ -1,7 +1,7 @@
 Falsifies `static_elf::note::verification::note_segments_from_a_head_never_panic`.
 
 The defect: the program header table's end is computed but never compared with the bytes the reader
-holds. The shell hands this function one page of a file anyone may have written, and a `phoff` or
+holds. A streaming reader hands this function one page of a file anyone may have written, and a `phoff` or
 `phnum` that points past that page then slices outside it.
 
 Expected to fail: a slice index out of range in `NoteSegments::from_head`.

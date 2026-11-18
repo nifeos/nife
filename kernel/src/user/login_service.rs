@@ -128,7 +128,7 @@ pub struct Wiring {
     pub term_ep: RendezvousId,
     /// The stand-in run-unvouched endpoint (§219 gate D2), `READ`: the progenitor's
     /// role, played by the harness. `login` holds it `WRITE | GRANT` at
-    /// `grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
+    /// `program_table::spawnproto::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
     /// `ipc_receive`s here to confirm the copy a session was handed names this object.
     pub run_unvouched: RendezvousId,
     /// `login`'s own thread: what `retype_fault::arm` names, and whose capability table a sweep
@@ -171,7 +171,8 @@ pub fn start(
     construction_pages: u64,
     schedule: bool,
 ) -> Wiring {
-    let elf = Elf::parse(image).expect("login is not loadable");
+    let elf = Elf::parse_with(image, static_elf::NATIVE_MACHINE, FRAME_PAGE_BYTES)
+        .expect("login is not loadable");
 
     let blobs = read_login_blobs(schedule);
     let aspace = build_login_space(&elf, &blobs, verify_page_frame);
@@ -286,7 +287,7 @@ fn build_login_space(elf: &Elf<'_>, blobs: &LoginBlobs, verify_page_frame: u64) 
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (s, e) = seg.page_range(FRAME_SIZE);
+            let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
             (e - s) / FRAME_SIZE
         })
         .sum::<u64>()
@@ -408,10 +409,10 @@ fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
     let landed = sched::thread_control_block_insert_capability(
         tid,
         rendezvous_capability(run_unvouched, Rights::WRITE.union(Rights::GRANT)),
-        Some(grant_plan::spawnproto::RUN_UNVOUCHED_SLOT),
+        Some(program_table::spawnproto::RUN_UNVOUCHED_SLOT),
     )
     .expect("insert run_unvouched");
-    assert_eq!(landed, grant_plan::spawnproto::RUN_UNVOUCHED_SLOT);
+    assert_eq!(landed, program_table::spawnproto::RUN_UNVOUCHED_SLOT);
     let window = super::fs_service::durable_window().expect("the file service is wired");
     let landed = sched::thread_control_block_insert_capability(
         tid,

@@ -61,7 +61,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_CONFIG.store(
-        user_mode_runtime::is_granted(grant_plan::SHELL_CONFIGURATION_SLOT),
+        user_mode_runtime::is_granted(grant_contract::SHELL_CONFIGURATION_SLOT),
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_MOUNTED_TREE.store(
@@ -100,7 +100,7 @@ pub(super) fn interactive(rights: u64) -> ! {
     // watcher reads to learn that the boot finished. Its head comes from `crates/boot_ladder`
     // rather than from a literal here, because `crates/serial_console` matches it and AGENTS.md
     // rule 7 says two binaries agreeing on a string means a crate.
-    for part in HEADS.prompt().parts() {
+    for part in HEADS.shell_banner().parts() {
         print(part.as_bytes());
     }
     print(b". naming a resource in a command IS granting it.\n");

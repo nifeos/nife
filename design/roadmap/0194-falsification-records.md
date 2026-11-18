@@ -45,7 +45,7 @@ to a fraction, so it comes before any code.
    hour. `script/verify --affected-since` already computes which harnesses a diff can reach.
 5. The retroactive pass. 145 harnesses land at `unfalsified` and the worklist derives itself. Work
    through it by value, starting where milestone 191 (did the proofs catch the bugs?) found chaff:
-   `capability::subset_is_reflexive` proves a tautology, and twelve of the 26 `paging` harnesses
+   `capability_table::subset_is_reflexive` proves a tautology, and twelve of the 26 `paging` harnesses
    restate six properties once per ISA.
 
 ## BUGS
@@ -61,7 +61,7 @@ to a fraction, so it comes before any code.
 - **Recorded.** `notes/falsification.md` holds the worklist this milestone created rather than
   finished: 141 harnesses landed at `unfalsified`, and `script/falsifications --unfalsified` prints
   them biggest package first. Where to start is recorded too, at the chaff milestone 191 found, with
-  `capability::subset_is_reflexive` proving a tautology and twelve of `paging`'s 26 harnesses
+  `capability_table::subset_is_reflexive` proving a tautology and twelve of `paging`'s 26 harnesses
   restating six properties once per ISA.
 - **Recorded.** `design/roadmap/0194-falsification-records.md`'s BUGS: nothing forces the ratio
   upward. Every harness may sit at `unfalsified` for ever while the lint stays green, which is the

@@ -46,7 +46,8 @@ pub fn write(block: &mut [u8], block_count: u64) -> Result<(), Error> {
 /// Check the block at LBA 0 is a protective MBR for a disk of `block_count` blocks.
 ///
 /// A **hybrid MBR**, where records 2 to 4 also describe partitions so that a GPT-unaware system
-/// can boot from them, is rejected ([`MbrProblem::ExtraRecord`]). That is a real thing people
+/// can boot from them, is rejected ([`MbrProblem::ExtraRecord`]), except that a record with a size of zero may be ignored
+/// by a reader (UEFI 2.10 section 5.2.1) and is not counted. A hybrid MBR is a real thing people
 /// do (Boot Camp made a generation of them) and it is also the format's worst failure mode: two
 /// descriptions of one disk, maintained by two different tools, silently diverging. Refusing it
 /// is a decision rather than an omission, and the error names it so the message can say so.
@@ -67,7 +68,15 @@ pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     else {
         return Err(Error::Mbr(MbrProblem::NoProtectiveRecord));
     };
-    if let Some(extra) = (0..4).find(|&j| j != i && operating_system_type(j) != 0x00) {
+    // A record whose size is zero may be ignored (UEFI 2.10 section 5.2.1), so a typed record with
+    // no blocks is noise and not a second description of the disk.
+    let size_of = |j: usize| {
+        let at = RECORDS + j * 16 + SIZE_LBA;
+        u32::from_le_bytes(block[at..at + 4].try_into().unwrap())
+    };
+    if let Some(extra) =
+        (0..4).find(|&j| j != i && operating_system_type(j) != 0x00 && size_of(j) != 0)
+    {
         return Err(Error::Mbr(MbrProblem::ExtraRecord { index: extra }));
     }
     let r = &block[RECORDS + i * 16..RECORDS + (i + 1) * 16];

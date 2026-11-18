@@ -104,7 +104,10 @@ CARD=""
 # **The network-first boot script** (milestone 257). Off by default and it stays off by default: a
 # script that fetches over the network is a promise about a machine that has to be running, so it is
 # asked for rather than arrived at. The card path is unchanged whether this is set or not, because
-# the network script keeps the card underneath it as its fallback. See `cargo xtask board-script`.
+# the network script keeps the card underneath it as its fallback. The card's script carries no
+# digest for anything the network serves: it fetches a second script, written here beside the
+# archive it names, so a card written once stays right across rebuilds. See `cargo xtask
+# board-script`.
 TFTP=no
 SERVER=""
 while [ $# -gt 0 ]; do
@@ -408,7 +411,8 @@ echo "  features: $FEATURES$E3"
 echo "  $IMG  ($SIZE bytes, Image header verified)"
 echo "  $OUT/nife-initial-ramdisk.img  ($ARCHIVE_SIZE bytes, the userspace archive this kernel measures)"
 if [ "$TFTP" = yes ]; then
-    echo "  boot.scr.uimg fetches over the network first and falls back to the card (257)"
+    echo "  $OUT/nife-network-boot.scr.uimg  (the served boot script: this archive's digests, never copied to a card)"
+    echo "  boot.scr.uimg fetches the served script over the network first and falls back to the card (257)"
     echo "  serve them:  script/board-netboot"
 fi
 echo
@@ -499,8 +503,10 @@ EOF
 
 if [ "$TFTP" = yes ]; then
 cat <<'EOF'
-This card's boot script tries the network FIRST and falls back to these same files on the card,
-so write it once and leave it in the board. On the serving machine, in another terminal:
+This card's boot script tries the network FIRST and falls back to these same files on the card.
+It fetches the served boot script, which carries the digests of the archive served beside it, so
+write the card once and leave it in the board: a rebuild needs no new card. On the serving machine,
+in another terminal:
 
   script/board-netboot                # serves target/board on udp/69, no sudo needed
 

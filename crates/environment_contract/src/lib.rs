@@ -10,8 +10,14 @@
 //!
 //! - The domains are curated and short, not the IANA, glibc or terminfo lists, which would be a
 //!   dependency decision (§46 (thin primitives or whole subsystems)). They grow on demand.
-//! - Every domain member fits its field's cap by construction; [`PageBuilder::build`] truncates if
-//!   that ever breaks, and a host test fails the suite first.
+//!   `KNOWN_LOCALES` spells the codeset `UTF-8`, as glibc's `LANG` does, while `locale -a` prints
+//!   `utf8`; whether `setlocale` normalizes the two is unverified.
+//! - Every domain member fits its field's maximum by construction, and a `const` assertion fails the
+//!   build when a list grows past it, so the page assembler never truncates a value.
+//! - The reader answers only a member of its key's domain, so a page some other writer produced
+//!   cannot hand a program a value outside the closed set. A zone, locale or terminal type missing
+//!   from the lists is added by a pull request that names the real IANA, glibc or terminfo entry.
+//!   Compiling the full tables in is a dependency decision (§46) and stays refused.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `env_proto` to spell out the contraction;
 //! `_contract` per calef's 2026-10-18 ruling.
@@ -107,13 +113,15 @@ pub mod domain {
 /// The page's first eight bytes, so a reader can tell an assembled config page from a zeroed
 /// frame or from somebody else's page. ASCII, ends unpadded at 8 bytes so the ASCII reads
 /// straight in a hex dump the way `clock_contract::MAGIC` does.
+///
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
 /// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
 /// interface-stability discipline owes.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 13, naming the inert-configuration
@@ -122,12 +130,12 @@ pub const VERSION: u32 = 1;
 /// versions) holds the table of numbers, and `script/lint` holds the tree to it. A program declares
 /// the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const INTERFACE_ID: u64 = 13;
 
 /// The most bytes a `TZ` value may occupy. Longer than every entry in [`domain::KNOWN_TIME_ZONES`]
-/// today (the longest IANA identifiers, like `America/Argentina/ComodRivadavia`, run to about
-/// 33 bytes), so a curated list can grow toward the real database's longer names without a
+/// today (the longest canonical IANA names run to 30 bytes, and the longest backward link,
+/// `America/Argentina/ComodRivadavia`, to 32), so a curated list can grow toward the real database's longer names without a
 /// layout change.
 ///
 /// Name: ratified 2026-10-27 (#2797).
@@ -142,11 +150,12 @@ pub const MAXIMUM_TIME_ZONE_BYTES: usize = 40;
 pub const MAXIMUM_LOCALE_BYTES: usize = 24;
 
 /// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERMINAL_TYPES`]
-/// (`screen-256color` is the longest at 15) with headroom to grow.
+/// (`screen-256color` is the longest at 15) and the longer common terminfo names (such as
+/// `screen.xterm-256color`, 21 bytes) with headroom to grow.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "TERM")]
-pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 24;
+pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 32;
 
 const MAGIC_OFFSET_BYTES: usize = 0;
 const TIME_ZONE_LENGTH_OFFSET_BYTES: usize = MAGIC_OFFSET_BYTES + 8;
@@ -156,8 +165,8 @@ const LOCALE_OFFSET_BYTES: usize = LOCALE_LENGTH_OFFSET_BYTES + 1;
 const TERMINAL_TYPE_LENGTH_OFFSET_BYTES: usize = LOCALE_OFFSET_BYTES + MAXIMUM_LOCALE_BYTES;
 const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 
-/// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
-/// under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
+/// The whole page's size in bytes: magic, then one length-prefixed field per declared key, 8 + 1 +
+/// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
 pub const PAGE_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
@@ -285,35 +294,82 @@ impl<'a> PageBuilder<'a> {
     }
 }
 
-/// Write one length-prefixed field. `val`'s bytes are truncated to `cap` rather than causing a
-/// panic if a future domain member ever exceeds its field's cap (see the crate's `BUGS`
-/// section); a host test pins every domain member's length against its cap so this path is not
-/// how that gets caught in practice.
-fn write_field(page: &mut [u8], len_off: usize, data_off: usize, cap: usize, val: Option<&str>) {
-    let Some(v) = val else { return };
-    let bytes = v.as_bytes();
-    let n = bytes.len().min(cap).min(u8::MAX as usize);
-    page[len_off] = n as u8;
-    page[data_off..data_off + n].copy_from_slice(&bytes[..n]);
+/// Whether every member of `list` fits in `maximum_bytes`, usable in a `const` assertion.
+const fn every_member_fits(list: &[&str], maximum_bytes: usize) -> bool {
+    let mut index = 0;
+    while index < list.len() {
+        if list[index].len() > maximum_bytes {
+            return false;
+        }
+        index += 1;
+    }
+    true
+}
+
+const _: () = assert!(
+    every_member_fits(domain::KNOWN_TIME_ZONES, MAXIMUM_TIME_ZONE_BYTES),
+    "a time zone in KNOWN_TIME_ZONES is longer than MAXIMUM_TIME_ZONE_BYTES"
+);
+const _: () = assert!(
+    every_member_fits(domain::KNOWN_LOCALES, MAXIMUM_LOCALE_BYTES),
+    "a locale in KNOWN_LOCALES is longer than MAXIMUM_LOCALE_BYTES"
+);
+const _: () = assert!(
+    every_member_fits(domain::KNOWN_TERMINAL_TYPES, MAXIMUM_TERMINAL_TYPE_BYTES),
+    "a terminal type in KNOWN_TERMINAL_TYPES is longer than MAXIMUM_TERMINAL_TYPE_BYTES"
+);
+
+/// Write one length-prefixed field. A value longer than `maximum_bytes` is a defect in a domain
+/// list, which the `const` assertion above refuses to compile, so this asserts instead of cutting
+/// a real value short.
+fn write_field(
+    page: &mut [u8],
+    length_offset: usize,
+    value_offset: usize,
+    maximum_bytes: usize,
+    value: Option<&str>,
+) {
+    let Some(value) = value else { return };
+    let bytes = value.as_bytes();
+    assert!(bytes.len() <= maximum_bytes);
+    let n = bytes.len();
+    page[length_offset] = n as u8;
+    page[value_offset..value_offset + n].copy_from_slice(bytes);
 }
 
 /// The bytes of one length-prefixed field. `None` for a zero length (the key was never declared)
-/// or for a length past the field's `cap`, which [`write_field`] never writes: the bytes beyond the
+/// or for a length past the field's maximum, which [`write_field`] never writes: the bytes beyond the
 /// field belong to the next field or lie off the page, and a foreign or corrupt page might claim
 /// them. Never panics, whatever the page and the length byte hold.
-fn field_bytes(page: &[u8], len_off: usize, data_off: usize, cap: usize) -> Option<&[u8]> {
-    let n = *page.get(len_off)? as usize;
-    if n == 0 || n > cap {
+fn field_bytes(
+    page: &[u8],
+    length_offset: usize,
+    value_offset: usize,
+    maximum_bytes: usize,
+) -> Option<&[u8]> {
+    let n = *page.get(length_offset)? as usize;
+    if n == 0 || n > maximum_bytes {
         return None;
     }
-    page.get(data_off..data_off.checked_add(n)?)
+    page.get(value_offset..value_offset.checked_add(n)?)
 }
 
 /// Read one length-prefixed field back as a `&str`. `None` where [`field_bytes`] is `None`, or for
 /// bytes that do not decode as UTF-8 (a page [`PageBuilder`] wrote never produces this; a foreign
 /// or corrupt page might, and the honest answer is absence rather than a panic).
-fn read_field(page: &[u8], len_off: usize, data_off: usize, cap: usize) -> Option<&str> {
-    core::str::from_utf8(field_bytes(page, len_off, data_off, cap)?).ok()
+fn read_field(
+    page: &[u8],
+    length_offset: usize,
+    value_offset: usize,
+    maximum_bytes: usize,
+) -> Option<&str> {
+    core::str::from_utf8(field_bytes(
+        page,
+        length_offset,
+        value_offset,
+        maximum_bytes,
+    )?)
+    .ok()
 }
 
 /// **The inert-configuration page**, as seen through one process's read-only mapping of it. It
@@ -382,8 +438,9 @@ impl ConfigPage {
         self.bytes()[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8] == MAGIC
     }
 
-    /// `TZ`, or `None` if this process holds no config page, the page is unrecognized, or `TZ`
-    /// was never declared onto it.
+    /// `TZ`, or `None` if this process holds no config page, the page is unrecognized, `TZ` was
+    /// never declared onto it, or the bytes are not a member of [`domain::KNOWN_TIME_ZONES`]. A
+    /// reader never sees a value outside that set, whoever wrote the page.
     pub fn tz(&self) -> Option<&str> {
         self.is_recognized()
             .then(|| {
@@ -395,9 +452,11 @@ impl ConfigPage {
                 )
             })
             .flatten()
+            .filter(|value| domain::is_valid_tz(value))
     }
 
-    /// `LANG`, or `None` for the same three reasons [`tz`](Self::tz) can be `None`.
+    /// `LANG`, or `None` for the same reasons [`tz`](Self::tz) can be `None`, with
+    /// [`domain::KNOWN_LOCALES`] as the set.
     pub fn lang(&self) -> Option<&str> {
         self.is_recognized()
             .then(|| {
@@ -409,9 +468,11 @@ impl ConfigPage {
                 )
             })
             .flatten()
+            .filter(|value| domain::is_valid_lang(value))
     }
 
-    /// `TERM`, or `None` for the same three reasons [`tz`](Self::tz) can be `None`.
+    /// `TERM`, or `None` for the same reasons [`tz`](Self::tz) can be `None`, with
+    /// [`domain::KNOWN_TERMINAL_TYPES`] as the set.
     pub fn term(&self) -> Option<&str> {
         self.is_recognized()
             .then(|| {
@@ -423,8 +484,21 @@ impl ConfigPage {
                 )
             })
             .flatten()
+            .filter(|value| domain::is_valid_term(value))
     }
 }
+
+impl core::fmt::Display for Refused {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter.write_str(match self {
+            Refused::UnknownTz => "TZ is not a member of KNOWN_TIME_ZONES",
+            Refused::UnknownLang => "LANG is not a member of KNOWN_LOCALES",
+            Refused::UnknownTerm => "TERM is not a member of KNOWN_TERMINAL_TYPES",
+        })
+    }
+}
+
+impl core::error::Error for Refused {}
 
 #[cfg(kani)]
 mod verification;
@@ -442,9 +516,8 @@ mod tests {
         f(&unsafe { ConfigPage::new(buffer.as_ptr() as u64) })
     }
 
-    /// Every curated domain member fits under its field's cap. This is what makes
-    /// [`write_field`]'s truncation path dead in practice: a domain grown past its cap fails
-    /// here rather than silently truncating a real value at assembly time.
+    /// Every curated domain member fits under its field's maximum. The `const` assertion above
+    /// already fails the build for a list grown past it; this names the offender at run time.
     #[test]
     fn every_domain_member_fits_its_field() {
         for tz in domain::KNOWN_TIME_ZONES {
@@ -554,7 +627,7 @@ mod tests {
     /// A page with a recognized magic but a length byte past its field reads that field as
     /// absent, for every field and every oversized length, without a panic. `TERM` is the last
     /// field, so a length of 255 there runs off the end of the page, and a length one past a
-    /// field's cap in the time zone or locale field would otherwise read into the next field.
+    /// field's maximum in the time zone or locale field would otherwise read into the next field.
     #[test]
     fn a_length_past_its_field_reads_that_field_as_absent() {
         let fields = [
@@ -565,8 +638,8 @@ mod tests {
                 MAXIMUM_TERMINAL_TYPE_BYTES,
             ),
         ];
-        for (corrupted, (len_off, cap)) in fields.into_iter().enumerate() {
-            for length in (cap + 1)..=usize::from(u8::MAX) {
+        for (corrupted, (length_offset, maximum_bytes)) in fields.into_iter().enumerate() {
+            for length in (maximum_bytes + 1)..=usize::from(u8::MAX) {
                 let mut bytes = PageBuilder::new()
                     .tz("UTC")
                     .unwrap()
@@ -575,7 +648,7 @@ mod tests {
                     .term("xterm")
                     .unwrap()
                     .build();
-                bytes[len_off] = length as u8;
+                bytes[length_offset] = length as u8;
                 with_page(&bytes, |page| {
                     let read = [page.tz(), page.lang(), page.term()];
                     for (i, value) in read.iter().enumerate() {
@@ -590,8 +663,66 @@ mod tests {
         }
     }
 
-    /// A length exactly equal to a field's cap is the longest legal value and reads back whole, in
-    /// every field, so the check against the cap refuses only what lies past it.
+    /// No domain member holds a zero byte, so a length that runs past a member into the zeroes after
+    /// it never spells another member. The Kani harness that bounds its length byte relies on this.
+    #[test]
+    fn no_domain_member_holds_a_zero_byte() {
+        for list in [
+            domain::KNOWN_TIME_ZONES,
+            domain::KNOWN_LOCALES,
+            domain::KNOWN_TERMINAL_TYPES,
+        ] {
+            assert!(list.iter().all(|value| !value.as_bytes().contains(&0)));
+        }
+    }
+
+    /// A recognized page whose field carries bytes that are not a member of the key's domain
+    /// (a writer other than [`PageBuilder`], or a zone name with trailing zero bytes) reads that
+    /// key as absent, and leaves the other keys alone.
+    #[test]
+    fn a_recognized_page_carrying_a_non_member_reads_that_key_as_absent() {
+        let mut bytes = PageBuilder::new()
+            .tz("UTC")
+            .unwrap()
+            .lang("C")
+            .unwrap()
+            .term("xterm")
+            .unwrap()
+            .build();
+        // `UTC` followed by a NUL, one byte longer than the member.
+        bytes[TIME_ZONE_LENGTH_OFFSET_BYTES] = 4;
+        with_page(&bytes, |page| {
+            assert_eq!(page.tz(), None);
+            assert_eq!(page.lang(), Some("C"));
+            assert_eq!(page.term(), Some("xterm"));
+        });
+        // A well-formed UTF-8 value the lists do not hold.
+        let mut bytes = PageBuilder::new().lang("C").unwrap().build();
+        bytes[LOCALE_OFFSET_BYTES] = b'X';
+        with_page(&bytes, |page| assert_eq!(page.lang(), None));
+        let mut bytes = PageBuilder::new().term("xterm").unwrap().build();
+        bytes[TERMINAL_TYPE_OFFSET_BYTES] = b'X';
+        with_page(&bytes, |page| assert_eq!(page.term(), None));
+    }
+
+    /// A refusal prints and converts into a boxed error, naming the domain constant.
+    #[test]
+    fn a_refusal_displays_and_is_an_error() {
+        let all = [
+            Refused::UnknownTz,
+            Refused::UnknownLang,
+            Refused::UnknownTerm,
+        ];
+        let names = ["KNOWN_TIME_ZONES", "KNOWN_LOCALES", "KNOWN_TERMINAL_TYPES"];
+        for (refused, name) in all.into_iter().zip(names) {
+            assert!(refused.to_string().contains(name));
+            let boxed: Box<dyn core::error::Error> = Box::new(refused);
+            assert!(boxed.to_string().contains(name));
+        }
+    }
+
+    /// A length exactly equal to a field's maximum is the longest legal value and reads back whole, in
+    /// every field, so the check against the maximum refuses only what lies past it.
     #[test]
     fn a_length_equal_to_its_maximum_reads_the_whole_field() {
         let fields = [
@@ -611,14 +742,53 @@ mod tests {
                 MAXIMUM_TERMINAL_TYPE_BYTES,
             ),
         ];
-        for (len_off, data_off, cap) in fields {
+        for (length_offset, value_offset, maximum_bytes) in fields {
             let mut bytes = PageBuilder::new().build();
-            bytes[len_off] = cap as u8;
-            bytes[data_off..data_off + cap].fill(b'a');
-            let read = field_bytes(&bytes, len_off, data_off, cap).unwrap();
-            assert_eq!(read.len(), cap);
+            bytes[length_offset] = maximum_bytes as u8;
+            bytes[value_offset..value_offset + maximum_bytes].fill(b'a');
+            let read = field_bytes(&bytes, length_offset, value_offset, maximum_bytes).unwrap();
+            assert_eq!(read.len(), maximum_bytes);
             assert!(read.iter().all(|&b| b == b'a'));
         }
+    }
+
+    /// `every_member_fits` is only evaluated at compile time on the real lists, where it passes, so
+    /// a mutant that always passes survives unless a test hands it a list that must fail.
+    #[test]
+    fn every_member_fits_accepts_a_member_at_the_maximum_and_refuses_one_past_it() {
+        assert!(every_member_fits(&[], 3));
+        assert!(every_member_fits(&["abc", "a"], 3));
+        assert!(!every_member_fits(&["abcd"], 3));
+        assert!(!every_member_fits(&["a", "abcd"], 3));
+        assert!(!every_member_fits(&["abcd", "a"], 3));
+    }
+
+    /// `field_bytes` answers `None` for a zero length and for one past the maximum, each on its
+    /// own, and `Some` for every length between. The readers above also check membership in the
+    /// domain, which would hide a wrong answer here.
+    #[test]
+    fn field_bytes_refuses_a_zero_length_and_a_length_past_its_maximum_each_alone() {
+        let mut page = [b'a'; PAGE_BYTES];
+        let (length_offset, value_offset, maximum_bytes) = (
+            TIME_ZONE_LENGTH_OFFSET_BYTES,
+            TIME_ZONE_OFFSET_BYTES,
+            MAXIMUM_TIME_ZONE_BYTES,
+        );
+        page[length_offset] = 0;
+        assert_eq!(
+            field_bytes(&page, length_offset, value_offset, maximum_bytes),
+            None
+        );
+        page[length_offset] = (maximum_bytes + 1) as u8;
+        assert_eq!(
+            field_bytes(&page, length_offset, value_offset, maximum_bytes),
+            None
+        );
+        page[length_offset] = 1;
+        assert_eq!(
+            field_bytes(&page, length_offset, value_offset, maximum_bytes),
+            Some(&b"a"[..])
+        );
     }
 
     /// A zero length byte after the magic reads as absent: an assembler that wrote the magic but
@@ -681,5 +851,19 @@ mod tests {
             TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES
         );
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
+    }
+
+    /// The frozen identity and widths, as literals: a change to any of them is a new version of
+    /// the interface, so it must fail here first.
+    #[test]
+    fn the_frozen_identity_and_widths_are_pinned() {
+        assert_eq!(&MAGIC, b"ENVCONF1");
+        assert_eq!(VERSION, 1);
+        assert_eq!(INTERFACE_ID, 13);
+        assert_eq!(MAXIMUM_TIME_ZONE_BYTES, 40);
+        assert_eq!(MAXIMUM_LOCALE_BYTES, 24);
+        assert_eq!(MAXIMUM_TERMINAL_TYPE_BYTES, 32);
+        assert_eq!(PAGE_BYTES, 107);
+        assert_eq!(MAGIC[7], b'0' + VERSION as u8);
     }
 }

@@ -15,8 +15,9 @@
 
 //! # BUGS
 //!
-//! - **Never run on silicon.** `PROVEN_ON_SILICON` in the kernel service keeps the booted system
-//!   from starting it until a bench boot has.
+//! - **Only the storage bench starts it.** A bench boot on radon has read and written through it,
+//!   so the kernel service's `PROVEN_ON_SILICON` is true, but no path of the booted system calls
+//!   the service's `start` (§260 (radon's block server serves a USB drive)).
 //! - **One request at a time**, polled, one `CMD18` or `CMD25` per request.
 //! - **`FLUSH` asks the card for its status** and counts; an SD card at default speed has no cache
 //!   this driver turned on, so there is nothing else to flush.

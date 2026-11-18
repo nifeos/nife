@@ -6,8 +6,8 @@
 
 use super::*;
 /// **`field_bytes`, which `read_field` is built on, never panics for any length byte, and a length
-/// past the field reads as absent.** (`read_field` adds only `core::str::from_utf8`, which is total.)
-/// **`read_field` never panics for any length byte, and a length past the field reads as absent.**
+/// past the field reads as absent.** (`read_field` adds only `core::str::from_utf8`, which is total,
+/// and is left out because a symbolic UTF-8 scan is the expensive part and not the bound.)
 /// The page is the real size, `TERM`'s field is the last on it, and the length byte is free, so the
 /// case that once sliced past the end of the page (a length of 255) is among the inputs.
 /// Falsification: replayable `crates/environment_contract/falsifications/verification.field_bytes_never_panics_for_any_length_byte.patch`

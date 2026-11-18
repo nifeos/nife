@@ -166,7 +166,12 @@ fn measured_progenitor(archive: &'static [u8]) -> Result<Elf<'static>, LoadError
     // And the table it measures every program it loads against (milestone 104 (the measurement
     // continues past init)).
     crate::trust::require_program_measurements(&fs);
-    Elf::parse(progenitor_bytes).map_err(LoadError::NotLoadable)
+    Elf::parse_with(
+        progenitor_bytes,
+        static_elf::NATIVE_MACHINE,
+        FRAME_PAGE_BYTES,
+    )
+    .map_err(LoadError::NotLoadable)
 }
 
 /// Build the progenitor's address space (segments, stack, timebase page, initial ramdisk) and
@@ -181,7 +186,7 @@ fn progenitor_address_space(
     let content: u64 = elf
         .segments()
         .map(|seg| {
-            let (s, e) = seg.page_range(FRAME_SIZE);
+            let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
             (e - s) / FRAME_SIZE
         })
         .sum::<u64>()

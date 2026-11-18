@@ -16,7 +16,7 @@ so its holder cannot pass it on, and the kernel refuses to `SEND_CAPABILITY` a c
 send on it.
 
 So D2 is one rendezvous, the run-unvouched endpoint. The progenitor holds the only `READ` on it.
-A session holds `WRITE` at slot 62 (`grant_plan::spawnproto::RUN_UNVOUCHED_SLOT`, just below the
+A session holds `WRITE` at slot 62 (`program_table::spawnproto::RUN_UNVOUCHED_SLOT`, just below the
 reserved fault slot). An image request that claims it sets `RUN_UNVOUCHED_BIT` and sends one word
 on that endpoint as its last message. The progenitor takes that word with a `RECEIVE` while serving
 the request. Only a holder can send there, so arriving is the proof.
@@ -55,7 +55,7 @@ The x86_64 leg's gauge reads the hand-over, not the peak, so it says nothing her
 
 ## What an unvouched child holds
 
-`grant_plan::UNVOUCHED_MANIFEST` is the ruling as one value, with a host test saying so. For a
+`program_table::UNVOUCHED_MANIFEST` is the ruling as one value, with a host test saying so. For a
 native child: slot 0 its output, slot 1 the clock page, slot 2 the configuration page. The shell
 binds an image line against `uptime`'s manifest before it knows the verdict, so the line can
 delegate the output and nothing else yet.

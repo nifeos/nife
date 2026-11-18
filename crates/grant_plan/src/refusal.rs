@@ -52,7 +52,12 @@ pub enum Refusal {
     /// `--mem N` was outside the program's declared range.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
-    MemoryGrantOutOfRange { minimum: u64, maximum: u64 },
+    MemoryGrantOutOfRange {
+        /// The fewest pages the program accepts.
+        minimum: u64,
+        /// The most pages the program accepts.
+        maximum: u64,
+    },
     /// The program requires an integer argument, but none was given.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").

@@ -53,7 +53,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
 - **Capability forgery or widening.** Minting a capability that was never granted, widening rights
   across `derive`, `Send`, or delegation, naming another process's CapabilityTable or endpoints, or reusing a
   generational name after revocation (DECISIONS §10 (the process model), §13 (capability revocation
-  and untyped reclamation), §16 (object revocation); `crates/capability`).
+  and untyped reclamation), §16 (object revocation); `crates/capability_table`).
 - **MMU escape.** EL0 reading, writing, or executing kernel memory or another address space;
   breaking W^X; a stale TLB entry exposing a dead owner's data; anything reachable from userspace
   that maps physical memory outside the process's own untyped budget (`crates/page_tables`,
@@ -69,8 +69,18 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   the single point of failure there rather than the first of two. A validator bypass is the
   highest-value finding in this file. The board's own SD/MMC and Ethernet servers are outside the
   validator: each holds a register page that names DMA addresses, so each is confined by its own
-  code (notes/designware-mobile-storage.md, notes/designware-ethernet.md), and the booted system
-  starts neither until a bench boot proves it.
+  code (notes/designware-mobile-storage.md, notes/designware-ethernet.md). The booted system
+  starts neither: the Ethernet processes wait for a bench boot to prove them, and the SD/MMC server,
+  which a bench boot has proved, has no caller there.
+
+  Two processes the booted system does start on that board hold authority over the whole machine,
+  and each is confined by its own code alone. The clock and reset server holds the one page of
+  each of three clock and reset domains, which also holds the CPU cores' resets, the DRAM
+  controller's, the watchdog's, the real-time clock's and the power management unit's; the kernel
+  is its only client (notes/jh7110-clock-and-reset.md). The PMIC route holds the I2C controller
+  of the bus the board's power controller sits on, so it could write any register of any chip on
+  that bus; the program that declares `reboot` can ask it for one thing, the reset
+  (notes/board-reboot.md).
 - **IPC.** Anything that lets a message reach an endpoint the sender cannot name, a reply
   capability be used twice or by the wrong thread, or a server be confused about which client it is
   answering (DECISIONS §12 (Call/Reply IPC), §26 (the fault endpoint);
@@ -166,7 +176,7 @@ took, its findings by disposition, and a link to the report. `script/audits` say
 is due, from the triggers `design/decisions/0074-audit-cadence.md` decided, and a weekly workflow asks
 the same question so that auditing does not depend on anyone remembering to.
 
-**Thirteen** <!--count:security-audits--> security audits are on the record, and reading them first will
+**Fifteen** <!--count:security-audits--> security audits are on the record, and reading them first will
 save you time. Each took a lens the previous one did not, deliberately, because the value of an audit
 is the lens the last one lacked. (Documentation audits are in the same index and are not listed here;
 they read the tree for claims that had gone false, which is worth knowing if you find prose and code
@@ -251,6 +261,14 @@ disagreeing.)
   system manifest, the base digest page) and the runtime crates split out beside it. No input
   reaches a grant wider than the owner approved. A delegated install writes the package's bytes
   before the approval check refuses it; proposed.
+- **design/audit-reports/2026-11-17-the-verifier.md**: the stock Kani pin, the bundle `cargo kani
+  setup` fetches behind it, the bump job and the patched riscv64 Kani. The prover's bytes run with
+  no digest check, from a mutable release; proposed. Five architecture-specific falsification
+  records carry no patch, so nothing replays them; proposed.
+- **design/audit-reports/2026-11-17-radon-device-authority.md**: the clock and reset server, the
+  GMAC's control process and the PMIC route on radon, read as hostile holders. The server's page
+  holds every clock and reset of three domains, CPU cores and DRAM included; accepted, with its
+  only client the kernel. The narrowing is checked for bring up alone; proposed.
 
 The machine-checked half is `script/verify` (Kani harnesses over the capability model, IPC, the MMU
 invariants, the DMA validator). notes/verification.md states what each proof covers and, more

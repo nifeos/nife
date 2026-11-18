@@ -145,7 +145,8 @@ impl Header {
     /// Write this header into one block, zeroing the block first and computing the header CRC last.
     ///
     /// Always emits a 92-byte header, so `decode(encode(h)) == h` for every header this crate can
-    /// hold. The block is zeroed rather than overwritten in place because the reserved tail must be
+    /// hold. A header that declared a larger size, which the specification permits, is rewritten as
+    /// 92 bytes: a rewrite normalizes it. The block is zeroed rather than overwritten in place because the reserved tail must be
     /// zero and a caller handing us a buffer with a previous header in it is the normal case.
     pub fn encode_into(&self, block: &mut [u8]) -> Result<(), Error> {
         if !is_block_size_ok(block.len()) {

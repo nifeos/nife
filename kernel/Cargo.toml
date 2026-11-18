@@ -49,7 +49,7 @@ address_space_identifier = { version = "0.1.0", path = "../crates/address_space_
 # warning is expected; any other `unused_dependencies` warning from the kernel is a real finding.
 # Do not add an `allow` for it either, because that would hide a second, real one.
 memory_corruption_canary_gate = { version = "0.1.0", path = "../crates/memory_corruption_canary_gate" }
-capability = { version = "0.1.0", path = "../crates/capability" }
+capability_table = { version = "0.1.0", path = "../crates/capability_table" }
 # The timer re-arm's arithmetic (milestone 360 (`crates/timetable`'s proved `next_after` is not what
 # the timer calls), §178 (where the timer re-arm seam goes)). The aarch64 and riscv64 `rearm` call
 # the Kani-proved `next_after` rather than keeping a copy, so the proof binds the code that runs.
@@ -59,7 +59,9 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
 # `terminal_contract` and `video_terminal` below: no party has its own copy of a shared definition.
+# The spawn protocol's slots are the program table's.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
+program_table = { version = "0.1.0", path = "../crates/program_table" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
 # through the same publish protocol the service writes with, so no party has its own copy of the
@@ -87,7 +89,7 @@ startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_cont
 # The block-device roster (milestone 57). The kernel writes the page and the surveyor reads it, and
 # the kernel's own tests read it back through this crate rather than by trusting the count the
 # program sent home, so no party has its own copy of the layout.
-block_roster_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/block_roster_contract", rev = "62630199281cbd294d6621cc35f31f81933e6be2" }
+block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "72f531ccf75c873614fb580e07af24d86f313f23" }
 # The boot ladder's console markers (milestone 268): the exact bytes each rung of the boot prints.
 # The kernel prints them and `serial_console` matches them, so AGENTS.md rule 7 makes them a crate
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
@@ -151,13 +153,13 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The entropy contract (milestone 56, DECISIONS §44). The kernel wires the entropy service and its
 # tests are its clients, speaking the same request/reply the std PAL does, so no party has its own
 # copy of the wire format.
-entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
 # The JH7110 TRNG's register logic and DTB discovery (milestone 159), the same
 # pure-logic/volatile-shell split `pci` below already uses. The kernel takes it for one
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
-jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06" }
+jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "497d3ec4f0b4d7fc36634dee47d1afd56eb22485" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
 # `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the
@@ -173,18 +175,18 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # The JH7110's SD/MMC controller (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): the whole driver as pure logic behind one `Registers` trait, which
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
-designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
+designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b" }
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
 pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configuration_space" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
-e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", rev = "ef01cefa9a186db7f1c9802e78d8c6c1215db7ec" }
+e1000e = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/e1000e", rev = "68ed5202b1df8c5de1ee365c9b9337f731ed7a0c" }
 # The xHCI half of the USB keyboard (milestone 242 (USB host and HID)): the register window the
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
-extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
+extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "a2189a4e8a795d6201cce3075b07216b6b405a7c" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }

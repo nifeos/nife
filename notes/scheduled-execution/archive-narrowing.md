@@ -14,7 +14,7 @@ the result. The kernel cannot do that, and the reason is worth knowing before an
 
 `timetable::Registry` is a `[Row; MAXIMUM_ENTRIES]`. A `Row` carries an `Admission`, which carries a
 kilobyte of `grant_plan::Endowment`. So `Registry::register` compiles to a 21632-byte stack frame,
-and the `grant_plan::plan` underneath it to a further 12048.
+and the `program_table::plan` underneath it to a further 12048.
 
 In `components/src/timetable.rs` those numbers are fine and stated. It is a process with a 32-page
 stack, and `system_tests/src/user/timetable_tests.rs` says why it maps 32 pages. In the kernel they

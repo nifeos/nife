@@ -215,7 +215,7 @@ fn a_read_only_file_grant_refuses_every_verb_that_mutates() {
 
 /// **The four attribute verbs are forwarded through a per-file grant**.
 ///
-/// Pinned as its own test because the old behaviour was uniform and defensible: all four
+/// Pinned as its own test because the old behavior was uniform and defensible: all four
 /// answered `EOPNOTSUPP`, which was honest about a capability that did not carry them. What
 /// makes forwarding right is `xattr`'s own rule, that an attribute is part of what a file *is*,
 /// so a capability that may read the file may read what is attached to it. A future edit that
@@ -242,7 +242,7 @@ fn a_per_file_grant_carries_its_files_attributes() {
 ///
 /// The distinction the table was most at risk of flattening. `CREATE` answers `ENOTDIR` because
 /// the request does not mean anything here, not `EACCES` and not a generic "denied"; the other
-/// directory verbs answer it too, since 2026-08-01. All seven are pinned, so a change to any of
+/// directory verbs answer it too. All seven are pinned, so a change to any of
 /// them is a change somebody made on purpose, and `EBADF` stays available to mean the one thing
 /// it should: the caller named a handle this program never minted.
 #[test]

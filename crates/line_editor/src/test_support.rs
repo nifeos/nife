@@ -74,6 +74,10 @@ impl Screen {
                     i = j;
                 }
                 _ => {
+                    // A cursor moved past the row's end leaves blanks behind it.
+                    if self.col > self.row.len() {
+                        self.row.resize(self.col, b' ');
+                    }
                     if self.col == self.row.len() {
                         self.row.push(b);
                     } else {

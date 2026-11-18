@@ -13,7 +13,12 @@ dependency is `uuid` (default features off).
   the disk: the header (`Header::decode`: signature, revision, size, both reserved regions, its own
   cyclic redundancy check (CRC)), the array CRC, the usable range, partitions off the end and
   partitions that overlap.
-  `check_backup` compares the backup copy field by field. `create` builds a table, and
+  `parse` takes the disk's size from the header and never sees the device, so a caller runs three more
+  checks after it: `check_disk_size` against the device, `check_backup` against the last block, and
+  `check_protective_mbr` against block 0. `check_backup` compares the backup copy field by field.
+  `parse_backup` opens a disk whose primary is damaged from its last block alone, and returns a
+  table normalized to the primary's orientation, so `write_primary_header` and `entry_array`
+  restore the primary. `create` builds a table, and
   `write_protective_mbr`, `write_primary_header` and `write_backup_header` lay it out. `mbr::validate`
   refuses a hybrid master boot record (MBR) on purpose (one disk described twice by tools that will
   not agree for long).
@@ -44,6 +49,8 @@ use globally_unique_identifier_partition_table::testing::sample_disk;
 
 // A 64 MiB disk with 512-byte blocks and one partition; only its first 34 blocks are real.
 let disk = sample_disk();
+// The array is not always at block 2: decode the header first and read `entry_array_lba`. Here
+// the sample disk puts it at block 2.
 let table = GloballyUniqueIdentifierPartitionTable::parse(&disk[512..1024], &disk[1024..1024 + 16384])?;
 for (index, partition) in table.partitions() {
     println!("{}: {} blocks", index + 1, partition.blocks().unwrap());
@@ -53,13 +60,13 @@ for (index, partition) in table.partitions() {
 
 ## What is proven
 
-Eight Kani harnesses, in `src/verification.rs`, each with a falsification patch in
+Nine Kani harnesses, in `src/verification.rs`, each with a falsification patch in
 `falsifications/` named `<module>.<harness>.patch`:
 
 - `crc32_matches_its_bitwise_definition` and `a_single_byte_change_always_changes_the_crc`
 - `an_entry_survives_the_round_trip` and `a_guid_survives_the_on_disk_layout`
 - `a_headers_fields_survive_the_round_trip` and `the_header_fields_partition_the_block`
-- `overlap_is_exactly_sharing_a_block`
+- `overlap_is_exactly_sharing_a_block` and `an_entries_block_count_never_panics_and_is_exact`
 - `create_never_lays_out_a_table_parse_would_reject`
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
@@ -122,7 +129,12 @@ dd if=apple64.img of=apple-64m.tail bs=512 skip=131039 count=33
 
 ## BUGS
 
-- The crate opts out of `missing_docs` until its 23 undocumented items are documented.
+- A header that declares more than 92 bytes is re-emitted as 92 by `write_primary_header`.
+- The reader checks the header's reserved tail and tolerates a non-zero entry tail and non-zero
+  reserved attribute bits: the header tail protects the CRC's meaning, and nothing this crate reads
+  depends on the others.
+- `uuid` is re-exported as `globally_unique_identifier_partition_table::uuid`, so a caller names the
+  type this crate returns without a second manifest line at a matching major.
 
 ## Minimum Rust version
 

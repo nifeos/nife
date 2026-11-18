@@ -7,9 +7,9 @@ file holds the harness tables and the reasoning for the capability core, the unt
 accounting, the paging arithmetic, the frame allocator, the device-tree leaves, the IPC rendezvous,
 the generational table, the intrusive queue and the ASID allocator.
 
-## `crates/capability`
+## `crates/capability_table`
 
-15 harnesses in `crates/capability/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-harnesses-->;
+16 harnesses in `crates/capability_table/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-table-harnesses-->;
 the table names the eight this appendix adjudicated:
 
 | Harness | Property |
@@ -29,7 +29,7 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Twelve in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Thirteen in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
 longer live; the table names those two and the eight that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
@@ -96,7 +96,7 @@ the host and kernel tests.
 
 ## `crates/page_frames`
 
-Six in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the physical frame allocator:
+Nine in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the physical frame allocator:
 
 | Harness | Property |
 |---|---|
@@ -182,7 +182,7 @@ legs. It is worth recording which kind of evidence each one rests on.
    name for the blocked caller anywhere in the system. (The caller is never in the receiver queue:
    `ipc_call` does not `receive`, and a blocked thread cannot run to enqueue itself again.)
 2. Consume-on-use is final: `a_deleted_capability_stays_deleted` and `delete_touches_only_its_slot`
-   in `crates/capability`. The syscall layer deletes the Reply capability the instant it is invoked.
+   in `crates/capability_table`. The syscall layer deletes the Reply capability the instant it is invoked.
    The proofs say no table state exists in which the consumed slot can be invoked again, and that
    consuming one caller's Reply cannot disturb another's.
 3. The capability cannot be duplicated or delegated. This leg is structural, not a harness. There is
@@ -193,7 +193,7 @@ legs. It is worth recording which kind of evidence each one rests on.
    call server invokes its Reply twice and the kernel refuses the second (`fixtures/src/hello.rs`,
    `call_server`).
 
-There was no rewire, because `capability::CapabilityTable` and
+There was no rewire, because `capability_table::CapabilityTable` and
 `inter_process_communication::Rendezvous` already *are* the kernel's capability table and endpoint
 state. The proofs landed on code the kernel was running all along.
 
@@ -211,15 +211,17 @@ notes/generational-names.md); the table names the three this appendix adjudicate
 
 ## `crates/intrusive_queue`
 
-One in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's
+Two in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's
 queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|
 | `any_push_pop_interleaving_is_first_in_first_out_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
+| `a_popped_node_leaves_with_a_clear_link` | whichever node is popped, and however many were queued behind it, the popped node's link reads as clear, which the FIFO order alone cannot show |
 
-One harness rather than several, because the operation-sequence shape subsumes the single-step
-properties: a push-preserves-X proof is the sequence of length one.
+The operation-sequence harness subsumes the single-step properties: a push-preserves-X proof is
+the sequence of length one. The second harness covers what that sequence cannot see, the link a
+popped node leaves behind.
 
 ## `crates/address_space_identifier`
 

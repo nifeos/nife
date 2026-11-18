@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -104,13 +104,33 @@ The P2 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 The P1 items are in [the appendix](1099-machine-statistics-contract-outside-review/before-the-tag.md).
 
+## Follow-on
+
+- **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
+  page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
+  `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582.
+- **Outstanding.** Items 1, 2, 6, 9, 12 and 13. They are the ratification table, the move
+  commit's manifest, licenses and README, and the line count (Decision 1). The rest are the header
+  and line namespaces, the dry run against the standalone check and the README's end-to-end note.
+  The ledger names
+  each with its reason. Checked by reading the ledger rows against the crate after the commit that
+  built the done items.
+
 ## Decisions for the architect
 
-One one-way door is open. The ratification table of item 1 is the architect's by the naming rule
+One one-way door was open, and Decision 1 below carries its ruling. The ratification table of item 1 is the architect's by the naming rule
 and sits after it with the review's flags; it is not a decision in the sense of this section.
 Everything else above is two-way and the maintainer decides it.
 
 ### Decision 1: Freeze the contract's identity before it leaves, with the line count inside it
+
+Ruling of 2026-11-14 (UTC), option A. The rule in force: the identity stays as built. `MAGIC` is
+`MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VA` is the fixed pair page. The page
+holds one header line of eight words plus one eight-word line per processor, 576 bytes, and header
+words 6 and 7 stay reserved and read zero. The processor-line count belongs to this crate as its
+own constant, `PROCESSOR_LINES` (name provisional), and replaces the re-export of
+`current_cpu_contract::CPU_ID_BOUND`. A compile-time assertion keeps it equal to that bound, so a
+change to the bound fails this crate's build until this page's magic and version move too.
 
 Background. Three programs under `components/src/` declare this interface by the pair (`INTERFACE_ID`, `VERSION`) in their `INTERFACES` note. The kernel and the spawn service compile in the fixed address. Every reader compares `MAGIC` and the version word. The kernel and every reader compute the layout from `word::LINE` and `CPU_ID_BOUND`. Once a pin outside nife builds one of those programs, a change to any of these values has to move every pin in one image. Milestone 1017 (the contract crates leave in this order) measured that cost from two reverts. The identity
 set here has one member the sibling page crates do not have: the number of cpu lines, which today
@@ -168,7 +188,7 @@ old spellings. Ratifying the table stays the architect's.
 
 ## Done when
 
-The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md).
+The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). [The ledger](1099-machine-statistics-contract-outside-review/ledger.md) says, item by item, what this block finished and what waits.
 
 ## BUGS
 

@@ -1,4 +1,4 @@
-//! An intrusive FIFO queue: the link lives inside the node, so push and pop cannot allocate or
+//! An intrusive first in, first out (FIFO) queue: the link lives inside the node, so push and pop cannot allocate or
 //! fail, and a pop hands back the node itself. The kernel's run queues and migration inboxes use
 //! it. Nothing here checks rule 2 below. See notes/intrusive-queues.md.
 //!
@@ -113,6 +113,20 @@ impl<T> PartialEq<NonNull<T>> for Unqueued<T> {
     }
 }
 
+impl<T> PartialEq for Unqueued<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T> Eq for Unqueued<T> {}
+
+impl<T> PartialEq<Unqueued<T>> for NonNull<T> {
+    fn eq(&self, other: &Unqueued<T>) -> bool {
+        *self == other.0
+    }
+}
+
 impl<T> core::fmt::Debug for Unqueued<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("Unqueued").field(&self.0).finish()
@@ -120,6 +134,10 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 }
 
 /// First in, first out: the queue is two pointers into nodes it does not own, plus a count.
+///
+/// Dropping a queue that still holds nodes strands them as dropping a token does: they stay linked,
+/// no token for them exists, and queueing one again needs a fresh [`Unqueued::new`]. `Queue` has no
+/// `Drop`, so pop every node before the queue goes.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 ///
@@ -139,18 +157,14 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// let a = NonNull::new(Box::into_raw(Box::new(Thread { tid: 1, next: None }))).unwrap();
 /// let b = NonNull::new(Box::into_raw(Box::new(Thread { tid: 2, next: None }))).unwrap();
 /// let mut q: Queue<Thread> = Queue::new();
-///
 /// // SAFETY: live boxed nodes on no queue, minted from their owning pointers, freed below.
 /// let (ta, tb) = unsafe { (Unqueued::new(a), Unqueued::new(b)) };
 /// q.push_back(ta);
 /// q.push_back(tb);
 /// assert_eq!(q.len(), 2);
 ///
+/// // Drained then refilled: where the classic tail-pointer bug lives.
 /// let first = q.pop_front().unwrap();
-/// // SAFETY: the token's node is one of the live locals above.
-/// assert_eq!(unsafe { (*first.as_ptr()).tid }, 1);
-///
-/// // A drained-then-refilled queue is where the classic tail-pointer bug lives.
 /// q.push_back(first);
 /// let order: Vec<u32> = core::iter::from_fn(|| q.pop_front())
 ///     // SAFETY: each token's node is one of the live locals above.
@@ -199,7 +213,7 @@ impl<T: Node> Queue<T> {
     ///
     /// A token is not `Clone`, so pushing one node onto two queues does not compile:
     ///
-    /// ```compile_fail
+    /// ```compile_fail,E0382
     /// # use core::ptr::NonNull;
     /// # use intrusive_queue::{Queue, Node, Unqueued};
     /// # struct T { next: Option<NonNull<T>> }
@@ -249,6 +263,18 @@ impl<T: Node> Queue<T> {
         // model's count after every step, so a wrapped decrement would fail it.
         self.len = self.len.wrapping_sub(1);
         Some(Unqueued(node))
+    }
+}
+
+impl<T: Node> core::fmt::Debug for Queue<T> {
+    /// Prints the two end pointers and the count, and walks nothing: a walk would read nodes,
+    /// which only the caller may do (rule 3).
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Queue")
+            .field("head", &self.head)
+            .field("tail", &self.tail)
+            .field("len", &self.len)
+            .finish()
     }
 }
 
@@ -346,6 +372,32 @@ mod verification {
             assert_eq!(q.len(), m_tail - m_head);
             assert_eq!(q.is_empty(), m_head == m_tail);
         }
+    }
+
+    /// A popped node leaves with a clear link, whichever node it was and however many were
+    /// queued behind it: the queue's order stays right without that write, so the FIFO harness
+    /// cannot see it go.
+    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.a_popped_node_leaves_with_a_clear_link.patch`
+    #[kani::proof]
+    #[kani::unwind(4)]
+    fn a_popped_node_leaves_with_a_clear_link() {
+        let mut nodes = [
+            N { next: None, tag: 0 },
+            N { next: None, tag: 1 },
+            N { next: None, tag: 2 },
+        ];
+        let base = (&raw mut nodes).cast::<N>();
+        let mut q: Queue<N> = Queue::new();
+        let count: usize = kani::any();
+        kani::assume((1..=3).contains(&count));
+        for i in 0..count {
+            // SAFETY: a distinct live element of a local declared before `q`, on no queue, minted
+            // once from the array's own pointer, and the harness is the only accessor.
+            q.push_back(unsafe { Unqueued::new(NonNull::new_unchecked(base.add(i))) });
+        }
+        let token = q.pop_front().expect("lost a node");
+        // SAFETY: pop returns only nodes we pushed, all still valid.
+        assert!(unsafe { (*token.as_ptr()).next() }.is_none());
     }
 }
 
@@ -483,6 +535,25 @@ mod tests {
             format!("{ta:?}"),
             format!("Unqueued({:?})", ta.as_non_null())
         );
+    }
+
+    /// Two tokens for one node compare equal and for two nodes unequal, a node's pointer compares
+    /// with a token from either side, and a queue prints its ends and count without walking.
+    #[test]
+    fn tokens_compare_each_way_and_a_queue_prints_its_ends() {
+        let (mut a, mut b) = (node(1), node(2));
+        let (pointer_a, pointer_b) = (a.0, b.0);
+        let (first, second) = (token(&mut a), token(&mut b));
+        assert!(first == first && first != second);
+        assert!(pointer_a == first && !(pointer_a == second) && pointer_b == second);
+        let mut q: Queue<N> = Queue::new();
+        assert_eq!(format!("{q:?}"), "Queue { head: None, tail: None, len: 0 }");
+        q.push_back(first);
+        assert_eq!(
+            format!("{q:?}"),
+            format!("Queue {{ head: Some({pointer_a:?}), tail: Some({pointer_a:?}), len: 1 }}")
+        );
+        q.push_back(second);
     }
 
     /// A popped node leaves with a clean link: it does not secretly point back into the queue.

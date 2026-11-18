@@ -35,6 +35,10 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const NAME_BYTES: usize = 512;
 
+// `NameSet::ends` holds offsets into the packed bytes as `u16`, and `Name` holds its length as a `u8`.
+const _: () = assert!(NAME_BYTES <= u16::MAX as usize);
+const _: () = assert!(MAXIMUM_NAME <= u8::MAX as usize);
+
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Name {
@@ -69,6 +73,7 @@ impl Name {
         })
     }
 
+    /// The name's bytes, without padding.
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes[..self.len as usize]
     }
@@ -100,10 +105,22 @@ pub struct NameSet {
     n: usize,
 }
 
+/// A name's bytes shown as [`Name`] shows them: as text when they are UTF-8, as bytes otherwise.
+struct NameText<'a>(&'a [u8]);
+
+impl core::fmt::Debug for NameText<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match core::str::from_utf8(self.0) {
+            Ok(s) => write!(f, "{s:?}"),
+            Err(_) => write!(f, "{:?}", self.0),
+        }
+    }
+}
+
 impl core::fmt::Debug for NameSet {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list()
-            .entries(self.iter().map(|(name, _)| name))
+            .entries(self.iter().map(|(name, _)| NameText(name)))
             .finish()
     }
 }
@@ -115,6 +132,7 @@ impl Default for NameSet {
 }
 
 impl NameSet {
+    /// A set holding no names.
     pub const fn empty() -> Self {
         NameSet {
             bytes: [0; NAME_BYTES],
@@ -181,14 +199,17 @@ impl NameSet {
         self.n += 1;
     }
 
+    /// How many names the set holds.
     pub fn len(&self) -> usize {
         self.n
     }
 
+    /// Whether the set holds no names.
     pub fn is_empty(&self) -> bool {
         self.n == 0
     }
 
+    /// Whether the set holds exactly `name`.
     pub fn contains(&self, name: &[u8]) -> bool {
         self.iter().any(|(n, _)| n == name)
     }
@@ -285,7 +306,9 @@ pub struct Expander<'a> {
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Resume {
     #[default]
+    /// Begin from the first name in byte order.
     Start,
+    /// Resume after this name, which the previous batch ended on.
     After(Name),
 }
 
@@ -297,7 +320,9 @@ pub enum Resume {
 /// ever holds the whole match, which is the point rather than an accident of the implementation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Batch {
+    /// The names of this batch, in byte order.
     pub names: NameSet,
+    /// Whether more names follow this batch.
     pub more: bool,
 }
 
@@ -527,7 +552,7 @@ impl Designation {
 /// **What the shell expanded, handed to the planner.**
 ///
 /// The shell expands *before* it plans, which is also what Unix does, so there is no divergence to
-/// earn here. The structural consequence is that [`crate::plan`] must see the **set** rather than
+/// earn here. The structural consequence is that [`crate::plan_against`] must see the **set** rather than
 /// the pattern, since the endowment is the set; this is that argument, and the positional index is
 /// carried so the placement stays explicit rather than being inferred from which slot happens to
 /// want a name.
@@ -749,7 +774,7 @@ mod tests {
         // `&[u8]`, and a slice debugs as numbers. Pinned as it is; if the set is ever taught to
         // print `["a.txt", "logs"]`, this is the test that says so on purpose.
         let set = expand(b"*", &[(b"a.txt", false), (b"logs", true)]).unwrap();
-        assert_debug(&set, "[[97, 46, 116, 120, 116], [108, 111, 103, 115]]");
+        assert_debug(&set, "[\"a.txt\", \"logs\"]");
     }
 
     // ---- batching at the bound (milestone 109) ----

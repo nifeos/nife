@@ -7,7 +7,7 @@
 //! `key_of` because keys collide in a bucket. The kernel side is `kernel/src/sched/futex.rs`; see
 //! `notes/futex.md` and `notes/inter-process-communication.md`.
 //!
-//! # EXAMPLES
+//! # Examples
 //!
 //! ```
 //! use core::ptr::NonNull;
@@ -49,7 +49,8 @@ use intrusive_queue::{Node, Queue, Unqueued};
 pub struct Key {
     /// The address space's name, as `kernel::user`'s registry hands it out.
     pub space: u64,
-    /// The word's virtual address in that space, 4-aligned.
+    /// The word's virtual address in that space, 4-aligned, which the caller checks: nothing in
+    /// the type enforces it.
     pub address: u64,
 }
 
@@ -68,7 +69,10 @@ impl<T: Node, const B: usize> Futexes<T, B> {
     /// No one waiting on anything.
     pub const fn new() -> Self {
         Self {
-            buckets: [const { Queue::new() }; B],
+            buckets: {
+                const { assert!(B > 0, "a futex table needs at least one bucket") };
+                [const { Queue::new() }; B]
+            },
         }
     }
 

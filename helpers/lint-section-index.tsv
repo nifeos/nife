@@ -5,6 +5,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)
 -	1	-	-	0	-	code	the CI fuzz job keeps a finding private
 -	1	-	-	0	-	code	script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot
+-	1	-	-	0	-	code	script/idle-pull-requests classifies open pull requests (the queue sweep's idle check)
 -	1	-	-	0	-	code	script/crate-move stages a move as the runbook says
 -	1	-	-	0	-	code	script/push believes origin's ref, not git's exit status
 -	1	-	-	0	-	code	script/push --requeue re-arms, and arming refuses a held pull request
@@ -77,6 +78,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	both	proof-only modules: crate::arch is the host's
 -	1	-	-	0	-	both	names meet the current naming rules
 -	1	-	-	0	-	code	every Kani harness carries a falsification record
+-	1	-	-	0	-	record	the audit index's selftest (fixture indexes: duplicates, triples, missing rows)
 -	1	-	-	0	-	record	the audit index
 -	1	-	-	0	-	record	the stranger test's run record
 -	1	-	-	0	-	both	environment names in prose
@@ -84,6 +86,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the empty-diff check
 -	1	-	-	0	-	code	workflow steps that swallow a failure
 -	1	-	-	0	-	code	every workflow file parses
+-	1	-	-	0	-	code	no workflow step uses a bare actions/checkout
 -	1	-	-	0	-	code	the fuzz heartbeat (selftest, and the workflow keeps to its limits)
 -	1	-	-	0	-	code	every issue form renders
 -	0	main	-	0	-	code	the kernel's dependencies: nothing only its tests use
@@ -122,6 +125,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	every mutation exclusion names code that exists
 -	1	-	-	0	-	code	the shared scope/architect-label merge-base resolution
 -	1	-	-	0	-	code	a pull request skips the heavy gates unless it carries full-ci
+-	1	-	-	0	-	code	a pull request proves when it changes a Kani harness
 -	1	-	-	0	-	code	format values move with their version constants
 -	1	-	-	0	-	both	the first cut's programs declare what they link
 -	1	-	-	1	-	both	em-dashes
@@ -141,3 +145,4 @@ shellcheck	1	-	-	0	-	code	shellcheck
 -	1	-	-	0	-	code	script/verify passes extra arguments through to cargo kani
 -	1	-	-	0	-	both	every kani-verifier install reads .kani-version
 -	1	-	-	0	-	code	script/kani-install: an installed pin is not reinstalled
+-	1	-	-	0	-	code	script/catch-up reads the milestone blocks and refuses to report zero from a broken reader

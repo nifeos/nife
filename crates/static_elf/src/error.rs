@@ -7,39 +7,40 @@
 /// # Examples
 ///
 /// ```
-/// use static_elf::{Elf, Error, FOREIGN_MACHINES, NATIVE_MACHINE, PF_R, PF_W, PF_X};
+/// use static_elf::*;
 /// # fn image(flags: u32, entry: u64) -> Vec<u8> {
 /// #     const EHDR: usize = 64; const PHDR: usize = 56;
-/// #     let mut v = vec![0u8; EHDR + PHDR];
+/// #     let mut v = vec![0u8; EHDR + PHDR + 16]; // 16 bytes of segment body
 /// #     v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
 /// #     v[4] = 2; v[5] = 1; v[6] = 1; // ELFCLASS64, ELFDATA2LSB, EV_CURRENT
 /// #     v[16..18].copy_from_slice(&2u16.to_le_bytes()); // ET_EXEC
 /// #     v[18..20].copy_from_slice(&NATIVE_MACHINE.to_le_bytes());
 /// #     v[24..32].copy_from_slice(&entry.to_le_bytes()); // e_entry
 /// #     v[32..40].copy_from_slice(&(EHDR as u64).to_le_bytes()); // e_phoff
-/// #     v[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes()); // e_phentsize
-/// #     v[56..58].copy_from_slice(&1u16.to_le_bytes()); // e_phnum
+/// #     v[54..56].copy_from_slice(&(PHDR as u16).to_le_bytes()); v[56] = 1; // e_phentsize, e_phnum
 /// #     let p = EHDR;
 /// #     v[p..p + 4].copy_from_slice(&1u32.to_le_bytes()); // PT_LOAD
 /// #     v[p + 4..p + 8].copy_from_slice(&flags.to_le_bytes());
 /// #     v[p + 8..p + 16].copy_from_slice(&((EHDR + PHDR) as u64).to_le_bytes()); // p_offset
 /// #     v[p + 16..p + 24].copy_from_slice(&0x40_0000u64.to_le_bytes()); // p_vaddr
 /// #     v[p + 24..p + 32].copy_from_slice(&0x40_0000u64.to_le_bytes()); // p_paddr, equal here
-/// #     v[p + 40..p + 48].copy_from_slice(&4096u64.to_le_bytes()); // p_memsz; p_filesz stays 0
+/// #     v[p + 32..p + 48].copy_from_slice(&[16u64.to_le_bytes(), 4096u64.to_le_bytes()].concat());
 /// #     v
 /// # }
 /// // W^X: a writable and executable segment is how a buffer overflow becomes code execution.
-/// let bad = image(PF_R | PF_W | PF_X, 0x40_0000);
+/// let bad = image(READABLE | WRITABLE | EXECUTABLE, 0x40_0000);
 /// assert!(matches!(Elf::parse(&bad), Err(Error::WritableAndExecutable)));
 ///
 /// // An entry point outside every executable segment is a program that cannot start.
-/// let nowhere = image(PF_R | PF_X, 0x99_0000);
+/// let nowhere = image(READABLE | EXECUTABLE, 0x99_0000);
 /// assert!(matches!(Elf::parse(&nowhere), Err(Error::EntryNotExecutable)));
 ///
-/// // A foreign binary (which machines are foreign depends on the build).
-/// let mut foreign = image(PF_R | PF_X, 0x40_0000);
-/// foreign[18..20].copy_from_slice(&FOREIGN_MACHINES[0].to_le_bytes());
+/// // A binary for another machine than this build's, which `parse_for_machine` accepts by name.
+/// let other = if NATIVE_MACHINE == MACHINE_X86_64 { MACHINE_AARCH64 } else { MACHINE_X86_64 };
+/// let mut foreign = image(READABLE | EXECUTABLE, 0x40_0000);
+/// foreign[18..20].copy_from_slice(&other.to_le_bytes());
 /// assert!(matches!(Elf::parse(&foreign), Err(Error::WrongMachine)));
+/// assert!(Elf::parse_for_machine(&foreign, other).is_ok());
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Error {
@@ -47,16 +48,16 @@ pub enum Error {
     TooSmall,
     /// No `\x7fELF`.
     BadMagic,
-    /// 32-bit. We do not have a 32-bit anything.
+    /// 32-bit. The crate reads ELF64 only.
     Not64Bit,
-    /// Big-endian. `aarch64` can be, and ours is not.
+    /// Big-endian. `aarch64` can be, and the crate reads little-endian only.
     NotLittleEndian,
     /// `e_version` is not 1.
     BadVersion,
-    /// `e_machine` is not this build's machine: a riscv binary handed to the `aarch64` kernel, say,
+    /// `e_machine` is not the machine asked for: a riscv binary handed to an `aarch64` loader, say,
     /// caught here rather than as an illegal-instruction fault when the program starts.
     WrongMachine,
-    /// A PIE or shared object. It expects a dynamic linker to relocate it. We are not one.
+    /// A PIE or shared object, which expects a dynamic linker to relocate it.
     NeedsRelocation,
     /// Not an executable at all (a relocatable object, a core dump).
     NotExecutable,
@@ -67,15 +68,20 @@ pub enum Error {
     SegmentOutOfBounds,
     /// `p_memsz < p_filesz`: the segment claims to occupy less memory than it has bytes.
     SegmentTruncated,
-    /// A segment that is both writable and executable: the W^X rule `page_tables::Flags` holds by
-    /// having no `writable_and_executable()` constructor. See notes/elf/parser.md.
+    /// A segment that is both writable and executable. A page that is both is how a buffer
+    /// overflow becomes code execution, so a loader holding W^X refuses the file asking for one.
     WritableAndExecutable,
     /// A segment that is neither readable nor executable. Nothing can ever touch it.
     SegmentUnreachable,
-    /// Two segments want the same page. Legal ELF, refused because
-    /// `crates/user_mode_runtime/link.ld` page-aligns every segment. See notes/elf/parser.md.
+    /// Two segments want the same page, on pages of the size the parse was given (4 KiB unless
+    /// [`Elf::parse_with`](crate::Elf::parse_with) named another). Legal ELF, and common when
+    /// `.text` and `.rodata` share a page, but refused: a loader that gives each segment its own
+    /// permissions cannot give one page two, so a linker script for this loader page-aligns every
+    /// segment.
     SegmentsOverlap,
-    /// The entry point is not inside any executable segment. The program cannot start.
+    /// The entry point is not inside the file bytes of any executable segment. Outside every one,
+    /// the program cannot start. Inside one but past its `p_filesz`, in the zero-filled tail, it
+    /// starts by executing zeros, which faults on every architecture this crate reads.
     EntryNotExecutable,
     /// `p_vaddr + p_memsz` overflows, caught so the entry check and page math cannot wrap.
     AddressOverflow,

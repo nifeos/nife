@@ -21,7 +21,7 @@ fn naming_something_to_remove_grants_the_directory_that_holds_it() {
         panic!()
     };
     let e = plan(&r, WITH_DIRECTORY).unwrap();
-    assert_eq!(e.program, Program::Rm);
+    assert_eq!(e.manifest, Program::Rm.manifest());
     let g = e
         .directory
         .expect("the operand did not become a directory grant");
@@ -98,7 +98,7 @@ fn the_recursion_letter_widens_by_its_own_bit_wherever_it_is_declared() {
     let Command::Run(r) = parse(b"sweep -r logs") else {
         panic!()
     };
-    let e = plan_against(&r, Program::Rm, SWEEPS_A_TREE, WITH_DIRECTORY).unwrap();
+    let e = plan_against(&r, SWEEPS_A_TREE, WITH_DIRECTORY).unwrap();
     assert_eq!(e.short_options, 1 << 1);
     assert!(
         e.directory.unwrap().subtree,
@@ -418,7 +418,6 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
     assert_eq!(
         super::plan_against(
             &r,
-            Program::LeastAuthorityDemo,
             READS_A_FILE,
             WITH_DIRECTORY,
             Expansion::at(0, expanded(b"*.txt").unwrap()),
@@ -431,7 +430,6 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
     };
     let g = super::plan_against(
         &r,
-        Program::LeastAuthorityDemo,
         READS_A_FILE,
         WITH_DIRECTORY,
         Expansion::at(0, expanded(b"*.log").unwrap()),
@@ -530,7 +528,7 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
         WITH_DIRECTORY,
     )
     .unwrap();
-    assert_eq!(e.program, Program::StdExerciser);
+    assert_eq!(e.manifest, Program::StdExerciser.manifest());
     assert_eq!(
         (e.program_argument, e.short_options, e.file, e.directory),
         (0, 0, None, None)

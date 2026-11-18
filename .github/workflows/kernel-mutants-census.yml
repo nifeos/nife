@@ -120,6 +120,13 @@ jobs:
       # no git at all. The checkout is this run's own commit, the tree the slice jobs check out
       # too, so the windows the plan materializes apply against the tree the jobs run.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
 
       - name: Install the pinned toolchain
         run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
@@ -238,7 +245,14 @@ jobs:
       # helper the steps invoke live in this tree, and the windows were materialized against this
       # same tree by the plan job.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         if: ${{ !matrix.noop }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: ${{ steps.checkout_first_1.outcome != 'success' && (!matrix.noop) }}
 
       - name: Install the pinned toolchain
         if: ${{ !matrix.noop }}
@@ -342,6 +356,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
 
       - name: Fetch the plan's material
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -406,6 +427,15 @@ jobs:
           permission-pull-requests: write
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           token: ${{ steps.app-token.outputs.token || github.token }}
 

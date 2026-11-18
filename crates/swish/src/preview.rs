@@ -27,16 +27,16 @@ pub struct Vouched {
 /// `digest` is the file's `sha256:<hex>`, `vouched_by` the live generation that lists it (or
 /// `None`), `holds` whether this session holds the run-unvouched capability, `declared` the
 /// manifest its note carries, and `e` the line bound against it. The rows are what
-/// [`grant_plan::image_manifest`] would endow, beside what the note asks. See
+/// [`program_table::image_manifest`] would endow, beside what the note asks. See
 /// notes/shell/caps-preview.md, "`caps <path>`: what a file's bytes would be granted".
 ///
 /// # EXAMPLES
 ///
 /// ```
 /// let grant_plan::Command::Run(spec) = grant_plan::parse(b"./a.out") else { panic!() };
-/// let m = grant_plan::Manifest { network: true, ..grant_plan::NO_NOTE_MANIFEST };
+/// let m = grant_contract::Manifest { network: true, ..program_table::NO_NOTE_MANIFEST };
 /// let holds = grant_plan::Holdings::default();
-/// let e = grant_plan::plan_against(&spec, grant_plan::IMAGE_ROW, m, holds, grant_plan::expand::Expansion::none()).unwrap();
+/// let e = grant_plan::plan_against(&spec, m, holds, grant_plan::expand::Expansion::none()).unwrap();
 /// let mut said = Vec::new();
 /// swish::write_image_capabilities(b"./a.out", b"sha256:ab12", None, true, Some(m), &e, &holds, &mut |b| said.extend_from_slice(b));
 /// let said = String::from_utf8(said).unwrap();
@@ -51,26 +51,27 @@ pub fn write_image_capabilities(
     digest: &[u8],
     vouched_by: Option<Vouched>,
     holds: bool,
-    declared: Option<grant_plan::Manifest>,
+    declared: Option<grant_contract::Manifest>,
     e: &Endowment,
     holdings: &Holdings,
     out: &mut dyn FnMut(&[u8]),
 ) {
     let vouched = vouched_by.is_some();
-    let vouch = vouched_by.map_or(grant_plan::Vouch::Unvouched, |v| {
-        grant_plan::Vouch::Vouched {
+    let vouch = vouched_by.map_or(program_table::Vouch::Unvouched, |v| {
+        program_table::Vouch::Vouched {
             network: v.network_granted,
         }
     });
-    let verdict = (vouched || holds).then(|| grant_plan::image_manifest(declared, vouch));
+    let verdict = (vouched || holds).then(|| program_table::image_manifest(declared, vouch));
     out(b"  ");
     out(path);
     match verdict {
         // An unvouched `std` image's pages sit at the `std` layout's slots, so the native rows
         // below would name slots it does not get.
-        Some(Ok(m)) if vouched || m.startup == grant_plan::StartupContract::Std => {
+        Some(Ok(m)) if vouched || m.startup == grant_contract::StartupContract::Std => {
             out(b" would grant the new process, and nothing else:\n");
-            write_preview_rows(e, &m, holdings, None, out);
+            // An image's bytes are no row of the table, so no resolver zone is the table's.
+            write_preview_rows(e, &m, None, holdings, None, out);
         }
         Some(Ok(_)) => {
             out(b" would grant the new process, and nothing else:\n");
@@ -120,7 +121,7 @@ pub fn write_image_capabilities(
 /// **The one line that says what a file's own manifest asks for**, in words, so it can be read
 /// beside the rows of what will be granted. Every authority a manifest can declare that an image
 /// can carry is named; the ones it cannot carry are refused before this matters.
-fn write_note_asks(declared: Option<grant_plan::Manifest>, out: &mut dyn FnMut(&[u8])) {
+fn write_note_asks(declared: Option<grant_contract::Manifest>, out: &mut dyn FnMut(&[u8])) {
     let Some(m) = declared else {
         out(b"    it carries no manifest note, so it asks for its output and nothing else\n");
         return;
@@ -140,7 +141,7 @@ fn write_note_asks(declared: Option<grant_plan::Manifest>, out: &mut dyn FnMut(&
         (
             !matches!(
                 m.memory_grant,
-                grant_plan::MemoryGrantDeclaration::Forbidden
+                grant_contract::MemoryGrantDeclaration::Forbidden
             ),
             b"memory",
         ),
@@ -232,60 +233,70 @@ pub fn write_capabilities(
             source: l.source_for(i, source_file),
             diagnostics: diag_file,
         };
-        match grant_plan::plan_stage(&spec, holdings, expanded, streams) {
+        match program_table::plan_stage(&spec, holdings, expanded, streams) {
             Err(refusal) => return write_refusal(&spec, refusal, out),
-            Ok(e) => {
+            Ok((program, e)) => {
                 // Narrowed by the line's verb, as the progenitor narrows it reading the same word
                 // off the argv (milestone 809 (the package client becomes a program), option V2).
-                let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
+                let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
                 let verb = grant_plan::verb_of(stage, &mut verb);
-                let m = grant_plan::narrow_by_verb(&e.program.manifest(), e.program.verbs(), verb);
+                let m = grant_contract::narrow_by_verb(&e.manifest, program.verbs(), verb);
                 out(b"  ");
-                out(e.program.name().as_bytes());
+                out(program.name().as_bytes());
                 out(b" would grant the new process, and nothing else:\n");
-                write_preview_rows(&e, &m, &holdings, config, out);
+                write_preview_rows(&e, &m, program.resolver_zone(), &holdings, config, out);
             }
         }
     }
 }
 
-/// Write the endowment a resolved invocation would hand the new process. `holdings` is what the
+/// Write the endowment a resolved invocation would hand the new process, planned as `program`,
+/// whose name heads the preview and whose resolver zone is printed. `holdings` is what the
 /// planning shell held, which is how a directory grant's position is printed as a path in the one
 /// tree even when the grant is in a mounted second tree ([`Holdings::place`]).
 ///
 /// `config` is this shell's own view of the inert-configuration page, when it holds one
-/// ([`grant_plan::SHELL_CONFIGURATION_SLOT`]). It is the frame the progenitor endows a child declaring
-/// [`grant_plan::Manifest::configuration`] with, so its values are printed as what that child will read.
+/// ([`grant_contract::SHELL_CONFIGURATION_SLOT`]). It is the frame the progenitor endows a child declaring
+/// [`grant_contract::Manifest::configuration`] with, so its values are printed as what that child will read.
 /// `None` prints the row without values and says why.
 pub fn write_preview(
+    program: Program,
     e: &Endowment,
     holdings: &Holdings,
     config: Option<ConfigPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
     out(b"  ");
-    out(e.program.name().as_bytes());
+    out(program.name().as_bytes());
     out(b" would grant the new process, and nothing else:\n");
-    write_preview_rows(e, &e.program.manifest(), holdings, config, out);
+    write_preview_rows(
+        e,
+        &e.manifest,
+        program.resolver_zone(),
+        holdings,
+        config,
+        out,
+    );
 }
 
-/// [`write_preview`]'s rows, for an endowment bound against `m`. Separate because a file run by its
-/// path is bound against the manifest its note carries, and its endowment's row is a stand-in
-/// (`grant_plan::IMAGE_ROW`) that must not be read.
+/// [`write_preview`]'s rows, for an endowment bound against `m`. Separate because a stage's
+/// manifest is narrowed by its verb, and an image run by its path has no row whose resolver zone
+/// (`zone`) applies.
 fn write_preview_rows(
     e: &Endowment,
-    m: &grant_plan::Manifest,
+    m: &grant_contract::Manifest,
+    zone: Option<&str>,
     holdings: &Holdings,
     config: Option<ConfigPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
     // A `std` program's slots are fixed by `crates/std_runtime_contract`, not by listing order.
-    let std = m.startup == grant_plan::StartupContract::Std;
+    let std = m.startup == grant_contract::StartupContract::Std;
     write_result_and_memory_rows(e, m, std, out);
     write_file_and_directory_rows(e, m, holdings, std, out);
     write_page_rows(m, config, std, out);
     write_service_rows(m, std, out);
-    write_resolver_row(e, m, std, out);
+    write_resolver_row(m, zone, std, out);
     write_machine_rows(m, out);
     write_index_rows(e, m, out);
     write_activation_rows(e, m, out);
@@ -319,14 +330,14 @@ fn write_slot(n: u64, out: &mut dyn FnMut(&[u8])) {
 /// The result row (or a `std` program's heap and stdout rows) and the memory grant.
 fn write_result_and_memory_rows(
     e: &Endowment,
-    m: &grant_plan::Manifest,
+    m: &grant_contract::Manifest,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {
     if std {
         write_slot(std_runtime_contract::MEMORY_REGION_SLOT, out);
         out(b"untyped   heap. the ");
-        write_num(grant_plan::named_std_region_pages(m), out);
+        write_num(program_table::named_std_region_pages(m), out);
         out(b"-page region it is built in, less the\n");
         out(if m.installer {
             b"                              build; from the progenitor's image pool, which holds\n                              one package beside the progenitor's copy of it, not\n".as_slice()
@@ -351,7 +362,7 @@ fn write_result_and_memory_rows(
 /// whether `-r` grants the walk (notes/shell/caps-preview.md, "The rows, in the order they print").
 fn write_file_and_directory_rows(
     e: &Endowment,
-    m: &grant_plan::Manifest,
+    m: &grant_contract::Manifest,
     holdings: &Holdings,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
@@ -378,7 +389,7 @@ fn write_file_and_directory_rows(
         let mut buf = [0u8; nav::RENDER_MAXIMUM];
         let n = holdings.place(g.which, &g.directory).render(&mut buf);
         out(&buf[..n]);
-        if let grant_plan::ProgramArgumentDeclaration::Words(w) = m.program_argument {
+        if let grant_contract::ProgramArgumentDeclaration::Words(w) = m.program_argument {
             if g.names.is_empty() {
                 out(b"  (this directory itself)\n");
             } else {
@@ -387,13 +398,13 @@ fn write_file_and_directory_rows(
                 out(b" in it, named on the line)\n");
             }
             out(match w {
-                grant_plan::WordGrant::ReadOnly => {
+                grant_contract::WordGrant::ReadOnly => {
                     b"           ...read-only, and everything under what was named\n".as_slice()
                 }
-                grant_plan::WordGrant::ReadWrite => {
+                grant_contract::WordGrant::ReadWrite => {
                     b"           ...read and write, and everything under what was named\n"
                 }
-                grant_plan::WordGrant::Create => {
+                grant_contract::WordGrant::Create => {
                     b"           ...read, write and create what was named, and everything under it\n"
                 }
             });
@@ -415,7 +426,7 @@ fn write_file_and_directory_rows(
 /// the inert configuration with its values (as §111 (inert configuration is a validated page)
 /// asks), and the argv, which is bytes and grants nothing (notes/shell/caps-preview.md).
 fn write_page_rows(
-    m: &grant_plan::Manifest,
+    m: &grant_contract::Manifest,
     config: Option<ConfigPage>,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
@@ -466,13 +477,13 @@ fn write_page_rows(
 
 /// The service endpoints a program may call: entropy, the network, and its supervision domain,
 /// each with the right it holds and what that right cannot do (notes/shell/caps-preview.md).
-fn write_service_rows(m: &grant_plan::Manifest, std: bool, out: &mut dyn FnMut(&[u8])) {
+fn write_service_rows(m: &grant_contract::Manifest, std: bool, out: &mut dyn FnMut(&[u8])) {
     if m.entropy {
         write_slot(
             if std {
                 std_runtime_contract::ENTROPY_SLOT
             } else {
-                grant_plan::ENTROPY_SLOT
+                grant_contract::ENTROPY_SLOT
             },
             out,
         );
@@ -522,12 +533,12 @@ fn write_service_rows(m: &grant_plan::Manifest, std: bool, out: &mut dyn FnMut(&
 /// which names the program may look up before it runs, where on Unix every process may read
 /// `/etc/resolv.conf` and ask about anything.
 fn write_resolver_row(
-    e: &Endowment,
-    m: &grant_plan::Manifest,
+    m: &grant_contract::Manifest,
+    zone: Option<&str>,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {
-    let (true, true, Some(zone)) = (m.network, std, e.program.resolver_zone()) else {
+    let (true, true, Some(zone)) = (m.network, std, zone) else {
         return;
     };
     write_slot(std_runtime_contract::RESOLVER_SLOT, out);
@@ -545,8 +556,8 @@ fn write_resolver_row(
 
 /// The machine-level grants: the statistics page, the budget view, reboot, sync, the installer
 /// and the catalog (notes/shell/caps-preview.md). `m` is the manifest the progenitor endows from.
-fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
-    // `m`, not `e.program.manifest()`: for an image run from a file, `e.program` is a placeholder.
+fn write_machine_rows(m: &grant_contract::Manifest, out: &mut dyn FnMut(&[u8])) {
+    // `m`, not `e.manifest`: a stage's manifest is narrowed by its verb before it is printed.
     if m.machine {
         out(b"    cap 11 frame     machine  read-only. memory, run queue, interrupts, context\n");
         out(b"                              switches and busy time for the whole machine.\n");
@@ -567,16 +578,16 @@ fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
     // The installer endpoint is a copy of one that can do all three things these lines refuse
     // (§270 (a package manager holds an installer endpoint, not the spawn endpoint)).
     if m.installer {
-        write_slot(grant_plan::INSTALLER_SLOT, out);
+        write_slot(grant_contract::INSTALLER_SLOT, out);
         out(b"endpoint  installer  WRITE. it may ask the progenitor to install, remove or\n");
         out(b"                              roll back a package, and nothing else: it cannot spawn,\n");
         out(b"                              cannot vouch for bytes, and cannot hand this on.\n");
         out(b"                              only the owner's console grants it\n");
-        write_slot(grant_plan::INSTALLER_REPLY_SLOT, out);
+        write_slot(grant_contract::INSTALLER_REPLY_SLOT, out);
         out(b"endpoint  replies    READ. the progenitor's answers to those requests\n");
     }
     if m.catalog {
-        write_slot(grant_plan::CATALOG_SLOT, out);
+        write_slot(grant_contract::CATALOG_SLOT, out);
         out(b"frame     catalog  read-only. the packages this image vouches for, by name,\n");
         out(b"                              version and digest; knowledge, and no authority\n");
     }
@@ -585,13 +596,13 @@ fn write_machine_rows(m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
 /// **The machine's index store** (milestone 801 (packages over the internet)): the directory the
 /// index copy lives in, at the `std` layout's one directory slot, and the image's index sources.
 /// Printed only when the line designated no directory of its own, because the progenitor then
-/// places the line's and not this one (`grant_plan::Manifest::indexes`).
-fn write_index_rows(e: &Endowment, m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
+/// places the line's and not this one (`grant_contract::Manifest::indexes`).
+fn write_index_rows(e: &Endowment, m: &grant_contract::Manifest, out: &mut dyn FnMut(&[u8])) {
     let write = match m.indexes {
-        grant_plan::IndexStoreDeclaration::Forbidden => return,
+        grant_contract::IndexStoreDeclaration::Forbidden => return,
         _ if e.directory.is_some() => return,
-        grant_plan::IndexStoreDeclaration::ReadOnly => false,
-        grant_plan::IndexStoreDeclaration::ReadWrite => true,
+        grant_contract::IndexStoreDeclaration::ReadOnly => false,
+        grant_contract::IndexStoreDeclaration::ReadWrite => true,
     };
     write_slot(std_runtime_contract::FS_DIR_SLOT, out);
     out(if write {
@@ -606,7 +617,7 @@ fn write_index_rows(e: &Endowment, m: &grant_plan::Manifest, out: &mut dyn FnMut
         b"                              machine installs from; only the owner's console grants it
 ",
     );
-    write_slot(grant_plan::INDEX_SOURCES_SLOT, out);
+    write_slot(grant_contract::INDEX_SOURCES_SLOT, out);
     out(
         b"frame     sources  read-only. where this image's index is, and the root its TLS
 ",
@@ -619,9 +630,9 @@ fn write_index_rows(e: &Endowment, m: &grant_plan::Manifest, out: &mut dyn FnMut
 
 /// **The activation directory, read only** (milestone 809 (the package client becomes a program),
 /// `jig list -u`), at the `std` layout's one directory slot in place of the index store
-/// (`grant_plan::Manifest::activation_directory`). Printed only when the line designated no
+/// (`grant_contract::Manifest::activation_directory`). Printed only when the line designated no
 /// directory of its own, as the store's row is.
-fn write_activation_rows(e: &Endowment, m: &grant_plan::Manifest, out: &mut dyn FnMut(&[u8])) {
+fn write_activation_rows(e: &Endowment, m: &grant_contract::Manifest, out: &mut dyn FnMut(&[u8])) {
     if !m.activation_directory || e.directory.is_some() {
         return;
     }

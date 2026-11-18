@@ -110,7 +110,7 @@ for c in $(cat set.txt); do
 done
 ```
 
-Results: every crate inherits `license` and `lints`. No crate has a `build.rs`. The six blocking
+Results: every crate inherits `license` and `lints`. No crate has a `build.rs`. The five blocking
 references are in the proposal's table. `grant_plan`'s `../../..` strings are path arguments in its
 own tests, not files. Fuzz targets build `byte_sink_contract`, `capability_manifest_note`,
 `domain_name_resolution_contract`, `domain_name_system`, `filesystem_contract`,

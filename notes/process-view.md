@@ -54,7 +54,7 @@ invoke(cap, SURVEY, cursor, record, 0) -> (next_cursor, tid, word)
 - A negative first word is an `abi::Error`.
 - Needs `ENUMERATE`, and pointedly not `READ`. `READ` on a supervision endpoint is what `RECEIVE`
   and `endpoint::REAP` take, so a viewer holding it could reap a child; a domain names its members
-  and does not act on them (calef, 2026-08-17). See `capability::Rights::ENUMERATE` and the first
+  and does not act on them (calef, 2026-08-17). See `capability_table::Rights::ENUMERATE` and the first
   `BUGS` entry in [process-view/limitations.md](process-view/limitations.md), which is the finding
   this right came from.
 
@@ -154,7 +154,7 @@ than it saw without saying so.
 person types, so there is no token to place and no refusal to write. What the field does is tell
 The progenitor which children to endow, and tell a person reading `caps ps` that the authority exists.
 
-Init places the endpoint in `grant_plan::DOMAIN_SLOT` (seven) with `ENUMERATE`, using the same named-slot
+Init places the endpoint in `grant_contract::DOMAIN_SLOT` (seven) with `ENUMERATE`, using the same named-slot
 mechanism §67 gave the diagnostics stream, for the same reason. How many low slots a child gets
 depends on what else the line granted it, and a program that probes a fixed number needs that number
 not to move.

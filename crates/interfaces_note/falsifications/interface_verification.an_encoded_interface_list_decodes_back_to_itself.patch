@@ -1,0 +1,21 @@
+Falsifies `interfaces_note::interface_verification::an_encoded_interface_list_decodes_back_to_itself`.
+
+The defect: the encoder writes a record's version word big-endian. The descriptor is
+little-endian everywhere else, and a version that reads the same either way (zero, or a
+palindrome) hides it from any fixed example.
+
+Expected to fail: the harness's comparison of each decoded record with the list that was
+encoded, on a symbolic version whose bytes are not a palindrome.
+
+diff --git a/crates/interfaces_note/src/lib.rs b/crates/interfaces_note/src/lib.rs
+--- a/crates/interfaces_note/src/lib.rs
++++ b/crates/interfaces_note/src/lib.rs
+@@ -168,7 +168,7 @@
+         let id = list[i].id.to_le_bytes();
+         put4(&mut out, at, [id[0], id[1], id[2], id[3]]);
+         put4(&mut out, at + 4, [id[4], id[5], id[6], id[7]]);
+-        put4(&mut out, at + 8, list[i].version.to_le_bytes());
++        put4(&mut out, at + 8, list[i].version.to_be_bytes());
+         i += 1;
+     }
+     out

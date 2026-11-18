@@ -1,0 +1,4 @@
+# `doc_markdown` asks for backticks around anything that looks like an identifier. VisionFive is the
+# name of a board, so backticks would say "an identifier you could type" where the word names
+# something in the world. `".."` extends clippy's defaults instead of replacing them.
+doc-valid-idents = ["..", "VisionFive"]

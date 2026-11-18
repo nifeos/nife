@@ -101,6 +101,20 @@ c_library/src/start.rs::CMain
 
 c_library/src/start.rs::run
 
+components/src/block_driver_roles.rs::run
+
+components/src/block_driver_roles.rs::run_attack
+
+components/src/block_driver_roles.rs::run_attack_indirect
+
+components/src/block_driver_roles.rs::run_blk_server
+
+components/src/block_driver_roles.rs::run_net
+
+components/src/block_driver_roles.rs::run_write
+
+components/src/block_driver_roles.rs::run_write_abandon
+
 components/src/credentialer.rs::RPT_READY
 
 components/src/designware_ethernet_transport.rs::bring_up
@@ -475,19 +489,14 @@ crates/address_space_layout/src/lib.rs::runtime_window
 
 crates/address_space_layout/src/lib.rs::service_window
 
-crates/allocation_cache/src/lib.rs::BATCH
 
 crates/allocation_cache/src/lib.rs::CLASSES
 
 crates/allocation_cache/src/lib.rs::Cache
 
-crates/allocation_cache/src/lib.rs::DEPTH
 
-crates/allocation_cache/src/lib.rs::GRID
 
-crates/allocation_cache/src/lib.rs::LARGEST
 
-crates/allocation_cache/src/lib.rs::MOST_CACHED_BYTES
 
 crates/allocation_cache/src/lib.rs::cached_bytes
 
@@ -497,17 +506,14 @@ crates/allocation_cache/src/lib.rs::class_bytes
 
 crates/allocation_cache/src/lib.rs::count
 
-crates/allocation_cache/src/lib.rs::drain
 
 crates/allocation_cache/src/lib.rs::new
 
-crates/allocation_cache/src/lib.rs::put
 
 crates/allocation_cache/src/lib.rs::refill
 
 crates/allocation_cache/src/lib.rs::spill
 
-crates/allocation_cache/src/lib.rs::take
 
 crates/bitmap_font/src/glyphs.rs
 
@@ -874,91 +880,17 @@ crates/c_seam/src/lib.rs::pattern_ro
 
 
 
-crates/capability/src/lib.rs::ALL
 
-crates/capability/src/lib.rs::BIND
 
-crates/capability/src/lib.rs::CapabilityTable
-
-crates/capability/src/lib.rs::ENUMERATE
-
-crates/capability/src/lib.rs::Error
-
-crates/capability/src/lib.rs::GRANT
-
-crates/capability/src/lib.rs::NONE
-
-crates/capability/src/lib.rs::READ
-
-crates/capability/src/lib.rs::Reap
-
-crates/capability/src/lib.rs::Rights
-
-crates/capability/src/lib.rs::WRITE
-
-crates/capability/src/lib.rs::allows
-
-crates/capability/src/lib.rs::bits
-
-crates/capability/src/lib.rs::delete
-
-crates/capability/src/lib.rs::delete_matching
-
-crates/capability/src/lib.rs::derive
-
-crates/capability/src/lib.rs::from_bits
-
-crates/capability/src/lib.rs::get
-
-crates/capability/src/lib.rs::get_with
-
-crates/capability/src/lib.rs::highest_seen
-
-crates/capability/src/lib.rs::insert
-
-crates/capability/src/lib.rs::insert_at
-
-crates/capability/src/lib.rs::insert_at_or_above
-
-crates/capability/src/lib.rs::intersect
-
-crates/capability/src/lib.rs::is_empty
-
-crates/capability/src/lib.rs::is_subset_of
-
-crates/capability/src/lib.rs::len
-
-crates/capability/src/lib.rs::mint_child
-
-crates/capability/src/lib.rs::new
-
-crates/capability/src/lib.rs::peak
-
-crates/capability/src/lib.rs::put
-
-crates/capability/src/lib.rs::reap_decision
-
-crates/capability/src/lib.rs::survey_includes
-
-crates/capability/src/lib.rs::union
-
-crates/capability/src/lib.rs::used
-
-crates/capability/src/tests.rs
-
-crates/capability_manifest_note/src/lib.rs::DESCRIPTOR_LEN
 
 crates/capability_manifest_note/src/lib.rs::Error
 
-crates/capability_manifest_note/src/lib.rs::NOTE_LEN
 
 crates/capability_manifest_note/src/lib.rs::Note
 
 crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS
 
-crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS_LEN
 
-crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS_NOTE_LEN
 
 crates/capability_manifest_note/src/lib.rs::SUBTREE_GRANTS_VERSION
 
@@ -970,9 +902,7 @@ crates/capability_manifest_note/src/lib.rs::VERBS
 
 crates/capability_manifest_note/src/lib.rs::VERBS_VERSION
 
-crates/capability_manifest_note/src/lib.rs::VERB_RECORD
 
-crates/capability_manifest_note/src/lib.rs::VERSION
 
 crates/capability_manifest_note/src/lib.rs::Verbs
 
@@ -1000,7 +930,6 @@ crates/capability_manifest_note/src/lib.rs::of
 
 crates/capability_manifest_note/src/lib.rs::of
 
-crates/capability_manifest_note/src/lib.rs::verbs_len
 
 crates/capability_plan/src/lib.rs::Dependents
 
@@ -1049,6 +978,74 @@ crates/capability_plan/src/lib.rs::rights
 crates/capability_plan/src/lib.rs::slot_for
 
 crates/capability_plan/src/lib.rs::slot_of
+
+crates/capability_table/src/lib.rs::ALL
+
+crates/capability_table/src/lib.rs::BIND
+
+crates/capability_table/src/lib.rs::CapabilityTable
+
+crates/capability_table/src/lib.rs::ENUMERATE
+
+crates/capability_table/src/lib.rs::Error
+
+crates/capability_table/src/lib.rs::GRANT
+
+crates/capability_table/src/lib.rs::NONE
+
+crates/capability_table/src/lib.rs::READ
+
+crates/capability_table/src/lib.rs::Reap
+
+crates/capability_table/src/lib.rs::Rights
+
+crates/capability_table/src/lib.rs::WRITE
+
+crates/capability_table/src/lib.rs::allows
+
+crates/capability_table/src/lib.rs::bits
+
+crates/capability_table/src/lib.rs::delete
+
+crates/capability_table/src/lib.rs::delete_matching
+
+crates/capability_table/src/lib.rs::derive
+
+crates/capability_table/src/lib.rs::from_bits
+
+crates/capability_table/src/lib.rs::get
+
+crates/capability_table/src/lib.rs::highest_seen
+
+crates/capability_table/src/lib.rs::insert
+
+crates/capability_table/src/lib.rs::insert_at
+
+crates/capability_table/src/lib.rs::insert_at_or_above
+
+crates/capability_table/src/lib.rs::intersect
+
+crates/capability_table/src/lib.rs::is_empty
+
+crates/capability_table/src/lib.rs::is_subset_of
+
+crates/capability_table/src/lib.rs::mint_child
+
+crates/capability_table/src/lib.rs::new
+
+crates/capability_table/src/lib.rs::peak
+
+crates/capability_table/src/lib.rs::put
+
+crates/capability_table/src/lib.rs::reap_decision
+
+crates/capability_table/src/lib.rs::survey_includes
+
+crates/capability_table/src/lib.rs::union
+
+crates/capability_table/src/lib.rs::used
+
+crates/capability_table/src/tests.rs
 
 crates/capability_witness_contract/src/lib.rs::CHILD_ANSWERED
 
@@ -1101,7 +1098,6 @@ crates/clock_contract/src/lib.rs::REFUSED_TOO_FAR_BACKWARD
 
 crates/clock_contract/src/lib.rs::REFUSED_TOO_FAR_FORWARD
 
-crates/clock_contract/src/lib.rs::RTC
 
 crates/clock_contract/src/lib.rs::Reading
 
@@ -1109,7 +1105,6 @@ crates/clock_contract/src/lib.rs::SET
 
 crates/clock_contract/src/lib.rs::STATE
 
-crates/clock_contract/src/lib.rs::SYNCED
 
 crates/clock_contract/src/lib.rs::UNKNOWN
 
@@ -1451,9 +1446,7 @@ crates/current_cpu_contract/src/lib.rs::CurrentCpuPage
 
 crates/current_cpu_contract/src/lib.rs::MAGIC
 
-crates/current_cpu_contract/src/lib.rs::PAGE_BYTES
 
-crates/current_cpu_contract/src/lib.rs::PAGE_VA
 
 crates/current_cpu_contract/src/lib.rs::THREAD_PAGE_SLOTS
 
@@ -1463,15 +1456,11 @@ crates/current_cpu_contract/src/lib.rs::allowance
 
 crates/current_cpu_contract/src/lib.rs::build_page
 
-crates/current_cpu_contract/src/lib.rs::build_page_allowing
 
 crates/current_cpu_contract/src/lib.rs::cpu
 
-crates/current_cpu_contract/src/lib.rs::new
 
-crates/current_cpu_contract/src/lib.rs::publish
 
-crates/current_cpu_contract/src/lib.rs::thread_page_va
 
 
 
@@ -1908,13 +1897,11 @@ crates/domain_name_resolution_contract/src/wire.rs::request
 
 crates/domain_name_resolution_contract/src/wire.rs::word
 
-crates/domain_name_system/src/lib.rs::A
 
 crates/domain_name_system/src/lib.rs::Answer
 
 crates/domain_name_system/src/lib.rs::CLASS_IN
 
-crates/domain_name_system/src/lib.rs::CNAME
 
 crates/domain_name_system/src/lib.rs::Error
 
@@ -1926,7 +1913,6 @@ crates/domain_name_system/src/lib.rs::Header
 
 crates/domain_name_system/src/lib.rs::Name
 
-crates/domain_name_system/src/lib.rs::OPCODE_MASK
 
 crates/domain_name_system/src/lib.rs::PORT
 
@@ -1953,7 +1939,6 @@ crates/domain_name_system/src/lib.rs::as_bytes
 
 crates/domain_name_system/src/lib.rs::canonical
 
-crates/domain_name_system/src/lib.rs::cname_target
 
 crates/domain_name_system/src/lib.rs::decode_name
 
@@ -1990,7 +1975,6 @@ crates/domain_name_system/src/lib.rs::request_tcp
 
 crates/domain_name_system/src/lib.rs::root
 
-crates/domain_name_system/src/lib.rs::ttl
 
 crates/domain_name_system/src/lib.rs::write
 
@@ -2182,7 +2166,6 @@ crates/domain_name_system/src/proofs.rs
 
 crates/environment_contract/src/lib.rs::ConfigPage
 
-crates/environment_contract/src/lib.rs::MAGIC
 
 crates/environment_contract/src/lib.rs::PAGE_BYTES
 
@@ -2594,7 +2577,6 @@ crates/filesystem_fixture/src/lib.rs::DISK_BLOCKS
 
 crates/filesystem_fixture/src/lib.rs::DOT_DOT_CROSSED_MOUNTS
 
-crates/filesystem_fixture/src/lib.rs::DURABLE
 
 crates/filesystem_fixture/src/lib.rs::ENUMERATED
 
@@ -2758,11 +2740,8 @@ crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_BODY
 
 crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_NO_SETTIME
 
-crates/filesystem_fixture/src/lib.rs::NEVER_FLUSHED
 
-crates/filesystem_fixture/src/lib.rs::NOT_ADVANCING
 
-crates/filesystem_fixture/src/lib.rs::NO_DEVICE_FLUSH
 
 crates/filesystem_fixture/src/lib.rs::NO_MATCH_REFUSED
 
@@ -2832,7 +2811,6 @@ crates/filesystem_fixture/src/lib.rs::REDIR_ONE
 
 crates/filesystem_fixture/src/lib.rs::REDIR_TWO
 
-crates/filesystem_fixture/src/lib.rs::REFUSED
 
 crates/filesystem_fixture/src/lib.rs::RENAMED
 
@@ -3216,6 +3194,74 @@ crates/globally_unique_identifier_partition_table/src/testing.rs::sample_disk
 
 crates/globally_unique_identifier_partition_table/src/verification.rs
 
+crates/grant_contract/src/manifest.rs::DIAGNOSTICS_SLOT
+
+crates/grant_contract/src/manifest.rs::DOMAIN_SLOT
+
+crates/grant_contract/src/manifest.rs::ENTROPY_SLOT
+
+crates/grant_contract/src/manifest.rs::Manifest
+
+crates/grant_contract/src/manifest.rs::NETWORK_SLOT
+
+crates/grant_contract/src/manifest.rs::diagnostics_slot
+
+crates/grant_contract/src/manifest.rs::hears_words
+
+crates/grant_contract/src/manifest.rs::is_byte_stream
+
+crates/grant_contract/src/manifest.rs::letters
+
+crates/grant_contract/src/manifest.rs::new
+
+crates/grant_contract/src/manifest.rs::rights
+
+crates/grant_contract/src/manifest.rs::rights
+
+crates/grant_contract/src/manifest.rs::try_new
+
+crates/grant_contract/src/manifest/tests.rs
+
+crates/grant_contract/src/verbs.rs::ALL
+
+crates/grant_contract/src/verbs.rs::CATALOG
+
+crates/grant_contract/src/verbs.rs::CLOCK
+
+crates/grant_contract/src/verbs.rs::CONFIGURATION
+
+crates/grant_contract/src/verbs.rs::DOMAIN
+
+crates/grant_contract/src/verbs.rs::ENTROPY
+
+crates/grant_contract/src/verbs.rs::INDEXES
+
+crates/grant_contract/src/verbs.rs::INDEXES_WRITE
+
+crates/grant_contract/src/verbs.rs::INSTALLER
+
+crates/grant_contract/src/verbs.rs::MACHINE
+
+crates/grant_contract/src/verbs.rs::NETWORK
+
+crates/grant_contract/src/verbs.rs::NONE
+
+crates/grant_contract/src/verbs.rs::SHARE
+
+crates/grant_contract/src/verbs.rs::VerbGrant
+
+crates/grant_contract/src/verbs.rs::bits
+
+crates/grant_contract/src/verbs.rs::contains
+
+crates/grant_contract/src/verbs.rs::from_bits
+
+crates/grant_contract/src/verbs.rs::narrow_by_verb
+
+crates/grant_contract/src/verbs.rs::union
+
+crates/grant_contract/src/verbs.rs::verb_of_page
+
 crates/grant_plan/src/command.rs::Command
 
 crates/grant_plan/src/command.rs::Endowment
@@ -3338,57 +3384,31 @@ crates/grant_plan/src/expand.rs::only
 
 crates/grant_plan/src/expand.rs::push
 
-crates/grant_plan/src/image.rs
 
-crates/grant_plan/src/image.rs::ImageRefusal
 
-crates/grant_plan/src/image.rs::image_can_carry
 
-crates/grant_plan/src/image.rs::image_hears_words
 
-crates/grant_plan/src/image.rs::image_manifest
 
-crates/grant_plan/src/image.rs::image_request_fits
 
-crates/grant_plan/src/image/tests.rs
 
-crates/grant_plan/src/job_page_frame.rs
 
-crates/grant_plan/src/job_page_frame.rs::DONE
 
-crates/grant_plan/src/job_page_frame.rs::HEARTBEAT
 
-crates/grant_plan/src/job_page_frame.rs::INTERRUPT
 
-crates/grant_plan/src/job_page_frame.rs::STATUS
 
-crates/grant_plan/src/job_page_frame.rs::STATUS_DONE
 
-crates/grant_plan/src/job_page_frame.rs::STATUS_INTERRUPTED
 
-crates/grant_plan/src/job_windows.rs::Label
 
-crates/grant_plan/src/job_windows.rs::Windows
 
-crates/grant_plan/src/job_windows.rs::any
 
-crates/grant_plan/src/job_windows.rs::expect
 
-crates/grant_plan/src/job_windows.rs::is_bound
 
-crates/grant_plan/src/job_windows.rs::new
 
-crates/grant_plan/src/job_windows.rs::new
 
-crates/grant_plan/src/job_windows.rs::reaped
 
-crates/grant_plan/src/job_windows.rs::reaped
 
-crates/grant_plan/src/job_windows.rs::release
 
-crates/grant_plan/src/job_windows.rs::set_bound
 
-crates/grant_plan/src/job_windows.rs::take
 
 crates/grant_plan/src/lexing.rs::file_name_fits
 
@@ -3424,35 +3444,20 @@ crates/grant_plan/src/line.rs::stage_count
 
 crates/grant_plan/src/line.rs::stages
 
-crates/grant_plan/src/manifest.rs::DIAGNOSTICS_SLOT
 
-crates/grant_plan/src/manifest.rs::DOMAIN_SLOT
 
-crates/grant_plan/src/manifest.rs::ENTROPY_SLOT
 
-crates/grant_plan/src/manifest.rs::Manifest
 
-crates/grant_plan/src/manifest.rs::NETWORK_SLOT
 
-crates/grant_plan/src/manifest.rs::UNVOUCHED_STD_MANIFEST
 
-crates/grant_plan/src/manifest.rs::diagnostics_slot
 
-crates/grant_plan/src/manifest.rs::hears_words
 
-crates/grant_plan/src/manifest.rs::is_byte_stream
 
-crates/grant_plan/src/manifest.rs::letters
 
-crates/grant_plan/src/manifest.rs::new
 
-crates/grant_plan/src/manifest.rs::rights
 
-crates/grant_plan/src/manifest.rs::rights
 
-crates/grant_plan/src/manifest.rs::try_new
 
-crates/grant_plan/src/manifest/tests.rs
 
 crates/grant_plan/src/nav.rs
 
@@ -3566,13 +3571,11 @@ crates/grant_plan/src/planning.rs::Streams
 
 crates/grant_plan/src/planning.rs::check_chain
 
-crates/grant_plan/src/planning.rs::plan
 
 crates/grant_plan/src/planning.rs::plan_against
 
 crates/grant_plan/src/planning.rs::plan_against_with
 
-crates/grant_plan/src/planning.rs::plan_stage
 
 crates/grant_plan/src/planning.rs::redirect_target
 
@@ -3584,21 +3587,13 @@ crates/grant_plan/src/planning/tests/operands.rs
 
 crates/grant_plan/src/planning/tests/streams.rs
 
-crates/grant_plan/src/program/catalog.rs::ALL
 
-crates/grant_plan/src/program/catalog.rs::from_id
 
-crates/grant_plan/src/program/catalog.rs::from_name
 
-crates/grant_plan/src/program/catalog.rs::id
 
-crates/grant_plan/src/program/catalog.rs::name
 
-crates/grant_plan/src/program/manifests.rs::manifest
 
-crates/grant_plan/src/program/manifests.rs::verbs
 
-crates/grant_plan/src/program/tests.rs
 
 crates/grant_plan/src/refusal.rs::Refusal
 
@@ -3606,105 +3601,56 @@ crates/grant_plan/src/refusal.rs::message
 
 crates/grant_plan/src/refusal/tests.rs
 
-crates/grant_plan/src/spawnproto.rs
 
-crates/grant_plan/src/spawnproto.rs::Activation
 
-crates/grant_plan/src/spawnproto.rs::ActivationStatus
 
-crates/grant_plan/src/spawnproto.rs::GRANT_WORDS
 
-crates/grant_plan/src/spawnproto.rs::IMAGE_PAGE
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_FAILED
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_NO_DISPLAY
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_OK
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_REFUSED_BY_MANIFEST
 
-crates/grant_plan/src/spawnproto.rs::SPAWN_UNVOUCHED
 
-crates/grant_plan/src/spawnproto.rs::UNDERTAKER_BADGE
 
-crates/grant_plan/src/spawnproto.rs::Wiring
 
-crates/grant_plan/src/spawnproto.rs::activation
 
-crates/grant_plan/src/spawnproto.rs::activation_reply
 
-crates/grant_plan/src/spawnproto.rs::activation_request
 
-crates/grant_plan/src/spawnproto.rs::from_word
 
-crates/grant_plan/src/spawnproto.rs::holder_from_words
 
-crates/grant_plan/src/spawnproto.rs::holder_words
 
-crates/grant_plan/src/spawnproto.rs::image_len
 
-crates/grant_plan/src/spawnproto.rs::image_pages
 
-crates/grant_plan/src/spawnproto.rs::installer_badge
 
-crates/grant_plan/src/spawnproto.rs::installer_label
 
-crates/grant_plan/src/spawnproto.rs::installer_serves
 
-crates/grant_plan/src/spawnproto.rs::is_interruptible
 
-crates/grant_plan/src/spawnproto.rs::prog_id
 
-crates/grant_plan/src/spawnproto.rs::reaped
 
-crates/grant_plan/src/spawnproto.rs::request
 
-crates/grant_plan/src/spawnproto.rs::wiring
 
 crates/grant_plan/src/tests.rs
 
-crates/grant_plan/src/verbs.rs::ALL
 
-crates/grant_plan/src/verbs.rs::CATALOG
 
-crates/grant_plan/src/verbs.rs::CLOCK
 
-crates/grant_plan/src/verbs.rs::CONFIGURATION
 
-crates/grant_plan/src/verbs.rs::DOMAIN
 
-crates/grant_plan/src/verbs.rs::ENTROPY
 
-crates/grant_plan/src/verbs.rs::INDEXES
 
-crates/grant_plan/src/verbs.rs::INDEXES_WRITE
 
-crates/grant_plan/src/verbs.rs::INSTALLER
 
-crates/grant_plan/src/verbs.rs::MACHINE
 
-crates/grant_plan/src/verbs.rs::NETWORK
 
-crates/grant_plan/src/verbs.rs::NONE
 
-crates/grant_plan/src/verbs.rs::SHARE
 
-crates/grant_plan/src/verbs.rs::VerbGrant
 
-crates/grant_plan/src/verbs.rs::bits
 
-crates/grant_plan/src/verbs.rs::contains
 
-crates/grant_plan/src/verbs.rs::from_bits
 
-crates/grant_plan/src/verbs.rs::narrow_by_verb
 
-crates/grant_plan/src/verbs.rs::union
 
-crates/grant_plan/src/verbs.rs::verb_of
 
-crates/grant_plan/src/verbs.rs::verb_of_page
 
 crates/grant_plan/src/word.rs
 
@@ -4949,7 +4895,6 @@ crates/machine_statistics_contract/src/lib.rs::ONLINE
 
 crates/machine_statistics_contract/src/lib.rs::PAGE_BYTES
 
-crates/machine_statistics_contract/src/lib.rs::PAGE_VA
 
 crates/machine_statistics_contract/src/lib.rs::RUNNABLE
 
@@ -5794,6 +5739,130 @@ crates/program_argument_contract/src/lib.rs::parse
 
 crates/program_argument_contract/src/lib.rs::push
 
+crates/program_table/src/image.rs
+
+crates/program_table/src/image.rs::ImageRefusal
+
+crates/program_table/src/image.rs::image_can_carry
+
+crates/program_table/src/image.rs::image_hears_words
+
+crates/program_table/src/image.rs::image_manifest
+
+crates/program_table/src/image.rs::image_request_fits
+
+crates/program_table/src/image/tests.rs
+
+crates/program_table/src/job_page_frame.rs
+
+crates/program_table/src/job_page_frame.rs::DONE
+
+crates/program_table/src/job_page_frame.rs::HEARTBEAT
+
+crates/program_table/src/job_page_frame.rs::INTERRUPT
+
+crates/program_table/src/job_page_frame.rs::STATUS
+
+crates/program_table/src/job_page_frame.rs::STATUS_DONE
+
+crates/program_table/src/job_page_frame.rs::STATUS_INTERRUPTED
+
+crates/program_table/src/job_windows.rs::Label
+
+crates/program_table/src/job_windows.rs::Windows
+
+crates/program_table/src/job_windows.rs::any
+
+crates/program_table/src/job_windows.rs::expect
+
+crates/program_table/src/job_windows.rs::is_bound
+
+crates/program_table/src/job_windows.rs::new
+
+crates/program_table/src/job_windows.rs::new
+
+crates/program_table/src/job_windows.rs::reaped
+
+crates/program_table/src/job_windows.rs::reaped
+
+crates/program_table/src/job_windows.rs::release
+
+crates/program_table/src/job_windows.rs::set_bound
+
+crates/program_table/src/job_windows.rs::take
+
+crates/program_table/src/program/catalog.rs::ALL
+
+crates/program_table/src/program/catalog.rs::from_id
+
+crates/program_table/src/program/catalog.rs::from_name
+
+crates/program_table/src/program/catalog.rs::id
+
+crates/program_table/src/program/catalog.rs::name
+
+crates/program_table/src/program/manifests.rs::manifest
+
+crates/program_table/src/program/manifests.rs::verbs
+
+crates/program_table/src/program/tests.rs
+
+crates/program_table/src/spawnproto.rs
+
+crates/program_table/src/spawnproto.rs::Activation
+
+crates/program_table/src/spawnproto.rs::ActivationStatus
+
+crates/program_table/src/spawnproto.rs::GRANT_WORDS
+
+crates/program_table/src/spawnproto.rs::IMAGE_PAGE
+
+crates/program_table/src/spawnproto.rs::SPAWN_FAILED
+
+crates/program_table/src/spawnproto.rs::SPAWN_NO_DISPLAY
+
+crates/program_table/src/spawnproto.rs::SPAWN_OK
+
+crates/program_table/src/spawnproto.rs::SPAWN_REFUSED_BY_MANIFEST
+
+crates/program_table/src/spawnproto.rs::SPAWN_UNVOUCHED
+
+crates/program_table/src/spawnproto.rs::UNDERTAKER_BADGE
+
+crates/program_table/src/spawnproto.rs::Wiring
+
+crates/program_table/src/spawnproto.rs::activation
+
+crates/program_table/src/spawnproto.rs::activation_reply
+
+crates/program_table/src/spawnproto.rs::activation_request
+
+crates/program_table/src/spawnproto.rs::from_word
+
+crates/program_table/src/spawnproto.rs::holder_from_words
+
+crates/program_table/src/spawnproto.rs::holder_words
+
+crates/program_table/src/spawnproto.rs::image_len
+
+crates/program_table/src/spawnproto.rs::image_pages
+
+crates/program_table/src/spawnproto.rs::installer_badge
+
+crates/program_table/src/spawnproto.rs::installer_label
+
+crates/program_table/src/spawnproto.rs::installer_serves
+
+crates/program_table/src/spawnproto.rs::is_interruptible
+
+crates/program_table/src/spawnproto.rs::prog_id
+
+crates/program_table/src/spawnproto.rs::reaped
+
+crates/program_table/src/spawnproto.rs::request
+
+crates/program_table/src/spawnproto.rs::wiring
+
 crates/ps/src/lib.rs::Row
 
 crates/ps/src/lib.rs::Survey
@@ -6172,13 +6241,10 @@ crates/socket_contract/src/lib.rs::word_ipv4
 
 crates/static_elf/src/error.rs::Error
 
-crates/static_elf/src/machine.rs::FOREIGN_MACHINES
 
-crates/static_elf/src/machine.rs::KNOWN_MACHINES
 
 crates/static_elf/src/machine.rs::NATIVE_MACHINE
 
-crates/static_elf/src/machine.rs::machine_no_nife_build_accepts
 
 crates/static_elf/src/note.rs
 
@@ -6207,12 +6273,6 @@ crates/static_elf/src/parse.rs::entry
 crates/static_elf/src/parse.rs::parse
 
 crates/static_elf/src/parse.rs::segments
-
-crates/static_elf/src/segment.rs::PF_R
-
-crates/static_elf/src/segment.rs::PF_W
-
-crates/static_elf/src/segment.rs::PF_X
 
 crates/static_elf/src/segment.rs::Segment
 
@@ -7607,19 +7667,12 @@ crates/video_terminal/src/vt.rs::width
 
 crates/video_terminal/src/vt/tests.rs
 
-crates/virtio/src/lib.rs::run
 
-crates/virtio/src/lib.rs::run_attack
 
-crates/virtio/src/lib.rs::run_attack_indirect
 
-crates/virtio/src/lib.rs::run_blk_server
 
-crates/virtio/src/lib.rs::run_net
 
-crates/virtio/src/lib.rs::run_write
 
-crates/virtio/src/lib.rs::run_write_abandon
 
 crates/vmstat/src/lib.rs::write_diagnostics
 

@@ -2,9 +2,9 @@
 
 An appendix to [the milestone](../1113-virtio-outside-review.md).
 
-- The architect rules Decision 1. Then either the crate's roles live in the drivers package   beside
-  `block_driver.rs` with no crate boundary, or a review package for `virtio` exists in
-  `notes/crate-reviews/` with a row in the index and this review's items answered in it.
+- The crate's roles live in the drivers package beside `block_driver.rs` with no crate boundary
+  (Decision 1, ruled 2026-11-16), and the workspace and the package tables no longer list
+  `crates/virtio`. No crate takes the name `virtio` until the library Decision 1 holds it for exists.
 - The ring layout constants have one home in `abi::virtio` (Decision 2) and every driver in the
   tree, this one included, imports them.
 - `find_file`, `pattern_byte`, `ip_checksum`, `build_dhcp_discover` and `parse_dhcp_offer` take a

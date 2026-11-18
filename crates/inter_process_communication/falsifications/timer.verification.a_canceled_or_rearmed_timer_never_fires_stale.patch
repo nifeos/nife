@@ -1,0 +1,20 @@
+Falsifies `inter_process_communication::timer::verification::a_canceled_or_rearmed_timer_never_fires_stale`.
+
+The defect: cancel reports what was pending but does not disarm it. The return value is right, so
+a caller testing only what `CANCEL` returns sees nothing wrong.
+
+Expected to fail: `assert!(got != Some(1))` once `now` passes the cancelled deadline.
+
+diff --git a/crates/inter_process_communication/src/timer.rs b/crates/inter_process_communication/src/timer.rs
+index 0d48dd72a..d0cad7011 100644
+--- a/crates/inter_process_communication/src/timer.rs
++++ b/crates/inter_process_communication/src/timer.rs
+@@ -93,7 +93,7 @@ impl<T: Copy> Timer<T> {
+     /// was armed (never armed, already fired, or already canceled). A caller that gets `false`
+     /// back knows the signal, if any, has already been sent.
+     pub fn cancel(&mut self) -> bool {
+-        self.armed.take().is_some()
++        self.armed.is_some()
+     }
+ 
+     /// **Fire if due**: `Some(target)` and disarmed when the deadline is at or before `now`,

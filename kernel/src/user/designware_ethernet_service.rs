@@ -23,7 +23,7 @@
 //!   control process granting them as the NVMe admin process does.
 //! - A control process that dies before its last record leaves the starter waiting for it.
 //! - The DMA region and the control process's stack are allocated once per boot and kept.
-//! - The moved bring-up has not run on silicon ([`PROVEN_ON_SILICON`]).
+//! - A boot with no cable in the port waits out the five-second link wait before it says `NONE`.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -366,12 +366,12 @@ pub(crate) struct Wiring {
     pub lease: u32,
 }
 
-/// Whether the booted system may bring this port up on its own. `false`: the bring-up that
-/// `bench/radon-2026-10-20/network-bench-3.log` proved ran in the kernel, and the control process
-/// that now runs it has not run on silicon. No emulator has this controller. Set it to `true` on
-/// a radon bench boot of this path that ends `verdict LEASED-AND-MEASURED` with
-/// `coherence : Coherent`; until then the booted system leaves the port as U-Boot left it.
-pub(crate) const PROVEN_ON_SILICON: bool = false;
+/// Whether the booted system may bring this port up on its own. `true`: a radon bench boot of this
+/// path (the control process and the clock and reset server, as merged at main `cfe18db337`) ended
+/// `verdict LEASED-AND-MEASURED` with `coherence : Coherent` on 2026-11-17 UTC (`bench/radon-2026-11-17/network-bench-main-3699.log`). An earlier boot
+/// (`dd47a83e88`) ran the code as it merged at #3498. No emulator has this controller, so only a
+/// radon boot can show this path broken again; set it back to `false` if one does.
+pub(crate) const PROVEN_ON_SILICON: bool = true;
 
 /// The last `net_stack`'s thread, so a second wiring can refuse while it lives.
 static SERVER: AtomicU64 = AtomicU64::new(u64::MAX);

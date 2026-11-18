@@ -22,7 +22,7 @@ epoch in a `u64`, which runs out in 2554.
 - The identity does not change: the magic `CLOCKv01`, `VERSION` 1, `INTERFACE_ID` 8 and the
   seven-word layout above. A layout break ships as a new magic and version together, never a new id. `VERSION` (1) is the digits of the magic: a
   reader built for one version reads another's page as no clock at all. A layout break bumps both.
-- States (`state`): `UNKNOWN`, `RTC`, `SET`, `SYNCED`. `UNKNOWN` is a real answer. A machine with no
+- States (`state`): `UNKNOWN`, `REAL_TIME_CLOCK`, `SET`, `SYNCHRONIZED`. `UNKNOWN` is a real answer. A machine with no
   usable clock must say so; reporting 1970 plus uptime is the failure this contract exists to
   prevent.
 - `ClockPage` is the page as seen through one mapping. There are many readers, several writers and
@@ -45,7 +45,7 @@ epoch in a `u64`, which runs out in 2554.
   Moving backward makes instants happen twice, which breaks log ordering and expiry. A clock that
   is `UNKNOWN` accepts any plausible proposal. The window is a floor on plausibility, not a claim of
   accuracy.
-- `rtc` names the kinds of hardware clock a service may read: `NONE`, `PL031`, `GOLDFISH`
+- `real_time_clock` names the kinds of hardware clock a service may read: `NONE`, `PL031`, `GOLDFISH`
   and `CMOS`. `PL031` and `GOLDFISH` name a register layout the service reads through a mapped
   page; `CMOS` names the two I/O ports, `INDEX_PORT` and `DATA_PORT`, it reads through a
   port capability.
@@ -64,20 +64,23 @@ assert_eq!(wall_nanoseconds(offset, monotonic), now);
 
 // A proposal a day ahead of a synchronized clock is refused.
 assert_eq!(
-    policy::decide(state::SYNCED, now, now + 86_400 * NS_PER_SECOND),
+    policy::decide(state::SYNCHRONIZED, now, now + 86_400 * NS_PER_SECOND),
     status::REFUSED_TOO_FAR_FORWARD,
 );
 ```
 
 ## What is proven
 
-There are no Kani harnesses. The loom run checks three claims against the C11 model, not against the
+Two Kani harnesses (`cargo kani`) cover every input. `policy::decide` accepts a proposal only inside the plausibility window and the step bounds, and accepts every plausible proposal when the time is unknown. The request word's opcode and the offset arithmetic round trip. Each has a patch under `falsifications/` that makes it fail. The loom run checks three claims against the C11 model, not against the
 Arm or RISC-V memory models: a reader never returns a torn pair, including a reader that sleeps
 across two publishes; a writer stopped at any point inside a publish never makes a reader wait; and
 two writers never interleave. Weakening any ordering on the page fails one of them, except the
 release that gives the claim back, which loom passes and the argument in the source carries.
 
 ## Building and testing
+
+The crate needs 64-bit atomics (`target_has_atomic = "64"`): every word of the page is an
+`AtomicU64`, so a target without them fails to build with a message that says so.
 
 ```sh
 cargo test
@@ -89,8 +92,6 @@ RUSTFLAGS="--cfg loom" cargo test --release      # the clock page under every in
 
 - A writer stopped while it holds the claim blocks every later writer until something clears the
   claim. Readers keep reading the last publish. Nothing here clears a claim it did not take.
-- `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`,
-  kept for a standard-library overlay, which reads them by those names. Use the newer spellings.
 
 ## Minimum Rust version
 

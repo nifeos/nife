@@ -36,7 +36,11 @@
 //!   never release it, which is a broken invariant by construction.
 //!
 //! Name: ratified 2026-10-26 (UTC), on #2760, as it stood. Considered: `kernel_lock` (names the
-//! user, not the thing) and `test_and_set_lock` (exact, longer than the field's word).
+//! user, not the thing) and `test_and_set_lock` (exact, longer than the field's word). The
+//! repository name `spin_lock` is provisional, as milestone 1109 (what an outside maintainer would
+//! fix before it leaves) recommends: crates.io reads `spin_lock` as the `spin-lock` another crate
+//! holds, so no publication name is chosen while the publication hold stands. Considered for a publication: `test_and_set_lock`, `checked_spin_lock`
+//! and `model_checked_spin_lock` (name the verification, not the lock).
 
 #![cfg_attr(not(test), no_std)]
 
@@ -60,13 +64,32 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 /// A spinlock holding a `T`. [`lock`](Self::lock) spins until it holds the flag;
 /// [`try_lock`](Self::try_lock) tries once.
 ///
+/// `T` may be unsized, as for `std::sync::Mutex`: a `&SpinLock<[u32; 3]>` coerces to a
+/// `&SpinLock<[u32]>`, and only `new` and `into_inner` need the size.
+///
 /// `repr(C)` keeps the flag at offset 0 and the data after it. That layout is an implementation
 /// choice, made so an inlined `lock` need not build an offset past a large `T`; it is not part of
 /// the API, and the fields are private. Nobody has measured the saving.
 ///
+/// # Examples
+///
+/// A counter in a static, taken by two threads. `new` is `const`, so the lock needs no lazy setup:
+///
+/// ```
+/// use spin_lock::SpinLock;
+///
+/// static HITS: SpinLock<u32> = SpinLock::new(0);
+///
+/// let other = std::thread::spawn(|| *HITS.lock() += 1);
+/// *HITS.lock() += 1;
+/// other.join().unwrap();
+/// assert_eq!(*HITS.lock(), 2);
+/// assert!(HITS.try_lock().is_some(), "every guard above was dropped at its statement's end");
+/// ```
+///
 /// Name: ratified 2026-10-26 (UTC), on #2760.
 #[repr(C)]
-pub struct SpinLock<T> {
+pub struct SpinLock<T: ?Sized> {
     locked: AtomicBool,
     data: UnsafeCell<T>,
 }
@@ -74,7 +97,7 @@ pub struct SpinLock<T> {
 // SAFETY: the flag gives one guard at a time the data, so sharing the lock between threads moves
 // the `T` between them and never shares it; that needs `T: Send`, as for `std::sync::Mutex`. The
 // claim is the loom models' (`interleavings` below): no two guards' accesses go unordered.
-unsafe impl<T: Send> Sync for SpinLock<T> {}
+unsafe impl<T: ?Sized + Send> Sync for SpinLock<T> {}
 
 /// The lock, held. Dropping it releases the lock with a Release store.
 ///
@@ -83,7 +106,7 @@ unsafe impl<T: Send> Sync for SpinLock<T> {}
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760.
 #[must_use = "dropping the guard releases the lock at once"]
-pub struct SpinLockGuard<'a, T> {
+pub struct SpinLockGuard<'a, T: ?Sized> {
     lock: &'a SpinLock<T>,
     _data: PhantomData<&'a mut T>,
 }
@@ -92,7 +115,7 @@ pub struct SpinLockGuard<'a, T> {
 /// happens-before edge orders against another guard's write fails the model. One function with two
 /// bodies rather than two functions, so `cargo test` compiles the function the mutation gate mutates.
 #[inline(always)]
-fn read<T>(cell: &UnsafeCell<T>) -> *const T {
+fn read<T: ?Sized>(cell: &UnsafeCell<T>) -> *const T {
     #[cfg(not(loom))]
     let p = cell.get();
     #[cfg(loom)]
@@ -102,7 +125,7 @@ fn read<T>(cell: &UnsafeCell<T>) -> *const T {
 
 /// The pointer a guard writes through; the write twin of `read`.
 #[inline(always)]
-fn write<T>(cell: &UnsafeCell<T>) -> *mut T {
+fn write<T: ?Sized>(cell: &UnsafeCell<T>) -> *mut T {
     #[cfg(not(loom))]
     let p = cell.get();
     #[cfg(loom)]
@@ -146,6 +169,16 @@ impl<T> SpinLock<T> {
         }
     }
 
+    /// The data, consuming the lock.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
+    /// in the standard library's spelling and meaning (`Mutex::into_inner`).
+    pub fn into_inner(self) -> T {
+        self.data.into_inner()
+    }
+}
+
+impl<T: ?Sized> SpinLock<T> {
     /// **Take the lock**, spinning until it is free. Returns only holding it.
     ///
     /// The weak compare-exchange may fail spuriously, which the loop absorbs; while the flag is
@@ -195,23 +228,14 @@ impl<T> SpinLock<T> {
     }
 
     /// The data, through exclusive access to the lock. No flag is read, because `&mut self` already
-    /// means nobody else holds the lock. Not available under `--cfg loom`, whose cell has no such
-    /// accessor.
+    /// means nobody else holds the lock. Not available under `--cfg loom`, whose cell's `get_mut`
+    /// hands out a tracked pointer rather than a reference.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
     /// in the standard library's spelling and meaning (`Mutex::get_mut`).
     #[cfg(not(loom))]
     pub fn get_mut(&mut self) -> &mut T {
         self.data.get_mut()
-    }
-
-    /// The data, consuming the lock. Not available under `--cfg loom`.
-    ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes,
-    /// in the standard library's spelling and meaning (`Mutex::into_inner`).
-    #[cfg(not(loom))]
-    pub fn into_inner(self) -> T {
-        self.data.into_inner()
     }
 
     #[inline(always)]
@@ -243,7 +267,7 @@ impl<T> From<T> for SpinLock<T> {
 }
 
 /// Prints through `try_lock`, so a debug print never spins: a held lock prints `<locked>`.
-impl<T: core::fmt::Debug> core::fmt::Debug for SpinLock<T> {
+impl<T: ?Sized + core::fmt::Debug> core::fmt::Debug for SpinLock<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self.try_lock() {
             Some(guard) => f.debug_struct("SpinLock").field("data", &&*guard).finish(),
@@ -252,19 +276,19 @@ impl<T: core::fmt::Debug> core::fmt::Debug for SpinLock<T> {
     }
 }
 
-impl<T: core::fmt::Debug> core::fmt::Debug for SpinLockGuard<'_, T> {
+impl<T: ?Sized + core::fmt::Debug> core::fmt::Debug for SpinLockGuard<'_, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(&**self, f)
     }
 }
 
-impl<T: core::fmt::Display> core::fmt::Display for SpinLockGuard<'_, T> {
+impl<T: ?Sized + core::fmt::Display> core::fmt::Display for SpinLockGuard<'_, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Display::fmt(&**self, f)
     }
 }
 
-impl<T> Drop for SpinLockGuard<'_, T> {
+impl<T: ?Sized> Drop for SpinLockGuard<'_, T> {
     #[inline(always)]
     fn drop(&mut self) {
         // Release: publish everything this holder wrote to the next holder's Acquire.
@@ -272,7 +296,7 @@ impl<T> Drop for SpinLockGuard<'_, T> {
     }
 }
 
-impl<T> Deref for SpinLockGuard<'_, T> {
+impl<T: ?Sized> Deref for SpinLockGuard<'_, T> {
     type Target = T;
     #[inline(always)]
     fn deref(&self) -> &T {
@@ -284,7 +308,7 @@ impl<T> Deref for SpinLockGuard<'_, T> {
     }
 }
 
-impl<T> DerefMut for SpinLockGuard<'_, T> {
+impl<T: ?Sized> DerefMut for SpinLockGuard<'_, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut T {
         // SAFETY: as for `deref` directly above, and `&mut self` makes this borrow the guard's only
@@ -329,6 +353,14 @@ mod tests {
         assert_eq!(*lock.lock(), 4);
         assert_eq!(lock.into_inner(), 4);
         assert_eq!(*SpinLock::<u32>::default().lock(), 0);
+    }
+
+    #[test]
+    fn a_lock_around_a_slice_hands_out_the_slice() {
+        let lock: &SpinLock<[u32]> = &SpinLock::new([1, 2, 3]);
+        lock.lock()[1] = 5;
+        assert_eq!(&*lock.lock(), &[1, 5, 3]);
+        assert_eq!(format!("{lock:?}"), "SpinLock { data: [1, 5, 3] }");
     }
 
     #[test]

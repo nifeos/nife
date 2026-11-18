@@ -263,7 +263,7 @@ fn spawn_timetable_with(
         crate::sched::thread_control_block_insert_capability(
             tid,
             rendezvous_capability(stand_in, Rights::WRITE),
-            Some(grant_plan::spawnproto::RUN_UNVOUCHED_SLOT),
+            Some(program_table::spawnproto::RUN_UNVOUCHED_SLOT),
         )
         .expect("insert the run-unvouched stand-in");
     }
@@ -637,7 +637,7 @@ fn await_reply(t: &Spawned, page: &[u8], seq: u64) {
 /// knows, and only image programs are known there. The store's own document names the suite's
 /// installed fixture `scheduled_demo`, which §229 (how a bare name at the prompt reaches an
 /// installed program) keeps off an image program's name and no
-/// `grant_plan::Program` knows, so a store-mode timetable plans it against the bytes' own manifest
+/// `program_table::Program` knows, so a store-mode timetable plans it against the bytes' own manifest
 /// instead; that difference is Fork 8 D's, and it is why this control copies the shape rather than
 /// the very bytes. Provisional name.
 const STORED_SCHEDULE_CONTROL: &str =
@@ -859,7 +859,7 @@ fn publish_at(t: &Spawned, set: bool, wall: u64) -> u64 {
     let state = if set {
         clock_contract::state::SET
     } else {
-        clock_contract::state::SYNCED
+        clock_contract::state::SYNCHRONIZED
     };
     // SAFETY: the frame `spawn_timetable_with` allocated for this test, through the direct map.
     let page = unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) };

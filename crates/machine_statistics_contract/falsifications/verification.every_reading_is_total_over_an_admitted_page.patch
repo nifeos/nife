@@ -1,0 +1,17 @@
+Falsifies `machine_statistics_contract::verification::every_reading_is_total_over_an_admitted_page`.
+
+The defect: the byte totals use a plain multiply where they must saturate, so a page whose frame
+count and frame size multiply past `u64::MAX` panics the reader that admitted it (and wraps in a
+release build). Real pages carry small numbers, so no host test with honest values reaches it.
+
+Expected to fail: the multiplication overflow check in `total_bytes`, on any admitted page whose
+total frames and frame size overflow when multiplied.
+
+diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+--- a/crates/machine_statistics_contract/src/lib.rs
++++ b/crates/machine_statistics_contract/src/lib.rs
+@@ -291,3 +291,3 @@
+     pub fn total_bytes(&self) -> u64 {
+-        self.total_frames.saturating_mul(self.frame_bytes)
++        self.total_frames * self.frame_bytes
+     }

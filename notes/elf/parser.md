@@ -109,7 +109,7 @@ targets seed from fixtures that already have tests of their own
 (`crates/device_tree_blob/tests/qemu_aarch64_virt.rs`,
 `crates/globally_unique_identifier_partition_table/tests/real_disks.rs`).
 
-There is one seed per machine nife runs, in `fuzz/seeds/elf_parse/`. They differ at exactly one
+There is one seed per machine nife runs, in `crates/static_elf/tests/fixtures/`, which `script/fuzz` passes to the target as a corpus. They differ at exactly one
 byte, offset 18, `e_machine`. A build's fuzzer spends one rejected input on each seed for another
 machine. The test picks this build's seed by the machine number in its header, not by `cfg`, so the
 choice cannot disagree with the bytes and no default arm naming one architecture comes back. It
