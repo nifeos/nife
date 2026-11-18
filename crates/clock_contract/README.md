@@ -34,8 +34,8 @@ epoch in a `u64`, which runs out in 2554.
   must be a mapped, 8-byte-aligned frame that stays mapped.
 - The conversion: `wall_nanoseconds(offset, monotonic)` saturates rather than wraps, and `offset_for` is its
   inverse.
-- Proposals (`propose`, `status`): a request is `req(PROPOSE)` with the proposed time as the second
-  word, or `req(STATE)` to ask what the clock knows. The opcode sits in bits 63:56. The reply's first
+- Proposals (`propose`, `status`): a request is `request(PROPOSE)` with the proposed time as the second
+  word, or `request(STATE)` to ask what the clock knows. The opcode sits in bits 63:56. The reply's first
   word is a `status` (`ACCEPTED`, `REFUSED_IMPLAUSIBLE`, `REFUSED_TOO_FAR_FORWARD`,
   `REFUSED_TOO_FAR_BACKWARD`, `BAD_REQUEST`) and its second the wall-clock nanoseconds in force.
 - The policy (`policy::decide`) refuses as implausible a proposal outside the window from 2026-01-01 (`NOT_BEFORE_NANOSECONDS`) to
@@ -53,18 +53,18 @@ epoch in a `u64`, which runs out in 2554.
 ## EXAMPLES
 
 ```rust
-use clock_contract::{NS_PER_SECOND, offset_for, policy, state, status, wall_nanoseconds};
+use clock_contract::{NANOSECONDS_PER_SECOND, offset_for, policy, state, status, wall_nanoseconds};
 
 // The machine has been up for 5 seconds and the service learns the wall time.
-let monotonic = 5 * NS_PER_SECOND;
-let now = 1_800_000_000 * NS_PER_SECOND;
+let monotonic = 5 * NANOSECONDS_PER_SECOND;
+let now = 1_800_000_000 * NANOSECONDS_PER_SECOND;
 assert_eq!(policy::decide(state::UNKNOWN, 0, now), status::ACCEPTED);
 let offset = offset_for(now, monotonic);
 assert_eq!(wall_nanoseconds(offset, monotonic), now);
 
 // A proposal a day ahead of a synchronized clock is refused.
 assert_eq!(
-    policy::decide(state::SYNCHRONIZED, now, now + 86_400 * NS_PER_SECOND),
+    policy::decide(state::SYNCHRONIZED, now, now + 86_400 * NANOSECONDS_PER_SECOND),
     status::REFUSED_TOO_FAR_FORWARD,
 );
 ```

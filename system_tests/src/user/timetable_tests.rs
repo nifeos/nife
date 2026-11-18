@@ -831,12 +831,12 @@ fn publish(t: &Spawned, set: bool, hh: u64, mm: u64, ss: u64) {
     publish_at(
         t,
         set,
-        ((TUESDAY * 86_400) + hh * 3600 + mm * 60 + ss) * clock_contract::NS_PER_SECOND,
+        ((TUESDAY * 86_400) + hh * 3600 + mm * 60 + ss) * clock_contract::NANOSECONDS_PER_SECOND,
     );
 }
 
 /// 02:00:00 on [`TUESDAY`], in wall nanoseconds: the occurrence the calendar test waits on.
-const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NS_PER_SECOND;
+const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NANOSECONDS_PER_SECOND;
 
 /// **How far before 02:00 the calendar test publishes**, and so how long it waits for real time.
 ///
@@ -845,12 +845,12 @@ const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NS_PER_SECON
 /// next day's occurrence instead. A pass is one yield of a loop that never blocks here, so a second
 /// covers it with room, and when it does not, [`fires_at_two`] publishes again instead of going
 /// red.
-const LEAD: u64 = clock_contract::NS_PER_SECOND;
+const LEAD: u64 = clock_contract::NANOSECONDS_PER_SECOND;
 
 /// **How long after 02:00 to wait for the report before publishing again.** Four seconds, so a
 /// lead plus this is the five-second window the test always had for the timetable to read a
 /// publication; see [`fires_at_two`] for why step 4 depends on that window and step 2 does not.
-const MISSED: u64 = 4 * clock_contract::NS_PER_SECOND;
+const MISSED: u64 = 4 * clock_contract::NANOSECONDS_PER_SECOND;
 
 /// **Publish `wall` (nanoseconds) to the clock page, and return the offset it published**, so a
 /// caller can turn any later wall time on that page into a reading of the same counter.

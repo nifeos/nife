@@ -328,10 +328,10 @@ pub fn monotonic_nanoseconds() -> u64 {
 /// `ticks` at `hertz` ticks per second, in nanoseconds, split into whole seconds and a remainder
 /// so the product never overflows. `hertz` is non-zero: [`counter_hertz`] refuses zero.
 fn ticks_to_nanoseconds(ticks: u64, hertz: u64) -> u64 {
-    use clock_contract::NS_PER_SECOND;
+    use clock_contract::NANOSECONDS_PER_SECOND;
     let seconds = ticks / hertz;
     let remainder = ticks % hertz;
-    seconds * NS_PER_SECOND + remainder * NS_PER_SECOND / hertz
+    seconds * NANOSECONDS_PER_SECOND + remainder * NANOSECONDS_PER_SECOND / hertz
 }
 
 #[cfg(test)]

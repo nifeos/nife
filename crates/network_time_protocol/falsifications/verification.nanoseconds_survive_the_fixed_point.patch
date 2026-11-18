@@ -11,6 +11,6 @@ index 209f6bae5..5bf2f844d 100644
 +++ b/crates/network_time_protocol/src/lib.rs
 @@ -416,3 +416,3 @@ const fn nanoseconds_to_ticks(nanos: u32) -> u32 {
  const fn ticks_to_nanoseconds(ticks: u32) -> u32 {
--    let n = ((ticks as u64 * NS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
-+    let n = (ticks as u64 * NS_PER_SECOND) / TICKS_PER_SECOND;
-     if n >= NS_PER_SECOND {
+-    let n = ((ticks as u64 * NANOSECONDS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
++    let n = (ticks as u64 * NANOSECONDS_PER_SECOND) / TICKS_PER_SECOND;
+     if n >= NANOSECONDS_PER_SECOND {

@@ -152,7 +152,7 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
     // `u64` count of nanoseconds since 1970 and every format here prints whole seconds.
     let unix_seconds =
         (clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds())
-            / clock_contract::NS_PER_SECOND) as i64;
+            / clock_contract::NANOSECONDS_PER_SECOND) as i64;
 
     // Out of range is not reachable from a clock the service believed (its sanity window is 2026 to
     // 2100 and the printable one is 0000 to 9999), and it is still an answer rather than a panic,

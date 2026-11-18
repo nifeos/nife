@@ -6,7 +6,7 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
-use clock_contract::NS_PER_SECOND;
+use clock_contract::NANOSECONDS_PER_SECOND;
 
 use crate::{MAXIMUM_ENTRIES, recurrence};
 
@@ -126,7 +126,7 @@ impl Error {
 /// let doc = timetable::parse("# housekeeping\nevery 30s  least_authority_demo 7\nat-boot  least_authority_demo 3\n")
 ///     .expect("that document is well formed");
 /// assert_eq!(doc.entries().len(), 2);
-/// assert_eq!(doc.entries()[0].schedule, timetable::Schedule::Every(30 * clock_contract::NS_PER_SECOND));
+/// assert_eq!(doc.entries()[0].schedule, timetable::Schedule::Every(30 * clock_contract::NANOSECONDS_PER_SECOND));
 /// assert_eq!(doc.entries()[1].schedule, timetable::Schedule::AtBoot);
 /// assert_eq!(doc.entries()[1].command, b"least_authority_demo 3");
 ///
@@ -224,9 +224,9 @@ fn interval_nanoseconds(s: &str) -> Option<u64> {
     }
     let value: u64 = s[..digits].parse().ok()?;
     let per = match &s[digits..] {
-        "ms" => NS_PER_SECOND / 1000,
-        "s" => NS_PER_SECOND,
-        "m" => 60 * NS_PER_SECOND,
+        "ms" => NANOSECONDS_PER_SECOND / 1000,
+        "s" => NANOSECONDS_PER_SECOND,
+        "m" => 60 * NANOSECONDS_PER_SECOND,
         _ => return None,
     };
     value.checked_mul(per)
@@ -272,11 +272,11 @@ mod tests {
         assert_eq!(doc.entries()[0].schedule, Schedule::Every(250_000_000));
         assert_eq!(
             doc.entries()[1].schedule,
-            Schedule::Every(30 * NS_PER_SECOND)
+            Schedule::Every(30 * NANOSECONDS_PER_SECOND)
         );
         assert_eq!(
             doc.entries()[2].schedule,
-            Schedule::Every(300 * NS_PER_SECOND)
+            Schedule::Every(300 * NANOSECONDS_PER_SECOND)
         );
     }
 

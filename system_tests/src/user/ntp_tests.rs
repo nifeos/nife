@@ -1,6 +1,6 @@
 use core::sync::atomic::Ordering;
 
-use clock_contract::{NS_PER_SECOND, policy, state, status};
+use clock_contract::{NANOSECONDS_PER_SECOND, policy, state, status};
 use ntp_service::{ATTEMPTS, reject, rpt, srv};
 
 use super::*;
@@ -176,7 +176,7 @@ fn an_ntp_exchange_reaches_the_clock_as_a_proposal() {
     }
     let (clock, clock_held) = clock();
     let before = clock.page().read();
-    let step = NS_PER_SECOND / 2;
+    let step = NANOSECONDS_PER_SECOND / 2;
     let wall_before = clock.wall_nanoseconds();
     let claimed = wall_before + step;
 
@@ -235,7 +235,7 @@ fn an_ntp_exchange_reaches_the_clock_as_a_proposal() {
         "the wall clock moved {moved} ns, less than the {step} ns the server claimed",
     );
     assert!(
-        moved < step + 3 * NS_PER_SECOND,
+        moved < step + 3 * NANOSECONDS_PER_SECOND,
         "the wall clock moved {moved} ns, far past the {step} ns the server claimed",
     );
     clock_held.release_or_fail("the clock service");
@@ -259,7 +259,7 @@ fn a_reply_that_fails_validation_never_becomes_a_proposal() {
     }
     let (clock, clock_held) = clock();
     let before = clock.page().read();
-    let claimed = clock.wall_nanoseconds() + NS_PER_SECOND / 2;
+    let claimed = clock.wall_nanoseconds() + NANOSECONDS_PER_SECOND / 2;
 
     for (variant, code, attempts, what) in [
         (
@@ -328,7 +328,7 @@ fn a_proposal_outside_the_policy_is_refused_by_the_service() {
             "two hours forward",
         ),
         (
-            clock.wall_nanoseconds() - 10 * NS_PER_SECOND,
+            clock.wall_nanoseconds() - 10 * NANOSECONDS_PER_SECOND,
             status::REFUSED_TOO_FAR_BACKWARD,
             "ten seconds backward",
         ),
@@ -438,11 +438,11 @@ fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
         crate::testing::skip!("no virtio-rng device on the mmio bus (NIFE_RNG not set?)");
     }
     let (clock, clock_held) = clock();
-    let claimed = clock.wall_nanoseconds() + NS_PER_SECOND / 2;
+    let claimed = clock.wall_nanoseconds() + NANOSECONDS_PER_SECOND / 2;
 
     // A time in the NTP era the transmit field would carry if it were a clock reading.
     let now_ntp_seconds =
-        clock.wall_nanoseconds() / NS_PER_SECOND + network_time_protocol::UNIX_DELTA;
+        clock.wall_nanoseconds() / NANOSECONDS_PER_SECOND + network_time_protocol::UNIX_DELTA;
 
     let mut nonces = [0u64; 2];
     for slot in nonces.iter_mut() {

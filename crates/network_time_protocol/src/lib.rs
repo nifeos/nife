@@ -46,7 +46,7 @@ pub const UNIX_DELTA: u64 = 2_208_988_800;
 /// [`Timestamp`] and arbitrary tick values do not.
 pub(crate) const TICKS_PER_SECOND: u64 = 1 << 32;
 
-use clock_contract::NS_PER_SECOND;
+use clock_contract::NANOSECONDS_PER_SECOND;
 
 /// **The oldest Unix second [`Timestamp`] can represent**, under the era pivot: 0, the Unix epoch.
 ///
@@ -184,7 +184,7 @@ impl Timestamp {
     /// conversion is only ever the identity's inverse inside the window, so outside it we return
     /// nothing instead of a value that would decode to a date 136 years off.
     pub const fn from_unix(seconds: u64, nanoseconds: u32) -> Option<Timestamp> {
-        if nanoseconds as u64 >= NS_PER_SECOND || seconds >= UNIX_LIMIT {
+        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds >= UNIX_LIMIT {
             return None;
         }
         // Wrapping is correct and intended here: for secs in range, the sum exceeds 2^32 exactly
@@ -264,7 +264,7 @@ impl Timestamp {
 /// on. Kani proves it for all 1e9 of them.
 const fn nanoseconds_to_ticks(nanoseconds: u32) -> u32 {
     let n = nanoseconds as u64;
-    (((n * TICKS_PER_SECOND) + NS_PER_SECOND / 2) / NS_PER_SECOND) as u32
+    (((n * TICKS_PER_SECOND) + NANOSECONDS_PER_SECOND / 2) / NANOSECONDS_PER_SECOND) as u32
 }
 
 /// Fraction ticks to nanoseconds, rounded to nearest, clamped to a valid sub-second.
@@ -275,9 +275,9 @@ const fn nanoseconds_to_ticks(nanoseconds: u32) -> u32 {
 /// decodes to a sub-second a `Duration` will accept, rather than one in 2<sup>31</sup> hostile
 /// packets producing a nanosecond field of 1e9 for something downstream to trip over.
 const fn ticks_to_nanoseconds(ticks: u32) -> u32 {
-    let n = ((ticks as u64 * NS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
-    if n >= NS_PER_SECOND {
-        (NS_PER_SECOND - 1) as u32
+    let n = ((ticks as u64 * NANOSECONDS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
+    if n >= NANOSECONDS_PER_SECOND {
+        (NANOSECONDS_PER_SECOND - 1) as u32
     } else {
         n as u32
     }
@@ -292,7 +292,7 @@ impl Short {
     /// The value in nanoseconds. Exact enough: a 16.16 tick is about 15.3 µs, so nothing is lost
     /// that was ever there.
     pub const fn nanoseconds(self) -> u64 {
-        (self.0 as u64 * NS_PER_SECOND) >> 16
+        (self.0 as u64 * NANOSECONDS_PER_SECOND) >> 16
     }
 
     /// The whole-seconds part.
@@ -335,7 +335,7 @@ impl Interval {
     /// interval no exchange can produce (above about 1.7 x 10<sup>29</sup> ticks) reads as the
     /// largest value rather than panicking or wrapping.
     pub const fn nanoseconds(self) -> i128 {
-        self.0.saturating_mul(NS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
+        self.0.saturating_mul(NANOSECONDS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
     }
 
     /// The interval in microseconds, truncated toward zero. For logging, where nanoseconds are noise.

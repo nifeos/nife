@@ -898,7 +898,7 @@ fn wall_reading() -> Option<timetable::WallReading> {
     }
     let wall = clock_contract::wall_nanoseconds(r.offset_nanoseconds, monotonic_nanoseconds());
     Some(timetable::WallReading {
-        minute: (wall / (60 * clock_contract::NS_PER_SECOND)) as i64,
+        minute: (wall / (60 * clock_contract::NANOSECONDS_PER_SECOND)) as i64,
         generation: r.generation,
         set: r.state == clock_contract::state::SET,
     })
