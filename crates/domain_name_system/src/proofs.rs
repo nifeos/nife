@@ -8,6 +8,8 @@
 //! which grows no new behavior with length; tests and the fuzz target cover realistic lengths.
 //! Measured: the decoder against its full 255-byte output ran past twenty solver minutes, and
 //! against a 32-byte one it takes seconds, with the loop identical.
+//!
+//! Name: ratified 2026-11-16 (UTC), block 1087.
 
 use super::*;
 

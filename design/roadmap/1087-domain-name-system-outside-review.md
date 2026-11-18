@@ -58,18 +58,12 @@ The ledger of what landed and what is left is in [the appendix](1087-domain-name
 
 ### P0: blocks the move
 
-1. 48 public names carry no `Name:` block, so `script/crate-standalone` fails at step 0. Finding:
-   `helpers/name_release.py --draft domain_name_system` lists the crate name and five constants as
-   ratified. Every other public item has no block (`PORT`, `HEADER_LEN`, the flag and mask
-   constants, `record_type::{IPV4_ADDRESS, CANONICAL_NAME}`, `CLASS_IN`, `Error`, `Result`, `Header`, `Name`,
-   `Question`, `Record`, `Reader`, `Query`, `Reject`, `Answer`, `TcpReply`, `decode_name`,
-   `canonical_name_target` and every method). The move commit strips the blocks, and nife keeps no other
-   record, so the ratification pull request is the only record these names will ever have. Evidence:
-   `crate-standalone` output, `FAIL names: 48 name(s) in the crate not ratified, first PORT`.
-   Change: one pull request whose body is the `--draft` table, after the architect rules items 6 and 7, so the
-   table carries the final spellings. The names this review recommends ratified as they stand are
-   every one not named in items 6 and 7. Door: each name is one-way once published; the block itself
-   is two-way. Effort: S for the lane, plus the architect's reading. Held: the architect has not read the table.
+1. DONE. Every public name carries a `Name:` block, and all are ratified as they stand (2026-11-16
+   UTC): `helpers/name_release.py --draft domain_name_system` lists none as provisional or
+   without a block, and `script/crate-standalone domain_name_system` passes its names step. The
+   ratification pull request's body is that table, which is the one record of these names, since the
+   move commit strips the blocks. Door: each name is one-way once published; the block itself is
+   two-way.
 
 2. DONE. The manifest does not stand alone. Finding: the manifest inherits `license` and `lints` from the nife workspace, there is no `rust-version`, no `description`, `repository`, `readme`, `keywords` or
    `categories`, and the `publish = false` line's comment names `crates/publish-allowlist.txt`, a
