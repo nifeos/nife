@@ -60,7 +60,9 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    hands out) states it. `components/src/power_management_chip_route.rs` holds the I2C5
    controller's page as a `DeviceFrame` and writes the AXP15060, after its starter brings I2C5 up
    through the step 2 server (§320 (the JH7110 clock and reset wire)). `reboot` calls it, then
-   `REBOOT`; the route bounds its wait. The kernel holds no I2C master. radon proves it.
+   `REBOOT`; the route bounds its wait. The kernel holds no I2C master. radon proves it. On
+   radon the route is the only working reset: `REBOOT`'s SBI SRST hangs in the firmware's own
+   PMIC read (notes/board-reboot.md, "Bench: reboot with the route withheld").
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
@@ -266,8 +268,9 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 2. The existing gates for each device pass on every architecture it runs on, with no test weakened.
    That means the e1000e, NVMe and virtio gates under QEMU, the clock tests on `x86_64` with a wall
    clock, and radon's Ethernet and reboot bench boots.
-3. `reboot` on radon resets the board through the userspace route, and resets it through `REBOOT`
-   when the route is absent.
+3. `reboot` on radon resets the board through the userspace route. With the route absent,
+   `reboot` invokes `REBOOT`, and radon's firmware hangs on that SBI SRST as milestone 592
+   (radon's cold reboot dies in OpenSBI's PMIC write) records.
 4. `script/fastpath-footprint` reports no change: none of these paths is hot.
 5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
    CI runs the direct and the mediated path on all three architectures.
