@@ -14,7 +14,8 @@ name: verify shard refresh
 # a plan of 19.8, and a stale row costs balance rather than correctness, so nothing went red. This
 # is the rung above a comment saying "re-measure sometimes": every day it reads the last 20 green
 # runs' per-crate seconds out of their logs, and rewrites the table when a planned shard is more
-# than 15% off its median or when repacking would save a minute. helpers/verify_times.py holds the
+# than 15% off its median, when one row's median is past the line its shard's run warns at, or
+# when repacking would save a minute. helpers/verify_times.py holds the
 # rule and its reasons; each shard also warns on its own run when it lands more than 30% off.
 # Since 2026-10-07 it also rewrites the re-falsify replay times the same way (calef, on #1802).
 #
@@ -110,7 +111,8 @@ jobs:
 
           Rewritten by the scheduled verify-shard-refresh workflow from the median per-crate
           and per-record seconds of the last 20 green verify runs. A shard planned more than 15% off its median,
-          or a repacking that saves a minute, is what triggers it; the table never changes which
+          a row whose median is past the line its shard warns at, or a repacking that saves a
+          minute, is what triggers it; the table never changes which
           harnesses run, only which runner runs them.
 
           $(cat "$RUNNER_TEMP/refresh.txt")"
