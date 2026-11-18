@@ -77,7 +77,7 @@ Full rows: [boards-and-boot-checks.md](scripts/boards-and-boot-checks.md).
 | `script/card-check` | Does this card's kernel vouch for its archive? |
 | `script/board-netboot` | Serve `target/board` over TFTP so radon boots without a card. |
 | `script/netboot-rehearsal` | Boot nife the way xenon will, on your machine, with nothing plugged in. |
-| `script/swish-check` | `console`'s gating twin: type at the prompt and check what came back. On aarch64 and riscv64 it also launches `graphical_terminal` with a virtio-gpu and reads the screen. |
+| `script/swish-check` | `console`'s gating twin: type at the prompt and check what came back. On aarch64 and riscv64 it also reads the `graphical_terminal` screen. |
 | `script/boot-check` | Boot the default kernel on all three architectures to a green verdict. |
 
 ### Load, concurrency and reliability
@@ -93,6 +93,7 @@ Full rows: [load-and-reliability.md](scripts/load-and-reliability.md).
 | `script/job-mix` | Rehearse the multi-tasking workload sweep under QEMU. |
 | `script/interleaving-check` | The atomic protocols under loom, every interleaving. |
 | `script/ci-log-baseline` | Per-check attribution for failed CI jobs, before the logs expire. |
+| `script/idle-pull-requests` | Flag ownerless pull requests. |
 
 ### Analysis, proofs and the supply chain
 
