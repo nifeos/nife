@@ -2263,6 +2263,56 @@ crates/filesystem_contract/src/directory_entry.rs::record_len
 
 crates/filesystem_contract/src/directory_entry/tests.rs
 
+crates/filesystem_contract/src/extended_attribute.rs
+
+crates/filesystem_contract/src/extended_attribute.rs::E2BIG
+
+crates/filesystem_contract/src/extended_attribute.rs::ENODATA
+
+crates/filesystem_contract/src/extended_attribute.rs::ENOSPC
+
+crates/filesystem_contract/src/extended_attribute.rs::ENOTSUP
+
+crates/filesystem_contract/src/extended_attribute.rs::ERANGE
+
+crates/filesystem_contract/src/extended_attribute.rs::Names
+
+crates/filesystem_contract/src/extended_attribute.rs::RAW
+
+crates/filesystem_contract/src/extended_attribute.rs::Records
+
+crates/filesystem_contract/src/extended_attribute.rs::count
+
+crates/filesystem_contract/src/extended_attribute.rs::encode
+
+crates/filesystem_contract/src/extended_attribute.rs::file_name
+
+crates/filesystem_contract/src/extended_attribute.rs::get
+
+crates/filesystem_contract/src/extended_attribute.rs::is_valid_name
+
+crates/filesystem_contract/src/extended_attribute.rs::iter
+
+crates/filesystem_contract/src/extended_attribute.rs::iter
+
+crates/filesystem_contract/src/extended_attribute.rs::list
+
+crates/filesystem_contract/src/extended_attribute.rs::record_len
+
+crates/filesystem_contract/src/extended_attribute.rs::record_len
+
+crates/filesystem_contract/src/extended_attribute.rs::remove
+
+crates/filesystem_contract/src/extended_attribute.rs::reply
+
+crates/filesystem_contract/src/extended_attribute.rs::reply_kind
+
+crates/filesystem_contract/src/extended_attribute.rs::reply_value_len
+
+crates/filesystem_contract/src/extended_attribute.rs::set
+
+crates/filesystem_contract/src/extended_attribute/tests.rs
+
 crates/filesystem_contract/src/fs.rs
 
 crates/filesystem_contract/src/fs.rs::BIND
@@ -2297,19 +2347,27 @@ crates/filesystem_contract/src/fs.rs::RMDIR
 
 crates/filesystem_contract/src/fs.rs::ROOT
 
+
+
+
 crates/filesystem_contract/src/fs.rs::SETXATTR
 
 crates/filesystem_contract/src/fs.rs::STATFS
 
 crates/filesystem_contract/src/fs.rs::SYNC
 
+
 crates/filesystem_contract/src/fs.rs::TRANSFER_PAGES
 
 crates/filesystem_contract/src/fs.rs::TRUNCATE
 
+
+
 crates/filesystem_contract/src/fs.rs::UNBIND
 
 crates/filesystem_contract/src/fs.rs::UNLINK
+
+
 
 crates/filesystem_contract/src/fs.rs::WRITE
 
@@ -2335,6 +2393,7 @@ crates/filesystem_contract/src/grant.rs::EROFS
 
 crates/filesystem_contract/src/grant.rs::HANDLE
 
+
 crates/filesystem_contract/src/grant.rs::READ
 
 crates/filesystem_contract/src/grant.rs::WHOLE_NAMESPACE
@@ -2347,27 +2406,19 @@ crates/filesystem_contract/src/grant.rs::is_writable
 
 crates/filesystem_contract/src/grant.rs::pack_name
 
-
-
-
 crates/filesystem_contract/src/grant.rs::unpack_name
 
 crates/filesystem_contract/src/grant/tests.rs
 
 crates/filesystem_contract/src/lib.rs::OPERATION_SHIFT
 
-
 crates/filesystem_contract/src/lib.rs::READY
 
 crates/filesystem_contract/src/lib.rs::operation
 
-
-
 crates/filesystem_contract/src/lib.rs::req
 
 crates/filesystem_contract/src/nameset.rs
-
-
 
 crates/filesystem_contract/src/nameset.rs::Names
 
@@ -2393,7 +2444,6 @@ crates/filesystem_contract/src/rm.rs::status
 
 crates/filesystem_contract/src/statfs.rs
 
-
 crates/filesystem_contract/src/statfs.rs::decode
 
 crates/filesystem_contract/src/statfs.rs::encode
@@ -2402,7 +2452,9 @@ crates/filesystem_contract/src/statfs.rs::free_bytes
 
 crates/filesystem_contract/src/statfs.rs::total_bytes
 
+
 crates/filesystem_contract/src/statfs/tests.rs
+
 
 crates/filesystem_contract/src/tests.rs
 
@@ -2434,62 +2486,10 @@ crates/filesystem_contract/src/verb.rs::of
 
 crates/filesystem_contract/src/verb.rs::takes_name
 
+
+
+
 crates/filesystem_contract/src/verb/tests.rs
-
-crates/filesystem_contract/src/extended_attribute.rs
-
-crates/filesystem_contract/src/extended_attribute.rs::E2BIG
-
-crates/filesystem_contract/src/extended_attribute.rs::ENODATA
-
-crates/filesystem_contract/src/extended_attribute.rs::ENOSPC
-
-crates/filesystem_contract/src/extended_attribute.rs::ENOTSUP
-
-crates/filesystem_contract/src/extended_attribute.rs::ERANGE
-
-crates/filesystem_contract/src/extended_attribute.rs::Names
-
-crates/filesystem_contract/src/extended_attribute.rs::RAW
-
-
-crates/filesystem_contract/src/extended_attribute.rs::Records
-
-
-crates/filesystem_contract/src/extended_attribute.rs::count
-
-crates/filesystem_contract/src/extended_attribute.rs::encode
-
-crates/filesystem_contract/src/extended_attribute.rs::file_name
-
-crates/filesystem_contract/src/extended_attribute.rs::get
-
-crates/filesystem_contract/src/extended_attribute.rs::is_valid_name
-
-crates/filesystem_contract/src/extended_attribute.rs::iter
-
-crates/filesystem_contract/src/extended_attribute.rs::iter
-
-crates/filesystem_contract/src/extended_attribute.rs::list
-
-crates/filesystem_contract/src/extended_attribute.rs::record_len
-
-crates/filesystem_contract/src/extended_attribute.rs::record_len
-
-crates/filesystem_contract/src/extended_attribute.rs::remove
-
-crates/filesystem_contract/src/extended_attribute.rs::reply
-
-crates/filesystem_contract/src/extended_attribute.rs::reply_kind
-
-crates/filesystem_contract/src/extended_attribute.rs::reply_value_len
-
-crates/filesystem_contract/src/extended_attribute.rs::set
-
-
-
-
-crates/filesystem_contract/src/extended_attribute/tests.rs
 
 crates/filesystem_fixture/src/lib.rs::A
 
