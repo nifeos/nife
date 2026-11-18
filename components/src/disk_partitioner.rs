@@ -2,7 +2,7 @@
 //! (notes/globally-unique-identifier-partition-table.md, "Writing a table on the target").
 //!
 //! The destructive half of the pair, and its endowment is the point: a block-service endpoint for
-//! one disk (`filesystem_contract::blk`), the authority to destroy that disk and no other, and an
+//! one disk (`filesystem_contract::block`), the authority to destroy that disk and no other, and an
 //! entropy endpoint (`entropy_contract`), which reaches random bytes and not the device. Both are
 //! required: a GPT's unique ids must be random, so without entropy it writes nothing rather than
 //! fall back to a counter. `a0` is [`ROLE_PARTITION`] (draw four GUIDs, lay out a table, write
@@ -26,7 +26,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{blk, req};
+use filesystem_contract::{block, req};
 use filesystem_fixture::blank;
 use globally_unique_identifier_partition_table::entry::{Entry, NAME_UNITS};
 use globally_unique_identifier_partition_table::guid::types;
@@ -53,7 +53,7 @@ const BLK_PAGE_FRAME: u64 = 4;
 const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// The transfer unit of the block service: one filesystem block per request.
-const TRANSFER: u64 = blk::BLOCK_SIZE as u64;
+const TRANSFER: u64 = block::BLOCK_BYTES as u64;
 
 /// The logical block size a GPT counts in. See BUGS.
 const LBA: u64 = blank::LBA;
@@ -91,10 +91,10 @@ pub(crate) const F_UNIQUE: u64 = 1 << 5;
 /// rather than on the one-page stack.
 static mut ARRAY: [u8; ENTRY_ARRAY_BYTES] = [0; ENTRY_ARRAY_BYTES];
 /// The primary table as read back: LBA 0..33 is 34 logical blocks, which is five transfer blocks.
-static mut PRIMARY: [u8; 5 * blk::BLOCK_SIZE] = [0; 5 * blk::BLOCK_SIZE];
+static mut PRIMARY: [u8; 5 * block::BLOCK_BYTES] = [0; 5 * block::BLOCK_BYTES];
 /// The backup table as read back. 33 logical blocks ending on the last block of the disk; where
 /// that begins inside a transfer block depends on the disk's size, so six is the worst case.
-static mut BACKUP: [u8; 6 * blk::BLOCK_SIZE] = [0; 6 * blk::BLOCK_SIZE];
+static mut BACKUP: [u8; 6 * block::BLOCK_BYTES] = [0; 6 * block::BLOCK_BYTES];
 
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
@@ -125,8 +125,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: filesystem_contract::blk::INTERFACE_ID,
-        version: filesystem_contract::blk::VERSION
+        id: filesystem_contract::block::INTERFACE_ID,
+        version: filesystem_contract::block::VERSION
     },
     interfaces_note::Declared {
         id: filesystem_fixture::INTERFACE_ID,
@@ -192,7 +192,7 @@ fn partition() -> ! {
 
     // The disk's own size, asked of the disk rather than assumed. A layout that does not fit is a
     // refusal from `GloballyUniqueIdentifierPartitionTable::create`, not a truncated table.
-    let size = call(BLK, req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 2, size as u64);
         user_mode_runtime::exit()
@@ -257,7 +257,7 @@ fn verify() -> ! {
     let mut partitions = 0u64;
     let mut data_first_lba = 0u64;
 
-    let size = call(BLK, req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, 0, 0, 0);
         user_mode_runtime::exit()
@@ -290,7 +290,7 @@ fn verify() -> ! {
     let tail = backup();
     if backup_blocks > 1
         && let Some(span) = Span::covering(backup_lba * LBA, backup_blocks * LBA, TRANSFER)
-        && span.blocks as usize * blk::BLOCK_SIZE <= tail.len()
+        && span.blocks as usize * block::BLOCK_BYTES <= tail.len()
         && read_span(span, &mut tail[..])
     {
         let array = span.offset;
@@ -356,8 +356,8 @@ fn write_at(first_lba: u64, data: &[u8]) -> bool {
         let byte_at = first_lba * LBA + done as u64;
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
-        let n = core::cmp::min(blk::BLOCK_SIZE - offset, data.len() - done);
-        if (call(BLK, req(blk::READ), block).0 as i64) < 0 {
+        let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);
+        if (call(BLK, req(block::READ), block).0 as i64) < 0 {
             return false;
         }
         // SAFETY: BLK_PAGE is a mapped, writable page of exactly one transfer block, and `offset +
@@ -369,7 +369,7 @@ fn write_at(first_lba: u64, data: &[u8]) -> bool {
                 n,
             );
         }
-        if (call(BLK, req(blk::WRITE), block).0 as i64) < 0 {
+        if (call(BLK, req(block::WRITE), block).0 as i64) < 0 {
             return false;
         }
         done += n;
@@ -390,11 +390,11 @@ fn read_at(first_lba: u64, into: &mut [u8]) -> bool {
 /// shared page before the next request lands in it.
 fn read_span(span: Span, into: &mut [u8]) -> bool {
     for i in 0..span.blocks {
-        let at = i as usize * blk::BLOCK_SIZE;
-        if at + blk::BLOCK_SIZE > into.len() {
+        let at = i as usize * block::BLOCK_BYTES;
+        if at + block::BLOCK_BYTES > into.len() {
             return false;
         }
-        if (call(BLK, req(blk::READ), span.first_block + i).0 as i64) < 0 {
+        if (call(BLK, req(block::READ), span.first_block + i).0 as i64) < 0 {
             return false;
         }
         // SAFETY: BLK_PAGE is a mapped page of exactly one block, and the destination window was
@@ -403,7 +403,7 @@ fn read_span(span: Span, into: &mut [u8]) -> bool {
             core::ptr::copy_nonoverlapping(
                 BLK_PAGE as *const u8,
                 into.as_mut_ptr().add(at),
-                blk::BLOCK_SIZE,
+                block::BLOCK_BYTES,
             );
         }
     }

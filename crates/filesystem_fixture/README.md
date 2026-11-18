@@ -41,7 +41,7 @@ staged glob names against a glob matcher live with the matcher.
   `twotrees`, `navscape`, `globscape`, `attrs` and the shared-frame report words. A
   witness reports a bitmap and the test asserts an exact set, so a witness that reached nothing and
   one that reached everything both fail. Each bit is a single bit and no two share one.
-- Benchmarks: `throughput` fixes the transfer unit (`filesystem_contract::fs::TRANSFER_MAXIMUM`),
+- Benchmarks: `throughput` fixes the transfer unit (`filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES`),
   the bytes per phase and the phase tags, and `walk` fixes the tree a walk is priced over.
 - Names ride in grants, so every file and directory name here fits `filesystem_contract::grant::fits`;
   the crate's tests check that against the contract, and check the witnesses' bits for overlap.

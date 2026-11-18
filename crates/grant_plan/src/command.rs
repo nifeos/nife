@@ -73,7 +73,7 @@ pub enum Command<'a> {
     /// ability to *lie about history*).
     ///
     /// A builtin in [`Mkdir`](Command::Mkdir)'s category: both forms take only the shell's own
-    /// directory capability (`dir::WRITE`, and `dir::SETTIME` for `-t`). [`TouchOperands::at`]
+    /// directory capability (`directory::WRITE`, and `directory::SETTIME` for `-t`). [`TouchOperands::at`]
     /// carries the `-t` text unparsed; it is read where the grant is made (`Nav::touch` in
     /// `components/src/swish/navigation.rs`). See notes/touch.md.
     Touch(TouchOperands<'a>),

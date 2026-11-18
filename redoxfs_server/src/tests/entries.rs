@@ -9,8 +9,8 @@ use super::*;
 fn a_rename_moves_a_name_within_a_directory_and_between_two() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
-    let deeper = srv.open_dir(sub, &named("deeper"), dir::ALL).unwrap();
+    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
+    let deeper = srv.open_dir(sub, &named("deeper"), directory::ALL).unwrap();
 
     // Within one directory: `sub/inner` becomes `sub/renamed`, contents intact.
     srv.rename(sub, &named("inner"), sub, &named("renamed"))
@@ -59,7 +59,7 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
     let root = filesystem_contract::fs::ROOT as u32;
     // Everything but REMOVE: milestone 47's motivating sentence, "add to this, destroy nothing".
     let append = srv
-        .open_dir(root, &named("sub"), dir::ALL & !dir::REMOVE)
+        .open_dir(root, &named("sub"), directory::ALL & !directory::REMOVE)
         .unwrap();
     assert_eq!(
         srv.rename(append, &named("inner"), append, &named("elsewhere"))
@@ -80,7 +80,7 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
     // Everything but CREATE: it may give a name up and has nowhere to put one.
     let mut srv = server_with_tree();
     let taker = srv
-        .open_dir(root, &named("sub"), dir::ALL & !dir::CREATE)
+        .open_dir(root, &named("sub"), directory::ALL & !directory::CREATE)
         .unwrap();
     assert_eq!(
         srv.rename(taker, &named("inner"), taker, &named("elsewhere"))
@@ -92,7 +92,7 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
     // With both, the same request through the same code succeeds, so the refusals above are
     // statements about the rights rather than about a verb that never works.
     let mut srv = server_with_tree();
-    let full = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
+    let full = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
     srv.rename(full, &named("inner"), full, &named("elsewhere"))
         .expect("REMOVE and CREATE together must be enough");
 }
@@ -104,11 +104,11 @@ fn a_rename_needs_remove_where_it_takes_from_and_create_where_it_puts() {
 fn a_cross_directory_rename_consults_both_directories_rights() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
-    let src = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
+    let src = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
     // A destination with no CREATE. Reached by descending twice so it is a genuinely different
     // capability rather than the same handle spelled differently.
     let dst = srv
-        .open_dir(src, &named("deeper"), dir::ALL & !dir::CREATE)
+        .open_dir(src, &named("deeper"), directory::ALL & !directory::CREATE)
         .unwrap();
     assert_eq!(
         srv.rename(src, &named("inner"), dst, &named("landed"))
@@ -121,7 +121,7 @@ fn a_cross_directory_rename_consults_both_directories_rights() {
     // to make impossible.
     assert!(srv.open_file_at(src, &named("inner")).is_ok());
 
-    let wide = srv.open_dir(src, &named("deeper"), dir::ALL).unwrap();
+    let wide = srv.open_dir(src, &named("deeper"), directory::ALL).unwrap();
     srv.rename(src, &named("inner"), wide, &named("landed"))
         .expect("rename");
     assert!(srv.open_file_at(wide, &named("landed")).is_ok());
@@ -133,7 +133,7 @@ fn a_cross_directory_rename_consults_both_directories_rights() {
 fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
+    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
     let tmp = srv.create_file_at(sub, &named("tmp")).unwrap();
     srv.write(tmp, 0, b"the new contents").unwrap();
 
@@ -168,7 +168,7 @@ fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
         Some(ENOTDIR),
     );
     // And a non-empty destination directory survives, which is the engine's ENOTEMPTY.
-    let d = srv.make_dir(sub, &named("empty-dir"), dir::ALL).unwrap();
+    let d = srv.make_dir(sub, &named("empty-dir"), directory::ALL).unwrap();
     let _ = d;
     assert_eq!(
         srv.rename(sub, &named("empty-dir"), sub, &named("deeper"))
@@ -187,12 +187,12 @@ fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
 fn a_directory_renames_in_place_and_refuses_to_move_between_directories() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
+    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
 
     srv.rename(sub, &named("deeper"), sub, &named("renamed-dir"))
         .expect("a directory renames in place");
     let d = srv
-        .open_dir(sub, &named("renamed-dir"), dir::ALL)
+        .open_dir(sub, &named("renamed-dir"), directory::ALL)
         .expect("and it is still a directory, with its contents");
     assert!(srv.open_file_at(d, &named("leaf")).is_ok());
 
@@ -221,7 +221,7 @@ fn a_directory_renames_in_place_and_refuses_to_move_between_directories() {
 fn a_rename_refuses_what_every_other_name_taking_verb_refuses() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
-    let sub = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
+    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
 
     for bad in ["..", ".", "", "a/b", "/abs", "with:colon"] {
         assert_eq!(
@@ -278,7 +278,7 @@ fn a_rename_survives_a_reopen() {
             .open_dir(
                 filesystem_contract::fs::ROOT as u32,
                 &named("sub"),
-                dir::ALL,
+                directory::ALL,
             )
             .unwrap();
         srv.rename(sub, &named("inner"), sub, &named("survivor"))
@@ -290,7 +290,7 @@ fn a_rename_survives_a_reopen() {
         .open_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("sub"),
-            dir::ALL,
+            directory::ALL,
         )
         .unwrap();
     assert_eq!(
@@ -318,10 +318,10 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
             .open_dir(
                 filesystem_contract::fs::ROOT as u32,
                 &named("sub"),
-                dir::ALL,
+                directory::ALL,
             )
             .unwrap();
-        let made = srv.make_dir(sub, &named("made"), dir::ALL).unwrap();
+        let made = srv.make_dir(sub, &named("made"), directory::ALL).unwrap();
         let f = srv.create_file_at(made, &named("note")).unwrap();
         srv.write(f, 0, b"written two levels down").unwrap();
         disk = srv.fs.disk; // no unmount, as a dying process leaves it
@@ -331,11 +331,11 @@ fn a_subtree_built_through_directory_handles_survives_a_reopen() {
         .open_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("sub"),
-            dir::ALL,
+            directory::ALL,
         )
         .unwrap();
     let made = srv
-        .open_dir(sub, &named("made"), dir::ALL)
+        .open_dir(sub, &named("made"), directory::ALL)
         .expect("the made directory");
     let f = srv
         .open_file_at(made, &named("note"))
@@ -394,7 +394,7 @@ fn statfs_answers_through_a_capability_that_carries_nothing() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
     // A child directory holding one right, and not one of the ones a read would need.
-    let narrow = srv.open_dir(root, &named("sub"), dir::DESCEND).unwrap();
+    let narrow = srv.open_dir(root, &named("sub"), directory::DESCEND).unwrap();
     assert!(
         srv.read_dir(narrow, 0, &mut [0u8; 64]).is_err(),
         "the fixture is only meaningful if this capability cannot enumerate",

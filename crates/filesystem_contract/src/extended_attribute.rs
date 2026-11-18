@@ -6,12 +6,12 @@
 /// [`super::dirent`]'s.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_NAME: usize = 255;
+pub const MAXIMUM_NAME_BYTES: usize = 255;
 
 /// The longest attribute **value**, in bytes.
 ///
 /// Three kibibytes, set by the transport: [`fs::SETXATTR`] carries a name and a value in one
-/// [`super::PAGE`], so `MAXIMUM_NAME + MAXIMUM_VALUE` must fit 4096 with room to spare. Apple's
+/// [`super::PAGE_BYTES`], so `MAXIMUM_NAME_BYTES + MAXIMUM_VALUE_BYTES` must fit 4096 with room to spare. Apple's
 /// `AFP_AfpInfo` is 60 bytes and a `FinderInfo` blob 32, while Samba's `streams_xattr` can ask for
 /// far more.
 ///
@@ -19,20 +19,20 @@ pub const MAXIMUM_NAME: usize = 255;
 /// declares what it offers and must be truthful; lifting the limit means chunking the transfer.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_VALUE: usize = 3072;
+pub const MAXIMUM_VALUE_BYTES: usize = 3072;
 
 /// The most attributes one file or directory may carry.
 ///
 /// Sixteen, and it is the number that makes [`fs::LISTXATTR`] complete in one reply: sixteen
-/// names of [`MAXIMUM_NAME`] bytes plus their length prefixes is 4096 bytes, exactly one
-/// [`super::PAGE`]. A cursor would otherwise be needed, and a cursored listing can be observed
+/// names of [`MAXIMUM_NAME_BYTES`] bytes plus their length prefixes is 4096 bytes, exactly one
+/// [`super::PAGE_BYTES`]. A cursor would otherwise be needed, and a cursored listing can be observed
 /// half-changed, which is a worse property than a ceiling. Samba with `fruit` uses a handful per
 /// file.
 ///
 /// **BUGS.** The seventeenth attribute is [`ENOSPC`], not an eviction.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_COUNT: usize = 16;
+pub const MAXIMUM_ATTRIBUTES: usize = 16;
 
 /// The largest **kind** code, [`i32::MAX`] as a `u32`. See this module's header: the kind rides
 /// in a reply word whose sign bit means "error", so bit 31 is not available to it.
@@ -45,15 +45,15 @@ pub const MAXIMUM_KIND: u32 = i32::MAX as u32;
 pub const RAW: u32 = 0;
 
 /// `ENODATA`: the named attribute is not set on this node. The only error that means absence,
-/// which is the discipline `ENOENT` earns in [`dir::explain`]: an instrument that reads any
+/// which is the discipline `ENOENT` earns in [`directory::explain`]: an instrument that reads any
 /// failure as "not there" reports filesystems that never existed.
 pub const ENODATA: i32 = 61;
-/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL byte. A fact about the
+/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME_BYTES`], or holds a NUL byte. A fact about the
 /// name, not about the capability.
 pub const ERANGE: i32 = 34;
-/// `E2BIG`: the value is longer than [`MAXIMUM_VALUE`].
+/// `E2BIG`: the value is longer than [`MAXIMUM_VALUE_BYTES`].
 pub const E2BIG: i32 = 7;
-/// `ENOSPC`: the node already holds [`MAXIMUM_COUNT`] attributes and this would be a new one.
+/// `ENOSPC`: the node already holds [`MAXIMUM_ATTRIBUTES`] attributes and this would be a new one.
 pub const ENOSPC: i32 = 28;
 /// `EOPNOTSUPP`: **this capability does not offer extended attributes at all.**
 ///
@@ -74,20 +74,28 @@ pub const ENOTSUP: i32 = 95;
 /// a leak.
 ///
 /// **BUGS.** No file anywhere on a nife filesystem can be called `.extended-attributes`, at any rights.
-pub const STORE_DIR: &str = ".extended-attributes";
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const STORE_DIRECTORY: &str = ".extended-attributes";
 
 /// Pack [`fs::SETXATTR`]'s second word: the value's type code in the high 32 bits, its length in
 /// the low 32. The name's length rides in the request word's own length field, as every other
 /// verb's payload length does, so the two lengths never share a field.
-pub const fn spec(kind: u32, value_len: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const fn specification(kind: u32, value_len: u64) -> u64 {
     ((kind as u64) << 32) | (value_len & 0xffff_ffff)
 }
 /// The type code from a [`fs::SETXATTR`] second word.
-pub const fn spec_kind(w1: u64) -> u32 {
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const fn specification_kind(w1: u64) -> u32 {
     (w1 >> 32) as u32
 }
 /// The value length from a [`fs::SETXATTR`] second word.
-pub const fn spec_value_len(w1: u64) -> usize {
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const fn specification_value_len(w1: u64) -> usize {
     (w1 & 0xffff_ffff) as usize
 }
 
@@ -109,7 +117,7 @@ pub const fn reply_value_len(r0: i64) -> usize {
     (r0 as u64 & 0xffff_ffff) as usize
 }
 
-/// Whether `name` is a name this store can hold: non-empty, at most [`MAXIMUM_NAME`] bytes, and
+/// Whether `name` is a name this store can hold: non-empty, at most [`MAXIMUM_NAME_BYTES`] bytes, and
 /// free of NUL.
 ///
 /// **Bytes, not UTF-8, and no namespace prefix is required.** Linux insists on
@@ -119,7 +127,7 @@ pub const fn reply_value_len(r0: i64) -> usize {
 /// anything speaking the POSIX API) hands it over as a C string, and a name with a NUL in it
 /// would come back shorter than it went out.
 pub const fn is_valid_name(name: &[u8]) -> bool {
-    if name.is_empty() || name.len() > MAXIMUM_NAME {
+    if name.is_empty() || name.len() > MAXIMUM_NAME_BYTES {
         return false;
     }
     let mut i = 0;
@@ -146,11 +154,11 @@ pub mod list {
     }
 
     /// The most bytes a complete listing can occupy: every attribute a node may hold, at the
-    /// longest name each. Equal to [`super::super::PAGE`], which is what lets
+    /// longest name each. Equal to [`super::super::PAGE_BYTES`], which is what lets
     /// [`super::super::fs::LISTXATTR`] answer without a cursor.
     ///
     /// Name: ratified 2026-10-27 (#2797).
-    pub const MAXIMUM_BYTES: usize = super::MAXIMUM_COUNT * record_len(super::MAXIMUM_NAME);
+    pub const MAXIMUM_BYTES: usize = super::MAXIMUM_ATTRIBUTES * record_len(super::MAXIMUM_NAME_BYTES);
 
     /// Write one record at the start of `out`, returning its length, or `None` if it does not
     /// fit or the name is not one this store holds.
@@ -194,30 +202,32 @@ pub mod list {
 
 /// **The store's on-disk record format, and the layer's semantics as pure functions.**
 ///
-/// One node's attributes are one blob of records, each a [`store::RECORD_HEADER`]-byte header (a
+/// One node's attributes are one blob of records, each a [`store::RECORD_HEADER_BYTES`]-byte header (a
 /// name length, a `u32` kind, a `u16` value length, little-endian), then the name, then the value.
 /// The FS server keeps one blob per node in a file named for the node's `TreePtr` id
-/// ([`store::file_name`]) inside [`STORE_DIR`], so attributes follow a file across a rename. The
+/// ([`store::file_name`]) inside [`STORE_DIRECTORY`], so attributes follow a file across a rename. The
 /// format is public so its rules are host-tested and a recovery tool can read it.
 pub mod store {
     use super::{
-        E2BIG, ENODATA, ENOSPC, ERANGE, MAXIMUM_COUNT, MAXIMUM_KIND, MAXIMUM_VALUE, is_valid_name,
+        E2BIG, ENODATA, ENOSPC, ERANGE, MAXIMUM_ATTRIBUTES, MAXIMUM_KIND, MAXIMUM_VALUE_BYTES, is_valid_name,
     };
 
     /// A record's fixed header: one byte of name length, four of kind, two of value length.
-    pub const RECORD_HEADER: usize = 1 + 4 + 2;
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+    pub const RECORD_HEADER_BYTES: usize = 1 + 4 + 2;
 
     /// Bytes one record occupies.
     pub const fn record_len(name_len: usize, value_len: usize) -> usize {
-        RECORD_HEADER + name_len + value_len
+        RECORD_HEADER_BYTES + name_len + value_len
     }
 
-    /// The largest a node's whole blob can be: [`MAXIMUM_COUNT`] records at the widest each. This
+    /// The largest a node's whole blob can be: [`MAXIMUM_ATTRIBUTES`] records at the widest each. This
     /// is the ceiling on what one node costs the store, and the reason the count limit exists at
     /// all rather than being left to the disk.
     ///
     /// Name: ratified 2026-10-27 (#2797).
-    pub const MAXIMUM_BYTES: usize = MAXIMUM_COUNT * record_len(super::MAXIMUM_NAME, MAXIMUM_VALUE);
+    pub const MAXIMUM_BYTES: usize = MAXIMUM_ATTRIBUTES * record_len(super::MAXIMUM_NAME_BYTES, MAXIMUM_VALUE_BYTES);
 
     /// The name of the file that holds a node's blob: its `TreePtr` id in lowercase hex, always
     /// eight characters, so the store directory's entries sort and read predictably in a
@@ -289,7 +299,7 @@ pub mod store {
         if !is_valid_name(name) {
             return Err(ERANGE);
         }
-        if value.len() > MAXIMUM_VALUE {
+        if value.len() > MAXIMUM_VALUE_BYTES {
             return Err(E2BIG);
         }
         if kind > MAXIMUM_KIND {
@@ -307,7 +317,7 @@ pub mod store {
             used += write_record(&mut out[used..], n, k, v).ok_or(ENOSPC)?;
         }
         if !replaced {
-            if count(blob) >= MAXIMUM_COUNT {
+            if count(blob) >= MAXIMUM_ATTRIBUTES {
                 return Err(ENOSPC);
             }
             used += write_record(&mut out[used..], name, kind, value).ok_or(ENOSPC)?;
@@ -344,14 +354,14 @@ pub mod store {
     /// Lay one record at the start of `out`; `None` if it does not fit.
     fn write_record(out: &mut [u8], name: &[u8], kind: u32, value: &[u8]) -> Option<usize> {
         let n = record_len(name.len(), value.len());
-        if out.len() < n || name.len() > super::MAXIMUM_NAME || value.len() > MAXIMUM_VALUE {
+        if out.len() < n || name.len() > super::MAXIMUM_NAME_BYTES || value.len() > MAXIMUM_VALUE_BYTES {
             return None;
         }
         out[0] = name.len() as u8;
         out[1..5].copy_from_slice(&kind.to_le_bytes());
         out[5..7].copy_from_slice(&(value.len() as u16).to_le_bytes());
-        out[RECORD_HEADER..RECORD_HEADER + name.len()].copy_from_slice(name);
-        out[RECORD_HEADER + name.len()..n].copy_from_slice(value);
+        out[RECORD_HEADER_BYTES..RECORD_HEADER_BYTES + name.len()].copy_from_slice(name);
+        out[RECORD_HEADER_BYTES + name.len()..n].copy_from_slice(value);
         Some(n)
     }
 
@@ -365,14 +375,14 @@ pub mod store {
         type Item = (&'a [u8], u32, &'a [u8]);
 
         fn next(&mut self) -> Option<Self::Item> {
-            let head = self.blob.get(self.at..self.at + RECORD_HEADER)?;
+            let head = self.blob.get(self.at..self.at + RECORD_HEADER_BYTES)?;
             let name_len = head[0] as usize;
             if name_len == 0 {
                 return None;
             }
             let kind = u32::from_le_bytes([head[1], head[2], head[3], head[4]]);
             let value_len = u16::from_le_bytes([head[5], head[6]]) as usize;
-            let body = self.at + RECORD_HEADER;
+            let body = self.at + RECORD_HEADER_BYTES;
             let name = self.blob.get(body..body + name_len)?;
             let value = self
                 .blob
@@ -383,19 +393,19 @@ pub mod store {
     }
 }
 
-use super::{dir, fs};
+use super::{directory, fs};
 
 /// A [`fs::SETXATTR`] carries a name and a value in one page, so the two limits together must
 /// leave the transport room. Checked at compile time because both sides are constants: a change
 /// that broke it should fail the build rather than wait for a request that happens to be wide.
-const _: () = assert!(MAXIMUM_NAME + MAXIMUM_VALUE <= super::PAGE);
+const _: () = assert!(MAXIMUM_NAME_BYTES + MAXIMUM_VALUE_BYTES <= super::PAGE_BYTES);
 /// And a complete listing must fit one page, which is what lets [`fs::LISTXATTR`] have no cursor.
-const _: () = assert!(list::MAXIMUM_BYTES <= super::PAGE);
+const _: () = assert!(list::MAXIMUM_BYTES <= super::PAGE_BYTES);
 /// The four verbs must not collide with the thirteen that were already on the wire.
 const _: () = assert!(fs::GETXATTR > fs::RMDIR && fs::REMOVEXATTR <= 0xff);
 /// The rights these verbs consult are the ones [`fs::READ`] and [`fs::WRITE`] consult; nothing
 /// here invents a rung, so a mask this module needs is a mask the ladder already defines.
-const _: () = assert!((dir::READ | dir::WRITE) & !dir::ALL == 0);
+const _: () = assert!((directory::READ | directory::WRITE) & !directory::ALL == 0);
 
 #[cfg(test)]
 mod tests;

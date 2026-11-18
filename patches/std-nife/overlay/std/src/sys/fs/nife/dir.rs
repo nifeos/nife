@@ -15,7 +15,7 @@ use super::*;
 ///
 /// A `Dir` asks for **everything its parent carries**, as `openat(dirfd, name, O_DIRECTORY)` does
 /// on Unix, where every verb elsewhere asks for its minimum. It says so with
-/// [`fsproto::dir::PARENT_RIGHTS`], "the parent's rights, whatever they are" (§98), so one message
+/// [`fsproto::directory::PARENT_RIGHTS`], "the parent's rights, whatever they are" (§98), so one message
 /// reaches the child under a full grant and under a narrowed one, and the server answers `parent &
 /// parent`, so nothing widens. See notes/std/fs-descent.md.
 pub struct Dir {
@@ -33,7 +33,7 @@ impl Dir {
     /// Descend one name, asking for everything this directory carries. See the type's header for
     /// why "everything it carries" is the right ask for an object and the wrong ask for a verb.
     pub(super) fn child(&self, p: &mut Page, name: &str) -> io::Result<Dir> {
-        let at = descend(p, &self.at, name, fsproto::dir::PARENT_RIGHTS)?;
+        let at = descend(p, &self.at, name, fsproto::directory::PARENT_RIGHTS)?;
         Ok(Dir { at })
     }
 
@@ -121,7 +121,7 @@ impl Dir {
     /// What there is to know about a directory over this contract, which is that it is one. The
     /// size is the placeholder [`FileAttr`] describes: no verb reports a directory's size, and
     /// inventing one would be a fact the contract does not carry. `modified()` refuses for
-    /// [`Mtime`]'s reason: a held directory is a handle, and `GETMTIME` asks by name. Its parent can
+    /// [`Mtime`]'s reason: a held directory is a handle, and `GET_MODIFICATION_TIME` asks by name. Its parent can
     /// answer for it (`std::fs::metadata` of the path it was opened by).
     pub fn self_metadata(&self) -> io::Result<FileAttr> {
         Ok(FileAttr { size: 0, dir: true, mtime: Mtime::Unnamed })
@@ -152,7 +152,7 @@ impl Dir {
     /// the path-shaped [`unlink`] draws.
     pub fn remove_file(&self, path: &Path) -> io::Result<()> {
         let mut p = page();
-        let (at, name) = walk(&mut p, self.at.0, path, fsproto::dir::REMOVE)?;
+        let (at, name) = walk(&mut p, self.at.0, path, fsproto::directory::REMOVE)?;
         p.put(name.as_bytes());
         request(proto::req(proto::UNLINK, at.0, name.len() as u64), 0)?;
         Ok(())
@@ -163,8 +163,8 @@ impl Dir {
     /// atomic message rather than a copy and an unlink.
     pub fn rename(&self, from: &Path, to_dir: &Dir, to: &Path) -> io::Result<()> {
         let mut p = page();
-        let (src_at, src) = walk(&mut p, self.at.0, from, fsproto::dir::REMOVE)?;
-        let (dst_at, dst) = walk(&mut p, to_dir.at.0, to, fsproto::dir::CREATE)?;
+        let (src_at, src) = walk(&mut p, self.at.0, from, fsproto::directory::REMOVE)?;
+        let (dst_at, dst) = walk(&mut p, to_dir.at.0, to, fsproto::directory::CREATE)?;
         if src.len() + dst.len() > PAGE {
             return Err(io::const_error!(
                 io::ErrorKind::InvalidFilename,
@@ -187,7 +187,7 @@ impl Dir {
     pub fn create_dir(&self, path: &Path) -> io::Result<()> {
         let mut p = page();
         let (at, name) =
-            walk(&mut p, self.at.0, path, fsproto::dir::CREATE | fsproto::dir::DESCEND)?;
+            walk(&mut p, self.at.0, path, fsproto::directory::CREATE | fsproto::directory::DESCEND)?;
         p.put(name.as_bytes());
         let handle = request(proto::req(proto::MKDIR, at.0, name.len() as u64), 0)?;
         let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
@@ -221,7 +221,7 @@ impl Dir {
     /// file underneath is refused with `NotADirectory`.
     pub fn remove_dir(&self, path: &Path) -> io::Result<()> {
         let mut p = page();
-        let (at, name) = walk(&mut p, self.at.0, path, fsproto::dir::REMOVE)?;
+        let (at, name) = walk(&mut p, self.at.0, path, fsproto::directory::REMOVE)?;
         p.put(name.as_bytes());
         request(proto::req(proto::RMDIR, at.0, name.len() as u64), 0)?;
         Ok(())

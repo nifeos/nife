@@ -184,10 +184,10 @@ macro_rules! skip_without_the_walk {
 /// opens a file it can name two levels down, so the refusals are about enumeration alone.
 #[test_case]
 fn a_walk_without_enumerate_is_refused_rather_than_empty() {
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     skip_without_the_walk!();
     let mut got = [0u8; 1024];
-    let Some(len) = walk_with(dir::READ | dir::DESCEND, &mut got) else {
+    let Some(len) = walk_with(directory::READ | directory::DESCEND, &mut got) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");
@@ -233,11 +233,11 @@ impl core::fmt::Write for Line {
 fn a_walk_through_a_confined_grant_is_priced() {
     use core::fmt::Write;
 
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::walk as tree;
     skip_without_the_walk!();
     let mut got = [0u8; 2048];
-    let Some(len) = walk_with(dir::ENUMERATE | dir::READ | dir::DESCEND, &mut got) else {
+    let Some(len) = walk_with(directory::ENUMERATE | directory::READ | directory::DESCEND, &mut got) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");
@@ -287,7 +287,7 @@ fn a_walk_through_a_confined_grant_is_priced() {
 /// the tree, fails here. The timings print beside the caretaker's for the comparison.
 #[test_case]
 fn a_walk_through_a_bound_grant_is_priced() {
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::walk as tree;
     skip_without_the_walk!();
     let Some(spawned) = fs_service::start_std_bound(
@@ -295,7 +295,7 @@ fn a_walk_through_a_bound_grant_is_priced() {
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         program("std_exerciser").expect("no std_exerciser program in the initial ramdisk"),
         tree::ROOT,
-        dir::ENUMERATE | dir::READ | dir::DESCEND,
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
     ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -339,14 +339,14 @@ fn a_walk_through_a_bound_grant_is_priced() {
 /// and after the grant is taken back even its own root is gone.
 #[test_case]
 fn a_bound_grant_reaches_nothing_outside_it() {
-    use filesystem_contract::{dir, fs};
+    use filesystem_contract::{directory, fs};
     use filesystem_fixture::walk as tree;
     skip_without_the_walk!();
     let Some(grant) = fs_service::bind_subtree(
         block_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),
         tree::ROOT,
-        dir::ENUMERATE | dir::READ | dir::DESCEND,
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
     ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -372,7 +372,7 @@ fn a_bound_grant_reaches_nothing_outside_it() {
 
     let inside = "narrow/n000";
     let len = stage(inside);
-    let h = call(fs::req(fs::OPEN, fs::ROOT, len), dir::READ, b);
+    let h = call(fs::req(fs::OPEN, fs::ROOT, len), directory::READ, b);
     assert!(
         h >= 0,
         "a file inside the bound subtree would not open: {h}"
@@ -381,12 +381,12 @@ fn a_bound_grant_reaches_nothing_outside_it() {
 
     let len = stage(filesystem_fixture::MOTD_NAME);
     assert_eq!(
-        call(fs::req(fs::OPEN, fs::ROOT, len), dir::READ, b),
+        call(fs::req(fs::OPEN, fs::ROOT, len), directory::READ, b),
         -2,
         "the image root's motd is not in the subtree, so it is not there (ENOENT)",
     );
     let len0 = stage_in(grant.shared, filesystem_fixture::MOTD_NAME);
-    let theirs = call(fs::req(fs::OPEN, fs::ROOT, len0), dir::READ, 0);
+    let theirs = call(fs::req(fs::OPEN, fs::ROOT, len0), directory::READ, 0);
     assert!(
         theirs >= 0,
         "the kernel's unbound call could not open motd: {theirs}"
@@ -415,7 +415,7 @@ fn a_bound_grant_reaches_nothing_outside_it() {
     );
     let len = stage(inside);
     assert_eq!(
-        call(fs::req(fs::OPEN, fs::ROOT, len), dir::READ, b),
+        call(fs::req(fs::OPEN, fs::ROOT, len), directory::READ, b),
         -9,
         "after UNBIND the badge reaches nothing, not the whole image (EBADF)",
     );
@@ -493,12 +493,12 @@ impl Line {
 /// `cargo xtask basalt-fetch`, so a replay that does not run that first would skip here.
 #[test_case]
 fn ripgrep_searches_the_tree_it_was_granted() {
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::walk as tree;
     skip_without_rg!();
     let mut got = [0u8; 8192];
     let Some(len) = rg_with(
-        dir::ENUMERATE | dir::READ | dir::DESCEND,
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
         tree::RG_SEARCH,
         &mut got,
     ) else {
@@ -537,11 +537,11 @@ fn ripgrep_searches_the_tree_it_was_granted() {
 /// `cargo xtask basalt-fetch`, so a replay that does not run that first would skip here.
 #[test_case]
 fn ripgrep_without_enumerate_is_refused_rather_than_empty() {
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::walk as tree;
     skip_without_rg!();
     let mut got = [0u8; 8192];
-    let Some(len) = rg_with(dir::READ | dir::DESCEND, tree::RG_SEARCH, &mut got) else {
+    let Some(len) = rg_with(directory::READ | directory::DESCEND, tree::RG_SEARCH, &mut got) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");
@@ -569,11 +569,11 @@ fn ripgrep_without_enumerate_is_refused_rather_than_empty() {
 /// `cargo xtask basalt-fetch`, so a replay that does not run that first would skip here.
 #[test_case]
 fn ripgrep_reaches_a_named_file_without_enumerate() {
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::walk as tree;
     skip_without_rg!();
     let mut got = [0u8; 1024];
-    let Some(len) = rg_with(dir::READ | dir::DESCEND, tree::RG_NAMED, &mut got) else {
+    let Some(len) = rg_with(directory::READ | directory::DESCEND, tree::RG_NAMED, &mut got) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(

@@ -28,7 +28,7 @@ pub const OK: u64 = 0;
 ///
 /// `rm(1)` promises only "a value >0", so this is a choice, and it is the one that costs
 /// nothing and says more: a test that expected `EROFS` and got `ENOENT` has learned that the
-/// walk stopped somewhere else than it thought. The [`crate::dir::explain`] sentence
+/// walk stopped somewhere else than it thought. The [`crate::directory::explain`] sentence
 /// for that number is what the program prints as its diagnostic, so the status word and the
 /// text a human reads come from the same decision.
 pub const fn status(errno: i32) -> u64 {

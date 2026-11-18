@@ -5,7 +5,7 @@ fn file_request_packs_and_unpacks() {
     // Every field survives the pack, at its extremes, without bleeding into another.
     for &(o, h, l) in &[
         (fs::OPEN, 0u64, 7u64),
-        (fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LENGTH_OR_OFFSET),
+        (fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LENGTH_BYTES),
         (fs::WRITE, 1, 4096),
         (fs::CLOSE, 65535, 0),
         (fs::FSTAT, 3, 0),
@@ -23,10 +23,10 @@ fn file_request_packs_and_unpacks() {
 fn a_handle_never_collides_with_the_opcode_or_length() {
     // A big handle must not spill into the opcode field, and a max length must not spill into
     // the handle: the READ path packs all three and reads them back independently.
-    let w = fs::req(fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LENGTH_OR_OFFSET);
+    let w = fs::req(fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LENGTH_BYTES);
     assert_eq!(operation(w), fs::READ);
     assert_eq!(fs::req_handle(w), fs::MAXIMUM_HANDLE);
-    assert_eq!(fs::req_len(w) as u64, fs::MAXIMUM_LENGTH_OR_OFFSET);
+    assert_eq!(fs::req_len(w) as u64, fs::MAXIMUM_LENGTH_BYTES);
 }
 
 // --- The directory capability ---
@@ -48,11 +48,11 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
         (1, 16, 2, 1),
         (
             fs::MAXIMUM_HANDLE,
-            fs::MAXIMUM_LENGTH_OR_OFFSET,
+            fs::MAXIMUM_LENGTH_BYTES,
             fs::MAXIMUM_HANDLE,
-            fs::MAXIMUM_LENGTH_OR_OFFSET,
+            fs::MAXIMUM_LENGTH_BYTES,
         ),
-        (fs::MAXIMUM_HANDLE, 1, 0, fs::MAXIMUM_LENGTH_OR_OFFSET),
+        (fs::MAXIMUM_HANDLE, 1, 0, fs::MAXIMUM_LENGTH_BYTES),
     ] {
         let w0 = fs::req(fs::RENAME, sh, sl);
         let w1 = fs::rename_dst(dh, dl);
@@ -80,13 +80,13 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
 /// not run in the EL0 build. What is left here is the round trip, which needs the packing.
 #[test]
 fn a_single_page_request_still_means_one_page() {
-    let w0 = fs::req(fs::READ, 1, PAGE as u64);
-    assert_eq!(fs::req_len(w0), PAGE);
+    let w0 = fs::req(fs::READ, 1, PAGE_BYTES as u64);
+    assert_eq!(fs::req_len(w0), PAGE_BYTES);
     assert_eq!(fs::req_handle(w0), 1);
     assert_eq!(operation(w0), fs::READ);
 
     // And the largest the channel permits survives the same 40-bit field.
-    let w0 = fs::req(fs::WRITE, 1, fs::TRANSFER_MAXIMUM as u64);
-    assert_eq!(fs::req_len(w0), fs::TRANSFER_MAXIMUM);
+    let w0 = fs::req(fs::WRITE, 1, fs::MAXIMUM_TRANSFER_BYTES as u64);
+    assert_eq!(fs::req_len(w0), fs::MAXIMUM_TRANSFER_BYTES);
     assert_eq!(operation(w0), fs::WRITE);
 }

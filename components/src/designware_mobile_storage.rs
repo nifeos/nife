@@ -1,4 +1,4 @@
-//! radon's SD/MMC block server: `filesystem_contract::blk` over the JH7110's `DesignWare` Mobile
+//! radon's SD/MMC block server: `filesystem_contract::block` over the JH7110's `DesignWare` Mobile
 //! Storage Host Controller, from EL0 (milestone 53 (the board's own peripherals: network and
 //! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
 //! same name; this file is its register window and serve loop. It holds only what
@@ -33,7 +33,7 @@ use designware_mobile_storage::host_controller::{HostController, RegisterWindowA
 use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::Handoff;
-use filesystem_contract::blk;
+use filesystem_contract::block;
 use startup_page_contract::StartupWindow;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -65,12 +65,12 @@ static REGISTERS: StartupWindow = unsafe {
     )
 };
 
-/// The request buffer, `blk::TRANSFER_BLOCKS` pages.
+/// The request buffer, `block::TRANSFER_BLOCKS` pages.
 // SAFETY: the spawner lists this window and maps all of it read/write before `_start` runs.
 static TRANSFER: StartupWindow = unsafe {
     StartupWindow::new(
         ::driver_process_contract::designware_mobile_storage::TRANSFER_KIND,
-        blk::TRANSFER_MAXIMUM as u64,
+        block::MAXIMUM_TRANSFER_BYTES as u64,
     )
 };
 
@@ -163,7 +163,7 @@ fn transfer_blocks(
     if write && !h.window.writable {
         return filesystem_contract::reply_err(EROFS);
     }
-    let buf = &mut transfer()[..count * blk::BLOCK_SIZE];
+    let buf = &mut transfer()[..count * block::BLOCK_BYTES];
     let r = if write {
         sd::write_blocks(host, card, lba, buf)
     } else {
@@ -185,12 +185,12 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
             continue;
         };
         // Clamped, as every block server here clamps: the packing could spell more.
-        let count = blk::req_blocks(w0).min(blk::TRANSFER_BLOCKS);
+        let count = block::req_blocks(w0).min(block::TRANSFER_BLOCKS);
         let r0 = match filesystem_contract::operation(w0) {
-            blk::READ => transfer_blocks(&mut host, &card, &h, block, count, false),
-            blk::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),
-            blk::SIZE => (h.window.sectors * sd::BLOCK_BYTES as u64) as i64,
-            blk::FLUSH => {
+            block::READ => transfer_blocks(&mut host, &card, &h, block, count, false),
+            block::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),
+            block::SIZE => (h.window.sectors * sd::BLOCK_BYTES as u64) as i64,
+            block::FLUSH => {
                 let status = host.send_command(&c::Command::new(
                     c::SEND_STATUS,
                     u32::from(card.relative_card_address) << 16,

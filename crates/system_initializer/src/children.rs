@@ -32,11 +32,11 @@ pub(super) fn build_grant(
     let words = match manifest.map(|m| m.program_argument) {
         Some(grant_contract::ProgramArgumentDeclaration::Words(g)) => {
             use filesystem_contract::grant as gr;
-            let rights = gr::spec_rights(care_words.2) & g.rights();
+            let rights = gr::specification_rights(care_words.2) & g.rights();
             (
                 care_words.0,
                 care_words.1,
-                gr::spec(gr::spec_len(care_words.2), rights),
+                gr::specification(gr::specification_len(care_words.2), rights),
             )
         }
         _ => care_words,

@@ -1,4 +1,4 @@
-use filesystem_contract::{dir, rm as rr};
+use filesystem_contract::{directory, rm as rr};
 use filesystem_fixture::tree;
 use grant_plan::rmopt;
 
@@ -40,7 +40,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
             // `rm` is started with a **grant's** three words rather than a role and a number:
             // the spec (the operand's length, and the options where a caretaker's rights ride),
             // then the two words of name.
-            role: filesystem_contract::grant::spec(name.len(), flags),
+            role: filesystem_contract::grant::specification(name.len(), flags),
             arg: lo,
             arg2: hi,
             // Measured the way `spawn_fs_client` asks for: the recursion is real stack, each
@@ -96,12 +96,12 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(refused) = run_rm(dir::REMOVE_TREE, tree::RM_DOOMED, 0) else {
+    let Some(refused) = run_rm(directory::REMOVE_TREE, tree::RM_DOOMED, 0) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(
         refused.status,
-        rr::status(dir::EISDIR),
+        rr::status(directory::EISDIR),
         "`rm` of a directory must refuse, not quietly recurse",
     );
     assert_eq!(refused.removed, 0);
@@ -111,7 +111,7 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     );
 
     // The narrow grant: it may take names out of `rmtree` and may not walk into anything.
-    let blind = run_rm(dir::REMOVE, tree::RM_DOOMED, rmopt::RECURSIVE)
+    let blind = run_rm(directory::REMOVE, tree::RM_DOOMED, rmopt::RECURSIVE)
         .expect("the service was wired by the first run");
     assert_eq!(
         blind.status,
@@ -125,7 +125,7 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
 
     // And the same line through the grant that carries the walk.
     let done = run_rm(
-        dir::REMOVE_TREE,
+        directory::REMOVE_TREE,
         tree::RM_DOOMED,
         rmopt::RECURSIVE | rmopt::VERBOSE,
     )
@@ -153,13 +153,13 @@ fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(loud) = run_rm(dir::REMOVE_TREE, tree::RM_MISSING, 0) else {
+    let Some(loud) = run_rm(directory::REMOVE_TREE, tree::RM_MISSING, 0) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(loud.status, rr::status(2), "a missing name is ENOENT");
     assert!(loud.printed > 0, "and it says so");
 
-    let quiet = run_rm(dir::REMOVE_TREE, tree::RM_MISSING, rmopt::FORCE)
+    let quiet = run_rm(directory::REMOVE_TREE, tree::RM_MISSING, rmopt::FORCE)
         .expect("the service was wired by the first run");
     assert_eq!(
         quiet.status,
@@ -170,7 +170,7 @@ fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     assert_eq!(quiet.removed, 0, "there was nothing to remove");
 
     let did =
-        run_rm(dir::REMOVE_TREE, tree::RM_SOLO, 0).expect("the service was wired by the first run");
+        run_rm(directory::REMOVE_TREE, tree::RM_SOLO, 0).expect("the service was wired by the first run");
     assert_eq!(did.status, rr::OK);
     assert_eq!(did.removed, 1);
     assert_eq!(

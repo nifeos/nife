@@ -3,13 +3,13 @@
 # (milestone 138 step 4).
 #
 # WHY THIS EXISTS. Step 3 grew the file channel and found the residual moved rather than shrank:
-# after it, a 4 KiB read is dominated by sixteen single-block trips through filesystem_contract::blk, and
+# after it, a 4 KiB read is dominated by sixteen single-block trips through filesystem_contract::block, and
 # fs_seq_read measures 80.30 MiB/s against the ~100 MiB/s ceiling one blk round trip per block
 # imposes. Step 4 is the change that grows the blk contract to carry more than one block per
 # request, and this is the measurement that says by how much. It is the sibling of
 # bench/transfer-size-sweep.sh and bench/record-level-sweep.sh in shape on purpose.
 #
-# WHAT IT DOES. `filesystem_contract::blk::TRANSFER_BLOCKS` is how many contiguous pages the FS server and the
+# WHAT IT DOES. `filesystem_contract::block::TRANSFER_BLOCKS` is how many contiguous pages the FS server and the
 # block server share, and therefore the most one blk request can carry. Every party's mapping, the
 # block server's clamp and `IpcDisk`'s batching all derive from it, so setting it to 1 reproduces
 # the contract exactly as it stood before step 4. This script therefore EDITS THAT CONSTANT IN
@@ -49,7 +49,7 @@
 #   numbers, but the wall-clock cost of a sweep is dominated by cargo.
 # - It does not check that the machine is quiet; it only records the load so you can tell
 #   afterwards.
-# - It does not vary `fs::TRANSFER_PAGES` alongside `blk::TRANSFER_BLOCKS`; the two contracts are
+# - It does not vary `fs::TRANSFER_PAGES` alongside `block::TRANSFER_BLOCKS`; the two contracts are
 #   swept independently on purpose (bench/transfer-size-sweep.sh is the file-channel sibling), so a
 #   run at 64 KiB file requests and 4 KiB blk requests is a real, reachable point rather than a
 #   confound.

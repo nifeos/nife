@@ -8,7 +8,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{fs, grant, xattr};
+use filesystem_contract::{fs, grant, extended_attribute};
 use filesystem_fixture as fixture;
 use fixture::escape;
 use user_mode_runtime::{call, exit, send};
@@ -177,7 +177,7 @@ fn probe_attributes(writable: bool) -> u64 {
         ),
         0,
     );
-    if filesystem_contract::reply_errno(g0 as i64) == Some(xattr::ENOTSUP) {
+    if filesystem_contract::reply_errno(g0 as i64) == Some(extended_attribute::ENOTSUP) {
         verdict |= escape::GRANTED_ATTRS_FAILED;
     }
 
@@ -194,7 +194,7 @@ fn probe_attributes(writable: bool) -> u64 {
             grant::HANDLE,
             fixture::attrs::NAME.len() as u64,
         ),
-        xattr::spec(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
+        extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
     );
     if (s as i64) >= 0 {
         verdict |= escape::WROTE_ATTR;
@@ -208,10 +208,10 @@ fn probe_attributes(writable: bool) -> u64 {
             ),
             0,
         );
-        get_page(xattr::reply_value_len(g as i64), &mut buf);
+        get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
         if (g as i64) < 0
-            || xattr::reply_kind(g as i64) != fixture::attrs::KIND
-            || xattr::reply_value_len(g as i64) != fixture::attrs::VALUE.len()
+            || extended_attribute::reply_kind(g as i64) != fixture::attrs::KIND
+            || extended_attribute::reply_value_len(g as i64) != fixture::attrs::VALUE.len()
             || &buf[..fixture::attrs::VALUE.len()] != fixture::attrs::VALUE
         {
             verdict |= escape::GRANTED_ATTRS_FAILED;

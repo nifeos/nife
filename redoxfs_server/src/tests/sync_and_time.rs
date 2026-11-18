@@ -40,12 +40,12 @@ fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
         .open_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("sub"),
-            dir::ENUMERATE | dir::READ | dir::DESCEND,
+            directory::ENUMERATE | directory::READ | directory::DESCEND,
         )
         .expect("open sub read-only");
     assert_eq!(
         srv.sync_permitted(ro).unwrap_err().errno,
-        dir::EROFS,
+        directory::EROFS,
         "a read-only capability must not be able to make the whole device flush"
     );
 

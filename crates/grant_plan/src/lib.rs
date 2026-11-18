@@ -57,6 +57,6 @@ pub use refusal::{CapabilityKind, Refusal};
 mod lexing;
 
 use lexing::*;
-pub use lexing::{MAXIMUM_FILE_NAME, WORDS_NAME, file_name_fits, parse_u64, trim};
+pub use lexing::{MAXIMUM_FILE_NAME, MAXIMUM_WORDS_NAME_BYTES, file_name_fits, parse_u64, trim};
 
 // ---- small byte helpers (no_std, no alloc) ----

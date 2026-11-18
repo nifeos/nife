@@ -7,7 +7,7 @@ use super::*;
 /// with their digest, made live by `current`. Anything already there is overwritten, and a
 /// generation this writes replaces the whole table, which no test here needs more of.
 pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) {
-    use filesystem_contract::{PAGE, dir as rights, fs};
+    use filesystem_contract::{PAGE_BYTES, directory as rights, fs};
     let (fs_ep, fs_page_frame) = root_directory(
         blk_server_image(),
         crate::user::program("redoxfs_server").expect("no redoxfs_server in the initial ramdisk"),
@@ -15,7 +15,7 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
     .expect("wired() already brought the file service up");
     // SAFETY: as in `set_file`: the file service's own shared page, idle between logins.
     let page = unsafe {
-        core::slice::from_raw_parts_mut(mmu::phys_to_virt(fs_page_frame) as *mut u8, PAGE)
+        core::slice::from_raw_parts_mut(mmu::phys_to_virt(fs_page_frame) as *mut u8, PAGE_BYTES)
     };
     let call = |w: [u64; 2]| crate::sched::ipc_call(fs_ep, w)[0] as i64;
     let named = |page: &mut [u8], verb: u64, at: u64, name: &str, w1: u64| {
@@ -45,9 +45,9 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
             0,
             "could not truncate {file}"
         );
-        for (k, chunk) in contents.chunks(PAGE).enumerate() {
+        for (k, chunk) in contents.chunks(PAGE_BYTES).enumerate() {
             page[..chunk.len()].copy_from_slice(chunk);
-            let wrote = call([fs::req(fs::WRITE, h, chunk.len() as u64), (k * PAGE) as u64]);
+            let wrote = call([fs::req(fs::WRITE, h, chunk.len() as u64), (k * PAGE_BYTES) as u64]);
             assert_eq!(wrote, chunk.len() as i64, "short write of {file}");
         }
         call([fs::req(fs::CLOSE, h, 0), 0]);

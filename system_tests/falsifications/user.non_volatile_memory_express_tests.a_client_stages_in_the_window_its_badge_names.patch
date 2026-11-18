@@ -22,7 +22,7 @@ index 86031f252..a62419d8e 100644
 @@ -322,7 +322,7 @@ fn serve(mut plane: Plane) -> ! {
          // request is never trusted to stay inside the region it shares just because the packing
          // allows a larger number to be spelled.
-         let count = blk::req_blocks(w0).min(TRANSFER_BLOCKS);
+         let count = block::req_blocks(w0).min(TRANSFER_BLOCKS);
 -        let Some(window) = client_window(req.badge) else {
 +        let Some(window) = client_window(req.badge).map(|_| 0) else {
              reply(reply_to, filesystem_contract::reply_err(22) as u64, 0); // EINVAL

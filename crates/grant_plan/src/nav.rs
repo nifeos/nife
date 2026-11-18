@@ -24,14 +24,14 @@ pub const MAXIMUM_DEPTH: usize = 8;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 
-/// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::WORDS_NAME`]:
+/// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
 /// a directory grant names its directory in the caretaker's two `START` words, and a shell that
 /// could `cd` into a directory it cannot grant would be able to reach a place it cannot talk about.
 /// It is also what keeps a [`Cwd`] small, and the shell carries one by value in every
 /// [`crate::Holdings`] and several in an [`crate::Endowment`].
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
-pub const MAXIMUM_DIRECTORY_NAME: usize = crate::WORDS_NAME;
+pub const MAXIMUM_DIRECTORY_NAME: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
 
 // A bound directory entry holds its name length as a `u8`.
 const _: () = assert!(MAXIMUM_NAME <= u8::MAX as usize);

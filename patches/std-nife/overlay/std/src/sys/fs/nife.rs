@@ -17,7 +17,7 @@
 //! (`CREATE`), `truncate` and `File::set_len` (`TRUNCATE`), `read_dir`, `create_dir`,
 //! `remove_file`, `remove_dir` and `rename` (`OPENDIR`, `READDIR`, `MKDIR`, `UNLINK`, `RMDIR`,
 //! `RENAME`), [`copy`], [`Dir`] (`#![feature(dirfd)]`), `remove_dir_all`, `Metadata::modified`
-//! (`GETMTIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SETMTIME_AT`,
+//! (`GET_MODIFICATION_TIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SET_MODIFICATION_TIME_AT`,
 //! §112).
 
 //! # What stays Unsupported
@@ -62,7 +62,7 @@ pub use unsupported_fs::rename_noreplace;
 ///
 /// It is written in terms of `read_dir`, `remove_file` and `remove_dir` on paths it composes with
 /// `DirEntry::path`, and [`walk`] resolves those holding one directory capability per level. The
-/// rights it needs at every level are `dir::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
+/// rights it needs at every level are `directory::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
 /// in, `REMOVE` to take the name out), asked for one verb at a time by the walk. See
 /// notes/std/fs-descent.md.
 pub use crate::sys::fs::common::remove_dir_all;
@@ -99,7 +99,7 @@ mod reachable;
 mod read_dir;
 mod walk;
 
-pub use dir::*;
+pub use directory::*;
 pub use errors::*;
 pub use file::*;
 pub use metadata::*;

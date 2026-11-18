@@ -1,6 +1,6 @@
 //! **`system_installer`**: what a booted stick runs to put this system on the machine's own disk.
 //! It is the most destructive program in the tree, so what stands between a stranger and a wiped
-//! disk is its authority, not its judgement: one disk as a `filesystem_contract::blk` endpoint,
+//! disk is its authority, not its judgement: one disk as a `filesystem_contract::block` endpoint,
 //! with no path to type, and an entropy endpoint so GPT ids are drawn (no entropy, no write). It is
 //! spawned only after a person answers a question naming the disk, asked by
 //! `kernel/src/user/install_service.rs`, because a confirmation it printed itself could be skipped.
@@ -30,7 +30,7 @@
 
 use boot_slot::{SlotHeader, State};
 use file_allocation_table as fat;
-use filesystem_contract::{blk, req};
+use filesystem_contract::{block, req};
 use globally_unique_identifier_partition_table::entry::Entry;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
@@ -72,10 +72,10 @@ pub const ROLE_SURVEY: u64 = 1;
 pub const ROLE_CONFIRM: u64 = 2;
 
 /// The transfer unit of the block service: one filesystem block per request.
-const TRANSFER: u64 = blk::BLOCK_SIZE as u64;
+const TRANSFER: u64 = block::BLOCK_BYTES as u64;
 
 /// The logical block size a GPT counts in, from the blk wire's own unit. See BUGS.
-const LBA: u64 = blk::SECTOR_BYTES;
+const LBA: u64 = block::SECTOR_BYTES;
 
 /// Logical blocks per transfer block: eight 512-byte sectors in one 4096-byte request.
 const SECTORS_PER_TRANSFER: u64 = TRANSFER / LBA;
@@ -163,7 +163,7 @@ pub const R_NO_SLOT: u64 = 0x_4E_4F_53_4C_54;
 static mut ARRAY: [u8; ENTRY_ARRAY_BYTES] = [0; ENTRY_ARRAY_BYTES];
 /// The primary table as read back by [`survey`]: LBA 0..33 is 34 logical blocks, five transfer
 /// blocks. Also `.bss`, for the same reason.
-static mut PRIMARY: [u8; 5 * blk::BLOCK_SIZE] = [0; 5 * blk::BLOCK_SIZE];
+static mut PRIMARY: [u8; 5 * block::BLOCK_BYTES] = [0; 5 * block::BLOCK_BYTES];
 
 user_mode_runtime::program_entry!(start);
 
@@ -201,7 +201,7 @@ fn start(role: u64, a1: u64, _a2: u64) -> ! {
 /// A disk this cannot read, or one with no table, is [`R_EMPTY`]: "there is no nife here" is the
 /// honest answer to both, and the caller's next step after either is to ask a person.
 fn survey() -> ! {
-    let size = call(BLK, req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size <= 0 {
         send(REPORT, R_EMPTY, 0, 0);
         user_mode_runtime::exit()
@@ -237,7 +237,7 @@ fn survey() -> ! {
 fn read_primary() -> bool {
     let head = primary();
     for i in 0..5u64 {
-        if (call(BLK, req(blk::READ), i).0 as i64) < 0 {
+        if (call(BLK, req(block::READ), i).0 as i64) < 0 {
             return false;
         }
         // SAFETY: `BLK_PAGE` is a mapped page of exactly one transfer block, and the destination
@@ -245,8 +245,8 @@ fn read_primary() -> bool {
         unsafe {
             core::ptr::copy_nonoverlapping(
                 BLK_PAGE as *const u8,
-                head.as_mut_ptr().add(i as usize * blk::BLOCK_SIZE),
-                blk::BLOCK_SIZE,
+                head.as_mut_ptr().add(i as usize * block::BLOCK_BYTES),
+                block::BLOCK_BYTES,
             );
         }
     }
@@ -270,7 +270,7 @@ const MAXIMUM_PARTITIONS: usize = 16;
 /// complete before the primary is touched. See notes/installing/system-installer.md; nothing yet
 /// reads the backup when the primary fails to parse (`uefi_loader::chooser`'s `BUGS`).
 fn confirm(slot: u64) -> ! {
-    let size = call(BLK, req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
@@ -381,7 +381,7 @@ fn confirm(slot: u64) -> ! {
 /// The whole of it, in the order that makes a refusal cheap: ask the disk its size, lay the
 /// arithmetic out, draw the randomness, and only then write.
 fn install(boot_file_len: u64) -> ! {
-    let size = call(BLK, req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 1, size as u64);
         user_mode_runtime::exit()
@@ -443,7 +443,7 @@ fn install(boot_file_len: u64) -> ! {
 
     // One flush, so that what a reboot reads is what this program wrote rather than what a
     // controller still has in a cache.
-    let _ = call(BLK, req(blk::FLUSH), 0);
+    let _ = call(BLK, req(block::FLUSH), 0);
 
     send(REPORT, R_INSTALLED, layout.data_first, layout.esp_first);
     user_mode_runtime::exit()
@@ -641,7 +641,7 @@ fn write_efi_system_partition(
             }
         }
         let block = (layout.esp_first + sector) / SECTORS_PER_TRANSFER;
-        if (call(BLK, req(blk::WRITE), block).0 as i64) < 0 {
+        if (call(BLK, req(block::WRITE), block).0 as i64) < 0 {
             return Err(40);
         }
         sector += SECTORS_PER_TRANSFER;
@@ -683,7 +683,7 @@ fn write_slot(slot_first: u64, boot_file_len: u64) -> Result<(), u64> {
         return Err(51);
     }
     let header_block = slot_first / SECTORS_PER_TRANSFER;
-    if (call(BLK, req(blk::WRITE), header_block).0 as i64) < 0 {
+    if (call(BLK, req(block::WRITE), header_block).0 as i64) < 0 {
         return Err(52);
     }
 
@@ -716,7 +716,7 @@ fn copy_boot_file(first_block: u64, boot_file_len: u64, step: u64) -> Result<(),
                 core::ptr::write_bytes((BLK_PAGE as *mut u8).add(n), 0, TRANSFER as usize - n);
             }
         }
-        if (call(BLK, req(blk::WRITE), first_block + i).0 as i64) < 0 {
+        if (call(BLK, req(block::WRITE), first_block + i).0 as i64) < 0 {
             return Err(step);
         }
     }
@@ -736,8 +736,8 @@ fn write_at(first_lba: u64, data: &[u8]) -> bool {
         let byte_at = first_lba * LBA + done as u64;
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
-        let n = core::cmp::min(blk::BLOCK_SIZE - offset, data.len() - done);
-        if (call(BLK, req(blk::READ), block).0 as i64) < 0 {
+        let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);
+        if (call(BLK, req(block::READ), block).0 as i64) < 0 {
             return false;
         }
         // SAFETY: `BLK_PAGE` is a mapped, writable page of exactly one transfer block, and
@@ -749,7 +749,7 @@ fn write_at(first_lba: u64, data: &[u8]) -> bool {
                 n,
             );
         }
-        if (call(BLK, req(blk::WRITE), block).0 as i64) < 0 {
+        if (call(BLK, req(block::WRITE), block).0 as i64) < 0 {
             return false;
         }
         done += n;

@@ -47,7 +47,7 @@ pub use batching::{Sweep, write_batch, write_sweep};
 use endowment::write_config_values;
 pub use endowment::{write_census, write_holdings};
 use environment_contract::ConfigurationPage;
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use grant_contract::{OutputDeclaration, ProgramArgumentDeclaration};
 use grant_plan::expand::{Expansion, NameSet};
 use grant_plan::line::{self, Line};

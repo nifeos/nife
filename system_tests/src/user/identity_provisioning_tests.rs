@@ -192,7 +192,7 @@ fn provisioning_creates_a_working_credential_and_a_real_subtree() {
         redoxfs_server_image(),
         caretaker,
         IDENTITY_STR,
-        filesystem_contract::dir::ALL,
+        filesystem_contract::directory::ALL,
     )
     .expect("the subtree identity_provisioner created did not open");
     held.release_or_fail("the caretaker over the provisioned subtree");

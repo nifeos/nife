@@ -3,7 +3,7 @@
 //!
 //! It holds a `READ`-only `PageFrame` capability on the roster page (`block_roster_contract`), so no
 //! writable mapping of the listing can be obtained (see [`probe`]), and a block-service endpoint
-//! for one device (`filesystem_contract::blk`). It was handed one disk: no path to type, and
+//! for one device (`filesystem_contract::block`). It was handed one disk: no path to type, and
 //! nothing in the roster turns into a handle. It reads LBA 1, parses the GUID Partition Table,
 //! checks the backup at the far end against it, and reports. Every byte of judging is
 //! `crates/globally_unique_identifier_partition_table`; this file is the I/O.
@@ -24,7 +24,7 @@
 //! - **The logical block size is assumed to be 512.** The block service does not carry the
 //!   device's logical block size on the wire, so a 4Kn disk would be read as though its LBA 1 were
 //!   at byte 512: a wrong answer rather than an error. The fix is a field in
-//!   `filesystem_contract::blk`, not a change here.
+//!   `filesystem_contract::block`, not a change here.
 //! - **It does not write.** Writing the table is `components/src/disk_partitioner.rs`.
 //! - **No hot plug.** The roster is written once at wiring time and never again.
 //!
@@ -43,7 +43,7 @@ use block_roster_contract::{
     Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS, TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
     TRANSPORT_VIRTIO_PCI,
 };
-use filesystem_contract::{blk, req};
+use filesystem_contract::{block, req};
 use globally_unique_identifier_partition_table::entry::NAME_UNITS;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::span::Span;
@@ -75,7 +75,7 @@ const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 const ROSTER_VA: u64 = address_space_layout::service_window(0x5001_0000);
 
 /// The transfer unit of the block service: one filesystem block per request.
-const TRANSFER: u64 = blk::BLOCK_SIZE as u64;
+const TRANSFER: u64 = block::BLOCK_BYTES as u64;
 
 /// The logical block size a GPT counts in. See BUGS: nothing on the wire reports the device's, and
 /// every disk this project has met uses this one.
@@ -83,10 +83,10 @@ const LBA: u64 = 512;
 
 /// The primary table: LBA 0 through LBA 33, which is the protective MBR, the header and the whole
 /// 16 KiB entry array. Five transfer blocks cover it.
-const PRIMARY_BYTES: usize = 5 * blk::BLOCK_SIZE;
+const PRIMARY_BYTES: usize = 5 * block::BLOCK_BYTES;
 /// The backup table: 33 logical blocks ending on the last block of the disk. Where that starts
 /// inside a transfer block depends on the disk's size, so six blocks is the worst case.
-const BACKUP_BYTES: usize = 6 * blk::BLOCK_SIZE;
+const BACKUP_BYTES: usize = 6 * block::BLOCK_BYTES;
 
 /// The buffers live in `.bss`. A user process gets one 4 KiB page of stack (`USER_STACK_VA`), and
 /// these are forty-four kilobytes between them.
@@ -161,8 +161,8 @@ interfaces_note::carry_interfaces!(&[
         version: entropy_contract::VERSION
     },
     interfaces_note::Declared {
-        id: filesystem_contract::blk::INTERFACE_ID,
-        version: filesystem_contract::blk::VERSION
+        id: filesystem_contract::block::INTERFACE_ID,
+        version: filesystem_contract::block::VERSION
     },
     interfaces_note::Declared {
         id: socket_contract::INTERFACE_ID,
@@ -202,7 +202,7 @@ fn holder() -> ! {
     // SAFETY: ROSTER_VA is mapped read-only from the frame in slot 4, on the line above: the
     // program's own `PageFrame::MAP` succeeded first, which is exactly the case
     // `user_mode_runtime::mapped_window::MappedWindow::new`'s own doc names (milestone 139 round 3).
-    let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE as u64) };
+    let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE_BYTES as u64) };
     let word = roster.read::<u64>(0);
     send(REPORT, R_HOLDING, word, 0);
 
@@ -260,7 +260,7 @@ fn survey() -> ! {
     // How big is the disk? This is the question only a *holder* can ask: the roster deliberately
     // carries no capacity, because a size is a fact about the device rather than about the machine
     // having one (`block_roster_contract`).
-    let size = call(BLK, req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size > 0 && (size as u64).is_multiple_of(LBA) {
         flags |= F_SIZE;
         let block_count = size as u64 / LBA;
@@ -306,7 +306,7 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     let tail_buf = backup();
     if backup_blocks > 1
         && let Some(tail) = Span::covering(backup_lba * LBA, backup_blocks * LBA, TRANSFER)
-        && tail.blocks as usize * blk::BLOCK_SIZE <= BACKUP_BYTES
+        && tail.blocks as usize * block::BLOCK_BYTES <= BACKUP_BYTES
         && read_span(tail, &mut tail_buf[..])
     {
         // The backup array first, then the backup header on the very last logical block.
@@ -347,11 +347,11 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
 /// page shared with the block server and is copied out before the next request.
 fn read_span(span: Span, into: &mut [u8]) -> bool {
     for i in 0..span.blocks {
-        let at = i as usize * blk::BLOCK_SIZE;
-        if at + blk::BLOCK_SIZE > into.len() {
+        let at = i as usize * block::BLOCK_BYTES;
+        if at + block::BLOCK_BYTES > into.len() {
             return false;
         }
-        if (call(BLK, req(blk::READ), span.first_block + i).0 as i64) < 0 {
+        if (call(BLK, req(block::READ), span.first_block + i).0 as i64) < 0 {
             return false;
         }
         // SAFETY: BLK_PAGE is a page this program mapped from a frame it holds, of exactly one
@@ -360,7 +360,7 @@ fn read_span(span: Span, into: &mut [u8]) -> bool {
             core::ptr::copy_nonoverlapping(
                 BLK_PAGE as *const u8,
                 into.as_mut_ptr().add(at),
-                blk::BLOCK_SIZE,
+                block::BLOCK_BYTES,
             );
         };
     }
@@ -391,7 +391,7 @@ fn probe() -> ! {
     // `PageFrame::MAP` succeeded). Not safe to write through, and that is the test: as in `holder`'s
     // second read, `MappedWindow`'s bounds check passes (offset 0 is inside the window) and the
     // kernel refuses the write itself, at the same volatile access the hand-written version made.
-    let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE as u64) };
+    let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE_BYTES as u64) };
     roster.write(0u64, 0u64);
     // Unreachable in a working kernel; if we get here the write was allowed and the test's
     // fault-count assertion is what says so.
@@ -402,9 +402,9 @@ fn probe() -> ! {
 /// refuses a page nobody wrote and a count larger than the page can hold.
 fn roster_page() -> &'static [u8] {
     // SAFETY: a page this program mapped read-only from a frame it holds `READ` on, of exactly
-    // `filesystem_contract::PAGE` bytes, and never written by anybody after that (the roster is built once at
+    // `filesystem_contract::PAGE_BYTES` bytes, and never written by anybody after that (the roster is built once at
     // wiring time).
-    unsafe { core::slice::from_raw_parts(ROSTER_VA as *const u8, filesystem_contract::PAGE) }
+    unsafe { core::slice::from_raw_parts(ROSTER_VA as *const u8, filesystem_contract::PAGE_BYTES) }
 }
 
 /// The primary table buffer.

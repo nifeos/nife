@@ -8,7 +8,7 @@
 //! (DECISIONS §19 (architectural parity is a tenet)). See
 //! notes/confinement-claims/the-eighth-pass-tests.md.
 
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use filesystem_fixture::{dirscape as esc, navscape as nb, tree};
 
 use super::dir_capability_tests::{assert_verdict, attack_a_subtree};
@@ -29,7 +29,7 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(read_only) = attack_a_subtree(dir::DESCEND | dir::READ | dir::ENUMERATE, 1) else {
+    let Some(read_only) = attack_a_subtree(directory::DESCEND | directory::READ | directory::ENUMERATE, 1) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -38,7 +38,7 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
         "read-only",
     );
 
-    let no_enumerate = attack_a_subtree(dir::DESCEND | dir::READ, 1)
+    let no_enumerate = attack_a_subtree(directory::DESCEND | directory::READ, 1)
         .expect("the service was wired for the read-only run");
     assert_verdict(
         no_enumerate,
@@ -51,7 +51,7 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
         "a grant with no ENUMERATE right still listed a directory",
     );
 
-    let no_read = attack_a_subtree(dir::DESCEND | dir::ENUMERATE, 1)
+    let no_read = attack_a_subtree(directory::DESCEND | directory::ENUMERATE, 1)
         .expect("the service was wired for the read-only run");
     assert_verdict(no_read, esc::ENUMERATED | esc::DESCENDED, "read-less");
     assert_eq!(

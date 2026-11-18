@@ -485,11 +485,11 @@ fn mkfs_phase(
         "mkfs failed at step {blocks} with errno {first}",
     );
     let want_blocks = (blank::DATA.1 - blank::DATA.0 + 1) * blank::LBA
-        / filesystem_contract::blk::BLOCK_SIZE as u64;
+        / filesystem_contract::block::BLOCK_BYTES as u64;
     assert_eq!(blocks, want_blocks, "the filesystem covers the partition");
     assert_eq!(
         first,
-        blank::DATA.0 * blank::LBA / filesystem_contract::blk::BLOCK_SIZE as u64,
+        blank::DATA.0 * blank::LBA / filesystem_contract::block::BLOCK_BYTES as u64,
         "and starts at the partition's first block",
     );
 

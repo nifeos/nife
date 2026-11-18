@@ -68,7 +68,7 @@ pub struct NameCopy {
 
 /// The longest name a [`NameCopy`] holds: one block, the length `Server::handle` clamps every
 /// name to, so a copy from the window never truncates.
-const NAME_MAXIMUM: usize = filesystem_contract::blk::BLOCK_SIZE;
+const NAME_MAXIMUM: usize = filesystem_contract::block::BLOCK_BYTES;
 
 impl NameCopy {
     /// Copy `src` into a new value and validate UTF-8 on the copy. `EINVAL` for invalid UTF-8 or a
@@ -121,7 +121,7 @@ impl NameCopy {
 pub(crate) fn check_component(name: &str) -> Result<()> {
     // What a name is anywhere is `subtree_scope`'s (ruling D); what RedoxFS adds is this server's.
     if !subtree_scope::is_name(name.as_bytes())
-        || name == xattr::STORE_DIR
+        || name == extended_attribute::STORE_DIRECTORY
         || name.contains('\\')
         || name.contains(':')
     {

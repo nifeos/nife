@@ -53,7 +53,7 @@ const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00e5_0000);
 // SAFETY: the wiring maps one page read/write at FS_VA before this process runs, shared with the
 // file service and with nothing else.
 const FS_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE as u64) };
+    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE_BYTES as u64) };
 
 /// **Success**: the subtree exists (freshly made or already there) and the credential was stored.
 pub const RPT_OK: u64 = 1;
@@ -130,7 +130,7 @@ fn start(id_len: u64, secret_len: u64, _a2: u64) -> ! {
 }
 
 /// `MKDIR` the identity's home subtree under [`FS_EP`]'s root, asking for full rights on it
-/// ([`filesystem_contract::dir::ALL`]), the same rights `login.rs` requests when it descends into the fixed
+/// ([`filesystem_contract::directory::ALL`]), the same rights `login.rs` requests when it descends into the fixed
 /// fixture subtree today. `None` on success (the handle this process minted is closed immediately;
 /// it has no further use for it), `Some(errno)` otherwise.
 fn mkdir_home(identity: &[u8]) -> Option<i32> {
@@ -141,7 +141,7 @@ fn mkdir_home(identity: &[u8]) -> Option<i32> {
     let (r0, _) = call(
         FS_EP,
         fs::req(fs::MKDIR, fs::ROOT, identity.len() as u64),
-        filesystem_contract::dir::ALL,
+        filesystem_contract::directory::ALL,
     );
     match filesystem_contract::reply_errno(r0 as i64) {
         Some(errno) => Some(errno),

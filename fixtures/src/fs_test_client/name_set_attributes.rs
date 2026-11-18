@@ -8,7 +8,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{dir, fs, xattr};
+use filesystem_contract::{directory, fs, extended_attribute};
 use filesystem_fixture as fixture;
 use user_mode_runtime::{call, exit, send};
 
@@ -52,7 +52,7 @@ pub(crate) fn set_attrs() -> ! {
         let (s, _) = call(
             FILE,
             fs::req(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
-            xattr::spec(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
+            extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
         );
         if (s as i64) >= 0 {
             put_page(fixture::attrs::NAME);
@@ -61,10 +61,10 @@ pub(crate) fn set_attrs() -> ! {
                 fs::req(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
                 0,
             );
-            get_page(xattr::reply_value_len(g as i64), &mut buf);
+            get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
             if (g as i64) >= 0
-                && xattr::reply_kind(g as i64) == fixture::attrs::KIND
-                && xattr::reply_value_len(g as i64) == fixture::attrs::VALUE.len()
+                && extended_attribute::reply_kind(g as i64) == fixture::attrs::KIND
+                && extended_attribute::reply_value_len(g as i64) == fixture::attrs::VALUE.len()
                 && buf[..fixture::attrs::VALUE.len()] == *fixture::attrs::VALUE
             {
                 v |= esc::SET_AN_ATTR;
@@ -92,7 +92,7 @@ pub(crate) fn set_attrs() -> ! {
     // The naming question, by both routes: a file the set does not carry, and a directory it does
     // not carry. Both are really in the granted directory and the caretaker one hop up could open
     // either on any request it liked, so each refusal is a fact about the set.
-    if dir_open(fs::ROOT, tree::DEEPER) >= 0 || dir_descend(fs::ROOT, tree::DEEPER, dir::READ) >= 0
+    if dir_open(fs::ROOT, tree::DEEPER) >= 0 || dir_descend(fs::ROOT, tree::DEEPER, directory::READ) >= 0
     {
         v |= esc::REACHED_AN_UNMATCHED_NAME;
     }

@@ -1,4 +1,4 @@
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use filesystem_fixture::{navscape as nb, tree};
 
 use super::*;
@@ -52,7 +52,7 @@ pub(super) const ALWAYS: u64 = nb::PWD_IS_ROOT
 /// Wire a `fs_subtree_caretaker` holding a capability to `root` and run the shell's navigation
 /// script inside it. `run` keeps the names it creates distinct across runs sharing one image.
 ///
-/// The run index and the rights ride in one word packed by `filesystem_contract::grant::spec`, the same
+/// The run index and the rights ride in one word packed by `filesystem_contract::grant::specification`, the same
 /// packing the caretaker's own grant uses: the shell is **told** what its capability carries
 /// because nothing on this wire reports what a handle holds, and `OPENDIR` refuses a request
 /// wider than the parent rather than narrowing it (notes/shell-navigation.md).
@@ -67,9 +67,9 @@ pub(super) fn navigate(root: &'static str, run: u64) -> Option<u64> {
         program("swish").expect("no swish program in the initial ramdisk"),
         fs_service::DirGrant {
             name: root,
-            rights: dir::ALL,
+            rights: directory::ALL,
             role: ROLE_NAVIGATE,
-            arg: filesystem_contract::grant::spec(run as usize, dir::ALL),
+            arg: filesystem_contract::grant::specification(run as usize, directory::ALL),
             arg2: 0,
             // Measured, not guessed: see `spawn_fs_client`. A shell carries a path stack, a
             // parsed path and a listing buffer by value, and one page is 192 bytes short.

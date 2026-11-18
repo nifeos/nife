@@ -11,7 +11,7 @@ use super::*;
 /// round.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct Grant {
-    /// The one name the caretaker will answer for. Must fit [`filesystem_contract::grant::WORDS_NAME`].
+    /// The one name the caretaker will answer for. Must fit [`filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES`].
     pub name: &'static str,
     /// `grant::READ`, or `READ | WRITE`.
     pub rights: u64,
@@ -54,7 +54,7 @@ pub fn start_granted(
 
     let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
         .expect("a granted name rides in two argument words; this one does not fit");
-    let spec = filesystem_contract::grant::spec(name.len(), rights);
+    let spec = filesystem_contract::grant::specification(name.len(), rights);
 
     // The grant (the name and the direction) rides in the caretaker's START arguments, so a
     // per-file grant costs no frame.

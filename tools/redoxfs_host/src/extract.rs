@@ -22,7 +22,7 @@ pub struct ExtractStats {
     pub attrs_skipped: u64,
     /// Attributes whose bytes were reattached but whose **type code** could not be, because no host
     /// filesystem has a per-attribute type word. The codes stay readable in the extracted
-    /// `.extended-attributes` blobs. Only counted for a code that is not [`xattr::RAW`], since dropping a
+    /// `.extended-attributes` blobs. Only counted for a code that is not [`extended_attribute::RAW`], since dropping a
     /// zero loses nothing.
     pub kinds_dropped: u64,
 }
@@ -102,7 +102,7 @@ pub(crate) fn reattach<D: Disk>(
         match host_xattr::set(dest, &attr.name, &attr.value) {
             Ok(()) => {
                 stats.attrs += 1;
-                if attr.kind != xattr::RAW {
+                if attr.kind != extended_attribute::RAW {
                     // Named per attribute rather than summarised, because the code is the one part
                     // of this record the host cannot carry and a reader who wants it needs to know
                     // which file to go back to `.extended-attributes` for.

@@ -17,7 +17,7 @@ use driver_process_contract::non_volatile_memory_express::{
 
 /// One transfer unit: a filesystem block, the same unit the blk-IPC protocol moves, so the EL0
 /// block server serves the FS server without a translation layer.
-pub const BLOCK_SIZE: usize = filesystem_contract::blk::BLOCK_SIZE;
+pub const BLOCK_SIZE: usize = filesystem_contract::block::BLOCK_BYTES;
 
 /// The EL0 server's client windows (milestone 834 (ioping on nife and Linux)), named here for the
 /// NVMe system tests.

@@ -102,11 +102,11 @@ pub const THROUGHPUT_NAME: &str = "throughput";
 /// not a constant written twice.
 pub mod throughput {
     /// **The transfer unit: the whole file channel, the most one `filesystem_contract` request can
-    /// carry.** It is [`filesystem_contract::fs::TRANSFER_MAXIMUM`], so this phase measures the
+    /// carry.** It is [`filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES`], so this phase measures the
     /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
     /// this architecture moves one request's worth, so a comparison against a system whose client
     /// passes a differently sized buffer compares two different things.
-    pub const UNIT: usize = filesystem_contract::fs::TRANSFER_MAXIMUM;
+    pub const UNIT: usize = filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES;
 
     /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
     /// the 16 MiB fixture image rather than chosen for statistics: the write phases fit beside
@@ -284,7 +284,7 @@ pub mod tree {
     /// capability and that the capability it mints is not wider than the one that made it.
     pub const MADE_DIR: &str = "dir-by-atk";
     /// What the attacker renames [`MADE`] to, if its capability carries
-    /// [`filesystem_contract::dir::REMOVE`]. The post-run host check looks for a name with this prefix
+    /// [`filesystem_contract::directory::REMOVE`]. The post-run host check looks for a name with this prefix
     /// in [`SUB`] **and** a [`MADE`] one that was not renamed, which is `REMOVE` being enforced
     /// witnessed from outside the guest: one capability moved a name and another could not.
     pub const MOVED: &str = "moved-by-atk";
@@ -412,7 +412,7 @@ pub mod tree {
     ///
     /// [`GLOB_PATTERN`] matches exactly [`GLOB_ONE`] and [`GLOB_TWO`]. [`GLOB_MISS`] is a file a
     /// set-attenuated capability must not name; [`GLOB_DIR`] is a directory, so the type bit
-    /// [`filesystem_contract::nameset::IS_DIR`] carries has something to be wrong about.
+    /// [`filesystem_contract::nameset::IS_DIRECTORY`] carries has something to be wrong about.
     pub const GLOBSET: &str = "globset";
     /// The pattern the shell expands, and the whole of what `rm *.txt` designates here. Pinned
     /// against the matcher by a host test, so the set the kernel test states literally is
@@ -520,7 +520,7 @@ pub mod walk {
     /// The width region: one directory holding [`WIDE_COUNT`] files.
     pub const WIDE: &str = "wide";
     /// Files in [`WIDE`]. 128 four-byte names are 768 bytes of `READDIR` records
-    /// ([`filesystem_contract::dirent::record_len`]), so the whole listing is one page and the slope is per
+    /// ([`filesystem_contract::directory_entry::record_len`]), so the whole listing is one page and the slope is per
     /// entry rather than per page. Pricing a page boundary would want more than 680 names.
     pub const WIDE_COUNT: usize = 128;
     /// The control: [`WIDE`]'s shape with one file, so the difference is entries alone.
@@ -528,7 +528,7 @@ pub mod walk {
     /// The byte region.
     pub const SIZES: &str = "sizes";
     /// Its files and their sizes. 4 KiB is one page; 256 KiB is sixteen of the file channel's
-    /// largest requests ([`filesystem_contract::fs::TRANSFER_MAXIMUM`]).
+    /// largest requests ([`filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES`]).
     pub const SIZE_FILES: [(&str, usize); 3] =
         [("s4k", 4096), ("s64k", 65_536), ("s256k", 262_144)];
     /// What every file in [`CHAIN`], [`WIDE`] and [`NARROW`] holds. Sixteen bytes, so a small
@@ -695,21 +695,21 @@ pub mod dirscape {
     /// **It asked for a right its capability did not carry, and got it.** Never allowed, and
     /// this is the bit that answers "can a child's rights exceed its parent's".
     pub const WIDENED: u64 = 1 << 3;
-    /// It enumerated the granted directory. Expected only with [`filesystem_contract::dir::ENUMERATE`].
+    /// It enumerated the granted directory. Expected only with [`filesystem_contract::directory::ENUMERATE`].
     pub const ENUMERATED: u64 = 1 << 4;
     /// It descended one level inside the grant. Expected only with
-    /// [`filesystem_contract::dir::DESCEND`].
+    /// [`filesystem_contract::directory::DESCEND`].
     pub const DESCENDED: u64 = 1 << 5;
-    /// It created a name inside the grant. Expected only with [`filesystem_contract::dir::CREATE`].
+    /// It created a name inside the grant. Expected only with [`filesystem_contract::directory::CREATE`].
     pub const CREATED: u64 = 1 << 6;
     /// It made a **directory** inside the grant and got a capability to it. Expected only with
-    /// [`filesystem_contract::dir::CREATE`] and [`filesystem_contract::dir::DESCEND`] together.
+    /// [`filesystem_contract::directory::CREATE`] and [`filesystem_contract::directory::DESCEND`] together.
     pub const MADE_A_DIR: u64 = 1 << 12;
     /// Its write to a file inside the grant was accepted **and read back**. Expected only with
-    /// [`filesystem_contract::dir::WRITE`].
+    /// [`filesystem_contract::directory::WRITE`].
     pub const WROTE: u64 = 1 << 7;
     /// **It renamed a name inside its grant.** Expected only with
-    /// [`filesystem_contract::dir::REMOVE`] and [`filesystem_contract::dir::CREATE`] together, which is what
+    /// [`filesystem_contract::directory::REMOVE`] and [`filesystem_contract::directory::CREATE`] together, which is what
     /// makes this the bit that gives the `REMOVE` rung something to fail.
     pub const RENAMED: u64 = 1 << 8;
     /// An enumeration it was allowed to make returned a name that is not in the granted
@@ -726,13 +726,13 @@ pub mod dirscape {
     /// that reaches nothing is trivially unescapable.
     pub const GRANTED_ACCESS_FAILED: u64 = 1 << 11;
     /// **It listed the extended attributes of the file inside its grant**.
-    /// Expected wherever [`filesystem_contract::dir::READ`] is held, which is every configuration that
+    /// Expected wherever [`filesystem_contract::directory::READ`] is held, which is every configuration that
     /// can open the file at all: an attribute is part of what a file *is*, so a capability that
     /// may read the file may read what is attached to it. Before attributes were forwarded the
     /// caretaker answered `EOPNOTSUPP` and this bit was never set.
     pub const READ_ATTRS: u64 = 1 << 14;
     /// **It set an extended attribute on that file and read it back with its type code.**
-    /// Expected only with [`filesystem_contract::dir::WRITE`], which is [`WROTE`]'s rule applied to the
+    /// Expected only with [`filesystem_contract::directory::WRITE`], which is [`WROTE`]'s rule applied to the
     /// third way of changing a file.
     ///
     /// The interesting part is *who* enforces it: `fs_subtree_caretaker` performs no check, so
@@ -746,7 +746,7 @@ pub mod dirscape {
     /// Never allowed.
     ///
     /// A set capability's whole property is that `rm *.txt` cannot reach `notes.md`. `rm` asks
-    /// that question with [`filesystem_contract::dir::REMOVE`] and nothing else; this asks it with
+    /// that question with [`filesystem_contract::directory::REMOVE`] and nothing else; this asks it with
     /// `READ`, because the set proxy serves four verbs that read and it
     /// would be a poor trade to close an attribute gap by opening a naming one.
     pub const REACHED_AN_UNMATCHED_NAME: u64 = 1 << 16;
@@ -935,7 +935,7 @@ pub mod navscape {
     /// **A bare second `touch`, real command line and all, observed a strictly later mtime**.
     /// [`TOUCH_CREATED`] and [`TOUCH_PRESERVED`]
     /// prove the *bytes*; this is the first bit that reads a timestamp back through the wire
-    /// (`GETMTIME`) at all, so it is also the first proof that the getter and the create-time
+    /// (`GET_MODIFICATION_TIME`) at all, so it is also the first proof that the getter and the create-time
     /// stamp agree on what "before" means.
     pub const TOUCH_MTIME_ADVANCED: u64 = 1 << 25;
     /// **`touch -t 2030-01-01T00:00:00Z`, typed as a real command line, produced a mtime that
@@ -949,14 +949,14 @@ pub mod navscape {
     /// now**, through the real wire and the real `fs_subtree_caretaker`, not just the
     /// filesystem server's in-process host tests. The rule that plain `WRITE` covers
     /// "now", made a measurement one layer further out: a bug in `verb::TABLE`'s row for
-    /// `SETMTIME` (the wrong `needs_all`, or an off-by-one index after `SYNC`'s row was
+    /// `SET_MODIFICATION_TIME` (the wrong `needs_all`, or an off-by-one index after `SYNC`'s row was
     /// inserted ahead of it) would show up here and would not show up in a test that calls
     /// `Server::set_mtime_now` directly.
     pub const TOUCH_NOW_NEEDS_ONLY_WRITE: u64 = 1 << 27;
     /// **The same handle's `touch -t` attempt was refused.** The pair with
     /// [`TOUCH_NOW_NEEDS_ONLY_WRITE`] is what makes "no, they are not the same
     /// right" non-vacuous through the real wire: both probes run against **one** handle, so a
-    /// caretaker or a table row that let `SETMTIME_AT` through on `WRITE` alone would set this
+    /// caretaker or a table row that let `SET_MODIFICATION_TIME_AT` through on `WRITE` alone would set this
     /// bit's sibling and clear this one, and a caretaker that refused everything would clear
     /// both.
     pub const TOUCH_AT_REFUSED_WITHOUT_SETTIME: u64 = 1 << 28;
@@ -1035,8 +1035,8 @@ pub mod attrs {
     /// on-device half of "deletion is in the same transaction as the file's": a leaked blob is
     /// not wasted space, it is somebody else's metadata on a file that never asked for it.
     pub const GONE_AFTER_UNLINK: u64 = 1 << 4;
-    /// A value past [`filesystem_contract::xattr::MAXIMUM_VALUE`] was refused with
-    /// [`filesystem_contract::xattr::E2BIG`], loudly, rather than stored short (a filesystem declares what it offers and must be truthful).
+    /// A value past [`filesystem_contract::extended_attribute::MAXIMUM_VALUE_BYTES`] was refused with
+    /// [`filesystem_contract::extended_attribute::E2BIG`], loudly, rather than stored short (a filesystem declares what it offers and must be truthful).
     pub const OVERSIZE_REFUSED: u64 = 1 << 5;
     /// The store's directory could not be opened, created, or descended into. A client that
     /// could name it could read any file's attributes as ordinary bytes.
@@ -1063,7 +1063,7 @@ pub mod attrs {
     /// Its value: opaque bytes, which is exactly what `streams_xattr` stores.
     pub const VALUE: &[u8] = b"CRK57: an opaque byte string\n";
     /// Its type code, `'CSTR'` in the `BeOS` filesystem's spelling. Non-zero on purpose: a layer that silently
-    /// wrote [`filesystem_contract::xattr::RAW`] would pass a test whose fixture used the default.
+    /// wrote [`filesystem_contract::extended_attribute::RAW`] would pass a test whose fixture used the default.
     pub const KIND: u32 = 0x4353_5452;
 }
 

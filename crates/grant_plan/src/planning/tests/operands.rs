@@ -470,13 +470,13 @@ fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(expand::NAME_BYTES, filesystem_contract::nameset::NAME_BYTES);
     assert_eq!(
         expand::MAXIMUM_NAME,
-        filesystem_contract::grant::MAXIMUM_NAME
+        filesystem_contract::grant::MAXIMUM_NAME_BYTES
     );
     // And the widest set this crate can plan must fit the buffer that contract sizes for it: every
     // name it may hold, sharing every byte it may hold.
     let wide = [b'w'; expand::NAME_BYTES / MAXIMUM_NAMES];
     let widest: [(&[u8], bool); MAXIMUM_NAMES] = [(&wide[..], false); MAXIMUM_NAMES];
-    let mut buf = [0u8; filesystem_contract::nameset::BYTES];
+    let mut buf = [0u8; filesystem_contract::nameset::MAXIMUM_BYTES];
     assert!(filesystem_contract::nameset::encode(&widest, &mut buf).is_some());
     let mut set = expand::NameSet::empty();
     for i in 0..MAXIMUM_NAMES {

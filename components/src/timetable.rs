@@ -498,7 +498,7 @@ fn load_current(p: &Installed) -> Option<(static_elf::Elf<'static>, grant_contra
 /// mapped at `timetable::contract::STORE_PAGE_VA`. Every call is a blocking `CALL`, so the page is
 /// this process's between them.
 mod store {
-    use filesystem_contract::{PAGE, dir, fs};
+    use filesystem_contract::{PAGE_BYTES, directory, fs};
     use installed_programs::{CURRENT, generation_name, lookup, parse_current};
     use timetable::contract;
     use user_mode_runtime::call;
@@ -590,7 +590,7 @@ mod store {
         // `packages/<name>/<version>/<program>`.
         let entry = lookup(table, name).ok()??;
         let (package, version) = (entry.package, entry.version);
-        let walk = dir::READ | dir::DESCEND;
+        let walk = directory::READ | directory::DESCEND;
         let d1 = named(PACKAGES, fs::OPENDIR, fs::ROOT, package.as_bytes(), walk);
         let d2 = if d1 >= 0 {
             named(PACKAGES, fs::OPENDIR, d1 as u64, version.as_bytes(), walk)

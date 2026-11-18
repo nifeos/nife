@@ -15,7 +15,7 @@ fn a_granted_name_survives_the_two_argument_words() {
     ] {
         assert!(grant::fits_words(name), "{name:?} should fit two words");
         let (lo, hi) = grant::pack_name(name).expect("it fits two words");
-        let mut buf = [0u8; grant::WORDS_NAME];
+        let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
         let n = grant::unpack_name(lo, hi, name.len(), &mut buf);
         assert_eq!(&buf[..n], name, "{name:?} did not survive the round trip");
     }
@@ -40,20 +40,20 @@ fn pack_name_refuses_what_two_words_cannot_hold() {
 /// like `least_authority_demo` is grantable, and only the packer refuses it.
 #[test]
 fn a_granted_name_may_be_longer_than_two_words() {
-    let long = [b'n'; grant::MAXIMUM_NAME];
+    let long = [b'n'; grant::MAXIMUM_NAME_BYTES];
     assert!(grant::fits(b"least_authority_demo"));
     assert!(grant::fits(&long), "the longest grantable name");
     assert!(
-        !grant::fits(&[b'n'; grant::MAXIMUM_NAME + 1]),
+        !grant::fits(&[b'n'; grant::MAXIMUM_NAME_BYTES + 1]),
         "one byte past it"
     );
     assert!(!grant::fits(b""));
     assert!(grant::pack_name(b"least_authority_demo").is_none());
-    const { assert!(grant::WORDS_NAME < grant::MAXIMUM_NAME) };
+    const { assert!(grant::MAXIMUM_WORDS_NAME_BYTES < grant::MAXIMUM_NAME_BYTES) };
     // The spec word's length field is one byte, so the longest name must still be sayable in it.
     assert_eq!(
-        grant::spec_len(grant::spec(grant::MAXIMUM_NAME, grant::READ)),
-        grant::MAXIMUM_NAME
+        grant::specification_len(grant::specification(grant::MAXIMUM_NAME_BYTES, grant::READ)),
+        grant::MAXIMUM_NAME_BYTES
     );
 }
 
@@ -61,14 +61,14 @@ fn a_granted_name_may_be_longer_than_two_words() {
 fn a_grant_spec_carries_its_length_and_its_direction_apart() {
     // A read grant and a write grant of the same name differ only here, so the two fields must
     // not bleed: a 16-byte name must not look like a write bit, and write must not lengthen it.
-    let ro = grant::spec(16, grant::READ);
-    let rw = grant::spec(16, grant::READ | grant::WRITE);
-    assert_eq!(grant::spec_len(ro), 16);
-    assert_eq!(grant::spec_len(rw), 16);
+    let ro = grant::specification(16, grant::READ);
+    let rw = grant::specification(16, grant::READ | grant::WRITE);
+    assert_eq!(grant::specification_len(ro), 16);
+    assert_eq!(grant::specification_len(rw), 16);
     assert!(!grant::is_writable(ro));
     assert!(grant::is_writable(rw));
     // And a zero-rights spec grants nothing, rather than defaulting to something.
-    assert!(!grant::is_writable(grant::spec(4, 0)));
+    assert!(!grant::is_writable(grant::specification(4, 0)));
 }
 
 // The tests from here down each pin something a mutation run over this crate showed nothing
@@ -80,10 +80,10 @@ fn a_grant_spec_carries_its_length_and_its_direction_apart() {
 #[test]
 fn grant_words_pack_exactly() {
     assert_eq!([grant::READ, grant::WRITE], [1, 2]);
-    let w = grant::spec(5, grant::WRITE);
+    let w = grant::specification(5, grant::WRITE);
     assert_eq!(w, 5 | (2 << 8));
-    assert_eq!(grant::spec_len(w), 5);
-    assert_eq!(grant::spec_rights(w), grant::WRITE);
+    assert_eq!(grant::specification_len(w), 5);
+    assert_eq!(grant::specification_rights(w), grant::WRITE);
 
     let (lo, hi) = grant::pack_name(b"abcdefghij").unwrap();
     assert_eq!(lo, u64::from_le_bytes(*b"abcdefgh"));
@@ -100,8 +100,8 @@ fn grant_words_pack_exactly() {
 fn a_root_grant_is_an_empty_name_carrying_its_rights() {
     assert!(!grant::fits(b""));
     assert!(grant::pack_name(b"").is_none());
-    let spec = grant::spec(0, crate::dir::REMOVE);
-    let mut buf = [0u8; grant::WORDS_NAME];
-    assert_eq!(grant::unpack_name(0, 0, grant::spec_len(spec), &mut buf), 0);
-    assert_eq!(grant::spec_rights(spec), crate::dir::REMOVE);
+    let specification = grant::specification(0, crate::directory::REMOVE);
+    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+    assert_eq!(grant::unpack_name(0, 0, grant::specification_len(specification), &mut buf), 0);
+    assert_eq!(grant::specification_rights(specification), crate::directory::REMOVE);
 }

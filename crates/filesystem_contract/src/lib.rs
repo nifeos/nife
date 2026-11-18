@@ -20,12 +20,14 @@
 #[doc = include_str!("../README.md")]
 struct ReadmeExample;
 
-/// One page, in bytes, and one RedoxFS block (`redoxfs::BLOCK_SIZE`), so a block move is a page
+/// One page, in bytes, and one RedoxFS block (`redoxfs::BLOCK_BYTES`), so a block move is a page
 /// move and one frame of the direct map holds exactly one block. Both channels are built from it:
-/// a `blk` request moves up to [`blk::TRANSFER_BLOCKS`] of these and a file request up to
-/// [`fs::TRANSFER_PAGES`]. A file read or write larger than [`fs::TRANSFER_MAXIMUM`], or a `Disk`
-/// call spanning more than [`blk::TRANSFER_MAXIMUM`], is chunked by the caller.
-pub const PAGE: usize = 4096;
+/// a `blk` request moves up to [`block::TRANSFER_BLOCKS`] of these and a file request up to
+/// [`fs::TRANSFER_PAGES`]. A file read or write larger than [`fs::MAXIMUM_TRANSFER_BYTES`], or a `Disk`
+/// call spanning more than [`block::MAXIMUM_TRANSFER_BYTES`], is chunked by the caller.
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const PAGE_BYTES: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
 /// the other message contracts of the nife kernel use, so the contracts read alike.
@@ -51,10 +53,10 @@ pub use reply::{EPROTO, MAXIMUM_ERRNO, reply_err, reply_errno};
 
 /// **The block-IPC protocol** (FS server to block server): read blocks, write blocks, ask the
 /// size, flush, shaped like the RedoxFS `Disk` trait the FS server implements over it. The unit is
-/// one filesystem block ([`PAGE`] bytes), and [`blk::READ`] and [`blk::WRITE`] carry up to
-/// [`blk::TRANSFER_BLOCKS`] of them. The block server moves a request as one descriptor over the
+/// one filesystem block ([`PAGE_BYTES`] bytes), and [`block::READ`] and [`block::WRITE`] carry up to
+/// [`block::TRANSFER_BLOCKS`] of them. The block server moves a request as one descriptor over the
 /// 512-byte virtio sectors the device transfers.
-pub mod blk;
+pub mod block;
 
 /// **The file-service protocol** (client to FS server). The endpoint a client holds is the
 /// directory capability, bound in the server to one directory node, and every name is resolved
@@ -63,12 +65,12 @@ pub mod blk;
 /// meaningless.
 pub mod fs;
 
-/// **What a directory capability carries**: the rights ladder ([`dir::Rights`]) and its one
-/// constructor for a non-root set, [`dir::Rights::attenuate`], a bitwise AND with the parent, so no
+/// **What a directory capability carries**: the rights ladder ([`directory::Rights`]) and its one
+/// constructor for a non-root set, [`directory::Rights::attenuate`], a bitwise AND with the parent, so no
 /// child carries more than its parent. A missing right answers one of three errnos, chosen for
-/// what the holder learns: a naming right ([`dir::READ`], [`dir::WRITE`], [`dir::DESCEND`])
-/// `ENOENT`, a mutating right [`dir::EROFS`], and [`dir::ENUMERATE`] [`dir::EPERM`].
-pub mod dir;
+/// what the holder learns: a naming right ([`directory::READ`], [`directory::WRITE`], [`directory::DESCEND`])
+/// `ENOENT`, a mutating right [`directory::EROFS`], and [`directory::ENUMERATE`] [`directory::EPERM`].
+pub mod directory;
 
 /// **The verb table**: each [`fs`] request word's argument shape and the rights the server will
 /// demand, declared once, so the three caretakers dispatch off it instead of a `match` each. A verb
@@ -88,12 +90,12 @@ pub mod verb;
 /// length byte because RedoxFS's own limit on an entry is well under 255. The reply's `r0` is how
 /// many bytes the server filled. A record is never split across replies: the server stops before one
 /// that would not fit and the cursor resumes there.
-pub mod dirent;
+pub mod directory_entry;
 
 /// **How [`fs::STATFS`] packs the volume's numbers into the shared page.**
 ///
 /// Three little-endian `u64`s, in order: the allocation unit in bytes, the volume's size in those
-/// units, and how many are free. The unit is a field, not [`PAGE`]. The reply's length is the
+/// units, and how many are free. The unit is a field, not [`PAGE_BYTES`]. The reply's length is the
 /// version: a client reads the fields it knows when `r0 >= LEN` ([`statfs::decode`]), so there is
 /// no version word.
 ///
@@ -118,7 +120,7 @@ pub mod grant;
 ///
 /// A set does not fit in `START`'s argument words, so it rides in a frame the wiring maps read-only
 /// into the caretaker, and [`nameset::MAXIMUM_NAMES`] and [`nameset::NAME_BYTES`] are the
-/// capability's ceilings. A record is a length byte, a flags byte ([`nameset::IS_DIR`]), then the
+/// capability's ceilings. A record is a length byte, a flags byte ([`nameset::IS_DIRECTORY`]), then the
 /// name; a zero length ends the set, so a name may not be empty. The caretaker answers `READDIR`
 /// from the set, so the type is what the directory said when the grant was planned.
 pub mod nameset;
@@ -126,13 +128,13 @@ pub mod nameset;
 /// **Extended attributes: the limits, the encodings, and the store the FS server keeps them in**,
 /// a layer above RedoxFS rather than a change to its format. Every path to the disk goes through
 /// [`fs`], so the layer is as authoritative as the filesystem. There is no attribute right:
-/// [`fs::GETXATTR`] and [`fs::LISTXATTR`] need [`dir::READ`], [`fs::SETXATTR`] and
-/// [`fs::REMOVEXATTR`] need [`dir::WRITE`]. Each attribute carries a `u32` kind the layer stores
-/// and never interprets ([`xattr::RAW`] for a POSIX client).
+/// [`fs::GETXATTR`] and [`fs::LISTXATTR`] need [`directory::READ`], [`fs::SETXATTR`] and
+/// [`fs::REMOVEXATTR`] need [`directory::WRITE`]. Each attribute carries a `u32` kind the layer stores
+/// and never interprets ([`extended_attribute::RAW`] for a POSIX client).
 ///
 /// **BUGS.** The kind is 31 bits, because it rides in the sign-protected half of a reply word
-/// ([`xattr::reply`]); [`fs::SETXATTR`] answers `EINVAL` for a kind with its top bit set.
-pub mod xattr;
+/// ([`extended_attribute::reply`]); [`fs::SETXATTR`] answers `EINVAL` for a kind with its top bit set.
+pub mod extended_attribute;
 
 /// The FS server's readiness sentinel: sent once, after it has opened the RedoxFS image over blk
 /// IPC and before it serves clients. A test waiting for it tells a hang in `open` (the blk path)

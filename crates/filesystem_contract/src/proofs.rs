@@ -18,7 +18,7 @@ fn a_file_request_round_trips() {
     let length: u64 = kani::any();
     kani::assume(opcode <= 0xff);
     kani::assume(handle <= fs::MAXIMUM_HANDLE);
-    kani::assume(length <= fs::MAXIMUM_LENGTH_OR_OFFSET);
+    kani::assume(length <= fs::MAXIMUM_LENGTH_BYTES);
     let w0 = fs::req(opcode, handle, length);
     assert!(operation(w0) == opcode);
     assert!(fs::req_handle(w0) == handle);
@@ -35,11 +35,11 @@ fn a_file_request_round_trips() {
 fn an_attribute_reply_is_never_an_error() {
     let kind: u32 = kani::any();
     let value_len: u32 = kani::any();
-    kani::assume(kind <= xattr::MAXIMUM_KIND);
-    let r0 = xattr::reply(kind, value_len as usize);
+    kani::assume(kind <= extended_attribute::MAXIMUM_KIND);
+    let r0 = extended_attribute::reply(kind, value_len as usize);
     assert!(r0 >= 0);
-    assert!(xattr::reply_kind(r0) == kind);
-    assert!(xattr::reply_value_len(r0) == value_len as usize);
+    assert!(extended_attribute::reply_kind(r0) == kind);
+    assert!(extended_attribute::reply_value_len(r0) == value_len as usize);
 }
 
 /// **A block request round-trips its count for every count in `1..=TRANSFER_BLOCKS`.**
@@ -49,10 +49,10 @@ fn a_block_request_round_trips() {
     let opcode: u64 = kani::any();
     let blocks: usize = kani::any();
     kani::assume(opcode <= 0xff);
-    kani::assume((1..=blk::TRANSFER_BLOCKS).contains(&blocks));
-    let w0 = blk::req(opcode, blocks);
+    kani::assume((1..=block::TRANSFER_BLOCKS).contains(&blocks));
+    let w0 = block::req(opcode, blocks);
     assert!(operation(w0) == opcode);
-    assert!(blk::req_blocks(w0) == blocks);
+    assert!(block::req_blocks(w0) == blocks);
 }
 
 /// **A packed name comes back whole at every length the two words hold.** Eight bytes are all the
@@ -61,12 +61,12 @@ fn a_block_request_round_trips() {
 #[kani::proof]
 #[kani::unwind(18)]
 fn a_packed_name_comes_back_whole() {
-    let bytes: [u8; grant::WORDS_NAME] = kani::any();
+    let bytes: [u8; grant::MAXIMUM_WORDS_NAME_BYTES] = kani::any();
     let length: usize = kani::any();
-    kani::assume((1..=grant::WORDS_NAME).contains(&length));
+    kani::assume((1..=grant::MAXIMUM_WORDS_NAME_BYTES).contains(&length));
     let name = &bytes[..length];
     let (lo, hi) = grant::pack_name(name).unwrap();
-    let mut out = [0u8; grant::WORDS_NAME];
+    let mut out = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
     let n = grant::unpack_name(lo, hi, length, &mut out);
     assert!(n == length);
     assert!(&out[..n] == name);
@@ -89,15 +89,15 @@ fn the_verb_table_is_total() {
 
 /// **The server's path never widens: whatever a request says, including the sentinel that means
 /// "the parent's own rights", the child is a subset of the parent.** `attenuate_never_widens` in
-/// [`dir`] covers `attenuate`; this adds [`dir::Rights::resolve`] in front of it.
+/// [`dir`] covers `attenuate`; this adds [`directory::Rights::resolve`] in front of it.
 /// Falsification: replayable `crates/filesystem_contract/falsifications/proofs.a_resolved_request_never_widens.patch`
 #[kani::proof]
 fn a_resolved_request_never_widens() {
-    let parent = dir::Rights::root(kani::any());
+    let parent = directory::Rights::root(kani::any());
     let requested: u64 = kani::any();
     let child = parent.attenuate(parent.resolve(requested));
     assert!(child.bits() & !parent.bits() == 0);
     // `attenuate` masks whatever `resolve` answers, so the line above alone cannot see `resolve`
     // widen. The sentinel is the one word `resolve` rewrites, and it must become the parent's own.
-    assert!(parent.resolve(dir::PARENT_RIGHTS) == parent.bits());
+    assert!(parent.resolve(directory::PARENT_RIGHTS) == parent.bits());
 }

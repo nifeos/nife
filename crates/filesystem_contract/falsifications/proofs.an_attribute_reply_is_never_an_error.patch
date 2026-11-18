@@ -1,12 +1,12 @@
 Falsifies `filesystem_contract::proofs::an_attribute_reply_is_never_an_error`.
 
-The defect: `xattr::reply` shifts the kind one bit too far, so a large kind sets the sign bit and the reply reads as an errno.
+The defect: `extended_attribute::reply` shifts the kind one bit too far, so a large kind sets the sign bit and the reply reads as an errno.
 
 Expected to fail: `assert!(r0 >= 0)` for a kind with bit 30 set, and the kind round trip.
 
-diff --git a/crates/filesystem_contract/src/xattr.rs b/crates/filesystem_contract/src/xattr.rs
---- a/crates/filesystem_contract/src/xattr.rs
-+++ b/crates/filesystem_contract/src/xattr.rs
+diff --git a/crates/filesystem_contract/src/extended_attribute.rs b/crates/filesystem_contract/src/extended_attribute.rs
+--- a/crates/filesystem_contract/src/extended_attribute.rs
++++ b/crates/filesystem_contract/src/extended_attribute.rs
 @@ -98,7 +98,7 @@
  /// its 32nd bit, and it is the right trade: a separate reply word does not exist, and a header
  /// in front of the value would make every client copy the value twice.

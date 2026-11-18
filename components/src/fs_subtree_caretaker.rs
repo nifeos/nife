@@ -45,7 +45,7 @@ const REPORT: u64 = 2;
 /// uses the page.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE;
+const PAGE: usize = filesystem_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled write_volatile
@@ -205,8 +205,8 @@ fn serve(dir: u64) -> ! {
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    let mut buf = [0u8; grant::WORDS_NAME];
-    let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
+    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
 
     // The whole grant, in one request. The FS server intersects the asked rights with its own and
     // refuses if the intersection is smaller, so a wiring that asked for more fails here, loudly.
@@ -217,14 +217,14 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
         call(
             FS,
             fs::req(fs::NARROW, fs::ROOT, 0),
-            grant::spec_rights(spec),
+            grant::specification_rights(spec),
         )
     } else {
         put(&buf[..n]);
         call(
             FS,
             fs::req(fs::OPENDIR, fs::ROOT, n as u64),
-            grant::spec_rights(spec),
+            grant::specification_rights(spec),
         )
     };
     // A refused descent is answered, not trapped: the waiter is the progenitor, which serves every

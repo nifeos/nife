@@ -16,7 +16,7 @@
 //! # The directory capability (milestone 47)
 //!
 //! The bound directory is [`filesystem_contract::fs::ROOT`], handle 0, an ordinary table entry. A
-//! directory handle carries a [`filesystem_contract::dir::Rights`] set, and [`Server::open_dir`]
+//! directory handle carries a [`filesystem_contract::directory::Rights`] set, and [`Server::open_dir`]
 //! gives a child the parent's rights intersected with the request. That intersection is the only
 //! constructor for a non-root rights set, so no descendant carries a right its ancestor lacked. A
 //! file handle inherits its directory's read and write bits. The table is per server, not per
@@ -53,8 +53,8 @@ use alloc::vec::Vec;
 
 pub use block::{BLOCK, BlockDisk, BlockIo, CACHE_SLOTS, CachedDisk};
 pub use dispatch::ServeEdges;
-use filesystem_contract::dir::{self, Rights};
-use filesystem_contract::xattr;
+use filesystem_contract::directory::{self, Rights};
+use filesystem_contract::extended_attribute;
 use redoxfs::{Disk, FileSystem, Node, Transaction, TreePtr};
 use subtree_scope::Kind;
 /// **The engine's error type, for a host caller that implements [`redoxfs::Disk`]** (a fuzz target's

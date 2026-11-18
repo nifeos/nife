@@ -25,7 +25,7 @@ pub fn set_home_file(identity: &[u8], file: &str, contents: Option<&[u8]>) {
 /// named `dir`.
 #[cfg(any(test, feature = "system_tests"))]
 fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
-    use filesystem_contract::{dir as rights, fs};
+    use filesystem_contract::{directory as rights, fs};
     let (fs_ep, fs_page_frame) = root_directory(
         blk_server_image(),
         crate::user::program("redoxfs_server").expect("no redoxfs_server in the initial ramdisk"),
@@ -35,7 +35,7 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
     let page = unsafe {
         core::slice::from_raw_parts_mut(
             mmu::phys_to_virt(fs_page_frame) as *mut u8,
-            filesystem_contract::PAGE,
+            filesystem_contract::PAGE_BYTES,
         )
     };
     let call = |w: [u64; 2]| crate::sched::ipc_call(fs_ep, w)[0] as i64;
@@ -95,7 +95,7 @@ pub fn read_root_file(file: &str, out: &mut [u8]) -> Option<usize> {
     let page = unsafe {
         core::slice::from_raw_parts_mut(
             mmu::phys_to_virt(fs_page_frame) as *mut u8,
-            filesystem_contract::PAGE,
+            filesystem_contract::PAGE_BYTES,
         )
     };
     page[..file.len()].copy_from_slice(file.as_bytes());
@@ -104,7 +104,7 @@ pub fn read_root_file(file: &str, out: &mut [u8]) -> Option<usize> {
     if h < 0 {
         return None;
     }
-    let want = out.len().min(filesystem_contract::PAGE) as u64;
+    let want = out.len().min(filesystem_contract::PAGE_BYTES) as u64;
     let n = crate::sched::ipc_call(fs_ep, [fs::req(fs::READ, h as u64, want), 0])[0] as i64;
     crate::sched::ipc_call(fs_ep, [fs::req(fs::CLOSE, h as u64, 0), 0]);
     let n = usize::try_from(n).ok()?.min(out.len());

@@ -110,7 +110,7 @@ impl Drop for At {
 /// capability, so asking for more than the operation needs breaks under every narrowed grant while
 /// passing every test that grants the root's full rights, which is the mistake `readdir` records
 /// having nearly shipped. An object that is held rather than used for one verb has no minimum, and
-/// asks for `fsproto::dir::PARENT_RIGHTS` (§98), the parent's rights whatever they are.
+/// asks for `fsproto::directory::PARENT_RIGHTS` (§98), the parent's rights whatever they are.
 pub(super) fn descend(p: &mut Page, parent: &At, name: &str, want: u64) -> io::Result<At> {
     p.put(name.as_bytes());
     let handle = request(proto::req(proto::OPENDIR, parent.0, name.len() as u64), want)?;
@@ -142,7 +142,7 @@ pub(super) fn walk<'a>(p: &mut Page, from: u64, path: &'a Path, needs: u64) -> i
         if seen == total {
             return Ok((at, name));
         }
-        at = descend(p, &at, name, fsproto::dir::DESCEND | needs)?;
+        at = descend(p, &at, name, fsproto::directory::DESCEND | needs)?;
     }
     // `count_names` counted the same components this loop walks, so the return above always fires.
     Err(io::const_error!(

@@ -28,7 +28,7 @@ fn a_filesystem_refusal_keeps_the_filesystems_own_words() {
     // rendering goes through `filesystem_contract`, which is where the number was chosen.
     assert_eq!(
         shown(|o| write_say(Say::Failed(-2), o)).trim(),
-        filesystem_contract::dir::explain(-2)
+        filesystem_contract::directory::explain(-2)
     );
 }
 

@@ -20,7 +20,7 @@ fn store_holds(srv: &mut Server<DiskMemory>, node_id: u32) -> bool {
             let Some(dir) = find_store(transaction)? else {
                 return Ok(false);
             };
-            let bytes = xattr::store::file_name(node_id);
+            let bytes = extended_attribute::store::file_name(node_id);
             let name = core::str::from_utf8(&bytes).expect("hex is ASCII");
             Ok(transaction.find_node(dir, name).is_ok())
         })
@@ -31,7 +31,7 @@ fn store_holds(srv: &mut Server<DiskMemory>, node_id: u32) -> bool {
 fn attr_names(srv: &mut Server<DiskMemory>, handle: u32) -> Vec<Vec<u8>> {
     let mut page = [0u8; 4096];
     let n = srv.list_xattr(handle, &mut page).expect("list");
-    filesystem_contract::xattr::list::iter(&page[..n])
+    filesystem_contract::extended_attribute::list::iter(&page[..n])
         .map(|s| s.to_vec())
         .collect()
 }
@@ -51,7 +51,7 @@ fn an_attribute_survives_a_mount_it_was_not_written_in() {
     let disk = image_with(&[("motd", b"hello")]);
     let mut srv = Server::open(disk).unwrap();
     let h = srv.open_file(&named("motd")).unwrap();
-    srv.set_xattr(h, b"user.DOSATTRIB", xattr::RAW, b"0x20")
+    srv.set_xattr(h, b"user.DOSATTRIB", extended_attribute::RAW, b"0x20")
         .expect("set");
     srv.set_xattr(h, b"user.com.apple.FinderInfo", 0x4353_5452, &[7u8; 32])
         .expect("set a typed one");
@@ -61,7 +61,7 @@ fn an_attribute_survives_a_mount_it_was_not_written_in() {
     let h = srv.open_file(&named("motd")).unwrap();
     assert_eq!(
         attr(&mut srv, h, b"user.DOSATTRIB").unwrap(),
-        (xattr::RAW, b"0x20".to_vec()),
+        (extended_attribute::RAW, b"0x20".to_vec()),
     );
     assert_eq!(
         attr(&mut srv, h, b"user.com.apple.FinderInfo").unwrap(),
@@ -104,7 +104,7 @@ fn a_rename_carries_the_attributes_because_the_store_keys_on_the_node() {
         .open_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("sub"),
-            dir::ALL,
+            directory::ALL,
         )
         .unwrap();
     srv.rename(
@@ -145,7 +145,7 @@ fn a_rename_carries_the_attributes_because_the_store_keys_on_the_node() {
 fn unlink_takes_the_attributes_and_a_reused_node_inherits_nothing() {
     let mut srv = server_with_tree();
     let h = srv.create_file(&named("doomed")).unwrap();
-    srv.set_xattr(h, b"user.secret", xattr::RAW, b"not yours")
+    srv.set_xattr(h, b"user.secret", extended_attribute::RAW, b"not yours")
         .unwrap();
     let doomed = node_id_of(&mut srv, TreePtr::root(), "doomed");
     assert!(store_holds(&mut srv, doomed));
@@ -180,7 +180,7 @@ fn unlink_takes_the_attributes_and_a_reused_node_inherits_nothing() {
     );
     assert_eq!(
         attr(&mut srv, nh, b"user.secret").unwrap_err().errno,
-        xattr::ENODATA,
+        extended_attribute::ENODATA,
     );
 }
 
@@ -191,13 +191,13 @@ fn unlink_takes_the_attributes_and_a_reused_node_inherits_nothing() {
 fn a_rename_over_a_file_takes_the_replaced_files_attributes() {
     let mut srv = server_with_tree();
     let victim = srv.create_file(&named("victim")).unwrap();
-    srv.set_xattr(victim, b"user.doomed", xattr::RAW, b"x")
+    srv.set_xattr(victim, b"user.doomed", extended_attribute::RAW, b"x")
         .unwrap();
     srv.close(victim).unwrap();
     let victim_id = node_id_of(&mut srv, TreePtr::root(), "victim");
 
     let winner = srv.create_file(&named("winner")).unwrap();
-    srv.set_xattr(winner, b"user.kept", xattr::RAW, b"y")
+    srv.set_xattr(winner, b"user.kept", extended_attribute::RAW, b"y")
         .unwrap();
     let winner_id = node_id_of(&mut srv, TreePtr::root(), "winner");
 
@@ -231,7 +231,7 @@ fn a_directory_carries_attributes_and_rmdir_takes_them_with_it() {
         .make_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("attrdir"),
-            dir::ALL,
+            directory::ALL,
         )
         .unwrap();
     srv.set_xattr(d, b"user.on-a-directory", 3, b"yes").unwrap();
@@ -275,8 +275,8 @@ fn the_last_attribute_takes_the_store_with_it() {
 
     let motd = srv.open_file(&named("motd")).unwrap();
     let second = srv.create_file(&named("second")).unwrap();
-    srv.set_xattr(motd, b"user.a", xattr::RAW, b"1").unwrap();
-    srv.set_xattr(second, b"user.b", xattr::RAW, b"2").unwrap();
+    srv.set_xattr(motd, b"user.a", extended_attribute::RAW, b"1").unwrap();
+    srv.set_xattr(second, b"user.b", extended_attribute::RAW, b"2").unwrap();
     assert!(store_exists(&mut srv), "setting one must create the store");
 
     srv.remove_xattr(motd, b"user.a").unwrap();
@@ -293,7 +293,7 @@ fn the_last_attribute_takes_the_store_with_it() {
 
     // And again by the other route: `unlink` purges a blob without going through `write_attrs`,
     // so the two paths need separate evidence.
-    srv.set_xattr(motd, b"user.c", xattr::RAW, b"3").unwrap();
+    srv.set_xattr(motd, b"user.c", extended_attribute::RAW, b"3").unwrap();
     assert!(store_exists(&mut srv));
     srv.unlink(filesystem_contract::fs::ROOT as u32, &named("motd"))
         .unwrap();
@@ -311,7 +311,7 @@ fn the_last_attribute_takes_the_store_with_it() {
 fn the_attribute_store_is_not_in_the_namespace() {
     let mut srv = server_with_tree();
     let h = srv.open_file(&named("motd")).unwrap();
-    srv.set_xattr(h, b"user.x", xattr::RAW, b"1").unwrap();
+    srv.set_xattr(h, b"user.x", extended_attribute::RAW, b"1").unwrap();
 
     // It is really there: this test would be vacuous against a filesystem with no store at all.
     assert!(
@@ -324,56 +324,56 @@ fn the_attribute_store_is_not_in_the_namespace() {
     let root = filesystem_contract::fs::ROOT as u32;
     let listed = list(&mut srv, root, 4096).unwrap();
     assert!(
-        !listed.iter().any(|(n, _)| n == xattr::STORE_DIR),
+        !listed.iter().any(|(n, _)| n == extended_attribute::STORE_DIRECTORY),
         "a listing named the attribute store: {listed:?}",
     );
     // Every name-taking verb, at every rights this contract can carry, and the answer is always
     // the same one `..` gets: the name is not expressible here.
     assert_eq!(
-        srv.open_file_at(root, &named(xattr::STORE_DIR))
+        srv.open_file_at(root, &named(extended_attribute::STORE_DIRECTORY))
             .unwrap_err()
             .errno,
         EINVAL
     );
     assert_eq!(
-        srv.open_dir(root, &named(xattr::STORE_DIR), dir::ALL)
+        srv.open_dir(root, &named(extended_attribute::STORE_DIRECTORY), directory::ALL)
             .unwrap_err()
             .errno,
         EINVAL,
     );
     assert_eq!(
-        srv.create_file_at(root, &named(xattr::STORE_DIR))
+        srv.create_file_at(root, &named(extended_attribute::STORE_DIRECTORY))
             .unwrap_err()
             .errno,
         EINVAL
     );
     assert_eq!(
-        srv.make_dir(root, &named(xattr::STORE_DIR), dir::ALL)
+        srv.make_dir(root, &named(extended_attribute::STORE_DIRECTORY), directory::ALL)
             .unwrap_err()
             .errno,
         EINVAL,
     );
     assert_eq!(
-        srv.unlink(root, &named(xattr::STORE_DIR))
+        srv.unlink(root, &named(extended_attribute::STORE_DIRECTORY))
             .unwrap_err()
             .errno,
         EINVAL
     );
     assert_eq!(
-        srv.rmdir(root, &named(xattr::STORE_DIR)).unwrap_err().errno,
+        srv.rmdir(root, &named(extended_attribute::STORE_DIRECTORY)).unwrap_err().errno,
         EINVAL
     );
     assert_eq!(
-        srv.rename(root, &named("motd"), root, &named(xattr::STORE_DIR))
+        srv.rename(root, &named("motd"), root, &named(extended_attribute::STORE_DIRECTORY))
             .unwrap_err()
             .errno,
         EINVAL,
     );
     // And it is reserved in a *subdirectory* too, so the rule is one sentence rather than a
     // location-dependent one.
-    let sub = srv.open_dir(root, &named("sub"), dir::ALL).unwrap();
+    let sub = srv.open_dir(root, &named("sub"), directory::ALL).unwrap();
     assert_eq!(
-        srv.create_file_at(sub, &named(xattr::STORE_DIR))
+        srv.create_file_at(sub, &named(extended_attribute::STORE_DIRECTORY))
             .unwrap_err()
             .errno,
         EINVAL
@@ -392,7 +392,7 @@ fn attributes_take_the_direction_the_capability_already_carries() {
         .open_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("sub"),
-            dir::READ | dir::DESCEND,
+            directory::READ | directory::DESCEND,
         )
         .unwrap();
     let h = srv.open_file_at(ro, &named("inner")).unwrap();
@@ -403,7 +403,7 @@ fn attributes_take_the_direction_the_capability_already_carries() {
         "reading is allowed"
     );
     assert_eq!(
-        srv.set_xattr(h, b"user.x", xattr::RAW, b"1")
+        srv.set_xattr(h, b"user.x", extended_attribute::RAW, b"1")
             .unwrap_err()
             .errno,
         EROFS,
@@ -417,11 +417,11 @@ fn attributes_take_the_direction_the_capability_already_carries() {
         .open_dir(
             filesystem_contract::fs::ROOT as u32,
             &named("sub"),
-            dir::WRITE | dir::DESCEND,
+            directory::WRITE | directory::DESCEND,
         )
         .unwrap();
     let h = srv.open_file_at(wo, &named("inner")).unwrap();
-    srv.set_xattr(h, b"user.x", xattr::RAW, b"1")
+    srv.set_xattr(h, b"user.x", extended_attribute::RAW, b"1")
         .expect("writing is allowed");
     assert_eq!(
         srv.get_xattr(h, b"user.x", &mut page).unwrap_err().errno,
@@ -442,53 +442,53 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
     let mut page = [0u8; 4096];
 
     assert_eq!(
-        srv.set_xattr(h, b"", xattr::RAW, b"v").unwrap_err().errno,
-        xattr::ERANGE,
+        srv.set_xattr(h, b"", extended_attribute::RAW, b"v").unwrap_err().errno,
+        extended_attribute::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, &vec![b'n'; xattr::MAXIMUM_NAME + 1], xattr::RAW, b"v")
+        srv.set_xattr(h, &vec![b'n'; extended_attribute::MAXIMUM_NAME_BYTES + 1], extended_attribute::RAW, b"v")
             .unwrap_err()
             .errno,
-        xattr::ERANGE,
+        extended_attribute::ERANGE,
     );
     assert_eq!(
         srv.set_xattr(
             h,
             b"user.big",
-            xattr::RAW,
-            &vec![0u8; xattr::MAXIMUM_VALUE + 1]
+            extended_attribute::RAW,
+            &vec![0u8; extended_attribute::MAXIMUM_VALUE_BYTES + 1]
         )
         .unwrap_err()
         .errno,
-        xattr::E2BIG,
+        extended_attribute::E2BIG,
     );
     // The widest value the contract allows must actually work, or the limit above is a limit on
     // nothing and the refusal proves only that the check exists.
     srv.set_xattr(
         h,
         b"user.widest",
-        xattr::RAW,
-        &vec![0xCDu8; xattr::MAXIMUM_VALUE],
+        extended_attribute::RAW,
+        &vec![0xCDu8; extended_attribute::MAXIMUM_VALUE_BYTES],
     )
     .expect("the widest permitted value");
     assert_eq!(
         attr(&mut srv, h, b"user.widest").unwrap().1.len(),
-        xattr::MAXIMUM_VALUE,
+        extended_attribute::MAXIMUM_VALUE_BYTES,
     );
 
     // Fill the node and ask for one more.
-    for i in 1..xattr::MAXIMUM_COUNT {
-        srv.set_xattr(h, format!("user.a{i}").as_bytes(), xattr::RAW, b"v")
+    for i in 1..extended_attribute::MAXIMUM_ATTRIBUTES {
+        srv.set_xattr(h, format!("user.a{i}").as_bytes(), extended_attribute::RAW, b"v")
             .unwrap();
     }
     assert_eq!(
-        srv.set_xattr(h, b"user.overflow", xattr::RAW, b"v")
+        srv.set_xattr(h, b"user.overflow", extended_attribute::RAW, b"v")
             .unwrap_err()
             .errno,
-        xattr::ENOSPC,
+        extended_attribute::ENOSPC,
     );
     // Replacing at the cap still works: the ceiling is on new names, not on a full file.
-    srv.set_xattr(h, b"user.a1", xattr::RAW, b"replaced")
+    srv.set_xattr(h, b"user.a1", extended_attribute::RAW, b"replaced")
         .unwrap();
 
     // Absence is ENODATA, from both verbs, and is the only error that means it.
@@ -496,11 +496,11 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         srv.get_xattr(h, b"user.never-set", &mut page)
             .unwrap_err()
             .errno,
-        xattr::ENODATA,
+        extended_attribute::ENODATA,
     );
     assert_eq!(
         srv.remove_xattr(h, b"user.never-set").unwrap_err().errno,
-        xattr::ENODATA,
+        extended_attribute::ENODATA,
     );
     // And a buffer too small for the value is ERANGE, never a short read.
     let mut tiny = [0u8; 4];
@@ -508,7 +508,7 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         srv.get_xattr(h, b"user.widest", &mut tiny)
             .unwrap_err()
             .errno,
-        xattr::ERANGE,
+        extended_attribute::ERANGE,
     );
 }
 

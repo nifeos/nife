@@ -238,7 +238,7 @@ pub const MOUNTED_TREE_NAME: &[u8] = b"disk";
 
 /// **The rights the second mounted tree's root carries**: list, walk, read. The disk tree answers
 /// nothing that writes, so a shell that asked for more could not `cd` there (`OPENDIR` refuses a
-/// request it cannot meet in full). `filesystem_contract::dir`'s `ENUMERATE | READ | DESCEND`,
+/// request it cannot meet in full). `filesystem_contract::directory`'s `ENUMERATE | READ | DESCEND`,
 /// spelled as a number because this crate does not link the contract; a host test pins the two.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
@@ -778,7 +778,7 @@ pub const IMAGE_PAGE: u64 = 4096;
 /// **The two messages after a [`Wiring::directory_grant`] request**, in order, three words each:
 ///
 /// 1. **the caretaker's `START` words**, passed to `fs_subtree_caretaker` verbatim: the granted
-///    directory's name and the `filesystem_contract::dir` rights the subtree capability carries;
+///    directory's name and the `filesystem_contract::directory` rights the subtree capability carries;
 /// 2. **the confined program's `START` words**, passed to the program verbatim: for `rm`, the
 ///    operand's name and the options that were typed.
 ///
@@ -1180,10 +1180,10 @@ mod tests {
 
     #[test]
     fn the_mounted_trees_rights_are_list_walk_and_read() {
-        use filesystem_contract::dir;
+        use filesystem_contract::directory;
         assert_eq!(
             MOUNTED_TREE_RIGHTS,
-            dir::ENUMERATE | dir::READ | dir::DESCEND
+            directory::ENUMERATE | directory::READ | directory::DESCEND
         );
     }
 

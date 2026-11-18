@@ -15,9 +15,9 @@ use crate::sched::RendezvousId;
 /// The block channel's address on every `blk` client. Must match `components/src/disk_tree.rs`.
 const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 /// The client windows, directly above the block channel. Must match `components/src/disk_tree.rs`.
-const FILE_PAGE: u64 = BLK_PAGE + filesystem_contract::blk::TRANSFER_MAXIMUM as u64;
+const FILE_PAGE: u64 = BLK_PAGE + filesystem_contract::block::MAXIMUM_TRANSFER_BYTES as u64;
 
-const BLK_PAGES: usize = filesystem_contract::blk::TRANSFER_BLOCKS;
+const BLK_PAGES: usize = filesystem_contract::block::TRANSFER_BLOCKS;
 /// Every client window, one run, as the filesystem server's pool is.
 pub(crate) const POOL_PAGES: usize =
     filesystem_contract::fs::CLIENT_WINDOWS * filesystem_contract::fs::TRANSFER_PAGES;

@@ -17,7 +17,7 @@
 #![no_main]
 
 use disk_tree::{Answer, Tree};
-use filesystem_contract::{blk, fs, reply_err};
+use filesystem_contract::{block, fs, reply_err};
 use user_mode_runtime::{call, receive_request, reply, send};
 
 /// Slot 0: the NVMe server's request endpoint, `WRITE`, badged
@@ -34,9 +34,9 @@ const REPORT: u64 = 2;
 /// here; the controller writes it by DMA.
 const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 /// The client windows, directly above the block channel, as `redoxfs_server` lays them out:
-/// `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes in one run, window `badge` per
+/// `fs::CLIENT_WINDOWS` windows of `fs::MAXIMUM_TRANSFER_BYTES` bytes in one run, window `badge` per
 /// request (milestone 599 (a frame per filesystem client channel)'s pattern).
-const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAXIMUM as u64;
+const FILE_PAGE: u64 = BLK_PAGE + block::MAXIMUM_TRANSFER_BYTES as u64;
 
 const EIO: i32 = 5;
 const EINVAL: i32 = 22;
@@ -45,7 +45,7 @@ user_mode_runtime::program_entry!(start);
 
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 fn start(_: u64, _: u64, _: u64) -> ! {
-    let size = call(BLK, filesystem_contract::req(blk::SIZE), 0).0 as i64;
+    let size = call(BLK, filesystem_contract::req(block::SIZE), 0).0 as i64;
     if size <= 0 {
         send(REPORT, 0xDEAD_0001, size as u64, 0);
         user_mode_runtime::exit();
@@ -62,26 +62,26 @@ fn start(_: u64, _: u64, _: u64) -> ! {
             reply(to, reply_err(EINVAL) as u64, 0);
             continue;
         }
-        // SAFETY: the wiring maps `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes at
+        // SAFETY: the wiring maps `fs::CLIENT_WINDOWS` windows of `fs::MAXIMUM_TRANSFER_BYTES` bytes at
         // FILE_PAGE, and the client whose badge names this one is parked inside its CALL until
         // the reply below.
         let page = unsafe {
             core::slice::from_raw_parts_mut(
-                (FILE_PAGE + req.badge * fs::TRANSFER_MAXIMUM as u64) as *mut u8,
-                fs::TRANSFER_MAXIMUM,
+                (FILE_PAGE + req.badge * fs::MAXIMUM_TRANSFER_BYTES as u64) as *mut u8,
+                fs::MAXIMUM_TRANSFER_BYTES,
             )
         };
         let (r0, r1) = match tree.handle(req.w0, req.w1, page) {
             Answer::Reply(r0, r1) => (r0, r1),
             Answer::Read(read) => {
-                let got = call(BLK, blk::req(blk::READ, read.blocks), read.block).0 as i64;
+                let got = call(BLK, block::req(block::READ, read.blocks), read.block).0 as i64;
                 if got < 0 {
                     (reply_err(EIO), 0)
                 } else {
-                    // SAFETY: the NVMe window is `blk::TRANSFER_MAXIMUM` bytes at BLK_PAGE and
+                    // SAFETY: the NVMe window is `block::MAXIMUM_TRANSFER_BYTES` bytes at BLK_PAGE and
                     // `skip + len` never passes `read.blocks` blocks (`crates/disk_tree`'s tests).
                     let staged = unsafe {
-                        core::slice::from_raw_parts(BLK_PAGE as *const u8, blk::TRANSFER_MAXIMUM)
+                        core::slice::from_raw_parts(BLK_PAGE as *const u8, block::MAXIMUM_TRANSFER_BYTES)
                     };
                     page[..read.len].copy_from_slice(&staged[read.skip..read.skip + read.len]);
                     (read.len as i64, 0)

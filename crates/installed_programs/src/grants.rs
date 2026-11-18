@@ -61,7 +61,7 @@ pub enum Granted<'a> {
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DirectoryRights {
-    /// Read, list and walk (`filesystem_contract::dir`'s `ENUMERATE | READ | DESCEND`).
+    /// Read, list and walk (`filesystem_contract::directory`'s `ENUMERATE | READ | DESCEND`).
     R,
     /// And write.
     RW,

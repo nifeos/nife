@@ -13,7 +13,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one set carries, all its names together.** A second bound beside
 /// [`MAXIMUM_NAMES`], for the same stack: a set travels by value through the shell's frames, so
-/// what it costs is its bytes, and holding eight names of [`grant::MAXIMUM_NAME`] each would cost
+/// what it costs is its bytes, and holding eight names of [`grant::MAXIMUM_NAME_BYTES`] each would cost
 /// eight times what a set of ordinary names needs. Two of the longest names fit, or eight of 64
 /// bytes. Over it is the same
 /// refusal as a ninth name, never a truncation.
@@ -23,20 +23,24 @@ pub const NAME_BYTES: usize = 512;
 
 /// Bytes an encoded set occupies at most: a two-byte header per name, the names, and the
 /// terminator.
-pub const BYTES: usize = 2 * MAXIMUM_NAMES + NAME_BYTES + 1;
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const MAXIMUM_BYTES: usize = 2 * MAXIMUM_NAMES + NAME_BYTES + 1;
 
 // A set arrives in one page, and the longest name has to fit in one set.
-const _: () = assert!(BYTES <= super::PAGE);
-const _: () = assert!(NAME_BYTES >= 2 * grant::MAXIMUM_NAME);
+const _: () = assert!(MAXIMUM_BYTES <= super::PAGE_BYTES);
+const _: () = assert!(NAME_BYTES >= 2 * grant::MAXIMUM_NAME_BYTES);
 
 /// Bit 0 of a record's flags byte: this name was a directory when the grant was planned.
-pub const IS_DIR: u8 = 1 << 0;
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+pub const IS_DIRECTORY: u8 = 1 << 0;
 
 /// Write `names` into `out`, returning the bytes used, or `None` if the set does not fit, a name
 /// is empty or too long, there are more than [`MAXIMUM_NAMES`] of them, or together they are over
 /// [`NAME_BYTES`].
 ///
-/// A record is a length byte, a flags byte ([`IS_DIR`]), then the name; a zero length ends the set,
+/// A record is a length byte, a flags byte ([`IS_DIRECTORY`]), then the name; a zero length ends the set,
 /// so a name may not be empty.
 ///
 /// **`None` rather than a short write**, for [`MAXIMUM_NAMES`]'s reason: the caller is building a
@@ -47,7 +51,7 @@ pub fn encode(names: &[(&[u8], bool)], out: &mut [u8]) -> Option<usize> {
     }
     let mut n = 0;
     let mut name_bytes = 0;
-    for &(name, is_dir) in names {
+    for &(name, is_directory) in names {
         if !grant::fits(name) {
             return None;
         }
@@ -60,7 +64,7 @@ pub fn encode(names: &[(&[u8], bool)], out: &mut [u8]) -> Option<usize> {
             return None;
         }
         out[n] = name.len() as u8;
-        out[n + 1] = if is_dir { IS_DIR } else { 0 };
+        out[n + 1] = if is_directory { IS_DIRECTORY } else { 0 };
         out[n + 2..end].copy_from_slice(name);
         n = end;
     }
@@ -68,7 +72,7 @@ pub fn encode(names: &[(&[u8], bool)], out: &mut [u8]) -> Option<usize> {
     Some(n + 1)
 }
 
-/// Walk an encoded set: `(name, is_dir)` per record. Stops at the terminator, at the first
+/// Walk an encoded set: `(name, is_directory)` per record. Stops at the terminator, at the first
 /// record that runs off the end, which is what a truncated buffer looks like and must not be
 /// read as a name, and after [`MAXIMUM_NAMES`] records.
 ///
@@ -109,7 +113,7 @@ impl<'a> Iterator for Names<'a> {
         let (&flags, rest) = rest.split_first()?;
         let (name, rest) = rest.split_at_checked(len as usize)?;
         self.buf = rest;
-        Some((name, flags & IS_DIR != 0))
+        Some((name, flags & IS_DIRECTORY != 0))
     }
 }
 

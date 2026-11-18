@@ -95,7 +95,7 @@ pub(super) fn list(
         if n == 0 {
             return Ok(out);
         }
-        for (name, is_dir) in filesystem_contract::dirent::iter(&buf[..n]) {
+        for (name, is_dir) in filesystem_contract::directory_entry::iter(&buf[..n]) {
             out.push((String::from_utf8(name.to_vec()).unwrap(), is_dir));
             cursor += 1;
         }

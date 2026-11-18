@@ -85,7 +85,7 @@ pub(crate) fn ls_transaction<D: Disk>(
         // A store that cannot be read is a listing that says nothing about attributes, not a listing
         // that fails: `ls` is the first thing a person runs on a damaged image.
         let attrs = match attr_blob(transaction, store, ptr.id()) {
-            Ok(blob) => xattr::store::count(&blob),
+            Ok(blob) => extended_attribute::store::count(&blob),
             Err(msg) => {
                 eprintln!("redoxfs_host: {name}: {msg}");
                 0

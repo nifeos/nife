@@ -75,11 +75,11 @@ pub(super) const fn mounted_job_windows() -> Windows {
 /// a grant in the first tree.
 pub(super) fn mounted_grant((lo, hi, spec): (u64, u64, u64)) -> Option<(u64, u64, u64)> {
     use filesystem_contract::grant;
-    let mut buf = [0u8; grant::WORDS_NAME];
-    let n = grant::unpack_name(lo, hi, grant::spec_len(spec), &mut buf);
+    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+    let n = grant::unpack_name(lo, hi, grant::specification_len(spec), &mut buf);
     let rest = spawnproto::in_mounted_tree(&buf[..n])?;
     let (lo, hi) = grant::pack_name(rest)?;
-    Some((lo, hi, grant::spec(rest.len(), grant::spec_rights(spec))))
+    Some((lo, hi, grant::specification(rest.len(), grant::specification_rights(spec))))
 }
 
 /// **A channel of its own for one job behind a grant in the second mounted tree**: [`job_channel`]
@@ -96,7 +96,7 @@ pub(super) fn mounted_job_channel(tree: Fs, w: u64, own_ut: u64, mapped: &mut bo
     // first page lies inside it; no client is using window `w` between two jobs.
     unsafe {
         core::ptr::write_bytes(
-            (MOUNTED_TREE_POOL_VA + w * fs_operation::TRANSFER_MAXIMUM as u64) as *mut u8,
+            (MOUNTED_TREE_POOL_VA + w * fs_operation::MAXIMUM_TRANSFER_BYTES as u64) as *mut u8,
             0,
             PAGE_BYTES,
         );
@@ -138,14 +138,14 @@ pub(super) fn bound_channel(
     (lo, hi, spec): (u64, u64, u64),
 ) -> Option<Fs> {
     let files = FsCalls::map(Some(fs), own_ut, mapped)?;
-    let mut buf = [0u8; filesystem_contract::grant::WORDS_NAME];
+    let mut buf = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
     let n = filesystem_contract::grant::unpack_name(
         lo,
         hi,
-        filesystem_contract::grant::spec_len(spec),
+        filesystem_contract::grant::specification_len(spec),
         &mut buf,
     );
-    let rights = filesystem_contract::grant::spec_rights(spec);
+    let rights = filesystem_contract::grant::specification_rights(spec);
     // An empty name is the root of the shell's namespace, which has no name to descend into: the
     // grant narrows the root handle instead (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)).
     let handle = if n == 0 {
@@ -164,7 +164,7 @@ pub(super) fn bound_channel(
 /// Name: provisional (milestone 946).
 pub(super) fn at_bound_root((_, _, spec): (u64, u64, u64)) -> (u64, u64, u64) {
     use filesystem_contract::grant;
-    (0, 0, grant::spec(0, grant::spec_rights(spec)))
+    (0, 0, grant::specification(0, grant::specification_rights(spec)))
 }
 
 /// **Bind window `w`'s badge to the directory `handle` names, and hand back the window's page and
@@ -193,7 +193,7 @@ fn bind_window(
     // SAFETY: as [`job_channel`]'s zeroing: window `w`'s first page, inside the mapped pool.
     unsafe {
         core::ptr::write_bytes(
-            (ACTIVATION_FS_VA + w * fs_operation::TRANSFER_MAXIMUM as u64) as *mut u8,
+            (ACTIVATION_FS_VA + w * fs_operation::MAXIMUM_TRANSFER_BYTES as u64) as *mut u8,
             0,
             PAGE_BYTES,
         );
@@ -301,7 +301,7 @@ pub(super) fn job_channel(fs: Fs, w: u64, own_ut: u64, mapped: &mut bool) -> Opt
     // window `w`'s first page lies inside it; no client is using window `w` between two jobs.
     unsafe {
         core::ptr::write_bytes(
-            (ACTIVATION_FS_VA + w * fs_operation::TRANSFER_MAXIMUM as u64) as *mut u8,
+            (ACTIVATION_FS_VA + w * fs_operation::MAXIMUM_TRANSFER_BYTES as u64) as *mut u8,
             0,
             PAGE_BYTES,
         );
@@ -443,11 +443,11 @@ impl FsCalls {
 
     /// Descend into `name` in `parent` with every right, making it if it is not there.
     pub(super) fn directory(&self, parent: u64, name: &str) -> i64 {
-        let h = self.named(fs_operation::OPENDIR, parent, name, dir::ALL);
+        let h = self.named(fs_operation::OPENDIR, parent, name, directory::ALL);
         if h >= 0 {
             h
         } else {
-            self.named(fs_operation::MKDIR, parent, name, dir::ALL)
+            self.named(fs_operation::MKDIR, parent, name, directory::ALL)
         }
     }
 
@@ -498,7 +498,7 @@ impl FsCalls {
             fs_operation::OPENDIR,
             act,
             package_index::STORE_DIRECTORY,
-            dir::READ,
+            directory::READ,
         );
         if store < 0 {
             return Err(());

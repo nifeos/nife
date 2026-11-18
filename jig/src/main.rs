@@ -426,7 +426,7 @@ fn ask(
         }
     }
     if let Some(name) = name {
-        // Every caller has held `name` to `grant::WORDS_NAME`; a longer one sends empty words,
+        // Every caller has held `name` to `grant::MAXIMUM_WORDS_NAME_BYTES`; a longer one sends empty words,
         // which the progenitor answers as a name it does not know.
         let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
         rt::send(INSTALLER_SLOT, lo, hi, name.len() as u64);

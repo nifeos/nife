@@ -13,6 +13,6 @@ diff --git a/crates/filesystem_contract/src/fs.rs b/crates/filesystem_contract/s
      (operation << super::OPERATION_SHIFT)
 -        | ((handle & MAXIMUM_HANDLE) << 40)
 +        | ((handle & MAXIMUM_HANDLE) << 41)
-         | (len & MAXIMUM_LENGTH_OR_OFFSET)
+         | (len & MAXIMUM_LENGTH_BYTES)
  }
  /// The handle of a file request word.

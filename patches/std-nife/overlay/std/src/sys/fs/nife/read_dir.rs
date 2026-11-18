@@ -84,7 +84,7 @@ impl DirEntry {
     /// the entry is a directory, so `file_type` is free and costs no message. Metadata is not on the
     /// listing, so it is [`stat`] of the entry's path, for a directory as for a file: a
     /// directory's size is still the placeholder [`FileAttr`] describes, but its mtime is real, and
-    /// `GETMTIME` answers for a directory exactly as for a file. That made a directory entry's
+    /// `GET_MODIFICATION_TIME` answers for a directory exactly as for a file. That made a directory entry's
     /// metadata cost a walk where it used to cost nothing, which is the price of a `modified()`
     /// that answers; a caller that only wants the kind should ask `file_type`, as it would anywhere.
     pub fn metadata(&self) -> io::Result<FileAttr> {

@@ -44,7 +44,7 @@ use user_mode_runtime::{exit, receive_request, reply, send, send_capability};
 use crate::{IO_QID, NSID, SPIN_BOUND, barrier};
 
 /// One filesystem block, the unit IDENTIFY's geometry is checked against.
-const BLOCK_SIZE: u64 = filesystem_contract::blk::BLOCK_SIZE as u64;
+const BLOCK_SIZE: u64 = filesystem_contract::block::BLOCK_BYTES as u64;
 
 /// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
 /// declares.

@@ -39,7 +39,7 @@ const REFUSED: &[&[u8]] = &[
     b"a/../b",
     b"a\\b",
     b"a:b",
-    filesystem_contract::xattr::STORE_DIR.as_bytes(),
+    filesystem_contract::extended_attribute::STORE_DIRECTORY.as_bytes(),
     &[0xff, 0xfe],
 ];
 
@@ -62,7 +62,7 @@ fn root_listing(srv: &mut Server<DiskMemory>) -> Vec<(String, bool)> {
 #[test]
 fn open_refuses_every_refused_name_and_opens_a_legal_one() {
     let mut srv = server_with_tree();
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
     for &name in REFUSED {
         let len = stage(&mut window, name);
         let (r0, _) = srv.handle(
@@ -94,13 +94,13 @@ fn open_refuses_every_refused_name_and_opens_a_legal_one() {
 #[test]
 fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
     let mut srv = server_with_tree();
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
     for &name in REFUSED {
         let len = stage(&mut window, name);
         let (r0, _) = srv.handle(
             0,
             fs::req(fs::OPENDIR, fs::ROOT, len),
-            filesystem_contract::dir::ALL,
+            filesystem_contract::directory::ALL,
             &mut window,
             &mut NoEdges,
         );
@@ -114,7 +114,7 @@ fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
     let (r0, _) = srv.handle(
         0,
         fs::req(fs::OPENDIR, fs::ROOT, len),
-        filesystem_contract::dir::ALL,
+        filesystem_contract::directory::ALL,
         &mut window,
         &mut NoEdges,
     );
@@ -129,7 +129,7 @@ fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
 fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
     let mut srv = server_with_tree();
     let before = root_listing(&mut srv);
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
     for &code in &[fs::CREATE, fs::MKDIR] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
@@ -180,7 +180,7 @@ fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
 fn unlink_and_rmdir_refuse_every_refused_name_and_remove_nothing() {
     let mut srv = server_with_tree();
     let before = root_listing(&mut srv);
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
     for &code in &[fs::UNLINK, fs::RMDIR] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
@@ -206,13 +206,13 @@ fn unlink_and_rmdir_refuse_every_refused_name_and_remove_nothing() {
 }
 
 /// **The mtime verbs act on no refused name.** All three take a name under a directory handle
-/// ([`fs::GETMTIME`], [`fs::SETMTIME`], [`fs::SETMTIME_AT`]); the refused name is `EINVAL` before
+/// ([`fs::GET_MODIFICATION_TIME`], [`fs::SET_MODIFICATION_TIME`], [`fs::SET_MODIFICATION_TIME_AT`]); the refused name is `EINVAL` before
 /// any node is touched, and `motd`'s mtime reads back to prove the arm is live.
 #[test]
 fn the_mtime_verbs_refuse_every_refused_name() {
     let mut srv = server_with_tree();
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
-    for &code in &[fs::GETMTIME, fs::SETMTIME, fs::SETMTIME_AT] {
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
+    for &code in &[fs::GET_MODIFICATION_TIME, fs::SET_MODIFICATION_TIME, fs::SET_MODIFICATION_TIME_AT] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
             let (r0, _) = srv.handle(
@@ -232,14 +232,14 @@ fn the_mtime_verbs_refuse_every_refused_name() {
     let len = stage(&mut window, b"motd");
     let (r0, _) = srv.handle(
         0,
-        fs::req(fs::GETMTIME, fs::ROOT, len),
+        fs::req(fs::GET_MODIFICATION_TIME, fs::ROOT, len),
         0,
         &mut window,
         &mut NoEdges,
     );
     assert!(
         r0 >= 0,
-        "GETMTIME refused the legal control name motd: {r0}"
+        "GET_MODIFICATION_TIME refused the legal control name motd: {r0}"
     );
 }
 
@@ -251,7 +251,7 @@ fn the_mtime_verbs_refuse_every_refused_name() {
 fn rename_refuses_a_refused_name_in_either_operand_and_changes_nothing() {
     let mut srv = server_with_tree();
     let before = root_listing(&mut srv);
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
     let rename = |srv: &mut Server<DiskMemory>, window: &mut [u8], src: &[u8], dst: &[u8]| -> i64 {
         window[..src.len()].copy_from_slice(src);
         window[src.len()..src.len() + dst.len()].copy_from_slice(dst);
@@ -299,14 +299,14 @@ fn rename_refuses_a_refused_name_in_either_operand_and_changes_nothing() {
 /// subdirectory behind the server's back to show a listing hides it there too.
 #[test]
 fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
-    use filesystem_contract::xattr::STORE_DIR;
+    use filesystem_contract::extended_attribute::STORE_DIRECTORY;
 
     let mut srv = server_with_tree();
     let root = fs::ROOT as u32;
     let sub = srv
-        .open_dir(root, &named("sub"), filesystem_contract::dir::ALL)
+        .open_dir(root, &named("sub"), filesystem_contract::directory::ALL)
         .unwrap();
-    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
+    let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
 
     // Every verb whose operand is a name, from the subdirectory handle.
     for &code in &[
@@ -316,11 +316,11 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
         fs::MKDIR,
         fs::UNLINK,
         fs::RMDIR,
-        fs::GETMTIME,
-        fs::SETMTIME,
-        fs::SETMTIME_AT,
+        fs::GET_MODIFICATION_TIME,
+        fs::SET_MODIFICATION_TIME,
+        fs::SET_MODIFICATION_TIME_AT,
     ] {
-        let len = stage(&mut window, STORE_DIR.as_bytes());
+        let len = stage(&mut window, STORE_DIRECTORY.as_bytes());
         let (r0, _) = srv.handle(
             0,
             fs::req(code, sub as u64, len),
@@ -337,9 +337,9 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
 
     // The path-taking verbs, with the name as a middle step and as the last step.
     for path in [
-        format!("sub/{STORE_DIR}"),
-        format!("{STORE_DIR}/x"),
-        format!("sub/{STORE_DIR}/x"),
+        format!("sub/{STORE_DIRECTORY}"),
+        format!("{STORE_DIRECTORY}/x"),
+        format!("sub/{STORE_DIRECTORY}/x"),
     ] {
         for &code in &[fs::OPEN, fs::OPENDIR] {
             let len = stage(&mut window, path.as_bytes());
@@ -369,12 +369,12 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
         .0
     };
     assert_eq!(
-        sub_rename(&mut srv, &mut window, b"inner", STORE_DIR.as_bytes()),
+        sub_rename(&mut srv, &mut window, b"inner", STORE_DIRECTORY.as_bytes()),
         -(EINVAL as i64),
         "RENAME took the store name as a destination from a subdirectory",
     );
     assert_eq!(
-        sub_rename(&mut srv, &mut window, STORE_DIR.as_bytes(), b"anywhere"),
+        sub_rename(&mut srv, &mut window, STORE_DIRECTORY.as_bytes(), b"anywhere"),
         -(EINVAL as i64),
         "RENAME took the store name as a source from a subdirectory",
     );
@@ -383,7 +383,7 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
     srv.fs
         .tx(|transaction| {
             let (ptr, _) = srv_lookup_sub(transaction)?;
-            transaction.create_node(ptr, STORE_DIR, redoxfs::Node::MODE_FILE | 0o600, 0, 0)?;
+            transaction.create_node(ptr, STORE_DIRECTORY, redoxfs::Node::MODE_FILE | 0o600, 0, 0)?;
             Ok(())
         })
         .unwrap();
@@ -393,7 +393,7 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
         "the control entry vanished: {listed:?}"
     );
     assert!(
-        !listed.iter().any(|(n, _)| n == STORE_DIR),
+        !listed.iter().any(|(n, _)| n == STORE_DIRECTORY),
         "a subdirectory listing named the store: {listed:?}",
     );
 }

@@ -11,7 +11,7 @@
 
 use std::time::Instant;
 
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use filesystem_fixture::walk as tree;
 use redoxfs::{DiskMemory, FileSystem};
 use redoxfs_server::walk_model::{self, Counting};
@@ -41,7 +41,7 @@ fn main() {
         .open_dir(
             0,
             &named(tree::ROOT),
-            dir::ENUMERATE | dir::READ | dir::DESCEND,
+            directory::ENUMERATE | directory::READ | directory::DESCEND,
         )
         .expect("open the tree");
 

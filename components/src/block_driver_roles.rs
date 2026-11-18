@@ -38,7 +38,7 @@
 //! (`block_driver`) and says what it holds. The name `virtio` stays reserved for a library cut later
 //! from what the six copies of the virtio-mmio handshake share.
 
-use filesystem_contract::blk;
+use filesystem_contract::block;
 use user_mode_runtime::virtio::{read_register, virtio_ring_barrier, write_register};
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
@@ -613,7 +613,7 @@ fn chained(i: usize, chain_length: usize, flags: u16) -> (u16, u16) {
 /// the margin, against 38.7 to 53.3 microseconds for a raw virtio read on Linux at the same tier.
 /// A 64 kibibyte sequential read runs at 189.9 mebibytes a second (Hypervisor.framework, `--smp`;
 /// notes/benchmarks.md, "Filesystem throughput"). A request already moves up to
-/// `blk::TRANSFER_BLOCKS` blocks as one descriptor, so the driver pays the interrupt per request
+/// `block::TRANSFER_BLOCKS` blocks as one descriptor, so the driver pays the interrupt per request
 /// and not per block. Several requests in flight would need a free list of descriptor heads and a
 /// completion that matches used-ring elements to their requests, and nothing measured yet asks
 /// for either.
@@ -1188,9 +1188,9 @@ const BLK_REQ: u64 = 0;
 /// Where the kernel maps the data region shared with the FS server (the block buffer). Distinct
 /// from the DMA region, which the FS server must never see, and from [`DMA_VA`].
 ///
-/// The block server's DMA region is `1 + blk::TRANSFER_BLOCKS` contiguous pages
+/// The block server's DMA region is `1 + block::TRANSFER_BLOCKS` contiguous pages
 /// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header and status, and pages
-/// `1..=blk::TRANSFER_BLOCKS` are the data buffer, which is the region shared with the FS server.
+/// `1..=block::TRANSFER_BLOCKS` are the data buffer, which is the region shared with the FS server.
 /// `BLOCK_SERVER_DATA_OFFSET_BYTES` is that page-1 offset. See notes/virtio.md ("The block server").
 const BLOCK_SERVER_DATA_OFFSET_BYTES: u64 = 0x1000;
 
@@ -1207,7 +1207,7 @@ const CONFIG: u64 = 0x100;
 /// to, exactly once each. The transfer unit is one filesystem block; the bulk rides in the shared
 /// page, the control (opcode, block index, result) rides in the message, the §10 split.
 pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
-    // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `blk::FLUSH`: a device round trip, or a
+    // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `block::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.
     let can_flush = initialize_with_features(0, true);
     // The capacity, read once: every transfer is checked against it before it reaches the device,
@@ -1216,8 +1216,8 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     // The device is up: signal readiness, so a hang here (bring-up) is distinct from a hang in the
     // first read completion. SEND rendezvous, so this also paces the test past bring-up.
     send(BLK_READY, filesystem_contract::READY, 0, 0);
-    // How many device flushes have completed. Answered back on every successful `blk::FLUSH`, so a
-    // client can tell a real round trip from a constant yes: see `filesystem_contract::blk::FLUSH`.
+    // How many device flushes have completed. Answered back on every successful `block::FLUSH`, so a
+    // client can tell a real round trip from a constant yes: see `filesystem_contract::block::FLUSH`.
     let mut flushes: i64 = 0;
     loop {
         // RECEIVE_CAPABILITY: (first word, the Reply, second word = the starting block index). The Reply is
@@ -1229,14 +1229,14 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
         let to = req.delivered.into_reply();
         // Clamp, as `fs_service.rs` does for the file channel: a request is never trusted to stay
         // inside the shared region just because its packing could spell a larger count.
-        let count = blk::req_blocks(w0).min(blk::TRANSFER_BLOCKS) as u64;
+        let count = block::req_blocks(w0).min(block::TRANSFER_BLOCKS) as u64;
         let operation = filesystem_contract::operation(w0);
         let r0: i64 = match operation {
-            blk::READ | blk::WRITE => match transfer_first_sector(block, count, capacity_sectors) {
+            block::READ | block::WRITE => match transfer_first_sector(block, count, capacity_sectors) {
                 // EINVAL: some block of the request lies past the end of the disk.
                 None => filesystem_contract::reply_err(22),
                 Some(sector) => {
-                    let done = if operation == blk::READ {
+                    let done = if operation == block::READ {
                         blk_read(direct_memory_access_phys, sector, count)
                     } else {
                         blk_write(direct_memory_access_phys, sector, count)
@@ -1249,11 +1249,11 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
                     }
                 }
             },
-            blk::SIZE => disk_size_bytes(capacity_sectors),
+            block::SIZE => disk_size_bytes(capacity_sectors),
             // The one verb that can refuse for a reason outside this program. A device that never
             // offered the feature gets EOPNOTSUPP rather than a zero, because a zero here is a lie
-            // about somebody's data; see `filesystem_contract::blk::FLUSH`.
-            blk::FLUSH => {
+            // about somebody's data; see `filesystem_contract::block::FLUSH`.
+            block::FLUSH => {
                 if !can_flush {
                     -95 // EOPNOTSUPP: this device has no flush, and pretending otherwise is the bug
                 } else if blk_flush(direct_memory_access_phys) {
@@ -1276,8 +1276,8 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
 /// when any block of it lies past a disk of `capacity_sectors` sectors, or when the arithmetic
 /// would overflow. The block index arrives from a client, so nothing about it is trusted.
 fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Option<u64> {
-    let first = block.checked_mul(blk::SECTORS_PER_BLOCK)?;
-    let end = first.checked_add(count.checked_mul(blk::SECTORS_PER_BLOCK)?)?;
+    let first = block.checked_mul(block::SECTORS_PER_BLOCK)?;
+    let end = first.checked_add(count.checked_mul(block::SECTORS_PER_BLOCK)?)?;
     (count >= 1 && end <= capacity_sectors).then_some(first)
 }
 
@@ -1344,7 +1344,7 @@ fn submit_flush(direct_memory_access_phys: u64) -> u16 {
 /// virtio-blk asks only that its length be whole sectors. Returns the used-ring index from before
 /// the submit, which [`complete_blk`] compares against.
 fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count: u64) -> u16 {
-    let data_len = count * blk::BLOCK_SIZE as u64;
+    let data_len = count * block::BLOCK_BYTES as u64;
     submit_block_request(
         direct_memory_access_phys,
         req_type,
@@ -1387,13 +1387,13 @@ fn capacity_sectors() -> u64 {
     .expect("the disk's configuration generation never held still across a capacity read")
 }
 
-/// The disk's size in bytes (sectors * 512), for `blk::SIZE`. RedoxFS asks for this once, at open,
+/// The disk's size in bytes (sectors * 512), for `block::SIZE`. RedoxFS asks for this once, at open,
 /// to size its allocator; the value is the whole extent the image lives in. A capacity too large to
 /// state in a non-negative `i64` answers `i64::MAX` rather than overflow or turn negative, which a
 /// client would read as an error.
 fn disk_size_bytes(capacity_sectors: u64) -> i64 {
     capacity_sectors
-        .saturating_mul(blk::SECTOR_BYTES)
+        .saturating_mul(block::SECTOR_BYTES)
         .min(i64::MAX as u64) as i64
 }
 

@@ -721,7 +721,7 @@ fn with_live_table<R>(
         fs_operation::OPENDIR,
         fs_operation::ROOT,
         installed_programs::DIRECTORY,
-        dir::READ,
+        directory::READ,
     );
     if d < 0 {
         return None;

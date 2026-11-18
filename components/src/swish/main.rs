@@ -38,7 +38,7 @@
 // behind the caller's back (see [`heap`]).
 #![feature(vec_push_within_capacity)]
 
-use filesystem_contract::{dirent, fs};
+use filesystem_contract::{directory_entry, fs};
 use grant_plan::expand::{Expander, NameSet, Resume};
 use grant_plan::line::{self, Line, Source};
 use grant_plan::nav::{self, Cwd, Refused, Step};

@@ -12,7 +12,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use filesystem_contract::{dir, fs, xattr};
+use filesystem_contract::{directory, fs, extended_attribute};
 use redoxfs::DiskFile;
 use redoxfs_server::NameCopy;
 
@@ -161,7 +161,7 @@ fn write_attributes_as_the_server_does(img: &Path) -> Vec<u8> {
             redoxfs_server::Server::open(disk).expect("mount the image as the FS server does");
 
         let top = srv.open_file(&named("top.txt")).unwrap();
-        srv.set_xattr(top, b"user.com.apple.FinderInfo", xattr::RAW, &finder)
+        srv.set_xattr(top, b"user.com.apple.FinderInfo", extended_attribute::RAW, &finder)
             .unwrap();
         srv.set_xattr(
             top,
@@ -172,13 +172,13 @@ fn write_attributes_as_the_server_does(img: &Path) -> Vec<u8> {
         .unwrap();
 
         let nested = srv
-            .open_dir(fs::ROOT as u32, &named("nested"), dir::ALL)
+            .open_dir(fs::ROOT as u32, &named("nested"), directory::ALL)
             .expect("descend into nested");
-        srv.set_xattr(nested, b"user.nife.kind", xattr::RAW, b"directory")
+        srv.set_xattr(nested, b"user.nife.kind", extended_attribute::RAW, b"directory")
             .unwrap();
 
         let note = srv.open_file_at(nested, &named("note.txt")).unwrap();
-        srv.set_xattr(note, b"user.nife.note", xattr::RAW, b"deep")
+        srv.set_xattr(note, b"user.nife.note", extended_attribute::RAW, b"deep")
             .unwrap();
     }
     finder
@@ -197,7 +197,7 @@ fn the_listing_marks_what_carries_attributes(img: &Path) {
     );
     let store_line = listing
         .lines()
-        .find(|l| l.ends_with(xattr::STORE_DIR))
+        .find(|l| l.ends_with(extended_attribute::STORE_DIRECTORY))
         .unwrap_or_else(|| panic!("the store is missing from the listing:\n{listing}"));
     assert!(
         !store_line.contains('@'),
@@ -257,9 +257,9 @@ fn the_round_trip_closes_on_the_host_files(out: &Path, finder: &[u8]) {
     );
 
     // The type code is not lost, it is relocated: the raw store comes out with the tree, and the
-    // format is published in `filesystem_contract::xattr::store`. That is what makes "dropped" honest rather
+    // format is published in `filesystem_contract::extended_attribute::store`. That is what makes "dropped" honest rather
     // than lossy, so the test asserts the fallback is really there.
-    let blobs = std::fs::read_dir(out.join(xattr::STORE_DIR))
+    let blobs = std::fs::read_dir(out.join(extended_attribute::STORE_DIRECTORY))
         .expect("the raw store must be extracted alongside, as the type codes' only home")
         .count();
     assert_eq!(
