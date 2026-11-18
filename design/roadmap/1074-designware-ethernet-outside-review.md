@@ -299,8 +299,7 @@ Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634).
 - The Motorcomm alias sets and the register gate's renames: no ruling found. Blocker: decision
   for calef (unverified).
 - The pin bump, and the weekly job's failure on main. Blocker: other, a lane.
-- The `v0.1.0-pre.1` tag. Blocker: release step.
-- Publishing. Blocker: publishing hold.
+- The `v0.1.0-pre.1` tag, then publishing. Blocker: release step, then the publishing hold.
 
 ## Follow-on
 
@@ -313,8 +312,7 @@ Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634).
   crate names the board and its two device trees. The README has its build, proof and falsification
   sections, and `cargo test` compiles its example.
 
-- **Outstanding.** The P2 items, and the two Motorcomm alias sets and register-gate renames that
-  wait for a ruling.
+- **Outstanding.** The P2 items and the two rulings listed above.
 
 ## Index row
 
