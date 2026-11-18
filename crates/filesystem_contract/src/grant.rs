@@ -26,7 +26,7 @@ pub const MAXIMUM_NAME_BYTES: usize = 252;
 /// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
 /// answers `None`), never truncated, because a truncated name is a different file.
 ///
-/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAXIMUM_NAME_BYTES`]'s "what
+/// Name: provisional (milestone 946 (a granted file name longer than sixteen bytes)), for "what two words can hold" beside [`MAXIMUM_NAME_BYTES`]'s "what
 /// a grant can name".
 pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;
 
