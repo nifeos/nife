@@ -10,7 +10,7 @@ use super::*;
 /// # BUGS
 ///
 /// - Every child costs a node read, because a RedoxFS directory entry does not store the child's
-///   type and the record carries [`filesystem_contract::dirent::IS_DIR`]. Milestone 121 (`ripgrep`
+///   type and the record carries [`filesystem_contract::directory_entry::IS_DIRECTORY`]. Milestone 121 (`ripgrep`
 ///   on nife: enumeration as a capability) measured 43 to 85 us per entry under HVF on 2026-09-26;
 ///   since milestone 606 (a directory walk costs what it does on Linux) the [`Memo`] pays it once
 ///   per directory until something changes.
@@ -25,7 +25,7 @@ pub(crate) fn list<D: Disk>(
     let mut out = Vec::with_capacity(children.len());
     for entry in &children {
         let Some(name) = entry.name() else { continue };
-        if name == xattr::STORE_DIR {
+        if name == extended_attribute::STORE_DIRECTORY {
             continue;
         }
         let child: redoxfs::TreeData<Node> = transaction.read_tree(entry.node_ptr())?;
@@ -43,7 +43,7 @@ pub(crate) fn list<D: Disk>(
 pub(crate) fn encode_listing(listing: &[memo::Child], cursor: u32, out: &mut [u8]) -> usize {
     let mut used = 0;
     for child in listing.iter().skip(cursor as usize) {
-        match filesystem_contract::dirent::encode(
+        match filesystem_contract::directory_entry::encode(
             &mut out[used..],
             child.name.as_bytes(),
             child.kind == Kind::Directory,

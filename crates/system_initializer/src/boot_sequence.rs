@@ -13,7 +13,7 @@ use super::*;
 /// does is park in `RECEIVE` on the shell's spawn channel for the life of the boot.
 ///
 /// `initial_ramdisk_len` is the archive length the kernel passed at entry; `fs_rights` is the
-/// `filesystem_contract::dir` rights the file-service endpoint carries, and 0 means this boot
+/// `filesystem_contract::directory` rights the file-service endpoint carries, and 0 means this boot
 /// attached no disk (so `fs_ep` and `fs_page` are empty). `uart_shape` is the console UART's
 /// register shape as the kernel passed it (`abi::uart`), handed on to the console and input
 /// drivers. `mounted_tree`, when `Some` and its slots hold something, is the shell's second

@@ -1,5 +1,5 @@
 use byte_sink_contract::eof;
-use filesystem_contract::{dir, rm as rr};
+use filesystem_contract::{directory, rm as rr};
 use filesystem_fixture::{VERDICT, globscape, tree};
 
 use super::*;
@@ -55,11 +55,14 @@ fn shell_expanded() -> Option<u64> {
         program("swish").expect("no swish program in the initial ramdisk"),
         fs_service::DirGrant {
             name: tree::GLOBSET,
-            rights: dir::ENUMERATE | dir::DESCEND | dir::READ,
+            rights: directory::ENUMERATE | directory::DESCEND | directory::READ,
             role: ROLE_GLOB,
             // The shell is told what its capability carries, for notes/shell-navigation.md's
             // reason: nothing on this wire reports what a handle holds.
-            arg: filesystem_contract::grant::spec(0, dir::ENUMERATE | dir::DESCEND | dir::READ),
+            arg: filesystem_contract::grant::specification(
+                0,
+                directory::ENUMERATE | directory::DESCEND | directory::READ,
+            ),
             arg2: 0,
             // A measurement: six pages ran within a few dozen bytes of the guard once `Holdings`
             // learned a second tree's mount point. See notes/two-trees.md, "The globbing
@@ -112,8 +115,8 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
             // `REMOVE` and nothing else: `rm *.txt` may not read, write, create beside or walk
             // under its names. Listing the set needs no right; the caretaker answers it from the
             // grant.
-            rights: dir::REMOVE,
-            role: filesystem_contract::grant::spec(name.len(), flags),
+            rights: directory::REMOVE,
+            role: filesystem_contract::grant::specification(name.len(), flags),
             arg: lo,
             arg2: hi,
             stack_pages: 6,

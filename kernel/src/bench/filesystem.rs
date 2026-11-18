@@ -127,14 +127,14 @@ pub(super) fn fs_walk() {
         println!("bench-probe: fs_walk skipped (a program is missing from the archive)");
         return;
     };
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     let Some(spawned) = crate::user::fs_service::start_std_narrowed(
         blk,
         server,
         caretaker,
         walker,
         filesystem_fixture::walk::ROOT,
-        dir::ENUMERATE | dir::READ | dir::DESCEND,
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
         None,
     ) else {
         return; // no RedoxFS disk on this run
@@ -155,13 +155,13 @@ pub(super) fn fs_walk_bound() {
     ) else {
         return;
     };
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     let Some(spawned) = crate::user::fs_service::start_std_bound(
         blk,
         server,
         walker,
         filesystem_fixture::walk::ROOT,
-        dir::ENUMERATE | dir::READ | dir::DESCEND,
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
     ) else {
         return;
     };
@@ -200,7 +200,7 @@ pub(super) fn rg_search() {
         println!("bench-probe: rg_search skipped (no rg in the archive; cargo xtask basalt-fetch)");
         return;
     };
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::walk as tree;
     let hertz = crate::arch::timer::frequency();
     let mut searched = [0u64; RG_SEARCH_RUNS];
@@ -213,7 +213,7 @@ pub(super) fn rg_search() {
             caretaker,
             rg,
             tree::ROOT,
-            dir::ENUMERATE | dir::READ | dir::DESCEND,
+            directory::ENUMERATE | directory::READ | directory::DESCEND,
             Some(tree::RG_SEARCH.as_bytes()),
         ) else {
             return; // no RedoxFS disk on this run

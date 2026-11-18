@@ -10,7 +10,7 @@ use std::{format, vec};
 
 /// Scratch big enough for any blob this store can hold, so a test never fails on its own buffer.
 fn scratch() -> Vec<u8> {
-    vec![0u8; xattr::store::MAXIMUM_BYTES]
+    vec![0u8; extended_attribute::store::MAXIMUM_BYTES]
 }
 
 /// **A name and a value survive the store round trip, at every length the limits allow**,
@@ -19,9 +19,9 @@ fn scratch() -> Vec<u8> {
 /// failure that must never be silent.
 #[test]
 fn an_attribute_round_trips_at_the_edges_of_both_limits() {
-    use xattr::store;
-    let widest_name = vec![b'n'; xattr::MAXIMUM_NAME];
-    let widest_value = vec![0xABu8; xattr::MAXIMUM_VALUE];
+    use extended_attribute::store;
+    let widest_name = vec![b'n'; extended_attribute::MAXIMUM_NAME_BYTES];
+    let widest_value = vec![0xABu8; extended_attribute::MAXIMUM_VALUE_BYTES];
     for (name, value) in [
         (&b"user.DOSATTRIB"[..], &b"0x20"[..]),
         (&b"a"[..], &b""[..]),
@@ -32,10 +32,10 @@ fn an_attribute_round_trips_at_the_edges_of_both_limits() {
         ),
     ] {
         let mut out = scratch();
-        let n = store::set(&[], name, xattr::RAW, value, &mut out).expect("set");
+        let n = store::set(&[], name, extended_attribute::RAW, value, &mut out).expect("set");
         assert_eq!(store::count(&out[..n]), 1);
         let (kind, got) = store::get(&out[..n], name).expect("the name we just wrote");
-        assert_eq!(kind, xattr::RAW);
+        assert_eq!(kind, extended_attribute::RAW);
         assert_eq!(got, value, "the value did not come back as it went in");
     }
 }
@@ -46,18 +46,27 @@ fn an_attribute_round_trips_at_the_edges_of_both_limits() {
 /// truncated into a type nobody wrote.
 #[test]
 fn a_type_code_survives_the_store_and_the_reply_word() {
-    use xattr::store;
+    use extended_attribute::store;
     // 'CSTR' and 'LONG', BFS's own spellings, plus the largest code the reply word can carry.
-    for kind in [xattr::RAW, 0x4353_5452, 0x4C4F_4E47, xattr::MAXIMUM_KIND] {
+    for kind in [
+        extended_attribute::RAW,
+        0x4353_5452,
+        0x4C4F_4E47,
+        extended_attribute::MAXIMUM_KIND,
+    ] {
         let mut out = scratch();
         let n = store::set(&[], b"typed", kind, b"body", &mut out).expect("set");
         assert_eq!(store::get(&out[..n], b"typed").unwrap().0, kind);
 
-        let r = xattr::reply(kind, 4);
+        let r = extended_attribute::reply(kind, 4);
         assert!(r >= 0, "a reply word must never read as an error");
-        assert_eq!(xattr::reply_kind(r), kind, "kind through the reply word");
         assert_eq!(
-            xattr::reply_value_len(r),
+            extended_attribute::reply_kind(r),
+            kind,
+            "kind through the reply word"
+        );
+        assert_eq!(
+            extended_attribute::reply_value_len(r),
             4,
             "length through the reply word"
         );
@@ -65,7 +74,13 @@ fn a_type_code_survives_the_store_and_the_reply_word() {
     // Bit 31 is not the store's to give away: refuse it where it is written.
     let mut out = scratch();
     assert_eq!(
-        store::set(&[], b"toobig", xattr::MAXIMUM_KIND + 1, b"x", &mut out),
+        store::set(
+            &[],
+            b"toobig",
+            extended_attribute::MAXIMUM_KIND + 1,
+            b"x",
+            &mut out
+        ),
         Err(22),
         "a kind that cannot ride home must be refused, not truncated",
     );
@@ -76,61 +91,71 @@ fn a_type_code_survives_the_store_and_the_reply_word() {
 /// all three would make the honest failure unactionable.
 #[test]
 fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
-    use xattr::store;
+    use extended_attribute::store;
     let mut out = scratch();
     assert_eq!(
-        store::set(&[], b"", xattr::RAW, b"v", &mut out),
-        Err(xattr::ERANGE)
+        store::set(&[], b"", extended_attribute::RAW, b"v", &mut out),
+        Err(extended_attribute::ERANGE)
     );
     assert_eq!(
         store::set(
             &[],
-            &vec![b'x'; xattr::MAXIMUM_NAME + 1],
-            xattr::RAW,
+            &vec![b'x'; extended_attribute::MAXIMUM_NAME_BYTES + 1],
+            extended_attribute::RAW,
             b"v",
             &mut out
         ),
-        Err(xattr::ERANGE),
+        Err(extended_attribute::ERANGE),
     );
     assert_eq!(
-        store::set(&[], b"has\0nul", xattr::RAW, b"v", &mut out),
-        Err(xattr::ERANGE),
+        store::set(&[], b"has\0nul", extended_attribute::RAW, b"v", &mut out),
+        Err(extended_attribute::ERANGE),
         "a NUL would come back as a shorter name than went out",
     );
     assert_eq!(
         store::set(
             &[],
             b"big",
-            xattr::RAW,
-            &vec![0u8; xattr::MAXIMUM_VALUE + 1],
+            extended_attribute::RAW,
+            &vec![0u8; extended_attribute::MAXIMUM_VALUE_BYTES + 1],
             &mut out
         ),
-        Err(xattr::E2BIG),
+        Err(extended_attribute::E2BIG),
     );
 
     // Fill a node to its ceiling, then ask for one more.
     let mut blob: Vec<u8> = Vec::new();
-    for i in 0..xattr::MAXIMUM_COUNT {
+    for i in 0..extended_attribute::MAXIMUM_ATTRIBUTES {
         let mut next = scratch();
         let n = store::set(
             &blob,
             format!("a{i}").as_bytes(),
-            xattr::RAW,
+            extended_attribute::RAW,
             b"v",
             &mut next,
         )
         .expect("within the count");
         blob = next[..n].to_vec();
     }
-    assert_eq!(store::count(&blob), xattr::MAXIMUM_COUNT);
+    assert_eq!(store::count(&blob), extended_attribute::MAXIMUM_ATTRIBUTES);
     assert_eq!(
-        store::set(&blob, b"one-too-many", xattr::RAW, b"v", &mut out),
-        Err(xattr::ENOSPC),
+        store::set(
+            &blob,
+            b"one-too-many",
+            extended_attribute::RAW,
+            b"v",
+            &mut out
+        ),
+        Err(extended_attribute::ENOSPC),
     );
     // And the ceiling is on NEW names only: replacing one of the sixteen still works, which is
     // what keeps a full file usable rather than frozen.
-    let n = store::set(&blob, b"a0", xattr::RAW, b"replaced", &mut out).expect("replace at cap");
-    assert_eq!(store::count(&out[..n]), xattr::MAXIMUM_COUNT);
+    let n = store::set(&blob, b"a0", extended_attribute::RAW, b"replaced", &mut out)
+        .expect("replace at cap");
+    assert_eq!(
+        store::count(&out[..n]),
+        extended_attribute::MAXIMUM_ATTRIBUTES
+    );
     assert_eq!(store::get(&out[..n], b"a0").unwrap().1, b"replaced");
 }
 
@@ -139,10 +164,10 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
 /// names move under it for no reason it could observe.
 #[test]
 fn a_replacement_keeps_its_position_and_a_new_name_appends() {
-    use xattr::store;
+    use extended_attribute::store;
     let (mut blob, mut out) = (Vec::new(), scratch());
     for name in [&b"one"[..], b"two", b"three"] {
-        let n = store::set(&blob, name, xattr::RAW, b"v1", &mut out).unwrap();
+        let n = store::set(&blob, name, extended_attribute::RAW, b"v1", &mut out).unwrap();
         blob = out[..n].to_vec();
     }
     let names = |b: &[u8]| store::iter(b).map(|(n, ..)| n.to_vec()).collect::<Vec<_>>();
@@ -163,19 +188,19 @@ fn a_replacement_keeps_its_position_and_a_new_name_appends() {
     );
     assert_eq!(
         store::get(&out[..n], b"one"),
-        Some((xattr::RAW, &b"v1"[..]))
+        Some((extended_attribute::RAW, &b"v1"[..]))
     );
 }
 
 /// Removing takes exactly one attribute and leaves the rest byte for byte, and removing what is
-/// not there is [`xattr::ENODATA`] rather than a quiet success. The caller asked about one
+/// not there is [`extended_attribute::ENODATA`] rather than a quiet success. The caller asked about one
 /// specific thing.
 #[test]
 fn removing_takes_one_attribute_and_says_so_when_there_is_none() {
-    use xattr::store;
+    use extended_attribute::store;
     let (mut blob, mut out) = (Vec::new(), scratch());
     for name in [&b"keep-a"[..], b"drop", b"keep-b"] {
-        let n = store::set(&blob, name, xattr::RAW, name, &mut out).unwrap();
+        let n = store::set(&blob, name, extended_attribute::RAW, name, &mut out).unwrap();
         blob = out[..n].to_vec();
     }
     let n = store::remove(&blob, b"drop", &mut out).expect("remove");
@@ -183,15 +208,15 @@ fn removing_takes_one_attribute_and_says_so_when_there_is_none() {
     assert_eq!(store::get(&out[..n], b"drop"), None);
     assert_eq!(
         store::get(&out[..n], b"keep-a"),
-        Some((xattr::RAW, &b"keep-a"[..]))
+        Some((extended_attribute::RAW, &b"keep-a"[..]))
     );
     assert_eq!(
         store::get(&out[..n], b"keep-b"),
-        Some((xattr::RAW, &b"keep-b"[..]))
+        Some((extended_attribute::RAW, &b"keep-b"[..]))
     );
     assert_eq!(
         store::remove(&out[..n], b"drop", &mut scratch()),
-        Err(xattr::ENODATA)
+        Err(extended_attribute::ENODATA)
     );
     // The last one out leaves an empty blob, which is how the server knows to delete the file.
     let mut b = out[..n].to_vec();
@@ -208,11 +233,11 @@ fn removing_takes_one_attribute_and_says_so_when_there_is_none() {
 /// would be corruption the checksums could not see.
 #[test]
 fn a_torn_blob_reads_back_short_rather_than_wrong() {
-    use xattr::store;
+    use extended_attribute::store;
     let mut out = scratch();
     let mut blob = Vec::new();
     for name in [&b"one"[..], b"two"] {
-        let n = store::set(&blob, name, xattr::RAW, b"value", &mut out).unwrap();
+        let n = store::set(&blob, name, extended_attribute::RAW, b"value", &mut out).unwrap();
         blob = out[..n].to_vec();
     }
     let whole = store::count(&blob);
@@ -242,30 +267,33 @@ fn a_torn_blob_reads_back_short_rather_than_wrong() {
 /// stops being true, the verb needs a cursor and the note needs rewriting.
 #[test]
 fn the_widest_listing_fits_one_page_and_round_trips() {
-    use xattr::store;
+    use extended_attribute::store;
     assert_eq!(
-        xattr::list::MAXIMUM_BYTES,
-        PAGE,
+        extended_attribute::list::MAXIMUM_BYTES,
+        PAGE_BYTES,
         "the no-cursor property is this equality"
     );
 
     let mut blob = Vec::new();
     let mut out = scratch();
-    let names: Vec<Vec<u8>> = (0..xattr::MAXIMUM_COUNT)
+    let names: Vec<Vec<u8>> = (0..extended_attribute::MAXIMUM_ATTRIBUTES)
         .map(|i| {
-            let mut n = vec![b'a' + i as u8; xattr::MAXIMUM_NAME];
+            let mut n = vec![b'a' + i as u8; extended_attribute::MAXIMUM_NAME_BYTES];
             n[0] = b'0' + i as u8;
             n
         })
         .collect();
     for name in &names {
-        let n = store::set(&blob, name, xattr::RAW, b"", &mut out).unwrap();
+        let n = store::set(&blob, name, extended_attribute::RAW, b"", &mut out).unwrap();
         blob = out[..n].to_vec();
     }
-    let mut page = [0u8; PAGE];
+    let mut page = [0u8; PAGE_BYTES];
     let used = store::list(&blob, &mut page);
-    assert_eq!(used, PAGE, "sixteen widest names fill the page and no more");
-    let back: Vec<Vec<u8>> = xattr::list::iter(&page[..used])
+    assert_eq!(
+        used, PAGE_BYTES,
+        "sixteen widest names fill the page and no more"
+    );
+    let back: Vec<Vec<u8>> = extended_attribute::list::iter(&page[..used])
         .map(|n| n.to_vec())
         .collect();
     assert_eq!(back, names, "the listing did not come back as it went in");
@@ -273,7 +301,7 @@ fn the_widest_listing_fits_one_page_and_round_trips() {
     // A short buffer stops before the record that will not fit rather than splitting a name.
     let mut tiny = [0u8; 300];
     let n = store::list(&blob, &mut tiny);
-    assert_eq!(xattr::list::iter(&tiny[..n]).count(), 1);
+    assert_eq!(extended_attribute::list::iter(&tiny[..n]).count(), 1);
 }
 
 /// The two packed words carry their fields without bleeding, at the extremes. A value length
@@ -282,22 +310,32 @@ fn the_widest_listing_fits_one_page_and_round_trips() {
 #[test]
 fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
     for &(kind, len) in &[
-        (xattr::RAW, 0usize),
-        (1, xattr::MAXIMUM_VALUE),
-        (xattr::MAXIMUM_KIND, xattr::MAXIMUM_VALUE),
+        (extended_attribute::RAW, 0usize),
+        (1, extended_attribute::MAXIMUM_VALUE_BYTES),
+        (
+            extended_attribute::MAXIMUM_KIND,
+            extended_attribute::MAXIMUM_VALUE_BYTES,
+        ),
         (0xFFFF_FFFF, 1), // a caller that ignores MAXIMUM_KIND: the reply masks rather than lies
     ] {
-        let w1 = xattr::spec(kind, len as u64);
-        assert_eq!(xattr::spec_kind(w1), kind, "kind through the request word");
+        let w1 = extended_attribute::specification(kind, len as u64);
         assert_eq!(
-            xattr::spec_value_len(w1),
+            extended_attribute::specification_kind(w1),
+            kind,
+            "kind through the request word"
+        );
+        assert_eq!(
+            extended_attribute::specification_value_len(w1),
             len,
             "length through the request word"
         );
-        let r = xattr::reply(kind, len);
+        let r = extended_attribute::reply(kind, len);
         assert!(r >= 0);
-        assert_eq!(xattr::reply_kind(r), kind & xattr::MAXIMUM_KIND);
-        assert_eq!(xattr::reply_value_len(r), len);
+        assert_eq!(
+            extended_attribute::reply_kind(r),
+            kind & extended_attribute::MAXIMUM_KIND
+        );
+        assert_eq!(extended_attribute::reply_value_len(r), len);
     }
 }
 
@@ -305,7 +343,7 @@ fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
 /// makes rename free and what makes a leaked blob dangerous, so it is pinned rather than assumed.
 #[test]
 fn a_store_file_is_named_for_exactly_one_node() {
-    use xattr::store::file_name;
+    use extended_attribute::store::file_name;
     assert_eq!(&file_name(0), b"00000000");
     assert_eq!(&file_name(1), b"00000001");
     assert_eq!(&file_name(0xdead_beef), b"deadbeef");
@@ -326,8 +364,8 @@ fn a_store_file_is_named_for_exactly_one_node() {
 /// wrong header width would pass them together.
 #[test]
 fn an_attribute_record_lays_out_exactly_as_published() {
-    use xattr::store;
-    assert_eq!(store::RECORD_HEADER, 7);
+    use extended_attribute::store;
+    assert_eq!(store::RECORD_HEADER_BYTES, 7);
     let mut out = scratch();
     let n = store::set(&[], b"ab", 0x0102_0304, b"xyz", &mut out).expect("set");
     assert_eq!(n, store::record_len(2, 3));
@@ -342,18 +380,21 @@ fn an_attribute_record_lays_out_exactly_as_published() {
 /// **An exactly-sized buffer is enough, and a short one refuses rather than crashes.** `set`'s
 /// doc sizes the caller's buffer at `blob.len() + record_len(...)`, so "exactly enough" has to
 /// mean enough; and the FS server hands `set` a buffer it sized itself, so a one-byte error
-/// there must come back [`xattr::ENOSPC`] instead of tearing down the serve loop on a slice
+/// there must come back [`extended_attribute::ENOSPC`] instead of tearing down the serve loop on a slice
 /// bound.
 #[test]
 fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
-    use xattr::store;
+    use extended_attribute::store;
     let n = store::record_len(1, 1);
     let mut exact = vec![0u8; n];
-    assert_eq!(store::set(&[], b"n", xattr::RAW, b"v", &mut exact), Ok(n));
+    assert_eq!(
+        store::set(&[], b"n", extended_attribute::RAW, b"v", &mut exact),
+        Ok(n)
+    );
     let mut short = vec![0u8; n - 1];
     assert_eq!(
-        store::set(&[], b"n", xattr::RAW, b"v", &mut short),
-        Err(xattr::ENOSPC),
+        store::set(&[], b"n", extended_attribute::RAW, b"v", &mut short),
+        Err(extended_attribute::ENOSPC),
     );
 }
 
@@ -363,26 +404,29 @@ fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
 
 /// **A record wider than the contract is refused when a blob is rewritten, not carried forward.**
 ///
-/// [`xattr::store::set`] and [`xattr::store::remove`] re-emit every untouched record with lengths
+/// [`extended_attribute::store::set`] and [`extended_attribute::store::remove`] re-emit every untouched record with lengths
 /// read off the blob, not from a bounds-checked caller. A value length is a `u16`, so a torn or
-/// forged blob reaches 65535 where [`xattr::MAXIMUM_VALUE`] is 3072, and `write_record`'s own limit
+/// forged blob reaches 65535 where [`extended_attribute::MAXIMUM_VALUE_BYTES`] is 3072, and `write_record`'s own limit
 /// is all that stops it. Every other test builds blobs through `set`, whose `E2BIG` fires first.
 #[test]
 fn a_record_wider_than_the_contract_is_refused_when_a_blob_is_rewritten() {
-    use xattr::store::{self, RECORD_HEADER};
-    let over = xattr::MAXIMUM_VALUE + 1;
+    use extended_attribute::store::{self, RECORD_HEADER_BYTES};
+    let over = extended_attribute::MAXIMUM_VALUE_BYTES + 1;
     let mut blob = vec![0u8; store::record_len(1, over)];
     blob[0] = 1;
     blob[5..7].copy_from_slice(&(over as u16).to_le_bytes());
-    blob[RECORD_HEADER] = b'a';
+    blob[RECORD_HEADER_BYTES] = b'a';
     // The walker has to hand the oversized record over, or the rewrite path is never reached
     // and the refusals below would be about an empty blob instead.
     assert_eq!(store::iter(&blob).count(), 1);
 
     let mut out = vec![0u8; blob.len() + store::record_len(1, 1)];
     assert_eq!(
-        store::set(&blob, b"b", xattr::RAW, b"v", &mut out),
-        Err(xattr::ENOSPC),
+        store::set(&blob, b"b", extended_attribute::RAW, b"v", &mut out),
+        Err(extended_attribute::ENOSPC),
     );
-    assert_eq!(store::remove(&blob, b"b", &mut out), Err(xattr::ENOSPC));
+    assert_eq!(
+        store::remove(&blob, b"b", &mut out),
+        Err(extended_attribute::ENOSPC)
+    );
 }

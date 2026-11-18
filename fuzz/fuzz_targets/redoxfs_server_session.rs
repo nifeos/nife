@@ -26,7 +26,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use filesystem_contract::{dir, fs, xattr};
+use filesystem_contract::{directory, extended_attribute, fs};
 use libfuzzer_sys::arbitrary::{Result as ArbResult, Unstructured};
 use libfuzzer_sys::fuzz_target;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem, Node, TreePtr};
@@ -217,9 +217,9 @@ const VERBS: &[u64] = &[
     fs::REMOVEXATTR,
     fs::STATFS,
     fs::SYNC,
-    fs::GETMTIME,
-    fs::SETMTIME,
-    fs::SETMTIME_AT,
+    fs::GET_MODIFICATION_TIME,
+    fs::SET_MODIFICATION_TIME,
+    fs::SET_MODIFICATION_TIME_AT,
     fs::NARROW,
     fs::BIND,
     fs::UNBIND,
@@ -256,11 +256,11 @@ impl Session {
 
     fn rights(u: &mut Unstructured) -> ArbResult<u64> {
         Ok(if u.ratio(1, 8)? {
-            dir::PARENT_RIGHTS
+            directory::PARENT_RIGHTS
         } else if u.ratio(3, 4)? {
-            dir::ALL
+            directory::ALL
         } else {
-            u.int_in_range(0..=dir::ALL)?
+            u.int_in_range(0..=directory::ALL)?
         })
     }
 
@@ -276,10 +276,12 @@ impl Session {
         let small = u.int_in_range(0u64..=9000)?;
         let (len, w1) = match code {
             fs::OPEN | fs::OPENDIR | fs::MKDIR => (self.name(u, 0)?, Self::rights(u)?),
-            fs::CREATE | fs::UNLINK | fs::RMDIR | fs::GETMTIME | fs::SETMTIME => {
-                (self.name(u, 0)?, 0)
-            }
-            fs::SETMTIME_AT => (self.name(u, 0)?, small),
+            fs::CREATE
+            | fs::UNLINK
+            | fs::RMDIR
+            | fs::GET_MODIFICATION_TIME
+            | fs::SET_MODIFICATION_TIME => (self.name(u, 0)?, 0),
+            fs::SET_MODIFICATION_TIME_AT => (self.name(u, 0)?, small),
             fs::NARROW => (0, Self::rights(u)?),
             fs::READ => (small as usize, u.int_in_range(0..=600)?),
             fs::WRITE => {
@@ -297,7 +299,7 @@ impl Session {
                 let name = self.name(u, 0)?;
                 let value = u.int_in_range(0usize..=40)?;
                 let kind = u.int_in_range(0u32..=3)?;
-                (name, xattr::spec(kind, value as u64))
+                (name, extended_attribute::specification(kind, value as u64))
             }
             fs::BIND | fs::UNBIND => (0, Self::badge(u)?),
             _ => (u.int_in_range(0..=64)?, small),
@@ -385,7 +387,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
     };
     let mut s = Session {
         server: Server::open(disk).expect("the template opens"),
-        window: vec![0; fs::TRANSFER_MAXIMUM],
+        window: vec![0; fs::MAXIMUM_TRANSFER_BYTES],
         badges: [Model::Open; fs::CLIENT_WINDOWS],
         owners: HashMap::new(),
         forbidden: [&[]; fs::CLIENT_WINDOWS],
@@ -402,7 +404,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
         let h = s.send(
             0,
             fs::req(fs::OPENDIR, fs::ROOT, path.len() as u64),
-            dir::ALL,
+            directory::ALL,
         );
         assert!(h > 0, "the prologue's OPENDIR failed: {h}");
         assert_eq!(

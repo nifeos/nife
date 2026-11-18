@@ -16,9 +16,9 @@ use super::*;
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct DirGrant {
     /// The directory the caretaker descends into, one component under the image root. Must fit
-    /// [`filesystem_contract::grant::WORDS_NAME`].
+    /// [`filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES`].
     pub name: &'static str,
-    /// The [`filesystem_contract::dir`] rights the caretaker asks for. The FS server intersects
+    /// The [`filesystem_contract::directory`] rights the caretaker asks for. The FS server intersects
     /// them with the root's and refuses if the answer is smaller, so asking for more than exists
     /// fails at the caretaker's first request.
     pub rights: u64,
@@ -157,7 +157,7 @@ fn spawn_caretaker(
 
     let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
         .expect("a granted name rides in two argument words; this one does not fit");
-    let spec = filesystem_contract::grant::spec(name.len(), rights);
+    let spec = filesystem_contract::grant::specification(name.len(), rights);
 
     let tid = crate::sched::spawn(move || {
         run(

@@ -40,7 +40,7 @@ diff --git a/components/src/printenv.rs b/components/src/printenv.rs
 index 7a383756..951469ce 100644
 --- a/components/src/printenv.rs
 +++ b/components/src/printenv.rs
-@@ -122,7 +122,7 @@ fn key_line(_page: &ConfigPage, key: &[u8], value: Option<&str>) {
+@@ -122,7 +122,7 @@ fn key_line(_page: &ConfigurationPage, key: &[u8], value: Option<&str>) {
  /// know `bytes.len()` and `*n` are both trustworthy, and one of them comes from the page.
  fn push(buf: &mut [u8; 96], n: &mut usize, bytes: &[u8]) {
      for &b in bytes {

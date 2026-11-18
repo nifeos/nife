@@ -308,7 +308,7 @@ fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {
             )
             .expect("insert the shared file page");
             assert_eq!(s6, 6);
-            (filesystem_contract::dir::ALL, Some(file_shared))
+            (filesystem_contract::directory::ALL, Some(file_shared))
         }
         None => (0, None),
     }

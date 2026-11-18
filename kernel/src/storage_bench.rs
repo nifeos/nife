@@ -426,7 +426,7 @@ enum El0 {
 /// A read-only build serves the first partition and checks block 0, `EROFS` and `EINVAL`; a
 /// `write` build serves the scratch range and round-trips one block. See notes/bench-boots.md.
 fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
-    use filesystem_contract::blk;
+    use filesystem_contract::block;
 
     use crate::user::designware_mobile_storage_service as service;
 
@@ -451,24 +451,24 @@ fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
     if ready[0] != filesystem_contract::READY {
         return El0::NotReady(ready[0], ready[1], ready[2]);
     }
-    let call = |op, block| crate::sched::ipc_call(w.request, [blk::req(op, 1), block])[0] as i64;
+    let call = |op, block| crate::sched::ipc_call(w.request, [block::req(op, 1), block])[0] as i64;
     // SAFETY: the service allocated these pages for the server and its one client, which this boot
     // thread now is; the direct map covers them, and the server touches them only inside a call.
     let shared = unsafe {
         core::slice::from_raw_parts_mut(
             crate::arch::mmu::phys_to_virt(w.transfer_phys) as *mut u8,
-            blk::BLOCK_SIZE,
+            block::BLOCK_BYTES,
         )
     };
-    if call(blk::SIZE, 0) != (window.sectors * BLOCK_BYTES as u64) as i64 {
-        return El0::Wrong("SIZE", call(blk::SIZE, 0));
+    if call(block::SIZE, 0) != (window.sectors * BLOCK_BYTES as u64) as i64 {
+        return El0::Wrong("SIZE", call(block::SIZE, 0));
     }
     let past = window.sectors / 8;
-    let got = call(blk::READ, past);
+    let got = call(block::READ, past);
     if got != filesystem_contract::reply_err(22) {
         return El0::Wrong("READ past the window is EINVAL", got);
     }
-    let got = call(blk::READ, 0);
+    let got = call(block::READ, 0);
     if got != 1 {
         return El0::Wrong("READ block 0", got);
     }
@@ -512,12 +512,12 @@ fn read_only_checks(
     shared: &[u8],
     r: &ReadOnlyProbeReport,
 ) -> El0 {
-    use filesystem_contract::blk;
+    use filesystem_contract::block;
 
     if shared[510..512] != [0x55, 0xaa] || shared[82..90] != r.file_system_type {
         return El0::Wrong("block 0 is the boot sector the kernel read", 0);
     }
-    let got = call(blk::WRITE, 0);
+    let got = call(block::WRITE, 0);
     if got != filesystem_contract::reply_err(30) {
         return El0::Wrong("WRITE to a read-only window is EROFS", got);
     }
@@ -531,26 +531,26 @@ fn write_cycle_checks(
     shared: &mut [u8],
     window: driver_process_contract::designware_mobile_storage::Window,
 ) -> El0 {
-    use filesystem_contract::blk;
+    use filesystem_contract::block;
 
-    let mut original = [0u8; blk::BLOCK_SIZE];
+    let mut original = [0u8; block::BLOCK_BYTES];
     original.copy_from_slice(shared);
     for (i, b) in shared.iter_mut().enumerate() {
         *b = bench::scratch_pattern_byte(window.first + (i / BLOCK_BYTES) as u64, i % BLOCK_BYTES)
             ^ 0xff;
     }
-    let got = call(blk::WRITE, 0);
+    let got = call(block::WRITE, 0);
     if got != 1 {
         return El0::Wrong("WRITE block 0", got);
     }
     shared.fill(0);
-    let got = call(blk::READ, 0);
+    let got = call(block::READ, 0);
     let intact = shared.iter().enumerate().all(|(i, &b)| {
         b == bench::scratch_pattern_byte(window.first + (i / BLOCK_BYTES) as u64, i % BLOCK_BYTES)
             ^ 0xff
     });
     shared.copy_from_slice(&original);
-    let restored = call(blk::WRITE, 0);
+    let restored = call(block::WRITE, 0);
     if got != 1 || !intact {
         return El0::Wrong("the written block read back", got);
     }
@@ -558,11 +558,11 @@ fn write_cycle_checks(
         return El0::Wrong("WRITE the original back", restored);
     }
     shared.fill(0);
-    let got = call(blk::READ, 0);
+    let got = call(block::READ, 0);
     if got != 1 || shared[..] != original[..] {
         return El0::Wrong("the original read back", got);
     }
-    let flushed = call(blk::FLUSH, 0);
+    let flushed = call(block::FLUSH, 0);
     if flushed != 1 {
         return El0::Wrong("FLUSH counts", flushed);
     }

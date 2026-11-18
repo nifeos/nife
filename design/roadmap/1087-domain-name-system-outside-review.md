@@ -272,6 +272,7 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
   (`notes/crate-move.md`, steps 4 and 5).
 - **Outstanding.** `mutation / mutation` has no green full run on `main` yet. It first runs in the new
   repository.
+- **Outstanding.** Nothing else here has a ruling to build.
 
 ## BUGS
 

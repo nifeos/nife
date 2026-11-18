@@ -5,7 +5,7 @@
 //! [`grant_contract::Manifest::configuration`] in place of [`grant_contract::Manifest::clock`]. The page
 //! is mapped `READ`-only, so there is no `printenv -s TZ=...`: the missing authority is a page
 //! permission, not a check here. "No grant" is told apart from an unset key by checking for the
-//! capability before printing anything, as `date` does: `environment_contract::ConfigPage`
+//! capability before printing anything, as `date` does: `environment_contract::ConfigurationPage`
 //! answers `None` both for a key never set and for a page nobody assembled.
 
 //! # EXAMPLES
@@ -38,7 +38,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use environment_contract::ConfigPage;
+use environment_contract::ConfigurationPage;
 use user_mode_runtime::{exit, is_granted, send};
 
 /// Slot 0: where the output goes. An endpoint with `WRITE`, and the same 16-bytes-per-message
@@ -112,9 +112,9 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         exit();
     };
 
-    key_line(&page, b"TZ", page.tz());
-    key_line(&page, b"LANG", page.lang());
-    key_line(&page, b"TERM", page.term());
+    key_line(&page, b"TZ", page.time_zone());
+    key_line(&page, b"LANG", page.locale());
+    key_line(&page, b"TERM", page.terminal_type());
 
     send(REPORT, byte_sink_contract::eof(), 0, 0);
     exit();
@@ -124,7 +124,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 /// simply does not carry it. `_page` is unused directly but keeps this a method-shaped call at
 /// every site, so a reader sees the three lines are the same operation three times rather than
 /// three hand-written formats that happen to agree today.
-fn key_line(_page: &ConfigPage, key: &[u8], value: Option<&str>) {
+fn key_line(_page: &ConfigurationPage, key: &[u8], value: Option<&str>) {
     let mut buf = [0u8; 96];
     let mut n = 0;
     push(&mut buf, &mut n, key);
@@ -162,13 +162,13 @@ fn push(buf: &mut [u8; 96], n: &mut usize, bytes: &[u8]) {
 /// The probe has to answer **without touching the page**, for `date`'s reason (a different binary,
 /// the same shape): a process granted nothing has nothing mapped at [`CONFIG_VA`], and a read
 /// there would fault instead of answering.
-fn config_page() -> Option<ConfigPage> {
+fn config_page() -> Option<ConfigurationPage> {
     if !is_granted(CONFIG_SLOT) {
         return None;
     }
     // SAFETY: the wiring maps the config page read-only at CONFIG_VA alongside the capability the
     // probe just found, and nothing unmaps it. Without the capability we never build the pointer.
-    Some(unsafe { ConfigPage::new(CONFIG_VA) })
+    Some(unsafe { ConfigurationPage::new(CONFIG_VA) })
 }
 
 /// Send `bytes` and a newline to the output endpoint, 16 bytes per message. `date`'s `line`/

@@ -31,7 +31,7 @@ use core::sync::atomic::{AtomicU8, Ordering};
 
 use crate::ffi::{OsStr, OsString};
 use crate::sync::Mutex;
-use crate::sys::pal::nife::envproto::ConfigPage;
+use crate::sys::pal::nife::envproto::ConfigurationPage;
 use crate::sys::pal::nife::rt;
 use crate::{fmt, io, vec};
 
@@ -141,9 +141,9 @@ pub fn seed() {
     // SAFETY: the loader maps the config page read-only at `rt::CONFIG_PAGE` alongside the
     // capability the probe just found in `rt::CONFIG_SLOT`, and nothing unmaps or writes it
     // (the page has exactly one writer, and it is not this process; see `environment_contract`'s docs).
-    let page = unsafe { ConfigPage::new(rt::CONFIG_PAGE) };
+    let page = unsafe { ConfigurationPage::new(rt::CONFIG_PAGE) };
     let mut guard = ENV.lock().unwrap_or_else(|e| e.into_inner());
-    for (key, value) in [("TZ", page.tz()), ("LANG", page.lang()), ("TERM", page.term())] {
+    for (key, value) in [("TZ", page.time_zone()), ("LANG", page.locale()), ("TERM", page.terminal_type())] {
         if let Some(v) = value {
             guard.push((OsString::from(key), OsString::from(v)));
         }

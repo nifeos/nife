@@ -17,7 +17,7 @@
 //! (`CREATE`), `truncate` and `File::set_len` (`TRUNCATE`), `read_dir`, `create_dir`,
 //! `remove_file`, `remove_dir` and `rename` (`OPENDIR`, `READDIR`, `MKDIR`, `UNLINK`, `RMDIR`,
 //! `RENAME`), [`copy`], [`Dir`] (`#![feature(dirfd)]`), `remove_dir_all`, `Metadata::modified`
-//! (`GETMTIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SETMTIME_AT`,
+//! (`GET_MODIFICATION_TIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SET_MODIFICATION_TIME_AT`,
 //! §112).
 
 //! # What stays Unsupported
@@ -81,7 +81,7 @@ const FS: u64 = rt::FS_DIR_SLOT;
 const PAGE_VA: u64 = rt::FS_PAGE;
 
 /// The contract's transfer unit: one page, so one request never moves more than this.
-const PAGE: usize = fsproto::PAGE;
+const PAGE: usize = fsproto::PAGE_BYTES;
 
 // One child per seam (§282 (when a file is split, the parent becomes an index)). Each takes
 // `use super::*` and is re-exported whole, the shape `kernel/src/sched.rs` uses, because it is part

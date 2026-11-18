@@ -8,7 +8,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{dir, fs, xattr};
+use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
 use fixture::attrs;
 use user_mode_runtime::call;
@@ -34,7 +34,7 @@ fn xattr_set(handle: u64, name: &[u8], kind: u32, value: &[u8]) -> i64 {
     call(
         FILE,
         fs::req(fs::SETXATTR, handle, name.len() as u64),
-        xattr::spec(kind, value.len() as u64),
+        extended_attribute::specification(kind, value.len() as u64),
     )
     .0 as i64
 }
@@ -74,8 +74,8 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     if xattr_set(scratch, attrs::NAME, attrs::KIND, attrs::VALUE) >= 0 {
         let r = xattr_get(scratch, attrs::NAME);
         if r >= 0
-            && xattr::reply_kind(r) == attrs::KIND
-            && xattr::reply_value_len(r) == attrs::VALUE.len()
+            && extended_attribute::reply_kind(r) == attrs::KIND
+            && extended_attribute::reply_value_len(r) == attrs::VALUE.len()
         {
             get_page(attrs::VALUE.len(), &mut buf);
             if &buf[..attrs::VALUE.len()] == attrs::VALUE {
@@ -93,7 +93,7 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
         get_page(n as usize, &mut buf);
         let mut count = 0;
         let mut saw = false;
-        for name in xattr::list::iter(&buf[..(n as usize).min(buf.len())]) {
+        for name in extended_attribute::list::iter(&buf[..(n as usize).min(buf.len())]) {
             count += 1;
             if name == attrs::NAME {
                 saw = true;
@@ -108,21 +108,25 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     //    than any local here, so it is written straight onto the page.
     let big = b"user.toobig";
     put_page(big);
-    fill_page(big.len(), xattr::MAXIMUM_VALUE + 1, b'Z');
+    fill_page(big.len(), extended_attribute::MAXIMUM_VALUE_BYTES + 1, b'Z');
     let r = call(
         FILE,
         fs::req(fs::SETXATTR, scratch, big.len() as u64),
-        xattr::spec(xattr::RAW, (xattr::MAXIMUM_VALUE + 1) as u64),
+        extended_attribute::specification(
+            extended_attribute::RAW,
+            (extended_attribute::MAXIMUM_VALUE_BYTES + 1) as u64,
+        ),
     )
     .0 as i64;
-    if filesystem_contract::reply_errno(r) == Some(xattr::E2BIG) {
+    if filesystem_contract::reply_errno(r) == Some(extended_attribute::E2BIG) {
         v |= attrs::OVERSIZE_REFUSED;
     }
 
     // 4. Removing it takes it away, and reading it afterwards is ENODATA. Without this the round
     //    trip above is equally true of a store that never forgets anything.
     if xattr_remove(scratch, attrs::NAME) >= 0
-        && filesystem_contract::reply_errno(xattr_get(scratch, attrs::NAME)) == Some(xattr::ENODATA)
+        && filesystem_contract::reply_errno(xattr_get(scratch, attrs::NAME))
+            == Some(extended_attribute::ENODATA)
     {
         v |= attrs::GONE_AFTER_REMOVE;
     }
@@ -141,9 +145,13 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     }
 
     // 7. The store is not in the namespace: it cannot be opened, created, or descended into.
-    if dir_open(fs::ROOT, xattr::STORE_DIR) < 0
-        && dir_create(fs::ROOT, xattr::STORE_DIR) < 0
-        && dir_descend(fs::ROOT, xattr::STORE_DIR, dir::ALL) < 0
+    if dir_open(fs::ROOT, extended_attribute::STORE_DIRECTORY) < 0
+        && dir_create(fs::ROOT, extended_attribute::STORE_DIRECTORY) < 0
+        && dir_descend(
+            fs::ROOT,
+            extended_attribute::STORE_DIRECTORY,
+            directory::ALL,
+        ) < 0
     {
         v |= attrs::STORE_UNNAMEABLE;
     }
@@ -175,7 +183,7 @@ fn an_attribute_follows_its_file_across_a_rename() -> u64 {
         } else {
             -1
         };
-        if r >= 0 && xattr::reply_value_len(r) == attrs::VALUE.len() {
+        if r >= 0 && extended_attribute::reply_value_len(r) == attrs::VALUE.len() {
             get_page(attrs::VALUE.len(), &mut buf);
             if &buf[..attrs::VALUE.len()] == attrs::VALUE {
                 v |= attrs::SURVIVED_RENAME;
@@ -202,8 +210,10 @@ fn a_full_enumeration_does_not_name_the_store() -> u64 {
         }
         get_page(n as usize, &mut buf);
         let mut seen = 0u64;
-        for (name, _) in filesystem_contract::dirent::iter(&buf[..(n as usize).min(buf.len())]) {
-            if name == xattr::STORE_DIR.as_bytes() {
+        for (name, _) in
+            filesystem_contract::directory_entry::iter(&buf[..(n as usize).min(buf.len())])
+        {
+            if name == extended_attribute::STORE_DIRECTORY.as_bytes() {
                 clean = false;
             }
             seen += 1;

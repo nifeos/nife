@@ -37,7 +37,7 @@ fn c_args(path: &Path, name: &[u8]) -> io::Result<(CString, CString)> {
 /// Set one extended attribute on `path` itself, not following a symlink.
 ///
 /// **The type code cannot come along.** No host filesystem has a per-attribute type word, so
-/// [`filesystem_contract::xattr`]'s `kind` is dropped here and the caller reports it (notes/host-recovery.md).
+/// [`filesystem_contract::extended_attribute`]'s `kind` is dropped here and the caller reports it (notes/host-recovery.md).
 /// The bytes are what a reader needs; the codes remain readable in the extracted `.extended-attributes`
 /// blobs, which is why those are still copied out.
 #[cfg(target_os = "macos")]

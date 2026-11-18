@@ -2125,10 +2125,8 @@ crates/domain_name_resolution_contract/src/wire.rs::word
 
 
 
-crates/environment_contract/src/lib.rs::ConfigPage
 
 
-crates/environment_contract/src/lib.rs::PAGE_BYTES
 
 crates/environment_contract/src/lib.rs::PageBuilder
 
@@ -2136,109 +2134,148 @@ crates/environment_contract/src/lib.rs::Refused
 
 crates/environment_contract/src/lib.rs::build
 
-crates/environment_contract/src/lib.rs::is_valid_lang
 
-crates/environment_contract/src/lib.rs::is_valid_term
 
-crates/environment_contract/src/lib.rs::is_valid_tz
 
-crates/environment_contract/src/lib.rs::lang
 
-crates/environment_contract/src/lib.rs::lang
 
 crates/environment_contract/src/lib.rs::new
 
 crates/environment_contract/src/lib.rs::new
 
-crates/environment_contract/src/lib.rs::term
 
-crates/environment_contract/src/lib.rs::term
 
-crates/environment_contract/src/lib.rs::tz
 
-crates/environment_contract/src/lib.rs::tz
 
-crates/filesystem_contract/src/blk.rs
+crates/filesystem_contract/src/block.rs
 
-crates/filesystem_contract/src/blk.rs::BLOCK_SIZE
 
-crates/filesystem_contract/src/blk.rs::FLUSH
+crates/filesystem_contract/src/block.rs::FLUSH
 
-crates/filesystem_contract/src/blk.rs::READ
+crates/filesystem_contract/src/block.rs::READ
 
-crates/filesystem_contract/src/blk.rs::SECTORS_PER_BLOCK
+crates/filesystem_contract/src/block.rs::SECTORS_PER_BLOCK
 
-crates/filesystem_contract/src/blk.rs::SIZE
+crates/filesystem_contract/src/block.rs::SIZE
 
-crates/filesystem_contract/src/blk.rs::TRANSFER_BLOCKS
+crates/filesystem_contract/src/block.rs::TRANSFER_BLOCKS
 
-crates/filesystem_contract/src/blk.rs::WRITE
+crates/filesystem_contract/src/block.rs::WRITE
 
-crates/filesystem_contract/src/blk.rs::req
+crates/filesystem_contract/src/block.rs::req
 
-crates/filesystem_contract/src/blk.rs::req_blocks
+crates/filesystem_contract/src/block.rs::req_blocks
 
-crates/filesystem_contract/src/blk/tests.rs
+crates/filesystem_contract/src/block/tests.rs
 
-crates/filesystem_contract/src/dir.rs
+crates/filesystem_contract/src/directory.rs
 
-crates/filesystem_contract/src/dir.rs::ALL
+crates/filesystem_contract/src/directory.rs::ALL
 
-crates/filesystem_contract/src/dir.rs::CREATE
+crates/filesystem_contract/src/directory.rs::CREATE
 
-crates/filesystem_contract/src/dir.rs::DESCEND
+crates/filesystem_contract/src/directory.rs::DESCEND
 
-crates/filesystem_contract/src/dir.rs::EINVAL
+crates/filesystem_contract/src/directory.rs::EINVAL
 
-crates/filesystem_contract/src/dir.rs::EISDIR
+crates/filesystem_contract/src/directory.rs::EISDIR
 
-crates/filesystem_contract/src/dir.rs::ENOTDIR
+crates/filesystem_contract/src/directory.rs::ENOTDIR
 
-crates/filesystem_contract/src/dir.rs::ENOTEMPTY
+crates/filesystem_contract/src/directory.rs::ENOTEMPTY
 
-crates/filesystem_contract/src/dir.rs::ENUMERATE
+crates/filesystem_contract/src/directory.rs::ENUMERATE
 
-crates/filesystem_contract/src/dir.rs::EPERM
+crates/filesystem_contract/src/directory.rs::EPERM
 
-crates/filesystem_contract/src/dir.rs::EROFS
+crates/filesystem_contract/src/directory.rs::EROFS
 
-crates/filesystem_contract/src/dir.rs::READ
+crates/filesystem_contract/src/directory.rs::READ
 
-crates/filesystem_contract/src/dir.rs::REMOVE
+crates/filesystem_contract/src/directory.rs::REMOVE
 
-crates/filesystem_contract/src/dir.rs::REMOVE_TREE
+crates/filesystem_contract/src/directory.rs::REMOVE_TREE
 
-crates/filesystem_contract/src/dir.rs::Rights
+crates/filesystem_contract/src/directory.rs::Rights
 
-crates/filesystem_contract/src/dir.rs::WRITE
+crates/filesystem_contract/src/directory.rs::WRITE
 
-crates/filesystem_contract/src/dir.rs::allows
+crates/filesystem_contract/src/directory.rs::allows
 
-crates/filesystem_contract/src/dir.rs::attenuate
+crates/filesystem_contract/src/directory.rs::attenuate
 
-crates/filesystem_contract/src/dir.rs::bits
+crates/filesystem_contract/src/directory.rs::bits
 
-crates/filesystem_contract/src/dir.rs::denies_all
+crates/filesystem_contract/src/directory.rs::denies_all
 
-crates/filesystem_contract/src/dir.rs::explain
+crates/filesystem_contract/src/directory.rs::explain
 
-crates/filesystem_contract/src/dir.rs::root
+crates/filesystem_contract/src/directory.rs::root
 
-crates/filesystem_contract/src/dir/tests.rs
+crates/filesystem_contract/src/directory/tests.rs
 
-crates/filesystem_contract/src/dirent.rs
+crates/filesystem_contract/src/directory_entry.rs
 
-crates/filesystem_contract/src/dirent.rs::Entries
+crates/filesystem_contract/src/directory_entry.rs::Entries
 
-crates/filesystem_contract/src/dirent.rs::IS_DIR
 
-crates/filesystem_contract/src/dirent.rs::encode
+crates/filesystem_contract/src/directory_entry.rs::encode
 
-crates/filesystem_contract/src/dirent.rs::iter
+crates/filesystem_contract/src/directory_entry.rs::iter
 
-crates/filesystem_contract/src/dirent.rs::record_len
+crates/filesystem_contract/src/directory_entry.rs::record_len
 
-crates/filesystem_contract/src/dirent/tests.rs
+crates/filesystem_contract/src/directory_entry/tests.rs
+
+crates/filesystem_contract/src/extended_attribute.rs
+
+crates/filesystem_contract/src/extended_attribute.rs::E2BIG
+
+crates/filesystem_contract/src/extended_attribute.rs::ENODATA
+
+crates/filesystem_contract/src/extended_attribute.rs::ENOSPC
+
+crates/filesystem_contract/src/extended_attribute.rs::ENOTSUP
+
+crates/filesystem_contract/src/extended_attribute.rs::ERANGE
+
+crates/filesystem_contract/src/extended_attribute.rs::Names
+
+crates/filesystem_contract/src/extended_attribute.rs::RAW
+
+crates/filesystem_contract/src/extended_attribute.rs::Records
+
+crates/filesystem_contract/src/extended_attribute.rs::count
+
+crates/filesystem_contract/src/extended_attribute.rs::encode
+
+crates/filesystem_contract/src/extended_attribute.rs::file_name
+
+crates/filesystem_contract/src/extended_attribute.rs::get
+
+crates/filesystem_contract/src/extended_attribute.rs::is_valid_name
+
+crates/filesystem_contract/src/extended_attribute.rs::iter
+
+crates/filesystem_contract/src/extended_attribute.rs::iter
+
+crates/filesystem_contract/src/extended_attribute.rs::list
+
+crates/filesystem_contract/src/extended_attribute.rs::record_len
+
+crates/filesystem_contract/src/extended_attribute.rs::record_len
+
+crates/filesystem_contract/src/extended_attribute.rs::remove
+
+crates/filesystem_contract/src/extended_attribute.rs::reply
+
+crates/filesystem_contract/src/extended_attribute.rs::reply_kind
+
+crates/filesystem_contract/src/extended_attribute.rs::reply_value_len
+
+crates/filesystem_contract/src/extended_attribute.rs::set
+
+crates/filesystem_contract/src/extended_attribute/tests.rs
 
 crates/filesystem_contract/src/fs.rs
 
@@ -2274,19 +2311,27 @@ crates/filesystem_contract/src/fs.rs::RMDIR
 
 crates/filesystem_contract/src/fs.rs::ROOT
 
+
+
+
 crates/filesystem_contract/src/fs.rs::SETXATTR
 
 crates/filesystem_contract/src/fs.rs::STATFS
 
 crates/filesystem_contract/src/fs.rs::SYNC
 
+
 crates/filesystem_contract/src/fs.rs::TRANSFER_PAGES
 
 crates/filesystem_contract/src/fs.rs::TRUNCATE
 
+
+
 crates/filesystem_contract/src/fs.rs::UNBIND
 
 crates/filesystem_contract/src/fs.rs::UNLINK
+
+
 
 crates/filesystem_contract/src/fs.rs::WRITE
 
@@ -2312,6 +2357,7 @@ crates/filesystem_contract/src/grant.rs::EROFS
 
 crates/filesystem_contract/src/grant.rs::HANDLE
 
+
 crates/filesystem_contract/src/grant.rs::READ
 
 crates/filesystem_contract/src/grant.rs::WHOLE_NAMESPACE
@@ -2324,33 +2370,19 @@ crates/filesystem_contract/src/grant.rs::is_writable
 
 crates/filesystem_contract/src/grant.rs::pack_name
 
-crates/filesystem_contract/src/grant.rs::spec
-
-crates/filesystem_contract/src/grant.rs::spec_len
-
-crates/filesystem_contract/src/grant.rs::spec_rights
-
 crates/filesystem_contract/src/grant.rs::unpack_name
 
 crates/filesystem_contract/src/grant/tests.rs
 
 crates/filesystem_contract/src/lib.rs::OPERATION_SHIFT
 
-crates/filesystem_contract/src/lib.rs::PAGE
-
 crates/filesystem_contract/src/lib.rs::READY
 
 crates/filesystem_contract/src/lib.rs::operation
 
-
-
 crates/filesystem_contract/src/lib.rs::req
 
 crates/filesystem_contract/src/nameset.rs
-
-crates/filesystem_contract/src/nameset.rs::BYTES
-
-crates/filesystem_contract/src/nameset.rs::IS_DIR
 
 crates/filesystem_contract/src/nameset.rs::Names
 
@@ -2376,8 +2408,6 @@ crates/filesystem_contract/src/rm.rs::status
 
 crates/filesystem_contract/src/statfs.rs
 
-crates/filesystem_contract/src/statfs.rs::LEN
-
 crates/filesystem_contract/src/statfs.rs::decode
 
 crates/filesystem_contract/src/statfs.rs::encode
@@ -2386,7 +2416,9 @@ crates/filesystem_contract/src/statfs.rs::free_bytes
 
 crates/filesystem_contract/src/statfs.rs::total_bytes
 
+
 crates/filesystem_contract/src/statfs/tests.rs
+
 
 crates/filesystem_contract/src/tests.rs
 
@@ -2418,67 +2450,10 @@ crates/filesystem_contract/src/verb.rs::of
 
 crates/filesystem_contract/src/verb.rs::takes_name
 
+
+
+
 crates/filesystem_contract/src/verb/tests.rs
-
-crates/filesystem_contract/src/xattr.rs
-
-crates/filesystem_contract/src/xattr.rs::E2BIG
-
-crates/filesystem_contract/src/xattr.rs::ENODATA
-
-crates/filesystem_contract/src/xattr.rs::ENOSPC
-
-crates/filesystem_contract/src/xattr.rs::ENOTSUP
-
-crates/filesystem_contract/src/xattr.rs::ERANGE
-
-crates/filesystem_contract/src/xattr.rs::Names
-
-crates/filesystem_contract/src/xattr.rs::RAW
-
-crates/filesystem_contract/src/xattr.rs::RECORD_HEADER
-
-crates/filesystem_contract/src/xattr.rs::Records
-
-crates/filesystem_contract/src/xattr.rs::STORE_DIR
-
-crates/filesystem_contract/src/xattr.rs::count
-
-crates/filesystem_contract/src/xattr.rs::encode
-
-crates/filesystem_contract/src/xattr.rs::file_name
-
-crates/filesystem_contract/src/xattr.rs::get
-
-crates/filesystem_contract/src/xattr.rs::is_valid_name
-
-crates/filesystem_contract/src/xattr.rs::iter
-
-crates/filesystem_contract/src/xattr.rs::iter
-
-crates/filesystem_contract/src/xattr.rs::list
-
-crates/filesystem_contract/src/xattr.rs::record_len
-
-crates/filesystem_contract/src/xattr.rs::record_len
-
-crates/filesystem_contract/src/xattr.rs::remove
-
-crates/filesystem_contract/src/xattr.rs::reply
-
-crates/filesystem_contract/src/xattr.rs::reply_kind
-
-crates/filesystem_contract/src/xattr.rs::reply_value_len
-
-crates/filesystem_contract/src/xattr.rs::set
-
-crates/filesystem_contract/src/xattr.rs::spec
-
-crates/filesystem_contract/src/xattr.rs::spec_kind
-
-crates/filesystem_contract/src/xattr.rs::spec_value_len
-
-crates/filesystem_contract/src/xattr/tests.rs
 
 crates/filesystem_fixture/src/lib.rs::A
 

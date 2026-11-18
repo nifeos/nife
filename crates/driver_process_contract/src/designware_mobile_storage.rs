@@ -1,6 +1,6 @@
 //! What the kernel and the EL0 SD/MMC block server agree on: where the spawner maps the server's
 //! two windows (the server reads them from the startup page), the part of the card it may serve, and the three spawn words that say so. The server
-//! (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::blk`, the four
+//! (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::block`, the four
 //! verbs the virtio and NVMe block servers answer, so the FS server cannot tell which disk it has.
 //! Its blocks are 4096 bytes; the card's are 512. A request names blocks inside a window the kernel
 //! chose at spawn, never a card address, and [`Window::translate`] is the one place a block becomes
@@ -13,7 +13,7 @@
 //! serves; the module was `designware_mobile_storage::serve` until the process layout left that
 //! crate.
 
-use filesystem_contract::blk;
+use filesystem_contract::block;
 use startup_page_contract::WindowKind;
 
 /// Where the spawner maps the controller's first page, device-typed, and lists it on the startup
@@ -23,7 +23,7 @@ use startup_page_contract::WindowKind;
 /// driver crate's `REGISTER_VA`, renamed to spell out the address as design/naming.md asks.
 pub const REGISTER_VIRTUAL_ADDRESS: u64 = address_space_layout::pair_page(0x0060_0000);
 /// Where the spawner maps the transfer region the server shares with its client,
-/// [`blk::TRANSFER_BLOCKS`] pages, and lists it on the startup page, where the server reads it.
+/// [`block::TRANSFER_BLOCKS`] pages, and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
 /// driver crate's `TRANSFER_VA`, renamed to spell out the address as design/naming.md asks.
@@ -42,7 +42,7 @@ pub const TRANSFER_KIND: WindowKind = WindowKind(9);
 ///
 /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
 /// crate, where the name had no block.
-pub const SECTORS_PER_BLOCK: u64 = blk::SECTORS_PER_BLOCK;
+pub const SECTORS_PER_BLOCK: u64 = block::SECTORS_PER_BLOCK;
 
 /// **The part of the card a server may touch**, in card sectors.
 ///

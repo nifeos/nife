@@ -7,7 +7,7 @@
 //! # Capability contract
 //!
 //! The data plane holds, the complete list: `data_plane_slots::REQUEST`, the request endpoint
-//! (`filesystem_contract::blk`, as the virtio block server speaks); `READY`, a readiness endpoint;
+//! (`filesystem_contract::block`, as the virtio block server speaks); `READY`, a readiness endpoint;
 //! `GRANTS`, where the admin process's handoff and grants arrive; `OWN_SPACE`, its own address
 //! space; and the two grants, held without `GRANT`, mapped where the spawn's second and third
 //! arguments say: the data-plane run (the two I/O rings and one window of [`TRANSFER_BLOCKS`]
@@ -36,7 +36,7 @@ use driver_process_contract::non_volatile_memory_express::{
     Handoff, IO_COMPLETION_QUEUE_PAGE, IO_SUBMISSION_QUEUE_PAGE, client_window, data_plane_slots,
     take_completion,
 };
-use filesystem_contract::blk;
+use filesystem_contract::block;
 use non_volatile_memory_express::{
     Command, Completion, CompletionQueue, Direction, Doorbell, Namespace, SubmissionQueue,
 };
@@ -64,7 +64,7 @@ const fn can_write(window: u64) -> bool {
 
 /// How many blocks one request may carry, and how many pages of transfer buffer the spawner
 /// mapped: the blk contract's own number, so this server and the virtio one clamp identically.
-const TRANSFER_BLOCKS: usize = blk::TRANSFER_BLOCKS;
+const TRANSFER_BLOCKS: usize = block::TRANSFER_BLOCKS;
 
 /// The data plane's layout, in byte offsets from the start of its run, as the contract crate
 /// lays the pages out.
@@ -110,9 +110,9 @@ struct Plane {
     sq: SubmissionQueue,
     cq: CompletionQueue,
     cid: u16,
-    /// How many device flushes have completed, answered back on every successful `blk::FLUSH`.
+    /// How many device flushes have completed, answered back on every successful `block::FLUSH`.
     /// A strictly increasing count is what makes that verb's success falsifiable; see the
-    /// contract's own argument at `filesystem_contract::blk::FLUSH`.
+    /// contract's own argument at `filesystem_contract::block::FLUSH`.
     flushes: i64,
 }
 
@@ -325,7 +325,7 @@ pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
     serve(plane)
 }
 
-/// The serve loop: one endpoint, one wait point, forever. `filesystem_contract::blk`, the same
+/// The serve loop: one endpoint, one wait point, forever. `filesystem_contract::block`, the same
 /// four verbs the virtio block server answers, so the FS server and the disk tools cannot tell
 /// which kind of disk is underneath.
 ///
@@ -347,21 +347,21 @@ fn serve(mut plane: Plane) -> ! {
         // today sends at most `TRANSFER_BLOCKS` because the field cannot encode more, and a
         // request is never trusted to stay inside the region it shares just because the packing
         // allows a larger number to be spelled.
-        let count = blk::req_blocks(w0).min(TRANSFER_BLOCKS);
+        let count = block::req_blocks(w0).min(TRANSFER_BLOCKS);
         let Some(window) = client_window(req.badge) else {
             reply(reply_to, filesystem_contract::reply_err(22) as u64, 0); // EINVAL
             continue;
         };
         let op = filesystem_contract::operation(w0);
-        if (op == blk::WRITE || op == blk::FLUSH) && !can_write(req.badge) {
+        if (op == block::WRITE || op == block::FLUSH) && !can_write(req.badge) {
             reply(reply_to, filesystem_contract::reply_err(30) as u64, 0); // EROFS
             continue;
         }
         let r0: i64 = match op {
-            blk::READ => transfer_range(&mut plane, block, window, count, false),
-            blk::WRITE => transfer_range(&mut plane, block, window, count, true),
-            blk::SIZE => plane.handoff.size_bytes as i64,
-            blk::FLUSH => {
+            block::READ => transfer_range(&mut plane, block, window, count, false),
+            block::WRITE => transfer_range(&mut plane, block, window, count, true),
+            block::SIZE => plane.handoff.size_bytes as i64,
+            block::FLUSH => {
                 let cid = plane.next_cid();
                 match plane.transact(Command::flush(cid, NSID)) {
                     // Never EOPNOTSUPP, unlike the virtio server: NVMe 1.4 section 6.8 makes Flush

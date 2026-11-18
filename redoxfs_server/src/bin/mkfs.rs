@@ -1,7 +1,7 @@
 //! `mkfs`: `mkfs` on the target (milestone 57's write half, notes/nifefs.md).
 //!
 //! Creates a filesystem with two capabilities and no more: a block-service endpoint for one disk
-//! (`filesystem_contract::blk`), the power to destroy that disk, and an entropy endpoint
+//! (`filesystem_contract::block`), the power to destroy that disk, and an entropy endpoint
 //! (`entropy_contract`), the power to obtain random bytes. Neither suffices alone: a filesystem
 //! carries a unique id, and the vendored RedoxFS has no `no_std` randomness, so the engine takes
 //! the uuid as an argument (`vendor/README.md` divergence 4,
@@ -41,7 +41,7 @@
 
 extern crate alloc;
 
-use filesystem_contract::{blk, req};
+use filesystem_contract::{block, req};
 use filesystem_fixture::blank;
 use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
 use globally_unique_identifier_partition_table::guid::types;
@@ -69,7 +69,7 @@ const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 
 /// One filesystem block / one shared page, in bytes. RedoxFS's `BLOCK_SIZE` and the blk wire's
 /// transfer unit are the same number, which is what lets a `Disk` block be a blk block.
-const BLOCK: usize = blk::BLOCK_SIZE;
+const BLOCK: usize = block::BLOCK_BYTES;
 
 /// The logical block size the partition table counts in (`disk_surveyor`'s BUGS: nothing on the
 /// wire reports the device's).
@@ -216,7 +216,7 @@ fn check(first_block: u64, blocks: u64) -> ! {
     // The signature first: on an unformatted partition `FileSystem::open`'s header scan runs until
     // a read fails at the end, 12,288 IPC round trips. Block 0 always holds generation zero's
     // header, so its signature answers "is there a filesystem here" in one read.
-    if blk_call(blk::READ, first_block) < 0 {
+    if blk_call(block::READ, first_block) < 0 {
         send(REPORT, R_NO_DISK, 0, 0);
         user_mode_runtime::exit()
     }
@@ -261,7 +261,7 @@ fn check(first_block: u64, blocks: u64) -> ! {
 /// `diskutil` wrote. **The partition is found by type GUID**, never by name: macOS writes no GPT
 /// partition names at all (notes/globally-unique-identifier-partition-table.md).
 fn data_partition() -> Option<(u64, u64)> {
-    let size = blk_call(blk::SIZE, 0);
+    let size = blk_call(block::SIZE, 0);
     if size <= 0 {
         return None; // no endpoint in slot BLK, or a device that cannot say how big it is
     }
@@ -271,7 +271,7 @@ fn data_partition() -> Option<(u64, u64)> {
     // blocks cover it. On the heap rather than in `.bss` because this program has one.
     let mut head = alloc::vec![0u8; 5 * BLOCK];
     for i in 0..5u64 {
-        if blk_call(blk::READ, i) < 0 {
+        if blk_call(block::READ, i) < 0 {
             return None;
         }
         // SAFETY: BLK_PAGE is a mapped page of exactly BLOCK bytes; the window is in range by
@@ -346,7 +346,7 @@ impl Disk for PartitionDisk {
             let Some(at) = self.device_block(block + i as u64) else {
                 return Err(Error::new(EIO));
             };
-            if blk_call(blk::READ, at) < 0 {
+            if blk_call(block::READ, at) < 0 {
                 return Err(Error::new(EIO));
             }
             // SAFETY: BLK_PAGE is a mapped page of exactly BLOCK bytes and `chunk` is no larger.
@@ -370,7 +370,7 @@ impl Disk for PartitionDisk {
                 // A partial final block would clobber the rest of the block; read-modify-write so
                 // only the given bytes change. The same courtesy `IpcDisk` pays, for the same
                 // reason: a `Disk` owes it even if this engine never asks.
-                if blk_call(blk::READ, at) < 0 {
+                if blk_call(block::READ, at) < 0 {
                     return Err(Error::new(EIO));
                 }
             }
@@ -378,7 +378,7 @@ impl Disk for PartitionDisk {
             unsafe {
                 core::ptr::copy_nonoverlapping(chunk.as_ptr(), BLK_PAGE as *mut u8, chunk.len())
             };
-            if blk_call(blk::WRITE, at) < 0 {
+            if blk_call(block::WRITE, at) < 0 {
                 return Err(Error::new(EIO));
             }
         }

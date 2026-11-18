@@ -2,13 +2,14 @@
 
 An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 
-Finished: Decisions A and C with item 6 (#3577), items 4, 13 and 17 to 20, the six harnesses of
+Finished: Decision B's renames (provisional names, in force), Decisions A and C with item 6 (#3577), items 4, 13 and 17 to 20, the six harnesses of
 item 8 (#3566, #3637), and the crate's own half of item 11.
 
 What remains, with what holds each:
 
-- Decision B's renames, and items 5, 16 and the name in item 17 with them: decided by the
-  maintainer, provisional, and not built; one lane applies the table.
+- Item 5's exemption for `block::SIZE` (an opcode the register gate takes for a register) and the
+  aliases for kept foreign spellings: the template's exemption file is not written, so not built.
+- Item 16, the errno module's name: Decision B's table does not name it, so no lane may choose one.
 - Items 1, 2, 3, 9 and 10, and the new repository's half of item 11: release step, the move.
 - Items 7 and 22: other. Each proxy call site needs a refusal before the packers can mask, a design
   change across three components, and no lane holds it.

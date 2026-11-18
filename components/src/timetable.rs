@@ -498,7 +498,7 @@ fn load_current(p: &Installed) -> Option<(static_elf::Elf<'static>, grant_contra
 /// mapped at `timetable::contract::STORE_PAGE_VA`. Every call is a blocking `CALL`, so the page is
 /// this process's between them.
 mod store {
-    use filesystem_contract::{PAGE, dir, fs};
+    use filesystem_contract::{PAGE_BYTES, directory, fs};
     use installed_programs::{CURRENT, generation_name, lookup, parse_current};
     use timetable::contract;
     use user_mode_runtime::call;
@@ -520,12 +520,12 @@ mod store {
     fn page() -> &'static mut [u8] {
         // SAFETY: the spawn site maps one read/write page at STORE_PAGE_VA for this process's life
         // (`timetable::contract`), and nothing here holds two borrows of it at once.
-        unsafe { core::slice::from_raw_parts_mut(contract::STORE_PAGE_VA as *mut u8, PAGE) }
+        unsafe { core::slice::from_raw_parts_mut(contract::STORE_PAGE_VA as *mut u8, PAGE_BYTES) }
     }
 
     /// A request that names something: `name` into the page, then the call.
     fn named(ep: u64, verb: u64, at: u64, name: &[u8], w1: u64) -> i64 {
-        if name.len() > PAGE {
+        if name.len() > PAGE_BYTES {
             return -1;
         }
         page()[..name.len()].copy_from_slice(name);
@@ -546,7 +546,7 @@ mod store {
         let mut done = 0usize;
         loop {
             // One byte past a full buffer, so a file exactly its size is told from a larger one.
-            let want = (out.len() - done).clamp(1, PAGE);
+            let want = (out.len() - done).clamp(1, PAGE_BYTES);
             let n = call(ep, fs::req(fs::READ, h as u64, want as u64), done as u64).0 as i64;
             if n < 0 {
                 return None;
@@ -564,7 +564,7 @@ mod store {
     }
 
     /// The live generation's text into `buf`, and its length.
-    fn live_table(buf: &mut [u8; PAGE]) -> Option<usize> {
+    fn live_table(buf: &mut [u8; PAGE_BYTES]) -> Option<usize> {
         let h = named(ACTIVATION, fs::OPEN, fs::ROOT, CURRENT.as_bytes(), 0);
         let mut line = [0u8; 32];
         let n = read_into(ACTIVATION, h, &mut line);
@@ -582,7 +582,7 @@ mod store {
     /// vouch, `installed_programs::lookup`), read from `packages/<name>/<version>/<program>`, and
     /// answered only if they hash to that entry's digest. `(length, digest)`.
     pub fn load(name: &str) -> Option<(usize, measured_boot::Digest)> {
-        let mut table = [0u8; PAGE];
+        let mut table = [0u8; PAGE_BYTES];
         let n = live_table(&mut table)?;
         let table = core::str::from_utf8(&table[..n]).ok()?;
         // The default row for the name, as a bare word at the prompt runs it (milestone 614 (two
@@ -590,7 +590,7 @@ mod store {
         // `packages/<name>/<version>/<program>`.
         let entry = lookup(table, name).ok()??;
         let (package, version) = (entry.package, entry.version);
-        let walk = dir::READ | dir::DESCEND;
+        let walk = directory::READ | directory::DESCEND;
         let d1 = named(PACKAGES, fs::OPENDIR, fs::ROOT, package.as_bytes(), walk);
         let d2 = if d1 >= 0 {
             named(PACKAGES, fs::OPENDIR, d1 as u64, version.as_bytes(), walk)

@@ -42,7 +42,7 @@ fn install_scheduled_program() {
 const EEXIST: i32 = 17;
 
 /// Ensure `name` exists as a subtree under `fs_ep`'s root, as `identity_provisioner.rs`'s
-/// `mkdir_home` does: [`filesystem_contract::fs::MKDIR`] with [`filesystem_contract::dir::ALL`] and
+/// `mkdir_home` does: [`filesystem_contract::fs::MKDIR`] with [`filesystem_contract::directory::ALL`] and
 /// the identity string as the name (DECISIONS §117 (a principal's subtree is named by its identity
 /// string)). The FS root is the whole test binary's shared fixture and another suite may have made
 /// the name already, so `EEXIST` is tolerated.
@@ -57,7 +57,7 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
     let page = unsafe {
         core::slice::from_raw_parts_mut(
             mmu::phys_to_virt(fs_page_frame) as *mut u8,
-            filesystem_contract::PAGE,
+            filesystem_contract::PAGE_BYTES,
         )
     };
     page[..name.len()].copy_from_slice(name);
@@ -69,7 +69,7 @@ fn ensure_home_subtree(fs_ep: sched::RendezvousId, fs_page_frame: u64, name: &[u
                 filesystem_contract::fs::ROOT,
                 name.len() as u64,
             ),
-            filesystem_contract::dir::ALL,
+            filesystem_contract::directory::ALL,
         ],
     );
     match filesystem_contract::reply_errno(r[0] as i64) {

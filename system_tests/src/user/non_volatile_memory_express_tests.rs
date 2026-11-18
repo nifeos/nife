@@ -100,7 +100,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
     // IDENTIFY and IDENTIFY is admin. What it answers must be what the admin process read from IDENTIFY,
     // whatever disk this leg attached: 8 MiB for xtask's `mknvmedisk`, 256 GB on xenon.
     assert_eq!(
-        disk.blk(filesystem_contract::blk::SIZE, 0) as u64,
+        disk.blk(filesystem_contract::block::SIZE, 0) as u64,
         disk.size_bytes,
         "the server answered the wrong size"
     );
@@ -123,7 +123,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
             *b = pattern(i);
         }
         assert_eq!(
-            disk.blk(filesystem_contract::blk::WRITE, block),
+            disk.blk(filesystem_contract::block::WRITE, block),
             0,
             "the server refused the write to block {block}"
         );
@@ -136,7 +136,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
         // passing on what this thread just staged. SAFETY: as above.
         unsafe { disk.transfer_block() }.fill(0xaa);
         assert_eq!(
-            disk.blk(filesystem_contract::blk::READ, block),
+            disk.blk(filesystem_contract::block::READ, block),
             0,
             "the server refused the read of block {block}"
         );
@@ -152,7 +152,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
     // size: it starts at the end or its transfer runs off it, and `Namespace::holds_whole_block` refuses both.
     let past_end = disk.size_bytes / crate::non_volatile_memory_express::BLOCK_SIZE as u64;
     assert!(
-        disk.blk(filesystem_contract::blk::READ, past_end) < 0,
+        disk.blk(filesystem_contract::block::READ, past_end) < 0,
         "the server read block {past_end}, which a namespace of {} bytes does not have",
         disk.size_bytes,
     );
@@ -161,10 +161,10 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
     // two syncs returning the same number would mean the second never reached the device. Unlike
     // the virtio server this one never answers EOPNOTSUPP, because NVMe 1.4 §6.8 makes Flush
     // mandatory.
-    let first = disk.blk(filesystem_contract::blk::FLUSH, 0);
+    let first = disk.blk(filesystem_contract::block::FLUSH, 0);
     assert!(first >= 1, "the server refused a flush: {first}");
     assert_eq!(
-        disk.blk(filesystem_contract::blk::FLUSH, 0),
+        disk.blk(filesystem_contract::block::FLUSH, 0),
         first + 1,
         "a second flush returned the same count, so it never reached the controller"
     );
@@ -184,7 +184,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
 /// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_client_stages_in_the_window_its_badge_names.patch`
 #[test_case]
 fn a_client_stages_in_the_window_its_badge_names() {
-    use filesystem_contract::blk;
+    use filesystem_contract::block;
 
     use crate::non_volatile_memory_express::{
         CLIENT_WINDOWS, DISK_TREE_WINDOW, FILESYSTEM_WINDOW, INSTALLER_WINDOW,
@@ -202,7 +202,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
         }
     };
     let call = |op, badge| {
-        crate::sched::ipc_call_badged(disk.request, [blk::req(op, 1), BLOCK], badge)[0] as i64
+        crate::sched::ipc_call_badged(disk.request, [block::req(op, 1), BLOCK], badge)[0] as i64
     };
     let pattern = |i: usize| (i as u64 % 239) as u8 ^ 0x3c;
 
@@ -211,7 +211,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
         *b = pattern(i);
     }
     assert_eq!(
-        call(blk::WRITE, INSTALLER_WINDOW),
+        call(block::WRITE, INSTALLER_WINDOW),
         0,
         "the installer's write was refused"
     );
@@ -222,7 +222,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
 
     staged(DISK_TREE_WINDOW).fill(0xaa);
     assert_eq!(
-        call(blk::READ, DISK_TREE_WINDOW),
+        call(block::READ, DISK_TREE_WINDOW),
         0,
         "the disk tree's read was refused"
     );
@@ -241,18 +241,18 @@ fn a_client_stages_in_the_window_its_badge_names() {
     // **Read-only is the capability's, not the disk tree's code** (`can_write`).
     let erofs = filesystem_contract::reply_err(30);
     assert_eq!(
-        call(blk::WRITE, DISK_TREE_WINDOW),
+        call(block::WRITE, DISK_TREE_WINDOW),
         erofs,
         "the disk tree's window wrote"
     );
     assert_eq!(
-        call(blk::FLUSH, DISK_TREE_WINDOW),
+        call(block::FLUSH, DISK_TREE_WINDOW),
         erofs,
         "the disk tree's window flushed"
     );
     // **A badge no client was given is refused**, not folded onto window 0.
     assert_eq!(
-        call(blk::READ, CLIENT_WINDOWS as u64),
+        call(block::READ, CLIENT_WINDOWS as u64),
         filesystem_contract::reply_err(22),
         "a badge past the last window was served"
     );

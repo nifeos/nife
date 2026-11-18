@@ -25,10 +25,10 @@ pub const INTERFACE_ID: u64 = 15;
 /// the file's size at the open, or 0 for "not given": a hint for sizing a buffer, never an answer
 /// to a later size question ([`FSTAT`]).
 ///
-/// Needs [`super::dir::READ`] or [`super::dir::WRITE`], and the handle inherits both bits; without
+/// Needs [`super::directory::READ`] or [`super::directory::WRITE`], and the handle inherits both bits; without
 /// either, `ENOENT`. `EISDIR` for a directory. A relative path `a/b/f` is walked as [`OPENDIR`]
 /// hops asking for `DESCEND | w1`, `w1` being the per-step rights: a step that comes up short is
-/// [`super::dir::EPERM`], and an empty step, `.` or `..` is `EINVAL`.
+/// [`super::directory::EPERM`], and an empty step, `.` or `..` is `EINVAL`.
 pub const OPEN: u64 = 1;
 /// Read up to [`req_len`] bytes from the handle ([`req_handle`]) at offset `w1` into the shared
 /// page. Reply `r0` = bytes read (≥ 0, 0 at end of file) into the shared page, or an error.
@@ -43,7 +43,7 @@ pub const FSTAT: u64 = 5;
 /// Create the name in the shared page ([`req_len`] bytes) under the directory handle in
 /// [`req_handle`] and open it: [`OPEN`]'s shape, second word 0. Reply `r0` = a handle, or an error.
 ///
-/// Needs [`super::dir::CREATE`], else [`super::dir::EROFS`]. `EEXIST` if the name exists, and
+/// Needs [`super::directory::CREATE`], else [`super::directory::EROFS`]. `EEXIST` if the name exists, and
 /// nothing is modified: create is create, not create-or-open.
 pub const CREATE: u64 = 6;
 /// Set the size of the handle's ([`req_handle`]) file to exactly `w1` bytes; [`req_len`] is 0.
@@ -55,29 +55,29 @@ pub const CREATE: u64 = 6;
 /// `std::fs::write` relies on, since it truncates unconditionally.
 pub const TRUNCATE: u64 = 7;
 /// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
-/// and hand back a handle to the child directory. `w1` is the requested [`super::dir`] mask, or
-/// [`super::dir::PARENT_RIGHTS`] for "the parent's rights, whatever they are", which a client
+/// and hand back a handle to the child directory. `w1` is the requested [`super::directory`] mask, or
+/// [`super::directory::PARENT_RIGHTS`] for "the parent's rights, whatever they are", which a client
 /// that cannot read its own capability asks for when it holds the directory for later use.
 /// Reply `r0` = the new directory handle, or an error.
 ///
-/// The child's rights are [`super::dir::Rights::attenuate`] of the parent's, so no descendant
-/// carries a right its ancestor lacked. A short intersection is [`super::dir::EPERM`]; no
-/// [`super::dir::DESCEND`] on the parent is `ENOENT`; a file is `ENOTDIR`; an empty component, `.`
+/// The child's rights are [`super::directory::Rights::attenuate`] of the parent's, so no descendant
+/// carries a right its ancestor lacked. A short intersection is [`super::directory::EPERM`]; no
+/// [`super::directory::DESCEND`] on the parent is `ENOENT`; a file is `ENOTDIR`; an empty component, `.`
 /// or `..` is `EINVAL`. A relative path is walked hop by hop, each step obeying these rules and
 /// asking for `DESCEND | requested`.
 pub const OPENDIR: u64 = 8;
 /// **Enumerate a directory handle.** [`req_handle`] is the directory and `w1` a cursor, the index
 /// of the first entry to return. Reply `r0` = bytes written into the shared page as
-/// [`super::dirent`] records; 0 means the cursor is past the end. [`req_len`] is ignored.
+/// [`super::directory_entry`] records; 0 means the cursor is past the end. [`req_len`] is ignored.
 ///
-/// Needs [`super::dir::ENUMERATE`]; its absence is [`super::dir::EPERM`], not an empty listing
+/// Needs [`super::directory::ENUMERATE`]; its absence is [`super::directory::EPERM`], not an empty listing
 /// (a filesystem declares what it offers and must be truthful). Entries are sorted
 /// by name, so a directory changed between two calls can repeat or skip a name.
 pub const READDIR: u64 = 9;
 /// **Make a child directory and hand back a capability to it**: [`OPENDIR`]'s shape and its
 /// attenuation, so making a directory mints no more authority than finding one. `w1` takes
-/// [`super::dir::PARENT_RIGHTS`] as [`OPENDIR`] does. Needs
-/// [`super::dir::CREATE`] and [`super::dir::DESCEND`]; `EEXIST` if the name is there, for
+/// [`super::directory::PARENT_RIGHTS`] as [`OPENDIR`] does. Needs
+/// [`super::directory::CREATE`] and [`super::directory::DESCEND`]; `EEXIST` if the name is there, for
 /// [`CREATE`]'s reason.
 pub const MKDIR: u64 = 10;
 /// **Move a name to another directory, or to another name in the same one.** The source is
@@ -85,8 +85,8 @@ pub const MKDIR: u64 = 10;
 /// [`rename_dst`]. Both names are in the shared page, source first: `[0, req_len)`, then
 /// `[req_len, req_len + dst_len)`. Reply `r0` = 0, or an error.
 ///
-/// Atomic against concurrency and against a crash. Needs [`super::dir::REMOVE`] on the source and
-/// [`super::dir::CREATE`] on the destination, else [`super::dir::EROFS`]. A destination of the same
+/// Atomic against concurrency and against a crash. Needs [`super::directory::REMOVE`] on the source and
+/// [`super::directory::CREATE`] on the destination, else [`super::directory::EROFS`]. A destination of the same
 /// kind is replaced; a file over a directory is `EISDIR`, the reverse `ENOTDIR`, a non-empty
 /// destination directory `ENOTEMPTY`, and a directory moved between directories `EINVAL`. A rename
 /// onto itself succeeds.
@@ -96,47 +96,47 @@ pub const RENAME: u64 = 11;
 /// error.
 ///
 /// A handle already open on the file keeps reading; the node goes when its last name and last
-/// handle are gone. Needs [`super::dir::REMOVE`], else [`super::dir::EROFS`], checked before the
+/// handle are gone. Needs [`super::directory::REMOVE`], else [`super::directory::EROFS`], checked before the
 /// name is resolved so a refusal says nothing about the name. A directory is
-/// [`super::dir::EISDIR`]: [`RMDIR`] takes only an empty one, so no single call removes a subtree.
+/// [`super::directory::EISDIR`]: [`RMDIR`] takes only an empty one, so no single call removes a subtree.
 pub const UNLINK: u64 = 12;
 /// **Remove an empty directory**, `rmdir(2)`: [`UNLINK`]'s shape, and it hands nothing back.
 /// Reply `r0` = 0, or an error.
 ///
-/// A non-empty directory is [`super::dir::ENOTEMPTY`], refused rather than emptied; `rm -r`
+/// A non-empty directory is [`super::directory::ENOTEMPTY`], refused rather than emptied; `rm -r`
 /// recurses in userspace one step and one set of rights at a time. Needs
-/// [`super::dir::REMOVE`] on the parent, else [`super::dir::EROFS`], checked before the name is
+/// [`super::directory::REMOVE`] on the parent, else [`super::directory::EROFS`], checked before the name is
 /// resolved. A file is `ENOTDIR`. Not revocation: a handle onto the removed directory then fails
 /// with `ENOENT`.
 pub const RMDIR: u64 = 13;
 
 /// **Read one extended attribute of the node a handle names**, file or directory. The name is
 /// [`req_len`] bytes at the start of the shared page, and `w1` is 0. Reply `r0` =
-/// [`super::xattr::reply`], packing the value's type code and length, with the value in the shared
+/// [`super::extended_attribute::reply`], packing the value's type code and length, with the value in the shared
 /// page; `ENODATA` if it is not set.
 ///
-/// Needs [`super::dir::READ`] on the handle, else `EBADF`, as [`READ`] does. See [`super::xattr`]
+/// Needs [`super::directory::READ`] on the handle, else `EBADF`, as [`READ`] does. See [`super::extended_attribute`]
 /// for why there is no attribute right.
 pub const GETXATTR: u64 = 14;
 /// **Set one extended attribute on the node a handle names.** The name is [`req_len`] bytes at the
 /// start of the shared page and the value follows it; `w1` packs the value's length and type code
-/// ([`super::xattr::spec`]). Reply `r0` = 0.
+/// ([`super::extended_attribute::specification`]). Reply `r0` = 0.
 ///
 /// Create and replace are one operation, and `XATTR_CREATE`/`XATTR_REPLACE` are not offered
-/// (the same rule). Needs [`super::dir::WRITE`], else [`super::dir::EROFS`]. `ERANGE` for a name the
-/// store cannot hold, [`super::xattr::E2BIG`] for an over-long value, [`super::xattr::ENOSPC`] at
-/// [`super::xattr::MAXIMUM_COUNT`] attributes.
+/// (the same rule). Needs [`super::directory::WRITE`], else [`super::directory::EROFS`]. `ERANGE` for a name the
+/// store cannot hold, [`super::extended_attribute::E2BIG`] for an over-long value, [`super::extended_attribute::ENOSPC`] at
+/// [`super::extended_attribute::MAXIMUM_ATTRIBUTES`] attributes.
 pub const SETXATTR: u64 = 15;
 /// **List the attribute names on the node a handle names**.
 ///
 /// [`req_len`] and the second word are both 0. Reply `r0` = how many bytes of the shared page
-/// were filled with [`super::xattr::list`] records; 0 means the node has no attributes.
+/// were filled with [`super::extended_attribute::list`] records; 0 means the node has no attributes.
 ///
 /// There is **no cursor**, unlike [`READDIR`], and that is a property rather than an omission:
-/// [`super::xattr::MAXIMUM_COUNT`] names of [`super::xattr::MAXIMUM_NAME`] bytes fit one page
+/// [`super::extended_attribute::MAXIMUM_ATTRIBUTES`] names of [`super::extended_attribute::MAXIMUM_NAME_BYTES`] bytes fit one page
 /// exactly, so a listing is always complete in one reply and cannot be observed half-changed.
 ///
-/// Needs [`super::dir::READ`], refused with `EBADF`, for [`GETXATTR`]'s reason.
+/// Needs [`super::directory::READ`], refused with `EBADF`, for [`GETXATTR`]'s reason.
 pub const LISTXATTR: u64 = 16;
 /// **Remove one extended attribute from the node a handle names**.
 ///
@@ -145,13 +145,13 @@ pub const LISTXATTR: u64 = 16;
 /// attribute that is not there is an **error, not a no-op**, because the caller asked about a
 /// specific thing and "it was not there" is the answer.
 ///
-/// Needs [`super::dir::WRITE`], refused with [`super::dir::EROFS`].
+/// Needs [`super::directory::WRITE`], refused with [`super::directory::EROFS`].
 pub const REMOVEXATTR: u64 = 17;
 
 /// **How much room the store behind this capability has**: POSIX `statfs`, cut to three numbers.
 /// [`req_len`] and `w1` are 0; [`req_handle`] is any handle this server minted, [`ROOT`] included,
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
-/// shared page filled ([`super::statfs::LEN`]) with the [`super::statfs`] record, or an error;
+/// shared page filled ([`super::statfs::RECORD_BYTES`]) with the [`super::statfs`] record, or an error;
 /// `EBADF` for a handle the server did not mint.
 ///
 /// # BUGS
@@ -169,8 +169,8 @@ pub const STATFS: u64 = 18;
 /// success is `>= 1`; or an error, `EBADF` for a handle the server did not mint.
 ///
 /// The FS server commits each write before replying, so after a successful `SYNC` every
-/// acknowledged write is on the medium the device calls durable. Needs [`super::dir::WRITE`], else
-/// [`super::dir::EROFS`]: a flush stalls the queue for every client, and a holder that may not write
+/// acknowledged write is on the medium the device calls durable. Needs [`super::directory::WRITE`], else
+/// [`super::directory::EROFS`]: a flush stalls the queue for every client, and a holder that may not write
 /// has nothing to make durable. The block server's `EOPNOTSUPP` passes through unchanged.
 ///
 /// # BUGS
@@ -185,41 +185,41 @@ pub const SYNC: u64 = 19;
 /// page, resolved directly under [`req_handle`], `w1` 0. Reply `r0` = the mtime, or an error.
 ///
 /// Name-taking, as the setters are, because `touch` never opens what it acts on. Needs
-/// [`super::dir::READ`], a naming right, so its absence is `ENOENT`, checked before the name is
+/// [`super::directory::READ`], a naming right, so its absence is `ENOENT`, checked before the name is
 /// resolved. A directory answers as a file does.
 ///
 /// Name: provisional (2026-08-24); an architect's
 /// to ratify.
-pub const GETMTIME: u64 = 20;
+pub const GET_MODIFICATION_TIME: u64 = 20;
 
-/// **Set `name`'s modification time to now**. [`GETMTIME`]'s shape, `w1` 0.
+/// **Set `name`'s modification time to now**. [`GET_MODIFICATION_TIME`]'s shape, `w1` 0.
 /// Reply `r0` = 0, or an error.
 ///
 /// "Now" is this server's own advancing logical clock, the one that stamps every [`WRITE`], not
-/// the wall clock, so two `touch`es in order see increasing mtimes. Needs [`super::dir::WRITE`],
-/// else [`super::dir::EROFS`], checked before the name is resolved: the value is one the server
+/// the wall clock, so two `touch`es in order see increasing mtimes. Needs [`super::directory::WRITE`],
+/// else [`super::directory::EROFS`], checked before the name is resolved: the value is one the server
 /// observed, so recording it needs no more than writing the file. The server has no wall clock to stamp with.
 ///
 /// Name: provisional (2026-08-24); an architect's to ratify.
-pub const SETMTIME: u64 = 21;
+pub const SET_MODIFICATION_TIME: u64 = 21;
 
-/// **Set `name`'s modification time to a value the caller supplies** (`touch -t`). [`GETMTIME`]'s
+/// **Set `name`'s modification time to a value the caller supplies** (`touch -t`). [`GET_MODIFICATION_TIME`]'s
 /// shape, with the Unix-seconds value in `w1`. Reply `r0` = 0, or an error.
 ///
-/// Needs [`super::dir::WRITE`] and [`super::dir::SETTIME`], else [`super::dir::EROFS`], checked
+/// Needs [`super::directory::WRITE`] and [`super::directory::SETTIME`], else [`super::directory::EROFS`], checked
 /// before the name is resolved: the caller asserts this value, and that
 /// authority stays out of `WRITE`. Any `u64` is accepted.
 ///
 /// Name: provisional (2026-08-24); an architect's to ratify.
-pub const SETMTIME_AT: u64 = 22;
+pub const SET_MODIFICATION_TIME_AT: u64 = 22;
 /// **Narrow a directory handle you already hold**: [`req_handle`] is the directory and `w1` the
-/// requested [`super::dir`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
+/// requested [`super::directory`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
 /// directory handle, or an error. The handle in [`req_handle`] stays open and unchanged.
 ///
-/// The new handle's rights are [`super::dir::Rights::attenuate`] of the held handle's, the same
+/// The new handle's rights are [`super::directory::Rights::attenuate`] of the held handle's, the same
 /// function [`OPENDIR`] and [`MKDIR`] narrow through, so it carries no right the held handle
-/// lacks. A short intersection is [`super::dir::EPERM`], as for [`OPENDIR`]: no silent
-/// degradation. A file handle is [`super::dir::ENOTDIR`]. It needs no right, because narrowing
+/// lacks. A short intersection is [`super::directory::EPERM`], as for [`OPENDIR`]: no silent
+/// degradation. A file handle is [`super::directory::ENOTDIR`]. It needs no right, because narrowing
 /// cannot widen, and that is what lets the holder of [`ROOT`] attenuate the directory it is bound
 /// to when no name leads down to it.
 ///
@@ -257,12 +257,12 @@ pub const UNBIND: u64 = 65;
 pub const BIND_SYNC: u64 = 66;
 
 /// **How many contiguous pages the file channel spans**, so one [`READ`] or [`WRITE`] carries up
-/// to [`TRANSFER_MAXIMUM`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it
+/// to [`MAXIMUM_TRANSFER_BYTES`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it
 /// changes.
 ///
 /// The FS server maps all of them. A client maps as many as it intends to use and asks for no
 /// more, so one that moves 4096 bytes maps one page and needs no change. Nothing checks that a
-/// client asked for no more than it mapped: one that sends `len = TRANSFER_MAXIMUM` with one page
+/// client asked for no more than it mapped: one that sends `len = MAXIMUM_TRANSFER_BYTES` with one page
 /// mapped faults on its own second page, after the server has done the work.
 pub const TRANSFER_PAGES: usize = 16;
 
@@ -270,7 +270,7 @@ pub const TRANSFER_PAGES: usize = 16;
 /// channel ([`TRANSFER_PAGES`] pages). The FS server clamps every request's length to this,
 /// which is the one bound that keeps a request inside the region it shares.
 ///
-/// Setting [`TRANSFER_PAGES`] to 1 makes this [`super::PAGE`], the one-page contract, which is
+/// Setting [`TRANSFER_PAGES`] to 1 makes this [`super::PAGE_BYTES`], the one-page contract, which is
 /// what `bench/transfer-size-sweep.sh` uses to measure one against the other on one harness.
 ///
 /// # Examples
@@ -278,36 +278,36 @@ pub const TRANSFER_PAGES: usize = 16;
 /// A bulk request is the same word with a bigger length, and a one-page client is untouched.
 ///
 /// ```
-/// use filesystem_contract::{PAGE, fs};
+/// use filesystem_contract::{PAGE_BYTES, fs};
 ///
 /// // The largest read this contract permits, in one request.
-/// let w0 = fs::req(fs::READ, 3, fs::TRANSFER_MAXIMUM as u64);
-/// assert_eq!(fs::req_len(w0), fs::TRANSFER_MAXIMUM);
-/// assert_eq!(fs::TRANSFER_MAXIMUM, fs::TRANSFER_PAGES * PAGE);
+/// let w0 = fs::req(fs::READ, 3, fs::MAXIMUM_TRANSFER_BYTES as u64);
+/// assert_eq!(fs::req_len(w0), fs::MAXIMUM_TRANSFER_BYTES);
+/// assert_eq!(fs::MAXIMUM_TRANSFER_BYTES, fs::TRANSFER_PAGES * PAGE_BYTES);
 ///
 /// // A client that shares only the first page keeps working untouched: it asks for one page,
 /// // and one page is what the region behind its request has always been.
-/// let w0 = fs::req(fs::READ, 3, PAGE as u64);
-/// assert_eq!(fs::req_len(w0), PAGE);
+/// let w0 = fs::req(fs::READ, 3, PAGE_BYTES as u64);
+/// assert_eq!(fs::req_len(w0), PAGE_BYTES);
 /// ```
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const TRANSFER_MAXIMUM: usize = TRANSFER_PAGES * super::PAGE;
+pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_PAGES * super::PAGE_BYTES;
 
-/// **How many client channels one file service keeps side by side**. Each is its own [`TRANSFER_MAXIMUM`]-byte window backed by its own
+/// **How many client channels one file service keeps side by side**. Each is its own [`MAXIMUM_TRANSFER_BYTES`]-byte window backed by its own
 /// frame, and the server picks window `badge` for each request (`abi::rendezvous::BADGE`); window 0
 /// is the unbadged default. It bounds how many file clients a boot runs at once, and costs the
-/// server `CLIENT_WINDOWS * TRANSFER_MAXIMUM` = 512 KiB of mapped frames. Eight is provisional, a
+/// server `CLIENT_WINDOWS * MAXIMUM_TRANSFER_BYTES` = 512 KiB of mapped frames. Eight is provisional, a
 /// capacity decision not yet made.
 pub const CLIENT_WINDOWS: usize = 8;
 
 /// The largest length that fits the packing below (40 bits). An offset carries no such bound: it
-/// rides whole in the second word. The bound is far above [`TRANSFER_MAXIMUM`], so the
+/// rides whole in the second word. The bound is far above [`MAXIMUM_TRANSFER_BYTES`], so the
 /// bit-packing has never been what bounds a transfer; the bound only guards the packing itself,
-/// and [`TRANSFER_MAXIMUM`] is what bounds a payload.
+/// and [`MAXIMUM_TRANSFER_BYTES`] is what bounds a payload.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_LENGTH_OR_OFFSET: u64 = (1 << 40) - 1;
+pub const MAXIMUM_LENGTH_BYTES: u64 = (1 << 40) - 1;
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, because a test does
 /// not run in the EL0 (unprivileged) build and a build is the only artifact that can be wrong about this.
@@ -318,8 +318,8 @@ pub const MAXIMUM_LENGTH_OR_OFFSET: u64 = (1 << 40) - 1;
 /// a half-working write wearing a different hat.
 const _: () = {
     assert!(TRANSFER_PAGES >= 1);
-    assert!(TRANSFER_MAXIMUM == TRANSFER_PAGES * super::PAGE);
-    assert!(TRANSFER_MAXIMUM as u64 <= MAXIMUM_LENGTH_OR_OFFSET);
+    assert!(MAXIMUM_TRANSFER_BYTES == TRANSFER_PAGES * super::PAGE_BYTES);
+    assert!(MAXIMUM_TRANSFER_BYTES as u64 <= MAXIMUM_LENGTH_BYTES);
     // A length decodes through a `usize`; on a narrower target the cast would drop its high bits and
     // a long transfer would read as a short successful one, so such a target does not build.
     assert!(usize::BITS >= 40);
@@ -355,7 +355,7 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 pub const fn req(operation: u64, handle: u64, len: u64) -> u64 {
     (operation << super::OPERATION_SHIFT)
         | ((handle & MAXIMUM_HANDLE) << 40)
-        | (len & MAXIMUM_LENGTH_OR_OFFSET)
+        | (len & MAXIMUM_LENGTH_BYTES)
 }
 /// The handle of a file request word.
 pub const fn req_handle(w0: u64) -> u64 {
@@ -363,14 +363,14 @@ pub const fn req_handle(w0: u64) -> u64 {
 }
 /// The length/count of a file request word.
 pub const fn req_len(w0: u64) -> usize {
-    (w0 & MAXIMUM_LENGTH_OR_OFFSET) as usize
+    (w0 & MAXIMUM_LENGTH_BYTES) as usize
 }
 
 /// Pack [`RENAME`]'s **destination** half into the second word: the same handle and length
 /// fields [`req`] uses, minus the opcode, because a rename names two directories and one word
 /// cannot carry both. Read back with [`dst_handle`] and [`dst_len`].
 pub const fn rename_dst(handle: u64, len: u64) -> u64 {
-    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_OR_OFFSET)
+    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_BYTES)
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
 pub const fn dst_handle(w1: u64) -> u64 {
@@ -378,7 +378,7 @@ pub const fn dst_handle(w1: u64) -> u64 {
 }
 /// The destination name's length, in bytes, of a [`RENAME`]'s second word.
 pub const fn dst_len(w1: u64) -> usize {
-    (w1 & MAXIMUM_LENGTH_OR_OFFSET) as usize
+    (w1 & MAXIMUM_LENGTH_BYTES) as usize
 }
 
 #[cfg(test)]

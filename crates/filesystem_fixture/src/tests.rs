@@ -526,11 +526,11 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
     // And a non-zero status is the errno, so the two ends agree about what failed rather than
     // only that something did.
     assert_eq!(
-        filesystem_contract::rm::status(filesystem_contract::dir::EROFS),
-        filesystem_contract::dir::EROFS as u64
+        filesystem_contract::rm::status(filesystem_contract::directory::EROFS),
+        filesystem_contract::directory::EROFS as u64
     );
     assert_ne!(
-        filesystem_contract::rm::status(filesystem_contract::dir::EROFS),
+        filesystem_contract::rm::status(filesystem_contract::directory::EROFS),
         filesystem_contract::rm::OK
     );
     assert_eq!(
@@ -548,7 +548,7 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
 /// something the bits no longer spell.
 #[test]
 fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
-    use filesystem_contract::{grant, xattr};
+    use filesystem_contract::{extended_attribute, grant};
 
     use crate::attrs::*;
     let bits = [
@@ -580,13 +580,13 @@ fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
     // between, and a name and value the store will actually accept.
     assert_ne!(PROBE, PROBE_MOVED);
     assert!(grant::fits(PROBE.as_bytes()) && grant::fits(PROBE_MOVED.as_bytes()));
-    assert!(xattr::is_valid_name(NAME));
-    assert!(VALUE.len() <= xattr::MAXIMUM_VALUE);
+    assert!(extended_attribute::is_valid_name(NAME));
+    assert!(VALUE.len() <= extended_attribute::MAXIMUM_VALUE_BYTES);
     // Checked at COMPILE time: both sides are constants, so a fixture that fell back to the
     // default kind should fail the build rather than wait for the suite. The same discipline
     // `a_text_frame_and_a_verdict_are_told_apart_by_the_first_word` uses.
     const _: () = assert!(
-        crate::attrs::KIND != xattr::RAW,
+        crate::attrs::KIND != extended_attribute::RAW,
         "a default kind would hide a layer that dropped it",
     );
 }

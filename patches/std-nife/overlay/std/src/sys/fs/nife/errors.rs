@@ -18,7 +18,7 @@ pub(super) fn request(w0: u64, w1: u64) -> io::Result<u64> {
 
 /// A reply word as a result: [`request`]'s mapping, split out so a reply can be kept and turned into
 /// an `io::Error` later. [`FileAttr`] needs that, because `Metadata` is a value std hands back
-/// whole and `modified()` is where a refused `GETMTIME` has to surface, not `metadata()`.
+/// whole and `modified()` is where a refused `GET_MODIFICATION_TIME` has to surface, not `metadata()`.
 pub(super) fn reply(r0: u64) -> io::Result<u64> {
     match fsproto::reply_errno(r0 as i64) {
         None => Ok(r0),

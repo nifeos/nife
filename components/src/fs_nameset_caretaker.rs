@@ -24,7 +24,9 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{dirent, fs, grant, nameset, operation, reply_err, reply_errno, verb};
+use filesystem_contract::{
+    directory_entry, fs, grant, nameset, operation, reply_err, reply_errno, verb,
+};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
@@ -45,14 +47,15 @@ const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// afterwards can widen the namespace.
 const SET_VA: u64 = address_space_layout::pair_page(0x0000_0000_0070_0000);
 /// The shared page's size, the contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE;
+const PAGE: usize = filesystem_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile loops below).
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
-// SAFETY: the wiring maps SET_VA read-only, at least nameset::BYTES bytes, before this program runs.
-const SET_WINDOW: MappedWindow = unsafe { MappedWindow::new(SET_VA, nameset::BYTES as u64) };
+// SAFETY: the wiring maps SET_VA read-only, at least nameset::MAXIMUM_BYTES bytes, before this program runs.
+const SET_WINDOW: MappedWindow =
+    unsafe { MappedWindow::new(SET_VA, nameset::MAXIMUM_BYTES as u64) };
 
 /// How many handles a confined program may hold open at once, including the granted directory at
 /// index 0. `fs_subtree_caretaker`'s number, for `fs_subtree_caretaker`'s reason: no heap, one
@@ -118,7 +121,7 @@ impl Table {
 /// because a first component longer than that is in no set and [`name_at`] refuses it anyway.
 fn first_component(len: usize) -> usize {
     let mut b = [0u8; 1];
-    for i in 0..len.min(grant::MAXIMUM_NAME + 1) {
+    for i in 0..len.min(grant::MAXIMUM_NAME_BYTES + 1) {
         get_at(i, &mut b);
         if b[0] == b'/' {
             return i;
@@ -132,8 +135,8 @@ fn first_component(len: usize) -> usize {
 /// A name longer than a grant can carry is truncated to nothing rather than clamped, because the set
 /// holds no such name and a clamped name is a *different* name: comparing a prefix against the set
 /// is how a filter accidentally admits `gl-one.txtXXX`.
-fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAXIMUM_NAME]) -> usize {
-    if len == 0 || len > grant::MAXIMUM_NAME || off + len > PAGE {
+fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAXIMUM_NAME_BYTES]) -> usize {
+    if len == 0 || len > grant::MAXIMUM_NAME_BYTES || off + len > PAGE {
         return 0;
     }
     get_at(off, &mut buf[..len]);
@@ -185,7 +188,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         // A name outside the set is refused before anything is forwarded, so the refusal cannot
         // be told apart from a name not on the disk. `RENAME` needs both halves, below.
         if filtered && v.takes_name() && v.operand == verb::Operand::Name {
-            let mut buf = [0u8; grant::MAXIMUM_NAME];
+            let mut buf = [0u8; grant::MAXIMUM_NAME_BYTES];
             // `OPEN` and `OPENDIR` may carry a relative path (milestone 606 (a directory walk
             // costs what it does on Linux), ruling A). Only its first component is a name in this
             // directory, so only it is checked and written back.
@@ -225,8 +228,8 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // destroys a name this capability was never granted. So a set capability cannot move a
             // name out of the set, and `mv *.txt` is not expressible (notes/glob-grant.md).
             let dst_len = fs::dst_len(w1).min(PAGE);
-            let mut src = [0u8; grant::MAXIMUM_NAME];
-            let mut dst = [0u8; grant::MAXIMUM_NAME];
+            let mut src = [0u8; grant::MAXIMUM_NAME_BYTES];
+            let mut dst = [0u8; grant::MAXIMUM_NAME_BYTES];
             let sn = name_at(0, len, &mut src);
             let dn = name_at(len, dst_len, &mut dst);
             let dst_handle = table.get(fs::dst_handle(w1));
@@ -279,9 +282,9 @@ fn serve(dir: u64, set: &[u8]) -> ! {
 /// afterwards is listed as it was designated, and the verb that acts on it answers for what it is.
 fn list(set: &[u8], cursor: usize) -> i64 {
     let mut off = 0usize;
-    let mut rec = [0u8; dirent::record_len(grant::MAXIMUM_NAME)];
+    let mut rec = [0u8; directory_entry::record_len(grant::MAXIMUM_NAME_BYTES)];
     for (name, is_dir) in nameset::iter(set).skip(cursor) {
-        let Some(n) = dirent::encode(&mut rec, name, is_dir) else {
+        let Some(n) = directory_entry::encode(&mut rec, name, is_dir) else {
             break;
         };
         if off + n > PAGE {
@@ -298,15 +301,15 @@ user_mode_runtime::program_entry!(start);
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // **Copy the set before anything else runs.** It arrives in a read-only page, and this process
     // then works from a local for the rest of its life, so the namespace it serves cannot be
-    // changed by anything that touches that page later. It is `nameset::BYTES`, 523 bytes, on a
+    // changed by anything that touches that page later. It is `nameset::MAXIMUM_BYTES`, 523 bytes, on a
     // stack of `CARETAKER_STACK_PAGES`.
-    let mut set = [0u8; nameset::BYTES];
+    let mut set = [0u8; nameset::MAXIMUM_BYTES];
     for (i, b) in set.iter_mut().enumerate() {
         *b = SET_WINDOW.read_u8(i as u64);
     }
 
-    let mut buf = [0u8; grant::WORDS_NAME];
-    let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
+    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
 
     // The descent, exactly `fs_subtree_caretaker`'s: ask for the granted directory with the granted
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
@@ -319,14 +322,14 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
         call(
             FS,
             fs::req(fs::NARROW, fs::ROOT, 0),
-            grant::spec_rights(spec),
+            grant::specification_rights(spec),
         )
     } else {
         put_at(0, &buf[..n]);
         call(
             FS,
             fs::req(fs::OPENDIR, fs::ROOT, n as u64),
-            grant::spec_rights(spec),
+            grant::specification_rights(spec),
         )
     };
     if reply_errno(r0 as i64).is_some() {

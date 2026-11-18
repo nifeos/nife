@@ -7,9 +7,9 @@ use super::*;
 
 /// The name of the file holding one node's attribute blob: its `TreePtr` id in hex. ASCII by
 /// construction, so the conversion cannot fail; the error arm exists so a future change to
-/// [`xattr::store::file_name`] cannot silently alias two nodes onto one blob.
+/// [`extended_attribute::store::file_name`] cannot silently alias two nodes onto one blob.
 pub(crate) fn store_file(id: u32) -> Result<([u8; 8], usize)> {
-    let bytes = xattr::store::file_name(id);
+    let bytes = extended_attribute::store::file_name(id);
     if core::str::from_utf8(&bytes).is_err() {
         return Err(Error::new(EIO));
     }
@@ -27,7 +27,7 @@ pub(crate) fn store_file(id: u32) -> Result<([u8; 8], usize)> {
 pub(crate) fn find_store<D: Disk>(
     transaction: &mut Transaction<D>,
 ) -> Result<Option<TreePtr<Node>>> {
-    match transaction.find_node(TreePtr::root(), xattr::STORE_DIR) {
+    match transaction.find_node(TreePtr::root(), extended_attribute::STORE_DIRECTORY) {
         Ok(node) => Ok(Some(node.ptr())),
         Err(e) if e.errno == ENOENT => Ok(None),
         Err(e) => Err(e),
@@ -36,7 +36,7 @@ pub(crate) fn find_store<D: Disk>(
 
 /// One node's attribute blob, or empty if it has none. Never partial: a blob longer than the layer
 /// can hold is `EIO`, because the alternative is reading whatever is in the first
-/// [`xattr::store::MAXIMUM_BYTES`] of a file this layer did not write.
+/// [`extended_attribute::store::MAXIMUM_BYTES`] of a file this layer did not write.
 pub(crate) fn read_attrs<D: Disk>(
     transaction: &mut Transaction<D>,
     node_id: u32,
@@ -52,7 +52,7 @@ pub(crate) fn read_attrs<D: Disk>(
         Err(e) => return Err(e),
     };
     let size = node.data().size() as usize;
-    if size > xattr::store::MAXIMUM_BYTES {
+    if size > extended_attribute::store::MAXIMUM_BYTES {
         return Err(Error::new(EIO));
     }
     let mut blob = alloc::vec![0u8; size];
@@ -82,7 +82,7 @@ pub(crate) fn write_attrs<D: Disk>(
         None => transaction
             .create_node(
                 TreePtr::root(),
-                xattr::STORE_DIR,
+                extended_attribute::STORE_DIRECTORY,
                 Node::MODE_DIR | 0o700,
                 now,
                 0,
@@ -132,7 +132,11 @@ pub(crate) fn purge_attrs<D: Disk>(transaction: &mut Transaction<D>, node_id: u3
 /// propagated, because a store that failed to be removed is not a store known to be gone. See
 /// notes/fs-server/the-core.md.
 pub(crate) fn drop_store_if_empty<D: Disk>(transaction: &mut Transaction<D>) -> Result<()> {
-    match transaction.remove_node(TreePtr::root(), xattr::STORE_DIR, Node::MODE_DIR) {
+    match transaction.remove_node(
+        TreePtr::root(),
+        extended_attribute::STORE_DIRECTORY,
+        Node::MODE_DIR,
+    ) {
         Ok(_) => Ok(()),
         Err(e) if e.errno == ENOTEMPTY || e.errno == ENOENT => Ok(()),
         Err(e) => Err(e),

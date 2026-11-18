@@ -45,7 +45,7 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
     let config = HOLDS_CONFIG
         .load(core::sync::atomic::Ordering::Relaxed)
         .then(|| unsafe {
-            environment_contract::ConfigPage::new(
+            environment_contract::ConfigurationPage::new(
                 grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
             )
         });
@@ -185,12 +185,13 @@ pub(super) fn file_digest(t: Tree, handle: u64, size: u64) -> Option<measured_bo
 /// One page of a generation table, read by [`live_generation_listing`]. A static rather than a
 /// local because a page on the stack would take `caps`'s frame over the 4 KiB guard page
 /// `script/stack-frame-check` holds every frame to; [`RANKED`] is here for the same reason.
-pub(super) static mut GENERATION_TABLE: [u8; filesystem_contract::PAGE] =
-    [0; filesystem_contract::PAGE];
+pub(super) static mut GENERATION_TABLE: [u8; filesystem_contract::PAGE_BYTES] =
+    [0; filesystem_contract::PAGE_BYTES];
 
 /// One page for the nearest version set, a static for [`GENERATION_TABLE`]'s reason. Provisional;
 /// the file it holds (`.jig-versions`) was ratified 2026-10-07, and this static's name was not.
-static mut VERSION_SET: [u8; filesystem_contract::PAGE] = [0; filesystem_contract::PAGE];
+static mut VERSION_SET: [u8; filesystem_contract::PAGE_BYTES] =
+    [0; filesystem_contract::PAGE_BYTES];
 
 /// **The nearest version set at or above where this shell stands** (milestone 614 (two installed
 /// versions of one program, each runnable, and a caller granted the one it needs), ruling 4):
@@ -254,7 +255,7 @@ pub(super) fn with_live_table<R>(nav: &Nav, f: impl FnOnce(&str, u32) -> Option<
         fs::OPENDIR,
         fs::ROOT,
         installed_programs::DIRECTORY.as_bytes(),
-        filesystem_contract::dir::READ,
+        filesystem_contract::directory::READ,
     );
     if act < 0 {
         return None;

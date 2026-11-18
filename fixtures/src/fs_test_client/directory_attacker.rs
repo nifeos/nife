@@ -7,7 +7,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{dir, fs, xattr};
+use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
 use fixture::{dirscape as esc, tree};
 use user_mode_runtime::{call, exit, send};
@@ -36,11 +36,13 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
         v |= esc::REACHED_PARENT;
     }
     // 2. The sibling, by both routes: descending into it and naming the file inside it.
-    if dir_descend(fs::ROOT, tree::OTHER, dir::ALL) >= 0 || dir_open(fs::ROOT, tree::SECRET) >= 0 {
+    if dir_descend(fs::ROOT, tree::OTHER, directory::ALL) >= 0
+        || dir_open(fs::ROOT, tree::SECRET) >= 0
+    {
         v |= esc::REACHED_SIBLING;
     }
     // 3. `..`, which is not a component this contract accepts, at any rights.
-    if dir_descend(fs::ROOT, "..", dir::ALL) >= 0 || dir_open(fs::ROOT, "..") >= 0 {
+    if dir_descend(fs::ROOT, "..", directory::ALL) >= 0 || dir_open(fs::ROOT, "..") >= 0 {
         v |= esc::WALKED_UP;
     }
 
@@ -77,13 +79,13 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
         v |= write_what_it_made(created);
     }
     let made_dir = run_name(tree::MADE_DIR, run);
-    if dir_mkdir(fs::ROOT, made_str(&made_dir), dir::READ) >= 0 {
+    if dir_mkdir(fs::ROOT, made_str(&made_dir), directory::READ) >= 0 {
         v |= esc::MADE_A_DIR;
     }
 
     // 9. Descending inside the grant, which is allowed exactly when DESCEND was granted. Asking for
     //    DESCEND alone, so this probe is about reaching the child rather than about its rights.
-    let child = dir_descend(fs::ROOT, tree::DEEPER, dir::DESCEND);
+    let child = dir_descend(fs::ROOT, tree::DEEPER, directory::DESCEND);
     if child >= 0 {
         v |= esc::DESCENDED;
     }
@@ -130,7 +132,7 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     let mut v = 0u64;
     let mut buf = [0u8; 256];
     // 4b. **Its attributes** (milestone 61). Reading them needs what reading the file needs, so
-    //     every configuration that got here should manage it; writing one needs `dir::WRITE`,
+    //     every configuration that got here should manage it; writing one needs `directory::WRITE`,
     //     and the caretaker checks nothing, so the refusal comes from the FS server acting on
     //     the rights the caretaker's one `OPENDIR` left on this handle.
     //
@@ -148,7 +150,7 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     let (s, _) = call(
         FILE,
         fs::req(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
-        xattr::spec(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
+        extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
     );
     if (s as i64) >= 0 {
         put_page(fixture::attrs::NAME);
@@ -157,10 +159,10 @@ fn probe_its_own_attributes(own: i64) -> u64 {
             fs::req(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
             0,
         );
-        get_page(xattr::reply_value_len(g as i64), &mut buf);
+        get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
         if (g as i64) >= 0
-            && xattr::reply_kind(g as i64) == fixture::attrs::KIND
-            && xattr::reply_value_len(g as i64) == fixture::attrs::VALUE.len()
+            && extended_attribute::reply_kind(g as i64) == fixture::attrs::KIND
+            && extended_attribute::reply_value_len(g as i64) == fixture::attrs::VALUE.len()
             && buf[..fixture::attrs::VALUE.len()] == *fixture::attrs::VALUE
         {
             v |= esc::SET_AN_ATTR;
@@ -197,7 +199,7 @@ fn probe_enumeration() -> u64 {
         // buffer with a length the server chose would be a panic this program cannot report.
         let n = (n as usize).min(buf.len());
         get_page(n, &mut buf);
-        for (name, _) in filesystem_contract::dirent::iter(&buf[..n]) {
+        for (name, _) in filesystem_contract::directory_entry::iter(&buf[..n]) {
             for stranger in [
                 fixture::MOTD_NAME,
                 fixture::SCRATCH_NAME,
@@ -261,7 +263,7 @@ fn probe_widening(created: i64) -> u64 {
     }
     //   (b) A child cannot carry what the parent did not. If creating in the grant was refused, the
     //       grant has no CREATE, so a descent that asks for CREATE must be refused too.
-    if created < 0 && dir_descend(fs::ROOT, tree::DEEPER, dir::ALL) >= 0 {
+    if created < 0 && dir_descend(fs::ROOT, tree::DEEPER, directory::ALL) >= 0 {
         v |= esc::WIDENED;
     }
     v

@@ -1,4 +1,4 @@
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use pipeline_service::{answer, counts};
 
 use super::*;
@@ -31,9 +31,9 @@ pub(super) fn transcript(out: &mut [u8; TRANSCRIPT_MAXIMUM]) -> Option<usize> {
             program("fs_subtree_caretaker")
                 .expect("no fs_subtree_caretaker program in the initial ramdisk"),
             filesystem_fixture::tree::REDIR,
-            dir::ALL,
+            directory::ALL,
         )?;
-        let Some(w) = pipeline_service::start_redirecting(dir, dir::ALL) else {
+        let Some(w) = pipeline_service::start_redirecting(dir, directory::ALL) else {
             panic!("no swish program in the initial ramdisk, or no memory to wire one");
         };
         let mut buf = [0u8; TRANSCRIPT_MAXIMUM];

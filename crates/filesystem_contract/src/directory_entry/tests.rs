@@ -18,13 +18,13 @@ fn a_directory_listing_round_trips_through_the_page() {
     ];
     let mut page = [0u8; 128];
     let mut at = 0;
-    for (name, is_dir) in entries {
-        at += dirent::encode(&mut page[at..], name, is_dir).expect("encode");
+    for (name, is_directory) in entries {
+        at += directory_entry::encode(&mut page[at..], name, is_directory).expect("encode");
     }
     let mut seen = 0;
-    for (i, (name, is_dir)) in dirent::iter(&page[..at]).enumerate() {
+    for (i, (name, is_directory)) in directory_entry::iter(&page[..at]).enumerate() {
         assert_eq!(name, entries[i].0, "entry {i}'s name");
-        assert_eq!(is_dir, entries[i].1, "entry {i}'s kind");
+        assert_eq!(is_directory, entries[i].1, "entry {i}'s kind");
         seen += 1;
     }
     assert_eq!(seen, entries.len());
@@ -36,22 +36,22 @@ fn a_directory_listing_round_trips_through_the_page() {
 #[test]
 fn a_listing_that_does_not_fit_encodes_nothing_and_reads_back_nothing_partial() {
     let mut tiny = [0u8; 4];
-    assert_eq!(dirent::encode(&mut tiny, b"ab", false), Some(4));
+    assert_eq!(directory_entry::encode(&mut tiny, b"ab", false), Some(4));
     assert_eq!(
-        dirent::encode(&mut tiny, b"abc", false),
+        directory_entry::encode(&mut tiny, b"abc", false),
         None,
         "a record that does not fit must be refused, not clipped",
     );
 
     // A buffer cut in the middle of a name yields only the whole records before it.
     let mut page = [0u8; 32];
-    let n = dirent::encode(&mut page, b"one", false).unwrap()
-        + dirent::encode(&mut page[5..], b"two", false).unwrap();
+    let n = directory_entry::encode(&mut page, b"one", false).unwrap()
+        + directory_entry::encode(&mut page[5..], b"two", false).unwrap();
     for cut in 0..n {
-        let seen = dirent::iter(&page[..cut]).count();
+        let seen = directory_entry::iter(&page[..cut]).count();
         assert!(seen <= 1, "a cut at {cut} produced a torn entry");
     }
-    assert_eq!(dirent::iter(&page[..n]).count(), 2);
+    assert_eq!(directory_entry::iter(&page[..n]).count(), 2);
 }
 
 /// **A 255-byte name fills the length byte exactly, and 256 is refused.** The boundary is
@@ -62,14 +62,14 @@ fn a_listing_that_does_not_fit_encodes_nothing_and_reads_back_nothing_partial() 
 fn a_dirent_name_fills_the_length_byte_exactly_or_is_refused() {
     let mut page = [0u8; 512];
     let longest = [b'n'; 255];
-    let n = dirent::encode(&mut page, &longest, false).expect("255 fits a length byte");
-    assert_eq!(n, dirent::record_len(255));
-    let (name, is_dir) = dirent::iter(&page[..n]).next().expect("readable");
+    let n = directory_entry::encode(&mut page, &longest, false).expect("255 fits a length byte");
+    assert_eq!(n, directory_entry::record_len(255));
+    let (name, is_directory) = directory_entry::iter(&page[..n]).next().expect("readable");
     assert_eq!(name, &longest[..]);
-    assert!(!is_dir);
+    assert!(!is_directory);
     let over = [b'n'; 256];
     assert_eq!(
-        dirent::encode(&mut page, &over, false),
+        directory_entry::encode(&mut page, &over, false),
         None,
         "a length byte cannot say 256"
     );
@@ -84,20 +84,20 @@ fn a_dirent_name_fills_the_length_byte_exactly_or_is_refused() {
 #[test]
 fn a_dirent_encodes_at_its_limits_and_not_past_them() {
     let name = vec![b'n'; 255];
-    let mut out = vec![0u8; dirent::record_len(255)];
-    assert_eq!(dirent::encode(&mut out, &name, true), Some(257));
-    assert_eq!(out[0], dirent::IS_DIR);
+    let mut out = vec![0u8; directory_entry::record_len(255)];
+    assert_eq!(directory_entry::encode(&mut out, &name, true), Some(257));
+    assert_eq!(out[0], directory_entry::IS_DIRECTORY);
     assert_eq!(out[1], 255);
     let mut short = vec![0u8; 256];
     assert_eq!(
-        dirent::encode(&mut short, &name, true),
+        directory_entry::encode(&mut short, &name, true),
         None,
         "a buffer one byte short"
     );
     let long = vec![b'n'; 256];
-    let mut out = vec![0u8; dirent::record_len(256)];
+    let mut out = vec![0u8; directory_entry::record_len(256)];
     assert_eq!(
-        dirent::encode(&mut out, &long, false),
+        directory_entry::encode(&mut out, &long, false),
         None,
         "a name one byte too long"
     );

@@ -406,7 +406,7 @@ test = false
 bench = false
 
 # radon's SD/MMC block server (milestone 53 (the board's own peripherals: network and storage on
-# real silicon)): `filesystem_contract::blk` over the JH7110's DesignWare Mobile Storage Host
+# real silicon)): `filesystem_contract::block` over the JH7110's DesignWare Mobile Storage Host
 # Controller, one register page and a transfer region, no DMA. It shares its crate's name, as
 # `non_volatile_memory_express` does. Name provisional.
 [[bin]]

@@ -17,23 +17,23 @@
 //! and the resolve both read; an arm that skipped the copy would not compile. This is milestone 825
 //! (a hostile client races the file server's name window)'s fix, and `notes/confinement-claims.md`
 //! rows 19 and 24 are the claims it holds. The attribute-name arms take bytes in a separate
-//! namespace, checked by `xattr::is_valid_name`; `get_xattr_request` copies its name too.
+//! namespace, checked by `extended_attribute::is_valid_name`; `get_xattr_request` copies its name too.
 
 //! # BUGS
 //!
 //! - `SETXATTR` and `REMOVEXATTR` hand the core their attribute name, and `SETXATTR` its value, as
 //!   slices of the shared window, uncopied, so a client's second thread can rewrite the name
-//!   between `xattr::is_valid_name` and the store's use of it, or the value as it is stored. Only
+//!   between `extended_attribute::is_valid_name` and the store's use of it, or the value as it is stored. Only
 //!   `GETXATTR` copies first.
 
-use filesystem_contract::{blk, fs, operation, reply_err, xattr};
+use filesystem_contract::{block, extended_attribute, fs, operation, reply_err};
 use redoxfs::Disk;
 use syscall::error::{EINVAL, EPERM, Error, Result};
 
 use crate::{NameCopy, Server};
 
 /// One filesystem block, in bytes: the size of every reply whose length the server chooses.
-const BLOCK: usize = blk::BLOCK_SIZE;
+const BLOCK: usize = block::BLOCK_BYTES;
 
 /// **The serve loop's IO, as the dispatch reaches it.** Everything else a request does is the
 /// [`Server`]'s own logic.
@@ -53,7 +53,7 @@ impl<D: Disk> Server<D> {
     /// read from and its reply's bytes written into (milestone 599 (a frame per filesystem client
     /// channel)). Returns the two reply words.
     ///
-    /// `window` must be at least [`fs::TRANSFER_MAXIMUM`] bytes, which the EL0 binary's mapped
+    /// `window` must be at least [`fs::MAXIMUM_TRANSFER_BYTES`] bytes, which the EL0 binary's mapped
     /// window is exactly. A shorter slice panics on the first verb that reaches past it.
     ///
     /// This is the **only** place a RedoxFS error becomes a wire value ([`reply_err`]); everything
@@ -97,7 +97,7 @@ impl<D: Disk> Server<D> {
         // length the client chooses, may use the whole channel. See
         // `filesystem_contract::fs::TRANSFER_PAGES`.
         let len = fs::req_len(w0).min(BLOCK);
-        let bulk_len = fs::req_len(w0).min(fs::TRANSFER_MAXIMUM);
+        let bulk_len = fs::req_len(w0).min(fs::MAXIMUM_TRANSFER_BYTES);
         let offset = w1;
         let request = Request {
             code,
@@ -244,16 +244,16 @@ impl<D: Disk> Server<D> {
             // The mtime verbs (milestone 47's `touch`; DECISIONS §112 (`touch`'s two behaviors need
             // two rights)), in UNLINK's shape. The rights split lives in [`Server::mtime`] and its
             // two siblings.
-            fs::GETMTIME => match NameCopy::copy_in(&window[..len]) {
+            fs::GET_MODIFICATION_TIME => match NameCopy::copy_in(&window[..len]) {
                 Ok(name) => self.mtime(handle, &name).map(|t| t as i64),
                 Err(e) => Err(e),
             },
-            fs::SETMTIME => match NameCopy::copy_in(&window[..len]) {
+            fs::SET_MODIFICATION_TIME => match NameCopy::copy_in(&window[..len]) {
                 Ok(name) => self.set_mtime_now(handle, &name).map(|()| 0),
                 Err(e) => Err(e),
             },
             // The asserted seconds ride in the second word, TRUNCATE's reason.
-            fs::SETMTIME_AT => match NameCopy::copy_in(&window[..len]) {
+            fs::SET_MODIFICATION_TIME_AT => match NameCopy::copy_in(&window[..len]) {
                 Ok(name) => self.set_mtime_at(handle, &name, offset).map(|()| 0),
                 Err(e) => Err(e),
             },
@@ -301,14 +301,14 @@ impl<D: Disk> Server<D> {
         // The name comes in on the page and the value goes back out on it, so the name is
         // copied to the stack before the reply is written over it. 255 bytes against a
         // measured 127 KiB high-water on a 397 KiB grant (notes/fs-server.md).
-        let mut name = [0u8; xattr::MAXIMUM_NAME];
+        let mut name = [0u8; extended_attribute::MAXIMUM_NAME_BYTES];
         if len > name.len() {
-            Err(Error::new(xattr::ERANGE))
+            Err(Error::new(extended_attribute::ERANGE))
         } else {
             name[..len].copy_from_slice(&window[..len]);
             // The server refuses a value that will not fit rather than writing past it.
             self.get_xattr(handle, &name[..len], &mut window[..BLOCK])
-                .map(|(kind, n)| xattr::reply(kind, n))
+                .map(|(kind, n)| extended_attribute::reply(kind, n))
         }
     }
 
@@ -321,13 +321,18 @@ impl<D: Disk> Server<D> {
         offset: u64,
         window: &[u8],
     ) -> Result<i64> {
-        let value_len = xattr::spec_value_len(offset);
+        let value_len = extended_attribute::specification_value_len(offset);
         if len + value_len > BLOCK {
             Err(Error::new(EINVAL))
         } else {
             let (name, value) = window[..len + value_len].split_at(len);
-            self.set_xattr(handle, name, xattr::spec_kind(offset), value)
-                .map(|()| 0)
+            self.set_xattr(
+                handle,
+                name,
+                extended_attribute::specification_kind(offset),
+                value,
+            )
+            .map(|()| 0)
         }
     }
 }

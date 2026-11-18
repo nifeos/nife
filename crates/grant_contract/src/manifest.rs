@@ -363,7 +363,7 @@ pub enum WordGrant {
 pub const THE_RIGHTS_BITS_SHARE_NO_BIT: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 
 impl WordGrant {
-    /// The rights a caretaker asks the file service for, as `filesystem_contract::dir`'s bits. Spelled
+    /// The rights a caretaker asks the file service for, as `filesystem_contract::directory`'s bits. Spelled
     /// as numbers here because this crate does not link the filesystem contract (see its
     /// `Cargo.toml`); `word_rights_are_the_filesystem_contracts` pins them to its constants.
     pub const fn rights(self) -> u64 {
@@ -689,7 +689,7 @@ pub enum IndexStoreDeclaration {
 }
 
 impl IndexStoreDeclaration {
-    /// The rights the store's directory is opened with, as `filesystem_contract::dir`'s bits:
+    /// The rights the store's directory is opened with, as `filesystem_contract::directory`'s bits:
     /// [`WordGrant::ReadOnly`]'s for reading, and [`WordGrant::Create`]'s for writing, since the
     /// first `update` creates the copy. `None` for [`IndexStoreDeclaration::Forbidden`].
     pub const fn rights(self) -> Option<u64> {

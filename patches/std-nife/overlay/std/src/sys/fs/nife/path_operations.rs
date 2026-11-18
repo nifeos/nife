@@ -8,15 +8,15 @@
 
 use super::*;
 
-/// A name's metadata: open, `FSTAT`, close, then `GETMTIME`. Four messages instead of one, because
+/// A name's metadata: open, `FSTAT`, close, then `GET_MODIFICATION_TIME`. Four messages instead of one, because
 /// the contract has no stat-by-name verb; the authority is identical (the name still resolves only
-/// under the granted directory, and all four need the `dir::READ` the walk asks for).
+/// under the granted directory, and all four need the `directory::READ` the walk asks for).
 ///
 /// **A directory answers too** (milestone 64): `OPEN`'s `EISDIR` *is* the answer to "what kind of
 /// thing is this name", so `Path::is_dir()` and `create_dir_all`'s recovery from `AlreadyExists`
-/// work. `GETMTIME` goes last, so every error this returns comes from the walk, `OPEN` or `FSTAT`;
+/// work. `GET_MODIFICATION_TIME` goes last, so every error this returns comes from the walk, `OPEN` or `FSTAT`;
 /// a refused one surfaces from `modified()` (see [`Mtime`]). The four are not atomic: a name
-/// replaced between `OPEN` and `GETMTIME` reports the new node's time with the old node's size, the
+/// replaced between `OPEN` and `GET_MODIFICATION_TIME` reports the new node's time with the old node's size, the
 /// window a Unix program calling `stat` twice has. A directory's size is a placeholder 0.
 pub fn stat(path: &Path) -> io::Result<FileAttr> {
     if !is_reachable() {
@@ -38,7 +38,7 @@ pub fn stat(path: &Path) -> io::Result<FileAttr> {
 /// learn that `EISDIR` is an answer.
 pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     let mut p = page();
-    let (at, name) = walk(&mut p, at, path, fsproto::dir::READ)?;
+    let (at, name) = walk(&mut p, at, path, fsproto::directory::READ)?;
     p.put(name.as_bytes());
     let (size, dir) = match request(proto::req(proto::OPEN, at.0, name.len() as u64), 0) {
         Ok(handle) => {
@@ -52,7 +52,7 @@ pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     };
     // The name again: nothing promises `OPEN`'s reply left the page as it found it.
     p.put(name.as_bytes());
-    let (r0, _) = rt::call(FS, proto::req(proto::GETMTIME, at.0, name.len() as u64), 0);
+    let (r0, _) = rt::call(FS, proto::req(proto::GET_MODIFICATION_TIME, at.0, name.len() as u64), 0);
     let mtime = match fsproto::reply_errno(r0 as i64) {
         None => Mtime::Seconds(r0),
         Some(_) => Mtime::Refused(r0),
@@ -91,10 +91,10 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
     let mut page = page();
 
     // `ENUMERATE` and nothing more, for the reason `DirBuilder::mkdir` spells out: over-asking is
-    // `EPERM`, not attenuation, so a PAL that asked for `dir::ALL` here would work through the
+    // `EPERM`, not attenuation, so a PAL that asked for `directory::ALL` here would work through the
     // test's full-rights grant and fail through every narrowed one. Every hop on the way to a
     // nested path asks for `DESCEND | ENUMERATE`, which is the same minimum one level up.
-    let at = dir_at(&mut page, p, fsproto::dir::ENUMERATE)?;
+    let at = dir_at(&mut page, p, fsproto::directory::ENUMERATE)?;
     let handle = at.0;
 
     let mut entries: Vec<(OsString, bool)> = Vec::new();
@@ -114,7 +114,7 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
         let filled = filled.min(PAGE);
         page.get(&mut buf[..filled]);
         let mut this_page = 0u64;
-        for (name, dir) in fsproto::dirent::iter(&buf[..filled]) {
+        for (name, dir) in fsproto::directory_entry::iter(&buf[..filled]) {
             // A name is bytes on the wire and an `OsString` in std, and on this target an
             // `OsString` is UTF-8. A name the FS server holds that is not UTF-8 cannot be
             // represented, so it is skipped rather than lossily renamed: handing back a name that
@@ -150,7 +150,7 @@ pub fn unlink(p: &Path) -> io::Result<()> {
         return Err(unsupported_err());
     }
     let mut page = page();
-    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::dir::REMOVE)?;
+    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::REMOVE)?;
     page.put(name.as_bytes());
     request(proto::req(proto::UNLINK, at.0, name.len() as u64), 0)?;
     Ok(())
@@ -165,7 +165,7 @@ pub fn rmdir(p: &Path) -> io::Result<()> {
         return Err(unsupported_err());
     }
     let mut page = page();
-    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::dir::REMOVE)?;
+    let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::REMOVE)?;
     page.put(name.as_bytes());
     request(proto::req(proto::RMDIR, at.0, name.len() as u64), 0)?;
     Ok(())
@@ -184,8 +184,8 @@ pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
         return Err(unsupported_err());
     }
     let mut page = page();
-    let (src_at, src) = walk(&mut page, proto::ROOT, old, fsproto::dir::REMOVE)?;
-    let (dst_at, dst) = walk(&mut page, proto::ROOT, new, fsproto::dir::CREATE)?;
+    let (src_at, src) = walk(&mut page, proto::ROOT, old, fsproto::directory::REMOVE)?;
+    let (dst_at, dst) = walk(&mut page, proto::ROOT, new, fsproto::directory::CREATE)?;
     if src.len() + dst.len() > PAGE {
         return Err(io::const_error!(
             io::ErrorKind::InvalidFilename,
@@ -261,13 +261,13 @@ pub fn set_perm_nofollow(_p: &Path, _perm: FilePermissions) -> io::Result<()> {
     unsupported()
 }
 
-/// **`std::fs::set_times`** (milestone 64, rank 28): `SETMTIME_AT`, the caller's time, by name.
+/// **`std::fs::set_times`** (milestone 64, rank 28): `SET_MODIFICATION_TIME_AT`, the caller's time, by name.
 ///
-/// Never `SETMTIME`: a caller's `SystemTime` asserts history, which DECISIONS §112 puts behind
-/// `dir::SETTIME`, so the walk asks for `WRITE | SETTIME` and a grant without it answers
+/// Never `SET_MODIFICATION_TIME`: a caller's `SystemTime` asserts history, which DECISIONS §112 puts behind
+/// `directory::SETTIME`, so the walk asks for `WRITE | SETTIME` and a grant without it answers
 /// `ReadOnlyFilesystem`. Falling back would write the server's logical "now" and report success.
 /// Refused before any message, so nothing is half done: an access time (no verb sets one), a time
-/// past `i64::MAX` seconds (`GETMTIME`'s signed reply could never read it back), and the granted
+/// past `i64::MAX` seconds (`GET_MODIFICATION_TIME`'s signed reply could never read it back), and the granted
 /// directory itself (``, `.`, `/`), which has no name. A sub-second part is truncated, as on a
 /// second-granularity Unix filesystem. An empty `FileTimes` still resolves the name, so a missing
 /// file is `NotFound`. See notes/std/file-times.md.
@@ -304,9 +304,9 @@ pub fn set_times(p: &Path, times: FileTimes) -> io::Result<()> {
     }
     let mut page = page();
     let (at, name) =
-        walk(&mut page, proto::ROOT, p, fsproto::dir::WRITE | fsproto::dir::SETTIME)?;
+        walk(&mut page, proto::ROOT, p, fsproto::directory::WRITE | fsproto::directory::SETTIME)?;
     page.put(name.as_bytes());
-    request(proto::req(proto::SETMTIME_AT, at.0, name.len() as u64), secs)?;
+    request(proto::req(proto::SET_MODIFICATION_TIME_AT, at.0, name.len() as u64), secs)?;
     Ok(())
 }
 
@@ -334,11 +334,11 @@ impl DirBuilder {
             return Err(unsupported_err());
         }
         let mut page = page();
-        let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::dir::CREATE | fsproto::dir::DESCEND)?;
+        let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::CREATE | fsproto::directory::DESCEND)?;
         page.put(name.as_bytes());
         // The second word asks for rights on the child. `create_dir` needs nothing from the handle
         // it gets back, because it closes it, so it asks for none. A caller that kept the handle
-        // would send `fsproto::dir::PARENT_RIGHTS` (§98) rather than guess a mask.
+        // would send `fsproto::directory::PARENT_RIGHTS` (§98) rather than guess a mask.
         let handle = request(proto::req(proto::MKDIR, at.0, name.len() as u64), 0)?;
         let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
         Ok(())

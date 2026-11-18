@@ -50,7 +50,7 @@ const EBADF: i32 = filesystem_contract::verb::file_grant::EBADF;
 /// call for the whole time this process uses the page, so the two uses cannot interleave.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE;
+const PAGE: usize = filesystem_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
@@ -119,11 +119,11 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
 
         let r: i64 = match policy {
             // Any name but the granted one is ENOENT: in this scope there is no such name. The
-            // buffer is `grant::WORDS_NAME` bytes, the granted name's own bound, because this
+            // buffer is `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the granted name's own bound, because this
             // process runs on the one stack page `run` maps, so a length mismatch is refused
             // before any copy.
             Policy::Local if code == fs::OPEN => {
-                let mut asked_name = [0u8; grant::WORDS_NAME];
+                let mut asked_name = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
                 if len == name.len() {
                     get(&mut asked_name[..len]);
                 }
@@ -158,8 +158,8 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    let mut buf = [0u8; grant::WORDS_NAME];
-    let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
+    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
     let name = &buf[..n];
 
     // Open the granted name once. If it is not there, die rather than serve a hole, so the

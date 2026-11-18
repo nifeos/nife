@@ -37,7 +37,7 @@ pub(super) fn page_frame() -> u64 {
 pub(super) const FILE_PAGES: usize = filesystem_contract::fs::TRANSFER_PAGES;
 
 /// How many pages the blk channel spans, straight from the contract, as [`FILE_PAGES`] is.
-pub(super) const BLK_PAGES: usize = filesystem_contract::blk::TRANSFER_BLOCKS;
+pub(super) const BLK_PAGES: usize = filesystem_contract::block::TRANSFER_BLOCKS;
 
 /// Every client window at once: [`CLIENT_WINDOWS`] channels of [`FILE_PAGES`] frames, one
 /// contiguous zeroed run, returned by its base. Window 0 is the first [`FILE_PAGES`] of it, so a

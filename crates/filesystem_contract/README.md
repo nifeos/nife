@@ -16,30 +16,30 @@ word is a protocol violation that reads as `EPROTO` (71), never as success; the 
 
 ## The contract
 
-- `blk` (the block protocol, shaped like a block device trait): `READ`, `WRITE`, `SIZE` and `FLUSH`.
-  The unit is one block of `PAGE` (4096) bytes, and a request moves up to `blk::TRANSFER_BLOCKS` (16)
-  of them. `blk::VERSION` is its version.
+- `block` (the block protocol, shaped like a block device trait): `READ`, `WRITE`, `SIZE` and `FLUSH`.
+  The unit is one block of `PAGE_BYTES` (4096) bytes, and a request moves up to `block::TRANSFER_BLOCKS` (16)
+  of them. `block::VERSION` is its version.
 - `fs` (the file protocol): the endpoint a client holds is a directory capability, bound in the
   server to one directory node, and every name is resolved relative to a handle under it. There is
   no global namespace and no absolute path. A handle is a small integer the server mints and checks
   against the session's table, so forging one is meaningless; `fs::ROOT` (0) is the bound directory.
   The verbs are `OPEN`, `READ`, `WRITE`, `CLOSE`, `FSTAT`, `CREATE`, `TRUNCATE`, `OPENDIR`,
   `READDIR`, `MKDIR`, `RENAME`, `UNLINK`, `RMDIR`, `GETXATTR`, `SETXATTR`, `LISTXATTR`,
-  `REMOVEXATTR`, `STATFS`, `SYNC`, `GETMTIME`, `SETMTIME`, `SETMTIME_AT` and `NARROW`, with `BIND`,
+  `REMOVEXATTR`, `STATFS`, `SYNC`, `GET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT` and `NARROW`, with `BIND`,
   `UNBIND` and `BIND_SYNC` outside the table's range so no caretaker forwards them. A transfer is up
   to `fs::TRANSFER_PAGES` (16) pages. `fs::VERSION` is its version.
-- `dir` (what a directory capability carries): a rights set of `ENUMERATE`, `READ`, `WRITE`,
+- `directory` (what a directory capability carries): a rights set of `ENUMERATE`, `READ`, `WRITE`,
   `CREATE`, `REMOVE`, `DESCEND` and `SETTIME`. A child's rights are the parent's rights combined by bitwise AND with
   the request (`Rights::attenuate`), so no child carries more than its parent. A missing right
   answers an errno chosen for what the holder learns: a naming right is `ENOENT`, a mutating right
   is `EROFS`, and `ENUMERATE` is `EPERM`. `explain` gives a fact-only sentence for each errno.
 - `verb`: each request's argument shape and the rights a server demands, declared once in `TABLE`,
   so every caretaker dispatches off it. A verb in `fs` without a row is a compile error.
-- `dirent` (a listing in the shared page: a flags byte, a length byte, then the name), `statfs`
+- `directory_entry` (a listing in the shared page: a flags byte, a length byte, then the name), `statfs`
   (three little-endian `u64`: the allocation unit, the volume size and the free count in those
   units; the reply length is the version), `grant` (a per-file grant: a name that fits two words or
   is longer, plus `READ` and `WRITE`), `nameset` (a directory attenuated to at most eight names and
-  512 bytes of name) and `xattr` (extended attributes: limits, encodings and the store) are the
+  512 bytes of name) and `extended_attribute` (extended attributes: limits, encodings and the store) are the
   encodings. A set or name is never silently truncated; a limit is refused with its own errno.
 - `READY` is the filesystem server's readiness word, and `DESCENT_REFUSED` a caretaker's refusal.
   `rm` defines what the `rm` program reports.
@@ -47,19 +47,19 @@ word is a protocol violation that reads as `EPROTO` (71), never as success; the 
 ## EXAMPLES
 
 ```rust
-use filesystem_contract::{dir, fs, operation, reply_err, reply_errno, req};
+use filesystem_contract::{directory, fs, operation, reply_err, reply_errno, req};
 
 // A block-protocol request is just an opcode.
-assert_eq!(operation(req(filesystem_contract::blk::READ)), filesystem_contract::blk::READ);
+assert_eq!(operation(req(filesystem_contract::block::READ)), filesystem_contract::block::READ);
 
 // An error is the negated errno; a length is itself.
 assert_eq!(reply_errno(reply_err(2)), Some(2));
 assert_eq!(reply_errno(4096), None);
 
 // A child directory never carries a right its parent lacks.
-let parent = dir::Rights::root(dir::READ | dir::ENUMERATE);
-let child = parent.attenuate(dir::READ | dir::WRITE);
-assert!(child.allows(dir::READ) && !child.allows(dir::WRITE));
+let parent = directory::Rights::root(directory::READ | directory::ENUMERATE);
+let child = parent.attenuate(directory::READ | directory::WRITE);
+assert!(child.allows(directory::READ) && !child.allows(directory::WRITE));
 assert_ne!(fs::OPEN, 0, "0 is not a verb: a zeroed word must not decode as one");
 ```
 
@@ -71,7 +71,7 @@ checker, so it needs network access. CI uses version 0.68.0, and another version
 differently.
 
 Five Kani harnesses, each with a falsification patch in `falsifications/`. Three are in
-`src/dir.rs`: `attenuate_never_widens`, `a_grandchild_is_bounded_by_the_root` and
+`src/directory.rs`: `attenuate_never_widens`, `a_grandchild_is_bounded_by_the_root` and
 `a_root_carries_nothing_undefined`. Two are in `src/lib.rs` and prove the reply word's error
 range for every `i64`: `every_word_decodes_within_the_bound` and `a_sent_code_round_trips`. Rerun them with `cargo kani`; applying a patch with
 `patch -p3` from the crate root makes its harness fail.

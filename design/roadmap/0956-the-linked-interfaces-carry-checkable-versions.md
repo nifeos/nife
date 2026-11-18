@@ -113,7 +113,7 @@ table. No registry outside it exists.
 | 11 | `domain_name_resolution_contract` |
 | 12 | `entropy_contract` |
 | 13 | `environment_contract` |
-| 14 | `filesystem_contract::blk` |
+| 14 | `filesystem_contract::block` |
 | 15 | `filesystem_contract::fs` |
 | 16 | `filesystem_fixture` |
 | 17 | `grant_contract` |

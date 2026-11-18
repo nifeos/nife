@@ -22,7 +22,7 @@
 //! # A page that does not parse reads as no arguments
 //!
 //! [`MAGIC`] is checked first, and then every length against what is left, the same
-//! default-honest shape `environment_contract::ConfigPage` uses. A zeroed frame, a page belonging
+//! default-honest shape `environment_contract::ConfigurationPage` uses. A zeroed frame, a page belonging
 //! to something else, or a count that disagrees with the records all answer an empty argv rather
 //! than a partial one: a program that sees half its arguments would act on a line nobody typed.
 //! That holds for damage to any one field. The layout has no checksum, so a header whose `count`

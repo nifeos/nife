@@ -111,7 +111,7 @@ fn attrs_of<D: redoxfs::Disk>(
 ) -> Result<Attrs, syscall::error::Error> {
     let mut page = [0u8; 4096];
     let n = srv.list_xattr(handle, &mut page)?;
-    let names: Vec<Vec<u8>> = filesystem_contract::xattr::list::iter(&page[..n])
+    let names: Vec<Vec<u8>> = filesystem_contract::extended_attribute::list::iter(&page[..n])
         .map(|s| s.to_vec())
         .collect();
     let mut out = Vec::new();
@@ -262,7 +262,7 @@ fn record_workload() -> Recorded {
     srv.set_xattr(
         h,
         b"user.DOSATTRIB",
-        filesystem_contract::xattr::RAW,
+        filesystem_contract::extended_attribute::RAW,
         b"0x20",
     )
     .expect("operation 9");

@@ -1,4 +1,4 @@
-use super::PAGE;
+use super::PAGE_BYTES;
 
 /// The block protocol's version, one for this operation set and its reply shapes. Module-scoped,
 /// not per crate: the file protocol moves on its own version. A break bumps this and owes a
@@ -37,10 +37,12 @@ pub const SIZE: u64 = 3;
 pub const FLUSH: u64 = 4;
 
 /// One filesystem block, in bytes: the transfer unit [`SIZE`] and [`FLUSH`] see and the unit
-/// [`req_blocks`] counts in. Equal to `redoxfs::BLOCK_SIZE`; asserted against it in the block
+/// [`req_blocks`] counts in. Equal to `redoxfs::BLOCK_BYTES`; asserted against it in the block
 /// server so a future RedoxFS bump that changed the block size would fail to build rather than
 /// silently corrupt.
-pub const BLOCK_SIZE: usize = PAGE;
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const BLOCK_BYTES: usize = PAGE_BYTES;
 
 /// The logical block size a partition table counts in: the 512-byte sector every disk this
 /// project has met presents and the unit the virtio blk wire counts in. Nothing on the wire
@@ -49,8 +51,8 @@ pub const BLOCK_SIZE: usize = PAGE;
 /// Name: provisional (milestone 886); calef names public items.
 pub const SECTOR_BYTES: u64 = 512;
 
-/// The number of sectors in one filesystem block (`BLOCK_SIZE / SECTOR_BYTES = 8`).
-pub const SECTORS_PER_BLOCK: u64 = (BLOCK_SIZE as u64) / SECTOR_BYTES;
+/// The number of sectors in one filesystem block (`BLOCK_BYTES / SECTOR_BYTES = 8`).
+pub const SECTORS_PER_BLOCK: u64 = (BLOCK_BYTES as u64) / SECTOR_BYTES;
 
 /// **How many blocks the shared region spans, and the most one [`READ`] or [`WRITE`] may carry.**
 /// Equal to `fs::TRANSFER_PAGES` on purpose, so a full file request fans out to one blk request
@@ -65,7 +67,7 @@ pub const TRANSFER_BLOCKS: usize = 16;
 /// ([`TRANSFER_BLOCKS`] blocks). The block server clamps every request's count to this.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const TRANSFER_MAXIMUM: usize = TRANSFER_BLOCKS * BLOCK_SIZE;
+pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_BLOCKS * BLOCK_BYTES;
 
 /// Pack a blk request's first word: opcode (bits 63:56, [`super::OPERATION_SHIFT`]) and a block count
 /// (bits 7:0, stored as `blocks - 1` so the all-zero word a single-block caller sends decodes as
@@ -82,12 +84,12 @@ pub const fn req_blocks(w0: u64) -> usize {
 }
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, for
-/// `fs::TRANSFER_MAXIMUM`'s reason: this contract has no test harness at EL0 (the unprivileged exception level), and a build is the
+/// `fs::MAXIMUM_TRANSFER_BYTES`'s reason: this contract has no test harness at EL0 (the unprivileged exception level), and a build is the
 /// only artifact that can be wrong about it there.
 const _: () = {
     assert!(TRANSFER_BLOCKS >= 1);
     assert!(TRANSFER_BLOCKS <= 256); // the 8-bit count field's range
-    assert!(TRANSFER_MAXIMUM == TRANSFER_BLOCKS * BLOCK_SIZE);
+    assert!(MAXIMUM_TRANSFER_BYTES == TRANSFER_BLOCKS * BLOCK_BYTES);
     // `req`'s all-zero-low-bits compatibility case: a caller that never heard of `req_blocks`
     // sends `super::req(operation)`, whose low bits are 0, and that must still mean one block.
     assert!(req_blocks(super::req(READ)) == 1);

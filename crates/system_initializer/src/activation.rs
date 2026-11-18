@@ -229,7 +229,7 @@ fn approval_document<'a>(
         fs_operation::OPENDIR,
         act,
         installed_programs::approval::STORE,
-        dir::ENUMERATE | dir::READ | dir::DESCEND,
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
     );
     let mut name_buf = [0u8; 16];
     let answer = if store >= 0 {
@@ -451,7 +451,7 @@ pub(super) fn activate(
         }
         _ => None,
     };
-    let mut named = [0u8; filesystem_contract::grant::WORDS_NAME];
+    let mut named = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
     // A vouch's name follows its frames, which `take_frames` has just taken; a revoke's names
     // the approval to drop (milestone 911 (scripted installs grant only what the owner's
     // approval file allows)).
@@ -1084,14 +1084,14 @@ fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
     let Ok(name) = core::str::from_utf8(named) else {
         return Answer::from((S::NotInstalled, live));
     };
-    // Removing the store's file: `UNLINK` is `dir::REMOVE`'s answer on the directory that
+    // Removing the store's file: `UNLINK` is `directory::REMOVE`'s answer on the directory that
     // holds it, so the store is opened carrying that right. A store this boot cannot open is
     // the state the request asks for, and the answer is `Done`.
     let act2 = files.named(
         fs_operation::OPENDIR,
         act,
         installed_programs::approval::STORE,
-        dir::ENUMERATE | dir::READ | dir::DESCEND | dir::REMOVE,
+        directory::ENUMERATE | directory::READ | directory::DESCEND | directory::REMOVE,
     );
     if act2 < 0 {
         return Answer::from((S::Done, live));
@@ -1112,7 +1112,7 @@ fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
             fs_operation::OPENDIR,
             act,
             installed_programs::approval::STORE,
-            dir::ENUMERATE | dir::READ | dir::DESCEND,
+            directory::ENUMERATE | directory::READ | directory::DESCEND,
         );
         if act3 >= 0 {
             let mut name_buf = [0u8; 16];

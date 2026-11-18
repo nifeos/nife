@@ -8,12 +8,12 @@ use super::*;
 // --- The attribute store, from the recovery side (milestone 57) --------------------------------
 //
 // `.extended-attributes` in an image's root holds one file per node with extended attributes, named for
-// its `TreePtr` id in hex, in the records `filesystem_contract::xattr::store` defines (a crate, per
+// its `TreePtr` id in hex, in the records `filesystem_contract::extended_attribute::store` defines (a crate, per
 // CLAUDE.md rule 7); only the FS server writes it. Nothing here may fail an extraction: a problem
 // is a skip the caller counts and walks past, so the files come out when the metadata does not.
 
 /// One extended attribute, as recovery sees it: the name and value as bytes, plus the type code
-/// [`filesystem_contract::xattr`] carries and no host filesystem can hold.
+/// [`filesystem_contract::extended_attribute`] carries and no host filesystem can hold.
 pub struct Attr {
     pub name: Vec<u8>,
     pub kind: u32,
@@ -29,19 +29,19 @@ pub struct Attr {
 pub(crate) fn find_store<D: Disk>(
     transaction: &mut Transaction<D>,
 ) -> Result<Option<TreePtr<Node>>, String> {
-    match transaction.find_node(TreePtr::root(), xattr::STORE_DIR) {
+    match transaction.find_node(TreePtr::root(), extended_attribute::STORE_DIRECTORY) {
         Ok(node) => Ok(Some(node.ptr())),
         Err(e) if e.errno == syscall::error::ENOENT => Ok(None),
         Err(e) => Err(format!(
             "cannot read the attribute store {}: {e}",
-            xattr::STORE_DIR
+            extended_attribute::STORE_DIRECTORY
         )),
     }
 }
 
 /// One node's raw attribute blob, empty if it has none.
 ///
-/// A blob longer than [`xattr::store::MAXIMUM_BYTES`] is refused rather than clipped: the layer
+/// A blob longer than [`extended_attribute::store::MAXIMUM_BYTES`] is refused rather than clipped: the layer
 /// cannot have written it, so reading its first 53 KB would be reading a file this format does not
 /// describe.
 pub(crate) fn attr_blob<D: Disk>(
@@ -52,7 +52,7 @@ pub(crate) fn attr_blob<D: Disk>(
     let Some(dir_ptr) = store else {
         return Ok(Vec::new());
     };
-    let file = xattr::store::file_name(node_id);
+    let file = extended_attribute::store::file_name(node_id);
     // ASCII by construction (`file_name` emits hex digits), so this cannot fail; the arm exists so a
     // future change there cannot silently alias two nodes onto one blob.
     let name = std::str::from_utf8(&file)
@@ -60,14 +60,19 @@ pub(crate) fn attr_blob<D: Disk>(
     let node = match transaction.find_node(dir_ptr, name) {
         Ok(node) => node,
         Err(e) if e.errno == syscall::error::ENOENT => return Ok(Vec::new()),
-        Err(e) => return Err(format!("{}/{name}: {e}", xattr::STORE_DIR)),
+        Err(e) => {
+            return Err(format!(
+                "{}/{name}: {e}",
+                extended_attribute::STORE_DIRECTORY
+            ));
+        }
     };
     let size = node.data().size() as usize;
-    if size > xattr::store::MAXIMUM_BYTES {
+    if size > extended_attribute::store::MAXIMUM_BYTES {
         return Err(format!(
             "{}/{name}: {size} bytes, more than the {} an attribute blob can be; not read",
-            xattr::STORE_DIR,
-            xattr::store::MAXIMUM_BYTES,
+            extended_attribute::STORE_DIRECTORY,
+            extended_attribute::store::MAXIMUM_BYTES,
         ));
     }
     read_all(transaction, &node)
@@ -83,8 +88,8 @@ pub(crate) fn attr_blob<D: Disk>(
 pub(crate) fn decode_attrs(blob: &[u8]) -> (Vec<Attr>, usize) {
     let mut out = Vec::new();
     let mut used = 0;
-    for (name, kind, value) in xattr::store::iter(blob) {
-        used += xattr::store::record_len(name.len(), value.len());
+    for (name, kind, value) in extended_attribute::store::iter(blob) {
+        used += extended_attribute::store::record_len(name.len(), value.len());
         out.push(Attr {
             name: name.to_vec(),
             kind,

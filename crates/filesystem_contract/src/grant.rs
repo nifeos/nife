@@ -13,12 +13,12 @@ pub const WRITE: u64 = 1 << 1;
 /// on nife's own disk.
 ///
 /// A name this long does not fit in a caretaker's `START` words. Those carry at most
-/// [`WORDS_NAME`], and a name over that travels on a page: a name set's frame, or the bytes the
+/// [`MAXIMUM_WORDS_NAME_BYTES`], and a name over that travels on a page: a name set's frame, or the bytes the
 /// shell opens itself. [`pack_name`] refuses rather than truncates, so nothing can put a long name in
 /// two words by mistake.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_NAME: usize = 252;
+pub const MAXIMUM_NAME_BYTES: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
 /// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation
@@ -26,9 +26,9 @@ pub const MAXIMUM_NAME: usize = 252;
 /// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
 /// answers `None`), never truncated, because a truncated name is a different file.
 ///
-/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAXIMUM_NAME`]'s "what
+/// Name: provisional (milestone 946 (a granted file name longer than sixteen bytes)), for "what two words can hold" beside [`MAXIMUM_NAME_BYTES`]'s "what
 /// a grant can name".
-pub const WORDS_NAME: usize = 16;
+pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;
 
 /// `EROFS`, the reply to a write through a read-only grant. Chosen over `EACCES` on purpose:
 /// `EACCES` is the Unix answer, "you were denied", which implies a policy that could have said
@@ -46,7 +46,7 @@ pub const ENOTDIR: i32 = 20;
 pub const HANDLE: u64 = 0;
 
 /// **Pack a name into the two argument words a process is started with**, or `None` when it is
-/// empty or longer than [`WORDS_NAME`]. Names shorter than that are zero-padded. `None` rather than
+/// empty or longer than [`MAXIMUM_WORDS_NAME_BYTES`]. Names shorter than that are zero-padded. `None` rather than
 /// a prefix, so a caller that forgot to check cannot start a caretaker on a different name.
 pub const fn pack_name(name: &[u8]) -> Option<(u64, u64)> {
     if !fits_words(name) {
@@ -67,23 +67,28 @@ pub const fn pack_name(name: &[u8]) -> Option<(u64, u64)> {
 }
 
 /// Unpack a name from two argument words into `buf` and return its length, at most
-/// [`WORDS_NAME`]: a length word claiming more is clamped to what two words can hold.
-pub fn unpack_name(lo: u64, hi: u64, len: usize, buf: &mut [u8; WORDS_NAME]) -> usize {
+/// [`MAXIMUM_WORDS_NAME_BYTES`]: a length word claiming more is clamped to what two words can hold.
+pub fn unpack_name(
+    lo: u64,
+    hi: u64,
+    len: usize,
+    buf: &mut [u8; MAXIMUM_WORDS_NAME_BYTES],
+) -> usize {
     buf[..8].copy_from_slice(&lo.to_le_bytes());
     buf[8..].copy_from_slice(&hi.to_le_bytes());
-    len.min(WORDS_NAME)
+    len.min(MAXIMUM_WORDS_NAME_BYTES)
 }
 
-/// Whether a name can be granted at all: one to [`MAXIMUM_NAME`] bytes.
+/// Whether a name can be granted at all: one to [`MAXIMUM_NAME_BYTES`] bytes.
 pub const fn fits(name: &[u8]) -> bool {
-    !name.is_empty() && name.len() <= MAXIMUM_NAME
+    !name.is_empty() && name.len() <= MAXIMUM_NAME_BYTES
 }
 
-/// Whether a name fits in two `START` argument words: one to [`WORDS_NAME`] bytes.
+/// Whether a name fits in two `START` argument words: one to [`MAXIMUM_WORDS_NAME_BYTES`] bytes.
 ///
-/// Name: provisional (milestone 946), after [`fits`] and [`WORDS_NAME`].
+/// Name: provisional (milestone 946), after [`fits`] and [`MAXIMUM_WORDS_NAME_BYTES`].
 pub const fn fits_words(name: &[u8]) -> bool {
-    !name.is_empty() && name.len() <= WORDS_NAME
+    !name.is_empty() && name.len() <= MAXIMUM_WORDS_NAME_BYTES
 }
 
 /// Pack the name length and the granted rights into the caretaker's third argument word.
@@ -97,11 +102,11 @@ pub const fn fits_words(name: &[u8]) -> bool {
 ///
 /// assert!(grant::fits_words(b"report.txt"));
 /// let (lo, hi) = grant::pack_name(b"report.txt").unwrap();
-/// let spec = grant::spec(b"report.txt".len(), grant::READ);
+/// let spec = grant::specification(b"report.txt".len(), grant::READ);
 ///
 /// // What the caretaker unpacks from its three argument words.
-/// let mut buf = [0u8; grant::WORDS_NAME];
-/// let n = grant::unpack_name(lo, hi, grant::spec_len(spec), &mut buf);
+/// let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+/// let n = grant::unpack_name(lo, hi, grant::specification_len(spec), &mut buf);
 /// assert_eq!(&buf[..n], b"report.txt");
 ///
 /// // A read-only grant is not a policy that could have said yes, so a write gets EROFS.
@@ -113,23 +118,29 @@ pub const fn fits_words(name: &[u8]) -> bool {
 /// assert!(grant::fits(b"quarterly-report.txt"));
 /// assert!(grant::pack_name(b"quarterly-report.txt").is_none());
 /// ```
-pub const fn spec(len: usize, rights: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn specification(len: usize, rights: u64) -> u64 {
     ((len as u64) & 0xff) | (rights << 8)
 }
 
 /// The granted name's length from a spec word.
-pub const fn spec_len(w: u64) -> usize {
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn specification_len(w: u64) -> usize {
     (w & 0xff) as usize
 }
 
 /// The granted rights from a spec word.
-pub const fn spec_rights(w: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn specification_rights(w: u64) -> u64 {
     w >> 8
 }
 
 /// Whether a spec word grants writing.
 pub const fn is_writable(w: u64) -> bool {
-    spec_rights(w) & WRITE != 0
+    specification_rights(w) & WRITE != 0
 }
 
 /// **A grant whose operand is the holder's whole namespace**, spelled as a name of zero length.

@@ -321,23 +321,23 @@ fn spawn_std(
     // visibility" shape the roadmap names); that arrives with whatever program first declares it
     // wants this page through `grant_contract::Manifest`, which none does today.
     let config_bytes = environment_contract::PageBuilder::new()
-        .tz("UTC")
+        .time_zone("UTC")
         .expect("UTC is not a recognized environment_contract::domain::KNOWN_TIME_ZONES member")
-        .lang("C")
+        .locale("C")
         .expect("C is not a recognized environment_contract::domain::KNOWN_LOCALES member")
-        .term("dumb")
+        .terminal_type("dumb")
         .expect(
             "dumb is not a recognized environment_contract::domain::KNOWN_TERMINAL_TYPES member",
         )
         .build();
     // Zeroed, so nothing left behind by a previous occupant of this physical page is visible
-    // through the reserved tail past `PAGE_BYTES` (`ConfigPage` only ever reads the first
-    // `PAGE_BYTES`, but a frame's contents are otherwise unspecified until written). The retype
+    // through the reserved tail past `PAGE_CONTENT_BYTES` (`ConfigurationPage` only ever reads the first
+    // `PAGE_CONTENT_BYTES`, but a frame's contents are otherwise unspecified until written). The retype
     // zeroes it.
     let config_phys = crate::memory_region::retype_page(region)
         .expect("no frame for the std program's config page");
     // SAFETY: `config_phys` is that fresh frame, direct-mapped and owned by nobody else, and
-    // `config_bytes` is `PAGE_BYTES` long, far under `FRAME_SIZE`.
+    // `config_bytes` is `PAGE_CONTENT_BYTES` long, far under `FRAME_SIZE`.
     unsafe {
         core::ptr::copy_nonoverlapping(
             config_bytes.as_ptr(),

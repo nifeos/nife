@@ -12,7 +12,7 @@ const SET_VA_CARETAKER: u64 = 0x0000_0000_0070_0000;
 
 /// Stack pages the caretaker gets beyond the one `run` maps: the progenitor's
 /// `CARETAKER_STACK_PAGES` (4), so this wiring runs it on the stack it gets in a booted system.
-/// One page is not enough. The caretaker copies the whole set, `nameset::BYTES`, onto its stack
+/// One page is not enough. The caretaker copies the whole set, `nameset::MAXIMUM_BYTES`, onto its stack
 /// before serving, and its first request ran off the page once `program_entry!` put a frame
 /// under `start`.
 const CARETAKER_EXTRA_STACK: usize = 3;
@@ -32,7 +32,7 @@ pub struct SetGrant<'a> {
     /// because the shell refuses it at the prompt (`grant_plan::Refusal::TooManyNames`), so one
     /// arriving means the wiring built a grant no command line could have expressed.
     pub names: &'a [(&'a [u8], bool)],
-    /// The [`filesystem_contract::dir`] rights the caretaker asks for on its descent.
+    /// The [`filesystem_contract::directory`] rights the caretaker asks for on its descent.
     pub rights: u64,
     /// The confined program's three `START` words. `rm` is started with a grant's spec and two
     /// name words rather than a role and a number; see [`DirGrant`].
@@ -82,18 +82,18 @@ pub fn start_granted_set(
     // The set, encoded into its own frame before anything can see it. `encode` refuses rather
     // than truncating, and a truncated set would be a capability nobody planned.
     let set_phys = page_frame();
-    let mut encoded = [0u8; filesystem_contract::nameset::BYTES];
+    let mut encoded = [0u8; filesystem_contract::nameset::MAXIMUM_BYTES];
     let n = filesystem_contract::nameset::encode(names, &mut encoded)
         .expect("this set does not fit one grant, so no command line could have named it");
     // SAFETY: a fresh frame of FRAME_SIZE bytes reachable through the direct map, and `n` is at
-    // most `nameset::BYTES`, which is far smaller.
+    // most `nameset::MAXIMUM_BYTES`, which is far smaller.
     unsafe {
         core::ptr::copy_nonoverlapping(encoded.as_ptr(), mmu::phys_to_virt(set_phys) as *mut u8, n);
     };
 
     let (lo, hi) = filesystem_contract::grant::pack_name(dir.as_bytes())
         .expect("a granted directory's name rides in two argument words; this one does not fit");
-    let spec = filesystem_contract::grant::spec(dir.len(), rights);
+    let spec = filesystem_contract::grant::specification(dir.len(), rights);
 
     let caretaker = crate::sched::spawn(move || {
         let mut maps = [Mapping {

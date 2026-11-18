@@ -89,7 +89,7 @@ impl File {
     pub fn file_attr(&self) -> io::Result<FileAttr> {
         let size = request(proto::req(proto::FSTAT, self.handle, 0), 0)?;
         // Anything that got as far as a handle came through `OPEN`, which refuses a directory
-        // (`EISDIR`), so this is a file by construction. No mtime: `GETMTIME` takes a name and a
+        // (`EISDIR`), so this is a file by construction. No mtime: `GET_MODIFICATION_TIME` takes a name and a
         // handle has none ([`Mtime`] says why the PAL does not re-resolve the one it was opened by).
         Ok(FileAttr { size, dir: false, mtime: Mtime::Unnamed })
     }
@@ -251,7 +251,7 @@ impl File {
         unsupported()
     }
 
-    /// **Refused**: `SETMTIME_AT` (milestone 47) takes a **name under a directory**, and an open
+    /// **Refused**: `SET_MODIFICATION_TIME_AT` (milestone 47) takes a **name under a directory**, and an open
     /// file has a handle and no name. Stamping whatever holds the name this file was opened by
     /// would set the wrong file's time after a rename, a silent wrong answer rather than a refusal
     /// ([`Mtime`] has the argument). `std::fs::set_times(path, ..)` is bound and is what a caller

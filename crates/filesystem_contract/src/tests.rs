@@ -27,7 +27,7 @@ fn every_opcode_is_distinct_and_fits_its_field() {
     // The blk protocol is a separate namespace on a separate endpoint, so its numbers may and do
     // overlap. Asserted so nobody "fixes" the overlap and renumbers a live wire.
     assert_eq!(
-        blk::READ,
+        block::READ,
         fs::OPEN,
         "the two protocols are deliberately independent"
     );

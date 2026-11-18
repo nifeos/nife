@@ -1,4 +1,4 @@
-use super::{dir, fs};
+use super::{directory, fs};
 
 /// **What the length field of a request word counts**, which is the only thing about a request
 /// a proxy has to understand in order to forward it faithfully.
@@ -42,12 +42,12 @@ pub struct Verb {
     /// Whether a successful reply is a **new handle**, which a proxy that renumbers handles must
     /// install in its own table before handing back.
     pub mints_handle: bool,
-    /// The [`dir`] rights the server demands, **all of them**. Zero where the verb needs none
+    /// The [`directory`] rights the server demands, **all of them**. Zero where the verb needs none
     /// ([`fs::CLOSE`], [`fs::FSTAT`]) or where the requirement is "any of" rather than "all of"
     /// (see [`Verb::needs_any`]).
     pub needs_all: u64,
     /// The rights where **any one** of them will do: only [`fs::OPEN`], which takes
-    /// [`dir::READ`] or [`dir::WRITE`]. Kept apart from [`Verb::needs_all`] because
+    /// [`directory::READ`] or [`directory::WRITE`]. Kept apart from [`Verb::needs_all`] because
     /// `Rights::allows` is deliberately "all of", and folding an any-of requirement into it
     /// would be a hole rather than a simplification.
     pub needs_any: u64,
@@ -83,7 +83,7 @@ impl Verb {
     /// mutating verb added to the contract is refused by a read-only grant from its first day
     /// rather than forwarded because nobody updated a list.
     pub const fn mutates(&self) -> bool {
-        self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
+        self.needs_all & (directory::WRITE | directory::CREATE | directory::REMOVE) != 0
     }
 }
 
@@ -130,18 +130,25 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         carries_w1: true,
         mints_handle: true,
         needs_all: 0,
-        needs_any: dir::READ | dir::WRITE,
+        needs_any: directory::READ | directory::WRITE,
     },
     // The second word is an offset for both, which is why they carry it and TRUNCATE's size
     // rides there too: an offset-shaped quantity is not a payload length.
-    row(fs::READ, "READ", Operand::Payload, true, false, dir::READ),
+    row(
+        fs::READ,
+        "READ",
+        Operand::Payload,
+        true,
+        false,
+        directory::READ,
+    ),
     row(
         fs::WRITE,
         "WRITE",
         Operand::Payload,
         true,
         false,
-        dir::WRITE,
+        directory::WRITE,
     ),
     row(fs::CLOSE, "CLOSE", Operand::None, false, false, 0),
     row(fs::FSTAT, "FSTAT", Operand::None, false, false, 0),
@@ -151,7 +158,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Name,
         false,
         true,
-        dir::CREATE,
+        directory::CREATE,
     ),
     row(
         fs::TRUNCATE,
@@ -159,7 +166,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::None,
         true,
         false,
-        dir::WRITE,
+        directory::WRITE,
     ),
     // OPENDIR and MKDIR carry the requested rights mask in the second word, which is what makes
     // them the two verbs that hand back *authority* rather than data.
@@ -169,7 +176,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Name,
         true,
         true,
-        dir::DESCEND,
+        directory::DESCEND,
     ),
     row(
         fs::READDIR,
@@ -177,7 +184,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::None,
         true,
         false,
-        dir::ENUMERATE,
+        directory::ENUMERATE,
     ),
     row(
         fs::MKDIR,
@@ -185,7 +192,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Name,
         true,
         true,
-        dir::CREATE | dir::DESCEND,
+        directory::CREATE | directory::DESCEND,
     ),
     // RENAME needs REMOVE on the source directory and CREATE on the destination. Both are in
     // `needs_all` because a proxy asks only "does this mutate", and it does, twice over.
@@ -195,7 +202,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Rename,
         true,
         false,
-        dir::REMOVE | dir::CREATE,
+        directory::REMOVE | directory::CREATE,
     ),
     row(
         fs::UNLINK,
@@ -203,9 +210,16 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Name,
         false,
         false,
-        dir::REMOVE,
+        directory::REMOVE,
     ),
-    row(fs::RMDIR, "RMDIR", Operand::Name, false, false, dir::REMOVE),
+    row(
+        fs::RMDIR,
+        "RMDIR",
+        Operand::Name,
+        false,
+        false,
+        directory::REMOVE,
+    ),
     // The extended-attribute verbs. Their operand is a **payload**, not a name:
     // an attribute name is not a name in the directory, so a name-set capability must not filter
     // it and a per-file capability must not compare it against the granted name. Getting that
@@ -217,7 +231,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Payload,
         false,
         false,
-        dir::READ,
+        directory::READ,
     ),
     // The only attribute verb with a second word: the value's length and type code.
     row(
@@ -226,7 +240,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Payload,
         true,
         false,
-        dir::WRITE,
+        directory::WRITE,
     ),
     row(
         fs::LISTXATTR,
@@ -234,7 +248,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::None,
         false,
         false,
-        dir::READ,
+        directory::READ,
     ),
     row(
         fs::REMOVEXATTR,
@@ -242,33 +256,40 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         Operand::Payload,
         false,
         false,
-        dir::WRITE,
+        directory::WRITE,
     ),
     // STATFS names a handle and nothing else: no operand, no second word, no right. The reply
     // fills the shared page, which costs a proxy nothing because the page is the one all three
     // parties already share (see `fs_subtree_caretaker`'s `PAGE_VA`).
     row(fs::STATFS, "STATFS", Operand::None, false, false, 0),
-    // SYNC: any handle qualifies, and it needs `dir::WRITE`, for the reason `fs::SYNC` gives.
-    row(fs::SYNC, "SYNC", Operand::None, false, false, dir::WRITE),
+    // SYNC: any handle qualifies, and it needs `directory::WRITE`, for the reason `fs::SYNC` gives.
+    row(
+        fs::SYNC,
+        "SYNC",
+        Operand::None,
+        false,
+        false,
+        directory::WRITE,
+    ),
     // **The mtime verbs**. All three are name-taking,
     // resolved directly under a directory handle rather than against an open file handle,
     // because `touch` never opens what it acts on: `fs::CREATE` and `fs::UNLINK` already take
     // this shape for the same reason.
     row(
-        fs::GETMTIME,
-        "GETMTIME",
+        fs::GET_MODIFICATION_TIME,
+        "GET_MODIFICATION_TIME",
         Operand::Name,
         false,
         false,
-        dir::READ,
+        directory::READ,
     ),
     row(
-        fs::SETMTIME,
-        "SETMTIME",
+        fs::SET_MODIFICATION_TIME,
+        "SET_MODIFICATION_TIME",
         Operand::Name,
         false,
         false,
-        dir::WRITE,
+        directory::WRITE,
     ),
     // The only one of the three that carries a second word: the caller's asserted seconds
     // value, TRUNCATE's reason for putting an offset-shaped quantity in `w1` rather than the
@@ -276,12 +297,12 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     // proxy that only asks "does this mutate" needs no finer answer, and the FS server is what
     // actually checks each bit.
     row(
-        fs::SETMTIME_AT,
-        "SETMTIME_AT",
+        fs::SET_MODIFICATION_TIME_AT,
+        "SET_MODIFICATION_TIME_AT",
         Operand::Name,
         true,
         false,
-        dir::WRITE | dir::SETTIME,
+        directory::WRITE | directory::SETTIME,
     ),
     // NARROW: a held directory handle and a rights mask in the second word, a second
     // handle back, and no name. It demands no right, since attenuation cannot widen, and it is
@@ -309,7 +330,7 @@ const _: () = assert!(
     "every opcode between verb::FIRST and verb::LAST needs a row in verb::TABLE"
 );
 const _: () = assert!(
-    in_opcode_order(&TABLE),
+    is_in_opcode_order(&TABLE),
     "verb::TABLE is stored in opcode order and indexed by it; a row is out of place"
 );
 
@@ -319,7 +340,7 @@ const _: () = assert!(
 // The `const` assertion above is the only use outside the tests, and the minimum Rust version's
 // dead-code pass does not count a use inside a `const _`.
 #[cfg_attr(not(test), allow(dead_code))]
-pub(crate) const fn in_opcode_order(table: &[Verb]) -> bool {
+pub(crate) const fn is_in_opcode_order(table: &[Verb]) -> bool {
     let mut i = 0;
     while i < table.len() {
         if table[i].operation != FIRST + i as u64 {
@@ -402,15 +423,15 @@ pub mod file_grant {
         Policy::Forward, // STATFS
         // SYNC is forwarded for STATFS's reason (any handle qualifies, the question is about
         // the device) and refused with EROFS through a read-only grant by `Policy::Forward`'s
-        // own rule, matching SYNC's own doc ("Rights: dir::WRITE").
+        // own rule, matching SYNC's own doc ("Rights: directory::WRITE").
         Policy::Forward, // SYNC
         // The mtime verbs are all name-taking, resolved under a
         // *directory* handle, exactly like CREATE/OPENDIR/UNLINK/RENAME above: a file
-        // capability has no directory to resolve a name under. (`dir::SETTIME` never applies to a
+        // capability has no directory to resolve a name under. (`directory::SETTIME` never applies to a
         // file handle anyway: a file entry is attenuated to `READ | WRITE` when it is opened.)
-        Policy::Refused(grant::ENOTDIR), // GETMTIME
-        Policy::Refused(grant::ENOTDIR), // SETMTIME
-        Policy::Refused(grant::ENOTDIR), // SETMTIME_AT
+        Policy::Refused(grant::ENOTDIR), // GET_MODIFICATION_TIME
+        Policy::Refused(grant::ENOTDIR), // SET_MODIFICATION_TIME
+        Policy::Refused(grant::ENOTDIR), // SET_MODIFICATION_TIME_AT
         // A file capability has no directory to narrow.
         Policy::Refused(grant::ENOTDIR), // NARROW
     ];

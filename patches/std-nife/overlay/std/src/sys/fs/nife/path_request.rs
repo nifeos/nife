@@ -67,10 +67,10 @@ pub(super) fn joined(path: &Path) -> Option<String> {
 pub(super) fn open_rights(opts: &OpenOptions) -> u64 {
     let mut want = 0;
     if opts.read {
-        want |= fsproto::dir::READ;
+        want |= fsproto::directory::READ;
     }
     if opts.write || opts.append || opts.truncate {
-        want |= fsproto::dir::WRITE;
+        want |= fsproto::directory::WRITE;
     }
     want
 }
@@ -128,7 +128,7 @@ pub(super) fn create_handle(path: &Path, opts: &OpenOptions) -> io::Result<u64> 
         &mut p,
         proto::ROOT,
         path,
-        fsproto::dir::CREATE | open_rights(opts),
+        fsproto::directory::CREATE | open_rights(opts),
     )?;
     p.put(name.as_bytes());
     request(proto::req(proto::CREATE, at.0, name.len() as u64), 0)

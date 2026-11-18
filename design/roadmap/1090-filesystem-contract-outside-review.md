@@ -154,13 +154,13 @@ The [ledger](1090-filesystem-contract-outside-review/ledger.md) lists each item 
 
 ## Follow-on
 
-- **Outstanding.** Items 1 to 3, 5 to 7, 9, 10, 12, 14 to 16, 21 and 22 and the walkers' proofs in
+- **Outstanding.** Items 1 to 3, 7, 9, 10, 12, 14 to 16, 21 and 22, and the rest of item 5, and the walkers' proofs in
   item 8. They wait on the move commit, Decisions B and C, the call-site design that item 7 needs,
   the template's exemption file, the README, the placement of `rm` and a fuzz crate. The ledger
   names each with its reason. Checked by reading the ledger rows against the crate.
-- **Outstanding.** The renames of decision B, which the maintainer has decided, provisionally. Checked
-  by reading each item and decision against the tree at this branch's head. Decisions A and C are the
-  only parts built. The store directory is `.extended-attributes` in the crate, the server, the host
+- **Done.** The renames of decision B, which the maintainer decided provisionally. Checked
+  by reading each item and decision against the tree at this branch's head. The tree carries decisions A, B
+  and C. The store directory is `.extended-attributes` in the crate, the server, the host
   tool and the notes. The reply word's error range is bounded, with its proofs. The items still
   describe the tree as it stands.
 - **Decision.** `design/decisions/0099-apple-metadata-at-rest.md` still names the store directory

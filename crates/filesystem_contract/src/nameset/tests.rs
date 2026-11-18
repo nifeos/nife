@@ -9,7 +9,7 @@ use crate::*;
 /// supposed to make impossible.
 #[test]
 fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
-    let mut buf = [0u8; nameset::BYTES];
+    let mut buf = [0u8; nameset::MAXIMUM_BYTES];
     let names: [(&[u8], bool); 3] = [(b"one.txt", false), (b"logs", true), (b"z", false)];
     let n = nameset::encode(&names, &mut buf).expect("three short names must fit");
     assert_eq!(nameset::count(&buf[..n]), 3);
@@ -41,17 +41,17 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     );
     assert_eq!(
         2 * nameset::MAXIMUM_NAMES + nameset::NAME_BYTES + 1,
-        nameset::BYTES,
+        nameset::MAXIMUM_BYTES,
         "the widest set this contract carries must fit its own buffer exactly",
     );
     // And the longest name travels in a set, twice over, with room for nothing
     // that would take the set past its bytes.
-    let longest = [b'l'; grant::MAXIMUM_NAME];
+    let longest = [b'l'; grant::MAXIMUM_NAME_BYTES];
     let two: [(&[u8], bool); 2] = [(&longest[..], false), (&longest[..], true)];
     let n = nameset::encode(&two, &mut buf).expect("two of the longest names fit");
     assert_eq!(nameset::iter(&buf[..n]).count(), 2);
     assert!(nameset::contains(&buf[..n], &longest));
-    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAXIMUM_NAME + 1];
+    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAXIMUM_NAME_BYTES + 1];
     let three: [(&[u8], bool); 3] = [
         (&longest[..], false),
         (&longest[..], true),
@@ -66,7 +66,10 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
         [(b"a", false); nameset::MAXIMUM_NAMES + 1];
     assert_eq!(nameset::encode(&over, &mut buf), None, "one name too many");
     assert_eq!(
-        nameset::encode(&[(&[b'n'; grant::MAXIMUM_NAME + 1][..], false)], &mut buf),
+        nameset::encode(
+            &[(&[b'n'; grant::MAXIMUM_NAME_BYTES + 1][..], false)],
+            &mut buf
+        ),
         None,
         "a name that cannot travel in a grant cannot travel in a set either",
     );
@@ -98,7 +101,7 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
 // recorded as such rather than tested.
 
 /// A name set, byte for byte, in an exact-fit buffer: the length byte and the flags byte per
-/// record (`IS_DIR` in the flags), the terminator, and one byte less refused. The record cursor is
+/// record (`IS_DIRECTORY` in the flags), the terminator, and one byte less refused. The record cursor is
 /// `n + 2 + name.len()`, and either `+` rotting turns the layout into overlapping records with
 /// every length still adding up.
 #[test]
@@ -108,7 +111,18 @@ fn a_nameset_lays_out_byte_for_byte() {
     assert_eq!(nameset::encode(&names, &mut out), Some(10));
     assert_eq!(
         out,
-        [2, 0, b'a', b'b', 3, nameset::IS_DIR, b'c', b'd', b'e', 0]
+        [
+            2,
+            0,
+            b'a',
+            b'b',
+            3,
+            nameset::IS_DIRECTORY,
+            b'c',
+            b'd',
+            b'e',
+            0
+        ]
     );
     let mut short = [0u8; 9];
     assert_eq!(nameset::encode(&names, &mut short), None);
@@ -118,7 +132,18 @@ fn a_nameset_lays_out_byte_for_byte() {
 /// names before it, and a length byte with no flags byte behind it reads as nothing.
 #[test]
 fn a_truncated_set_stops_at_the_last_whole_record() {
-    let full = [2, 0, b'a', b'b', 3, nameset::IS_DIR, b'c', b'd', b'e', 0];
+    let full = [
+        2,
+        0,
+        b'a',
+        b'b',
+        3,
+        nameset::IS_DIRECTORY,
+        b'c',
+        b'd',
+        b'e',
+        0,
+    ];
     assert_eq!(nameset::count(&full[..7]), 1);
     assert_eq!(nameset::count(&full[..5]), 1);
     assert_eq!(nameset::count(&full[..1]), 0);
@@ -130,7 +155,7 @@ fn a_truncated_set_stops_at_the_last_whole_record() {
 /// could otherwise hold hundreds of records.
 #[test]
 fn a_set_past_maximum_names_reads_as_its_first_maximum_names() {
-    let mut buf = [0u8; nameset::BYTES];
+    let mut buf = [0u8; nameset::MAXIMUM_BYTES];
     for i in 0..=nameset::MAXIMUM_NAMES {
         buf[3 * i..3 * i + 3].copy_from_slice(&[1, 0, b'a' + i as u8]);
     }

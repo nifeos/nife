@@ -22,7 +22,7 @@
 //! - A stopped durable session is retired only at its identity's next login.
 //! - Ending a durable session waits for a running job (§222), and `SUSPEND` waits on the terminal.
 //! - A `user_timetable_keeper` that fails half way leaves its splits in the user's budget.
-//! - Identities over `grant::WORDS_NAME` (16 bytes) get no subtree: [`mint`] refuses to truncate.
+//! - Identities over `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes) get no subtree: [`mint`] refuses to truncate.
 //! - A holder that never sends `LOGOUT` wedges the terminal until this process restarts.
 //! - The measured-boot decision is spelled here rather than through `measured_boot::verdict`.
 //! - The audit endpoint proves establishment, not per-request attribution.
@@ -825,7 +825,7 @@ fn rederive(
             record(RederiveSkip::TableFull);
             break;
         };
-        // `Durable` keeps a name of at most `grant::WORDS_NAME` bytes, the bound `mint` holds a
+        // `Durable` keeps a name of at most `grant::MAXIMUM_WORDS_NAME_BYTES` bytes, the bound `mint` holds a
         // login to; the manifest's own bound is wider.
         if !filesystem_contract::grant::fits_words(identity) || durables.find(identity).is_some() {
             record(RederiveSkip::Identity);
@@ -859,7 +859,7 @@ fn rederive(
 /// belongs to, and the four capabilities that let this process hand it back and, later, take it
 /// down. Four slots each, which is what bounds [`DURABLE_SESSIONS`].
 struct Durable {
-    identity: [u8; filesystem_contract::grant::WORDS_NAME],
+    identity: [u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES],
     len: usize,
     /// The user's budget. `user_timetable_keeper` and its timetable are built from regions split off
     /// it, so it refuses `DESTROY` for as long as either lives (DECISIONS §16 (object revocation)).
@@ -890,7 +890,7 @@ impl Durable {
     ) -> Option<Self> {
         let va = DURABLE_PAGE_VA + k as u64 * DURABLE_PAGE_STRIDE;
         let (keeper, page, ready) = open_schedule(own_ut, budget, images, va)?;
-        let mut id = [0u8; filesystem_contract::grant::WORDS_NAME];
+        let mut id = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES];
         id[..identity.len()].copy_from_slice(identity);
         Some(Durable {
             identity: id,
@@ -1177,9 +1177,9 @@ fn store_caretaker(
         capability_delete(narrow_ep);
         return None;
     };
-    let spec = filesystem_contract::grant::spec(
+    let spec = filesystem_contract::grant::specification(
         name.len(),
-        filesystem_contract::dir::READ | filesystem_contract::dir::DESCEND,
+        filesystem_contract::directory::READ | filesystem_contract::directory::DESCEND,
     );
     let started = build_child(
         own_ut,
@@ -1292,7 +1292,7 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
     let care = care?;
 
     // The grant name travels in two `START` argument words, so it is capped at
-    // `grant::WORDS_NAME` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated
+    // `grant::MAXIMUM_WORDS_NAME_BYTES` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated
     // name is one two identities could share, so `pack_name` refuses a longer one, and that refusal
     // is taken before anything is built.
     let (lo, hi) = filesystem_contract::grant::pack_name(identity)?;
@@ -1310,7 +1310,10 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
         return None;
     };
 
-    let spec = filesystem_contract::grant::spec(identity.len(), filesystem_contract::dir::ALL);
+    let spec = filesystem_contract::grant::specification(
+        identity.len(),
+        filesystem_contract::directory::ALL,
+    );
 
     // Its whole authority: the file service to attenuate, the endpoint it will serve, one place to
     // say it is ready, and the frame it shares with the file service. No untyped of its own, no
@@ -1484,13 +1487,13 @@ fn write_root_file(name: &[u8], bytes: &[u8]) -> bool {
 /// schedule store)) into `out`: the byte count, or `None` when there is none. Descends by name, as
 /// [`rederive`] and the file service's other clients do, and never enumerates.
 fn read_stored_schedule(identity: &[u8], out: &mut [u8]) -> Option<usize> {
-    use filesystem_contract::{dir, fs};
+    use filesystem_contract::{directory, fs};
     let page = file_page()?;
     page[..identity.len()].copy_from_slice(identity);
     let d = call(
         FS_EP,
         fs::req(fs::OPENDIR, fs::ROOT, identity.len() as u64),
-        dir::READ | dir::DESCEND,
+        directory::READ | directory::DESCEND,
     )
     .0 as i64;
     if d < 0 {

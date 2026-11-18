@@ -39,7 +39,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{dir, dirent, fs, grant, rm};
+use filesystem_contract::{directory, directory_entry, fs, grant, rm};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
 
@@ -56,9 +56,9 @@ const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/
 // write_volatile loops below).
 const WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(PAGE_VA, filesystem_contract::PAGE as u64) };
+    unsafe { MappedWindow::new(PAGE_VA, filesystem_contract::PAGE_BYTES as u64) };
 
-/// `ENOENT`. Not in [`dir`]'s list because it is POSIX's oldest number and this contract answers it
+/// `ENOENT`. Not in [`directory`]'s list because it is POSIX's oldest number and this contract answers it
 /// from three different rungs; `-f` cares about exactly one of them (see [`remove`]).
 const ENOENT: i32 = 2;
 /// `ELOOP`, borrowed for a tree deeper than this program can walk. It is **this program's refusal
@@ -81,7 +81,8 @@ const LISTING: usize = 128;
 /// the widest set a grant carries, a directory entry's header per name and every byte of name the
 /// set may hold. It is one frame at the top of the stack and is never held across the recursion,
 /// which is why it can be larger than [`LISTING`] on a program with four stack pages.
-const SET_LISTING: usize = dirent::record_len(0) * filesystem_contract::nameset::MAXIMUM_NAMES
+const SET_LISTING: usize = directory_entry::record_len(0)
+    * filesystem_contract::nameset::MAXIMUM_NAMES
     + filesystem_contract::nameset::NAME_BYTES;
 
 /// The most rounds one directory takes before the walk gives up on it. A ceiling rather than a limit
@@ -93,7 +94,11 @@ const MAXIMUM_ROUNDS: usize = 64;
 
 /// Copy `bytes` into the shared page.
 fn put_page(bytes: &[u8]) {
-    for (i, &b) in bytes.iter().take(filesystem_contract::PAGE).enumerate() {
+    for (i, &b) in bytes
+        .iter()
+        .take(filesystem_contract::PAGE_BYTES)
+        .enumerate()
+    {
         WINDOW.write_u8(i as u64, b);
     }
 }
@@ -144,15 +149,15 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     if errno == ENOENT && flags & grant_plan::rmopt::FORCE != 0 {
         return Ok(());
     }
-    if errno != dir::EISDIR {
+    if errno != directory::EISDIR {
         diagnose(name, errno);
         return Err(errno);
     }
 
     // It is a directory. Without `-r` that is the answer, and it is `rm`'s answer.
     if flags & grant_plan::rmopt::RECURSIVE == 0 {
-        diagnose(name, dir::EISDIR);
-        return Err(dir::EISDIR);
+        diagnose(name, directory::EISDIR);
+        return Err(directory::EISDIR);
     }
     if depth >= MAXIMUM_DEPTH {
         diagnose(name, ELOOP);
@@ -163,7 +168,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     // Asking for more would be refused (`EPERM`) rather than quietly narrowed, and asking through a
     // grant that carries less is `ENOENT` from the rung above: **a `rm` handed the narrow grant
     // cannot even learn there is a subtree there.**
-    let child = name_call(fs::OPENDIR, parent, name, dir::REMOVE_TREE);
+    let child = name_call(fs::OPENDIR, parent, name, directory::REMOVE_TREE);
     if child < 0 {
         diagnose(name, (-child) as i32);
         return Err((-child) as i32);
@@ -221,7 +226,7 @@ fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i
         get_page(n, &mut buf);
 
         let mut progress = false;
-        for (name, _) in dirent::iter(&buf[..n]) {
+        for (name, _) in directory_entry::iter(&buf[..n]) {
             match remove(handle, name, flags, depth, count) {
                 Ok(()) => progress = true,
                 Err(e) => first_error = first_error.or(Some(e)),
@@ -229,7 +234,7 @@ fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i
         }
         if !progress {
             // Nothing in this round could be removed, so another round would read the same names.
-            return Err(first_error.unwrap_or(dir::EPERM));
+            return Err(first_error.unwrap_or(directory::EPERM));
         }
     }
     Err(first_error.unwrap_or(ELOOP))
@@ -256,7 +261,7 @@ fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
     get_page(n, &mut buf);
 
     let mut first_error = None;
-    for (name, _) in dirent::iter(&buf[..n]) {
+    for (name, _) in directory_entry::iter(&buf[..n]) {
         if let Err(e) = remove(fs::ROOT, name, flags, 0, count) {
             first_error = first_error.or(Some(e));
         }
@@ -270,13 +275,13 @@ fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
 /// **The `-v` line: the name, and nothing else.** `rm(1)`'s `-v` is "showing them as they are
 /// removed", and the default is silence, which is why every call to this is behind the option.
 fn say(name: &[u8], suffix: &[u8]) {
-    let mut out = [0u8; grant::MAXIMUM_NAME + 16];
+    let mut out = [0u8; grant::MAXIMUM_NAME_BYTES + 16];
     let n = pack(&mut out, &[name, suffix, b"\n"]);
     text(&out[..n]);
 }
 
 /// **A diagnostic, which is not behind an option**: a failure is a line plus a non-zero exit,
-/// always. The sentence comes from [`dir::explain`], so what a human reads is chosen next to the
+/// always. The sentence comes from [`directory::explain`], so what a human reads is chosen next to the
 /// decision that chose the errno rather than reinvented here.
 fn diagnose(name: &[u8], errno: i32) {
     let reason: &[u8] = if errno == ELOOP {
@@ -284,9 +289,9 @@ fn diagnose(name: &[u8], errno: i32) {
         // refused", which would be a lie about which side gave up.
         b"deeper than rm can walk without an allocator"
     } else {
-        dir::explain(errno).as_bytes()
+        directory::explain(errno).as_bytes()
     };
-    let mut out = [0u8; grant::MAXIMUM_NAME + 96];
+    let mut out = [0u8; grant::MAXIMUM_NAME_BYTES + 96];
     let n = if name.is_empty() {
         pack(&mut out, &[b"rm: ", reason, b"\n"])
     } else {
@@ -404,13 +409,13 @@ interfaces_note::carry_interfaces!(&[
 user_mode_runtime::program_entry!(start);
 
 fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
-    let mut buf = [0u8; grant::WORDS_NAME];
-    let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
+    let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
+    let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
     // The options ride in the spec word's mask field, the same field a caretaker's rights ride in:
     // both are "what this process was started with", and neither needs a frame. The bit order is
     // `grant_plan::rmopt`, which is the shell's own numbering, so the program and the prompt cannot
     // disagree about what `-r` means.
-    let flags = grant::spec_rights(spec);
+    let flags = grant::specification_rights(spec);
 
     let mut count = 0u64;
     // **A grant with no name in it means the operand is the namespace** (`grant::WHOLE_NAMESPACE`).

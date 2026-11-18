@@ -1,12 +1,12 @@
 Falsifies `filesystem_contract::proofs::a_block_request_round_trips`.
 
-The defect: `blk::req` stores the count rather than the count minus one.
+The defect: `block::req` stores the count rather than the count minus one.
 
-Expected to fail: `assert!(blk::req_blocks(w0) == blocks)` for every count.
+Expected to fail: `assert!(block::req_blocks(w0) == blocks)` for every count.
 
-diff --git a/crates/filesystem_contract/src/blk.rs b/crates/filesystem_contract/src/blk.rs
---- a/crates/filesystem_contract/src/blk.rs
-+++ b/crates/filesystem_contract/src/blk.rs
+diff --git a/crates/filesystem_contract/src/block.rs b/crates/filesystem_contract/src/block.rs
+--- a/crates/filesystem_contract/src/block.rs
++++ b/crates/filesystem_contract/src/block.rs
 @@ -72,7 +72,7 @@
  /// one block). `blocks` must be in `1..=TRANSFER_BLOCKS`.
  pub const fn req(operation: u64, blocks: usize) -> u64 {

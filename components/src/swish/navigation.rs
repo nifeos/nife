@@ -25,7 +25,7 @@ pub(super) struct Nav {
     /// It is told rather than asking, and that is a gap in the contract rather than a shortcut:
     /// `filesystem_contract` has no verb that reports what a handle carries. It matters because `OPENDIR`
     /// refuses (`EPERM`) when the intersection is smaller than the request, so a shell that asked
-    /// for `dir::ALL` from a narrower capability could not `cd` at all. See notes/shell-navigation.md.
+    /// for `directory::ALL` from a narrower capability could not `cd` at all. See notes/shell-navigation.md.
     pub(super) rights: u64,
     /// **What this shell holds, as the planner sees it**: where it stands (`holds.cwd`, a path in
     /// the one tree it presents), the names it has bound (`holds.binds`, values rather than
@@ -458,8 +458,8 @@ impl Nav {
     }
 
     /// **`touch`**: create an empty file if the name is not there (a no-op if it already is), then
-    /// bump its modification time. Bare `touch` sets it to now (`fs::SETMTIME`, needs only the
-    /// `WRITE` this shell already holds); `-t` asserts a caller-chosen instant (`fs::SETMTIME_AT`,
+    /// bump its modification time. Bare `touch` sets it to now (`fs::SET_MODIFICATION_TIME`, needs only the
+    /// `WRITE` this shell already holds); `-t` asserts a caller-chosen instant (`fs::SET_MODIFICATION_TIME_AT`,
     /// needs `WRITE` **and** `SETTIME`, DECISIONS §112). The create half is `mkdir`'s shape, one
     /// right narrower: `fs::CREATE` mints a name and this builtin gives the handle straight back,
     /// because touching a file is not opening it.
@@ -488,7 +488,7 @@ impl Nav {
                 let errno = -r as i32;
                 // `CREATE` is create, not create-or-open (DECISIONS §27): an existing name answers
                 // `EEXIST`, which is exactly the outcome this half of `touch` wants for a name that
-                // is already there. Not in `filesystem_contract::dir`'s named list, for
+                // is already there. Not in `filesystem_contract::directory`'s named list, for
                 // `components/src/rm.rs::ENOENT`'s reason: this contract answers it from one rung only,
                 // so there is nothing else in this program that would collide with a local name for
                 // it.
@@ -499,8 +499,10 @@ impl Nav {
             }
 
             let r = match at_seconds {
-                None => nav.name_call_in(t, fs::SETMTIME, handle, name, 0),
-                Some(seconds) => nav.name_call_in(t, fs::SETMTIME_AT, handle, name, seconds),
+                None => nav.name_call_in(t, fs::SET_MODIFICATION_TIME, handle, name, 0),
+                Some(seconds) => {
+                    nav.name_call_in(t, fs::SET_MODIFICATION_TIME_AT, handle, name, seconds)
+                }
             };
             if r < 0 {
                 return Say::Failed(-r as i32);
@@ -609,7 +611,7 @@ impl Nav {
             let n = (n as usize).min(buf.len());
             get_page(n, &mut buf);
             let mut seen = 0u64;
-            for (name, is_dir) in dirent::iter(&buf[..n]) {
+            for (name, is_dir) in directory_entry::iter(&buf[..n]) {
                 each(name, is_dir);
                 seen += 1;
             }

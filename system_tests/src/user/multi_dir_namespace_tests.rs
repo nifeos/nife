@@ -1,4 +1,4 @@
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use filesystem_fixture::twodir as t;
 
 use super::*;
@@ -85,7 +85,7 @@ fn a_process_holding_two_directory_capabilities_reaches_both_and_crosses_neither
 
 /// The rights both tests in this module grant on both trees: what the two-tree shell needs to
 /// list (`ENUMERATE`), walk (`DESCEND`) and read (`READ`), and nothing that writes.
-const TWO_TREE_RIGHTS: u64 = dir::ENUMERATE | dir::READ | dir::DESCEND;
+const TWO_TREE_RIGHTS: u64 = directory::ENUMERATE | directory::READ | directory::DESCEND;
 
 /// The `swish` binary's two-tree role (`components/src/swish.rs`'s `ROLE_TWO_TREES`).
 const ROLE_TWO_TREES: u64 = 6;
@@ -108,7 +108,7 @@ fn two_tree_shell() -> Option<u64> {
             a: (filesystem_fixture::tree::SUB, rights),
             b: (filesystem_fixture::tree::OTHER, rights),
             role: ROLE_TWO_TREES,
-            arg: filesystem_contract::grant::spec(0, rights),
+            arg: filesystem_contract::grant::specification(0, rights),
             // **Seven, measured.** This script plans an `rm`, and the planner's own frames in a
             // debug build (`plan_against_with` alone is over 11 KiB) are the deepest chain it
             // reaches, about 26 KiB with the witness above them. Four overflowed there, presenting

@@ -15,7 +15,7 @@ use std::vec::Vec;
 /// it the real table, which passes whether or not the check runs.
 #[test]
 fn the_order_check_refuses_two_rows_out_of_place() {
-    assert!(!verb::in_opcode_order(&[verb::TABLE[1], verb::TABLE[0]]));
+    assert!(!verb::is_in_opcode_order(&[verb::TABLE[1], verb::TABLE[0]]));
 }
 
 #[test]
@@ -37,13 +37,13 @@ fn every_verb_has_a_row_that_says_what_its_words_mean() {
             v.name
         );
         assert_eq!(
-            v.needs_all & !dir::ALL,
+            v.needs_all & !directory::ALL,
             0,
             "{} names a right this contract does not define",
             v.name
         );
         assert_eq!(
-            v.needs_any & !dir::ALL,
+            v.needs_any & !directory::ALL,
             0,
             "{} names a right this contract does not define",
             v.name
@@ -51,7 +51,7 @@ fn every_verb_has_a_row_that_says_what_its_words_mean() {
     }
     // The one any-of in the contract, pinned so that folding it into `needs_all` fails here.
     let open = verb::of(fs::OPEN).unwrap();
-    assert_eq!(open.needs_any, dir::READ | dir::WRITE);
+    assert_eq!(open.needs_any, directory::READ | directory::WRITE);
     assert_eq!(open.needs_all, 0);
 
     // The five verbs that hand back authority, which is what a renumbering proxy must install.
@@ -151,9 +151,9 @@ fn the_filter_sees_exactly_the_verbs_that_name_a_directory_entry() {
             "RENAME",
             "UNLINK",
             "RMDIR",
-            "GETMTIME",
-            "SETMTIME",
-            "SETMTIME_AT",
+            "GET_MODIFICATION_TIME",
+            "SET_MODIFICATION_TIME",
+            "SET_MODIFICATION_TIME_AT",
         ],
         "a verb that resolves a name in the granted directory is missing from the filter, or a \
          verb that does not resolve one is being filtered"
@@ -194,8 +194,8 @@ fn a_read_only_file_grant_refuses_every_verb_that_mutates() {
             "SETXATTR",
             "REMOVEXATTR",
             "SYNC",
-            "SETMTIME",
-            "SETMTIME_AT",
+            "SET_MODIFICATION_TIME",
+            "SET_MODIFICATION_TIME_AT",
         ]
     );
     // Nothing that mutates may be answered locally: `Forward` is the only policy that consults
@@ -303,7 +303,7 @@ fn the_verb_predicates_partition_the_table_as_documented() {
         "SYNC",
         "NARROW",
     ];
-    // needs_all intersects WRITE | CREATE | REMOVE. SETMTIME_AT's needs_all also carries
+    // needs_all intersects WRITE | CREATE | REMOVE. SET_MODIFICATION_TIME_AT's needs_all also carries
     // SETTIME, but it mutates because it carries WRITE too; SETTIME alone never appears
     // without WRITE, by this table's own construction.
     let mutating = [
@@ -317,8 +317,8 @@ fn the_verb_predicates_partition_the_table_as_documented() {
         "SETXATTR",
         "REMOVEXATTR",
         "SYNC",
-        "SETMTIME",
-        "SETMTIME_AT",
+        "SET_MODIFICATION_TIME",
+        "SET_MODIFICATION_TIME_AT",
     ];
     for v in &verb::TABLE {
         assert_eq!(

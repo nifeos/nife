@@ -1,4 +1,4 @@
-use filesystem_contract::dir;
+use filesystem_contract::directory;
 use filesystem_fixture::dirscape as esc;
 
 use super::*;
@@ -126,7 +126,10 @@ fn a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(dir::DESCEND | dir::READ | dir::ENUMERATE, 1) else {
+    let Some(v) = attack_a_subtree(
+        directory::DESCEND | directory::READ | directory::ENUMERATE,
+        1,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -149,7 +152,7 @@ fn a_full_directory_capability_does_everything_inside_and_nothing_outside() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(dir::ALL, 2) else {
+    let Some(v) = attack_a_subtree(directory::ALL, 2) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -181,7 +184,8 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(dir::READ | dir::WRITE | dir::CREATE, 3) else {
+    let Some(v) = attack_a_subtree(directory::READ | directory::WRITE | directory::CREATE, 3)
+    else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -197,7 +201,7 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
 /// `fs_nameset_caretaker` inspects a name on every request, so its four attribute verbs could go
 /// wrong either way. Filtering the attribute name against the set would hide what is attached to a
 /// matched file (`READ_ATTRS` and `SET_AN_ATTR` catch it). Not filtering the directory names would
-/// unmake the set (`REACHED_AN_UNMATCHED_NAME` catches it, through `dir::READ` verbs `rm` never
+/// unmake the set (`REACHED_AN_UNMATCHED_NAME` catches it, through `directory::READ` verbs `rm` never
 /// sends). The set is one name in `sub`, so `deeper` is one entry away and reachable one hop up.
 #[test_case]
 fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
@@ -214,7 +218,7 @@ fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
             dir: filesystem_fixture::tree::SUB,
             // Exactly one name, and `deeper` deliberately left out of it.
             names: &[(filesystem_fixture::tree::INNER.as_bytes(), false)],
-            rights: dir::READ | dir::WRITE | dir::DESCEND,
+            rights: directory::READ | directory::WRITE | directory::DESCEND,
             role: 6, // ROLE_SET_ATTRS
             arg: 0,
             arg2: 0,

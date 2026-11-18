@@ -13,7 +13,7 @@ pub enum Say {
     Nothing,
     /// The name could not be navigated, and nothing was sent.
     Refused(Refused),
-    /// The filesystem refused, with this errno. Rendered by `filesystem_contract::dir::explain`, which keeps
+    /// The filesystem refused, with this errno. Rendered by `filesystem_contract::directory::explain`, which keeps
     /// the sentence next to the decision that chose the number.
     Failed(i32),
     /// This shell holds no directory capability, so there is nothing to name.
@@ -21,9 +21,9 @@ pub enum Say {
     /// The verb needs an operand and got none.
     NeedsAName,
     /// **`touch -t`'s operand did not parse as an RFC 3339 instant, or names one this wire cannot
-    /// carry** (a pre-1970 instant: `filesystem_contract::fs::SETMTIME_AT`'s value is an unsigned
+    /// carry** (a pre-1970 instant: `filesystem_contract::fs::SET_MODIFICATION_TIME_AT`'s value is an unsigned
     /// seconds count). DECISIONS §112. Not a [`Say::Failed`], deliberately: this is refused before
-    /// any wire request is made, so there is no errno the filesystem chose and `dir::explain`
+    /// any wire request is made, so there is no errno the filesystem chose and `directory::explain`
     /// would have nothing true to say about it.
     NotAnInstant,
     /// **A designation this shell cannot back**, in `grant_plan`'s vocabulary. It arrives here
@@ -60,7 +60,7 @@ pub enum Say {
 pub const HEAP_MAXIMUM_BYTES: u64 = 32 * 1024;
 
 /// Write what a builtin had to say. Every line is a statement about a name or a capability, never
-/// about a policy: `filesystem_contract::dir::explain` keeps the filesystem's half next to the decision that
+/// about a policy: `filesystem_contract::directory::explain` keeps the filesystem's half next to the decision that
 /// chose the errno, so this function does not get to invent a friendlier word for a refusal.
 pub fn write_say(s: Say, out: &mut dyn FnMut(&[u8])) {
     match s {
@@ -72,7 +72,7 @@ pub fn write_say(s: Say, out: &mut dyn FnMut(&[u8])) {
         }
         Say::Failed(errno) => {
             out(b"  ");
-            out(dir::explain(errno).as_bytes());
+            out(directory::explain(errno).as_bytes());
             out(b"\n");
         }
         Say::NoDirectory => {

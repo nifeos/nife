@@ -203,8 +203,8 @@ const REPORT: u64 = 1;
 /// "The navigating script".
 pub(super) fn navigate(spec: u64) -> ! {
     use filesystem_fixture::{VERDICT, navscape as nb, tree};
-    let run = filesystem_contract::grant::spec_len(spec) as u64;
-    let mut nav = Nav::rooted(filesystem_contract::grant::spec_rights(spec));
+    let run = filesystem_contract::grant::specification_len(spec) as u64;
+    let mut nav = Nav::rooted(filesystem_contract::grant::specification_rights(spec));
     let mut v = 0u64;
 
     probe_root_and_reach(&mut nav, &mut v);
@@ -541,7 +541,7 @@ pub(super) fn two_trees(spec: u64) -> ! {
     const A: u64 = 0;
     const B: u64 = 1;
     const REPORT: u64 = 2;
-    let rights = filesystem_contract::grant::spec_rights(spec);
+    let rights = filesystem_contract::grant::specification_rights(spec);
     let mount = nav::path(tt::MOUNT.as_bytes())
         .ok()
         .and_then(|p| grant_plan::Holdings::default().resolve_path(&p).ok())
@@ -754,7 +754,7 @@ impl Text {
 /// agreement from being vacuous. See `notes/swish-language/witness.md`, "The globbing script".
 pub(super) fn globbing(spec: u64) -> ! {
     use filesystem_fixture::{VERDICT, globscape, tree};
-    let mut nav = Nav::rooted(filesystem_contract::grant::spec_rights(spec));
+    let mut nav = Nav::rooted(filesystem_contract::grant::specification_rights(spec));
     let mut v = 0u64;
 
     // 1. What `echo` shows.
@@ -873,10 +873,10 @@ fn created(nav: &Nav, name: &[u8]) -> Option<u64> {
     if r < 0 { None } else { Some(r as u64) }
 }
 
-/// `GETMTIME` a name where we stand (milestone 47's mtime lane, DECISIONS §112). `None` on any
+/// `GET_MODIFICATION_TIME` a name where we stand (milestone 47's mtime lane, DECISIONS §112). `None` on any
 /// error, which the mtime probes below treat as "prove nothing" rather than guess a value.
 fn mtime_of(nav: &Nav, name: &[u8]) -> Option<u64> {
-    let r = nav.name_call(fs::GETMTIME, nav.here(), name, 0);
+    let r = nav.name_call(fs::GET_MODIFICATION_TIME, nav.here(), name, 0);
     if r < 0 { None } else { Some(r as u64) }
 }
 
@@ -938,7 +938,7 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
 /// **`touch`'s mtime half, typed as real command lines and read back through the wire**
 /// (the mtime lane of milestone 47 (navigation and naming), DECISIONS §112 (`touch`'s two
 /// behaviors need two rights)). Runs after [`touch_twice`] and reuses `touched`, which by then
-/// names a file with a body: a bare `touch`, then `touch -t`, each checked against a `GETMTIME`
+/// names a file with a body: a bare `touch`, then `touch -t`, each checked against a `GET_MODIFICATION_TIME`
 /// read. Chained, because `TOUCH_AT_ROUND_TRIPPED` is checked against the mtime
 /// `TOUCH_MTIME_ADVANCED` established.
 fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
@@ -948,7 +948,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
         return;
     };
 
-    // Bare `touch`, real command line, real dispatch through `Nav::touch` to `fs::SETMTIME`.
+    // Bare `touch`, real command line, real dispatch through `Nav::touch` to `fs::SET_MODIFICATION_TIME`.
     let mut cmd = [0u8; 32];
     let Some(Say::Nothing) = run_line(nav, line(&mut cmd, b"touch ", touched)) else {
         return;
@@ -962,7 +962,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
     *v |= nb::TOUCH_MTIME_ADVANCED;
 
     // `touch -t <RFC 3339>`, a real command line the parser has to split into three tokens
-    // (`touch`, `-t`, the instant, the name) and dispatch to `fs::SETMTIME_AT` with the seconds
+    // (`touch`, `-t`, the instant, the name) and dispatch to `fs::SET_MODIFICATION_TIME_AT` with the seconds
     // value `jiff` decoded from it. The buffer is sized for exactly this one line: "touch -t "
     // (9) + the RFC 3339 text (20) + " " (1) + the name (at most 16, `run_name`'s own bound).
     const AT_PREFIX: &[u8] = b"touch -t ";
@@ -993,14 +993,14 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
 /// (milestone 47's mtime lane, DECISIONS §112). Bypasses the `touch` builtin and the parser
 /// entirely, unlike [`touch_mtime_probes`]: what this proves is that a `verb::TABLE` row or a
 /// caretaker forwarding bug cannot smuggle the arbitrary-time authority past a handle that never
-/// carried it, which a test that only ever grants `dir::ALL` (every other probe in this script)
+/// carried it, which a test that only ever grants `directory::ALL` (every other probe in this script)
 /// cannot exercise. A raw `fs::MKDIR` mints a **fresh** directory attenuated to `WRITE` and not
 /// `SETTIME`, one level below the shell's own root, and both mtime verbs are sent straight to it.
 fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
-    use filesystem_contract::dir;
+    use filesystem_contract::directory;
     use filesystem_fixture::navscape as nb;
 
-    let narrow_rights = dir::ALL & !dir::SETTIME;
+    let narrow_rights = directory::ALL & !directory::SETTIME;
     let r = nav.name_call(fs::MKDIR, nav.here(), name, narrow_rights);
     if r < 0 {
         return;
@@ -1012,11 +1012,11 @@ fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
     if created >= 0 {
         nav.close(created as u64);
 
-        if nav.name_call(fs::SETMTIME, dir_handle, inner, 0) == 0 {
+        if nav.name_call(fs::SET_MODIFICATION_TIME, dir_handle, inner, 0) == 0 {
             *v |= nb::TOUCH_NOW_NEEDS_ONLY_WRITE;
         }
         if nav.name_call(
-            fs::SETMTIME_AT,
+            fs::SET_MODIFICATION_TIME_AT,
             dir_handle,
             inner,
             filesystem_fixture::tree::NAV_TOUCH_AT_UNIX,

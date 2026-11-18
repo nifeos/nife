@@ -154,18 +154,18 @@ argument that one already carries: a scratch buffer one thread at a time touches
 caller rather than by a lock. Same shape, same reasoning, a different file.
 
 Raised from 18 to 20 by milestone 47's environment-variable fork (2026-08-23, DECISIONS §111):
-`crates/environment_contract::ConfigPage`'s `unsafe impl Send`/`Sync`. That is the exact pair
+`crates/environment_contract::ConfigurationPage`'s `unsafe impl Send`/`Sync`. That is the exact pair
 `clock_contract::ClockPage` already carries, for the same argument, restated for a type with a
 plainer contract. The config page is shared across address spaces by construction; that is the
 whole point of a page-shaped endowment. Every access goes through the same immutable byte reads,
 whichever process is reading. So there is no non-atomic mutable aliasing for either trait to protect
 against. `ClockPage` needs the same two impls despite carrying a seqlock, precisely because its
-*writer* uses atomics too. `ConfigPage` needs them for the simpler reason that it has no writer at
+*writer* uses atomics too. `ConfigurationPage` needs them for the simpler reason that it has no writer at
 all once it is mapped (see `environment_contract`'s own docs on why it needs no seqlock).
 
 Raised from 20 to 22 by milestone 161's x86_64 timebase-page work (2026-08-25):
 `crates/counter_frequency_contract::CounterFrequencyPage`'s `unsafe impl Send`/`Sync`, the same pair
-`ConfigPage` already carries and for the identical argument. The page is computed once by the
+`ConfigurationPage` already carries and for the identical argument. The page is computed once by the
 kernel at boot (`kernel::user::x86_timebase_page_phys`) and mapped read-only into every x86_64
 process; it has no writer once mapped.
 

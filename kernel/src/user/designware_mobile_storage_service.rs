@@ -11,7 +11,7 @@ use designware_mobile_storage::jh7110::Slot;
 use driver_process_contract::designware_mobile_storage::{
     Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS, Window,
 };
-use filesystem_contract::blk;
+use filesystem_contract::block;
 
 use super::*;
 use crate::capability_object::{Rights, rendezvous_capability};
@@ -47,11 +47,11 @@ fn stack_maps(frames: [u64; EXTRA_STACK_PAGES]) -> [Mapping; EXTRA_STACK_PAGES] 
 /// A running server: where a client sends, where readiness arrives, and the physical base of the
 /// transfer region a client maps.
 pub(crate) struct Wiring {
-    /// Requests, `filesystem_contract::blk`.
+    /// Requests, `filesystem_contract::block`.
     pub request: RendezvousId,
     /// One message when the server is up, or which step stopped it.
     pub ready: RendezvousId,
-    /// The transfer region, [`blk::TRANSFER_BLOCKS`] pages.
+    /// The transfer region, [`block::TRANSFER_BLOCKS`] pages.
     pub transfer_phys: u64,
 }
 
@@ -93,7 +93,7 @@ pub(crate) fn start(
     if !brought.is_up() {
         return Err(NotStarted::Clocks);
     }
-    let transfer_phys = crate::memory::alloc_contiguous_zeroed(blk::TRANSFER_BLOCKS)
+    let transfer_phys = crate::memory::alloc_contiguous_zeroed(block::TRANSFER_BLOCKS)
         .ok_or(NotStarted::NoMemory)?
         .addr();
 
@@ -114,20 +114,20 @@ pub(crate) fn start(
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; blk::TRANSFER_BLOCKS + 1 + EXTRA_STACK_PAGES];
+        }; block::TRANSFER_BLOCKS + 1 + EXTRA_STACK_PAGES];
         super::fs_service::map_channel(
-            &mut maps[..blk::TRANSFER_BLOCKS],
+            &mut maps[..block::TRANSFER_BLOCKS],
             TRANSFER_VIRTUAL_ADDRESS,
             transfer_phys,
-            blk::TRANSFER_BLOCKS,
+            block::TRANSFER_BLOCKS,
         );
         // One page of the controller: every register the driver touches and the data FIFO.
-        maps[blk::TRANSFER_BLOCKS] = Mapping {
+        maps[block::TRANSFER_BLOCKS] = Mapping {
             va: REGISTER_VIRTUAL_ADDRESS,
             phys: base,
             flags: Flags::user_device(),
         };
-        maps[blk::TRANSFER_BLOCKS + 1..].copy_from_slice(&stack);
+        maps[block::TRANSFER_BLOCKS + 1..].copy_from_slice(&stack);
         run(
             image,
             Spawn {
@@ -143,7 +143,7 @@ pub(crate) fn start(
                     startup_page_contract::Window {
                         kind: ::driver_process_contract::designware_mobile_storage::TRANSFER_KIND,
                         virtual_address: TRANSFER_VIRTUAL_ADDRESS,
-                        pages: blk::TRANSFER_BLOCKS as u32,
+                        pages: block::TRANSFER_BLOCKS as u32,
                     },
                     startup_page_contract::Window {
                         kind: ::driver_process_contract::designware_mobile_storage::REGISTER_KIND,

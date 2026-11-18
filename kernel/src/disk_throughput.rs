@@ -11,7 +11,7 @@
 //! - Sequential only, one pass, no warm-up and no repeats.
 
 use driver_process_contract::non_volatile_memory_express::BringUpError;
-use filesystem_contract::blk;
+use filesystem_contract::block;
 
 use crate::non_volatile_memory_express::{Absent, BLOCK_SIZE};
 use crate::user::non_volatile_memory_express_service::{self as service, Wiring};
@@ -235,7 +235,7 @@ fn ipc_floor(disk: &Wiring) -> Result<(), Verdict> {
     // The IPC floor: the same path with no device on it.
     let start = arch::timer::now();
     for _ in 0..FLOOR_CALLS {
-        if disk.blk(blk::SIZE, 0) as u64 != disk.size_bytes {
+        if disk.blk(block::SIZE, 0) as u64 != disk.size_bytes {
             return Err(Verdict::Failed(
                 "SIZE answered the wrong size during the ipc floor",
             ));
@@ -259,7 +259,7 @@ fn timed_writes(disk: &Wiring, count: u64) -> Result<u64, Verdict> {
     let start = arch::timer::now();
     for b in WINDOW_START..WINDOW_START + count {
         stamp(disk, b);
-        if disk.blk(blk::WRITE, b) != 0 {
+        if disk.blk(block::WRITE, b) != 0 {
             return Err(Verdict::Failed(
                 "the server refused a write inside the namespace",
             ));
@@ -273,7 +273,7 @@ fn timed_writes(disk: &Wiring, count: u64) -> Result<u64, Verdict> {
 /// Time one FLUSH.
 fn timed_flush(disk: &Wiring) -> Result<(), Verdict> {
     let start = arch::timer::now();
-    let flushed = disk.blk(blk::FLUSH, 0);
+    let flushed = disk.blk(block::FLUSH, 0);
     let flush = arch::timer::now().wrapping_sub(start);
     if flushed < 1 {
         return Err(Verdict::Failed("the server refused a flush"));
@@ -292,7 +292,7 @@ fn timed_reads(disk: &Wiring, count: u64) -> Result<u64, Verdict> {
     let start = arch::timer::now();
     for b in WINDOW_START..WINDOW_START + count {
         clobber(disk);
-        if disk.blk(blk::READ, b) != 0 {
+        if disk.blk(block::READ, b) != 0 {
             return Err(Verdict::Failed(
                 "the server refused a read inside the namespace",
             ));

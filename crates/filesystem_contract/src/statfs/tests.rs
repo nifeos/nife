@@ -9,32 +9,32 @@ fn the_statfs_record_round_trips_and_a_short_reply_is_not_zeroes() {
     let mut page = [0u8; 64];
     assert_eq!(
         statfs::encode(&mut page, 4096, 16384, 9001),
-        Some(statfs::LEN)
+        Some(statfs::RECORD_BYTES)
     );
     assert_eq!(statfs::decode(&page), Some((4096, 16384, 9001)));
     // Exactly the record is enough; one byte less is not readable at all.
     assert_eq!(
-        statfs::decode(&page[..statfs::LEN]),
+        statfs::decode(&page[..statfs::RECORD_BYTES]),
         Some((4096, 16384, 9001))
     );
-    assert_eq!(statfs::decode(&page[..statfs::LEN - 1]), None);
+    assert_eq!(statfs::decode(&page[..statfs::RECORD_BYTES - 1]), None);
     assert_eq!(statfs::decode(&[]), None);
     // A page too small to hold the record refuses rather than writing a partial one, and a
-    // page of exactly the record, what a caller sizing from `statfs::LEN` hands it, is not.
-    let mut tiny = [0u8; statfs::LEN - 1];
+    // page of exactly the record, what a caller sizing from `statfs::RECORD_BYTES` hands it, is not.
+    let mut tiny = [0u8; statfs::RECORD_BYTES - 1];
     assert_eq!(statfs::encode(&mut tiny, 4096, 1, 1), None);
-    let mut exact = [0u8; statfs::LEN];
+    let mut exact = [0u8; statfs::RECORD_BYTES];
     assert_eq!(
         statfs::encode(&mut exact, 4096, 16384, 9001),
-        Some(statfs::LEN)
+        Some(statfs::RECORD_BYTES)
     );
     assert_eq!(statfs::decode(&exact), Some((4096, 16384, 9001)));
 
     // The length is the version: a longer reply is a later version, and this version reads its
     // own prefix out of it rather than refusing.
-    let mut longer = [0u8; statfs::LEN + 8];
+    let mut longer = [0u8; statfs::RECORD_BYTES + 8];
     statfs::encode(&mut longer, 512, 2, 1).unwrap();
-    longer[statfs::LEN..].copy_from_slice(&7u64.to_le_bytes());
+    longer[statfs::RECORD_BYTES..].copy_from_slice(&7u64.to_le_bytes());
     assert_eq!(statfs::decode(&longer), Some((512, 2, 1)));
 
     assert_eq!(statfs::total_bytes(4096, 16384), 64 * 1024 * 1024);

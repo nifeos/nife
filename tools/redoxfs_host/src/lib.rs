@@ -13,7 +13,7 @@ use std::fs::File;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use filesystem_contract::xattr;
+use filesystem_contract::extended_attribute;
 use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
 use redoxfs::{BLOCK_SIZE, Disk, DiskFile, FileSystem, Node, Transaction, TreeData, TreePtr};
 use syscall::error::{EIO, Error};

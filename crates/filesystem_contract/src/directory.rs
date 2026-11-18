@@ -24,17 +24,17 @@ pub const REMOVE: u64 = 1 << 4;
 /// decided by the shape of the tree rather than by the grant. That is ambient authority
 /// reintroduced by recursion, which is the thing this design exists to refuse.
 pub const DESCEND: u64 = 1 << 5;
-/// **Assert an arbitrary modification time** ([`super::fs::SETMTIME_AT`], `touch -t`). Every other mutating right bounds what the caller may do to the bytes or names in a
+/// **Assert an arbitrary modification time** ([`super::fs::SET_MODIFICATION_TIME_AT`], `touch -t`). Every other mutating right bounds what the caller may do to the bytes or names in a
 /// directory; this one bounds what it may claim about when it did. Plain `touch`
-/// ([`super::fs::SETMTIME`]) needs only [`WRITE`], because the server observed that value. POSIX's
+/// ([`super::fs::SET_MODIFICATION_TIME`]) needs only [`WRITE`], because the server observed that value. POSIX's
 /// `utime()` draws the same line, and the wall clock draws it between reading the clock and setting it.
 ///
 /// Name: provisional (2026-08-24); an architect's to ratify. Candidates considered and set aside:
 /// `BACKDATE` (the capability also permits a *future* value, so a name for lying only backward
 /// would be narrower than what it grants), `RETIME` (read as "change the pace of something" as
 /// readily as "reassign its recorded time"). `SETTIME` was chosen for reading as exactly what
-/// it grants, at the cost of sitting one letter from [`super::fs::SETMTIME`]'s name; the two
-/// are always written module-qualified (`dir::SETTIME` against `fs::SETMTIME`), the same way
+/// it grants, at the cost of sitting one letter from [`super::fs::SET_MODIFICATION_TIME`]'s name; the two
+/// are always written module-qualified (`directory::SETTIME` against `fs::SET_MODIFICATION_TIME`), the same way
 /// [`CREATE`] already sits one identifier from [`super::fs::CREATE`] without confusion.
 pub const SETTIME: u64 = 1 << 6;
 
@@ -125,11 +125,11 @@ pub const fn explain(errno: i32) -> &'static str {
         EINVAL => "that is not a name this contract can resolve",
         // The extended-attribute vocabulary, rendered here beside the rest for this function's
         // reason.
-        super::xattr::ENODATA => "that attribute is not set",
-        super::xattr::ERANGE => "that is not a name an attribute can have",
-        super::xattr::E2BIG => "that attribute value is too large to store",
-        super::xattr::ENOSPC => "that already holds as many attributes as it can",
-        super::xattr::ENOTSUP => "this capability does not carry extended attributes",
+        super::extended_attribute::ENODATA => "that attribute is not set",
+        super::extended_attribute::ERANGE => "that is not a name an attribute can have",
+        super::extended_attribute::E2BIG => "that attribute value is too large to store",
+        super::extended_attribute::ENOSPC => "that already holds as many attributes as it can",
+        super::extended_attribute::ENOTSUP => "this capability does not carry extended attributes",
         _ => "the filesystem refused",
     }
 }
@@ -143,20 +143,20 @@ pub const fn explain(errno: i32) -> &'static str {
 /// Attenuation is a bitwise AND, so no chain of calls widens a child past its parent.
 ///
 /// ```
-/// use filesystem_contract::dir::{self, Rights};
+/// use filesystem_contract::directory::{self, Rights};
 ///
 /// // What a shell holds over the user's home directory.
-/// let home = Rights::root(dir::ALL);
+/// let home = Rights::root(directory::ALL);
 ///
 /// // What it hands a log writer: somewhere to write, and no power to delete what is there.
-/// let logs = home.attenuate(dir::READ | dir::WRITE | dir::CREATE);
-/// assert!(logs.allows(dir::WRITE));
-/// assert!(logs.denies_all(dir::REMOVE));
+/// let logs = home.attenuate(directory::READ | directory::WRITE | directory::CREATE);
+/// assert!(logs.allows(directory::WRITE));
+/// assert!(logs.denies_all(directory::REMOVE));
 ///
 /// // The log writer passing its authority on cannot widen it back, however it asks.
-/// let narrower = logs.attenuate(dir::ALL);
+/// let narrower = logs.attenuate(directory::ALL);
 /// assert_eq!(narrower.bits(), logs.bits());
-/// assert!(narrower.denies_all(dir::REMOVE));
+/// assert!(narrower.denies_all(directory::REMOVE));
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Rights(u64);
@@ -224,7 +224,7 @@ mod proofs {
     /// **Attenuation never widens, for every parent and every request.** `allows` is the only
     /// question the server asks a rights set, so the property is stated in its terms: anything
     /// the child permits, the parent permitted.
-    /// Falsification: replayable `crates/filesystem_contract/falsifications/dir.proofs.attenuate_never_widens.patch`
+    /// Falsification: replayable `crates/filesystem_contract/falsifications/directory.proofs.attenuate_never_widens.patch`
     #[kani::proof]
     fn attenuate_never_widens() {
         let parent = Rights(kani::any());
@@ -245,7 +245,7 @@ mod proofs {
     /// descents are still bounded by the root. `attenuate` is idempotent-shaped rather than
     /// merely monotone, and a proof is cheaper than trusting that AND is associative in code
     /// somebody may later rewrite.
-    /// Falsification: replayable `crates/filesystem_contract/falsifications/dir.proofs.a_grandchild_is_bounded_by_the_root.patch`
+    /// Falsification: replayable `crates/filesystem_contract/falsifications/directory.proofs.a_grandchild_is_bounded_by_the_root.patch`
     #[kani::proof]
     fn a_grandchild_is_bounded_by_the_root() {
         let root = Rights(kani::any());
@@ -263,7 +263,7 @@ mod proofs {
 
     /// A root is bounded by [`ALL`], so a caller that invents a mask with unknown bits set
     /// cannot smuggle one in and have some later version of this module give it a meaning.
-    /// Falsification: replayable `crates/filesystem_contract/falsifications/dir.proofs.a_root_carries_nothing_undefined.patch`
+    /// Falsification: replayable `crates/filesystem_contract/falsifications/directory.proofs.a_root_carries_nothing_undefined.patch`
     #[kani::proof]
     fn a_root_carries_nothing_undefined() {
         let mask: u64 = kani::any();
