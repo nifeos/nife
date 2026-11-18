@@ -27,6 +27,10 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-sta
 `script/crate-review-packet`, `helpers/name_release.py`, Kani, cargo-mutants, cargo-fuzz. No new
 tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1087-domain-name-system-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds `domain_name_system` on its own can tell in one screen that it is the DNS wire

@@ -27,6 +27,10 @@ crates leave in this order): after `machine_statistics_contract`,
 Reuse: `script/crate-move --dry-run`, the template `nifeos/crate-workflows` and its scaffold and
 helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1082-capability-manifest-note-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds the crate in its own repository can tell in one screen what an ELF manifest note is, and can build and prove the crate from the README alone. The stranger can trust the one claim the crate makes: that one manifest has exactly one encoding, in both directions. What the compiler accepts into a

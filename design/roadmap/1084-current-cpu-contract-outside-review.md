@@ -35,6 +35,10 @@ and `design/naming.md`. Nothing below reopens:
 Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_externalized_crates.py`,
 `helpers/template_report_gates.py`, Miri, the template's `scaffold/` and `sample/`. No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1084-current-cpu-contract-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds `current_cpu_contract` in its own repository can tell in one screen what the
