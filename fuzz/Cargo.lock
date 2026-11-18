@@ -157,12 +157,12 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096#ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=8d9cca0a044487403fd0d37e4fb34442c18b19d2#8d9cca0a044487403fd0d37e4fb34442c18b19d2"
 
 [[package]]
 name = "designware_mobile_storage"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b#4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=8bb45f85ad1a7b97614a5258a98c481701eda816#8bb45f85ad1a7b97614a5258a98c481701eda816"
 
 [[package]]
 name = "device_tree_blob"
@@ -360,7 +360,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.3.0-pre.1"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
 
 [[package]]
 name = "jobserver"
