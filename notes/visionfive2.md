@@ -171,10 +171,8 @@ script/board-netboot                                # in the other terminal, whi
 ```
 
 Then every later boot is `script/board-image --tftp` and a power cycle. The card is still
-underneath: the script falls back to the card's own copy when any transfer fails, and takes both
-files from one place, never half a pair. The server address is read off the serving machine when
-the card is written and echoed at boot. When it has moved, `setenv nife_boot_server <addr>` then
-`source ${scriptaddr}` retries at the prompt. A TFTP-loaded boot measured the same as a card boot.
+underneath: when any transfer fails the script boots the card's own pair, never half of each. The server address is read off the serving machine when
+the card is written and echoed at boot.
 [`visionfive2/network-boot.md`](visionfive2/network-boot.md) has the design, the measurements and
 why this is not dnsmasq.
 
@@ -240,6 +238,7 @@ memory-map work).
 | Firmware banners but garbage | Baud mismatch in the terminal (must be 115200); a 5 V adapter on 3.3 V pins has by then possibly cost a board |
 | U-Boot fine, `Bad Linux RISCV Image magic!` | The file is the ELF, not the objcopy output; `script/board-image` verifies the magic at offset 0x38 at build time, so a stale card is the other suspect |
 | `payload came from card` when you expected `net` | The serving machine is not running `script/board-netboot`; or its address moved and the card's baked one is stale (the `tftp server is` line one above says which address was tried); or the board is on the other ethernet port. `setenv nife_boot_server <addr>` then `source ${scriptaddr}` retries without a card reader |
+| `MEASURED BOOT REFUSED` after `payload came from net` | A card script older than the served one: rewrite the card with `script/board-image --tftp --card <card>` |
 | `nife: still at the prompt, so nothing loaded` | Neither path had a payload: no serving machine AND no card, or a card whose files are named something else. The board is at the prompt and everything is still typeable |
 | `Starting kernel ...` then silence | Expected until the UART driver handles reg-shift/io-width: the kernel may be running and polling LSR at the wrong offset. Also: DTB left at `$fdtcontroladdr`/`fdt_addr_r` (outside the boot map, faults with the trap path not yet printing); or the relocation did not happen (check U-Boot printed `Moving Image from ... to 0x80200000`) |
 | `Starting kernel ...` then garbage | Kernel is alive and the divisor is wrong: driver reprogrammed the divisor against the wrong clock (needs 13 at 24 MHz, not 1) |
