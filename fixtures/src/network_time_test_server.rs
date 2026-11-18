@@ -237,8 +237,8 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanoseconds: u64, out: &m
 /// `Query::accept` refuses it, which is the behaviour a test wiring an absurd time wants.
 fn stamp(unix_nanoseconds: u64) -> Option<Timestamp> {
     Timestamp::from_unix(
-        unix_nanoseconds / clock_contract::NS_PER_SECOND,
-        (unix_nanoseconds % clock_contract::NS_PER_SECOND) as u32,
+        unix_nanoseconds / clock_contract::NANOSECONDS_PER_SECOND,
+        (unix_nanoseconds % clock_contract::NANOSECONDS_PER_SECOND) as u32,
     )
 }
 

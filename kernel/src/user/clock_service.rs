@@ -183,7 +183,7 @@ impl Wiring {
         let r = crate::sched::ipc_call(
             self.propose,
             [
-                clock_contract::propose::req(clock_contract::propose::PROPOSE),
+                clock_contract::propose::request(clock_contract::propose::PROPOSE),
                 unix_nanoseconds,
             ],
         );
@@ -199,5 +199,6 @@ pub fn monotonic_nanoseconds() -> u64 {
     let ticks = crate::arch::timer::now();
     let seconds = ticks / freq;
     let rem = ticks % freq;
-    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
+    seconds * clock_contract::NANOSECONDS_PER_SECOND
+        + rem * clock_contract::NANOSECONDS_PER_SECOND / freq
 }

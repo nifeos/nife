@@ -53,7 +53,7 @@ fn the_era_pivot_is_exact_over_the_window() {
 fn decoding_any_wire_value_is_total() {
     let bits: u64 = kani::any();
     let (_seconds, nanoseconds) = Timestamp::from_bits(bits).to_unix();
-    assert!((nanoseconds as u64) < NS_PER_SECOND);
+    assert!((nanoseconds as u64) < NANOSECONDS_PER_SECOND);
 }
 
 /// **Out of range is refused, never aliased.** For every `seconds`, `from_unix` returns `Some` if
@@ -67,7 +67,7 @@ fn out_of_range_is_refused() {
     let encoded = Timestamp::from_unix(seconds, nanoseconds);
     assert_eq!(
         encoded.is_some(),
-        seconds < UNIX_LIMIT && (nanoseconds as u64) < NS_PER_SECOND
+        seconds < UNIX_LIMIT && (nanoseconds as u64) < NANOSECONDS_PER_SECOND
     );
 }
 

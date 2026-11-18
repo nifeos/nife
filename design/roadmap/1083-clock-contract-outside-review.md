@@ -184,9 +184,10 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 - **Done.** Item 6 before the tag: pull request #3559, carried onto the two-copy layout by #3576.
 - **Done.** Items 2 and 4 to 15 except item 3, and every Decision 3 name except the two named
   next: pull request #3640, on branch `milestone/1083-clock-contract-names-and-docs`.
-- **Outstanding.** Item 1's two renames, `NS_PER_SECOND` to `NANOSECONDS_PER_SECOND` and
-  `propose::req` to `request`, which edit files that #3567 also changes and wait for it to land.
-  Item 3 is the move's first mutation run.
+- **Done.** Item 1's two renames, `NANOSECONDS_PER_SECOND` and `propose::request`, in every
+  crate, component, test and the std overlay that reads them: branch
+  `milestone/1082-1083-ruled-follow-ons`.
+- **Outstanding.** Item 3 is the move's first mutation run.
 
 ## BUGS
 

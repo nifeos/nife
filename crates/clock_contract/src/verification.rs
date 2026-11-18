@@ -44,14 +44,14 @@ fn a_proposal_is_accepted_only_inside_the_policy_bounds() {
 }
 
 /// The wire format and the arithmetic the page's readers and writers agree on: the opcode that
-/// `propose::req` puts in the top byte comes back out of `propose::operation`, and the offset
+/// `propose::request` puts in the top byte comes back out of `propose::operation`, and the offset
 /// `offset_for` computes reads back as the wall time through `wall_nanoseconds`.
 /// Falsification: replayable `crates/clock_contract/falsifications/verification.the_request_word_and_the_offset_round_trip.patch`
 #[kani::proof]
 fn the_request_word_and_the_offset_round_trip() {
     let opcode: u64 = kani::any();
     kani::assume(opcode < 256);
-    assert!(propose::operation(propose::req(opcode)) == opcode);
+    assert!(propose::operation(propose::request(opcode)) == opcode);
 
     let wall: u64 = kani::any();
     let monotonic: u64 = kani::any();

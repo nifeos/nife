@@ -22,7 +22,7 @@
 
 #![cfg_attr(not(test), no_std)]
 
-use clock_contract::NS_PER_SECOND;
+use clock_contract::NANOSECONDS_PER_SECOND;
 
 const SECONDS_PER_MINUTE: u64 = 60;
 const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
@@ -64,7 +64,7 @@ impl Formatted {
 /// assert_eq!(format(90_000 * 1_000_000_000).as_bytes(), b"up 1 day, 01:00:00\n");
 /// ```
 pub fn format(nanoseconds: u64) -> Formatted {
-    let total_seconds = nanoseconds / NS_PER_SECOND;
+    let total_seconds = nanoseconds / NANOSECONDS_PER_SECOND;
     let days = total_seconds / SECONDS_PER_DAY;
     let hours = (total_seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
     let minutes = (total_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
@@ -159,21 +159,30 @@ mod tests {
 
     #[test]
     fn seconds_minutes_hours_all_render() {
-        assert_eq!(format(5 * NS_PER_SECOND).as_bytes(), b"up 00:00:05\n");
-        assert_eq!(format(90 * NS_PER_SECOND).as_bytes(), b"up 00:01:30\n");
-        assert_eq!(format(3661 * NS_PER_SECOND).as_bytes(), b"up 01:01:01\n");
+        assert_eq!(
+            format(5 * NANOSECONDS_PER_SECOND).as_bytes(),
+            b"up 00:00:05\n"
+        );
+        assert_eq!(
+            format(90 * NANOSECONDS_PER_SECOND).as_bytes(),
+            b"up 00:01:30\n"
+        );
+        assert_eq!(
+            format(3661 * NANOSECONDS_PER_SECOND).as_bytes(),
+            b"up 01:01:01\n"
+        );
     }
 
     #[test]
     fn a_day_rolls_over_and_pluralises() {
         // One full day plus one hour: singular "day".
         assert_eq!(
-            format((SECONDS_PER_DAY + SECONDS_PER_HOUR) * NS_PER_SECOND).as_bytes(),
+            format((SECONDS_PER_DAY + SECONDS_PER_HOUR) * NANOSECONDS_PER_SECOND).as_bytes(),
             b"up 1 day, 01:00:00\n"
         );
         // Two days: plural.
         assert_eq!(
-            format(2 * SECONDS_PER_DAY * NS_PER_SECOND).as_bytes(),
+            format(2 * SECONDS_PER_DAY * NANOSECONDS_PER_SECOND).as_bytes(),
             b"up 2 days, 00:00:00\n"
         );
     }
@@ -182,13 +191,19 @@ mod tests {
     fn sub_second_time_truncates_rather_than_rounds() {
         // 999,999,999 ns is still "0 seconds elapsed", not "1": this is a floor, matching how
         // date's own second-resolution read behaves.
-        assert_eq!(format(NS_PER_SECOND - 1).as_bytes(), b"up 00:00:00\n");
+        assert_eq!(
+            format(NANOSECONDS_PER_SECOND - 1).as_bytes(),
+            b"up 00:00:00\n"
+        );
     }
 
     #[test]
     fn hours_and_minutes_never_reach_24_or_60_in_the_printed_field() {
         // 23 hours, 59 minutes, 59 seconds: the boundary just before a day rolls over.
         let seconds = 23 * SECONDS_PER_HOUR + 59 * SECONDS_PER_MINUTE + 59;
-        assert_eq!(format(seconds * NS_PER_SECOND).as_bytes(), b"up 23:59:59\n");
+        assert_eq!(
+            format(seconds * NANOSECONDS_PER_SECOND).as_bytes(),
+            b"up 23:59:59\n"
+        );
     }
 }

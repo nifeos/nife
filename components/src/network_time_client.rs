@@ -111,7 +111,7 @@ fn done(w0: u64, w1: u64, w2: u64) -> ! {
 fn client(server_ip: u64, server_port: u64) -> ! {
     // The wall clock, by asking the service (`propose::STATE`): this process holds no mapping of
     // the clock page. Taken once; the ambient monotonic counter carries the time from here.
-    let (_state, wall0) = call(PROPOSE, propose::req(propose::STATE), 0);
+    let (_state, wall0) = call(PROPOSE, propose::request(propose::STATE), 0);
     let local = LocalClock {
         wall0,
         mono0: monotonic_nanoseconds(),
@@ -183,7 +183,8 @@ fn client(server_ip: u64, server_port: u64) -> ! {
                 // claim about the present, and the service compares it against the present.
                 let corrected = local.now() as i128 + sample.offset.nanoseconds();
                 let proposed = corrected.clamp(0, u64::MAX as i128) as u64;
-                let (status, _wall_after) = call(PROPOSE, propose::req(propose::PROPOSE), proposed);
+                let (status, _wall_after) =
+                    call(PROPOSE, propose::request(propose::PROPOSE), proposed);
                 let _ = call(socket, OPERATION_CLOSE, 0);
                 done(RPT_SYNCED, status, proposed);
             }
@@ -257,7 +258,8 @@ fn monotonic_nanoseconds() -> u64 {
     let ticks = now();
     let seconds = ticks / freq;
     let rem = ticks % freq;
-    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
+    seconds * clock_contract::NANOSECONDS_PER_SECOND
+        + rem * clock_contract::NANOSECONDS_PER_SECOND / freq
 }
 
 /// Unix nanoseconds to an NTP timestamp. `None` outside the crate's representable window, which the
@@ -265,8 +267,8 @@ fn monotonic_nanoseconds() -> u64 {
 /// alternative to checking is a timestamp 136 years out.
 fn stamp(unix_nanoseconds: u64) -> Option<Timestamp> {
     Timestamp::from_unix(
-        unix_nanoseconds / clock_contract::NS_PER_SECOND,
-        (unix_nanoseconds % clock_contract::NS_PER_SECOND) as u32,
+        unix_nanoseconds / clock_contract::NANOSECONDS_PER_SECOND,
+        (unix_nanoseconds % clock_contract::NANOSECONDS_PER_SECOND) as u32,
     )
 }
 

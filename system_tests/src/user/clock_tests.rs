@@ -52,7 +52,7 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
         clock_service::monotonic_nanoseconds(),
     );
     assert!(
-        by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NS_PER_SECOND,
+        by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NANOSECONDS_PER_SECOND,
         "a reader's own arithmetic ({by_hand}) should agree with the service's ({})",
         report[2],
     );
@@ -109,7 +109,7 @@ fn a_proposer_can_ask_and_cannot_tell() {
 
     // And the bounded case it exists to allow: a small correction is accepted, and the
     // provenance says it came from a proposal rather than from a human.
-    let (got, after) = w.propose_nanoseconds(now + clock_contract::NS_PER_SECOND / 2);
+    let (got, after) = w.propose_nanoseconds(now + clock_contract::NANOSECONDS_PER_SECOND / 2);
     assert_eq!(got, status::ACCEPTED);
     assert!(after >= now);
     let r = w.page().read();
@@ -135,7 +135,7 @@ fn adjusting_the_wall_clock_leaves_the_monotonic_counter_alone() {
         crate::testing::skip!(clock_service::NO_RTC);
     }
     let (w, _) = start();
-    let step = clock_contract::NS_PER_SECOND / 2;
+    let step = clock_contract::NANOSECONDS_PER_SECOND / 2;
 
     let mono_before = clock_service::monotonic_nanoseconds();
     let wall_before = w.wall_nanoseconds();
@@ -166,10 +166,10 @@ fn an_unknown_opcode_is_answered_rather_than_fatal() {
         crate::testing::skip!(clock_service::NO_RTC);
     }
     let (w, _) = start();
-    let r = crate::sched::ipc_call(w.propose, [propose::req(0xff), 0]);
+    let r = crate::sched::ipc_call(w.propose, [propose::request(0xff), 0]);
     assert_eq!(r[0], status::BAD_REQUEST);
 
-    let r = crate::sched::ipc_call(w.propose, [propose::req(propose::STATE), 0]);
+    let r = crate::sched::ipc_call(w.propose, [propose::request(propose::STATE), 0]);
     assert_eq!(
         r[0],
         state::REAL_TIME_CLOCK,

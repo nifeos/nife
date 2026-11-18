@@ -23,6 +23,7 @@ grant_plan = { version = "0.1.0", path = "../grant_plan" }
 # and `map_el0`'s budget to the one the primitive benchmark measured, without linking either, and
 # read a verb back off an argument page the way the progenitor does.
 [dev-dependencies]
+capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
 program_argument_contract = { version = "0.1.0", path = "../program_argument_contract" }
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 primitive_benchmark_contract = { version = "0.1.0", path = "../primitive_benchmark_contract" }

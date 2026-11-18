@@ -230,9 +230,10 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 - **Done.** Items 1 to 6 and 10 to 15, the wire literal marker, and the three names the
   maintainer or the units rule decides; [the ledger](1082-capability-manifest-note-outside-review/ledger.md)
   says what each became.
+- **Done.** The catalog round trip of item 7, `every_compiled_in_manifest_round_trips`, runs in
+  `crates/program_table`, which holds the catalog.
 - **Outstanding.** The stranger run of item 2 and the fuzz workspace of item 8 belong to the move
-  pull request. The unit tests of item 7 that walk the program catalog wait for milestone 1017 to
-  settle where it lives. The two statics in BUGS want a rename lane.
+  pull request. The two statics in BUGS want a rename lane.
 
 ## BUGS
 
@@ -248,7 +249,7 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 - The prior-art rows marked unverified (GNU property alignment and ordering, the OpenBSD, NetBSD
   and Go type numbers) are from memory. The README cites only the owners `FreeBSD`, `GNU` and
   `FDO`, and none of those rows.
-- This block does not review `grant_plan::Manifest`, whose fields the layout spells. If someone adds a field there without a byte here, `every_compiled_in_manifest_round_trips` refuses it at compile time. That holds only while that test lives in a tree that holds both crates (item 7 moves it to `grant_plan`'s).
+- This block does not review `grant_plan::Manifest`, whose fields the layout spells. If someone adds a field there without a byte here, `every_compiled_in_manifest_round_trips` refuses it at compile time. That holds only while that test lives in a tree that holds both crates (it lives in `program_table`'s tests).
 
 ## Index row
 

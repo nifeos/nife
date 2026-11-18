@@ -30,37 +30,6 @@ fn a_subtree_grants_note_has_one_encoding() {
     assert_eq!(Scope::SubtreeScope.declared(), "subtree_scope");
 }
 
-/// Every manifest the tree compiles in has a spelling, and reads back as itself. A program
-/// added to `Program` with a manifest this layout cannot carry fails here rather than in a build
-/// that tries to carry it.
-#[test]
-fn every_compiled_in_manifest_round_trips() {
-    for p in Program::ALL {
-        let m = p.manifest();
-        // The manifests with no note, by design: see `encode`.
-        if m.reboot
-            || m.sync
-            || m.installer
-            || m.catalog
-            || m.indexes != IndexStoreDeclaration::Forbidden
-            || m.activation_directory
-        {
-            continue;
-        }
-        assert_eq!(decode(&encode(&m)), Ok(m), "{}", p.name());
-    }
-    let m = program_table::UNVOUCHED_MANIFEST;
-    assert_eq!(decode(&encode(&m)), Ok(m));
-    // Each word grant a program that hears words may declare.
-    for g in [WordGrant::ReadOnly, WordGrant::ReadWrite, WordGrant::Create] {
-        let m = Manifest {
-            program_argument: ProgramArgumentDeclaration::Words(g),
-            ..program_table::UNVOUCHED_STD_MANIFEST
-        };
-        assert_eq!(decode(&encode(&m)), Ok(m), "{g:?}");
-    }
-}
-
 #[test]
 fn a_later_version_is_refused_rather_than_guessed_at() {
     let mut d = encode(&Program::Uptime.manifest());

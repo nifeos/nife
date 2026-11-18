@@ -10,7 +10,7 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
 | 4 | done: the source states each fact with no milestone, section, ruling, person or tree path; the doctests build their own manifests and verb table; test zones are example domains |
 | 5 | done: `BARE_VERSION`, `Error::WrongLength`, the exact offsets, the cut version 3 descriptor and the `verification.rs` header say what the code does |
 | 6 | done: the private offsets, decoders and bindings spell their fields out (`PROGRAM_ARGUMENT`, `MEMORY_MINIMUM_PAGES`, `OPTION_COUNT`, `STARTUP` and the rest) |
-| 7 | half done: the doctests no longer name a program of the catalog; the unit tests that walk `grant_plan::Program`, and `every_compiled_in_manifest_round_trips`, wait for milestone 1017 (the contract crates leave in this order) to settle where the catalog lives |
+| 7 | done: the doctests no longer name a program of the catalog, and `every_compiled_in_manifest_round_trips` runs in `crates/program_table`, where the catalog lives; the other tests encode one catalog row each as a fixture and stay |
 | 8 | left: the fuzz workspace moves with the crate, in the move pull request |
 | 9 | decided: the weekly fuzz opt-in stays off, and the crate is fuzzed on the project's own host; the template's scan is not changed |
 | 10 | done: `Display`, `core::error::Error` and `Hash` for `Error` |

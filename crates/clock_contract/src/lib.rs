@@ -55,12 +55,12 @@ fn spin_hint() {
     core::hint::spin_loop();
 }
 
-/// (`NS_PER_SECOND`, the unit-symbol ruling of 2026-10-27, which names this one definition.)
+/// (`NANOSECONDS_PER_SECOND`, the unit-symbol ruling of 2026-10-27, which names this one definition.)
 /// Nanoseconds in a second, the conversion every reader does exactly once.
 ///
 /// Name: ratified 2026-10-27 (calef): the one definition the unit-symbol ruling of that date names.
 #[doc(alias = "nanoseconds per second")]
-pub const NS_PER_SECOND: u64 = 1_000_000_000;
+pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
 
 /// Wall-clock nanoseconds, from the offset the clock page carries and the monotonic nanoseconds
 /// the reader measured for itself.
@@ -77,22 +77,22 @@ pub const NS_PER_SECOND: u64 = 1_000_000_000;
 /// Setting the wall clock is writing an offset; the monotonic counter is not in the expression:
 ///
 /// ```
-/// use clock_contract::{NS_PER_SECOND, offset_for, wall_nanoseconds};
+/// use clock_contract::{NANOSECONDS_PER_SECOND, offset_for, wall_nanoseconds};
 ///
 /// // The machine has been up for 5 seconds and the service has just learned the wall time.
-/// let monotonic = 5 * NS_PER_SECOND;
-/// let now = 1_800_000_000 * NS_PER_SECOND;
+/// let monotonic = 5 * NANOSECONDS_PER_SECOND;
+/// let now = 1_800_000_000 * NANOSECONDS_PER_SECOND;
 /// let offset = offset_for(now, monotonic);
 /// assert_eq!(wall_nanoseconds(offset, monotonic), now);
 ///
 /// // Two seconds later, with nobody having touched anything.
-/// let monotonic = 7 * NS_PER_SECOND;
-/// assert_eq!(wall_nanoseconds(offset, monotonic), now + 2 * NS_PER_SECOND);
+/// let monotonic = 7 * NANOSECONDS_PER_SECOND;
+/// assert_eq!(wall_nanoseconds(offset, monotonic), now + 2 * NANOSECONDS_PER_SECOND);
 ///
 /// // An operator steps the clock a minute forward. Only the offset changes.
-/// let stepped = offset_for(now + 60 * NS_PER_SECOND, monotonic);
-/// assert_eq!(wall_nanoseconds(stepped, monotonic), now + 60 * NS_PER_SECOND);
-/// assert_eq!(monotonic, 7 * NS_PER_SECOND); // untouched, and there is no way to touch it
+/// let stepped = offset_for(now + 60 * NANOSECONDS_PER_SECOND, monotonic);
+/// assert_eq!(wall_nanoseconds(stepped, monotonic), now + 60 * NANOSECONDS_PER_SECOND);
+/// assert_eq!(monotonic, 7 * NANOSECONDS_PER_SECOND); // untouched, and there is no way to touch it
 /// ```
 pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
     offset_nanoseconds.saturating_add(monotonic_nanoseconds)
@@ -485,7 +485,7 @@ pub mod propose {
 
     /// Build a request's first word. The opcode is one byte: a larger `operation` loses its high
     /// bits, which a debug build refuses.
-    pub const fn req(operation: u64) -> u64 {
+    pub const fn request(operation: u64) -> u64 {
         debug_assert!(operation < 256);
         operation << OPERATION_SHIFT
     }
@@ -496,13 +496,13 @@ pub mod propose {
         word >> OPERATION_SHIFT
     }
 
-    /// `CALL(req(PROPOSE), proposed_unix_nanoseconds)`. Ask the service to move the wall clock to
+    /// `CALL(request(PROPOSE), proposed_unix_nanoseconds)`. Ask the service to move the wall clock to
     /// `proposed_unix_nanoseconds`. Reply `r0` is one of the `status` codes and `r1` is
     /// the wall-clock nanoseconds in force afterwards (0 when the state is unknown), so a proposer
     /// learns what happened without needing a read mapping.
     pub const PROPOSE: u64 = 1;
 
-    /// `CALL(req(STATE), 0)`. Ask what the clock knows. Reply `r0` is a [`state`](super::state)
+    /// `CALL(request(STATE), 0)`. Ask what the clock knows. Reply `r0` is a [`state`](super::state)
     /// value and `r1` the wall-clock nanoseconds now (0 when unknown).
     ///
     /// Redundant for anyone holding the page, and that is fine: a proposer is exactly the process
@@ -551,12 +551,12 @@ pub mod policy {
     /// It is the escape from the network-time chicken-and-egg (TLS needs a roughly correct clock,
     /// and a correct clock needs TLS), chosen here on purpose. It is a **floor on plausibility, not a
     /// claim of accuracy**: passing it means "not obviously a lie", never "trustworthy".
-    pub const NOT_BEFORE_NANOSECONDS: u64 = 1_767_225_600 * super::NS_PER_SECOND;
+    pub const NOT_BEFORE_NANOSECONDS: u64 = 1_767_225_600 * super::NANOSECONDS_PER_SECOND;
 
     /// The ceiling: 2100-01-01T00:00:00Z. Far enough out to be uncontroversial and near enough to
     /// catch the classic attacks, which push the clock past a certificate's expiry rather than
     /// nudging it.
-    pub const NOT_AFTER_NANOSECONDS: u64 = 4_102_444_800 * super::NS_PER_SECOND;
+    pub const NOT_AFTER_NANOSECONDS: u64 = 4_102_444_800 * super::NANOSECONDS_PER_SECOND;
 
     /// How far forward one accepted proposal may move a clock that already knows the time: an hour.
     /// Enough to absorb a machine that has been asleep, or an RTC an hour out because somebody set
@@ -564,7 +564,7 @@ pub mod policy {
     ///
     /// Name: ratified 2026-10-27 (calef): `MAXIMUM` from the minimum, maximum and operating-system
     /// ruling of 2026-10-26 (UTC), and `NS` from the unit-symbol ruling of 2026-10-27 (UTC).
-    pub const MAXIMUM_STEP_FORWARD_NANOSECONDS: u64 = 3600 * super::NS_PER_SECOND;
+    pub const MAXIMUM_STEP_FORWARD_NANOSECONDS: u64 = 3600 * super::NANOSECONDS_PER_SECOND;
 
     /// How far **backward** one accepted proposal may move a clock that already knows the time: one
     /// second.
@@ -578,7 +578,7 @@ pub mod policy {
     ///
     /// Name: ratified 2026-10-27 (calef): `MAXIMUM` from the minimum, maximum and operating-system
     /// ruling of 2026-10-26 (UTC), and `NS` from the unit-symbol ruling of 2026-10-27 (UTC).
-    pub const MAXIMUM_STEP_BACKWARD_NANOSECONDS: u64 = super::NS_PER_SECOND;
+    pub const MAXIMUM_STEP_BACKWARD_NANOSECONDS: u64 = super::NANOSECONDS_PER_SECOND;
 
     // The asymmetry is a decision, not an accident, so it is a build-time fact rather than
     // something a reader has to notice: anyone "tidying" the two constants into one fails to
@@ -609,12 +609,12 @@ pub mod policy {
     /// A compromised time client can lie inside these bounds and do nothing else:
     ///
     /// ```
-    /// use clock_contract::{NS_PER_SECOND, policy, state, status};
+    /// use clock_contract::{NANOSECONDS_PER_SECOND, policy, state, status};
     ///
-    /// let now = 1_800_000_000 * NS_PER_SECOND;
+    /// let now = 1_800_000_000 * NANOSECONDS_PER_SECOND;
     ///
     /// // A small correction, in either direction, is what a time client is for.
-    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + NS_PER_SECOND / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + NANOSECONDS_PER_SECOND / 2), status::ACCEPTED);
     ///
     /// // Walking the clock past a certificate expiry in one step is the classic attack.
     /// assert_eq!(
@@ -623,9 +623,9 @@ pub mod policy {
     /// );
     ///
     /// // And the tighter half: a second forward is fine, a second and a half backward is not.
-    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + 3 * NS_PER_SECOND / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCHRONIZED, now, now + 3 * NANOSECONDS_PER_SECOND / 2), status::ACCEPTED);
     /// assert_eq!(
-    ///     policy::decide(state::SYNCHRONIZED, now, now - 3 * NS_PER_SECOND / 2),
+    ///     policy::decide(state::SYNCHRONIZED, now, now - 3 * NANOSECONDS_PER_SECOND / 2),
     ///     status::REFUSED_TOO_FAR_BACKWARD,
     /// );
     ///
@@ -726,7 +726,7 @@ mod tests {
     }
 
     /// A time inside the sanity window, used as "now" by the policy tests.
-    const NOW: u64 = 1_800_000_000 * NS_PER_SECOND; // 2027-01-15-ish
+    const NOW: u64 = 1_800_000_000 * NANOSECONDS_PER_SECOND; // 2027-01-15-ish
 
     #[test]
     fn the_sanity_window_rejects_the_two_lies_that_matter() {
@@ -739,7 +739,7 @@ mod tests {
         // 2038, where a 32-bit `time_t` wraps, is deliberately INSIDE the window. It is a real
         // instant this machine may run at, and refusing it would be treating a C bug as a fact
         // about time. Asserted so a future tightening of the ceiling has to mean it.
-        assert!(policy::is_plausible(2_147_483_647 * NS_PER_SECOND));
+        assert!(policy::is_plausible(2_147_483_647 * NANOSECONDS_PER_SECOND));
     }
 
     #[test]
@@ -791,7 +791,7 @@ mod tests {
     #[test]
     fn backwards_is_held_far_tighter_than_forwards() {
         let known = state::SYNCHRONIZED;
-        let ten_minutes = 600 * NS_PER_SECOND;
+        let ten_minutes = 600 * NANOSECONDS_PER_SECOND;
         assert_eq!(
             policy::decide(known, NOW, NOW + ten_minutes),
             status::ACCEPTED
@@ -805,17 +805,17 @@ mod tests {
 
     #[test]
     fn the_offset_round_trips_through_the_wall_clock() {
-        let monotonic = 42 * NS_PER_SECOND;
+        let monotonic = 42 * NANOSECONDS_PER_SECOND;
         let offset = offset_for(NOW, monotonic);
         assert_eq!(wall_nanoseconds(offset, monotonic), NOW);
         // And the property the whole design is for: the offset changes, the monotonic input does
         // not, and the two are independent by construction.
-        let stepped = offset_for(NOW + 5 * NS_PER_SECOND, monotonic);
+        let stepped = offset_for(NOW + 5 * NANOSECONDS_PER_SECOND, monotonic);
         assert_eq!(
             wall_nanoseconds(stepped, monotonic) - NOW,
-            5 * NS_PER_SECOND
+            5 * NANOSECONDS_PER_SECOND
         );
-        assert_eq!(monotonic, 42 * NS_PER_SECOND);
+        assert_eq!(monotonic, 42 * NANOSECONDS_PER_SECOND);
     }
 
     /// A zeroed frame is a frame nobody published to, and it must read as "unknown" rather than as
@@ -1083,9 +1083,9 @@ mod tests {
     /// once showed the shift direction and the whole function bodies were pinned by nothing.
     #[test]
     fn the_request_word_is_the_wire_format_it_claims() {
-        assert_eq!(propose::req(propose::PROPOSE), 1u64 << 56);
+        assert_eq!(propose::request(propose::PROPOSE), 1u64 << 56);
         assert_eq!(
-            propose::operation(propose::req(propose::STATE)),
+            propose::operation(propose::request(propose::STATE)),
             propose::STATE
         );
         assert_eq!(propose::operation(0), 0);

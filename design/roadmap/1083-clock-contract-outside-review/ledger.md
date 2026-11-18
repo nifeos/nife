@@ -4,7 +4,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
 
 | item | state |
 |---|---|
-| 1 | partly done: every Decision 3 name is applied except `NS_PER_SECOND` to `NANOSECONDS_PER_SECOND` and `propose::req` to `request`, which edit files that #3567 also changes and wait for it to land; the British spellings are fixed and the README's two passives are rewritten; the badge row, the acronym expansions and the `accepted-words` entries are the move's |
+| 1 | partly done: every Decision 3 name is applied, `NANOSECONDS_PER_SECOND` and `propose::request` included; the British spellings are fixed and the README's two passives are rewritten; the badge row, the acronym expansions and the `accepted-words` entries are the move's |
 | 2 | done: the crate carries a `clippy.toml` for `VisionFive` |
 | 3 | left: the move's first mutation run |
 | 4 | done: the `publish` comment names no file of this repository |

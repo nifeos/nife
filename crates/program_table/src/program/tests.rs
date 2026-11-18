@@ -200,3 +200,35 @@ fn map_el0_declares_the_budget_the_bench_contract_measured() {
     assert_eq!(minimum, primitive_benchmark_contract::MAP_BUDGET_PAGES);
     assert!(maximum >= minimum);
 }
+
+/// Every manifest the tree compiles in has a spelling in the capability manifest note, and reads
+/// back as itself. A program added to `Program` with a manifest the note's layout cannot carry
+/// fails here rather than in a build that tries to carry it.
+#[test]
+fn every_compiled_in_manifest_round_trips() {
+    use capability_manifest_note::{decode, encode};
+    for p in Program::ALL {
+        let m = p.manifest();
+        // The manifests with no note, by design: see `encode`.
+        if m.reboot
+            || m.sync
+            || m.installer
+            || m.catalog
+            || m.indexes != IndexStoreDeclaration::Forbidden
+            || m.activation_directory
+        {
+            continue;
+        }
+        assert_eq!(decode(&encode(&m)), Ok(m), "{}", p.name());
+    }
+    let m = UNVOUCHED_MANIFEST;
+    assert_eq!(decode(&encode(&m)), Ok(m));
+    // Each word grant a program that hears words may declare.
+    for g in [WordGrant::ReadOnly, WordGrant::ReadWrite, WordGrant::Create] {
+        let m = Manifest {
+            program_argument: ProgramArgumentDeclaration::Words(g),
+            ..UNVOUCHED_STD_MANIFEST
+        };
+        assert_eq!(decode(&encode(&m)), Ok(m), "{g:?}");
+    }
+}

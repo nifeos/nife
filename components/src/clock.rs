@@ -136,7 +136,8 @@ fn monotonic_nanoseconds() -> u64 {
     let ticks = now();
     let seconds = ticks / freq;
     let rem = ticks % freq;
-    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
+    seconds * clock_contract::NANOSECONDS_PER_SECOND
+        + rem * clock_contract::NANOSECONDS_PER_SECOND / freq
 }
 
 /// Read the machine's RTC, whichever one it has. `None` when it has none, or when its reading is
@@ -170,7 +171,7 @@ fn pl031_unix_nanoseconds(base: u64) -> u64 {
     const DR: u64 = 0x00;
     // SAFETY: `base` is this process's device mapping of a PL031, placed by whoever built us.
     let seconds = unsafe { core::ptr::read_volatile((base + DR) as *const u32) } as u64;
-    seconds * clock_contract::NS_PER_SECOND
+    seconds * clock_contract::NANOSECONDS_PER_SECOND
 }
 
 /// **The Goldfish RTC driver** (`google,goldfish-rtc`, QEMU `virt` on riscv64). Same rule 2 shape:
@@ -333,7 +334,7 @@ mod cmos {
         .ok()?;
         let epoch = jiff::civil::date(1970, 1, 1).at(0, 0, 0, 0);
         let seconds = u64::try_from(reading.duration_since(epoch).as_secs()).ok()?;
-        Some(seconds * clock_contract::NS_PER_SECOND)
+        Some(seconds * clock_contract::NANOSECONDS_PER_SECOND)
     }
 }
 
