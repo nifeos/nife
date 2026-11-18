@@ -15,7 +15,9 @@
 #      same deadline and must NOT finish, so the holder is proved to hold (a pass of stage 2 means
 #      something).
 #   3. a row in KANI_APART proves in two passes: `--exact` over every listed harness but the one held
-#      apart, then that one alone; and a held-apart name the row no longer has fails the run.
+#      apart, then that one alone; and a held-apart name the row no longer has fails the run. A row
+#      with its own flags (domain_name_resolution_contract's `-Z stubbing`) keeps them in the
+#      listing and in both passes.
 #
 # Every stage uses the scratch slot directory, so none waits on, nor takes a unit of, a real job.
 # Run by script/lint.
@@ -38,10 +40,11 @@ cat >"$tmp/bin/cargo" <<'STUB'
 # places byte_glob in a scratch directory and `cargo kani list` writes three harnesses there.
 [ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
 if [ "$1" = metadata ]; then
-	printf '{"packages": [{"name": "byte_glob", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR"
+	printf '{"packages": [{"name": "byte_glob", "manifest_path": "%s/row/Cargo.toml"}, {"name": "domain_name_resolution_contract", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR" "$VERIFY_STUB_DIR"
 	exit 0
 fi
 if [ "$1 $2" = "kani list" ]; then
+	printf '%s\n' "$*" >>"$VERIFY_STUB_LOG"
 	echo '{"standard-harnesses": {"src/lib.rs": ["verification::c", "verification::a", "verification::b"]}}' >kani-list.json
 	exit 0
 fi
@@ -126,4 +129,15 @@ if apart "$(printf 'byte_glob\tverification::gone')"; then fail "a stale held-ap
 grep -q 'no longer has: verification::gone' "$tmp/apart.out" || fail "a stale held-apart name failed without naming it"
 grep -q '^kani -p byte_glob --harness' "$tmp/log" && fail "a stale held-apart name still ran a proof"
 [ ! -e "$tmp/row/kani-list.json" ] || fail "a failed listing was left in the crate directory"
-echo "script/verify: a row held apart proves the rest, then each held harness alone, and refuses a stale name"
+: >"$tmp/log"
+VERIFY_STUB_LOG="$tmp/log" VERIFY_STUB_DIR="$tmp" NIFE_KANI_POOL=off \
+	NIFE_KANI_APART="$(printf 'domain_name_resolution_contract\tverification::b')" \
+	script/verify --only domain_name_resolution_contract >"$tmp/apart.out" 2>&1 ||
+	{ sed 's/^/  /' "$tmp/apart.out" >&2; fail "a held-apart row with flags failed"; }
+grep -q '^kani list -Z stubbing ' "$tmp/log" ||
+	{ sed 's/^/  /' "$tmp/log" >&2; fail "the listing dropped the row's -Z stubbing"; }
+grep -q '^kani -p domain_name_resolution_contract -Z stubbing --harness verification::a --harness verification::c --exact ' "$tmp/log" ||
+	{ sed 's/^/  /' "$tmp/log" >&2; fail "the first pass dropped the row's -Z stubbing"; }
+grep -q '^kani -p domain_name_resolution_contract -Z stubbing --harness verification::b --exact ' "$tmp/log" ||
+	{ sed 's/^/  /' "$tmp/log" >&2; fail "the held-apart pass dropped the row's -Z stubbing"; }
+echo "script/verify: a row held apart proves the rest, then each held harness alone, keeps the row's flags, and refuses a stale name"

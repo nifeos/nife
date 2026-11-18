@@ -787,12 +787,20 @@ for c in $crates; do
     apart="$(printf '%s\n' "$KANI_APART" | awk -F'\t' -v c="$c" '$1 == c { print $2 }')"
     case " $* " in *" --harness "*) apart="" ;; esac
     if [ -n "$apart" ]; then
+        # Both passes and the listing keep the row's own flags (`-Z stubbing` for a row whose
+        # harness uses `#[kani::stub]`; without it the crate does not compile under Kani). Flags that
+        # select targets would fight `--exact`, so a row with those cannot be split.
+        case " $extra " in *" --harness "*|*" --bin "*|*" --lib "*)
+            echo "script/verify: KANI_APART cannot split $c, whose flags select targets: $extra" >&2
+            exit 2 ;;
+        esac
         # The row's harnesses, from Kani itself, so a harness added later is in the first pass and
         # never in neither. `cargo kani list` reads the package of the directory it runs in and
         # writes kani-list.json there.
         dir="$(cargo metadata --no-deps --format-version 1 \
             | python3 -c 'import json, os, sys; m = json.load(sys.stdin); print(next(os.path.dirname(p["manifest_path"]) for p in m["packages"] if p["name"] == sys.argv[1]))' "$c")"
-        (cd "$dir" && kani list --format json >/dev/null) || exit 1
+        # shellcheck disable=SC2086
+        (cd "$dir" && kani list $extra --format json >/dev/null) || exit 1
         rest="$(python3 - "$dir/kani-list.json" "$apart" <<'PY'
 import json, sys
 listed = json.load(open(sys.argv[1]))["standard-harnesses"]
@@ -806,10 +814,11 @@ PY
 )" || { rm -f "$dir/kani-list.json"; exit 1; }
         rm -f "$dir/kani-list.json"
         # shellcheck disable=SC2086
-        kani -p "$c" $rest --exact "$@"
+        kani -p "$c" $extra $rest --exact "$@"
         for h in $apart; do
             echo "==> kani: $c, $h apart from the rest"
-            kani -p "$c" --harness "$h" --exact "$@"
+            # shellcheck disable=SC2086
+            kani -p "$c" $extra --harness "$h" --exact "$@"
         done
     else
         # shellcheck disable=SC2086
