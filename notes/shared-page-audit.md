@@ -227,12 +227,12 @@ isolation on all three architectures. What remains is the production progenitor'
 "What is left" (noted 2026-10-15 UTC).
 
 **B. A harness that can make a virtio device misbehave.** The case is finding 6 and the honesty gap
-under it. This tree tests DMA confinement by making the *driver* attack (`crates/virtio`'s
+under it. This tree tests DMA confinement by making the *driver* attack (`components/src/block_driver_roles.rs`'s
 `run_attack` and its indirect-descriptor cousin, both proving the kernel refuses), and it has no way
 to make the *device* attack. So the direction the IOMMU and the validator were built for is the one
 direction with no negative control, and the two fixes committed in this lane are unproven for the
 same reason. Something that can write an arbitrary used ring under the driver, whether a fake
-transport behind `crates/virtio`'s trait or a QEMU device model, would give every driver a hostile
+transport behind `components/src/block_driver_roles.rs`'s trait or a QEMU device model, would give every driver a hostile
 counterparty and would be reusable by every later one. It is also what a second board makes urgent.
 
 **C. A lint for one-sided fences.** The case is finding 7 plus milestone 80's. Both are the same

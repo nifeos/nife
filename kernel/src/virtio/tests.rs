@@ -224,7 +224,7 @@ fn feature_negotiation_leaves_the_blk_flush_bit_alone() {
         sanitize_driver_features(0, F_FLUSH_LO),
         F_FLUSH_LO,
         "VIRTIO_BLK_F_FLUSH must reach the device: the block server's whole durability answer \
-         is whether it was negotiated (crates/virtio's F_FLUSH_LO)"
+         is whether it was negotiated (components/src/block_driver_roles.rs's F_FLUSH_LO)"
     );
     // And alongside the bit that is stripped.
     assert_eq!(

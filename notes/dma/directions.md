@@ -19,7 +19,7 @@ aimed there would let it *exfiltrate* kernel memory to disk. Neither address eve
 device. The roadmap's claim that the transport "already speaks both directions" was verified
 against the code and is accurate.
 
-Three things were new. The driver's write verb is `crates/virtio`'s `write_block`, one flag away
+Three things were new. The driver's write verb is `components/src/block_driver_roles.rs`'s `write_block`, one flag away
 from the read. QEMU's disks are attached writable, one image file per transport, because QEMU
 write-locks a file once any attachment can write (see the runners). And there are the tests. They
 run the same matrix as the read path: both ISAs, both transports (mmio and PCIe). Each does a full
@@ -52,7 +52,7 @@ round trip. Three facts make the abandoned request harmless, and all three are l
   signal, and then found its own request not yet on the used ring. The read path never noticed
   because it only ever expects one completion. The fix is the correct virtio discipline anyway. A
   driver treats the used ring advancing, not a single wakeup, as the completion. So
-  `complete_block` (`crates/virtio`) now loops WAIT/ack until `used.idx` moves, discarding a
+  `complete_block` (`components/src/block_driver_roles.rs`) now loops WAIT/ack until `used.idx` moves, discarding a
   wakeup that was really someone else's. Every real completion also raises the line, so the loop
   always makes progress. This hardens the read path too: coalesced and spurious interrupts were
   always possible and were only tolerated by luck before.

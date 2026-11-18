@@ -29,9 +29,8 @@ current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
 # The socket contract's frame layout (milestone 410 (six copies of the shared-frame accessors)):
 # `socket_frame::Frame` reads and writes the shared frame through it. Dependency-free and no_std,
-# like the protocol crates above. The type lives here rather than in socket_contract because it
-# is built on mapped_window, which cannot compile for the host, and socket_contract's wire format
-# is host-tested; the module doc has the whole reason.
+# like the protocol crates above. The type lives here rather than in socket_contract because a
+# contract crate never links the runtime: the dependency runs from this crate to that one.
 socket_contract = { version = "0.1.0", path = "../socket_contract" }
 
 # Only riscv64 and x86_64 read the counter frequency from the kernel's timebase page; aarch64 reads

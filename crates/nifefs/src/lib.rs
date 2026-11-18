@@ -26,7 +26,7 @@
 //! - [`MAXIMUM_FILES`] grows with the suite, not the system, so a resize lands on whoever merges.
 //! - `a_short_image_is_refused_not_indexed`'s falsification takes tens of minutes and gigabytes of
 //!   solver memory, the same shape as `package_archive`'s `a_short_file_is_refused`.
-//! - The EL0 blk driver (`crates/virtio`) buffers block 0 only, so it sees the first
+//! - The EL0 blk driver (`components/src/block_driver_roles.rs`) buffers block 0 only, so it sees the first
 //!   [`ENTRIES_IN_FIRST_BLOCK`] files, and nothing in the format says so.
 //! - No directories, writes or permissions; the read-write filesystem is `redoxfs_server/`.
 

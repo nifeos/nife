@@ -335,7 +335,7 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 ///
 /// ```no_run
 /// fn start(direct_memory_access_phys: u64) -> ! {
-///     virtio::run(direct_memory_access_phys)
+///     block_driver_roles::run(direct_memory_access_phys)
 /// }
 /// ```
 pub fn run(direct_memory_access_phys: u64) -> ! {

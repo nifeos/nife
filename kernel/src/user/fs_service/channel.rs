@@ -9,7 +9,7 @@
 use super::*;
 
 // The VAs each process expects its mappings at. Each MUST match that program's source.
-pub(super) const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000); // block server DMA region, 1 + BLK_PAGES pages (crates/virtio)
+pub(super) const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000); // block server DMA region, 1 + BLK_PAGES pages (components/src/block_driver_roles.rs)
 pub(super) const BLK_PAGE_FS: u64 = 0x5000_0000; // FS server's block region (redoxfs_server.rs BLK_PAGE)
 // FS server's file region (redoxfs_server.rs FILE_PAGE): BLK_PAGES pages above BLK_PAGE_FS, so the
 // block channel cannot walk into it.

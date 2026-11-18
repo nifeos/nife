@@ -9,7 +9,7 @@
 use super::*;
 
 /// The block server's role in the driver binary (must match `components/src/block_driver.rs` and
-/// `crates/virtio`).
+/// `components/src/block_driver_roles.rs`).
 const ROLE_BLK_SERVER: u64 = 32;
 
 /// The heap budget the FS server draws RedoxFS's allocations from. RedoxFS keeps a 128 KiB

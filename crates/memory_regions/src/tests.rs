@@ -89,7 +89,7 @@ fn the_watermark_falls_only_when_quiescent_and_never_rises() {
 /// parent's spent part, and its parent's retyped pages end at or below the child's start or above
 /// the child's end. The Kani proof `a_return_keeps_every_run_inside_its_parents_spent_part` starts
 /// from any state satisfying that last rule; this test is the evidence that the rule holds in the
-/// states the table reaches, which CBMC cannot build in memory.
+/// states the table reaches, which the C Bounded Model Checker (CBMC) cannot build in memory.
 #[test]
 fn no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages() {
     const CALLS: u32 = 4 * (3 + 2) + 3;

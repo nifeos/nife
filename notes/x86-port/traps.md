@@ -90,7 +90,7 @@ different stacks. RISC-V does the same job with `sscratch`; aarch64 banks `SP_EL
   transmit-empty line.
 - **MSI.** An MSI vector is its own intid. The device writes the vector to the local APIC with no
   controller input in between, so no inversion is owed and nothing is masked. The used-ring loop in
-  `crates/virtio` decides a request is complete.
+  `components/src/block_driver_roles.rs` decides a request is complete.
 - **IO APIC lines.** `interrupt_controller::intid_of_vector` maps the vector back to the intid that
   armed it.
   Subtraction alone gives the redirection index, and an index is not a legacy interrupt. COM1's

@@ -34,7 +34,7 @@ Three links, none of them timing-dependent:
    `interrupt_notify`,
    never after (`arch/aarch64/exceptions.rs`, `arch/riscv64/exceptions.rs`,
    `arch/x86_64/exceptions.rs`).
-3. `crates/virtio`'s `complete_block` cannot leave its loop without a `WAIT` returning. The driver
+3. `components/src/block_driver_roles.rs`'s `complete_block` cannot leave its loop without a `WAIT` returning. The driver
    cannot reach its `send` without `complete_block` returning, twice.
 
 So a report on the wire proves that `ROUTED_INTERRUPTS` has already moved. The interrupt cannot be
