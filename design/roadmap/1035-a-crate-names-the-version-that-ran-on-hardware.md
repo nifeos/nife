@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 promoted_from: a-crate-names-the-version-that-ran-on-hardware
 raised: 2026-11-05
 milestone_dependencies: 159, 818, 857
@@ -173,7 +173,7 @@ Today's claims under it:
 
 Steps 2 to 4 need no board. Step 2 waits for step 1, because the README names a version only once
 that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is the only step that needed a
-person, and it is done. The milestone stays PARTIAL until step 2 merges.
+person, and it is done. Step 2 has merged.
 
 ## Done when
 
@@ -203,8 +203,8 @@ claim, so loosening it later breaks nobody.
   self-test       : true_random_number_generator ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 625b4bc8.., differ true; bring-up 1637 us, 64 bytes in 102 us (627450 bytes/s); crate jh7110_entropy 0.3.0-pre.1 at 497d3ec4f0b4d7fc36634dee47d1afd56eb22485
   self-test       : true_random_number_generator ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550, STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 7bb8b233.., differ true; bring-up 1629 us, 64 bytes in 103 us (616867 bytes/s); crate jh7110_entropy 0.3.0-pre.1 at 497d3ec4f0b4d7fc36634dee47d1afd56eb22485
   ```
-- **Outstanding.** Step 2, the README sentence in `nifeos/jh7110_entropy`, in its pull request
-  nifeos/jh7110_entropy#25. Step 1 is done, so it may merge.
+- **Done.** Step 2: the README sentence is on `nifeos/jh7110_entropy`'s main (nifeos/jh7110_entropy#25,
+  merge commit `df37dc91383c`).
 - **Done.** Step 3: the rule is in milestone 857's extraction checklist,
   `design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md`.
 - **Done.** Step 4: the `e1000e` I219 sentence becomes a limitation, in its own repository's pull
