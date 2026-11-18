@@ -360,8 +360,10 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W47,counter_frequency_contract,0,0,2,0
 2026W47,current_cpu_contract,7,5,2,1
 2026W47,entropy_contract,30,0,0,0
-2026W47,environment_contract,3,0,0,0
+2026W47,environment_contract,3,2,0,0
+2026W47,globally_unique_identifier_partition_table,4,8,0,0
 2026W47,grant_plan,490,2,0,0
-2026W47,machine_statistics_contract,1,1,0,0
+2026W47,line_editor,0,0,4,0
+2026W47,machine_statistics_contract,2,1,0,0
 2026W47,measured_boot,0,0,1,1
 2026W47,static_elf,14,26,15,6
