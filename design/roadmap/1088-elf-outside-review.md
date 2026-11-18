@@ -51,6 +51,10 @@ way the other extracted crates left. Publication is a separate later question, a
 hold stands; nothing here lifts it. The P0 items are what the move needs. The P1 items are what a
 first tag needs. The decisions section holds the three one-way doors a release would close.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1088-elf-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds the repository can tell in one screen that this is a validating front half of a

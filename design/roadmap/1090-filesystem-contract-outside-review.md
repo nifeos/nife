@@ -35,6 +35,10 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, its helpers (`sta
 `falsify.py`, `coverage-floor.sh`, the name gates), Kani, cargo-mutants, cargo-llvm-cov, the
 classification of equivalent mutants already in `notes/mutation-testing/`. No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1090-filesystem-contract-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds `filesystem_contract` in its own repository can tell in one screen what the two

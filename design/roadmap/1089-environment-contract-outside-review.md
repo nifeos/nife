@@ -24,6 +24,10 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-sta
 `script/crate-move`, Kani with the falsification-patch shape `block_roster_contract` carries,
 cargo-mutants. No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1089-environment-contract-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds `environment_contract` in its own repository can tell in one screen what the

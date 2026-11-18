@@ -28,6 +28,10 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, its naming and st
 cargo-mutants, Kani, cargo-fuzz and the crate's own `Blob` builder in `tests/hostile.rs`. No new
 tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1085-device-tree-blob-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds `device_tree_blob` can tell in one screen what it reads and what it refuses.

@@ -24,6 +24,10 @@ in this order) owns the move; this block owns the findings that should land insi
 
 Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov. No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1083-clock-contract-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who finds `clock_contract` in its own repository can tell in one screen what it is for

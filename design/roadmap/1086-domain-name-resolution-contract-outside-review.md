@@ -30,6 +30,10 @@ Reuse: `script/crate-move --dry-run`, `helpers/lint_externalized_crates.py`, the
 `abbreviations.py`, `prose_acronyms.py`), cargo-mutants' recorded census, Kani and cargo-fuzz for
 the proofs this block asks for. No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1086-domain-name-resolution-contract-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who opens `nifeos/domain_name_resolution_contract` can tell in one screen what the three
