@@ -13,6 +13,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [A mechanism says how many things it examined](../denominators.md): workflow steps that swallow a failure, and what each published ratio is of. Name provisional.
 - [What to do when `main` goes red](../main-is-red.md). Names provisional.
 - [The merge queue, and the three things that watch it](../merge-queue.md): the scripts that land, watch, and flag queue work. Names provisional.
+- [An open pull request always has an owner](../idle-pull-requests.md): `script/idle-pull-requests` flags a pull request that is green, stale, red or no longer held, and the `Held on #N` line declares a hold. Names provisional.
 - [Why `empty diff` fails: 609 failures in 14 days, sorted](../empty-diff-failures-2026-10-31.md): 95% are claim drafts failing by design; 5% cost a ready pull request time. Name provisional.
 - [A ready pull request failing a required check says so](../ci-failing.md): the scheduled flag that labels and comments once per head. Names provisional.
 - [A push to a queued branch is refused by the pre-push hook](../push-while-queued.md): what GitHub does to a queued pull request on a push, the check, its override and its gaps. Names provisional.

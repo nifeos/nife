@@ -272,6 +272,11 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # waiting for the slot its parent holds) is proved against a one-slot fixture under a deadline,
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
+echo "==> script/idle-pull-requests classifies open pull requests (the queue sweep's idle check)"
+# lint-scope: code
+# notes/idle-pull-requests.md: the classifier (queued, armed, held, running, idle) and its four flags run on
+# fixture pull requests with a stub for the blocker lookup, no `gh` and no network.
+python3 helpers/idle_pull_requests.py --selftest >/dev/null
 echo "==> script/crate-move stages a move as the runbook says"
 # lint-scope: code
 # notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and
