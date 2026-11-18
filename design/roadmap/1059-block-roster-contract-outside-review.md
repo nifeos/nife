@@ -243,24 +243,40 @@ None needs hardware or QEMU.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
+## Where this stands
+
+Finished: P0-1 (`nifeos/block_roster_contract` #3, #5), P0-2 (#6), the mutation caller of P1-1 (#4,
+#7), P1-2 to P1-6 and P1-8 (#9), P1-7 (#5, #8, #9, #10), P2-1, P2-3, P2-6 and P2-8 (#10), P2-5
+(#11) and P2-4 (#12). P2-2 is a README BUGS entry (#18). The two call sites in this organization
+use the new `Roster::read` (nife #3568). The weekly jobs pass on `main`, and `v0.1.0-pre.2` is
+tagged.
+
+| item | what remains | blocker |
+|---|---|---|
+| P1-1 | every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no template release; the newest release, `v7`, predates the mutation stack | release step |
+| P2-7 | the repository description now names block devices, but its topics lack `virtio` and `nvme` | other: one settings run, not yet done |
+
+Nothing in this block waits on a decision for calef. Any further tag is a separate ask, and the
+publishing hold keeps `publish = false`.
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/block_roster_contract`. Its tag `v0.1.0-pre.1` sits on
-`6263019`, the merge of #7; `main` is `9c2ca39`, 13 commits further on.
-
 - **Done.** P0-1 landed in `nifeos/block_roster_contract` #3 and #5, P0-2 in #6, and P1-1's mutation
-  caller in #4 and #7, before the tag.
-- **Done.** P1-2 to P1-6 and P1-8 landed in `nifeos/block_roster_contract` #9 after the tag, with
-  `Roster::read` returning `Result<Roster, ReadError>`; P1-7 in #5, #8, #9 and #10; P2-1, P2-3, P2-6
-  and P2-8 in #10; P2-5 in #11; P2-4 in #12.
-- **Outstanding.** P1-1's pin: every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no
-  template release. Read from the workflow files on `main`.
-- **Outstanding.** nife's two call sites on the new API: nife pins `6263019`, before #9, so
-  `components/src/disk_surveyor.rs` still matches the old `Option`; the pin bump moves it. Read from
-  this tree.
-- **Outstanding.** P2-2 and P2-7: `rust-version` stays 1.88, declined in #10 because `as_chunks`
-  needs it and stated in the README's "Minimum Rust version", and the repository description is
-  still the scaffold sentence. Neither is a BUGS entry or an issue. Read from the repository.
+  caller in #4 and #7; the `main` ruleset requires `check / mutation-diff`, which reports.
+- **Done.** P1-2 to P1-6 and P1-8 landed in `nifeos/block_roster_contract` #9, with `Roster::read`
+  returning `Result<Roster, ReadError>`; P1-7 in #5, #8, #9 and #10; P2-1, P2-3, P2-6 and P2-8 in
+  #10; P2-5 in #11; P2-4 in #12.
+- **Done.** nife's two call sites build against the new API: nife #3568 moved the pin to `72f531c`
+  (`v0.1.0-pre.2` and later), and `components/src/disk_surveyor.rs` and
+  `system_tests/src/user/disk_tests.rs` match on the `Result`.
+- **Done.** P2-2 became a README BUGS entry in `nifeos/block_roster_contract` #18: `rust-version`
+  stays 1.88 because the reader uses `slice::as_chunks`.
+- **Outstanding.** P1-1's pin: every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no
+  template release, and no release of the template carries the mutation stack. Read from the
+  workflow files on `main` and the template's tags.
+- **Outstanding.** P2-7's topics: the description is the manifest's, and the topics are
+  `block-device`, `storage`, `no-std`, `kani`, `formal-verification` and `rust`, without `virtio`
+  and `nvme`. Read from the repository through the GitHub API.
 
 ## Index row
 

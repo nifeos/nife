@@ -291,27 +291,33 @@ The checks, and the hardware steps the review claims none of, are in
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
+## Where this stands
+
+Finished: every P0, P1 and P2 item except P1-10, in `nifeos/extensible_host_controller_interface`
+#2 to #15 and #20. The names of P1-3, P1-5 to P1-9, P1-12 and P1-13 are ratified as built (nife
+#3664). The `main` ruleset requires `check / mutation-diff`. Kani, fuzz and mutation pass at
+`a2189a4`, the commit `v0.1.0-pre.2` tags.
+
+| item | what remains | blocker |
+|---|---|---|
+| P1-10 | every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no template release; the newest release, `v7`, predates the mutation stack | release step |
+| P1-2, P1-3, P1-5, P2-3 | #20 landed after `v0.1.0-pre.2`, so no tag carries them yet; milestone 820 owns the next tag, and any tag is a separate ask | decision for calef |
+| the hardware checks of the done-when appendix | none has a bench record after the review or a README BUGS line naming it unrun | bench |
+
+The publishing hold keeps `publish = false`.
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/extensible_host_controller_interface`. Its tag
-`v0.1.0-pre.1` sits on `2394d80`, the merge of #6; `main` is `f0b468b`, 36 commits further on.
-
-- **Done.** P1-1 landed in `nifeos/extensible_host_controller_interface` #5 before the tag. After
-  it, P0-1 landed in #7 and #8, P1-9 in #8, P1-4, P1-6 and P1-7 in #9, P2-2 in #10 and P1-8 in
-  #12. P1-11, P1-12 and P1-14 landed in #13, P1-13 in #14, and P2-1, P2-4 to P2-9 and P2-11 in
-  #15. Thirteen harnesses carry thirteen patches.
-- **Outstanding.** P1-2: the stranger run and the build section landed in #2 and #4, but the Kani
-  install line still breaks across two README lines. Read from the README on `main`.
-- **Outstanding.** P1-3 and P1-5: #9 and #11 landed `EndpointType` and the ring size bounds, but #11
-  removed the mask and the falsification patch now shifts one bit too far, and the Kani ring
-  harnesses still range over sizes outside the bounds. Read from `src/context.rs`,
-  `src/verification.rs` and the patch.
-- **Outstanding.** P1-10's pin: every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no
-  template release. Read from the workflow files.
-- **Outstanding.** P2-3 and P2-10 in part: no module says when to reach for it, and the repository
-  description and topics are still the scaffold's. Neither is a BUGS entry or an issue.
-- **Outstanding.** Kani and fuzz at a tagged commit: the last fuzz run, at `bea0257`, predates the
-  tag, and this check read no Kani run at `2394d80`.
+- **Done.** P0-1 landed in `nifeos/extensible_host_controller_interface` #7 and #8, and P1-1 in #5.
+  P1-4, P1-6 and P1-7 landed in #9, P1-8 in #12, P1-9 in #8, P1-11, P1-12 and P1-14 in #13, P1-13 in #14, P2-2 in
+  #10, and the rest of P2 in #15.
+- **Done.** #20 landed P1-2's one-line Kani install, P1-3's mask with a patch that drops it, P1-5's
+  harness bounds, P2-3's module sentences and P2-10's description and topics.
+- **Outstanding.** P1-10's pin: every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no
+  template release, and none carries the mutation stack. Read from the workflow files and the tags.
+- **Outstanding.** The hardware checks of
+  [the done-when appendix](1060-extensible-host-controller-interface-outside-review/done-when.md):
+  none has a bench record made after the review. Read from the README's BUGS and nife's `bench/`.
 
 ## Index row
 
