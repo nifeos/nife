@@ -33,3 +33,25 @@ fn output_expansion_never_puts_an_empty_slice() {
         assert!(out.0.iter().all(|put| !put.is_empty()), "{input:?}");
     }
 }
+
+/// The puts are exactly the text between newlines and each `\r\n`, in order, so a dropped
+/// trailing segment, a dropped leading segment and an extra empty put all show.
+#[test]
+fn output_expansion_puts_each_segment_once_in_order() {
+    struct Puts(Vec<Vec<u8>>);
+    impl Sink for Puts {
+        fn put(&mut self, b: &[u8]) {
+            self.0.push(b.to_vec());
+        }
+    }
+    let expand = |input: &[u8]| {
+        let mut out = Puts(Vec::new());
+        expand_output(input, &mut out);
+        out.0
+    };
+    assert_eq!(expand(b"a\nb"), [b"a".to_vec(), b"\r\n".to_vec(), b"b".to_vec()]);
+    assert_eq!(expand(b"ab"), [b"ab".to_vec()]);
+    assert_eq!(expand(b"\nb"), [b"\r\n".to_vec(), b"b".to_vec()]);
+    assert_eq!(expand(b"a\n"), [b"a".to_vec(), b"\r\n".to_vec()]);
+    assert!(expand(b"").is_empty());
+}

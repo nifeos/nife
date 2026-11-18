@@ -719,3 +719,30 @@ fn no_short_keystroke_sequence_puts_an_empty_slice() {
         }
     }
 }
+
+/// Walking down from a recalled entry back to an empty line in progress erases the row and puts
+/// nothing else: no empty write for the empty text, and the recalled text is a single put.
+#[test]
+fn recalling_the_empty_line_in_progress_puts_only_the_erase() {
+    struct Puts(Vec<Vec<u8>>);
+    impl Sink for Puts {
+        fn put(&mut self, b: &[u8]) {
+            self.0.push(b.to_vec());
+        }
+    }
+    let mut editor = LineDisc::new();
+    let mut out = Puts(Vec::new());
+    for key in *b"ab\r" {
+        let _ = editor.feed(key, &mut out);
+    }
+    out.0.clear();
+    for key in *b"\x1b[A" {
+        let _ = editor.feed(key, &mut out);
+    }
+    assert_eq!(out.0, [b"ab".to_vec(), b"\x1b[K".to_vec()]);
+    out.0.clear();
+    for key in *b"\x1b[B" {
+        let _ = editor.feed(key, &mut out);
+    }
+    assert_eq!(out.0, [b"\x1b[2D".to_vec(), b"\x1b[K".to_vec()]);
+}
