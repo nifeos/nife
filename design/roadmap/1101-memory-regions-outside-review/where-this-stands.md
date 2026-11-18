@@ -5,8 +5,8 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
 Waiting on calef: Decision 1 (whether the crate leaves) and item 9's names.
 
 Finished: item 1 (#3525), item 3's refusals (#3534), item 4 (#3532), items 7, 10, 12, 13, 14 and
-15 and item 6(b) (#3567, with item 14's times in #3647), and item 6(d) (#3521). Item 6(c) is done:
-`src/proofs.rs` and `src/tests.rs` spell out `CBMC` at first use. The maintainer has decided Decisions 2, 3 and 4, provisionally.
+15 and item 6(b) (#3567, with item 14's times in #3647), and item 6(d) (#3521). Item 6(c) holds: `src/proofs.rs` and `src/tests.rs` spell out `CBMC` at first use.
+The maintainer has decided Decisions 2, 3 and 4, provisionally.
 
 What remains, and what holds each:
 
