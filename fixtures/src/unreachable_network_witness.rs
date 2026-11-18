@@ -110,7 +110,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     });
     let (r0, _) = call(
         grant_contract::ENTROPY_SLOT,
-        entropy_contract::request(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
+        entropy_contract::request(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES)
+            .expect("GET is a defined operation"),
         0,
     );
     say(match r0 as i64 {

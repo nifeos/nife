@@ -256,7 +256,8 @@ fn fill(out: &mut [u8]) -> bool {
         let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
         let (r0, r1) = call(
             ENTROPY,
-            entropy_contract::request(entropy_contract::GET, want as u64),
+            entropy_contract::request(entropy_contract::GET, want as u64)
+                .expect("GET is a defined operation"),
             0,
         );
         // `delivered` is what makes "no entropy capability" distinguishable from "no entropy"

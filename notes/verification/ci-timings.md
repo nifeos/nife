@@ -48,36 +48,34 @@ considered and declined on these numbers.
 
 This is milestone 119 (the long pole is one prover). The packer balances crates by their measured
 seconds, so the slowest shard can never beat the slowest crate, and the slowest crate can never
-beat its slowest harness, one formula in one single-threaded solver. The table below holds medians of the 29 merge-group runs 43642016303 to 43659021264 (2026-11-14
-and 2026-11-15 UTC), each with every shard passing. The largest harness is each crate's median over
-the shard logs of the last 40 runs:
+beat its slowest harness, one formula in one single-threaded solver. The table below holds medians
+over the green shard jobs of the merge-group runs 43987371696 to 44351284576 (2026-11-17 and
+2026-11-18 UTC), 34 to 39 jobs per crate:
 
 | crate | median | largest harness |
 |---|---|---|
-| `memory_regions` | 9.5 min | 2.9 min |
-| `byte_glob` | 9.1 min | 7.8 min, `no_magic_means_the_pattern_is_its_own_only_match` |
-| `machine_discovery` | 6.5 min | 6.3 min |
-| `driver_process_contract::virtual_input_output` | 5.6 min | 5.6 min |
-| `subtree_scope` | 3.8 min | 3.6 min |
-| the other 33 | 16.2 min | |
-| serial | 50.6 min | |
+| `byte_glob` | 9.3 min | 7.5 min, `no_magic_means_the_pattern_is_its_own_only_match` |
+| `memory_regions` | 8.8 min | 3.0 min |
+| `socket_contract` | 7.1 min | 7.0 min |
+| `machine_discovery` | 6.8 min | 6.6 min |
+| `driver_process_contract::virtual_io` | 5.5 min | 5.3 min |
+| serial, from the table in script/verify | 79.3 min | |
 
 A harness can outlast its crate's median because two run at once (`VERIFY_JOBS=2`), and the
-runner's speed varies by about 1.6 times from run to run (`byte_glob`: 399 to 658 seconds over
-those runs). The packer splits these medians into shards as below. The other two columns sum each
-crate's 90th percentile and maximum over the same shard, and each job adds about 0.7 minutes of
-setup:
+runner's speed varies by about 1.6 times from run to run (`byte_glob`: 399 to 700 seconds over
+those runs). Over the 33 complete five-shard runs in that window, the slowest shard took 1.18 times
+the plan at the median, 1.29 at the 90th percentile and 1.37 at the most, setup included. Those
+ratios against the plan for the current table give:
 
-| prove shards | slowest shard, median | slowest shard, 90th percentile | slowest shard, maximum |
-|---|---|---|---|
-| four | 12.7 min | 14.3 min | 15.4 min |
-| **five (what runs)** | **10.1 min** | **11.6 min** | **12.5 min** |
-| six | 9.5 min | 10.6 min | 11.6 min |
+| prove shards | plan | slowest shard, median | slowest shard, 90th percentile | slowest shard, maximum |
+|---|---|---|---|---|
+| five | 15.9 min | 18.8 min | 20.5 min | 21.8 min |
+| **six (what runs)** | **13.2 min** | **15.6 min** | **17.0 min** | **18.1 min** |
+| seven | 11.3 min | 13.3 min | 14.6 min | 15.5 min |
 
-Five hold the slowest job near 60% of its 20-minute budget at the 90th percentile. A sixth buys
-under a minute, because `memory_regions` and `byte_glob` are each a shard on their own, and seven
-buy nothing more. `helpers/verify_times.py` keeps the table current, and
-[notes/project-metrics.md](../project-metrics.md) charts it.
+Six keep the slowest job under its 20-minute budget at the maximum. `byte_glob` fills a shard alone
+at 9.3 minutes, so the floor is well below six shards' plan. `helpers/verify_times.py` keeps the
+table current, and [notes/project-metrics.md](../project-metrics.md) charts it.
 
 ### A shard that stalls
 

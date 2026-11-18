@@ -673,7 +673,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b" }
+designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "8bb45f85ad1a7b97614a5258a98c481701eda816" }
 # The boot ladder's console markers (milestone 268). `swish` prints the last rung; the kernel
 # prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
@@ -703,7 +703,7 @@ http_response = { version = "0.1.0", path = "../crates/http_response" }
 domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
 # The name resolver's contract with its clients and its spawner (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
-block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "72f531ccf75c873614fb580e07af24d86f313f23" }
+block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
@@ -747,7 +747,7 @@ slabtop = { version = "0.1.0", path = "../crates/slabtop" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
 uptime = { version = "0.1.0", path = "../crates/uptime" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
-entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 # The JH7110's clock and reset device table, walk and request dispatch, host-tested in its own
 # crate; jh7110_clock_and_reset.rs is the volatile shell of register stores over it.
 jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset_devices" }
@@ -756,7 +756,7 @@ jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_c
 designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/designware_inter_integrated_circuit" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
-jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "497d3ec4f0b4d7fc36634dee47d1afd56eb22485" }
+jh7110_entropy = { version = "0.3.0-pre.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "df37dc91383c4226b0266499c48de7e5e92ecb99" }
 # login's own measured-boot consultation before it will build a caretaker from an archive entry
 # (milestone 49's BUGS, resolved): the same crate `crates/system_initializer` already depends on.
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
@@ -770,18 +770,18 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
-non_volatile_memory_express = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "73b335cd973cc63f9039fbbc8894af7c72d3a344" }
+non_volatile_memory_express = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "5b0c24dcd3fe5416bcefeed7bb3936108c44ed45" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
-e1000e = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/e1000e", rev = "68ed5202b1df8c5de1ee365c9b9337f731ed7a0c" }
+e1000e = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/e1000e", rev = "0a21349ffcd95b79ffda04222fc413f7b0e77ed2" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
-designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096" }
+designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "8d9cca0a044487403fd0d37e4fb34442c18b19d2" }
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
 usb = { version = "0.1.0", path = "../crates/usb" }
-extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "a2189a4e8a795d6201cce3075b07216b6b405a7c" }
+extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "875a6401be12f311d925580901faf00cbcacbf99" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.
