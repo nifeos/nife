@@ -10,7 +10,7 @@ reads DONE with the test or harness that holds it, or LEFT with the reason.
 | 3 stand-alone text and manifest | LEFT | done by the move commit, which strips the provenance blocks and rewrites citations |
 | 4 type named `Send` | LEFT | decision D1 (a public name) |
 | 5 gate names, private parts | DONE | `a_canceled_or_rearmed_timer_never_fires_stale` (harness and patch renamed); test bindings spelled `pointer_a`, `pointer_b`, `pointer_c` |
-| 5 prose spellings | LEFT | `signalled` and `modelled` in `notification.rs`, `signalling` in `timer.rs` and `behaviour` in one patch header remain, with a doc-example `pa` in `futex.rs` |
+| 5 prose spellings | LEFT | five British spellings remain, in the prose of `notification.rs` and `timer.rs` and in one patch header, with a doc-example `pa` in `futex.rs` |
 | 5 gate names, public parts | LEFT | `one_queue_invariant_holds` and `Key::virtual_address` are public names; they wait for the package rulings |
 | 6 design record travels | LEFT | `docs/design.md` and the README belong to the move |
 | 7 manifest metadata | LEFT | the move's manifest rows |
