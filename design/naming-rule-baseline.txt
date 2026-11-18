@@ -41,7 +41,6 @@ crates/documentation/src/index.rs::STORE_DIR spelled-out
 
 
 
-crates/environment_contract/src/lib.rs::ConfigPage spelled-out
 
 crates/filesystem_contract/src/dir.rs::dir spelled-out
 

@@ -95,16 +95,22 @@ pub mod domain {
     ];
 
     /// Whether `s` is a member of [`KNOWN_TIME_ZONES`].
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     pub fn is_known_time_zone(s: &str) -> bool {
         KNOWN_TIME_ZONES.contains(&s)
     }
 
     /// Whether `s` is a member of [`KNOWN_LOCALES`].
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     pub fn is_known_locale(s: &str) -> bool {
         KNOWN_LOCALES.contains(&s)
     }
 
     /// Whether `s` is a member of [`KNOWN_TERMINAL_TYPES`].
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     pub fn is_known_terminal_type(s: &str) -> bool {
         KNOWN_TERMINAL_TYPES.contains(&s)
     }
@@ -168,6 +174,8 @@ const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key, 8 + 1 +
 /// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
 pub const PAGE_CONTENT_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
@@ -235,6 +243,8 @@ impl<'a> PageBuilder<'a> {
     }
 
     /// Declare `TZ`. Refused if `value` is not a member of [`domain::KNOWN_TIME_ZONES`].
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     #[doc(alias = "TZ")]
     pub fn time_zone(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_known_time_zone(value) {
@@ -246,6 +256,8 @@ impl<'a> PageBuilder<'a> {
     }
 
     /// Declare `LANG`. Refused if `value` is not a member of [`domain::KNOWN_LOCALES`].
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     #[doc(alias = "LANG")]
     pub fn locale(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_known_locale(value) {
@@ -257,6 +269,8 @@ impl<'a> PageBuilder<'a> {
     }
 
     /// Declare `TERM`. Refused if `value` is not a member of [`domain::KNOWN_TERMINAL_TYPES`].
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     #[doc(alias = "TERM")]
     pub fn terminal_type(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_known_terminal_type(value) {
@@ -399,6 +413,8 @@ fn read_field(
 /// assert_eq!(nothing.locale(), None);
 /// assert_eq!(nothing.terminal_type(), None);
 /// ```
+///
+/// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
 #[derive(Debug, Clone, Copy)]
 pub struct ConfigurationPage {
     base: *const u8,
@@ -444,6 +460,8 @@ impl ConfigurationPage {
     /// `TZ`, or `None` if this process holds no config page, the page is unrecognized, `TZ` was
     /// never declared onto it, or the bytes are not a member of [`domain::KNOWN_TIME_ZONES`]. A
     /// reader never sees a value outside that set, whoever wrote the page.
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     #[doc(alias = "TZ")]
     pub fn time_zone(&self) -> Option<&str> {
         self.is_recognized()
@@ -461,6 +479,8 @@ impl ConfigurationPage {
 
     /// `LANG`, or `None` for the same reasons [`time_zone`](Self::time_zone) can be `None`, with
     /// [`domain::KNOWN_LOCALES`] as the set.
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     #[doc(alias = "LANG")]
     pub fn locale(&self) -> Option<&str> {
         self.is_recognized()
@@ -478,6 +498,8 @@ impl ConfigurationPage {
 
     /// `TERM`, or `None` for the same reasons [`time_zone`](Self::time_zone) can be `None`, with
     /// [`domain::KNOWN_TERMINAL_TYPES`] as the set.
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by lane 1087-1089-1090-ruled-follow-ons; spelled out under the page family rule and the spelled-out rule.
     #[doc(alias = "TERM")]
     pub fn terminal_type(&self) -> Option<&str> {
         self.is_recognized()
