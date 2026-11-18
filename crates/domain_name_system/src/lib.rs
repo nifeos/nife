@@ -35,10 +35,13 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[cfg(kani)]
 mod proofs;
 
 /// The port a name server listens on, over UDP and TCP alike (RFC 1035 section 4.2).
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub const PORT: u16 = 53;
 
 /// The largest message RFC 1035 lets travel over the User Datagram Protocol (UDP) without EDNS
@@ -50,7 +53,7 @@ pub const MAXIMUM_UDP_MESSAGE_BYTES: usize = 512;
 /// The largest message RFC 7766 lets travel over TCP: its two-byte length prefix counts up to
 /// 65,535 bytes, and the prefix itself comes on top.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub const MAXIMUM_TCP_MESSAGE_BYTES: usize = 65_535;
 
 /// A name in wire form is at most 255 bytes, length bytes and the root label included (section 2.3.4).
@@ -59,67 +62,71 @@ pub const MAXIMUM_TCP_MESSAGE_BYTES: usize = 65_535;
 pub const MAXIMUM_NAME_BYTES: usize = 255;
 /// A label is at most 63 bytes; the two top bits of a longer count are the compression-pointer tag.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes; the spelling ratified
+/// Name: ratified 2026-11-16 (UTC), block 1087; the spelling ratified
 /// in #2797 was `MAXIMUM_LABEL_LEN`.
 pub const MAXIMUM_LABEL_BYTES: usize = 63;
 
 /// The header every DNS message starts with.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub const HEADER_BYTES: usize = 12;
 
 /// The response bit: set in a reply.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "QR")]
 pub const FLAG_RESPONSE: u16 = 0x8000;
 /// The operation code field. A standard query has operation code 0.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "OPCODE")]
 pub const OPERATION_CODE_MASK: u16 = 0x7800;
 /// Truncated: the server had more to say than the transport carried.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "TC")]
 pub const FLAG_TRUNCATED: u16 = 0x0200;
 /// Recursion desired. A stub resolver always sets it, because it asks a recursive server to do the
 /// walk from the root that a stub does not.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "RD")]
 pub const FLAG_RECURSION_DESIRED: u16 = 0x0100;
 /// The response code field, the low four bits of the flags.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "RCODE")]
 pub const RESPONSE_CODE_MASK: u16 = 0x000f;
 
 /// The response code a server sends for a name that does not exist (RFC 1035's "Name Error").
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "RCODE")]
 #[doc(alias = "NXDOMAIN")]
 pub const RESPONSE_CODE_NAME_ERROR: u8 = 3;
 
 /// Record types this crate reads.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub mod record_type {
     /// An address record, whose data is one IPv4 address.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     #[doc(alias = "A")]
     #[doc(alias = "address record")]
     pub const IPV4_ADDRESS: u16 = 1;
     /// A canonical name record: the owner is an alias, and the record's data is the
     /// canonical name.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     #[doc(alias = "canonical name record")]
     #[doc(alias = "CNAME")]
     pub const CANONICAL_NAME: u16 = 5;
 }
 
 /// The Internet class, the only one a host-name lookup uses.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "Internet class")]
 pub const CLASS_IN: u16 = 1;
 
@@ -132,7 +139,7 @@ pub const MAXIMUM_CHAIN: usize = 8;
 
 /// How many IPv4 addresses an [`Answer`] keeps (see the crate's BUGS).
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes; the spelling ratified
+/// Name: ratified 2026-11-16 (UTC), block 1087; the spelling ratified
 /// in #2797 was `MAXIMUM_ADDRESSES`.
 pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 
@@ -144,6 +151,8 @@ pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 ///
 /// Non-exhaustive: Longer addresses or EDNS(0) would add variants, so a caller matches with a
 /// wildcard arm.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {
@@ -172,6 +181,8 @@ pub enum Error {
 }
 
 /// This crate's results.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub type Result<T> = core::result::Result<T, Error>;
 
 // =================================================================================================
@@ -180,6 +191,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 /// The 12-byte header, decoded. Judging the flags is the caller's business, so decoding it is
 /// total on any input long enough.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Header {
     /// The transaction id a reply must echo.
@@ -202,6 +215,8 @@ pub struct Header {
 
 impl Header {
     /// Decode the first 12 bytes of `msg`.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn parse(msg: &[u8]) -> Result<Header> {
         let b = msg.get(..HEADER_BYTES).ok_or(Error::Truncated)?;
         let f = |i: usize| u16::from_be_bytes([b[i], b[i + 1]]);
@@ -216,6 +231,8 @@ impl Header {
     }
 
     /// Encode into the first 12 bytes of `out`.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn write(&self, out: &mut [u8]) -> Result<()> {
         let out = out.get_mut(..HEADER_BYTES).ok_or(Error::Overflow)?;
         let words = [
@@ -234,7 +251,7 @@ impl Header {
 
     /// The response code, the flags' low four bits.
     ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     #[doc(alias = "RCODE")]
     pub fn response_code(&self) -> u8 {
         (self.flags & RESPONSE_CODE_MASK) as u8
@@ -255,6 +272,8 @@ impl Header {
 ///
 /// There is no `Hash`: with case-insensitive equality a hash would have to fold case first, and a
 /// caller that wants a key folds the bytes itself.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Clone, Copy)]
 pub struct Name {
     bytes: [u8; MAXIMUM_NAME_BYTES],
@@ -263,6 +282,8 @@ pub struct Name {
 
 impl Name {
     /// The root, the name every other name ends in: one empty label.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub const fn root() -> Name {
         Name {
             bytes: [0; MAXIMUM_NAME_BYTES],
@@ -271,6 +292,8 @@ impl Name {
     }
 
     /// The wire bytes, root label included.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes[..self.length_bytes as usize]
     }
@@ -292,6 +315,8 @@ impl Name {
     /// assert_eq!(Name::from_dotted("example..test"), Err(Error::BadLabel));
     /// assert_eq!(Name::from_dotted("example test"), Err(Error::BadCharacter));
     /// ```
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn from_dotted(text: &str) -> Result<Name> {
         Name::from_dotted_bytes(text.as_bytes())
     }
@@ -359,6 +384,8 @@ impl Name {
     /// assert!(Name::from_dotted("packages.EXAMPLE.test").unwrap().is_within(&zone));
     /// assert!(!Name::from_dotted("evilexample.test").unwrap().is_within(&zone));
     /// ```
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn is_within(&self, zone: &Name) -> bool {
         let name = self.as_bytes();
         let zone = zone.as_bytes();
@@ -456,6 +483,8 @@ impl core::fmt::Display for Name {
 /// is what a correct encoder always produces, and it is the termination argument: the pointer
 /// budget strictly decreases and every label consumes bytes, so a pointer loop is an
 /// [`Error::PointerForward`] rather than a hang. `src/proofs.rs` checks that claim with Kani.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub fn decode_name(msg: &[u8], off: usize) -> Result<(Name, usize)> {
     let mut out = Name {
         bytes: [0; MAXIMUM_NAME_BYTES],
@@ -525,6 +554,8 @@ pub(crate) fn decode_name_into(msg: &[u8], off: usize, out: &mut [u8]) -> Result
 // =================================================================================================
 
 /// A decoded question.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy)]
 pub struct Question {
     /// The name asked about.
@@ -540,6 +571,8 @@ pub struct Question {
 /// A decoded resource record: its fixed fields and its raw data. Data that holds a name (a canonical name's)
 /// may be compressed against the whole message (a canonical name's is; an A record's is four plain bytes),
 /// so [`canonical_name_target`] takes the message too, and `data_offset` says where the data sits in it.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy)]
 pub struct Record<'a> {
     /// The record's owner.
@@ -552,7 +585,7 @@ pub struct Record<'a> {
     pub class: u16,
     /// The time to live: seconds a cache may keep the record.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     #[doc(alias = "TTL")]
     #[doc(alias = "time to live")]
     pub ttl_seconds: u32,
@@ -566,6 +599,8 @@ pub struct Record<'a> {
 /// Walks one message in wire order: the header, then [`Reader::question`] `question_count` times, then
 /// [`Reader::record`] for each record. The reader does not count for you. It is `Clone`, so a caller
 /// can rescan a section from a saved position.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Clone)]
 pub struct Reader<'a> {
     /// The message's header, decoded on construction.
@@ -576,6 +611,8 @@ pub struct Reader<'a> {
 
 impl<'a> Reader<'a> {
     /// Start reading `msg`, decoding its header.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn new(msg: &'a [u8]) -> Result<Reader<'a>> {
         Ok(Reader {
             header: Header::parse(msg)?,
@@ -590,6 +627,8 @@ impl<'a> Reader<'a> {
     }
 
     /// Read the next question.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn question(&mut self) -> Result<Question> {
         let (name, off) = decode_name(self.msg, self.off)?;
         let record_type = self.u16_at(off)?;
@@ -603,6 +642,8 @@ impl<'a> Reader<'a> {
     }
 
     /// Read the next resource record.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn record(&mut self) -> Result<Record<'a>> {
         let (name, off) = decode_name(self.msg, self.off)?;
         let record_type = self.u16_at(off)?;
@@ -630,7 +671,7 @@ impl<'a> Reader<'a> {
 /// A canonical name record's canonical name, decompressed against the whole message. The name must end
 /// inside the record's own data, though its pointers may reach back anywhere earlier.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[doc(alias = "canonical name")]
 #[doc(alias = "CNAME")]
 pub fn canonical_name_target(msg: &[u8], record: &Record<'_>) -> Result<Name> {
@@ -650,6 +691,8 @@ pub fn canonical_name_target(msg: &[u8], record: &Record<'_>) -> Result<Name> {
 /// The id is the caller's to choose, and over UDP it should be unguessable: it is the only thing an
 /// off-path forger has to guess. This crate has no randomness of its own, deliberately, for the
 /// reason `network_time_protocol::Query::with_nonce` takes its nonce as an argument.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy)]
 pub struct Query {
     id: u16,
@@ -658,6 +701,8 @@ pub struct Query {
 
 /// Why a reply was not believed. Each variant is one check in [`Query::accept`], declared in the
 /// order the checks run, so a log or a test can say which check refused it.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reject {
     /// Not a DNS message, or its answer section is not.
@@ -694,6 +739,8 @@ fn believable_time_to_live(time_to_live: u32) -> u32 {
 }
 
 /// The addresses a reply gave for our name, after every check passed.
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Answer {
     ipv4_addresses: [[u8; 4]; MAXIMUM_IPV4_ADDRESSES],
@@ -705,7 +752,7 @@ pub struct Answer {
 impl Answer {
     /// The IPv4 addresses, in the order the server gave them. Never empty.
     ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1087-outside-review-fixes.
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn ipv4_addresses(&self) -> &[[u8; 4]] {
         &self.ipv4_addresses[..self.count as usize]
     }
@@ -714,7 +761,7 @@ impl Answer {
     /// A record whose TTL has its most significant bit set counts as zero, as RFC 2181 section 8
     /// directs, so an answer carrying one is good for no time.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by lane/dns-ttl-seconds-canonical-name.
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     #[doc(alias = "TTL")]
     #[doc(alias = "time to live")]
     pub fn ttl_seconds(&self) -> u32 {
@@ -722,6 +769,8 @@ impl Answer {
     }
 
     /// The name the addresses belong to: ours, or the end of the canonical name chain from it.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn canonical(&self) -> &Name {
         &self.canonical
     }
@@ -730,6 +779,8 @@ impl Answer {
 impl Query {
     /// A query for `host`'s IPv4 addresses under transaction id `id`. Fails only when `host` is not
     /// a host name [`Name::from_dotted`] accepts.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn new(id: u16, host: &str) -> Result<Query> {
         Ok(Query {
             id,
@@ -740,16 +791,22 @@ impl Query {
     /// A query for a name already in wire form. The resolver parses a client's text once, checks it
     /// against the client's grant, and asks about exactly the name it checked, rather than parsing
     /// the text a second time and trusting the two parses to agree.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn for_name(id: u16, name: Name) -> Query {
         Query { id, name }
     }
 
     /// The transaction id.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn id(&self) -> u16 {
         self.id
     }
 
     /// The name asked about.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn name(&self) -> &Name {
         &self.name
     }
@@ -757,6 +814,8 @@ impl Query {
     /// Write the query message (header with RD set, one question, type A, class IN) into `out`, and
     /// return its length. At most [`HEADER_BYTES`] + [`MAXIMUM_NAME_BYTES`] + 4 = 271 bytes, so it
     /// always fits a UDP datagram.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn request(&self, out: &mut [u8]) -> Result<usize> {
         let name = self.name.as_bytes();
         let len = HEADER_BYTES + name.len() + 4;
@@ -777,6 +836,8 @@ impl Query {
 
     /// The same query framed for TCP (RFC 7766): a two-byte big-endian length, then the message.
     /// Returns the framed length.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn request_tcp(&self, out: &mut [u8]) -> Result<usize> {
         let body = out.get_mut(2..).ok_or(Error::Overflow)?;
         let n = self.request(body)?;
@@ -817,6 +878,8 @@ impl Query {
     /// reply[1] ^= 1;
     /// assert_eq!(query.accept(&reply), Err(Reject::IdMismatch));
     /// ```
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn accept(&self, reply: &[u8]) -> core::result::Result<Answer, Reject> {
         let mut reader = Reader::new(reply).map_err(Reject::Malformed)?;
         let h = reader.header;
@@ -958,6 +1021,8 @@ fn response_code_reject(code: u8) -> Reject {
 /// assert_eq!(reply.feed(&[2, 3]), Ok(true));
 /// assert_eq!(reply.message(), Some(&[1u8, 2, 3][..]));
 /// ```
+///
+/// Name: ratified 2026-11-16 (UTC), block 1087.
 pub struct TcpReply<'a> {
     buf: &'a mut [u8],
     have: usize,
@@ -970,6 +1035,8 @@ impl<'a> TcpReply<'a> {
     /// A buffer no larger than [`MAXIMUM_UDP_MESSAGE_BYTES`] cannot hold the TCP reply that a
     /// truncated UDP reply asks for, which defeats the retry. Size it for the largest reply the
     /// caller accepts, up to [`MAXIMUM_TCP_MESSAGE_BYTES`] + 2.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn new(buf: &'a mut [u8]) -> TcpReply<'a> {
         TcpReply { buf, have: 0 }
     }
@@ -982,6 +1049,8 @@ impl<'a> TcpReply<'a> {
     }
 
     /// Take the next piece. `Ok(true)` once the message is whole.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn feed(&mut self, mut bytes: &[u8]) -> Result<bool> {
         while !bytes.is_empty() {
             let limit = match self.wanted() {
@@ -1006,6 +1075,8 @@ impl<'a> TcpReply<'a> {
     }
 
     /// The message, without its length, once [`TcpReply::feed`] has said it is whole.
+    ///
+    /// Name: ratified 2026-11-16 (UTC), block 1087.
     pub fn message(&self) -> Option<&[u8]> {
         match self.wanted() {
             Some(w) if self.have == w => Some(&self.buf[2..w]),
