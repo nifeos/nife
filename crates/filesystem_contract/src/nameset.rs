@@ -24,7 +24,7 @@ pub const NAME_BYTES: usize = 512;
 /// Bytes an encoded set occupies at most: a two-byte header per name, the names, and the
 /// terminator.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const MAXIMUM_BYTES: usize = 2 * MAXIMUM_NAMES + NAME_BYTES + 1;
 
 // A set arrives in one page, and the longest name has to fit in one set.
@@ -33,7 +33,7 @@ const _: () = assert!(NAME_BYTES >= 2 * grant::MAXIMUM_NAME_BYTES);
 
 /// Bit 0 of a record's flags byte: this name was a directory when the grant was planned.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const IS_DIRECTORY: u8 = 1 << 0;
 
 /// Write `names` into `out`, returning the bytes used, or `None` if the set does not fit, a name

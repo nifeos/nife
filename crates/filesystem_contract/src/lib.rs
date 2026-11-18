@@ -26,7 +26,7 @@ struct ReadmeExample;
 /// [`fs::TRANSFER_PAGES`]. A file read or write larger than [`fs::MAXIMUM_TRANSFER_BYTES`], or a `Disk`
 /// call spanning more than [`block::MAXIMUM_TRANSFER_BYTES`], is chunked by the caller.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const PAGE_BYTES: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position

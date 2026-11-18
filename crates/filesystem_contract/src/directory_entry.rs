@@ -2,7 +2,7 @@
 /// [`super::fs::OPEN`]. Carried because a listing whose reader has to open every name to find
 /// out what it is turns one enumeration into N opens, and because completion wants to know.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const IS_DIRECTORY: u8 = 1 << 0;
 
 /// Bytes one record takes: two for the header, plus the name.

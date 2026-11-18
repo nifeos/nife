@@ -114,21 +114,21 @@ pub const fn fits_words(name: &[u8]) -> bool {
 /// assert!(grant::pack_name(b"quarterly-report.txt").is_none());
 /// ```
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn specification(len: usize, rights: u64) -> u64 {
     ((len as u64) & 0xff) | (rights << 8)
 }
 
 /// The granted name's length from a spec word.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn specification_len(w: u64) -> usize {
     (w & 0xff) as usize
 }
 
 /// The granted rights from a spec word.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn specification_rights(w: u64) -> u64 {
     w >> 8
 }

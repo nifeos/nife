@@ -41,7 +41,7 @@ pub const FLUSH: u64 = 4;
 /// server so a future RedoxFS bump that changed the block size would fail to build rather than
 /// silently corrupt.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const BLOCK_BYTES: usize = PAGE_BYTES;
 
 /// The logical block size a partition table counts in: the 512-byte sector every disk this

@@ -1,7 +1,7 @@
 /// Bytes one record takes. Also the value [`super::fs::STATFS`] answers with on success; see
 /// the module header on why the length is the version.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const RECORD_BYTES: usize = 24;
 
 /// Write a record at the start of `out`, returning its length, or `None` if it does not fit.

@@ -75,26 +75,26 @@ pub const ENOTSUP: i32 = 95;
 ///
 /// **BUGS.** No file anywhere on a nife filesystem can be called `.extended-attributes`, at any rights.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const STORE_DIRECTORY: &str = ".extended-attributes";
 
 /// Pack [`fs::SETXATTR`]'s second word: the value's type code in the high 32 bits, its length in
 /// the low 32. The name's length rides in the request word's own length field, as every other
 /// verb's payload length does, so the two lengths never share a field.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn specification(kind: u32, value_len: u64) -> u64 {
     ((kind as u64) << 32) | (value_len & 0xffff_ffff)
 }
 /// The type code from a [`fs::SETXATTR`] second word.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn specification_kind(w1: u64) -> u32 {
     (w1 >> 32) as u32
 }
 /// The value length from a [`fs::SETXATTR`] second word.
 ///
-/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+/// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn specification_value_len(w1: u64) -> usize {
     (w1 & 0xffff_ffff) as usize
 }
@@ -214,7 +214,7 @@ pub mod store {
 
     /// A record's fixed header: one byte of name length, four of kind, two of value length.
     ///
-    /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (Decision B spells the name out).
+    /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
     pub const RECORD_HEADER_BYTES: usize = 1 + 4 + 2;
 
     /// Bytes one record occupies.
