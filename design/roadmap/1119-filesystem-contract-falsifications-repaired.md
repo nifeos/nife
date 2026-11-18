@@ -10,8 +10,8 @@ replayable falsification patch. Every patch applies to the current tree. Each tu
 red on the assertion it names. The branch is `milestone/1119-filesystem-contract-falsifications-repaired`;
 the number is provisional.
 
-What drives it: the outside review of the filesystem contract (milestone 1090, "filesystem_contract:
-outside review") added six harnesses and six patches. Its pull request left the crate's patches for
+What drives it: the outside review of the filesystem contract (milestone 1090, "`filesystem_contract`: what an
+outside maintainer would fix before it leaves") added six harnesses and six patches. Its pull request left the crate's patches for
 a separate lane to check. One patch looked like a survivor. A change to `Rights::resolve` alone
 passes a harness that checks only the child, since the `&` in `attenuate` masks the answer.
 
@@ -33,7 +33,7 @@ milestone adds no tool.
 
 ## Follow-on
 
-- **None.** Every patch of the crate is red on the assertion it names, so nothing is left to repair.
+- **None.** Every patch of the crate is red on the assertion it names, so no repair remains.
 
 ## Index row
 
